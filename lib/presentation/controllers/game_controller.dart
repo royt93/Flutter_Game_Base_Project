@@ -26,7 +26,7 @@ class GameController extends GetxController {
   // --- Kinh tế & booster ---
   final RxInt coins = 0.obs;
   final RxInt boosterHammer = 0.obs;
-  final RxInt boosterShuffle = 0.obs;
+  final RxInt boosterMoves = 0.obs; // +5 lượt
 
   /// Số sao đạt được ở ván vừa kết thúc (cho dialog celebration).
   int lastStars = 0;
@@ -46,7 +46,7 @@ class GameController extends GetxController {
     unlockedLevel.value = _prefs.getInt('unlockedLevel') ?? 1;
     coins.value = _prefs.getInt('coins') ?? 50; // tặng 50 xu khởi đầu
     boosterHammer.value = _prefs.getInt('b_hammer') ?? 2;
-    boosterShuffle.value = _prefs.getInt('b_shuffle') ?? 2;
+    boosterMoves.value = _prefs.getInt('b_moves') ?? 2;
     for (final lv in kLevels) {
       final hs = _prefs.getInt('hs_${lv.index}');
       if (hs != null) highScores[lv.index] = hs;
@@ -161,16 +161,18 @@ class GameController extends GetxController {
     return true;
   }
 
-  bool useShuffleBooster() {
-    if (boosterShuffle.value <= 0) return false;
-    boosterShuffle.value--;
-    _prefs.setInt('b_shuffle', boosterShuffle.value);
+  /// +5 lượt. Trả về true nếu còn booster.
+  bool useMovesBooster() {
+    if (boosterMoves.value <= 0) return false;
+    boosterMoves.value--;
+    _prefs.setInt('b_moves', boosterMoves.value);
+    movesLeft.value += 5;
     return true;
   }
 
   /// Mua booster bằng xu. Trả về true nếu đủ xu.
   bool buyHammer({int price = 30}) => _buy('b_hammer', boosterHammer, price);
-  bool buyShuffle({int price = 30}) => _buy('b_shuffle', boosterShuffle, price);
+  bool buyMoves({int price = 25}) => _buy('b_moves', boosterMoves, price);
 
   bool _buy(String key, RxInt count, int price) {
     if (coins.value < price) return false;

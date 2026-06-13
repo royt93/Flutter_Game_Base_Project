@@ -211,6 +211,14 @@ lib/
 - [x] **22 ngôn ngữ** (en, vi + 20: es/fr/de/pt/ru/zh/ja/ko/it/id/th/hi/ar/tr/nl/pl/fil/ms/uk/bn) — agent dịch, test parity pass
 - [x] **66 unit/widget test pass**, 0 analyzer issue, build release chạy thật (Samsung 1080x2340 + Tecno BG6)
 
+#### Wave 3.1 — fix booster + GetX hoá (đã làm)
+- [x] **Bỏ booster Shuffle** (trùng auto-shuffle) → thay bằng **+5 Lượt** (rõ giá trị)
+- [x] **Fix nút X triệt để (root cause thật)**: Flame GameWidget vẽ ĐÈ lên dialog route → chuyển quit/win/lose sang **overlay trong cây widget** (NeonDialog.panel + NeonDialog.overlay) render trên GameWidget. Đã verify trên máy: X → "THOÁT MÀN?" → ĐỒNG Ý → về Level Select.
+- [x] **Bỏ hoàn toàn setState** → refactor `game_screen` thành StatelessWidget + `GameScreenController` (GetX): game instance, overlay state, vòng đời wakelock đều qua Rx/Obx
+- [x] **Booster có animation khi bấm** (InkWell ripple); hết booster → hiện **giá xu** (💰30) ngay trên nút → làm rõ quan hệ xu↔booster
+- [x] Icon: 🔨 búa = đập 1 gem bất kỳ; ⏰+5 = thêm 5 lượt; 💰 = xu (mua booster)
+- [x] 66 test pass · 0 analyzer issue · verify thật trên Samsung
+
 ### 🟡 In progress
 *(không có)*
 
