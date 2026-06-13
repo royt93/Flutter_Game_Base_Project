@@ -74,9 +74,22 @@ class MatchDetector {
     return MatchGroup(
       cells: cells,
       color: color,
+      horizontal: horizontal,
       special: special,
       specialAt: specialAt,
     );
+  }
+
+  /// Các ô là giao điểm của 1 run ngang & 1 run dọc (hình T / L / +) → tạo bomb.
+  static Set<Cell> bombCells(List<MatchGroup> groups) {
+    final inH = <Cell>{};
+    final inV = <Cell>{};
+    for (final g in groups) {
+      for (final c in g.cells) {
+        (g.horizontal ? inH : inV).add(c);
+      }
+    }
+    return inH.intersection(inV);
   }
 
   /// Tiện ích: gộp tất cả ô của mọi group thành một tập hợp duy nhất.

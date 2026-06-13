@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/neon_theme.dart';
 
 /// Nút bấm phong cách neon: viền sáng + glow + chữ phát sáng.
@@ -43,7 +42,7 @@ class NeonButton extends StatelessWidget {
             ],
             Text(
               label,
-              style: GoogleFonts.orbitron(
+              style: TextStyle(fontFamily: 'Orbitron', 
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,

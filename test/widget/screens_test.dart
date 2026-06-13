@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:neon_jewels/core/app_translations.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
 import 'package:neon_jewels/presentation/screens/home_screen.dart';
 import 'package:neon_jewels/presentation/screens/level_select_screen.dart';
@@ -17,30 +18,39 @@ void main() {
   });
   tearDown(Get.reset);
 
-  testWidgets('HomeScreen hiển thị tiêu đề & nút chơi', (tester) async {
-    await tester.pumpWidget(const GetMaterialApp(home: HomeScreen()));
+  // App giả lập với i18n English (default).
+  Widget appEn(Widget home) => GetMaterialApp(
+        translations: AppTranslations(),
+        locale: const Locale('en', 'US'),
+        fallbackLocale: AppTranslations.fallback,
+        home: home,
+      );
+
+  testWidgets('HomeScreen hiển thị tiêu đề & nút chơi (English default)',
+      (tester) async {
+    await tester.pumpWidget(appEn(const HomeScreen()));
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('NEON'), findsOneWidget);
     expect(find.text('JEWELS'), findsOneWidget);
-    expect(find.text('CHƠI NGAY'), findsOneWidget);
+    expect(find.text('PLAY NOW'), findsOneWidget);
+    expect(find.text('SETTINGS'), findsOneWidget);
   });
 
   testWidgets('LevelSelectScreen render đủ tile level', (tester) async {
     Get.put(GameController());
     await tester.pump(const Duration(milliseconds: 30));
-    await tester.pumpWidget(const GetMaterialApp(home: LevelSelectScreen()));
+    await tester.pumpWidget(appEn(const LevelSelectScreen()));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('CHỌN MÀN'), findsOneWidget);
-    // level 1 luôn mở khóa → có số '1'
+    expect(find.text('SELECT LEVEL'), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
   });
 
-  testWidgets('LevelSelectScreen khóa level chưa unlock (hiện icon khóa)', (tester) async {
+  testWidgets('LevelSelectScreen khóa level chưa unlock (hiện icon khóa)',
+      (tester) async {
     Get.put(GameController());
     await tester.pump(const Duration(milliseconds: 30));
-    await tester.pumpWidget(const GetMaterialApp(home: LevelSelectScreen()));
+    await tester.pumpWidget(appEn(const LevelSelectScreen()));
     await tester.pump(const Duration(milliseconds: 100));
-    // mặc định chỉ mở khóa level 1 → level 2..5 bị khóa
     expect(find.byIcon(Icons.lock), findsWidgets);
   });
 }

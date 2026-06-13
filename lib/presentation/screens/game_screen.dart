@@ -2,7 +2,6 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/audio_manager.dart';
 import '../../core/neon_theme.dart';
 import '../../game/neon_jewel_game.dart';
@@ -60,8 +59,8 @@ class _GameScreenState extends State<GameScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                win ? 'CHIẾN THẮNG!' : 'THỬ LẠI',
-                style: GoogleFonts.orbitron(
+                win ? 'victory'.tr : 'retry'.tr,
+                style: TextStyle(fontFamily: 'Orbitron', 
                   color: Colors.white,
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
@@ -71,31 +70,31 @@ class _GameScreenState extends State<GameScreen> {
               ).animate().scale(duration: 400.ms, curve: Curves.elasticOut),
               const SizedBox(height: 16),
               Text(
-                'Điểm: ${ctrl.score.value}',
-                style: GoogleFonts.orbitron(color: Colors.white, fontSize: 18),
+                'score_value'.trParams({'value': '${ctrl.score.value}'}),
+                style: TextStyle(fontFamily: 'Orbitron', color: Colors.white, fontSize: 18),
               ),
               Text(
-                'Mục tiêu: ${ctrl.targetScore.value}',
-                style: GoogleFonts.orbitron(color: Colors.white54, fontSize: 14),
+                'target_value'.trParams({'value': '${ctrl.targetScore.value}'}),
+                style: TextStyle(fontFamily: 'Orbitron', color: Colors.white54, fontSize: 14),
               ),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _dialogBtn('LẠI', NeonTheme.cyan, () {
+                  _dialogBtn('btn_again'.tr, NeonTheme.cyan, () {
                     Get.back();
                     ctrl.startLevel(ctrl.currentLevel.value);
                     setState(_buildGame);
                   }),
                   const SizedBox(width: 12),
                   if (win && ctrl.currentLevel.value < 5)
-                    _dialogBtn('TIẾP', NeonTheme.lime, () {
+                    _dialogBtn('btn_next'.tr, NeonTheme.lime, () {
                       Get.back();
                       ctrl.startLevel(ctrl.currentLevel.value + 1);
                       setState(_buildGame);
                     })
                   else
-                    _dialogBtn('VỀ', NeonTheme.purple, () {
+                    _dialogBtn('btn_home'.tr, NeonTheme.purple, () {
                       Get.back();
                       Get.back();
                     }),
@@ -120,7 +119,7 @@ class _GameScreenState extends State<GameScreen> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.orbitron(
+          style: TextStyle(fontFamily: 'Orbitron', 
             color: Colors.white,
             fontWeight: FontWeight.w700,
             shadows: [Shadow(color: c, blurRadius: 8)],
@@ -140,10 +139,51 @@ class _GameScreenState extends State<GameScreen> {
             children: [
               _buildHud(),
               Expanded(child: GameWidget(game: game)),
+              _buildBoosterBar(),
               const SizedBox(height: 8),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBoosterBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          GestureDetector(
+            onTap: () => game.shuffleBoard(),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: NeonTheme.panel.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: NeonTheme.purple, width: 2),
+                boxShadow: NeonTheme.glow(NeonTheme.purple, blur: 8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.shuffle, color: NeonTheme.purple, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'shuffle'.tr,
+                    style: const TextStyle(
+                      fontFamily: 'Orbitron',
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1,
+                      shadows: [Shadow(color: NeonTheme.purple, blurRadius: 8)],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -172,7 +212,7 @@ class _GameScreenState extends State<GameScreen> {
                     )),
               const SizedBox(width: 8),
               Obx(() => _statChip(
-                    'MÀN ${ctrl.currentLevel.value}',
+                    'stage_n'.trParams({'n': '${ctrl.currentLevel.value}'}),
                     NeonTheme.purple,
                   )),
             ],
@@ -181,9 +221,9 @@ class _GameScreenState extends State<GameScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Obx(() => _statChip('ĐIỂM\n${ctrl.score.value}', NeonTheme.cyan)),
-              Obx(() => _statChip('MỤC TIÊU\n${ctrl.targetScore.value}', NeonTheme.lime)),
-              Obx(() => _statChip('LƯỢT\n${ctrl.movesLeft.value}', NeonTheme.orange)),
+              Obx(() => _statChip('${'hud_score'.tr}\n${ctrl.score.value}', NeonTheme.cyan)),
+              Obx(() => _statChip('${'hud_target'.tr}\n${ctrl.targetScore.value}', NeonTheme.lime)),
+              Obx(() => _statChip('${'hud_moves'.tr}\n${ctrl.movesLeft.value}', NeonTheme.orange)),
             ],
           ),
           const SizedBox(height: 8),
@@ -219,7 +259,7 @@ class _GameScreenState extends State<GameScreen> {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: GoogleFonts.orbitron(
+        style: TextStyle(fontFamily: 'Orbitron', 
           color: Colors.white,
           fontSize: 13,
           fontWeight: FontWeight.w700,

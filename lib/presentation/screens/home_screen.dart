@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/neon_theme.dart';
 import '../../data/levels.dart';
 import '../controllers/game_controller.dart';
 import '../widgets/neon_button.dart';
 import 'level_select_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -27,7 +27,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 Text(
                   'NEON',
-                  style: GoogleFonts.orbitron(
+                  style: TextStyle(fontFamily: 'Orbitron', 
                     fontSize: 56,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
@@ -43,7 +43,7 @@ class HomeScreen extends StatelessWidget {
                     .scaleXY(begin: 1, end: 1.04, duration: 1600.ms),
                 Text(
                   'JEWELS',
-                  style: GoogleFonts.orbitron(
+                  style: TextStyle(fontFamily: 'Orbitron', 
                     fontSize: 40,
                     fontWeight: FontWeight.w700,
                     color: NeonTheme.magenta,
@@ -55,14 +55,14 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const Spacer(),
                 NeonButton(
-                  label: 'CHƠI NGAY',
+                  label: 'play_now'.tr,
                   color: NeonTheme.lime,
                   icon: Icons.play_arrow_rounded,
                   onTap: () => Get.to(() => const LevelSelectScreen()),
                 ),
                 const SizedBox(height: 18),
                 NeonButton(
-                  label: 'LEVEL 1',
+                  label: 'quick_level1'.tr,
                   color: NeonTheme.cyan,
                   icon: Icons.bolt,
                   onTap: () {
@@ -70,10 +70,18 @@ class HomeScreen extends StatelessWidget {
                     Get.to(() => const LevelSelectScreen());
                   },
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 18),
+                NeonButton(
+                  label: 'settings'.tr,
+                  color: NeonTheme.purple,
+                  icon: Icons.settings,
+                  onTap: () => Get.to(() => const SettingsScreen()),
+                ),
+                const SizedBox(height: 36),
                 Text(
-                  '${kLevels.length} levels · style neon',
-                  style: GoogleFonts.orbitron(
+                  'levels_tagline'.trParams({'count': '${kLevels.length}'}),
+                  style: TextStyle(
+                    fontFamily: 'Orbitron',
                     color: Colors.white54,
                     fontSize: 12,
                     letterSpacing: 2,

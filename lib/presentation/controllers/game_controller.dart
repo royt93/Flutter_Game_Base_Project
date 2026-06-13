@@ -78,6 +78,16 @@ class GameController extends GetxController {
     return null;
   }
 
+  /// Xoá toàn bộ tiến độ (về level 1, xoá high score).
+  Future<void> resetProgress() async {
+    unlockedLevel.value = 1;
+    highScores.clear();
+    await _prefs.setInt('unlockedLevel', 1);
+    for (final lv in kLevels) {
+      await _prefs.remove('hs_${lv.index}');
+    }
+  }
+
   Future<void> _saveProgress({required bool win}) async {
     final lv = currentLevel.value;
     final prev = highScores[lv] ?? 0;

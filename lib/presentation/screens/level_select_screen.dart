@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/neon_theme.dart';
 import '../../data/levels.dart';
 import '../controllers/game_controller.dart';
@@ -28,8 +27,8 @@ class LevelSelectScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'CHỌN MÀN',
-                      style: GoogleFonts.orbitron(
+                      'select_level'.tr,
+                      style: TextStyle(fontFamily: 'Orbitron',
                         color: Colors.white,
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
@@ -102,7 +101,7 @@ class _LevelTile extends StatelessWidget {
             else
               Text(
                 '${level.index}',
-                style: GoogleFonts.orbitron(
+                style: TextStyle(fontFamily: 'Orbitron', 
                   color: Colors.white,
                   fontSize: 34,
                   fontWeight: FontWeight.w900,
@@ -113,7 +112,7 @@ class _LevelTile extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 '★ $highScore',
-                style: GoogleFonts.orbitron(color: Colors.amber, fontSize: 11),
+                style: TextStyle(fontFamily: 'Orbitron', color: Colors.amber, fontSize: 11),
               ),
             ],
           ],

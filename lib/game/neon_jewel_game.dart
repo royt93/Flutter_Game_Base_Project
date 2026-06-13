@@ -18,7 +18,7 @@ import 'gem_component.dart';
 
 /// Game match-3 neon chính (Flame). Sở hữu lưới GemComponent và điều phối
 /// toàn bộ vòng lặp: swap → match → nổ → trọng lực → cascade.
-class NeonJewelGame extends FlameGame with TapCallbacks {
+class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   final GameController controller;
   final int rows;
   final int cols;
@@ -51,8 +51,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
 
   @override
   Future<void> onLoad() async {
+    await NeonFx.ensureInit(); // pre-render ảnh glow 1 lần (tránh blur mỗi frame)
     _layout();
-    add(AmbientNeon(area: size, palette: NeonTheme.gemColors, rnd: _rnd)
+    add(NeonBackground(area: size, palette: NeonTheme.gemColors, rnd: _rnd)
       ..priority = -10);
     boardLayer = PositionComponent()..priority = 0;
     add(boardLayer);
@@ -162,6 +163,51 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
       (a.row == b.row && (a.col - b.col).abs() == 1) ||
       (a.col == b.col && (a.row - b.row).abs() == 1);
 
+  // --- Vuốt để đổi gem (swipe-to-swap, giống game gốc) ---
+  Cell? _dragCell;
+  Vector2 _dragAccum = Vector2.zero();
+
+  @override
+  void onDragStart(DragStartEvent event) {
+    super.onDragStart(event);
+    if (_busy) {
+      _dragCell = null;
+      return;
+    }
+    _dragCell = _cellAtPosition(event.localPosition);
+    _dragAccum = Vector2.zero();
+    _selected?.selected = false;
+    _selected = null;
+  }
+
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    super.onDragUpdate(event);
+    if (_dragCell == null || _busy) return;
+    _dragAccum += event.localDelta;
+    if (_dragAccum.length < cellSize * 0.4) return;
+
+    int dr = 0, dc = 0;
+    if (_dragAccum.x.abs() > _dragAccum.y.abs()) {
+      dc = _dragAccum.x > 0 ? 1 : -1;
+    } else {
+      dr = _dragAccum.y > 0 ? 1 : -1;
+    }
+    final from = _dragCell!;
+    _dragCell = null; // chỉ kích hoạt 1 lần mỗi cử chỉ
+    final r = from.row + dr, c = from.col + dc;
+    if (r < 0 || r >= rows || c < 0 || c >= cols) return;
+    final a = grid[from.row][from.col];
+    final b = grid[r][c];
+    if (a != null && b != null) _trySwap(a, b);
+  }
+
+  @override
+  void onDragEnd(DragEndEvent event) {
+    super.onDragEnd(event);
+    _dragCell = null;
+  }
+
   // --------------------------------------------------------------------------
   // Vòng lặp game
   // --------------------------------------------------------------------------
@@ -223,6 +269,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
           newSpecials[g.specialAt!] = g.special;
         }
       }
+      // Giao điểm T/L → bomb (ưu tiên hơn striped tại ô đó)
+      for (final bomb in MatchDetector.bombCells(matches)) {
+        newSpecials[bomb] = GemType.bomb;
+      }
 
       // kích hoạt special đã có sẵn nằm trong vùng xóa (chain reaction)
       var expanded = _expandSpecials(toClear);
@@ -266,6 +316,20 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
               neonColorOf(g.color));
           for (int r = 0; r < rows; r++) {
             extra.add(Cell(r, cell.col));
+          }
+          break;
+        case GemType.bomb:
+          add(ShockwaveComponent(
+            position: _cellCenter(cell.row, cell.col),
+            color: neonColorOf(g.color),
+            maxRadius: cellSize * 2.2,
+          )..priority = 50);
+          _shake(8);
+          for (int dr = -1; dr <= 1; dr++) {
+            for (int dc = -1; dc <= 1; dc++) {
+              final r = cell.row + dr, c = cell.col + dc;
+              if (r >= 0 && r < rows && c >= 0 && c < cols) extra.add(Cell(r, c));
+            }
           }
           break;
         case GemType.rainbow:
@@ -427,12 +491,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
   }
 
   void _spawnBurst(Vector2 position, Color color) {
+    // Particle nhẹ: không MaskFilter, dùng blend cộng (BlendMode.plus) tạo cảm giác
+    // neon rực mà rẻ. Giảm count 16→9 để mượt khi nổ cụm lớn.
     final particle = Particle.generate(
-      count: 16,
-      lifespan: 0.55,
+      count: 9,
+      lifespan: 0.5,
       generator: (i) {
         final angle = _rnd.nextDouble() * math.pi * 2;
-        final speed = 60 + _rnd.nextDouble() * 160;
+        final speed = 60 + _rnd.nextDouble() * 150;
         final velocity = Vector2(math.cos(angle), math.sin(angle))..scale(speed);
         return AcceleratedParticle(
           acceleration: Vector2(0, 160),
@@ -442,14 +508,58 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
               final t = 1 - p.progress;
               final paint = Paint()
                 ..color = color.withValues(alpha: t)
-                ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-              canvas.drawCircle(Offset.zero, cellSize * 0.12 * t + 1, paint);
+                ..blendMode = BlendMode.plus;
+              canvas.drawCircle(Offset.zero, cellSize * 0.11 * t + 1, paint);
             },
           ),
         );
       },
     );
     add(ParticleSystemComponent(particle: particle, position: position)..priority = 40);
+  }
+
+  /// Booster: xáo trộn màu toàn bàn (đảm bảo không tạo match sẵn). Có pop + rung.
+  Future<void> shuffleBoard() async {
+    if (_busy) return;
+    _busy = true;
+    try {
+      final cells = <Cell>[];
+      final colors = <GemColor>[];
+      for (int r = 0; r < rows; r++) {
+        for (int c = 0; c < cols; c++) {
+          final g = grid[r][c];
+          if (g != null) {
+            cells.add(Cell(r, c));
+            colors.add(g.color);
+          }
+        }
+      }
+      // xáo tới khi không có match sẵn (tối đa 20 lần thử)
+      for (int attempt = 0; attempt < 20; attempt++) {
+        colors.shuffle(_rnd);
+        final test = List.generate(
+            rows, (_) => List<GemColor?>.filled(cols, null));
+        for (int i = 0; i < cells.length; i++) {
+          test[cells[i].row][cells[i].col] = colors[i];
+        }
+        if (!MatchDetector.hasMatch(test)) break;
+      }
+      final futures = <Future>[];
+      for (int i = 0; i < cells.length; i++) {
+        final g = grid[cells[i].row][cells[i].col]!;
+        g.color = colors[i];
+        g.type = GemType.normal;
+        g.scale = Vector2.all(0.5);
+        futures.add(_run(
+            g,
+            ScaleEffect.to(Vector2.all(1),
+                EffectController(duration: 0.3, curve: Curves.elasticOut))));
+      }
+      _shake(6);
+      await Future.wait(futures);
+    } finally {
+      _busy = false;
+    }
   }
 
   /// Rung toàn bàn gem rồi trả về vị trí gốc (tự huỷ effect, không leak).

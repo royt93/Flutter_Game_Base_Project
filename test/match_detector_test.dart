@@ -128,6 +128,28 @@ void main() {
       expect(five.specialAt, isNotNull);
     });
 
+    test('match hình T/L tạo bomb tại giao điểm', () {
+      // cột giữa (c) dọc 3 + hàng giữa (c) ngang 3 giao tại (1,1) → bomb
+      final g = grid([
+        'mcm',
+        'ccc',
+        'mcm',
+      ]);
+      final matches = MatchDetector.findMatches(g);
+      final bombs = MatchDetector.bombCells(matches);
+      expect(bombs.contains(const Cell(1, 1)), isTrue);
+    });
+
+    test('match thẳng không tạo bomb', () {
+      final g = grid([
+        'cccm',
+        'ompy',
+        'lyol',
+        'pmlc',
+      ]);
+      expect(MatchDetector.bombCells(MatchDetector.findMatches(g)), isEmpty);
+    });
+
     test('match 3 không tạo special', () {
       final g = grid([
         'cccm',

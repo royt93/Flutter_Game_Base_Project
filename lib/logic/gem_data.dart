@@ -7,8 +7,9 @@ enum GemColor { cyan, magenta, lime, yellow, orange, purple }
 /// Loại gem.
 /// - normal: gem thường
 /// - stripedH / stripedV: nổ cả hàng / cả cột (tạo từ match 4)
+/// - bomb: nổ vùng 3x3 xung quanh (tạo từ match hình T/L)
 /// - rainbow: xóa toàn bộ gem cùng 1 màu (tạo từ match 5)
-enum GemType { normal, stripedH, stripedV, rainbow }
+enum GemType { normal, stripedH, stripedV, bomb, rainbow }
 
 /// Vị trí 1 ô trên lưới.
 class Cell {
@@ -32,6 +33,9 @@ class MatchGroup {
   final List<Cell> cells;
   final GemColor color;
 
+  /// true = run ngang, false = run dọc (dùng để phát hiện giao điểm T/L → bomb).
+  final bool horizontal;
+
   /// Special nên tạo (normal nghĩa là không tạo special).
   final GemType special;
 
@@ -41,6 +45,7 @@ class MatchGroup {
   const MatchGroup({
     required this.cells,
     required this.color,
+    required this.horizontal,
     this.special = GemType.normal,
     this.specialAt,
   });
