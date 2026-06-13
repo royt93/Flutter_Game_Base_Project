@@ -355,31 +355,52 @@ class GameScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Obx(() => _pill(Icons.monetization_on_rounded, NeonTheme.yellow,
-              '${ctrl.coins.value}')),
+                  '${ctrl.coins.value}')
+              .animate(key: ValueKey(sc.coinShake.value))
+              .shake(duration: 450.ms, hz: 6)),
           const SizedBox(width: NeonTheme.s24),
-          // Búa: phá 1 viên (đập gem) — hết thì mua 30 xu
+          // Búa: còn → chọn (chạm gem để đập); hết → mua 30 xu
           Obx(() => _boosterBtn(
                 Icons.gavel_rounded,
                 NeonTheme.orange,
                 ctrl.boosterHammer.value,
-                () {
-                  if (ctrl.boosterHammer.value > 0) {
-                    sc.game.armHammer();
+                price: 30,
+                armed: sc.hammerArmed.value,
+                onTap: () {
+                  debugPrint('roy93~ HAMMER tap: count=${ctrl.boosterHammer.value} '
+                      'coins=${ctrl.coins.value} armed=${sc.hammerArmed.value}');
+                  if (sc.hammerArmed.value) {
+                    sc.hammerArmed.value = false; // bấm lại để bỏ chọn
+                    sc.game.hammerArmed = false;
+                  } else if (ctrl.boosterHammer.value > 0) {
+                    sc.armHammer();
                   } else {
-                    ctrl.buyHammer();
+                    final ok = ctrl.buyHammer();
+                    debugPrint('roy93~ HAMMER buy result=$ok coins=${ctrl.coins.value}');
+                    if (!ok) sc.coinShake.value++; // thiếu xu → rung chip xu
                   }
                 },
               )),
           const SizedBox(width: NeonTheme.s16),
-          // +5 lượt — hết thì mua 25 xu
+          // +5 lượt: còn → dùng ngay (+5 lượt); hết → mua 25 xu
           Obx(() => _boosterBtn(
                 Icons.add_alarm_rounded,
                 NeonTheme.cyan,
                 ctrl.boosterMoves.value,
-                () {
-                  if (!ctrl.useMovesBooster()) ctrl.buyMoves();
-                },
                 label: '+5',
+                price: 25,
+                onTap: () {
+                  debugPrint('roy93~ MOVES tap: count=${ctrl.boosterMoves.value} '
+                      'moves=${ctrl.movesLeft.value} coins=${ctrl.coins.value}');
+                  if (ctrl.boosterMoves.value > 0) {
+                    ctrl.useMovesBooster();
+                    debugPrint('roy93~ MOVES used -> moves=${ctrl.movesLeft.value}');
+                  } else {
+                    final ok = ctrl.buyMoves();
+                    debugPrint('roy93~ MOVES buy result=$ok coins=${ctrl.coins.value}');
+                    if (!ok) sc.coinShake.value++; // thiếu xu → rung chip xu
+                  }
+                },
               )),
         ],
       ),
@@ -409,9 +430,17 @@ class GameScreen extends StatelessWidget {
     );
   }
 
-  /// Nút booster: nhấn có animation (scale). Còn → "xN", hết → giá mua.
-  Widget _boosterBtn(IconData icon, Color color, int count, VoidCallback onTap,
-      {String? label}) {
+  /// Nút booster. Còn → "xN" (bấm để dùng); hết → giá mua (💰price).
+  /// armed = true (búa đã chọn) → viền sáng + nền nổi bật.
+  Widget _boosterBtn(
+    IconData icon,
+    Color color,
+    int count, {
+    required VoidCallback onTap,
+    String? label,
+    int price = 30,
+    bool armed = false,
+  }) {
     final has = count > 0;
     return Material(
       color: Colors.transparent,
@@ -424,45 +453,47 @@ class GameScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: NeonTheme.panel.withValues(alpha: 0.6),
+            color: armed
+                ? color.withValues(alpha: 0.35)
+                : NeonTheme.panel.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: color, width: 2),
-            boxShadow: NeonTheme.glow(color, blur: 7),
+            border: Border.all(color: color, width: armed ? 3 : 2),
+            boxShadow: NeonTheme.glow(color, blur: armed ? 16 : 7),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, color: color, size: 22),
-          if (label != null) ...[
-            const SizedBox(width: 3),
-            Text(label,
-                style: TextStyle(
-                  fontFamily: 'Orbitron',
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
-                )),
-          ],
-          const SizedBox(width: 6),
-          if (has)
-            Text('x$count',
-                style: const TextStyle(
-                  fontFamily: 'Orbitron',
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13,
-                ))
-          else
-            Row(mainAxisSize: MainAxisSize.min, children: const [
-              Icon(Icons.monetization_on_rounded,
-                  color: NeonTheme.yellow, size: 13),
-              SizedBox(width: 2),
-              Text('30',
+            Icon(icon, color: armed ? Colors.white : color, size: 22),
+            if (label != null) ...[
+              const SizedBox(width: 3),
+              Text(label,
                   style: TextStyle(
                     fontFamily: 'Orbitron',
-                    color: NeonTheme.yellow,
+                    color: color,
                     fontWeight: FontWeight.w800,
                     fontSize: 12,
                   )),
-            ]),
+            ],
+            const SizedBox(width: 6),
+            if (has)
+              Text('x$count',
+                  style: const TextStyle(
+                    fontFamily: 'Orbitron',
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ))
+            else
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.monetization_on_rounded,
+                    color: NeonTheme.yellow, size: 13),
+                const SizedBox(width: 2),
+                Text('$price',
+                    style: const TextStyle(
+                      fontFamily: 'Orbitron',
+                      color: NeonTheme.yellow,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    )),
+              ]),
           ]),
         ),
       ),

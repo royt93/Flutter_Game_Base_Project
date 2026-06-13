@@ -226,5 +226,19 @@ void main() {
       expect(c.buyHammer(price: 30), isFalse);
       expect(c.coins.value, 10);
     });
+
+    test('+5 lượt: dùng booster cộng 5 lượt', () {
+      c.startLevel(1);
+      final m0 = c.movesLeft.value;
+      c.boosterMoves.value = 1;
+      expect(c.useMovesBooster(), isTrue);
+      expect(c.movesLeft.value, m0 + 5);
+      expect(c.boosterMoves.value, 0);
+    });
+
+    test('hết +5 thì useMovesBooster trả false', () {
+      c.boosterMoves.value = 0;
+      expect(c.useMovesBooster(), isFalse);
+    });
   });
 }

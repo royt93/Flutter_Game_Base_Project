@@ -13,6 +13,8 @@ class GameScreenController extends GetxController {
 
   final Rx<GameUi> ui = GameUi.playing.obs;
   final RxInt gameVersion = 0.obs; // tăng để Obx dựng lại GameWidget
+  final RxBool hammerArmed = false.obs; // búa đã chọn → chờ chạm gem
+  final RxInt coinShake = 0.obs; // tăng để rung chip xu khi thiếu xu
   NeonJewelGame? _game;
   NeonJewelGame get game => _game!;
 
@@ -37,9 +39,22 @@ class GameScreenController extends GetxController {
       cols: lv.cols,
       colorCount: lv.colorCount,
       onGameEnd: _onGameEnd,
-      onHammerUsed: gameCtrl.useHammer,
+      onHammerUsed: _onHammerUsed,
     );
     gameVersion.value++;
+  }
+
+  /// Chọn búa: kích hoạt chế độ đập (chờ người chơi chạm 1 gem).
+  void armHammer() {
+    if (gameCtrl.boosterHammer.value > 0) {
+      game.armHammer();
+      hammerArmed.value = true;
+    }
+  }
+
+  void _onHammerUsed() {
+    gameCtrl.useHammer();
+    hammerArmed.value = false;
   }
 
   void _onGameEnd(String result) {

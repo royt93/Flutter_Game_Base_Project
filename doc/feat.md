@@ -219,6 +219,14 @@ lib/
 - [x] Icon: 🔨 búa = đập 1 gem bất kỳ; ⏰+5 = thêm 5 lượt; 💰 = xu (mua booster)
 - [x] 66 test pass · 0 analyzer issue · verify thật trên Samsung
 
+#### Wave 3.2 — fix booster UX (đã làm)
+- [x] **Trace bằng debug print `roy93~`** ở click event booster (giữ lại để dễ debug trên máy)
+- [x] **Nguyên nhân "booster không work"**: hết booster (count=0) + thiếu xu (coins<giá) → mua thất bại **im lặng**. Đã verify: khi còn booster, +5 → LƯỢT 26→31; búa → arm → đập gem OK
+- [x] **Phản hồi thiếu xu**: rung chip xu (shake) khi mua thất bại
+- [x] **Búa có chỉ báo "đã chọn"** (nút sáng rực) + bấm lại để bỏ chọn
+- [x] **Giá mua đúng** trên nút (búa 30, +5 lượt 25); icon: 🔨 đập 1 gem, ⏰+5 thêm lượt, 💰 xu
+- [x] 68 unit/widget test pass · 0 analyzer issue · verify thật trên máy
+
 ### 🟡 In progress
 *(không có)*
 
