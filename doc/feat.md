@@ -118,8 +118,21 @@ lib/
 - [x] **5 level demo** độ khó tăng dần
 - [x] **Animation "wow":** pop-in xếp tầng đường chéo khi mở màn, bounce khi rơi, nền neon orb trôi động, swap mượt
 - [x] **Audio:** nhạc nền (bkg.mp3) + 24 nốt nhạc tăng cao độ theo combo + âm special + nút tắt tiếng
-- [x] **Test đầy đủ:** unit (match detector, controller, levels) + widget (button, screens) + integration (luồng E2E) — 37 test pass
+- [x] **Test đầy đủ:** unit + widget + integration — 45 test pass
 - [x] **Chất lượng:** 0 issue analyze, try/finally chống kẹt bàn cờ, effect/particle tự huỷ (không leak)
+
+#### Wave 1.1 — phản hồi người dùng (đã làm)
+- [x] **Swipe để đổi gem** (DragCallbacks) — giống game gốc, vẫn giữ tap-chọn-tap
+- [x] **Bomb gem** (match hình T/L) → nổ vùng 3x3
+- [x] **Hình gem đa dạng + neon hơn:** mỗi màu 1 hình riêng (tròn/kim cương/tam giác/lục giác/ngũ giác/sao) + viền neon đôi
+- [x] **Booster Shuffle** (xáo bàn, đảm bảo không match sẵn)
+- [x] **Đa ngôn ngữ (i18n GetX):** English (default) + Tiếng Việt, kiến trúc sẵn sàng 20+ ngôn ngữ + test toàn vẹn key
+- [x] **Màn Settings:** âm thanh, chọn ngôn ngữ, reset tiến độ
+- [x] **Launcher icon + Splash screen** neon (kim cương SVG → PNG)
+- [x] **Font bundle Orbitron** (offline, bỏ phụ thuộc tải mạng)
+- [x] **Tối ưu hiệu năng:** bỏ MaskFilter.blur per-frame (thủ phạm lag), glow dùng ảnh cache, particle blend cộng, nền tối ưu
+- [x] **Tên app:** "Neon Jewels" (Android + iOS)
+- [x] **Chạy thật trên Tecno BG6 (release)** — không crash trong logcat
 
 ### 🟡 In progress
 *(không có — Wave 1 đã xong)*
@@ -128,17 +141,17 @@ lib/
 *(trống — chờ chọn Wave 2 từ Deferred)*
 
 ### ⏸️ Deferred (lớn, để session sau)
-- [ ] **Bomb gem (match T/L)** + tất cả combo 2-special-gem
-- [ ] **5 game modes** (xem mục 5)
+- [ ] **Combo 2-special-gem** (striped+striped, striped+bomb, rainbow+bomb...) — hiện mới có rainbow-swap
+- [ ] **5 game modes** (xem mục 5) — hiện mới có Score Target
 - [ ] **Obstacles:** băng (ice), xích (chain), đá (stone), jelly
 - [ ] **Level objectives đa dạng:** collect gems, clear jelly, drop items xuống đáy
 - [ ] **Map/World progression** (lâu đài, mở khóa khu vực) — 100+ levels
-- [ ] **Booster system** (hammer, shuffle, bomb pre-game)
+- [ ] **Booster đầy đủ:** hammer (đập 1 gem), swap (đổi 2 gem bất kỳ), bomb pre-game (mới có Shuffle)
 - [ ] **Hệ thống sao (1-3 sao/level)** + reward
 - [ ] **Daily reward, lives/energy system**
-- [ ] **Âm thanh:** nhạc nền neon synthwave + SFX
-- [ ] **Settings:** âm lượng, ngôn ngữ, haptic feedback
-- [ ] **Tutorial level đầu game**
+- [ ] **Thêm 20 ngôn ngữ** (kiến trúc i18n đã sẵn sàng — chỉ thêm map)
+- [ ] **Haptic feedback**, tutorial màn đầu
+- [ ] **Phát hiện hết nước đi → tự xáo bàn**
 
 ### 💭 Ideas (brainstorm pool)
 - Theme neon đổi màu theo world (cyan → magenta → green...)
