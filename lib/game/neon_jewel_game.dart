@@ -94,8 +94,93 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       cellSize: cellSize,
       origin: boardOrigin,
     )..priority = -1);
+    _buildObstacle();
+    boardLayer.add(ObstacleLayer(
+      obstacle: obstacle,
+      type: controller.level.obstacle,
+      rows: rows,
+      cols: cols,
+      cellSize: cellSize,
+      origin: boardOrigin,
+    )..priority = -1);
     _fillInitialBoard();
+    _placeIngredients();
     if (!_hasPossibleMove()) await _doShuffle();
+  }
+
+  /// Lưới obstacle (0 = không, >0 = số lớp). Theo cấu hình màn.
+  late List<List<int>> obstacle;
+
+  ObstacleType get _obstacleType => controller.level.obstacle;
+
+  void _buildObstacle() {
+    obstacle = List.generate(rows, (_) => List<int>.filled(cols, 0));
+    final type = controller.level.obstacle;
+    if (type == ObstacleType.none) {
+      controller.obstacleTotal.value = 0;
+      return;
+    }
+    int total = 0;
+    final pattern = controller.level.obstaclePattern;
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        if (patternHas(pattern, r, c, rows, cols)) {
+          obstacle[r][c] = 1;
+          total++;
+        }
+      }
+    }
+    controller.obstacleTotal.value = total;
+  }
+
+  /// Số ingredient tối đa cùng lúc trên bàn (Drop Down).
+  static const int _maxConcurrentIngredients = 2;
+
+  /// Drop Down: đặt ingredient ban đầu (tối đa [_maxConcurrentIngredients]);
+  /// phần còn lại sinh dần qua [_replenishIngredients].
+  void _placeIngredients() {
+    if (controller.level.objective != ObjectiveType.dropDown) return;
+    final initial =
+        controller.level.dropTarget.clamp(0, _maxConcurrentIngredients);
+    final chosen = <int>{};
+    while (chosen.length < initial && chosen.length < cols) {
+      chosen.add(_rnd.nextInt(cols));
+    }
+    for (final c in chosen) {
+      grid[0][c]?.isIngredient = true;
+    }
+  }
+
+  /// Sinh thêm ingredient ở hàng trên khi còn thiếu so với mục tiêu, giữ tối đa
+  /// [_maxConcurrentIngredients] trên bàn (dòng chảy ingredient liên tục).
+  void _replenishIngredients() {
+    if (controller.level.objective != ObjectiveType.dropDown) return;
+    final remaining = controller.level.dropTarget - controller.dropped.value;
+    if (remaining <= 0) return;
+    var active = 0;
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        if (grid[r][c]?.isIngredient ?? false) active++;
+      }
+    }
+    final desired =
+        remaining < _maxConcurrentIngredients ? remaining : _maxConcurrentIngredients;
+    if (active >= desired) return;
+    final free = [
+      for (int c = 0; c < cols; c++)
+        if (grid[0][c] != null && !grid[0][c]!.isIngredient) c
+    ]..shuffle(_rnd);
+    for (final c in free) {
+      if (active >= desired) break;
+      grid[0][c]!.isIngredient = true;
+      add(ShockwaveComponent(
+        position: _cellCenter(0, c),
+        color: const Color(0xFFFFC83D),
+        maxRadius: cellSize * 1.3,
+        duration: 0.3,
+      )..priority = 50);
+      active++;
+    }
   }
 
   /// Lưới jelly (0 = không, >0 = số lớp). Khởi tạo theo cấu hình màn.
@@ -104,23 +189,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   void _buildJelly() {
     jelly = List.generate(rows, (_) => List<int>.filled(cols, 0));
     int total = 0;
-    bool has(int r, int c) {
-      switch (controller.level.jelly) {
-        case JellyPattern.none:
-          return false;
-        case JellyPattern.all:
-          return true;
-        case JellyPattern.checker:
-          return (r + c).isEven;
-        case JellyPattern.center:
-          final r0 = (rows - 4) ~/ 2, c0 = (cols - 4) ~/ 2;
-          return r >= r0 && r < r0 + 4 && c >= c0 && c < c0 + 4;
-      }
-    }
-
+    final pattern = controller.level.jelly;
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
-        if (has(r, c)) {
+        if (patternHas(pattern, r, c, rows, cols)) {
           jelly[r][c] = 1;
           total++;
         }
@@ -134,9 +206,23 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   double _trauma = 0;
   static const double _maxShake = 11;
 
+  double _timeAccum = 0; // tích luỹ dt cho đồng hồ Time Attack
+
   @override
   void update(double dt) {
     super.update(dt);
+
+    // Time Attack: đếm ngược thời gian, hết giờ → kết thúc ván.
+    if (!_ended &&
+        controller.level.objective == ObjectiveType.timeAttack) {
+      _timeAccum += dt;
+      while (_timeAccum >= 1.0 && controller.timeLeft.value > 0) {
+        _timeAccum -= 1.0;
+        controller.tickTime(1);
+      }
+      if (controller.timeLeft.value <= 0) _finishMove();
+    }
+
     if (_trauma > 0) {
       final amt = _trauma * _trauma;
       boardLayer.position = Vector2(
@@ -215,8 +301,32 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
   List<List<GemColor?>> _colorGrid() => [
         for (int r = 0; r < rows; r++)
-          [for (int c = 0; c < cols; c++) grid[r][c]?.color],
+          [
+            for (int c = 0; c < cols; c++) _matchColorAt(r, c),
+          ],
       ];
+
+  /// Màu dùng cho match-detection: ingredient & stone (còn lớp) bị loại (null)
+  /// → không tham gia match.
+  GemColor? _matchColorAt(int r, int c) {
+    final g = grid[r][c];
+    if (g == null || g.isIngredient) return null;
+    if (obstacle[r][c] > 0 && _obstacleType == ObstacleType.stone) return null;
+    return g.color;
+  }
+
+  /// Gem có bị khoá không cho người chơi chủ động đổi chỗ?
+  /// (ingredient luôn khoá; chain/stone khoá khi còn lớp; ice KHÔNG khoá.)
+  bool _swapLocked(int r, int c) {
+    final g = grid[r][c];
+    if (g == null) return false;
+    if (g.isIngredient) return true;
+    if (obstacle[r][c] > 0) {
+      return _obstacleType == ObstacleType.chain ||
+          _obstacleType == ObstacleType.stone;
+    }
+    return false;
+  }
 
   // --------------------------------------------------------------------------
   // Tương tác chạm
@@ -316,6 +426,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   // --------------------------------------------------------------------------
   Future<void> _trySwap(GemComponent a, GemComponent b) async {
     if (_ended) return;
+    // gem bị khoá (ingredient/chain/stone) không cho đổi chỗ
+    if (_swapLocked(a.row, a.col) || _swapLocked(b.row, b.col)) return;
     _busy = true;
     var consumed = false; // đã tiêu 1 lượt?
     // try/finally: dù lỗi giữa chừng, _busy mở lại + LUÔN kiểm tra kết thúc ván.
@@ -345,7 +457,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           controller.addScore(expanded.length, 2);
           await _applyGravityAndRefill();
         }
-        await _resolveAll();
+        await _settle();
         await _ensurePlayable();
       }
     } finally {
@@ -489,10 +601,17 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
         if (g[r][c] == null) continue;
-        if (c + 1 < cols && matchAfterSwap(r, c, r, c + 1)) {
+        // bỏ qua nước cần đổi ô đang bị khoá (ingredient/chain/stone) — nếu không
+        // game tưởng còn nước đi nhưng người chơi không thực hiện được → kẹt.
+        if (_swapLocked(r, c)) continue;
+        if (c + 1 < cols &&
+            !_swapLocked(r, c + 1) &&
+            matchAfterSwap(r, c, r, c + 1)) {
           return [Cell(r, c), Cell(r, c + 1)];
         }
-        if (r + 1 < rows && matchAfterSwap(r, c, r + 1, c)) {
+        if (r + 1 < rows &&
+            !_swapLocked(r + 1, c) &&
+            matchAfterSwap(r, c, r + 1, c)) {
           return [Cell(r, c), Cell(r + 1, c)];
         }
       }
@@ -557,6 +676,13 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       controller.addScore(expanded.length, combo);
       AudioManager.maybe?.playNote(combo); // combo cao → nốt cao dần
       if (combo >= 2) _spawnComboText(combo);
+      // Time Attack: combo lớn thưởng thêm giây
+      if (combo >= 4 &&
+          controller.level.objective == ObjectiveType.timeAttack) {
+        final bonus = combo - 2; // combo4→+2s, 5→+3s...
+        controller.addTime(bonus);
+        _spawnTimeBonus(bonus);
+      }
 
       // tạo gem special mới — kèm hiệu ứng "ra đời" nổi bật
       if (newSpecials.isNotEmpty) AudioManager.maybe?.playSpecial();
@@ -580,6 +706,61 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
       await _applyGravityAndRefill();
     }
+  }
+
+  /// Giải quyết toàn bộ sau 1 nước đi: resolve match → thu ingredient (Drop Down)
+  /// → resolve lại cho tới khi bàn ổn định.
+  Future<void> _settle() async {
+    await _resolveAll();
+    if (controller.level.objective == ObjectiveType.dropDown) {
+      while (await _collectIngredients()) {
+        await _resolveAll();
+      }
+      _replenishIngredients(); // bổ sung ingredient nếu còn thiếu mục tiêu
+    }
+  }
+
+  /// Thu các ingredient đang nằm ở hàng đáy → tính điểm mục tiêu Drop Down,
+  /// rồi gravity bù lại. Trả về true nếu có thu được (để caller resolve tiếp).
+  Future<bool> _collectIngredients() async {
+    var collectedAny = false;
+    while (true) {
+      final atBottom = <GemComponent>[];
+      for (int c = 0; c < cols; c++) {
+        final g = grid[rows - 1][c];
+        if (g != null && g.isIngredient) {
+          grid[rows - 1][c] = null;
+          atBottom.add(g);
+          controller.registerDrop();
+        }
+      }
+      if (atBottom.isEmpty) break;
+      collectedAny = true;
+      final futures = <Future>[];
+      for (final g in atBottom) {
+        _spawnBurst(g.position.clone(), NeonTheme.lime);
+        add(ShockwaveComponent(
+          position: g.position.clone(),
+          color: NeonTheme.lime,
+          maxRadius: cellSize * 1.7,
+          duration: 0.35,
+        )..priority = 50);
+        futures.add(_run(
+          g,
+          ScaleEffect.to(
+            Vector2.zero(),
+            EffectController(duration: 0.2, curve: Curves.easeIn),
+          ),
+        ));
+      }
+      _shake(6);
+      await Future.wait(futures);
+      for (final g in atBottom) {
+        g.removeFromParent();
+      }
+      await _applyGravityAndRefill();
+    }
+    return collectedAny;
   }
 
   /// Mở rộng tập ô xóa bằng cách kích hoạt các gem special bên trong nó.
@@ -649,10 +830,17 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   }
 
   Future<void> _clearCells(Set<Cell> cells) async {
+    // obstacle bị tổn hại theo tập ô vừa clear (ice: trực tiếp; chain/stone: kề)
+    _damageObstacles(cells);
     final gems = <GemComponent>[];
     for (final cell in cells) {
       final g = grid[cell.row][cell.col];
       if (g == null) continue;
+      // stone còn lớp → KHÔNG xóa gem (chỉ bị damage qua _damageObstacles)
+      if (obstacle[cell.row][cell.col] > 0 &&
+          _obstacleType == ObstacleType.stone) {
+        continue;
+      }
       // cập nhật mục tiêu: thu thập màu + phá jelly tại ô này
       final wasJelly = jelly[cell.row][cell.col] > 0;
       if (wasJelly) jelly[cell.row][cell.col]--;
@@ -689,6 +877,57 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     await Future.wait(futures);
     for (final g in gems) {
       g.removeFromParent();
+    }
+  }
+
+  /// Gỡ obstacle theo tập ô vừa clear:
+  /// - ice: giảm 1 lớp ở chính ô bị clear (gem đã được match)
+  /// - chain/stone: giảm 1 lớp ở ô KỀ (hoặc chính ô) bị clear
+  void _damageObstacles(Set<Cell> cleared) {
+    final type = _obstacleType;
+    if (type == ObstacleType.none) return;
+    final reduce = <Cell>{};
+    if (type == ObstacleType.ice) {
+      for (final cell in cleared) {
+        if (obstacle[cell.row][cell.col] > 0) reduce.add(cell);
+      }
+    } else {
+      for (final cell in cleared) {
+        final neighbours = [
+          cell,
+          Cell(cell.row - 1, cell.col),
+          Cell(cell.row + 1, cell.col),
+          Cell(cell.row, cell.col - 1),
+          Cell(cell.row, cell.col + 1),
+        ];
+        for (final n in neighbours) {
+          if (n.row < 0 || n.row >= rows || n.col < 0 || n.col >= cols) continue;
+          if (obstacle[n.row][n.col] > 0) reduce.add(n);
+        }
+      }
+    }
+    for (final cell in reduce) {
+      obstacle[cell.row][cell.col]--;
+      controller.registerObstacleClear(1);
+      add(ShockwaveComponent(
+        position: _cellCenter(cell.row, cell.col),
+        color: _obstacleColor(type),
+        maxRadius: cellSize * 1.1,
+        duration: 0.3,
+      )..priority = 48);
+    }
+  }
+
+  Color _obstacleColor(ObstacleType type) {
+    switch (type) {
+      case ObstacleType.ice:
+        return NeonTheme.cyan;
+      case ObstacleType.chain:
+        return NeonTheme.yellow;
+      case ObstacleType.stone:
+        return NeonTheme.purple;
+      case ObstacleType.none:
+        return Colors.white;
     }
   }
 
@@ -893,7 +1132,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       await _clearCells(expanded);
       controller.addScore(expanded.length, 1);
       await _applyGravityAndRefill();
-      await _resolveAll();
+      await _settle();
       await _ensurePlayable();
     } finally {
       _busy = false;
@@ -908,7 +1147,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     try {
       await _animateSwap(a, b);
       _swapInGrid(a, b);
-      await _resolveAll();
+      await _settle();
       await _ensurePlayable();
     } finally {
       _busy = false;
@@ -988,7 +1227,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       _flash(NeonTheme.cyan, peak: 0.2);
       _shake(8);
       await Future.delayed(const Duration(milliseconds: 280));
-      await _resolveAll();
+      await _settle();
       await _ensurePlayable();
     } finally {
       _busy = false;
@@ -1026,7 +1265,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       final test =
           List.generate(rows, (_) => List<GemColor?>.filled(cols, null));
       for (int i = 0; i < cells.length; i++) {
-        test[cells[i].row][cells[i].col] = colors[i];
+        final cell = cells[i];
+        final excluded = (grid[cell.row][cell.col]?.isIngredient ?? false) ||
+            (obstacle[cell.row][cell.col] > 0 &&
+                _obstacleType == ObstacleType.stone);
+        test[cell.row][cell.col] = excluded ? null : colors[i];
       }
       if (!MatchDetector.hasMatch(test)) break;
     }
@@ -1078,6 +1321,18 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     } else {
       HapticFeedback.lightImpact();
     }
+  }
+
+  /// Time Attack: hiện "+Ns" bay lên (phần thưởng thời gian combo lớn).
+  void _spawnTimeBonus(int seconds) {
+    add(ComboTextComponent(
+      text: '+${seconds}s',
+      color: NeonTheme.lime,
+      position: Vector2(size.x / 2, size.y * 0.26),
+      fontSize: 30,
+      maxWidth: size.x * 0.7,
+      duration: 0.9,
+    )..priority = 71);
   }
 
   /// Chớp sáng toàn màn (rainbow / combo lớn).

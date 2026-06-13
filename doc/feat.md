@@ -240,24 +240,64 @@ lib/
 - [x] Đã verify thật: tap thẻ → overlay "Xoá tiến độ?" hiện → ĐỒNG Ý → `unlocked 4→1, highScores 3→0, stars 3→0` + snackbar; HUỶ/barrier đóng overlay
 - [x] 72 test pass · 0 analyzer issue
 
+### 🌊 Wave 4 — giữ chân + 2 game mode + obstacles (✅ đã làm song song)
+> Theo dõi trạng thái chi tiết: [`tasks/done/`](tasks/done/).
+> Quyết định: **giữ nguyên** debug `print('roy93~')` theo yêu cầu người dùng (dễ debug trên máy).
+
+- [x] **Daily Reward** — thưởng xu theo chuỗi 7 ngày (20→110), badge sáng khi có quà, overlay trong cây (route dialog no-op theo [[route-dialogs-noop-fullscreen]])
+- [x] **Lives / Energy** — 5 mạng, hồi 1 mạng/15' (mốc thời gian, hồi nhiều chu kỳ), thua trừ mạng, 0 mạng chặn vào màn + đếm ngược; chip ❤ trên Home
+- [x] **Mode 5 — Time Attack** — đạt điểm trong giới hạn thời gian (45–75s), timer chạy trong `update()` của Flame, HUD hiện TIME (đỏ ≤10s)
+- [x] **Mode 4 — Drop Down** — đưa ingredient xuống đáy bàn (gem không match `_matchColorAt`, rơi theo trọng lực, thu ở đáy `_collectIngredients`)
+- [x] **Obstacles Ice/Chain/Stone** — lớp overlay cell-based (như jelly): ice vỡ khi clear trực tiếp, chain/stone gỡ khi ô kề clear, stone loại khỏi match; objective `clearObstacle`; `ObstacleLayer` render băng/xích/đá
+- [x] **Guide cập nhật** 3 mode mới + section Chướng ngại
+- [x] **Kết quả**: 0 analyzer issue · **89 unit/widget test pass** (+17 test Wave 4) · build APK debug OK
+
+> i18n: key mới thêm proper **en + vi** (merge qua `_extraEn`/`_extraVi`); 20 ngôn ngữ còn lại fallback English cho key mới (giữ parity test). Dịch đầy đủ 20 ngôn ngữ → follow-up.
+
+#### Wave 4.1 — verify máy thật + hoàn thiện chiều sâu + i18n + world (✅ đã làm)
+- [x] **Verify máy thật** (Samsung 1080×2340): Time Attack (GIỜ đếm ngược), Drop Down (ingredient + ↓0/2), Obstacle Ice (❄0/16 + băng), Daily overlay, **mua đầy mạng** (lives 2→5, xu 110→50) + countdown hồi mạng
+- [x] **Drop Down sâu hơn**: ingredient sinh dần theo dòng chảy (`_replenishIngredients`, tối đa 2 cùng lúc) thay vì cố định lúc mở màn
+- [x] **Mua đầy mạng bằng xu** (60 xu): `buyRefillLives` + overlay xác nhận trên Home (chip ❤ bấm được khi chưa đầy) + báo thiếu xu
+- [x] **Time Attack thưởng giây**: combo ≥4 → +(combo−2)s, hiện "+Ns" bay lên (`addTime`)
+- [x] **Dịch đủ 22 ngôn ngữ** cho key Wave 4 (4 agent dịch song song → `_extraByLang`, giữ `@n`/`@t`, đúng dấu bản địa)
+- [x] **World progression**: 100 màn chia **5 thế giới** (`kWorlds`, 20 màn/thế giới, chủ đề neon) + banner tiêu đề khu vực trong Level Select (sao + tiến trình + khoá thế giới chưa tới)
+- [x] **Kết quả**: 0 analyzer issue · **98 test pass** · build APK debug OK
+- [x] **World-header verify máy thật** (chụp được sau): "THẾ GIỚI 1 ★8 20/20" + "THẾ GIỚI 2 ★0 15/20"
+
+#### Wave 4.2 — audit & fix (✅ đã làm)
+> Tự audit code Wave 4 (chấm 7.5/10) → phát hiện & sửa lỗi nghiêm trọng.
+- [x] **FIX winnability obstacle (nghiêm trọng)**: chain dùng `checker` + stone dùng `all` → khoá swap dày đặc làm **bí cứng ~10 màn** (36/42/48/54 + 66/72/78/84/90/96). Sửa: chain & stone luôn dùng `center` (chừa viền tự do); ice giữ tierPattern. Verify máy thật: màn 36 (xích/center) + màn 66 (đá/center) đều ❄0/16, viền tự do, không auto-shuffle.
+- [x] **FIX `_findMove` bỏ qua ô khoá**: trước đây phát hiện "còn nước đi" không xét swap-lock → tưởng còn nước nhưng người chơi không đi được → không auto-shuffle. Nay hint + phát hiện hết-nước đều tôn trọng khoá.
+- [x] **FIX lives bypass khi retry**: `again()` chặn khi hết mạng (về Level Select); dialog thua ẩn nút CHƠI LẠI + báo "HẾT MẠNG" khi lives=0.
+- [x] **Refactor**: tách `patternHas()` thuần (DRY cho jelly/obstacle + test được không cần Flame).
+- [x] **Test winnability** (4 test mới): chain/stone không bao giờ dùng all/checker + luôn còn cặp ô tự do kề nhau (regression guard — sẽ fail nếu tái phát).
+- [x] **Kết quả**: 0 analyzer issue · **102 test pass** · build APK OK · verify máy thật chain+stone.
+- [ ] *Còn nợ nhỏ (đã ghi)*: đếm ngược hồi mạng ở Home chưa tự tick (static tới rebuild); `_doShuffle` kiểm hasMatch trên màu thô gồm ô loại trừ (vô hại).
+
 ### 🟡 In progress
 *(không có)*
 
 ### 📋 Picked (đã chốt, chờ implement)
-*(trống — chờ chọn Wave 2 từ Deferred)*
+*(trống)*
 
 ### ⏸️ Deferred (lớn, để session sau)
-- [ ] **Combo 2-special-gem** (striped+striped, striped+bomb, rainbow+bomb...) — hiện mới có rainbow-swap
-- [ ] **5 game modes** (xem mục 5) — hiện mới có Score Target
-- [ ] **Obstacles:** băng (ice), xích (chain), đá (stone), jelly
-- [ ] **Level objectives đa dạng:** collect gems, clear jelly, drop items xuống đáy
-- [ ] **Map/World progression** (lâu đài, mở khóa khu vực) — 100+ levels
-- [ ] **Booster đầy đủ:** hammer (đập 1 gem), swap (đổi 2 gem bất kỳ), bomb pre-game (mới có Shuffle)
-- [ ] **Hệ thống sao (1-3 sao/level)** + reward
-- [ ] **Daily reward, lives/energy system**
-- [ ] **Thêm 20 ngôn ngữ** (kiến trúc i18n đã sẵn sàng — chỉ thêm map)
-- [ ] **Haptic feedback**, tutorial màn đầu
-- [ ] **Phát hiện hết nước đi → tự xáo bàn**
+- [x] ~~Combo 2-special-gem~~ (Wave 2)
+- [x] ~~5 game modes~~ — **đủ 5/5**: Score, Collect, Clear Jelly, Time Attack, Drop Down (Wave 4)
+- [x] ~~Obstacles ice/chain/stone~~ (Wave 4) — jelly đã có từ Wave 2
+- [x] ~~Level objectives đa dạng~~ (collect/jelly/drop/obstacle)
+- [x] ~~Booster đầy đủ~~ (9 booster — Wave 3)
+- [x] ~~Hệ thống sao 1-3 + reward~~ (Wave 3)
+- [x] ~~Daily reward, lives/energy system~~ (Wave 4)
+- [x] ~~Phát hiện hết nước đi → tự xáo bàn~~ (Wave 2)
+- [x] ~~Haptic feedback~~ (Wave 2.5)
+- [x] ~~Dịch đầy đủ 20 ngôn ngữ cho key Wave 4~~ (Wave 4.1 — đủ 22 ngôn ngữ)
+- [x] ~~Drop Down sinh thêm ingredient theo thời gian~~ (Wave 4.1)
+- [x] ~~Mua đầy mạng bằng xu~~ (Wave 4.1)
+- [x] ~~Time Attack bonus thời gian khi combo lớn~~ (Wave 4.1)
+- [x] ~~Map/World progression~~ — đã chia 5 thế giới + banner khu vực (Wave 4.1); *màn map riêng (lâu đài/đường đi) vẫn để sau*
+- [ ] **Màn World Map riêng** (đường đi node-based, lâu đài) — hiện là Level Select gom theo thế giới
+- [ ] **Tutorial màn đầu** (overlay hướng dẫn lần chơi đầu)
+- [ ] **word_n + tên thế giới dịch 20 ngôn ngữ** (hiện fallback English cho `world_n`; tên thế giới là proper noun)
 
 ### 💭 Ideas (brainstorm pool)
 - Theme neon đổi màu theo world (cyan → magenta → green...)

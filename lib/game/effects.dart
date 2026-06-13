@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flame/text.dart';
 import 'package:flutter/material.dart';
 import '../core/neon_theme.dart';
+import '../data/levels.dart' show ObstacleType;
 
 /// Cache hiệu ứng dùng chung — pre-render 1 lần để tránh MaskFilter.blur mỗi frame
 /// (blur per-frame là nguyên nhân lag chính trên mobile).
@@ -335,6 +336,140 @@ class JellyLayer extends PositionComponent {
         );
       }
     }
+  }
+}
+
+/// Lớp obstacle (ice/chain/stone): phủ ô tương ứng. Đọc trực tiếp lưới obstacle
+/// (cùng tham chiếu với game) nên tự cập nhật khi gỡ.
+class ObstacleLayer extends PositionComponent {
+  final List<List<int>> obstacle;
+  final ObstacleType type;
+  final int rows;
+  final int cols;
+  final double cellSize;
+  final Vector2 origin;
+
+  ObstacleLayer({
+    required this.obstacle,
+    required this.type,
+    required this.rows,
+    required this.cols,
+    required this.cellSize,
+    required this.origin,
+  });
+
+  @override
+  void render(Canvas canvas) {
+    if (type == ObstacleType.none) return;
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        if (obstacle[r][c] <= 0) continue;
+        final rect = Rect.fromLTWH(
+          origin.x + c * cellSize,
+          origin.y + r * cellSize,
+          cellSize,
+          cellSize,
+        ).deflate(cellSize * 0.04);
+        switch (type) {
+          case ObstacleType.ice:
+            _drawIce(canvas, rect);
+            break;
+          case ObstacleType.chain:
+            _drawChain(canvas, rect);
+            break;
+          case ObstacleType.stone:
+            _drawStone(canvas, rect);
+            break;
+          case ObstacleType.none:
+            break;
+        }
+      }
+    }
+  }
+
+  void _drawIce(Canvas canvas, Rect rect) {
+    final rr = RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.18));
+    canvas.drawRRect(
+      rr,
+      Paint()
+        ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, [
+          const Color(0xFF9BE7FF).withValues(alpha: 0.40),
+          const Color(0xFF00F0FF).withValues(alpha: 0.30),
+        ]),
+    );
+    canvas.drawRRect(
+      rr,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = Colors.white.withValues(alpha: 0.65),
+    );
+    // vết nứt băng
+    final crack = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..color = Colors.white.withValues(alpha: 0.55);
+    canvas.drawLine(rect.topCenter, rect.center, crack);
+    canvas.drawLine(rect.center,
+        Offset(rect.left + rect.width * 0.28, rect.bottom), crack);
+    canvas.drawLine(rect.center,
+        Offset(rect.right - rect.width * 0.2, rect.bottom), crack);
+  }
+
+  void _drawStone(Canvas canvas, Rect rect) {
+    final rr = RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.16));
+    canvas.drawRRect(
+      rr,
+      Paint()
+        ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, [
+          const Color(0xFF8A8FA8),
+          const Color(0xFF4A4E63),
+        ]),
+    );
+    canvas.drawRRect(
+      rr,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.4
+        ..color = const Color(0xFFBC4BFF).withValues(alpha: 0.7),
+    );
+    // hạt sạn
+    final fleck = Paint()..color = Colors.white.withValues(alpha: 0.18);
+    canvas.drawCircle(
+        Offset(rect.left + rect.width * 0.32, rect.top + rect.height * 0.35),
+        cellSize * 0.05,
+        fleck);
+    canvas.drawCircle(
+        Offset(rect.left + rect.width * 0.66, rect.top + rect.height * 0.6),
+        cellSize * 0.04,
+        fleck);
+  }
+
+  void _drawChain(Canvas canvas, Rect rect) {
+    // mắt xích chéo qua ô
+    final link = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = cellSize * 0.09
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0xFFFFE36E).withValues(alpha: 0.9);
+    final glow = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = cellSize * 0.16
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0xFFFFC83D).withValues(alpha: 0.35);
+    for (final p in [glow, link]) {
+      canvas.drawLine(rect.topLeft, rect.bottomRight, p);
+      canvas.drawLine(rect.bottomLeft, rect.topRight, p);
+    }
+    canvas.drawCircle(rect.center, cellSize * 0.12,
+        Paint()..color = const Color(0xFF4A3A00).withValues(alpha: 0.8));
+    canvas.drawCircle(
+        rect.center,
+        cellSize * 0.12,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = cellSize * 0.05
+          ..color = const Color(0xFFFFE36E));
   }
 }
 

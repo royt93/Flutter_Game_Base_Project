@@ -22,12 +22,43 @@ class LevelSelectScreen extends StatelessWidget {
         return Icons.diamond_rounded;
       case ObjectiveType.clearJelly:
         return Icons.blur_on_rounded;
+      case ObjectiveType.timeAttack:
+        return Icons.timer_rounded;
+      case ObjectiveType.dropDown:
+        return Icons.south_rounded;
+      case ObjectiveType.clearObstacle:
+        return Icons.ac_unit_rounded;
     }
   }
 
   void _play(GameController ctrl, int index) {
+    // hết mạng → chặn vào màn + báo thời gian hồi
+    if (!ctrl.hasLife) {
+      final ctx = Get.context;
+      if (ctx != null) {
+        final next = ctrl.timeToNextLife;
+        final msg = next > Duration.zero
+            ? '${'lives_none_msg'.tr} (${_fmtDur(next)})'
+            : 'lives_none_msg'.tr;
+        ScaffoldMessenger.of(ctx)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(
+            content: Text(msg,
+                style: const TextStyle(fontFamily: 'Orbitron', fontSize: 13)),
+            backgroundColor: NeonTheme.panel,
+            behavior: SnackBarBehavior.floating,
+          ));
+      }
+      return;
+    }
     ctrl.startLevel(index);
     Get.to(() => const GameScreen());
+  }
+
+  static String _fmtDur(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
   }
 
   @override
@@ -56,32 +87,134 @@ class LevelSelectScreen extends StatelessWidget {
                           child: _featured(ctrl, current),
                         ),
                       ),
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(NeonTheme.s24, 0,
-                            NeonTheme.s24, NeonTheme.s24),
-                        sliver: SliverGrid(
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            mainAxisSpacing: NeonTheme.s8,
-                            crossAxisSpacing: NeonTheme.s8,
-                          ),
-                          delegate: SliverChildBuilderDelegate(
-                            (context, i) {
-                              final lv = kLevels[i];
-                              return _miniTile(ctrl, lv, lv.index <= current,
-                                  lv.index == current);
-                            },
-                            childCount: kLevels.length,
+                      // gom màn theo từng thế giới (20 màn / thế giới)
+                      for (final w in kWorlds) ...[
+                        SliverToBoxAdapter(child: _worldHeader(ctrl, w, current)),
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(NeonTheme.s24, 0,
+                              NeonTheme.s24, NeonTheme.s16),
+                          sliver: SliverGrid(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 4,
+                              mainAxisSpacing: NeonTheme.s8,
+                              crossAxisSpacing: NeonTheme.s8,
+                            ),
+                            delegate: SliverChildBuilderDelegate(
+                              (context, i) {
+                                final lv = kLevels[w.startLevel - 1 + i];
+                                return _miniTile(ctrl, lv, lv.index <= current,
+                                    lv.index == current);
+                              },
+                              childCount: w.endLevel - w.startLevel + 1,
+                            ),
                           ),
                         ),
-                      ),
+                      ],
+                      const SliverToBoxAdapter(
+                          child: SizedBox(height: NeonTheme.s16)),
                     ],
                   );
                 }),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Color _worldColor(int worldIndex) {
+    const colors = [
+      NeonTheme.cyan,
+      NeonTheme.magenta,
+      NeonTheme.lime,
+      NeonTheme.orange,
+      NeonTheme.purple,
+    ];
+    return colors[(worldIndex - 1) % colors.length];
+  }
+
+  /// Banner tiêu đề thế giới: số + tên chủ đề + tiến trình (sao + màn xong).
+  Widget _worldHeader(GameController ctrl, WorldConfig w, int current) {
+    final c = _worldColor(w.index);
+    final reached = current >= w.startLevel; // đã tới thế giới này chưa
+    var stars = 0;
+    var done = 0;
+    for (int lv = w.startLevel; lv <= w.endLevel; lv++) {
+      stars += ctrl.stars[lv] ?? 0;
+      if (lv < current) done++;
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          NeonTheme.s24, NeonTheme.s8, NeonTheme.s24, NeonTheme.s8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: NeonTheme.s16, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [
+            c.withValues(alpha: reached ? 0.3 : 0.12),
+            NeonTheme.panel.withValues(alpha: 0.8),
+          ]),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: reached ? c : c.withValues(alpha: 0.4), width: 2),
+          boxShadow: reached ? NeonTheme.glow(c, blur: 10) : null,
+        ),
+        child: Row(
+          children: [
+            Icon(reached ? Icons.public_rounded : Icons.lock_rounded,
+                color: reached ? c : Colors.white38, size: 24),
+            const SizedBox(width: NeonTheme.s8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'world_n'.trParams({'n': '${w.index}'}),
+                    style: TextStyle(
+                      fontFamily: 'Orbitron',
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                      shadows: [Shadow(color: c, blurRadius: 10)],
+                    ),
+                  ),
+                  Text(
+                    w.name,
+                    style: TextStyle(
+                      fontFamily: 'Orbitron',
+                      color: c,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // tiến trình: sao + số màn xong
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+              const SizedBox(width: 3),
+              Text('$stars',
+                  style: const TextStyle(
+                    fontFamily: 'Orbitron',
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  )),
+              const SizedBox(width: NeonTheme.s8),
+              Text('$done/${w.endLevel - w.startLevel + 1}',
+                  style: const TextStyle(
+                    fontFamily: 'Orbitron',
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  )),
+            ]),
+          ],
         ),
       ),
     );

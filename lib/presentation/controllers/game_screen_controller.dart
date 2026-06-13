@@ -97,6 +97,7 @@ class GameScreenController extends GetxController {
   }
 
   void _onGameEnd(String result) {
+    if (result == 'lose') gameCtrl.consumeLife(); // thua → trừ 1 mạng
     Future.delayed(const Duration(milliseconds: 350), () {
       ui.value = result == 'win' ? GameUi.win : GameUi.lose;
     });
@@ -118,6 +119,11 @@ class GameScreenController extends GetxController {
   }
 
   void again() {
+    // hết mạng → không cho chơi lại (tránh lách cổng mạng); về Level Select.
+    if (!gameCtrl.hasLife) {
+      quit();
+      return;
+    }
     gameCtrl.startLevel(gameCtrl.currentLevel.value);
     ui.value = GameUi.playing;
     _newGame();

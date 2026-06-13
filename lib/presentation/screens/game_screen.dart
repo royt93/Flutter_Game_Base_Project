@@ -87,15 +87,20 @@ class GameScreen extends StatelessWidget {
 
   Widget _resultPanel(GameController ctrl, GameScreenController sc, bool win) {
     final cur = ctrl.currentLevel.value;
+    // thua mà hết mạng → ẩn nút CHƠI LẠI (không lách cổng mạng), báo hết mạng.
+    final noLives = !win && !ctrl.hasLife;
     return NeonDialog.panel(
       title: win ? 'victory'.tr : 'retry'.tr,
       color: win ? NeonTheme.lime : NeonTheme.magenta,
       icon: win ? Icons.emoji_events_rounded : Icons.refresh_rounded,
-      message: '${'hud_goal'.tr}: ${_objectiveText(ctrl)}',
+      message: noLives
+          ? 'lives_none_title'.tr
+          : '${'hud_goal'.tr}: ${_objectiveText(ctrl)}',
       content: win ? _celebration(ctrl) : null,
       actions: [
-        NeonDialogAction(
-            label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+        if (!noLives)
+          NeonDialogAction(
+              label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
         if (win && cur < kLevels.length)
           NeonDialogAction(
               label: 'btn_next'.tr, color: NeonTheme.lime, onTap: sc.next)
@@ -114,6 +119,12 @@ class GameScreen extends StatelessWidget {
         return '${ctrl.collected.value} / ${ctrl.level.collectTarget}';
       case ObjectiveType.clearJelly:
         return '${ctrl.jellyCleared.value} / ${ctrl.jellyTotal.value}';
+      case ObjectiveType.timeAttack:
+        return '${ctrl.score.value} / ${ctrl.targetScore.value}';
+      case ObjectiveType.dropDown:
+        return '${ctrl.dropped.value} / ${ctrl.level.dropTarget}';
+      case ObjectiveType.clearObstacle:
+        return '${ctrl.obstacleCleared.value} / ${ctrl.obstacleTotal.value}';
     }
   }
 
@@ -222,12 +233,27 @@ class GameScreen extends StatelessWidget {
               child:
                   Obx(() => _infoCell('hud_goal'.tr, _goalValue(ctrl), NeonTheme.lime))),
           _divider(),
-          Expanded(
-              child: Obx(() => _infoCell('hud_moves'.tr,
-                  _animValue('${ctrl.movesLeft.value}'), NeonTheme.orange))),
+          Expanded(child: Obx(() => _movesOrTimeCell(ctrl))),
         ],
       ),
     );
+  }
+
+  /// Ô thứ 3 của HUD: Time Attack hiện TIME (mm:ss, đỏ khi ≤10s), còn lại MOVES.
+  Widget _movesOrTimeCell(GameController ctrl) {
+    if (ctrl.level.objective == ObjectiveType.timeAttack) {
+      final t = ctrl.timeLeft.value;
+      final mm = (t ~/ 60).toString().padLeft(2, '0');
+      final ss = (t % 60).toString().padLeft(2, '0');
+      final urgent = t <= 10;
+      return _infoCell(
+        'hud_time'.tr,
+        _animValue('$mm:$ss'),
+        urgent ? NeonTheme.magenta : NeonTheme.orange,
+      );
+    }
+    return _infoCell(
+        'hud_moves'.tr, _animValue('${ctrl.movesLeft.value}'), NeonTheme.orange);
   }
 
   Widget _animatedBar(double progress) {
@@ -329,6 +355,16 @@ class GameScreen extends StatelessWidget {
       leading = const Padding(
         padding: EdgeInsets.only(right: 5),
         child: NeonIcon(Icons.blur_on_rounded, color: NeonTheme.lime, size: 15),
+      );
+    } else if (obj == ObjectiveType.dropDown) {
+      leading = const Padding(
+        padding: EdgeInsets.only(right: 5),
+        child: NeonIcon(Icons.south_rounded, color: NeonTheme.lime, size: 15),
+      );
+    } else if (obj == ObjectiveType.clearObstacle) {
+      leading = const Padding(
+        padding: EdgeInsets.only(right: 5),
+        child: NeonIcon(Icons.ac_unit_rounded, color: NeonTheme.cyan, size: 15),
       );
     }
     return Row(

@@ -20,6 +20,7 @@ class GemComponent extends PositionComponent {
   double _pulse = 0; // pha dao động cho hiệu ứng nhấp nháy
   bool selected = false;
   bool hint = false; // nhấp nháy gợi ý khi người chơi bị stuck
+  bool isIngredient = false; // Drop Down: item cần đưa xuống đáy
 
   GemComponent({
     required this.color,
@@ -44,6 +45,10 @@ class GemComponent extends PositionComponent {
 
   @override
   void render(Canvas canvas) {
+    if (isIngredient) {
+      _renderIngredient(canvas);
+      return;
+    }
     final c = neonColorOf(color);
     final s = size.x;
     final center = Offset(s / 2, s / 2);
@@ -134,6 +139,57 @@ class GemComponent extends PositionComponent {
           ..strokeWidth = s * 0.06
           ..color = Colors.white.withValues(alpha: blink),
       );
+    }
+  }
+
+  /// Render ingredient (Drop Down): huy hiệu phát sáng + mũi tên xuống.
+  void _renderIngredient(Canvas canvas) {
+    final s = size.x;
+    final center = Offset(s / 2, s / 2);
+    final pulseAmt = 0.5 + 0.5 * math.sin(_pulse);
+    const gold = Color(0xFFFFC83D);
+
+    NeonFx.drawGlow(canvas, center, s * (0.8 + pulseAmt * 0.18), gold,
+        opacity: 0.95);
+
+    // đĩa tròn gradient
+    canvas.drawCircle(
+      center,
+      s * 0.36,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-0.3, -0.4),
+          colors: [
+            Color.lerp(gold, Colors.white, 0.7)!,
+            gold,
+            Color.lerp(gold, Colors.black, 0.3)!,
+          ],
+          stops: const [0.0, 0.55, 1.0],
+        ).createShader(Rect.fromCircle(center: center, radius: s * 0.36)),
+    );
+    // viền neon
+    canvas.drawCircle(
+      center,
+      s * 0.36,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.05
+        ..color = Colors.white.withValues(alpha: 0.9),
+    );
+
+    // mũi tên xuống (chevron đôi)
+    final arrow = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.07
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = const Color(0xFF3A2400);
+    for (final dy in [-0.12, 0.12]) {
+      final p = Path()
+        ..moveTo(center.dx - s * 0.16, center.dy + s * (dy - 0.04))
+        ..lineTo(center.dx, center.dy + s * (dy + 0.12))
+        ..lineTo(center.dx + s * 0.16, center.dy + s * (dy - 0.04));
+      canvas.drawPath(p, arrow);
     }
   }
 

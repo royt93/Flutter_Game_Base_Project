@@ -9,6 +9,14 @@ class StorageKeys {
   static const String coins = 'coins';
   static const String localeCode = 'locale_code';
 
+  // Daily reward
+  static const String dailyLastClaim = 'daily_last_claim'; // epoch-day
+  static const String dailyStreak = 'daily_streak';
+
+  // Lives / energy
+  static const String lives = 'lives';
+  static const String livesRegenAt = 'lives_regen_at'; // epoch ms mốc hồi kế
+
   static String highScore(int level) => 'hs_$level';
   static String star(int level) => 'star_$level';
 

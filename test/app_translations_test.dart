@@ -51,5 +51,17 @@ void main() {
             isNotNull);
       }
     });
+
+    test('key Wave 4 đã dịch thật (không còn fallback English)', () {
+      // mẫu vài ngôn ngữ: hud_time KHÁC bản English 'TIME'
+      expect(keys['es_ES']!['hud_time'], 'TIEMPO');
+      expect(keys['de_DE']!['hud_time'], 'ZEIT');
+      expect(keys['ja_JP']!['daily_title'], 'デイリーボーナス');
+      expect(keys['ru_RU']!['buy'], 'КУПИТЬ');
+      expect(keys['ar_SA']!['lives_label'], 'الأرواح');
+      // placeholder vẫn còn trong bản dịch
+      expect(keys['fr_FR']!['lives_buy_msg']!.contains('@n'), isTrue);
+      expect(keys['th_TH']!['lives_next']!.contains('@t'), isTrue);
+    });
   });
 }
