@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:neon_jewels/core/app_translations.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
+import 'package:neon_jewels/presentation/screens/guide_screen.dart';
 import 'package:neon_jewels/presentation/screens/home_screen.dart';
 import 'package:neon_jewels/presentation/screens/level_select_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -52,5 +53,13 @@ void main() {
     await tester.pumpWidget(appEn(const LevelSelectScreen()));
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byIcon(Icons.lock), findsWidgets);
+  });
+
+  testWidgets('GuideScreen hiển thị các mục hướng dẫn', (tester) async {
+    await tester.pumpWidget(appEn(const GuideScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('HOW TO PLAY'), findsWidgets);
+    expect(find.text('Special Gems'), findsOneWidget);
+    expect(find.text('Game Modes'), findsOneWidget);
   });
 }

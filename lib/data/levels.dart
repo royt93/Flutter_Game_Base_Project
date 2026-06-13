@@ -46,8 +46,8 @@ class LevelConfig {
 const List<LevelConfig> kLevels = [
   LevelConfig(
     index: 1,
-    rows: 7,
-    cols: 7,
+    rows: 8,
+    cols: 8,
     colorCount: 4,
     moves: 25,
     objective: ObjectiveType.score,
@@ -55,8 +55,8 @@ const List<LevelConfig> kLevels = [
   ),
   LevelConfig(
     index: 2,
-    rows: 7,
-    cols: 7,
+    rows: 8,
+    cols: 8,
     colorCount: 5,
     moves: 22,
     objective: ObjectiveType.collect,

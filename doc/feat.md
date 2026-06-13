@@ -174,8 +174,20 @@ lib/
 - [x] **Fix HUD tràn:** chip SCORE/GOAL/MOVES bọc Flexible + FittedBox, chữ nhỏ lại (không wrap)
 - [x] **Special gem nổi bật hơn:** thêm **vòng cung sáng xoay** quanh gem special để gây chú ý
 
+#### Wave 2.4 — full screen, board chuẩn, action bar chung (đã làm)
+- [x] **Full screen** (immersive: ẩn status bar + navigation bar)
+- [x] **Slot bo tròn 0px**, chỉ 4 ô góc board bo theo panel
+- [x] **Board chuẩn 8×8** đồng nhất mọi màn (tham chiếu Candy Crush)
+- [x] **NeonAppBar — action bar chung** áp cho Guide / Settings / Level Select
+- [x] Fix **Settings scroll cắt glow** card + **reset card bấm cả thẻ** (HitTestBehavior.opaque)
+- [x] Fix **Guide cuộn đè action bar** (bỏ clip none, padding hợp lý)
+- [x] **NeonBg** áp cho tất cả màn phụ (đồng bộ)
+- [x] **WOMBO COMBO epic animation:** đổi màu cầu vồng + lắc xoay + flash/shake mạnh khi combo ≥ 6
+- [x] **Giữ màn hình luôn sáng khi chơi** (wakelock_plus)
+- [x] **Test bổ sung:** objective collect/jelly, board 8×8, NeonAppBar/NeonBg/NeonIcon, Guide screen, integration (guide + dialog thoát) — 58 unit/widget test pass
+
 ### 🟡 In progress
-*(không có — Wave 2.3 đã xong)*
+*(không có — Wave 2.4 đã xong)*
 
 ### 📋 Picked (đã chốt, chờ implement)
 *(trống — chờ chọn Wave 2 từ Deferred)*

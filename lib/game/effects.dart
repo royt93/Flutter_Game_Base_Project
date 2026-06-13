@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/text.dart';
 import 'package:flutter/material.dart';
+import '../core/neon_theme.dart';
 
 /// Cache hiệu ứng dùng chung — pre-render 1 lần để tránh MaskFilter.blur mỗi frame
 /// (blur per-frame là nguyên nhân lag chính trên mobile).
@@ -251,7 +252,8 @@ class BoardFrame extends PositionComponent {
         ..color = const Color(0xFFBC4BFF).withValues(alpha: 0.3),
     );
 
-    // ô lõm checkerboard
+    // ô vuông (radius 0); chỉ 4 ô góc bo tròn theo góc panel
+    final cr = Radius.circular(cellSize * 0.4);
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
         final rect = Rect.fromLTWH(
@@ -259,8 +261,16 @@ class BoardFrame extends PositionComponent {
           origin.y + r * cellSize,
           cellSize,
           cellSize,
-        ).deflate(cellSize * 0.055);
-        final rr = RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.24));
+        ).deflate(cellSize * 0.02);
+        final top = r == 0, bottom = r == rows - 1;
+        final left = c == 0, right = c == cols - 1;
+        final rr = RRect.fromRectAndCorners(
+          rect,
+          topLeft: top && left ? cr : Radius.zero,
+          topRight: top && right ? cr : Radius.zero,
+          bottomLeft: bottom && left ? cr : Radius.zero,
+          bottomRight: bottom && right ? cr : Radius.zero,
+        );
         final shade = (r + c).isEven ? 0.07 : 0.03;
         canvas.drawRRect(rr, Paint()..color = Colors.white.withValues(alpha: shade));
         canvas.drawRRect(
@@ -268,7 +278,7 @@ class BoardFrame extends PositionComponent {
           Paint()
             ..style = PaintingStyle.stroke
             ..strokeWidth = 1
-            ..color = Colors.white.withValues(alpha: 0.05),
+            ..color = Colors.white.withValues(alpha: 0.06),
         );
       }
     }
@@ -380,6 +390,7 @@ class ComboTextComponent extends PositionComponent {
   final double duration;
   final double fontSize;
   final double maxWidth; // giới hạn bề rộng để không tràn màn hình
+  final bool epic; // WOMBO COMBO: đổi màu cầu vồng + rung mạnh
   double _t = 0;
   late final TextPaint _paint;
 
@@ -390,6 +401,7 @@ class ComboTextComponent extends PositionComponent {
     this.duration = 0.9,
     this.fontSize = 30,
     this.maxWidth = 9999,
+    this.epic = false,
   }) : super(position: position, anchor: Anchor.center) {
     _paint = TextPaint(
       style: TextStyle(
@@ -418,16 +430,31 @@ class ComboTextComponent extends PositionComponent {
   void render(Canvas canvas) {
     final p = _t.clamp(0.0, 1.0);
     var scale = 0.6 + 0.7 * Curves.elasticOut.transform(p.clamp(0.0, 0.6) / 0.6);
+    // epic: thêm rung scale + lắc xoay nhẹ
+    final epicWobble = epic ? math.sin(_t * 40) * 0.04 : 0.0;
+    scale += epicWobble;
     final op = p < 0.7 ? 1.0 : (1 - (p - 0.7) / 0.3);
     final m = _paint.getLineMetrics(text);
-    // không cho vượt quá maxWidth
     if (m.width > 0 && m.width * scale > maxWidth) {
       scale = maxWidth / m.width;
     }
+
+    // màu glow: epic đổi màu cầu vồng theo thời gian
+    final glowColor = epic
+        ? NeonTheme.gemColors[(_t * 18).floor() % NeonTheme.gemColors.length]
+        : color;
+
     canvas.save();
     canvas.scale(scale);
+    if (epic) canvas.rotate(math.sin(_t * 22) * 0.05);
     final tp = TextPaint(
-      style: _paint.style.copyWith(color: Colors.white.withValues(alpha: op)),
+      style: _paint.style.copyWith(
+        color: Colors.white.withValues(alpha: op),
+        shadows: [
+          Shadow(color: glowColor, blurRadius: epic ? 26 : 16),
+          Shadow(color: glowColor, blurRadius: epic ? 12 : 6),
+        ],
+      ),
     );
     tp.render(canvas, text, Vector2(-m.width / 2, -m.height / 2));
     canvas.restore();

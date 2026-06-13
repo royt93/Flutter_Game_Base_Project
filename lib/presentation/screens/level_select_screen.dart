@@ -3,7 +3,8 @@ import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
 import '../../data/levels.dart';
 import '../controllers/game_controller.dart';
-import '../widgets/neon_icon.dart';
+import '../widgets/neon_app_bar.dart';
+import '../widgets/neon_bg.dart';
 import 'game_screen.dart';
 
 class LevelSelectScreen extends StatelessWidget {
@@ -13,33 +14,15 @@ class LevelSelectScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ctrl = Get.find<GameController>();
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: NeonTheme.bgGradient),
+      body: NeonBg(
         child: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(NeonTheme.s16),
-                child: Row(
-                  children: [
-                    const NeonBackButton(color: NeonTheme.cyan),
-                    const SizedBox(width: 8),
-                    Text(
-                      'select_level'.tr,
-                      style: TextStyle(fontFamily: 'Orbitron',
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 3,
-                        shadows: const [Shadow(color: NeonTheme.cyan, blurRadius: 16)],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              NeonAppBar(title: 'select_level'.tr, color: NeonTheme.cyan),
               Expanded(
                 child: Obx(() => GridView.count(
-                      padding: const EdgeInsets.all(NeonTheme.s16),
+                      padding: const EdgeInsets.fromLTRB(NeonTheme.s24,
+                          NeonTheme.s16, NeonTheme.s24, NeonTheme.s24),
                       crossAxisCount: 3,
                       mainAxisSpacing: NeonTheme.s16,
                       crossAxisSpacing: NeonTheme.s16,

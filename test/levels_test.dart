@@ -44,5 +44,12 @@ void main() {
       final types = kLevels.map((l) => l.objective).toSet();
       expect(types, containsAll(ObjectiveType.values));
     });
+
+    test('mọi màn dùng board 8x8 chuẩn (đồng nhất)', () {
+      for (final lv in kLevels) {
+        expect(lv.rows, 8, reason: 'level ${lv.index} rows != 8');
+        expect(lv.cols, 8, reason: 'level ${lv.index} cols != 8');
+      }
+    });
   });
 }

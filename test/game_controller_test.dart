@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:neon_jewels/data/levels.dart';
+import 'package:neon_jewels/logic/gem_data.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -111,6 +112,67 @@ void main() {
       c.checkEnd();
       await Future.delayed(const Duration(milliseconds: 20));
       expect(c.highScores[1], c.score.value);
+    });
+  });
+
+  group('objective: collect', () {
+    int collectLevel() =>
+        kLevels.indexWhere((l) => l.objective == ObjectiveType.collect) + 1;
+
+    test('registerClear tăng collected khi đúng màu', () {
+      final idx = collectLevel();
+      c.startLevel(idx);
+      final color = c.level.collectColor!;
+      c.registerClear(color, false);
+      c.registerClear(color, false);
+      expect(c.collected.value, 2);
+    });
+
+    test('màu khác không tính', () {
+      final idx = collectLevel();
+      c.startLevel(idx);
+      final wrong = GemColor.values.firstWhere((g) => g != c.level.collectColor);
+      c.registerClear(wrong, false);
+      expect(c.collected.value, 0);
+    });
+
+    test('thắng khi thu đủ', () {
+      final idx = collectLevel();
+      c.startLevel(idx);
+      for (int i = 0; i < c.level.collectTarget; i++) {
+        c.registerClear(c.level.collectColor!, false);
+      }
+      expect(c.hasWon, isTrue);
+    });
+  });
+
+  group('objective: clearJelly', () {
+    int jellyLevel() =>
+        kLevels.indexWhere((l) => l.objective == ObjectiveType.clearJelly) + 1;
+
+    test('phá đủ jelly thì thắng', () {
+      c.startLevel(jellyLevel());
+      c.jellyTotal = 5; // game thường set; mô phỏng ở test
+      for (int i = 0; i < 5; i++) {
+        c.registerClear(GemColor.cyan, true);
+      }
+      expect(c.jellyCleared.value, 5);
+      expect(c.hasWon, isTrue);
+    });
+
+    test('chưa đủ jelly thì chưa thắng', () {
+      c.startLevel(jellyLevel());
+      c.jellyTotal = 5;
+      c.registerClear(GemColor.cyan, true);
+      expect(c.hasWon, isFalse);
+    });
+  });
+
+  group('objectiveProgress', () {
+    test('score: tỉ lệ theo điểm', () {
+      c.startLevel(1);
+      c.score.value = (c.targetScore.value / 2).round();
+      expect(c.objectiveProgress, closeTo(0.5, 0.05));
     });
   });
 }

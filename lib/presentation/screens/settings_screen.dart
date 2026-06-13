@@ -5,8 +5,9 @@ import '../../core/audio_manager.dart';
 import '../../core/locale_service.dart';
 import '../../core/neon_theme.dart';
 import '../controllers/game_controller.dart';
+import '../widgets/neon_app_bar.dart';
+import '../widgets/neon_bg.dart';
 import '../widgets/neon_dialog.dart';
-import '../widgets/neon_icon.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -24,30 +25,16 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = Get.find<LocaleService>();
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: NeonTheme.bgGradient),
+      body: NeonBg(
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(NeonTheme.s16),
-                child: Row(
-                  children: [
-                    const NeonBackButton(color: NeonTheme.purple),
-                    const SizedBox(width: 8),
-                    Text(
-                      'settings'.tr,
-                      style: _t(24, w: FontWeight.w800).copyWith(
-                        shadows: const [Shadow(color: NeonTheme.purple, blurRadius: 16)],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              NeonAppBar(title: 'settings'.tr, color: NeonTheme.purple),
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: NeonTheme.s16),
+                  padding: const EdgeInsets.fromLTRB(
+                      NeonTheme.s24, NeonTheme.s16, NeonTheme.s24, NeonTheme.s24),
                   children: [
                     // --- Âm thanh ---
                     _card(
@@ -113,18 +100,16 @@ class SettingsScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: NeonTheme.s16),
-                    // --- Reset tiến độ ---
+                    // --- Reset tiến độ (cả thẻ bấm được) ---
                     _card(
                       color: NeonTheme.magenta,
-                      child: GestureDetector(
-                        onTap: () => _confirmReset(),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.restart_alt, color: NeonTheme.magenta),
-                            const SizedBox(width: 12),
-                            Text('reset_progress'.tr, style: _t(16)),
-                          ],
-                        ),
+                      onTap: _confirmReset,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.restart_alt, color: NeonTheme.magenta),
+                          const SizedBox(width: 12),
+                          Text('reset_progress'.tr, style: _t(16)),
+                        ],
                       ),
                     ),
                   ],
@@ -137,16 +122,25 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _card({required Color color, required Widget child}) => Container(
-        padding: const EdgeInsets.all(NeonTheme.s16),
-        decoration: BoxDecoration(
-          color: NeonTheme.panel.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color, width: 2),
-          boxShadow: NeonTheme.glow(color, blur: 8),
-        ),
-        child: child,
-      );
+  Widget _card({required Color color, required Widget child, VoidCallback? onTap}) {
+    final box = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(NeonTheme.s16),
+      decoration: BoxDecoration(
+        color: NeonTheme.panel.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color, width: 2),
+        boxShadow: NeonTheme.glow(color, blur: 7),
+      ),
+      child: child,
+    );
+    if (onTap == null) return box;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: box,
+    );
+  }
 
   void _confirmReset() {
     NeonDialog.show(

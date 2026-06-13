@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
+import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_icon.dart';
 
@@ -16,21 +17,11 @@ class GuideScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(NeonTheme.s16),
-                child: Row(
-                  children: [
-                    const NeonBackButton(color: NeonTheme.magenta),
-                    const SizedBox(width: NeonTheme.s8),
-                    Text('guide'.tr, style: _title(24, NeonTheme.magenta)),
-                  ],
-                ),
-              ),
+              NeonAppBar(title: 'guide'.tr, color: NeonTheme.magenta),
               Expanded(
                 child: ListView(
-                  clipBehavior: Clip.none,
                   padding: const EdgeInsets.fromLTRB(
-                      NeonTheme.s24, NeonTheme.s8, NeonTheme.s24, NeonTheme.s24),
+                      NeonTheme.s24, NeonTheme.s16, NeonTheme.s24, NeonTheme.s24),
                   children: [
                     _section(
                       color: NeonTheme.cyan,

@@ -53,5 +53,31 @@ void main() {
       expect(find.text('English'), findsOneWidget);
       expect(find.text('Tiếng Việt'), findsOneWidget);
     });
+
+    testWidgets('Mở màn Hướng dẫn từ Home', (tester) async {
+      await app();
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+      await tester.tap(find.text('guide'.tr));
+      await tester.pumpAndSettle(const Duration(milliseconds: 600));
+      expect(find.text('guide_special_title'.tr), findsOneWidget);
+      expect(find.text('guide_modes_title'.tr), findsOneWidget);
+    });
+
+    testWidgets('Bấm X trong game hiện dialog xác nhận thoát', (tester) async {
+      await app();
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+      await tester.tap(find.text('play_now'.tr));
+      await tester.pumpAndSettle(const Duration(milliseconds: 600));
+      await tester.tap(find.text('1').first);
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+      expect(find.text('quit_title'.tr), findsOneWidget);
+      // huỷ → quay lại game
+      await tester.tap(find.text('cancel'.tr));
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+      expect(find.textContaining('hud_score'.tr), findsOneWidget);
+    });
   });
 }

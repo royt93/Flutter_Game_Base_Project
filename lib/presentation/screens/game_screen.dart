@@ -1,6 +1,7 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../core/audio_manager.dart';
 import '../../core/neon_theme.dart';
 import '../../data/levels.dart';
@@ -23,7 +24,14 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void initState() {
     super.initState();
+    WakelockPlus.enable(); // giữ màn hình luôn sáng khi chơi
     _buildGame();
+  }
+
+  @override
+  void dispose() {
+    WakelockPlus.disable(); // cho phép tắt màn khi rời game
+    super.dispose();
   }
 
   void _buildGame() {
