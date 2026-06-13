@@ -18,7 +18,7 @@ class LevelSelectScreen extends StatelessWidget {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(NeonTheme.s16),
                 child: Row(
                   children: [
                     IconButton(
@@ -41,10 +41,10 @@ class LevelSelectScreen extends StatelessWidget {
               ),
               Expanded(
                 child: Obx(() => GridView.count(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(NeonTheme.s16),
                       crossAxisCount: 3,
-                      mainAxisSpacing: 18,
-                      crossAxisSpacing: 18,
+                      mainAxisSpacing: NeonTheme.s16,
+                      crossAxisSpacing: NeonTheme.s16,
                       children: [
                         for (final lv in kLevels)
                           _LevelTile(

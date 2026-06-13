@@ -58,6 +58,9 @@ class AppTranslations extends Translations {
     'on': 'On',
     'off': 'Off',
     'shuffle': 'SHUFFLE',
+    'hud_goal': 'GOAL',
+    'quit_title': 'QUIT LEVEL?',
+    'quit_msg': 'Your progress in this level will be lost.',
   };
 
   static const Map<String, String> _vi = {
@@ -87,5 +90,8 @@ class AppTranslations extends Translations {
     'on': 'Bật',
     'off': 'Tắt',
     'shuffle': 'XÁO TRỘN',
+    'hud_goal': 'MỤC TIÊU',
+    'quit_title': 'THOÁT MÀN?',
+    'quit_msg': 'Tiến độ màn này sẽ bị mất.',
   };
 }

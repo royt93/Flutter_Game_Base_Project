@@ -67,7 +67,9 @@ class _Star {
   final double phase;
   final double size;
   final double speed;
-  _Star(this.pos, this.phase, this.size, this.speed);
+  final bool sparkle; // true = ngôi sao 4 cánh, false = chấm tròn
+  final Color color;
+  _Star(this.pos, this.phase, this.size, this.speed, this.sparkle, this.color);
 }
 
 /// Nền neon động & đẹp: lưới phát sáng mờ + orb gradient trôi + sao lấp lánh.
@@ -97,12 +99,15 @@ class NeonBackground extends PositionComponent {
         palette[rnd.nextInt(palette.length)],
       ));
     }
-    for (int i = 0; i < 46; i++) {
+    for (int i = 0; i < 64; i++) {
+      final sparkle = i % 5 == 0; // ~20% là sao 4 cánh
       _stars.add(_Star(
         Offset(rnd.nextDouble() * area.x, rnd.nextDouble() * area.y),
         rnd.nextDouble() * math.pi * 2,
-        1 + rnd.nextDouble() * 2.2,
+        (sparkle ? 2.5 : 1.0) + rnd.nextDouble() * 2.2,
         0.8 + rnd.nextDouble() * 2.0,
+        sparkle,
+        palette[rnd.nextInt(palette.length)],
       ));
     }
   }
@@ -147,11 +152,177 @@ class NeonBackground extends PositionComponent {
   void _renderStars(Canvas canvas) {
     for (final s in _stars) {
       final tw = 0.3 + 0.7 * (0.5 + 0.5 * math.sin(_time * s.speed + s.phase));
-      canvas.drawCircle(
-        s.pos,
-        s.size,
-        Paint()..color = Colors.white.withValues(alpha: 0.5 * tw),
-      );
+      if (s.sparkle) {
+        // sao 4 cánh phát màu neon
+        final paint = Paint()
+          ..color = s.color.withValues(alpha: 0.8 * tw)
+          ..strokeWidth = 1.4
+          ..strokeCap = StrokeCap.round;
+        final r = s.size * (0.6 + 0.4 * tw);
+        canvas.drawLine(
+            Offset(s.pos.dx - r, s.pos.dy), Offset(s.pos.dx + r, s.pos.dy), paint);
+        canvas.drawLine(
+            Offset(s.pos.dx, s.pos.dy - r), Offset(s.pos.dx, s.pos.dy + r), paint);
+        canvas.drawCircle(s.pos, 1.2,
+            Paint()..color = Colors.white.withValues(alpha: 0.9 * tw));
+      } else {
+        canvas.drawCircle(
+          s.pos,
+          s.size,
+          Paint()..color = Colors.white.withValues(alpha: 0.5 * tw),
+        );
+      }
+    }
+  }
+}
+
+/// Chớp sáng toàn màn hình (dùng cho rainbow / combo lớn). Tự huỷ.
+class FlashOverlay extends PositionComponent {
+  final Color color;
+  final double peak;
+  final double duration;
+  double _t = 0;
+
+  FlashOverlay({
+    required Vector2 area,
+    required this.color,
+    this.peak = 0.3,
+    this.duration = 0.4,
+  }) : super(size: area);
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _t += dt / duration;
+    if (_t >= 1) removeFromParent();
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final op = peak * (1 - _t).clamp(0.0, 1.0);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Paint()..color = color.withValues(alpha: op),
+    );
+  }
+}
+
+/// Khung bàn chơi: panel bo góc + viền neon + các ô lõm (slot) kiểu khay đựng gem.
+/// Đặt làm con của boardLayer để rung cùng gem (đồng bộ, không lệch).
+class BoardFrame extends PositionComponent {
+  final int rows;
+  final int cols;
+  final double cellSize;
+  final Vector2 origin;
+
+  BoardFrame({
+    required this.rows,
+    required this.cols,
+    required this.cellSize,
+    required this.origin,
+  });
+
+  @override
+  void render(Canvas canvas) {
+    final pad = cellSize * 0.16;
+    final panel = RRect.fromLTRBR(
+      origin.x - pad,
+      origin.y - pad,
+      origin.x + cols * cellSize + pad,
+      origin.y + rows * cellSize + pad,
+      Radius.circular(cellSize * 0.5),
+    );
+
+    // nền panel + viền neon đôi
+    canvas.drawRRect(panel, Paint()..color = const Color(0xE60B0B1F));
+    canvas.drawRRect(
+      panel,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..color = const Color(0xFF00F0FF).withValues(alpha: 0.5),
+    );
+    canvas.drawRRect(
+      panel.inflate(3),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = const Color(0xFFBC4BFF).withValues(alpha: 0.3),
+    );
+
+    // ô lõm checkerboard
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        final rect = Rect.fromLTWH(
+          origin.x + c * cellSize,
+          origin.y + r * cellSize,
+          cellSize,
+          cellSize,
+        ).deflate(cellSize * 0.055);
+        final rr = RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.24));
+        final shade = (r + c).isEven ? 0.07 : 0.03;
+        canvas.drawRRect(rr, Paint()..color = Colors.white.withValues(alpha: shade));
+        canvas.drawRRect(
+          rr,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1
+            ..color = Colors.white.withValues(alpha: 0.05),
+        );
+      }
+    }
+  }
+}
+
+/// Lớp jelly (obstacle): phủ ô có jelly bằng khối trong mờ phát sáng.
+/// Đọc trực tiếp lưới jelly (cùng tham chiếu với game) nên tự cập nhật khi phá.
+class JellyLayer extends PositionComponent {
+  final List<List<int>> jelly;
+  final int rows;
+  final int cols;
+  final double cellSize;
+  final Vector2 origin;
+
+  JellyLayer({
+    required this.jelly,
+    required this.rows,
+    required this.cols,
+    required this.cellSize,
+    required this.origin,
+  });
+
+  @override
+  void render(Canvas canvas) {
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        if (jelly[r][c] <= 0) continue;
+        final rect = Rect.fromLTWH(
+          origin.x + c * cellSize,
+          origin.y + r * cellSize,
+          cellSize,
+          cellSize,
+        ).deflate(cellSize * 0.04);
+        final rr = RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.26));
+        canvas.drawRRect(
+          rr,
+          Paint()
+            ..shader = ui.Gradient.linear(
+              rect.topLeft,
+              rect.bottomRight,
+              [
+                const Color(0xFF00F0FF).withValues(alpha: 0.28),
+                const Color(0xFFBC4BFF).withValues(alpha: 0.28),
+              ],
+            ),
+        );
+        canvas.drawRRect(
+          rr,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2
+            ..color = Colors.white.withValues(alpha: 0.35),
+        );
+      }
     }
   }
 }
@@ -206,6 +377,7 @@ class ComboTextComponent extends PositionComponent {
   final String text;
   final Color color;
   final double duration;
+  final double fontSize;
   double _t = 0;
   late final TextPaint _paint;
 
@@ -214,15 +386,19 @@ class ComboTextComponent extends PositionComponent {
     required this.color,
     required Vector2 position,
     this.duration = 0.9,
+    this.fontSize = 30,
   }) : super(position: position, anchor: Anchor.center) {
     _paint = TextPaint(
       style: TextStyle(
         color: Colors.white,
         fontFamily: 'Orbitron',
-        fontSize: 30,
+        fontSize: fontSize,
         fontWeight: FontWeight.w900,
         letterSpacing: 1.5,
-        shadows: [Shadow(color: color, blurRadius: 12)],
+        shadows: [
+          Shadow(color: color, blurRadius: 16),
+          Shadow(color: color, blurRadius: 6),
+        ],
       ),
     );
   }

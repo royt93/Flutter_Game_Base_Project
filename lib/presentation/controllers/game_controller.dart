@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/levels.dart';
+import '../../logic/gem_data.dart';
 
 /// Quản lý state ván chơi + tiến trình (GetX).
 class GameController extends GetxController {
@@ -9,6 +10,11 @@ class GameController extends GetxController {
   final RxInt targetScore = 0.obs;
   final RxInt comboCount = 0.obs;
   final RxInt currentLevel = 1.obs;
+
+  // --- Mục tiêu màn chơi ---
+  final RxInt collected = 0.obs; // số gem màu mục tiêu đã thu (collect)
+  final RxInt jellyCleared = 0.obs; // số jelly đã phá (clearJelly)
+  int jellyTotal = 0; // tổng jelly (game set khi onLoad)
 
   /// Level cao nhất đã mở khóa (lưu local).
   final RxInt unlockedLevel = 1.obs;
@@ -44,6 +50,9 @@ class GameController extends GetxController {
     comboCount.value = 0;
     movesLeft.value = cfg.moves;
     targetScore.value = cfg.targetScore;
+    collected.value = 0;
+    jellyCleared.value = 0;
+    jellyTotal = 0;
     _resolved = false;
   }
 
@@ -54,12 +63,49 @@ class GameController extends GetxController {
     score.value += (gemsCleared * 10 * multiplier).round();
   }
 
+  /// Game gọi mỗi khi 1 gem bị xoá → cập nhật tiến độ mục tiêu.
+  void registerClear(GemColor color, bool wasJelly) {
+    if (level.objective == ObjectiveType.collect &&
+        color == level.collectColor) {
+      collected.value++;
+    }
+    if (wasJelly) jellyCleared.value++;
+  }
+
   void useMove() {
     if (movesLeft.value > 0) movesLeft.value--;
   }
 
-  bool get hasWon => score.value >= targetScore.value;
+  bool get hasWon {
+    switch (level.objective) {
+      case ObjectiveType.score:
+        return score.value >= targetScore.value;
+      case ObjectiveType.collect:
+        return collected.value >= level.collectTarget;
+      case ObjectiveType.clearJelly:
+        return jellyTotal > 0 && jellyCleared.value >= jellyTotal;
+    }
+  }
+
   bool get isOutOfMoves => movesLeft.value <= 0;
+
+  /// Tiến độ mục tiêu 0..1 (cho thanh tiến độ HUD).
+  double get objectiveProgress {
+    switch (level.objective) {
+      case ObjectiveType.score:
+        return targetScore.value == 0
+            ? 0
+            : (score.value / targetScore.value).clamp(0.0, 1.0);
+      case ObjectiveType.collect:
+        return level.collectTarget == 0
+            ? 0
+            : (collected.value / level.collectTarget).clamp(0.0, 1.0);
+      case ObjectiveType.clearJelly:
+        return jellyTotal == 0
+            ? 0
+            : (jellyCleared.value / jellyTotal).clamp(0.0, 1.0);
+    }
+  }
 
   /// Gọi sau khi board ổn định (không còn cascade). Trả về:
   /// 'win', 'lose' hoặc null (chơi tiếp).

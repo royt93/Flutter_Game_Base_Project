@@ -4,6 +4,11 @@ import 'package:flutter/material.dart';
 class NeonTheme {
   NeonTheme._();
 
+  // Hệ spacing chuẩn dùng toàn app (8 / 16 / 24).
+  static const double s8 = 8;
+  static const double s16 = 16;
+  static const double s24 = 24;
+
   // Nền tối làm nổi gem phát sáng
   static const Color bgDark = Color(0xFF0A0A1A);
   static const Color bgDark2 = Color(0xFF14142E);

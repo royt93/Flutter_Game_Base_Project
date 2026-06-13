@@ -134,8 +134,29 @@ lib/
 - [x] **Tên app:** "Neon Jewels" (Android + iOS)
 - [x] **Chạy thật trên Tecno BG6 (release)** — không crash trong logcat
 
+#### Wave 2 — chiều sâu gameplay + revamp UI (đã làm)
+- [x] **Combo 2-special tổng quát:** striped+striped (chữ thập), striped+bomb (3 hàng+3 cột), bomb+bomb (5x5), rainbow+striped/bomb/rainbow
+- [x] **Auto-shuffle khi hết nước đi** (phát hiện no-move + báo "SHUFFLE!"), bỏ booster shuffle thủ công
+- [x] **Obstacle Jelly** + **objective đa dạng:** Score / Collect (thu màu) / Clear Jelly — mỗi màn 1 kiểu
+- [x] **HUD revamp:** chip SCORE / GOAL (đổi theo mục tiêu, có chấm màu cho collect) / MOVES + thanh tiến độ + NeonIcon
+- [x] **Khung bàn (BoardFrame)** + ô lõm checkerboard — gem nằm trong khay
+- [x] **NeonDialog dùng chung** (win/lose + xác nhận reset) + **NeonIcon dùng chung**
+- [x] **Nền lung linh hơn:** lưới + 64 sao (có sao 4 cánh neon) + orb gradient + vignette
+- [x] **Polish hiệu ứng special/combo:** flash màn hình (rainbow/bomb/combo≥4), combo text to dần theo cấp, hiệu ứng "ra đời" khi tạo gem special, beam/shockwave
+- [x] **Sửa bug bàn lệch tâm** khi animation (trauma-based shake, không drift)
+- [x] **Fix:** tên app Neon Jewels, font bundle, 46 test pass
+
+#### Wave 2.1 — tinh chỉnh UI/UX (đã làm)
+- [x] **Board cách mép 16px** (không còn khít màn hình)
+- [x] **Hệ spacing chuẩn 8/16/24** (`NeonTheme.s8/s16/s24`) áp cho game + home + level select + settings
+- [x] **Hint nhấp nháy khi stuck:** đứng yên >4s → gem gợi ý nước đi phát sáng nhấp nháy
+- [x] **HUD gọn lại:** chip inline (nhãn + giá trị 1 hàng), icon nhỏ, vẫn đủ SCORE/GOAL/MOVES
+- [x] **Thanh progress animate mượt** (TweenAnimation + gradient + glow), chip giá trị nảy khi đổi (AnimatedSwitcher)
+- [x] **Dialog xác nhận thoát màn** (NeonDialog) khi bấm X giữa lúc chơi
+- [x] Tăng cường animation tổng thể (flash, combo scale, special birth — từ Wave 2)
+
 ### 🟡 In progress
-*(không có — Wave 1 đã xong)*
+*(không có — Wave 2.1 đã xong)*
 
 ### 📋 Picked (đã chốt, chờ implement)
 *(trống — chờ chọn Wave 2 từ Deferred)*

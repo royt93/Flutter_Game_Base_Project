@@ -19,6 +19,7 @@ class GemComponent extends PositionComponent {
 
   double _pulse = 0; // pha dao động cho hiệu ứng nhấp nháy
   bool selected = false;
+  bool hint = false; // nhấp nháy gợi ý khi người chơi bị stuck
 
   GemComponent({
     required this.color,
@@ -112,6 +113,20 @@ class GemComponent extends PositionComponent {
           ..style = PaintingStyle.stroke
           ..strokeWidth = s * 0.05
           ..color = Colors.white.withValues(alpha: 0.9),
+      );
+    }
+
+    // Gợi ý nhấp nháy khi stuck
+    if (hint) {
+      final blink = 0.35 + 0.65 * pulseAmt;
+      NeonFx.drawGlow(canvas, center, s * 0.7, Colors.white, opacity: blink);
+      canvas.drawCircle(
+        center,
+        s * 0.46,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.06
+          ..color = Colors.white.withValues(alpha: blink),
       );
     }
   }

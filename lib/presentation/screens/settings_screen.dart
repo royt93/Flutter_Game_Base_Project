@@ -5,6 +5,7 @@ import '../../core/audio_manager.dart';
 import '../../core/locale_service.dart';
 import '../../core/neon_theme.dart';
 import '../controllers/game_controller.dart';
+import '../widgets/neon_dialog.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -29,7 +30,7 @@ class SettingsScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(NeonTheme.s16),
                 child: Row(
                   children: [
                     IconButton(
@@ -48,7 +49,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: NeonTheme.s16),
                   children: [
                     // --- Âm thanh ---
                     _card(
@@ -66,7 +67,7 @@ class SettingsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: NeonTheme.s16),
                     // --- Ngôn ngữ ---
                     _card(
                       color: NeonTheme.lime,
@@ -113,7 +114,7 @@ class SettingsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: NeonTheme.s16),
                     // --- Reset tiến độ ---
                     _card(
                       color: NeonTheme.magenta,
@@ -139,7 +140,7 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _card({required Color color, required Widget child}) => Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(NeonTheme.s16),
         decoration: BoxDecoration(
           color: NeonTheme.panel.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(16),
@@ -150,36 +151,34 @@ class SettingsScreen extends StatelessWidget {
       );
 
   void _confirmReset() {
-    Get.dialog(
-      AlertDialog(
-        backgroundColor: NeonTheme.panel,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: NeonTheme.magenta, width: 2),
+    NeonDialog.show(
+      title: 'reset_progress'.tr,
+      color: NeonTheme.magenta,
+      icon: Icons.restart_alt_rounded,
+      message: 'reset_confirm_msg'.tr,
+      dismissible: true,
+      actions: [
+        NeonDialogAction(
+          label: 'cancel'.tr,
+          color: NeonTheme.cyan,
+          onTap: () {},
         ),
-        content: Text('reset_confirm_msg'.tr, style: _t(15, w: FontWeight.w500)),
-        actions: [
-          TextButton(
-            onPressed: Get.back,
-            child: Text('cancel'.tr, style: _t(14, color: Colors.white70)),
-          ),
-          TextButton(
-            onPressed: () async {
-              await Get.find<GameController>().resetProgress();
-              Get.back();
-              Get.snackbar(
-                '',
-                'reset_done'.tr,
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: NeonTheme.panel,
-                colorText: Colors.white,
-                margin: const EdgeInsets.all(16),
-              );
-            },
-            child: Text('confirm'.tr, style: _t(14, color: NeonTheme.magenta)),
-          ),
-        ],
-      ),
+        NeonDialogAction(
+          label: 'confirm'.tr,
+          color: NeonTheme.magenta,
+          onTap: () async {
+            await Get.find<GameController>().resetProgress();
+            Get.snackbar(
+              '',
+              'reset_done'.tr,
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: NeonTheme.panel,
+              colorText: Colors.white,
+              margin: const EdgeInsets.all(NeonTheme.s16),
+            );
+          },
+        ),
+      ],
     );
   }
 }

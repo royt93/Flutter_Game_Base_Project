@@ -24,7 +24,7 @@ class HomeScreen extends StatelessWidget {
               children: [
                 const Spacer(),
                 _GemSparkle(),
-                const SizedBox(height: 24),
+                const SizedBox(height: NeonTheme.s24),
                 Text(
                   'NEON',
                   style: TextStyle(fontFamily: 'Orbitron', 
@@ -60,7 +60,7 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.play_arrow_rounded,
                   onTap: () => Get.to(() => const LevelSelectScreen()),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: NeonTheme.s16),
                 NeonButton(
                   label: 'quick_level1'.tr,
                   color: NeonTheme.cyan,
@@ -70,14 +70,14 @@ class HomeScreen extends StatelessWidget {
                     Get.to(() => const LevelSelectScreen());
                   },
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: NeonTheme.s16),
                 NeonButton(
                   label: 'settings'.tr,
                   color: NeonTheme.purple,
                   icon: Icons.settings,
                   onTap: () => Get.to(() => const SettingsScreen()),
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: NeonTheme.s24),
                 Text(
                   'levels_tagline'.trParams({'count': '${kLevels.length}'}),
                   style: TextStyle(
