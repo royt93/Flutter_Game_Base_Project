@@ -29,13 +29,20 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// Callback báo kết quả ván ('win' | 'lose') cho tầng UI hiển thị dialog.
   final void Function(String result) onGameEnd;
 
+  /// Gọi khi búa (hammer) được dùng thành công → UI trừ booster.
+  final VoidCallback? onHammerUsed;
+
   NeonJewelGame({
     required this.controller,
     required this.rows,
     required this.cols,
     required this.colorCount,
     required this.onGameEnd,
+    this.onHammerUsed,
   });
+
+  bool hammerArmed = false;
+  void armHammer() => hammerArmed = true;
 
   final _rnd = math.Random();
   late List<List<GemComponent?>> grid;
@@ -209,6 +216,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     if (cell == null) return;
     final gem = grid[cell.row][cell.col];
     if (gem == null) return;
+
+    // Búa: phá 1 gem bất kỳ
+    if (hammerArmed) {
+      hammerArmed = false;
+      onHammerUsed?.call();
+      _useHammerOn(cell);
+      return;
+    }
 
     if (_selected == null) {
       _selected = gem..selected = true;
@@ -786,6 +801,24 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       },
     );
     add(ParticleSystemComponent(particle: particle, position: position)..priority = 40);
+  }
+
+  /// Booster búa: phá 1 gem tại ô được chọn (không tốn lượt).
+  Future<void> _useHammerOn(Cell cell) async {
+    if (_busy || _ended) return;
+    _busy = true;
+    try {
+      final expanded = _expandSpecials({cell});
+      _shake(5);
+      await _clearCells(expanded);
+      controller.addScore(expanded.length, 1);
+      await _applyGravityAndRefill();
+      await _resolveAll();
+      await _ensurePlayable();
+    } finally {
+      _busy = false;
+      _finishMove();
+    }
   }
 
   /// Booster: xáo trộn màu toàn bàn (đảm bảo không tạo match sẵn). Có pop + rung.

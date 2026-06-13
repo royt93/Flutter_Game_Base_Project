@@ -197,8 +197,22 @@ lib/
 - [x] **Haptic** theo combo (nhẹ 2-3, vừa 4-5, mạnh ≥6 wombo)
 - [x] 58 unit/widget test pass
 
+#### Wave 2.6 — revamp + fix triệt để (đã làm)
+- [x] **Fix nút X/back triệt để**: đóng dialog rồi pop màn ở frame kế (hết bị GetX nuốt pop) + PopScope (back hệ thống → dialog thoát)
+- [x] **Revamp Level Select**: banner "màn hiện tại" lớn (emblem + ★ + CHƠI NGAY) + lưới 4 cột, focus màn đang chơi
+- [x] **NeonBg động** (nebula + sweep + sao) áp toàn bộ màn; version/copyright neon glow
+- [x] Đã xác minh trên máy: dialog (reset/quit) hiện đúng, nút CANCEL/CONFIRM gọn trong khung
+- [x] 59 unit/widget test pass
+
+### 🌊 Wave 3 — 4 mục song song (đã làm)
+- [x] **Hệ thống sao 1-3** + lưu sao tốt nhất/màn + **dialog thắng celebration** (sao bay elastic + thưởng xu)
+- [x] **Booster + kinh tế xu**: Hammer (đập 1 gem) + Shuffle; xu thưởng khi thắng (20/30/40 theo sao); hết booster → mua bằng xu; booster bar trong game + chip xu
+- [x] **100 màn** (generator scaling, xoay vòng 3 mục tiêu, jelly pattern theo tier); Level Select 4 cột cuộn lazy (CustomScrollView) + sao trên mỗi tile
+- [x] **22 ngôn ngữ** (en, vi + 20: es/fr/de/pt/ru/zh/ja/ko/it/id/th/hi/ar/tr/nl/pl/fil/ms/uk/bn) — agent dịch, test parity pass
+- [x] **66 unit/widget test pass**, 0 analyzer issue, build release chạy thật (Samsung 1080x2340 + Tecno BG6)
+
 ### 🟡 In progress
-*(không có — Wave 2.5 đã xong)*
+*(không có)*
 
 ### 📋 Picked (đã chốt, chờ implement)
 *(trống — chờ chọn Wave 2 từ Deferred)*

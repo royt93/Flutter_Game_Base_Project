@@ -3,8 +3,9 @@ import 'package:neon_jewels/data/levels.dart';
 
 void main() {
   group('kLevels — tính hợp lệ', () {
-    test('có đúng 5 level', () {
-      expect(kLevels.length, 5);
+    test('có đúng 100 level', () {
+      expect(kLevels.length, kLevelCount);
+      expect(kLevels.length, 100);
     });
 
     test('index liên tục từ 1', () {

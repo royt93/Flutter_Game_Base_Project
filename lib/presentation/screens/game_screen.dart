@@ -1,5 +1,6 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../core/audio_manager.dart';
@@ -42,6 +43,7 @@ class _GameScreenState extends State<GameScreen> {
       cols: lv.cols,
       colorCount: lv.colorCount,
       onGameEnd: _onGameEnd,
+      onHammerUsed: ctrl.useHammer,
     );
   }
 
@@ -69,6 +71,7 @@ class _GameScreenState extends State<GameScreen> {
       color: win ? NeonTheme.lime : NeonTheme.magenta,
       icon: win ? Icons.emoji_events_rounded : Icons.refresh_rounded,
       message: '${'hud_goal'.tr}: ${_objectiveText()}',
+      content: win ? _celebration() : null,
       actions: [
         NeonDialogAction(
           label: 'btn_again'.tr,
@@ -97,18 +100,172 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  /// Nội dung celebration trong dialog thắng: sao bay + thưởng xu.
+  Widget _celebration() {
+    final earned = ctrl.lastStars;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(3, (i) {
+            final on = i < earned;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Icon(
+                Icons.star_rounded,
+                size: 42,
+                color: on ? Colors.amber : Colors.white24,
+                shadows: on
+                    ? const [Shadow(color: Colors.amber, blurRadius: 18)]
+                    : null,
+              )
+                  .animate()
+                  .scale(
+                      delay: (i * 160).ms,
+                      duration: 420.ms,
+                      curve: Curves.elasticOut),
+            );
+          }),
+        ),
+        const SizedBox(height: NeonTheme.s8),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.monetization_on_rounded,
+                color: NeonTheme.yellow, size: 20),
+            const SizedBox(width: 6),
+            Text('+${ctrl.lastCoinReward}',
+                style: const TextStyle(
+                  fontFamily: 'Orbitron',
+                  color: NeonTheme.yellow,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                )),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBoosterBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: NeonTheme.s24, vertical: NeonTheme.s8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // xu
+          Obx(() => _pill(Icons.monetization_on_rounded, NeonTheme.yellow,
+              '${ctrl.coins.value}')),
+          const SizedBox(width: NeonTheme.s24),
+          // búa: có thì kích hoạt, hết thì mua 30 xu
+          Obx(() => _boosterBtn(
+                Icons.gavel_rounded,
+                NeonTheme.orange,
+                ctrl.boosterHammer.value,
+                () {
+                  if (ctrl.boosterHammer.value > 0) {
+                    game.armHammer();
+                  } else {
+                    ctrl.buyHammer();
+                  }
+                },
+              )),
+          const SizedBox(width: NeonTheme.s16),
+          // xáo trộn
+          Obx(() => _boosterBtn(
+                Icons.shuffle_rounded,
+                NeonTheme.purple,
+                ctrl.boosterShuffle.value,
+                () {
+                  if (ctrl.useShuffleBooster()) {
+                    game.shuffleBoard();
+                  } else {
+                    ctrl.buyShuffle();
+                  }
+                },
+              )),
+        ],
+      ),
+    );
+  }
+
+  Widget _pill(IconData icon, Color color, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: NeonTheme.panel.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color, width: 1.5),
+        boxShadow: NeonTheme.glow(color, blur: 6),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 5),
+        Text(text,
+            style: const TextStyle(
+              fontFamily: 'Orbitron',
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            )),
+      ]),
+    );
+  }
+
+  /// Nút booster: icon + "xN" nếu còn, hoặc badge "+" (mua) nếu hết.
+  Widget _boosterBtn(IconData icon, Color color, int count, VoidCallback onTap) {
+    final has = count > 0;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: NeonTheme.panel.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color, width: 2),
+          boxShadow: NeonTheme.glow(color, blur: 7),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(width: 6),
+          if (has)
+            Text('x$count',
+                style: const TextStyle(
+                  fontFamily: 'Orbitron',
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ))
+          else
+            const Icon(Icons.add_circle_rounded,
+                color: NeonTheme.yellow, size: 16),
+        ]),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: NeonTheme.bgGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHud(),
-              Expanded(child: GameWidget(game: game)),
-              const SizedBox(height: 8),
-            ],
+    // chặn back hệ thống → hiện dialog xác nhận thoát (như nút X)
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmQuit();
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(gradient: NeonTheme.bgGradient),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildHud(),
+                Expanded(child: GameWidget(game: game)),
+                _buildBoosterBar(),
+                const SizedBox(height: NeonTheme.s8),
+              ],
+            ),
           ),
         ),
       ),
@@ -139,9 +296,9 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildHud() {
     return Padding(
-      // top lớn hơn để nút X không sát mép (full screen) → dễ bấm
+      // padding ngang lớn để nút X rời khỏi vùng vuốt-mép (gesture nav) → tap được
       padding: const EdgeInsets.fromLTRB(
-          NeonTheme.s16, NeonTheme.s24, NeonTheme.s16, NeonTheme.s8),
+          NeonTheme.s24, NeonTheme.s16, NeonTheme.s24, NeonTheme.s8),
       child: Column(
         children: [
           SizedBox(

@@ -175,4 +175,56 @@ void main() {
       expect(c.objectiveProgress, closeTo(0.5, 0.05));
     });
   });
+
+  group('sao & xu', () {
+    test('điểm vượt xa → 3 sao', () {
+      c.startLevel(1);
+      c.score.value = c.targetScore.value * 2;
+      expect(c.computeStars(), 3);
+    });
+
+    test('vừa đủ điểm → 1 sao', () {
+      c.startLevel(1);
+      c.score.value = c.targetScore.value;
+      expect(c.computeStars(), 1);
+    });
+
+    test('thắng thưởng xu + lưu sao tốt nhất', () async {
+      final coin0 = c.coins.value;
+      c.startLevel(1);
+      c.score.value = c.targetScore.value * 2; // 3 sao
+      c.checkEnd();
+      await Future.delayed(const Duration(milliseconds: 20));
+      expect(c.lastStars, 3);
+      expect(c.stars[1], 3);
+      expect(c.coins.value, greaterThan(coin0));
+    });
+  });
+
+  group('booster', () {
+    test('useHammer giảm số lượng', () {
+      c.boosterHammer.value = 2;
+      expect(c.useHammer(), isTrue);
+      expect(c.boosterHammer.value, 1);
+    });
+
+    test('hết búa thì useHammer trả false', () {
+      c.boosterHammer.value = 0;
+      expect(c.useHammer(), isFalse);
+    });
+
+    test('mua búa: trừ xu + tăng số lượng', () {
+      c.coins.value = 100;
+      final h0 = c.boosterHammer.value;
+      expect(c.buyHammer(price: 30), isTrue);
+      expect(c.coins.value, 70);
+      expect(c.boosterHammer.value, h0 + 1);
+    });
+
+    test('thiếu xu không mua được', () {
+      c.coins.value = 10;
+      expect(c.buyHammer(price: 30), isFalse);
+      expect(c.coins.value, 10);
+    });
+  });
 }

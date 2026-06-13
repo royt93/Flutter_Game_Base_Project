@@ -11,69 +11,11 @@ import 'game_screen.dart';
 class LevelSelectScreen extends StatelessWidget {
   const LevelSelectScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    final ctrl = Get.find<GameController>();
-    return Scaffold(
-      body: NeonBg(
-        child: SafeArea(
-          child: Column(
-            children: [
-              NeonAppBar(title: 'select_level'.tr, color: NeonTheme.cyan),
-              Expanded(
-                child: Obx(() => GridView.count(
-                      padding: const EdgeInsets.fromLTRB(NeonTheme.s24,
-                          NeonTheme.s16, NeonTheme.s24, NeonTheme.s24),
-                      crossAxisCount: 2,
-                      mainAxisSpacing: NeonTheme.s16,
-                      crossAxisSpacing: NeonTheme.s16,
-                      childAspectRatio: 0.92,
-                      children: [
-                        for (int i = 0; i < kLevels.length; i++)
-                          _LevelTile(
-                            level: kLevels[i],
-                            unlocked: kLevels[i].index <= ctrl.unlockedLevel.value,
-                            isCurrent: kLevels[i].index == ctrl.unlockedLevel.value,
-                            highScore: ctrl.highScores[kLevels[i].index],
-                            onTap: () {
-                              ctrl.startLevel(kLevels[i].index);
-                              Get.to(() => const GameScreen());
-                            },
-                          )
-                              .animate()
-                              .fadeIn(delay: (i * 70).ms, duration: 300.ms)
-                              .slideY(begin: 0.2, curve: Curves.easeOut),
-                      ],
-                    )),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+  Color _colorOf(int index) =>
+      NeonTheme.gemColors[(index - 1) % NeonTheme.gemColors.length];
 
-class _LevelTile extends StatelessWidget {
-  final LevelConfig level;
-  final bool unlocked;
-  final bool isCurrent;
-  final int? highScore;
-  final VoidCallback onTap;
-
-  const _LevelTile({
-    required this.level,
-    required this.unlocked,
-    required this.isCurrent,
-    required this.highScore,
-    required this.onTap,
-  });
-
-  Color get _color =>
-      NeonTheme.gemColors[(level.index - 1) % NeonTheme.gemColors.length];
-
-  IconData get _objIcon {
-    switch (level.objective) {
+  IconData _objIcon(ObjectiveType o) {
+    switch (o) {
       case ObjectiveType.score:
         return Icons.star_rounded;
       case ObjectiveType.collect:
@@ -83,122 +25,246 @@ class _LevelTile extends StatelessWidget {
     }
   }
 
+  void _play(GameController ctrl, int index) {
+    ctrl.startLevel(index);
+    Get.to(() => const GameScreen());
+  }
+
   @override
   Widget build(BuildContext context) {
-    final c = unlocked ? _color : Colors.grey.shade700;
-    Widget tile = GestureDetector(
-      onTap: unlocked ? onTap : null,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              NeonTheme.panel.withValues(alpha: 0.85),
-              NeonTheme.bgDark2.withValues(alpha: 0.85),
+    final ctrl = Get.find<GameController>();
+    return Scaffold(
+      body: NeonBg(
+        child: SafeArea(
+          child: Column(
+            children: [
+              NeonAppBar(
+                title: 'select_level'.tr,
+                color: NeonTheme.cyan,
+                actions: [_coinChip(ctrl)],
+              ),
+              Expanded(
+                child: Obx(() {
+                  final current =
+                      ctrl.unlockedLevel.value.clamp(1, kLevels.length);
+                  return CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(NeonTheme.s24,
+                              NeonTheme.s8, NeonTheme.s24, NeonTheme.s16),
+                          child: _featured(ctrl, current),
+                        ),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(NeonTheme.s24, 0,
+                            NeonTheme.s24, NeonTheme.s24),
+                        sliver: SliverGrid(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            mainAxisSpacing: NeonTheme.s8,
+                            crossAxisSpacing: NeonTheme.s8,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, i) {
+                              final lv = kLevels[i];
+                              return _miniTile(ctrl, lv, lv.index <= current,
+                                  lv.index == current);
+                            },
+                            childCount: kLevels.length,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              ),
             ],
           ),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: c, width: 2.5),
-          boxShadow: unlocked ? NeonTheme.glow(c, blur: 14) : null,
         ),
-        child: Stack(
-          alignment: Alignment.center,
+      ),
+    );
+  }
+
+  Widget _coinChip(GameController ctrl) {
+    return Container(
+      margin: const EdgeInsets.only(right: NeonTheme.s8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: NeonTheme.panel.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: NeonTheme.yellow, width: 1.5),
+        boxShadow: NeonTheme.glow(NeonTheme.yellow, blur: 6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.monetization_on_rounded,
+              color: NeonTheme.yellow, size: 18),
+          const SizedBox(width: 5),
+          Obx(() => Text('${ctrl.coins.value}',
+              style: const TextStyle(
+                fontFamily: 'Orbitron',
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+              ))),
+        ],
+      ),
+    );
+  }
+
+  Widget _featured(GameController ctrl, int index) {
+    final lv = kLevels[index - 1];
+    final c = _colorOf(index);
+    final hs = ctrl.highScores[index];
+    return GestureDetector(
+      onTap: () => _play(ctrl, index),
+      child: Container(
+        padding: const EdgeInsets.all(NeonTheme.s16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [
+            c.withValues(alpha: 0.25),
+            NeonTheme.panel.withValues(alpha: 0.85),
+          ]),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: c, width: 2.5),
+          boxShadow: NeonTheme.glow(c, blur: 18),
+        ),
+        child: Row(
           children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _emblem(c),
-                const SizedBox(height: 12),
-                if (unlocked)
-                  _objBadge(c)
-                else
-                  const Icon(Icons.lock_rounded, color: Colors.white54, size: 22),
-                const SizedBox(height: 8),
-                Text(
-                  unlocked && highScore != null ? '★ $highScore' : '— — —',
+            _emblem(index, c, 84),
+            const SizedBox(width: NeonTheme.s16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('stage_n'.trParams({'n': '$index'}),
+                      style: TextStyle(
+                        fontFamily: 'Orbitron',
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        shadows: [Shadow(color: c, blurRadius: 12)],
+                      )),
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    Icon(_objIcon(lv.objective), color: c, size: 16),
+                    const SizedBox(width: 6),
+                    Text(hs != null ? '★ $hs' : '★ —',
+                        style: const TextStyle(
+                          fontFamily: 'Orbitron',
+                          color: Colors.amber,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        )),
+                  ]),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: c,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: NeonTheme.glow(c, blur: 10),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.play_arrow_rounded,
+                          color: Colors.white, size: 20),
+                      const SizedBox(width: 4),
+                      Text('play_now'.tr,
+                          style: const TextStyle(
+                            fontFamily: 'Orbitron',
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                          )),
+                    ]),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    )
+        .animate(onPlay: (a) => a.repeat(reverse: true))
+        .scaleXY(begin: 1, end: 1.015, duration: 1200.ms, curve: Curves.easeInOut);
+  }
+
+  Widget _miniTile(
+      GameController ctrl, LevelConfig lv, bool unlocked, bool isCurrent) {
+    final c = unlocked ? _colorOf(lv.index) : Colors.grey.shade700;
+    final star = ctrl.stars[lv.index] ?? 0;
+    return GestureDetector(
+      onTap: unlocked ? () => _play(ctrl, lv.index) : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: NeonTheme.panel.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: isCurrent ? Colors.white : c,
+              width: isCurrent ? 2.5 : 1.6),
+          boxShadow: unlocked ? NeonTheme.glow(c, blur: 7) : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (unlocked)
+              Text('${lv.index}',
                   style: TextStyle(
                     fontFamily: 'Orbitron',
-                    color: unlocked && highScore != null
-                        ? Colors.amber
-                        : Colors.white24,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    shadows: unlocked && highScore != null
-                        ? const [Shadow(color: Colors.amber, blurRadius: 8)]
-                        : null,
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    shadows: [Shadow(color: c, blurRadius: 8)],
+                  ))
+            else
+              const Icon(Icons.lock_rounded, color: Colors.white38, size: 18),
+            if (unlocked) ...[
+              const SizedBox(height: 2),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  3,
+                  (s) => Icon(
+                    Icons.star_rounded,
+                    size: 9,
+                    color: s < star ? Colors.amber : Colors.white24,
                   ),
-                ),
-              ],
-            ),
-            // badge "CHƠI" cho màn hiện tại
-            if (isCurrent && unlocked)
-              Positioned(
-                bottom: 10,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: c,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: NeonTheme.glow(c, blur: 8),
-                  ),
-                  child: Icon(Icons.play_arrow_rounded,
-                      color: Colors.white, size: 18),
                 ),
               ),
+            ],
           ],
         ),
       ),
     );
-
-    // màn hiện tại: nhịp đập thu hút
-    if (isCurrent && unlocked) {
-      tile = tile
-          .animate(onPlay: (c) => c.repeat(reverse: true))
-          .scaleXY(begin: 1, end: 1.04, duration: 900.ms, curve: Curves.easeInOut);
-    }
-    return tile;
   }
 
-  Widget _emblem(Color c) {
+  Widget _emblem(int index, Color c, double size) {
     final light = Color.lerp(c, Colors.white, 0.5)!;
     return Container(
-      width: 76,
-      height: 76,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         gradient: RadialGradient(
           center: const Alignment(-0.3, -0.4),
-          colors: unlocked
-              ? [light, c, Color.lerp(c, Colors.black, 0.3)!]
-              : [Colors.grey.shade600, Colors.grey.shade800],
+          colors: [light, c, Color.lerp(c, Colors.black, 0.3)!],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withValues(alpha: 0.85), width: 2),
-        boxShadow: unlocked ? NeonTheme.glow(c, blur: 10) : null,
+        boxShadow: NeonTheme.glow(c, blur: 12),
       ),
       alignment: Alignment.center,
-      child: Text(
-        '${level.index}',
-        style: const TextStyle(
-          fontFamily: 'Orbitron',
-          color: Colors.white,
-          fontSize: 32,
-          fontWeight: FontWeight.w900,
-          shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
-        ),
-      ),
-    );
-  }
-
-  Widget _objBadge(Color c) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(_objIcon, color: c, size: 16, shadows: [
-          Shadow(color: c, blurRadius: 8),
-        ]),
-      ],
+      child: Text('$index',
+          style: const TextStyle(
+            fontFamily: 'Orbitron',
+            color: Colors.white,
+            fontSize: 34,
+            fontWeight: FontWeight.w900,
+            shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
+          )),
     );
   }
 }

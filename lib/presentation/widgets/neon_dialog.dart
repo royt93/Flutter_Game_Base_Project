@@ -107,8 +107,15 @@ class _DialogButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        if (action.closeFirst && Get.isDialogOpen == true) Get.back();
-        action.onTap();
+        // Đóng dialog trước; nếu onTap có điều hướng (vd pop màn chơi) thì chạy
+        // ở frame kế tiếp để tránh 2 lần pop đồng bộ bị GetX nuốt mất.
+        if (action.closeFirst && (Get.isDialogOpen ?? false)) {
+          Get.back();
+          WidgetsBinding.instance
+              .addPostFrameCallback((_) => action.onTap());
+        } else {
+          action.onTap();
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),

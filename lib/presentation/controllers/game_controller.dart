@@ -12,18 +12,27 @@ class GameController extends GetxController {
   final RxInt currentLevel = 1.obs;
 
   // --- Mục tiêu màn chơi ---
-  final RxInt collected = 0.obs; // số gem màu mục tiêu đã thu (collect)
-  final RxInt jellyCleared = 0.obs; // số jelly đã phá (clearJelly)
-  final RxInt jellyTotal = 0.obs; // tổng jelly (game set khi onLoad)
+  final RxInt collected = 0.obs;
+  final RxInt jellyCleared = 0.obs;
+  final RxInt jellyTotal = 0.obs;
 
-  /// Level cao nhất đã mở khóa (lưu local).
+  /// Level cao nhất đã mở khóa.
   final RxInt unlockedLevel = 1.obs;
 
-  /// High score theo từng level.
+  /// High score & số sao (0-3) theo từng level.
   final RxMap<int, int> highScores = <int, int>{}.obs;
+  final RxMap<int, int> stars = <int, int>{}.obs;
 
-  bool _resolved = false; // tránh hiện dialog 2 lần / ván
+  // --- Kinh tế & booster ---
+  final RxInt coins = 0.obs;
+  final RxInt boosterHammer = 0.obs;
+  final RxInt boosterShuffle = 0.obs;
 
+  /// Số sao đạt được ở ván vừa kết thúc (cho dialog celebration).
+  int lastStars = 0;
+  int lastCoinReward = 0;
+
+  bool _resolved = false;
   late SharedPreferences _prefs;
 
   @override
@@ -35,9 +44,14 @@ class GameController extends GetxController {
   Future<void> _load() async {
     _prefs = await SharedPreferences.getInstance();
     unlockedLevel.value = _prefs.getInt('unlockedLevel') ?? 1;
+    coins.value = _prefs.getInt('coins') ?? 50; // tặng 50 xu khởi đầu
+    boosterHammer.value = _prefs.getInt('b_hammer') ?? 2;
+    boosterShuffle.value = _prefs.getInt('b_shuffle') ?? 2;
     for (final lv in kLevels) {
       final hs = _prefs.getInt('hs_${lv.index}');
       if (hs != null) highScores[lv.index] = hs;
+      final st = _prefs.getInt('star_${lv.index}');
+      if (st != null) stars[lv.index] = st;
     }
   }
 
@@ -58,12 +72,10 @@ class GameController extends GetxController {
 
   void addScore(int gemsCleared, int combo) {
     comboCount.value = combo;
-    // điểm = số gem * 10 * hệ số combo
     final multiplier = 1 + (combo - 1) * 0.5;
     score.value += (gemsCleared * 10 * multiplier).round();
   }
 
-  /// Game gọi mỗi khi 1 gem bị xoá → cập nhật tiến độ mục tiêu.
   void registerClear(GemColor color, bool wasJelly) {
     if (level.objective == ObjectiveType.collect &&
         color == level.collectColor) {
@@ -89,7 +101,6 @@ class GameController extends GetxController {
 
   bool get isOutOfMoves => movesLeft.value <= 0;
 
-  /// Tiến độ mục tiêu 0..1 (cho thanh tiến độ HUD).
   double get objectiveProgress {
     switch (level.objective) {
       case ObjectiveType.score:
@@ -107,30 +118,77 @@ class GameController extends GetxController {
     }
   }
 
-  /// Gọi sau khi board ổn định (không còn cascade). Trả về:
-  /// 'win', 'lose' hoặc null (chơi tiếp).
+  /// Tính số sao (1-3) khi thắng dựa trên hiệu suất.
+  int computeStars() {
+    if (level.objective == ObjectiveType.score) {
+      final r = targetScore.value == 0 ? 1.0 : score.value / targetScore.value;
+      if (r >= 1.8) return 3;
+      if (r >= 1.35) return 2;
+      return 1;
+    }
+    // collect/jelly: còn càng nhiều lượt càng nhiều sao
+    final cfg = level;
+    final r = cfg.moves == 0 ? 0.0 : movesLeft.value / cfg.moves;
+    if (r >= 0.45) return 3;
+    if (r >= 0.2) return 2;
+    return 1;
+  }
+
   String? checkEnd() {
     if (_resolved) return null;
     if (hasWon) {
       _resolved = true;
+      lastStars = computeStars();
+      lastCoinReward = 10 + lastStars * 10; // 20/30/40 xu
       _saveProgress(win: true);
       return 'win';
     }
     if (isOutOfMoves) {
       _resolved = true;
+      lastStars = 0;
+      lastCoinReward = 0;
       _saveProgress(win: false);
       return 'lose';
     }
     return null;
   }
 
-  /// Xoá toàn bộ tiến độ (về level 1, xoá high score).
+  // --- Booster ---
+  bool useHammer() {
+    if (boosterHammer.value <= 0) return false;
+    boosterHammer.value--;
+    _prefs.setInt('b_hammer', boosterHammer.value);
+    return true;
+  }
+
+  bool useShuffleBooster() {
+    if (boosterShuffle.value <= 0) return false;
+    boosterShuffle.value--;
+    _prefs.setInt('b_shuffle', boosterShuffle.value);
+    return true;
+  }
+
+  /// Mua booster bằng xu. Trả về true nếu đủ xu.
+  bool buyHammer({int price = 30}) => _buy('b_hammer', boosterHammer, price);
+  bool buyShuffle({int price = 30}) => _buy('b_shuffle', boosterShuffle, price);
+
+  bool _buy(String key, RxInt count, int price) {
+    if (coins.value < price) return false;
+    coins.value -= price;
+    count.value++;
+    _prefs.setInt('coins', coins.value);
+    _prefs.setInt(key, count.value);
+    return true;
+  }
+
   Future<void> resetProgress() async {
     unlockedLevel.value = 1;
     highScores.clear();
+    stars.clear();
     await _prefs.setInt('unlockedLevel', 1);
     for (final lv in kLevels) {
       await _prefs.remove('hs_${lv.index}');
+      await _prefs.remove('star_${lv.index}');
     }
   }
 
@@ -141,9 +199,20 @@ class GameController extends GetxController {
       highScores[lv] = score.value;
       await _prefs.setInt('hs_$lv', score.value);
     }
-    if (win && lv >= unlockedLevel.value && lv < kLevels.length) {
-      unlockedLevel.value = lv + 1;
-      await _prefs.setInt('unlockedLevel', unlockedLevel.value);
+    if (win) {
+      // sao tốt nhất
+      final prevStar = stars[lv] ?? 0;
+      if (lastStars > prevStar) {
+        stars[lv] = lastStars;
+        await _prefs.setInt('star_$lv', lastStars);
+      }
+      // thưởng xu
+      coins.value += lastCoinReward;
+      await _prefs.setInt('coins', coins.value);
+      if (lv >= unlockedLevel.value && lv < kLevels.length) {
+        unlockedLevel.value = lv + 1;
+        await _prefs.setInt('unlockedLevel', unlockedLevel.value);
+      }
     }
   }
 }

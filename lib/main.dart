@@ -13,8 +13,10 @@ void main() => app();
 /// Điểm khởi chạy app (tách riêng để integration_test gọi lại được).
 Future<void> app() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Full screen game: ẩn status bar + navigation bar (kéo từ mép để hiện lại).
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  // Full screen: ẩn status bar + navigation bar.
+  // Dùng `manual` + overlays rỗng thay vì immersiveSticky để KHÔNG reserve
+  // vùng cử chỉ mép trên (vốn nuốt tap nút X ở HUD).
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);

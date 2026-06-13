@@ -43,7 +43,7 @@ void main() {
     await tester.pumpWidget(appEn(const LevelSelectScreen()));
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('SELECT LEVEL'), findsOneWidget);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('1'), findsWidgets); // emblem nổi bật + mini tile
   });
 
   testWidgets('LevelSelectScreen khóa level chưa unlock (hiện icon khóa)',

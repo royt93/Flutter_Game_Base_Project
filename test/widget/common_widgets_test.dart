@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:neon_jewels/core/neon_theme.dart';
 import 'package:neon_jewels/presentation/widgets/neon_app_bar.dart';
 import 'package:neon_jewels/presentation/widgets/neon_bg.dart';
+import 'package:neon_jewels/presentation/widgets/neon_dialog.dart';
 import 'package:neon_jewels/presentation/widgets/neon_icon.dart';
 
 void main() {
@@ -43,5 +44,34 @@ void main() {
     await tester.pumpWidget(
         wrap(const NeonIcon(Icons.star, color: NeonTheme.lime)));
     expect(find.byIcon(Icons.star), findsOneWidget);
+  });
+
+  testWidgets('NeonDialog.show hiển thị dialog + nút', (tester) async {
+    await tester.pumpWidget(GetMaterialApp(
+      home: Scaffold(
+        body: Builder(
+          builder: (ctx) => Center(
+            child: ElevatedButton(
+              onPressed: () => NeonDialog.show(
+                title: 'QUIT?',
+                color: NeonTheme.magenta,
+                actions: [
+                  NeonDialogAction(
+                      label: 'CANCEL', color: NeonTheme.cyan, onTap: () {}),
+                  NeonDialogAction(
+                      label: 'OK', color: NeonTheme.magenta, onTap: () {}),
+                ],
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.text('QUIT?'), findsOneWidget);
+    expect(find.text('CANCEL'), findsOneWidget);
+    expect(find.text('OK'), findsOneWidget);
   });
 }
