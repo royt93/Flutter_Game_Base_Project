@@ -14,7 +14,7 @@ class GameController extends GetxController {
   // --- Mục tiêu màn chơi ---
   final RxInt collected = 0.obs; // số gem màu mục tiêu đã thu (collect)
   final RxInt jellyCleared = 0.obs; // số jelly đã phá (clearJelly)
-  int jellyTotal = 0; // tổng jelly (game set khi onLoad)
+  final RxInt jellyTotal = 0.obs; // tổng jelly (game set khi onLoad)
 
   /// Level cao nhất đã mở khóa (lưu local).
   final RxInt unlockedLevel = 1.obs;
@@ -52,7 +52,7 @@ class GameController extends GetxController {
     targetScore.value = cfg.targetScore;
     collected.value = 0;
     jellyCleared.value = 0;
-    jellyTotal = 0;
+    jellyTotal.value = 0;
     _resolved = false;
   }
 
@@ -83,7 +83,7 @@ class GameController extends GetxController {
       case ObjectiveType.collect:
         return collected.value >= level.collectTarget;
       case ObjectiveType.clearJelly:
-        return jellyTotal > 0 && jellyCleared.value >= jellyTotal;
+        return jellyTotal.value > 0 && jellyCleared.value >= jellyTotal.value;
     }
   }
 
@@ -101,9 +101,9 @@ class GameController extends GetxController {
             ? 0
             : (collected.value / level.collectTarget).clamp(0.0, 1.0);
       case ObjectiveType.clearJelly:
-        return jellyTotal == 0
+        return jellyTotal.value == 0
             ? 0
-            : (jellyCleared.value / jellyTotal).clamp(0.0, 1.0);
+            : (jellyCleared.value / jellyTotal.value).clamp(0.0, 1.0);
     }
   }
 

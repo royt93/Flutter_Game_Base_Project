@@ -92,9 +92,14 @@ class HomeScreen extends StatelessWidget {
                     'v$kAppVersion',
                     style: const TextStyle(
                       fontFamily: 'Orbitron',
-                      color: Colors.white60,
+                      color: Colors.white,
                       fontSize: 12,
                       letterSpacing: 2,
+                      fontWeight: FontWeight.w700,
+                      shadows: [
+                        Shadow(color: NeonTheme.cyan, blurRadius: 12),
+                        Shadow(color: NeonTheme.cyan, blurRadius: 4),
+                      ],
                     ),
                   ),
                   const SizedBox(height: NeonTheme.s8),
@@ -102,9 +107,14 @@ class HomeScreen extends StatelessWidget {
                     kCopyright,
                     style: const TextStyle(
                       fontFamily: 'Orbitron',
-                      color: Colors.white38,
+                      color: Colors.white,
                       fontSize: 10,
                       letterSpacing: 1.5,
+                      fontWeight: FontWeight.w600,
+                      shadows: [
+                        Shadow(color: NeonTheme.magenta, blurRadius: 12),
+                        Shadow(color: NeonTheme.magenta, blurRadius: 4),
+                      ],
                     ),
                   ),
                 ],

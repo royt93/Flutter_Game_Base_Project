@@ -186,8 +186,19 @@ lib/
 - [x] **Giữ màn hình luôn sáng khi chơi** (wakelock_plus)
 - [x] **Test bổ sung:** objective collect/jelly, board 8×8, NeonAppBar/NeonBg/NeonIcon, Guide screen, integration (guide + dialog thoát) — 58 unit/widget test pass
 
+#### Wave 2.5 — revamp visual mạnh + fix (đã làm)
+- [x] **Background động cực mạnh** (NeonBg): nebula trôi + tia sweep xoay + sao lấp lánh — áp mọi màn
+- [x] **Revamp Level Select**: tile lớn 2 cột, emblem gem neon, icon mục tiêu, điểm cao, **màn hiện tại pulse + badge ▶**, animation vào màn
+- [x] **HUD panel thống nhất** (ĐIỂM | MỤC TIÊU | LƯỢT) — căn giữa, cùng chiều cao, có divider
+- [x] **Version + copyright neon glow** ở Home
+- [x] Fix **nút X** dễ bấm (thêm padding top, icon to 28) + chặn input sau khi kết thúc ván
+- [x] **Fix bug "lượt 0 không có dialog"**: gọi `_finishMove` trong finally (luôn kiểm tra kết thúc kể cả khi lỗi) + cờ `_ended`
+- [x] **Fix MỤC TIÊU jelly hiện 0/0** → jellyTotal thành RxInt (reactive)
+- [x] **Haptic** theo combo (nhẹ 2-3, vừa 4-5, mạnh ≥6 wombo)
+- [x] 58 unit/widget test pass
+
 ### 🟡 In progress
-*(không có — Wave 2.4 đã xong)*
+*(không có — Wave 2.5 đã xong)*
 
 ### 📋 Picked (đã chốt, chờ implement)
 *(trống — chờ chọn Wave 2 từ Deferred)*

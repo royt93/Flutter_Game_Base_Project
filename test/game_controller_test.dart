@@ -152,7 +152,7 @@ void main() {
 
     test('phá đủ jelly thì thắng', () {
       c.startLevel(jellyLevel());
-      c.jellyTotal = 5; // game thường set; mô phỏng ở test
+      c.jellyTotal.value = 5; // game thường set; mô phỏng ở test
       for (int i = 0; i < 5; i++) {
         c.registerClear(GemColor.cyan, true);
       }
@@ -162,7 +162,7 @@ void main() {
 
     test('chưa đủ jelly thì chưa thắng', () {
       c.startLevel(jellyLevel());
-      c.jellyTotal = 5;
+      c.jellyTotal.value = 5;
       c.registerClear(GemColor.cyan, true);
       expect(c.hasWon, isFalse);
     });

@@ -58,7 +58,7 @@ class _GameScreenState extends State<GameScreen> {
       case ObjectiveType.collect:
         return '${ctrl.collected.value} / ${ctrl.level.collectTarget}';
       case ObjectiveType.clearJelly:
-        return '${ctrl.jellyCleared.value} / ${ctrl.jellyTotal}';
+        return '${ctrl.jellyCleared.value} / ${ctrl.jellyTotal.value}';
     }
   }
 
@@ -139,17 +139,17 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildHud() {
     return Padding(
+      // top lớn hơn để nút X không sát mép (full screen) → dễ bấm
       padding: const EdgeInsets.fromLTRB(
-          NeonTheme.s16, NeonTheme.s8, NeonTheme.s16, NeonTheme.s8),
+          NeonTheme.s16, NeonTheme.s24, NeonTheme.s16, NeonTheme.s8),
       child: Column(
         children: [
-          // Hàng trên gọn: đóng | stage | âm thanh
           SizedBox(
-            height: 40,
+            height: 48,
             child: Row(
               children: [
                 NeonIconButton(Icons.close_rounded,
-                    color: NeonTheme.magenta, size: 22, onTap: _confirmQuit),
+                    color: NeonTheme.magenta, size: 28, onTap: _confirmQuit),
                 const Spacer(),
                 Obx(() => _stageBadge(
                     'stage_n'.trParams({'n': '${ctrl.currentLevel.value}'}))),
@@ -160,35 +160,119 @@ class _GameScreenState extends State<GameScreen> {
                             ? Icons.volume_off_rounded
                             : Icons.volume_up_rounded,
                         color: NeonTheme.cyan,
-                        size: 22,
+                        size: 28,
                         onTap: AudioManager.maybe!.toggleMute,
                       ))
                 else
-                  const SizedBox(width: 40),
+                  const SizedBox(width: 48),
               ],
             ),
           ),
           const SizedBox(height: NeonTheme.s8),
-          // Hàng chip gọn inline — Flexible + FittedBox chống tràn
-          Row(
-            children: [
-              Flexible(
-                  child: Obx(() => _chip('hud_score'.tr, '${ctrl.score.value}',
-                      NeonTheme.cyan))),
-              const SizedBox(width: NeonTheme.s8),
-              Flexible(child: Obx(() => _goalChip())),
-              const SizedBox(width: NeonTheme.s8),
-              Flexible(
-                  child: Obx(() => _chip('hud_moves'.tr,
-                      '${ctrl.movesLeft.value}', NeonTheme.orange))),
-            ],
-          ),
+          _infoPanel(),
           const SizedBox(height: NeonTheme.s8),
           Obx(() => _animatedBar(ctrl.objectiveProgress)),
         ],
       ),
     );
   }
+
+  /// Panel thông tin thống nhất: SCORE | GOAL | MOVES — cùng chiều cao, căn giữa.
+  Widget _infoPanel() {
+    return Container(
+      height: 64,
+      decoration: BoxDecoration(
+        color: NeonTheme.panel.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(16),
+        border:
+            Border.all(color: NeonTheme.cyan.withValues(alpha: 0.4), width: 1.5),
+        boxShadow: NeonTheme.glow(NeonTheme.cyan, blur: 6),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+              child: Obx(() => _infoCell('hud_score'.tr,
+                  _animValue('${ctrl.score.value}'), NeonTheme.cyan))),
+          _divider(),
+          Expanded(child: Obx(() => _infoCell('hud_goal'.tr, _goalValue(), NeonTheme.lime))),
+          _divider(),
+          Expanded(
+              child: Obx(() => _infoCell('hud_moves'.tr,
+                  _animValue('${ctrl.movesLeft.value}'), NeonTheme.orange))),
+        ],
+      ),
+    );
+  }
+
+  Widget _divider() => Container(
+        width: 1.2,
+        height: 38,
+        color: Colors.white.withValues(alpha: 0.12),
+      );
+
+  Widget _infoCell(String label, Widget value, Color color) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(label,
+            style: TextStyle(
+              fontFamily: 'Orbitron',
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            )),
+        const SizedBox(height: 3),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: FittedBox(fit: BoxFit.scaleDown, child: value),
+        ),
+      ],
+    );
+  }
+
+  Widget _animValue(String v) => AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+        child: Text(v, key: ValueKey(v), style: _valueStyle),
+      );
+
+  Widget _goalValue() {
+    final obj = ctrl.level.objective;
+    Widget? leading;
+    if (obj == ObjectiveType.collect && ctrl.level.collectColor != null) {
+      final c = NeonTheme.gemColors[ctrl.level.collectColor!.index];
+      leading = Container(
+        width: 14,
+        height: 14,
+        margin: const EdgeInsets.only(right: 5),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: c,
+          boxShadow: NeonTheme.glow(c, blur: 6),
+        ),
+      );
+    } else if (obj == ObjectiveType.clearJelly) {
+      leading = const Padding(
+        padding: EdgeInsets.only(right: 5),
+        child: NeonIcon(Icons.blur_on_rounded, color: NeonTheme.lime, size: 15),
+      );
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (leading != null) leading,
+        Text(_objectiveText(), style: _valueStyle),
+      ],
+    );
+  }
+
+  final TextStyle _valueStyle = const TextStyle(
+    fontFamily: 'Orbitron',
+    color: Colors.white,
+    fontSize: 17,
+    fontWeight: FontWeight.w800,
+  );
 
   /// Thanh tiến độ animate mượt + glow.
   Widget _animatedBar(double progress) {
@@ -244,70 +328,4 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  /// Chip inline gọn: nhãn + giá trị trên cùng 1 hàng (tự co bằng FittedBox).
-  Widget _chip(String label, String value, Color color, {Widget? leading}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: NeonTheme.panel.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color, width: 1.8),
-        boxShadow: NeonTheme.glow(color, blur: 6),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(label,
-                style: TextStyle(
-                  fontFamily: 'Orbitron',
-                  color: color,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                )),
-            const SizedBox(width: 5),
-            if (leading != null) ...[leading, const SizedBox(width: 4)],
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
-              child: Text(
-                value,
-                key: ValueKey(value),
-                style: const TextStyle(
-                  fontFamily: 'Orbitron',
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _goalChip() {
-    final obj = ctrl.level.objective;
-    Widget? leading;
-    if (obj == ObjectiveType.collect && ctrl.level.collectColor != null) {
-      final c = NeonTheme.gemColors[ctrl.level.collectColor!.index];
-      leading = Container(
-        width: 13,
-        height: 13,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: c,
-          boxShadow: NeonTheme.glow(c, blur: 6),
-        ),
-      );
-    } else if (obj == ObjectiveType.clearJelly) {
-      leading =
-          const NeonIcon(Icons.blur_on_rounded, color: NeonTheme.lime, size: 14);
-    }
-    return _chip('hud_goal'.tr, _objectiveText(), NeonTheme.lime,
-        leading: leading);
-  }
 }

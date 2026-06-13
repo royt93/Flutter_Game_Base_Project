@@ -7,6 +7,7 @@ import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../core/audio_manager.dart';
 import '../core/neon_theme.dart';
@@ -46,6 +47,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
   GemComponent? _selected;
   bool _busy = false;
+  bool _ended = false; // ván đã kết thúc (thắng/thua) → chặn input
 
   @override
   Color backgroundColor() => const Color(0x00000000); // để nền gradient Flutter lộ ra
@@ -104,7 +106,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         }
       }
     }
-    controller.jellyTotal = total;
+    controller.jellyTotal.value = total;
   }
 
   // Trauma-based shake: luôn tính offset từ gốc (0,0) và tự giảm về 0 →
@@ -126,7 +128,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     }
 
     // Gợi ý khi đứng yên quá lâu (stuck)
-    if (!_busy && _selected == null) {
+    if (!_busy && !_ended && _selected == null) {
       _idle += dt;
       if (_idle > 4.0 && _hintGems.isEmpty) _triggerHint();
     }
@@ -201,7 +203,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   // --------------------------------------------------------------------------
   @override
   void onTapDown(TapDownEvent event) {
-    if (_busy) return;
+    if (_busy || _ended) return;
     _resetIdle();
     final cell = _cellAtPosition(event.localPosition);
     if (cell == null) return;
@@ -244,7 +246,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   @override
   void onDragStart(DragStartEvent event) {
     super.onDragStart(event);
-    if (_busy) {
+    if (_busy || _ended) {
       _dragCell = null;
       return;
     }
@@ -287,8 +289,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   // Vòng lặp game
   // --------------------------------------------------------------------------
   Future<void> _trySwap(GemComponent a, GemComponent b) async {
+    if (_ended) return;
     _busy = true;
-    // try/finally: dù có lỗi giữa chừng, _busy LUÔN được mở lại → bàn không bao giờ kẹt.
+    var consumed = false; // đã tiêu 1 lượt?
+    // try/finally: dù lỗi giữa chừng, _busy mở lại + LUÔN kiểm tra kết thúc ván.
     try {
       await _animateSwap(a, b);
       _swapInGrid(a, b);
@@ -304,6 +308,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         await _animateSwap(a, b);
         _swapInGrid(a, b);
       } else {
+        consumed = true;
         controller.useMove();
         if (comboTrigger) {
           AudioManager.maybe?.playSpecial();
@@ -316,11 +321,12 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         }
         await _resolveAll();
         await _ensurePlayable();
-        _finishMove();
       }
     } finally {
       _busy = false;
       _selected = null;
+      // LUÔN kiểm tra kết thúc nếu đã tiêu lượt (kể cả khi có lỗi ở trên)
+      if (consumed) _finishMove();
     }
   }
 
@@ -719,6 +725,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   void _finishMove() {
     final result = controller.checkEnd();
     if (result != null) {
+      _ended = true;
+      _clearHint();
       onGameEnd(result);
     }
   }
@@ -855,8 +863,12 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     if (epic) {
       _flash(color, peak: 0.32);
       _shake(12);
+      HapticFeedback.heavyImpact();
     } else if (combo >= 4) {
       _flash(color, peak: 0.18);
+      HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.lightImpact();
     }
   }
 

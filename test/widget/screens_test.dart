@@ -52,7 +52,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 30));
     await tester.pumpWidget(appEn(const LevelSelectScreen()));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.byIcon(Icons.lock), findsWidgets);
+    expect(find.byIcon(Icons.lock_rounded), findsWidgets);
   });
 
   testWidgets('GuideScreen hiển thị các mục hướng dẫn', (tester) async {
