@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="75%">
+      <stop offset="0%" stop-color="#1A0A2E"/>
+      <stop offset="60%" stop-color="#14142E"/>
+      <stop offset="100%" stop-color="#0A0A1A"/>
+    </radialGradient>
+    <linearGradient id="gem2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00F0FF"/>
+      <stop offset="50%" stop-color="#FF2BD6"/>
+      <stop offset="100%" stop-color="#BC4BFF"/>
+    </linearGradient>
+    <linearGradient id="gemLight2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.1"/>
+    </linearGradient>
+    <filter id="glow2" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="22" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="0" fill="url(#bg)"/>
+
+  <g filter="url(#glow2)">
+    <polygon points="362,360 662,360 744,460 512,780 280,460" fill="url(#gem2)" opacity="0.55"/>
+    <polygon points="362,360 662,360 744,460 512,780 280,460" fill="url(#gem2)"/>
+    <polygon points="362,360 662,360 616,460 408,460" fill="url(#gemLight2)" opacity="0.85"/>
+    <g stroke="#FFFFFF" stroke-width="6" stroke-opacity="0.9" fill="none" stroke-linejoin="round">
+      <polygon points="362,360 662,360 744,460 512,780 280,460"/>
+      <line x1="408" y1="460" x2="616" y2="460"/>
+      <line x1="362" y1="360" x2="408" y2="460"/>
+      <line x1="662" y1="360" x2="616" y2="460"/>
+      <line x1="280" y1="460" x2="408" y2="460"/>
+      <line x1="744" y1="460" x2="616" y2="460"/>
+      <line x1="408" y1="460" x2="512" y2="780"/>
+      <line x1="616" y1="460" x2="512" y2="780"/>
+    </g>
+  </g>
+</svg>
