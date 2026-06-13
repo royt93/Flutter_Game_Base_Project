@@ -29,7 +29,7 @@ class NeonButton extends StatelessWidget {
         width: width,
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: NeonTheme.panel.withOpacity(0.6),
+          color: NeonTheme.panel.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: c, width: 2.5),
           boxShadow: enabled ? NeonTheme.glow(c, blur: 16) : null,

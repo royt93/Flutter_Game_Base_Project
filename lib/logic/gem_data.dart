@@ -1,5 +1,5 @@
-/// Dữ liệu thuần (pure Dart) mô tả viên gem — không phụ thuộc Flutter/Flame.
-/// Tách riêng để dễ unit-test phần logic match-3.
+// Dữ liệu thuần (pure Dart) mô tả viên gem — không phụ thuộc Flutter/Flame.
+// Tách riêng để dễ unit-test phần logic match-3.
 
 /// Màu gem, ánh xạ sang màu neon thật ở tầng render.
 enum GemColor { cyan, magenta, lime, yellow, orange, purple }

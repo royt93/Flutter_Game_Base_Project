@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/audio_manager.dart';
 import '../../core/neon_theme.dart';
 import '../../game/neon_jewel_game.dart';
 import '../controllers/game_controller.dart';
@@ -159,6 +160,17 @@ class _GameScreenState extends State<GameScreen> {
                 icon: const Icon(Icons.close, color: Colors.white),
               ),
               const Spacer(),
+              if (AudioManager.maybe != null)
+                Obx(() => IconButton(
+                      onPressed: AudioManager.maybe!.toggleMute,
+                      icon: Icon(
+                        AudioManager.maybe!.muted.value
+                            ? Icons.volume_off
+                            : Icons.volume_up,
+                        color: Colors.white,
+                      ),
+                    )),
+              const SizedBox(width: 8),
               Obx(() => _statChip(
                     'MÀN ${ctrl.currentLevel.value}',
                     NeonTheme.purple,
@@ -199,7 +211,7 @@ class _GameScreenState extends State<GameScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: NeonTheme.panel.withOpacity(0.6),
+        color: NeonTheme.panel.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color, width: 2),
         boxShadow: NeonTheme.glow(color, blur: 8),

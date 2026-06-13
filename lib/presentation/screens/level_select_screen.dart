@@ -89,7 +89,7 @@ class _LevelTile extends StatelessWidget {
       onTap: unlocked ? onTap : null,
       child: Container(
         decoration: BoxDecoration(
-          color: NeonTheme.panel.withOpacity(0.6),
+          color: NeonTheme.panel.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: c, width: 2.5),
           boxShadow: unlocked ? NeonTheme.glow(c, blur: 12) : null,

@@ -105,23 +105,27 @@ lib/
 
 ## 4. Roadmap tính năng
 
-### ✅ Implemented (done + build pass)
-*(chưa có — sẽ cập nhật sau mỗi wave)*
+### ✅ Implemented (done + build pass Android & iOS + 37 test pass)
+- [x] **Setup dự án Flutter** (`com.galaxyjoy.neonjewels`) + deps: get, flame, flame_audio, shared_preferences, google_fonts, flutter_animate
+- [x] **Logic board (pure Dart):** match-3 detection ngang/dọc, run 4→striped, run 5→rainbow — `lib/logic/` (unit-tested kỹ)
+- [x] **Render board bằng Flame:** `GemComponent` 6 màu neon, glow pulsing, gradient radial, tap-chọn-rồi-swap
+- [x] **Hiệu ứng nổ neon:** particle burst + glow, shockwave ring lan tỏa, screen shake
+- [x] **Special gem:** Striped (match 4, nổ hàng/cột + tia laser beam) + Rainbow (match 5, xóa cùng màu) + chain reaction + combo rainbow swap
+- [x] **Scoring + combo** với hệ số nhân, combo text bay lên ("COMBO x3!")
+- [x] **Game mode 1:** Score Target (đạt điểm trong số lượt)
+- [x] **Màn hình (GetX):** Home (logo shimmer) → Level Select → Gameplay → Win/Lose dialog
+- [x] **Lưu high score + unlock level** bằng shared_preferences
+- [x] **5 level demo** độ khó tăng dần
+- [x] **Animation "wow":** pop-in xếp tầng đường chéo khi mở màn, bounce khi rơi, nền neon orb trôi động, swap mượt
+- [x] **Audio:** nhạc nền (bkg.mp3) + 24 nốt nhạc tăng cao độ theo combo + âm special + nút tắt tiếng
+- [x] **Test đầy đủ:** unit (match detector, controller, levels) + widget (button, screens) + integration (luồng E2E) — 37 test pass
+- [x] **Chất lượng:** 0 issue analyze, try/finally chống kẹt bàn cờ, effect/particle tự huỷ (không leak)
 
 ### 🟡 In progress
-*(chưa bắt đầu code)*
+*(không có — Wave 1 đã xong)*
 
-### 📋 Picked (đã chốt, chờ implement) — MVP Wave 1
-- [ ] **Setup dự án Flutter** + cấu hình Android/iOS + thêm deps (get, flame...)
-- [ ] **Logic board (pure Dart):** grid NxN, swap, match-3 detection, gravity, refill
-- [ ] **Render board bằng Flame:** GemComponent với 6 màu neon, tap/swipe để swap
-- [ ] **Hiệu ứng nổ neon cơ bản:** particle khi match (glow + burst)
-- [ ] **Special gem cơ bản:** Striped (match 4) + Rainbow (match 5)
-- [ ] **Scoring + combo counter** hiển thị HUD
-- [ ] **1 game mode:** Score Target (đạt X điểm trong Y lượt)
-- [ ] **Màn hình:** Home → Gameplay → Win/Lose dialog (GetX)
-- [ ] **Lưu high score** bằng shared_preferences
-- [ ] **5 level demo** để chơi thử
+### 📋 Picked (đã chốt, chờ implement)
+*(trống — chờ chọn Wave 2 từ Deferred)*
 
 ### ⏸️ Deferred (lớn, để session sau)
 - [ ] **Bomb gem (match T/L)** + tất cả combo 2-special-gem

@@ -55,7 +55,7 @@ class GemComponent extends PositionComponent {
     canvas.drawRRect(
       rrect,
       Paint()
-        ..color = c.withOpacity(0.9)
+        ..color = c.withValues(alpha: 0.9)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, glowBlur),
     );
 
@@ -78,14 +78,14 @@ class GemComponent extends PositionComponent {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = s * 0.04
-        ..color = Colors.white.withOpacity(0.85),
+        ..color = Colors.white.withValues(alpha: 0.85),
     );
 
     // 4) Đốm sáng highlight góc trên-trái
     canvas.drawCircle(
       Offset(s * 0.34, s * 0.32),
       s * 0.1,
-      Paint()..color = Colors.white.withOpacity(0.85),
+      Paint()..color = Colors.white.withValues(alpha: 0.85),
     );
 
     // 5) Overlay theo loại special
@@ -105,7 +105,7 @@ class GemComponent extends PositionComponent {
 
   void _renderSpecial(Canvas canvas, double s, Color c) {
     final p = Paint()
-      ..color = Colors.white.withOpacity(0.9)
+      ..color = Colors.white.withValues(alpha: 0.9)
       ..strokeWidth = s * 0.05
       ..style = PaintingStyle.stroke;
     switch (type) {

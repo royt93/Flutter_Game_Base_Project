@@ -8,10 +8,12 @@ import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
 
+import '../core/audio_manager.dart';
 import '../core/neon_theme.dart';
 import '../logic/gem_data.dart';
 import '../logic/match_detector.dart';
 import '../presentation/controllers/game_controller.dart';
+import 'effects.dart';
 import 'gem_component.dart';
 
 /// Game match-3 neon chính (Flame). Sở hữu lưới GemComponent và điều phối
@@ -38,6 +40,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
   late double cellSize;
   late Vector2 boardOrigin;
 
+  /// Lớp chứa gem — tách riêng để rung (shake) toàn bàn mà không ảnh hưởng nền.
+  late final PositionComponent boardLayer;
+
   GemComponent? _selected;
   bool _busy = false;
 
@@ -47,6 +52,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
   @override
   Future<void> onLoad() async {
     _layout();
+    add(AmbientNeon(area: size, palette: NeonTheme.gemColors, rnd: _rnd)
+      ..priority = -10);
+    boardLayer = PositionComponent()..priority = 0;
+    add(boardLayer);
     _fillInitialBoard();
   }
 
@@ -83,7 +92,17 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
           cellSize: cellSize,
         );
         grid[r][c] = g;
-        add(g);
+        // pop-in xếp tầng theo đường chéo cho màn mở đầu "wow"
+        g.scale = Vector2.zero();
+        g.add(ScaleEffect.to(
+          Vector2.all(1),
+          EffectController(
+            duration: 0.35,
+            curve: Curves.easeOutBack,
+            startDelay: (r + c) * 0.03,
+          ),
+        ));
+        boardLayer.add(g);
       }
     }
   }
@@ -148,38 +167,45 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
   // --------------------------------------------------------------------------
   Future<void> _trySwap(GemComponent a, GemComponent b) async {
     _busy = true;
-    await _animateSwap(a, b);
-    _swapInGrid(a, b);
-
-    final isSpecialSwap = a.type == GemType.rainbow || b.type == GemType.rainbow;
-    final matches = MatchDetector.findMatches(_colorGrid());
-
-    if (matches.isEmpty && !isSpecialSwap) {
-      // không hợp lệ → đảo lại
+    // try/finally: dù có lỗi giữa chừng, _busy LUÔN được mở lại → bàn không bao giờ kẹt.
+    try {
       await _animateSwap(a, b);
       _swapInGrid(a, b);
-    } else {
-      controller.useMove();
-      if (isSpecialSwap) {
-        // kích hoạt rainbow: xóa toàn bộ gem cùng màu với gem còn lại
-        final rainbow = a.type == GemType.rainbow ? a : b;
-        final other = a.type == GemType.rainbow ? b : a;
-        final targetColor = other.type == GemType.rainbow ? _randomColor() : other.color;
-        final toClear = <Cell>{Cell(rainbow.row, rainbow.col)};
-        for (int r = 0; r < rows; r++) {
-          for (int c = 0; c < cols; c++) {
-            if (grid[r][c]?.color == targetColor) toClear.add(Cell(r, c));
+
+      final isSpecialSwap = a.type == GemType.rainbow || b.type == GemType.rainbow;
+      final matches = MatchDetector.findMatches(_colorGrid());
+
+      if (matches.isEmpty && !isSpecialSwap) {
+        // không hợp lệ → đảo lại
+        await _animateSwap(a, b);
+        _swapInGrid(a, b);
+      } else {
+        controller.useMove();
+        if (isSpecialSwap) {
+          AudioManager.maybe?.playSpecial();
+          // kích hoạt rainbow: xóa toàn bộ gem cùng màu với gem còn lại
+          final rainbow = a.type == GemType.rainbow ? a : b;
+          final other = a.type == GemType.rainbow ? b : a;
+          final targetColor =
+              other.type == GemType.rainbow ? _randomColor() : other.color;
+          final toClear = <Cell>{Cell(rainbow.row, rainbow.col)};
+          for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+              if (grid[r][c]?.color == targetColor) toClear.add(Cell(r, c));
+            }
           }
+          final expanded = _expandSpecials(toClear);
+          await _clearCells(expanded);
+          controller.addScore(expanded.length, 1);
+          await _applyGravityAndRefill();
         }
-        final expanded = _expandSpecials(toClear);
-        await _clearCells(expanded);
-        controller.addScore(expanded.length, 1);
-        await _applyGravityAndRefill();
+        await _resolveAll();
+        _finishMove();
       }
-      await _resolveAll();
-      _finishMove();
+    } finally {
+      _busy = false;
+      _selected = null;
     }
-    _busy = false;
   }
 
   Future<void> _resolveAll() async {
@@ -205,8 +231,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
 
       await _clearCells(expanded);
       controller.addScore(expanded.length, combo);
+      AudioManager.maybe?.playNote(combo); // combo cao → nốt cao dần
+      if (combo >= 2) _spawnComboText(combo);
 
       // tạo gem special mới
+      if (newSpecials.isNotEmpty) AudioManager.maybe?.playSpecial();
       newSpecials.forEach((cell, type) {
         grid[cell.row][cell.col]?.type = type;
       });
@@ -226,16 +255,26 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
       final extra = <Cell>[];
       switch (g.type) {
         case GemType.stripedH:
+          _addBeam(_cellCenter(cell.row, 0), _cellCenter(cell.row, cols - 1),
+              neonColorOf(g.color));
           for (int c = 0; c < cols; c++) {
             extra.add(Cell(cell.row, c));
           }
           break;
         case GemType.stripedV:
+          _addBeam(_cellCenter(0, cell.col), _cellCenter(rows - 1, cell.col),
+              neonColorOf(g.color));
           for (int r = 0; r < rows; r++) {
             extra.add(Cell(r, cell.col));
           }
           break;
         case GemType.rainbow:
+          add(ShockwaveComponent(
+            position: _cellCenter(cell.row, cell.col),
+            color: Colors.white,
+            maxRadius: cellSize * 4,
+          )..priority = 50);
+          _shake(12);
           for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
               if (grid[r][c]?.color == g.color) extra.add(Cell(r, c));
@@ -263,6 +302,21 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
       gems.add(g);
       grid[cell.row][cell.col] = null;
     }
+    if (gems.isNotEmpty) {
+      // sóng xung kích tại trọng tâm cụm + rung bàn theo số gem
+      var centroid = Vector2.zero();
+      for (final g in gems) {
+        centroid += g.position;
+      }
+      centroid /= gems.length.toDouble();
+      add(ShockwaveComponent(
+        position: centroid,
+        color: neonColorOf(gems.first.color),
+        maxRadius: cellSize * (1.4 + gems.length * 0.25),
+      )..priority = 50);
+      _shake((gems.length * 0.8).clamp(2.0, 14.0));
+    }
+
     final futures = <Future>[];
     for (final g in gems) {
       _spawnBurst(g.position.clone(), neonColorOf(g.color));
@@ -318,7 +372,12 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
           cellSize: cellSize,
         );
         grid[targetRow][c] = g;
-        add(g);
+        g.scale = Vector2.all(0.4);
+        g.add(ScaleEffect.to(
+          Vector2.all(1),
+          EffectController(duration: 0.28, curve: Curves.easeOutBack),
+        ));
+        boardLayer.add(g);
         futures.add(_run(
           g,
           MoveToEffect(
@@ -382,7 +441,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
             renderer: (canvas, p) {
               final t = 1 - p.progress;
               final paint = Paint()
-                ..color = color.withOpacity(t)
+                ..color = color.withValues(alpha: t)
                 ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
               canvas.drawCircle(Offset.zero, cellSize * 0.12 * t + 1, paint);
             },
@@ -390,6 +449,35 @@ class NeonJewelGame extends FlameGame with TapCallbacks {
         );
       },
     );
-    add(ParticleSystemComponent(particle: particle, position: position));
+    add(ParticleSystemComponent(particle: particle, position: position)..priority = 40);
+  }
+
+  /// Rung toàn bàn gem rồi trả về vị trí gốc (tự huỷ effect, không leak).
+  void _shake(double intensity) {
+    final moves = <Effect>[];
+    for (int i = 0; i < 5; i++) {
+      moves.add(MoveEffect.by(
+        Vector2(
+          (_rnd.nextDouble() * 2 - 1) * intensity,
+          (_rnd.nextDouble() * 2 - 1) * intensity,
+        ),
+        EffectController(duration: 0.045),
+      ));
+    }
+    moves.add(MoveEffect.to(Vector2.zero(), EffectController(duration: 0.05)));
+    boardLayer.add(SequenceEffect(moves));
+  }
+
+  void _addBeam(Vector2 from, Vector2 to, Color color) {
+    add(BeamComponent(from: from, to: to, color: color)..priority = 60);
+  }
+
+  void _spawnComboText(int combo) {
+    final color = NeonTheme.gemColors[combo % NeonTheme.gemColors.length];
+    add(ComboTextComponent(
+      text: 'COMBO x$combo!',
+      color: color,
+      position: Vector2(size.x / 2, size.y * 0.4),
+    )..priority = 70);
   }
 }

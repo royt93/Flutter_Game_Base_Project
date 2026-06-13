@@ -35,8 +35,8 @@ class NeonTheme {
   /// Đổ bóng phát sáng quanh widget theo màu neon.
   static List<BoxShadow> glow(Color color, {double blur = 18, double spread = 1}) {
     return [
-      BoxShadow(color: color.withOpacity(0.8), blurRadius: blur, spreadRadius: spread),
-      BoxShadow(color: color.withOpacity(0.4), blurRadius: blur * 2, spreadRadius: spread),
+      BoxShadow(color: color.withValues(alpha: 0.8), blurRadius: blur, spreadRadius: spread),
+      BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: blur * 2, spreadRadius: spread),
     ];
   }
 }

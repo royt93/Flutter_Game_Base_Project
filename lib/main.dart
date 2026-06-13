@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'core/audio_manager.dart';
 import 'core/neon_theme.dart';
 import 'presentation/screens/home_screen.dart';
 
-void main() {
+void main() => app();
+
+/// Điểm khởi chạy app (tách riêng để integration_test gọi lại được).
+void app() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
+  final audio = Get.put(AudioManager(), permanent: true);
+  audio.init().then((_) => audio.startBgm());
   runApp(const NeonJewelsApp());
 }
 
