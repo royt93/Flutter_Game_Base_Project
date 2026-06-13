@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
 
 /// Một nút hành động trong dialog. onTap tự chịu trách nhiệm đóng (route/overlay).
@@ -89,7 +88,12 @@ class NeonDialog {
   }
 
   /// Hiển thị dạng route (dùng cho màn KHÔNG có Flame GameWidget: settings...).
+  ///
+  /// Dùng [showDialog] native (Navigator cục bộ của [context]) thay cho
+  /// `Get.dialog` — vì ở chế độ full-screen `Get.dialog` không push được route
+  /// (no-op) khiến dialog không hiện.
   static Future<T?> show<T>({
+    required BuildContext context,
     required String title,
     required Color color,
     required List<NeonDialogAction> actions,
@@ -98,20 +102,24 @@ class NeonDialog {
     IconData? icon,
     bool dismissible = false,
   }) {
-    // bọc mỗi action: đóng route trước (frame kế) rồi chạy onTap gốc
+    final nav = Navigator.of(context, rootNavigator: true);
+    // bọc mỗi action: đóng route trước rồi chạy onTap gốc ở frame kế.
     final wrapped = actions
         .map((a) => NeonDialogAction(
               label: a.label,
               color: a.color,
               onTap: () {
-                if (Get.isDialogOpen ?? false) Get.back();
+                if (nav.canPop()) nav.pop();
                 WidgetsBinding.instance.addPostFrameCallback((_) => a.onTap());
               },
             ))
         .toList();
-    return Get.dialog<T>(
+    debugPrint('roy93~ NeonDialog.show CALL title=$title (showDialog native)');
+    return showDialog<T>(
+      context: context,
       barrierDismissible: dismissible,
-      Dialog(
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: EdgeInsets.zero,
         child: panel(

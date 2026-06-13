@@ -13,7 +13,7 @@ class GameScreenController extends GetxController {
 
   final Rx<GameUi> ui = GameUi.playing.obs;
   final RxInt gameVersion = 0.obs; // tăng để Obx dựng lại GameWidget
-  final RxBool hammerArmed = false.obs; // búa đã chọn → chờ chạm gem
+  final Rx<BoosterMode> armed = BoosterMode.none.obs; // booster đang chọn
   final RxInt coinShake = 0.obs; // tăng để rung chip xu khi thiếu xu
   NeonJewelGame? _game;
   NeonJewelGame get game => _game!;
@@ -39,22 +39,61 @@ class GameScreenController extends GetxController {
       cols: lv.cols,
       colorCount: lv.colorCount,
       onGameEnd: _onGameEnd,
-      onHammerUsed: _onHammerUsed,
+      onBoosterUsed: _onBoosterUsed,
     );
     gameVersion.value++;
   }
 
-  /// Chọn búa: kích hoạt chế độ đập (chờ người chơi chạm 1 gem).
-  void armHammer() {
-    if (gameCtrl.boosterHammer.value > 0) {
-      game.armHammer();
-      hammerArmed.value = true;
+  int _countOf(BoosterMode m) {
+    switch (m) {
+      case BoosterMode.hammer:
+        return gameCtrl.boosterHammer.value;
+      case BoosterMode.swap:
+        return gameCtrl.boosterSwap.value;
+      case BoosterMode.bomb:
+        return gameCtrl.boosterBomb.value;
+      case BoosterMode.colorBlast:
+        return gameCtrl.boosterColor.value;
+      case BoosterMode.joker:
+        return gameCtrl.boosterJoker.value;
+      case BoosterMode.none:
+        return 0;
     }
   }
 
-  void _onHammerUsed() {
-    gameCtrl.useHammer();
-    hammerArmed.value = false;
+  /// Chọn booster cần chạm bàn (hammer/swap/bomb/colorBlast).
+  /// Bấm lại booster đang chọn → bỏ chọn.
+  void toggleArm(BoosterMode m) {
+    if (armed.value == m) {
+      game.disarmBooster();
+      armed.value = BoosterMode.none;
+    } else if (_countOf(m) > 0) {
+      game.armBooster(m);
+      armed.value = m;
+    }
+  }
+
+  void _onBoosterUsed(BoosterMode m) {
+    switch (m) {
+      case BoosterMode.hammer:
+        gameCtrl.useHammer();
+        break;
+      case BoosterMode.swap:
+        gameCtrl.useSwap();
+        break;
+      case BoosterMode.bomb:
+        gameCtrl.useBomb();
+        break;
+      case BoosterMode.colorBlast:
+        gameCtrl.useColor();
+        break;
+      case BoosterMode.joker:
+        gameCtrl.useJoker();
+        break;
+      case BoosterMode.none:
+        break;
+    }
+    armed.value = BoosterMode.none;
   }
 
   void _onGameEnd(String result) {

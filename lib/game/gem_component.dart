@@ -137,32 +137,79 @@ class GemComponent extends PositionComponent {
     }
   }
 
-  /// Tạo path theo hình của từng màu.
+  /// Bộ lá bài: mỗi màu một chất.
+  /// 0 cyan=tròn ●, 1 magenta=cơ ♥, 2 lime=chuồn ♣,
+  /// 3 yellow=sao ★, 4 orange=rô ♦, 5 purple=bích ♠.
   Path _shapePath(int idx, Offset c, double r) {
     switch (idx) {
-      case 0: // tròn (cyan)
+      case 0:
         return Path()..addOval(Rect.fromCircle(center: c, radius: r));
-      case 1: // kim cương / thoi (magenta)
-        return _polygon(c, r * 1.12, 4, rotation: 0);
-      case 2: // tam giác (lime)
-        return _polygon(c, r * 1.15, 3, rotation: -math.pi / 2);
-      case 3: // lục giác (yellow)
-        return _polygon(c, r * 1.08, 6, rotation: math.pi / 6);
-      case 4: // ngũ giác (orange)
-        return _polygon(c, r * 1.1, 5, rotation: -math.pi / 2);
-      default: // ngôi sao (purple)
+      case 1:
+        return _heart(c, r);
+      case 2:
+        return _club(c, r);
+      case 3:
         return _star(c, r * 1.18, r * 0.5, 5);
+      case 4:
+        return _diamondSuit(c, r);
+      default:
+        return _spade(c, r);
     }
   }
 
-  Path _polygon(Offset c, double r, int sides, {double rotation = 0}) {
-    final path = Path();
-    for (int i = 0; i < sides; i++) {
-      final a = rotation + i * 2 * math.pi / sides;
-      final p = Offset(c.dx + r * math.cos(a), c.dy + r * math.sin(a));
-      i == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
-    }
-    return path..close();
+  /// Cơ ♥
+  Path _heart(Offset c, double r) {
+    final p = Path();
+    p.moveTo(c.dx, c.dy + r * 0.95);
+    p.cubicTo(c.dx - r * 1.35, c.dy - r * 0.15, c.dx - r * 0.55, c.dy - r * 1.15,
+        c.dx, c.dy - r * 0.4);
+    p.cubicTo(c.dx + r * 0.55, c.dy - r * 1.15, c.dx + r * 1.35, c.dy - r * 0.15,
+        c.dx, c.dy + r * 0.95);
+    return p..close();
+  }
+
+  /// Bích ♠ (cơ lật ngược + cuống)
+  Path _spade(Offset c, double r) {
+    final p = Path();
+    p.moveTo(c.dx, c.dy - r * 1.0);
+    p.cubicTo(c.dx + r * 1.35, c.dy + r * 0.15, c.dx + r * 0.55, c.dy + r * 1.0,
+        c.dx, c.dy + r * 0.35);
+    p.cubicTo(c.dx - r * 0.55, c.dy + r * 1.0, c.dx - r * 1.35, c.dy + r * 0.15,
+        c.dx, c.dy - r * 1.0);
+    p.close();
+    p.moveTo(c.dx - r * 0.38, c.dy + r * 0.95);
+    p.lineTo(c.dx + r * 0.38, c.dy + r * 0.95);
+    p.lineTo(c.dx + r * 0.12, c.dy + r * 0.35);
+    p.lineTo(c.dx - r * 0.12, c.dy + r * 0.35);
+    p.close();
+    return p;
+  }
+
+  /// Chuồn ♣ (3 vòng tròn + cuống)
+  Path _club(Offset c, double r) {
+    final cr = r * 0.5;
+    final p = Path()
+      ..addOval(Rect.fromCircle(center: Offset(c.dx, c.dy - r * 0.42), radius: cr))
+      ..addOval(
+          Rect.fromCircle(center: Offset(c.dx - r * 0.55, c.dy + r * 0.18), radius: cr))
+      ..addOval(
+          Rect.fromCircle(center: Offset(c.dx + r * 0.55, c.dy + r * 0.18), radius: cr));
+    p.moveTo(c.dx - r * 0.34, c.dy + r * 0.98);
+    p.lineTo(c.dx + r * 0.34, c.dy + r * 0.98);
+    p.lineTo(c.dx + r * 0.13, c.dy + r * 0.3);
+    p.lineTo(c.dx - r * 0.13, c.dy + r * 0.3);
+    p.close();
+    return p;
+  }
+
+  /// Rô ♦ (thoi cao)
+  Path _diamondSuit(Offset c, double r) {
+    return Path()
+      ..moveTo(c.dx, c.dy - r * 1.1)
+      ..lineTo(c.dx + r * 0.82, c.dy)
+      ..lineTo(c.dx, c.dy + r * 1.1)
+      ..lineTo(c.dx - r * 0.82, c.dy)
+      ..close();
   }
 
   Path _star(Offset c, double outer, double inner, int points) {

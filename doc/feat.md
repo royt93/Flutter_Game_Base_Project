@@ -227,6 +227,19 @@ lib/
 - [x] **Giá mua đúng** trên nút (búa 30, +5 lượt 25); icon: 🔨 đập 1 gem, ⏰+5 thêm lượt, 💰 xu
 - [x] 68 unit/widget test pass · 0 analyzer issue · verify thật trên máy
 
+#### Wave 3.3 — gem lá bài + 9 booster + StorageService (đã làm)
+- [x] **Gem hình lá bài** (♥ cơ, ♦ rô, ♣ chuồn, ♠ bích, ★ sao, ● tròn) vẽ bằng `Path`/`cubicTo` trong `gem_component.dart`
+- [x] **9 booster**: Hammer, +10 Lượt, Swap, Bomb, Color Blast + 4 booster **độc quyền**: 🃏 Joker (biến 1 gem thành rainbow), ⚡ Chain Lightning (7 gem cùng màu + tia sét), ♕ Royal Flush (clear cả bàn), 🌀 Gravity Flip (đảo cột). Có user-guide trong màn Hướng dẫn (`guide_boost_title/body`)
+- [x] **StorageService + StorageKeys** (GetxService bọc SharedPreferences, key tập trung thành constant) — audit toàn bộ key, bỏ string rời rạc. `GameController`/`LocaleService`/`main.dart` đều dùng service
+- [x] 72 unit/widget test pass · 0 analyzer issue · verify gameplay thật trên Samsung (gem lá bài + booster bar hiển thị đúng)
+
+#### Wave 3.4 — fix bug "Xoá tiến độ" không work (đã làm)
+- [x] **Trace `roy93~`** ở settings (card tap → show dialog → resetProgress START/DONE)
+- [x] **Nguyên nhân gốc**: route-based dialog (`Get.dialog` **và** `showDialog` native) đều **no-op** trong app full-screen này — không push được route, không có exception. Log xác nhận handler chạy mỗi lần tap nhưng dialog không bao giờ chặn được tap kế tiếp
+- [x] **Cách fix**: chuyển dialog xác nhận reset sang **overlay trong cây** (`NeonDialog.overlay` + `NeonDialog.panel`) điều khiển bởi `SettingsController` (GetX `RxBool`, không setState) — cùng pattern đã chạy OK ở màn game. Snackbar "đã xoá" đổi sang `ScaffoldMessenger`
+- [x] Đã verify thật: tap thẻ → overlay "Xoá tiến độ?" hiện → ĐỒNG Ý → `unlocked 4→1, highScores 3→0, stars 3→0` + snackbar; HUỶ/barrier đóng overlay
+- [x] 72 test pass · 0 analyzer issue
+
 ### 🟡 In progress
 *(không có)*
 
@@ -320,4 +333,4 @@ lib/
 
 ---
 
-*Cập nhật lần cuối: 2026-06-13 · Trạng thái: Kế hoạch (chưa code)*
+*Cập nhật lần cuối: 2026-06-13 · Trạng thái: Đang phát triển (Wave 3.4 — fix bug Xoá tiến độ, 72 test pass)*

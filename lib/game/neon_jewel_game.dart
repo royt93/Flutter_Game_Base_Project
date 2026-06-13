@@ -18,6 +18,9 @@ import '../presentation/controllers/game_controller.dart';
 import 'effects.dart';
 import 'gem_component.dart';
 
+/// Chế độ booster đang kích hoạt (chờ người chơi chạm bàn).
+enum BoosterMode { none, hammer, swap, bomb, colorBlast, joker }
+
 /// Game match-3 neon chính (Flame). Sở hữu lưới GemComponent và điều phối
 /// toàn bộ vòng lặp: swap → match → nổ → trọng lực → cascade.
 class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
@@ -29,8 +32,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// Callback báo kết quả ván ('win' | 'lose') cho tầng UI hiển thị dialog.
   final void Function(String result) onGameEnd;
 
-  /// Gọi khi búa (hammer) được dùng thành công → UI trừ booster.
-  final VoidCallback? onHammerUsed;
+  /// Gọi khi 1 booster được DÙNG thành công → UI trừ số lượng booster đó.
+  final void Function(BoosterMode mode)? onBoosterUsed;
 
   NeonJewelGame({
     required this.controller,
@@ -38,11 +41,21 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     required this.cols,
     required this.colorCount,
     required this.onGameEnd,
-    this.onHammerUsed,
+    this.onBoosterUsed,
   });
 
-  bool hammerArmed = false;
-  void armHammer() => hammerArmed = true;
+  BoosterMode boosterMode = BoosterMode.none;
+  Cell? _swapA; // ô đầu tiên khi dùng booster Swap
+
+  void armBooster(BoosterMode m) {
+    boosterMode = m;
+    _swapA = null;
+  }
+
+  void disarmBooster() {
+    boosterMode = BoosterMode.none;
+    _swapA = null;
+  }
 
   final _rnd = math.Random();
   late List<List<GemComponent?>> grid;
@@ -217,11 +230,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final gem = grid[cell.row][cell.col];
     if (gem == null) return;
 
-    // Búa: phá 1 gem bất kỳ
-    if (hammerArmed) {
-      hammerArmed = false;
-      onHammerUsed?.call();
-      _useHammerOn(cell);
+    // Đang kích hoạt booster → xử lý theo loại
+    if (boosterMode != BoosterMode.none) {
+      _handleBoosterTap(cell);
       return;
     }
 
@@ -803,16 +814,180 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     add(ParticleSystemComponent(particle: particle, position: position)..priority = 40);
   }
 
-  /// Booster búa: phá 1 gem tại ô được chọn (không tốn lượt).
-  Future<void> _useHammerOn(Cell cell) async {
-    if (_busy || _ended) return;
+  /// Xử lý chạm bàn khi đang kích hoạt booster.
+  void _handleBoosterTap(Cell cell) {
+    switch (boosterMode) {
+      case BoosterMode.none:
+        return;
+      case BoosterMode.hammer:
+        boosterMode = BoosterMode.none;
+        onBoosterUsed?.call(BoosterMode.hammer);
+        _smashCells({cell}, color: neonColorOf(grid[cell.row][cell.col]!.color));
+        break;
+      case BoosterMode.bomb:
+        boosterMode = BoosterMode.none;
+        onBoosterUsed?.call(BoosterMode.bomb);
+        final area = <Cell>{};
+        _addArea(area, cell, 1); // 3x3
+        add(ShockwaveComponent(
+          position: _cellCenter(cell.row, cell.col),
+          color: NeonTheme.orange,
+          maxRadius: cellSize * 2.4,
+        )..priority = 50);
+        _flash(NeonTheme.orange, peak: 0.2);
+        _smashCells(area, color: NeonTheme.orange);
+        break;
+      case BoosterMode.colorBlast:
+        boosterMode = BoosterMode.none;
+        onBoosterUsed?.call(BoosterMode.colorBlast);
+        final col = grid[cell.row][cell.col]!.color;
+        final cells = <Cell>{};
+        for (int r = 0; r < rows; r++) {
+          for (int c = 0; c < cols; c++) {
+            if (grid[r][c]?.color == col) cells.add(Cell(r, c));
+          }
+        }
+        _flash(neonColorOf(col), peak: 0.35);
+        _smashCells(cells, color: neonColorOf(col));
+        break;
+      case BoosterMode.joker:
+        boosterMode = BoosterMode.none;
+        onBoosterUsed?.call(BoosterMode.joker);
+        final g = grid[cell.row][cell.col];
+        if (g != null) {
+          g.type = GemType.rainbow; // biến thành gem vạn năng (Rainbow)
+          add(ShockwaveComponent(
+            position: _cellCenter(cell.row, cell.col),
+            color: Colors.white,
+            maxRadius: cellSize * 1.6,
+          )..priority = 55);
+          _flash(Colors.white, peak: 0.25);
+        }
+        break;
+      case BoosterMode.swap:
+        if (_swapA == null) {
+          _swapA = cell;
+          grid[cell.row][cell.col]?.selected = true;
+        } else {
+          final a = grid[_swapA!.row][_swapA!.col];
+          final b = grid[cell.row][cell.col];
+          a?.selected = false;
+          boosterMode = BoosterMode.none;
+          _swapA = null;
+          if (a != null && b != null && a != b) {
+            onBoosterUsed?.call(BoosterMode.swap);
+            _forceSwap(a, b);
+          }
+        }
+        break;
+    }
+  }
+
+  /// Phá 1 tập ô (booster búa/bom/color) — không tốn lượt.
+  Future<void> _smashCells(Set<Cell> cells, {required Color color}) async {
+    if (_busy || _ended || cells.isEmpty) return;
     _busy = true;
     try {
-      final expanded = _expandSpecials({cell});
-      _shake(5);
+      final expanded = _expandSpecials(cells);
+      _shake((expanded.length * 0.5).clamp(4.0, 12.0));
       await _clearCells(expanded);
       controller.addScore(expanded.length, 1);
       await _applyGravityAndRefill();
+      await _resolveAll();
+      await _ensurePlayable();
+    } finally {
+      _busy = false;
+      _finishMove();
+    }
+  }
+
+  /// Booster Swap: hoán đổi 2 gem bất kỳ (không cần kề, không cần tạo match).
+  Future<void> _forceSwap(GemComponent a, GemComponent b) async {
+    if (_busy || _ended) return;
+    _busy = true;
+    try {
+      await _animateSwap(a, b);
+      _swapInGrid(a, b);
+      await _resolveAll();
+      await _ensurePlayable();
+    } finally {
+      _busy = false;
+      _finishMove();
+    }
+  }
+
+  // ===== Booster độc quyền (tức thì) =====
+
+  /// Chain Lightning: sét phá tối đa 7 gem cùng màu phổ biến nhất.
+  Future<void> chainLightning() async {
+    if (_busy || _ended) return;
+    final counts = <GemColor, int>{};
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        final g = grid[r][c];
+        if (g != null) counts[g.color] = (counts[g.color] ?? 0) + 1;
+      }
+    }
+    if (counts.isEmpty) return;
+    final color =
+        counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+    final all = <Cell>[];
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        if (grid[r][c]?.color == color) all.add(Cell(r, c));
+      }
+    }
+    all.shuffle(_rnd);
+    final pick = all.take(7).toList();
+    // tia sét nối các gem
+    for (int i = 0; i < pick.length - 1; i++) {
+      _addBeam(_cellCenter(pick[i].row, pick[i].col),
+          _cellCenter(pick[i + 1].row, pick[i + 1].col), neonColorOf(color));
+    }
+    _flash(neonColorOf(color), peak: 0.25);
+    await _smashCells(pick.toSet(), color: neonColorOf(color));
+  }
+
+  /// Royal Flush: nổ toàn bộ bàn.
+  Future<void> royalFlush() async {
+    if (_busy || _ended) return;
+    final all = <Cell>{};
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        if (grid[r][c] != null) all.add(Cell(r, c));
+      }
+    }
+    _flash(Colors.white, peak: 0.5);
+    _shake(14);
+    await _smashCells(all, color: Colors.white);
+  }
+
+  /// Gravity Flip: đảo trọng lực (đảo thứ tự gem trong mỗi cột) rồi resolve.
+  Future<void> gravityFlip() async {
+    if (_busy || _ended) return;
+    _busy = true;
+    try {
+      for (int c = 0; c < cols; c++) {
+        for (int r = 0; r < rows ~/ 2; r++) {
+          final a = grid[r][c];
+          final b = grid[rows - 1 - r][c];
+          if (a == null || b == null) continue;
+          final tColor = a.color, tType = a.type;
+          a.color = b.color;
+          a.type = b.type;
+          b.color = tColor;
+          b.type = tType;
+          a.scale = Vector2.all(0.6);
+          b.scale = Vector2.all(0.6);
+          a.add(ScaleEffect.to(
+              Vector2.all(1), EffectController(duration: 0.25, curve: Curves.easeOutBack)));
+          b.add(ScaleEffect.to(
+              Vector2.all(1), EffectController(duration: 0.25, curve: Curves.easeOutBack)));
+        }
+      }
+      _flash(NeonTheme.cyan, peak: 0.2);
+      _shake(8);
+      await Future.delayed(const Duration(milliseconds: 280));
       await _resolveAll();
       await _ensurePlayable();
     } finally {

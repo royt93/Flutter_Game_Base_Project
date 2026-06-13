@@ -140,6 +140,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Collect: gather enough gems of a given color.',
     'guide_mode_jelly': 'Clear Jelly: pop every jelly tile on the board.',
     'guide_stuck': 'Stuck? Idle gems will blink a hint; no moves left auto-shuffles the board.',
+    'guide_boost_title': 'Boosters & Coins',
+    'guide_boost_body':
+        'Win levels to earn coins — the more stars, the more coins. Spend coins to buy boosters when you run out. Boosters: Hammer smashes 1 gem; Swap swaps any 2 gems; Bomb blasts a 3×3 area; Color Blast clears all gems of one color; +10 adds 10 moves. Tap a booster, then tap the board to use it.',
   };
 
   static const Map<String, String> _vi = {
@@ -191,6 +194,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Thu thập: gom đủ số gem của màu chỉ định.',
     'guide_mode_jelly': 'Phá Jelly: phá hết các ô jelly trên bàn.',
     'guide_stuck': 'Bí nước? Gem sẽ nhấp nháy gợi ý; hết nước đi bàn tự xáo lại.',
+    'guide_boost_title': 'Booster & Xu',
+    'guide_boost_body':
+        'Thắng các màn để kiếm xu — càng nhiều sao càng nhiều xu. Hết booster thì dùng xu để mua. Booster: Búa đập 1 gem; Swap đổi 2 gem bất kỳ; Bom nổ vùng 3×3; Color Blast xoá hết 1 màu; +10 thêm 10 lượt. Bấm booster rồi chạm vào bàn để dùng.',
   };
 
   static const Map<String, String> _es = {
@@ -242,6 +248,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Recolectar: reúne suficientes gemas de un color dado.',
     'guide_mode_jelly': 'Limpiar Gelatina: revienta cada casilla de gelatina del tablero.',
     'guide_stuck': '¿Atascado? Las gemas inactivas parpadearán como pista; sin movimientos, el tablero se baraja solo.',
+    'guide_boost_title': 'Potenciadores y monedas',
+    'guide_boost_body':
+        'Gana niveles para conseguir monedas: cuantas más estrellas, más monedas. Gasta las monedas para comprar potenciadores cuando se te acaben. Potenciadores: el Martillo rompe 1 gema; el Intercambio cambia 2 gemas cualesquiera; la Bomba arrasa un área de 3×3; Color Blast elimina todas las gemas de un color; +10 añade 10 movimientos. Toca un potenciador y luego toca el tablero para usarlo.',
   };
 
   static const Map<String, String> _fr = {
@@ -293,6 +302,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Collecte : rassemblez assez de gemmes d\'une couleur donnée.',
     'guide_mode_jelly': 'Nettoyer la Gelée : éclatez chaque case de gelée du plateau.',
     'guide_stuck': 'Bloqué ? Les gemmes inactives clignotent comme indice ; sans coup possible, le plateau se mélange.',
+    'guide_boost_title': 'Boosters et pièces',
+    'guide_boost_body':
+        'Remportez des niveaux pour gagner des pièces : plus d\'étoiles, plus de pièces. Dépensez vos pièces pour acheter des boosters quand vous n\'en avez plus. Boosters : le Marteau casse 1 gemme ; l\'Échange permute 2 gemmes au choix ; la Bombe détruit une zone de 3×3 ; Color Blast élimine toutes les gemmes d\'une couleur ; +10 ajoute 10 coups. Touchez un booster, puis touchez le plateau pour l\'utiliser.',
   };
 
   static const Map<String, String> _de = {
@@ -344,6 +356,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Sammeln: Sammle genug Steine einer bestimmten Farbe.',
     'guide_mode_jelly': 'Gelee räumen: Zerplatze jedes Gelee-Feld auf dem Brett.',
     'guide_stuck': 'Festgefahren? Untätige Steine blinken als Hinweis; ohne Zug wird das Brett automatisch gemischt.',
+    'guide_boost_title': 'Booster & Münzen',
+    'guide_boost_body':
+        'Gewinne Level, um Münzen zu verdienen – je mehr Sterne, desto mehr Münzen. Gib Münzen aus, um Booster zu kaufen, wenn dir welche ausgehen. Booster: Der Hammer zerschlägt 1 Stein; der Tausch vertauscht 2 beliebige Steine; die Bombe sprengt einen 3×3-Bereich; Color Blast entfernt alle Steine einer Farbe; +10 fügt 10 Züge hinzu. Tippe auf einen Booster und dann auf das Brett, um ihn einzusetzen.',
   };
 
   static const Map<String, String> _pt = {
@@ -395,6 +410,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Coletar: junte gemas suficientes de uma cor dada.',
     'guide_mode_jelly': 'Limpar Geleia: estoure cada peça de geleia do tabuleiro.',
     'guide_stuck': 'Travado? Gemas paradas piscam uma dica; sem jogadas, o tabuleiro embaralha sozinho.',
+    'guide_boost_title': 'Boosters e moedas',
+    'guide_boost_body':
+        'Vença fases para ganhar moedas — quanto mais estrelas, mais moedas. Gaste moedas para comprar boosters quando acabarem. Boosters: o Martelo quebra 1 gema; a Troca troca 2 gemas quaisquer; a Bomba explode uma área 3×3; o Color Blast limpa todas as gemas de uma cor; +10 adiciona 10 jogadas. Toque em um booster e depois toque no tabuleiro para usá-lo.',
   };
 
   static const Map<String, String> _ru = {
@@ -446,6 +464,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Сбор: соберите достаточно кристаллов заданного цвета.',
     'guide_mode_jelly': 'Очистить желе: лопните все плитки желе на поле.',
     'guide_stuck': 'Застряли? Бездействующие кристаллы мигнут подсказкой; без ходов поле перемешается само.',
+    'guide_boost_title': 'Бустеры и монеты',
+    'guide_boost_body':
+        'Проходите уровни, чтобы зарабатывать монеты — чем больше звёзд, тем больше монет. Тратьте монеты на покупку бустеров, когда они закончатся. Бустеры: Молот разбивает 1 кристалл; Обмен меняет местами любые 2 кристалла; Бомба взрывает область 3×3; Color Blast убирает все кристаллы одного цвета; +10 добавляет 10 ходов. Нажмите на бустер, затем нажмите на поле, чтобы применить его.',
   };
 
   static const Map<String, String> _zh = {
@@ -496,6 +517,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': '收集：收集足够数量的指定颜色宝石。',
     'guide_mode_jelly': '清除果冻：消除棋盘上所有果冻格。',
     'guide_stuck': '卡住了？闲置宝石会闪烁提示；无步可走时棋盘会自动洗牌。',
+    'guide_boost_title': '道具与金币',
+    'guide_boost_body':
+        '通关即可赚取金币——星星越多，金币越多。道具用完时可花金币购买。道具：锤子可砸碎 1 颗宝石；交换可交换任意 2 颗宝石；炸弹可炸开 3×3 范围；Color Blast 可清除同色的所有宝石；+10 可增加 10 步。先点击道具，再点击棋盘即可使用。',
   };
 
   static const Map<String, String> _ja = {
@@ -546,6 +570,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'コレクト：指定色のジェムを十分に集める。',
     'guide_mode_jelly': 'ゼリー消し：盤上のゼリーマスをすべて消す。',
     'guide_stuck': '行き詰まり？動かないジェムがヒントで点滅します。手がなくなると盤面が自動でシャッフルされます。',
+    'guide_boost_title': 'ブースターとコイン',
+    'guide_boost_body':
+        'レベルをクリアするとコインが手に入ります。スターが多いほどコインも増えます。ブースターが切れたらコインで購入しましょう。ブースター：ハンマーはジェムを1個壊し、スワップは任意の2個を入れ替え、ボムは3×3の範囲を吹き飛ばし、Color Blastは同じ色のジェムをすべて消去し、+10は手数を10回追加します。ブースターをタップしてから盤面をタップして使用します。',
   };
 
   static const Map<String, String> _ko = {
@@ -596,6 +623,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': '수집: 지정된 색의 보석을 충분히 모으세요.',
     'guide_mode_jelly': '젤리 제거: 보드의 모든 젤리 칸을 터뜨리세요.',
     'guide_stuck': '막혔나요? 가만히 있는 보석이 힌트로 깜빡입니다. 이동할 수 없으면 보드가 자동으로 섞입니다.',
+    'guide_boost_title': '부스터 & 코인',
+    'guide_boost_body':
+        '레벨을 클리어하면 코인을 얻습니다 — 별이 많을수록 코인도 많아집니다. 부스터가 떨어지면 코인으로 구매하세요. 부스터: 망치는 보석 1개를 부수고, 교환은 아무 보석 2개를 바꾸며, 폭탄은 3×3 영역을 터뜨리고, Color Blast는 같은 색 보석을 모두 제거하며, +10은 이동 횟수를 10회 추가합니다. 부스터를 누른 다음 보드를 눌러 사용하세요.',
   };
 
   static const Map<String, String> _it = {
@@ -647,6 +677,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Raccogli: ottieni abbastanza gemme di un dato colore.',
     'guide_mode_jelly': 'Elimina Gelatina: fai scoppiare ogni casella di gelatina sul tabellone.',
     'guide_stuck': 'Bloccato? Le gemme inattive lampeggeranno come suggerimento; senza mosse il tabellone si mescola da solo.',
+    'guide_boost_title': 'Potenziamenti e monete',
+    'guide_boost_body':
+        'Supera i livelli per guadagnare monete: più stelle, più monete. Spendi le monete per comprare potenziamenti quando li finisci. Potenziamenti: il Martello rompe 1 gemma; lo Scambio scambia 2 gemme qualsiasi; la Bomba fa esplodere un\'area 3×3; Color Blast elimina tutte le gemme di un colore; +10 aggiunge 10 mosse. Tocca un potenziamento, poi tocca il tabellone per usarlo.',
   };
 
   static const Map<String, String> _id = {
@@ -698,6 +731,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Kumpulkan: kumpulkan cukup permata dari warna tertentu.',
     'guide_mode_jelly': 'Bersihkan Jeli: pecahkan setiap petak jeli di papan.',
     'guide_stuck': 'Buntu? Permata diam akan berkedip sebagai petunjuk; tanpa langkah, papan diacak otomatis.',
+    'guide_boost_title': 'Booster & Koin',
+    'guide_boost_body':
+        'Menangkan level untuk mendapatkan koin — semakin banyak bintang, semakin banyak koin. Gunakan koin untuk membeli booster saat habis. Booster: Palu menghancurkan 1 permata; Tukar menukar 2 permata mana saja; Bom meledakkan area 3×3; Color Blast membersihkan semua permata satu warna; +10 menambah 10 langkah. Ketuk booster, lalu ketuk papan untuk menggunakannya.',
   };
 
   static const Map<String, String> _th = {
@@ -749,6 +785,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'เก็บ: รวบรวมอัญมณีสีที่กำหนดให้ครบ',
     'guide_mode_jelly': 'เคลียร์เยลลี่: ทำลายช่องเยลลี่ทุกช่องบนกระดาน',
     'guide_stuck': 'ตันหรือ? อัญมณีที่ไม่ขยับจะกะพริบเป็นคำใบ้ เมื่อไม่มีตาเดินกระดานจะสับเปลี่ยนเอง',
+    'guide_boost_title': 'บูสเตอร์และเหรียญ',
+    'guide_boost_body':
+        'ผ่านด่านเพื่อรับเหรียญ ยิ่งได้ดาวมากก็ยิ่งได้เหรียญมาก ใช้เหรียญซื้อบูสเตอร์เมื่อหมด บูสเตอร์: ค้อนทุบอัญมณี 1 เม็ด; สลับใช้สลับอัญมณีคู่ใดก็ได้ 2 เม็ด; ระเบิดทำลายพื้นที่ 3×3; Color Blast ล้างอัญมณีสีเดียวกันทั้งหมด; +10 เพิ่มตาเดิน 10 ครั้ง แตะบูสเตอร์ แล้วแตะกระดานเพื่อใช้งาน',
   };
 
   static const Map<String, String> _hi = {
@@ -800,6 +839,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'इकट्ठा करें: किसी दिए गए रंग के पर्याप्त रत्न जमा करें।',
     'guide_mode_jelly': 'जेली साफ़ करें: बोर्ड की हर जेली टाइल फोड़ें।',
     'guide_stuck': 'अटक गए? निष्क्रिय रत्न संकेत के रूप में चमकेंगे; कोई चाल न बचने पर बोर्ड स्वयं फेंट जाता है।',
+    'guide_boost_title': 'बूस्टर और सिक्के',
+    'guide_boost_body':
+        'स्तर जीतकर सिक्के कमाएँ — जितने ज़्यादा सितारे, उतने ज़्यादा सिक्के। सिक्के खत्म होने पर उनसे बूस्टर खरीदें। बूस्टर: हथौड़ा 1 रत्न तोड़ता है; स्वैप किन्हीं 2 रत्नों की अदला-बदली करता है; बम 3×3 क्षेत्र उड़ा देता है; Color Blast एक रंग के सभी रत्न साफ़ कर देता है; +10 दस चालें जोड़ता है। बूस्टर पर टैप करें, फिर उसे इस्तेमाल करने के लिए बोर्ड पर टैप करें।',
   };
 
   static const Map<String, String> _ar = {
@@ -851,6 +893,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'الجمع: اجمع ما يكفي من جواهر لون معيّن.',
     'guide_mode_jelly': 'إزالة الهلام: فجّر كل مربعات الهلام على اللوحة.',
     'guide_stuck': 'عالق؟ ستومض الجواهر الخاملة كتلميح؛ وعند عدم وجود حركات تُخلط اللوحة تلقائيًا.',
+    'guide_boost_title': 'المعزِّزات والعملات',
+    'guide_boost_body':
+        'اربح المراحل لتكسب العملات — كلما زادت النجوم زادت العملات. أنفق العملات لشراء المعزِّزات عند نفادها. المعزِّزات: المطرقة تحطّم جوهرة واحدة؛ التبديل يبدّل أي جوهرتين؛ القنبلة تفجّر منطقة 3×3؛ وColor Blast يمسح كل الجواهر من لون واحد؛ و+10 يضيف 10 حركات. انقر على معزِّز ثم انقر على اللوحة لاستخدامه.',
   };
 
   static const Map<String, String> _tr = {
@@ -902,6 +947,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Topla: belirli bir renkten yeterince mücevher topla.',
     'guide_mode_jelly': 'Jöleyi Temizle: tahtadaki her jöle karesini patlat.',
     'guide_stuck': 'Takıldın mı? Boştaki mücevherler ipucu olarak yanıp söner; hamle kalmayınca tahta kendiliğinden karışır.',
+    'guide_boost_title': 'Güçlendiriciler ve Paralar',
+    'guide_boost_body':
+        'Bölümleri kazanarak para topla — yıldız ne kadar çoksa para da o kadar çok. Bittiğinde paralarla güçlendirici satın al. Güçlendiriciler: Çekiç 1 mücevheri kırar; Takas herhangi 2 mücevheri yer değiştirir; Bomba 3×3 alanı patlatır; Color Blast bir renkteki tüm mücevherleri temizler; +10 ise 10 hamle ekler. Bir güçlendiriciye dokun, ardından kullanmak için tahtaya dokun.',
   };
 
   static const Map<String, String> _nl = {
@@ -953,6 +1001,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Verzamel: verzamel genoeg edelstenen van een bepaalde kleur.',
     'guide_mode_jelly': 'Gelei wissen: laat elk geleivakje op het bord knappen.',
     'guide_stuck': 'Vast? Stilstaande edelstenen knipperen als hint; zonder zetten schudt het bord automatisch.',
+    'guide_boost_title': 'Boosters & munten',
+    'guide_boost_body':
+        'Win levels om munten te verdienen — hoe meer sterren, hoe meer munten. Geef munten uit om boosters te kopen als ze op zijn. Boosters: de Hamer slaat 1 edelsteen kapot; Ruilen verwisselt 2 willekeurige edelstenen; de Bom blaast een gebied van 3×3 op; Color Blast verwijdert alle edelstenen van één kleur; +10 voegt 10 zetten toe. Tik op een booster en tik daarna op het bord om hem te gebruiken.',
   };
 
   static const Map<String, String> _pl = {
@@ -1004,6 +1055,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Zbieraj: zgromadź wystarczająco klejnotów danego koloru.',
     'guide_mode_jelly': 'Wyczyść Galaretkę: rozbij każde pole galaretki na planszy.',
     'guide_stuck': 'Utknąłeś? Nieruchome klejnoty zamigają jako podpowiedź; bez ruchów plansza tasuje się sama.',
+    'guide_boost_title': 'Dopalacze i monety',
+    'guide_boost_body':
+        'Wygrywaj poziomy, aby zdobywać monety — im więcej gwiazdek, tym więcej monet. Wydawaj monety na zakup dopalaczy, gdy się skończą. Dopalacze: Młot rozbija 1 klejnot; Zamiana zamienia dowolne 2 klejnoty; Bomba wysadza obszar 3×3; Color Blast usuwa wszystkie klejnoty jednego koloru; +10 dodaje 10 ruchów. Dotknij dopalacza, a następnie dotknij planszy, aby go użyć.',
   };
 
   static const Map<String, String> _fil = {
@@ -1055,6 +1109,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Kolektahin: magtipon ng sapat na hiyas ng ibinigay na kulay.',
     'guide_mode_jelly': 'Linisin ang Jelly: pasabugin ang bawat jelly tile sa board.',
     'guide_stuck': 'Naipit? Kikislap ang mga tamad na hiyas bilang pahiwatig; kapag walang galaw, kusang nagsasalansan muli ang board.',
+    'guide_boost_title': 'Mga Booster at Barya',
+    'guide_boost_body':
+        'Manalo sa mga level para kumita ng barya — habang mas maraming bituin, mas maraming barya. Gumastos ng barya para bumili ng booster kapag naubusan ka. Mga booster: Ang Martilyo ay dumudurog ng 1 hiyas; ang Swap ay nagpapalit ng kahit anong 2 hiyas; ang Bomba ay sumasabog sa 3×3 na lugar; nililinis ng Color Blast ang lahat ng hiyas na iisang kulay; ang +10 ay nagdaragdag ng 10 galaw. Pindutin ang isang booster, pagkatapos ay pindutin ang board para gamitin ito.',
   };
 
   static const Map<String, String> _ms = {
@@ -1106,6 +1163,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Kumpul: kumpulkan cukup permata warna tertentu.',
     'guide_mode_jelly': 'Bersihkan Jeli: pecahkan setiap petak jeli pada papan.',
     'guide_stuck': 'Tersekat? Permata yang diam akan berkelip sebagai pembayang; tanpa gerakan, papan dikocok secara automatik.',
+    'guide_boost_title': 'Penggalak & Syiling',
+    'guide_boost_body':
+        'Menangi peringkat untuk memperoleh syiling — semakin banyak bintang, semakin banyak syiling. Belanjakan syiling untuk membeli penggalak apabila kehabisan. Penggalak: Tukul memecahkan 1 permata; Tukar menukar mana-mana 2 permata; Bom meletupkan kawasan 3×3; Color Blast membersihkan semua permata satu warna; +10 menambah 10 gerakan. Ketik penggalak, kemudian ketik papan untuk menggunakannya.',
   };
 
   static const Map<String, String> _uk = {
@@ -1157,6 +1217,9 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'Збір: зберіть достатньо самоцвітів заданого кольору.',
     'guide_mode_jelly': 'Очистити желе: лопніть усі клітинки желе на полі.',
     'guide_stuck': 'Застрягли? Нерухомі самоцвіти блимнуть підказкою; без ходів поле перемішається саме.',
+    'guide_boost_title': 'Бустери та монети',
+    'guide_boost_body':
+        'Проходьте рівні, щоб заробляти монети — що більше зірок, то більше монет. Витрачайте монети на купівлю бустерів, коли вони закінчуються. Бустери: Молот розбиває 1 самоцвіт; Обмін міняє місцями будь-які 2 самоцвіти; Бомба підриває область 3×3; Color Blast прибирає всі самоцвіти одного кольору; +10 додає 10 ходів. Торкніться бустера, а потім торкніться поля, щоб застосувати його.',
   };
 
   static const Map<String, String> _bn = {
@@ -1208,5 +1271,8 @@ class AppTranslations extends Translations {
     'guide_mode_collect': 'সংগ্রহ: নির্দিষ্ট রঙের যথেষ্ট রত্ন জোগাড় করুন।',
     'guide_mode_jelly': 'জেলি পরিষ্কার: বোর্ডের প্রতিটি জেলি টাইল ফাটান।',
     'guide_stuck': 'আটকে গেছেন? নিষ্ক্রিয় রত্ন ইঙ্গিত হিসেবে জ্বলবে; কোনো চাল না থাকলে বোর্ড নিজেই এলোমেলো হয়।',
+    'guide_boost_title': 'বুস্টার ও কয়েন',
+    'guide_boost_body':
+        'লেভেল জিতে কয়েন অর্জন করুন — যত বেশি তারা, তত বেশি কয়েন। ফুরিয়ে গেলে কয়েন খরচ করে বুস্টার কিনুন। বুস্টার: হাতুড়ি ১টি রত্ন ভাঙে; অদলবদল যেকোনো ২টি রত্ন বদলায়; বোমা ৩×৩ এলাকা উড়িয়ে দেয়; Color Blast এক রঙের সব রত্ন মুছে দেয়; +10 ১০টি চাল যোগ করে। একটি বুস্টারে ট্যাপ করুন, তারপর ব্যবহার করতে বোর্ডে ট্যাপ করুন।',
   };
 }

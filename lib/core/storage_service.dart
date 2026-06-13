@@ -1,0 +1,43 @@
+import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Tập trung MỌI key lưu trữ — tránh gõ string literal rải rác, dễ sai.
+class StorageKeys {
+  StorageKeys._();
+
+  static const String unlockedLevel = 'unlockedLevel';
+  static const String coins = 'coins';
+  static const String localeCode = 'locale_code';
+
+  static String highScore(int level) => 'hs_$level';
+  static String star(int level) => 'star_$level';
+
+  // Booster
+  static const String bHammer = 'b_hammer';
+  static const String bMoves = 'b_moves';
+  static const String bSwap = 'b_swap';
+  static const String bBomb = 'b_bomb';
+  static const String bColor = 'b_color';
+  static const String bJoker = 'b_joker';
+  static const String bLightning = 'b_light';
+  static const String bRoyal = 'b_royal';
+  static const String bGravity = 'b_grav';
+}
+
+/// Service lưu trữ local dùng chung (bọc SharedPreferences).
+/// Đăng ký 1 lần ở main: `Get.put(StorageService(prefs), permanent: true)`.
+class StorageService extends GetxService {
+  final SharedPreferences _prefs;
+  StorageService(this._prefs);
+
+  static StorageService get to => Get.find<StorageService>();
+
+  int getInt(String key, {int def = 0}) => _prefs.getInt(key) ?? def;
+  Future<void> setInt(String key, int value) => _prefs.setInt(key, value);
+
+  String? getString(String key) => _prefs.getString(key);
+  Future<void> setString(String key, String value) =>
+      _prefs.setString(key, value);
+
+  Future<void> remove(String key) => _prefs.remove(key);
+}

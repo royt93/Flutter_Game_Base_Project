@@ -53,6 +53,7 @@ void main() {
           builder: (ctx) => Center(
             child: ElevatedButton(
               onPressed: () => NeonDialog.show(
+                context: ctx,
                 title: 'QUIT?',
                 color: NeonTheme.magenta,
                 actions: [

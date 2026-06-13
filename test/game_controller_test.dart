@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:neon_jewels/data/levels.dart';
 import 'package:neon_jewels/logic/gem_data.dart';
+import 'package:neon_jewels/core/storage_service.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,9 +14,9 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     Get.reset();
+    final prefs = await SharedPreferences.getInstance();
+    Get.put(StorageService(prefs));
     c = Get.put(GameController());
-    // chờ _load() nạp prefs xong
-    await Future.delayed(const Duration(milliseconds: 30));
   });
 
   tearDown(Get.reset);
@@ -227,18 +228,61 @@ void main() {
       expect(c.coins.value, 10);
     });
 
-    test('+5 lượt: dùng booster cộng 5 lượt', () {
+    test('+10 lượt: dùng booster cộng 10 lượt', () {
       c.startLevel(1);
       final m0 = c.movesLeft.value;
       c.boosterMoves.value = 1;
       expect(c.useMovesBooster(), isTrue);
-      expect(c.movesLeft.value, m0 + 5);
+      expect(c.movesLeft.value, m0 + 10);
       expect(c.boosterMoves.value, 0);
     });
 
-    test('hết +5 thì useMovesBooster trả false', () {
+    test('hết +10 thì useMovesBooster trả false', () {
       c.boosterMoves.value = 0;
       expect(c.useMovesBooster(), isFalse);
+    });
+
+    test('swap/bomb/color: dùng giảm số lượng', () {
+      c.boosterSwap.value = 1;
+      c.boosterBomb.value = 1;
+      c.boosterColor.value = 1;
+      expect(c.useSwap(), isTrue);
+      expect(c.useBomb(), isTrue);
+      expect(c.useColor(), isTrue);
+      expect(c.boosterSwap.value, 0);
+      expect(c.boosterBomb.value, 0);
+      expect(c.boosterColor.value, 0);
+      expect(c.useSwap(), isFalse);
+    });
+
+    test('mua swap/bomb/color trừ xu', () {
+      c.coins.value = 200;
+      expect(c.buySwap(price: 40), isTrue);
+      expect(c.buyBomb(price: 50), isTrue);
+      expect(c.buyColor(price: 80), isTrue);
+      expect(c.coins.value, 200 - 40 - 50 - 80);
+    });
+
+    test('booster độc quyền: dùng giảm số lượng', () {
+      c.boosterJoker.value = 1;
+      c.boosterLightning.value = 1;
+      c.boosterRoyal.value = 1;
+      c.boosterGravity.value = 1;
+      expect(c.useJoker(), isTrue);
+      expect(c.useLightning(), isTrue);
+      expect(c.useRoyal(), isTrue);
+      expect(c.useGravity(), isTrue);
+      expect(c.useJoker(), isFalse);
+      expect(c.useRoyal(), isFalse);
+    });
+
+    test('mua booster độc quyền trừ xu', () {
+      c.coins.value = 500;
+      expect(c.buyJoker(price: 60), isTrue);
+      expect(c.buyLightning(price: 60), isTrue);
+      expect(c.buyRoyal(price: 120), isTrue);
+      expect(c.buyGravity(price: 50), isTrue);
+      expect(c.coins.value, 500 - 60 - 60 - 120 - 50);
     });
   });
 }

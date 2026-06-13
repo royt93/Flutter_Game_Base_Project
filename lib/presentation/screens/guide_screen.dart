@@ -62,6 +62,31 @@ class GuideScreen extends StatelessWidget {
                       ],
                     ),
                     _section(
+                      color: NeonTheme.orange,
+                      icon: Icons.bolt_rounded,
+                      title: 'guide_boost_title'.tr,
+                      children: [
+                        _bullet(NeonTheme.cyan, Icons.swap_horiz_rounded, '',
+                            'guide_boost_body'.tr),
+                        Padding(
+                          padding: const EdgeInsets.only(top: NeonTheme.s8),
+                          child: Wrap(
+                            spacing: NeonTheme.s8,
+                            runSpacing: NeonTheme.s8,
+                            children: const [
+                              _BoostChip(Icons.gavel_rounded, NeonTheme.orange),
+                              _BoostChip(Icons.swap_horiz_rounded, NeonTheme.cyan),
+                              _BoostChip(Icons.adjust_rounded, NeonTheme.magenta),
+                              _BoostChip(Icons.palette_rounded, NeonTheme.purple),
+                              _BoostChip(Icons.av_timer_rounded, NeonTheme.lime),
+                              _BoostChip(Icons.monetization_on_rounded,
+                                  NeonTheme.yellow),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    _section(
                       color: NeonTheme.yellow,
                       icon: Icons.lightbulb_rounded,
                       title: '★',
@@ -160,4 +185,25 @@ class GuideScreen extends StatelessWidget {
     fontSize: 13,
     height: 1.45,
   );
+}
+
+/// Chip icon booster nhỏ minh hoạ trong guide.
+class _BoostChip extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  const _BoostChip(this.icon, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: NeonTheme.panel.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color, width: 1.5),
+        boxShadow: NeonTheme.glow(color, blur: 5),
+      ),
+      child: NeonIcon(icon, color: color, size: 18),
+    );
+  }
 }

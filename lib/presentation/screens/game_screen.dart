@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../core/audio_manager.dart';
 import '../../core/neon_theme.dart';
 import '../../data/levels.dart';
+import '../../game/neon_jewel_game.dart' show BoosterMode;
 import '../controllers/game_controller.dart';
 import '../controllers/game_screen_controller.dart';
 import '../widgets/neon_dialog.dart';
@@ -348,62 +349,125 @@ class GameScreen extends StatelessWidget {
 
   // ---------------------------------------------------------------- Booster
   Widget _buildBoosterBar(GameController ctrl, GameScreenController sc) {
-    return Padding(
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(
           horizontal: NeonTheme.s24, vertical: NeonTheme.s8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Obx(() => _pill(Icons.monetization_on_rounded, NeonTheme.yellow,
                   '${ctrl.coins.value}')
               .animate(key: ValueKey(sc.coinShake.value))
               .shake(duration: 450.ms, hz: 6)),
-          const SizedBox(width: NeonTheme.s24),
-          // Búa: còn → chọn (chạm gem để đập); hết → mua 30 xu
-          Obx(() => _boosterBtn(
-                Icons.gavel_rounded,
-                NeonTheme.orange,
-                ctrl.boosterHammer.value,
-                price: 30,
-                armed: sc.hammerArmed.value,
-                onTap: () {
-                  debugPrint('roy93~ HAMMER tap: count=${ctrl.boosterHammer.value} '
-                      'coins=${ctrl.coins.value} armed=${sc.hammerArmed.value}');
-                  if (sc.hammerArmed.value) {
-                    sc.hammerArmed.value = false; // bấm lại để bỏ chọn
-                    sc.game.hammerArmed = false;
-                  } else if (ctrl.boosterHammer.value > 0) {
-                    sc.armHammer();
-                  } else {
-                    final ok = ctrl.buyHammer();
-                    debugPrint('roy93~ HAMMER buy result=$ok coins=${ctrl.coins.value}');
-                    if (!ok) sc.coinShake.value++; // thiếu xu → rung chip xu
-                  }
-                },
-              )),
           const SizedBox(width: NeonTheme.s16),
-          // +5 lượt: còn → dùng ngay (+5 lượt); hết → mua 25 xu
+          // Swap: đổi 2 gem bất kỳ
+          Obx(() => _armBooster(ctrl, sc, BoosterMode.swap,
+              Icons.swap_horiz_rounded, NeonTheme.cyan,
+              ctrl.boosterSwap.value, 40, ctrl.buySwap)),
+          const SizedBox(width: NeonTheme.s8),
+          // Búa: đập 1 gem
+          Obx(() => _armBooster(ctrl, sc, BoosterMode.hammer,
+              Icons.gavel_rounded, NeonTheme.orange,
+              ctrl.boosterHammer.value, 30, ctrl.buyHammer)),
+          const SizedBox(width: NeonTheme.s8),
+          // Bom: nổ 3x3
+          Obx(() => _armBooster(ctrl, sc, BoosterMode.bomb,
+              Icons.adjust_rounded, NeonTheme.magenta,
+              ctrl.boosterBomb.value, 50, ctrl.buyBomb)),
+          const SizedBox(width: NeonTheme.s8),
+          // Color Blast: xoá 1 màu
+          Obx(() => _armBooster(ctrl, sc, BoosterMode.colorBlast,
+              Icons.palette_rounded, NeonTheme.purple,
+              ctrl.boosterColor.value, 80, ctrl.buyColor)),
+          const SizedBox(width: NeonTheme.s8),
+          // Joker: biến 1 gem thành Rainbow (arm)
+          Obx(() => _armBooster(ctrl, sc, BoosterMode.joker,
+              Icons.auto_awesome_rounded, NeonTheme.magenta,
+              ctrl.boosterJoker.value, 60, ctrl.buyJoker)),
+          const SizedBox(width: NeonTheme.s8),
+          // Chain Lightning (tức thì)
+          Obx(() => _instantBooster(ctrl, sc, Icons.bolt_rounded, NeonTheme.yellow,
+              ctrl.boosterLightning.value, 60, ctrl.useLightning, ctrl.buyLightning,
+              () => sc.game.chainLightning())),
+          const SizedBox(width: NeonTheme.s8),
+          // Royal Flush (tức thì: nổ cả bàn)
+          Obx(() => _instantBooster(ctrl, sc, Icons.workspace_premium_rounded,
+              NeonTheme.orange, ctrl.boosterRoyal.value, 120, ctrl.useRoyal,
+              ctrl.buyRoyal, () => sc.game.royalFlush())),
+          const SizedBox(width: NeonTheme.s8),
+          // Gravity Flip (tức thì)
+          Obx(() => _instantBooster(ctrl, sc, Icons.swap_vert_rounded,
+              NeonTheme.cyan, ctrl.boosterGravity.value, 50, ctrl.useGravity,
+              ctrl.buyGravity, () => sc.game.gravityFlip())),
+          const SizedBox(width: NeonTheme.s8),
+          // +10 lượt (tức thì)
           Obx(() => _boosterBtn(
-                Icons.add_alarm_rounded,
-                NeonTheme.cyan,
+                Icons.av_timer_rounded,
+                NeonTheme.lime,
                 ctrl.boosterMoves.value,
-                label: '+5',
-                price: 25,
+                label: '+10',
+                price: 40,
                 onTap: () {
-                  debugPrint('roy93~ MOVES tap: count=${ctrl.boosterMoves.value} '
+                  debugPrint('roy93~ MOVES tap count=${ctrl.boosterMoves.value} '
                       'moves=${ctrl.movesLeft.value} coins=${ctrl.coins.value}');
                   if (ctrl.boosterMoves.value > 0) {
                     ctrl.useMovesBooster();
-                    debugPrint('roy93~ MOVES used -> moves=${ctrl.movesLeft.value}');
-                  } else {
-                    final ok = ctrl.buyMoves();
-                    debugPrint('roy93~ MOVES buy result=$ok coins=${ctrl.coins.value}');
-                    if (!ok) sc.coinShake.value++; // thiếu xu → rung chip xu
+                  } else if (!ctrl.buyMoves()) {
+                    sc.coinShake.value++;
                   }
                 },
               )),
         ],
       ),
+    );
+  }
+
+  /// Booster tức thì (lightning/royal/gravity): còn → dùng ngay; hết → mua.
+  Widget _instantBooster(
+    GameController ctrl,
+    GameScreenController sc,
+    IconData icon,
+    Color color,
+    int count,
+    int price,
+    bool Function() use,
+    bool Function() buy,
+    void Function() action,
+  ) {
+    return _boosterBtn(
+      icon,
+      color,
+      count,
+      price: price,
+      onTap: () {
+        debugPrint('roy93~ instant booster count=$count coins=${ctrl.coins.value}');
+        if (count > 0) {
+          if (use()) action();
+        } else if (!buy()) {
+          sc.coinShake.value++;
+        }
+      },
+    );
+  }
+
+  /// Booster cần chạm bàn (búa/swap/bom/color): chọn/bỏ chọn; hết → mua.
+  Widget _armBooster(GameController ctrl, GameScreenController sc, BoosterMode mode,
+      IconData icon, Color color, int count, int price, bool Function() buy) {
+    final armed = sc.armed.value == mode;
+    return _boosterBtn(
+      icon,
+      color,
+      count,
+      price: price,
+      armed: armed,
+      onTap: () {
+        debugPrint('roy93~ booster $mode count=$count coins=${ctrl.coins.value} armed=$armed');
+        if (armed || count > 0) {
+          sc.toggleArm(mode);
+        } else if (!buy()) {
+          sc.coinShake.value++;
+        }
+      },
     );
   }
 

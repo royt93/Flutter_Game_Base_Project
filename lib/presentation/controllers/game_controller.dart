@@ -1,5 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/storage_service.dart';
 import '../../data/levels.dart';
 import '../../logic/gem_data.dart';
 
@@ -25,15 +26,23 @@ class GameController extends GetxController {
 
   // --- Kinh tế & booster ---
   final RxInt coins = 0.obs;
-  final RxInt boosterHammer = 0.obs;
-  final RxInt boosterMoves = 0.obs; // +5 lượt
+  final RxInt boosterHammer = 0.obs; // đập 1 gem
+  final RxInt boosterMoves = 0.obs; // +10 lượt
+  final RxInt boosterSwap = 0.obs; // đổi 2 gem bất kỳ
+  final RxInt boosterBomb = 0.obs; // nổ 3x3
+  final RxInt boosterColor = 0.obs; // xoá 1 màu
+  // Booster độc quyền (theme lá bài)
+  final RxInt boosterJoker = 0.obs; // biến 1 gem thành Rainbow
+  final RxInt boosterLightning = 0.obs; // sét phá nhiều gem cùng màu
+  final RxInt boosterRoyal = 0.obs; // Royal Flush: nổ cả bàn
+  final RxInt boosterGravity = 0.obs; // đảo trọng lực (đảo cột)
 
   /// Số sao đạt được ở ván vừa kết thúc (cho dialog celebration).
   int lastStars = 0;
   int lastCoinReward = 0;
 
   bool _resolved = false;
-  late SharedPreferences _prefs;
+  final StorageService _store = StorageService.to;
 
   @override
   void onInit() {
@@ -41,17 +50,23 @@ class GameController extends GetxController {
     _load();
   }
 
-  Future<void> _load() async {
-    _prefs = await SharedPreferences.getInstance();
-    unlockedLevel.value = _prefs.getInt('unlockedLevel') ?? 1;
-    coins.value = _prefs.getInt('coins') ?? 50; // tặng 50 xu khởi đầu
-    boosterHammer.value = _prefs.getInt('b_hammer') ?? 2;
-    boosterMoves.value = _prefs.getInt('b_moves') ?? 2;
+  void _load() {
+    unlockedLevel.value = _store.getInt(StorageKeys.unlockedLevel, def: 1);
+    coins.value = _store.getInt(StorageKeys.coins, def: 50); // tặng 50 xu
+    boosterHammer.value = _store.getInt(StorageKeys.bHammer, def: 2);
+    boosterMoves.value = _store.getInt(StorageKeys.bMoves, def: 2);
+    boosterSwap.value = _store.getInt(StorageKeys.bSwap, def: 1);
+    boosterBomb.value = _store.getInt(StorageKeys.bBomb, def: 1);
+    boosterColor.value = _store.getInt(StorageKeys.bColor, def: 0);
+    boosterJoker.value = _store.getInt(StorageKeys.bJoker, def: 1);
+    boosterLightning.value = _store.getInt(StorageKeys.bLightning, def: 1);
+    boosterRoyal.value = _store.getInt(StorageKeys.bRoyal, def: 0);
+    boosterGravity.value = _store.getInt(StorageKeys.bGravity, def: 1);
     for (final lv in kLevels) {
-      final hs = _prefs.getInt('hs_${lv.index}');
-      if (hs != null) highScores[lv.index] = hs;
-      final st = _prefs.getInt('star_${lv.index}');
-      if (st != null) stars[lv.index] = st;
+      final hs = _store.getInt(StorageKeys.highScore(lv.index), def: -1);
+      if (hs >= 0) highScores[lv.index] = hs;
+      final st = _store.getInt(StorageKeys.star(lv.index), def: -1);
+      if (st >= 0) stars[lv.index] = st;
     }
   }
 
@@ -154,44 +169,65 @@ class GameController extends GetxController {
   }
 
   // --- Booster ---
-  bool useHammer() {
-    if (boosterHammer.value <= 0) return false;
-    boosterHammer.value--;
-    _prefs.setInt('b_hammer', boosterHammer.value);
+  bool useHammer() => _useBooster(StorageKeys.bHammer, boosterHammer);
+
+  /// +10 lượt. Trả về true nếu còn booster.
+  bool useMovesBooster() {
+    if (!_useBooster(StorageKeys.bMoves, boosterMoves)) return false;
+    movesLeft.value += 10;
     return true;
   }
 
-  /// +5 lượt. Trả về true nếu còn booster.
-  bool useMovesBooster() {
-    if (boosterMoves.value <= 0) return false;
-    boosterMoves.value--;
-    _prefs.setInt('b_moves', boosterMoves.value);
-    movesLeft.value += 5;
+  bool useSwap() => _useBooster(StorageKeys.bSwap, boosterSwap);
+  bool useBomb() => _useBooster(StorageKeys.bBomb, boosterBomb);
+  bool useColor() => _useBooster(StorageKeys.bColor, boosterColor);
+  bool useJoker() => _useBooster(StorageKeys.bJoker, boosterJoker);
+  bool useLightning() => _useBooster(StorageKeys.bLightning, boosterLightning);
+  bool useRoyal() => _useBooster(StorageKeys.bRoyal, boosterRoyal);
+  bool useGravity() => _useBooster(StorageKeys.bGravity, boosterGravity);
+
+  bool _useBooster(String key, RxInt count) {
+    if (count.value <= 0) return false;
+    count.value--;
+    _store.setInt(key, count.value);
     return true;
   }
 
   /// Mua booster bằng xu. Trả về true nếu đủ xu.
-  bool buyHammer({int price = 30}) => _buy('b_hammer', boosterHammer, price);
-  bool buyMoves({int price = 25}) => _buy('b_moves', boosterMoves, price);
+  bool buyHammer({int price = 30}) => _buy(StorageKeys.bHammer, boosterHammer, price);
+  bool buyMoves({int price = 40}) => _buy(StorageKeys.bMoves, boosterMoves, price);
+  bool buySwap({int price = 40}) => _buy(StorageKeys.bSwap, boosterSwap, price);
+  bool buyBomb({int price = 50}) => _buy(StorageKeys.bBomb, boosterBomb, price);
+  bool buyColor({int price = 80}) => _buy(StorageKeys.bColor, boosterColor, price);
+  bool buyJoker({int price = 60}) => _buy(StorageKeys.bJoker, boosterJoker, price);
+  bool buyLightning({int price = 60}) =>
+      _buy(StorageKeys.bLightning, boosterLightning, price);
+  bool buyRoyal({int price = 120}) => _buy(StorageKeys.bRoyal, boosterRoyal, price);
+  bool buyGravity({int price = 50}) =>
+      _buy(StorageKeys.bGravity, boosterGravity, price);
 
   bool _buy(String key, RxInt count, int price) {
     if (coins.value < price) return false;
     coins.value -= price;
     count.value++;
-    _prefs.setInt('coins', coins.value);
-    _prefs.setInt(key, count.value);
+    _store.setInt(StorageKeys.coins, coins.value);
+    _store.setInt(key, count.value);
     return true;
   }
 
   Future<void> resetProgress() async {
+    debugPrint('roy93~ resetProgress START unlocked=${unlockedLevel.value} '
+        'highScores=${highScores.length} stars=${stars.length} coins=${coins.value}');
     unlockedLevel.value = 1;
     highScores.clear();
     stars.clear();
-    await _prefs.setInt('unlockedLevel', 1);
+    await _store.setInt(StorageKeys.unlockedLevel, 1);
     for (final lv in kLevels) {
-      await _prefs.remove('hs_${lv.index}');
-      await _prefs.remove('star_${lv.index}');
+      await _store.remove(StorageKeys.highScore(lv.index));
+      await _store.remove(StorageKeys.star(lv.index));
     }
+    debugPrint('roy93~ resetProgress DONE unlocked=${unlockedLevel.value} '
+        'highScores=${highScores.length} stars=${stars.length}');
   }
 
   Future<void> _saveProgress({required bool win}) async {
@@ -199,21 +235,19 @@ class GameController extends GetxController {
     final prev = highScores[lv] ?? 0;
     if (score.value > prev) {
       highScores[lv] = score.value;
-      await _prefs.setInt('hs_$lv', score.value);
+      await _store.setInt(StorageKeys.highScore(lv), score.value);
     }
     if (win) {
-      // sao tốt nhất
       final prevStar = stars[lv] ?? 0;
       if (lastStars > prevStar) {
         stars[lv] = lastStars;
-        await _prefs.setInt('star_$lv', lastStars);
+        await _store.setInt(StorageKeys.star(lv), lastStars);
       }
-      // thưởng xu
       coins.value += lastCoinReward;
-      await _prefs.setInt('coins', coins.value);
+      await _store.setInt(StorageKeys.coins, coins.value);
       if (lv >= unlockedLevel.value && lv < kLevels.length) {
         unlockedLevel.value = lv + 1;
-        await _prefs.setInt('unlockedLevel', unlockedLevel.value);
+        await _store.setInt(StorageKeys.unlockedLevel, unlockedLevel.value);
       }
     }
   }

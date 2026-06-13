@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:neon_jewels/core/app_translations.dart';
+import 'package:neon_jewels/core/storage_service.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
 import 'package:neon_jewels/presentation/screens/guide_screen.dart';
 import 'package:neon_jewels/presentation/screens/home_screen.dart';
@@ -13,9 +14,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
     Get.reset();
+    Get.put(StorageService(await SharedPreferences.getInstance()));
   });
   tearDown(Get.reset);
 

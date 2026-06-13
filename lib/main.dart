@@ -6,6 +6,7 @@ import 'core/app_translations.dart';
 import 'core/audio_manager.dart';
 import 'core/locale_service.dart';
 import 'core/neon_theme.dart';
+import 'core/storage_service.dart';
 import 'presentation/screens/home_screen.dart';
 
 void main() => app();
@@ -22,7 +23,8 @@ Future<void> app() async {
   ]);
 
   final prefs = await SharedPreferences.getInstance();
-  final locale = Get.put(LocaleService(prefs), permanent: true);
+  final store = Get.put(StorageService(prefs), permanent: true);
+  final locale = Get.put(LocaleService(store), permanent: true);
 
   final audio = Get.put(AudioManager(), permanent: true);
   audio.init().then((_) => audio.startBgm());
