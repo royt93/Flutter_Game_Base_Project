@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import '../../core/app_info.dart';
 import '../../core/neon_theme.dart';
-import '../../data/levels.dart';
 import '../controllers/game_controller.dart';
 import '../widgets/neon_button.dart';
+import 'guide_screen.dart';
 import 'level_select_screen.dart';
 import 'settings_screen.dart';
 
@@ -18,12 +19,16 @@ class HomeScreen extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(gradient: NeonTheme.bgGradient),
         child: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(),
-                _GemSparkle(),
+          child: LayoutBuilder(
+            builder: (context, c) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: c.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Spacer(),
+                      _GemSparkle(),
                 const SizedBox(height: NeonTheme.s24),
                 Text(
                   'NEON',
@@ -72,6 +77,13 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: NeonTheme.s16),
                 NeonButton(
+                  label: 'guide'.tr,
+                  color: NeonTheme.magenta,
+                  icon: Icons.menu_book_rounded,
+                  onTap: () => Get.to(() => const GuideScreen()),
+                ),
+                const SizedBox(height: NeonTheme.s16),
+                NeonButton(
                   label: 'settings'.tr,
                   color: NeonTheme.purple,
                   icon: Icons.settings,
@@ -79,16 +91,29 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: NeonTheme.s24),
                 Text(
-                  'levels_tagline'.trParams({'count': '${kLevels.length}'}),
-                  style: TextStyle(
+                  'v$kAppVersion',
+                  style: const TextStyle(
                     fontFamily: 'Orbitron',
-                    color: Colors.white54,
+                    color: Colors.white60,
                     fontSize: 12,
                     letterSpacing: 2,
                   ),
                 ),
-                const Spacer(),
-              ],
+                const SizedBox(height: NeonTheme.s8),
+                Text(
+                  kCopyright,
+                  style: const TextStyle(
+                    fontFamily: 'Orbitron',
+                    color: Colors.white38,
+                    fontSize: 10,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                      const Spacer(),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ),

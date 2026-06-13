@@ -61,6 +61,25 @@ class AppTranslations extends Translations {
     'hud_goal': 'GOAL',
     'quit_title': 'QUIT LEVEL?',
     'quit_msg': 'Your progress in this level will be lost.',
+    'guide': 'HOW TO PLAY',
+    'guide_howto_title': 'Match 3+',
+    'guide_howto_body':
+        'Swipe or tap to swap two adjacent gems. Line up 3 or more of the same shape to clear them and score.',
+    'guide_special_title': 'Special Gems',
+    'guide_striped': 'Striped — match 4',
+    'guide_striped_desc': 'Clears a whole row or column.',
+    'guide_bomb': 'Bomb — match T/L',
+    'guide_bomb_desc': 'Blasts the surrounding 3×3 area.',
+    'guide_rainbow': 'Rainbow — match 5',
+    'guide_rainbow_desc': 'Removes every gem of one color.',
+    'guide_combo_title': 'Combos & Wombo Combo',
+    'guide_combo_body':
+        'Chain clears (cascades) raise your combo and score multiplier. Swap two special gems together for a huge combined blast — hit a long chain for a WOMBO COMBO!',
+    'guide_modes_title': 'Game Modes',
+    'guide_mode_score': 'Score: reach the target score within the moves.',
+    'guide_mode_collect': 'Collect: gather enough gems of a given color.',
+    'guide_mode_jelly': 'Clear Jelly: pop every jelly tile on the board.',
+    'guide_stuck': 'Stuck? Idle gems will blink a hint; no moves left auto-shuffles the board.',
   };
 
   static const Map<String, String> _vi = {
@@ -93,5 +112,24 @@ class AppTranslations extends Translations {
     'hud_goal': 'MỤC TIÊU',
     'quit_title': 'THOÁT MÀN?',
     'quit_msg': 'Tiến độ màn này sẽ bị mất.',
+    'guide': 'HƯỚNG DẪN',
+    'guide_howto_title': 'Ghép 3+',
+    'guide_howto_body':
+        'Vuốt hoặc chạm để đổi 2 gem kề nhau. Xếp 3 gem cùng hình trở lên để phá và ghi điểm.',
+    'guide_special_title': 'Gem Đặc Biệt',
+    'guide_striped': 'Striped — ghép 4',
+    'guide_striped_desc': 'Phá nguyên 1 hàng hoặc 1 cột.',
+    'guide_bomb': 'Bomb — ghép hình T/L',
+    'guide_bomb_desc': 'Nổ tung vùng 3×3 xung quanh.',
+    'guide_rainbow': 'Rainbow — ghép 5',
+    'guide_rainbow_desc': 'Xoá toàn bộ gem của 1 màu.',
+    'guide_combo_title': 'Combo & Wombo Combo',
+    'guide_combo_body':
+        'Chuỗi phá liên tiếp (cascade) tăng combo và hệ số điểm. Đổi 2 gem đặc biệt cạnh nhau để tạo vụ nổ kết hợp cực lớn — chuỗi thật dài sẽ thành WOMBO COMBO!',
+    'guide_modes_title': 'Các Chế Độ Chơi',
+    'guide_mode_score': 'Điểm: đạt điểm mục tiêu trong số lượt cho phép.',
+    'guide_mode_collect': 'Thu thập: gom đủ số gem của màu chỉ định.',
+    'guide_mode_jelly': 'Phá Jelly: phá hết các ô jelly trên bàn.',
+    'guide_stuck': 'Bí nước? Gem sẽ nhấp nháy gợi ý; hết nước đi bàn tự xáo lại.',
   };
 }

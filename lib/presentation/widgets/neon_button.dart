@@ -35,19 +35,27 @@ class NeonButton extends StatelessWidget {
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
               Icon(icon, color: c, size: 22),
               const SizedBox(width: 10),
             ],
-            Text(
-              label,
-              style: TextStyle(fontFamily: 'Orbitron', 
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.5,
-                shadows: [Shadow(color: c, blurRadius: 12)],
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontFamily: 'Orbitron',
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.5,
+                    shadows: [Shadow(color: c, blurRadius: 12)],
+                  ),
+                ),
               ),
             ),
           ],

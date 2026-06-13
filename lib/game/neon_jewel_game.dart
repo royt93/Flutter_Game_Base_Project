@@ -431,6 +431,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         text: 'SHUFFLE!',
         color: NeonTheme.purple,
         position: Vector2(size.x / 2, size.y * 0.42),
+        maxWidth: size.x * 0.9,
       )..priority = 70);
       await _doShuffle();
       await _resolveAll();
@@ -839,12 +840,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
   void _spawnComboText(int combo) {
     final color = NeonTheme.gemColors[combo % NeonTheme.gemColors.length];
-    final fontSize = (26 + combo * 5).clamp(26, 60).toDouble();
+    final fontSize = (24 + combo * 4).clamp(24, 40).toDouble();
+    final label = combo >= 6 ? 'WOMBO COMBO x$combo!' : 'COMBO x$combo!';
     add(ComboTextComponent(
-      text: 'COMBO x$combo!',
+      text: label,
       color: color,
       position: Vector2(size.x / 2, size.y * 0.4),
       fontSize: fontSize,
+      maxWidth: size.x * 0.9,
     )..priority = 70);
     if (combo >= 4) _flash(color, peak: 0.18);
   }

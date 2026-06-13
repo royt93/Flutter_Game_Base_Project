@@ -79,6 +79,7 @@ class NeonBackground extends PositionComponent {
   final List<Color> palette;
   final math.Random rnd;
   final List<_Orb> _orbs = [];
+  final List<_Orb> _nebula = []; // đám mây sáng lớn tạo chiều sâu
   final List<_Star> _stars = [];
   double _time = 0;
   late final Paint _vignette;
@@ -91,11 +92,20 @@ class NeonBackground extends PositionComponent {
         const [Color(0x00000000), Color(0x55000000), Color(0x99000000)],
         const [0.5, 0.82, 1.0],
       );
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < 9; i++) {
       _orbs.add(_Orb(
         Vector2(rnd.nextDouble() * area.x, rnd.nextDouble() * area.y),
-        Vector2(rnd.nextDouble() * 2 - 1, rnd.nextDouble() * 2 - 1)..scale(10),
-        70 + rnd.nextDouble() * 90,
+        Vector2(rnd.nextDouble() * 2 - 1, rnd.nextDouble() * 2 - 1)..scale(12),
+        70 + rnd.nextDouble() * 100,
+        palette[rnd.nextInt(palette.length)],
+      ));
+    }
+    // nebula lớn, trôi rất chậm — tạo nền không gian sâu, lung linh
+    for (int i = 0; i < 3; i++) {
+      _nebula.add(_Orb(
+        Vector2(rnd.nextDouble() * area.x, rnd.nextDouble() * area.y),
+        Vector2(rnd.nextDouble() * 2 - 1, rnd.nextDouble() * 2 - 1)..scale(4),
+        area.x * (0.4 + rnd.nextDouble() * 0.3),
         palette[rnd.nextInt(palette.length)],
       ));
     }
@@ -116,7 +126,7 @@ class NeonBackground extends PositionComponent {
   void update(double dt) {
     super.update(dt);
     _time += dt;
-    for (final o in _orbs) {
+    for (final o in [..._orbs, ..._nebula]) {
       o.pos.add(o.vel * dt);
       if (o.pos.x < -o.radius) o.pos.x = area.x + o.radius;
       if (o.pos.x > area.x + o.radius) o.pos.x = -o.radius;
@@ -127,26 +137,17 @@ class NeonBackground extends PositionComponent {
 
   @override
   void render(Canvas canvas) {
-    _renderGrid(canvas);
+    // nebula lớn (sâu, mờ) → orb vừa → sao → vignette
+    for (final n in _nebula) {
+      NeonFx.drawGlow(canvas, Offset(n.pos.x, n.pos.y), n.radius, n.color,
+          opacity: 0.09);
+    }
     for (final o in _orbs) {
       NeonFx.drawGlow(canvas, Offset(o.pos.x, o.pos.y), o.radius, o.color,
-          opacity: 0.16);
+          opacity: 0.18);
     }
     _renderStars(canvas);
     canvas.drawRect(Rect.fromLTWH(0, 0, area.x, area.y), _vignette);
-  }
-
-  void _renderGrid(Canvas canvas) {
-    const cells = 8;
-    final stepX = area.x / cells;
-    final stepY = area.y / cells;
-    final paint = Paint()
-      ..color = const Color(0xFF00F0FF).withValues(alpha: 0.045)
-      ..strokeWidth = 1;
-    for (int i = 1; i < cells; i++) {
-      canvas.drawLine(Offset(stepX * i, 0), Offset(stepX * i, area.y), paint);
-      canvas.drawLine(Offset(0, stepY * i), Offset(area.x, stepY * i), paint);
-    }
   }
 
   void _renderStars(Canvas canvas) {
@@ -378,6 +379,7 @@ class ComboTextComponent extends PositionComponent {
   final Color color;
   final double duration;
   final double fontSize;
+  final double maxWidth; // giới hạn bề rộng để không tràn màn hình
   double _t = 0;
   late final TextPaint _paint;
 
@@ -387,6 +389,7 @@ class ComboTextComponent extends PositionComponent {
     required Vector2 position,
     this.duration = 0.9,
     this.fontSize = 30,
+    this.maxWidth = 9999,
   }) : super(position: position, anchor: Anchor.center) {
     _paint = TextPaint(
       style: TextStyle(
@@ -414,11 +417,15 @@ class ComboTextComponent extends PositionComponent {
   @override
   void render(Canvas canvas) {
     final p = _t.clamp(0.0, 1.0);
-    final scale = 0.6 + 0.7 * Curves.elasticOut.transform(p.clamp(0.0, 0.6) / 0.6);
+    var scale = 0.6 + 0.7 * Curves.elasticOut.transform(p.clamp(0.0, 0.6) / 0.6);
     final op = p < 0.7 ? 1.0 : (1 - (p - 0.7) / 0.3);
+    final m = _paint.getLineMetrics(text);
+    // không cho vượt quá maxWidth
+    if (m.width > 0 && m.width * scale > maxWidth) {
+      scale = maxWidth / m.width;
+    }
     canvas.save();
     canvas.scale(scale);
-    final m = _paint.getLineMetrics(text);
     final tp = TextPaint(
       style: _paint.style.copyWith(color: Colors.white.withValues(alpha: op)),
     );

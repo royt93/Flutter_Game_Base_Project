@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 /// Icon phong cách neon: lõi trắng + glow màu (dùng chung toàn app).
 class NeonIcon extends StatelessWidget {
@@ -18,6 +19,22 @@ class NeonIcon extends StatelessWidget {
         Shadow(color: color, blurRadius: 14),
         Shadow(color: color, blurRadius: 6),
       ],
+    );
+  }
+}
+
+/// Nút back neon dùng chung cho mọi màn phụ (mặc định quay lại màn trước).
+class NeonBackButton extends StatelessWidget {
+  final Color color;
+  final VoidCallback? onTap;
+  const NeonBackButton({super.key, this.color = const Color(0xFF00F0FF), this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return NeonIconButton(
+      Icons.arrow_back_rounded,
+      color: color,
+      onTap: onTap ?? Get.back,
     );
   }
 }

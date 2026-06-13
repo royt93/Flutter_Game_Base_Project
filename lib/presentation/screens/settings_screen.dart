@@ -6,6 +6,7 @@ import '../../core/locale_service.dart';
 import '../../core/neon_theme.dart';
 import '../controllers/game_controller.dart';
 import '../widgets/neon_dialog.dart';
+import '../widgets/neon_icon.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -33,10 +34,7 @@ class SettingsScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(NeonTheme.s16),
                 child: Row(
                   children: [
-                    IconButton(
-                      onPressed: Get.back,
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    ),
+                    const NeonBackButton(color: NeonTheme.purple),
                     const SizedBox(width: 8),
                     Text(
                       'settings'.tr,

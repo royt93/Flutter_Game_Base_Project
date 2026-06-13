@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
 import '../../data/levels.dart';
 import '../controllers/game_controller.dart';
+import '../widgets/neon_icon.dart';
 import 'game_screen.dart';
 
 class LevelSelectScreen extends StatelessWidget {
@@ -21,10 +22,7 @@ class LevelSelectScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(NeonTheme.s16),
                 child: Row(
                   children: [
-                    IconButton(
-                      onPressed: Get.back,
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    ),
+                    const NeonBackButton(color: NeonTheme.cyan),
                     const SizedBox(width: 8),
                     Text(
                       'select_level'.tr,

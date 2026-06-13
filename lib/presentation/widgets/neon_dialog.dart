@@ -84,10 +84,9 @@ class NeonDialog {
               if (content != null) ...[const SizedBox(height: 14), content],
               const SizedBox(height: 24),
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   for (final a in actions) ...[
-                    _DialogButton(action: a),
+                    Expanded(child: _DialogButton(action: a)),
                     if (a != actions.last) const SizedBox(width: 12),
                   ],
                 ],
@@ -112,20 +111,25 @@ class _DialogButton extends StatelessWidget {
         action.onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: action.color, width: 2),
           boxShadow: NeonTheme.glow(action.color, blur: 10),
         ),
-        child: Text(
-          action.label,
-          style: TextStyle(
-            fontFamily: 'Orbitron',
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1,
-            shadows: [Shadow(color: action.color, blurRadius: 8)],
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            action.label,
+            maxLines: 1,
+            style: TextStyle(
+              fontFamily: 'Orbitron',
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1,
+              shadows: [Shadow(color: action.color, blurRadius: 8)],
+            ),
           ),
         ),
       ),

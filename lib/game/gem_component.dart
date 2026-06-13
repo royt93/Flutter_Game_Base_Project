@@ -49,14 +49,16 @@ class GemComponent extends PositionComponent {
     final center = Offset(s / 2, s / 2);
     final r = s * 0.40;
     final pulseAmt = 0.5 + 0.5 * math.sin(_pulse);
+    final isSpecial = type != GemType.normal;
 
-    // 1) Glow ngoài (ảnh cache, không blur per-frame)
+    // 1) Glow ngoài (ảnh cache) — gem special sáng mạnh & nhịp nhanh hơn
     NeonFx.drawGlow(
       canvas,
       center,
-      s * (selected ? 0.95 : 0.7) + pulseAmt * s * 0.12,
-      c,
-      opacity: selected ? 1.0 : 0.75,
+      s * (selected ? 0.95 : (isSpecial ? 0.9 : 0.7)) +
+          pulseAmt * s * (isSpecial ? 0.22 : 0.12),
+      type == GemType.rainbow ? Colors.white : c,
+      opacity: selected ? 1.0 : (isSpecial ? 0.95 : 0.75),
     );
 
     final path = _shapePath(color.index, center, r);
@@ -171,57 +173,81 @@ class GemComponent extends PositionComponent {
   }
 
   void _renderSpecial(Canvas canvas, double s, Offset center, Color c) {
-    final p = Paint()
-      ..color = Colors.white.withValues(alpha: 0.95)
-      ..strokeWidth = s * 0.05
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
+    if (type == GemType.normal) return;
+    final pulse = 0.6 + 0.4 * math.sin(_pulse * 1.8);
+
+    // Vạch neon đậm: ống màu dày + lõi trắng (dùng cho striped).
+    void neonBar(Offset a, Offset b) {
+      canvas.drawLine(
+          a,
+          b,
+          Paint()
+            ..color = c
+            ..strokeWidth = s * 0.16
+            ..strokeCap = StrokeCap.round);
+      canvas.drawLine(
+          a,
+          b,
+          Paint()
+            ..color = Colors.white
+            ..strokeWidth = s * 0.07
+            ..strokeCap = StrokeCap.round);
+    }
+
     switch (type) {
       case GemType.stripedH:
-        for (final fy in [-0.18, 0.0, 0.18]) {
-          canvas.drawLine(Offset(s * 0.2, center.dy + s * fy),
-              Offset(s * 0.8, center.dy + s * fy), p);
+        for (final fy in [-0.2, 0.2]) {
+          neonBar(Offset(s * 0.16, center.dy + s * fy),
+              Offset(s * 0.84, center.dy + s * fy));
         }
         break;
       case GemType.stripedV:
-        for (final fx in [-0.18, 0.0, 0.18]) {
-          canvas.drawLine(Offset(center.dx + s * fx, s * 0.2),
-              Offset(center.dx + s * fx, s * 0.8), p);
+        for (final fx in [-0.2, 0.2]) {
+          neonBar(Offset(center.dx + s * fx, s * 0.16),
+              Offset(center.dx + s * fx, s * 0.84));
         }
         break;
       case GemType.bomb:
-        // lõi tối + vòng sáng + tia → cảm giác "bom năng lượng"
-        canvas.drawCircle(center, s * 0.16,
-            Paint()..color = Colors.black.withValues(alpha: 0.55));
+        // lõi tối + vòng sáng nhịp + tia năng lượng
+        canvas.drawCircle(center, s * 0.2,
+            Paint()..color = Colors.black.withValues(alpha: 0.5));
         canvas.drawCircle(
             center,
-            s * 0.16,
+            s * 0.2 * pulse,
             Paint()
               ..style = PaintingStyle.stroke
-              ..strokeWidth = s * 0.04
+              ..strokeWidth = s * 0.06
               ..color = Colors.white);
         for (int i = 0; i < 8; i++) {
-          final a = i * math.pi / 4;
+          final a = i * math.pi / 4 + _pulse * 0.5;
           canvas.drawLine(
-            Offset(center.dx + math.cos(a) * s * 0.2,
-                center.dy + math.sin(a) * s * 0.2),
-            Offset(center.dx + math.cos(a) * s * 0.28,
-                center.dy + math.sin(a) * s * 0.28),
-            p,
+            Offset(center.dx + math.cos(a) * s * 0.22,
+                center.dy + math.sin(a) * s * 0.22),
+            Offset(center.dx + math.cos(a) * s * 0.34,
+                center.dy + math.sin(a) * s * 0.34),
+            Paint()
+              ..color = Colors.white
+              ..strokeWidth = s * 0.05
+              ..strokeCap = StrokeCap.round,
           );
         }
+        canvas.drawCircle(center, s * 0.07,
+            Paint()..color = Colors.white.withValues(alpha: pulse));
         break;
       case GemType.rainbow:
+        // vòng cầu vồng xoay + lõi trắng sáng
         final colors = NeonTheme.gemColors;
         for (int i = 0; i < colors.length; i++) {
           final a = i / colors.length * math.pi * 2 + _pulse;
           canvas.drawCircle(
-            Offset(center.dx + math.cos(a) * s * 0.2,
-                center.dy + math.sin(a) * s * 0.2),
-            s * 0.07,
+            Offset(center.dx + math.cos(a) * s * 0.24,
+                center.dy + math.sin(a) * s * 0.24),
+            s * 0.08,
             Paint()..color = colors[i],
           );
         }
+        canvas.drawCircle(center, s * 0.12 * pulse,
+            Paint()..color = Colors.white.withValues(alpha: 0.9));
         break;
       case GemType.normal:
         break;
