@@ -155,8 +155,27 @@ lib/
 - [x] **Dialog xác nhận thoát màn** (NeonDialog) khi bấm X giữa lúc chơi
 - [x] Tăng cường animation tổng thể (flash, combo scale, special birth — từ Wave 2)
 
+#### Wave 2.2 — audit UI/UX theo phản hồi (đã làm)
+- [x] Home: bỏ tagline "5 màn", thay bằng **version (v1.0.0) + © SAIGON PHANTOM LABS**
+- [x] **NeonBackButton** dùng chung (back neon ở mọi màn phụ); xác nhận nút X màn chơi mở dialog OK
+- [x] Fix **HUD tràn width** (chip co giãn, NeonButton label FittedBox)
+- [x] **Xoá lưới ô vuông** nền game
+- [x] **Nền lung linh hơn:** thêm nebula màu lớn (chiều sâu) + sao
+- [x] **Gem special nổi bật hơn:** glow mạnh/nhịp nhanh, vạch neon đậm, lõi sáng nhịp, vòng cầu vồng xoay
+- [x] **Màn Hướng dẫn (Guide):** cách chơi, gem đặc biệt, combo/wombo combo, các chế độ, mẹo khi stuck
+- [x] Fix **COMBO text tràn màn** (giới hạn maxWidth) + nhãn **WOMBO COMBO** khi combo ≥ 6
+- [x] Fix **dialog button tràn** (Expanded + FittedBox) — áp cho mọi NeonDialog
+- [x] Home **cuộn được** khi màn thấp (chống overflow)
+
+#### Wave 2.3 — fix layout & background chung (đã làm)
+- [x] **Fix Home lệch:** bỏ IntrinsicHeight/Spacer, dùng Center + SingleChildScrollView (căn giữa chuẩn, cuộn an toàn)
+- [x] **NeonBg — background common** (gradient + quầng sáng mềm + vignette) áp cho Home & Guide
+- [x] **Revamp Guide:** dùng NeonBg, tăng padding + giảm glow → card không bị cắt
+- [x] **Fix HUD tràn:** chip SCORE/GOAL/MOVES bọc Flexible + FittedBox, chữ nhỏ lại (không wrap)
+- [x] **Special gem nổi bật hơn:** thêm **vòng cung sáng xoay** quanh gem special để gây chú ý
+
 ### 🟡 In progress
-*(không có — Wave 2.1 đã xong)*
+*(không có — Wave 2.3 đã xong)*
 
 ### 📋 Picked (đã chốt, chờ implement)
 *(trống — chờ chọn Wave 2 từ Deferred)*

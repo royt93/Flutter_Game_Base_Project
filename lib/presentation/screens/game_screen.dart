@@ -161,15 +161,18 @@ class _GameScreenState extends State<GameScreen> {
             ),
           ),
           const SizedBox(height: NeonTheme.s8),
-          // Hàng chip gọn inline
+          // Hàng chip gọn inline — Flexible + FittedBox chống tràn
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Obx(() => _chip('hud_score'.tr, '${ctrl.score.value}',
-                  NeonTheme.cyan)),
-              Obx(() => _goalChip()),
-              Obx(() => _chip('hud_moves'.tr, '${ctrl.movesLeft.value}',
-                  NeonTheme.orange)),
+              Flexible(
+                  child: Obx(() => _chip('hud_score'.tr, '${ctrl.score.value}',
+                      NeonTheme.cyan))),
+              const SizedBox(width: NeonTheme.s8),
+              Flexible(child: Obx(() => _goalChip())),
+              const SizedBox(width: NeonTheme.s8),
+              Flexible(
+                  child: Obx(() => _chip('hud_moves'.tr,
+                      '${ctrl.movesLeft.value}', NeonTheme.orange))),
             ],
           ),
           const SizedBox(height: NeonTheme.s8),
@@ -233,44 +236,47 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  /// Chip inline gọn: nhãn + giá trị trên cùng 1 hàng.
+  /// Chip inline gọn: nhãn + giá trị trên cùng 1 hàng (tự co bằng FittedBox).
   Widget _chip(String label, String value, Color color, {Widget? leading}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: NeonTheme.panel.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color, width: 1.8),
         boxShadow: NeonTheme.glow(color, blur: 6),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label,
-              style: TextStyle(
-                fontFamily: 'Orbitron',
-                color: color,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-              )),
-          const SizedBox(width: 6),
-          if (leading != null) ...[leading, const SizedBox(width: 4)],
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
-            child: Text(
-              value,
-              key: ValueKey(value),
-              style: const TextStyle(
-                fontFamily: 'Orbitron',
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label,
+                style: TextStyle(
+                  fontFamily: 'Orbitron',
+                  color: color,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                )),
+            const SizedBox(width: 5),
+            if (leading != null) ...[leading, const SizedBox(width: 4)],
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+              child: Text(
+                value,
+                key: ValueKey(value),
+                style: const TextStyle(
+                  fontFamily: 'Orbitron',
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

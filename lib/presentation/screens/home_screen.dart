@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../core/app_info.dart';
 import '../../core/neon_theme.dart';
 import '../controllers/game_controller.dart';
+import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
 import 'guide_screen.dart';
 import 'level_select_screen.dart';
@@ -16,103 +17,97 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Get.put(GameController(), permanent: true);
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: NeonTheme.bgGradient),
+      body: NeonBg(
         child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, c) => SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: c.maxHeight),
-                child: IntrinsicHeight(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Spacer(),
-                      _GemSparkle(),
-                const SizedBox(height: NeonTheme.s24),
-                Text(
-                  'NEON',
-                  style: TextStyle(fontFamily: 'Orbitron', 
-                    fontSize: 56,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 6,
-                    shadows: NeonTheme.gemColors
-                        .take(3)
-                        .map((c) => Shadow(color: c, blurRadius: 24))
-                        .toList(),
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: NeonTheme.s24, vertical: NeonTheme.s24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _GemSparkle(),
+                  const SizedBox(height: NeonTheme.s24),
+                  Text(
+                    'NEON',
+                    style: TextStyle(
+                      fontFamily: 'Orbitron',
+                      fontSize: 56,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 6,
+                      shadows: NeonTheme.gemColors
+                          .take(3)
+                          .map((c) => Shadow(color: c, blurRadius: 24))
+                          .toList(),
+                    ),
+                  )
+                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .shimmer(duration: 2200.ms, color: NeonTheme.cyan)
+                      .scaleXY(begin: 1, end: 1.04, duration: 1600.ms),
+                  const Text(
+                    'JEWELS',
+                    style: TextStyle(
+                      fontFamily: 'Orbitron',
+                      fontSize: 40,
+                      fontWeight: FontWeight.w700,
+                      color: NeonTheme.magenta,
+                      letterSpacing: 10,
+                      shadows: [Shadow(color: NeonTheme.magenta, blurRadius: 28)],
+                    ),
                   ),
-                )
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .shimmer(duration: 2200.ms, color: NeonTheme.cyan)
-                    .scaleXY(begin: 1, end: 1.04, duration: 1600.ms),
-                Text(
-                  'JEWELS',
-                  style: TextStyle(fontFamily: 'Orbitron', 
-                    fontSize: 40,
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(height: NeonTheme.s24 * 1.5),
+                  NeonButton(
+                    label: 'play_now'.tr,
+                    color: NeonTheme.lime,
+                    icon: Icons.play_arrow_rounded,
+                    onTap: () => Get.to(() => const LevelSelectScreen()),
+                  ),
+                  const SizedBox(height: NeonTheme.s16),
+                  NeonButton(
+                    label: 'quick_level1'.tr,
+                    color: NeonTheme.cyan,
+                    icon: Icons.bolt,
+                    onTap: () {
+                      Get.find<GameController>().startLevel(1);
+                      Get.to(() => const LevelSelectScreen());
+                    },
+                  ),
+                  const SizedBox(height: NeonTheme.s16),
+                  NeonButton(
+                    label: 'guide'.tr,
                     color: NeonTheme.magenta,
-                    letterSpacing: 10,
-                    shadows: [
-                      const Shadow(color: NeonTheme.magenta, blurRadius: 28),
-                    ],
+                    icon: Icons.menu_book_rounded,
+                    onTap: () => Get.to(() => const GuideScreen()),
                   ),
-                ),
-                const Spacer(),
-                NeonButton(
-                  label: 'play_now'.tr,
-                  color: NeonTheme.lime,
-                  icon: Icons.play_arrow_rounded,
-                  onTap: () => Get.to(() => const LevelSelectScreen()),
-                ),
-                const SizedBox(height: NeonTheme.s16),
-                NeonButton(
-                  label: 'quick_level1'.tr,
-                  color: NeonTheme.cyan,
-                  icon: Icons.bolt,
-                  onTap: () {
-                    Get.find<GameController>().startLevel(1);
-                    Get.to(() => const LevelSelectScreen());
-                  },
-                ),
-                const SizedBox(height: NeonTheme.s16),
-                NeonButton(
-                  label: 'guide'.tr,
-                  color: NeonTheme.magenta,
-                  icon: Icons.menu_book_rounded,
-                  onTap: () => Get.to(() => const GuideScreen()),
-                ),
-                const SizedBox(height: NeonTheme.s16),
-                NeonButton(
-                  label: 'settings'.tr,
-                  color: NeonTheme.purple,
-                  icon: Icons.settings,
-                  onTap: () => Get.to(() => const SettingsScreen()),
-                ),
-                const SizedBox(height: NeonTheme.s24),
-                Text(
-                  'v$kAppVersion',
-                  style: const TextStyle(
-                    fontFamily: 'Orbitron',
-                    color: Colors.white60,
-                    fontSize: 12,
-                    letterSpacing: 2,
+                  const SizedBox(height: NeonTheme.s16),
+                  NeonButton(
+                    label: 'settings'.tr,
+                    color: NeonTheme.purple,
+                    icon: Icons.settings,
+                    onTap: () => Get.to(() => const SettingsScreen()),
                   ),
-                ),
-                const SizedBox(height: NeonTheme.s8),
-                Text(
-                  kCopyright,
-                  style: const TextStyle(
-                    fontFamily: 'Orbitron',
-                    color: Colors.white38,
-                    fontSize: 10,
-                    letterSpacing: 1.5,
+                  const SizedBox(height: NeonTheme.s24),
+                  Text(
+                    'v$kAppVersion',
+                    style: const TextStyle(
+                      fontFamily: 'Orbitron',
+                      color: Colors.white60,
+                      fontSize: 12,
+                      letterSpacing: 2,
+                    ),
                   ),
-                ),
-                      const Spacer(),
-                    ],
+                  const SizedBox(height: NeonTheme.s8),
+                  Text(
+                    kCopyright,
+                    style: const TextStyle(
+                      fontFamily: 'Orbitron',
+                      color: Colors.white38,
+                      fontSize: 10,
+                      letterSpacing: 1.5,
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ),

@@ -103,7 +103,11 @@ class GemComponent extends PositionComponent {
       Paint()..color = Colors.white.withValues(alpha: 0.85),
     );
 
-    // 5) Overlay special
+    // 5) Overlay special + vòng sáng xoay gây chú ý
+    if (isSpecial) {
+      _drawAttentionRing(
+          canvas, center, s, type == GemType.rainbow ? Colors.white : c);
+    }
     _renderSpecial(canvas, s, center, c);
 
     // Vòng chọn
@@ -170,6 +174,20 @@ class GemComponent extends PositionComponent {
       i == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
     }
     return path..close();
+  }
+
+  /// Vòng cung sáng xoay quanh gem special → bắt mắt người chơi.
+  void _drawAttentionRing(Canvas canvas, Offset center, double s, Color color) {
+    final rect = Rect.fromCircle(center: center, radius: s * 0.52);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.045
+      ..strokeCap = StrokeCap.round
+      ..color = color.withValues(alpha: 0.9);
+    for (int i = 0; i < 4; i++) {
+      final start = _pulse * 1.6 + i * math.pi / 2;
+      canvas.drawArc(rect, start, 0.55, false, paint);
+    }
   }
 
   void _renderSpecial(Canvas canvas, double s, Offset center, Color c) {
