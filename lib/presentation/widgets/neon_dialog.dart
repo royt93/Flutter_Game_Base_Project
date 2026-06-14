@@ -51,7 +51,7 @@ class NeonDialog {
             title,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Orbitron',
+              fontFamily: 'Baloo2',
               color: Colors.white,
               fontSize: 26,
               fontWeight: FontWeight.w900,
@@ -65,7 +65,7 @@ class NeonDialog {
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontFamily: 'Orbitron',
+                fontFamily: 'Baloo2',
                 color: Colors.white70,
                 fontSize: 14,
                 height: 1.4,
@@ -172,7 +172,7 @@ class _DialogButton extends StatelessWidget {
             action.label,
             maxLines: 1,
             style: TextStyle(
-              fontFamily: 'Orbitron',
+              fontFamily: 'Baloo2',
               color: Colors.white,
               fontWeight: FontWeight.w700,
               letterSpacing: 1,

@@ -102,7 +102,7 @@ class HomeScreen extends StatelessWidget {
                   Text(
                     'NEON',
                     style: TextStyle(
-                      fontFamily: 'Orbitron',
+                      fontFamily: 'Baloo2',
                       fontSize: 56,
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
@@ -119,7 +119,7 @@ class HomeScreen extends StatelessWidget {
                   const Text(
                     'JEWELS',
                     style: TextStyle(
-                      fontFamily: 'Orbitron',
+                      fontFamily: 'Baloo2',
                       fontSize: 40,
                       fontWeight: FontWeight.w700,
                       color: NeonTheme.magenta,
@@ -127,7 +127,8 @@ class HomeScreen extends StatelessWidget {
                       shadows: [Shadow(color: NeonTheme.magenta, blurRadius: 28)],
                     ),
                   ),
-                  const SizedBox(height: NeonTheme.s24 * 1.5),
+                  const SizedBox(height: NeonTheme.s24 * 1.6),
+                  // NÚT CHÍNH — focus vào chơi ngay
                   NeonButton(
                     label: 'play_now'.tr,
                     color: NeonTheme.lime,
@@ -142,66 +143,37 @@ class HomeScreen extends StatelessWidget {
                           : const WorldMapScreen());
                     },
                   ),
-                  const SizedBox(height: NeonTheme.s16),
-                  NeonButton(
-                    label: 'quick_level1'.tr,
-                    color: NeonTheme.cyan,
-                    icon: Icons.bolt,
-                    onTap: () {
-                      Get.find<GameController>().startLevel(1);
-                      Get.to(() => const LevelSelectScreen());
-                    },
-                  ),
-                  const SizedBox(height: NeonTheme.s16),
-                  Stack(
-                    clipBehavior: Clip.none,
+                  const SizedBox(height: NeonTheme.s24 * 1.2),
+                  // PHỤ — hàng icon tròn gọn (thành tựu / hướng dẫn / cài đặt)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      NeonButton(
-                        label: 'achievements'.tr,
-                        color: NeonTheme.yellow,
-                        icon: Icons.emoji_events_rounded,
-                        onTap: () => Get.to(() => const AchievementsScreen()),
-                      ),
-                      Positioned(
-                        right: -2,
-                        top: -2,
-                        child: Obx(() {
-                          ac.claimed.length;
-                          return ac.hasUnclaimed
-                              ? Container(
-                                  width: 14,
-                                  height: 14,
-                                  decoration: BoxDecoration(
-                                    color: NeonTheme.lime,
-                                    shape: BoxShape.circle,
-                                    boxShadow:
-                                        NeonTheme.glow(NeonTheme.lime, blur: 8),
-                                  ),
-                                )
-                              : const SizedBox.shrink();
-                        }),
-                      ),
+                      Obx(() {
+                        ac.claimed.length;
+                        return _circleNav(
+                          Icons.emoji_events_rounded,
+                          NeonTheme.yellow,
+                          'achievements'.tr,
+                          () => Get.to(() => const AchievementsScreen()),
+                          badge: ac.hasUnclaimed,
+                        );
+                      }),
+                      const SizedBox(width: NeonTheme.s24),
+                      _circleNav(Icons.menu_book_rounded, NeonTheme.magenta,
+                          'guide'.tr, () => Get.to(() => const GuideScreen())),
+                      const SizedBox(width: NeonTheme.s24),
+                      _circleNav(
+                          Icons.settings_rounded,
+                          NeonTheme.purple,
+                          'settings'.tr,
+                          () => Get.to(() => const SettingsScreen())),
                     ],
                   ),
-                  const SizedBox(height: NeonTheme.s16),
-                  NeonButton(
-                    label: 'guide'.tr,
-                    color: NeonTheme.magenta,
-                    icon: Icons.menu_book_rounded,
-                    onTap: () => Get.to(() => const GuideScreen()),
-                  ),
-                  const SizedBox(height: NeonTheme.s16),
-                  NeonButton(
-                    label: 'settings'.tr,
-                    color: NeonTheme.purple,
-                    icon: Icons.settings,
-                    onTap: () => Get.to(() => const SettingsScreen()),
-                  ),
-                  const SizedBox(height: NeonTheme.s24),
+                  const SizedBox(height: NeonTheme.s24 * 1.4),
                   Text(
                     'v$kAppVersion',
                     style: const TextStyle(
-                      fontFamily: 'Orbitron',
+                      fontFamily: 'Baloo2',
                       color: Colors.white,
                       fontSize: 12,
                       letterSpacing: 2,
@@ -216,7 +188,7 @@ class HomeScreen extends StatelessWidget {
                   Text(
                     kCopyright,
                     style: const TextStyle(
-                      fontFamily: 'Orbitron',
+                      fontFamily: 'Baloo2',
                       color: Colors.white,
                       fontSize: 10,
                       letterSpacing: 1.5,
@@ -231,6 +203,60 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           );
+  }
+
+  /// Nút điều hướng phụ: icon tròn neon + nhãn nhỏ + badge tuỳ chọn.
+  Widget _circleNav(IconData icon, Color color, String label, VoidCallback onTap,
+      {bool badge = false}) {
+    final circle = Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: NeonTheme.panel.withValues(alpha: 0.55),
+        shape: BoxShape.circle,
+        border: Border.all(color: color, width: 2),
+        boxShadow: NeonTheme.glow(color, blur: 10),
+      ),
+      child: Icon(icon, color: color, size: 26),
+    );
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          badge
+              ? Stack(clipBehavior: Clip.none, children: [
+                  circle,
+                  Positioned(
+                    right: -1,
+                    top: -1,
+                    child: Container(
+                      width: 13,
+                      height: 13,
+                      decoration: BoxDecoration(
+                        color: NeonTheme.lime,
+                        shape: BoxShape.circle,
+                        boxShadow: NeonTheme.glow(NeonTheme.lime, blur: 8),
+                      ),
+                    ),
+                  ),
+                ])
+              : circle,
+          const SizedBox(height: 7),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Baloo2',
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              shadows: [Shadow(color: color, blurRadius: 8)],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // -------------------------------------------------------------- Lives chip
@@ -424,7 +450,7 @@ class HomeScreen extends StatelessWidget {
               Text(
                 'daily_day'.trParams({'n': '$day'}),
                 style: const TextStyle(
-                  fontFamily: 'Orbitron',
+                  fontFamily: 'Baloo2',
                   color: Colors.white70,
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
@@ -442,7 +468,7 @@ class HomeScreen extends StatelessWidget {
               Text(
                 '$reward',
                 style: const TextStyle(
-                  fontFamily: 'Orbitron',
+                  fontFamily: 'Baloo2',
                   color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
@@ -549,7 +575,7 @@ class _LivesChipState extends State<_LivesChip> {
           Text(
             '$lives',
             style: const TextStyle(
-              fontFamily: 'Orbitron',
+              fontFamily: 'Baloo2',
               color: Colors.white,
               fontWeight: FontWeight.w800,
               fontSize: 15,
@@ -563,7 +589,7 @@ class _LivesChipState extends State<_LivesChip> {
             Text(
               HomeScreen._fmt(next),
               style: TextStyle(
-                fontFamily: 'Orbitron',
+                fontFamily: 'Baloo2',
                 color: Colors.white.withValues(alpha: 0.8),
                 fontWeight: FontWeight.w700,
                 fontSize: 12,

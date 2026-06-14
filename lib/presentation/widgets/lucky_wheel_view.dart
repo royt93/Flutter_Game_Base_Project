@@ -117,7 +117,7 @@ class _LuckyWheelViewState extends State<LuckyWheelView>
                     ? '+${s.amount} 💰'
                     : '${'wheel_got_booster'.tr} ${s.label}',
                 style: const TextStyle(
-                  fontFamily: 'Orbitron',
+                  fontFamily: 'Baloo2',
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
@@ -144,7 +144,7 @@ class _LuckyWheelViewState extends State<LuckyWheelView>
                     ? '...'
                     : (canSpin ? 'wheel_spin'.tr : 'wheel_done'.tr),
                 style: TextStyle(
-                  fontFamily: 'Orbitron',
+                  fontFamily: 'Baloo2',
                   color: (canSpin && !spinning) ? Colors.black : Colors.white54,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
@@ -207,7 +207,7 @@ class _WheelPainter extends CustomPainter {
         text: TextSpan(
           text: s.label,
           style: const TextStyle(
-            fontFamily: 'Orbitron',
+            fontFamily: 'Baloo2',
             fontSize: 12,
             fontWeight: FontWeight.w900,
             color: Colors.white,

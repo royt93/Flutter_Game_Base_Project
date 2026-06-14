@@ -48,7 +48,7 @@ class NeonButton extends StatelessWidget {
                   label,
                   maxLines: 1,
                   style: TextStyle(
-                    fontFamily: 'Orbitron',
+                    fontFamily: 'Baloo2',
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,

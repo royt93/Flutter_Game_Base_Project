@@ -40,7 +40,7 @@ class SettingsScreen extends StatelessWidget {
   TextStyle _t(double size,
           {Color color = Colors.white, FontWeight w = FontWeight.w700}) =>
       TextStyle(
-        fontFamily: 'Orbitron',
+        fontFamily: 'Baloo2',
         color: color,
         fontSize: size,
         fontWeight: w,

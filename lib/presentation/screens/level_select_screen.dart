@@ -48,7 +48,7 @@ class LevelSelectScreen extends StatelessWidget {
           ..hideCurrentSnackBar()
           ..showSnackBar(SnackBar(
             content: Text(msg,
-                style: const TextStyle(fontFamily: 'Orbitron', fontSize: 13)),
+                style: const TextStyle(fontFamily: 'Baloo2', fontSize: 13)),
             backgroundColor: NeonTheme.panel,
             behavior: SnackBarBehavior.floating,
           ));
@@ -239,7 +239,7 @@ class LevelSelectScreen extends StatelessWidget {
           Expanded(
             child: Text(label,
                 style: TextStyle(
-                  fontFamily: 'Orbitron',
+                  fontFamily: 'Baloo2',
                   color: owned ? Colors.white : Colors.white38,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -247,7 +247,7 @@ class LevelSelectScreen extends StatelessWidget {
           ),
           Text('x$count',
               style: TextStyle(
-                fontFamily: 'Orbitron',
+                fontFamily: 'Baloo2',
                 color: owned ? color : Colors.white38,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
@@ -314,7 +314,7 @@ class LevelSelectScreen extends StatelessWidget {
                   Text(
                     'world_n'.trParams({'n': '${w.index}'}),
                     style: TextStyle(
-                      fontFamily: 'Orbitron',
+                      fontFamily: 'Baloo2',
                       color: Colors.white,
                       fontSize: 14,
                       fontWeight: FontWeight.w900,
@@ -325,7 +325,7 @@ class LevelSelectScreen extends StatelessWidget {
                   Text(
                     w.name,
                     style: TextStyle(
-                      fontFamily: 'Orbitron',
+                      fontFamily: 'Baloo2',
                       color: c,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -341,7 +341,7 @@ class LevelSelectScreen extends StatelessWidget {
               const SizedBox(width: 3),
               Text('$stars',
                   style: const TextStyle(
-                    fontFamily: 'Orbitron',
+                    fontFamily: 'Baloo2',
                     color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
@@ -349,7 +349,7 @@ class LevelSelectScreen extends StatelessWidget {
               const SizedBox(width: NeonTheme.s8),
               Text('$done/${w.endLevel - w.startLevel + 1}',
                   style: const TextStyle(
-                    fontFamily: 'Orbitron',
+                    fontFamily: 'Baloo2',
                     color: Colors.white70,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -379,7 +379,7 @@ class LevelSelectScreen extends StatelessWidget {
           const SizedBox(width: 5),
           Obx(() => Text('${ctrl.coins.value}',
               style: const TextStyle(
-                fontFamily: 'Orbitron',
+                fontFamily: 'Baloo2',
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
                 fontSize: 14,
@@ -416,7 +416,7 @@ class LevelSelectScreen extends StatelessWidget {
                 children: [
                   Text('stage_n'.trParams({'n': '$index'}),
                       style: TextStyle(
-                        fontFamily: 'Orbitron',
+                        fontFamily: 'Baloo2',
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
@@ -428,7 +428,7 @@ class LevelSelectScreen extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(hs != null ? '★ $hs' : '★ —',
                         style: const TextStyle(
-                          fontFamily: 'Orbitron',
+                          fontFamily: 'Baloo2',
                           color: Colors.amber,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -449,7 +449,7 @@ class LevelSelectScreen extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text('play_now'.tr,
                           style: const TextStyle(
-                            fontFamily: 'Orbitron',
+                            fontFamily: 'Baloo2',
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
                             fontSize: 13,
@@ -488,7 +488,7 @@ class LevelSelectScreen extends StatelessWidget {
             if (unlocked)
               Text('${lv.index}',
                   style: TextStyle(
-                    fontFamily: 'Orbitron',
+                    fontFamily: 'Baloo2',
                     color: Colors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
@@ -533,7 +533,7 @@ class LevelSelectScreen extends StatelessWidget {
       alignment: Alignment.center,
       child: Text('$index',
           style: const TextStyle(
-            fontFamily: 'Orbitron',
+            fontFamily: 'Baloo2',
             color: Colors.white,
             fontSize: 34,
             fontWeight: FontWeight.w900,

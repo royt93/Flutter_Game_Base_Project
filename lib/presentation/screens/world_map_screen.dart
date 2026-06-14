@@ -48,7 +48,7 @@ class WorldMapScreen extends StatelessWidget {
           ..hideCurrentSnackBar()
           ..showSnackBar(SnackBar(
             content: Text(msg,
-                style: const TextStyle(fontFamily: 'Orbitron', fontSize: 13)),
+                style: const TextStyle(fontFamily: 'Baloo2', fontSize: 13)),
             backgroundColor: NeonTheme.panel,
             behavior: SnackBarBehavior.floating,
           ));
@@ -144,7 +144,7 @@ class WorldMapScreen extends StatelessWidget {
         const SizedBox(width: 5),
         Obx(() => Text('${ctrl.coins.value}',
             style: const TextStyle(
-              fontFamily: 'Orbitron',
+              fontFamily: 'Baloo2',
               color: Colors.white,
               fontWeight: FontWeight.w800,
               fontSize: 14,
@@ -220,7 +220,7 @@ class WorldMapScreen extends StatelessWidget {
           Expanded(
             child: Text(label,
                 style: TextStyle(
-                  fontFamily: 'Orbitron',
+                  fontFamily: 'Baloo2',
                   color: owned ? Colors.white : Colors.white38,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -228,7 +228,7 @@ class WorldMapScreen extends StatelessWidget {
           ),
           Text('x$count',
               style: TextStyle(
-                fontFamily: 'Orbitron',
+                fontFamily: 'Baloo2',
                 color: owned ? color : Colors.white38,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
@@ -384,7 +384,7 @@ class _AnimatedMapState extends State<_AnimatedMap>
         Text(
           '${'world_n'.trParams({'n': '${w.index}'})} · ${w.name}',
           style: TextStyle(
-            fontFamily: 'Orbitron',
+            fontFamily: 'Baloo2',
             color: Colors.white,
             fontSize: 10,
             fontWeight: FontWeight.w800,
@@ -396,7 +396,7 @@ class _AnimatedMapState extends State<_AnimatedMap>
         const SizedBox(width: 2),
         Text('$stars',
             style: const TextStyle(
-              fontFamily: 'Orbitron',
+              fontFamily: 'Baloo2',
               color: Colors.white,
               fontSize: 10,
               fontWeight: FontWeight.w800,
@@ -440,7 +440,7 @@ class _AnimatedMapState extends State<_AnimatedMap>
                 children: [
                   Text('${lv.index}',
                       style: const TextStyle(
-                        fontFamily: 'Orbitron',
+                        fontFamily: 'Baloo2',
                         color: Colors.white,
                         fontSize: 15,
                         fontWeight: FontWeight.w900,

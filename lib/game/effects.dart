@@ -577,7 +577,7 @@ class ComboTextComponent extends PositionComponent {
     _paint = TextPaint(
       style: TextStyle(
         color: Colors.white,
-        fontFamily: 'Orbitron',
+        fontFamily: 'Baloo2',
         fontSize: fontSize,
         fontWeight: FontWeight.w900,
         letterSpacing: 1.5,

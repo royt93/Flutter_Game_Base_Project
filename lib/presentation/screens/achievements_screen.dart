@@ -95,7 +95,7 @@ class AchievementsScreen extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Orbitron',
+              fontFamily: 'Baloo2',
               color: Colors.white,
               fontSize: 13,
               fontWeight: FontWeight.w800,
@@ -109,7 +109,7 @@ class AchievementsScreen extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontFamily: 'Orbitron',
+              fontFamily: 'Baloo2',
               color: Colors.white60,
               fontSize: 10,
               fontWeight: FontWeight.w600,
@@ -130,7 +130,7 @@ class AchievementsScreen extends StatelessWidget {
           const SizedBox(height: 3),
           Text('$cur / ${a.threshold}',
               style: const TextStyle(
-                fontFamily: 'Orbitron',
+                fontFamily: 'Baloo2',
                 color: Colors.white54,
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
@@ -147,7 +147,7 @@ class AchievementsScreen extends StatelessWidget {
     if (claimed) {
       return Text('ach_claimed'.tr,
           style: const TextStyle(
-            fontFamily: 'Orbitron',
+            fontFamily: 'Baloo2',
             color: NeonTheme.lime,
             fontSize: 11,
             fontWeight: FontWeight.w800,
@@ -163,7 +163,7 @@ class AchievementsScreen extends StatelessWidget {
               ..hideCurrentSnackBar()
               ..showSnackBar(SnackBar(
                 content: Text('+$got 💰',
-                    style: const TextStyle(fontFamily: 'Orbitron')),
+                    style: const TextStyle(fontFamily: 'Baloo2')),
                 backgroundColor: NeonTheme.panel,
                 behavior: SnackBarBehavior.floating,
                 duration: const Duration(milliseconds: 900),
@@ -181,7 +181,7 @@ class AchievementsScreen extends StatelessWidget {
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             Text('${'ach_claim'.tr} +${a.reward}',
                 style: const TextStyle(
-                  fontFamily: 'Orbitron',
+                  fontFamily: 'Baloo2',
                   color: Colors.black,
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
@@ -196,7 +196,7 @@ class AchievementsScreen extends StatelessWidget {
       const SizedBox(width: 3),
       Text('+${a.reward}',
           style: const TextStyle(
-            fontFamily: 'Orbitron',
+            fontFamily: 'Baloo2',
             color: NeonTheme.yellow,
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -220,7 +220,7 @@ class AchievementsScreen extends StatelessWidget {
         const SizedBox(width: 5),
         Obx(() => Text('${g.coins.value}',
             style: const TextStyle(
-              fontFamily: 'Orbitron',
+              fontFamily: 'Baloo2',
               color: Colors.white,
               fontWeight: FontWeight.w800,
               fontSize: 14,
