@@ -275,7 +275,17 @@ lib/
 - [ ] *Còn nợ nhỏ (đã ghi)*: đếm ngược hồi mạng ở Home chưa tự tick (static tới rebuild); `_doShuffle` kiểm hasMatch trên màu thô gồm ô loại trừ (vô hại).
 
 ### 🟡 In progress
-*(không có — Wave 5 đã xong 9/9)*
+*(không có — Wave 6 đã xong 3/3)*
+
+### 🌊 Wave 6 — Story/Episode + Endless + Theme-per-world + dọn nợ i18n — ✅ đã làm
+> Task chi tiết: [`tasks/done/w6-*.md`](tasks/done/). Người dùng chốt làm song song 3 hướng.
+- [x] **Story/Episode + nhân vật NPC**: 5 vệ thần neon (1/thế giới, vẽ bằng `CustomPainter` — Luma/Vera/Cir/Ember/Nyx), 15 beat (intro vào world + mid giữa world + outro thắng màn cuối), overlay trong cây (avatar + thoại + vuốt chuyển dòng), chỉ hiện 1 lần/beat. Trigger ở World Map / Level Select (trước pre-game) + sau win màn cuối thế giới. Guide thêm section Cốt truyện.
+- [x] **Endless mode (thử thách tăng dần)**: `ObjectiveType.endless` riêng (không dính 100 màn thường); ghép lớn hoàn lượt, lượt hoàn giảm theo stage → cạn lượt thì thua; stage +1 mỗi 1500đ; high score riêng; KHÔNG tốn mạng; nút ENDLESS ở Home; HUD STAGE + panel kỷ lục.
+- [x] **Theme đổi màu theo thế giới**: `NeonTheme.accentForWorld` (nguồn duy nhất), `NeonBg` nhận `accent` → tia sweep + nebula theo tông màu world; GameScreen đổi nền theo thế giới màn đang chơi (Endless đổi theo stage).
+- [x] **Dọn nợ i18n**: `world_n` + tên 5 thế giới (`world_name_1..5`) dịch đủ **22 ngôn ngữ** (lớp merge `_w6ByLang` — không sửa 22 base map); `level_select`/`world_map` dùng key dịch. Xác nhận đếm ngược hồi mạng ở Home đã tự tick (gỡ nợ Wave 4.2).
+- [x] **Kết quả**: 0 analyzer issue · **140 unit/widget test pass** (+12 test Wave 6 ở `test/w6_test.dart`) · build APK debug OK.
+
+> So với CCS: đóng nốt mục **A** (đã có node-map từ W5, nay + theme world) và mục **K** (story/nhân vật). Chỉ còn **J** (leaderboard/cloud — cần backend, đã chốt offline thuần) là chưa làm.
 
 ### 🌊 Wave 5 — batch 3.5 (World Map juice) + batch 4 (engine: Polish + Lucky + Spread) — ✅ đã làm
 - [x] **World Map nâng cấp** (theo feedback): node nhỏ gọn (46px), zig-zag sin mượt, **sao màu lấp lánh** động (CustomPainter twinkle), **xung năng lượng** chạy dọc path đã đi, node hiện tại **vầng sáng xoay** + pulse, banner thế giới gọn, auto-scroll tới màn hiện tại.
@@ -322,7 +332,7 @@ match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 
 | H | **Sound/Music revamp + juice** (SFX phong phú, slow-mo combo lớn, trail gem rơi) | Audio cơ bản | 🟢 Thấp | ⭐⭐ Cảm giác |
 | I | **Gem hiếm / Lucky candy / Mystery** (gem ngẫu nhiên ra special) | Chưa có | 🟢 Thấp | ⭐ Bất ngờ |
 | J | **Leaderboard / Cloud save / Daily challenge online** | Chưa có (cần backend) | 🔴 Cao | ⭐⭐ Social (cần Firebase) |
-| K | **Episode/story + nhân vật** (cốt truyện, NPC dẫn dắt) | Chưa có | 🔴 Cao | ⭐ Cốt truyện |
+| K | ~~**Episode/story + nhân vật** (cốt truyện, NPC dẫn dắt)~~ | ✅ Wave 6 (5 vệ thần neon, 15 beat intro/mid/outro) | 🔴 Cao | ⭐ Cốt truyện |
 
 ### 📋 Picked — Wave 5 (đã chốt: làm CẢ 4 hướng + 4 tính năng nhỏ, song song, OFFLINE thuần)
 > Task chi tiết: [`tasks/todo/`](tasks/todo/) → di chuyển sang `in-progress/` → `done/`.
@@ -381,8 +391,8 @@ match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 
 - [ ] **word_n + tên thế giới dịch 20 ngôn ngữ** (hiện fallback English cho `world_n`; tên thế giới là proper noun)
 
 ### 💭 Ideas (brainstorm pool)
-- Theme neon đổi màu theo world (cyan → magenta → green...)
-- Chế độ Endless / Zen không giới hạn lượt
+- ~~Theme neon đổi màu theo world (cyan → magenta → green...)~~ ✅ Wave 6
+- ~~Chế độ Endless / Zen không giới hạn lượt~~ ✅ Wave 6 (Endless thử thách tăng dần)
 - Daily challenge với leaderboard (cần backend — Firebase?)
 - Hiệu ứng "screen shake" + slow-motion khi combo lớn
 - Gem hiếm phát sáng pulsing, trail khi rơi
@@ -454,4 +464,4 @@ match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 
 
 ---
 
-*Cập nhật lần cuối: 2026-06-13 · Trạng thái: Đang phát triển (Wave 3.4 — fix bug Xoá tiến độ, 72 test pass)*
+*Cập nhật lần cuối: 2026-06-14 · Trạng thái: Đang phát triển (Wave 6 — Story/Episode + Endless + Theme-per-world + i18n 22 ngôn ngữ, 140 test pass)*

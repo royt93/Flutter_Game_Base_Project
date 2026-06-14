@@ -7,7 +7,12 @@ import '../../core/neon_theme.dart';
 /// Hiệu năng tốt: dùng RadialGradient/shader, không MaskFilter.
 class NeonBg extends StatefulWidget {
   final Widget child;
-  const NeonBg({super.key, required this.child});
+
+  /// Màu chủ đạo theo thế giới. Null = palette neon mặc định (đa sắc).
+  /// Khi có giá trị: tia sweep + nebula nghiêng về tông màu này → mỗi world
+  /// một sắc thái riêng (cyan → magenta → lime → ...).
+  final Color? accent;
+  const NeonBg({super.key, required this.child, this.accent});
 
   @override
   State<NeonBg> createState() => _NeonBgState();
@@ -62,7 +67,8 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
             child: AnimatedBuilder(
               animation: _ctrl,
               builder: (_, __) => CustomPaint(
-                painter: _NeonBgPainter(_ctrl.value, _orbs, _stars),
+                painter: _NeonBgPainter(
+                    _ctrl.value, _orbs, _stars, widget.accent),
               ),
             ),
           ),
@@ -109,7 +115,8 @@ class _NeonBgPainter extends CustomPainter {
   final double t; // 0..1
   final List<_Orb> orbs;
   final List<_Star> stars;
-  _NeonBgPainter(this.t, this.orbs, this.stars);
+  final Color? accent;
+  _NeonBgPainter(this.t, this.orbs, this.stars, this.accent);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -127,7 +134,12 @@ class _NeonBgPainter extends CustomPainter {
         ).createShader(rect),
     );
 
-    // 2) Tia sweep xoay (conic) tạo cảm giác sống động
+    // 2) Tia sweep xoay (conic) tạo cảm giác sống động.
+    //    Có accent → 2 tông màu world; null → cyan/magenta mặc định.
+    final sweepA = accent ?? NeonTheme.cyan;
+    final sweepB = accent != null
+        ? Color.lerp(accent!, Colors.white, 0.35)!
+        : NeonTheme.magenta;
     canvas.save();
     canvas.translate(size.width / 2, size.height * 0.4);
     canvas.rotate(tau);
@@ -139,28 +151,30 @@ class _NeonBgPainter extends CustomPainter {
         ..blendMode = BlendMode.plus
         ..shader = SweepGradient(
           colors: [
-            NeonTheme.cyan.withValues(alpha: 0.05),
+            sweepA.withValues(alpha: 0.05),
             Colors.transparent,
-            NeonTheme.magenta.withValues(alpha: 0.05),
+            sweepB.withValues(alpha: 0.05),
             Colors.transparent,
-            NeonTheme.cyan.withValues(alpha: 0.05),
+            sweepA.withValues(alpha: 0.05),
           ],
         ).createShader(sweepRect),
     );
     canvas.restore();
 
-    // 3) Nebula trôi
+    // 3) Nebula trôi. Có accent → pha về tông màu world (giữ chút đa sắc).
     for (final o in orbs) {
       final cx = (o.base.dx + o.amp.dx * math.sin(tau + o.phase)) * size.width;
       final cy = (o.base.dy + o.amp.dy * math.cos(tau + o.phase)) * size.height;
       final r = o.radius * size.width;
+      final oc =
+          accent != null ? Color.lerp(o.color, accent!, 0.6)! : o.color;
       canvas.drawCircle(
         Offset(cx, cy),
         r,
         Paint()
           ..blendMode = BlendMode.plus
           ..shader = RadialGradient(
-            colors: [o.color.withValues(alpha: 0.18), o.color.withValues(alpha: 0)],
+            colors: [oc.withValues(alpha: 0.18), oc.withValues(alpha: 0)],
           ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r)),
       );
     }
@@ -197,5 +211,6 @@ class _NeonBgPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _NeonBgPainter old) => old.t != t;
+  bool shouldRepaint(covariant _NeonBgPainter old) =>
+      old.t != t || old.accent != accent;
 }

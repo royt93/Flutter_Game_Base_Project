@@ -48,13 +48,16 @@ void main() {
             expect(lv.obstacle, isNot(ObstacleType.none));
             expect(lv.obstaclePattern, isNot(JellyPattern.none));
             break;
+          case ObjectiveType.endless:
+            fail('endless không được gắn vào màn thường (level ${lv.index})');
         }
       }
     });
 
-    test('có đủ 3 loại mục tiêu trong 5 màn demo', () {
+    test('các màn thường phủ đủ 6 mục tiêu xoay vòng (không gồm endless)', () {
       final types = kLevels.map((l) => l.objective).toSet();
-      expect(types, containsAll(ObjectiveType.values));
+      expect(types, containsAll(kRotatingObjectives));
+      expect(types, isNot(contains(ObjectiveType.endless)));
     });
 
     test('mọi màn dùng board 8x8 chuẩn (đồng nhất)', () {

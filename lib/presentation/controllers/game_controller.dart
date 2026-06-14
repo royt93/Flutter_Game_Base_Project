@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../core/storage_service.dart';
 import '../../data/achievements.dart';
 import '../../data/levels.dart';
+import '../../data/story.dart';
 import '../../logic/gem_data.dart';
 
 /// Quản lý state ván chơi + tiến trình (GetX).
@@ -27,6 +28,12 @@ class GameController extends GetxController {
   // Obstacle (ice/chain/stone): tiến trình dọn sạch.
   final RxInt obstacleCleared = 0.obs;
   final RxInt obstacleTotal = 0.obs;
+
+  // --- Endless mode (Wave 6) ---
+  final RxBool isEndless = false.obs;
+  final RxInt endlessStage = 1.obs; // tăng theo điểm → khó hơn + đổi màu
+  final RxInt endlessHigh = 0.obs; // high score riêng của Endless
+  LevelConfig? _endlessCfg; // cấu hình màn endless (không thuộc kLevels)
 
   // --- Daily reward ---
   final RxInt dailyStreak = 0.obs;
@@ -115,12 +122,16 @@ class GameController extends GetxController {
     totalWins.value = _store.getInt(StorageKeys.totalWins, def: 0);
     bestCombo.value = _store.getInt(StorageKeys.bestCombo, def: 0);
     coinsEarnedTotal.value = _store.getInt(StorageKeys.coinsEarned, def: 0);
+    endlessHigh.value = _store.getInt(StorageKeys.endlessHigh, def: 0);
     refillLives();
   }
 
-  LevelConfig get level => kLevels[currentLevel.value - 1];
+  LevelConfig get level =>
+      _endlessCfg ?? kLevels[currentLevel.value - 1];
 
   void startLevel(int index) {
+    isEndless.value = false;
+    _endlessCfg = null;
     currentLevel.value = index;
     final cfg = kLevels[index - 1];
     score.value = 0;
@@ -137,6 +148,25 @@ class GameController extends GetxController {
     _resolved = false;
   }
 
+  /// Bắt đầu chế độ Endless (thử thách tăng dần).
+  void startEndless() {
+    _endlessCfg = buildEndlessLevel();
+    isEndless.value = true;
+    endlessStage.value = 1;
+    score.value = 0;
+    comboCount.value = 0;
+    movesLeft.value = _endlessCfg!.moves;
+    targetScore.value = 0;
+    collected.value = 0;
+    jellyCleared.value = 0;
+    jellyTotal.value = 0;
+    timeLeft.value = 0;
+    dropped.value = 0;
+    obstacleCleared.value = 0;
+    obstacleTotal.value = 0;
+    _resolved = false;
+  }
+
   void addScore(int gemsCleared, int combo) {
     comboCount.value = combo;
     final multiplier = 1 + (combo - 1) * 0.5;
@@ -145,6 +175,25 @@ class GameController extends GetxController {
       bestCombo.value = combo;
       _store.setInt(StorageKeys.bestCombo, combo);
     }
+    if (isEndless.value) _endlessTick(gemsCleared);
+  }
+
+  /// Endless: cập nhật stage theo điểm, lưu high score, hoàn lượt khi ghép lớn.
+  /// Độ khó tăng dần = lượt hoàn ÍT đi khi stage cao → chơi lâu sẽ cạn lượt.
+  void _endlessTick(int gemsCleared) {
+    final newStage = 1 + score.value ~/ kEndlessStageScore;
+    if (newStage > endlessStage.value) endlessStage.value = newStage;
+    if (score.value > endlessHigh.value) {
+      endlessHigh.value = score.value;
+      _store.setInt(StorageKeys.endlessHigh, endlessHigh.value);
+    }
+    int refund = 0;
+    if (gemsCleared >= 5) {
+      refund = endlessStage.value <= 2 ? 2 : 1;
+    } else if (gemsCleared >= 4) {
+      refund = endlessStage.value <= 4 ? 1 : 0;
+    }
+    if (refund > 0) movesLeft.value += refund;
   }
 
   void registerClear(GemColor color, bool wasJelly) {
@@ -195,6 +244,8 @@ class GameController extends GetxController {
       case ObjectiveType.clearObstacle:
         return obstacleTotal.value > 0 &&
             obstacleCleared.value >= obstacleTotal.value;
+      case ObjectiveType.endless:
+        return false; // Endless không có "win"
     }
   }
 
@@ -230,6 +281,10 @@ class GameController extends GetxController {
         return obstacleTotal.value == 0
             ? 0
             : (obstacleCleared.value / obstacleTotal.value).clamp(0.0, 1.0);
+      case ObjectiveType.endless:
+        // tiến trình tới stage kế tiếp
+        return ((score.value % kEndlessStageScore) / kEndlessStageScore)
+            .clamp(0.0, 1.0);
     }
   }
 
@@ -257,6 +312,21 @@ class GameController extends GetxController {
 
   String? checkEnd() {
     if (_resolved) return null;
+    // Endless: không có "win"; thua khi hết lượt. KHÔNG đụng win-streak/level.
+    if (isEndless.value) {
+      if (movesLeft.value <= 0) {
+        _resolved = true;
+        lastStars = 0;
+        lastCoinReward = 0;
+        lastStreakBonus = 0;
+        if (score.value > endlessHigh.value) {
+          endlessHigh.value = score.value;
+          _store.setInt(StorageKeys.endlessHigh, endlessHigh.value);
+        }
+        return 'lose';
+      }
+      return null;
+    }
     if (hasWon) {
       _resolved = true;
       lastStars = computeStars();
@@ -375,17 +445,23 @@ class GameController extends GetxController {
     totalWins.value = 0;
     bestCombo.value = 0;
     coinsEarnedTotal.value = 0;
+    endlessHigh.value = 0;
     for (final k in [
       StorageKeys.winStreak,
       StorageKeys.bestWinStreak,
       StorageKeys.totalWins,
       StorageKeys.bestCombo,
       StorageKeys.coinsEarned,
+      StorageKeys.endlessHigh,
     ]) {
       await _store.remove(k);
     }
     for (final a in kAchievements) {
       await _store.remove(StorageKeys.achievementClaimed(a.id));
+    }
+    // Wave 6: xem lại cốt truyện từ đầu
+    for (final b in kStory) {
+      await _store.remove(StorageKeys.storySeen(b.id));
     }
     debugPrint('roy93~ resetProgress DONE unlocked=${unlockedLevel.value} '
         'highScores=${highScores.length} stars=${stars.length}');

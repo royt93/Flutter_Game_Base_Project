@@ -2,8 +2,11 @@ import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../core/storage_service.dart';
+import '../../data/levels.dart';
+import '../../data/story.dart';
 import '../../game/neon_jewel_game.dart';
 import 'game_controller.dart';
+import 'story_controller.dart';
 
 /// Trạng thái UI của màn chơi (thay cho setState).
 enum GameUi { playing, quit, win, lose }
@@ -35,7 +38,8 @@ class GameScreenController extends GetxController {
     // — tránh markNeedsBuild trong lúc GameScreen đang build.
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _applyPregameBoosters();
-      if (gameCtrl.currentLevel.value == 1 &&
+      if (!gameCtrl.isEndless.value &&
+          gameCtrl.currentLevel.value == 1 &&
           StorageService.to.getInt(StorageKeys.tutorialSeen, def: 0) == 0) {
         tutorialOpen.value = true;
       }
@@ -149,7 +153,8 @@ class GameScreenController extends GetxController {
   }
 
   void _onGameEnd(String result) {
-    if (result == 'lose') gameCtrl.consumeLife(); // thua → trừ 1 mạng
+    // Endless là chế độ phụ — thua KHÔNG trừ mạng.
+    if (result == 'lose' && !gameCtrl.isEndless.value) gameCtrl.consumeLife();
     Future.delayed(const Duration(milliseconds: 350), () {
       ui.value = result == 'win' ? GameUi.win : GameUi.lose;
     });
@@ -171,6 +176,13 @@ class GameScreenController extends GetxController {
   }
 
   void again() {
+    if (gameCtrl.isEndless.value) {
+      // Endless: chơi lại không cần mạng.
+      gameCtrl.startEndless();
+      ui.value = GameUi.playing;
+      _newGame();
+      return;
+    }
     // hết mạng → không cho chơi lại (tránh lách cổng mạng); về Level Select.
     if (!gameCtrl.hasLife) {
       quit();
@@ -185,5 +197,21 @@ class GameScreenController extends GetxController {
     gameCtrl.startLevel(gameCtrl.currentLevel.value + 1);
     ui.value = GameUi.playing;
     _newGame();
+  }
+
+  /// Sau khi thắng: nếu vừa hoàn thành màn cuối thế giới → hiện outro cốt
+  /// truyện trước, rồi mới đi tiếp (màn kế) hoặc về Home (màn cuối game).
+  void proceedNextOrHome() {
+    final lv = gameCtrl.currentLevel.value;
+    final goNext = lv < kLevels.length;
+    void go() => goNext ? next() : quit();
+    if (!gameCtrl.isEndless.value && lv == worldOfLevel(lv).endLevel) {
+      if (StoryController.to.maybeShow(
+          StoryTrigger.outro, worldOfLevel(lv).index,
+          onComplete: go)) {
+        return;
+      }
+    }
+    go();
   }
 }

@@ -65,4 +65,14 @@ Batch 1–4: tính năng. Batch 5: view-mode local (lưu DB khi user đổi styl
 
 **Tổng kết Wave 5**: 0 analyzer issue · **128 unit/widget + 8 integration = 136 test pass** · verify thật iQOO Z9 Turbo (tất cả tính năng + 8 flow integration chạy trên máy).
 
+## Wave 6 — ✅ DONE 3/3 (song song: Story + Endless/Theme + i18n)
+
+| Nhóm | Task | Trạng thái | File |
+|---|---|---|---|
+| Hành trình | Story / Episode + NPC | ✅ done | `done/w6-story-episode.md` |
+| Chiều sâu | Endless mode + Theme-per-world | ✅ done | `done/w6-endless-theme.md` |
+| i18n | Dọn nợ (world_n + tên thế giới 22 ngôn ngữ) | ✅ done | `done/w6-i18n-polish.md` |
+
+Kết quả: 0 analyzer issue · **140 unit/widget test pass** (+12 test Wave 6) · build APK debug OK.
+
 > Nguồn chân lý tổng thể: [`../feat.md`](../feat.md). Bảng này chỉ theo dõi trạng thái chi tiết của Wave 4.

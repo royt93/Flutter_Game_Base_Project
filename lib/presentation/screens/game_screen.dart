@@ -8,8 +8,10 @@ import '../../data/levels.dart';
 import '../../game/neon_jewel_game.dart' show BoosterMode;
 import '../controllers/game_controller.dart';
 import '../controllers/game_screen_controller.dart';
+import '../widgets/neon_bg.dart';
 import '../widgets/neon_dialog.dart';
 import '../widgets/neon_icon.dart';
+import '../widgets/story_overlay.dart';
 
 /// Màn chơi — StatelessWidget thuần GetX (không setState).
 class GameScreen extends StatelessWidget {
@@ -26,9 +28,16 @@ class GameScreen extends StatelessWidget {
         if (!didPop) sc.confirmQuit();
       },
       child: Scaffold(
-        body: Container(
-          decoration: const BoxDecoration(gradient: NeonTheme.bgGradient),
-          child: Stack(
+        body: Obx(() {
+          // Theme đổi màu theo thế giới (hoặc theo stage khi Endless).
+          final accent = ctrl.isEndless.value
+              ? NeonTheme.worldAccents[
+                  (ctrl.endlessStage.value - 1) % NeonTheme.worldAccents.length]
+              : NeonTheme.accentForWorld(
+                  worldOfLevel(ctrl.currentLevel.value).index);
+          return NeonBg(
+            accent: accent,
+            child: Stack(
             children: [
               SafeArea(
                 child: Column(
@@ -54,9 +63,12 @@ class GameScreen extends StatelessWidget {
                     ? _tutorialOverlay(sc)
                     : const SizedBox.shrink();
               }),
+              // Overlay cốt truyện outro (sau khi thắng màn cuối thế giới)
+              const StoryOverlay(),
             ],
-          ),
-        ),
+            ),
+          );
+        }),
       ),
     );
   }
@@ -174,6 +186,23 @@ class GameScreen extends StatelessWidget {
   }
 
   Widget _resultPanel(GameController ctrl, GameScreenController sc, bool win) {
+    // Endless: chỉ có màn kết thúc (hết lượt) — hiện điểm + kỷ lục, không sao.
+    if (ctrl.isEndless.value) {
+      return NeonDialog.panel(
+        title: 'endless_over'.tr,
+        color: NeonTheme.purple,
+        icon: Icons.all_inclusive_rounded,
+        message: '${'hud_score'.tr}: ${ctrl.score.value}\n'
+            '${'endless_best'.tr}: ${ctrl.endlessHigh.value}  ·  '
+            '${'stage_n'.trParams({'n': '${ctrl.endlessStage.value}'})}',
+        actions: [
+          NeonDialogAction(
+              label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+          NeonDialogAction(
+              label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+        ],
+      );
+    }
     final cur = ctrl.currentLevel.value;
     // thua mà hết mạng → ẩn nút CHƠI LẠI (không lách cổng mạng), báo hết mạng.
     final noLives = !win && !ctrl.hasLife;
@@ -191,10 +220,14 @@ class GameScreen extends StatelessWidget {
               label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
         if (win && cur < kLevels.length)
           NeonDialogAction(
-              label: 'btn_next'.tr, color: NeonTheme.lime, onTap: sc.next)
+              label: 'btn_next'.tr,
+              color: NeonTheme.lime,
+              onTap: sc.proceedNextOrHome)
         else
           NeonDialogAction(
-              label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+              label: 'btn_home'.tr,
+              color: NeonTheme.purple,
+              onTap: win ? sc.proceedNextOrHome : sc.quit),
       ],
     );
   }
@@ -213,6 +246,8 @@ class GameScreen extends StatelessWidget {
         return '${ctrl.dropped.value} / ${ctrl.level.dropTarget}';
       case ObjectiveType.clearObstacle:
         return '${ctrl.obstacleCleared.value} / ${ctrl.obstacleTotal.value}';
+      case ObjectiveType.endless:
+        return '${ctrl.score.value}';
     }
   }
 
@@ -300,8 +335,9 @@ class GameScreen extends StatelessWidget {
                 NeonIconButton(Icons.close_rounded,
                     color: NeonTheme.magenta, size: 28, onTap: sc.confirmQuit),
                 const Spacer(),
-                Obx(() => _stageBadge(
-                    'stage_n'.trParams({'n': '${ctrl.currentLevel.value}'}))),
+                Obx(() => _stageBadge(ctrl.isEndless.value
+                    ? 'endless_title'.tr
+                    : 'stage_n'.trParams({'n': '${ctrl.currentLevel.value}'}))),
                 const Spacer(),
                 if (AudioManager.maybe != null)
                   Obx(() => NeonIconButton(
@@ -343,8 +379,11 @@ class GameScreen extends StatelessWidget {
                   _animValue('${ctrl.score.value}'), NeonTheme.cyan))),
           _divider(),
           Expanded(
-              child:
-                  Obx(() => _infoCell('hud_goal'.tr, _goalValue(ctrl), NeonTheme.lime))),
+              child: Obx(() => ctrl.isEndless.value
+                  ? _infoCell('hud_stage'.tr,
+                      _animValue('${ctrl.endlessStage.value}'), NeonTheme.lime)
+                  : _infoCell(
+                      'hud_goal'.tr, _goalValue(ctrl), NeonTheme.lime))),
           _divider(),
           Expanded(child: Obx(() => _movesOrTimeCell(ctrl))),
         ],

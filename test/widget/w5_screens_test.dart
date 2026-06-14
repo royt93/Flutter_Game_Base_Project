@@ -80,6 +80,8 @@ void main() {
     testWidgets('bấm chơi → mở pre-game panel (có booster mặc định)',
         (tester) async {
       Get.put(GameController());
+      // đã xem cốt truyện intro thế giới 1 → bấm chơi vào thẳng pre-game
+      StorageService.to.setInt(StorageKeys.storySeen('w1_intro'), 1);
       await tester.pumpWidget(appEn(const LevelSelectScreen()));
       await tester.pump(const Duration(milliseconds: 120));
       await tester.tap(find.text('PLAY NOW').first); // tile nổi bật

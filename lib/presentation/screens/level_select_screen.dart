@@ -4,11 +4,14 @@ import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
 import '../../core/storage_service.dart';
 import '../../data/levels.dart';
+import '../../data/story.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/pregame_controller.dart';
+import '../controllers/story_controller.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_dialog.dart';
+import '../widgets/story_overlay.dart';
 import 'game_screen.dart';
 import 'world_map_screen.dart';
 
@@ -32,6 +35,8 @@ class LevelSelectScreen extends StatelessWidget {
         return Icons.south_rounded;
       case ObjectiveType.clearObstacle:
         return Icons.ac_unit_rounded;
+      case ObjectiveType.endless:
+        return Icons.all_inclusive_rounded;
     }
   }
 
@@ -55,6 +60,17 @@ class LevelSelectScreen extends StatelessWidget {
       }
       return;
     }
+    // cốt truyện intro/mid trước khi vào màn (chỉ lần đầu mỗi beat)
+    final t = storyStartTriggerFor(index);
+    if (t != null &&
+        StoryController.to.maybeShow(t, worldOfLevel(index).index,
+            onComplete: () => _afterStory(ctrl, index))) {
+      return;
+    }
+    _afterStory(ctrl, index);
+  }
+
+  void _afterStory(GameController ctrl, int index) {
     // có booster để chọn → mở pre-game panel; nếu không, vào thẳng
     final pg = Get.find<PregameController>();
     if (pg.hasAny) {
@@ -151,6 +167,7 @@ class LevelSelectScreen extends StatelessWidget {
         Obx(() => pg.open.value
             ? _pregameOverlay(ctrl, pg)
             : const SizedBox.shrink()),
+          const StoryOverlay(),
           ],
         ),
       ),
@@ -265,16 +282,7 @@ class LevelSelectScreen extends StatelessWidget {
     );
   }
 
-  Color _worldColor(int worldIndex) {
-    const colors = [
-      NeonTheme.cyan,
-      NeonTheme.magenta,
-      NeonTheme.lime,
-      NeonTheme.orange,
-      NeonTheme.purple,
-    ];
-    return colors[(worldIndex - 1) % colors.length];
-  }
+  Color _worldColor(int worldIndex) => NeonTheme.accentForWorld(worldIndex);
 
   /// Banner tiêu đề thế giới: số + tên chủ đề + tiến trình (sao + màn xong).
   Widget _worldHeader(GameController ctrl, WorldConfig w, int current) {
@@ -323,7 +331,7 @@ class LevelSelectScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    w.name,
+                    worldNameKey(w.index).tr,
                     style: TextStyle(
                       fontFamily: 'Baloo2',
                       color: c,

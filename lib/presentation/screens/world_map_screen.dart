@@ -5,11 +5,14 @@ import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
 import '../../core/storage_service.dart';
 import '../../data/levels.dart';
+import '../../data/story.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/pregame_controller.dart';
+import '../controllers/story_controller.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_dialog.dart';
+import '../widgets/story_overlay.dart';
 import 'game_screen.dart';
 import 'level_select_screen.dart';
 
@@ -22,16 +25,8 @@ class WorldMapScreen extends StatelessWidget {
   static const double _topPad = 92; // chừa chỗ cho banner thế giới đầu tiên
   static const double _nodeSize = 46; // node nhỏ lại
 
-  static Color worldColor(int w) {
-    const colors = [
-      NeonTheme.cyan,
-      NeonTheme.magenta,
-      NeonTheme.lime,
-      NeonTheme.orange,
-      NeonTheme.purple,
-    ];
-    return colors[(w - 1) % colors.length];
-  }
+  /// Màu thế giới — nguồn duy nhất ở [NeonTheme.accentForWorld].
+  static Color worldColor(int w) => NeonTheme.accentForWorld(w);
 
   /// X tương đối (0..1) của node theo chỉ số (zig-zag mềm bằng sin).
   static double fx(int i) => 0.5 + 0.27 * math.sin(i * 0.9);
@@ -55,6 +50,16 @@ class WorldMapScreen extends StatelessWidget {
       }
       return;
     }
+    final t = storyStartTriggerFor(index);
+    if (t != null &&
+        StoryController.to.maybeShow(t, worldOfLevel(index).index,
+            onComplete: () => _afterStory(ctrl, index))) {
+      return;
+    }
+    _afterStory(ctrl, index);
+  }
+
+  void _afterStory(GameController ctrl, int index) {
     final pg = Get.find<PregameController>();
     if (pg.hasAny) {
       pg.openFor(index);
@@ -121,6 +126,7 @@ class WorldMapScreen extends StatelessWidget {
               Obx(() => pg.open.value
                   ? _pregameOverlay(ctrl, pg)
                   : const SizedBox.shrink()),
+              const StoryOverlay(),
             ],
           ),
         ),
@@ -382,7 +388,7 @@ class _AnimatedMapState extends State<_AnimatedMap>
             color: reached ? c : Colors.white38, size: 14),
         const SizedBox(width: 6),
         Text(
-          '${'world_n'.trParams({'n': '${w.index}'})} · ${w.name}',
+          '${'world_n'.trParams({'n': '${w.index}'})} · ${worldNameKey(w.index).tr}',
           style: TextStyle(
             fontFamily: 'Baloo2',
             color: Colors.white,

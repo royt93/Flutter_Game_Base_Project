@@ -31,6 +31,19 @@ class NeonTheme {
     purple,
   ];
 
+  /// Màu chủ đạo (accent) theo từng thế giới (1-based). Nguồn DUY NHẤT —
+  /// dùng cho banner world, node map, background theo world, viền bàn.
+  static const List<Color> worldAccents = [
+    cyan, // World 1 — Cyan Nebula
+    magenta, // World 2 — Magenta Pulse
+    lime, // World 3 — Lime Circuit
+    orange, // World 4 — Amber Comet
+    purple, // World 5 — Violet Void
+  ];
+
+  static Color accentForWorld(int worldIndex) =>
+      worldAccents[(worldIndex - 1) % worldAccents.length];
+
   static const LinearGradient bgGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,

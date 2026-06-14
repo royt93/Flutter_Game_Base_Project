@@ -27,6 +27,12 @@ class StorageKeys {
   static const String tutorialSeen = 'tutorial_seen';
   static const String viewMode = 'view_mode'; // 0 = world map, 1 = grid
 
+  // Wave 6 — Endless mode (high score riêng)
+  static const String endlessHigh = 'endless_high';
+
+  // Wave 6 — Story / Episode: cờ "đã xem" của 1 beat.
+  static String storySeen(String beatId) => 'story_$beatId';
+
   static String highScore(int level) => 'hs_$level';
   static String star(int level) => 'star_$level';
 

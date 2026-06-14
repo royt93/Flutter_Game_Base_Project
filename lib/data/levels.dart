@@ -7,6 +7,8 @@ import '../logic/gem_data.dart';
 /// - timeAttack: đạt điểm trong giới hạn THỜI GIAN (không tính lượt)
 /// - dropDown: đưa đủ "ingredient" xuống đáy bàn
 /// - clearObstacle: dọn sạch obstacle (ice/chain/stone)
+/// - endless: chế độ vô tận (thử thách tăng dần) — KHÔNG có "win", thua khi
+///   hết lượt; ghép special hoàn lượt; obstacle xuất hiện theo stage.
 enum ObjectiveType {
   score,
   collect,
@@ -14,7 +16,19 @@ enum ObjectiveType {
   timeAttack,
   dropDown,
   clearObstacle,
+  endless,
 }
+
+/// 6 mục tiêu xoay vòng cho 100 màn thường (KHÔNG gồm [ObjectiveType.endless] —
+/// endless là chế độ riêng, không gắn vào level nào).
+const List<ObjectiveType> kRotatingObjectives = [
+  ObjectiveType.score,
+  ObjectiveType.collect,
+  ObjectiveType.clearJelly,
+  ObjectiveType.timeAttack,
+  ObjectiveType.dropDown,
+  ObjectiveType.clearObstacle,
+];
 
 /// Cách rải jelly trên bàn.
 enum JellyPattern { none, all, checker, center }
@@ -131,7 +145,7 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
   // màn 1 luôn là score (intro); sau đó xoay vòng 6 loại mục tiêu
   final objective = index == 1
       ? ObjectiveType.score
-      : ObjectiveType.values[(index - 1) % ObjectiveType.values.length];
+      : kRotatingObjectives[(index - 1) % kRotatingObjectives.length];
 
   // pattern theo tier (dùng chung cho jelly & obstacle)
   JellyPattern tierPattern() => index < 30
@@ -217,5 +231,49 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
         obstacle: type,
         obstaclePattern: pattern,
       );
+    case ObjectiveType.endless:
+      // Không bao giờ rơi vào đây (endless không thuộc kRotatingObjectives);
+      // trả về fallback score để switch exhaustive.
+      return LevelConfig(
+        index: index,
+        rows: rows,
+        cols: cols,
+        colorCount: colorCount,
+        moves: moves,
+        objective: ObjectiveType.score,
+        targetScore: 1000 + index * 220,
+      );
   }
 });
+
+/// Index ảo cho màn Endless (không thuộc 1..100).
+const int kEndlessLevelIndex = 0;
+
+/// Số lượt khởi đầu của Endless.
+const int kEndlessStartMoves = 20;
+
+/// Mỗi mốc điểm này → tăng 1 stage (khó hơn, đổi màu accent).
+const int kEndlessStageScore = 1500;
+
+/// Tạo cấu hình màn Endless: bàn 8×8, 6 màu, lượt khởi đầu hữu hạn nhưng
+/// được hoàn khi ghép lớn — thua khi hết lượt. Difficulty tăng theo stage
+/// (xử lý động trong GameController, không cố định ở đây).
+LevelConfig buildEndlessLevel() => const LevelConfig(
+      index: kEndlessLevelIndex,
+      rows: 8,
+      cols: 8,
+      colorCount: 6,
+      moves: kEndlessStartMoves,
+      objective: ObjectiveType.endless,
+    );
+
+/// Key i18n tên thế giới (1-based). Dùng `.tr` để lấy bản dịch.
+String worldNameKey(int worldIndex) => 'world_name_$worldIndex';
+
+/// Thế giới chứa [level] (1-based). Trả về world cuối nếu vượt ngưỡng.
+WorldConfig worldOfLevel(int level) {
+  for (final w in kWorlds) {
+    if (w.contains(level)) return w;
+  }
+  return kWorlds.last;
+}

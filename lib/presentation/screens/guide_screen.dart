@@ -74,6 +74,12 @@ class GuideScreen extends StatelessWidget {
                       body: 'guide_obstacle_body'.tr,
                     ),
                     _section(
+                      color: NeonTheme.purple,
+                      icon: Icons.auto_stories_rounded,
+                      title: 'guide_story_title'.tr,
+                      body: 'guide_story_body'.tr,
+                    ),
+                    _section(
                       color: NeonTheme.orange,
                       icon: Icons.bolt_rounded,
                       title: 'guide_boost_title'.tr,

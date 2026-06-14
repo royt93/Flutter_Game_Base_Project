@@ -10,11 +10,13 @@ import '../controllers/achievement_controller.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/lucky_wheel_controller.dart';
+import '../controllers/story_controller.dart';
 import '../widgets/lucky_wheel_view.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
 import '../widgets/neon_dialog.dart';
 import 'achievements_screen.dart';
+import 'game_screen.dart';
 import 'guide_screen.dart';
 import 'level_select_screen.dart';
 import 'settings_screen.dart';
@@ -35,13 +37,14 @@ class HomeScreen extends StatelessWidget {
     final hc = Get.put(HomeController(g));
     final ac = Get.put(AchievementController(g), permanent: true);
     final lw = Get.put(LuckyWheelController(g), permanent: true);
+    Get.put(StoryController(), permanent: true);
     g.refillLives(); // cập nhật mạng hồi được khi quay về Home
     return Scaffold(
       body: NeonBg(
         child: SafeArea(
           child: Stack(
             children: [
-              _menu(ac),
+              _menu(g, ac),
               // Thanh trên: mạng (trái) + quà hằng ngày (phải)
               Positioned(
                 top: NeonTheme.s8,
@@ -89,7 +92,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _menu(AchievementController ac) {
+  Widget _menu(GameController g, AchievementController ac) {
     return Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(
@@ -141,6 +144,17 @@ class HomeScreen extends StatelessWidget {
                       Get.to(() => grid
                           ? const LevelSelectScreen()
                           : const WorldMapScreen());
+                    },
+                  ),
+                  const SizedBox(height: NeonTheme.s16),
+                  // Chế độ Endless (thử thách tăng dần — không tốn mạng)
+                  NeonButton(
+                    label: 'endless_title'.tr,
+                    color: NeonTheme.purple,
+                    icon: Icons.all_inclusive_rounded,
+                    onTap: () {
+                      g.startEndless();
+                      Get.to(() => const GameScreen());
                     },
                   ),
                   const SizedBox(height: NeonTheme.s24 * 1.2),
