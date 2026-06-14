@@ -294,6 +294,11 @@ lib/
   - **Integration** (`integration_test/app_test.dart`): 8 flow end-to-end (World Map↔Grid, Thành tựu, Vòng quay quay thật, Quà ngày, vào game qua pre-game, X→thoát, Settings, Guide) — **chạy thật & PASS trên iQOO Z9 Turbo**.
 - [x] **Kết quả cuối**: 0 analyzer issue · **128 unit/widget test + 8 integration test = 136 pass** · verify máy thật.
 
+### 🌊 Wave 5 — batch 6 (revamp menu + font tiếng Việt) — ✅ đã làm
+- [x] **Font casual hỗ trợ tiếng Việt**: thay **Orbitron** (thiếu glyph tiếng Việt → mất dấu) bằng **Baloo2** (variable, đủ Latin Extended + Vietnamese, bo tròn vui mắt). Bundle `asset/fonts/Baloo2.ttf`, đổi 59 chỗ `fontFamily` ở 12 file. Verify máy thật: CHƠI NGAY / THÀNH TỰU / Thợ Săn Sao… đủ dấu.
+- [x] **Revamp menu Home gọn** (sửa lỗi quá nhiều nút): bỏ nút "MÀN 1" trùng; **CHƠI NGAY** là nút chính nổi bật; gom Thành tựu / Hướng dẫn / Cài đặt thành **hàng 3 icon tròn neon** nhỏ (có nhãn + badge thành tựu). Bớt chiều cao → không tràn/đè overlay.
+- [x] 0 analyzer issue · 136 test pass.
+
 ---
 
 ## 4.5 So sánh Candy Crush Saga — GAP ANALYSIS (Wave 5 candidate)
