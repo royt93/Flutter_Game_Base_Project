@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
@@ -9,11 +10,9 @@ import '../controllers/versus_controller.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
 import '../widgets/neon_dialog.dart';
-import '../widgets/versus_board_view.dart';
 
-/// Màn 2 người 1 máy (Wave 8 — signature). Chọn chế độ → đếm ngược → 2 bàn
-/// split dọc (người trên xoay 180°) → panel kết quả. Hoàn toàn offline, tách
-/// khỏi tiến trình (không tốn mạng/xu).
+/// Màn 2 người 1 máy (Wave 8.7 — chạy ENGINE Flame như mode thường → đủ juice).
+/// Chọn chế độ → đếm ngược → 2 bàn split dọc (người trên xoay 180°) → kết quả.
 class VersusScreen extends StatefulWidget {
   const VersusScreen({super.key});
 
@@ -24,21 +23,31 @@ class VersusScreen extends StatefulWidget {
 enum _Phase { select, countdown, playing }
 
 class _VersusScreenState extends State<VersusScreen> {
+  static const String _tag = 'versus';
   _Phase _phase = _Phase.select;
-  VersusController? _ctrl;
   int _count = 3;
   Timer? _countTimer;
+
+  VersusController get _ctrl => Get.find<VersusController>(tag: _tag);
+  bool get _hasCtrl => Get.isRegistered<VersusController>(tag: _tag);
 
   @override
   void dispose() {
     _countTimer?.cancel();
-    _ctrl?.finish();
+    if (_hasCtrl) Get.delete<VersusController>(tag: _tag);
     super.dispose();
   }
 
   void _pick(VersusMode mode) {
-    _ctrl?.finish();
-    _ctrl = VersusController(mode);
+    if (_hasCtrl) Get.delete<VersusController>(tag: _tag);
+    Get.put(VersusController(mode), tag: _tag);
+    _startCountdown();
+  }
+
+  void _replay() {
+    final mode = _ctrl.mode;
+    Get.delete<VersusController>(tag: _tag);
+    Get.put(VersusController(mode), tag: _tag);
     _startCountdown();
   }
 
@@ -53,17 +62,10 @@ class _VersusScreenState extends State<VersusScreen> {
       setState(() => _count--);
       if (_count <= 0) {
         t.cancel();
-        _ctrl!.start();
+        _ctrl.start();
         setState(() => _phase = _Phase.playing);
       }
     });
-  }
-
-  void _replay() {
-    final mode = _ctrl!.mode;
-    _ctrl!.finish();
-    _ctrl = VersusController(mode); // bàn mới, điểm mới
-    _startCountdown();
   }
 
   @override
@@ -102,18 +104,12 @@ class _VersusScreenState extends State<VersusScreen> {
               style: const TextStyle(
                   fontFamily: 'Baloo2', fontSize: 14, color: Colors.white70)),
           const SizedBox(height: NeonTheme.s24 * 1.5),
-          _modeButton(
-              'versus_mode'.tr,
-              'versus_mode_desc'.tr,
-              Icons.sports_kabaddi_rounded,
-              NeonTheme.magenta,
+          _modeButton('versus_mode'.tr, 'versus_mode_desc'.tr,
+              Icons.sports_kabaddi_rounded, NeonTheme.magenta,
               () => _pick(VersusMode.versus)),
           const SizedBox(height: NeonTheme.s16),
-          _modeButton(
-              'coop_mode'.tr,
-              'coop_mode_desc'.tr,
-              Icons.handshake_rounded,
-              NeonTheme.lime,
+          _modeButton('coop_mode'.tr, 'coop_mode_desc'.tr,
+              Icons.handshake_rounded, NeonTheme.lime,
               () => _pick(VersusMode.coop)),
           const SizedBox(height: NeonTheme.s24 * 1.5),
           NeonButton(
@@ -194,7 +190,7 @@ class _VersusScreenState extends State<VersusScreen> {
 
   // --------------------------------------------------------------- chơi
   Widget _buildPlaying() {
-    final c = _ctrl!;
+    final c = _ctrl;
     return Stack(
       children: [
         Column(
@@ -211,7 +207,6 @@ class _VersusScreenState extends State<VersusScreen> {
             Expanded(child: _playerPane(c, 1, NeonTheme.magenta)),
           ],
         ),
-        // Overlay kết quả
         Obx(() => c.finished.value
             ? NeonDialog.overlay(panel: _resultPanel(c))
             : const SizedBox.shrink()),
@@ -220,44 +215,30 @@ class _VersusScreenState extends State<VersusScreen> {
   }
 
   Widget _playerPane(VersusController c, int player, Color accent) {
-    final board = player == 1 ? c.p1 : c.p2;
+    final g = player == 1 ? c.g1 : c.g2;
+    final game = player == 1 ? c.game1 : c.game2;
     return Padding(
       padding: const EdgeInsets.all(NeonTheme.s8),
       child: Column(
         children: [
-          // HUD người chơi
-          Obx(() {
-            final score = player == 1 ? c.score1.value : c.score2.value;
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.person_rounded, color: accent, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  '${(player == 1 ? 'versus_p1' : 'versus_p2').tr}  $score',
-                  style: TextStyle(
-                      fontFamily: 'Baloo2',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      shadows: [Shadow(color: accent, blurRadius: 8)]),
-                ),
-              ],
-            );
-          }),
-          const SizedBox(height: 6),
-          Expanded(
-            child: Obx(() {
-              final flash = player == 1 ? c.junkFlash1.value : c.junkFlash2.value;
-              return VersusBoardView(
-                board: board,
-                accent: accent,
-                repaint: c.moveTick.value + flash,
-                enabled: c.running.value,
-                onSwap: (a, b) => c.playerSwap(player, a, b),
-              );
-            }),
-          ),
+          Obx(() => Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.person_rounded, color: accent, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${(player == 1 ? 'versus_p1' : 'versus_p2').tr}  ${g.score.value}',
+                    style: TextStyle(
+                        fontFamily: 'Baloo2',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        shadows: [Shadow(color: accent, blurRadius: 8)]),
+                  ),
+                ],
+              )),
+          const SizedBox(height: 4),
+          Expanded(child: GameWidget(game: game)),
         ],
       ),
     );
@@ -265,7 +246,8 @@ class _VersusScreenState extends State<VersusScreen> {
 
   Widget _centerBar(VersusController c) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: NeonTheme.s16),
+      padding:
+          const EdgeInsets.symmetric(vertical: 6, horizontal: NeonTheme.s16),
       color: Colors.black.withValues(alpha: 0.35),
       child: Obx(() {
         final t = c.timeLeft.value;
@@ -317,7 +299,7 @@ class _VersusScreenState extends State<VersusScreen> {
           : Icons.emoji_events_rounded,
       message: c.mode == VersusMode.coop
           ? '${'coop_goal'.tr}: ${c.combinedScore} / ${VersusController.coopGoal}'
-          : '${'versus_p1'.tr} ${c.score1.value}  ·  ${'versus_p2'.tr} ${c.score2.value}',
+          : '${'versus_p1'.tr} ${c.score1}  ·  ${'versus_p2'.tr} ${c.score2}',
       actions: [
         NeonDialogAction(
             label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: _replay),

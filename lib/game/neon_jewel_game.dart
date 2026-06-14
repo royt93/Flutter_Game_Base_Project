@@ -1141,6 +1141,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     await Future.wait(futures);
   }
 
+  /// Versus: đóng băng/mở input (trước countdown / sau khi hết giờ). Dùng cờ
+  /// `_ended` sẵn có để chặn tap/drag mà không cần kết thúc ván qua checkEnd.
+  void setInputFrozen(bool frozen) => _ended = frozen;
+
   void _finishMove() {
     final result = controller.checkEnd();
     if (result != null) {

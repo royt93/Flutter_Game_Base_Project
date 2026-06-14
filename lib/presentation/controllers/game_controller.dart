@@ -76,6 +76,15 @@ class GameController extends GetxController {
   /// Trần groove (đúng nhịp liên tiếp) → hệ số thưởng điểm tối đa.
   static const int kGrooveMax = 8;
 
+  // --- Versus (2 người, Wave 8.7) — 1 bàn engine Flame, KHÔNG đụng tiến trình ---
+  /// Khi true: bỏ qua _load (không đọc/ghi storage tiến trình), checkEnd→null
+  /// (đồng hồ ngoài quyết định), không cộng xu/win-streak/bestCombo.
+  final bool versus;
+  final RxBool isVersus = false.obs;
+  LevelConfig? _versusCfg;
+
+  GameController({this.versus = false});
+
   /// Ngưỡng combo để gây sát thương GẤP ĐÔI (đánh đúng "phase yếu").
   static const int bossWeakCombo = 4;
 
@@ -142,7 +151,18 @@ class GameController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _load();
+    if (versus) {
+      _initVersus();
+    } else {
+      _load();
+    }
+  }
+
+  /// Khởi tạo controller cho 1 bàn Versus (score mode, lượt vô hạn).
+  void _initVersus() {
+    _versusCfg = buildVersusLevel();
+    isVersus.value = true;
+    _resetRunState(moves: _versusCfg!.moves);
   }
 
   void _load() {
@@ -180,6 +200,7 @@ class GameController extends GetxController {
       _endlessCfg ??
       _gravityCfg ??
       _rhythmCfg ??
+      _versusCfg ??
       kLevels[currentLevel.value - 1];
 
   /// Đặt cờ chế độ ĐỘC QUYỀN (đúng 1 mode bật, hoặc tất cả false = màn thường)
@@ -330,7 +351,7 @@ class GameController extends GetxController {
     }
     score.value += gained;
     if (isBoss.value) _bossDamage(gemsCleared, combo);
-    if (combo > bestCombo.value) {
+    if (combo > bestCombo.value && !isVersus.value) {
       bestCombo.value = combo;
       unawaited(_store.setInt(StorageKeys.bestCombo, combo));
     }
@@ -399,6 +420,7 @@ class GameController extends GetxController {
   }
 
   void useMove() {
+    if (isVersus.value) return; // versus: lượt vô hạn (đồng hồ quyết định)
     if (movesLeft.value > 0) movesLeft.value--;
     // Boss phản đòn: mỗi 4 lượt rút thêm 1 lượt (áp lực tăng theo stage).
     if (isBoss.value && bossHp.value > 0) {
@@ -500,6 +522,7 @@ class GameController extends GetxController {
 
   String? checkEnd() {
     if (_resolved) return null;
+    if (isVersus.value) return null; // versus: không tự kết thúc, đồng hồ quyết định
     // Endless: không có "win"; thua khi hết lượt. KHÔNG đụng win-streak/level.
     if (isEndless.value) {
       if (movesLeft.value <= 0) {
@@ -646,7 +669,7 @@ class GameController extends GetxController {
 
   /// Cộng xu (thưởng thành tựu / vòng quay…) + persist.
   void addCoins(int amount) {
-    if (amount <= 0) return;
+    if (isVersus.value || amount <= 0) return; // versus không đụng kinh tế
     _setCoins(coins.value + amount);
   }
 

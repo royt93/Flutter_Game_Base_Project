@@ -328,6 +328,21 @@ LevelConfig buildRhythmLevel() => const LevelConfig(
       targetScore: kRhythmTarget,
     );
 
+// --- Versus / Co-op (2 người, chạy engine Flame như mode thường) ---
+const int kVersusLevelIndex = -4;
+
+/// Cấu hình 1 bàn Versus: 7×7 (gọn để 2 bàn trên 1 màn), 6 màu, mục tiêu điểm
+/// (không có điều kiện thắng từ engine — đồng hồ ngoài quyết định). Lượt "vô hạn".
+LevelConfig buildVersusLevel() => const LevelConfig(
+      index: kVersusLevelIndex,
+      rows: 7,
+      cols: 7,
+      colorCount: 6,
+      moves: 999999,
+      objective: ObjectiveType.score,
+      targetScore: 0,
+    );
+
 /// Key i18n tên thế giới (1-based). Dùng `.tr` để lấy bản dịch.
 String worldNameKey(int worldIndex) => 'world_name_$worldIndex';
 
