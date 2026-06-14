@@ -75,4 +75,43 @@ Batch 1–4: tính năng. Batch 5: view-mode local (lưu DB khi user đổi styl
 
 Kết quả: 0 analyzer issue · **140 unit/widget test pass** (+12 test Wave 6) · build APK debug OK.
 
-> Nguồn chân lý tổng thể: [`../feat.md`](../feat.md). Bảng này chỉ theo dõi trạng thái chi tiết của Wave 4.
+## Bug fixes (đợt audit) — ✅ DONE
+
+| Bug | Mô tả | Trạng thái |
+|---|---|---|
+| Nhạc nền không tắt khi ra background | Thiếu `WidgetsBindingObserver` → thêm lifecycle pause/resume nhạc (`main.dart` + `audio_manager.dart`) | ✅ done |
+| Persistence tiền tệ | ~16 chỗ `setInt` fire-and-forget → bọc `unawaited`, gom xu qua `_setCoins` (clamp overflow int32), ghi guard-key trước khi phát thưởng (daily/wheel/achievement) chống exploit | ✅ done |
+
+Kết quả: 0 analyzer issue · 140 test pass.
+
+## Wave 7 — ✅ GIỮ CHÂN (meta ngoài lưới)
+
+| Task | Mô tả | Trạng thái | File |
+|---|---|---|---|
+| Meta build "Đền Neon" | Tích Shard khi thắng → xây/nâng cấp công trình neon | ✅ done | `done/w7-meta-build.md` |
+| Sự kiện theo mùa | Event tuần offline + theme + mốc thưởng | ✅ done | `done/w7-seasonal-event.md` |
+| Battle Pass + nhiệm vụ ngày | Track thưởng theo cấp + 3 quest/ngày | ✅ done | `done/w7-battle-pass.md` |
+
+## Wave 8 — 🟡 ĐỘC QUYỀN (signature)
+
+| Task | Mô tả | Trạng thái | File |
+|---|---|---|---|
+| Trọng lực động / Mê cung | Bàn tự lật mỗi 5 lượt (MVP); 4 hướng + tường để dành | ✅ done | `done/w8-gravity-dynamic.md` |
+| Boss neon theo lượt | Trùm có máu + điểm yếu + phản đòn hút lượt | ✅ done | `done/w8-boss-neon.md` |
+| Chế độ Nhịp điệu | Ghép theo beat, groove meter (tận dụng 24 nốt) | 📋 todo | `todo/w8-rhythm-mode.md` |
+| Co-op / Versus cục bộ | 2 người 1 máy, đua điểm / chung mục tiêu | 📋 todo | `todo/w8-coop-versus.md` |
+
+Wave 7+8 (4 tính năng): 0 analyzer · **175 test pass** (+26) · build APK debug OK.
+
+## Wave 8.1 — ✅ POLISH (UI + Audio, verify máy thật S24 Ultra)
+
+| Việc | Mô tả | Trạng thái |
+|---|---|---|
+| Revamp Home | Bỏ 4 nút dọc → khu **THỬ THÁCH** (3 thẻ 1 hàng) + khu **PHẦN THƯỞNG** + hàng tiện ích nhỏ + chip xu top bar | ✅ done |
+| Fix overlay action bar | `_GemSparkle` đè action bar → căn top + chừa 64px clearance | ✅ done |
+| Fix tutorial nhầm chế độ | Tutorial lần-đầu hiện ở Boss/Gravity → thêm guard loại trừ chế độ phụ | ✅ done |
+| Giai điệu nốt nhạc | `playMelodic`: **ngũ cung + màu gem = bậc âm + đổi tông theo khoá + hợp âm/arpeggio khi wombo** (thay chromatic đơn điệu). Hàm `noteIndexFor` thuần, test được | ✅ done |
+
+Kết quả: 0 analyzer · **180 test pass** (+5 `test/w8_audio_test.dart`) · build + chạy thật S24 Ultra (SM-S928B): Home/Boss/Gravity/Temple/Season/Battle Pass/Endless OK, logcat sạch (không exception app).
+
+> Nguồn chân lý tổng thể: [`../feat.md`](../feat.md).

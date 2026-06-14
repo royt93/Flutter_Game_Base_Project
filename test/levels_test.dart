@@ -50,6 +50,8 @@ void main() {
             break;
           case ObjectiveType.endless:
             fail('endless không được gắn vào màn thường (level ${lv.index})');
+          case ObjectiveType.boss:
+            fail('boss không được gắn vào màn thường (level ${lv.index})');
         }
       }
     });

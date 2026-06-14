@@ -30,6 +30,25 @@ class StorageKeys {
   // Wave 6 — Endless mode (high score riêng)
   static const String endlessHigh = 'endless_high';
 
+  // Wave 7 — Meta build "Đền Neon"
+  static const String shards = 'shards'; // mảnh neon (tài nguyên xây đền)
+  /// Tier hiện tại của 1 hạng mục đền (0 = chưa xây).
+  static String templeTier(String id) => 'temple_$id';
+
+  // Wave 7 — Battle Pass + nhiệm vụ ngày
+  static const String bpXp = 'bp_xp'; // tổng XP pass
+  static const String bpLevel = 'bp_level'; // cấp pass hiện tại
+  static String bpClaimed(int level) => 'bp_claimed_$level'; // 1 = đã nhận
+  static const String questDay = 'quest_day'; // epoch-day của bộ quest hiện tại
+  static String questProgress(int idx) => 'quest_prog_$idx'; // tiến trình quest #idx
+  static String questCredited(int idx) => 'quest_cred_$idx'; // 1 = đã cộng XP
+
+  // Wave 7 — Sự kiện theo mùa (tuần)
+  static const String seasonIdx = 'season_idx'; // chỉ số mùa của điểm đang giữ
+  static const String seasonPoints = 'season_points'; // điểm mùa hiện tại
+  /// 1 = đã nhận mốc [m] của mùa [idx] (keyed tuyệt đối → chống chỉnh giờ lùi).
+  static String seasonClaimed(int idx, int m) => 'season_cl_${idx}_$m';
+
   // Wave 6 — Story / Episode: cờ "đã xem" của 1 beat.
   static String storySeen(String beatId) => 'story_$beatId';
 

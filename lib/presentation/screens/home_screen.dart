@@ -7,8 +7,10 @@ import '../../core/app_info.dart';
 import '../../core/neon_theme.dart';
 import '../../core/storage_service.dart';
 import '../controllers/achievement_controller.dart';
+import '../controllers/battle_pass_controller.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_controller.dart';
+import '../controllers/season_controller.dart';
 import '../controllers/lucky_wheel_controller.dart';
 import '../controllers/story_controller.dart';
 import '../widgets/lucky_wheel_view.dart';
@@ -16,10 +18,13 @@ import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
 import '../widgets/neon_dialog.dart';
 import 'achievements_screen.dart';
+import 'battle_pass_screen.dart';
 import 'game_screen.dart';
 import 'guide_screen.dart';
 import 'level_select_screen.dart';
+import 'season_screen.dart';
 import 'settings_screen.dart';
+import 'temple_screen.dart';
 import 'world_map_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -37,6 +42,8 @@ class HomeScreen extends StatelessWidget {
     final hc = Get.put(HomeController(g));
     final ac = Get.put(AchievementController(g), permanent: true);
     final lw = Get.put(LuckyWheelController(g), permanent: true);
+    final bp = Get.put(BattlePassController(g), permanent: true);
+    final sc = Get.put(SeasonController(g), permanent: true);
     Get.put(StoryController(), permanent: true);
     g.refillLives(); // cập nhật mạng hồi được khi quay về Home
     return Scaffold(
@@ -44,17 +51,23 @@ class HomeScreen extends StatelessWidget {
         child: SafeArea(
           child: Stack(
             children: [
-              _menu(g, ac),
+              _menu(g, ac, bp, sc),
               // Thanh trên: mạng (trái) + quà hằng ngày (phải)
               Positioned(
                 top: NeonTheme.s8,
                 left: NeonTheme.s16,
-                child: Obx(() => GestureDetector(
-                      onTap: g.lives.value < GameController.maxLives
-                          ? hc.openLivesBuy
-                          : null,
-                      child: _LivesChip(g: g),
-                    )),
+                child: Row(
+                  children: [
+                    Obx(() => GestureDetector(
+                          onTap: g.lives.value < GameController.maxLives
+                              ? hc.openLivesBuy
+                              : null,
+                          child: _LivesChip(g: g),
+                        )),
+                    const SizedBox(width: 8),
+                    _coinsChip(g),
+                  ],
+                ),
               ),
               Positioned(
                 top: NeonTheme.s8,
@@ -92,16 +105,20 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _menu(GameController g, AchievementController ac) {
-    return Center(
+  Widget _menu(GameController g, AchievementController ac,
+      BattlePassController bp, SeasonController sc) {
+    // Căn TOP + chừa 64px cho action bar (tim/xu/wheel/quà) — tránh _GemSparkle
+    // và logo đè lên vùng action bar như trước.
+    return Align(
+            alignment: Alignment.topCenter,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: NeonTheme.s24, vertical: NeonTheme.s24),
+              padding: const EdgeInsets.fromLTRB(
+                  NeonTheme.s24, 64, NeonTheme.s24, NeonTheme.s24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _GemSparkle(),
-                  const SizedBox(height: NeonTheme.s24),
+                  const SizedBox(height: NeonTheme.s16),
                   Text(
                     'NEON',
                     style: TextStyle(
@@ -130,7 +147,7 @@ class HomeScreen extends StatelessWidget {
                       shadows: [Shadow(color: NeonTheme.magenta, blurRadius: 28)],
                     ),
                   ),
-                  const SizedBox(height: NeonTheme.s24 * 1.6),
+                  const SizedBox(height: NeonTheme.s24 * 1.3),
                   // NÚT CHÍNH — focus vào chơi ngay
                   NeonButton(
                     label: 'play_now'.tr,
@@ -146,21 +163,96 @@ class HomeScreen extends StatelessWidget {
                           : const WorldMapScreen());
                     },
                   ),
-                  const SizedBox(height: NeonTheme.s16),
-                  // Chế độ Endless (thử thách tăng dần — không tốn mạng)
-                  NeonButton(
-                    label: 'endless_title'.tr,
-                    color: NeonTheme.purple,
-                    icon: Icons.all_inclusive_rounded,
-                    onTap: () {
-                      g.startEndless();
-                      Get.to(() => const GameScreen());
-                    },
-                  ),
-                  const SizedBox(height: NeonTheme.s24 * 1.2),
-                  // PHỤ — hàng icon tròn gọn (thành tựu / hướng dẫn / cài đặt)
+                  const SizedBox(height: NeonTheme.s24),
+                  // KHU THỬ THÁCH — 3 chế độ phụ gọn trong 1 hàng (thay vì 3 nút dọc)
+                  _sectionLabel('challenge_modes'.tr),
+                  const SizedBox(height: NeonTheme.s8),
                   Row(
-                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Expanded(
+                        child: _modeCard(
+                          Icons.all_inclusive_rounded,
+                          'endless_title'.tr,
+                          NeonTheme.purple,
+                          () {
+                            g.startEndless();
+                            Get.to(() => const GameScreen());
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _modeCard(
+                          Icons.coronavirus_rounded,
+                          'boss_title'.tr,
+                          NeonTheme.orange,
+                          () {
+                            final stage =
+                                (1 + (g.unlockedLevel.value - 1) ~/ 20)
+                                    .clamp(1, 5);
+                            g.startBoss(stage);
+                            Get.to(() => const GameScreen());
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _modeCard(
+                          Icons.swap_vert_rounded,
+                          'gravity_title'.tr,
+                          NeonTheme.cyan,
+                          () {
+                            g.startGravity();
+                            Get.to(() => const GameScreen());
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: NeonTheme.s24),
+                  // KHU GIỮ CHÂN — Đền Neon · Battle Pass · Sự kiện mùa
+                  _sectionLabel('meta_section'.tr),
+                  const SizedBox(height: NeonTheme.s8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _circleNav(Icons.account_balance_rounded, NeonTheme.cyan,
+                          'temple_title'.tr,
+                          () => Get.to(() => const TempleScreen())),
+                      Obx(() {
+                        bp.xp.value;
+                        bp.claimed.length;
+                        return _circleNav(
+                          Icons.military_tech_rounded,
+                          NeonTheme.orange,
+                          'bp_title'.tr,
+                          () => Get.to(() => const BattlePassScreen()),
+                          badge: bp.hasClaimable,
+                        );
+                      }),
+                      Obx(() {
+                        sc.points.value;
+                        sc.claimed.length;
+                        return _circleNav(
+                          Icons.event_rounded,
+                          NeonTheme.accentForWorld(sc.worldAccent),
+                          'season_title'.tr,
+                          () => Get.to(() => const SeasonScreen()),
+                          badge: sc.hasClaimable,
+                        );
+                      }),
+                    ],
+                  ),
+                  const SizedBox(height: NeonTheme.s24),
+                  // Tiện ích — phân cách mảnh + hàng icon nhỏ
+                  Container(
+                    height: 1,
+                    margin: const EdgeInsets.symmetric(horizontal: 40),
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                  const SizedBox(height: NeonTheme.s16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       Obx(() {
                         ac.claimed.length;
@@ -170,20 +262,21 @@ class HomeScreen extends StatelessWidget {
                           'achievements'.tr,
                           () => Get.to(() => const AchievementsScreen()),
                           badge: ac.hasUnclaimed,
+                          small: true,
                         );
                       }),
-                      const SizedBox(width: NeonTheme.s24),
                       _circleNav(Icons.menu_book_rounded, NeonTheme.magenta,
-                          'guide'.tr, () => Get.to(() => const GuideScreen())),
-                      const SizedBox(width: NeonTheme.s24),
+                          'guide'.tr, () => Get.to(() => const GuideScreen()),
+                          small: true),
                       _circleNav(
                           Icons.settings_rounded,
                           NeonTheme.purple,
                           'settings'.tr,
-                          () => Get.to(() => const SettingsScreen())),
+                          () => Get.to(() => const SettingsScreen()),
+                          small: true),
                     ],
                   ),
-                  const SizedBox(height: NeonTheme.s24 * 1.4),
+                  const SizedBox(height: NeonTheme.s24 * 1.2),
                   Text(
                     'v$kAppVersion',
                     style: const TextStyle(
@@ -219,18 +312,98 @@ class HomeScreen extends StatelessWidget {
           );
   }
 
+  /// Chip xu trên top bar.
+  Widget _coinsChip(GameController g) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: NeonTheme.panel.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: NeonTheme.yellow, width: 1.5),
+          boxShadow: NeonTheme.glow(NeonTheme.yellow, blur: 6),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.monetization_on_rounded,
+              color: NeonTheme.yellow, size: 18),
+          const SizedBox(width: 5),
+          Obx(() => Text('${g.coins.value}',
+              style: const TextStyle(
+                fontFamily: 'Baloo2',
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+              ))),
+        ]),
+      );
+
+  /// Nhãn tiêu đề khu (canh trái, mảnh).
+  Widget _sectionLabel(String text) => Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 2),
+          child: Text(
+            text.toUpperCase(),
+            style: TextStyle(
+              fontFamily: 'Baloo2',
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2,
+            ),
+          ),
+        ),
+      );
+
+  /// Thẻ chế độ gọn (icon + nhãn) — dùng trong hàng "Thử thách".
+  Widget _modeCard(
+      IconData icon, String label, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+        decoration: BoxDecoration(
+          color: NeonTheme.panel.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color, width: 1.6),
+          boxShadow: NeonTheme.glow(color, blur: 8),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Baloo2',
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
+                shadows: [Shadow(color: color, blurRadius: 8)],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Nút điều hướng phụ: icon tròn neon + nhãn nhỏ + badge tuỳ chọn.
   Widget _circleNav(IconData icon, Color color, String label, VoidCallback onTap,
-      {bool badge = false}) {
+      {bool badge = false, bool small = false}) {
     final circle = Container(
-      padding: const EdgeInsets.all(15),
+      padding: EdgeInsets.all(small ? 12 : 15),
       decoration: BoxDecoration(
         color: NeonTheme.panel.withValues(alpha: 0.55),
         shape: BoxShape.circle,
         border: Border.all(color: color, width: 2),
-        boxShadow: NeonTheme.glow(color, blur: 10),
+        boxShadow: NeonTheme.glow(color, blur: small ? 8 : 10),
       ),
-      child: Icon(icon, color: color, size: 26),
+      child: Icon(icon, color: color, size: small ? 22 : 26),
     );
     return GestureDetector(
       onTap: onTap,

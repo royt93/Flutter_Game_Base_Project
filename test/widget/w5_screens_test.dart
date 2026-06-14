@@ -112,6 +112,8 @@ void main() {
     testWidgets('bấm thành tựu → mở AchievementsScreen', (tester) async {
       await tester.pumpWidget(appEn(const HomeScreen()));
       await tester.pump(const Duration(milliseconds: 120));
+      await tester.ensureVisible(find.text('ACHIEVEMENTS'));
+      await tester.pump();
       await tester.tap(find.text('ACHIEVEMENTS'));
       await tester.pump(); // bắt đầu chuyển route
       await tester.pump(const Duration(milliseconds: 400));

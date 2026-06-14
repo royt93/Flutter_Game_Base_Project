@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:get/get.dart';
 import '../../core/storage_service.dart';
@@ -36,7 +37,8 @@ class LuckyWheelController extends GetxController {
     final idx = rng.nextInt(kWheel.length);
     resultIndex.value = idx;
     spinning.value = true;
-    _store.setInt(StorageKeys.wheelLastSpin, g.todayEpochDay);
+    // Ghi mốc "đã quay hôm nay" TRƯỚC khi trao thưởng → chặn quay lại exploit.
+    unawaited(_store.setInt(StorageKeys.wheelLastSpin, g.todayEpochDay));
     _applyReward(kWheel[idx]);
     return idx;
   }

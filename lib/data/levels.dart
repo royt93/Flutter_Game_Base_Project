@@ -17,6 +17,7 @@ enum ObjectiveType {
   dropDown,
   clearObstacle,
   endless,
+  boss,
 }
 
 /// 6 mục tiêu xoay vòng cho 100 màn thường (KHÔNG gồm [ObjectiveType.endless] —
@@ -232,8 +233,9 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
         obstaclePattern: pattern,
       );
     case ObjectiveType.endless:
-      // Không bao giờ rơi vào đây (endless không thuộc kRotatingObjectives);
-      // trả về fallback score để switch exhaustive.
+    case ObjectiveType.boss:
+      // Không bao giờ rơi vào đây (endless/boss là chế độ riêng, không thuộc
+      // kRotatingObjectives); trả về fallback score để switch exhaustive.
       return LevelConfig(
         index: index,
         rows: rows,
@@ -265,6 +267,45 @@ LevelConfig buildEndlessLevel() => const LevelConfig(
       colorCount: 6,
       moves: kEndlessStartMoves,
       objective: ObjectiveType.endless,
+    );
+
+// --- Boss neon (chế độ riêng — đánh trùm theo lượt) ---
+const int kBossLevelIndex = -1;
+
+/// Số lượt cho mỗi trận boss (đánh trùm trong giới hạn lượt).
+const int kBossMoves = 30;
+
+/// Máu boss cơ bản; nhân theo stage trong GameController.
+const int kBossBaseHp = 1200;
+
+/// Tạo cấu hình trận boss: bàn 8×8, 6 màu, đánh trùm trong [kBossMoves] lượt.
+LevelConfig buildBossLevel() => const LevelConfig(
+      index: kBossLevelIndex,
+      rows: 8,
+      cols: 8,
+      colorCount: 6,
+      moves: kBossMoves,
+      objective: ObjectiveType.boss,
+    );
+
+// --- Trọng lực động (chế độ riêng — lật trọng lực mỗi N lượt) ---
+const int kGravityLevelIndex = -2;
+const int kGravityMoves = 28;
+const int kGravityTarget = 2600;
+
+/// Cứ mỗi bao nhiêu lượt thì bàn tự lật trọng lực (đảo cột).
+const int kGravityFlipEvery = 5;
+
+/// Cấu hình chế độ Trọng lực động: dùng mục tiêu điểm (score) để tận dụng sẵn
+/// HUD/sao; điểm khác biệt là engine tự lật bàn định kỳ (xem GameController).
+LevelConfig buildGravityLevel() => const LevelConfig(
+      index: kGravityLevelIndex,
+      rows: 8,
+      cols: 8,
+      colorCount: 6,
+      moves: kGravityMoves,
+      objective: ObjectiveType.score,
+      targetScore: kGravityTarget,
     );
 
 /// Key i18n tên thế giới (1-based). Dùng `.tr` để lấy bản dịch.

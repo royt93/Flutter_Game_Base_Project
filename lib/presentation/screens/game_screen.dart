@@ -203,6 +203,24 @@ class GameScreen extends StatelessWidget {
         ],
       );
     }
+    // Boss: chế độ phụ — không tốn mạng, luôn cho đánh lại.
+    if (ctrl.isBoss.value) {
+      return NeonDialog.panel(
+        title: win ? 'victory'.tr : 'retry'.tr,
+        color: win ? NeonTheme.lime : NeonTheme.orange,
+        icon: win ? Icons.emoji_events_rounded : Icons.coronavirus_rounded,
+        message:
+            '${'boss_stage'.tr} ${ctrl.bossStage.value}  ·  ${'boss_hp'.tr}: '
+            '${ctrl.bossHp.value}/${ctrl.bossMaxHp.value}',
+        content: win ? _celebration(ctrl) : null,
+        actions: [
+          NeonDialogAction(
+              label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+          NeonDialogAction(
+              label: 'btn_home'.tr, color: NeonTheme.orange, onTap: sc.quit),
+        ],
+      );
+    }
     final cur = ctrl.currentLevel.value;
     // thua mà hết mạng → ẩn nút CHƠI LẠI (không lách cổng mạng), báo hết mạng.
     final noLives = !win && !ctrl.hasLife;
@@ -248,6 +266,8 @@ class GameScreen extends StatelessWidget {
         return '${ctrl.obstacleCleared.value} / ${ctrl.obstacleTotal.value}';
       case ObjectiveType.endless:
         return '${ctrl.score.value}';
+      case ObjectiveType.boss:
+        return '${ctrl.bossHp.value} / ${ctrl.bossMaxHp.value}';
     }
   }
 
@@ -290,6 +310,19 @@ class GameScreen extends StatelessWidget {
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                 )),
+            if (ctrl.lastShardReward > 0) ...[
+              const SizedBox(width: 14),
+              const Icon(Icons.diamond_rounded,
+                  color: NeonTheme.cyan, size: 20),
+              const SizedBox(width: 6),
+              Text('+${ctrl.lastShardReward}',
+                  style: const TextStyle(
+                    fontFamily: 'Baloo2',
+                    color: NeonTheme.cyan,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  )),
+            ],
           ],
         ),
         if (ctrl.lastStreakBonus > 0) ...[
@@ -335,9 +368,14 @@ class GameScreen extends StatelessWidget {
                 NeonIconButton(Icons.close_rounded,
                     color: NeonTheme.magenta, size: 28, onTap: sc.confirmQuit),
                 const Spacer(),
-                Obx(() => _stageBadge(ctrl.isEndless.value
-                    ? 'endless_title'.tr
-                    : 'stage_n'.trParams({'n': '${ctrl.currentLevel.value}'}))),
+                Obx(() => _stageBadge(ctrl.isBoss.value
+                    ? '${'boss_title'.tr} ${ctrl.bossStage.value}'
+                    : ctrl.isGravity.value
+                        ? '${'gravity_title'.tr} ${ctrl.gravityDir.value == 0 ? '↓' : '↑'}'
+                        : ctrl.isEndless.value
+                            ? 'endless_title'.tr
+                            : 'stage_n'.trParams(
+                                {'n': '${ctrl.currentLevel.value}'}))),
                 const Spacer(),
                 if (AudioManager.maybe != null)
                   Obx(() => NeonIconButton(

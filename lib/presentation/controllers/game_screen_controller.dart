@@ -5,7 +5,9 @@ import '../../core/storage_service.dart';
 import '../../data/levels.dart';
 import '../../data/story.dart';
 import '../../game/neon_jewel_game.dart';
+import 'battle_pass_controller.dart';
 import 'game_controller.dart';
+import 'season_controller.dart';
 import 'story_controller.dart';
 
 /// Trạng thái UI của màn chơi (thay cho setState).
@@ -38,7 +40,11 @@ class GameScreenController extends GetxController {
     // — tránh markNeedsBuild trong lúc GameScreen đang build.
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _applyPregameBoosters();
+      // Tutorial chỉ ở màn 1 thường — KHÔNG hiện ở chế độ phụ (Endless/Boss/Trọng lực),
+      // vì các chế độ đó giữ nguyên currentLevel (mặc định 1 khi mới cài).
       if (!gameCtrl.isEndless.value &&
+          !gameCtrl.isBoss.value &&
+          !gameCtrl.isGravity.value &&
           gameCtrl.currentLevel.value == 1 &&
           StorageService.to.getInt(StorageKeys.tutorialSeen, def: 0) == 0) {
         tutorialOpen.value = true;
@@ -153,8 +159,22 @@ class GameScreenController extends GetxController {
   }
 
   void _onGameEnd(String result) {
-    // Endless là chế độ phụ — thua KHÔNG trừ mạng.
-    if (result == 'lose' && !gameCtrl.isEndless.value) gameCtrl.consumeLife();
+    // Endless & Boss là chế độ phụ — thua KHÔNG trừ mạng.
+    if (result == 'lose' && !gameCtrl.isEndless.value && !gameCtrl.isBoss.value) {
+      gameCtrl.consumeLife();
+    }
+    // Battle Pass + Sự kiện mùa: ghi tiến trình (chỉ màn thường).
+    if (!gameCtrl.isEndless.value && !gameCtrl.isBoss.value) {
+      BattlePassController.maybe?.recordLevelEnd(
+        win: result == 'win',
+        stars: gameCtrl.lastStars,
+        coins: gameCtrl.lastCoinReward,
+        combo: gameCtrl.runMaxCombo.value,
+      );
+      if (result == 'win') {
+        SeasonController.maybe?.addWin(gameCtrl.lastStars);
+      }
+    }
     Future.delayed(const Duration(milliseconds: 350), () {
       ui.value = result == 'win' ? GameUi.win : GameUi.lose;
     });
@@ -179,6 +199,13 @@ class GameScreenController extends GetxController {
     if (gameCtrl.isEndless.value) {
       // Endless: chơi lại không cần mạng.
       gameCtrl.startEndless();
+      ui.value = GameUi.playing;
+      _newGame();
+      return;
+    }
+    if (gameCtrl.isBoss.value) {
+      // Boss: đánh lại cùng stage, không cần mạng.
+      gameCtrl.startBoss(gameCtrl.bossStage.value);
       ui.value = GameUi.playing;
       _newGame();
       return;

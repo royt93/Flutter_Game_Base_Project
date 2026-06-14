@@ -46,6 +46,19 @@ class AudioManager extends GetxService {
     _bgmPlaying = false;
   }
 
+  /// Tạm dừng nhạc khi app vào background (lifecycle paused/inactive/hidden).
+  /// Giữ `_bgmPlaying = true` để biết có nhạc cần resume khi quay lại.
+  void pauseBgm() {
+    if (!_bgmPlaying || muted.value) return;
+    FlameAudio.bgm.pause();
+  }
+
+  /// Phát tiếp khi app trở lại foreground (resumed). Không resume nếu user mute.
+  void resumeBgm() {
+    if (!_bgmPlaying || muted.value) return;
+    FlameAudio.bgm.resume();
+  }
+
   void toggleMute() {
     muted.toggle();
     if (muted.value) {
@@ -60,6 +73,71 @@ class AudioManager extends GetxService {
     if (muted.value || !_ready) return;
     final idx = step.clamp(1, noteCount);
     FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.6);
+  }
+
+  // --------------------------------------------------------------------------
+  // Giai điệu (Wave 8.1): biến chuỗi cascade thành câu nhạc du dương thay vì
+  // chạy chromatic đơn điệu. 4 yếu tố:
+  //  1) THANG NGŨ CUNG: mọi nốt rơi vào pentatonic → nghe hay ở mọi thứ tự.
+  //  2) MÀU GEM = BẬC ÂM: mỗi màu gem giữ 1 "giọng" cố định.
+  //  3) ĐỔI TÔNG THEO KHOÁ: world/stage dịch nốt gốc → 5 màu âm khác nhau.
+  //  4) HỢP ÂM KHI COMBO LỚN: wombo (≥6) thêm quãng 3 + 5 (arpeggio) giải toả.
+  // --------------------------------------------------------------------------
+
+  /// Major pentatonic 1 quãng tám (bán cung từ gốc). An toàn ở mọi thứ tự.
+  static const List<int> pentatonic = [0, 2, 4, 7, 9];
+
+  /// Nốt gốc theo "khoá" (world/stage) — dịch tông cho đa dạng, giữ trong dải.
+  static const List<int> keyRoots = [0, 2, 3, 5, 7];
+
+  /// Bán cung của bậc ngũ cung [degree] (tự lên quãng tám khi vượt 5 bậc).
+  static int pentaSemitone(int degree) =>
+      pentatonic[degree % pentatonic.length] +
+      12 * (degree ~/ pentatonic.length);
+
+  /// THUẦN (test được): chỉ số nốt 1..24 cho 1 bước cascade.
+  /// - [combo] ≥ 1: combo càng sâu → leo bậc ngũ cung (đi lên).
+  /// - [colorIndex] 0..5: màu gem quyết định bậc gốc (mỗi màu 1 giọng); -1 = theo combo.
+  /// - [keyIndex] ≥ 1: khoá (world/stage) dịch nốt gốc.
+  static int noteIndexFor(
+      {required int combo, int colorIndex = -1, int keyIndex = 1}) {
+    final root = keyRoots[(keyIndex - 1) % keyRoots.length];
+    // màu gem cho bậc gốc (mỗi màu 1 giọng); không có màu → bậc 0, combo tự dẫn.
+    final baseDeg = colorIndex >= 0 ? colorIndex % pentatonic.length : 0;
+    final degree = baseDeg + (combo - 1); // combo đẩy đi lên dần
+    final semitone = root + pentaSemitone(degree);
+    return semitone.clamp(0, noteCount - 1) + 1; // 1..24
+  }
+
+  /// Phát 1 bước cascade theo giai điệu (ngũ cung + màu + khoá + hợp âm wombo).
+  void playMelodic(
+      {required int combo, int colorIndex = -1, int keyIndex = 1}) {
+    if (muted.value || !_ready) return;
+    final idx = noteIndexFor(
+        combo: combo, colorIndex: colorIndex, keyIndex: keyIndex);
+    FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.6);
+    // Wombo (combo lớn) → arpeggio quãng 3 + 5 ngũ cung tạo hợp âm giải toả.
+    if (combo >= 6) {
+      _arpAfter(70, combo: combo, colorIndex: colorIndex, keyIndex: keyIndex,
+          addDegree: 2);
+      _arpAfter(140, combo: combo, colorIndex: colorIndex, keyIndex: keyIndex,
+          addDegree: 4);
+    }
+  }
+
+  void _arpAfter(int delayMs,
+      {required int combo,
+      required int colorIndex,
+      required int keyIndex,
+      required int addDegree}) {
+    Future.delayed(Duration(milliseconds: delayMs), () {
+      if (muted.value || !_ready) return;
+      final root = keyRoots[(keyIndex - 1) % keyRoots.length];
+      final baseDeg = colorIndex >= 0 ? colorIndex % pentatonic.length : 0;
+      final semitone = root + pentaSemitone(baseDeg + (combo - 1) + addDegree);
+      final idx = semitone.clamp(0, noteCount - 1) + 1;
+      FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.5);
+    });
   }
 
   /// Âm cho gem special (nốt cao nhất, to hơn).

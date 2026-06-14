@@ -37,6 +37,8 @@ class LevelSelectScreen extends StatelessWidget {
         return Icons.ac_unit_rounded;
       case ObjectiveType.endless:
         return Icons.all_inclusive_rounded;
+      case ObjectiveType.boss:
+        return Icons.coronavirus_rounded;
     }
   }
 

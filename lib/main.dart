@@ -37,9 +37,41 @@ Future<void> app({bool withAudio = true}) async {
   runApp(NeonJewelsApp(initialLocale: locale.current.value));
 }
 
-class NeonJewelsApp extends StatelessWidget {
+class NeonJewelsApp extends StatefulWidget {
   final Locale initialLocale;
   const NeonJewelsApp({super.key, required this.initialLocale});
+
+  @override
+  State<NeonJewelsApp> createState() => _NeonJewelsAppState();
+}
+
+class _NeonJewelsAppState extends State<NeonJewelsApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Tạm dừng nhạc khi app ra background, phát lại khi quay vào.
+  // Trước đây thiếu observer này nên nhạc vẫn chạy khi back ra launcher.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final audio = AudioManager.maybe;
+    if (audio == null) return;
+    if (state == AppLifecycleState.resumed) {
+      audio.resumeBgm();
+    } else {
+      // paused / inactive / hidden / detached → dừng nhạc
+      audio.pauseBgm();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +79,7 @@ class NeonJewelsApp extends StatelessWidget {
       title: 'Neon Jewels',
       debugShowCheckedModeBanner: false,
       translations: AppTranslations(),
-      locale: initialLocale,
+      locale: widget.initialLocale,
       fallbackLocale: AppTranslations.fallback,
       supportedLocales: AppTranslations.supported,
       // Material/Cupertino localizations cho mọi ngôn ngữ (tooltip, ngày giờ,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import '../../core/storage_service.dart';
 import '../../data/achievements.dart';
@@ -54,8 +55,9 @@ class AchievementController extends GetxController {
   /// Nhận thưởng. Trả về xu nhận (0 nếu không đủ điều kiện).
   int claim(Achievement a) {
     if (!canClaim(a)) return 0;
+    // Ghi cờ "đã nhận" TRƯỚC khi cộng xu → chặn nhận thưởng 2 lần.
     claimed.add(a.id);
-    _store.setInt(StorageKeys.achievementClaimed(a.id), 1);
+    unawaited(_store.setInt(StorageKeys.achievementClaimed(a.id), 1));
     g.addCoins(a.reward);
     return a.reward;
   }

@@ -496,6 +496,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         await _settle();
         await _maybeGrowSpread(); // không chặn được → chocolate lan 1 ô
         await _ensurePlayable();
+        // Trọng lực động: cứ N lượt thì bàn tự lật (đảo cột).
+        if (controller.consumeGravityFlip()) {
+          await _doColumnFlip();
+        }
       }
     } finally {
       _busy = false;
@@ -711,7 +715,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
       await _clearCells(expanded);
       controller.addScore(expanded.length, combo);
-      AudioManager.maybe?.playNote(combo); // combo cao → nốt cao dần
+      // Giai điệu: màu nổi trội của bước này → bậc âm; combo → leo thang;
+      // khoá theo world/stage → đổi tông. (ngũ cung + hợp âm khi wombo)
+      final domColor = matches
+          .reduce((a, b) => b.cells.length > a.cells.length ? b : a)
+          .color
+          .index;
+      AudioManager.maybe?.playMelodic(
+          combo: combo, colorIndex: domColor, keyIndex: controller.melodyKey);
       if (combo >= 2) _spawnComboText(combo);
       // Time Attack: combo lớn thưởng thêm giây
       if (combo >= 4 &&
@@ -1339,33 +1350,39 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   }
 
   /// Gravity Flip: đảo trọng lực (đảo thứ tự gem trong mỗi cột) rồi resolve.
+  /// Đảo cột (trên↔dưới) + hiệu ứng + settle. KHÔNG quản _busy/_finishMove để
+  /// dùng chung được cả booster lẫn chế độ Trọng lực động (gọi trong lượt).
+  Future<void> _doColumnFlip() async {
+    for (int c = 0; c < cols; c++) {
+      for (int r = 0; r < rows ~/ 2; r++) {
+        final a = grid[r][c];
+        final b = grid[rows - 1 - r][c];
+        if (a == null || b == null) continue;
+        final tColor = a.color, tType = a.type;
+        a.color = b.color;
+        a.type = b.type;
+        b.color = tColor;
+        b.type = tType;
+        a.scale = Vector2.all(0.6);
+        b.scale = Vector2.all(0.6);
+        a.add(ScaleEffect.to(Vector2.all(1),
+            EffectController(duration: 0.25, curve: Curves.easeOutBack)));
+        b.add(ScaleEffect.to(Vector2.all(1),
+            EffectController(duration: 0.25, curve: Curves.easeOutBack)));
+      }
+    }
+    _flash(NeonTheme.cyan, peak: 0.2);
+    _shake(8);
+    await Future.delayed(const Duration(milliseconds: 280));
+    await _settle();
+    await _ensurePlayable();
+  }
+
   Future<void> gravityFlip() async {
     if (_busy || _ended) return;
     _busy = true;
     try {
-      for (int c = 0; c < cols; c++) {
-        for (int r = 0; r < rows ~/ 2; r++) {
-          final a = grid[r][c];
-          final b = grid[rows - 1 - r][c];
-          if (a == null || b == null) continue;
-          final tColor = a.color, tType = a.type;
-          a.color = b.color;
-          a.type = b.type;
-          b.color = tColor;
-          b.type = tType;
-          a.scale = Vector2.all(0.6);
-          b.scale = Vector2.all(0.6);
-          a.add(ScaleEffect.to(
-              Vector2.all(1), EffectController(duration: 0.25, curve: Curves.easeOutBack)));
-          b.add(ScaleEffect.to(
-              Vector2.all(1), EffectController(duration: 0.25, curve: Curves.easeOutBack)));
-        }
-      }
-      _flash(NeonTheme.cyan, peak: 0.2);
-      _shake(8);
-      await Future.delayed(const Duration(milliseconds: 280));
-      await _settle();
-      await _ensurePlayable();
+      await _doColumnFlip();
     } finally {
       _busy = false;
       _finishMove();
