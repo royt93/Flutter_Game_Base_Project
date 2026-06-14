@@ -534,7 +534,7 @@ class GameScreen extends StatelessWidget {
       tween: Tween(begin: 0, end: progress),
       duration: const Duration(milliseconds: 450),
       curve: Curves.easeOutCubic,
-      builder: (_, v, __) => Container(
+      builder: (_, v, _) => Container(
         height: 8,
         decoration: BoxDecoration(color: NeonTheme.panel, borderRadius: BorderRadius.circular(8)),
         child: Align(
@@ -638,7 +638,7 @@ class GameScreen extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (leading != null) leading,
+        ?leading,
         Text(_objectiveText(ctrl), style: _valueStyle),
       ],
     );

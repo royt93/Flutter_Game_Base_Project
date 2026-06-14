@@ -5,7 +5,18 @@ import 'package:flutter/foundation.dart';
 enum QuestType { winLevels, playLevels, earnCoins, reachCombo, collectStars }
 
 /// Phần thưởng (dùng chung cho mốc pass).
-enum RewardKind { coins, shards, hammer, moves }
+enum RewardKind {
+  coins,
+  shards,
+  hammer,
+  moves,
+  // Booster độc quyền (nguồn nhận chính qua Battle Pass).
+  color,
+  joker,
+  lightning,
+  royal,
+  gravity,
+}
 
 @immutable
 class QuestTemplate {
@@ -75,11 +86,11 @@ const List<PassTier> kPassTiers = [
   PassTier(240, RewardKind.hammer, 1),
   PassTier(360, RewardKind.coins, 90),
   PassTier(500, RewardKind.moves, 1),
-  PassTier(660, RewardKind.shards, 6),
+  PassTier(660, RewardKind.joker, 1), // booster độc quyền
   PassTier(840, RewardKind.coins, 140),
-  PassTier(1040, RewardKind.hammer, 2),
-  PassTier(1260, RewardKind.shards, 9),
+  PassTier(1040, RewardKind.color, 1),
+  PassTier(1260, RewardKind.lightning, 1),
   PassTier(1500, RewardKind.coins, 220),
-  PassTier(1760, RewardKind.moves, 2),
-  PassTier(2040, RewardKind.shards, 14),
+  PassTier(1760, RewardKind.gravity, 1),
+  PassTier(2040, RewardKind.royal, 1),
 ];

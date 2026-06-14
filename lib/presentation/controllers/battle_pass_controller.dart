@@ -161,6 +161,21 @@ class BattlePassController extends GetxController {
       case RewardKind.moves:
         g.grantMovesBooster(t.amount);
         break;
+      case RewardKind.color:
+        g.grantColor(t.amount);
+        break;
+      case RewardKind.joker:
+        g.grantJoker(t.amount);
+        break;
+      case RewardKind.lightning:
+        g.grantLightning(t.amount);
+        break;
+      case RewardKind.royal:
+        g.grantRoyal(t.amount);
+        break;
+      case RewardKind.gravity:
+        g.grantGravity(t.amount);
+        break;
     }
     return true;
   }

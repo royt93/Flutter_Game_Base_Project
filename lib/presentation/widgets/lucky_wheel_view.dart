@@ -66,7 +66,7 @@ class _LuckyWheelViewState extends State<LuckyWheelView>
             children: [
               AnimatedBuilder(
                 animation: _turn,
-                builder: (_, __) {
+                builder: (_, _) {
                   final angle = _from + (_to - _from) * _turn.value;
                   return Transform.rotate(
                     angle: angle,

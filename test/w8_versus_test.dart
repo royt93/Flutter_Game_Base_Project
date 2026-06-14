@@ -89,6 +89,37 @@ void main() {
       expect(c.finished.value, isTrue);
     });
 
+    test('combo lớn gửi rác sang đối thủ (versus)', () {
+      final c = put(VersusMode.versus);
+      c.running.value = true;
+      c.game1.onMoveResolved?.call(4); // P1 combo 4 → gửi (4-3+1)=2 rác sang P2
+      expect(c.game2.pendingJunk, 2);
+      expect(c.game1.pendingJunk, 0);
+      c.game2.onMoveResolved?.call(3); // P2 combo 3 → 1 rác sang P1
+      expect(c.game1.pendingJunk, 1);
+    });
+
+    test('combo nhỏ (< ngưỡng) KHÔNG gửi rác', () {
+      final c = put(VersusMode.versus);
+      c.running.value = true;
+      c.game1.onMoveResolved?.call(2);
+      expect(c.game2.pendingJunk, 0);
+    });
+
+    test('co-op KHÔNG tấn công nhau (không gửi rác)', () {
+      final c = put(VersusMode.coop);
+      c.running.value = true;
+      c.game1.onMoveResolved?.call(5);
+      expect(c.game2.pendingJunk, 0);
+    });
+
+    test('rác chỉ gửi khi đang chạy', () {
+      final c = put(VersusMode.versus);
+      c.running.value = false;
+      c.game1.onMoveResolved?.call(5);
+      expect(c.game2.pendingJunk, 0);
+    });
+
     test('2 bàn điểm độc lập', () {
       final c = put(VersusMode.versus);
       c.g1.addScore(5, 2);

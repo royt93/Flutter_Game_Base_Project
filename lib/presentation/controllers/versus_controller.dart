@@ -37,19 +37,22 @@ class VersusController extends GetxController {
 
   Timer? _timer;
 
+  /// Combo tối thiểu để bắt đầu gửi rác; combo 3 → 1 hàng, 4 → 2 hàng…
+  static const int _junkThreshold = 3;
+
   @override
   void onInit() {
     super.onInit();
     g1 = Get.put(GameController(versus: true), tag: 'vp1');
     g2 = Get.put(GameController(versus: true), tag: 'vp2');
-    game1 = _build(g1);
-    game2 = _build(g2);
+    game1 = _build(g1, 1);
+    game2 = _build(g2, 2);
     // đóng băng tới khi đếm ngược xong
     game1.setInputFrozen(true);
     game2.setInputFrozen(true);
   }
 
-  NeonJewelGame _build(GameController g) {
+  NeonJewelGame _build(GameController g, int player) {
     final cfg = buildVersusLevel();
     return NeonJewelGame(
       controller: g,
@@ -57,7 +60,17 @@ class VersusController extends GetxController {
       cols: cfg.cols,
       colorCount: cfg.colorCount,
       onGameEnd: (_) {}, // versus không kết thúc qua engine
+      muteSfx: true, // tắt SFX 2 bàn → không chồng âm (giữ juice hình)
+      onMoveResolved: (combo) => _onCombo(player, combo),
     );
+  }
+
+  /// Người [player] vừa ghép xong combo: combo lớn (Versus) → gửi rác sang đối thủ.
+  void _onCombo(int player, int combo) {
+    if (mode != VersusMode.versus) return; // Co-op không tấn công nhau
+    if (!running.value || combo < _junkThreshold) return;
+    final n = combo - _junkThreshold + 1;
+    (player == 1 ? game2 : game1).receiveJunk(n);
   }
 
   int get score1 => g1.score.value;

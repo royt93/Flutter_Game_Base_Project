@@ -100,6 +100,21 @@ class SeasonController extends GetxController {
       case RewardKind.moves:
         g.grantMovesBooster(ms.amount);
         break;
+      case RewardKind.color:
+        g.grantColor(ms.amount);
+        break;
+      case RewardKind.joker:
+        g.grantJoker(ms.amount);
+        break;
+      case RewardKind.lightning:
+        g.grantLightning(ms.amount);
+        break;
+      case RewardKind.royal:
+        g.grantRoyal(ms.amount);
+        break;
+      case RewardKind.gravity:
+        g.grantGravity(ms.amount);
+        break;
     }
     return true;
   }

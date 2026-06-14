@@ -261,6 +261,8 @@ class _SeasonScreenState extends State<SeasonScreen> {
         return Icons.gavel_rounded;
       case RewardKind.moves:
         return Icons.add_circle_rounded;
+      default: // season không dùng booster độc quyền
+        return Icons.card_giftcard_rounded;
     }
   }
 
@@ -274,6 +276,8 @@ class _SeasonScreenState extends State<SeasonScreen> {
         return NeonTheme.magenta;
       case RewardKind.moves:
         return NeonTheme.lime;
+      default:
+        return NeonTheme.purple;
     }
   }
 
@@ -287,6 +291,8 @@ class _SeasonScreenState extends State<SeasonScreen> {
         return 'bp_hammer'.tr;
       case RewardKind.moves:
         return 'bp_moves'.tr;
+      default:
+        return 'bp_color'.tr;
     }
   }
 }

@@ -35,6 +35,13 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// Gọi khi 1 booster được DÙNG thành công → UI trừ số lượng booster đó.
   final void Function(BoosterMode mode)? onBoosterUsed;
 
+  /// Versus: gọi sau mỗi nước đi hoàn tất với combo đỉnh của nước đó → tầng
+  /// trên gửi "rác" sang đối thủ khi combo lớn.
+  final void Function(int combo)? onMoveResolved;
+
+  /// Versus: tắt SFX của bàn này (tránh 2 bàn chồng âm) — vẫn giữ hiệu ứng hình.
+  final bool muteSfx;
+
   NeonJewelGame({
     required this.controller,
     required this.rows,
@@ -42,7 +49,21 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     required this.colorCount,
     required this.onGameEnd,
     this.onBoosterUsed,
+    this.onMoveResolved,
+    this.muteSfx = false,
   });
+
+  /// Audio SFX của bàn (null khi [muteSfx] — versus tắt để không chồng âm 2 bàn).
+  AudioManager? get _sfx => muteSfx ? null : AudioManager.maybe;
+
+  /// Hàng rác chờ áp (áp khi engine rảnh để không phá cascade đang chạy).
+  int _pendingJunk = 0;
+  int get pendingJunk => _pendingJunk; // cho test
+
+  /// Versus: nhận [n] hàng rác từ đối thủ (xếp hàng, áp ở [update] khi rảnh).
+  void receiveJunk(int n) {
+    if (n > 0) _pendingJunk += n;
+  }
 
   BoosterMode boosterMode = BoosterMode.none;
   Cell? _swapA; // ô đầu tiên khi dùng booster Swap
@@ -244,6 +265,13 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     // Rhythm: tiến đồng hồ nhịp theo thời gian thực (không dính slow-mo).
     if (!_ended) controller.tickRhythm(dt);
 
+    // Versus: áp hàng rác đang chờ khi engine rảnh (không phá cascade).
+    if (!_busy && !_ended && _pendingJunk > 0) {
+      final n = _pendingJunk.clamp(1, rows - 1);
+      _pendingJunk = 0;
+      _applyJunk(n);
+    }
+
     // Time Attack: đếm ngược thời gian, hết giờ → kết thúc ván.
     if (!_ended &&
         controller.level.objective == ObjectiveType.timeAttack) {
@@ -252,7 +280,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         _timeAccum -= 1.0;
         controller.tickTime(1);
       }
-      if (controller.timeLeft.value <= 0) _finishMove();
+      // Hết giờ → kết thúc, NHƯNG chờ cascade hiện tại xong (_busy) để không
+      // end giữa chuỗi nổ (tránh race score/dialog).
+      if (controller.timeLeft.value <= 0 && !_busy) _finishMove();
     }
 
     if (_trauma > 0) {
@@ -489,11 +519,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         controller.judgeRhythmBeat(); // Rhythm: phán định đúng/lệch nhịp tại nước đi
         if (controller.isRhythm.value && controller.lastBeatJudge.value == 1) {
           // đúng nhịp → nốt nhạc cao dần theo groove (phản hồi "khớp" nghe đã tai)
-          AudioManager.maybe?.playNote(controller.groove.value.clamp(1, 24));
+          _sfx?.playNote(controller.groove.value.clamp(1, 24));
         }
         _spreadHitThisMove = false; // theo dõi có chặn được chocolate lan không
         if (comboTrigger) {
-          AudioManager.maybe?.playSpecial();
+          _sfx?.playSpecial();
           final base = _comboCells(a, b);
           final expanded = _expandSpecials(base);
           _shake((expanded.length * 0.5).clamp(4.0, 14.0));
@@ -729,7 +759,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           .reduce((a, b) => b.cells.length > a.cells.length ? b : a)
           .color
           .index;
-      AudioManager.maybe?.playMelodic(
+      _sfx?.playMelodic(
           combo: combo, colorIndex: domColor, keyIndex: controller.melodyKey);
       if (combo >= 2) _spawnComboText(combo);
       // Time Attack: combo lớn thưởng thêm giây
@@ -741,7 +771,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       }
 
       // tạo gem special mới — kèm hiệu ứng "ra đời" nổi bật
-      if (newSpecials.isNotEmpty) AudioManager.maybe?.playSpecial();
+      if (newSpecials.isNotEmpty) _sfx?.playSpecial();
       newSpecials.forEach((cell, type) {
         final g = grid[cell.row][cell.col];
         if (g == null) return;
@@ -1141,11 +1171,72 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     await Future.wait(futures);
   }
 
+  /// Versus: áp [n] hàng RÁC — gem rơi từ trên đẩy bàn XUỐNG, mất [n] hàng đáy.
+  /// Rác là gem màu ngẫu nhiên (tránh tạo match ngay → không tặng điểm đối thủ).
+  /// Dồn cả cột nên KHÔNG sinh match ngang/dọc mới từ phần dịch.
+  Future<void> _applyJunk(int n) async {
+    _busy = true;
+    _shake((n * 4.0).clamp(4.0, 12.0));
+    _flash(NeonTheme.magenta, peak: 0.35); // báo "bị tấn công"
+    final futures = <Future>[];
+    for (int c = 0; c < cols; c++) {
+      // 1) xoá n gem ĐÁY
+      for (int r = rows - n; r < rows; r++) {
+        final g = grid[r][c];
+        if (g == null) continue;
+        grid[r][c] = null;
+        futures.add(_run(
+                g,
+                ScaleEffect.to(Vector2.zero(),
+                    EffectController(duration: 0.16, curve: Curves.easeIn)))
+            .then((_) => g.removeFromParent()));
+      }
+      // 2) đẩy gem còn lại XUỐNG n hàng (từ đáy lên để không ghi đè)
+      for (int r = rows - 1 - n; r >= 0; r--) {
+        final g = grid[r][c];
+        if (g == null) continue;
+        grid[r + n][c] = g;
+        grid[r][c] = null;
+        g.row = r + n;
+        futures.add(_run(
+            g,
+            MoveToEffect(_cellCenter(r + n, c),
+                EffectController(duration: 0.26, curve: Curves.easeIn))));
+      }
+      // 3) thêm n gem RÁC ở các hàng trên, rơi từ trên xuống
+      for (int r = 0; r < n; r++) {
+        GemColor color;
+        var guard = 0;
+        do {
+          color = _randomColor();
+        } while (guard++ < 20 && _wouldMatchAt(r, c, color));
+        final g = GemComponent(
+          color: color,
+          type: GemType.normal,
+          row: r,
+          col: c,
+          position: _cellCenter(r - n, c),
+          cellSize: cellSize,
+        );
+        grid[r][c] = g;
+        boardLayer.add(g);
+        futures.add(_run(
+            g,
+            MoveToEffect(_cellCenter(r, c),
+                EffectController(duration: 0.30, curve: Curves.bounceOut))));
+      }
+    }
+    await Future.wait(futures);
+    await _ensurePlayable();
+    _busy = false;
+  }
+
   /// Versus: đóng băng/mở input (trước countdown / sau khi hết giờ). Dùng cờ
   /// `_ended` sẵn có để chặn tap/drag mà không cần kết thúc ván qua checkEnd.
   void setInputFrozen(bool frozen) => _ended = frozen;
 
   void _finishMove() {
+    onMoveResolved?.call(controller.comboCount.value); // versus: gửi rác theo combo
     final result = controller.checkEnd();
     if (result != null) {
       _ended = true;

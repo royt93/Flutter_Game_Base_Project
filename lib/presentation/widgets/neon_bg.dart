@@ -66,7 +66,7 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
           child: RepaintBoundary(
             child: AnimatedBuilder(
               animation: _ctrl,
-              builder: (_, __) => CustomPaint(
+              builder: (_, _) => CustomPaint(
                 painter: _NeonBgPainter(
                     _ctrl.value, _orbs, _stars, widget.accent),
               ),

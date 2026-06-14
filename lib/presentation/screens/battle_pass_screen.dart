@@ -297,6 +297,16 @@ class BattlePassScreen extends StatelessWidget {
         return Icons.gavel_rounded;
       case RewardKind.moves:
         return Icons.add_circle_rounded;
+      case RewardKind.color:
+        return Icons.palette_rounded;
+      case RewardKind.joker:
+        return Icons.style_rounded;
+      case RewardKind.lightning:
+        return Icons.bolt_rounded;
+      case RewardKind.royal:
+        return Icons.workspace_premium_rounded;
+      case RewardKind.gravity:
+        return Icons.swap_vert_rounded;
     }
   }
 
@@ -310,6 +320,16 @@ class BattlePassScreen extends StatelessWidget {
         return NeonTheme.magenta;
       case RewardKind.moves:
         return NeonTheme.lime;
+      case RewardKind.color:
+        return NeonTheme.purple;
+      case RewardKind.joker:
+        return NeonTheme.magenta;
+      case RewardKind.lightning:
+        return NeonTheme.yellow;
+      case RewardKind.royal:
+        return NeonTheme.orange;
+      case RewardKind.gravity:
+        return NeonTheme.cyan;
     }
   }
 
@@ -323,6 +343,16 @@ class BattlePassScreen extends StatelessWidget {
         return 'bp_hammer'.tr;
       case RewardKind.moves:
         return 'bp_moves'.tr;
+      case RewardKind.color:
+        return 'bp_color'.tr;
+      case RewardKind.joker:
+        return 'bp_joker'.tr;
+      case RewardKind.lightning:
+        return 'bp_lightning'.tr;
+      case RewardKind.royal:
+        return 'bp_royal'.tr;
+      case RewardKind.gravity:
+        return 'bp_gravity'.tr;
     }
   }
 }

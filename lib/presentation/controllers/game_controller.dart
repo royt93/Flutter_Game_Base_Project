@@ -215,10 +215,12 @@ class GameController extends GetxController {
     isBoss.value = boss;
     isGravity.value = gravity;
     isRhythm.value = rhythm;
+    isVersus.value = false; // versus chỉ bật qua _initVersus; mọi start* khác tắt
     if (!endless) _endlessCfg = null;
     if (!boss) _bossCfg = null;
     if (!gravity) _gravityCfg = null;
     if (!rhythm) _rhythmCfg = null;
+    _versusCfg = null;
   }
 
   /// Reset state CHUNG của 1 ván mới (mọi mode dùng) → khỏi lặp 12 dòng/hàm.
@@ -703,9 +705,31 @@ class GameController extends GetxController {
       _grant(StorageKeys.bMoves, boosterMoves, n);
   void grantBomb([int n = 1]) => _grant(StorageKeys.bBomb, boosterBomb, n);
   void grantSwap([int n = 1]) => _grant(StorageKeys.bSwap, boosterSwap, n);
+  // Booster độc quyền — nguồn nhận qua Battle Pass (xem kPassTiers).
+  void grantColor([int n = 1]) => _grant(StorageKeys.bColor, boosterColor, n);
+  void grantJoker([int n = 1]) => _grant(StorageKeys.bJoker, boosterJoker, n);
+  void grantLightning([int n = 1]) =>
+      _grant(StorageKeys.bLightning, boosterLightning, n);
+  void grantRoyal([int n = 1]) => _grant(StorageKeys.bRoyal, boosterRoyal, n);
+  void grantGravity([int n = 1]) =>
+      _grant(StorageKeys.bGravity, boosterGravity, n);
 
   /// Epoch-day hôm nay (công khai cho Lucky Wheel…).
-  int get todayEpochDay => _todayEpochDay;
+  /// Epoch-day "hiệu lực" — chống chỉnh giờ LÙI: không nhỏ hơn ngày cao nhất
+  /// từng thấy. Chỉnh giờ lùi → giữ ngày cũ (không cho nhận lại quà). (Chỉnh giờ
+  /// TIẾN không chặn được offline — chấp nhận, chỉ tự hại người chơi.)
+  int get _effectiveDay {
+    final today = _todayEpochDay;
+    final maxSeen = _store.getInt(StorageKeys.maxDay, def: today);
+    if (today >= maxSeen) {
+      if (today > maxSeen) unawaited(_store.setInt(StorageKeys.maxDay, today));
+      return today;
+    }
+    return maxSeen;
+  }
+
+  /// Ngày epoch công khai (đã chống chỉnh giờ lùi) — daily/wheel/quest/season dùng.
+  int get todayEpochDay => _effectiveDay;
 
   bool _buy(String key, RxInt count, int price) {
     if (coins.value < price) return false;
@@ -730,6 +754,7 @@ class GameController extends GetxController {
       StorageKeys.shards,
       StorageKeys.dailyLastClaim,
       StorageKeys.dailyStreak,
+      StorageKeys.maxDay,
       StorageKeys.lives,
       StorageKeys.livesRegenAt,
       StorageKeys.winStreak,
@@ -810,9 +835,9 @@ class GameController extends GetxController {
     return DateTime(n.year, n.month, n.day).millisecondsSinceEpoch ~/ 86400000;
   }
 
-  /// Chưa nhận quà hôm nay?
+  /// Chưa nhận quà hôm nay? (dùng ngày hiệu lực — chống chỉnh giờ lùi)
   bool get canClaimDaily =>
-      _store.getInt(StorageKeys.dailyLastClaim, def: -1) != _todayEpochDay;
+      _store.getInt(StorageKeys.dailyLastClaim, def: -1) != _effectiveDay;
 
   /// Xu thưởng cho ngày thứ [day] trong chuỗi (1-based), chu kỳ 7 ngày:
   /// 20, 35, 50, 65, 80, 95, 110 rồi lặp lại.
@@ -824,7 +849,7 @@ class GameController extends GetxController {
   /// Nhận quà hằng ngày. Trả về số xu nhận (0 nếu đã nhận hôm nay).
   int claimDaily() {
     if (!canClaimDaily) return 0;
-    final today = _todayEpochDay;
+    final today = _effectiveDay;
     final last = _store.getInt(StorageKeys.dailyLastClaim, def: -1);
     // liên tục (hôm qua) → +1; gãy hoặc lần đầu → reset về 1
     dailyStreak.value = (last == today - 1) ? dailyStreak.value + 1 : 1;

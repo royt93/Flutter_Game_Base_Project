@@ -331,7 +331,7 @@ class _AnimatedMapState extends State<_AnimatedMap>
             Positioned.fill(
               child: AnimatedBuilder(
                 animation: _anim,
-                builder: (_, __) => CustomPaint(
+                builder: (_, _) => CustomPaint(
                   painter: _MapPainter(
                     centers: centers,
                     current: widget.current,

@@ -12,6 +12,8 @@ class StorageKeys {
   // Daily reward
   static const String dailyLastClaim = 'daily_last_claim'; // epoch-day
   static const String dailyStreak = 'daily_streak';
+  /// Ngày (epoch-day) CAO NHẤT từng thấy — chống chỉnh giờ LÙI để nhận lại quà.
+  static const String maxDay = 'max_epoch_day';
 
   // Lives / energy
   static const String lives = 'lives';
