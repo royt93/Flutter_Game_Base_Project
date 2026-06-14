@@ -6,10 +6,16 @@ status: done
 owner: claude
 ---
 
-> ✅ DONE (Wave 8.4): subsystem tách biệt (KHÔNG 2 Flame instance) — `VersusBoard`
-> thuần + `VersusController` (junk gem versus + co-op goal) + `VersusBoardView`
-> (CustomPaint, vuốt) + `VersusScreen` (split dọc, bàn trên xoay 180°). **211 test
-> pass** (+14), build APK OK. Chi tiết: [`../../feat.md`](../../feat.md) Wave 8.4.
+> ✅ DONE (Wave 8.4 → REWORK 8.7).
+>
+> - **8.4 (cũ)**: subsystem CustomPaint tách biệt (`VersusBoard` thuần + `VersusBoardView`).
+>   Người dùng phản hồi "quá tệ, thiếu animation/cơ chế như mode thường".
+> - **8.7 (hiện tại)**: ĐÃ XOÁ bản CustomPaint, **dựng lại trên engine Flame thật**
+>   (`NeonJewelGame`) → đủ juice (particle/gem rơi/cascade/special gem). Mỗi người 1
+>   `GameController(versus:true)` cách ly tiến trình (không xu/mạng/save); `VersusScreen`
+>   render 2 `GameWidget` (bàn trên `RotatedBox` 180°). **206 test pass**, build APK OK,
+>   verify máy thật (Pixel 7 Pro). Chi tiết: [`../../feat.md`](../../feat.md) Wave 8.7.
+> - **CÒN NỢ**: junk-gem attack (gửi rác khi combo lớn) — cần inject garbage vào engine.
 
 # Đối kháng / Hợp tác cục bộ (cùng thiết bị)
 

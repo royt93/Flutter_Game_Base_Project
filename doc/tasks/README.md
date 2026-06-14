@@ -103,15 +103,20 @@ Kết quả: 0 analyzer issue · 140 test pass.
 
 Wave 7+8 (4 tính năng): 0 analyzer · **175 test pass** (+26) · build APK debug OK.
 
-## Wave 8.2 → 8.4 — ✅ DONE (audit-fix + Rhythm + Versus/Co-op)
+## Wave 8.2 → 8.7 — ✅ DONE (audit-fix + Rhythm + Versus/Co-op + UX polish)
 
-| Việc | Mô tả | Trạng thái | File |
+| Wave | Việc | Mô tả | File |
 |---|---|---|---|
-| Audit & fix lỗ hổng | resetProgress sạch (đĩa+RAM) + boss điểm yếu màu wire vào damage | ✅ done | `done/w8.2-audit-fix.md` |
-| Rhythm Mode | RhythmClock thuần + groove + thưởng điểm theo nhịp + HUD beat | ✅ done | `done/w8-rhythm-mode.md` |
-| Co-op / Versus | Subsystem tách biệt: VersusBoard + Controller (junk/coop) + màn split | ✅ done | `done/w8-coop-versus.md` |
+| 8.2 | Audit & fix lỗ hổng | resetProgress sạch (đĩa+RAM) + boss điểm yếu màu wire vào damage | `done/w8.2-audit-fix.md` |
+| 8.3 | Rhythm Mode | RhythmClock thuần + groove + thưởng điểm theo nhịp + HUD beat | `done/w8-rhythm-mode.md` |
+| 8.4 | Co-op / Versus (v1) | Bản đầu: subsystem CustomPaint tách biệt (đã bị 8.7 thay thế) | `done/w8-coop-versus.md` |
+| 8.5 | Juice + refactor + dọn release | Versus special gem · refactor `_enterMode`/`_resetRunState` · `dlog()` gate kDebugMode | — (xem `feat.md`) |
+| 8.6 | Fix UX (lần 1) | Home FittedBox · Versus shape lá bài + animation swap | — (xem `feat.md`) |
+| **8.7** | **Home full-width + REBUILD Versus trên engine Flame** | Home dùng full width (hết dư 2 bên); Versus chạy `NeonJewelGame` thật → đủ juice (particle/rơi/cascade), cách ly tiến trình qua `GameController(versus)` | — (xem `feat.md`) |
 
-Kết quả: 0 analyzer · **211 test pass** (+31 so với 180) · build APK debug OK.
+Kết quả mới nhất (8.7): 0 analyzer · **206 test pass** · build APK OK · verify máy thật (Pixel 7 Pro): 2 bàn full-juice, Home coins không đổi sau ván.
+
+**Còn nợ**: junk-gem attack cho Versus (cần method inject garbage vào `NeonJewelGame`); on-device re-verify trên S24 (đang dùng Pixel do S24 rớt USB).
 
 ## Wave 8.1 — ✅ POLISH (UI + Audio, verify máy thật S24 Ultra)
 

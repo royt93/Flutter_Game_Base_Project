@@ -302,7 +302,15 @@ lib/
 
 > 🎉 **HOÀN TẤT 4/4 chế độ signature Wave 8** (Gravity, Boss, Rhythm, Versus/Co-op) + Wave 8.2 audit-fix. Người dùng đã chốt 1+2+3 → done cả 3.
 
-### 🌊 Wave 8.6 — fix UX theo phản hồi máy thật (✅ đã làm)
+### 🌊 Wave 8.7 — Home full-width + REBUILD Versus trên engine Flame (✅ đã làm)
+> Phản hồi: (1) Home dư space 2 bên (chuẩn 8/16/24); (2) Versus "quá tệ" — thiếu animation/vật phẩm/cơ chế như mode thường.
+- [x] **Home full-width, không scroll**: bug 8.6 co `SizedBox(width:320)` → dư 2 bên. Sửa: `LayoutBuilder` → `SizedBox(width: constraints.maxWidth)` + `FittedBox(scaleDown)` (chỉ co theo CHIỀU CAO khi màn thấp), padding chuẩn `s16`. Verify máy thật: cards full width, không scroll.
+- [x] **REBUILD Versus trên `NeonJewelGame` (engine thật)** → đủ juice như mode thường (particle nổ, gem rơi, cascade, special gem, glow). Bỏ hẳn `VersusBoard`/`versus_board_view`/`gem_painter`. Mỗi người 1 `GameController(versus:true)` **cách ly tiến trình**: `_initVersus` (bỏ `_load`), `checkEnd→null`, `addCoins`/`useMove` no-op, không ghi bestCombo. `NeonJewelGame.setInputFrozen`. `VersusController` tạo 2 controller+game; `VersusScreen` render 2 `GameWidget` (bàn trên `RotatedBox` 180°). [[versus-separate-subsystem]]
+- [x] **Verify máy thật** (Pixel 7 Pro): 2 bàn full-juice, vuốt ghi điểm (N1 30), timer + "NGƯỜI 1 THẮNG", **Home coins vẫn 50 sau ván** (không hỏng tiến trình), logcat sạch.
+- [x] **Kết quả**: 0 analyzer · **206 test pass** (VersusController engine-based; bỏ test board CustomPaint cũ) · build APK OK.
+- [ ] *Chưa làm*: junk-gem attack (cần method inject garbage vào NeonJewelGame).
+
+### 🌊 Wave 8.6 — fix UX theo phản hồi máy thật (✅ đã làm — phần Versus đã bị 8.7 thay thế)
 > Phản hồi: (1) Home phải scroll; (2) Versus vuốt "không có gì xảy ra" + gem shape kì quặc.
 - [x] **Home KHÔNG scroll** (mọi device): bỏ `SingleChildScrollView`, bọc menu trong `FittedBox(scaleDown)` trên `SizedBox` rộng tham chiếu 320 → toàn bộ item tự co vừa 1 màn. Thu nhỏ tiêu đề (NEON 56→46, JEWELS 40→30) + khoảng cách. Bọc hàng circle-nav (Đền/Pass/Mùa + Thành tựu/Hướng dẫn/Cài đặt) trong `Expanded` + nhãn ellipsis → không tràn ngang khi co. Verify máy thật: đủ item, không scroll.
 - [x] **Versus gem cùng hình lá bài game chính**: tạo `gem_painter.dart` (`paintGem` — ♥♣♠♦★● + viền neon đôi) dùng cho `VersusBoardView` (trước là ô vuông bo tròn → "kì quặc"). Verify máy thật.
@@ -504,4 +512,22 @@ match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 
 
 ---
 
-*Cập nhật lần cuối: 2026-06-14 · Trạng thái: Đang phát triển (Wave 8.4 — đủ 4 chế độ signature: Gravity/Boss/Rhythm/Versus-Coop + audit-fix; **211 test pass**, 0 analyzer, build APK debug OK)*
+*Cập nhật lần cuối: 2026-06-14 · Trạng thái: Đang phát triển (Wave 8.7 — đủ 4 chế độ signature: Gravity/Boss/Rhythm/Versus-Coop; Versus đã REBUILD trên engine Flame (full juice, cách ly tiến trình); Home full-width no-scroll. **206 test pass**, 0 analyzer, build APK OK, verify máy thật Pixel 7 Pro)*
+
+---
+
+## 📌 Trạng thái resume (cho phiên sau)
+
+> Tóm tắt nhanh để bắt đầu lại nhanh chóng.
+
+**Mới nhất**: Wave 8.7 xong — Home full-width không scroll + Versus dựng lại trên `NeonJewelGame` (engine thật, full juice, cách ly tiến trình qua `GameController(versus:true)`).
+
+**Sức khỏe code**: 206 test pass · 0 analyzer issue · build APK debug OK.
+
+**Việc còn nợ (ưu tiên gợi ý cho phiên sau)**:
+1. **Junk-gem attack cho Versus** (cơ chế "gửi rác" sang đối thủ khi combo lớn) — cần thêm method inject garbage rows vào `NeonJewelGame`. Hiện Versus là "2 bàn đua điểm full-juice" + Co-op chung mục tiêu, CHƯA có tấn công.
+2. **3 nợ audit Wave 8.2** (ưu tiên thấp): daily/wheel chống chỉnh giờ tiến; booster độc quyền (joker/lightning/royal/gravity) chưa có nguồn nhận miễn phí; Time Attack `_finishMove` gọi từ update-loop.
+3. **23 package major-bump** (get/flame/win32/xml…) — chưa đụng, nên bump chọn lọc + test từng cái.
+4. **On-device re-verify trên S24 Ultra** (SM-S928B) — các bản gần đây verify trên Pixel 7 Pro do S24 rớt USB.
+
+**Thiết bị test**: Pixel 7 Pro (USB, ổn định) + S24 Ultra SM-S928B (USB, hay rớt). Package `com.galaxyjoy.neon_jewels`. Build: `flutter build apk --debug`.
