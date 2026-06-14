@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/app_translations.dart';
+import '../../core/debug_log.dart';
 import '../../core/audio_manager.dart';
 import '../../core/locale_service.dart';
 import '../../core/neon_theme.dart';
@@ -16,20 +17,20 @@ class SettingsController extends GetxController {
   final RxBool showResetConfirm = false.obs;
 
   void askReset() {
-    debugPrint('roy93~ RESET card tapped → bật overlay xác nhận');
+    dlog('RESET card tapped → bật overlay xác nhận');
     showResetConfirm.value = true;
   }
 
   void cancelReset() {
-    debugPrint('roy93~ RESET huỷ');
+    dlog('RESET huỷ');
     showResetConfirm.value = false;
   }
 
   Future<void> doReset() async {
-    debugPrint('roy93~ RESET confirm → gọi resetProgress');
+    dlog('RESET confirm → gọi resetProgress');
     await Get.find<GameController>().resetProgress();
     showResetConfirm.value = false;
-    debugPrint('roy93~ RESET xong: unlockedLevel='
+    dlog('RESET xong: unlockedLevel='
         '${Get.find<GameController>().unlockedLevel.value}');
   }
 }

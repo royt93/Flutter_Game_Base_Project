@@ -128,6 +128,20 @@ class BattlePassController extends GetxController {
     if (_questDay != g.todayEpochDay) _loadQuests();
   }
 
+  /// Xoá sạch state in-memory khi người chơi reset tiến trình. Controller này
+  /// `permanent: true` nên KHÔNG tự mất khi GameController xoá đĩa — không gọi
+  /// hàm này thì RAM vẫn giữ "đã nhận" → restart đọc đĩa trống ⇒ nhận lại thưởng.
+  void resetState() {
+    xp.value = 0;
+    claimed.clear();
+    questProgress.value = [0, 0, 0];
+    for (int i = 0; i < _credited.length; i++) {
+      _credited[i] = false;
+    }
+    _questDay = -1;
+    _loadQuests(); // đĩa đã trống → nạp lại bộ quest hôm nay từ đầu
+  }
+
   /// Nhận thưởng tier [idx]. Trả về true nếu nhận được.
   bool claim(int idx) {
     if (!canClaim(idx)) return false;

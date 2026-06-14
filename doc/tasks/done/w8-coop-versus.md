@@ -2,9 +2,14 @@
 id: w8-coop-versus
 title: Co-op / Versus cục bộ (signature)
 wave: 8
-status: todo
+status: done
 owner: claude
 ---
+
+> ✅ DONE (Wave 8.4): subsystem tách biệt (KHÔNG 2 Flame instance) — `VersusBoard`
+> thuần + `VersusController` (junk gem versus + co-op goal) + `VersusBoardView`
+> (CustomPaint, vuốt) + `VersusScreen` (split dọc, bàn trên xoay 180°). **211 test
+> pass** (+14), build APK OK. Chi tiết: [`../../feat.md`](../../feat.md) Wave 8.4.
 
 # Đối kháng / Hợp tác cục bộ (cùng thiết bị)
 

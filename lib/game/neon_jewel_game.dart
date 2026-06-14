@@ -241,6 +241,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     }
     super.update(dt * _timeScale);
 
+    // Rhythm: tiến đồng hồ nhịp theo thời gian thực (không dính slow-mo).
+    if (!_ended) controller.tickRhythm(dt);
+
     // Time Attack: đếm ngược thời gian, hết giờ → kết thúc ván.
     if (!_ended &&
         controller.level.objective == ObjectiveType.timeAttack) {
@@ -483,6 +486,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       } else {
         consumed = true;
         controller.useMove();
+        controller.judgeRhythmBeat(); // Rhythm: phán định đúng/lệch nhịp tại nước đi
+        if (controller.isRhythm.value && controller.lastBeatJudge.value == 1) {
+          // đúng nhịp → nốt nhạc cao dần theo groove (phản hồi "khớp" nghe đã tai)
+          AudioManager.maybe?.playNote(controller.groove.value.clamp(1, 24));
+        }
         _spreadHitThisMove = false; // theo dõi có chặn được chocolate lan không
         if (comboTrigger) {
           AudioManager.maybe?.playSpecial();

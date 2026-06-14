@@ -98,10 +98,20 @@ Kết quả: 0 analyzer issue · 140 test pass.
 |---|---|---|---|
 | Trọng lực động / Mê cung | Bàn tự lật mỗi 5 lượt (MVP); 4 hướng + tường để dành | ✅ done | `done/w8-gravity-dynamic.md` |
 | Boss neon theo lượt | Trùm có máu + điểm yếu + phản đòn hút lượt | ✅ done | `done/w8-boss-neon.md` |
-| Chế độ Nhịp điệu | Ghép theo beat, groove meter (tận dụng 24 nốt) | 📋 todo | `todo/w8-rhythm-mode.md` |
-| Co-op / Versus cục bộ | 2 người 1 máy, đua điểm / chung mục tiêu | 📋 todo | `todo/w8-coop-versus.md` |
+| Chế độ Nhịp điệu | Ghép theo beat, groove meter (tận dụng 24 nốt) | ✅ done | `done/w8-rhythm-mode.md` |
+| Co-op / Versus cục bộ | 2 người 1 máy, đua điểm / chung mục tiêu + junk gem | ✅ done | `done/w8-coop-versus.md` |
 
 Wave 7+8 (4 tính năng): 0 analyzer · **175 test pass** (+26) · build APK debug OK.
+
+## Wave 8.2 → 8.4 — ✅ DONE (audit-fix + Rhythm + Versus/Co-op)
+
+| Việc | Mô tả | Trạng thái | File |
+|---|---|---|---|
+| Audit & fix lỗ hổng | resetProgress sạch (đĩa+RAM) + boss điểm yếu màu wire vào damage | ✅ done | `done/w8.2-audit-fix.md` |
+| Rhythm Mode | RhythmClock thuần + groove + thưởng điểm theo nhịp + HUD beat | ✅ done | `done/w8-rhythm-mode.md` |
+| Co-op / Versus | Subsystem tách biệt: VersusBoard + Controller (junk/coop) + màn split | ✅ done | `done/w8-coop-versus.md` |
+
+Kết quả: 0 analyzer · **211 test pass** (+31 so với 180) · build APK debug OK.
 
 ## Wave 8.1 — ✅ POLISH (UI + Audio, verify máy thật S24 Ultra)
 

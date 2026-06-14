@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/debug_log.dart';
 import '../../core/neon_theme.dart';
 
 /// Một nút hành động trong dialog. onTap tự chịu trách nhiệm đóng (route/overlay).
@@ -114,7 +115,7 @@ class NeonDialog {
               },
             ))
         .toList();
-    debugPrint('roy93~ NeonDialog.show CALL title=$title (showDialog native)');
+    dlog('NeonDialog.show CALL title=$title (showDialog native)');
     return showDialog<T>(
       context: context,
       barrierDismissible: dismissible,

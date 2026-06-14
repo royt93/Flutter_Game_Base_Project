@@ -2,7 +2,9 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+
 import '../../core/audio_manager.dart';
+import '../../core/debug_log.dart';
 import '../../core/neon_theme.dart';
 import '../../data/levels.dart';
 import '../../game/neon_jewel_game.dart' show BoosterMode;
@@ -31,41 +33,37 @@ class GameScreen extends StatelessWidget {
         body: Obx(() {
           // Theme đổi màu theo thế giới (hoặc theo stage khi Endless).
           final accent = ctrl.isEndless.value
-              ? NeonTheme.worldAccents[
-                  (ctrl.endlessStage.value - 1) % NeonTheme.worldAccents.length]
-              : NeonTheme.accentForWorld(
-                  worldOfLevel(ctrl.currentLevel.value).index);
+              ? NeonTheme.worldAccents[(ctrl.endlessStage.value - 1) % NeonTheme.worldAccents.length]
+              : NeonTheme.accentForWorld(worldOfLevel(ctrl.currentLevel.value).index);
           return NeonBg(
             accent: accent,
             child: Stack(
-            children: [
-              SafeArea(
-                child: Column(
-                  children: [
-                    _buildHud(ctrl, sc),
-                    Expanded(
-                      child: Obx(() {
-                        final v = sc.gameVersion.value;
-                        return GameWidget(key: ValueKey(v), game: sc.game);
-                      }),
-                    ),
-                    _buildBoosterBar(ctrl, sc),
-                    const SizedBox(height: NeonTheme.s8),
-                  ],
+              children: [
+                SafeArea(
+                  child: Column(
+                    children: [
+                      _buildHud(ctrl, sc),
+                      Expanded(
+                        child: Obx(() {
+                          final v = sc.gameVersion.value;
+                          return GameWidget(key: ValueKey(v), game: sc.game);
+                        }),
+                      ),
+                      _buildBoosterBar(ctrl, sc),
+                      const SizedBox(height: NeonTheme.s8),
+                    ],
+                  ),
                 ),
-              ),
-              // Overlay dialog render TRÊN GameWidget (Flame không đè được)
-              Obx(() => _overlay(ctrl, sc)),
-              // Overlay hướng dẫn lần đầu (trên cùng)
-              Obx(() {
-                sc.tutorialStep.value; // observe để rebuild khi đổi bước
-                return sc.tutorialOpen.value
-                    ? _tutorialOverlay(sc)
-                    : const SizedBox.shrink();
-              }),
-              // Overlay cốt truyện outro (sau khi thắng màn cuối thế giới)
-              const StoryOverlay(),
-            ],
+                // Overlay dialog render TRÊN GameWidget (Flame không đè được)
+                Obx(() => _overlay(ctrl, sc)),
+                // Overlay hướng dẫn lần đầu (trên cùng)
+                Obx(() {
+                  sc.tutorialStep.value; // observe để rebuild khi đổi bước
+                  return sc.tutorialOpen.value ? _tutorialOverlay(sc) : const SizedBox.shrink();
+                }),
+                // Overlay cốt truyện outro (sau khi thắng màn cuối thế giới)
+                const StoryOverlay(),
+              ],
             ),
           );
         }),
@@ -86,14 +84,8 @@ class GameScreen extends StatelessWidget {
             icon: Icons.exit_to_app_rounded,
             message: 'quit_msg'.tr,
             actions: [
-              NeonDialogAction(
-                  label: 'cancel'.tr,
-                  color: NeonTheme.cyan,
-                  onTap: sc.closeOverlay),
-              NeonDialogAction(
-                  label: 'confirm'.tr,
-                  color: NeonTheme.magenta,
-                  onTap: sc.quit),
+              NeonDialogAction(label: 'cancel'.tr, color: NeonTheme.cyan, onTap: sc.closeOverlay),
+              NeonDialogAction(label: 'confirm'.tr, color: NeonTheme.magenta, onTap: sc.quit),
             ],
           ),
         );
@@ -108,11 +100,7 @@ class GameScreen extends StatelessWidget {
   Widget _tutorialOverlay(GameScreenController sc) {
     final step = sc.tutorialStep.value;
     final last = step >= GameScreenController.tutorialSteps - 1;
-    const icons = [
-      Icons.swipe_rounded,
-      Icons.bolt_rounded,
-      Icons.auto_awesome_rounded,
-    ];
+    const icons = [Icons.swipe_rounded, Icons.bolt_rounded, Icons.auto_awesome_rounded];
     return NeonDialog.overlay(
       onBarrier: sc.tutorialNext,
       // vuốt trái → bước tiếp, vuốt phải → lùi bước
@@ -127,59 +115,56 @@ class GameScreen extends StatelessWidget {
           }
         },
         child: NeonDialog.panel(
-        title: 'tut_title'.tr,
-        color: NeonTheme.cyan,
-        icon: icons[step],
-        message: 'tut_${step + 1}'.tr,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(GameScreenController.tutorialSteps, (i) {
-                final on = i == step;
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: on ? 22 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: on ? NeonTheme.cyan : Colors.white24,
-                    borderRadius: BorderRadius.circular(4),
-                    boxShadow:
-                        on ? NeonTheme.glow(NeonTheme.cyan, blur: 6) : null,
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(height: NeonTheme.s8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.swipe_left_rounded,
-                    color: Colors.white38, size: 14),
-                const SizedBox(width: 5),
-                Text('tut_swipe_hint'.tr,
+          title: 'tut_title'.tr,
+          color: NeonTheme.cyan,
+          icon: icons[step],
+          message: 'tut_${step + 1}'.tr,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(GameScreenController.tutorialSteps, (i) {
+                  final on = i == step;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: on ? 22 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: on ? NeonTheme.cyan : Colors.white24,
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: on ? NeonTheme.glow(NeonTheme.cyan, blur: 6) : null,
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: NeonTheme.s8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.swipe_left_rounded, color: Colors.white38, size: 14),
+                  const SizedBox(width: 5),
+                  Text(
+                    'tut_swipe_hint'.tr,
                     style: const TextStyle(
                       fontFamily: 'Baloo2',
                       color: Colors.white38,
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                    )),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          if (!last)
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            if (!last) NeonDialogAction(label: 'tut_skip'.tr, color: NeonTheme.magenta, onTap: sc.tutorialSkip),
             NeonDialogAction(
-                label: 'tut_skip'.tr,
-                color: NeonTheme.magenta,
-                onTap: sc.tutorialSkip),
-          NeonDialogAction(
               label: last ? 'tut_start'.tr : 'tut_next'.tr,
               color: NeonTheme.lime,
-              onTap: sc.tutorialNext),
-        ],
+              onTap: sc.tutorialNext,
+            ),
+          ],
         ),
       ),
     );
@@ -192,14 +177,13 @@ class GameScreen extends StatelessWidget {
         title: 'endless_over'.tr,
         color: NeonTheme.purple,
         icon: Icons.all_inclusive_rounded,
-        message: '${'hud_score'.tr}: ${ctrl.score.value}\n'
+        message:
+            '${'hud_score'.tr}: ${ctrl.score.value}\n'
             '${'endless_best'.tr}: ${ctrl.endlessHigh.value}  ·  '
             '${'stage_n'.trParams({'n': '${ctrl.endlessStage.value}'})}',
         actions: [
-          NeonDialogAction(
-              label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
-          NeonDialogAction(
-              label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
         ],
       );
     }
@@ -214,10 +198,24 @@ class GameScreen extends StatelessWidget {
             '${ctrl.bossHp.value}/${ctrl.bossMaxHp.value}',
         content: win ? _celebration(ctrl) : null,
         actions: [
-          NeonDialogAction(
-              label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
-          NeonDialogAction(
-              label: 'btn_home'.tr, color: NeonTheme.orange, onTap: sc.quit),
+          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.orange, onTap: sc.quit),
+        ],
+      );
+    }
+    // Rhythm: chế độ phụ — không tốn mạng, luôn cho chơi lại.
+    if (ctrl.isRhythm.value) {
+      return NeonDialog.panel(
+        title: win ? 'victory'.tr : 'retry'.tr,
+        color: win ? NeonTheme.lime : NeonTheme.cyan,
+        icon: win ? Icons.emoji_events_rounded : Icons.music_note_rounded,
+        message:
+            '${'hud_score'.tr}: ${ctrl.score.value} / ${ctrl.targetScore.value}'
+            '  ·  ${'rhythm_groove'.tr} ${ctrl.groove.value}',
+        content: win ? _celebration(ctrl) : null,
+        actions: [
+          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
         ],
       );
     }
@@ -228,24 +226,14 @@ class GameScreen extends StatelessWidget {
       title: win ? 'victory'.tr : 'retry'.tr,
       color: win ? NeonTheme.lime : NeonTheme.magenta,
       icon: win ? Icons.emoji_events_rounded : Icons.refresh_rounded,
-      message: noLives
-          ? 'lives_none_title'.tr
-          : '${'hud_goal'.tr}: ${_objectiveText(ctrl)}',
+      message: noLives ? 'lives_none_title'.tr : '${'hud_goal'.tr}: ${_objectiveText(ctrl)}',
       content: win ? _celebration(ctrl) : null,
       actions: [
-        if (!noLives)
-          NeonDialogAction(
-              label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+        if (!noLives) NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
         if (win && cur < kLevels.length)
-          NeonDialogAction(
-              label: 'btn_next'.tr,
-              color: NeonTheme.lime,
-              onTap: sc.proceedNextOrHome)
+          NeonDialogAction(label: 'btn_next'.tr, color: NeonTheme.lime, onTap: sc.proceedNextOrHome)
         else
-          NeonDialogAction(
-              label: 'btn_home'.tr,
-              color: NeonTheme.purple,
-              onTap: win ? sc.proceedNextOrHome : sc.quit),
+          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: win ? sc.proceedNextOrHome : sc.quit),
       ],
     );
   }
@@ -286,13 +274,8 @@ class GameScreen extends StatelessWidget {
                 Icons.star_rounded,
                 size: 42,
                 color: on ? Colors.amber : Colors.white24,
-                shadows: on
-                    ? const [Shadow(color: Colors.amber, blurRadius: 18)]
-                    : null,
-              ).animate().scale(
-                  delay: (i * 160).ms,
-                  duration: 420.ms,
-                  curve: Curves.elasticOut),
+                shadows: on ? const [Shadow(color: Colors.amber, blurRadius: 18)] : null,
+              ).animate().scale(delay: (i * 160).ms, duration: 420.ms, curve: Curves.elasticOut),
             );
           }),
         ),
@@ -300,28 +283,30 @@ class GameScreen extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.monetization_on_rounded,
-                color: NeonTheme.yellow, size: 20),
+            const Icon(Icons.monetization_on_rounded, color: NeonTheme.yellow, size: 20),
             const SizedBox(width: 6),
-            Text('+${ctrl.lastCoinReward}',
-                style: const TextStyle(
-                  fontFamily: 'Baloo2',
-                  color: NeonTheme.yellow,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                )),
+            Text(
+              '+${ctrl.lastCoinReward}',
+              style: const TextStyle(
+                fontFamily: 'Baloo2',
+                color: NeonTheme.yellow,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             if (ctrl.lastShardReward > 0) ...[
               const SizedBox(width: 14),
-              const Icon(Icons.diamond_rounded,
-                  color: NeonTheme.cyan, size: 20),
+              const Icon(Icons.diamond_rounded, color: NeonTheme.cyan, size: 20),
               const SizedBox(width: 6),
-              Text('+${ctrl.lastShardReward}',
-                  style: const TextStyle(
-                    fontFamily: 'Baloo2',
-                    color: NeonTheme.cyan,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  )),
+              Text(
+                '+${ctrl.lastShardReward}',
+                style: const TextStyle(
+                  fontFamily: 'Baloo2',
+                  color: NeonTheme.cyan,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ],
           ],
         ),
@@ -334,20 +319,22 @@ class GameScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: NeonTheme.orange, width: 1.5),
             ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.local_fire_department_rounded,
-                  color: NeonTheme.orange, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                '${'streak_bonus'.trParams({'n': '${ctrl.winStreak.value}'})}  +${ctrl.lastStreakBonus}',
-                style: const TextStyle(
-                  fontFamily: 'Baloo2',
-                  color: NeonTheme.orange,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.local_fire_department_rounded, color: NeonTheme.orange, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  '${'streak_bonus'.trParams({'n': '${ctrl.winStreak.value}'})}  +${ctrl.lastStreakBonus}',
+                  style: const TextStyle(
+                    fontFamily: 'Baloo2',
+                    color: NeonTheme.orange,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-            ]),
+              ],
+            ),
           ),
         ],
       ],
@@ -357,44 +344,147 @@ class GameScreen extends StatelessWidget {
   // -------------------------------------------------------------------- HUD
   Widget _buildHud(GameController ctrl, GameScreenController sc) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          NeonTheme.s24, NeonTheme.s16, NeonTheme.s24, NeonTheme.s8),
+      padding: const EdgeInsets.fromLTRB(NeonTheme.s24, NeonTheme.s16, NeonTheme.s24, NeonTheme.s8),
       child: Column(
         children: [
           SizedBox(
             height: 48,
             child: Row(
               children: [
-                NeonIconButton(Icons.close_rounded,
-                    color: NeonTheme.magenta, size: 28, onTap: sc.confirmQuit),
+                NeonIconButton(Icons.close_rounded, color: NeonTheme.magenta, size: 28, onTap: sc.confirmQuit),
                 const Spacer(),
-                Obx(() => _stageBadge(ctrl.isBoss.value
-                    ? '${'boss_title'.tr} ${ctrl.bossStage.value}'
-                    : ctrl.isGravity.value
+                Obx(
+                  () => _stageBadge(
+                    ctrl.isBoss.value
+                        ? '${'boss_title'.tr} ${ctrl.bossStage.value}'
+                        : ctrl.isRhythm.value
+                        ? 'rhythm_title'.tr
+                        : ctrl.isGravity.value
                         ? '${'gravity_title'.tr} ${ctrl.gravityDir.value == 0 ? '↓' : '↑'}'
                         : ctrl.isEndless.value
-                            ? 'endless_title'.tr
-                            : 'stage_n'.trParams(
-                                {'n': '${ctrl.currentLevel.value}'}))),
+                        ? 'endless_title'.tr
+                        : 'stage_n'.trParams({'n': '${ctrl.currentLevel.value}'}),
+                  ),
+                ),
                 const Spacer(),
                 if (AudioManager.maybe != null)
-                  Obx(() => NeonIconButton(
-                        AudioManager.maybe!.muted.value
-                            ? Icons.volume_off_rounded
-                            : Icons.volume_up_rounded,
-                        color: NeonTheme.cyan,
-                        size: 28,
-                        onTap: AudioManager.maybe!.toggleMute,
-                      ))
+                  Obx(
+                    () => NeonIconButton(
+                      AudioManager.maybe!.muted.value ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                      color: NeonTheme.cyan,
+                      size: 28,
+                      onTap: AudioManager.maybe!.toggleMute,
+                    ),
+                  )
                 else
                   const SizedBox(width: 48),
               ],
             ),
           ),
+          Obx(
+            () => ctrl.isBoss.value
+                ? _bossWeakHint(ctrl)
+                : ctrl.isRhythm.value
+                ? _rhythmHud(ctrl)
+                : const SizedBox.shrink(),
+          ),
           const SizedBox(height: NeonTheme.s8),
           _infoPanel(ctrl),
           const SizedBox(height: NeonTheme.s8),
           Obx(() => _animatedBar(ctrl.objectiveProgress)),
+        ],
+      ),
+    );
+  }
+
+  /// Chỉ báo "ĐIỂM YẾU" của boss: chấm màu cần đánh trúng để ×2 sát thương.
+  Widget _bossWeakHint(GameController ctrl) {
+    final c = NeonTheme.gemColors[ctrl.bossWeakColor.value];
+    return Padding(
+      padding: const EdgeInsets.only(top: NeonTheme.s8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'boss_weak'.tr,
+            style: const TextStyle(
+              fontFamily: 'Baloo2',
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Colors.white70,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color: c,
+              shape: BoxShape.circle,
+              boxShadow: [BoxShadow(color: c, blurRadius: 10)],
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '×2',
+            style: TextStyle(fontFamily: 'Baloo2', fontSize: 13, fontWeight: FontWeight.w800, color: c),
+          ),
+        ],
+      ),
+    ).animate(key: ValueKey(ctrl.bossWeakColor.value)).fadeIn(duration: 300.ms);
+  }
+
+  /// HUD chế độ Nhịp điệu: chấm đập theo beat + thanh groove + nhãn đúng/lệch.
+  Widget _rhythmHud(GameController ctrl) {
+    final judge = ctrl.lastBeatJudge.value;
+    final accent = judge == 1
+        ? NeonTheme.lime
+        : judge == -1
+        ? NeonTheme.magenta
+        : NeonTheme.cyan;
+    return Padding(
+      padding: const EdgeInsets.only(top: NeonTheme.s8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // chấm đập mỗi beat (re-animate khi rhythmBeat đổi)
+          Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: NeonTheme.cyan,
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: NeonTheme.cyan, blurRadius: 12)],
+                ),
+              )
+              .animate(key: ValueKey(ctrl.rhythmBeat.value))
+              .scale(begin: const Offset(1.5, 1.5), end: const Offset(1, 1), duration: 260.ms, curve: Curves.easeOut),
+          const SizedBox(width: 12),
+          // thanh groove
+          Row(
+            children: List.generate(GameController.kGrooveMax, (i) {
+              final on = i < ctrl.groove.value;
+              return Container(
+                width: 8,
+                height: 14,
+                margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                decoration: BoxDecoration(
+                  color: on ? accent : Colors.white12,
+                  borderRadius: BorderRadius.circular(3),
+                  boxShadow: on ? [BoxShadow(color: accent, blurRadius: 6)] : null,
+                ),
+              );
+            }),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            judge == 1
+                ? 'rhythm_onbeat'.tr
+                : judge == -1
+                ? 'rhythm_offbeat'.tr
+                : 'rhythm_groove'.tr,
+            style: TextStyle(fontFamily: 'Baloo2', fontSize: 12, fontWeight: FontWeight.w800, color: accent),
+          ),
         ],
       ),
     );
@@ -406,22 +496,20 @@ class GameScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: NeonTheme.panel.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: NeonTheme.cyan.withValues(alpha: 0.4), width: 1.5),
+        border: Border.all(color: NeonTheme.cyan.withValues(alpha: 0.4), width: 1.5),
         boxShadow: NeonTheme.glow(NeonTheme.cyan, blur: 6),
       ),
       child: Row(
         children: [
-          Expanded(
-              child: Obx(() => _infoCell('hud_score'.tr,
-                  _animValue('${ctrl.score.value}'), NeonTheme.cyan))),
+          Expanded(child: Obx(() => _infoCell('hud_score'.tr, _animValue('${ctrl.score.value}'), NeonTheme.cyan))),
           _divider(),
           Expanded(
-              child: Obx(() => ctrl.isEndless.value
-                  ? _infoCell('hud_stage'.tr,
-                      _animValue('${ctrl.endlessStage.value}'), NeonTheme.lime)
-                  : _infoCell(
-                      'hud_goal'.tr, _goalValue(ctrl), NeonTheme.lime))),
+            child: Obx(
+              () => ctrl.isEndless.value
+                  ? _infoCell('hud_stage'.tr, _animValue('${ctrl.endlessStage.value}'), NeonTheme.lime)
+                  : _infoCell('hud_goal'.tr, _goalValue(ctrl), NeonTheme.lime),
+            ),
+          ),
           _divider(),
           Expanded(child: Obx(() => _movesOrTimeCell(ctrl))),
         ],
@@ -436,14 +524,9 @@ class GameScreen extends StatelessWidget {
       final mm = (t ~/ 60).toString().padLeft(2, '0');
       final ss = (t % 60).toString().padLeft(2, '0');
       final urgent = t <= 10;
-      return _infoCell(
-        'hud_time'.tr,
-        _animValue('$mm:$ss'),
-        urgent ? NeonTheme.magenta : NeonTheme.orange,
-      );
+      return _infoCell('hud_time'.tr, _animValue('$mm:$ss'), urgent ? NeonTheme.magenta : NeonTheme.orange);
     }
-    return _infoCell(
-        'hud_moves'.tr, _animValue('${ctrl.movesLeft.value}'), NeonTheme.orange);
+    return _infoCell('hud_moves'.tr, _animValue('${ctrl.movesLeft.value}'), NeonTheme.orange);
   }
 
   Widget _animatedBar(double progress) {
@@ -453,10 +536,7 @@ class GameScreen extends StatelessWidget {
       curve: Curves.easeOutCubic,
       builder: (_, v, __) => Container(
         height: 8,
-        decoration: BoxDecoration(
-          color: NeonTheme.panel,
-          borderRadius: BorderRadius.circular(8),
-        ),
+        decoration: BoxDecoration(color: NeonTheme.panel, borderRadius: BorderRadius.circular(8)),
         child: Align(
           alignment: Alignment.centerLeft,
           child: FractionallySizedBox(
@@ -464,8 +544,7 @@ class GameScreen extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                gradient: const LinearGradient(
-                    colors: [NeonTheme.cyan, NeonTheme.lime]),
+                gradient: const LinearGradient(colors: [NeonTheme.cyan, NeonTheme.lime]),
                 boxShadow: NeonTheme.glow(NeonTheme.lime, blur: 8),
               ),
             ),
@@ -484,33 +563,36 @@ class GameScreen extends StatelessWidget {
         border: Border.all(color: NeonTheme.purple, width: 2),
         boxShadow: NeonTheme.glow(NeonTheme.purple, blur: 8),
       ),
-      child: Text(text,
-          style: const TextStyle(
-            fontFamily: 'Baloo2',
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1,
-            shadows: [Shadow(color: NeonTheme.purple, blurRadius: 10)],
-          )),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontFamily: 'Baloo2',
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1,
+          shadows: [Shadow(color: NeonTheme.purple, blurRadius: 10)],
+        ),
+      ),
     );
   }
 
-  Widget _divider() =>
-      Container(width: 1.2, height: 38, color: Colors.white.withValues(alpha: 0.12));
+  Widget _divider() => Container(width: 1.2, height: 38, color: Colors.white.withValues(alpha: 0.12));
 
   Widget _infoCell(String label, Widget value, Color color) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(label,
-            style: TextStyle(
-              fontFamily: 'Baloo2',
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            )),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Baloo2',
+            color: color,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
+        ),
         const SizedBox(height: 3),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -521,10 +603,10 @@ class GameScreen extends StatelessWidget {
   }
 
   Widget _animValue(String v) => AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
-        child: Text(v, key: ValueKey(v), style: _valueStyle),
-      );
+    duration: const Duration(milliseconds: 250),
+    transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+    child: Text(v, key: ValueKey(v), style: _valueStyle),
+  );
 
   Widget _goalValue(GameController ctrl) {
     final obj = ctrl.level.objective;
@@ -535,11 +617,7 @@ class GameScreen extends StatelessWidget {
         width: 14,
         height: 14,
         margin: const EdgeInsets.only(right: 5),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: c,
-          boxShadow: NeonTheme.glow(c, blur: 6),
-        ),
+        decoration: BoxDecoration(shape: BoxShape.circle, color: c, boxShadow: NeonTheme.glow(c, blur: 6)),
       );
     } else if (obj == ObjectiveType.clearJelly) {
       leading = const Padding(
@@ -577,72 +655,151 @@ class GameScreen extends StatelessWidget {
   Widget _buildBoosterBar(GameController ctrl, GameScreenController sc) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(
-          horizontal: NeonTheme.s24, vertical: NeonTheme.s8),
+      padding: const EdgeInsets.symmetric(horizontal: NeonTheme.s24, vertical: NeonTheme.s8),
       child: Row(
         children: [
-          Obx(() => _pill(Icons.monetization_on_rounded, NeonTheme.yellow,
-                  '${ctrl.coins.value}')
-              .animate(key: ValueKey(sc.coinShake.value))
-              .shake(duration: 450.ms, hz: 6)),
+          Obx(
+            () => _pill(
+              Icons.monetization_on_rounded,
+              NeonTheme.yellow,
+              '${ctrl.coins.value}',
+            ).animate(key: ValueKey(sc.coinShake.value)).shake(duration: 450.ms, hz: 6),
+          ),
           const SizedBox(width: NeonTheme.s16),
           // Swap: đổi 2 gem bất kỳ
-          Obx(() => _armBooster(ctrl, sc, BoosterMode.swap,
-              Icons.swap_horiz_rounded, NeonTheme.cyan,
-              ctrl.boosterSwap.value, 40, ctrl.buySwap)),
+          Obx(
+            () => _armBooster(
+              ctrl,
+              sc,
+              BoosterMode.swap,
+              Icons.swap_horiz_rounded,
+              NeonTheme.cyan,
+              ctrl.boosterSwap.value,
+              40,
+              ctrl.buySwap,
+            ),
+          ),
           const SizedBox(width: NeonTheme.s8),
           // Búa: đập 1 gem
-          Obx(() => _armBooster(ctrl, sc, BoosterMode.hammer,
-              Icons.gavel_rounded, NeonTheme.orange,
-              ctrl.boosterHammer.value, 30, ctrl.buyHammer)),
+          Obx(
+            () => _armBooster(
+              ctrl,
+              sc,
+              BoosterMode.hammer,
+              Icons.gavel_rounded,
+              NeonTheme.orange,
+              ctrl.boosterHammer.value,
+              30,
+              ctrl.buyHammer,
+            ),
+          ),
           const SizedBox(width: NeonTheme.s8),
           // Bom: nổ 3x3
-          Obx(() => _armBooster(ctrl, sc, BoosterMode.bomb,
-              Icons.adjust_rounded, NeonTheme.magenta,
-              ctrl.boosterBomb.value, 50, ctrl.buyBomb)),
+          Obx(
+            () => _armBooster(
+              ctrl,
+              sc,
+              BoosterMode.bomb,
+              Icons.adjust_rounded,
+              NeonTheme.magenta,
+              ctrl.boosterBomb.value,
+              50,
+              ctrl.buyBomb,
+            ),
+          ),
           const SizedBox(width: NeonTheme.s8),
           // Color Blast: xoá 1 màu
-          Obx(() => _armBooster(ctrl, sc, BoosterMode.colorBlast,
-              Icons.palette_rounded, NeonTheme.purple,
-              ctrl.boosterColor.value, 80, ctrl.buyColor)),
+          Obx(
+            () => _armBooster(
+              ctrl,
+              sc,
+              BoosterMode.colorBlast,
+              Icons.palette_rounded,
+              NeonTheme.purple,
+              ctrl.boosterColor.value,
+              80,
+              ctrl.buyColor,
+            ),
+          ),
           const SizedBox(width: NeonTheme.s8),
           // Joker: biến 1 gem thành Rainbow (arm)
-          Obx(() => _armBooster(ctrl, sc, BoosterMode.joker,
-              Icons.auto_awesome_rounded, NeonTheme.magenta,
-              ctrl.boosterJoker.value, 60, ctrl.buyJoker)),
+          Obx(
+            () => _armBooster(
+              ctrl,
+              sc,
+              BoosterMode.joker,
+              Icons.auto_awesome_rounded,
+              NeonTheme.magenta,
+              ctrl.boosterJoker.value,
+              60,
+              ctrl.buyJoker,
+            ),
+          ),
           const SizedBox(width: NeonTheme.s8),
           // Chain Lightning (tức thì)
-          Obx(() => _instantBooster(ctrl, sc, Icons.bolt_rounded, NeonTheme.yellow,
-              ctrl.boosterLightning.value, 60, ctrl.useLightning, ctrl.buyLightning,
-              () => sc.game.chainLightning())),
+          Obx(
+            () => _instantBooster(
+              ctrl,
+              sc,
+              Icons.bolt_rounded,
+              NeonTheme.yellow,
+              ctrl.boosterLightning.value,
+              60,
+              ctrl.useLightning,
+              ctrl.buyLightning,
+              () => sc.game.chainLightning(),
+            ),
+          ),
           const SizedBox(width: NeonTheme.s8),
           // Royal Flush (tức thì: nổ cả bàn)
-          Obx(() => _instantBooster(ctrl, sc, Icons.workspace_premium_rounded,
-              NeonTheme.orange, ctrl.boosterRoyal.value, 120, ctrl.useRoyal,
-              ctrl.buyRoyal, () => sc.game.royalFlush())),
+          Obx(
+            () => _instantBooster(
+              ctrl,
+              sc,
+              Icons.workspace_premium_rounded,
+              NeonTheme.orange,
+              ctrl.boosterRoyal.value,
+              120,
+              ctrl.useRoyal,
+              ctrl.buyRoyal,
+              () => sc.game.royalFlush(),
+            ),
+          ),
           const SizedBox(width: NeonTheme.s8),
           // Gravity Flip (tức thì)
-          Obx(() => _instantBooster(ctrl, sc, Icons.swap_vert_rounded,
-              NeonTheme.cyan, ctrl.boosterGravity.value, 50, ctrl.useGravity,
-              ctrl.buyGravity, () => sc.game.gravityFlip())),
+          Obx(
+            () => _instantBooster(
+              ctrl,
+              sc,
+              Icons.swap_vert_rounded,
+              NeonTheme.cyan,
+              ctrl.boosterGravity.value,
+              50,
+              ctrl.useGravity,
+              ctrl.buyGravity,
+              () => sc.game.gravityFlip(),
+            ),
+          ),
           const SizedBox(width: NeonTheme.s8),
           // +10 lượt (tức thì)
-          Obx(() => _boosterBtn(
-                Icons.av_timer_rounded,
-                NeonTheme.lime,
-                ctrl.boosterMoves.value,
-                label: '+10',
-                price: 40,
-                onTap: () {
-                  debugPrint('roy93~ MOVES tap count=${ctrl.boosterMoves.value} '
-                      'moves=${ctrl.movesLeft.value} coins=${ctrl.coins.value}');
-                  if (ctrl.boosterMoves.value > 0) {
-                    ctrl.useMovesBooster();
-                  } else if (!ctrl.buyMoves()) {
-                    sc.coinShake.value++;
-                  }
-                },
-              )),
+          Obx(
+            () => _boosterBtn(
+              Icons.av_timer_rounded,
+              NeonTheme.lime,
+              ctrl.boosterMoves.value,
+              label: '+10',
+              price: 40,
+              onTap: () {
+                dlog('MOVES tap count=${ctrl.boosterMoves.value} '
+                    'moves=${ctrl.movesLeft.value} coins=${ctrl.coins.value}');
+                if (ctrl.boosterMoves.value > 0) {
+                  ctrl.useMovesBooster();
+                } else if (!ctrl.buyMoves()) {
+                  sc.coinShake.value++;
+                }
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -666,7 +823,7 @@ class GameScreen extends StatelessWidget {
       count,
       price: price,
       onTap: () {
-        debugPrint('roy93~ instant booster count=$count coins=${ctrl.coins.value}');
+        dlog('instant booster count=$count coins=${ctrl.coins.value}');
         if (count > 0) {
           if (use()) action();
         } else if (!buy()) {
@@ -677,8 +834,16 @@ class GameScreen extends StatelessWidget {
   }
 
   /// Booster cần chạm bàn (búa/swap/bom/color): chọn/bỏ chọn; hết → mua.
-  Widget _armBooster(GameController ctrl, GameScreenController sc, BoosterMode mode,
-      IconData icon, Color color, int count, int price, bool Function() buy) {
+  Widget _armBooster(
+    GameController ctrl,
+    GameScreenController sc,
+    BoosterMode mode,
+    IconData icon,
+    Color color,
+    int count,
+    int price,
+    bool Function() buy,
+  ) {
     final armed = sc.armed.value == mode;
     return _boosterBtn(
       icon,
@@ -687,7 +852,7 @@ class GameScreen extends StatelessWidget {
       price: price,
       armed: armed,
       onTap: () {
-        debugPrint('roy93~ booster $mode count=$count coins=${ctrl.coins.value} armed=$armed');
+        dlog('booster $mode count=$count coins=${ctrl.coins.value} armed=$armed');
         if (armed || count > 0) {
           sc.toggleArm(mode);
         } else if (!buy()) {
@@ -706,17 +871,22 @@ class GameScreen extends StatelessWidget {
         border: Border.all(color: color, width: 1.5),
         boxShadow: NeonTheme.glow(color, blur: 6),
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, color: color, size: 18),
-        const SizedBox(width: 5),
-        Text(text,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 5),
+          Text(
+            text,
             style: const TextStyle(
               fontFamily: 'Baloo2',
               color: Colors.white,
               fontWeight: FontWeight.w800,
               fontSize: 14,
-            )),
-      ]),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -743,48 +913,52 @@ class GameScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: armed
-                ? color.withValues(alpha: 0.35)
-                : NeonTheme.panel.withValues(alpha: 0.6),
+            color: armed ? color.withValues(alpha: 0.35) : NeonTheme.panel.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: color, width: armed ? 3 : 2),
             boxShadow: NeonTheme.glow(color, blur: armed ? 16 : 7),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, color: armed ? Colors.white : color, size: 22),
-            if (label != null) ...[
-              const SizedBox(width: 3),
-              Text(label,
-                  style: TextStyle(
-                    fontFamily: 'Baloo2',
-                    color: color,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                  )),
-            ],
-            const SizedBox(width: 6),
-            if (has)
-              Text('x$count',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: armed ? Colors.white : color, size: 22),
+              if (label != null) ...[
+                const SizedBox(width: 3),
+                Text(
+                  label,
+                  style: TextStyle(fontFamily: 'Baloo2', color: color, fontWeight: FontWeight.w800, fontSize: 12),
+                ),
+              ],
+              const SizedBox(width: 6),
+              if (has)
+                Text(
+                  'x$count',
                   style: const TextStyle(
                     fontFamily: 'Baloo2',
                     color: Colors.white,
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
-                  ))
-            else
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.monetization_on_rounded,
-                    color: NeonTheme.yellow, size: 13),
-                const SizedBox(width: 2),
-                Text('$price',
-                    style: const TextStyle(
-                      fontFamily: 'Baloo2',
-                      color: NeonTheme.yellow,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                    )),
-              ]),
-          ]),
+                  ),
+                )
+              else
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.monetization_on_rounded, color: NeonTheme.yellow, size: 13),
+                    const SizedBox(width: 2),
+                    Text(
+                      '$price',
+                      style: const TextStyle(
+                        fontFamily: 'Baloo2',
+                        color: NeonTheme.yellow,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
         ),
       ),
     );

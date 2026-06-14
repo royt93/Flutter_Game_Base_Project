@@ -25,6 +25,7 @@ import 'level_select_screen.dart';
 import 'season_screen.dart';
 import 'settings_screen.dart';
 import 'temple_screen.dart';
+import 'versus_screen.dart';
 import 'world_map_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -109,21 +110,26 @@ class HomeScreen extends StatelessWidget {
       BattlePassController bp, SeasonController sc) {
     // Căn TOP + chừa 64px cho action bar (tim/xu/wheel/quà) — tránh _GemSparkle
     // và logo đè lên vùng action bar như trước.
-    return Align(
-            alignment: Alignment.topCenter,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                  NeonTheme.s24, 64, NeonTheme.s24, NeonTheme.s24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+    // KHÔNG scroll: co toàn bộ menu vừa khung hình mọi device bằng FittedBox
+    // (scaleDown) trên 1 SizedBox chiều rộng tham chiếu → item tự thu nhỏ hợp lý.
+    return Padding(
+            padding: const EdgeInsets.fromLTRB(
+                NeonTheme.s16, 58, NeonTheme.s16, NeonTheme.s8),
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: SizedBox(
+                  width: 320,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                   _GemSparkle(),
-                  const SizedBox(height: NeonTheme.s16),
+                  const SizedBox(height: NeonTheme.s8),
                   Text(
                     'NEON',
                     style: TextStyle(
                       fontFamily: 'Baloo2',
-                      fontSize: 56,
+                      fontSize: 46,
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
                       letterSpacing: 6,
@@ -140,14 +146,14 @@ class HomeScreen extends StatelessWidget {
                     'JEWELS',
                     style: TextStyle(
                       fontFamily: 'Baloo2',
-                      fontSize: 40,
+                      fontSize: 30,
                       fontWeight: FontWeight.w700,
                       color: NeonTheme.magenta,
                       letterSpacing: 10,
                       shadows: [Shadow(color: NeonTheme.magenta, blurRadius: 28)],
                     ),
                   ),
-                  const SizedBox(height: NeonTheme.s24 * 1.3),
+                  const SizedBox(height: NeonTheme.s16),
                   // NÚT CHÍNH — focus vào chơi ngay
                   NeonButton(
                     label: 'play_now'.tr,
@@ -195,7 +201,11 @@ class HomeScreen extends StatelessWidget {
                           },
                         ),
                       ),
-                      const SizedBox(width: 10),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
                       Expanded(
                         child: _modeCard(
                           Icons.swap_vert_rounded,
@@ -207,6 +217,33 @@ class HomeScreen extends StatelessWidget {
                           },
                         ),
                       ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _modeCard(
+                          Icons.graphic_eq_rounded,
+                          'rhythm_title'.tr,
+                          NeonTheme.magenta,
+                          () {
+                            g.startRhythm();
+                            Get.to(() => const GameScreen());
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // 2 NGƯỜI 1 MÁY (versus / co-op) — card rộng cả 2 cột, cùng
+                  // lưới THỬ THÁCH (ô thứ 5) để khớp width, không lạc lõng.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _modeCard(
+                          Icons.groups_rounded,
+                          'versus_title'.tr,
+                          NeonTheme.yellow,
+                          () => Get.to(() => const VersusScreen()),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: NeonTheme.s24),
@@ -214,33 +251,38 @@ class HomeScreen extends StatelessWidget {
                   _sectionLabel('meta_section'.tr),
                   const SizedBox(height: NeonTheme.s8),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _circleNav(Icons.account_balance_rounded, NeonTheme.cyan,
-                          'temple_title'.tr,
-                          () => Get.to(() => const TempleScreen())),
-                      Obx(() {
-                        bp.xp.value;
-                        bp.claimed.length;
-                        return _circleNav(
-                          Icons.military_tech_rounded,
-                          NeonTheme.orange,
-                          'bp_title'.tr,
-                          () => Get.to(() => const BattlePassScreen()),
-                          badge: bp.hasClaimable,
-                        );
-                      }),
-                      Obx(() {
-                        sc.points.value;
-                        sc.claimed.length;
-                        return _circleNav(
-                          Icons.event_rounded,
-                          NeonTheme.accentForWorld(sc.worldAccent),
-                          'season_title'.tr,
-                          () => Get.to(() => const SeasonScreen()),
-                          badge: sc.hasClaimable,
-                        );
-                      }),
+                      Expanded(
+                        child: _circleNav(Icons.account_balance_rounded,
+                            NeonTheme.cyan, 'temple_title'.tr,
+                            () => Get.to(() => const TempleScreen())),
+                      ),
+                      Expanded(
+                        child: Obx(() {
+                          bp.xp.value;
+                          bp.claimed.length;
+                          return _circleNav(
+                            Icons.military_tech_rounded,
+                            NeonTheme.orange,
+                            'bp_title'.tr,
+                            () => Get.to(() => const BattlePassScreen()),
+                            badge: bp.hasClaimable,
+                          );
+                        }),
+                      ),
+                      Expanded(
+                        child: Obx(() {
+                          sc.points.value;
+                          sc.claimed.length;
+                          return _circleNav(
+                            Icons.event_rounded,
+                            NeonTheme.accentForWorld(sc.worldAccent),
+                            'season_title'.tr,
+                            () => Get.to(() => const SeasonScreen()),
+                            badge: sc.hasClaimable,
+                          );
+                        }),
+                      ),
                     ],
                   ),
                   const SizedBox(height: NeonTheme.s24),
@@ -252,31 +294,37 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: NeonTheme.s16),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Obx(() {
-                        ac.claimed.length;
-                        return _circleNav(
-                          Icons.emoji_events_rounded,
-                          NeonTheme.yellow,
-                          'achievements'.tr,
-                          () => Get.to(() => const AchievementsScreen()),
-                          badge: ac.hasUnclaimed,
-                          small: true,
-                        );
-                      }),
-                      _circleNav(Icons.menu_book_rounded, NeonTheme.magenta,
-                          'guide'.tr, () => Get.to(() => const GuideScreen()),
-                          small: true),
-                      _circleNav(
-                          Icons.settings_rounded,
-                          NeonTheme.purple,
-                          'settings'.tr,
-                          () => Get.to(() => const SettingsScreen()),
-                          small: true),
+                      Expanded(
+                        child: Obx(() {
+                          ac.claimed.length;
+                          return _circleNav(
+                            Icons.emoji_events_rounded,
+                            NeonTheme.yellow,
+                            'achievements'.tr,
+                            () => Get.to(() => const AchievementsScreen()),
+                            badge: ac.hasUnclaimed,
+                            small: true,
+                          );
+                        }),
+                      ),
+                      Expanded(
+                        child: _circleNav(Icons.menu_book_rounded,
+                            NeonTheme.magenta, 'guide'.tr,
+                            () => Get.to(() => const GuideScreen()),
+                            small: true),
+                      ),
+                      Expanded(
+                        child: _circleNav(
+                            Icons.settings_rounded,
+                            NeonTheme.purple,
+                            'settings'.tr,
+                            () => Get.to(() => const SettingsScreen()),
+                            small: true),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: NeonTheme.s24 * 1.2),
+                  const SizedBox(height: NeonTheme.s16),
                   Text(
                     'v$kAppVersion',
                     style: const TextStyle(
@@ -306,7 +354,9 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                ],
+                    ],
+                  ),
+                ),
               ),
             ),
           );
@@ -432,6 +482,9 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 7),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Baloo2',
               color: Colors.white.withValues(alpha: 0.85),

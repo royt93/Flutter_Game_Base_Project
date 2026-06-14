@@ -17,7 +17,18 @@ class TempleController extends GetxController {
   /// Hạng mục đang chọn trên màn đền (rỗng = chưa chọn).
   final RxString selectedId = ''.obs;
 
+  static TempleController? get maybe =>
+      Get.isRegistered<TempleController>() ? Get.find<TempleController>() : null;
+
   void select(String id) => selectedId.value = id;
+
+  /// Đặt lại tier đã xây in-memory về 0 khi reset tiến trình (controller permanent).
+  void resetState() {
+    selectedId.value = '';
+    for (final n in kTempleNodes) {
+      builtTier[n.id] = 0;
+    }
+  }
 
   @override
   void onInit() {

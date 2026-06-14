@@ -308,6 +308,26 @@ LevelConfig buildGravityLevel() => const LevelConfig(
       targetScore: kGravityTarget,
     );
 
+// --- Rhythm mode (chế độ riêng — ghép gem theo nhịp nhạc) ---
+const int kRhythmLevelIndex = -3;
+const int kRhythmMoves = 30;
+const int kRhythmTarget = 4000;
+
+/// Nhịp của chế độ Rhythm (BPM). Engine tích luỹ thời gian → mốc beat.
+const double kRhythmBpm = 100;
+
+/// Cấu hình chế độ Nhịp điệu: tái dùng mục tiêu điểm (score) để dùng sẵn HUD/sao;
+/// khác biệt nằm ở cờ `isRhythm` của GameController (đúng nhịp → groove + thưởng điểm).
+LevelConfig buildRhythmLevel() => const LevelConfig(
+      index: kRhythmLevelIndex,
+      rows: 8,
+      cols: 8,
+      colorCount: 6,
+      moves: kRhythmMoves,
+      objective: ObjectiveType.score,
+      targetScore: kRhythmTarget,
+    );
+
 /// Key i18n tên thế giới (1-based). Dùng `.tr` để lấy bản dịch.
 String worldNameKey(int worldIndex) => 'world_name_$worldIndex';
 

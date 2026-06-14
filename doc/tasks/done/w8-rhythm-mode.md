@@ -2,9 +2,13 @@
 id: w8-rhythm-mode
 title: Chế độ Nhịp điệu (Rhythm match-3) (signature)
 wave: 8
-status: todo
+status: done
 owner: claude
 ---
+
+> ✅ DONE (Wave 8.3): `RhythmClock` thuần + `isRhythm` (tái dùng objective score),
+> đúng nhịp → groove + thưởng điểm ×1.5..2.5 + nốt nhạc; HUD beat/groove; Home 2×2;
+> i18n en+vi; **197 test pass** (+10). Chi tiết: [`../../feat.md`](../../feat.md) Wave 8.3.
 
 # Chế độ Nhịp điệu — ghép gem theo beat nhạc
 

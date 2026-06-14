@@ -75,6 +75,13 @@ class SeasonController extends GetxController {
     if (_store.getInt(StorageKeys.seasonIdx, def: -1) != idx) _refresh();
   }
 
+  /// Xoá sạch state in-memory khi reset tiến trình (xem [BattlePassController.resetState]).
+  void resetState() {
+    points.value = 0;
+    claimed.clear();
+    _refresh(); // đĩa đã trống → đặt lại mùa hiện tại từ 0 điểm
+  }
+
   bool claim(int m) {
     if (!canClaim(m)) return false;
     claimed.add('${idx}_$m');

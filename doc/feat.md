@@ -274,8 +274,48 @@ lib/
 - [x] **Kết quả**: 0 analyzer issue · **102 test pass** · build APK OK · verify máy thật chain+stone.
 - [ ] *Còn nợ nhỏ (đã ghi)*: đếm ngược hồi mạng ở Home chưa tự tick (static tới rebuild); `_doShuffle` kiểm hasMatch trên màu thô gồm ô loại trừ (vô hại).
 
-### 🟡 In progress
-*(không có — Wave 6 đã xong 3/3)*
+### 🌊 Wave 8.2 — audit & fix lỗ hổng (✅ đã làm)
+> Tự audit code toàn dự án (2 agent đọc sâu logic + presentation) → sửa lỗ hổng đã xác minh.
+- [x] **FIX `resetProgress()` không sạch + exploit nhận lại thưởng (Critical)**: trước chỉ xoá key đĩa của Battle Pass / Season / Achievement / Temple nhưng KHÔNG clear state in-memory của các controller `permanent:true` → restart đọc đĩa trống ⇒ nhận lại thưởng (lặp xu/shard). Thêm `resetState()` cho 4 controller (clear `claimed`/`xp`/`points`/`builtTier` + reload). Đồng thời xoá đủ key còn sót: `coins`, `daily*`, `wheelLastSpin`, `lives*`, 9 `booster*`, `tutorialSeen`, `viewMode` → reset đưa xu/booster/mạng về mặc định cài đầu (50 xu, booster default, đầy mạng). Nạp lại qua `_load()`.
+- [x] **FIX boss "điểm yếu màu" dở dang (feature chưa wire)**: `bossWeakColor` được tính & đổi phase nhưng KHÔNG ảnh hưởng sát thương và KHÔNG hiện HUD. Nay: `registerClear` bật cờ `_weakHitPending` khi clear trúng màu yếu → `_bossDamage` ×2 (cộng dồn với ×2 combo lớn → tối đa ×4). Thêm chỉ báo "ĐIỂM YẾU ● ×2" trên HUD boss (key i18n `boss_weak` đã có sẵn en/vi).
+- [x] **Kết quả**: 0 analyzer issue · **187 test pass** (+7 `test/w8_2_test.dart`) · build pass.
+- [ ] *Còn nợ nhỏ (ghi nhận, chưa sửa)*: daily/wheel chống chỉnh giờ tiến (Season đã keyed tuyệt đối); booster độc quyền joker/lightning/royal/gravity chưa có nguồn nhận miễn phí; Time Attack hết giờ giữa cascade gọi `_finishMove` từ update-loop.
+
+### 🌊 Wave 8.3 — Rhythm Mode (✅ đã làm)
+> Chế độ Nhịp điệu signature — ghép gem theo beat. Người dùng chốt làm (1+2+3).
+- [x] **`RhythmClock` thuần** (`lib/logic/rhythm_clock.dart`): tích luỹ thời gian trong game loop (KHÔNG `DateTime.now`/`Random` — ràng buộc engine), phán định `onBeat` theo cửa sổ ±0.14s quanh mốc beat (BPM 100). Test inject được.
+- [x] **Chế độ riêng `isRhythm`** (tái dùng `ObjectiveType.score` như Gravity → không phải sửa hàng loạt switch): đạt 4000đ trong 30 lượt. `startRhythm`/`tickRhythm`/`judgeRhythmBeat` trong GameController; checkEnd branch riêng (thưởng xu/shard theo sao + groove, KHÔNG đụng win-streak/level-unlock).
+- [x] **Engine wiring**: `update()` tiến đồng hồ nhịp; `_trySwap` phán định đúng/lệch nhịp tại nước đi hợp lệ → đúng nhịp `groove++` + thưởng điểm ×1.5..2.5 (theo groove), lệch nhịp `groove--`; đúng nhịp phát `playNote` cao dần theo groove.
+- [x] **HUD nhịp**: chấm đập mỗi beat (re-animate theo `rhythmBeat`) + thanh groove 8 nấc + nhãn ĐÚNG/LỆCH NHỊP; badge "NHỊP ĐIỆU"; dialog kết thúc chế độ phụ (không tốn mạng, luôn chơi lại).
+- [x] **Home**: khu THỬ THÁCH chuyển lưới 2×2 (Endless/Boss/Gravity/**Rhythm**). Guide thêm section Nhịp điệu. i18n en+vi (`rhythm_*`, `guide_rhythm_*`), 20 ngôn ngữ fallback English (giữ parity).
+- [x] **Kết quả**: 0 analyzer issue · **197 test pass** (+10 `test/w8_rhythm_test.dart`).
+
+### 🌊 Wave 8.4 — Co-op / Versus cục bộ (✅ đã làm)
+> Chế độ 2 người 1 máy — signature khác biệt vs Candy Crush. Người dùng chốt làm **đầy đủ** (Versus + Co-op + junk gem).
+> **Quyết định kiến trúc**: KHÔNG chạy 2 `NeonJewelGame` (Flame) — sẽ entangle với `GameController`/tiến trình (xu/mạng/save) + rủi ro 2 game-loop. Thay vào đó xây subsystem **tách biệt hoàn toàn**, render bằng Flutter widget nhẹ.
+- [x] **`VersusBoard` thuần** (`lib/logic/versus_board.dart`): bàn 7×7 tái dùng `MatchDetector` — swap → cascade → trọng lực → refill, cộng điểm, `receiveJunk` (đẩy bàn lên + lấp đáy), `hasMove`. Inject `Random` để test xác định.
+- [x] **`VersusController`** (GetX, không đụng tiến trình): 2 bàn độc lập, đồng hồ 60s (Timer thực + `tickSecond` test được), **junk gem**: combo ≥2 → gửi (combo−1) hàng rác sang đối thủ (Versus); **Co-op**: cộng điểm 2 người đạt mục tiêu chung 3000; xác định kết cục (P1/P2/hoà/coopWin/coopLose).
+- [x] **`VersusBoardView`** (CustomPaint + vuốt-để-đổi, không Flame) → 2 bàn trên 1 màn không tốn 2 game-loop. **`VersusScreen`**: chọn chế độ → đếm ngược 3-2-1-GO → split dọc (**bàn người trên xoay 180°** ngồi đối diện) + HUD điểm/giờ + panel kết quả + chơi lại.
+- [x] **Home**: nút "2 NGƯỜI" rộng (vàng). Guide thêm section. i18n en+vi (`versus_*`, `coop_*`, `guide_versus_*`), 20 ngôn ngữ fallback (giữ parity).
+- [x] **Kết quả**: 0 analyzer issue · **211 test pass** (+14: 6 board + 7 controller + 1 widget).
+- [ ] *Hạn chế MVP-đầy-đủ (ghi nhận)*: Versus board không có special gem (chỉ match thường + cascade); render tức thời (không animation rơi) cho nhẹ + ổn định 2 bàn.
+
+> 🎉 **HOÀN TẤT 4/4 chế độ signature Wave 8** (Gravity, Boss, Rhythm, Versus/Co-op) + Wave 8.2 audit-fix. Người dùng đã chốt 1+2+3 → done cả 3.
+
+### 🌊 Wave 8.6 — fix UX theo phản hồi máy thật (✅ đã làm)
+> Phản hồi: (1) Home phải scroll; (2) Versus vuốt "không có gì xảy ra" + gem shape kì quặc.
+- [x] **Home KHÔNG scroll** (mọi device): bỏ `SingleChildScrollView`, bọc menu trong `FittedBox(scaleDown)` trên `SizedBox` rộng tham chiếu 320 → toàn bộ item tự co vừa 1 màn. Thu nhỏ tiêu đề (NEON 56→46, JEWELS 40→30) + khoảng cách. Bọc hàng circle-nav (Đền/Pass/Mùa + Thành tựu/Hướng dẫn/Cài đặt) trong `Expanded` + nhãn ellipsis → không tràn ngang khi co. Verify máy thật: đủ item, không scroll.
+- [x] **Versus gem cùng hình lá bài game chính**: tạo `gem_painter.dart` (`paintGem` — ♥♣♠♦★● + viền neon đôi) dùng cho `VersusBoardView` (trước là ô vuông bo tròn → "kì quặc"). Verify máy thật.
+- [x] **Versus có animation swap + phản hồi**: thêm `VersusBoard.wouldMatch` (dry-run); `VersusBoardView` (StatefulWidget + ticker) trượt gem khi vuốt — hợp lệ → trượt rồi đổi thật; KHÔNG match → trượt-nhún rồi trả lại (báo "đã nhận thao tác", hết cảm giác "không có gì xảy ra").
+- [x] **Test**: widget test deterministic `versus_board_test.dart` (vuốt hợp lệ→onSwap gọi; vuốt sai→không gọi) + `wouldMatch` unit. **216 test pass** (+3). 0 analyzer · build APK OK · verify máy thật (Pixel 7 Pro USB; S24 rớt USB).
+
+### 🌊 Wave 8.5 — Versus juice + refactor + dọn release (✅ đã làm)
+> Người dùng chốt: Versus juice + refactor GameController + bump deps/store. Verify máy thật S24 (SM-S928B) ở các bản trước (Home/Rhythm/Versus/Boss sạch logcat); bản 8.5 verify qua 213 test + build (USB S24 rớt giữa chừng → on-device re-verify 8.5 còn treo).
+- [x] **Versus juice**: `VersusBoard` thêm lưới `type` song song → **special gem** (match-4 striped nổ hàng/cột, match-5 rainbow xoá cùng màu, T/L bomb 3×3) + `_expand` lan hiệu ứng; render dấu hiệu special trong `VersusBoardView` (vạch striped / lõi bomb / vòng cầu vồng) + flash nhẹ mỗi nước đi. (+2 test)
+- [x] **Refactor GameController**: trích `_enterMode()` (cờ mode độc quyền) + `_resetRunState()` (reset field chung) → 5 hàm `start*` từ ~20 dòng/hàm còn ~5 dòng, BỎ ~60 dòng trùng lặp. **Giữ nguyên API RxBool công khai** (`isBoss.value`…) → không đụng call-site, không hồi quy (213 test xanh).
+- [x] **Dọn release**: gom 11 `debugPrint('roy93~')` về helper `dlog()` (`lib/core/debug_log.dart`, gate `kDebugMode` → no-op + tree-shake ở release; dev vẫn thấy log). `flutter pub upgrade` (trong ràng buộc đã mới nhất). Version `2026.06.15`.
+- [x] **Kết quả**: 0 analyzer issue · **213 test pass** (+2 special gem) · build APK debug OK.
+- [ ] *Chưa làm (rủi ro/ngoài phạm vi)*: 23 package **major bump** (get/flame/win32/xml…) — không bump mù trên build đã verify; nên làm chọn lọc + test lại từng cái. On-device re-verify Wave 8.5 (chờ cắm lại S24).
 
 ### 🌊 Wave 6 — Story/Episode + Endless + Theme-per-world + dọn nợ i18n — ✅ đã làm
 > Task chi tiết: [`tasks/done/w6-*.md`](tasks/done/). Người dùng chốt làm song song 3 hướng.
@@ -464,4 +504,4 @@ match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 
 
 ---
 
-*Cập nhật lần cuối: 2026-06-14 · Trạng thái: Đang phát triển (Wave 6 — Story/Episode + Endless + Theme-per-world + i18n 22 ngôn ngữ, 140 test pass)*
+*Cập nhật lần cuối: 2026-06-14 · Trạng thái: Đang phát triển (Wave 8.4 — đủ 4 chế độ signature: Gravity/Boss/Rhythm/Versus-Coop + audit-fix; **211 test pass**, 0 analyzer, build APK debug OK)*

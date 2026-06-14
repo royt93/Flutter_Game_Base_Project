@@ -210,6 +210,13 @@ class GameScreenController extends GetxController {
       _newGame();
       return;
     }
+    if (gameCtrl.isRhythm.value) {
+      // Rhythm: chơi lại không cần mạng.
+      gameCtrl.startRhythm();
+      ui.value = GameUi.playing;
+      _newGame();
+      return;
+    }
     // hết mạng → không cho chơi lại (tránh lách cổng mạng); về Level Select.
     if (!gameCtrl.hasLife) {
       quit();

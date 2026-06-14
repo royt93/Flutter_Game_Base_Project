@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import '../../core/debug_log.dart';
 import '../../core/storage_service.dart';
 import '../../data/achievements.dart';
 import '../../data/battle_pass.dart';
@@ -10,6 +10,11 @@ import '../../data/season.dart';
 import '../../data/story.dart';
 import '../../data/temple.dart';
 import '../../logic/gem_data.dart';
+import '../../logic/rhythm_clock.dart';
+import 'achievement_controller.dart';
+import 'battle_pass_controller.dart';
+import 'season_controller.dart';
+import 'temple_controller.dart';
 
 /// Quản lý state ván chơi + tiến trình (GetX).
 class GameController extends GetxController {
@@ -49,12 +54,27 @@ class GameController extends GetxController {
   final RxInt bossWeakColor = 0.obs; // index màu điểm yếu (đổi theo phase)
   LevelConfig? _bossCfg;
   int _bossHitsSinceRetaliate = 0;
+  /// Đã clear ÍT NHẤT 1 gem đúng màu điểm yếu trong nhịp resolve hiện tại?
+  /// Bật bởi [registerClear], tiêu thụ (×2 sát thương) trong [_bossDamage].
+  bool _weakHitPending = false;
 
   // --- Trọng lực động (Wave 8) ---
   final RxBool isGravity = false.obs;
   final RxInt gravityDir = 0.obs; // 0 = xuống (mặc định), 1 = lên (đã lật)
   LevelConfig? _gravityCfg;
   int _gravityMoveCount = 0;
+
+  // --- Rhythm mode (Wave 8) — ghép theo nhịp ---
+  final RxBool isRhythm = false.obs;
+  LevelConfig? _rhythmCfg;
+  final RhythmClock rhythm = RhythmClock(bpm: kRhythmBpm);
+  final RxInt rhythmBeat = 0.obs; // tăng mỗi mốc beat → đập HUD
+  final RxInt groove = 0.obs; // chuỗi đúng nhịp (0..[kGrooveMax])
+  final RxInt lastBeatJudge = 0.obs; // 0 chưa đánh, 1 đúng nhịp, -1 lệch nhịp
+  bool _rhythmBonusPending = false;
+
+  /// Trần groove (đúng nhịp liên tiếp) → hệ số thưởng điểm tối đa.
+  static const int kGrooveMax = 8;
 
   /// Ngưỡng combo để gây sát thương GẤP ĐÔI (đánh đúng "phase yếu").
   static const int bossWeakCombo = 4;
@@ -159,79 +179,68 @@ class GameController extends GetxController {
       _bossCfg ??
       _endlessCfg ??
       _gravityCfg ??
+      _rhythmCfg ??
       kLevels[currentLevel.value - 1];
 
-  void startLevel(int index) {
-    isEndless.value = false;
-    isBoss.value = false;
-    isGravity.value = false;
-    _endlessCfg = null;
-    _bossCfg = null;
-    _gravityCfg = null;
-    currentLevel.value = index;
-    final cfg = kLevels[index - 1];
+  /// Đặt cờ chế độ ĐỘC QUYỀN (đúng 1 mode bật, hoặc tất cả false = màn thường)
+  /// + xoá cfg các mode không bật. Gom 1 chỗ → 5 hàm start* khỏi lặp 8 dòng cờ.
+  void _enterMode({
+    bool endless = false,
+    bool boss = false,
+    bool gravity = false,
+    bool rhythm = false,
+  }) {
+    isEndless.value = endless;
+    isBoss.value = boss;
+    isGravity.value = gravity;
+    isRhythm.value = rhythm;
+    if (!endless) _endlessCfg = null;
+    if (!boss) _bossCfg = null;
+    if (!gravity) _gravityCfg = null;
+    if (!rhythm) _rhythmCfg = null;
+  }
+
+  /// Reset state CHUNG của 1 ván mới (mọi mode dùng) → khỏi lặp 12 dòng/hàm.
+  void _resetRunState({required int moves, int target = 0, int time = 0}) {
     score.value = 0;
     comboCount.value = 0;
     runMaxCombo.value = 0;
-    movesLeft.value = cfg.moves;
-    targetScore.value = cfg.targetScore;
+    movesLeft.value = moves;
+    targetScore.value = target;
     collected.value = 0;
     jellyCleared.value = 0;
     jellyTotal.value = 0;
-    timeLeft.value = cfg.timeLimit;
+    timeLeft.value = time;
     dropped.value = 0;
     obstacleCleared.value = 0;
     obstacleTotal.value = 0;
     _resolved = false;
+  }
+
+  void startLevel(int index) {
+    _enterMode(); // tất cả false = màn thường
+    currentLevel.value = index;
+    final cfg = kLevels[index - 1];
+    _resetRunState(
+        moves: cfg.moves, target: cfg.targetScore, time: cfg.timeLimit);
   }
 
   /// Bắt đầu chế độ Endless (thử thách tăng dần).
   void startEndless() {
     _endlessCfg = buildEndlessLevel();
-    _bossCfg = null;
-    _gravityCfg = null;
-    isBoss.value = false;
-    isGravity.value = false;
-    isEndless.value = true;
+    _enterMode(endless: true);
     endlessStage.value = 1;
-    score.value = 0;
-    comboCount.value = 0;
-    runMaxCombo.value = 0;
-    movesLeft.value = _endlessCfg!.moves;
-    targetScore.value = 0;
-    collected.value = 0;
-    jellyCleared.value = 0;
-    jellyTotal.value = 0;
-    timeLeft.value = 0;
-    dropped.value = 0;
-    obstacleCleared.value = 0;
-    obstacleTotal.value = 0;
-    _resolved = false;
+    _resetRunState(moves: _endlessCfg!.moves);
   }
 
   /// Bắt đầu chế độ Trọng lực động (chế độ riêng). Bàn tự lật mỗi N lượt.
   void startGravity() {
     _gravityCfg = buildGravityLevel();
-    _bossCfg = null;
-    _endlessCfg = null;
-    isGravity.value = true;
-    isBoss.value = false;
-    isEndless.value = false;
+    _enterMode(gravity: true);
     gravityDir.value = 0;
     _gravityMoveCount = 0;
-    score.value = 0;
-    comboCount.value = 0;
-    runMaxCombo.value = 0;
-    movesLeft.value = _gravityCfg!.moves;
-    targetScore.value = _gravityCfg!.targetScore;
-    collected.value = 0;
-    jellyCleared.value = 0;
-    jellyTotal.value = 0;
-    timeLeft.value = 0;
-    dropped.value = 0;
-    obstacleCleared.value = 0;
-    obstacleTotal.value = 0;
-    _resolved = false;
+    _resetRunState(
+        moves: _gravityCfg!.moves, target: _gravityCfg!.targetScore);
   }
 
   /// Engine gọi sau mỗi lượt ở chế độ Trọng lực động: trả true mỗi
@@ -246,39 +255,61 @@ class GameController extends GetxController {
     return false;
   }
 
+  /// Bắt đầu chế độ Nhịp điệu (chế độ riêng). Ghép đúng nhịp → groove + thưởng điểm.
+  void startRhythm() {
+    _rhythmCfg = buildRhythmLevel();
+    _enterMode(rhythm: true);
+    rhythm.reset();
+    rhythmBeat.value = 0;
+    groove.value = 0;
+    lastBeatJudge.value = 0;
+    _rhythmBonusPending = false;
+    _resetRunState(
+        moves: _rhythmCfg!.moves, target: _rhythmCfg!.targetScore);
+  }
+
+  /// Engine gọi mỗi frame ở chế độ Rhythm: tiến đồng hồ nhịp, đập HUD mỗi beat.
+  void tickRhythm(double dt) {
+    if (!isRhythm.value) return;
+    if (rhythm.tick(dt)) rhythmBeat.value = rhythm.beatCount;
+  }
+
+  /// Engine gọi lúc người chơi thực hiện nước đi HỢP LỆ: phán định đúng/lệch
+  /// nhịp. Đúng nhịp → groove++ + bật cờ thưởng điểm (tiêu thụ ở [addScore]);
+  /// lệch nhịp → groove-- + tắt thưởng.
+  void judgeRhythmBeat() {
+    if (!isRhythm.value) return;
+    if (rhythm.onBeat) {
+      groove.value = (groove.value + 1).clamp(0, kGrooveMax);
+      lastBeatJudge.value = 1;
+      _rhythmBonusPending = true;
+    } else {
+      groove.value = (groove.value - 1).clamp(0, kGrooveMax);
+      lastBeatJudge.value = -1;
+      _rhythmBonusPending = false;
+    }
+  }
+
   /// Bắt đầu trận Boss neon (chế độ riêng). [stage] tăng máu + đổi điểm yếu.
   void startBoss(int stage) {
     _bossCfg = buildBossLevel();
-    _endlessCfg = null;
-    _gravityCfg = null;
-    isGravity.value = false;
-    isBoss.value = true;
-    isEndless.value = false;
+    _enterMode(boss: true);
     bossStage.value = stage.clamp(1, 99);
     bossMaxHp.value = kBossBaseHp + (bossStage.value - 1) * 700;
     bossHp.value = bossMaxHp.value;
     bossWeakColor.value = (stage - 1) % level.colorCount;
     _bossHitsSinceRetaliate = 0;
-    score.value = 0;
-    comboCount.value = 0;
-    runMaxCombo.value = 0;
-    movesLeft.value = _bossCfg!.moves;
-    targetScore.value = 0;
-    collected.value = 0;
-    jellyCleared.value = 0;
-    jellyTotal.value = 0;
-    timeLeft.value = 0;
-    dropped.value = 0;
-    obstacleCleared.value = 0;
-    obstacleTotal.value = 0;
-    _resolved = false;
+    _resetRunState(moves: _bossCfg!.moves);
   }
 
-  /// Sát thương lên boss: tỉ lệ số gem × hệ số combo; combo ≥ [bossWeakCombo]
-  /// (đánh đúng phase yếu) → GẤP ĐÔI. Đổi điểm yếu khi máu xuống nửa.
+  /// Sát thương lên boss: tỉ lệ số gem × hệ số combo. Đánh TRÚNG màu điểm yếu
+  /// ([_weakHitPending]) HOẶC combo ≥ [bossWeakCombo] → GẤP ĐÔI (cộng dồn được
+  /// → ×4 nếu vừa trúng màu yếu vừa combo lớn). Đổi điểm yếu khi máu xuống nửa.
   void _bossDamage(int gemsCleared, int combo) {
     var dmg = gemsCleared * 12 + combo * 8;
+    if (_weakHitPending) dmg *= 2; // trúng màu điểm yếu → thưởng sát thương
     if (combo >= bossWeakCombo) dmg *= 2;
+    _weakHitPending = false; // tiêu thụ cờ cho nhịp kế
     bossHp.value = (bossHp.value - dmg).clamp(0, bossMaxHp.value);
     // phase 2 (máu < 50%) → đổi điểm yếu 1 lần (xác định theo phase, không nhấp nháy)
     final phase2 = bossHp.value <= bossMaxHp.value ~/ 2;
@@ -290,7 +321,13 @@ class GameController extends GetxController {
     comboCount.value = combo;
     if (combo > runMaxCombo.value) runMaxCombo.value = combo;
     final multiplier = 1 + (combo - 1) * 0.5;
-    final gained = (gemsCleared * 10 * multiplier).round();
+    var gained = (gemsCleared * 10 * multiplier).round();
+    // Rhythm: ghép đúng nhịp → thưởng điểm theo groove (×1.5 .. ×2.5).
+    if (isRhythm.value && _rhythmBonusPending) {
+      final grooveMult = 1.5 + groove.value / kGrooveMax;
+      gained = (gained * grooveMult).round();
+      _rhythmBonusPending = false;
+    }
     score.value += gained;
     if (isBoss.value) _bossDamage(gemsCleared, combo);
     if (combo > bestCombo.value) {
@@ -324,6 +361,10 @@ class GameController extends GetxController {
       collected.value++;
     }
     if (wasJelly) jellyCleared.value++;
+    // Boss: ghi nhận đã đánh trúng màu điểm yếu trong nhịp này → ×2 sát thương.
+    if (isBoss.value && color.index == bossWeakColor.value) {
+      _weakHitPending = true;
+    }
   }
 
   /// Drop Down: 1 ingredient vừa chạm đáy bàn.
@@ -498,6 +539,29 @@ class GameController extends GetxController {
       }
       return null;
     }
+    // Rhythm: chế độ riêng — thắng khi đạt điểm mục tiêu, thua khi hết lượt.
+    // Thưởng xu/shard theo sao + groove, KHÔNG đụng win-streak/level-unlock.
+    if (isRhythm.value) {
+      if (score.value >= targetScore.value) {
+        _resolved = true;
+        lastStars = computeStars();
+        lastStreakBonus = 0;
+        lastCoinReward = 20 + lastStars * 10 + groove.value * 3;
+        lastShardReward = 1 + lastStars;
+        addCoins(lastCoinReward);
+        addShards(lastShardReward);
+        return 'win';
+      }
+      if (movesLeft.value <= 0) {
+        _resolved = true;
+        lastStars = 0;
+        lastCoinReward = 0;
+        lastStreakBonus = 0;
+        lastShardReward = 0;
+        return 'lose';
+      }
+      return null;
+    }
     if (hasWon) {
       _resolved = true;
       lastStars = computeStars();
@@ -631,42 +695,54 @@ class GameController extends GetxController {
   }
 
   Future<void> resetProgress() async {
-    debugPrint('roy93~ resetProgress START unlocked=${unlockedLevel.value} '
+    dlog('resetProgress START unlocked=${unlockedLevel.value} '
         'highScores=${highScores.length} stars=${stars.length} coins=${coins.value}');
-    unlockedLevel.value = 1;
-    highScores.clear();
-    stars.clear();
-    await _store.setInt(StorageKeys.unlockedLevel, 1);
-    for (final lv in kLevels) {
-      await _store.remove(StorageKeys.highScore(lv.index));
-      await _store.remove(StorageKeys.star(lv.index));
-    }
-    // Wave 5: reset thống kê win-streak / thành tựu
-    winStreak.value = 0;
-    bestWinStreak.value = 0;
-    totalWins.value = 0;
-    bestCombo.value = 0;
-    coinsEarnedTotal.value = 0;
-    endlessHigh.value = 0;
-    shards.value = 0;
-    for (final k in [
+
+    // 1) Xoá MỌI key tiến trình trên đĩa (giữ lại cài đặt ngôn ngữ localeCode).
+    //    Trước đây bỏ sót: coins, daily, wheel, lives, booster, tutorial,
+    //    viewMode → "reset" nhưng xu/booster/mạng vẫn còn.
+    final scalarKeys = <String>[
+      StorageKeys.unlockedLevel,
+      StorageKeys.coins,
+      StorageKeys.shards,
+      StorageKeys.dailyLastClaim,
+      StorageKeys.dailyStreak,
+      StorageKeys.lives,
+      StorageKeys.livesRegenAt,
       StorageKeys.winStreak,
       StorageKeys.bestWinStreak,
       StorageKeys.totalWins,
       StorageKeys.bestCombo,
       StorageKeys.coinsEarned,
+      StorageKeys.wheelLastSpin,
+      StorageKeys.tutorialSeen,
+      StorageKeys.viewMode,
       StorageKeys.endlessHigh,
-      StorageKeys.shards,
-    ]) {
+      StorageKeys.bpXp,
+      StorageKeys.bpLevel,
+      StorageKeys.questDay,
+      StorageKeys.seasonPoints,
+      StorageKeys.seasonIdx,
+      StorageKeys.bHammer,
+      StorageKeys.bMoves,
+      StorageKeys.bSwap,
+      StorageKeys.bBomb,
+      StorageKeys.bColor,
+      StorageKeys.bJoker,
+      StorageKeys.bLightning,
+      StorageKeys.bRoyal,
+      StorageKeys.bGravity,
+    ];
+    for (final k in scalarKeys) {
       await _store.remove(k);
+    }
+    for (final lv in kLevels) {
+      await _store.remove(StorageKeys.highScore(lv.index));
+      await _store.remove(StorageKeys.star(lv.index));
     }
     for (final n in kTempleNodes) {
       await _store.remove(StorageKeys.templeTier(n.id));
     }
-    // Wave 7: Battle Pass + nhiệm vụ ngày
-    await _store.remove(StorageKeys.bpXp);
-    await _store.remove(StorageKeys.bpLevel);
-    await _store.remove(StorageKeys.questDay);
     for (int i = 0; i < kPassTiers.length; i++) {
       await _store.remove(StorageKeys.bpClaimed(i));
     }
@@ -674,22 +750,33 @@ class GameController extends GetxController {
       await _store.remove(StorageKeys.questProgress(i));
       await _store.remove(StorageKeys.questCredited(i));
     }
-    // Wave 7: Sự kiện mùa (xoá điểm + cờ nhận mốc của mùa hiện tại)
     final sIdx = seasonIndex(_todayEpochDay);
-    await _store.remove(StorageKeys.seasonPoints);
-    await _store.remove(StorageKeys.seasonIdx);
     for (int m = 0; m < kSeasonMilestones.length; m++) {
       await _store.remove(StorageKeys.seasonClaimed(sIdx, m));
     }
     for (final a in kAchievements) {
       await _store.remove(StorageKeys.achievementClaimed(a.id));
     }
-    // Wave 6: xem lại cốt truyện từ đầu
     for (final b in kStory) {
       await _store.remove(StorageKeys.storySeen(b.id));
     }
-    debugPrint('roy93~ resetProgress DONE unlocked=${unlockedLevel.value} '
-        'highScores=${highScores.length} stars=${stars.length}');
+
+    // 2) Xoá map in-memory rồi nạp lại GIÁ TRỊ MẶC ĐỊNH từ đĩa (đã trống) — đưa
+    //    coins/booster/lives… về đúng như lần cài đầu thay vì giữ giá trị cũ.
+    highScores.clear();
+    stars.clear();
+    _load();
+
+    // 3) Reset state in-memory của các controller meta (permanent → không tự
+    //    mất khi xoá đĩa). Bỏ bước này thì RAM giữ "đã nhận" → restart đọc đĩa
+    //    trống ⇒ NHẬN LẠI thưởng Battle Pass / Season / Achievement / Temple.
+    BattlePassController.maybe?.resetState();
+    SeasonController.maybe?.resetState();
+    AchievementController.maybe?.resetState();
+    TempleController.maybe?.resetState();
+
+    dlog('resetProgress DONE unlocked=${unlockedLevel.value} '
+        'highScores=${highScores.length} stars=${stars.length} coins=${coins.value}');
   }
 
   // --------------------------------------------------------------------------

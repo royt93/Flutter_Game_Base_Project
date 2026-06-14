@@ -14,6 +14,14 @@ class AchievementController extends GetxController {
   /// id thành tựu đã nhận thưởng (reactive cho UI/badge).
   final RxSet<String> claimed = <String>{}.obs;
 
+  static AchievementController? get maybe =>
+      Get.isRegistered<AchievementController>()
+          ? Get.find<AchievementController>()
+          : null;
+
+  /// Xoá cờ "đã nhận" in-memory khi reset tiến trình (controller permanent).
+  void resetState() => claimed.clear();
+
   @override
   void onInit() {
     super.onInit();

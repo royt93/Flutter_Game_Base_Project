@@ -326,6 +326,33 @@ class AppTranslations extends Translations {
     'boss_stage': 'Stage',
     // Wave 8 — Trọng lực động
     'gravity_title': 'GRAVITY',
+    // Wave 8 — Nhịp điệu
+    'rhythm_title': 'RHYTHM',
+    'rhythm_groove': 'GROOVE',
+    'rhythm_onbeat': 'ON BEAT!',
+    'rhythm_offbeat': 'OFF BEAT',
+    'guide_rhythm_title': 'Rhythm Mode',
+    'guide_rhythm_body':
+        'Swap right on the beat (watch the pulsing dot) to build your GROOVE meter and score up to 2.5× points. Off-beat swaps drop your groove. Reach the target score before moves run out.',
+    // Wave 8 — 2 người 1 máy (Versus / Co-op)
+    'versus_title': '2 PLAYERS',
+    'versus_pick': 'Choose a mode',
+    'versus_mode': 'VERSUS',
+    'versus_mode_desc': 'Race for the highest score',
+    'coop_mode': 'CO-OP',
+    'coop_mode_desc': 'Reach the shared goal together',
+    'versus_p1': 'P1',
+    'versus_p2': 'P2',
+    'versus_p1_win': 'PLAYER 1 WINS!',
+    'versus_p2_win': 'PLAYER 2 WINS!',
+    'versus_draw': 'DRAW!',
+    'coop_win': 'GOAL REACHED!',
+    'coop_lose': "TIME'S UP",
+    'coop_goal': 'GOAL',
+    'versus_go': 'GO!',
+    'guide_versus_title': '2 Players (local)',
+    'guide_versus_body':
+        'Two players, one device. VERSUS: race for the higher score in 60s — big combos send junk rows to your rival. CO-OP: combine scores to reach the shared goal before time runs out. The top board is rotated for face-to-face play.',
     // Home revamp — nhãn khu
     'challenge_modes': 'Challenges',
     'meta_section': 'Rewards',
@@ -527,6 +554,33 @@ class AppTranslations extends Translations {
     'boss_stage': 'Ải',
     // Wave 8 — Trọng lực động
     'gravity_title': 'TRỌNG LỰC',
+    // Wave 8 — Nhịp điệu
+    'rhythm_title': 'NHỊP ĐIỆU',
+    'rhythm_groove': 'GROOVE',
+    'rhythm_onbeat': 'ĐÚNG NHỊP!',
+    'rhythm_offbeat': 'LỆCH NHỊP',
+    'guide_rhythm_title': 'Chế độ Nhịp điệu',
+    'guide_rhythm_body':
+        'Đổi gem ĐÚNG nhịp (theo chấm sáng đập) để tăng thanh GROOVE và ghi điểm tới 2.5×. Đổi lệch nhịp làm tụt groove. Đạt điểm mục tiêu trước khi hết lượt.',
+    // Wave 8 — 2 người 1 máy (Versus / Co-op)
+    'versus_title': '2 NGƯỜI',
+    'versus_pick': 'Chọn chế độ',
+    'versus_mode': 'ĐỐI KHÁNG',
+    'versus_mode_desc': 'Đua điểm cao hơn',
+    'coop_mode': 'HỢP TÁC',
+    'coop_mode_desc': 'Cùng đạt mục tiêu chung',
+    'versus_p1': 'N1',
+    'versus_p2': 'N2',
+    'versus_p1_win': 'NGƯỜI 1 THẮNG!',
+    'versus_p2_win': 'NGƯỜI 2 THẮNG!',
+    'versus_draw': 'HOÀ!',
+    'coop_win': 'ĐẠT MỤC TIÊU!',
+    'coop_lose': 'HẾT GIỜ',
+    'coop_goal': 'MỤC TIÊU',
+    'versus_go': 'BẮT ĐẦU!',
+    'guide_versus_title': '2 Người (cục bộ)',
+    'guide_versus_body':
+        'Hai người, một máy. ĐỐI KHÁNG: đua điểm cao hơn trong 60 giây — combo lớn gửi hàng rác sang đối thủ. HỢP TÁC: cộng điểm 2 người đạt mục tiêu chung trước khi hết giờ. Bàn phía trên xoay 180° để ngồi đối diện.',
     // Home revamp — nhãn khu
     'challenge_modes': 'Thử thách',
     'meta_section': 'Phần thưởng',
