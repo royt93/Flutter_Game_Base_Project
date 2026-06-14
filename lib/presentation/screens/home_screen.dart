@@ -110,16 +110,17 @@ class HomeScreen extends StatelessWidget {
       BattlePassController bp, SeasonController sc) {
     // Căn TOP + chừa 64px cho action bar (tim/xu/wheel/quà) — tránh _GemSparkle
     // và logo đè lên vùng action bar như trước.
-    // KHÔNG scroll: co toàn bộ menu vừa khung hình mọi device bằng FittedBox
-    // (scaleDown) trên 1 SizedBox chiều rộng tham chiếu → item tự thu nhỏ hợp lý.
+    // KHÔNG scroll: dùng FULL chiều rộng (padding chuẩn s16) + FittedBox
+    // (scaleDown) chỉ co lại theo CHIỀU CAO khi màn quá thấp → không dư space 2 bên.
     return Padding(
             padding: const EdgeInsets.fromLTRB(
                 NeonTheme.s16, 58, NeonTheme.s16, NeonTheme.s8),
-            child: Center(
+            child: LayoutBuilder(
+              builder: (context, constraints) => Center(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: SizedBox(
-                  width: 320,
+                  width: constraints.maxWidth,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -359,6 +360,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
+          ),
           );
   }
 
