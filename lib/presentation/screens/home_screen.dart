@@ -5,14 +5,20 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import '../../core/app_info.dart';
 import '../../core/neon_theme.dart';
+import '../../core/storage_service.dart';
+import '../controllers/achievement_controller.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_controller.dart';
+import '../controllers/lucky_wheel_controller.dart';
+import '../widgets/lucky_wheel_view.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
 import '../widgets/neon_dialog.dart';
+import 'achievements_screen.dart';
 import 'guide_screen.dart';
 import 'level_select_screen.dart';
 import 'settings_screen.dart';
+import 'world_map_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -27,13 +33,15 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = Get.put(GameController(), permanent: true);
     final hc = Get.put(HomeController(g));
+    final ac = Get.put(AchievementController(g), permanent: true);
+    final lw = Get.put(LuckyWheelController(g), permanent: true);
     g.refillLives(); // cập nhật mạng hồi được khi quay về Home
     return Scaffold(
       body: NeonBg(
         child: SafeArea(
           child: Stack(
             children: [
-              _menu(),
+              _menu(ac),
               // Thanh trên: mạng (trái) + quà hằng ngày (phải)
               Positioned(
                 top: NeonTheme.s8,
@@ -53,6 +61,15 @@ class HomeScreen extends StatelessWidget {
                   return _dailyButton(g, hc);
                 }),
               ),
+              // Vòng quay may mắn (trái nút quà)
+              Positioned(
+                top: NeonTheme.s8,
+                right: 64,
+                child: Obx(() {
+                  lw.resultIndex.value; // refresh badge sau khi quay
+                  return _wheelButton(lw);
+                }),
+              ),
               // Overlay daily (trong cây — route dialog no-op ở full-screen)
               Obx(() => hc.dailyOpen.value
                   ? _dailyOverlay(g, hc)
@@ -61,6 +78,10 @@ class HomeScreen extends StatelessWidget {
               Obx(() => hc.livesBuyOpen.value
                   ? _livesBuyOverlay(g, hc)
                   : const SizedBox.shrink()),
+              // Overlay vòng quay may mắn
+              Obx(() => lw.open.value
+                  ? _wheelOverlay(lw)
+                  : const SizedBox.shrink()),
             ],
           ),
         ),
@@ -68,7 +89,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _menu() {
+  Widget _menu(AchievementController ac) {
     return Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(
@@ -111,7 +132,15 @@ class HomeScreen extends StatelessWidget {
                     label: 'play_now'.tr,
                     color: NeonTheme.lime,
                     icon: Icons.play_arrow_rounded,
-                    onTap: () => Get.to(() => const LevelSelectScreen()),
+                    onTap: () {
+                      // mở đúng kiểu xem người chơi đã chọn (lưu local; mặc định map)
+                      final grid = StorageService.to
+                              .getInt(StorageKeys.viewMode, def: 0) ==
+                          1;
+                      Get.to(() => grid
+                          ? const LevelSelectScreen()
+                          : const WorldMapScreen());
+                    },
                   ),
                   const SizedBox(height: NeonTheme.s16),
                   NeonButton(
@@ -122,6 +151,37 @@ class HomeScreen extends StatelessWidget {
                       Get.find<GameController>().startLevel(1);
                       Get.to(() => const LevelSelectScreen());
                     },
+                  ),
+                  const SizedBox(height: NeonTheme.s16),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      NeonButton(
+                        label: 'achievements'.tr,
+                        color: NeonTheme.yellow,
+                        icon: Icons.emoji_events_rounded,
+                        onTap: () => Get.to(() => const AchievementsScreen()),
+                      ),
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Obx(() {
+                          ac.claimed.length;
+                          return ac.hasUnclaimed
+                              ? Container(
+                                  width: 14,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    color: NeonTheme.lime,
+                                    shape: BoxShape.circle,
+                                    boxShadow:
+                                        NeonTheme.glow(NeonTheme.lime, blur: 8),
+                                  ),
+                                )
+                              : const SizedBox.shrink();
+                        }),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: NeonTheme.s16),
                   NeonButton(
@@ -212,6 +272,67 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------ Wheel button
+  Widget _wheelButton(LuckyWheelController lw) {
+    final can = lw.canSpin;
+    final btn = Container(
+      padding: const EdgeInsets.all(9),
+      decoration: BoxDecoration(
+        color: NeonTheme.panel.withValues(alpha: 0.6),
+        shape: BoxShape.circle,
+        border: Border.all(color: NeonTheme.lime, width: 1.5),
+        boxShadow: NeonTheme.glow(NeonTheme.lime, blur: can ? 12 : 5),
+      ),
+      child: const Icon(Icons.casino_rounded, color: NeonTheme.lime, size: 22),
+    );
+    return GestureDetector(
+      onTap: lw.openWheel,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          can
+              ? btn
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .rotate(begin: -0.03, end: 0.03, duration: 700.ms)
+              : btn,
+          if (can)
+            Positioned(
+              right: -1,
+              top: -1,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: NeonTheme.magenta,
+                  shape: BoxShape.circle,
+                  boxShadow: NeonTheme.glow(NeonTheme.magenta, blur: 8),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ----------------------------------------------------------- Wheel overlay
+  Widget _wheelOverlay(LuckyWheelController lw) {
+    return NeonDialog.overlay(
+      onBarrier: lw.closeWheel,
+      panel: NeonDialog.panel(
+        title: 'wheel_title'.tr,
+        color: NeonTheme.lime,
+        icon: Icons.casino_rounded,
+        content: LuckyWheelView(ctrl: lw),
+        actions: [
+          NeonDialogAction(
+              label: 'btn_home'.tr,
+              color: NeonTheme.cyan,
+              onTap: lw.closeWheel),
         ],
       ),
     );

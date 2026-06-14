@@ -21,6 +21,7 @@ class GemComponent extends PositionComponent {
   bool selected = false;
   bool hint = false; // nhấp nháy gợi ý khi người chơi bị stuck
   bool isIngredient = false; // Drop Down: item cần đưa xuống đáy
+  bool isLucky = false; // gem hiếm: match → thưởng bất ngờ
 
   GemComponent({
     required this.color,
@@ -107,6 +108,11 @@ class GemComponent extends PositionComponent {
       s * 0.07,
       Paint()..color = Colors.white.withValues(alpha: 0.85),
     );
+
+    // 4b) Gem may mắn (chưa thành special): tia sáng lấp lánh trắng
+    if (isLucky && !isSpecial) {
+      _drawLuckySparkle(canvas, center, s);
+    }
 
     // 5) Overlay special + vòng sáng xoay gây chú ý
     if (isSpecial) {
@@ -277,6 +283,26 @@ class GemComponent extends PositionComponent {
       i == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
     }
     return path..close();
+  }
+
+  /// Tia sáng lấp lánh (4 cánh) xoay nhẹ + lõi trắng nhịp — đánh dấu gem may mắn.
+  void _drawLuckySparkle(Canvas canvas, Offset center, double s) {
+    final pulse = 0.5 + 0.5 * math.sin(_pulse * 2.2);
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.85)
+      ..strokeWidth = s * 0.035
+      ..strokeCap = StrokeCap.round;
+    final len = s * (0.2 + 0.06 * pulse);
+    for (int i = 0; i < 4; i++) {
+      final a = _pulse * 0.6 + i * math.pi / 2;
+      canvas.drawLine(
+        center,
+        Offset(center.dx + math.cos(a) * len, center.dy + math.sin(a) * len),
+        paint,
+      );
+    }
+    canvas.drawCircle(center, s * 0.06 * (0.8 + 0.4 * pulse),
+        Paint()..color = Colors.white.withValues(alpha: 0.95));
   }
 
   /// Vòng cung sáng xoay quanh gem special → bắt mắt người chơi.

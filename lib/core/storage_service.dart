@@ -17,8 +17,21 @@ class StorageKeys {
   static const String lives = 'lives';
   static const String livesRegenAt = 'lives_regen_at'; // epoch ms mốc hồi kế
 
+  // Wave 5 — meta giữ chân
+  static const String winStreak = 'win_streak';
+  static const String bestWinStreak = 'best_win_streak';
+  static const String totalWins = 'total_wins';
+  static const String bestCombo = 'best_combo';
+  static const String coinsEarned = 'coins_earned'; // tổng xu kiếm (lifetime)
+  static const String wheelLastSpin = 'wheel_last_spin'; // epoch-day
+  static const String tutorialSeen = 'tutorial_seen';
+  static const String viewMode = 'view_mode'; // 0 = world map, 1 = grid
+
   static String highScore(int level) => 'hs_$level';
   static String star(int level) => 'star_$level';
+
+  /// Cờ "đã nhận thưởng" của thành tựu [id].
+  static String achievementClaimed(String id) => 'ach_$id';
 
   // Booster
   static const String bHammer = 'b_hammer';

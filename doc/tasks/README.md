@@ -47,4 +47,22 @@ Kết quả: 0 analyzer issue · 89 test pass · build APK debug OK.
 
 Chi tiết: `done/w4.1-depth-i18n-worlds.md`. Kết quả: 0 analyzer issue · 98 test pass · build APK OK.
 
+## Wave 5 — ✅ DONE 9/9 (cả 4 hướng + 4 tính năng, offline thuần)
+
+| Nhóm | Task | Trạng thái | File |
+|---|---|---|---|
+| Meta | Achievement | ✅ done | `done/w5-achievements.md` |
+| Meta | Win Streak | ✅ done | `done/w5-win-streak.md` |
+| Meta | Lucky Wheel | ✅ done | `done/w5-lucky-wheel.md` |
+| Meta | Pre-game Booster | ✅ done | `done/w5-pregame-boosters.md` |
+| Hành trình | Tutorial lần đầu (+ vuốt) | ✅ done | `done/w5-tutorial.md` |
+| Hành trình | World Map node-based (+ juice) | ✅ done | `done/w5-world-map.md` |
+| Chiều sâu | Obstacle lan tỏa (chocolate) | ✅ done | `done/w5-spreading-obstacle.md` |
+| Chiều sâu | Lucky / Mystery Gem | ✅ done | `done/w5-lucky-gem.md` |
+| Cảm giác | Polish & Juice (slow-mo, particle) | ✅ done | `done/w5-polish-juice.md` |
+
+Batch 1–4: tính năng. Batch 5: view-mode local (lưu DB khi user đổi style) + flutter_localizations + **test toàn diện**.
+
+**Tổng kết Wave 5**: 0 analyzer issue · **128 unit/widget + 8 integration = 136 test pass** · verify thật iQOO Z9 Turbo (tất cả tính năng + 8 flow integration chạy trên máy).
+
 > Nguồn chân lý tổng thể: [`../feat.md`](../feat.md). Bảng này chỉ theo dõi trạng thái chi tiết của Wave 4.

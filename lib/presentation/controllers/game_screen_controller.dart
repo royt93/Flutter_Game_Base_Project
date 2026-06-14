@@ -1,5 +1,7 @@
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import '../../core/storage_service.dart';
 import '../../game/neon_jewel_game.dart';
 import 'game_controller.dart';
 
@@ -15,6 +17,12 @@ class GameScreenController extends GetxController {
   final RxInt gameVersion = 0.obs; // tăng để Obx dựng lại GameWidget
   final Rx<BoosterMode> armed = BoosterMode.none.obs; // booster đang chọn
   final RxInt coinShake = 0.obs; // tăng để rung chip xu khi thiếu xu
+
+  // --- Tutorial lần đầu (chỉ màn 1) ---
+  static const int tutorialSteps = 3;
+  final RxBool tutorialOpen = false.obs;
+  final RxInt tutorialStep = 0.obs;
+
   NeonJewelGame? _game;
   NeonJewelGame get game => _game!;
 
@@ -23,6 +31,50 @@ class GameScreenController extends GetxController {
     super.onInit();
     WakelockPlus.enable(); // giữ màn sáng khi chơi
     _newGame();
+    // Hoãn các mutation Rx (booster pre-game + mở tutorial) sang sau frame đầu
+    // — tránh markNeedsBuild trong lúc GameScreen đang build.
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _applyPregameBoosters();
+      if (gameCtrl.currentLevel.value == 1 &&
+          StorageService.to.getInt(StorageKeys.tutorialSeen, def: 0) == 0) {
+        tutorialOpen.value = true;
+      }
+    });
+  }
+
+  /// Áp booster đã chọn ở pre-game panel (1 lần, đầu màn).
+  void _applyPregameBoosters() {
+    if (gameCtrl.pendingMovesBoost) {
+      gameCtrl.pendingMovesBoost = false;
+      if (gameCtrl.boosterMoves.value > 0) gameCtrl.useMovesBooster();
+    }
+    if (gameCtrl.pendingArmHammer) {
+      gameCtrl.pendingArmHammer = false;
+      if (gameCtrl.boosterHammer.value > 0) {
+        game.armBooster(BoosterMode.hammer);
+        armed.value = BoosterMode.hammer;
+      }
+    }
+  }
+
+  void tutorialNext() {
+    if (tutorialStep.value < tutorialSteps - 1) {
+      tutorialStep.value++;
+    } else {
+      _endTutorial();
+    }
+  }
+
+  /// Vuốt phải → lùi bước (không lùi quá bước đầu).
+  void tutorialPrev() {
+    if (tutorialStep.value > 0) tutorialStep.value--;
+  }
+
+  void tutorialSkip() => _endTutorial();
+
+  void _endTutorial() {
+    tutorialOpen.value = false;
+    StorageService.to.setInt(StorageKeys.tutorialSeen, 1);
   }
 
   @override

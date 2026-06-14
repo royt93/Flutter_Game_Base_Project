@@ -36,7 +36,12 @@ bool patternHas(JellyPattern p, int r, int c, int rows, int cols) {
 }
 
 /// Loại chướng ngại (obstacle) phủ lên gem.
-enum ObstacleType { none, ice, chain, stone }
+/// - spread: "chocolate" tự lan sang ô kề mỗi lượt nếu KHÔNG bị chặn (clear kề).
+enum ObstacleType { none, ice, chain, stone, spread }
+
+/// Các màn (score) có thêm hazard lan tỏa (chocolate) — không phải mục tiêu,
+/// chỉ là chướng ngại động người chơi phải kìm hãm.
+const Set<int> kSpreadLevels = {55, 73, 91};
 
 class LevelConfig {
   final int index;
@@ -137,14 +142,16 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
 
   switch (objective) {
     case ObjectiveType.score:
+      final spread = kSpreadLevels.contains(index);
       return LevelConfig(
         index: index,
         rows: rows,
         cols: cols,
         colorCount: colorCount,
-        moves: moves,
+        moves: spread ? moves + 6 : moves, // hazard lan tỏa → thêm lượt
         objective: ObjectiveType.score,
         targetScore: 1000 + index * 220,
+        obstacle: spread ? ObstacleType.spread : ObstacleType.none,
       );
     case ObjectiveType.collect:
       return LevelConfig(

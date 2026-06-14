@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
+import '../../core/storage_service.dart';
 import '../../data/levels.dart';
 import '../controllers/game_controller.dart';
+import '../controllers/pregame_controller.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
+import '../widgets/neon_dialog.dart';
 import 'game_screen.dart';
+import 'world_map_screen.dart';
 
 class LevelSelectScreen extends StatelessWidget {
   const LevelSelectScreen({super.key});
@@ -51,6 +55,16 @@ class LevelSelectScreen extends StatelessWidget {
       }
       return;
     }
+    // có booster để chọn → mở pre-game panel; nếu không, vào thẳng
+    final pg = Get.find<PregameController>();
+    if (pg.hasAny) {
+      pg.openFor(index);
+    } else {
+      _enter(ctrl, index);
+    }
+  }
+
+  void _enter(GameController ctrl, int index) {
     ctrl.startLevel(index);
     Get.to(() => const GameScreen());
   }
@@ -64,15 +78,29 @@ class LevelSelectScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.find<GameController>();
+    final pg = Get.put(PregameController(ctrl));
     return Scaffold(
       body: NeonBg(
-        child: SafeArea(
+        child: Stack(
+          children: [
+          SafeArea(
           child: Column(
             children: [
               NeonAppBar(
                 title: 'select_level'.tr,
                 color: NeonTheme.cyan,
-                actions: [_coinChip(ctrl)],
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.map_rounded, color: NeonTheme.cyan),
+                    tooltip: 'world_map'.tr,
+                    onPressed: () {
+                      // chủ động đổi style → lưu local (world map)
+                      StorageService.to.setInt(StorageKeys.viewMode, 0);
+                      Get.off(() => const WorldMapScreen());
+                    },
+                  ),
+                  _coinChip(ctrl),
+                ],
               ),
               Expanded(
                 child: Obx(() {
@@ -120,6 +148,119 @@ class LevelSelectScreen extends StatelessWidget {
             ],
           ),
         ),
+        Obx(() => pg.open.value
+            ? _pregameOverlay(ctrl, pg)
+            : const SizedBox.shrink()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------- Pre-game overlay
+  Widget _pregameOverlay(GameController ctrl, PregameController pg) {
+    return NeonDialog.overlay(
+      onBarrier: pg.close,
+      panel: NeonDialog.panel(
+        title: 'pregame_title'.tr,
+        color: NeonTheme.lime,
+        icon: Icons.rocket_launch_rounded,
+        message: 'pregame_msg'.tr,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Obx(() => _pregameOption(
+                  icon: Icons.av_timer_rounded,
+                  color: NeonTheme.lime,
+                  label: 'pregame_moves'.tr,
+                  count: ctrl.boosterMoves.value,
+                  selected: pg.useMoves.value,
+                  onTap: pg.toggleMoves,
+                )),
+            const SizedBox(height: NeonTheme.s8),
+            Obx(() => _pregameOption(
+                  icon: Icons.gavel_rounded,
+                  color: NeonTheme.orange,
+                  label: 'pregame_hammer'.tr,
+                  count: ctrl.boosterHammer.value,
+                  selected: pg.armHammer.value,
+                  onTap: pg.toggleHammer,
+                )),
+          ],
+        ),
+        actions: [
+          NeonDialogAction(
+              label: 'pregame_skip'.tr,
+              color: NeonTheme.cyan,
+              onTap: () {
+                pg.useMoves.value = false;
+                pg.armHammer.value = false;
+                pg.start();
+                _enter(ctrl, pg.level.value);
+              }),
+          NeonDialogAction(
+              label: 'play_now'.tr,
+              color: NeonTheme.lime,
+              onTap: () {
+                pg.start();
+                _enter(ctrl, pg.level.value);
+              }),
+        ],
+      ),
+    );
+  }
+
+  Widget _pregameOption({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required int count,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final owned = count > 0;
+    return GestureDetector(
+      onTap: owned ? onTap : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? color.withValues(alpha: 0.25)
+              : NeonTheme.panel.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: owned ? color : Colors.white24,
+              width: selected ? 2.5 : 1.4),
+          boxShadow: selected ? NeonTheme.glow(color, blur: 10) : null,
+        ),
+        child: Row(children: [
+          Icon(icon, color: owned ? color : Colors.white38, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(label,
+                style: TextStyle(
+                  fontFamily: 'Orbitron',
+                  color: owned ? Colors.white : Colors.white38,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                )),
+          ),
+          Text('x$count',
+              style: TextStyle(
+                fontFamily: 'Orbitron',
+                color: owned ? color : Colors.white38,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              )),
+          const SizedBox(width: 6),
+          Icon(
+            selected
+                ? Icons.check_circle_rounded
+                : Icons.circle_outlined,
+            color: selected ? color : Colors.white30,
+            size: 18,
+          ),
+        ]),
       ),
     );
   }

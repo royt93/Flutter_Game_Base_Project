@@ -380,6 +380,9 @@ class ObstacleLayer extends PositionComponent {
           case ObstacleType.stone:
             _drawStone(canvas, rect);
             break;
+          case ObstacleType.spread:
+            _drawSpread(canvas, rect);
+            break;
           case ObstacleType.none:
             break;
         }
@@ -443,6 +446,39 @@ class ObstacleLayer extends PositionComponent {
         Offset(rect.left + rect.width * 0.66, rect.top + rect.height * 0.6),
         cellSize * 0.04,
         fleck);
+  }
+
+  /// Chocolate lan tỏa: khối tối bong bóng + viền neon tím hồng.
+  void _drawSpread(Canvas canvas, Rect rect) {
+    final rr = RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.2));
+    canvas.drawRRect(
+      rr,
+      Paint()
+        ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, [
+          const Color(0xFF5A2A6E),
+          const Color(0xFF2E1640),
+        ]),
+    );
+    canvas.drawRRect(
+      rr,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.4
+        ..color = const Color(0xFFB05CFF).withValues(alpha: 0.85),
+    );
+    // bong bóng chocolate
+    final bubble = Paint()..color = Colors.white.withValues(alpha: 0.16);
+    for (final o in const [
+      Offset(0.32, 0.34),
+      Offset(0.66, 0.4),
+      Offset(0.48, 0.66),
+    ]) {
+      canvas.drawCircle(
+        Offset(rect.left + rect.width * o.dx, rect.top + rect.height * o.dy),
+        cellSize * 0.08,
+        bubble,
+      );
+    }
   }
 
   void _drawChain(Canvas canvas, Rect rect) {

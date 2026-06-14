@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../core/storage_service.dart';
+import '../../data/achievements.dart';
 import '../../data/levels.dart';
 import '../../logic/gem_data.dart';
 
@@ -29,6 +30,20 @@ class GameController extends GetxController {
 
   // --- Daily reward ---
   final RxInt dailyStreak = 0.obs;
+
+  // --- Win streak + thống kê (Wave 5) ---
+  final RxInt winStreak = 0.obs; // thắng liên tiếp hiện tại
+  final RxInt bestWinStreak = 0.obs; // kỷ lục streak
+  final RxInt totalWins = 0.obs; // tổng số màn thắng
+  final RxInt bestCombo = 0.obs; // combo cao nhất từng đạt
+  final RxInt coinsEarnedTotal = 0.obs; // tổng xu kiếm (lifetime)
+
+  /// Bonus xu từ win-streak ở ván vừa thắng (cho dialog).
+  int lastStreakBonus = 0;
+
+  /// Tổng sao đã đạt (mọi màn) — dùng cho thành tựu.
+  int get totalStars =>
+      stars.values.fold(0, (sum, s) => sum + s);
 
   // --- Lives / energy ---
   static const int maxLives = 5;
@@ -62,6 +77,10 @@ class GameController extends GetxController {
   int lastStars = 0;
   int lastCoinReward = 0;
 
+  /// Pre-game booster (chọn trước khi vào màn) — đọc 1 lần ở GameScreenController.
+  bool pendingMovesBoost = false;
+  bool pendingArmHammer = false;
+
   bool _resolved = false;
   final StorageService _store = StorageService.to;
 
@@ -91,6 +110,11 @@ class GameController extends GetxController {
     }
     dailyStreak.value = _store.getInt(StorageKeys.dailyStreak, def: 0);
     lives.value = _store.getInt(StorageKeys.lives, def: maxLives);
+    winStreak.value = _store.getInt(StorageKeys.winStreak, def: 0);
+    bestWinStreak.value = _store.getInt(StorageKeys.bestWinStreak, def: 0);
+    totalWins.value = _store.getInt(StorageKeys.totalWins, def: 0);
+    bestCombo.value = _store.getInt(StorageKeys.bestCombo, def: 0);
+    coinsEarnedTotal.value = _store.getInt(StorageKeys.coinsEarned, def: 0);
     refillLives();
   }
 
@@ -117,6 +141,10 @@ class GameController extends GetxController {
     comboCount.value = combo;
     final multiplier = 1 + (combo - 1) * 0.5;
     score.value += (gemsCleared * 10 * multiplier).round();
+    if (combo > bestCombo.value) {
+      bestCombo.value = combo;
+      _store.setInt(StorageKeys.bestCombo, combo);
+    }
   }
 
   void registerClear(GemColor color, bool wasJelly) {
@@ -223,12 +251,28 @@ class GameController extends GetxController {
     return 1;
   }
 
+  /// Cap số bậc streak được thưởng + xu mỗi bậc.
+  static const int _streakCap = 6;
+  static const int _streakStep = 5;
+
   String? checkEnd() {
     if (_resolved) return null;
     if (hasWon) {
       _resolved = true;
       lastStars = computeStars();
-      lastCoinReward = 10 + lastStars * 10; // 20/30/40 xu
+      // win streak: tăng chuỗi + thưởng bonus theo chuỗi (từ bậc 2)
+      winStreak.value++;
+      if (winStreak.value > bestWinStreak.value) {
+        bestWinStreak.value = winStreak.value;
+        _store.setInt(StorageKeys.bestWinStreak, bestWinStreak.value);
+      }
+      lastStreakBonus = winStreak.value >= 2
+          ? winStreak.value.clamp(0, _streakCap) * _streakStep
+          : 0;
+      lastCoinReward = 10 + lastStars * 10 + lastStreakBonus; // 20/30/40 + bonus
+      totalWins.value++;
+      _store.setInt(StorageKeys.winStreak, winStreak.value);
+      _store.setInt(StorageKeys.totalWins, totalWins.value);
       _saveProgress(win: true);
       return 'win';
     }
@@ -236,6 +280,9 @@ class GameController extends GetxController {
       _resolved = true;
       lastStars = 0;
       lastCoinReward = 0;
+      lastStreakBonus = 0;
+      winStreak.value = 0;
+      _store.setInt(StorageKeys.winStreak, 0);
       _saveProgress(win: false);
       return 'lose';
     }
@@ -280,6 +327,28 @@ class GameController extends GetxController {
   bool buyGravity({int price = 50}) =>
       _buy(StorageKeys.bGravity, boosterGravity, price);
 
+  /// Cộng xu (thưởng thành tựu / vòng quay…) + persist.
+  void addCoins(int amount) {
+    if (amount <= 0) return;
+    coins.value += amount;
+    _store.setInt(StorageKeys.coins, coins.value);
+  }
+
+  /// Tặng booster (vòng quay / pre-game) + persist.
+  void _grant(String key, RxInt count, int n) {
+    count.value += n;
+    _store.setInt(key, count.value);
+  }
+
+  void grantHammer([int n = 1]) => _grant(StorageKeys.bHammer, boosterHammer, n);
+  void grantMovesBooster([int n = 1]) =>
+      _grant(StorageKeys.bMoves, boosterMoves, n);
+  void grantBomb([int n = 1]) => _grant(StorageKeys.bBomb, boosterBomb, n);
+  void grantSwap([int n = 1]) => _grant(StorageKeys.bSwap, boosterSwap, n);
+
+  /// Epoch-day hôm nay (công khai cho Lucky Wheel…).
+  int get todayEpochDay => _todayEpochDay;
+
   bool _buy(String key, RxInt count, int price) {
     if (coins.value < price) return false;
     coins.value -= price;
@@ -299,6 +368,24 @@ class GameController extends GetxController {
     for (final lv in kLevels) {
       await _store.remove(StorageKeys.highScore(lv.index));
       await _store.remove(StorageKeys.star(lv.index));
+    }
+    // Wave 5: reset thống kê win-streak / thành tựu
+    winStreak.value = 0;
+    bestWinStreak.value = 0;
+    totalWins.value = 0;
+    bestCombo.value = 0;
+    coinsEarnedTotal.value = 0;
+    for (final k in [
+      StorageKeys.winStreak,
+      StorageKeys.bestWinStreak,
+      StorageKeys.totalWins,
+      StorageKeys.bestCombo,
+      StorageKeys.coinsEarned,
+    ]) {
+      await _store.remove(k);
+    }
+    for (final a in kAchievements) {
+      await _store.remove(StorageKeys.achievementClaimed(a.id));
     }
     debugPrint('roy93~ resetProgress DONE unlocked=${unlockedLevel.value} '
         'highScores=${highScores.length} stars=${stars.length}');
@@ -418,7 +505,9 @@ class GameController extends GetxController {
         await _store.setInt(StorageKeys.star(lv), lastStars);
       }
       coins.value += lastCoinReward;
+      coinsEarnedTotal.value += lastCoinReward;
       await _store.setInt(StorageKeys.coins, coins.value);
+      await _store.setInt(StorageKeys.coinsEarned, coinsEarnedTotal.value);
       if (lv >= unlockedLevel.value && lv < kLevels.length) {
         unlockedLevel.value = lv + 1;
         await _store.setInt(StorageKeys.unlockedLevel, unlockedLevel.value);

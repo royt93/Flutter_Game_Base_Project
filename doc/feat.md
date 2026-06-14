@@ -275,10 +275,86 @@ lib/
 - [ ] *Còn nợ nhỏ (đã ghi)*: đếm ngược hồi mạng ở Home chưa tự tick (static tới rebuild); `_doShuffle` kiểm hasMatch trên màu thô gồm ô loại trừ (vô hại).
 
 ### 🟡 In progress
-*(không có)*
+*(không có — Wave 5 đã xong 9/9)*
 
-### 📋 Picked (đã chốt, chờ implement)
-*(trống)*
+### 🌊 Wave 5 — batch 3.5 (World Map juice) + batch 4 (engine: Polish + Lucky + Spread) — ✅ đã làm
+- [x] **World Map nâng cấp** (theo feedback): node nhỏ gọn (46px), zig-zag sin mượt, **sao màu lấp lánh** động (CustomPainter twinkle), **xung năng lượng** chạy dọc path đã đi, node hiện tại **vầng sáng xoay** + pulse, banner thế giới gọn, auto-scroll tới màn hiện tại.
+- [x] **Polish & Juice**: **slow-motion** 0.45s khi wombo combo (≥6) làm chậm mọi hiệu ứng Flame (`super.update(dt*timeScale)`); particle gem **special tăng 9→18 hạt** bay xa hơn.
+- [x] **Lucky / Mystery Gem**: ~2.8% gem refill là gem may mắn (tia sáng lấp lánh trắng); match → **+điểm +xu** & biến vài gem thường thành special ngẫu nhiên + flash "LUCKY!".
+- [x] **Obstacle lan tỏa (chocolate)**: `ObstacleType.spread` mới — phủ ô (khoá swap + loại match như stone), mỗi lượt KHÔNG phá ô kề → **lan 1 ô** (trần 16 ô chống khoá bàn). Hazard trên 3 màn score (55/73/91, +6 lượt), không phải mục tiêu. Render khối chocolate tím. `ObstacleLayer._drawSpread`.
+- [x] i18n Guide cập nhật (chocolate + lucky gem). 0 analyzer issue.
+
+### 🌊 Wave 5 — batch 5 (view-mode local + test toàn diện) — ✅ đã làm
+- [x] **Lưu kiểu xem (local DB)**: `StorageKeys.viewMode` (0 = World Map, 1 = Grid). Home "CHƠI NGAY" mở đúng kiểu đã chọn (mặc định Map). **Chỉ ghi khi user chủ động đổi** (bấm nút Grid trên Map → lưu 1; nút Map trên Grid → lưu 0).
+- [x] **flutter_localizations**: thêm `GlobalMaterialLocalizations`/`Widgets`/`Cupertino` delegates → tooltip + Material widget hoạt động đúng cho cả 22 ngôn ngữ (trước đây thiếu → ném lỗi với locale ≠ en).
+- [x] **app(withAudio)**: tách cờ audio để integration test không bị frame-callback của audioplayers giữ sống (gây lỗi teardown).
+- [x] **Test toàn diện**:
+  - **Unit** (`test/w5_test.dart`): win-streak, achievements (mọi thành tựu mở khoá + claim hết), lucky wheel (mọi ô thưởng), pre-game, view-mode, resetProgress, spread data.
+  - **Widget** (`test/widget/w5_screens_test.dart`): AchievementsScreen, WorldMapScreen (+ lưu viewMode), LevelSelect (map toggle + pre-game), Home (nút thành tựu/vòng quay, mở overlay).
+  - **Integration** (`integration_test/app_test.dart`): 8 flow end-to-end (World Map↔Grid, Thành tựu, Vòng quay quay thật, Quà ngày, vào game qua pre-game, X→thoát, Settings, Guide) — **chạy thật & PASS trên iQOO Z9 Turbo**.
+- [x] **Kết quả cuối**: 0 analyzer issue · **128 unit/widget test + 8 integration test = 136 pass** · verify máy thật.
+
+---
+
+## 4.5 So sánh Candy Crush Saga — GAP ANALYSIS (Wave 5 candidate)
+
+> Đánh giá tính năng còn thiếu so với **Candy Crush Saga** (bản gốc King). Đã có khá đầy đủ core: 5 mode, obstacle, booster, sao, daily, lives, world. Phần còn thiếu chủ yếu là **trải nghiệm hành trình + meta-retention + juice**.
+
+### Đã ngang ngửa CCS ✅
+match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 mode · obstacle (jelly/ice/chain/stone) · booster · sao 1-3 · daily reward · lives/energy · 100 màn · world grouping · i18n.
+
+### Còn THIẾU so với CCS (xếp theo độ "đậm chất Candy Crush")
+
+| # | Tính năng CCS | Hiện trạng | Độ khó | Tác động |
+|---|---|---|---|---|
+| A | **World Map node-based** (đường đi uốn lượn, node màn, lâu đài, cờ episode) | Chỉ Level Select dạng lưới gom thế giới | 🟡 TB | ⭐⭐⭐ Định danh CCS |
+| B | **Tutorial lần đầu** (overlay tay chỉ, dạy swap/special) | Chưa có | 🟢 Thấp | ⭐⭐ Onboarding |
+| C | **Obstacle lan tỏa** (chocolate/licorice tự nhân lên mỗi lượt nếu không chặn) | Obstacle tĩnh | 🟡 TB | ⭐⭐⭐ Chiều sâu |
+| D | **Pre-game booster panel** (chọn booster trước khi vào màn) | Chỉ dùng booster trong màn | 🟢 Thấp | ⭐⭐ Kinh tế |
+| E | **Lucky Wheel / vòng quay may mắn** (spin hàng ngày nhận thưởng) | Chỉ daily streak | 🟢 Thấp | ⭐⭐ Giữ chân |
+| F | **Achievement / thành tựu** (mốc combo, số sao, win streak…) | Chưa có | 🟢 Thấp | ⭐⭐ Giữ chân |
+| G | **Win streak / Sweet streak** (thắng liên tiếp → thưởng tăng) | Chưa có | 🟢 Thấp | ⭐ Giữ chân |
+| H | **Sound/Music revamp + juice** (SFX phong phú, slow-mo combo lớn, trail gem rơi) | Audio cơ bản | 🟢 Thấp | ⭐⭐ Cảm giác |
+| I | **Gem hiếm / Lucky candy / Mystery** (gem ngẫu nhiên ra special) | Chưa có | 🟢 Thấp | ⭐ Bất ngờ |
+| J | **Leaderboard / Cloud save / Daily challenge online** | Chưa có (cần backend) | 🔴 Cao | ⭐⭐ Social (cần Firebase) |
+| K | **Episode/story + nhân vật** (cốt truyện, NPC dẫn dắt) | Chưa có | 🔴 Cao | ⭐ Cốt truyện |
+
+### 📋 Picked — Wave 5 (đã chốt: làm CẢ 4 hướng + 4 tính năng nhỏ, song song, OFFLINE thuần)
+> Task chi tiết: [`tasks/todo/`](tasks/todo/) → di chuyển sang `in-progress/` → `done/`.
+
+| Nhóm | Task | File | Trạng thái |
+|---|---|---|---|
+| Meta giữ chân | Achievement / Thành tựu | `w5-achievements.md` | ✅ done |
+| Meta giữ chân | Win Streak | `w5-win-streak.md` | ✅ done |
+| Meta giữ chân | Lucky Wheel (vòng quay) | `w5-lucky-wheel.md` | ✅ done |
+| Meta giữ chân | Pre-game Booster Panel | `w5-pregame-boosters.md` | ✅ done |
+| Hành trình | Tutorial lần đầu | `w5-tutorial.md` | ✅ done |
+| Hành trình | World Map node-based | `w5-world-map.md` | ✅ done |
+| Chiều sâu | Obstacle lan tỏa | `w5-spreading-obstacle.md` | ✅ done |
+| Chiều sâu | Lucky / Mystery Gem | `w5-lucky-gem.md` | ✅ done |
+| Cảm giác | Polish & Juice | `w5-polish-juice.md` | ✅ done |
+
+> Quyết định: **không backend** — game offline thuần (không leaderboard/cloud).
+
+### 🌊 Wave 5 — batch 1 (Meta giữ chân: Achievement + Win Streak) — ✅ đã làm
+- [x] **Win Streak / Sweet Streak**: thắng liên tiếp → bonus xu tăng dần (từ bậc 2, +5 xu/bậc, trần 6 bậc); thua reset chuỗi. Dialog thắng hiện chip "CHUỖI xN +bonus". Lưu `winStreak`/`bestWinStreak`/`totalWins` qua StorageService.
+- [x] **Achievement / Thành tựu** (12 thành tựu offline): tổng thắng / sao / combo cao nhất / chuỗi thắng / mở khoá thế giới / tổng xu kiếm. Mỗi mốc thưởng xu, nhận 1 lần. Màn `AchievementsScreen` (lưới thẻ + thanh tiến trình + nút NHẬN), nút + badge sáng ở Home. `AchievementController` (GetX) đọc thống kê reactive.
+- [x] Theo dõi `bestCombo` (qua addScore), `coinsEarnedTotal` (lifetime); reset đầy đủ trong `resetProgress`.
+- [x] i18n: thêm key proper **en + vi** (merge `_extraEn`/`_extraVi`, 20 ngôn ngữ fallback English — giữ parity test).
+- [x] **Kết quả**: 0 analyzer issue · **108 test pass** (+6 test Wave 5) · build APK debug.
+
+### 🌊 Wave 5 — batch 2 (Lucky Wheel + Tutorial + Pre-game Booster) — ✅ đã làm
+- [x] **Lucky Wheel / Vòng quay**: 8 ô (xu + booster), quay miễn phí 1 lần/ngày (`wheelLastSpin` epoch-day), bánh xe `CustomPainter` xoay 5 vòng dừng đúng ô trúng, trao thưởng ngay. Nút 🎰 + badge ở Home (cạnh nút quà). `LuckyWheelController` (GetX, inject `Random` để test).
+- [x] **Tutorial lần đầu**: overlay 3 bước (swap → striped → rainbow) chỉ hiện ở **màn 1, lần đầu** (`tutorialSeen`), có chấm tiến trình + nút TIẾP/BỎ QUA. Quản lý bởi `GameScreenController`.
+- [x] **Pre-game Booster Panel**: overlay "CHUẨN BỊ" trước khi vào màn (chỉ khi sở hữu booster) — chọn **+10 lượt khởi đầu** (tiêu 1 booster moves) và/hoặc **Búa sẵn sàng** (pre-arm). Cờ pending đọc 1 lần ở `GameScreenController._applyPregameBoosters`. `PregameController` (GetX).
+- [x] i18n proper **en + vi** (20 ngôn ngữ fallback English, giữ parity).
+- [x] **Kết quả**: 0 analyzer issue · **110 test pass** (+2 test wheel) · build APK debug.
+- [x] **Tutorial vuốt**: bổ sung vuốt trái→tiếp / phải→lùi (GestureDetector onHorizontalDragEnd) + gợi ý "Vuốt để chuyển bước"; fix Obx overlay observe thêm `tutorialStep`. Verify máy thật (bước 1→2). **113 test pass** (+3 pre-game).
+
+### 🌊 Wave 5 — batch 3 (World Map node-based) — ✅ đã làm
+- [x] **WorldMapScreen**: bản đồ hành trình kiểu Candy Crush — đường path uốn lượn (`CustomPaint` quadratic bezier, sáng tới màn đã đi/mờ tới màn khoá) nối **100 node** zig-zag 4 nhịp; node = màn (số + 3 sao + khoá/hiện-tại-pulse), banner thế giới xen giữa (tên + tổng sao). Cuộn dọc toàn bộ.
+- [x] **Tích hợp**: Home "CHƠI NGAY" → World Map; nút chuyển **Grid view ↔ Map** (Get.off) ở cả 2 màn; tái dùng pre-game flow + cổng mạng.
+- [x] i18n `world_map`/`grid_view` (en + vi). 0 analyzer issue · verify máy thật (path + node pulse). Giữ Level Select cũ làm chế độ lưới.
 
 ### ⏸️ Deferred (lớn, để session sau)
 - [x] ~~Combo 2-special-gem~~ (Wave 2)

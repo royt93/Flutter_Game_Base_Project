@@ -47,6 +47,13 @@ class GameScreen extends StatelessWidget {
               ),
               // Overlay dialog render TRÊN GameWidget (Flame không đè được)
               Obx(() => _overlay(ctrl, sc)),
+              // Overlay hướng dẫn lần đầu (trên cùng)
+              Obx(() {
+                sc.tutorialStep.value; // observe để rebuild khi đổi bước
+                return sc.tutorialOpen.value
+                    ? _tutorialOverlay(sc)
+                    : const SizedBox.shrink();
+              }),
             ],
           ),
         ),
@@ -83,6 +90,87 @@ class GameScreen extends StatelessWidget {
       case GameUi.lose:
         return NeonDialog.overlay(panel: _resultPanel(ctrl, sc, false));
     }
+  }
+
+  // -------------------------------------------------------------- Tutorial
+  Widget _tutorialOverlay(GameScreenController sc) {
+    final step = sc.tutorialStep.value;
+    final last = step >= GameScreenController.tutorialSteps - 1;
+    const icons = [
+      Icons.swipe_rounded,
+      Icons.bolt_rounded,
+      Icons.auto_awesome_rounded,
+    ];
+    return NeonDialog.overlay(
+      onBarrier: sc.tutorialNext,
+      // vuốt trái → bước tiếp, vuốt phải → lùi bước
+      panel: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragEnd: (d) {
+          final v = d.primaryVelocity ?? 0;
+          if (v < -100) {
+            sc.tutorialNext();
+          } else if (v > 100) {
+            sc.tutorialPrev();
+          }
+        },
+        child: NeonDialog.panel(
+        title: 'tut_title'.tr,
+        color: NeonTheme.cyan,
+        icon: icons[step],
+        message: 'tut_${step + 1}'.tr,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(GameScreenController.tutorialSteps, (i) {
+                final on = i == step;
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: on ? 22 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: on ? NeonTheme.cyan : Colors.white24,
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow:
+                        on ? NeonTheme.glow(NeonTheme.cyan, blur: 6) : null,
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: NeonTheme.s8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.swipe_left_rounded,
+                    color: Colors.white38, size: 14),
+                const SizedBox(width: 5),
+                Text('tut_swipe_hint'.tr,
+                    style: const TextStyle(
+                      fontFamily: 'Orbitron',
+                      color: Colors.white38,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    )),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          if (!last)
+            NeonDialogAction(
+                label: 'tut_skip'.tr,
+                color: NeonTheme.magenta,
+                onTap: sc.tutorialSkip),
+          NeonDialogAction(
+              label: last ? 'tut_start'.tr : 'tut_next'.tr,
+              color: NeonTheme.lime,
+              onTap: sc.tutorialNext),
+        ],
+        ),
+      ),
+    );
   }
 
   Widget _resultPanel(GameController ctrl, GameScreenController sc, bool win) {
@@ -169,6 +257,31 @@ class GameScreen extends StatelessWidget {
                 )),
           ],
         ),
+        if (ctrl.lastStreakBonus > 0) ...[
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: NeonTheme.orange.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: NeonTheme.orange, width: 1.5),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.local_fire_department_rounded,
+                  color: NeonTheme.orange, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                '${'streak_bonus'.trParams({'n': '${ctrl.winStreak.value}'})}  +${ctrl.lastStreakBonus}',
+                style: const TextStyle(
+                  fontFamily: 'Orbitron',
+                  color: NeonTheme.orange,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ]),
+          ),
+        ],
       ],
     );
   }
