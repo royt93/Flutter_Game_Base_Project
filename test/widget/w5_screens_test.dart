@@ -23,11 +23,11 @@ void main() {
   tearDown(Get.reset);
 
   Widget appEn(Widget home) => GetMaterialApp(
-        translations: AppTranslations(),
-        locale: const Locale('en', 'US'),
-        fallbackLocale: AppTranslations.fallback,
-        home: home,
-      );
+    translations: AppTranslations(),
+    locale: const Locale('en', 'US'),
+    fallbackLocale: AppTranslations.fallback,
+    home: home,
+  );
 
   group('AchievementsScreen', () {
     testWidgets('render tiêu đề + thành tựu + icon khoá', (tester) async {
@@ -77,8 +77,9 @@ void main() {
       }
     });
 
-    testWidgets('bấm chơi → mở pre-game panel (có booster mặc định)',
-        (tester) async {
+    testWidgets('bấm chơi → mở pre-game panel (có booster mặc định)', (
+      tester,
+    ) async {
       Get.put(GameController());
       // đã xem cốt truyện intro thế giới 1 → bấm chơi vào thẳng pre-game
       StorageService.to.setInt(StorageKeys.storySeen('w1_intro'), 1);
@@ -93,6 +94,10 @@ void main() {
 
   group('HomeScreen Wave 5', () {
     testWidgets('có nút thành tựu + icon vòng quay/quà', (tester) async {
+      tester.view.physicalSize = const Size(1170, 2532);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(appEn(const HomeScreen()));
       await tester.pump(const Duration(milliseconds: 120));
       expect(find.text('ACHIEVEMENTS'), findsOneWidget);
@@ -101,6 +106,10 @@ void main() {
     });
 
     testWidgets('bấm nút vòng quay → overlay Lucky Wheel', (tester) async {
+      tester.view.physicalSize = const Size(1170, 2532);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(appEn(const HomeScreen()));
       await tester.pump(const Duration(milliseconds: 120));
       await tester.tap(find.byIcon(Icons.casino_rounded));
@@ -110,6 +119,10 @@ void main() {
     });
 
     testWidgets('bấm thành tựu → mở AchievementsScreen', (tester) async {
+      tester.view.physicalSize = const Size(1170, 2532);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(appEn(const HomeScreen()));
       await tester.pump(const Duration(milliseconds: 120));
       await tester.ensureVisible(find.text('ACHIEVEMENTS'));

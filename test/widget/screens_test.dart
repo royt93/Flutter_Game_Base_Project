@@ -23,14 +23,19 @@ void main() {
 
   // App giả lập với i18n English (default).
   Widget appEn(Widget home) => GetMaterialApp(
-        translations: AppTranslations(),
-        locale: const Locale('en', 'US'),
-        fallbackLocale: AppTranslations.fallback,
-        home: home,
-      );
+    translations: AppTranslations(),
+    locale: const Locale('en', 'US'),
+    fallbackLocale: AppTranslations.fallback,
+    home: home,
+  );
 
-  testWidgets('HomeScreen hiển thị tiêu đề & nút chơi (English default)',
-      (tester) async {
+  testWidgets('HomeScreen hiển thị tiêu đề & nút chơi (English default)', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(appEn(const HomeScreen()));
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('NEON'), findsOneWidget);
@@ -48,8 +53,9 @@ void main() {
     expect(find.text('1'), findsWidgets); // emblem nổi bật + mini tile
   });
 
-  testWidgets('LevelSelectScreen khóa level chưa unlock (hiện icon khóa)',
-      (tester) async {
+  testWidgets('LevelSelectScreen khóa level chưa unlock (hiện icon khóa)', (
+    tester,
+  ) async {
     Get.put(GameController());
     await tester.pump(const Duration(milliseconds: 30));
     await tester.pumpWidget(appEn(const LevelSelectScreen()));
