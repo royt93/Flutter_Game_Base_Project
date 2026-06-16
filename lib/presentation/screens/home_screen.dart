@@ -88,6 +88,49 @@ class HomeScreen extends StatelessWidget {
                   return _wheelButton(lw);
                 }),
               ),
+              // Footer GHIM ĐÁY device (edge-to-edge, căn giữa): version +
+              // copyright → chừa thêm chỗ thở cho khu giữa (tách khỏi Column menu).
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: NeonTheme.s8,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'v$kAppVersion',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: 'Baloo2',
+                        color: Colors.white,
+                        fontSize: 12,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w700,
+                        shadows: [
+                          Shadow(color: NeonTheme.cyan, blurRadius: 12),
+                          Shadow(color: NeonTheme.cyan, blurRadius: 4),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      kCopyright,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: 'Baloo2',
+                        color: Colors.white,
+                        fontSize: 10,
+                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w600,
+                        shadows: [
+                          Shadow(color: NeonTheme.magenta, blurRadius: 12),
+                          Shadow(color: NeonTheme.magenta, blurRadius: 4),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               // Overlay daily (trong cây — route dialog no-op ở full-screen)
               Obx(
                 () => hc.dailyOpen.value
@@ -123,12 +166,8 @@ class HomeScreen extends StatelessWidget {
     // sau padding s16), không sinh lề 2 bên. FittedBox chỉ là lưới an toàn cho
     // máy quá thấp (co nhẹ thay vì scroll). Padding chuẩn s16 hai bên, s24 đáy.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        NeonTheme.s16,
-        58,
-        NeonTheme.s16,
-        NeonTheme.s24,
-      ),
+      // đáy chừa 46px cho footer ghim đáy (version + copyright) khỏi đè lên.
+      padding: const EdgeInsets.fromLTRB(NeonTheme.s16, 58, NeonTheme.s16, 46),
       child: LayoutBuilder(
         builder: (context, constraints) => Center(
           child: FittedBox(
@@ -360,36 +399,8 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: NeonTheme.s16),
-                  Text(
-                    'v$kAppVersion',
-                    style: const TextStyle(
-                      fontFamily: 'Baloo2',
-                      color: Colors.white,
-                      fontSize: 12,
-                      letterSpacing: 2,
-                      fontWeight: FontWeight.w700,
-                      shadows: [
-                        Shadow(color: NeonTheme.cyan, blurRadius: 12),
-                        Shadow(color: NeonTheme.cyan, blurRadius: 4),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: NeonTheme.s8),
-                  Text(
-                    kCopyright,
-                    style: const TextStyle(
-                      fontFamily: 'Baloo2',
-                      color: Colors.white,
-                      fontSize: 10,
-                      letterSpacing: 1.5,
-                      fontWeight: FontWeight.w600,
-                      shadows: [
-                        Shadow(color: NeonTheme.magenta, blurRadius: 12),
-                        Shadow(color: NeonTheme.magenta, blurRadius: 4),
-                      ],
-                    ),
-                  ),
+                  // version + copyright KHÔNG ở đây nữa — ghim đáy device (footer
+                  // edge-to-edge) ở Stack → chừa thêm chỗ thở cho khu giữa.
                 ],
               ),
             ),
