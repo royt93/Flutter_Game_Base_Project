@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'core/app_info.dart';
 import 'core/app_translations.dart';
 import 'core/audio_manager.dart';
 import 'core/locale_service.dart';
@@ -25,6 +27,8 @@ Future<void> app({bool withAudio = true}) async {
     DeviceOrientation.portraitUp,
   ]);
 
+  await loadAppVersion();
+
   final prefs = await SharedPreferences.getInstance();
   final store = Get.put(StorageService(prefs), permanent: true);
   final locale = Get.put(LocaleService(store), permanent: true);
@@ -35,6 +39,17 @@ Future<void> app({bool withAudio = true}) async {
   }
 
   runApp(NeonJewelsApp(initialLocale: locale.current.value));
+}
+
+/// Nạp version thật từ pubspec (qua package_info_plus) vào [kAppVersion].
+/// Lỗi (vd nền tảng test) → giữ nguyên fallback.
+Future<void> loadAppVersion() async {
+  try {
+    final info = await PackageInfo.fromPlatform();
+    if (info.version.isNotEmpty) kAppVersion = info.version;
+  } catch (_) {
+    // giữ fallback trong app_info.dart
+  }
 }
 
 class NeonJewelsApp extends StatefulWidget {

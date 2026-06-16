@@ -43,16 +43,19 @@ class VersusController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // CÙNG 1 seed cho 2 bàn → khởi đầu layout y hệt (mirror, công bằng: bỏ may
+    // rủi mở bàn). Sau vài nước 2 bàn vẫn rẽ nhánh vì lấp đầy phụ thuộc nước đi.
+    final seed = DateTime.now().microsecondsSinceEpoch & 0x7fffffff;
     g1 = Get.put(GameController(versus: true), tag: 'vp1');
     g2 = Get.put(GameController(versus: true), tag: 'vp2');
-    game1 = _build(g1, 1);
-    game2 = _build(g2, 2);
+    game1 = _build(g1, 1, seed);
+    game2 = _build(g2, 2, seed);
     // đóng băng tới khi đếm ngược xong
     game1.setInputFrozen(true);
     game2.setInputFrozen(true);
   }
 
-  NeonJewelGame _build(GameController g, int player) {
+  NeonJewelGame _build(GameController g, int player, int seed) {
     final cfg = buildVersusLevel();
     return NeonJewelGame(
       controller: g,
@@ -62,6 +65,7 @@ class VersusController extends GetxController {
       onGameEnd: (_) {}, // versus không kết thúc qua engine
       muteSfx: true, // tắt SFX 2 bàn → không chồng âm (giữ juice hình)
       onMoveResolved: (combo) => _onCombo(player, combo),
+      boardSeed: seed, // 2 bàn chung seed → mirror mở bàn
     );
   }
 

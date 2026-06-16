@@ -42,6 +42,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// Versus: tắt SFX của bàn này (tránh 2 bàn chồng âm) — vẫn giữ hiệu ứng hình.
   final bool muteSfx;
 
+  /// Versus: seed cố định để 2 bàn KHỞI ĐẦU layout y hệt nhau (mirror → công
+  /// bằng, bỏ may rủi mở bàn). null = ngẫu nhiên như mode thường.
+  final int? boardSeed;
+
   NeonJewelGame({
     required this.controller,
     required this.rows,
@@ -51,6 +55,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     this.onBoosterUsed,
     this.onMoveResolved,
     this.muteSfx = false,
+    this.boardSeed,
   });
 
   /// Audio SFX của bàn (null khi [muteSfx] — versus tắt để không chồng âm 2 bàn).
@@ -78,7 +83,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     _swapA = null;
   }
 
-  final _rnd = math.Random();
+  late final math.Random _rnd = math.Random(boardSeed);
   late List<List<GemComponent?>> grid;
   late double cellSize;
   late Vector2 boardOrigin;
@@ -97,7 +102,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   Future<void> onLoad() async {
     await NeonFx.ensureInit(); // pre-render ảnh glow 1 lần (tránh blur mỗi frame)
     _layout();
-    add(NeonBackground(area: size, palette: NeonTheme.gemColors, rnd: _rnd)
+    // Nền trang trí dùng Random RIÊNG (không seed) → KHÔNG tiêu `_rnd` của bàn.
+    // Nhờ vậy `_rnd` (seeded) chỉ phục vụ logic bàn → 2 bàn versus cùng seed cho
+    // layout mở đầu y hệt (mirror), miễn nhiễm với mọi thay đổi của nền.
+    add(NeonBackground(
+        area: size, palette: NeonTheme.gemColors, rnd: math.Random())
       ..priority = -10);
     boardLayer = PositionComponent()..priority = 0;
     add(boardLayer);
@@ -1217,7 +1226,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           col: c,
           position: _cellCenter(r - n, c),
           cellSize: cellSize,
-        );
+        )..isJunk = true; // đánh dấu rác để render xám + nứt
         grid[r][c] = g;
         boardLayer.add(g);
         futures.add(_run(

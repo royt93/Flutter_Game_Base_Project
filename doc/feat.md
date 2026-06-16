@@ -302,6 +302,16 @@ lib/
 
 > 🎉 **HOÀN TẤT 4/4 chế độ signature Wave 8** (Gravity, Boss, Rhythm, Versus/Co-op) + Wave 8.2 audit-fix. Người dùng đã chốt 1+2+3 → done cả 3.
 
+### 🌊 Wave 8.8 — Junk-gem + dọn 3 nợ audit + fix hồi quy + bump lint (✅ đã làm)
+> Người dùng chốt làm song song: junk-gem (1) + 3 nợ audit (2) + audit toàn diện (4) + bump deps (3). Audit nền (agent) xác nhận versus cách ly tiến trình SẠCH, không Critical/High.
+- [x] **Junk-gem attack (Versus)**: combo ≥3 ở 1 bàn → gửi (combo−2) hàng RÁC sang đối thủ. Engine: `receiveJunk` xếp hàng `_pendingJunk`, áp ở `update()` khi `!_busy` (không phá cascade); `_applyJunk` cho gem rơi từ trên đẩy bàn xuống (mất đáy) + shake + flash magenta "bị tấn công"; tránh tạo match khi rải rác. Callback `onMoveResolved(combo)` ở `_finishMove`; `VersusController._onCombo` định tuyến rác. Verify máy thật: Versus chạy ổn (N1 75đ), không crash.
+- [x] **Fix hồi quy (từ audit)**: `_enterMode` reset thêm `isVersus`/`_versusCfg` (bẫy tiềm ẩn nếu tái dùng instance); **mute SFX 2 bàn versus** (`muteSfx` + getter `_sfx`) → hết chồng âm khi cả 2 ghép cùng lúc.
+- [x] **Debt #3 — Time Attack race**: hết giờ chỉ `_finishMove` khi `!_busy` → không end giữa chuỗi cascade.
+- [x] **Debt #2 — booster độc quyền có nguồn nhận**: thêm `grantColor/Joker/Lightning/Royal/Gravity`; `RewardKind` mở rộng + 5 tier Battle Pass phát joker/color/lightning/gravity/royal (icon + i18n en/vi). Verify máy thật: Battle Pass hiện "1 Joker/Phá màu/Tia sét/Trọng lực/Hoàng gia".
+- [x] **Debt #1 — chống chỉnh giờ LÙI**: `_effectiveDay` (ngày không nhỏ hơn ngày cao nhất từng thấy, key `maxDay`) → daily/wheel/quest/season không cho nhận lại quà khi chỉnh giờ lùi. (Chỉnh giờ TIẾN không chặn được offline — chấp nhận, chỉ tự hại.)
+- [x] **Bump deps chọn lọc**: `flutter_lints` 5→6 + dọn 5 lint mới (4 unnecessary_underscores + 1 use_null_aware). Engine deps (flame/flame_audio) GIỮ NGUYÊN (bị pin + bump major rủi ro cao trên build đã verify).
+- [x] **Kết quả**: 0 analyzer · **210 test pass** (+4 junk wiring) · build APK OK · verify máy thật (Pixel 7 Pro).
+
 ### 🌊 Wave 8.7 — Home full-width + REBUILD Versus trên engine Flame (✅ đã làm)
 > Phản hồi: (1) Home dư space 2 bên (chuẩn 8/16/24); (2) Versus "quá tệ" — thiếu animation/vật phẩm/cơ chế như mode thường.
 - [x] **Home full-width, không scroll**: bug 8.6 co `SizedBox(width:320)` → dư 2 bên. Sửa: `LayoutBuilder` → `SizedBox(width: constraints.maxWidth)` + `FittedBox(scaleDown)` (chỉ co theo CHIỀU CAO khi màn thấp), padding chuẩn `s16`. Verify máy thật: cards full width, không scroll.
@@ -512,7 +522,48 @@ match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 
 
 ---
 
-*Cập nhật lần cuối: 2026-06-14 · Trạng thái: Đang phát triển (Wave 8.7 — đủ 4 chế độ signature: Gravity/Boss/Rhythm/Versus-Coop; Versus đã REBUILD trên engine Flame (full juice, cách ly tiến trình); Home full-width no-scroll. **206 test pass**, 0 analyzer, build APK OK, verify máy thật Pixel 7 Pro)*
+*Cập nhật lần cuối: 2026-06-16 · Trạng thái: Đang phát triển (Wave 8.9 xong + **đánh giá chất lượng code toàn diện**. **214 test pass**, 0 analyzer, build APK OK, verify máy thật S24 Ultra qua WiFi adb)*
+
+---
+
+## 🆕 Wave 9 — Thử thách hằng ngày (2026-06-16) ✅ TÍNH NĂNG 1/3
+
+Puzzle chơi theo NGÀY: mọi người chơi **cùng bàn + cùng mục tiêu** trong ngày (engine
+nhận `boardSeed = epochDay` → bàn tất định, tái dùng cơ chế mirror của Versus). Mục tiêu
+xoay theo ngày (score/collect/jelly/drop/obstacle-ice). Cô lập như Boss/Rhythm: KHÔNG
+trừ mạng, KHÔNG đụng win-streak/level-unlock/Battle Pass.
+
+- **Thưởng 1 lần/ngày** + **streak ngày** (🔥) — chơi lại luyện được nhưng không farm xu.
+- Thưởng hậu hơn màn thường: `60 + sao×20 + streak(cap7)×10` xu + `3 + sao` shard.
+- **Anti-cheat**: tái dùng `_effectiveDay`/`maxDay` (chống lùi giờ). **Đồng thời FIX bug
+  có sẵn**: `maxDay` dùng `def: today` ⇒ `today > maxSeen` luôn false ⇒ maxDay KHÔNG
+  bao giờ được ghi ⇒ bảo vệ lùi-giờ là **code chết** cho daily reward/wheel/season. Đổi
+  `def: 0` → bật lại bảo vệ cho TẤT CẢ tính năng theo ngày (eval cũng đã khuyến nghị).
+- UI: card rộng "THỬ THÁCH NGÀY" ở khu Thử thách (badge streak/PLAY/✓done) + panel kết
+  quả riêng + tiêu đề HUD. i18n EN/VI (`daily_ch_*`).
+- Files: `levels.dart` (`buildDailyLevel`), `storage_service.dart` (3 key), `game_controller.dart`
+  (`startDaily`/`boardSeed`/checkEnd daily + fix maxDay), `game_screen_controller.dart`,
+  `game_screen.dart`, `home_screen.dart`, `app_translations.dart`.
+
+Kết quả: 0 analyzer · **224 test pass** (+10 `test/w9_daily_challenge_test.dart`: tất định
+seed, thưởng-1-lần, streak liền/gãy, anti-cheat lùi giờ, thua) · build APK debug OK ·
+**verify máy thật S24 Ultra** (WiFi adb): card Home render đúng, tap vào chơi OK, HUD
+"THỬ THÁCH NGÀY", bàn seed theo ngày (2026-06-16 = clearObstacle/ice 0/32, 33 lượt — khớp
+công thức), logcat sạch exception app.
+
+> Wave 9 còn lại: 💎 Diagonal gem (special mới, match 6+) → 🛒 Cửa hàng trang trí.
+
+## 🔍 Đánh giá chất lượng code (2026-06-16, Wave 8.9)
+
+4 agent đọc song song 4 tầng (engine / controllers / UI / core) + verify claim nặng bằng đọc code thật & probe. **Điểm tổng: 7.5/10** — chạy ổn, kiến trúc tốt, không lỗi logic nghiêm trọng; nợ kỹ thuật tập trung 2 chỗ.
+
+**🔴 CRITICAL (đã verify bằng probe đếm key):** i18n — **EN + VI đầy đủ, nhưng 20 ngôn ngữ còn lại ~49-51% key hiện tiếng Anh**. Wave 5/7/8 (achievements, win_streak, ach_desc_*, guide_*, battle-pass, season, boss, rhythm, versus) chưa bao giờ dịch cho 20 ngôn ngữ. Test `app_translations_test.dart` chỉ kiểm **key đủ** (qua fallback merge), KHÔNG kiểm **value đã dịch** → ru ngủ. **Blocker phát hành đa ngôn ngữ** (~2.440 chuỗi cần dịch). Xem memory `i18n-coverage-gap`.
+
+**🟡 Thật, rủi ro thấp:** (a) `GameController` 958 LOC god-controller (tách economy/clock — L, rủi ro cao, hoãn sau release); (b) copy-paste UI (`_coinChip` ×4, `_fmtDur` ×4, TextStyle inline ~26, magic number layout) — dọn S, rủi ro ~0; (c) `levelUnlock` ghi RAM trước await disk — khe kill hẹp, siết S.
+
+**✅ Claim agent đã BÁC sau khi đọc code:** "claimDaily exploit 2 lần" (SAI — guard-key ghi trước, dòng 859); "ComboText chia 0" (SAI — đã guard dòng 609); "ensureInit race load 2 lần" (SAI — cờ set đồng bộ trước await).
+
+**Thứ tự việc:** 1) dịch đủ Wave 5/7/8 cho 20 ngôn ngữ + sửa test kiểm value (L, trước release) · 2) gom widget tái dùng (S) · 3) magic number → const (S) · 4) siết levelUnlock (S) · 5) test daily anti-cheat/versus/boss (M) · 6) tách GameController (L, hoãn).
 
 ---
 
@@ -520,14 +571,14 @@ match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 
 
 > Tóm tắt nhanh để bắt đầu lại nhanh chóng.
 
-**Mới nhất**: Wave 8.7 xong — Home full-width không scroll + Versus dựng lại trên `NeonJewelGame` (engine thật, full juice, cách ly tiến trình qua `GameController(versus:true)`).
+**Mới nhất**: Wave 8.9 xong — (1) junk-gem có **vẻ riêng** (xám hoá + vết nứt + viền magenta nhịp, `GemComponent.isJunk`); (2) Versus **công bằng**: 2 bàn chung `boardSeed` → mirror mở đầu, tách RNG nền khỏi RNG bàn; (3) **version** đọc tự động từ pubspec qua `package_info_plus` (`v2026.06.15`, hết hardcode `1.0.0`); (4) điều tra flame bump → **chốt giữ 1.35** (flame ≥1.36 cần Flutter 3.44.2); (5) re-verify S24 Ultra qua WiFi adb.
 
-**Sức khỏe code**: 206 test pass · 0 analyzer issue · build APK debug OK.
+**Sức khỏe code**: **214 test pass** (+4) · 0 analyzer issue · build APK debug OK · verify máy thật S24 Ultra (SM-S928B, WiFi adb): Home không scroll, Versus chạy trọn ván, version `v2026.06.15`.
 
 **Việc còn nợ (ưu tiên gợi ý cho phiên sau)**:
-1. **Junk-gem attack cho Versus** (cơ chế "gửi rác" sang đối thủ khi combo lớn) — cần thêm method inject garbage rows vào `NeonJewelGame`. Hiện Versus là "2 bàn đua điểm full-juice" + Co-op chung mục tiêu, CHƯA có tấn công.
-2. **3 nợ audit Wave 8.2** (ưu tiên thấp): daily/wheel chống chỉnh giờ tiến; booster độc quyền (joker/lightning/royal/gravity) chưa có nguồn nhận miễn phí; Time Attack `_finishMove` gọi từ update-loop.
-3. **23 package major-bump** (get/flame/win32/xml…) — chưa đụng, nên bump chọn lọc + test từng cái.
-4. **On-device re-verify trên S24 Ultra** (SM-S928B) — các bản gần đây verify trên Pixel 7 Pro do S24 rớt USB.
+1. **Chuẩn bị release store** (icon, screenshot, store listing, signing config, build appbundle release, app size/proguard) — app đã đủ tính năng, ROI cao nhất.
+2. **Tần suất quảng cáo Versus**: phát hiện khi test — interstitial AppLovin MAX bật lúc vào/replay Versus; cần xem lại UX (đừng spam ad mỗi ván).
+3. **Engine deps major-bump** (flame 1.35→1.37) — BỊ CHẶN: cần nâng Flutter SDK toàn máy 3.35.1→3.44.2 (Dart 3.9→3.11). Chỉ làm khi sẵn sàng nâng SDK (hoặc dùng fvm pin riêng project).
+4. **Chỉnh giờ TIẾN** (daily/wheel) vẫn farm được — bản chất offline không trusted-time; muốn chặn cứng cần backend.
 
-**Thiết bị test**: Pixel 7 Pro (USB, ổn định) + S24 Ultra SM-S928B (USB, hay rớt). Package `com.galaxyjoy.neon_jewels`. Build: `flutter build apk --debug`.
+**Thiết bị test**: S24 Ultra SM-S928B (**WiFi adb 192.168.21.76 — ổn định, không rớt như USB**) + Pixel 7 Pro (USB). Package `com.galaxyjoy.neon_jewels`. Build: `flutter build apk --debug`.

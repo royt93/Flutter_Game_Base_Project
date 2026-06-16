@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../logic/gem_data.dart';
 
 /// Loại mục tiêu của màn chơi.
@@ -342,6 +344,94 @@ LevelConfig buildVersusLevel() => const LevelConfig(
       objective: ObjectiveType.score,
       targetScore: 0,
     );
+
+// --- Thử thách hằng ngày (Wave 9 — puzzle theo NGÀY) ---
+const int kDailyLevelIndex = -5;
+
+/// Số lượt nền của thử thách ngày (cộng thêm chút ngẫu nhiên-tất-định theo ngày).
+const int kDailyBaseMoves = 24;
+
+/// Mục tiêu xoay vòng cho thử thách ngày. CỐ TÌNH bỏ [ObjectiveType.timeAttack]
+/// (phụ thuộc đồng hồ, khó so công bằng) và các chế độ riêng (endless/boss).
+const List<ObjectiveType> kDailyObjectives = [
+  ObjectiveType.score,
+  ObjectiveType.collect,
+  ObjectiveType.clearJelly,
+  ObjectiveType.dropDown,
+  ObjectiveType.clearObstacle,
+];
+
+/// Cấu hình màn "Thử thách hằng ngày" sinh TẤT ĐỊNH từ [epochDay] → mọi người
+/// chơi CÙNG bàn + CÙNG mục tiêu trong ngày (bàn seed bằng chính `epochDay`
+/// truyền cho engine). Cùng `epochDay` ⇒ cùng config (test được, không cần Flame).
+/// Bàn 8×8, 6 màu, độ khó nhỉnh hơn mid-game nhưng vẫn qua được.
+LevelConfig buildDailyLevel(int epochDay) {
+  final rnd = math.Random(epochDay);
+  const rows = 8, cols = 8, colorCount = 6;
+  final objective = kDailyObjectives[epochDay % kDailyObjectives.length];
+  final moves = kDailyBaseMoves + rnd.nextInt(5); // 24..28
+
+  switch (objective) {
+    case ObjectiveType.collect:
+      return LevelConfig(
+        index: kDailyLevelIndex,
+        rows: rows,
+        cols: cols,
+        colorCount: colorCount,
+        moves: moves,
+        objective: ObjectiveType.collect,
+        collectTarget: 20 + rnd.nextInt(12), // 20..31
+        collectColor: GemColor.values[rnd.nextInt(GemColor.values.length)],
+      );
+    case ObjectiveType.clearJelly:
+      return LevelConfig(
+        index: kDailyLevelIndex,
+        rows: rows,
+        cols: cols,
+        colorCount: colorCount,
+        moves: moves + 4,
+        objective: ObjectiveType.clearJelly,
+        jelly: rnd.nextBool() ? JellyPattern.checker : JellyPattern.center,
+      );
+    case ObjectiveType.dropDown:
+      return LevelConfig(
+        index: kDailyLevelIndex,
+        rows: rows,
+        cols: cols,
+        colorCount: colorCount,
+        moves: moves + 6,
+        objective: ObjectiveType.dropDown,
+        dropTarget: 3 + rnd.nextInt(3), // 3..5
+      );
+    case ObjectiveType.clearObstacle:
+      // CHỈ dùng ICE: chain/stone khoá swap → pattern dày dễ làm bí bàn (xem ghi
+      // chú ở kLevels). Ice an toàn cho 1 màn chơi seed cứng.
+      return LevelConfig(
+        index: kDailyLevelIndex,
+        rows: rows,
+        cols: cols,
+        colorCount: colorCount,
+        moves: moves + 5,
+        objective: ObjectiveType.clearObstacle,
+        obstacle: ObstacleType.ice,
+        obstaclePattern:
+            rnd.nextBool() ? JellyPattern.checker : JellyPattern.center,
+      );
+    case ObjectiveType.score:
+    case ObjectiveType.timeAttack:
+    case ObjectiveType.endless:
+    case ObjectiveType.boss:
+      return LevelConfig(
+        index: kDailyLevelIndex,
+        rows: rows,
+        cols: cols,
+        colorCount: colorCount,
+        moves: moves,
+        objective: ObjectiveType.score,
+        targetScore: 3200 + rnd.nextInt(9) * 250, // 3200..5200
+      );
+  }
+}
 
 /// Key i18n tên thế giới (1-based). Dùng `.tr` để lấy bản dịch.
 String worldNameKey(int worldIndex) => 'world_name_$worldIndex';

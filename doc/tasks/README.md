@@ -112,11 +112,29 @@ Wave 7+8 (4 tính năng): 0 analyzer · **175 test pass** (+26) · build APK deb
 | 8.4 | Co-op / Versus (v1) | Bản đầu: subsystem CustomPaint tách biệt (đã bị 8.7 thay thế) | `done/w8-coop-versus.md` |
 | 8.5 | Juice + refactor + dọn release | Versus special gem · refactor `_enterMode`/`_resetRunState` · `dlog()` gate kDebugMode | — (xem `feat.md`) |
 | 8.6 | Fix UX (lần 1) | Home FittedBox · Versus shape lá bài + animation swap | — (xem `feat.md`) |
-| **8.7** | **Home full-width + REBUILD Versus trên engine Flame** | Home dùng full width (hết dư 2 bên); Versus chạy `NeonJewelGame` thật → đủ juice (particle/rơi/cascade), cách ly tiến trình qua `GameController(versus)` | — (xem `feat.md`) |
+| 8.7 | Home full-width + REBUILD Versus trên engine Flame | Home full width; Versus chạy `NeonJewelGame` thật → đủ juice, cách ly tiến trình | — (xem `feat.md`) |
+| **8.8** | **Junk-gem + dọn 3 nợ audit + bump lint** | Versus junk attack (combo→rác); chống chỉnh giờ lùi; booster độc quyền qua Battle Pass; Time Attack race; lint 5→6 | — (xem `feat.md`) |
 
-Kết quả mới nhất (8.7): 0 analyzer · **206 test pass** · build APK OK · verify máy thật (Pixel 7 Pro): 2 bàn full-juice, Home coins không đổi sau ván.
+Kết quả mới nhất (8.8): 0 analyzer · **210 test pass** · build APK OK · verify máy thật (Pixel 7 Pro): Versus junk + Battle Pass booster độc quyền.
 
-**Còn nợ**: junk-gem attack cho Versus (cần method inject garbage vào `NeonJewelGame`); on-device re-verify trên S24 (đang dùng Pixel do S24 rớt USB).
+**Còn nợ**: ~~engine deps major-bump (flame)~~ → **đã điều tra (Wave 8.9)**: flame ≥1.36
+yêu cầu Dart 3.11 / Flutter 3.44.2, máy đang Flutter 3.35.1 (Dart 3.9) → bump bắt buộc
+nâng SDK toàn máy ⇒ **chốt GIỮ flame 1.35.1** (vẫn mới, ổn, 210 test pass); chỉnh giờ
+TIẾN offline (giới hạn cố hữu).
+
+## Wave 8.9 — ✅ DONE (junk-gem polish + điều tra flame + re-verify S24 + version + mirror)
+
+| Việc | Mô tả | Trạng thái |
+|---|---|---|
+| Đánh bóng junk-gem | Gem rác Versus có vẻ riêng: xám hoá thân + vết nứt + viền cảnh báo magenta nhịp (`GemComponent.isJunk`) → người chơi nhận ra đòn tấn công | ✅ done |
+| Điều tra flame bump | flame 1.37 bị chặn bởi SDK (cần Flutter 3.44.2) → chốt giữ 1.35.1, ghi nợ | ✅ done |
+| Re-verify S24 Ultra | Cài qua WiFi adb (SM-S928B): Home không scroll, Versus chạy trọn ván ổn định, panel kết thúc sạch, logcat không exception app | ✅ done |
+| Fix version hiển thị | Trước hardcode `v1.0.0` lệch pubspec → đọc TỰ ĐỘNG qua `package_info_plus` (`loadAppVersion` trong main) → hiện `v2026.06.15`, không bao giờ lệch | ✅ done |
+| Versus công bằng (mirror) | 2 bàn DÙNG CHUNG `boardSeed` → layout mở đầu Y HỆT (bỏ may rủi khai cuộc); tách RNG nền (Random riêng) khỏi RNG bàn (seeded) → mirror miễn nhiễm thay đổi nền. Test mount thật so grid | ✅ done |
+
+Kết quả (8.9): 0 analyzer · **214 test pass** (+4: 2 mirror seed/determinism + 2 mount grid) · build APK OK · verify máy thật S24 Ultra (WiFi adb): Home + Versus + version `v2026.06.15`.
+
+> ⚠️ Ghi nhận khi test máy: chế độ Versus có bật **quảng cáo interstitial AppLovin MAX** (test ad) lúc vào/replay ván — cần xem lại tần suất quảng cáo cho UX khi chuẩn bị release.
 
 ## Wave 8.1 — ✅ POLISH (UI + Audio, verify máy thật S24 Ultra)
 

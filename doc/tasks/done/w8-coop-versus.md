@@ -15,7 +15,9 @@ owner: claude
 >   `GameController(versus:true)` cách ly tiến trình (không xu/mạng/save); `VersusScreen`
 >   render 2 `GameWidget` (bàn trên `RotatedBox` 180°). **206 test pass**, build APK OK,
 >   verify máy thật (Pixel 7 Pro). Chi tiết: [`../../feat.md`](../../feat.md) Wave 8.7.
-> - **CÒN NỢ**: junk-gem attack (gửi rác khi combo lớn) — cần inject garbage vào engine.
+> - **8.8**: ĐÃ thêm **junk-gem attack** — combo ≥3 → gửi (combo−2) hàng rác sang
+>   đối thủ (`NeonJewelGame.receiveJunk`/`_applyJunk` áp khi engine rảnh; combo
+>   route qua `onMoveResolved`). Mute SFX 2 bàn tránh chồng âm. Verify máy thật.
 
 # Đối kháng / Hợp tác cục bộ (cùng thiết bị)
 

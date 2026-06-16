@@ -85,6 +85,15 @@ class GameController extends GetxController {
 
   GameController({this.versus = false});
 
+  // --- Thử thách hằng ngày (Wave 9) — 1 màn seed theo NGÀY ---
+  /// Khi true: màn chơi 1 puzzle seed bằng epoch-day (mọi người cùng bàn), thắng
+  /// được thưởng + cộng streak CHỈ 1 lần/ngày; KHÔNG đụng win-streak/level-unlock.
+  final RxBool isDaily = false.obs;
+  LevelConfig? _dailyCfg;
+  int _dailySeed = 0;
+  final RxInt dailyChStreak = 0.obs; // chuỗi ngày hoàn thành liên tiếp
+  final RxInt dailyChBestStreak = 0.obs;
+
   /// Ngưỡng combo để gây sát thương GẤP ĐÔI (đánh đúng "phase yếu").
   static const int bossWeakCombo = 4;
 
@@ -184,6 +193,9 @@ class GameController extends GetxController {
       if (st >= 0) stars[lv.index] = st;
     }
     dailyStreak.value = _store.getInt(StorageKeys.dailyStreak, def: 0);
+    dailyChStreak.value = _store.getInt(StorageKeys.dailyChStreak, def: 0);
+    dailyChBestStreak.value =
+        _store.getInt(StorageKeys.dailyChBestStreak, def: 0);
     lives.value = _store.getInt(StorageKeys.lives, def: maxLives);
     winStreak.value = _store.getInt(StorageKeys.winStreak, def: 0);
     bestWinStreak.value = _store.getInt(StorageKeys.bestWinStreak, def: 0);
@@ -201,6 +213,7 @@ class GameController extends GetxController {
       _gravityCfg ??
       _rhythmCfg ??
       _versusCfg ??
+      _dailyCfg ??
       kLevels[currentLevel.value - 1];
 
   /// Đặt cờ chế độ ĐỘC QUYỀN (đúng 1 mode bật, hoặc tất cả false = màn thường)
@@ -210,16 +223,19 @@ class GameController extends GetxController {
     bool boss = false,
     bool gravity = false,
     bool rhythm = false,
+    bool daily = false,
   }) {
     isEndless.value = endless;
     isBoss.value = boss;
     isGravity.value = gravity;
     isRhythm.value = rhythm;
+    isDaily.value = daily;
     isVersus.value = false; // versus chỉ bật qua _initVersus; mọi start* khác tắt
     if (!endless) _endlessCfg = null;
     if (!boss) _bossCfg = null;
     if (!gravity) _gravityCfg = null;
     if (!rhythm) _rhythmCfg = null;
+    if (!daily) _dailyCfg = null;
     _versusCfg = null;
   }
 
@@ -311,6 +327,23 @@ class GameController extends GetxController {
       lastBeatJudge.value = -1;
       _rhythmBonusPending = false;
     }
+  }
+
+  /// Seed bàn cho engine: Thử thách ngày dùng `epochDay` (mọi người CÙNG bàn);
+  /// các chế độ khác trả null (engine tự ngẫu nhiên). Versus truyền seed riêng.
+  int? get boardSeed => isDaily.value ? _dailySeed : null;
+
+  /// Đã HOÀN THÀNH (thắng) Thử thách ngày HÔM NAY chưa (đã nhận thưởng).
+  bool get dailyChallengeDoneToday =>
+      _store.getInt(StorageKeys.dailyChLastDone, def: -1) == _effectiveDay;
+
+  /// Bắt đầu Thử thách hằng ngày: 1 màn seed theo NGÀY → mọi người cùng bàn +
+  /// cùng mục tiêu. Chơi lại bao nhiêu lần cũng được nhưng chỉ THƯỞNG 1 lần/ngày.
+  void startDaily() {
+    _dailySeed = _effectiveDay;
+    _dailyCfg = buildDailyLevel(_dailySeed);
+    _enterMode(daily: true);
+    _resetRunState(moves: _dailyCfg!.moves, target: _dailyCfg!.targetScore);
   }
 
   /// Bắt đầu trận Boss neon (chế độ riêng). [stage] tăng máu + đổi điểm yếu.
@@ -587,6 +620,53 @@ class GameController extends GetxController {
       }
       return null;
     }
+    // Thử thách hằng ngày: thắng khi đạt mục tiêu, thua khi hết lượt. Thưởng
+    // xu/shard + cộng streak CHỈ 1 lần/ngày (chơi lại không farm được). KHÔNG
+    // đụng win-streak/level-unlock.
+    if (isDaily.value) {
+      if (hasWon) {
+        _resolved = true;
+        lastStars = computeStars();
+        lastStreakBonus = 0;
+        if (!dailyChallengeDoneToday) {
+          final last = _store.getInt(StorageKeys.dailyChLastDone, def: -1);
+          // liền mạch (hôm qua đã hoàn thành) → +1; gãy/lần đầu → reset về 1
+          dailyChStreak.value =
+              (last == _effectiveDay - 1) ? dailyChStreak.value + 1 : 1;
+          // Ghi mốc "đã hoàn thành hôm nay" TRƯỚC khi thưởng (kill giữa chừng →
+          // xấu nhất mất 1 lượt thưởng, KHÔNG farm lặp).
+          unawaited(
+              _store.setInt(StorageKeys.dailyChLastDone, _effectiveDay));
+          unawaited(
+              _store.setInt(StorageKeys.dailyChStreak, dailyChStreak.value));
+          if (dailyChStreak.value > dailyChBestStreak.value) {
+            dailyChBestStreak.value = dailyChStreak.value;
+            unawaited(_store.setInt(
+                StorageKeys.dailyChBestStreak, dailyChBestStreak.value));
+          }
+          // thưởng hậu hĩnh hơn màn thường (1 lần/ngày): theo sao + streak (cap 7)
+          lastCoinReward =
+              60 + lastStars * 20 + dailyChStreak.value.clamp(1, 7) * 10;
+          lastShardReward = 3 + lastStars;
+          addCoins(lastCoinReward);
+          addShards(lastShardReward);
+        } else {
+          // đã nhận hôm nay → chơi lại chỉ để luyện, không thưởng nữa
+          lastCoinReward = 0;
+          lastShardReward = 0;
+        }
+        return 'win';
+      }
+      if (movesLeft.value <= 0) {
+        _resolved = true;
+        lastStars = 0;
+        lastCoinReward = 0;
+        lastStreakBonus = 0;
+        lastShardReward = 0;
+        return 'lose';
+      }
+      return null;
+    }
     if (hasWon) {
       _resolved = true;
       lastStars = computeStars();
@@ -720,7 +800,10 @@ class GameController extends GetxController {
   /// TIẾN không chặn được offline — chấp nhận, chỉ tự hại người chơi.)
   int get _effectiveDay {
     final today = _todayEpochDay;
-    final maxSeen = _store.getInt(StorageKeys.maxDay, def: today);
+    // def: 0 (KHÔNG phải `today`) — nếu để def=today thì `today > maxSeen` luôn
+    // false ⇒ maxDay KHÔNG bao giờ được ghi ⇒ bảo vệ lùi-giờ thành code chết.
+    // Với def=0: lần đầu ghi maxDay=today; về sau giữ ngày CAO NHẤT từng thấy.
+    final maxSeen = _store.getInt(StorageKeys.maxDay, def: 0);
     if (today >= maxSeen) {
       if (today > maxSeen) unawaited(_store.setInt(StorageKeys.maxDay, today));
       return today;

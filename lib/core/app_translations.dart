@@ -361,6 +361,13 @@ class AppTranslations extends Translations {
     // Home revamp — nhãn khu
     'challenge_modes': 'Challenges',
     'meta_section': 'Rewards',
+    // Wave 9 — Thử thách hằng ngày (puzzle theo ngày)
+    'daily_ch_title': 'DAILY CHALLENGE',
+    'daily_ch_sub': 'New puzzle every day',
+    'daily_ch_done': 'Done today ✓',
+    'daily_ch_streak': 'Day streak',
+    'daily_ch_reward': '+@c coins · +@s shards',
+    'daily_ch_play': 'PLAY',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -594,6 +601,13 @@ class AppTranslations extends Translations {
     // Home revamp — nhãn khu
     'challenge_modes': 'Thử thách',
     'meta_section': 'Phần thưởng',
+    // Wave 9 — Thử thách hằng ngày (puzzle theo ngày)
+    'daily_ch_title': 'THỬ THÁCH NGÀY',
+    'daily_ch_sub': 'Mỗi ngày một câu đố',
+    'daily_ch_done': 'Đã hoàn thành hôm nay ✓',
+    'daily_ch_streak': 'Chuỗi ngày',
+    'daily_ch_reward': '+@c xu · +@s mảnh',
+    'daily_ch_play': 'CHƠI',
   };
 
   static const Map<String, String> _extraEs = {

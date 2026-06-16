@@ -15,6 +15,12 @@ class StorageKeys {
   /// Ngày (epoch-day) CAO NHẤT từng thấy — chống chỉnh giờ LÙI để nhận lại quà.
   static const String maxDay = 'max_epoch_day';
 
+  // Wave 9 — Thử thách hằng ngày (puzzle chơi theo ngày, seed = epoch-day)
+  /// Epoch-day của lần HOÀN THÀNH (thắng) gần nhất — thưởng chỉ 1 lần/ngày.
+  static const String dailyChLastDone = 'daily_ch_last_done';
+  static const String dailyChStreak = 'daily_ch_streak';
+  static const String dailyChBestStreak = 'daily_ch_best_streak';
+
   // Lives / energy
   static const String lives = 'lives';
   static const String livesRegenAt = 'lives_regen_at'; // epoch ms mốc hồi kế

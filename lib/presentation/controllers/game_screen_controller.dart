@@ -102,6 +102,8 @@ class GameScreenController extends GetxController {
       colorCount: lv.colorCount,
       onGameEnd: _onGameEnd,
       onBoosterUsed: _onBoosterUsed,
+      // Thử thách ngày: seed theo NGÀY → mọi người cùng bàn (các mode khác null).
+      boardSeed: gameCtrl.boardSeed,
     );
     gameVersion.value++;
   }
@@ -159,12 +161,17 @@ class GameScreenController extends GetxController {
   }
 
   void _onGameEnd(String result) {
-    // Endless & Boss là chế độ phụ — thua KHÔNG trừ mạng.
-    if (result == 'lose' && !gameCtrl.isEndless.value && !gameCtrl.isBoss.value) {
+    // Endless, Boss & Thử thách ngày là chế độ phụ — thua KHÔNG trừ mạng.
+    if (result == 'lose' &&
+        !gameCtrl.isEndless.value &&
+        !gameCtrl.isBoss.value &&
+        !gameCtrl.isDaily.value) {
       gameCtrl.consumeLife();
     }
-    // Battle Pass + Sự kiện mùa: ghi tiến trình (chỉ màn thường).
-    if (!gameCtrl.isEndless.value && !gameCtrl.isBoss.value) {
+    // Battle Pass + Sự kiện mùa: ghi tiến trình (chỉ màn thường, không chế độ phụ).
+    if (!gameCtrl.isEndless.value &&
+        !gameCtrl.isBoss.value &&
+        !gameCtrl.isDaily.value) {
       BattlePassController.maybe?.recordLevelEnd(
         win: result == 'win',
         stars: gameCtrl.lastStars,
@@ -213,6 +220,14 @@ class GameScreenController extends GetxController {
     if (gameCtrl.isRhythm.value) {
       // Rhythm: chơi lại không cần mạng.
       gameCtrl.startRhythm();
+      ui.value = GameUi.playing;
+      _newGame();
+      return;
+    }
+    if (gameCtrl.isDaily.value) {
+      // Thử thách ngày: chơi lại CÙNG bàn (seed theo ngày), không cần mạng,
+      // không thưởng lại (checkEnd tự chặn nếu đã hoàn thành hôm nay).
+      gameCtrl.startDaily();
       ui.value = GameUi.playing;
       _newGame();
       return;

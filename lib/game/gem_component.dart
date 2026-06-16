@@ -22,6 +22,7 @@ class GemComponent extends PositionComponent {
   bool hint = false; // nhấp nháy gợi ý khi người chơi bị stuck
   bool isIngredient = false; // Drop Down: item cần đưa xuống đáy
   bool isLucky = false; // gem hiếm: match → thưởng bất ngờ
+  bool isJunk = false; // Versus: gem RÁC do đối thủ bơm sang (xám + nứt)
 
   GemComponent({
     required this.color,
@@ -56,6 +57,9 @@ class GemComponent extends PositionComponent {
     final r = s * 0.40;
     final pulseAmt = 0.5 + 0.5 * math.sin(_pulse);
     final isSpecial = type != GemType.normal;
+    // Gem rác (chỉ áp cho gem thường): xám hoá thân gem + viền cảnh báo.
+    final junk = isJunk && !isSpecial;
+    final bc = junk ? Color.lerp(c, const Color(0xFF8A8A99), 0.6)! : c;
 
     // 1) Glow ngoài (ảnh cache) — gem special sáng mạnh & nhịp nhanh hơn
     NeonFx.drawGlow(
@@ -63,23 +67,23 @@ class GemComponent extends PositionComponent {
       center,
       s * (selected ? 0.95 : (isSpecial ? 0.9 : 0.7)) +
           pulseAmt * s * (isSpecial ? 0.22 : 0.12),
-      type == GemType.rainbow ? Colors.white : c,
-      opacity: selected ? 1.0 : (isSpecial ? 0.95 : 0.75),
+      type == GemType.rainbow ? Colors.white : (junk ? NeonTheme.magenta : c),
+      opacity: selected ? 1.0 : (isSpecial ? 0.95 : (junk ? 0.5 : 0.75)),
     );
 
     final path = _shapePath(color.index, center, r);
     final bounds = path.getBounds();
 
     // 2) Thân gem: gradient radial sáng giữa
-    final light = Color.lerp(c, Colors.white, 0.6)!;
-    final dark = Color.lerp(c, Colors.black, 0.35)!;
+    final light = Color.lerp(bc, Colors.white, 0.6)!;
+    final dark = Color.lerp(bc, Colors.black, 0.35)!;
     canvas.drawPath(
       path,
       Paint()
         ..shader = RadialGradient(
           center: const Alignment(-0.3, -0.4),
           radius: 0.95,
-          colors: [light, c, dark],
+          colors: [light, bc, dark],
           stops: const [0.0, 0.55, 1.0],
         ).createShader(bounds),
     );
@@ -91,7 +95,7 @@ class GemComponent extends PositionComponent {
         ..style = PaintingStyle.stroke
         ..strokeWidth = s * 0.09
         ..strokeJoin = StrokeJoin.round
-        ..color = c.withValues(alpha: 0.6),
+        ..color = (junk ? NeonTheme.magenta : c).withValues(alpha: 0.6),
     );
     canvas.drawPath(
       path,
@@ -112,6 +116,11 @@ class GemComponent extends PositionComponent {
     // 4b) Gem may mắn (chưa thành special): tia sáng lấp lánh trắng
     if (isLucky && !isSpecial) {
       _drawLuckySparkle(canvas, center, s);
+    }
+
+    // 4c) Gem rác (Versus): vết nứt + viền cảnh báo → người chơi nhận ra đòn tấn công
+    if (junk) {
+      _drawJunkOverlay(canvas, center, s, r);
     }
 
     // 5) Overlay special + vòng sáng xoay gây chú ý
@@ -283,6 +292,42 @@ class GemComponent extends PositionComponent {
       i == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
     }
     return path..close();
+  }
+
+  /// Gem rác (Versus): phủ vết nứt xám + 2 cung cảnh báo magenta nhịp nhẹ.
+  void _drawJunkOverlay(Canvas canvas, Offset center, double s, double r) {
+    final pulse = 0.5 + 0.5 * math.sin(_pulse * 1.6);
+    // Vết nứt: vài đường gãy khúc tối từ tâm toả ra.
+    final crack = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.035
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = const Color(0xFF2A2A33).withValues(alpha: 0.8);
+    for (int i = 0; i < 3; i++) {
+      final a = i * 2.094 + 0.5; // 3 nhánh lệch ~120°
+      final mid = Offset(center.dx + math.cos(a) * r * 0.45,
+          center.dy + math.sin(a) * r * 0.45);
+      final end = Offset(center.dx + math.cos(a + 0.4) * r * 0.92,
+          center.dy + math.sin(a + 0.4) * r * 0.92);
+      canvas.drawPath(
+        Path()
+          ..moveTo(center.dx, center.dy)
+          ..lineTo(mid.dx, mid.dy)
+          ..lineTo(end.dx, end.dy),
+        crack,
+      );
+    }
+    // 2 cung cảnh báo magenta xoay nhẹ.
+    final rect = Rect.fromCircle(center: center, radius: s * 0.5);
+    final warn = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.04
+      ..strokeCap = StrokeCap.round
+      ..color = NeonTheme.magenta.withValues(alpha: 0.45 + 0.4 * pulse);
+    for (int i = 0; i < 2; i++) {
+      canvas.drawArc(rect, _pulse * 0.8 + i * math.pi, 0.7, false, warn);
+    }
   }
 
   /// Tia sáng lấp lánh (4 cánh) xoay nhẹ + lõi trắng nhịp — đánh dấu gem may mắn.

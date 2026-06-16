@@ -219,6 +219,31 @@ class GameScreen extends StatelessWidget {
         ],
       );
     }
+    // Thử thách hằng ngày: chế độ phụ — không tốn mạng, luôn cho chơi lại (CÙNG
+    // bàn theo ngày). Thắng lần đầu/ngày → khoe streak + thưởng; chơi lại đã
+    // hoàn thành → báo done. Thua → hiện mục tiêu.
+    if (ctrl.isDaily.value) {
+      final msg = win
+          ? (ctrl.lastCoinReward > 0
+              ? '${'daily_ch_streak'.tr}: ${ctrl.dailyChStreak.value}\n'
+                  '${'daily_ch_reward'.trParams({
+                    'c': '${ctrl.lastCoinReward}',
+                    's': '${ctrl.lastShardReward}'
+                  })}'
+              : 'daily_ch_done'.tr)
+          : '${'hud_goal'.tr}: ${_objectiveText(ctrl)}';
+      return NeonDialog.panel(
+        title: win ? 'victory'.tr : 'retry'.tr,
+        color: win ? NeonTheme.lime : NeonTheme.cyan,
+        icon: win ? Icons.emoji_events_rounded : Icons.event_rounded,
+        message: msg,
+        content: win ? _celebration(ctrl) : null,
+        actions: [
+          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+        ],
+      );
+    }
     final cur = ctrl.currentLevel.value;
     // thua mà hết mạng → ẩn nút CHƠI LẠI (không lách cổng mạng), báo hết mạng.
     final noLives = !win && !ctrl.hasLife;
@@ -355,7 +380,9 @@ class GameScreen extends StatelessWidget {
                 const Spacer(),
                 Obx(
                   () => _stageBadge(
-                    ctrl.isBoss.value
+                    ctrl.isDaily.value
+                        ? 'daily_ch_title'.tr
+                        : ctrl.isBoss.value
                         ? '${'boss_title'.tr} ${ctrl.bossStage.value}'
                         : ctrl.isRhythm.value
                         ? 'rhythm_title'.tr

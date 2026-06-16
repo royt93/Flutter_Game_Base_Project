@@ -43,6 +43,7 @@ dependencies:
   flutter_animate: ^4.5.2
   flame_audio: ^2.11.14
   wakelock_plus: ^1.4.0
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:

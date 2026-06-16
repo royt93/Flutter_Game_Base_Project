@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:neon_jewels/core/storage_service.dart';
@@ -126,5 +128,30 @@ void main() {
       expect(c.score1, greaterThan(0));
       expect(c.score2, 0); // bàn 2 không bị ảnh hưởng
     });
+
+    test('2 bàn versus DÙNG CHUNG seed → mirror mở bàn (công bằng)', () {
+      final c = put(VersusMode.versus);
+      expect(c.game1.boardSeed, isNotNull);
+      expect(c.game2.boardSeed, isNotNull);
+      // cùng seed → Random(seed) sinh dãy y hệt → fill bàn giống hệt lúc mở
+      expect(c.game1.boardSeed, c.game2.boardSeed);
+    });
+
+    test('Random(seed) tất định: cùng seed → cùng dãy màu (cơ sở mirror)', () {
+      final a = List.generate(50, (_) => 0);
+      final r1 = _seqFromSeed(12345, 50);
+      final r2 = _seqFromSeed(12345, 50);
+      final r3 = _seqFromSeed(999, 50);
+      expect(r1, r2); // cùng seed → y hệt
+      expect(r1, isNot(equals(r3))); // khác seed → khác
+      expect(r1.length, a.length);
+    });
   });
+}
+
+/// Mô phỏng cách engine bốc màu: Random(seed).nextInt(6) — chứng minh tính
+/// tất định làm cơ sở cho "mirror mở bàn" của Versus.
+List<int> _seqFromSeed(int seed, int n) {
+  final rnd = Random(seed);
+  return List.generate(n, (_) => rnd.nextInt(6));
 }

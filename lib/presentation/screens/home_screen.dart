@@ -174,6 +174,9 @@ class HomeScreen extends StatelessWidget {
                   // KHU THỬ THÁCH — 3 chế độ phụ gọn trong 1 hàng (thay vì 3 nút dọc)
                   _sectionLabel('challenge_modes'.tr),
                   const SizedBox(height: NeonTheme.s8),
+                  // Thử thách hằng ngày — tâm điểm giữ chân (card rộng + badge streak)
+                  _dailyChallengeCard(g),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
@@ -406,6 +409,120 @@ class HomeScreen extends StatelessWidget {
       );
 
   /// Thẻ chế độ gọn (icon + nhãn) — dùng trong hàng "Thử thách".
+  /// Card rộng "Thử thách hằng ngày": tiêu đề + phụ đề (hoặc "đã xong hôm nay") +
+  /// badge chuỗi ngày (🔥N) bên phải. Bấm → vào màn puzzle seed theo ngày.
+  Widget _dailyChallengeCard(GameController g) {
+    const color = NeonTheme.lime;
+    return Obx(() {
+      final done = g.dailyChallengeDoneToday;
+      final streak = g.dailyChStreak.value;
+      return GestureDetector(
+        onTap: () {
+          g.startDaily();
+          Get.to(() => const GameScreen());
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+          decoration: BoxDecoration(
+            color: NeonTheme.panel.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color, width: 1.6),
+            boxShadow: NeonTheme.glow(color, blur: done ? 6 : 10),
+          ),
+          child: Row(
+            children: [
+              Icon(done ? Icons.event_available_rounded : Icons.event_rounded,
+                  color: color, size: 30),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'daily_ch_title'.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Baloo2',
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                        shadows: [Shadow(color: color, blurRadius: 8)],
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      done ? 'daily_ch_done'.tr : 'daily_ch_sub'.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Baloo2',
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (streak > 0)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: NeonTheme.panel.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: NeonTheme.orange, width: 1.3),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.local_fire_department_rounded,
+                          color: NeonTheme.orange, size: 16),
+                      const SizedBox(width: 3),
+                      Text(
+                        '$streak',
+                        style: const TextStyle(
+                          fontFamily: 'Baloo2',
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: color, width: 1.3),
+                  ),
+                  child: Text(
+                    'daily_ch_play'.tr,
+                    style: const TextStyle(
+                      fontFamily: 'Baloo2',
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
   Widget _modeCard(
       IconData icon, String label, Color color, VoidCallback onTap) {
     return GestureDetector(
