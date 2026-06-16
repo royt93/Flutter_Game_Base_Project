@@ -15,7 +15,6 @@ import '../controllers/lucky_wheel_controller.dart';
 import '../controllers/story_controller.dart';
 import '../widgets/lucky_wheel_view.dart';
 import '../widgets/neon_bg.dart';
-import '../widgets/neon_button.dart';
 import '../widgets/neon_dialog.dart';
 import 'achievements_screen.dart';
 import 'battle_pass_screen.dart';
@@ -139,21 +138,21 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Logo gọn (1 dòng các gem màu nhỏ + chữ) để menu vừa khít màn,
-                  // KHÔNG scroll, FittedBox không phải co → full chiều rộng.
-                  _GemSparkle(size: 18, gap: 8),
+                  // Logo TO, nổi bật (chiều cao bù lại nhờ lưới Thử thách 3×2 +
+                  // rewards thu nhỏ → vẫn vừa 1 màn, no-scroll, full-width).
+                  _GemSparkle(size: 24, gap: 12),
                   const SizedBox(height: NeonTheme.s8),
                   Text(
                         'NEON',
                         style: TextStyle(
                           fontFamily: 'Baloo2',
-                          fontSize: 34,
+                          fontSize: 52,
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
-                          letterSpacing: 5,
+                          letterSpacing: 7,
                           shadows: NeonTheme.gemColors
                               .take(3)
-                              .map((c) => Shadow(color: c, blurRadius: 20))
+                              .map((c) => Shadow(color: c, blurRadius: 26))
                               .toList(),
                         ),
                       )
@@ -164,43 +163,37 @@ class HomeScreen extends StatelessWidget {
                     'JEWELS',
                     style: TextStyle(
                       fontFamily: 'Baloo2',
-                      fontSize: 20,
+                      fontSize: 32,
                       fontWeight: FontWeight.w700,
                       color: NeonTheme.magenta,
-                      letterSpacing: 8,
+                      letterSpacing: 11,
                       shadows: [
-                        Shadow(color: NeonTheme.magenta, blurRadius: 22),
+                        Shadow(color: NeonTheme.magenta, blurRadius: 30),
                       ],
                     ),
                   ),
                   const SizedBox(height: NeonTheme.s16),
-                  // NÚT CHÍNH — focus vào chơi ngay
-                  NeonButton(
-                    label: 'play_now'.tr,
-                    color: NeonTheme.lime,
-                    icon: Icons.play_arrow_rounded,
-                    onTap: () {
-                      // mở đúng kiểu xem người chơi đã chọn (lưu local; mặc định map)
-                      final grid =
-                          StorageService.to.getInt(
-                            StorageKeys.viewMode,
-                            def: 0,
-                          ) ==
-                          1;
-                      Get.to(
-                        () => grid
-                            ? const LevelSelectScreen()
-                            : const WorldMapScreen(),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: NeonTheme.s16),
-                  // KHU THỬ THÁCH — 3 chế độ phụ gọn trong 1 hàng (thay vì 3 nút dọc)
+                  // NÚT CHÍNH — TO + full-width + glow mạnh + nhịp đập nhẹ để hút mắt.
+                  _playButton(() {
+                    final grid =
+                        StorageService.to.getInt(
+                          StorageKeys.viewMode,
+                          def: 0,
+                        ) ==
+                        1;
+                    Get.to(
+                      () => grid
+                          ? const LevelSelectScreen()
+                          : const WorldMapScreen(),
+                    );
+                  }),
+                  const SizedBox(height: NeonTheme.s8),
+                  // KHU THỬ THÁCH — lưới 2×3 (6 ô đều)
                   _sectionLabel('challenge_modes'.tr),
                   const SizedBox(height: NeonTheme.s8),
-                  // LƯỚI ĐỀU 2×3 — 6 thử thách ô vuông bằng nhau (hài hoà, hết
-                  // cảnh card rộng/vuông lẫn lộn). Daily nổi bật: màu lime +
-                  // badge streak 🔥 / ✓ ở góc (Obx → cập nhật khi đổi streak).
+                  // LƯỚI ĐỀU 3 CỘT × 2 HÀNG — 6 thử thách ô bằng nhau. Hàng 1:
+                  // Daily · Vô tận · Trùm. Hàng 2: Trọng lực · Nhịp · 2 người.
+                  // Daily nổi bật: lime + badge 🔥/✓ ở góc (Obx theo streak).
                   Row(
                     children: [
                       Expanded(
@@ -229,11 +222,7 @@ class HomeScreen extends StatelessWidget {
                           },
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: NeonTheme.s8),
-                  Row(
-                    children: [
+                      const SizedBox(width: NeonTheme.s8),
                       Expanded(
                         child: _modeCard(
                           Icons.coronavirus_rounded,
@@ -250,7 +239,11 @@ class HomeScreen extends StatelessWidget {
                           },
                         ),
                       ),
-                      const SizedBox(width: NeonTheme.s8),
+                    ],
+                  ),
+                  const SizedBox(height: NeonTheme.s8),
+                  Row(
+                    children: [
                       Expanded(
                         child: _modeCard(
                           Icons.swap_vert_rounded,
@@ -262,11 +255,7 @@ class HomeScreen extends StatelessWidget {
                           },
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: NeonTheme.s8),
-                  Row(
-                    children: [
+                      const SizedBox(width: NeonTheme.s8),
                       Expanded(
                         child: _modeCard(
                           Icons.graphic_eq_rounded,
@@ -289,9 +278,9 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: NeonTheme.s16),
-                  // KHU GIỮ CHÂN + TIỆN ÍCH — gộp 1 hàng 6 icon nhỏ để vừa khít
-                  // màn (no-scroll): Đền · Pass · Mùa · Thành tựu · Hướng dẫn · Cài đặt
+                  const SizedBox(height: NeonTheme.s8),
+                  // KHU GIỮ CHÂN + TIỆN ÍCH — 2 hàng × 3 icon (nhãn đủ, thoáng).
+                  // Hàng 1: Đền · Pass · Mùa. Hàng 2: Thành tựu · Hướng dẫn · Cài đặt.
                   _sectionLabel('meta_section'.tr),
                   const SizedBox(height: NeonTheme.s8),
                   Row(
@@ -333,6 +322,11 @@ class HomeScreen extends StatelessWidget {
                           );
                         }),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: NeonTheme.s8),
+                  Row(
+                    children: [
                       Expanded(
                         child: Obx(() {
                           ac.claimed.length;
@@ -458,8 +452,61 @@ class HomeScreen extends StatelessWidget {
 
   /// Thẻ chế độ gọn (icon + nhãn) — dùng trong hàng "Thử thách".
 
+  /// Nút "CHƠI NGAY" NỔI BẬT: full-width, cao, gradient + glow mạnh + nhịp đập
+  /// nhẹ (scale lặp) để hút mắt — tâm điểm hành động chính của Home.
+  Widget _playButton(VoidCallback onTap) {
+    const color = NeonTheme.lime;
+    return GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  color.withValues(alpha: 0.22),
+                  NeonTheme.panel.withValues(alpha: 0.6),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: color, width: 3),
+              boxShadow: NeonTheme.glow(color, blur: 22),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.play_arrow_rounded, color: color, size: 32),
+                const SizedBox(width: 10),
+                Text(
+                  'play_now'.tr,
+                  style: const TextStyle(
+                    fontFamily: 'Baloo2',
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                    shadows: [Shadow(color: color, blurRadius: 14)],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
+        .animate(onPlay: (c) => c.repeat(reverse: true))
+        .scaleXY(
+          begin: 1,
+          end: 1.03,
+          duration: 1100.ms,
+          curve: Curves.easeInOut,
+        );
+  }
+
   /// Ô thử thách vuông (icon + nhãn). [corner] = badge tuỳ chọn ở góc phải-trên
-  /// (vd streak Daily). Dùng chung cho cả 6 ô lưới 2×3 → đồng nhất.
+  /// (vd streak Daily). Dùng chung cho cả 6 ô lưới (2 hàng × 3) → đồng nhất.
   Widget _modeCard(
     IconData icon,
     String label,
@@ -471,7 +518,7 @@ class HomeScreen extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
         decoration: BoxDecoration(
           color: NeonTheme.panel.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(16),
@@ -481,8 +528,8 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
+            Icon(icon, color: color, size: 26),
+            const SizedBox(height: 6),
             Text(
               label,
               maxLines: 1,
@@ -491,9 +538,9 @@ class HomeScreen extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Baloo2',
                 color: Colors.white,
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 0.3,
+                letterSpacing: 0.2,
                 shadows: [Shadow(color: color, blurRadius: 8)],
               ),
             ),
@@ -570,14 +617,14 @@ class HomeScreen extends StatelessWidget {
     bool small = false,
   }) {
     final circle = Container(
-      padding: EdgeInsets.all(small ? 12 : 15),
+      padding: EdgeInsets.all(small ? 9 : 15),
       decoration: BoxDecoration(
         color: NeonTheme.panel.withValues(alpha: 0.55),
         shape: BoxShape.circle,
-        border: Border.all(color: color, width: 2),
-        boxShadow: NeonTheme.glow(color, blur: small ? 8 : 10),
+        border: Border.all(color: color, width: small ? 1.6 : 2),
+        boxShadow: NeonTheme.glow(color, blur: small ? 6 : 10),
       ),
-      child: Icon(icon, color: color, size: small ? 22 : 26),
+      child: Icon(icon, color: color, size: small ? 18 : 26),
     );
     return GestureDetector(
       onTap: onTap,
@@ -606,7 +653,7 @@ class HomeScreen extends StatelessWidget {
                   ],
                 )
               : circle,
-          const SizedBox(height: 7),
+          SizedBox(height: small ? 5 : 7),
           Text(
             label,
             maxLines: 1,
@@ -615,9 +662,9 @@ class HomeScreen extends StatelessWidget {
             style: TextStyle(
               fontFamily: 'Baloo2',
               color: Colors.white.withValues(alpha: 0.85),
-              fontSize: 10,
+              fontSize: small ? 9 : 10,
               fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
+              letterSpacing: 0.3,
               shadows: [Shadow(color: color, blurRadius: 8)],
             ),
           ),
