@@ -283,7 +283,7 @@ class AppTranslations extends Translations {
     'temple_build': 'BUILD',
     'temple_built': 'Built!',
     'temple_maxed': 'MAXED',
-    'temple_hint': 'Tap a structure to build it with Shards earned from levels.',
+    'temple_hint': 'Tap a structure to build it with coins earned from levels.',
     'coins_short': 'coins',
     'temple_gate': 'Neon Gate',
     'temple_gate_desc': 'The glowing entrance to your temple.',
@@ -366,8 +366,9 @@ class AppTranslations extends Translations {
     'daily_ch_sub': 'New puzzle every day',
     'daily_ch_done': 'Done today ✓',
     'daily_ch_streak': 'Day streak',
-    'daily_ch_reward': '+@c coins · +@s shards',
+    'daily_ch_reward': '+@c coins',
     'daily_ch_play': 'PLAY',
+    'daily_ch_short': 'DAILY',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -523,7 +524,7 @@ class AppTranslations extends Translations {
     'temple_build': 'XÂY',
     'temple_built': 'Đã xây!',
     'temple_maxed': 'TỐI ĐA',
-    'temple_hint': 'Chạm vào công trình để xây bằng Mảnh neon kiếm từ các màn chơi.',
+    'temple_hint': 'Chạm vào công trình để xây bằng xu kiếm từ các màn chơi.',
     'coins_short': 'xu',
     'temple_gate': 'Cổng Neon',
     'temple_gate_desc': 'Lối vào rực sáng của ngôi đền.',
@@ -606,8 +607,9 @@ class AppTranslations extends Translations {
     'daily_ch_sub': 'Mỗi ngày một câu đố',
     'daily_ch_done': 'Đã hoàn thành hôm nay ✓',
     'daily_ch_streak': 'Chuỗi ngày',
-    'daily_ch_reward': '+@c xu · +@s mảnh',
+    'daily_ch_reward': '+@c xu',
     'daily_ch_play': 'CHƠI',
+    'daily_ch_short': 'HẰNG NGÀY',
   };
 
   static const Map<String, String> _extraEs = {

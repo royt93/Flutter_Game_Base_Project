@@ -152,9 +152,6 @@ class BattlePassController extends GetxController {
       case RewardKind.coins:
         g.addCoins(t.amount);
         break;
-      case RewardKind.shards:
-        g.addShards(t.amount);
-        break;
       case RewardKind.hammer:
         g.grantHammer(t.amount);
         break;

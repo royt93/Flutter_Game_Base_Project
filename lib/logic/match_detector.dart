@@ -5,7 +5,8 @@ import 'gem_data.dart';
 /// Đầu vào là lưới màu (null = ô trống). Trả về danh sách [MatchGroup]:
 /// - run dài 3: match thường
 /// - run dài 4: tạo gem striped (ngang/dọc tùy hướng run)
-/// - run dài >=5: tạo gem rainbow
+/// - run dài 5: tạo gem rainbow
+/// - run dài >=6: tạo gem diagonal (nổ 2 đường chéo) — Wave 9
 ///
 /// Lưu ý: T/L shape (tạo bomb) thuộc phạm vi mở rộng — chưa xử lý ở MVP.
 class MatchDetector {
@@ -67,8 +68,12 @@ class MatchDetector {
     if (len == 4) {
       // Striped: nổ theo chiều vuông góc với run cho cảm giác "phá rộng".
       special = horizontal ? GemType.stripedV : GemType.stripedH;
-    } else if (len >= 5) {
+    } else if (len == 5) {
       special = GemType.rainbow;
+    } else if (len >= 6) {
+      // Match 6+ → Diagonal: nổ 2 đường chéo (X) qua ô — mạnh hơn rainbow về
+      // phủ chéo, tạo cảm giác "phá toang" khi xếp được run rất dài.
+      special = GemType.diagonal;
     }
     final specialAt = special == GemType.normal ? null : cells[cells.length ~/ 2];
     return MatchGroup(
@@ -90,6 +95,24 @@ class MatchDetector {
       }
     }
     return inH.intersection(inV);
+  }
+
+  /// Các ô nằm trên 2 đường chéo (hình X) đi qua [center] trong lưới
+  /// [rows]×[cols] — dùng cho diagonal gem (Wave 9). [thickness] > 0 → chéo dày
+  /// thêm ±thickness ô (combo mạnh). Pure → unit-test được.
+  static Set<Cell> diagonalCells(int rows, int cols, Cell center,
+      {int thickness = 0}) {
+    final out = <Cell>{};
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        final main = (r - center.row) - (c - center.col); // lệch chéo ↘
+        final anti = (r - center.row) + (c - center.col); // lệch chéo ↙↗
+        if (main.abs() <= thickness || anti.abs() <= thickness) {
+          out.add(Cell(r, c));
+        }
+      }
+    }
+    return out;
   }
 
   /// Tiện ích: gộp tất cả ô của mọi group thành một tập hợp duy nhất.

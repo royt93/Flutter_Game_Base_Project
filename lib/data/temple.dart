@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../core/neon_theme.dart';
 
-/// Một cấp (tier) của hạng mục đền: chi phí Shard để xây + thưởng xu khi xong.
+/// Một cấp (tier) của hạng mục đền: chi phí XU để xây + thưởng xu khi xong.
 @immutable
 class TempleTier {
-  final int cost; // shard cần để lên tier này
+  final int
+  cost; // xu cần để lên tier này (gộp tiền tệ Wave 9: trước là shard ×10)
   final int rewardCoins; // thưởng xu khi xây xong tier
 
   const TempleTier({required this.cost, required this.rewardCoins});
@@ -42,9 +43,9 @@ const List<TempleNode> kTempleNodes = [
     accent: NeonTheme.cyan,
     pos: Offset(0.5, 0.86),
     tiers: [
-      TempleTier(cost: 6, rewardCoins: 30),
-      TempleTier(cost: 14, rewardCoins: 60),
-      TempleTier(cost: 28, rewardCoins: 120),
+      TempleTier(cost: 60, rewardCoins: 30),
+      TempleTier(cost: 140, rewardCoins: 60),
+      TempleTier(cost: 280, rewardCoins: 120),
     ],
   ),
   TempleNode(
@@ -54,9 +55,9 @@ const List<TempleNode> kTempleNodes = [
     accent: NeonTheme.magenta,
     pos: Offset(0.26, 0.6),
     tiers: [
-      TempleTier(cost: 8, rewardCoins: 30),
-      TempleTier(cost: 18, rewardCoins: 70),
-      TempleTier(cost: 34, rewardCoins: 130),
+      TempleTier(cost: 80, rewardCoins: 30),
+      TempleTier(cost: 180, rewardCoins: 70),
+      TempleTier(cost: 340, rewardCoins: 130),
     ],
   ),
   TempleNode(
@@ -66,9 +67,9 @@ const List<TempleNode> kTempleNodes = [
     accent: NeonTheme.magenta,
     pos: Offset(0.74, 0.6),
     tiers: [
-      TempleTier(cost: 8, rewardCoins: 30),
-      TempleTier(cost: 18, rewardCoins: 70),
-      TempleTier(cost: 34, rewardCoins: 130),
+      TempleTier(cost: 80, rewardCoins: 30),
+      TempleTier(cost: 180, rewardCoins: 70),
+      TempleTier(cost: 340, rewardCoins: 130),
     ],
   ),
   TempleNode(
@@ -78,9 +79,9 @@ const List<TempleNode> kTempleNodes = [
     accent: NeonTheme.lime,
     pos: Offset(0.5, 0.62),
     tiers: [
-      TempleTier(cost: 12, rewardCoins: 40),
-      TempleTier(cost: 26, rewardCoins: 90),
-      TempleTier(cost: 48, rewardCoins: 160),
+      TempleTier(cost: 120, rewardCoins: 40),
+      TempleTier(cost: 260, rewardCoins: 90),
+      TempleTier(cost: 480, rewardCoins: 160),
     ],
   ),
   TempleNode(
@@ -90,9 +91,9 @@ const List<TempleNode> kTempleNodes = [
     accent: NeonTheme.orange,
     pos: Offset(0.5, 0.34),
     tiers: [
-      TempleTier(cost: 16, rewardCoins: 50),
-      TempleTier(cost: 34, rewardCoins: 110),
-      TempleTier(cost: 60, rewardCoins: 200),
+      TempleTier(cost: 160, rewardCoins: 50),
+      TempleTier(cost: 340, rewardCoins: 110),
+      TempleTier(cost: 600, rewardCoins: 200),
     ],
   ),
   TempleNode(
@@ -102,9 +103,9 @@ const List<TempleNode> kTempleNodes = [
     accent: NeonTheme.purple,
     pos: Offset(0.5, 0.14),
     tiers: [
-      TempleTier(cost: 24, rewardCoins: 80),
-      TempleTier(cost: 50, rewardCoins: 170),
-      TempleTier(cost: 90, rewardCoins: 320),
+      TempleTier(cost: 240, rewardCoins: 80),
+      TempleTier(cost: 500, rewardCoins: 170),
+      TempleTier(cost: 900, rewardCoins: 320),
     ],
   ),
 ];

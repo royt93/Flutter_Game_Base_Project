@@ -602,12 +602,32 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           }
         }
       }
+      // rainbow + diagonal → xoá toàn bộ gem cùng màu + 2 đường chéo (X) qua pos
+      if (other.type == GemType.diagonal) _addDiagonals(cells, pos);
       return cells;
     }
 
     bool striped(GemType t) => t == GemType.stripedH || t == GemType.stripedV;
-    // bomb + bomb → 5x5
-    if (ta == GemType.bomb && tb == GemType.bomb) {
+    bool diag(GemType t) => t == GemType.diagonal;
+    // diagonal + diagonal → X DÀY (2 chéo ±1 ô)
+    if (diag(ta) && diag(tb)) {
+      _addDiagonals(cells, pos, thickness: 1);
+    } else if ((diag(ta) && striped(tb)) || (striped(ta) && diag(tb))) {
+      // diagonal + striped → hoa thị: 2 chéo + 1 hàng + 1 cột
+      _addDiagonals(cells, pos);
+      for (int c = 0; c < cols; c++) {
+        cells.add(Cell(pos.row, c));
+      }
+      for (int r = 0; r < rows; r++) {
+        cells.add(Cell(r, pos.col));
+      }
+    } else if ((diag(ta) && tb == GemType.bomb) ||
+        (ta == GemType.bomb && diag(tb))) {
+      // diagonal + bomb → 2 chéo + vùng 3x3
+      _addDiagonals(cells, pos);
+      _addArea(cells, pos, 1);
+    } else if (ta == GemType.bomb && tb == GemType.bomb) {
+      // bomb + bomb → 5x5
       _addArea(cells, pos, 2);
     } else if ((ta == GemType.bomb && striped(tb)) ||
         (striped(ta) && tb == GemType.bomb)) {
@@ -636,6 +656,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       for (int r = 0; r < rows; r++) {
         cells.add(Cell(r, pos.col));
       }
+    } else if (diag(ta) || diag(tb)) {
+      // diagonal đơn còn lại (phòng hờ): 2 chéo qua pos
+      _addDiagonals(cells, pos);
     } else {
       // 1 bomb / 1 striped còn lại: kích hoạt theo loại tại pos
       _addArea(cells, pos, 1);
@@ -650,6 +673,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         if (r >= 0 && r < rows && c >= 0 && c < cols) cells.add(Cell(r, c));
       }
     }
+  }
+
+  /// Thêm các ô nằm trên 2 đường chéo (hình X) đi qua [center] (diagonal gem).
+  /// [thickness] > 0 → chéo dày thêm (mỗi bên ±thickness ô) cho combo mạnh.
+  /// Hình học thuần ở [MatchDetector.diagonalCells] (test được).
+  void _addDiagonals(Set<Cell> cells, Cell center, {int thickness = 0}) {
+    cells.addAll(
+        MatchDetector.diagonalCells(rows, cols, center, thickness: thickness));
   }
 
   /// Nếu bàn không còn nước đi hợp lệ → tự xáo (tối đa vài lần) để người chơi
@@ -948,6 +979,29 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
               if (grid[r][c]?.color == g.color) extra.add(Cell(r, c));
+            }
+          }
+          break;
+        case GemType.diagonal:
+          // 2 đường chéo (X) qua ô: beam neon dọc theo từng chéo + phá mọi ô
+          // cùng chéo. _addBeam dùng đầu mút chéo (clamp trong biên bàn).
+          final dcol = neonColorOf(g.color);
+          final mMin = -math.min(cell.row, cell.col);
+          final mMax = math.min(rows - 1 - cell.row, cols - 1 - cell.col);
+          _addBeam(_cellCenter(cell.row + mMin, cell.col + mMin),
+              _cellCenter(cell.row + mMax, cell.col + mMax), dcol);
+          final aMin = math.max(-cell.row, cell.col - (cols - 1));
+          final aMax = math.min(rows - 1 - cell.row, cell.col);
+          _addBeam(_cellCenter(cell.row + aMin, cell.col - aMin),
+              _cellCenter(cell.row + aMax, cell.col - aMax), dcol);
+          _flash(dcol, peak: 0.16);
+          _shake(9);
+          for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+              if ((r - cell.row) == (c - cell.col) ||
+                  (r - cell.row) == -(c - cell.col)) {
+                extra.add(Cell(r, c));
+              }
             }
           }
           break;

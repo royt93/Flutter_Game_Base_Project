@@ -255,8 +255,6 @@ class _SeasonScreenState extends State<SeasonScreen> {
     switch (k) {
       case RewardKind.coins:
         return Icons.monetization_on_rounded;
-      case RewardKind.shards:
-        return Icons.diamond_rounded;
       case RewardKind.hammer:
         return Icons.gavel_rounded;
       case RewardKind.moves:
@@ -270,8 +268,6 @@ class _SeasonScreenState extends State<SeasonScreen> {
     switch (k) {
       case RewardKind.coins:
         return NeonTheme.yellow;
-      case RewardKind.shards:
-        return NeonTheme.cyan;
       case RewardKind.hammer:
         return NeonTheme.magenta;
       case RewardKind.moves:
@@ -285,8 +281,6 @@ class _SeasonScreenState extends State<SeasonScreen> {
     switch (k) {
       case RewardKind.coins:
         return 'coins_short'.tr;
-      case RewardKind.shards:
-        return 'bp_shards'.tr;
       case RewardKind.hammer:
         return 'bp_hammer'.tr;
       case RewardKind.moves:

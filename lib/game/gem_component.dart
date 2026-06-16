@@ -441,6 +441,13 @@ class GemComponent extends PositionComponent {
         canvas.drawCircle(center, s * 0.12 * pulse,
             Paint()..color = Colors.white.withValues(alpha: 0.9));
         break;
+      case GemType.diagonal:
+        // 2 vạch neon chéo (hình X) + lõi sáng nhịp → gợi ý "nổ 2 đường chéo"
+        neonBar(Offset(s * 0.18, s * 0.18), Offset(s * 0.82, s * 0.82));
+        neonBar(Offset(s * 0.18, s * 0.82), Offset(s * 0.82, s * 0.18));
+        canvas.drawCircle(center, s * 0.09 * pulse,
+            Paint()..color = Colors.white.withValues(alpha: 0.95));
+        break;
       case GemType.normal:
         break;
     }

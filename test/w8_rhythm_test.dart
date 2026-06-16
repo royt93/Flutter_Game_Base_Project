@@ -96,7 +96,8 @@ void main() {
       expect(c.score.value - s1, 30);
     });
 
-    test('đạt điểm mục tiêu → win, thưởng xu/shard, KHÔNG đụng win-streak', () {
+    test('đạt điểm mục tiêu → win, thưởng xu (gộp shard cũ), KHÔNG đụng win-streak',
+        () {
       c.startRhythm();
       c.winStreak.value = 3;
       final coins0 = c.coins.value;
@@ -105,7 +106,7 @@ void main() {
       expect(r, 'win');
       expect(c.winStreak.value, 3); // không đổi
       expect(c.coins.value, greaterThan(coins0));
-      expect(c.lastShardReward, greaterThan(0));
+      expect(c.lastCoinReward, greaterThan(0));
     });
 
     test('hết lượt mà chưa đạt điểm → lose, không thưởng', () {

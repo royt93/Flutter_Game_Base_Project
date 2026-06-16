@@ -23,24 +23,15 @@ void main() {
 
   tearDown(Get.reset);
 
-  group('Shard economy', () {
-    test('addShards cộng + persist; bỏ qua số <= 0', () {
-      expect(g.shards.value, 0);
-      g.addShards(5);
-      expect(g.shards.value, 5);
-      expect(StorageService.to.getInt(StorageKeys.shards), 5);
-      g.addShards(0);
-      g.addShards(-3);
-      expect(g.shards.value, 5); // không đổi
-    });
-
-    test('spendShards trừ đúng; chặn khi thiếu', () {
-      g.addShards(10);
-      expect(g.spendShards(4), isTrue);
-      expect(g.shards.value, 6);
-      expect(g.spendShards(99), isFalse); // thiếu
-      expect(g.shards.value, 6); // không đổi
-      expect(g.spendShards(0), isFalse); // số không hợp lệ
+  group('Coin economy (Wave 9 — 1 tiền tệ)', () {
+    test('spendCoins trừ đúng; chặn khi thiếu / số không hợp lệ', () {
+      g.addCoins(100);
+      final before = g.coins.value;
+      expect(g.spendCoins(40), isTrue);
+      expect(g.coins.value, before - 40);
+      expect(g.spendCoins(999999999), isFalse); // thiếu
+      expect(g.coins.value, before - 40); // không đổi
+      expect(g.spendCoins(0), isFalse); // số không hợp lệ
     });
 
     test('coins clamp dưới trần int32 (chống overflow)', () {
@@ -48,9 +39,30 @@ void main() {
       g.addCoins(1000);
       expect(g.coins.value, GameController.maxCoins);
     });
+
+    test('migrate shard cũ → xu ×10, chạy 1 lần', () async {
+      SharedPreferences.setMockInitialValues({'shards': 7, 'coins': 100});
+      Get.reset();
+      final prefs = await SharedPreferences.getInstance();
+      Get.put(StorageService(prefs));
+      final g2 = Get.put(GameController());
+      expect(g2.coins.value, 100 + 70); // 7 shard × 10
+      expect(prefs.getInt(StorageKeys.shards), 0); // đã tiêu hết shard cũ
+      expect(prefs.getInt(StorageKeys.shardsMigrated), 1);
+    });
+
+    test('không migrate lần 2 (đã đánh dấu)', () async {
+      SharedPreferences.setMockInitialValues(
+          {'shards': 5, 'coins': 50, 'shards_migrated': 1});
+      Get.reset();
+      final prefs = await SharedPreferences.getInstance();
+      Get.put(StorageService(prefs));
+      final g2 = Get.put(GameController());
+      expect(g2.coins.value, 50); // KHÔNG cộng lại
+    });
   });
 
-  group('Temple build', () {
+  group('Temple build (tiêu xu)', () {
     test('khởi tạo tier = 0 cho mọi hạng mục', () {
       for (final n in kTempleNodes) {
         expect(t.tierOf(n), 0);
@@ -59,22 +71,23 @@ void main() {
       expect(t.progress, 0);
     });
 
-    test('build trừ shard, tier++, thưởng xu, persist', () {
+    test('build trừ XU, tier++, thưởng xu, persist', () {
       final gate = kTempleNodes.firstWhere((e) => e.id == 'gate');
       final tier0 = gate.tiers[0];
-      g.addShards(tier0.cost);
+      g.addCoins(tier0.cost); // đủ xu để xây
       final coins0 = g.coins.value;
 
       expect(t.build(gate), isTrue);
       expect(t.tierOf(gate), 1);
-      expect(g.shards.value, 0); // đã trừ hết
-      expect(g.coins.value, coins0 + tier0.rewardCoins); // thưởng xu
+      // xu = coins0 - cost (đã trừ) + rewardCoins (thưởng)
+      expect(g.coins.value, coins0 - tier0.cost + tier0.rewardCoins);
       expect(StorageService.to.getInt(StorageKeys.templeTier('gate')), 1);
     });
 
-    test('chặn build khi thiếu shard', () {
+    test('chặn build khi thiếu xu', () {
       final gate = kTempleNodes.firstWhere((e) => e.id == 'gate');
-      expect(g.shards.value, 0);
+      g.spendCoins(g.coins.value); // vét sạch xu
+      expect(g.coins.value, 0);
       expect(t.canBuild(gate), isFalse);
       expect(t.build(gate), isFalse);
       expect(t.tierOf(gate), 0);
@@ -82,7 +95,7 @@ void main() {
 
     test('không vượt max tier; isMaxed đúng', () {
       final gate = kTempleNodes.firstWhere((e) => e.id == 'gate');
-      g.addShards(100000); // dư shard
+      g.addCoins(1000000); // dư xu
       for (var i = 0; i < gate.maxTier; i++) {
         expect(t.build(gate), isTrue);
       }
@@ -93,21 +106,11 @@ void main() {
     });
 
     test('progress phản ánh tổng tier đã xây', () {
-      g.addShards(100000);
+      g.addCoins(1000000);
       final gate = kTempleNodes.firstWhere((e) => e.id == 'gate');
       t.build(gate);
       expect(t.builtCount, 1);
       expect(t.progress, closeTo(1 / t.totalCount, 1e-9));
-    });
-  });
-
-  group('Win thưởng shard', () {
-    test('lastShardReward = 1 + sao (qua addShards)', () {
-      // Mô phỏng tối thiểu: gọi trực tiếp addShards như _saveProgress làm.
-      g.lastStars = 2;
-      final before = g.shards.value;
-      g.addShards(1 + g.lastStars);
-      expect(g.shards.value, before + 3);
     });
   });
 }

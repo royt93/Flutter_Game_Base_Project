@@ -48,10 +48,10 @@ class TempleController extends GetxController {
     return t < n.maxTier ? n.tiers[t] : null;
   }
 
-  /// Đủ shard để xây tier kế?
+  /// Đủ xu để xây tier kế? (Wave 9: gộp tiền tệ — Đền Neon nay tiêu xu.)
   bool canBuild(TempleNode n) {
     final t = nextTier(n);
-    return t != null && g.shards.value >= t.cost;
+    return t != null && g.coins.value >= t.cost;
   }
 
   /// Tổng số tier đã xây / tổng tier (cho thanh tiến trình toàn đền).
@@ -62,15 +62,15 @@ class TempleController extends GetxController {
 
   double get progress => totalCount == 0 ? 0 : builtCount / totalCount;
 
-  /// Xây tier kế của hạng mục. Trả về true nếu thành công (đã trừ shard + thưởng xu).
+  /// Xây tier kế của hạng mục. Trả về true nếu thành công (đã trừ xu + thưởng xu).
   bool build(TempleNode n) {
     final t = nextTier(n);
     if (t == null) return false; // đã max
-    if (!g.spendShards(t.cost)) return false; // thiếu shard
+    if (!g.spendCoins(t.cost)) return false; // thiếu xu
     final newTier = tierOf(n) + 1;
     builtTier[n.id] = newTier;
     unawaited(_store.setInt(StorageKeys.templeTier(n.id), newTier));
-    // Thưởng xu mốc xây xong (vòng lặp: chơi → shard → xây → có thêm xu).
+    // Thưởng xu mốc xây xong (vòng lặp: chơi → xu → xây → có thêm xu).
     if (t.rewardCoins > 0) g.addCoins(t.rewardCoins);
     return true;
   }

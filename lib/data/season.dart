@@ -40,10 +40,10 @@ class SeasonMilestone {
 /// 6 mốc thưởng mùa (điểm tích luỹ tăng dần).
 const List<SeasonMilestone> kSeasonMilestones = [
   SeasonMilestone(50, RewardKind.coins, 60),
-  SeasonMilestone(120, RewardKind.shards, 5),
+  SeasonMilestone(120, RewardKind.coins, 50), // (gộp: 5 shard → 50 xu)
   SeasonMilestone(220, RewardKind.hammer, 1),
   SeasonMilestone(350, RewardKind.coins, 130),
-  SeasonMilestone(520, RewardKind.shards, 9),
+  SeasonMilestone(520, RewardKind.coins, 90), // (gộp: 9 shard → 90 xu)
   SeasonMilestone(720, RewardKind.moves, 2),
 ];
 

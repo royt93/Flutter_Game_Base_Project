@@ -226,10 +226,7 @@ class GameScreen extends StatelessWidget {
       final msg = win
           ? (ctrl.lastCoinReward > 0
               ? '${'daily_ch_streak'.tr}: ${ctrl.dailyChStreak.value}\n'
-                  '${'daily_ch_reward'.trParams({
-                    'c': '${ctrl.lastCoinReward}',
-                    's': '${ctrl.lastShardReward}'
-                  })}'
+                  '${'daily_ch_reward'.trParams({'c': '${ctrl.lastCoinReward}'})}'
               : 'daily_ch_done'.tr)
           : '${'hud_goal'.tr}: ${_objectiveText(ctrl)}';
       return NeonDialog.panel(
@@ -319,20 +316,6 @@ class GameScreen extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            if (ctrl.lastShardReward > 0) ...[
-              const SizedBox(width: 14),
-              const Icon(Icons.diamond_rounded, color: NeonTheme.cyan, size: 20),
-              const SizedBox(width: 6),
-              Text(
-                '+${ctrl.lastShardReward}',
-                style: const TextStyle(
-                  fontFamily: 'Baloo2',
-                  color: NeonTheme.cyan,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
           ],
         ),
         if (ctrl.lastStreakBonus > 0) ...[

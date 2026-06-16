@@ -74,11 +74,10 @@ void main() {
   });
 
   group('Kết thúc', () {
-    test('thắng boss thưởng xu+shard, KHÔNG đụng win-streak', () {
+    test('thắng boss thưởng xu (gộp shard cũ ×10), KHÔNG đụng win-streak', () {
       c.startBoss(2);
       c.winStreak.value = 4;
       final coins0 = c.coins.value;
-      final shards0 = c.shards.value;
       while (c.bossHp.value > 0) {
         c.addScore(8, 6);
       }
@@ -86,8 +85,8 @@ void main() {
       expect(r, 'win');
       expect(c.winStreak.value, 4); // không đổi
       expect(c.coins.value, greaterThan(coins0));
-      expect(c.shards.value, greaterThan(shards0));
-      expect(c.lastShardReward, 2 + 2); // 2 + stage
+      // xu = 40 + stage*20 + sao*10 + (2+stage)*10 → có phần shard cũ gộp vào
+      expect(c.lastCoinReward, greaterThan(40 + 2 * 20));
     });
 
     test('hết lượt mà boss còn máu → lose', () {

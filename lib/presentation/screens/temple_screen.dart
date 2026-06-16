@@ -25,7 +25,7 @@ class TempleScreen extends StatelessWidget {
               NeonAppBar(
                 title: 'temple_title'.tr,
                 color: NeonTheme.cyan,
-                actions: [_shardChip(g), _coinChip(g)],
+                actions: [_coinChip(g)],
               ),
               _progressBar(t),
               Expanded(child: _templeView(t)),
@@ -112,7 +112,7 @@ class TempleScreen extends StatelessWidget {
   // --- Panel dưới: hạng mục đang chọn + nút xây ---
   Widget _panel(GameController g, TempleController t) {
     return Obx(() {
-      g.shards.value;
+      g.coins.value; // rebuild khi xu đổi (đủ/không đủ để xây)
       t.builtTier.length;
       final id = t.selectedId.value;
       if (id.isEmpty) {
@@ -198,13 +198,14 @@ class TempleScreen extends StatelessWidget {
             else
               Row(
                 children: [
-                  Icon(Icons.diamond_rounded, color: n.accent, size: 18),
+                  const Icon(Icons.monetization_on_rounded,
+                      color: NeonTheme.yellow, size: 18),
                   const SizedBox(width: 5),
                   Text(
                     '${next.cost}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Baloo2',
-                      color: Colors.white,
+                      color: t.canBuild(n) ? Colors.white : NeonTheme.magenta,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
@@ -245,13 +246,6 @@ class TempleScreen extends StatelessWidget {
       );
     });
   }
-
-  Widget _shardChip(GameController g) => _chip(
-        Icons.diamond_rounded,
-        NeonTheme.cyan,
-        () => g.shards.value,
-        g,
-      );
 
   Widget _coinChip(GameController g) => _chip(
         Icons.monetization_on_rounded,

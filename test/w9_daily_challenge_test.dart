@@ -101,14 +101,13 @@ void main() {
       expect(c.level.index, kDailyLevelIndex);
     });
 
-    test('thắng lần đầu/ngày → thưởng xu+shard, streak=1, done', () {
+    test('thắng lần đầu/ngày → thưởng xu, streak=1, done', () {
       c.clock = () => DateTime(2026, 6, 16);
       final coins0 = c.coins.value;
       c.startDaily();
       forceWin(c);
       expect(c.checkEnd(), 'win');
       expect(c.lastCoinReward, greaterThan(0));
-      expect(c.lastShardReward, greaterThan(0));
       expect(c.dailyChStreak.value, 1);
       expect(c.dailyChallengeDoneToday, isTrue);
       expect(c.coins.value, greaterThan(coins0));
@@ -125,7 +124,6 @@ void main() {
       forceWin(c);
       expect(c.checkEnd(), 'win');
       expect(c.lastCoinReward, 0);
-      expect(c.lastShardReward, 0);
       expect(c.coins.value, coinsAfter1); // không tăng thêm
       expect(c.dailyChStreak.value, 1); // streak không nhảy khi chơi lại
     });

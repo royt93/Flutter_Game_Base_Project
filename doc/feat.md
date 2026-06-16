@@ -522,7 +522,7 @@ match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 
 
 ---
 
-*Cập nhật lần cuối: 2026-06-16 · Trạng thái: Đang phát triển (Wave 8.9 xong + **đánh giá chất lượng code toàn diện**. **214 test pass**, 0 analyzer, build APK OK, verify máy thật S24 Ultra qua WiFi adb)*
+*Cập nhật lần cuối: 2026-06-16 · Trạng thái: Đang phát triển (Wave 9: Thử thách hằng ngày + Diagonal gem + gộp tiền tệ 1 xu + revamp Home no-scroll/full-width/lưới 2×3. **235 test pass**, 0 analyzer, build APK OK, verify máy thật S24 Ultra. Còn lại: 🛒 Cửa hàng trang trí)*
 
 ---
 
@@ -551,7 +551,60 @@ seed, thưởng-1-lần, streak liền/gãy, anti-cheat lùi giờ, thua) · bui
 "THỬ THÁCH NGÀY", bàn seed theo ngày (2026-06-16 = clearObstacle/ice 0/32, 33 lượt — khớp
 công thức), logcat sạch exception app.
 
-> Wave 9 còn lại: 💎 Diagonal gem (special mới, match 6+) → 🛒 Cửa hàng trang trí.
+## 💎 Wave 9 — Diagonal gem (2026-06-16) ✅ TÍNH NĂNG 2/3
+
+Special gem mới thứ 6: **Diagonal** — tạo từ **match 6+** (match 5 vẫn rainbow), nổ **2
+đường chéo (hình X)** qua ô. Wire trọn vẹn qua 5 điểm:
+- `GemType.diagonal` (enum) → compiler ép xử lý đủ mọi `switch` (an toàn).
+- `MatchDetector._buildGroup`: len==5 → rainbow, len>=6 → diagonal.
+- `MatchDetector.diagonalCells(rows,cols,center,{thickness})` — hình học chéo **thuần,
+  test được** (engine `_addDiagonals` chỉ gọi lại).
+- `_expandSpecials`: kích hoạt diagonal → 2 beam neon dọc chéo + phá mọi ô cùng chéo.
+- `_comboCells` — **full combo**: diagonal+diagonal → X DÀY (±1); diagonal+striped → hoa
+  thị (2 chéo + hàng + cột); diagonal+bomb → 2 chéo + 3×3; rainbow+diagonal → cùng màu +
+  X qua pos.
+- `gem_component._renderSpecial`: vẽ 2 vạch neon chéo X + lõi sáng nhịp.
+
+Kết quả: 0 analyzer · **235 test pass** (+11 `test/w9_diagonal_gem_test.dart`: match-length→
+special, diagonalCells X 14 ô/góc 8 ô/thickness/biên) · build APK OK.
+
+## 💰 Wave 9 — Gộp tiền tệ về 1 loại xu (2026-06-16)
+
+Theo yêu cầu người dùng: **bỏ shard, mọi thứ dùng xu**. Trước đây shard chỉ tiêu cho Đền
+Neon → tích thừa (đúng vấn đề eval). Refactor 13 file:
+- **Quy đổi 1 shard = 10 xu**: migrate shard cũ → xu (`_migrateShardsToCoins`, guard
+  `shardsMigrated` chạy 1 lần, KHÔNG mất tiến trình người chơi).
+- Mọi nguồn thưởng shard (boss/rhythm/daily/normal/battle-pass/season) **gộp ×10 vào xu**.
+- Đền Neon: chi phí tier ×10, tiêu xu (`spendCoins`); bỏ `RewardKind.shards` (enum),
+  `shards` Rx, `addShards`/`spendShards`/`_setShards`/`lastShardReward`.
+- UI: bỏ shard chip/diamond icon ở Temple + dialog thưởng; i18n bỏ "shards".
+- **Bonus**: đơn giản hoá GameController (bớt 1 trục tiền tệ).
+
+Kết quả: 0 analyzer · **235 test pass** (w7_test viết lại cho coin + 2 test migrate) · verify
+máy thật (xu hiển thị đúng, Đền Neon tiêu xu).
+
+## 🎨 Wave 9 — Revamp Home: no-scroll, full-width, lưới Thử thách 2×3 (2026-06-16)
+
+Người dùng phản ánh menu Home **dư lề trái/phải** + yêu cầu **KHÔNG scroll** + bố cục Thử
+thách hài hoà hơn. Gốc rễ: nội dung quá cao cho 1 màn no-scroll → `FittedBox(scaleDown)`
+co ĐỒNG ĐỀU 2 chiều để vừa cao → sinh lề ngang. Không widget đơn nào "chỉ co chiều cao"
+→ giải pháp đúng là **nén nội dung vừa khít** để FittedBox khỏi co (full-width) mà vẫn
+giữ FittedBox làm lưới an toàn (no-scroll tuyệt đối).
+
+Đã làm:
+- **Nén để vừa 1 màn**: logo nhỏ lại (NEON 46→34, JEWELS 30→20), GemSparkle nhỏ; gộp khu
+  "Giữ chân" (Đền/Pass/Mùa) + "Tiện ích" (Thành tựu/Hướng dẫn/Cài đặt) thành **1 hàng 6
+  icon nhỏ** (bỏ 1 hàng + divider, tiết kiệm ~140px).
+- **Revamp Thử thách → lưới đều 2×3**: 6 ô VUÔNG bằng nhau (HẰNG NGÀY · VÔ TẬN / TRÙM ·
+  TRỌNG LỰC / NHỊP · 2 NGƯỜI) dùng chung `_modeCard` → hết cảnh card rộng/vuông lẫn lộn &
+  "2 người" trống trải. Daily nổi bật bằng **màu lime + badge góc** (🔥streak / ✓done, qua
+  Obx). `_modeCard` thêm tham số `corner`; bỏ `_dailyChallengeCard`. i18n `daily_ch_short`.
+- Spacing chuẩn 8/16/24 xuyên suốt.
+
+Verify S24 Ultra: full-width, **không scroll**, lưới 2×3 cân đối, logcat sạch (không
+overflow/RenderFlex). Bẫy đã ghi memory `home-fullwidth-no-fittedbox`.
+
+> Wave 9 còn lại: 🛒 Cửa hàng trang trí (skin gem + theme bàn, mua bằng xu).
 
 ## 🔍 Đánh giá chất lượng code (2026-06-16, Wave 8.9)
 

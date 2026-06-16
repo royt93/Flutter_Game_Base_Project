@@ -91,9 +91,6 @@ class SeasonController extends GetxController {
       case RewardKind.coins:
         g.addCoins(ms.amount);
         break;
-      case RewardKind.shards:
-        g.addShards(ms.amount);
-        break;
       case RewardKind.hammer:
         g.grantHammer(ms.amount);
         break;

@@ -67,14 +67,12 @@ void main() {
       c.lives.value = 1;
       c.totalWins.value = 10;
       c.unlockedLevel.value = 7;
-      c.shards.value = 30;
       await c.resetProgress();
       expect(c.coins.value, 50, reason: 'về 50 xu tặng mặc định');
       expect(c.boosterHammer.value, 2, reason: 'booster về mặc định');
       expect(c.lives.value, GameController.maxLives);
       expect(c.totalWins.value, 0);
       expect(c.unlockedLevel.value, 1);
-      expect(c.shards.value, 0);
     });
 
     test('reset xoá state in-memory của controller permanent (chống nhận lại)',

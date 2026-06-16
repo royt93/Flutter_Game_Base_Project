@@ -7,7 +7,8 @@ void main() {
     expect(GemColor.values.length, 6);
   });
 
-  test('GemType có normal + 4 special (striped H/V, bomb, rainbow)', () {
-    expect(GemType.values.length, 5);
+  test('GemType có normal + 5 special (striped H/V, bomb, rainbow, diagonal)', () {
+    expect(GemType.values.length, 6);
+    expect(GemType.values.contains(GemType.diagonal), isTrue);
   });
 }

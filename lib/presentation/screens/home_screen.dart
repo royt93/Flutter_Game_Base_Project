@@ -59,12 +59,14 @@ class HomeScreen extends StatelessWidget {
                 left: NeonTheme.s16,
                 child: Row(
                   children: [
-                    Obx(() => GestureDetector(
-                          onTap: g.lives.value < GameController.maxLives
-                              ? hc.openLivesBuy
-                              : null,
-                          child: _LivesChip(g: g),
-                        )),
+                    Obx(
+                      () => GestureDetector(
+                        onTap: g.lives.value < GameController.maxLives
+                            ? hc.openLivesBuy
+                            : null,
+                        child: _LivesChip(g: g),
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     _coinsChip(g),
                   ],
@@ -88,17 +90,22 @@ class HomeScreen extends StatelessWidget {
                 }),
               ),
               // Overlay daily (trong cây — route dialog no-op ở full-screen)
-              Obx(() => hc.dailyOpen.value
-                  ? _dailyOverlay(g, hc)
-                  : const SizedBox.shrink()),
+              Obx(
+                () => hc.dailyOpen.value
+                    ? _dailyOverlay(g, hc)
+                    : const SizedBox.shrink(),
+              ),
               // Overlay mua đầy mạng
-              Obx(() => hc.livesBuyOpen.value
-                  ? _livesBuyOverlay(g, hc)
-                  : const SizedBox.shrink()),
+              Obx(
+                () => hc.livesBuyOpen.value
+                    ? _livesBuyOverlay(g, hc)
+                    : const SizedBox.shrink(),
+              ),
               // Overlay vòng quay may mắn
-              Obx(() => lw.open.value
-                  ? _wheelOverlay(lw)
-                  : const SizedBox.shrink()),
+              Obx(
+                () =>
+                    lw.open.value ? _wheelOverlay(lw) : const SizedBox.shrink(),
+              ),
             ],
           ),
         ),
@@ -106,40 +113,50 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _menu(GameController g, AchievementController ac,
-      BattlePassController bp, SeasonController sc) {
-    // Căn TOP + chừa 64px cho action bar (tim/xu/wheel/quà) — tránh _GemSparkle
-    // và logo đè lên vùng action bar như trước.
-    // KHÔNG scroll: dùng FULL chiều rộng (padding chuẩn s16) + FittedBox
-    // (scaleDown) chỉ co lại theo CHIỀU CAO khi màn quá thấp → không dư space 2 bên.
+  Widget _menu(
+    GameController g,
+    AchievementController ac,
+    BattlePassController bp,
+    SeasonController sc,
+  ) {
+    // KHÔNG scroll + FULL chiều rộng: nội dung đã nén vừa khít màn nên FittedBox
+    // (scaleDown) KHÔNG co ở phần lớn máy → dùng trọn bề rộng (SizedBox = maxWidth
+    // sau padding s16), không sinh lề 2 bên. FittedBox chỉ là lưới an toàn cho
+    // máy quá thấp (co nhẹ thay vì scroll). Padding chuẩn s16 hai bên, s24 đáy.
     return Padding(
-            padding: const EdgeInsets.fromLTRB(
-                NeonTheme.s16, 58, NeonTheme.s16, NeonTheme.s8),
-            child: LayoutBuilder(
-              builder: (context, constraints) => Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: SizedBox(
-                  width: constraints.maxWidth,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                  _GemSparkle(),
+      padding: const EdgeInsets.fromLTRB(
+        NeonTheme.s16,
+        58,
+        NeonTheme.s16,
+        NeonTheme.s24,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) => Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              width: constraints.maxWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Logo gọn (1 dòng các gem màu nhỏ + chữ) để menu vừa khít màn,
+                  // KHÔNG scroll, FittedBox không phải co → full chiều rộng.
+                  _GemSparkle(size: 18, gap: 8),
                   const SizedBox(height: NeonTheme.s8),
                   Text(
-                    'NEON',
-                    style: TextStyle(
-                      fontFamily: 'Baloo2',
-                      fontSize: 46,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 6,
-                      shadows: NeonTheme.gemColors
-                          .take(3)
-                          .map((c) => Shadow(color: c, blurRadius: 24))
-                          .toList(),
-                    ),
-                  )
+                        'NEON',
+                        style: TextStyle(
+                          fontFamily: 'Baloo2',
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 5,
+                          shadows: NeonTheme.gemColors
+                              .take(3)
+                              .map((c) => Shadow(color: c, blurRadius: 20))
+                              .toList(),
+                        ),
+                      )
                       .animate(onPlay: (c) => c.repeat(reverse: true))
                       .shimmer(duration: 2200.ms, color: NeonTheme.cyan)
                       .scaleXY(begin: 1, end: 1.04, duration: 1600.ms),
@@ -147,11 +164,13 @@ class HomeScreen extends StatelessWidget {
                     'JEWELS',
                     style: TextStyle(
                       fontFamily: 'Baloo2',
-                      fontSize: 30,
+                      fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: NeonTheme.magenta,
-                      letterSpacing: 10,
-                      shadows: [Shadow(color: NeonTheme.magenta, blurRadius: 28)],
+                      letterSpacing: 8,
+                      shadows: [
+                        Shadow(color: NeonTheme.magenta, blurRadius: 22),
+                      ],
                     ),
                   ),
                   const SizedBox(height: NeonTheme.s16),
@@ -162,23 +181,43 @@ class HomeScreen extends StatelessWidget {
                     icon: Icons.play_arrow_rounded,
                     onTap: () {
                       // mở đúng kiểu xem người chơi đã chọn (lưu local; mặc định map)
-                      final grid = StorageService.to
-                              .getInt(StorageKeys.viewMode, def: 0) ==
+                      final grid =
+                          StorageService.to.getInt(
+                            StorageKeys.viewMode,
+                            def: 0,
+                          ) ==
                           1;
-                      Get.to(() => grid
-                          ? const LevelSelectScreen()
-                          : const WorldMapScreen());
+                      Get.to(
+                        () => grid
+                            ? const LevelSelectScreen()
+                            : const WorldMapScreen(),
+                      );
                     },
                   ),
-                  const SizedBox(height: NeonTheme.s24),
+                  const SizedBox(height: NeonTheme.s16),
                   // KHU THỬ THÁCH — 3 chế độ phụ gọn trong 1 hàng (thay vì 3 nút dọc)
                   _sectionLabel('challenge_modes'.tr),
                   const SizedBox(height: NeonTheme.s8),
-                  // Thử thách hằng ngày — tâm điểm giữ chân (card rộng + badge streak)
-                  _dailyChallengeCard(g),
-                  const SizedBox(height: 10),
+                  // LƯỚI ĐỀU 2×3 — 6 thử thách ô vuông bằng nhau (hài hoà, hết
+                  // cảnh card rộng/vuông lẫn lộn). Daily nổi bật: màu lime +
+                  // badge streak 🔥 / ✓ ở góc (Obx → cập nhật khi đổi streak).
                   Row(
                     children: [
+                      Expanded(
+                        child: Obx(
+                          () => _modeCard(
+                            Icons.event_rounded,
+                            'daily_ch_short'.tr,
+                            NeonTheme.lime,
+                            () {
+                              g.startDaily();
+                              Get.to(() => const GameScreen());
+                            },
+                            corner: _dailyCorner(g),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: NeonTheme.s8),
                       Expanded(
                         child: _modeCard(
                           Icons.all_inclusive_rounded,
@@ -190,7 +229,11 @@ class HomeScreen extends StatelessWidget {
                           },
                         ),
                       ),
-                      const SizedBox(width: 10),
+                    ],
+                  ),
+                  const SizedBox(height: NeonTheme.s8),
+                  Row(
+                    children: [
                       Expanded(
                         child: _modeCard(
                           Icons.coronavirus_rounded,
@@ -198,18 +241,16 @@ class HomeScreen extends StatelessWidget {
                           NeonTheme.orange,
                           () {
                             final stage =
-                                (1 + (g.unlockedLevel.value - 1) ~/ 20)
-                                    .clamp(1, 5);
+                                (1 + (g.unlockedLevel.value - 1) ~/ 20).clamp(
+                                  1,
+                                  5,
+                                );
                             g.startBoss(stage);
                             Get.to(() => const GameScreen());
                           },
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
+                      const SizedBox(width: NeonTheme.s8),
                       Expanded(
                         child: _modeCard(
                           Icons.swap_vert_rounded,
@@ -221,7 +262,11 @@ class HomeScreen extends StatelessWidget {
                           },
                         ),
                       ),
-                      const SizedBox(width: 10),
+                    ],
+                  ),
+                  const SizedBox(height: NeonTheme.s8),
+                  Row(
+                    children: [
                       Expanded(
                         child: _modeCard(
                           Icons.graphic_eq_rounded,
@@ -233,13 +278,7 @@ class HomeScreen extends StatelessWidget {
                           },
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  // 2 NGƯỜI 1 MÁY (versus / co-op) — card rộng cả 2 cột, cùng
-                  // lưới THỬ THÁCH (ô thứ 5) để khớp width, không lạc lõng.
-                  Row(
-                    children: [
+                      const SizedBox(width: NeonTheme.s8),
                       Expanded(
                         child: _modeCard(
                           Icons.groups_rounded,
@@ -250,16 +289,21 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: NeonTheme.s24),
-                  // KHU GIỮ CHÂN — Đền Neon · Battle Pass · Sự kiện mùa
+                  const SizedBox(height: NeonTheme.s16),
+                  // KHU GIỮ CHÂN + TIỆN ÍCH — gộp 1 hàng 6 icon nhỏ để vừa khít
+                  // màn (no-scroll): Đền · Pass · Mùa · Thành tựu · Hướng dẫn · Cài đặt
                   _sectionLabel('meta_section'.tr),
                   const SizedBox(height: NeonTheme.s8),
                   Row(
                     children: [
                       Expanded(
-                        child: _circleNav(Icons.account_balance_rounded,
-                            NeonTheme.cyan, 'temple_title'.tr,
-                            () => Get.to(() => const TempleScreen())),
+                        child: _circleNav(
+                          Icons.account_balance_rounded,
+                          NeonTheme.cyan,
+                          'temple_title'.tr,
+                          () => Get.to(() => const TempleScreen()),
+                          small: true,
+                        ),
                       ),
                       Expanded(
                         child: Obx(() {
@@ -271,6 +315,7 @@ class HomeScreen extends StatelessWidget {
                             'bp_title'.tr,
                             () => Get.to(() => const BattlePassScreen()),
                             badge: bp.hasClaimable,
+                            small: true,
                           );
                         }),
                       ),
@@ -284,21 +329,10 @@ class HomeScreen extends StatelessWidget {
                             'season_title'.tr,
                             () => Get.to(() => const SeasonScreen()),
                             badge: sc.hasClaimable,
+                            small: true,
                           );
                         }),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: NeonTheme.s24),
-                  // Tiện ích — phân cách mảnh + hàng icon nhỏ
-                  Container(
-                    height: 1,
-                    margin: const EdgeInsets.symmetric(horizontal: 40),
-                    color: Colors.white.withValues(alpha: 0.08),
-                  ),
-                  const SizedBox(height: NeonTheme.s16),
-                  Row(
-                    children: [
                       Expanded(
                         child: Obx(() {
                           ac.claimed.length;
@@ -313,18 +347,22 @@ class HomeScreen extends StatelessWidget {
                         }),
                       ),
                       Expanded(
-                        child: _circleNav(Icons.menu_book_rounded,
-                            NeonTheme.magenta, 'guide'.tr,
-                            () => Get.to(() => const GuideScreen()),
-                            small: true),
+                        child: _circleNav(
+                          Icons.menu_book_rounded,
+                          NeonTheme.magenta,
+                          'guide'.tr,
+                          () => Get.to(() => const GuideScreen()),
+                          small: true,
+                        ),
                       ),
                       Expanded(
                         child: _circleNav(
-                            Icons.settings_rounded,
-                            NeonTheme.purple,
-                            'settings'.tr,
-                            () => Get.to(() => const SettingsScreen()),
-                            small: true),
+                          Icons.settings_rounded,
+                          NeonTheme.purple,
+                          'settings'.tr,
+                          () => Get.to(() => const SettingsScreen()),
+                          small: true,
+                        ),
                       ),
                     ],
                   ),
@@ -358,178 +396,82 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                    ],
-                  ),
-                ),
+                ],
               ),
             ),
           ),
-          );
+        ),
+      ),
+    );
   }
 
   /// Chip xu trên top bar.
   Widget _coinsChip(GameController g) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: NeonTheme.panel.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: NeonTheme.yellow, width: 1.5),
-          boxShadow: NeonTheme.glow(NeonTheme.yellow, blur: 6),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    decoration: BoxDecoration(
+      color: NeonTheme.panel.withValues(alpha: 0.6),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: NeonTheme.yellow, width: 1.5),
+      boxShadow: NeonTheme.glow(NeonTheme.yellow, blur: 6),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.monetization_on_rounded,
+          color: NeonTheme.yellow,
+          size: 18,
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.monetization_on_rounded,
-              color: NeonTheme.yellow, size: 18),
-          const SizedBox(width: 5),
-          Obx(() => Text('${g.coins.value}',
-              style: const TextStyle(
-                fontFamily: 'Baloo2',
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-              ))),
-        ]),
-      );
-
-  /// Nhãn tiêu đề khu (canh trái, mảnh).
-  Widget _sectionLabel(String text) => Align(
-        alignment: Alignment.centerLeft,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 2),
-          child: Text(
-            text.toUpperCase(),
-            style: TextStyle(
+        const SizedBox(width: 5),
+        Obx(
+          () => Text(
+            '${g.coins.value}',
+            style: const TextStyle(
               fontFamily: 'Baloo2',
-              color: Colors.white.withValues(alpha: 0.6),
-              fontSize: 12,
+              color: Colors.white,
               fontWeight: FontWeight.w800,
-              letterSpacing: 2,
+              fontSize: 15,
             ),
           ),
         ),
-      );
+      ],
+    ),
+  );
+
+  /// Nhãn tiêu đề khu (canh trái, mảnh).
+  Widget _sectionLabel(String text) => Align(
+    alignment: Alignment.centerLeft,
+    child: Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 2),
+      child: Text(
+        text.toUpperCase(),
+        style: TextStyle(
+          fontFamily: 'Baloo2',
+          color: Colors.white.withValues(alpha: 0.6),
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 2,
+        ),
+      ),
+    ),
+  );
 
   /// Thẻ chế độ gọn (icon + nhãn) — dùng trong hàng "Thử thách".
-  /// Card rộng "Thử thách hằng ngày": tiêu đề + phụ đề (hoặc "đã xong hôm nay") +
-  /// badge chuỗi ngày (🔥N) bên phải. Bấm → vào màn puzzle seed theo ngày.
-  Widget _dailyChallengeCard(GameController g) {
-    const color = NeonTheme.lime;
-    return Obx(() {
-      final done = g.dailyChallengeDoneToday;
-      final streak = g.dailyChStreak.value;
-      return GestureDetector(
-        onTap: () {
-          g.startDaily();
-          Get.to(() => const GameScreen());
-        },
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-          decoration: BoxDecoration(
-            color: NeonTheme.panel.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color, width: 1.6),
-            boxShadow: NeonTheme.glow(color, blur: done ? 6 : 10),
-          ),
-          child: Row(
-            children: [
-              Icon(done ? Icons.event_available_rounded : Icons.event_rounded,
-                  color: color, size: 30),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'daily_ch_title'.tr,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Baloo2',
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
-                        shadows: [Shadow(color: color, blurRadius: 8)],
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      done ? 'daily_ch_done'.tr : 'daily_ch_sub'.tr,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Baloo2',
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (streak > 0)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: NeonTheme.panel.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: NeonTheme.orange, width: 1.3),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.local_fire_department_rounded,
-                          color: NeonTheme.orange, size: 16),
-                      const SizedBox(width: 3),
-                      Text(
-                        '$streak',
-                        style: const TextStyle(
-                          fontFamily: 'Baloo2',
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: color, width: 1.3),
-                  ),
-                  child: Text(
-                    'daily_ch_play'.tr,
-                    style: const TextStyle(
-                      fontFamily: 'Baloo2',
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    });
-  }
 
+  /// Ô thử thách vuông (icon + nhãn). [corner] = badge tuỳ chọn ở góc phải-trên
+  /// (vd streak Daily). Dùng chung cho cả 6 ô lưới 2×3 → đồng nhất.
   Widget _modeCard(
-      IconData icon, String label, Color color, VoidCallback onTap) {
-    return GestureDetector(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap, {
+    Widget? corner,
+  }) {
+    final card = GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
         decoration: BoxDecoration(
           color: NeonTheme.panel.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(16),
@@ -559,11 +501,74 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
+    if (corner == null) return card;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        card,
+        Positioned(top: -6, right: -6, child: corner),
+      ],
+    );
   }
 
+  /// Badge góc của ô Daily: ✓ khi đã hoàn thành hôm nay, 🔥streak khi đang có
+  /// chuỗi, ngược lại null (ô lime đã đủ nổi bật). Gọi trong Obx (đọc streak Rx).
+  Widget? _dailyCorner(GameController g) {
+    final done = g.dailyChallengeDoneToday;
+    final streak = g.dailyChStreak.value;
+    if (done) {
+      return _cornerPill(Icons.check_rounded, NeonTheme.lime, null);
+    }
+    if (streak > 0) {
+      return _cornerPill(
+        Icons.local_fire_department_rounded,
+        NeonTheme.orange,
+        '$streak',
+      );
+    }
+    return null;
+  }
+
+  Widget _cornerPill(IconData icon, Color color, String? text) => Container(
+    padding: EdgeInsets.symmetric(
+      horizontal: text == null ? 4 : 6,
+      vertical: 3,
+    ),
+    decoration: BoxDecoration(
+      color: NeonTheme.bgDark,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: color, width: 1.3),
+      boxShadow: NeonTheme.glow(color, blur: 6),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 13),
+        if (text != null) ...[
+          const SizedBox(width: 2),
+          Text(
+            text,
+            style: const TextStyle(
+              fontFamily: 'Baloo2',
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ],
+    ),
+  );
+
   /// Nút điều hướng phụ: icon tròn neon + nhãn nhỏ + badge tuỳ chọn.
-  Widget _circleNav(IconData icon, Color color, String label, VoidCallback onTap,
-      {bool badge = false, bool small = false}) {
+  Widget _circleNav(
+    IconData icon,
+    Color color,
+    String label,
+    VoidCallback onTap, {
+    bool badge = false,
+    bool small = false,
+  }) {
     final circle = Container(
       padding: EdgeInsets.all(small ? 12 : 15),
       decoration: BoxDecoration(
@@ -581,22 +586,25 @@ class HomeScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           badge
-              ? Stack(clipBehavior: Clip.none, children: [
-                  circle,
-                  Positioned(
-                    right: -1,
-                    top: -1,
-                    child: Container(
-                      width: 13,
-                      height: 13,
-                      decoration: BoxDecoration(
-                        color: NeonTheme.lime,
-                        shape: BoxShape.circle,
-                        boxShadow: NeonTheme.glow(NeonTheme.lime, blur: 8),
+              ? Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    circle,
+                    Positioned(
+                      right: -1,
+                      top: -1,
+                      child: Container(
+                        width: 13,
+                        height: 13,
+                        decoration: BoxDecoration(
+                          color: NeonTheme.lime,
+                          shape: BoxShape.circle,
+                          boxShadow: NeonTheme.glow(NeonTheme.lime, blur: 8),
+                        ),
                       ),
                     ),
-                  ),
-                ])
+                  ],
+                )
               : circle,
           const SizedBox(height: 7),
           Text(
@@ -630,8 +638,11 @@ class HomeScreen extends StatelessWidget {
         border: Border.all(color: NeonTheme.yellow, width: 1.5),
         boxShadow: NeonTheme.glow(NeonTheme.yellow, blur: can ? 12 : 5),
       ),
-      child: const Icon(Icons.card_giftcard_rounded,
-          color: NeonTheme.yellow, size: 22),
+      child: const Icon(
+        Icons.card_giftcard_rounded,
+        color: NeonTheme.yellow,
+        size: 22,
+      ),
     );
     return GestureDetector(
       onTap: hc.openDaily,
@@ -640,8 +651,8 @@ class HomeScreen extends StatelessWidget {
         children: [
           can
               ? btn
-                  .animate(onPlay: (c) => c.repeat(reverse: true))
-                  .scaleXY(begin: 1, end: 1.12, duration: 700.ms)
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .scaleXY(begin: 1, end: 1.12, duration: 700.ms)
               : btn,
           if (can)
             Positioned(
@@ -682,8 +693,8 @@ class HomeScreen extends StatelessWidget {
         children: [
           can
               ? btn
-                  .animate(onPlay: (c) => c.repeat(reverse: true))
-                  .rotate(begin: -0.03, end: 0.03, duration: 700.ms)
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .rotate(begin: -0.03, end: 0.03, duration: 700.ms)
               : btn,
           if (can)
             Positioned(
@@ -715,9 +726,10 @@ class HomeScreen extends StatelessWidget {
         content: LuckyWheelView(ctrl: lw),
         actions: [
           NeonDialogAction(
-              label: 'btn_home'.tr,
-              color: NeonTheme.cyan,
-              onTap: lw.closeWheel),
+            label: 'btn_home'.tr,
+            color: NeonTheme.cyan,
+            onTap: lw.closeWheel,
+          ),
         ],
       ),
     );
@@ -741,14 +753,16 @@ class HomeScreen extends StatelessWidget {
         actions: [
           if (can)
             NeonDialogAction(
-                label: 'daily_claim'.tr,
-                color: NeonTheme.lime,
-                onTap: hc.claim)
+              label: 'daily_claim'.tr,
+              color: NeonTheme.lime,
+              onTap: hc.claim,
+            )
           else
             NeonDialogAction(
-                label: 'btn_home'.tr,
-                color: NeonTheme.cyan,
-                onTap: hc.closeDaily),
+              label: 'btn_home'.tr,
+              color: NeonTheme.cyan,
+              onTap: hc.closeDaily,
+            ),
         ],
       ),
     );
@@ -767,13 +781,15 @@ class HomeScreen extends StatelessWidget {
             : 'lives_buy_msg'.trParams({'n': '${HomeController.refillPrice}'}),
         actions: [
           NeonDialogAction(
-              label: 'cancel'.tr,
-              color: NeonTheme.cyan,
-              onTap: hc.closeLivesBuy),
+            label: 'cancel'.tr,
+            color: NeonTheme.cyan,
+            onTap: hc.closeLivesBuy,
+          ),
           NeonDialogAction(
-              label: '${'buy'.tr} (${HomeController.refillPrice}💰)',
-              color: NeonTheme.lime,
-              onTap: hc.buyLives),
+            label: '${'buy'.tr} (${HomeController.refillPrice}💰)',
+            color: NeonTheme.lime,
+            onTap: hc.buyLives,
+          ),
         ],
       ),
     );
@@ -800,8 +816,9 @@ class HomeScreen extends StatelessWidget {
                 : NeonTheme.panel.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: claimed ? NeonTheme.lime : NeonTheme.yellow,
-                width: claimed ? 2 : 1.2),
+              color: claimed ? NeonTheme.lime : NeonTheme.yellow,
+              width: claimed ? 2 : 1.2,
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -843,21 +860,25 @@ class HomeScreen extends StatelessWidget {
 
 /// Cụm gem nhỏ lấp lánh trên logo.
 class _GemSparkle extends StatelessWidget {
+  final double size;
+  final double gap;
+  const _GemSparkle({this.size = 30, this.gap = 12});
+
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 12,
+      spacing: gap,
       children: [
         for (int i = 0; i < 5; i++)
           Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: NeonTheme.gemColors[i],
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: NeonTheme.glow(NeonTheme.gemColors[i], blur: 14),
-            ),
-          )
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  color: NeonTheme.gemColors[i],
+                  borderRadius: BorderRadius.circular(size * 0.27),
+                  boxShadow: NeonTheme.glow(NeonTheme.gemColors[i], blur: 14),
+                ),
+              )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scaleXY(begin: 0.8, end: 1.2, duration: (800 + i * 160).ms)
               .then()
@@ -927,35 +948,44 @@ class _LivesChipState extends State<_LivesChip> {
           border: Border.all(color: NeonTheme.magenta, width: 1.5),
           boxShadow: NeonTheme.glow(NeonTheme.magenta, blur: 6),
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.favorite_rounded,
-              color: NeonTheme.magenta, size: 18),
-          const SizedBox(width: 5),
-          Text(
-            '$lives',
-            style: const TextStyle(
-              fontFamily: 'Baloo2',
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 15,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.favorite_rounded,
+              color: NeonTheme.magenta,
+              size: 18,
             ),
-          ),
-          if (!full && next > Duration.zero) ...[
-            const SizedBox(width: 8),
-            Icon(Icons.schedule_rounded,
-                color: Colors.white.withValues(alpha: 0.7), size: 13),
-            const SizedBox(width: 3),
+            const SizedBox(width: 5),
             Text(
-              HomeScreen._fmt(next),
-              style: TextStyle(
+              '$lives',
+              style: const TextStyle(
                 fontFamily: 'Baloo2',
-                color: Colors.white.withValues(alpha: 0.8),
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
               ),
             ),
+            if (!full && next > Duration.zero) ...[
+              const SizedBox(width: 8),
+              Icon(
+                Icons.schedule_rounded,
+                color: Colors.white.withValues(alpha: 0.7),
+                size: 13,
+              ),
+              const SizedBox(width: 3),
+              Text(
+                HomeScreen._fmt(next),
+                style: TextStyle(
+                  fontFamily: 'Baloo2',
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ],
-        ]),
+        ),
       );
     });
   }

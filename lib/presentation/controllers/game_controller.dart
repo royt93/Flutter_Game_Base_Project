@@ -22,7 +22,8 @@ class GameController extends GetxController {
   final RxInt movesLeft = 0.obs;
   final RxInt targetScore = 0.obs;
   final RxInt comboCount = 0.obs;
-  final RxInt runMaxCombo = 0.obs; // combo cao nhất trong VÁN hiện tại (cho quest)
+  final RxInt runMaxCombo =
+      0.obs; // combo cao nhất trong VÁN hiện tại (cho quest)
   final RxInt currentLevel = 1.obs;
 
   // --- Mục tiêu màn chơi ---
@@ -54,6 +55,7 @@ class GameController extends GetxController {
   final RxInt bossWeakColor = 0.obs; // index màu điểm yếu (đổi theo phase)
   LevelConfig? _bossCfg;
   int _bossHitsSinceRetaliate = 0;
+
   /// Đã clear ÍT NHẤT 1 gem đúng màu điểm yếu trong nhịp resolve hiện tại?
   /// Bật bởi [registerClear], tiêu thụ (×2 sát thương) trong [_bossDamage].
   bool _weakHitPending = false;
@@ -111,8 +113,7 @@ class GameController extends GetxController {
   int lastStreakBonus = 0;
 
   /// Tổng sao đã đạt (mọi màn) — dùng cho thành tựu.
-  int get totalStars =>
-      stars.values.fold(0, (sum, s) => sum + s);
+  int get totalStars => stars.values.fold(0, (sum, s) => sum + s);
 
   // --- Lives / energy ---
   static const int maxLives = 5;
@@ -130,11 +131,9 @@ class GameController extends GetxController {
   final RxMap<int, int> stars = <int, int>{}.obs;
 
   // --- Kinh tế & booster ---
+  // Wave 9: GỘP tiền tệ về 1 loại DUY NHẤT là `coins` (xu). Shard cũ đã bỏ —
+  // quy đổi 1 shard = 10 xu (migrate 1 lần ở _load). Đền Neon nay tiêu xu.
   final RxInt coins = 0.obs;
-  final RxInt shards = 0.obs; // Wave 7: mảnh neon để xây "Đền Neon"
-
-  /// Shard nhận ở ván vừa thắng (cho dialog). Endless không cho shard.
-  int lastShardReward = 0;
   final RxInt boosterHammer = 0.obs; // đập 1 gem
   final RxInt boosterMoves = 0.obs; // +10 lượt
   final RxInt boosterSwap = 0.obs; // đổi 2 gem bất kỳ
@@ -194,8 +193,10 @@ class GameController extends GetxController {
     }
     dailyStreak.value = _store.getInt(StorageKeys.dailyStreak, def: 0);
     dailyChStreak.value = _store.getInt(StorageKeys.dailyChStreak, def: 0);
-    dailyChBestStreak.value =
-        _store.getInt(StorageKeys.dailyChBestStreak, def: 0);
+    dailyChBestStreak.value = _store.getInt(
+      StorageKeys.dailyChBestStreak,
+      def: 0,
+    );
     lives.value = _store.getInt(StorageKeys.lives, def: maxLives);
     winStreak.value = _store.getInt(StorageKeys.winStreak, def: 0);
     bestWinStreak.value = _store.getInt(StorageKeys.bestWinStreak, def: 0);
@@ -203,7 +204,7 @@ class GameController extends GetxController {
     bestCombo.value = _store.getInt(StorageKeys.bestCombo, def: 0);
     coinsEarnedTotal.value = _store.getInt(StorageKeys.coinsEarned, def: 0);
     endlessHigh.value = _store.getInt(StorageKeys.endlessHigh, def: 0);
-    shards.value = _store.getInt(StorageKeys.shards, def: 0);
+    _migrateShardsToCoins(); // Wave 9: shard cũ → xu (×10), chạy 1 lần
     refillLives();
   }
 
@@ -230,7 +231,8 @@ class GameController extends GetxController {
     isGravity.value = gravity;
     isRhythm.value = rhythm;
     isDaily.value = daily;
-    isVersus.value = false; // versus chỉ bật qua _initVersus; mọi start* khác tắt
+    isVersus.value =
+        false; // versus chỉ bật qua _initVersus; mọi start* khác tắt
     if (!endless) _endlessCfg = null;
     if (!boss) _bossCfg = null;
     if (!gravity) _gravityCfg = null;
@@ -261,7 +263,10 @@ class GameController extends GetxController {
     currentLevel.value = index;
     final cfg = kLevels[index - 1];
     _resetRunState(
-        moves: cfg.moves, target: cfg.targetScore, time: cfg.timeLimit);
+      moves: cfg.moves,
+      target: cfg.targetScore,
+      time: cfg.timeLimit,
+    );
   }
 
   /// Bắt đầu chế độ Endless (thử thách tăng dần).
@@ -278,8 +283,7 @@ class GameController extends GetxController {
     _enterMode(gravity: true);
     gravityDir.value = 0;
     _gravityMoveCount = 0;
-    _resetRunState(
-        moves: _gravityCfg!.moves, target: _gravityCfg!.targetScore);
+    _resetRunState(moves: _gravityCfg!.moves, target: _gravityCfg!.targetScore);
   }
 
   /// Engine gọi sau mỗi lượt ở chế độ Trọng lực động: trả true mỗi
@@ -303,8 +307,7 @@ class GameController extends GetxController {
     groove.value = 0;
     lastBeatJudge.value = 0;
     _rhythmBonusPending = false;
-    _resetRunState(
-        moves: _rhythmCfg!.moves, target: _rhythmCfg!.targetScore);
+    _resetRunState(moves: _rhythmCfg!.moves, target: _rhythmCfg!.targetScore);
   }
 
   /// Engine gọi mỗi frame ở chế độ Rhythm: tiến đồng hồ nhịp, đập HUD mỗi beat.
@@ -523,8 +526,10 @@ class GameController extends GetxController {
             : (obstacleCleared.value / obstacleTotal.value).clamp(0.0, 1.0);
       case ObjectiveType.endless:
         // tiến trình tới stage kế tiếp
-        return ((score.value % kEndlessStageScore) / kEndlessStageScore)
-            .clamp(0.0, 1.0);
+        return ((score.value % kEndlessStageScore) / kEndlessStageScore).clamp(
+          0.0,
+          1.0,
+        );
       case ObjectiveType.boss:
         // tiến trình = máu boss đã trừ
         return bossMaxHp.value == 0
@@ -557,7 +562,8 @@ class GameController extends GetxController {
 
   String? checkEnd() {
     if (_resolved) return null;
-    if (isVersus.value) return null; // versus: không tự kết thúc, đồng hồ quyết định
+    // versus: không tự kết thúc, đồng hồ ngoài quyết định
+    if (isVersus.value) return null;
     // Endless: không có "win"; thua khi hết lượt. KHÔNG đụng win-streak/level.
     if (isEndless.value) {
       if (movesLeft.value <= 0) {
@@ -565,7 +571,6 @@ class GameController extends GetxController {
         lastStars = 0;
         lastCoinReward = 0;
         lastStreakBonus = 0;
-        lastShardReward = 0;
         if (score.value > endlessHigh.value) {
           endlessHigh.value = score.value;
           unawaited(_store.setInt(StorageKeys.endlessHigh, endlessHigh.value));
@@ -574,17 +579,19 @@ class GameController extends GetxController {
       }
       return null;
     }
-    // Boss: chế độ riêng — thắng khi hạ máu boss, thua khi hết lượt. Thưởng
-    // xu/shard theo stage, KHÔNG đụng win-streak/level-unlock.
+    // Boss: chế độ riêng — thắng khi hạ máu boss, thua khi hết lượt. Thưởng xu
+    // theo stage (đã gộp phần shard cũ ×10), KHÔNG đụng win-streak/level-unlock.
     if (isBoss.value) {
       if (hasWon) {
         _resolved = true;
         lastStars = computeStars();
         lastStreakBonus = 0;
-        lastCoinReward = 40 + bossStage.value * 20 + lastStars * 10;
-        lastShardReward = 2 + bossStage.value;
+        lastCoinReward =
+            40 +
+            bossStage.value * 20 +
+            lastStars * 10 +
+            (2 + bossStage.value) * 10; // gộp shard cũ (2+stage) → xu
         addCoins(lastCoinReward);
-        addShards(lastShardReward);
         return 'win';
       }
       if (movesLeft.value <= 0) {
@@ -592,22 +599,23 @@ class GameController extends GetxController {
         lastStars = 0;
         lastCoinReward = 0;
         lastStreakBonus = 0;
-        lastShardReward = 0;
         return 'lose';
       }
       return null;
     }
     // Rhythm: chế độ riêng — thắng khi đạt điểm mục tiêu, thua khi hết lượt.
-    // Thưởng xu/shard theo sao + groove, KHÔNG đụng win-streak/level-unlock.
+    // Thưởng xu theo sao + groove (đã gộp shard cũ ×10), KHÔNG đụng win-streak.
     if (isRhythm.value) {
       if (score.value >= targetScore.value) {
         _resolved = true;
         lastStars = computeStars();
         lastStreakBonus = 0;
-        lastCoinReward = 20 + lastStars * 10 + groove.value * 3;
-        lastShardReward = 1 + lastStars;
+        lastCoinReward =
+            20 +
+            lastStars * 10 +
+            groove.value * 3 +
+            (1 + lastStars) * 10; // gộp shard cũ (1+sao) → xu
         addCoins(lastCoinReward);
-        addShards(lastShardReward);
         return 'win';
       }
       if (movesLeft.value <= 0) {
@@ -615,7 +623,6 @@ class GameController extends GetxController {
         lastStars = 0;
         lastCoinReward = 0;
         lastStreakBonus = 0;
-        lastShardReward = 0;
         return 'lose';
       }
       return null;
@@ -631,29 +638,35 @@ class GameController extends GetxController {
         if (!dailyChallengeDoneToday) {
           final last = _store.getInt(StorageKeys.dailyChLastDone, def: -1);
           // liền mạch (hôm qua đã hoàn thành) → +1; gãy/lần đầu → reset về 1
-          dailyChStreak.value =
-              (last == _effectiveDay - 1) ? dailyChStreak.value + 1 : 1;
+          dailyChStreak.value = (last == _effectiveDay - 1)
+              ? dailyChStreak.value + 1
+              : 1;
           // Ghi mốc "đã hoàn thành hôm nay" TRƯỚC khi thưởng (kill giữa chừng →
           // xấu nhất mất 1 lượt thưởng, KHÔNG farm lặp).
+          unawaited(_store.setInt(StorageKeys.dailyChLastDone, _effectiveDay));
           unawaited(
-              _store.setInt(StorageKeys.dailyChLastDone, _effectiveDay));
-          unawaited(
-              _store.setInt(StorageKeys.dailyChStreak, dailyChStreak.value));
+            _store.setInt(StorageKeys.dailyChStreak, dailyChStreak.value),
+          );
           if (dailyChStreak.value > dailyChBestStreak.value) {
             dailyChBestStreak.value = dailyChStreak.value;
-            unawaited(_store.setInt(
-                StorageKeys.dailyChBestStreak, dailyChBestStreak.value));
+            unawaited(
+              _store.setInt(
+                StorageKeys.dailyChBestStreak,
+                dailyChBestStreak.value,
+              ),
+            );
           }
           // thưởng hậu hĩnh hơn màn thường (1 lần/ngày): theo sao + streak (cap 7)
+          // + phần shard cũ (3+sao) đã gộp ×10 vào xu.
           lastCoinReward =
-              60 + lastStars * 20 + dailyChStreak.value.clamp(1, 7) * 10;
-          lastShardReward = 3 + lastStars;
+              60 +
+              lastStars * 20 +
+              dailyChStreak.value.clamp(1, 7) * 10 +
+              (3 + lastStars) * 10;
           addCoins(lastCoinReward);
-          addShards(lastShardReward);
         } else {
           // đã nhận hôm nay → chơi lại chỉ để luyện, không thưởng nữa
           lastCoinReward = 0;
-          lastShardReward = 0;
         }
         return 'win';
       }
@@ -662,7 +675,6 @@ class GameController extends GetxController {
         lastStars = 0;
         lastCoinReward = 0;
         lastStreakBonus = 0;
-        lastShardReward = 0;
         return 'lose';
       }
       return null;
@@ -674,12 +686,15 @@ class GameController extends GetxController {
       winStreak.value++;
       if (winStreak.value > bestWinStreak.value) {
         bestWinStreak.value = winStreak.value;
-        unawaited(_store.setInt(StorageKeys.bestWinStreak, bestWinStreak.value));
+        unawaited(
+          _store.setInt(StorageKeys.bestWinStreak, bestWinStreak.value),
+        );
       }
       lastStreakBonus = winStreak.value >= 2
           ? winStreak.value.clamp(0, _streakCap) * _streakStep
           : 0;
-      lastCoinReward = 10 + lastStars * 10 + lastStreakBonus; // 20/30/40 + bonus
+      lastCoinReward =
+          10 + lastStars * 10 + lastStreakBonus; // 20/30/40 + bonus
       totalWins.value++;
       unawaited(_store.setInt(StorageKeys.winStreak, winStreak.value));
       unawaited(_store.setInt(StorageKeys.totalWins, totalWins.value));
@@ -691,7 +706,6 @@ class GameController extends GetxController {
       lastStars = 0;
       lastCoinReward = 0;
       lastStreakBonus = 0;
-      lastShardReward = 0;
       winStreak.value = 0;
       unawaited(_store.setInt(StorageKeys.winStreak, 0));
       unawaited(_saveProgress(win: false));
@@ -726,15 +740,20 @@ class GameController extends GetxController {
   }
 
   /// Mua booster bằng xu. Trả về true nếu đủ xu.
-  bool buyHammer({int price = 30}) => _buy(StorageKeys.bHammer, boosterHammer, price);
-  bool buyMoves({int price = 40}) => _buy(StorageKeys.bMoves, boosterMoves, price);
+  bool buyHammer({int price = 30}) =>
+      _buy(StorageKeys.bHammer, boosterHammer, price);
+  bool buyMoves({int price = 40}) =>
+      _buy(StorageKeys.bMoves, boosterMoves, price);
   bool buySwap({int price = 40}) => _buy(StorageKeys.bSwap, boosterSwap, price);
   bool buyBomb({int price = 50}) => _buy(StorageKeys.bBomb, boosterBomb, price);
-  bool buyColor({int price = 80}) => _buy(StorageKeys.bColor, boosterColor, price);
-  bool buyJoker({int price = 60}) => _buy(StorageKeys.bJoker, boosterJoker, price);
+  bool buyColor({int price = 80}) =>
+      _buy(StorageKeys.bColor, boosterColor, price);
+  bool buyJoker({int price = 60}) =>
+      _buy(StorageKeys.bJoker, boosterJoker, price);
   bool buyLightning({int price = 60}) =>
       _buy(StorageKeys.bLightning, boosterLightning, price);
-  bool buyRoyal({int price = 120}) => _buy(StorageKeys.bRoyal, boosterRoyal, price);
+  bool buyRoyal({int price = 120}) =>
+      _buy(StorageKeys.bRoyal, boosterRoyal, price);
   bool buyGravity({int price = 50}) =>
       _buy(StorageKeys.bGravity, boosterGravity, price);
 
@@ -755,23 +774,23 @@ class GameController extends GetxController {
     _setCoins(coins.value + amount);
   }
 
-  /// Gán shard (clamp [0, maxCoins]) + persist. Mọi thay đổi shard đi qua đây.
-  void _setShards(int value) {
-    shards.value = value.clamp(0, maxCoins);
-    unawaited(_store.setInt(StorageKeys.shards, shards.value));
-  }
-
-  /// Cộng shard (thắng level / thưởng) + persist.
-  void addShards(int amount) {
-    if (amount <= 0) return;
-    _setShards(shards.value + amount);
-  }
-
-  /// Tiêu shard để xây đền. Trả về false nếu không đủ.
-  bool spendShards(int amount) {
-    if (amount <= 0 || shards.value < amount) return false;
-    _setShards(shards.value - amount);
+  /// Tiêu xu (xây Đền Neon, mua skin/theme cửa hàng…). Trả về false nếu không đủ.
+  bool spendCoins(int amount) {
+    if (amount <= 0 || coins.value < amount) return false;
+    _setCoins(coins.value - amount);
     return true;
+  }
+
+  /// Wave 9 — GỘP tiền tệ: quy đổi shard cũ → xu (1 shard = 10 xu), CHẠY 1 LẦN.
+  /// Không xoá tiến trình người chơi: số shard đang giữ cộng thẳng vào xu.
+  void _migrateShardsToCoins() {
+    if (_store.getInt(StorageKeys.shardsMigrated, def: 0) == 1) return;
+    final old = _store.getInt(StorageKeys.shards, def: 0);
+    if (old > 0) {
+      _setCoins(coins.value + old * 10);
+      unawaited(_store.setInt(StorageKeys.shards, 0));
+    }
+    unawaited(_store.setInt(StorageKeys.shardsMigrated, 1));
   }
 
   /// Tặng booster (vòng quay / pre-game) + persist.
@@ -780,7 +799,8 @@ class GameController extends GetxController {
     unawaited(_store.setInt(key, count.value));
   }
 
-  void grantHammer([int n = 1]) => _grant(StorageKeys.bHammer, boosterHammer, n);
+  void grantHammer([int n = 1]) =>
+      _grant(StorageKeys.bHammer, boosterHammer, n);
   void grantMovesBooster([int n = 1]) =>
       _grant(StorageKeys.bMoves, boosterMoves, n);
   void grantBomb([int n = 1]) => _grant(StorageKeys.bBomb, boosterBomb, n);
@@ -825,8 +845,10 @@ class GameController extends GetxController {
   }
 
   Future<void> resetProgress() async {
-    dlog('resetProgress START unlocked=${unlockedLevel.value} '
-        'highScores=${highScores.length} stars=${stars.length} coins=${coins.value}');
+    dlog(
+      'resetProgress START unlocked=${unlockedLevel.value} '
+      'highScores=${highScores.length} stars=${stars.length} coins=${coins.value}',
+    );
 
     // 1) Xoá MỌI key tiến trình trên đĩa (giữ lại cài đặt ngôn ngữ localeCode).
     //    Trước đây bỏ sót: coins, daily, wheel, lives, booster, tutorial,
@@ -906,8 +928,10 @@ class GameController extends GetxController {
     AchievementController.maybe?.resetState();
     TempleController.maybe?.resetState();
 
-    dlog('resetProgress DONE unlocked=${unlockedLevel.value} '
-        'highScores=${highScores.length} stars=${stars.length} coins=${coins.value}');
+    dlog(
+      'resetProgress DONE unlocked=${unlockedLevel.value} '
+      'highScores=${highScores.length} stars=${stars.length} coins=${coins.value}',
+    );
   }
 
   // --------------------------------------------------------------------------
@@ -972,7 +996,8 @@ class GameController extends GetxController {
     } else {
       final remainder = elapsed % _regenMs;
       unawaited(
-          _store.setInt(StorageKeys.livesRegenAt, now - remainder + _regenMs));
+        _store.setInt(StorageKeys.livesRegenAt, now - remainder + _regenMs),
+      );
     }
     unawaited(_store.setInt(StorageKeys.lives, lives.value));
   }
@@ -995,8 +1020,12 @@ class GameController extends GetxController {
     lives.value--;
     if (wasMax) {
       // vừa rời mức tối đa → bắt đầu đếm hồi
-      unawaited(_store.setInt(
-          StorageKeys.livesRegenAt, clock().millisecondsSinceEpoch + _regenMs));
+      unawaited(
+        _store.setInt(
+          StorageKeys.livesRegenAt,
+          clock().millisecondsSinceEpoch + _regenMs,
+        ),
+      );
     }
     unawaited(_store.setInt(StorageKeys.lives, lives.value));
     return true;
@@ -1024,14 +1053,16 @@ class GameController extends GetxController {
         stars[lv] = lastStars;
         await _store.setInt(StorageKeys.star(lv), lastStars);
       }
+      // Wave 9 (gộp tiền tệ): phần shard cũ (1 + sao) → xu ×10, gộp vào lastCoinReward
+      // TRƯỚC khi cộng (để dialog hiện đúng tổng).
+      lastCoinReward += (1 + lastStars) * 10;
       coins.value = (coins.value + lastCoinReward).clamp(0, maxCoins);
-      coinsEarnedTotal.value =
-          (coinsEarnedTotal.value + lastCoinReward).clamp(0, maxCoins);
+      coinsEarnedTotal.value = (coinsEarnedTotal.value + lastCoinReward).clamp(
+        0,
+        maxCoins,
+      );
       await _store.setInt(StorageKeys.coins, coins.value);
       await _store.setInt(StorageKeys.coinsEarned, coinsEarnedTotal.value);
-      // Wave 7: thưởng Shard xây Đền Neon (1 + số sao). Endless không vào đây.
-      lastShardReward = 1 + lastStars;
-      addShards(lastShardReward);
       if (lv >= unlockedLevel.value && lv < kLevels.length) {
         unlockedLevel.value = lv + 1;
         await _store.setInt(StorageKeys.unlockedLevel, unlockedLevel.value);

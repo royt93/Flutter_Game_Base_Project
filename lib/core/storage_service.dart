@@ -39,7 +39,9 @@ class StorageKeys {
   static const String endlessHigh = 'endless_high';
 
   // Wave 7 — Meta build "Đền Neon"
-  static const String shards = 'shards'; // mảnh neon (tài nguyên xây đền)
+  static const String shards = 'shards'; // (CŨ) mảnh neon — Wave 9 gộp về xu
+  /// Wave 9: đã quy đổi shard cũ → xu (×10) chưa (1 = rồi). Chạy 1 lần.
+  static const String shardsMigrated = 'shards_migrated';
   /// Tier hiện tại của 1 hạng mục đền (0 = chưa xây).
   static String templeTier(String id) => 'temple_$id';
 

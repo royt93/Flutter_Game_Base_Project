@@ -7,7 +7,6 @@ enum QuestType { winLevels, playLevels, earnCoins, reachCombo, collectStars }
 /// Phần thưởng (dùng chung cho mốc pass).
 enum RewardKind {
   coins,
-  shards,
   hammer,
   moves,
   // Booster độc quyền (nguồn nhận chính qua Battle Pass).
@@ -82,7 +81,7 @@ class PassTier {
 /// Track Battle Pass — 12 cấp, XP tích luỹ tăng dần, thưởng xen kẽ.
 const List<PassTier> kPassTiers = [
   PassTier(60, RewardKind.coins, 50),
-  PassTier(140, RewardKind.shards, 4),
+  PassTier(140, RewardKind.coins, 40), // (gộp tiền tệ: 4 shard → 40 xu)
   PassTier(240, RewardKind.hammer, 1),
   PassTier(360, RewardKind.coins, 90),
   PassTier(500, RewardKind.moves, 1),
