@@ -143,13 +143,13 @@ class HomeScreen extends StatelessWidget {
                 'NEON',
                 style: TextStyle(
                   fontFamily: 'Baloo2',
-                  fontSize: 52,
+                  fontSize: 72,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
-                  letterSpacing: 7,
+                  letterSpacing: 9,
                   shadows: NeonTheme.gemColors
                       .take(3)
-                      .map((c) => Shadow(color: c, blurRadius: 26))
+                      .map((c) => Shadow(color: c, blurRadius: 30))
                       .toList(),
                 ),
               )
@@ -160,11 +160,11 @@ class HomeScreen extends StatelessWidget {
             'JEWELS',
             style: TextStyle(
               fontFamily: 'Baloo2',
-              fontSize: 32,
+              fontSize: 44,
               fontWeight: FontWeight.w700,
               color: NeonTheme.magenta,
-              letterSpacing: 11,
-              shadows: [Shadow(color: NeonTheme.magenta, blurRadius: 30)],
+              letterSpacing: 14,
+              shadows: [Shadow(color: NeonTheme.magenta, blurRadius: 34)],
             ),
           ),
           const Spacer(), // đẩy khối GIỮA (CHƠI NGAY + Thử thách) xuống
@@ -266,7 +266,9 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
-          const Spacer(), // đẩy Phần thưởng xuống sát đáy
+          // Cách section Phần thưởng đúng 32px (khối Chơi ngay + Thử thách dời
+          // xuống sát mép trên của Phần thưởng nhờ Spacer phía trên logo).
+          const SizedBox(height: 32),
           // KHU GIỮ CHÂN + TIỆN ÍCH — 2 hàng × 3 icon (nhãn đủ, thoáng).
           // Hàng 1: Đền · Pass · Mùa. Hàng 2: Thành tựu · Hướng dẫn · Cài đặt.
           _sectionLabel('meta_section'.tr),
@@ -462,8 +464,7 @@ class HomeScreen extends StatelessWidget {
           onTap: onTap,
           behavior: HitTestBehavior.opaque,
           child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 18),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -473,25 +474,25 @@ class HomeScreen extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: color, width: 3),
-              boxShadow: NeonTheme.glow(color, blur: 22),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color, width: 2.5),
+              boxShadow: NeonTheme.glow(color, blur: 16),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.play_arrow_rounded, color: color, size: 32),
-                const SizedBox(width: 10),
+                const Icon(Icons.play_arrow_rounded, color: color, size: 24),
+                const SizedBox(width: 8),
                 Text(
                   'play_now'.tr,
                   style: const TextStyle(
                     fontFamily: 'Baloo2',
                     color: Colors.white,
-                    fontSize: 24,
+                    fontSize: 18,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                    shadows: [Shadow(color: color, blurRadius: 14)],
+                    letterSpacing: 1.2,
+                    shadows: [Shadow(color: color, blurRadius: 12)],
                   ),
                 ),
               ],
