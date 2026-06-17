@@ -57,7 +57,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   integration_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.14.4
+  icons_launcher: ^3.0.3
   flutter_native_splash: ^2.4.7
 
 # For information on the generic Dart part of this file, see the
@@ -106,14 +106,16 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-# Launcher icon (chạy: dart run flutter_launcher_icons)
-flutter_launcher_icons:
-  android: true
-  ios: true
-  image_path: "asset/icon/icon.png"
-  adaptive_icon_background: "#0A0A1A"
-  adaptive_icon_foreground: "asset/icon/foreground.png"
-  remove_alpha_ios: true
+# Launcher icon (chạy: dart run icons_launcher:create)
+icons_launcher:
+  image_path: "asset/icon/ic_launcher.png"
+  platforms:
+    android:
+      enable: true
+      adaptive_background_color: "#0A0A1A"
+      adaptive_foreground_image: "asset/icon/ic_launcher.png"
+    ios:
+      enable: true
 
 # Splash screen neon (chạy: dart run flutter_native_splash:create)
 flutter_native_splash:

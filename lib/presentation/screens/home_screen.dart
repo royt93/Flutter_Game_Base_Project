@@ -118,17 +118,24 @@ class HomeScreen extends StatelessWidget {
     //  • Logo TRÊN CÙNG
     //  • CHƠI NGAY + Thử thách Ở GIỮA (2 Spacer kẹp 2 đầu → tự căn giữa khoảng thở)
     //  • Phần thưởng DƯỚI, cách version ĐÚNG 16px; version + copyright ở ĐÁY.
-    // (nội dung đã nén để vừa 1 màn nên Column max không tràn). Padding s16 2 bên.
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        NeonTheme.s16,
-        58,
-        NeonTheme.s16,
-        NeonTheme.s8,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        children: [
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight,
+            ),
+            child: IntrinsicHeight(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  NeonTheme.s16,
+                  58,
+                  NeonTheme.s16,
+                  NeonTheme.s8,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
           // Logo TO, nổi bật trên cùng.
           _GemSparkle(size: 24, gap: 12),
           const SizedBox(height: NeonTheme.s8),
@@ -384,8 +391,13 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
           ),
-        ],
-      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
