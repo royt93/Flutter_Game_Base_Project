@@ -120,9 +120,11 @@ icons_launcher:
 # Splash screen neon (chạy: dart run flutter_native_splash:create)
 flutter_native_splash:
   color: "#0A0A1A"
-  image: asset/icon/foreground.png
-  android: true
-  ios: true
+  image_android: asset/icon/ic_launcher.png
+  background_image_ios: asset/icon/ios_background.png
+  fullscreen: true
+  android_gravity: center
+
   android_12:
     color: "#0A0A1A"
-    image: asset/icon/foreground.png
+    image: asset/icon/ic_launcher.png
