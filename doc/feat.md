@@ -681,6 +681,84 @@ fallback tiếng Anh). Nay dịch đủ.
 - **Kết quả**: 0 analyzer issue · **237 test pass** (+2 i18n). App **sẵn sàng phát hành
   đa ngôn ngữ**.
 
+## 🧹 Wave 10 — Dọn nợ kỹ thuật: tách GameController + centralize font (2026-06-17)
+
+Người dùng chốt làm tuần tự: dọn nợ (option 4) → thêm gameplay mới (option 3).
+Phần dọn nợ:
+
+- **Tách GameController god-controller** (1165 LOC → 8 file, file lớn nhất 312):
+  giữ NGUYÊN là MỘT class qua `part`/`extension`. File chính `game_controller.dart`
+  giữ toàn bộ Rx field + `static const` + constructor + `onInit`/`_load`/`_enterMode`/
+  `_resetRunState` + getter `level`; 7 part file = 7 extension theo trách nhiệm
+  (`_modes`/`_scoring`/`_economy`/`_booster`/`_cosmetics`/`_lives`/`_progress`).
+  **Public API + mọi call-site + Get.find + Obx + test giữ y nguyên** → né rủi ro
+  "tách thành controller riêng" mà eval Wave 8.9 cảnh báo. Memory:
+  `game-controller-part-extension-split`.
+  - *Cạm bẫy gặp & fix*: extension scope KHÔNG truyền qua import lồng → `w8_versus_test`
+    (chỉ import `versus_controller`) vỡ `addScore/addCoins/checkEnd/useMove`; thêm import
+    trực tiếp `game_controller.dart`. Static const trong extension prefix `GameController.`.
+- **Centralize font**: thêm `NeonTheme.fontFamily = 'Baloo2'` + set `ThemeData.fontFamily`
+  trong `main.dart` → Baloo2 là default app-wide (mọi Text MỚI kế thừa, khỏi lặp string).
+  *Không* mass-remove 106 dòng `fontFamily: 'Baloo2'` cũ (vô hại, churn cao, eval đã
+  rate ROI thấp — để khi cần).
+- *Bỏ qua (như eval khuyến nghị)*: magic-number layout → const (mơ hồ, dễ tạo noise);
+  tách economy/clock thành service riêng (đã đạt mục tiêu bằng part/extension).
+
+Kết quả: 0 analyzer issue · **250 test pass** (không hồi quy) · build sạch.
+
+## 🎮 Wave 10 — 4 gameplay feature mới (2026-06-17)
+
+Người dùng chốt KẾT HỢP cả 4 (làm chung 1 wave vì đụng file lõi chung —
+levels/controller/engine/HUD/i18n; song song subagent sẽ xung đột).
+
+- **Mục tiêu hỗn hợp (Order mode)**: `ObjectiveType.order` + `OrderGoal(color,target)`.
+  Weave vào 3 màn score `kOrderLevels={37,67,97}` (giữ NGUYÊN kRotatingObjectives →
+  không xô lệch). Thu đủ 3 màu cùng lúc. `orderProgress` (RxList) cập nhật trong
+  `registerClear`; hasWon = mọi mục tiêu đạt; HUD multi-chip màu; đi qua nhánh
+  win thường (tính win-streak/unlock). Test `w10_order_test` (7).
+- **Bom đếm ngược**: hazard trên màn score `kBombLevels={31,49,79}` (KHÔNG thêm
+  ObjectiveType). Engine sở hữu lưới `bomb` (>0 = đếm ngược). Mỗi lượt `_tickBombs`
+  giảm 1; về 0 chưa tháo → `controller.bombExploded=true` → checkEnd cho THUA
+  (win ưu tiên trước). Tháo = clear gem trên ô bom (`_defuseBombs`). `BombLayer`
+  vẽ số đếm + cảnh báo magenta nhịp khi ≤3. HUD dải bom. i18n `bomb_left/timer`
+  (en+vi). Test `w10_bomb_test` (7: cấu hình + lose-contract + mount seed).
+- **Light Ball (special gem thứ 7)**: `GemType.lightBall`. Đổi rule: match 6 →
+  diagonal, **≥7 → lightBall** (tầng cao nhất, hiếm = jackpot). Nổ = sao 8 hướng
+  (hàng+cột+2 chéo) qua `MatchDetector.lightBallCells` (pure, test được). Combo:
+  LB+LB → cả bàn; LB+special → sao DÀY (±1) + special kia tự kích hoạt. Render
+  4 vạch + 8 tia xoay + lõi trắng. Test `w10_light_ball_test` (6) + cập nhật
+  `w9_diagonal_gem_test` (match-7 nay lightBall) + `widget_test` (GemType=7).
+- **Shader glow neon**: `shaders/neon_glow.frag` (fragment shader, runtime_effect)
+  → `NeonGlowAura` (1 draw/frame, priority -9 dưới gem). Nạp async qua
+  `FragmentProgram.fromAsset` trong engine onLoad, **try/catch → tự tắt nếu GPU/nền
+  tảng không hỗ trợ** (fallback giữ hình ảnh cũ; tránh tái diễn lag glow lịch sử).
+  KHÔNG thay NeonFx.drawGlow (hot path 50+/frame). Compile OK qua impellerc (build).
+
+Kết quả: 0 analyzer · **271 test pass** (+21: order 7, bomb 7, light ball 6, +1 chỉnh
+GemType count) · build APK debug OK.
+
+**Audit (8.5/10) + sửa polish (2026-06-17)**: đã verify đọc-code 5 điểm rủi ro (RxList
+`[]=` refresh OK; màn score KHÔNG tick bom mỗi frame — dòng 309 gate timeAttack; retry
+reset `bombExploded`; win ưu tiên trước bom nổ; switch enum vá đủ). Đã sửa 3 polish:
+(1) màu Order xoay theo level (`base=(index~/7)%n` + 3 màu liên tiếp → 37/67/97 khác bộ,
+hết trùng trio); (2) cân bằng Order (`per=7+index~/16`, moves `+12` → màn 97 còn 13×3=39
+mục tiêu / 27 lượt); (3) Guide thêm section "Tính năng mới" (Light Ball + Bom đếm ngược
++ Mục tiêu hỗn hợp) — i18n **en+vi**, 20 ngôn ngữ fallback EN (coverage test ≥80% vẫn
+PASS). Shader thuần visual → không vào Guide.
+
+**✅ Verify máy thật (Pixel 7 Pro, Android 16, Impeller/Vulkan) — 2026-06-17**:
+- Boot sạch · Home/World Map/Story/Pregame/Board render đúng · logcat KHÔNG exception
+  (chỉ warning `AIBinder_linkToDeath` của plugin, vô hại).
+- **Shader**: log `Using the Impeller rendering backend (Vulkan)` + `neon_glow.frag`
+  nạp & chạy KHÔNG lỗi (không rơi fallback) → shader OK trên GPU thật.
+- **Bom** (qua build tạm thêm màn 1 vào kBombLevels, đã revert): HUD "Bom: 3 · Đếm:12",
+  3 quả bom vẽ số đếm, LƯỢT 30 (đúng +4 bonus). Sau 1 nước hợp lệ: Đếm 12→11 (tick
+  đúng 1/lượt), Bom 3→2 (tháo khi clear gem ô bom), 3 swipe sai KHÔNG tốn lượt. ✓
+- *Chưa thấy trực quan (đã unit-test, rủi ro thấp)*: Order (màn 37), Light Ball
+  (match-7 hiếm), bom NỔ→thua (mới chỉ tháo kịp). fps: Flutter surface không vào
+  gfxinfo; định tính chỉ 1 frame-skip lúc vào bàn (debug), còn lại mượt.
+- Nợ nhẹ: dịch Guide 4 feature cho 20 ngôn ngữ (đang fallback EN; coverage test ≥80% pass).
+
 ## 🔍 Đánh giá chất lượng code (2026-06-16, Wave 8.9)
 
 4 agent đọc song song 4 tầng (engine / controllers / UI / core) + verify claim nặng bằng đọc code thật & probe. **Điểm tổng: 7.5/10** — chạy ổn, kiến trúc tốt, không lỗi logic nghiêm trọng; nợ kỹ thuật tập trung 2 chỗ.

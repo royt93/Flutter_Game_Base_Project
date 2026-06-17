@@ -9,8 +9,9 @@ enum GemColor { cyan, magenta, lime, yellow, orange, purple }
 /// - stripedH / stripedV: nổ cả hàng / cả cột (tạo từ match 4)
 /// - bomb: nổ vùng 3x3 xung quanh (tạo từ match hình T/L)
 /// - rainbow: xóa toàn bộ gem cùng 1 màu (tạo từ match 5)
-/// - diagonal: nổ 2 đường chéo (hình X) qua ô (tạo từ match 6+) — Wave 9
-enum GemType { normal, stripedH, stripedV, bomb, rainbow, diagonal }
+/// - diagonal: nổ 2 đường chéo (hình X) qua ô (tạo từ match 6) — Wave 9
+/// - lightBall: toả tia hàng + cột + 2 chéo (sao 8 hướng) — tạo từ match 7+ (Wave 10)
+enum GemType { normal, stripedH, stripedV, bomb, rainbow, diagonal, lightBall }
 
 /// Vị trí 1 ô trên lưới.
 class Cell {

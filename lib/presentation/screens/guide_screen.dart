@@ -117,6 +117,19 @@ class GuideScreen extends StatelessWidget {
                       ],
                     ),
                     _section(
+                      color: NeonTheme.lime,
+                      icon: Icons.new_releases_rounded,
+                      title: 'guide_w10_title'.tr,
+                      children: [
+                        _bullet(NeonTheme.cyan, Icons.flare_rounded,
+                            'guide_lightball'.tr, 'guide_lightball_desc'.tr),
+                        _bullet(NeonTheme.magenta, Icons.dangerous_rounded,
+                            'guide_bombdown'.tr, 'guide_bombdown_desc'.tr),
+                        _bullet(NeonTheme.lime, Icons.checklist_rounded,
+                            'guide_order'.tr, 'guide_order_desc'.tr),
+                      ],
+                    ),
+                    _section(
                       color: NeonTheme.yellow,
                       icon: Icons.lightbulb_rounded,
                       title: '★',

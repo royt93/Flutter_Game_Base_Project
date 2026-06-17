@@ -3,6 +3,9 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:neon_jewels/core/storage_service.dart';
+// GameController tách thành part/extension (Wave 10): test truy cập addScore/
+// addCoins/checkEnd/useMove qua extension → cần import trực tiếp library này.
+import 'package:neon_jewels/presentation/controllers/game_controller.dart';
 import 'package:neon_jewels/presentation/controllers/versus_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

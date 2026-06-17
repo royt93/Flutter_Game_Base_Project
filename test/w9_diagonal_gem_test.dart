@@ -34,8 +34,11 @@ void main() {
     test('match 6 → diagonal (MỚI)', () {
       expect(specialOfRun(6), GemType.diagonal);
     });
-    test('match 7 → diagonal', () {
-      expect(specialOfRun(7), GemType.diagonal);
+    test('match 7 → lightBall (Wave 10: tầng cao nhất, không còn diagonal)', () {
+      expect(specialOfRun(7), GemType.lightBall);
+    });
+    test('match 8 → lightBall', () {
+      expect(specialOfRun(8), GemType.lightBall);
     });
 
     test('diagonal đặt ở ô giữa run', () {

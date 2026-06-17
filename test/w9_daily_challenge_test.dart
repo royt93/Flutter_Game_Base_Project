@@ -32,6 +32,7 @@ void main() {
         c.obstacleTotal.value = 4;
         c.obstacleCleared.value = 4;
         break;
+      case ObjectiveType.order:
       case ObjectiveType.endless:
       case ObjectiveType.boss:
         break;

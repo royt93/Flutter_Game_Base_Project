@@ -9,6 +9,7 @@ import '../logic/gem_data.dart';
 /// - timeAttack: đạt điểm trong giới hạn THỜI GIAN (không tính lượt)
 /// - dropDown: đưa đủ "ingredient" xuống đáy bàn
 /// - clearObstacle: dọn sạch obstacle (ice/chain/stone)
+/// - order: mục tiêu HỖN HỢP — thu đủ NHIỀU màu cùng lúc (Wave 10)
 /// - endless: chế độ vô tận (thử thách tăng dần) — KHÔNG có "win", thua khi
 ///   hết lượt; ghép special hoàn lượt; obstacle xuất hiện theo stage.
 enum ObjectiveType {
@@ -18,8 +19,16 @@ enum ObjectiveType {
   timeAttack,
   dropDown,
   clearObstacle,
+  order,
   endless,
   boss,
+}
+
+/// 1 mục tiêu con của chế độ Order (thu đủ [target] gem màu [color]).
+class OrderGoal {
+  final GemColor color;
+  final int target;
+  const OrderGoal(this.color, this.target);
 }
 
 /// 6 mục tiêu xoay vòng cho 100 màn thường (KHÔNG gồm [ObjectiveType.endless] —
@@ -60,6 +69,20 @@ enum ObstacleType { none, ice, chain, stone, spread }
 /// chỉ là chướng ngại động người chơi phải kìm hãm.
 const Set<int> kSpreadLevels = {55, 73, 91};
 
+/// Các màn (vốn là score) được CHUYỂN sang mục tiêu hỗn hợp Order (Wave 10):
+/// thu đủ 3 màu gem cùng lúc. Chọn 3 màn rải đều các thế giới (không trùng
+/// kSpreadLevels). Giữ NGUYÊN kRotatingObjectives → không xô lệch màn khác.
+const Set<int> kOrderLevels = {37, 67, 97};
+
+/// Các màn score có HAZARD "bom đếm ngược" (Wave 10): mục tiêu vẫn là điểm,
+/// nhưng vài quả bom đếm lùi mỗi lượt — để 1 quả về 0 (chưa tháo) → THUA ngay.
+/// Tháo bom = clear gem nằm trên ô bom. Chọn màn score không trùng order/spread.
+const Set<int> kBombLevels = {31, 49, 79};
+
+/// Số quả bom seed mỗi màn bomb + số lượt đếm ngược khởi đầu (rộng rãi cho công bằng).
+const int kBombCount = 3;
+const int kBombCountdown = 12;
+
 class LevelConfig {
   final int index;
   final int rows;
@@ -82,6 +105,9 @@ class LevelConfig {
   final ObstacleType obstacle;
   final JellyPattern obstaclePattern;
 
+  /// Order: danh sách mục tiêu con (thu đủ nhiều màu). Rỗng nếu không phải Order.
+  final List<OrderGoal> orders;
+
   const LevelConfig({
     required this.index,
     required this.rows,
@@ -97,7 +123,34 @@ class LevelConfig {
     this.dropTarget = 0,
     this.obstacle = ObstacleType.none,
     this.obstaclePattern = JellyPattern.none,
+    this.orders = const [],
   });
+}
+
+/// Tạo cấu hình màn Order (mục tiêu hỗn hợp): thu đủ 3 màu khác nhau, target
+/// tăng nhẹ theo [index]. Chọn 3 màu tất định theo index (không phụ thuộc RNG
+/// → test được). Cho thêm lượt vì mục tiêu nặng hơn 1 màu đơn.
+LevelConfig _buildOrderLevel(int index, int rows, int cols, int colorCount,
+    int baseMoves) {
+  final n = GemColor.values.length;
+  // Màu khởi đầu XOAY theo level (37/67/97 ≡1 mod 6 → nếu dùng index%n sẽ TRÙNG
+  // bộ màu). Dùng base = (index~/7)%n cho 3 bộ màu KHÁC nhau giữa các màn order,
+  // lấy 3 màu LIÊN TIẾP (luôn phân biệt trong 1 màn).
+  final base = (index ~/ 7) % n;
+  final c0 = GemColor.values[base];
+  final c1 = GemColor.values[(base + 1) % n];
+  final c2 = GemColor.values[(base + 2) % n];
+  // Target mỗi màu nhẹ hơn + nhiều lượt hơn (mục tiêu 3 màu nặng → cân bằng).
+  final per = 7 + index ~/ 16; // 37→9, 67→11, 97→13 (tổng ≤ 39)
+  return LevelConfig(
+    index: index,
+    rows: rows,
+    cols: cols,
+    colorCount: colorCount,
+    moves: baseMoves + 12,
+    objective: ObjectiveType.order,
+    orders: [OrderGoal(c0, per), OrderGoal(c1, per), OrderGoal(c2, per)],
+  );
 }
 
 /// Tổng số màn.
@@ -159,13 +212,23 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
 
   switch (objective) {
     case ObjectiveType.score:
+      // Wave 10: vài màn score chuyển sang Order (mục tiêu hỗn hợp 3 màu).
+      if (kOrderLevels.contains(index)) {
+        return _buildOrderLevel(index, rows, cols, colorCount, moves);
+      }
       final spread = kSpreadLevels.contains(index);
+      final bomb = kBombLevels.contains(index);
       return LevelConfig(
         index: index,
         rows: rows,
         cols: cols,
         colorCount: colorCount,
-        moves: spread ? moves + 6 : moves, // hazard lan tỏa → thêm lượt
+        // hazard (lan tỏa / bom) → thêm lượt cho công bằng
+        moves: spread
+            ? moves + 6
+            : bomb
+                ? moves + 4
+                : moves,
         objective: ObjectiveType.score,
         targetScore: 1000 + index * 220,
         obstacle: spread ? ObstacleType.spread : ObstacleType.none,
@@ -234,10 +297,11 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
         obstacle: type,
         obstaclePattern: pattern,
       );
+    case ObjectiveType.order:
     case ObjectiveType.endless:
     case ObjectiveType.boss:
-      // Không bao giờ rơi vào đây (endless/boss là chế độ riêng, không thuộc
-      // kRotatingObjectives); trả về fallback score để switch exhaustive.
+      // Không bao giờ rơi vào đây (order weave qua kOrderLevels ở case score;
+      // endless/boss là chế độ riêng) — fallback score để switch exhaustive.
       return LevelConfig(
         index: index,
         rows: rows,
@@ -419,6 +483,7 @@ LevelConfig buildDailyLevel(int epochDay) {
       );
     case ObjectiveType.score:
     case ObjectiveType.timeAttack:
+    case ObjectiveType.order:
     case ObjectiveType.endless:
     case ObjectiveType.boss:
       return LevelConfig(

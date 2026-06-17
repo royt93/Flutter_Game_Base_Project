@@ -106,6 +106,7 @@ class _NeonJewelsAppState extends State<NeonJewelsApp>
       ],
       theme: ThemeData(
         useMaterial3: true,
+        fontFamily: NeonTheme.fontFamily, // Baloo2 mặc định toàn app
         scaffoldBackgroundColor: NeonTheme.bgDark,
         colorScheme: const ColorScheme.dark(
           primary: NeonTheme.cyan,

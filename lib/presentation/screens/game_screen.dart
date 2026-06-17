@@ -274,6 +274,13 @@ class GameScreen extends StatelessWidget {
         return '${ctrl.dropped.value} / ${ctrl.level.dropTarget}';
       case ObjectiveType.clearObstacle:
         return '${ctrl.obstacleCleared.value} / ${ctrl.obstacleTotal.value}';
+      case ObjectiveType.order:
+        final orders = ctrl.level.orders;
+        var done = 0;
+        for (var i = 0; i < orders.length && i < ctrl.orderProgress.length; i++) {
+          if (ctrl.orderProgress[i] >= orders[i].target) done++;
+        }
+        return '$done / ${orders.length}';
       case ObjectiveType.endless:
         return '${ctrl.score.value}';
       case ObjectiveType.boss:
@@ -402,6 +409,44 @@ class GameScreen extends StatelessWidget {
           _infoPanel(ctrl),
           const SizedBox(height: NeonTheme.s8),
           Obx(() => _animatedBar(ctrl.objectiveProgress)),
+          // Bom đếm ngược (Wave 10): chỉ báo cảnh báo khi còn bom trên bàn.
+          Obx(() => ctrl.bombsLeft.value > 0
+              ? Padding(
+                  padding: const EdgeInsets.only(top: NeonTheme.s8),
+                  child: _bombStrip(ctrl.bombsLeft.value, ctrl.bombMinTimer.value),
+                )
+              : const SizedBox.shrink()),
+        ],
+      ),
+    );
+  }
+
+  /// Dải cảnh báo bom: 💣 ×N + đếm ngược nhỏ nhất. Đỏ rực khi ≤3 lượt.
+  Widget _bombStrip(int count, int minTimer) {
+    final danger = minTimer <= 3;
+    final color = danger ? NeonTheme.magenta : NeonTheme.orange;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: NeonTheme.panel.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.6), width: 1.5),
+        boxShadow: NeonTheme.glow(color, blur: danger ? 10 : 5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NeonIcon(Icons.dangerous_rounded, color: color, size: 18),
+          const SizedBox(width: 6),
+          Text(
+            '${'bomb_left'.tr}: $count  •  ${'bomb_timer'.tr}: $minTimer',
+            style: TextStyle(
+              fontFamily: 'Baloo2',
+              color: danger ? color : Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -620,6 +665,29 @@ class GameScreen extends StatelessWidget {
 
   Widget _goalValue(GameController ctrl) {
     final obj = ctrl.level.objective;
+    // Order (Wave 10): nhiều mục tiêu màu cùng lúc → dãy chip nhỏ (dot + đếm),
+    // FittedBox co vừa ô goal hẹp.
+    if (obj == ObjectiveType.order) {
+      final orders = ctrl.level.orders;
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0;
+                i < orders.length && i < ctrl.orderProgress.length;
+                i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              _orderChip(
+                NeonTheme.gemColors[orders[i].color.index],
+                ctrl.orderProgress[i],
+                orders[i].target,
+              ),
+            ],
+          ],
+        ),
+      );
+    }
     Widget? leading;
     if (obj == ObjectiveType.collect && ctrl.level.collectColor != null) {
       final c = NeonTheme.gemColors[ctrl.level.collectColor!.index];
@@ -650,6 +718,38 @@ class GameScreen extends StatelessWidget {
       children: [
         ?leading,
         Text(_objectiveText(ctrl), style: _valueStyle),
+      ],
+    );
+  }
+
+  /// 1 chip mục tiêu Order: chấm màu gem + "cur/target". Đạt đủ → viền lime.
+  Widget _orderChip(Color color, int cur, int target) {
+    final done = cur >= target;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 13,
+          height: 13,
+          margin: const EdgeInsets.only(right: 4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+            border: done
+                ? Border.all(color: NeonTheme.lime, width: 1.5)
+                : null,
+            boxShadow: NeonTheme.glow(color, blur: 6),
+          ),
+        ),
+        Text(
+          '$cur/$target',
+          style: TextStyle(
+            fontFamily: 'Baloo2',
+            color: done ? NeonTheme.lime : Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ],
     );
   }

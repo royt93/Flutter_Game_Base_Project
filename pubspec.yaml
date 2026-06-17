@@ -80,6 +80,10 @@ flutter:
       fonts:
         - asset: asset/fonts/Baloo2.ttf
 
+  # Fragment shader glow neon (Wave 10) — aura động dưới bàn (1 draw/frame).
+  shaders:
+    - shaders/neon_glow.frag
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

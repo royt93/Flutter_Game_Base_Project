@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
@@ -108,6 +109,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     add(NeonBackground(
         area: size, palette: NeonTheme.gemColors, rnd: math.Random())
       ..priority = -10);
+    // Aura neon bằng FRAGMENT SHADER (Wave 10) — tự TẮT nếu nền tảng/GPU không
+    // hỗ trợ (try/catch) → fallback giữ nguyên hình ảnh cũ. 1 draw/frame.
+    await _addGlowAura();
     boardLayer = PositionComponent()..priority = 0;
     add(boardLayer);
     boardLayer.add(BoardFrame(
@@ -133,6 +137,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       cellSize: cellSize,
       origin: boardOrigin,
     )..priority = -1);
+    _buildBombs();
+    boardLayer.add(BombLayer(
+      bomb: bomb,
+      rows: rows,
+      cols: cols,
+      cellSize: cellSize,
+      origin: boardOrigin,
+    )..priority = 2); // trên gem để thấy số đếm
     _fillInitialBoard();
     _placeIngredients();
     if (!_hasPossibleMove()) await _doShuffle();
@@ -140,6 +152,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
   /// Lưới obstacle (0 = không, >0 = số lớp). Theo cấu hình màn.
   late List<List<int>> obstacle;
+
+  /// Lưới bom đếm ngược (Wave 10): 0 = không bom, >0 = số lượt còn lại.
+  late List<List<int>> bomb;
 
   ObstacleType get _obstacleType => controller.level.obstacle;
 
@@ -562,6 +577,23 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final ta = a.type, tb = b.type;
     final pos = Cell(b.row, b.col);
     final cells = <Cell>{Cell(a.row, a.col), pos};
+
+    // Light Ball (Wave 10) — combo TỐI THƯỢNG. LB + LB → cả bàn; LB + special
+    // khác → SAO DÀY (±1) qua pos (special kia tự kích hoạt qua _expandSpecials
+    // vì nằm trong tập). Ưu tiên trước mọi cặp khác.
+    bool isLB(GemType t) => t == GemType.lightBall;
+    if (isLB(ta) || isLB(tb)) {
+      if (isLB(ta) && isLB(tb)) {
+        for (int r = 0; r < rows; r++) {
+          for (int c = 0; c < cols; c++) {
+            cells.add(Cell(r, c));
+          }
+        }
+        return cells;
+      }
+      cells.addAll(MatchDetector.lightBallCells(rows, cols, pos, thickness: 1));
+      return cells;
+    }
 
     bool isRainbow(GemType t) => t == GemType.rainbow;
 
@@ -1005,6 +1037,32 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
             }
           }
           break;
+        case GemType.lightBall:
+          // Light Ball (Wave 10): sao 8 hướng — beam HÀNG + CỘT + 2 CHÉO, flash
+          // mạnh, phá toàn bộ ô trên hàng/cột/2 chéo qua ô này.
+          final lcol = neonColorOf(g.color);
+          _addBeam(_cellCenter(cell.row, 0), _cellCenter(cell.row, cols - 1),
+              lcol);
+          _addBeam(_cellCenter(0, cell.col), _cellCenter(rows - 1, cell.col),
+              lcol);
+          final mMin = -math.min(cell.row, cell.col);
+          final mMax = math.min(rows - 1 - cell.row, cols - 1 - cell.col);
+          _addBeam(_cellCenter(cell.row + mMin, cell.col + mMin),
+              _cellCenter(cell.row + mMax, cell.col + mMax), lcol);
+          final aMin = math.max(-cell.row, cell.col - (cols - 1));
+          final aMax = math.min(rows - 1 - cell.row, cell.col);
+          _addBeam(_cellCenter(cell.row + aMin, cell.col - aMin),
+              _cellCenter(cell.row + aMax, cell.col - aMax), lcol);
+          add(ShockwaveComponent(
+            position: _cellCenter(cell.row, cell.col),
+            color: Colors.white,
+            maxRadius: cellSize * 3,
+          )..priority = 50);
+          _flash(Colors.white, peak: 0.3);
+          _shake(13);
+          extra.addAll(
+              MatchDetector.lightBallCells(rows, cols, Cell(cell.row, cell.col)));
+          break;
         case GemType.normal:
           break;
       }
@@ -1021,6 +1079,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   Future<void> _clearCells(Set<Cell> cells) async {
     // obstacle bị tổn hại theo tập ô vừa clear (ice: trực tiếp; chain/stone: kề)
     _damageObstacles(cells);
+    _defuseBombs(cells); // bom đếm ngược: clear gem trên ô bom → tháo ngòi
     final gems = <GemComponent>[];
     var luckyCount = 0;
     for (final cell in cells) {
@@ -1177,6 +1236,107 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     }
   }
 
+  // --------------------------------------------------------------------------
+  // Bom đếm ngược (Wave 10)
+  // --------------------------------------------------------------------------
+  /// Seed bom theo cấu hình màn (tất định theo level.index → tái lập được).
+  void _buildBombs() {
+    bomb = List.generate(rows, (_) => List<int>.filled(cols, 0));
+    if (!kBombLevels.contains(controller.level.index)) {
+      _syncBombHud();
+      return;
+    }
+    final rnd = math.Random(controller.level.index);
+    final cells = <Cell>[
+      for (int r = 0; r < rows; r++)
+        for (int c = 0; c < cols; c++) Cell(r, c),
+    ]..shuffle(rnd);
+    for (var i = 0; i < kBombCount && i < cells.length; i++) {
+      bomb[cells[i].row][cells[i].col] = kBombCountdown;
+    }
+    _syncBombHud();
+  }
+
+  /// Clear gem trên ô bom → THÁO NGÒI (bom biến mất, không nổ).
+  void _defuseBombs(Set<Cell> cleared) {
+    if (controller.bombsLeft.value <= 0) return;
+    var changed = false;
+    for (final cell in cleared) {
+      if (bomb[cell.row][cell.col] > 0) {
+        bomb[cell.row][cell.col] = 0;
+        changed = true;
+        add(ShockwaveComponent(
+          position: _cellCenter(cell.row, cell.col),
+          color: NeonTheme.lime,
+          maxRadius: cellSize * 1.2,
+          duration: 0.3,
+        )..priority = 49);
+      }
+    }
+    if (changed) _syncBombHud();
+  }
+
+  /// Mỗi lượt: giảm đếm ngược mọi bom; quả về 0 (chưa tháo) → NỔ (thua).
+  /// Trả true nếu có ít nhất 1 quả nổ trong lượt này.
+  bool _tickBombs() {
+    if (controller.bombsLeft.value <= 0) return false;
+    var exploded = false;
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        if (bomb[r][c] > 0) {
+          bomb[r][c]--;
+          if (bomb[r][c] == 0) {
+            exploded = true;
+            add(ShockwaveComponent(
+              position: _cellCenter(r, c),
+              color: NeonTheme.magenta,
+              maxRadius: cellSize * 2.2,
+              duration: 0.5,
+            )..priority = 60);
+          }
+        }
+      }
+    }
+    if (exploded) {
+      _shake(16);
+      controller.bombExploded.value = true;
+    }
+    _syncBombHud();
+    return exploded;
+  }
+
+  /// Đẩy trạng thái bom (số còn lại + đếm ngược nhỏ nhất) vào controller cho HUD.
+  void _syncBombHud() {
+    var count = 0;
+    var minT = 1 << 30;
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        if (bomb[r][c] > 0) {
+          count++;
+          if (bomb[r][c] < minT) minT = bomb[r][c];
+        }
+      }
+    }
+    controller.bombsLeft.value = count;
+    controller.bombMinTimer.value = count == 0 ? 0 : minT;
+  }
+
+  /// Nạp & gắn aura shader neon (Wave 10). NUỐT mọi lỗi nạp shader (nền tảng
+  /// không hỗ trợ / chạy test không có asset) → đơn giản là không có aura.
+  Future<void> _addGlowAura() async {
+    try {
+      final program =
+          await ui.FragmentProgram.fromAsset('shaders/neon_glow.frag');
+      add(NeonGlowAura(
+        shader: program.fragmentShader(),
+        area: size.clone(),
+        color: NeonTheme.cyan,
+      )..priority = -9);
+    } catch (_) {
+      // nền tảng/GPU không hỗ trợ shader → bỏ qua (fallback hình ảnh cũ)
+    }
+  }
+
   Future<void> _applyGravityAndRefill() async {
     final futures = <Future>[];
     for (int c = 0; c < cols; c++) {
@@ -1300,6 +1460,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
   void _finishMove() {
     onMoveResolved?.call(controller.comboCount.value); // versus: gửi rác theo combo
+    // Bom đếm ngược giảm 1 nhịp sau mỗi lượt; nổ → cờ thua. checkEnd ưu tiên
+    // hasWon trước nên nước đi vừa đạt mục tiêu vẫn THẮNG dù bom cũng về 0.
+    _tickBombs();
     final result = controller.checkEnd();
     if (result != null) {
       _ended = true;

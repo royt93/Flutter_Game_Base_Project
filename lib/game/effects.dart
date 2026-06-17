@@ -682,3 +682,106 @@ class BeamComponent extends PositionComponent {
     );
   }
 }
+
+/// Aura neon động bằng FRAGMENT SHADER (Wave 10) — phủ toàn màn dưới lớp gem,
+/// 1 draw/frame. Nếu shader không nạp được (GPU/nền tảng) → KHÔNG thêm component
+/// này (fallback: giữ nguyên hình ảnh cũ). Tông màu theo accent thế giới.
+class NeonGlowAura extends PositionComponent {
+  final ui.FragmentShader shader;
+  final Vector2 area;
+  Color color;
+  double _t = 0;
+
+  NeonGlowAura({
+    required this.shader,
+    required this.area,
+    required this.color,
+  });
+
+  @override
+  void update(double dt) => _t += dt;
+
+  @override
+  void render(Canvas canvas) {
+    shader
+      ..setFloat(0, area.x)
+      ..setFloat(1, area.y)
+      ..setFloat(2, _t)
+      ..setFloat(3, color.r)
+      ..setFloat(4, color.g)
+      ..setFloat(5, color.b)
+      ..setFloat(6, 0.45); // cường độ tổng (nhẹ để không lấn gameplay)
+    canvas.drawRect(
+      Offset.zero & Size(area.x, area.y),
+      Paint()..shader = shader,
+    );
+  }
+}
+
+/// Lớp render bom đếm ngược (Wave 10): mỗi ô bom = lõi tối + viền neon + SỐ đếm
+/// ở tâm. Sắp nổ (≤3) → viền/đèn nhấp nháy đỏ-magenta cảnh báo.
+class BombLayer extends PositionComponent {
+  final List<List<int>> bomb;
+  final int rows;
+  final int cols;
+  final double cellSize;
+  final Vector2 origin;
+  double _t = 0;
+
+  BombLayer({
+    required this.bomb,
+    required this.rows,
+    required this.cols,
+    required this.cellSize,
+    required this.origin,
+  });
+
+  @override
+  void update(double dt) => _t += dt;
+
+  @override
+  void render(Canvas canvas) {
+    final pulse = 0.5 + 0.5 * math.sin(_t * 6);
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        final n = bomb[r][c];
+        if (n <= 0) continue;
+        final center = Offset(
+          origin.x + c * cellSize + cellSize / 2,
+          origin.y + r * cellSize + cellSize / 2,
+        );
+        final low = n <= 3; // sắp nổ → cảnh báo gắt
+        final col = low
+            ? Color.lerp(NeonTheme.orange, NeonTheme.magenta, pulse)!
+            : NeonTheme.magenta;
+        final radius = cellSize * 0.30;
+        NeonFx.drawGlow(canvas, center,
+            radius * (low ? 1.8 + pulse * 0.6 : 1.4), col,
+            opacity: low ? 0.9 : 0.6);
+        canvas.drawCircle(
+            center, radius, Paint()..color = const Color(0xCC0A0A1A));
+        canvas.drawCircle(
+          center,
+          radius,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = low ? 3.0 + pulse * 1.5 : 2.2
+            ..color = col,
+        );
+        final tp = TextPainter(
+          text: TextSpan(
+            text: '$n',
+            style: TextStyle(
+              fontFamily: NeonTheme.fontFamily,
+              color: Colors.white,
+              fontSize: cellSize * 0.34,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
+      }
+    }
+  }
+}

@@ -513,6 +513,29 @@ class GemComponent extends PositionComponent {
         canvas.drawCircle(center, s * 0.09 * pulse,
             Paint()..color = Colors.white.withValues(alpha: 0.95));
         break;
+      case GemType.lightBall:
+        // Light Ball (Wave 10): sao 8 hướng — 4 vạch (ngang/dọc/2 chéo) + lõi
+        // trắng-nóng nhịp mạnh + 8 tia xoay → "quả cầu năng lượng" rực rỡ nhất.
+        neonBar(Offset(s * 0.12, center.dy), Offset(s * 0.88, center.dy));
+        neonBar(Offset(center.dx, s * 0.12), Offset(center.dx, s * 0.88));
+        neonBar(Offset(s * 0.2, s * 0.2), Offset(s * 0.8, s * 0.8));
+        neonBar(Offset(s * 0.2, s * 0.8), Offset(s * 0.8, s * 0.2));
+        for (int i = 0; i < 8; i++) {
+          final a = i * math.pi / 4 + _pulse * 0.8;
+          canvas.drawLine(
+            Offset(center.dx + math.cos(a) * s * 0.16,
+                center.dy + math.sin(a) * s * 0.16),
+            Offset(center.dx + math.cos(a) * s * 0.30,
+                center.dy + math.sin(a) * s * 0.30),
+            Paint()
+              ..color = Colors.white.withValues(alpha: 0.85)
+              ..strokeWidth = s * 0.045
+              ..strokeCap = StrokeCap.round,
+          );
+        }
+        canvas.drawCircle(center, s * 0.15 * pulse,
+            Paint()..color = Colors.white);
+        break;
       case GemType.normal:
         break;
     }

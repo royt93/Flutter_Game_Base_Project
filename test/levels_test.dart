@@ -48,6 +48,10 @@ void main() {
             expect(lv.obstacle, isNot(ObstacleType.none));
             expect(lv.obstaclePattern, isNot(JellyPattern.none));
             break;
+          case ObjectiveType.order:
+            expect(lv.orders, isNotEmpty,
+                reason: 'level ${lv.index} order cần orders không rỗng');
+            break;
           case ObjectiveType.endless:
             fail('endless không được gắn vào màn thường (level ${lv.index})');
           case ObjectiveType.boss:

@@ -70,10 +70,13 @@ class MatchDetector {
       special = horizontal ? GemType.stripedV : GemType.stripedH;
     } else if (len == 5) {
       special = GemType.rainbow;
-    } else if (len >= 6) {
-      // Match 6+ → Diagonal: nổ 2 đường chéo (X) qua ô — mạnh hơn rainbow về
-      // phủ chéo, tạo cảm giác "phá toang" khi xếp được run rất dài.
+    } else if (len == 6) {
+      // Match 6 → Diagonal: nổ 2 đường chéo (X) qua ô — phủ chéo "phá toang".
       special = GemType.diagonal;
+    } else if (len >= 7) {
+      // Match 7+ → Light Ball (Wave 10): quả cầu sáng — toả tia HÀNG + CỘT +
+      // 2 CHÉO (hình sao 8 hướng). Tầng cao nhất, hiếm gặp = "jackpot".
+      special = GemType.lightBall;
     }
     final specialAt = special == GemType.normal ? null : cells[cells.length ~/ 2];
     return MatchGroup(
@@ -110,6 +113,26 @@ class MatchDetector {
         if (main.abs() <= thickness || anti.abs() <= thickness) {
           out.add(Cell(r, c));
         }
+      }
+    }
+    return out;
+  }
+
+  /// Các ô của Light Ball (Wave 10): HÀNG + CỘT + 2 CHÉO qua [center] (sao 8
+  /// hướng). [thickness] > 0 → dày thêm cho combo. Pure → unit-test được.
+  static Set<Cell> lightBallCells(int rows, int cols, Cell center,
+      {int thickness = 0}) {
+    final out = diagonalCells(rows, cols, center, thickness: thickness);
+    for (int c = 0; c < cols; c++) {
+      for (int t = -thickness; t <= thickness; t++) {
+        final r = center.row + t;
+        if (r >= 0 && r < rows) out.add(Cell(r, c)); // hàng (±dày)
+      }
+    }
+    for (int r = 0; r < rows; r++) {
+      for (int t = -thickness; t <= thickness; t++) {
+        final c = center.col + t;
+        if (c >= 0 && c < cols) out.add(Cell(r, c)); // cột (±dày)
       }
     }
     return out;

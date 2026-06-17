@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 class NeonTheme {
   NeonTheme._();
 
+  /// Font toàn app — Baloo2 (đủ glyph tiếng Việt + bo tròn vui mắt). Đặt làm
+  /// default trong ThemeData (main.dart) → mọi Text mới kế thừa, khỏi lặp string.
+  static const String fontFamily = 'Baloo2';
+
   // Hệ spacing chuẩn dùng toàn app (8 / 16 / 24).
   static const double s8 = 8;
   static const double s16 = 16;

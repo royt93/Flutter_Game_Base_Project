@@ -133,6 +133,20 @@ class AppTranslations extends Translations {
 
   /// Key Wave 4 — English (mặc định + fallback cho ngôn ngữ chưa dịch).
   static const Map<String, String> _extraEn = {
+    // Wave 10 — Bom đếm ngược (HUD)
+    'bomb_left': 'Bombs',
+    'bomb_timer': 'Timer',
+    // Wave 10 — Guide (tính năng mới)
+    'guide_w10_title': "What's New",
+    'guide_lightball': 'Light Ball',
+    'guide_lightball_desc':
+        'Match 7+ gems to create a Light Ball — it bursts in 8 directions (row + column + both diagonals). The rarest, most powerful gem.',
+    'guide_bombdown': 'Countdown Bomb',
+    'guide_bombdown_desc':
+        'Some levels have bombs counting down each move. Clear the gem on a bomb to defuse it. If any bomb hits 0, you lose instantly!',
+    'guide_order': 'Mixed Goals',
+    'guide_order_desc':
+        'Order levels ask you to collect several gem colors at once. Complete every color goal to win.',
     // Wave 9 — Cửa hàng trang trí (skin gem + theme bàn)
     'shop_title': 'SHOP',
     'shop_skins': 'Gem Skins',
@@ -380,6 +394,20 @@ class AppTranslations extends Translations {
 
   /// Key Wave 4 — Tiếng Việt (override English).
   static const Map<String, String> _extraVi = {
+    // Wave 10 — Bom đếm ngược (HUD)
+    'bomb_left': 'Bom',
+    'bomb_timer': 'Đếm',
+    // Wave 10 — Guide (tính năng mới)
+    'guide_w10_title': 'Tính năng mới',
+    'guide_lightball': 'Quả Cầu Sáng',
+    'guide_lightball_desc':
+        'Ghép 7+ viên cùng màu để tạo Quả Cầu Sáng — nổ toả 8 hướng (hàng + cột + 2 đường chéo). Viên hiếm và mạnh nhất.',
+    'guide_bombdown': 'Bom Đếm Ngược',
+    'guide_bombdown_desc':
+        'Vài màn có bom đếm lùi mỗi lượt. Ghép viên ngay trên ô bom để tháo ngòi. Nếu một quả về 0 mà chưa tháo, bạn THUA ngay!',
+    'guide_order': 'Mục Tiêu Hỗn Hợp',
+    'guide_order_desc':
+        'Màn Mục Tiêu yêu cầu thu đủ NHIỀU màu gem cùng lúc. Hoàn thành mọi mục tiêu màu để thắng.',
     // Wave 9 — Cửa hàng trang trí
     'shop_title': 'CỬA HÀNG',
     'shop_skins': 'Skin Gem',
