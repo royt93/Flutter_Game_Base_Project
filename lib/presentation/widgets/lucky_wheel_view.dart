@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
+import '../../core/utils/format.dart';
 import '../../data/wheel.dart';
 import '../controllers/lucky_wheel_controller.dart';
 
@@ -114,7 +115,7 @@ class _LuckyWheelViewState extends State<LuckyWheelView>
               const SizedBox(width: 6),
               Text(
                 s.isCoins
-                    ? '+${s.amount} 💰'
+                    ? '+${fmtNum(s.amount)} 💰'
                     : '${'wheel_got_booster'.tr} ${s.label}',
                 style: const TextStyle(
                   fontFamily: 'Baloo2',

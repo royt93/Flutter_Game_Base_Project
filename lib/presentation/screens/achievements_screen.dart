@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
+import '../../core/utils/format.dart';
 import '../../data/achievements.dart';
 import '../controllers/achievement_controller.dart';
 import '../controllers/game_controller.dart';
@@ -180,7 +181,7 @@ class AchievementsScreen extends StatelessWidget {
             boxShadow: NeonTheme.glow(NeonTheme.lime, blur: 10),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Text('${'ach_claim'.tr} +${a.reward}',
+            Text('${'ach_claim'.tr} +${fmtNum(a.reward)}',
                 style: const TextStyle(
                   fontFamily: 'Baloo2',
                   color: Colors.black,
@@ -195,7 +196,7 @@ class AchievementsScreen extends StatelessWidget {
       const Icon(Icons.monetization_on_rounded,
           color: NeonTheme.yellow, size: 13),
       const SizedBox(width: 3),
-      Text('+${a.reward}',
+      Text('+${fmtNum(a.reward)}',
           style: const TextStyle(
             fontFamily: 'Baloo2',
             color: NeonTheme.yellow,

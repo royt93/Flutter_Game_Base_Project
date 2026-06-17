@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
+import '../../core/utils/format.dart';
 import '../../data/battle_pass.dart' show RewardKind;
 import '../../data/season.dart';
 import '../controllers/game_controller.dart';
@@ -183,7 +184,7 @@ class _SeasonScreenState extends State<SeasonScreen> {
               Icon(_rewardIcon(ms.kind), color: _rewardColor(ms.kind), size: 20),
               const SizedBox(width: 6),
               Text(
-                '${ms.amount} ${_rewardLabel(ms.kind)}',
+                '${fmtNum(ms.amount)} ${_rewardLabel(ms.kind)}',
                 style: const TextStyle(
                   fontFamily: 'Baloo2',
                   color: Colors.white,

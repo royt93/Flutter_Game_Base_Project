@@ -759,6 +759,23 @@ PASS). Shader thuần visual → không vào Guide.
   gfxinfo; định tính chỉ 1 frame-skip lúc vào bàn (debug), còn lại mượt.
 - Nợ nhẹ: dịch Guide 4 feature cho 20 ngôn ngữ (đang fallback EN; coverage test ≥80% pass).
 
+## 💱 Wave 10 — Định dạng tiền tệ/số (2026-06-17)
+
+Người dùng phản ánh xu hiển thị số thô (10000) thiếu phân tách hàng nghìn. Thêm
+`fmtNum(int)` (`lib/core/utils/format.dart`) — dùng `NumberFormat` (intl) theo
+`Get.locale`: **vi → "10.000", en → "10,000"**, có fallback nhóm thủ công nếu locale
+lạ (không bao giờ ném lỗi). Thêm `intl: ^0.20.2` vào pubspec (trước là transitive).
+
+Áp cho TẤT CẢ hiển thị xu + số lớn (bỏ qua số nhỏ không phải tiền: lượt/mạng/stage/
+streak/mục tiêu): CoinChip (4 màn), coin chip Home + in-game, giá booster, giá shop
+(skin/theme), chi phí Đền Neon, thưởng thành tựu/season/battle-pass/vòng quay/daily,
+thưởng thắng ván, điểm/điểm mục tiêu/high-score/endless-best/máu boss (HUD + dialog +
+_objectiveText). 17+ site.
+
+Kết quả: 0 analyzer · **276 test pass** (+5 `test/w10_format_test.dart`: vi/en separator,
+số âm, locale null không lỗi) · build OK · **✅ verify máy Pixel 7 Pro**: chip xu hiện
+"10.000" (locale vi), logcat sạch.
+
 ## 🔍 Đánh giá chất lượng code (2026-06-16, Wave 8.9)
 
 4 agent đọc song song 4 tầng (engine / controllers / UI / core) + verify claim nặng bằng đọc code thật & probe. **Điểm tổng: 7.5/10** — chạy ổn, kiến trúc tốt, không lỗi logic nghiêm trọng; nợ kỹ thuật tập trung 2 chỗ.

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
+import '../../core/utils/format.dart';
 import '../../data/cosmetics.dart';
 import '../controllers/game_controller.dart';
 import '../widgets/coin_chip.dart';
@@ -166,7 +167,7 @@ class _CosmeticCard extends StatelessWidget {
     if (owned) {
       return _pill('shop_equip'.tr, accent, filled: false, onTap: onEquip);
     }
-    return _pill('💰 $price', NeonTheme.yellow, filled: false, onTap: onBuy);
+    return _pill('💰 ${fmtNum(price)}', NeonTheme.yellow, filled: false, onTap: onBuy);
   }
 
   Widget _pill(String label, Color color,

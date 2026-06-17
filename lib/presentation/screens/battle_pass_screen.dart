@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
+import '../../core/utils/format.dart';
 import '../../data/battle_pass.dart';
 import '../controllers/battle_pass_controller.dart';
 import '../controllers/game_controller.dart';
@@ -239,7 +240,7 @@ class BattlePassScreen extends StatelessWidget {
           Icon(_rewardIcon(t.kind), color: _rewardColor(t.kind), size: 20),
           const SizedBox(width: 6),
           Text(
-            '${t.amount} ${_rewardLabel(t.kind)}',
+            '${fmtNum(t.amount)} ${_rewardLabel(t.kind)}',
             style: const TextStyle(
               fontFamily: 'Baloo2',
               color: Colors.white,

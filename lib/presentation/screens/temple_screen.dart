@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
+import '../../core/utils/format.dart';
 import '../../data/temple.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/temple_controller.dart';
@@ -203,7 +204,7 @@ class TempleScreen extends StatelessWidget {
                       color: NeonTheme.yellow, size: 18),
                   const SizedBox(width: 5),
                   Text(
-                    '${next.cost}',
+                    fmtNum(next.cost),
                     style: TextStyle(
                       fontFamily: 'Baloo2',
                       color: t.canBuild(n) ? Colors.white : NeonTheme.magenta,

@@ -423,7 +423,7 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(width: 5),
         Obx(
           () => Text(
-            '${g.coins.value}',
+            fmtNum(g.coins.value),
             style: const TextStyle(
               fontFamily: 'Baloo2',
               color: Colors.white,
@@ -790,7 +790,7 @@ class HomeScreen extends StatelessWidget {
     final can = g.canClaimDaily;
     final got = hc.lastReward.value;
     final message = got > 0
-        ? 'daily_got'.trParams({'n': '$got'})
+        ? 'daily_got'.trParams({'n': fmtNum(got)})
         : (!can ? 'daily_claimed'.tr : null);
     return NeonDialog.overlay(
       onBarrier: hc.closeDaily,
@@ -836,7 +836,7 @@ class HomeScreen extends StatelessWidget {
             onTap: hc.closeLivesBuy,
           ),
           NeonDialogAction(
-            label: '${'buy'.tr} (${HomeController.refillPrice}💰)',
+            label: '${'buy'.tr} (${fmtNum(HomeController.refillPrice)}💰)',
             color: NeonTheme.lime,
             onTap: hc.buyLives,
           ),
@@ -892,7 +892,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                '$reward',
+                fmtNum(reward),
                 style: const TextStyle(
                   fontFamily: 'Baloo2',
                   color: Colors.white,

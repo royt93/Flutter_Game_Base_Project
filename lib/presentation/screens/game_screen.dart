@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../core/audio_manager.dart';
 import '../../core/debug_log.dart';
 import '../../core/neon_theme.dart';
+import '../../core/utils/format.dart';
 import '../../data/levels.dart';
 import '../../game/neon_jewel_game.dart' show BoosterMode;
 import '../controllers/game_controller.dart';
@@ -178,8 +179,8 @@ class GameScreen extends StatelessWidget {
         color: NeonTheme.purple,
         icon: Icons.all_inclusive_rounded,
         message:
-            '${'hud_score'.tr}: ${ctrl.score.value}\n'
-            '${'endless_best'.tr}: ${ctrl.endlessHigh.value}  ·  '
+            '${'hud_score'.tr}: ${fmtNum(ctrl.score.value)}\n'
+            '${'endless_best'.tr}: ${fmtNum(ctrl.endlessHigh.value)}  ·  '
             '${'stage_n'.trParams({'n': '${ctrl.endlessStage.value}'})}',
         actions: [
           NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
@@ -195,7 +196,7 @@ class GameScreen extends StatelessWidget {
         icon: win ? Icons.emoji_events_rounded : Icons.coronavirus_rounded,
         message:
             '${'boss_stage'.tr} ${ctrl.bossStage.value}  ·  ${'boss_hp'.tr}: '
-            '${ctrl.bossHp.value}/${ctrl.bossMaxHp.value}',
+            '${fmtNum(ctrl.bossHp.value)}/${fmtNum(ctrl.bossMaxHp.value)}',
         content: win ? _celebration(ctrl) : null,
         actions: [
           NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
@@ -210,7 +211,7 @@ class GameScreen extends StatelessWidget {
         color: win ? NeonTheme.lime : NeonTheme.cyan,
         icon: win ? Icons.emoji_events_rounded : Icons.music_note_rounded,
         message:
-            '${'hud_score'.tr}: ${ctrl.score.value} / ${ctrl.targetScore.value}'
+            '${'hud_score'.tr}: ${fmtNum(ctrl.score.value)} / ${fmtNum(ctrl.targetScore.value)}'
             '  ·  ${'rhythm_groove'.tr} ${ctrl.groove.value}',
         content: win ? _celebration(ctrl) : null,
         actions: [
@@ -226,7 +227,7 @@ class GameScreen extends StatelessWidget {
       final msg = win
           ? (ctrl.lastCoinReward > 0
               ? '${'daily_ch_streak'.tr}: ${ctrl.dailyChStreak.value}\n'
-                  '${'daily_ch_reward'.trParams({'c': '${ctrl.lastCoinReward}'})}'
+                  '${'daily_ch_reward'.trParams({'c': fmtNum(ctrl.lastCoinReward)})}'
               : 'daily_ch_done'.tr)
           : '${'hud_goal'.tr}: ${_objectiveText(ctrl)}';
       return NeonDialog.panel(
@@ -263,13 +264,13 @@ class GameScreen extends StatelessWidget {
   String _objectiveText(GameController ctrl) {
     switch (ctrl.level.objective) {
       case ObjectiveType.score:
-        return '${ctrl.score.value} / ${ctrl.targetScore.value}';
+        return '${fmtNum(ctrl.score.value)} / ${fmtNum(ctrl.targetScore.value)}';
       case ObjectiveType.collect:
         return '${ctrl.collected.value} / ${ctrl.level.collectTarget}';
       case ObjectiveType.clearJelly:
         return '${ctrl.jellyCleared.value} / ${ctrl.jellyTotal.value}';
       case ObjectiveType.timeAttack:
-        return '${ctrl.score.value} / ${ctrl.targetScore.value}';
+        return '${fmtNum(ctrl.score.value)} / ${fmtNum(ctrl.targetScore.value)}';
       case ObjectiveType.dropDown:
         return '${ctrl.dropped.value} / ${ctrl.level.dropTarget}';
       case ObjectiveType.clearObstacle:
@@ -282,9 +283,9 @@ class GameScreen extends StatelessWidget {
         }
         return '$done / ${orders.length}';
       case ObjectiveType.endless:
-        return '${ctrl.score.value}';
+        return fmtNum(ctrl.score.value);
       case ObjectiveType.boss:
-        return '${ctrl.bossHp.value} / ${ctrl.bossMaxHp.value}';
+        return '${fmtNum(ctrl.bossHp.value)} / ${fmtNum(ctrl.bossMaxHp.value)}';
     }
   }
 
@@ -315,7 +316,7 @@ class GameScreen extends StatelessWidget {
             const Icon(Icons.monetization_on_rounded, color: NeonTheme.yellow, size: 20),
             const SizedBox(width: 6),
             Text(
-              '+${ctrl.lastCoinReward}',
+              '+${fmtNum(ctrl.lastCoinReward)}',
               style: const TextStyle(
                 fontFamily: 'Baloo2',
                 color: NeonTheme.yellow,
@@ -556,7 +557,7 @@ class GameScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(child: Obx(() => _infoCell('hud_score'.tr, _animValue('${ctrl.score.value}'), NeonTheme.cyan))),
+          Expanded(child: Obx(() => _infoCell('hud_score'.tr, _animValue(fmtNum(ctrl.score.value)), NeonTheme.cyan))),
           _divider(),
           Expanded(
             child: Obx(
@@ -772,7 +773,7 @@ class GameScreen extends StatelessWidget {
             () => _pill(
               Icons.monetization_on_rounded,
               NeonTheme.yellow,
-              '${ctrl.coins.value}',
+              fmtNum(ctrl.coins.value),
             ).animate(key: ValueKey(sc.coinShake.value)).shake(duration: 450.ms, hz: 6),
           ),
           const SizedBox(width: NeonTheme.s16),
@@ -1057,7 +1058,7 @@ class GameScreen extends StatelessWidget {
                     const Icon(Icons.monetization_on_rounded, color: NeonTheme.yellow, size: 13),
                     const SizedBox(width: 2),
                     Text(
-                      '$price',
+                      fmtNum(price),
                       style: const TextStyle(
                         fontFamily: 'Baloo2',
                         color: NeonTheme.yellow,

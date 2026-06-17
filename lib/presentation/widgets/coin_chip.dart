@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
+import '../../core/utils/format.dart';
 import '../controllers/game_controller.dart';
 
 /// Chip hiển thị số xu (icon vàng + viền/glow neon), reactive theo
@@ -26,7 +27,7 @@ class CoinChip extends StatelessWidget {
         const Icon(Icons.monetization_on_rounded,
             color: NeonTheme.yellow, size: 18),
         const SizedBox(width: 5),
-        Obx(() => Text('${controller.coins.value}',
+        Obx(() => Text(fmtNum(controller.coins.value),
             style: const TextStyle(
               fontFamily: 'Baloo2',
               color: Colors.white,
