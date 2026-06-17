@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:neon_jewels/core/storage_service.dart';
@@ -68,7 +69,8 @@ void main() {
       c.totalWins.value = 10;
       c.unlockedLevel.value = 7;
       await c.resetProgress();
-      expect(c.coins.value, 50, reason: 'về 50 xu tặng mặc định');
+      expect(c.coins.value, kDebugMode ? 10000 : 100,
+          reason: 'về xu tặng mặc định (debug 10000 / release 100)');
       expect(c.boosterHammer.value, 2, reason: 'booster về mặc định');
       expect(c.lives.value, GameController.maxLives);
       expect(c.totalWins.value, 0);
