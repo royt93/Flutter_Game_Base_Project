@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../core/app_info.dart';
 import '../../core/neon_theme.dart';
 import '../../core/storage_service.dart';
+import '../../core/utils/format.dart';
 import '../controllers/achievement_controller.dart';
 import '../controllers/battle_pass_controller.dart';
 import '../controllers/game_controller.dart';
@@ -23,18 +24,13 @@ import 'guide_screen.dart';
 import 'level_select_screen.dart';
 import 'season_screen.dart';
 import 'settings_screen.dart';
+import 'shop_screen.dart';
 import 'temple_screen.dart';
 import 'versus_screen.dart';
 import 'world_map_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  static String _fmt(Duration d) {
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -306,6 +302,15 @@ class HomeScreen extends StatelessWidget {
                     small: true,
                   );
                 }),
+              ),
+              Expanded(
+                child: _circleNav(
+                  Icons.storefront_rounded,
+                  NeonTheme.magenta,
+                  'shop_title'.tr,
+                  () => Get.to(() => const ShopScreen()),
+                  small: true,
+                ),
               ),
             ],
           ),
@@ -1007,7 +1012,7 @@ class _LivesChipState extends State<_LivesChip> {
               ),
               const SizedBox(width: 3),
               Text(
-                HomeScreen._fmt(next),
+                fmtDur(next),
                 style: TextStyle(
                   fontFamily: 'Baloo2',
                   color: Colors.white.withValues(alpha: 0.8),

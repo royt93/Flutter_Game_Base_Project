@@ -4,6 +4,7 @@ import '../../core/neon_theme.dart';
 import '../../data/achievements.dart';
 import '../controllers/achievement_controller.dart';
 import '../controllers/game_controller.dart';
+import '../widgets/coin_chip.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 
@@ -23,7 +24,7 @@ class AchievementsScreen extends StatelessWidget {
               NeonAppBar(
                 title: 'achievements'.tr,
                 color: NeonTheme.yellow,
-                actions: [_coinChip(g)],
+                actions: [CoinChip(g)],
               ),
               Expanded(
                 child: Obx(() {
@@ -204,28 +205,4 @@ class AchievementsScreen extends StatelessWidget {
     ]);
   }
 
-  Widget _coinChip(GameController g) {
-    return Container(
-      margin: const EdgeInsets.only(right: NeonTheme.s8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: NeonTheme.panel.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: NeonTheme.yellow, width: 1.5),
-        boxShadow: NeonTheme.glow(NeonTheme.yellow, blur: 6),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.monetization_on_rounded,
-            color: NeonTheme.yellow, size: 18),
-        const SizedBox(width: 5),
-        Obx(() => Text('${g.coins.value}',
-            style: const TextStyle(
-              fontFamily: 'Baloo2',
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 14,
-            ))),
-      ]),
-    );
-  }
 }

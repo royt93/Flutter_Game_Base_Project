@@ -522,7 +522,7 @@ match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 
 
 ---
 
-*Cập nhật lần cuối: 2026-06-16 · Trạng thái: Đang phát triển (Wave 9: Thử thách hằng ngày + Diagonal gem + gộp tiền tệ 1 xu + revamp Home no-scroll/full-width/lưới 2×3. **235 test pass**, 0 analyzer, build APK OK, verify máy thật S24 Ultra. Còn lại: 🛒 Cửa hàng trang trí)*
+*Cập nhật lần cuối: 2026-06-16 · Trạng thái: Đang phát triển (Wave 9 HOÀN TẤT: Thử thách hằng ngày + Diagonal gem + gộp tiền tệ 1 xu + revamp Home + **đóng lỗ hổng i18n (20 ngôn ngữ dịch 86-97%)** + dọn nợ kỹ thuật + **Cửa hàng trang trí (6 skin + 6 theme)**. **250 test pass**, 0 analyzer, build APK OK. Sẵn sàng phát hành đa ngôn ngữ; bước sau: chuẩn bị release store + verify máy thật)*
 
 ---
 
@@ -604,7 +604,82 @@ giữ FittedBox làm lưới an toàn (no-scroll tuyệt đối).
 Verify S24 Ultra: full-width, **không scroll**, lưới 2×3 cân đối, logcat sạch (không
 overflow/RenderFlex). Bẫy đã ghi memory `home-fullwidth-no-fittedbox`.
 
-> Wave 9 còn lại: 🛒 Cửa hàng trang trí (skin gem + theme bàn, mua bằng xu).
+## 🛒 Wave 9 — Cửa hàng trang trí: skin gem + theme bàn (2026-06-16) ✅
+
+Tính năng cuối Wave 9 — coin-sink cho kinh tế xu. Mua bằng xu, KHÔNG ảnh hưởng gameplay
+(6 màu luôn phân biệt).
+- **6 skin gem** (Classic miễn phí + 5 trả phí 300→900 xu): mỗi skin đổi **bộ 6 màu + họ
+  hình (3 họ: lá bài / hình học / tinh thể) + hệ số glow**. `lib/data/cosmetics.dart`
+  (`GemSkin`, `BoardTheme`, `ActiveCosmetics` — holder TĨNH cho tầng render Flame đọc không
+  cần Get.find mỗi frame). `gem_component`: `neonColorOf` + `_shapePath(family,…)` + glow
+  đọc `ActiveCosmetics.gemSkin` → mọi particle/beam/flash tự khớp skin.
+- **6 theme bàn** (Midnight miễn phí + 5 trả phí 300→800 xu): đổi 2 màu viền neon + tông ô.
+  `BoardFrame` (effects.dart) đọc `ActiveCosmetics.boardTheme`.
+- **Kinh tế**: `GameController.buySkin/selectSkin/buyTheme/selectTheme` (cộng quyền sở hữu
+  TRƯỚC khi trừ xu, giống `_buy`), `RxSet ownedSkins/ownedThemes` + `RxString selectedSkin/
+  Theme`, load trong `_load` (`_loadCosmetics`), xoá sạch trong `resetProgress`. Item miễn
+  phí luôn sở hữu; mua xong tự trang bị.
+- **`ShopScreen`** (NeonAppBar + NeonBg + CoinChip): 2 mục (skin/theme), thẻ có preview
+  CustomPaint (palette+hình / khung viền) + nút mua(💰giá)/DÙNG/ĐANG DÙNG; thiếu xu → snackbar.
+  Home thêm nút "CỬA HÀNG" (icon storefront) ở hàng meta.
+- **i18n**: 5 nhãn shop (`shop_*`) dịch đủ **22 ngôn ngữ** (en/vi + 20 qua `_w8ByLang`) →
+  KHÔNG tái mở lỗ hổng i18n vừa vá.
+- **Test đầy đủ** (theo yêu cầu): **unit** `test/w9_shop_test.dart` (10: mặc định/mua/thiếu
+  xu/chọn-chưa-sở-hữu/persist-reload/reset), **widget** `test/widget/shop_screen_test.dart`
+  (3: render + mua + thiếu xu snackbar), **integration** `app_test.dart` (+1: Home→Shop→mua).
+- **Thông báo mua dùng dialog chung** (NeonDialog, KHÔNG SnackBar): mua thành công →
+  dialog tên item + "ĐANG DÙNG" (icon ✓ lime); thiếu xu → dialog "Không đủ xu" (icon ví,
+  vàng) + nút ĐỒNG Ý. ShopScreen là route Flutter thuần (không Flame) nên `NeonDialog.show`
+  hoạt động (giống Settings). Tái dùng key `confirm`/`not_enough_coins`/`shop_equipped` đã
+  dịch sẵn → KHÔNG thêm key i18n.
+- **Xu khởi điểm theo build**: debug 10000 (dễ test mua), release/profile 100 (`kDebugMode`
+  trong `_load`). Trước là 50.
+- **Kết quả**: 0 analyzer · **250 test pass** · build APK debug+profile OK.
+- **✅ Verify máy thật S24 Ultra (SM-S928B)**: chụp màn Home (nút CỬA HÀNG, 💲100 release),
+  Shop (6 skin hình/màu khác nhau + 6 theme bàn), dialog "Không đủ xu" neon (skin & theme),
+  gem trong game render đúng (6 chất bài + glow + khung theme).
+- **FIX 2 integration test flaky** (chạy trên S24 → **9/9 PASS** từ state mới):
+  - *Gốc rễ*: màn 1 trên state mới kích hoạt **cốt truyện intro** (`_play`→`StoryController
+    .maybeShow`) TRƯỚC pre-game; test cũ không bỏ qua → "CHUẨN BỊ" không hiện (trên iQOO cũ
+    story đã xem nên "may mắn" pass). Thêm `skipStoryIfAny`.
+  - *Gốc rễ 2*: pre-game **chỉ hiện khi còn booster** (`PregameController.hasAny`); hết
+    booster (state tích luỹ) → vào thẳng game, không có nút "CHƠI NGAY" → `play_now.last`
+    ném "No element". Helper `enterLevelOne` chịu được CẢ HAI nhánh (có/không pre-game) →
+    test độc lập thứ tự chạy & state đĩa.
+
+## 🧹 Wave 9 — Dọn nợ kỹ thuật (widget tái dùng + durability) (2026-06-16)
+
+Dọn nợ "rủi ro thấp" từ eval Wave 8.9 (DRY + durability):
+- **Gom `_coinChip` ×4 → widget chung `CoinChip`** (`lib/presentation/widgets/coin_chip.dart`):
+  4 bản gần giống nhau ở Temple/Achievements/Level Select/World Map → 1 widget reactive
+  (Obx coins). Temple bỏ luôn helper `_chip` (chỉ dùng cho coin).
+- **Gom `_fmtDur`/`_fmt` ×3 → hàm chung `fmtDur`** (`lib/core/utils/format.dart`): bản mm:ss
+  giống hệt ở Home/Level Select/World Map. (season `_fmtCountdown` riêng — bản duy nhất.)
+- **Siết durability `levelUnlock`**: ghi đĩa (`setInt` coins/coinsEarned/unlockedLevel)
+  TRƯỚC rồi mới cập nhật state RAM (`coins.value`...) → app bị kill giữa chừng không làm
+  RAM lệch đĩa (tránh hiển thị xu/unlock chưa kịp lưu).
+- *Bỏ qua*: magic-number layout → const (mơ hồ, ROI thấp, dễ tạo noise) — để khi cần.
+- **Kết quả**: 0 analyzer issue · **237 test pass** (không hồi quy).
+
+## 🌍 Wave 9 — Đóng lỗ hổng i18n: dịch đủ 20 ngôn ngữ (2026-06-16)
+
+Sửa **blocker CRITICAL** từ eval Wave 8.9: 20/22 ngôn ngữ chỉ dịch ~50% (Wave 5/7/8/9
+fallback tiếng Anh). Nay dịch đủ.
+
+- **129 key** W5/7/8/9 (achievements, battle-pass, season, neon temple, versus/co-op,
+  tutorial, npc story, daily challenge, quest, rhythm, boss...) trước đây thiếu cho 20
+  ngôn ngữ → dịch bằng **20 agent song song** (1 ngôn ngữ/agent).
+- **Map mới `_w8ByLang`** trong `app_translations.dart` (20 map `_w8<lang>`) + merge
+  `...?_w8ByLang[e.key]` sau `_w6ByLang` — KHÔNG đụng 22 base map (pattern `_extra`/`_w6`).
+- **Kết quả dịch**: mỗi ngôn ngữ giờ **86.4% (Fil) → 97.7% (Tr)** value khác EN (trước
+  ~50%). Key còn giữ EN là tên riêng NPC (Luma/Vera/Cir/Ember/Nyx) + thuật ngữ game
+  (VERSUS/CO-OP/GROOVE/P1/P2/tên season) — hợp lệ. Placeholder `@n`/`@c`/`@t`/`@s` giữ
+  nguyên (validate 0 lỗi).
+- **Siết test** (`app_translations_test.dart`): bỏ "ru ngủ" — thêm (1) mỗi ngôn ngữ ≥80%
+  value ≠ EN (chống fallback hàng loạt nếu feature mới quên dịch 20 ngôn ngữ); (2) mẫu
+  key W5/7/8/9 × 11 ngôn ngữ ≠ EN + placeholder còn nguyên.
+- **Kết quả**: 0 analyzer issue · **237 test pass** (+2 i18n). App **sẵn sàng phát hành
+  đa ngôn ngữ**.
 
 ## 🔍 Đánh giá chất lượng code (2026-06-16, Wave 8.9)
 

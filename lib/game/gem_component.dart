@@ -2,11 +2,13 @@ import 'dart:math' as math;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import '../core/neon_theme.dart';
+import '../data/cosmetics.dart';
 import '../logic/gem_data.dart';
 import 'effects.dart';
 
-/// Ánh xạ GemColor (logic) sang màu neon thật (render).
-Color neonColorOf(GemColor c) => NeonTheme.gemColors[c.index];
+/// Ánh xạ GemColor (logic) sang màu neon thật (render) — theo skin đang chọn
+/// (Cửa hàng). Mọi particle/beam/flash dùng hàm này nên tự khớp skin.
+Color neonColorOf(GemColor c) => ActiveCosmetics.gemSkin.colors[c.index];
 
 /// Mỗi màu gem có 1 HÌNH DẠNG neon riêng (đa dạng + dễ phân biệt màu):
 /// 0 cyan=tròn, 1 magenta=kim cương, 2 lime=tam giác,
@@ -65,13 +67,15 @@ class GemComponent extends PositionComponent {
     NeonFx.drawGlow(
       canvas,
       center,
-      s * (selected ? 0.95 : (isSpecial ? 0.9 : 0.7)) +
-          pulseAmt * s * (isSpecial ? 0.22 : 0.12),
+      (s * (selected ? 0.95 : (isSpecial ? 0.9 : 0.7)) +
+              pulseAmt * s * (isSpecial ? 0.22 : 0.12)) *
+          ActiveCosmetics.gemSkin.glowScale,
       type == GemType.rainbow ? Colors.white : (junk ? NeonTheme.magenta : c),
       opacity: selected ? 1.0 : (isSpecial ? 0.95 : (junk ? 0.5 : 0.75)),
     );
 
-    final path = _shapePath(color.index, center, r);
+    final path =
+        _shapePath(ActiveCosmetics.gemSkin.shapeFamily, color.index, center, r);
     final bounds = path.getBounds();
 
     // 2) Thân gem: gradient radial sáng giữa
@@ -208,10 +212,21 @@ class GemComponent extends PositionComponent {
     }
   }
 
-  /// Bộ lá bài: mỗi màu một chất.
-  /// 0 cyan=tròn ●, 1 magenta=cơ ♥, 2 lime=chuồn ♣,
-  /// 3 yellow=sao ★, 4 orange=rô ♦, 5 purple=bích ♠.
-  Path _shapePath(int idx, Offset c, double r) {
+  /// Chọn hình theo "họ hình" của skin: 0 = lá bài, 1 = hình học, 2 = tinh thể.
+  Path _shapePath(int family, int idx, Offset c, double r) {
+    switch (family) {
+      case 1:
+        return _geoShape(idx, c, r);
+      case 2:
+        return _crystalShape(idx, c, r);
+      default:
+        return _cardShape(idx, c, r);
+    }
+  }
+
+  /// Họ "lá bài" (family 0): mỗi màu một chất.
+  /// 0=tròn ●, 1=cơ ♥, 2=chuồn ♣, 3=sao ★, 4=rô ♦, 5=bích ♠.
+  Path _cardShape(int idx, Offset c, double r) {
     switch (idx) {
       case 0:
         return Path()..addOval(Rect.fromCircle(center: c, radius: r));
@@ -226,6 +241,56 @@ class GemComponent extends PositionComponent {
       default:
         return _spade(c, r);
     }
+  }
+
+  /// Họ "hình học" (family 1): tròn, vuông bo, tam giác, lục giác, ngũ giác, sao.
+  Path _geoShape(int idx, Offset c, double r) {
+    switch (idx) {
+      case 0:
+        return Path()..addOval(Rect.fromCircle(center: c, radius: r));
+      case 1:
+        return Path()
+          ..addRRect(RRect.fromRectAndRadius(
+              Rect.fromCircle(center: c, radius: r * 0.92),
+              Radius.circular(r * 0.3)));
+      case 2:
+        return _polygon(c, r * 1.1, 3, -math.pi / 2);
+      case 3:
+        return _polygon(c, r * 1.05, 6, -math.pi / 2);
+      case 4:
+        return _polygon(c, r * 1.05, 5, -math.pi / 2);
+      default:
+        return _star(c, r * 1.18, r * 0.5, 5);
+    }
+  }
+
+  /// Họ "tinh thể" (family 2): các đa giác cắt cạnh kiểu đá quý + sao 6 cánh.
+  Path _crystalShape(int idx, Offset c, double r) {
+    switch (idx) {
+      case 0:
+        return _polygon(c, r * 1.05, 6, 0); // lục giác nằm ngang
+      case 1:
+        return _diamondSuit(c, r);
+      case 2:
+        return _polygon(c, r * 1.02, 8, math.pi / 8); // bát giác
+      case 3:
+        return _polygon(c, r * 1.1, 3, math.pi / 2); // tam giác ngược
+      case 4:
+        return _polygon(c, r * 1.05, 5, math.pi / 10);
+      default:
+        return _star(c, r * 1.15, r * 0.62, 6); // sao 6 cánh
+    }
+  }
+
+  /// Đa giác đều [sides] cạnh, bán kính [radius], xoay [rotation] rad.
+  Path _polygon(Offset c, double radius, int sides, double rotation) {
+    final p = Path();
+    for (int i = 0; i < sides; i++) {
+      final a = rotation + i * 2 * math.pi / sides;
+      final pt = Offset(c.dx + radius * math.cos(a), c.dy + radius * math.sin(a));
+      i == 0 ? p.moveTo(pt.dx, pt.dy) : p.lineTo(pt.dx, pt.dy);
+    }
+    return p..close();
   }
 
   /// Cơ ♥

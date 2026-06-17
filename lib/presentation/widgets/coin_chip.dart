@@ -1,0 +1,39 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../core/neon_theme.dart';
+import '../controllers/game_controller.dart';
+
+/// Chip hiển thị số xu (icon vàng + viền/glow neon), reactive theo
+/// [GameController.coins]. Dùng chung cho action bar các màn phụ
+/// (Đền Neon, Thành tựu, Level Select, World Map).
+class CoinChip extends StatelessWidget {
+  const CoinChip(this.controller, {super.key});
+
+  final GameController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: NeonTheme.s8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: NeonTheme.panel.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: NeonTheme.yellow, width: 1.5),
+        boxShadow: NeonTheme.glow(NeonTheme.yellow, blur: 6),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.monetization_on_rounded,
+            color: NeonTheme.yellow, size: 18),
+        const SizedBox(width: 5),
+        Obx(() => Text('${controller.coins.value}',
+            style: const TextStyle(
+              fontFamily: 'Baloo2',
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            ))),
+      ]),
+    );
+  }
+}

@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flame/text.dart';
 import 'package:flutter/material.dart';
 import '../core/neon_theme.dart';
+import '../data/cosmetics.dart';
 import '../data/levels.dart' show ObstacleType;
 
 /// Cache hiệu ứng dùng chung — pre-render 1 lần để tránh MaskFilter.blur mỗi frame
@@ -236,21 +237,22 @@ class BoardFrame extends PositionComponent {
       Radius.circular(cellSize * 0.5),
     );
 
-    // nền panel + viền neon đôi
+    // nền panel + viền neon đôi (màu theo theme bàn đang chọn — Cửa hàng)
+    final theme = ActiveCosmetics.boardTheme;
     canvas.drawRRect(panel, Paint()..color = const Color(0xE60B0B1F));
     canvas.drawRRect(
       panel,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3
-        ..color = const Color(0xFF00F0FF).withValues(alpha: 0.5),
+        ..color = theme.border1.withValues(alpha: 0.5),
     );
     canvas.drawRRect(
       panel.inflate(3),
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2
-        ..color = const Color(0xFFBC4BFF).withValues(alpha: 0.3),
+        ..color = theme.border2.withValues(alpha: 0.3),
     );
 
     // ô vuông (radius 0); chỉ 4 ô góc bo tròn theo góc panel
@@ -274,6 +276,9 @@ class BoardFrame extends PositionComponent {
         );
         final shade = (r + c).isEven ? 0.07 : 0.03;
         canvas.drawRRect(rr, Paint()..color = Colors.white.withValues(alpha: shade));
+        if (theme.slotTint.a > 0) {
+          canvas.drawRRect(rr, Paint()..color = theme.slotTint);
+        }
         canvas.drawRRect(
           rr,
           Paint()

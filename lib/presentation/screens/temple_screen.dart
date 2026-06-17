@@ -4,6 +4,7 @@ import '../../core/neon_theme.dart';
 import '../../data/temple.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/temple_controller.dart';
+import '../widgets/coin_chip.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
@@ -25,7 +26,7 @@ class TempleScreen extends StatelessWidget {
               NeonAppBar(
                 title: 'temple_title'.tr,
                 color: NeonTheme.cyan,
-                actions: [_coinChip(g)],
+                actions: [CoinChip(g)],
               ),
               _progressBar(t),
               Expanded(child: _templeView(t)),
@@ -247,36 +248,6 @@ class TempleScreen extends StatelessWidget {
     });
   }
 
-  Widget _coinChip(GameController g) => _chip(
-        Icons.monetization_on_rounded,
-        NeonTheme.yellow,
-        () => g.coins.value,
-        g,
-      );
-
-  Widget _chip(IconData icon, Color color, int Function() value, GameController g) {
-    return Container(
-      margin: const EdgeInsets.only(right: NeonTheme.s8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: NeonTheme.panel.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color, width: 1.5),
-        boxShadow: NeonTheme.glow(color, blur: 6),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, color: color, size: 18),
-        const SizedBox(width: 5),
-        Obx(() => Text('${value()}',
-            style: const TextStyle(
-              fontFamily: 'Baloo2',
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 14,
-            ))),
-      ]),
-    );
-  }
 }
 
 /// Huy hiệu 1 hạng mục: vòng tròn sáng dần theo tier + chấm tier.

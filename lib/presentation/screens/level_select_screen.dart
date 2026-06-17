@@ -8,6 +8,8 @@ import '../../data/story.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/pregame_controller.dart';
 import '../controllers/story_controller.dart';
+import '../../core/utils/format.dart';
+import '../widgets/coin_chip.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_dialog.dart';
@@ -49,7 +51,7 @@ class LevelSelectScreen extends StatelessWidget {
       if (ctx != null) {
         final next = ctrl.timeToNextLife;
         final msg = next > Duration.zero
-            ? '${'lives_none_msg'.tr} (${_fmtDur(next)})'
+            ? '${'lives_none_msg'.tr} (${fmtDur(next)})'
             : 'lives_none_msg'.tr;
         ScaffoldMessenger.of(ctx)
           ..hideCurrentSnackBar()
@@ -87,12 +89,6 @@ class LevelSelectScreen extends StatelessWidget {
     Get.to(() => const GameScreen());
   }
 
-  static String _fmtDur(Duration d) {
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
-
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.find<GameController>();
@@ -117,7 +113,7 @@ class LevelSelectScreen extends StatelessWidget {
                       Get.off(() => const WorldMapScreen());
                     },
                   ),
-                  _coinChip(ctrl),
+                  CoinChip(ctrl),
                 ],
               ),
               Expanded(
@@ -367,34 +363,6 @@ class LevelSelectScreen extends StatelessWidget {
             ]),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _coinChip(GameController ctrl) {
-    return Container(
-      margin: const EdgeInsets.only(right: NeonTheme.s8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: NeonTheme.panel.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: NeonTheme.yellow, width: 1.5),
-        boxShadow: NeonTheme.glow(NeonTheme.yellow, blur: 6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.monetization_on_rounded,
-              color: NeonTheme.yellow, size: 18),
-          const SizedBox(width: 5),
-          Obx(() => Text('${ctrl.coins.value}',
-              style: const TextStyle(
-                fontFamily: 'Baloo2',
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 14,
-              ))),
-        ],
       ),
     );
   }

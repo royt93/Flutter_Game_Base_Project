@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../core/debug_log.dart';
 import '../../core/storage_service.dart';
 import '../../data/achievements.dart';
 import '../../data/battle_pass.dart';
+import '../../data/cosmetics.dart';
 import '../../data/levels.dart';
 import '../../data/season.dart';
 import '../../data/story.dart';
@@ -145,6 +147,14 @@ class GameController extends GetxController {
   final RxInt boosterRoyal = 0.obs; // Royal Flush: nổ cả bàn
   final RxInt boosterGravity = 0.obs; // đảo trọng lực (đảo cột)
 
+  // --- Cửa hàng trang trí (Wave 9) ---
+  /// Tập id skin gem / theme bàn đã sở hữu (item miễn phí luôn có sẵn).
+  final RxSet<String> ownedSkins = <String>{}.obs;
+  final RxSet<String> ownedThemes = <String>{}.obs;
+  /// Id skin / theme đang trang bị (áp qua [ActiveCosmetics]).
+  final RxString selectedSkin = ''.obs;
+  final RxString selectedTheme = ''.obs;
+
   /// Số sao đạt được ở ván vừa kết thúc (cho dialog celebration).
   int lastStars = 0;
   int lastCoinReward = 0;
@@ -175,7 +185,9 @@ class GameController extends GetxController {
 
   void _load() {
     unlockedLevel.value = _store.getInt(StorageKeys.unlockedLevel, def: 1);
-    coins.value = _store.getInt(StorageKeys.coins, def: 50); // tặng 50 xu
+    // Xu khởi điểm (lần đầu cài/chưa có key): debug 10000 (dễ test mua), release 100.
+    coins.value =
+        _store.getInt(StorageKeys.coins, def: kDebugMode ? 10000 : 100);
     boosterHammer.value = _store.getInt(StorageKeys.bHammer, def: 2);
     boosterMoves.value = _store.getInt(StorageKeys.bMoves, def: 2);
     boosterSwap.value = _store.getInt(StorageKeys.bSwap, def: 1);
@@ -205,7 +217,77 @@ class GameController extends GetxController {
     coinsEarnedTotal.value = _store.getInt(StorageKeys.coinsEarned, def: 0);
     endlessHigh.value = _store.getInt(StorageKeys.endlessHigh, def: 0);
     _migrateShardsToCoins(); // Wave 9: shard cũ → xu (×10), chạy 1 lần
+    _loadCosmetics(); // Wave 9: skin gem / theme bàn đã sở hữu + đang chọn
     refillLives();
+  }
+
+  /// Nạp trang trí đã sở hữu + đang chọn từ đĩa rồi áp vào [ActiveCosmetics].
+  void _loadCosmetics() {
+    ownedSkins.clear();
+    for (final s in kGemSkins) {
+      if (s.price == 0 || _store.getInt(StorageKeys.ownedSkin(s.id)) == 1) {
+        ownedSkins.add(s.id);
+      }
+    }
+    ownedThemes.clear();
+    for (final t in kBoardThemes) {
+      if (t.price == 0 || _store.getInt(StorageKeys.ownedTheme(t.id)) == 1) {
+        ownedThemes.add(t.id);
+      }
+    }
+    var sel = _store.getString(StorageKeys.selectedSkin) ?? kGemSkins.first.id;
+    if (!ownedSkins.contains(sel)) sel = kGemSkins.first.id;
+    selectedSkin.value = sel;
+    var selT =
+        _store.getString(StorageKeys.selectedTheme) ?? kBoardThemes.first.id;
+    if (!ownedThemes.contains(selT)) selT = kBoardThemes.first.id;
+    selectedTheme.value = selT;
+    _applyCosmetics();
+  }
+
+  /// Đưa lựa chọn hiện tại vào holder tĩnh để tầng render (Flame) đọc.
+  void _applyCosmetics() {
+    ActiveCosmetics.gemSkin = gemSkinById(selectedSkin.value);
+    ActiveCosmetics.boardTheme = boardThemeById(selectedTheme.value);
+  }
+
+  bool isSkinOwned(String id) => ownedSkins.contains(id);
+  bool isThemeOwned(String id) => ownedThemes.contains(id);
+
+  /// Mua skin (nếu đủ xu & chưa sở hữu) rồi tự trang bị. Cộng quyền sở hữu
+  /// TRƯỚC khi trừ xu (giống [_buy]) — kill giữa chừng thì giữ skin, không mất xu trắng.
+  bool buySkin(String id) {
+    final skin = gemSkinById(id);
+    if (ownedSkins.contains(id) || coins.value < skin.price) return false;
+    ownedSkins.add(id);
+    unawaited(_store.setInt(StorageKeys.ownedSkin(id), 1));
+    _setCoins(coins.value - skin.price);
+    selectSkin(id);
+    return true;
+  }
+
+  void selectSkin(String id) {
+    if (!ownedSkins.contains(id)) return;
+    selectedSkin.value = id;
+    unawaited(_store.setString(StorageKeys.selectedSkin, id));
+    _applyCosmetics();
+  }
+
+  bool buyTheme(String id) {
+    final th = boardThemeById(id);
+    if (ownedThemes.contains(id) || coins.value < th.price) return false;
+    ownedThemes.add(id);
+    unawaited(_store.setInt(StorageKeys.ownedTheme(id), 1));
+    _setCoins(coins.value - th.price);
+    selectTheme(id);
+    return true;
+  }
+
+  void selectTheme(String id) {
+    if (!ownedThemes.contains(id)) return;
+    selectedTheme.value = id;
+    unawaited(_store.setString(StorageKeys.selectedTheme, id));
+    _applyCosmetics();
   }
 
   LevelConfig get level =>
@@ -885,9 +967,17 @@ class GameController extends GetxController {
       StorageKeys.bLightning,
       StorageKeys.bRoyal,
       StorageKeys.bGravity,
+      StorageKeys.selectedSkin,
+      StorageKeys.selectedTheme,
     ];
     for (final k in scalarKeys) {
       await _store.remove(k);
+    }
+    for (final s in kGemSkins) {
+      await _store.remove(StorageKeys.ownedSkin(s.id));
+    }
+    for (final t in kBoardThemes) {
+      await _store.remove(StorageKeys.ownedTheme(t.id));
     }
     for (final lv in kLevels) {
       await _store.remove(StorageKeys.highScore(lv.index));
@@ -1056,16 +1146,19 @@ class GameController extends GetxController {
       // Wave 9 (gộp tiền tệ): phần shard cũ (1 + sao) → xu ×10, gộp vào lastCoinReward
       // TRƯỚC khi cộng (để dialog hiện đúng tổng).
       lastCoinReward += (1 + lastStars) * 10;
-      coins.value = (coins.value + lastCoinReward).clamp(0, maxCoins);
-      coinsEarnedTotal.value = (coinsEarnedTotal.value + lastCoinReward).clamp(
-        0,
-        maxCoins,
-      );
-      await _store.setInt(StorageKeys.coins, coins.value);
-      await _store.setInt(StorageKeys.coinsEarned, coinsEarnedTotal.value);
+      // Ghi đĩa TRƯỚC rồi mới cập nhật state RAM: nếu app bị kill giữa chừng,
+      // RAM và đĩa không lệch nhau (tránh mất xu/unlock đã hiển thị).
+      final newCoins = (coins.value + lastCoinReward).clamp(0, maxCoins);
+      final newEarned =
+          (coinsEarnedTotal.value + lastCoinReward).clamp(0, maxCoins);
+      await _store.setInt(StorageKeys.coins, newCoins);
+      await _store.setInt(StorageKeys.coinsEarned, newEarned);
+      coins.value = newCoins;
+      coinsEarnedTotal.value = newEarned;
       if (lv >= unlockedLevel.value && lv < kLevels.length) {
-        unlockedLevel.value = lv + 1;
-        await _store.setInt(StorageKeys.unlockedLevel, unlockedLevel.value);
+        final newUnlock = lv + 1;
+        await _store.setInt(StorageKeys.unlockedLevel, newUnlock);
+        unlockedLevel.value = newUnlock;
       }
     }
   }

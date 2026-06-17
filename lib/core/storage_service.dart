@@ -68,6 +68,12 @@ class StorageKeys {
   /// Cờ "đã nhận thưởng" của thành tựu [id].
   static String achievementClaimed(String id) => 'ach_$id';
 
+  // Wave 9 — Cửa hàng trang trí (skin gem + theme bàn, mua bằng xu)
+  static String ownedSkin(String id) => 'skin_$id'; // 1 = đã sở hữu
+  static String ownedTheme(String id) => 'theme_$id';
+  static const String selectedSkin = 'sel_skin'; // id skin đang dùng
+  static const String selectedTheme = 'sel_theme'; // id theme đang dùng
+
   // Booster
   static const String bHammer = 'b_hammer';
   static const String bMoves = 'b_moves';

@@ -63,5 +63,46 @@ void main() {
       expect(keys['fr_FR']!['lives_buy_msg']!.contains('@n'), isTrue);
       expect(keys['th_TH']!['lives_next']!.contains('@t'), isTrue);
     });
+
+    // ── Chống hồi quy lỗ hổng i18n (Wave 8.9): trước đây 20 ngôn ngữ chỉ ~50%
+    // key được dịch (Wave 5/7/8/9 fallback English). Test cũ chỉ kiểm KEY đủ
+    // (qua fallback merge) nên KHÔNG phát hiện. 2 test dưới kiểm VALUE đã dịch.
+    test('mỗi ngôn ngữ phải dịch ≥80% value (không fallback English hàng loạt)',
+        () {
+      final en = keys['en_US']!;
+      for (final entry in keys.entries) {
+        if (entry.key == 'en_US') continue;
+        var diff = 0;
+        entry.value.forEach((k, v) {
+          if (v.trim() != en[k]?.trim()) diff++;
+        });
+        final ratio = diff / entry.value.length;
+        expect(ratio, greaterThanOrEqualTo(0.80),
+            reason: '${entry.key} chỉ dịch ${(ratio * 100).toStringAsFixed(1)}% '
+                '— nghi fallback English (thêm feature mới mà quên dịch?)');
+      }
+    });
+
+    test('key Wave 5/7/8/9 đã dịch thật cho 20 ngôn ngữ (mẫu)', () {
+      // Các key mô tả/UI tiêu biểu (không phải tên riêng) phải KHÁC bản English.
+      const sampleKeys = [
+        'achievements', 'win_streak', 'tut_1', 'season_hint', 'boss_hp',
+        'temple_tier', 'quest_win', 'ach_claim', 'bp_track', 'guide_versus_body',
+      ];
+      const langs = [
+        'es_ES', 'de_DE', 'ru_RU', 'zh_CN', 'ja_JP', 'ko_KR',
+        'ar_SA', 'th_TH', 'hi_IN', 'uk_UA', 'bn_BD',
+      ];
+      final en = keys['en_US']!;
+      for (final k in sampleKeys) {
+        for (final lang in langs) {
+          expect(keys[lang]![k], isNot(en[k]),
+              reason: '$lang/$k còn dùng English (chưa dịch Wave 5/7/8/9)');
+        }
+      }
+      // placeholder vẫn giữ nguyên sau khi dịch
+      expect(keys['ru_RU']!['streak_bonus']!.contains('@n'), isTrue);
+      expect(keys['bn_BD']!['daily_ch_reward']!.contains('@c'), isTrue);
+    });
   });
 }
