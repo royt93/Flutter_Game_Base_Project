@@ -108,6 +108,31 @@ extension GameControllerModes on GameController {
     score.value += gems * kColorRushBonusPerGem;
   }
 
+  /// Bắt đầu chế độ Soda (chế độ riêng): clear gem làm mực nước dâng, đẩy chai
+  /// nổi lên đỉnh. Đưa đủ [LevelConfig.sodaTarget] chai → thắng trong số lượt.
+  /// KHÔNG đụng mạng/win-streak/level-unlock (side mode).
+  void startSoda() {
+    _sodaCfg = buildSodaLevel();
+    _enterMode(soda: true);
+    _resetRunState(moves: _sodaCfg!.moves);
+  }
+
+  /// Soda: mỗi gem clear làm mực nước dâng 1 đơn vị; mỗi [kSodaFillPerBottle]
+  /// đơn vị → 1 chai nổi lên đỉnh. Gọi từ registerClear (tính cả cascade).
+  void registerSodaFill([int gems = 1]) {
+    if (!isSoda.value || gems <= 0) return;
+    sodaFill.value += gems;
+    final target = level.sodaTarget;
+    sodaCollected.value =
+        (sodaFill.value ~/ kSodaFillPerBottle).clamp(0, target);
+  }
+
+  /// Soda: tiến độ mực nước 0..1 (cho overlay nước dâng).
+  double get sodaProgress {
+    final max = level.sodaTarget * kSodaFillPerBottle;
+    return max == 0 ? 0 : (sodaFill.value / max).clamp(0.0, 1.0);
+  }
+
   /// Seed bàn cho engine: Thử thách ngày dùng `epochDay` (mọi người CÙNG bàn);
   /// các chế độ khác trả null (engine tự ngẫu nhiên). Versus truyền seed riêng.
   int? get boardSeed => isDaily.value ? _dailySeed : null;

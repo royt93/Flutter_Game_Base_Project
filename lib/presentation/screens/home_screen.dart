@@ -9,9 +9,12 @@ import '../../core/storage_service.dart';
 import '../../core/utils/format.dart';
 import '../controllers/achievement_controller.dart';
 import '../controllers/battle_pass_controller.dart';
+import '../controllers/collection_controller.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_controller.dart';
+import '../controllers/piggy_controller.dart';
 import '../controllers/season_controller.dart';
+import '../controllers/tournament_controller.dart';
 import '../controllers/lucky_wheel_controller.dart';
 import '../controllers/story_controller.dart';
 import '../widgets/lucky_wheel_view.dart';
@@ -19,13 +22,16 @@ import '../widgets/neon_bg.dart';
 import '../widgets/neon_dialog.dart';
 import 'achievements_screen.dart';
 import 'battle_pass_screen.dart';
+import 'collection_screen.dart';
 import 'game_screen.dart';
 import 'guide_screen.dart';
 import 'level_select_screen.dart';
+import 'piggy_screen.dart';
 import 'season_screen.dart';
 import 'settings_screen.dart';
 import 'shop_screen.dart';
 import 'temple_screen.dart';
+import 'tournament_screen.dart';
 import 'versus_screen.dart';
 import 'world_map_screen.dart';
 
@@ -40,6 +46,9 @@ class HomeScreen extends StatelessWidget {
     final lw = Get.put(LuckyWheelController(g), permanent: true);
     final bp = Get.put(BattlePassController(g), permanent: true);
     final sc = Get.put(SeasonController(g), permanent: true);
+    final cc = Get.put(CollectionController(g), permanent: true);
+    final pc = Get.put(PiggyController(g), permanent: true);
+    final tc = Get.put(TournamentController(g), permanent: true);
     Get.put(StoryController(), permanent: true);
     g.refillLives(); // cập nhật mạng hồi được khi quay về Home
     return Scaffold(
@@ -47,7 +56,7 @@ class HomeScreen extends StatelessWidget {
         child: SafeArea(
           child: Stack(
             children: [
-              _menu(g, ac, bp, sc),
+              _menu(g, ac, bp, sc, cc, pc, tc),
               // Thanh trên: mạng (trái) + quà hằng ngày (phải)
               Positioned(
                 top: NeonTheme.s8,
@@ -113,6 +122,9 @@ class HomeScreen extends StatelessWidget {
     AchievementController ac,
     BattlePassController bp,
     SeasonController sc,
+    CollectionController cc,
+    PiggyController pc,
+    TournamentController tc,
   ) {
     // FULL chiều rộng + KHÔNG scroll. PHÂN BỐ DỌC bằng Column(max) + Spacer:
     //  • Logo TRÊN CÙNG
@@ -175,11 +187,11 @@ class HomeScreen extends StatelessWidget {
             );
           }),
           const SizedBox(height: NeonTheme.s8),
-          // KHU THỬ THÁCH — lưới 2×3 (6 ô đều)
+          // KHU THỬ THÁCH — lưới 2×4 (8 ô đều): gộp Color Rush + Soda vào lưới
+          // (bỏ 2 card full-width) → gọn chiều cao, version/copyright hiện đủ.
           _sectionLabel('challenge_modes'.tr),
           const SizedBox(height: NeonTheme.s8),
-          // LƯỚI ĐỀU 3 CỘT × 2 HÀNG — 6 thử thách ô bằng nhau. Hàng 1:
-          // Daily · Vô tận · Trùm. Hàng 2: Trọng lực · Nhịp · 2 người.
+          // Hàng 1: HẰNG NGÀY · VÔ TẬN · TRÙM · TRUY QUÉT MÀU.
           // Daily nổi bật: lime + badge 🔥/✓ ở góc (Obx theo streak).
           Row(
             children: [
@@ -216,11 +228,21 @@ class HomeScreen extends StatelessWidget {
                   'boss_title'.tr,
                   NeonTheme.orange,
                   () {
-                    final stage = (1 + (g.unlockedLevel.value - 1) ~/ 20).clamp(
-                      1,
-                      5,
-                    );
+                    final stage =
+                        (1 + (g.unlockedLevel.value - 1) ~/ 20).clamp(1, 5);
                     g.startBoss(stage);
+                    Get.to(() => const GameScreen());
+                  },
+                ),
+              ),
+              const SizedBox(width: NeonTheme.s8),
+              Expanded(
+                child: _modeCard(
+                  Icons.local_fire_department_rounded,
+                  'color_rush_short'.tr,
+                  NeonTheme.magenta,
+                  () {
+                    g.startColorRush();
                     Get.to(() => const GameScreen());
                   },
                 ),
@@ -228,6 +250,7 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: NeonTheme.s8),
+          // Hàng 2: TRỌNG LỰC · NHỊP ĐIỆU · 2 NGƯỜI · NƯỚC DÂNG (Soda).
           Row(
             children: [
               Expanded(
@@ -262,56 +285,26 @@ class HomeScreen extends StatelessWidget {
                   () => Get.to(() => const VersusScreen()),
                 ),
               ),
+              const SizedBox(width: NeonTheme.s8),
+              Expanded(
+                child: _modeCard(
+                  Icons.local_drink_rounded,
+                  'soda_short'.tr,
+                  NeonTheme.cyan,
+                  () {
+                    g.startSoda();
+                    Get.to(() => const GameScreen());
+                  },
+                ),
+              ),
             ],
-          ),
-          const SizedBox(height: NeonTheme.s8),
-          // Color Rush (Wave 11) — chế độ mới, card full-width nổi bật (ngang).
-          GestureDetector(
-            onTap: () {
-              g.startColorRush();
-              Get.to(() => const GameScreen());
-            },
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-              decoration: BoxDecoration(
-                color: NeonTheme.panel.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: NeonTheme.magenta, width: 1.6),
-                boxShadow: NeonTheme.glow(NeonTheme.magenta, blur: 8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.local_fire_department_rounded,
-                      color: NeonTheme.magenta, size: 24),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'color_rush_title'.tr,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
-                        shadows: const [
-                          Shadow(color: NeonTheme.magenta, blurRadius: 8)
-                        ],
-                      ),
-                    ),
-                  ),
-                  Icon(Icons.chevron_right_rounded,
-                      color: NeonTheme.magenta, size: 22),
-                ],
-              ),
-            ),
           ),
           // Cách section Phần thưởng đúng 32px (khối Chơi ngay + Thử thách dời
           // xuống sát mép trên của Phần thưởng nhờ Spacer phía trên logo).
           const SizedBox(height: 32),
-          // KHU GIỮ CHÂN + TIỆN ÍCH — 2 hàng × 3 icon (nhãn đủ, thoáng).
-          // Hàng 1: Đền · Pass · Mùa. Hàng 2: Thành tựu · Hướng dẫn · Cài đặt.
+          // KHU GIỮ CHÂN + TIỆN ÍCH — 2 hàng × 5 icon (gọn 1 màn, KHÔNG scroll).
+          // Hàng 1: Đền · Pass · Mùa · Cửa hàng · Album.
+          // Hàng 2: Heo đất · Giải đấu · Thành tựu · Hướng dẫn · Cài đặt.
           _sectionLabel('meta_section'.tr),
           const SizedBox(height: NeonTheme.s8),
           Row(
@@ -362,11 +355,52 @@ class HomeScreen extends StatelessWidget {
                   small: true,
                 ),
               ),
+              Expanded(
+                child: Obx(() {
+                  cc.points.value; // hasClaimable phụ thuộc điểm → đọc để rebuild
+                  cc.claimed.length;
+                  return _circleNav(
+                    Icons.photo_album_rounded,
+                    NeonTheme.cyan,
+                    'coll_title'.tr,
+                    () => Get.to(() => const CollectionScreen()),
+                    badge: cc.hasClaimable,
+                    small: true,
+                  );
+                }),
+              ),
             ],
           ),
           const SizedBox(height: NeonTheme.s8),
           Row(
             children: [
+              Expanded(
+                child: Obx(() {
+                  pc.saved.value;
+                  return _circleNav(
+                    Icons.savings_rounded,
+                    NeonTheme.magenta,
+                    'piggy_title'.tr,
+                    () => Get.to(() => const PiggyScreen()),
+                    badge: pc.canSmash,
+                    small: true,
+                  );
+                }),
+              ),
+              Expanded(
+                child: Obx(() {
+                  tc.points.value;
+                  tc.claimedThisWeek.value;
+                  return _circleNav(
+                    Icons.leaderboard_rounded,
+                    NeonTheme.orange,
+                    'tour_title'.tr,
+                    () => Get.to(() => const TournamentScreen()),
+                    badge: tc.hasClaimable,
+                    small: true,
+                  );
+                }),
+              ),
               Expanded(
                 child: Obx(() {
                   ac.claimed.length;

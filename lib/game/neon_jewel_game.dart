@@ -175,6 +175,19 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         origin: boardOrigin,
       )..priority = 1);
     }
+    // Soda (Wave 14): lớp "nước dâng" + chai nổi (overlay trên gem, đọc tiến độ
+    // mực nước từ controller mỗi frame). KHÔNG đụng gravity/refill.
+    if (controller.isSoda.value) {
+      boardLayer.add(SodaLayer(
+        progress: () => controller.sodaProgress,
+        collected: () => controller.sodaCollected.value,
+        target: controller.level.sodaTarget,
+        rows: rows,
+        cols: cols,
+        cellSize: cellSize,
+        origin: boardOrigin,
+      )..priority = 3); // trên gem để thấy nước + chai
+    }
     _fillInitialBoard();
     _placeIngredients();
     if (!_hasPossibleMove()) await _doShuffle();
@@ -223,6 +236,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   bool _spreadHitThisMove = false;
   static const int _spreadCap = 16;
 
+  // Jam (mứt, Wave 14): tương tự spread NHƯNG là mục tiêu clearObstacle. Cờ "đã
+  // chặn lan lượt này" + trần riêng (kJamSpreadCap, đặt ở levels.dart để test được).
+  bool _jamHitThisMove = false;
+  static const int _jamCap = kJamSpreadCap;
+
   /// Wave 13 — trần số particle-burst gem THƯỜNG trong 1 lần clear (chống spike
   /// cấp phát ở cascade lớn). Gem special không bị giới hạn này.
   static const int _burstCap = 16;
@@ -243,16 +261,19 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       controller.obstacleTotal.value = 0; // không tính vào điều kiện thắng
       return;
     }
+    // licorice: 2 LỚP/ô (mục tiêu = số lớp = count × kLicoriceLayers).
+    final layers = type == ObstacleType.licorice ? kLicoriceLayers : 1;
     int total = 0;
     final pattern = controller.level.obstaclePattern;
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
         if (patternHas(pattern, r, c, rows, cols)) {
-          obstacle[r][c] = 1;
-          total++;
+          obstacle[r][c] = layers;
+          total += layers;
         }
       }
     }
+    // jam: mục tiêu = số lớp BAN ĐẦU (lan thêm KHÔNG tăng → luôn khả thi).
     controller.obstacleTotal.value = total;
   }
 
@@ -461,10 +482,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   GemColor? _matchColorAt(int r, int c) {
     final g = grid[r][c];
     if (g == null || g.isIngredient) return null;
-    // stone & spread (chocolate) phủ kín → gem không tham gia match
-    if (obstacle[r][c] > 0 &&
-        (_obstacleType == ObstacleType.stone ||
-            _obstacleType == ObstacleType.spread)) {
+    // stone/spread/licorice/jam phủ kín → gem không tham gia match
+    if (obstacle[r][c] > 0 && _obstacleCoversGem(_obstacleType)) {
       return null;
     }
     return g.color;
@@ -477,12 +496,20 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     if (g == null) return false;
     if (g.isIngredient) return true;
     if (obstacle[r][c] > 0) {
-      return _obstacleType == ObstacleType.chain ||
-          _obstacleType == ObstacleType.stone ||
-          _obstacleType == ObstacleType.spread;
+      final t = _obstacleType;
+      // ice KHÔNG khoá; mọi loại còn lại (chain/stone/spread/licorice/jam) khoá.
+      return t != ObstacleType.none && t != ObstacleType.ice;
     }
     return false;
   }
+
+  /// Obstacle [t] có phủ kín gem (gem không match + không bị xoá khi còn lớp)?
+  /// stone/spread/licorice/jam phủ kín; ice/chain chỉ "đính kèm" (gem vẫn match).
+  bool _obstacleCoversGem(ObstacleType t) =>
+      t == ObstacleType.stone ||
+      t == ObstacleType.spread ||
+      t == ObstacleType.licorice ||
+      t == ObstacleType.jam;
 
   // --------------------------------------------------------------------------
   // Tương tác chạm
@@ -610,6 +637,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           _sfx?.playNote(controller.groove.value.clamp(1, 24));
         }
         _spreadHitThisMove = false; // theo dõi có chặn được chocolate lan không
+        _jamHitThisMove = false; // tương tự cho mứt (jam)
         if (comboTrigger) {
           _sfx?.playSpecial();
           final base = _comboCells(a, b);
@@ -621,6 +649,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         }
         await _settle();
         await _maybeGrowSpread(); // không chặn được → chocolate lan 1 ô
+        await _maybeGrowJam(); // không chặn được → mứt lan 1 ô (mục tiêu vẫn cố định)
         await _ensurePlayable();
         // Băng chuyền (Wave 11): dịch hàng băng chuyền 1 cột sau mỗi lượt.
         if (_hasConveyor) await _advanceConveyor();
@@ -1045,6 +1074,47 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     await Future.delayed(const Duration(milliseconds: 170));
   }
 
+  /// Mứt (jam) lan: như chocolate nhưng KHÔNG tăng mục tiêu (obstacleTotal cố
+  /// định = lớp ban đầu) → dù lan, người chơi vẫn thắng sau đủ số lần dọn. Trần
+  /// [_jamCap] chống khoá bàn.
+  Future<void> _maybeGrowJam() async {
+    if (_obstacleType != ObstacleType.jam || _jamHitThisMove) return;
+    final jamCells = <Cell>[];
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        if (obstacle[r][c] > 0) jamCells.add(Cell(r, c));
+      }
+    }
+    if (jamCells.isEmpty || jamCells.length >= _jamCap) return;
+    final candidates = <Cell>{};
+    for (final cell in jamCells) {
+      for (final n in [
+        Cell(cell.row - 1, cell.col),
+        Cell(cell.row + 1, cell.col),
+        Cell(cell.row, cell.col - 1),
+        Cell(cell.row, cell.col + 1),
+      ]) {
+        if (n.row < 0 || n.row >= rows || n.col < 0 || n.col >= cols) continue;
+        if (obstacle[n.row][n.col] > 0) continue;
+        final g = grid[n.row][n.col];
+        if (g != null && !g.isIngredient && g.type == GemType.normal) {
+          candidates.add(n);
+        }
+      }
+    }
+    if (candidates.isEmpty) return;
+    final target = (candidates.toList()..shuffle(_rnd)).first;
+    obstacle[target.row][target.col] = 1;
+    _shake(4);
+    add(ShockwaveComponent(
+      position: _cellCenter(target.row, target.col),
+      color: const Color(0xFFFF4D6D),
+      maxRadius: cellSize * 1.25,
+      duration: 0.35,
+    )..priority = 48);
+    await Future.delayed(const Duration(milliseconds: 170));
+  }
+
   /// Mở rộng tập ô xóa bằng cách kích hoạt các gem special bên trong nó.
   Set<Cell> _expandSpecials(Set<Cell> initial) {
     final result = <Cell>{...initial};
@@ -1172,9 +1242,12 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     for (final cell in cells) {
       final g = grid[cell.row][cell.col];
       if (g == null) continue;
-      // stone còn lớp → KHÔNG xóa gem (chỉ bị damage qua _damageObstacles)
+      // stone/licorice/jam còn lớp → KHÔNG xóa gem (chỉ bị damage qua
+      // _damageObstacles khi clear ô KỀ). ice/chain: gem vẫn xoá bình thường.
       if (obstacle[cell.row][cell.col] > 0 &&
-          _obstacleType == ObstacleType.stone) {
+          (_obstacleType == ObstacleType.stone ||
+              _obstacleType == ObstacleType.licorice ||
+              _obstacleType == ObstacleType.jam)) {
         continue;
       }
       // cập nhật mục tiêu: thu thập màu + phá jelly tại ô này
@@ -1305,9 +1378,13 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     }
     for (final cell in reduce) {
       obstacle[cell.row][cell.col]--;
-      // spread không tính mục tiêu; các loại khác tính tiến trình clearObstacle
+      // spread (chocolate) KHÔNG tính mục tiêu; jam tính mục tiêu + chặn lan lượt
+      // này; các loại còn lại (ice/chain/stone/licorice) tính tiến trình.
       if (type == ObstacleType.spread) {
         _spreadHitThisMove = true; // đã kìm hãm được lan trong lượt này
+      } else if (type == ObstacleType.jam) {
+        _jamHitThisMove = true; // chặn được mứt lan trong lượt này
+        controller.registerObstacleClear(1);
       } else {
         controller.registerObstacleClear(1);
       }
@@ -1330,6 +1407,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         return NeonTheme.purple;
       case ObstacleType.spread:
         return const Color(0xFFB05CFF);
+      case ObstacleType.licorice:
+        return const Color(0xFF7A4BFF);
+      case ObstacleType.jam:
+        return const Color(0xFFFF4D6D);
       case ObstacleType.none:
         return Colors.white;
     }
@@ -1933,10 +2014,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           List.generate(rows, (_) => List<GemColor?>.filled(cols, null));
       for (int i = 0; i < cells.length; i++) {
         final cell = cells[i];
+        // Ô phủ kín (stone/spread/licorice/jam) không match → loại khỏi test
+        // shuffle để khớp _matchColorAt (nhất quán, tránh ước lượng thừa match).
         final excluded = (grid[cell.row][cell.col]?.isIngredient ?? false) ||
             (obstacle[cell.row][cell.col] > 0 &&
-                (_obstacleType == ObstacleType.stone ||
-                    _obstacleType == ObstacleType.spread));
+                _obstacleCoversGem(_obstacleType));
         test[cell.row][cell.col] = excluded ? null : colors[i];
       }
       if (!MatchDetector.hasMatch(test)) break;

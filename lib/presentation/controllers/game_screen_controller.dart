@@ -6,9 +6,12 @@ import '../../data/levels.dart';
 import '../../data/story.dart';
 import '../../game/neon_jewel_game.dart';
 import 'battle_pass_controller.dart';
+import 'collection_controller.dart';
 import 'game_controller.dart';
+import 'piggy_controller.dart';
 import 'season_controller.dart';
 import 'story_controller.dart';
+import 'tournament_controller.dart';
 
 /// Trạng thái UI của màn chơi (thay cho setState).
 enum GameUi { playing, quit, win, lose }
@@ -175,6 +178,13 @@ class GameScreenController extends GetxController {
       );
       if (result == 'win') {
         SeasonController.maybe?.addWin(gameCtrl.lastStars);
+        // Wave 14 — meta giữ chân: album sưu tập + heo đất + giải đấu tuần. CHỈ
+        // tính LẦN ĐẦU thắng màn (first-clear) → chống farm thắng lại màn dễ.
+        if (gameCtrl.lastFirstClear) {
+          CollectionController.maybe?.addWin(gameCtrl.lastStars);
+          PiggyController.maybe?.addWin(gameCtrl.lastStars);
+          TournamentController.maybe?.addWin(gameCtrl.lastStars);
+        }
       }
     }
     Future.delayed(const Duration(milliseconds: 350), () {
@@ -229,6 +239,13 @@ class GameScreenController extends GetxController {
     if (gameCtrl.isColorRush.value) {
       // Color Rush: chơi lại không cần mạng (chế độ phụ).
       gameCtrl.startColorRush();
+      ui.value = GameUi.playing;
+      _newGame();
+      return;
+    }
+    if (gameCtrl.isSoda.value) {
+      // Soda: chơi lại không cần mạng (chế độ phụ).
+      gameCtrl.startSoda();
       ui.value = GameUi.playing;
       _newGame();
       return;

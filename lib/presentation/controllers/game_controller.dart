@@ -6,6 +6,7 @@ import '../../core/debug_log.dart';
 import '../../core/storage_service.dart';
 import '../../data/achievements.dart';
 import '../../data/battle_pass.dart';
+import '../../data/collection.dart';
 import '../../data/cosmetics.dart';
 import '../../data/levels.dart';
 import '../../data/season.dart';
@@ -15,8 +16,11 @@ import '../../logic/gem_data.dart';
 import '../../logic/rhythm_clock.dart';
 import 'achievement_controller.dart';
 import 'battle_pass_controller.dart';
+import 'collection_controller.dart';
+import 'piggy_controller.dart';
 import 'season_controller.dart';
 import 'temple_controller.dart';
+import 'tournament_controller.dart';
 
 // GameController được tách vật lý thành nhiều file `part` theo trách nhiệm để
 // dễ bảo trì, NHƯNG vẫn là MỘT class duy nhất (giữ nguyên public API + mọi
@@ -98,6 +102,12 @@ class GameController extends GetxController {
   final RxInt colorRushHot = 0.obs; // index GemColor đang "nóng"
   int _colorRushMoveCount = 0;
   LevelConfig? _colorRushCfg;
+
+  // --- Soda / Ngập nước (Wave 14) — clear gem → mực nước dâng, đẩy chai nổi lên ---
+  final RxBool isSoda = false.obs;
+  LevelConfig? _sodaCfg;
+  final RxInt sodaFill = 0.obs; // tổng gem clear tích luỹ (mực nước)
+  final RxInt sodaCollected = 0.obs; // số chai đã nổi lên đỉnh
 
   // --- Rhythm mode (Wave 8) — ghép theo nhịp ---
   final RxBool isRhythm = false.obs;
@@ -190,6 +200,11 @@ class GameController extends GetxController {
   int lastStars = 0;
   int lastCoinReward = 0;
 
+  /// Ván vừa thắng có phải LẦN ĐẦU thắng màn đó không (chưa có sao trước đó).
+  /// Wave 14: thưởng meta (Album/Heo/Giải đấu) CHỈ tính first-clear → chống farm
+  /// thắng lại màn dễ. Set trong checkEnd (nhánh màn thường) TRƯỚC _saveProgress.
+  bool lastFirstClear = false;
+
   /// Pre-game booster (chọn trước khi vào màn) — đọc 1 lần ở GameScreenController.
   bool pendingMovesBoost = false;
   bool pendingArmHammer = false;
@@ -272,6 +287,7 @@ class GameController extends GetxController {
       _gravityCfg ??
       _rhythmCfg ??
       _colorRushCfg ??
+      _sodaCfg ??
       _versusCfg ??
       _dailyCfg ??
       kLevels[currentLevel.value - 1];
@@ -286,6 +302,7 @@ class GameController extends GetxController {
       isGravity.value ||
       isRhythm.value ||
       isColorRush.value ||
+      isSoda.value ||
       isDaily.value ||
       isVersus.value;
 
@@ -297,6 +314,7 @@ class GameController extends GetxController {
     bool gravity = false,
     bool rhythm = false,
     bool colorRush = false,
+    bool soda = false,
     bool daily = false,
   }) {
     isEndless.value = endless;
@@ -304,6 +322,7 @@ class GameController extends GetxController {
     isGravity.value = gravity;
     isRhythm.value = rhythm;
     isColorRush.value = colorRush;
+    isSoda.value = soda;
     isDaily.value = daily;
     isVersus.value =
         false; // versus chỉ bật qua _initVersus; mọi start* khác tắt
@@ -312,6 +331,7 @@ class GameController extends GetxController {
     if (!gravity) _gravityCfg = null;
     if (!rhythm) _rhythmCfg = null;
     if (!colorRush) _colorRushCfg = null;
+    if (!soda) _sodaCfg = null;
     if (!daily) _dailyCfg = null;
     _versusCfg = null;
   }
@@ -330,6 +350,8 @@ class GameController extends GetxController {
     dropped.value = 0;
     obstacleCleared.value = 0;
     obstacleTotal.value = 0;
+    sodaFill.value = 0; // Soda: mực nước về 0
+    sodaCollected.value = 0;
     // Order: khởi tạo bộ đếm 0 khớp số mục tiêu con của màn (rỗng cho mode khác).
     orderProgress.assignAll(List<int>.filled(level.orders.length, 0));
     // Bom: engine sẽ seed lại ở onLoad; reset trạng thái HUD + cờ nổ.

@@ -56,6 +56,8 @@ void main() {
             fail('endless không được gắn vào màn thường (level ${lv.index})');
           case ObjectiveType.boss:
             fail('boss không được gắn vào màn thường (level ${lv.index})');
+          case ObjectiveType.soda:
+            fail('soda không được gắn vào màn thường (level ${lv.index})');
         }
       }
     });

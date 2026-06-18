@@ -80,9 +80,17 @@ extension GameControllerProgress on GameController {
       StorageKeys.bGravity,
       StorageKeys.selectedSkin,
       StorageKeys.selectedTheme,
+      StorageKeys.collectionPoints,
+      StorageKeys.piggySaved,
+      StorageKeys.tournamentWeek,
+      StorageKeys.tournamentPoints,
+      StorageKeys.tournamentClaimedWeek,
     ];
     for (final k in scalarKeys) {
       await _store.remove(k);
+    }
+    for (final it in kCollectionItems) {
+      await _store.remove(StorageKeys.collectionClaimed(it.id));
     }
     for (final s in kGemSkins) {
       await _store.remove(StorageKeys.ownedSkin(s.id));
@@ -128,6 +136,9 @@ extension GameControllerProgress on GameController {
     SeasonController.maybe?.resetState();
     AchievementController.maybe?.resetState();
     TempleController.maybe?.resetState();
+    CollectionController.maybe?.resetState();
+    PiggyController.maybe?.resetState();
+    TournamentController.maybe?.resetState();
 
     dlog(
       'resetProgress DONE unlocked=${unlockedLevel.value} '

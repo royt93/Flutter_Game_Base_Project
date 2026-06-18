@@ -389,6 +389,12 @@ class ObstacleLayer extends PositionComponent {
           case ObstacleType.spread:
             _drawSpread(canvas, rect);
             break;
+          case ObstacleType.licorice:
+            _drawLicorice(canvas, rect, obstacle[r][c]);
+            break;
+          case ObstacleType.jam:
+            _drawJam(canvas, rect);
+            break;
           case ObstacleType.none:
             break;
         }
@@ -483,6 +489,82 @@ class ObstacleLayer extends PositionComponent {
         Offset(rect.left + rect.width * o.dx, rect.top + rect.height * o.dy),
         cellSize * 0.08,
         bubble,
+      );
+    }
+  }
+
+  /// Kẹo cam thảo (licorice) — khối tím-đen bóng, viền đôi khi còn 2 lớp.
+  void _drawLicorice(Canvas canvas, Rect rect, int layer) {
+    final rr = RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.16));
+    canvas.drawRRect(
+      rr,
+      Paint()
+        ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, [
+          const Color(0xFF3A1F5C),
+          const Color(0xFF160A26),
+        ]),
+    );
+    // sọc cam thảo (3 vạch dọc sáng mờ)
+    final stripe = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = cellSize * 0.06
+      ..color = const Color(0xFF9B6BFF).withValues(alpha: 0.6);
+    for (final fx in const [0.34, 0.5, 0.66]) {
+      canvas.drawLine(
+        Offset(rect.left + rect.width * fx, rect.top + rect.height * 0.16),
+        Offset(rect.left + rect.width * fx, rect.bottom - rect.height * 0.16),
+        stripe,
+      );
+    }
+    canvas.drawRRect(
+      rr,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.4
+        ..color = const Color(0xFF7A4BFF).withValues(alpha: 0.9),
+    );
+    // còn 2 lớp → viền trong thứ 2 (báo "cứng hơn").
+    if (layer >= 2) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            rect.deflate(cellSize * 0.12), Radius.circular(cellSize * 0.12)),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.6
+          ..color = Colors.white.withValues(alpha: 0.5),
+      );
+    }
+  }
+
+  /// Mứt (jam) — khối đỏ-hồng bóng + giọt mứt sệt.
+  void _drawJam(Canvas canvas, Rect rect) {
+    final rr = RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.2));
+    canvas.drawRRect(
+      rr,
+      Paint()
+        ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, [
+          const Color(0xFFB02046),
+          const Color(0xFF6E0F28),
+        ]),
+    );
+    canvas.drawRRect(
+      rr,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.4
+        ..color = const Color(0xFFFF4D6D).withValues(alpha: 0.9),
+    );
+    // giọt mứt sáng
+    final drop = Paint()..color = Colors.white.withValues(alpha: 0.2);
+    for (final o in const [
+      Offset(0.36, 0.34),
+      Offset(0.62, 0.46),
+      Offset(0.5, 0.68),
+    ]) {
+      canvas.drawCircle(
+        Offset(rect.left + rect.width * o.dx, rect.top + rect.height * o.dy),
+        cellSize * 0.07,
+        drop,
       );
     }
   }
@@ -961,5 +1043,127 @@ class DispenserLayer extends PositionComponent {
         tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
       }
     }
+  }
+}
+
+/// Wave 14 — lớp SODA: "nước" dâng từ đáy bàn theo tiến độ + bề mặt gợn sóng +
+/// các CHAI nổi lên (chai đã đạt đỉnh sáng rực). Đọc tiến độ qua callback mỗi
+/// frame (không giữ state gameplay) → KHÔNG đụng gravity/refill.
+class SodaLayer extends PositionComponent {
+  final double Function() progress; // 0..1 mực nước
+  final int Function() collected; // số chai đã nổi lên đỉnh
+  final int target; // tổng số chai
+  final int rows;
+  final int cols;
+  final double cellSize;
+  final Vector2 origin;
+  double _t = 0;
+
+  SodaLayer({
+    required this.progress,
+    required this.collected,
+    required this.target,
+    required this.rows,
+    required this.cols,
+    required this.cellSize,
+    required this.origin,
+  });
+
+  // Paint cache (Wave 14 L4): dựng 1 lần, KHÔNG cấp phát/đặt MaskFilter.blur mỗi
+  // frame (dự án có lịch sử lag vì blur per-frame). Chỉ shader nước (phụ thuộc
+  // surfaceY) buộc dựng theo frame — 1 lần/frame, không đáng kể.
+  static final Paint _wavePaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.4
+    ..color = const Color(0xFF7CFBFF).withValues(alpha: 0.8);
+  static final Paint _bubblePaint = Paint()
+    ..color = Colors.white.withValues(alpha: 0.16);
+  static final Paint _strokePaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.6
+    ..color = Colors.white.withValues(alpha: 0.85);
+  static final Paint _glowReached = Paint()
+    ..color = const Color(0xFF39FF14).withValues(alpha: 0.4)
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+  static final Paint _bodyReached = Paint()
+    ..color = const Color(0xFF39FF14).withValues(alpha: 0.9);
+  static final Paint _bodyFloat = Paint()
+    ..color = const Color(0xFF00E5FF).withValues(alpha: 0.8);
+  static final Paint _neckReached = Paint()
+    ..color = const Color(0xFF39FF14).withValues(alpha: 0.9);
+  static final Paint _neckFloat = Paint()
+    ..color = const Color(0xFF00E5FF).withValues(alpha: 0.9);
+
+  // Cache shader khối nước: chỉ dựng lại khi MỰC NƯỚC đổi (p khác lần trước) —
+  // sóng bề mặt animate theo _t mỗi frame nhưng gradient nền chỉ đổi khi dâng.
+  double _lastP = -1;
+  Paint? _fillPaint;
+
+  @override
+  void update(double dt) => _t += dt;
+
+  @override
+  void render(Canvas canvas) {
+    final w = cols * cellSize;
+    final h = rows * cellSize;
+    final p = progress().clamp(0.0, 1.0);
+    final surfaceY = origin.y + h * (1 - p); // mặt nước dâng lên khi p tăng
+    // khối nước (gradient lam-lime trong suốt) — shader cache theo p
+    if (p > 0) {
+      if (_fillPaint == null || p != _lastP) {
+        _lastP = p;
+        _fillPaint = Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(origin.x, surfaceY),
+            Offset(origin.x, origin.y + h),
+            [
+              const Color(0xFF00E5FF).withValues(alpha: 0.26),
+              const Color(0xFF39FF14).withValues(alpha: 0.16),
+            ],
+          );
+      }
+      final fill = Rect.fromLTWH(origin.x, surfaceY, w, origin.y + h - surfaceY);
+      canvas.drawRect(fill, _fillPaint!);
+      // bề mặt gợn sóng
+      final wave = Path()..moveTo(origin.x, surfaceY);
+      const amp = 4.0;
+      for (double x = 0; x <= w; x += 6) {
+        final y = surfaceY + math.sin((x / cellSize) * 1.6 + _t * 3) * amp;
+        wave.lineTo(origin.x + x, y);
+      }
+      canvas.drawPath(wave, _wavePaint);
+      // bong bóng sủi
+      for (int i = 0; i < 5; i++) {
+        final bx = origin.x + ((i * 53 + (_t * 22).floor()) % w.toInt());
+        final by = origin.y + h - ((i * 37 + (_t * 30).floor()) % h.toInt());
+        if (by > surfaceY) canvas.drawCircle(Offset(bx, by), 2.4, _bubblePaint);
+      }
+    }
+    // chai: vẽ target chai dàn ngang; chai chưa đạt nổi ở mặt nước, chai đã đạt
+    // nằm sáng ở đỉnh.
+    final got = collected();
+    for (int i = 0; i < target; i++) {
+      final cx = origin.x + w * (i + 1) / (target + 1);
+      final reached = i < got;
+      final cy = reached ? origin.y + cellSize * 0.45 : surfaceY - cellSize * 0.1;
+      _drawBottle(canvas, Offset(cx, cy), reached);
+    }
+  }
+
+  void _drawBottle(Canvas canvas, Offset c, bool reached) {
+    final bw = cellSize * 0.34, bh = cellSize * 0.56;
+    final body = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: c.translate(0, bh * 0.1), width: bw, height: bh),
+      Radius.circular(bw * 0.4),
+    );
+    if (reached) canvas.drawRRect(body.inflate(3), _glowReached);
+    canvas.drawRRect(body, reached ? _bodyReached : _bodyFloat);
+    // cổ chai
+    canvas.drawRect(
+      Rect.fromCenter(
+          center: c.translate(0, -bh * 0.45), width: bw * 0.4, height: bh * 0.3),
+      reached ? _neckReached : _neckFloat,
+    );
+    canvas.drawRRect(body, _strokePaint);
   }
 }

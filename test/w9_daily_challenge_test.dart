@@ -35,6 +35,7 @@ void main() {
       case ObjectiveType.order:
       case ObjectiveType.endless:
       case ObjectiveType.boss:
+      case ObjectiveType.soda:
         break;
     }
   }

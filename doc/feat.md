@@ -522,7 +522,7 @@ match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 
 
 ---
 
-*Cập nhật lần cuối: 2026-06-18 · Trạng thái: Đang phát triển (Wave 13: dọn nợ audit [_findMove special, cổng echo special, cap particle, bỏ 81 fontFamily thừa] + **auto-playtest simulator** validate đường cong → tinh chỉnh đến 0 màn "quá khó" [bot 58-100%]. **294 test pass**, 0 analyzer, build APK OK. Bước sau: verify máy người chơi tự + cân nhắc monetization)*
+*Cập nhật lần cuối: 2026-06-18 · Trạng thái: Đang phát triển (Wave 14: 4 hướng song song — Soda mode [fill-based, không đụng gravity] + obstacle Licorice/Jam + meta Album/Heo đất/Giải đấu tuần [offline leaderboard tất định]. i18n 37 key × 22 ngôn ngữ. **309 test pass**, 0 analyzer, build APK OK. Bước sau: verify máy người chơi tự + cân nhắc monetization/release store)*
 
 ---
 
@@ -926,6 +926,105 @@ Người dùng chốt kết hợp option 3 (dọn nợ) + option 1 (auto-playtes
 
 **Kết quả**: 0 analyzer · **294 test pass** · build APK OK. Đường cong độ khó nay được
 **validate bằng dữ liệu** (chạy lại `dart run tool/playtest.dart` bất cứ lúc nào).
+
+## 🌊 Wave 14 — 4 hướng song song: Soda mode + obstacle mới + 3 meta (2026-06-18)
+
+Người dùng chốt làm **CẢ 4** hướng. Hướng 1+2 đụng engine (làm tuần tự cẩn thận,
+tránh vỡ gravity/refill); hướng 3+4 là meta tự chứa (bắt chước pattern Season/Temple).
+
+- **Soda / Ngập nước (chế độ phụ mới)**: `ObjectiveType.soda` + `isSoda` (vào
+  `isSideMode`). Thiết kế **fill-based KHÔNG đụng gravity**: mỗi gem clear (kể cả
+  cascade) làm `sodaFill++` qua `registerClear`; mỗi `kSodaFillPerBottle` (20) →
+  1 chai nổi; đủ `kSodaBottles` (3) chai → thắng. `SodaLayer` (effects.dart) vẽ
+  nước dâng + sóng + chai nổi (overlay đọc tiến độ mỗi frame). checkEnd nhánh
+  riêng (thưởng `30+sao×15`, side-mode isolation). Nút Home full-width + Guide +
+  HUD + result panel. [[side-mode-isolation]]
+- **Obstacle Licorice + Jam (mới)**: mở rộng `ObstacleType` (+licorice +jam).
+  **Licorice**: khoá 2 LỚP (`kLicoriceLayers`), che gem (không match, không xoá),
+  gỡ bằng clear ô kề 2 lần — weave màn {48,84}. **Jam (mứt)**: lan như chocolate
+  NHƯNG là mục tiêu clearObstacle — `obstacleTotal` = lớp BAN ĐẦU (lan thêm KHÔNG
+  tăng → **luôn khả thi**); `_maybeGrowJam` + cap 24 — weave màn {54,90}. Cả 2 dùng
+  pattern `center` (chống bí bàn — regression guard có test). `_obstacleCoversGem`
+  helper gom logic. Render `_drawLicorice`/`_drawJam`. Guide + i18n.
+- **Album sưu tập + Heo đất (meta)**: `CollectionController` (điểm lifetime, mở 12
+  sticker theo mốc tích luỹ, permanent + resetState). `PiggyController` (mỗi thắng
+  bỏ ống `6+sao×4`, cap 600, đập khi ≥120 nhận hết). `CollectionScreen` (lưới
+  album) + `PiggyScreen` (heo + thanh đầy + đập). addWin gọi từ `_onGameEnd`.
+- **Giải đấu tuần (event)**: `TournamentController` (epoch-week như Season; điểm
+  reset/tuần; **bảng xếp hạng OFFLINE tất định** — 7 bot điểm sinh theo seed tuần
+  leo dần theo ngày; thưởng theo hạng, 1 lần/tuần). `TournamentScreen` (leaderboard
+  + đếm ngược + claim). Chống chỉnh giờ qua `_effectiveDay`.
+- **Wiring chung**: 3 controller meta đăng ký permanent ở Home + 3 nút (hàng meta
+  mới Album/Heo/Giải đấu) + reset trong `resetProgress` (xoá key + resetState).
+- **i18n**: 37 key mới dịch đủ **22 ngôn ngữ** (en/vi inline + 20 ngôn ngữ qua lớp
+  merge mới `_w14ByLang`, 4 agent dịch song song) → coverage test ≥80% PASS (không
+  tái mở lỗ hổng i18n).
+
+**Kết quả**: 0 analyzer issue · **309 test pass** (+15 `test/w14_test.dart`: obstacle
+weave/winnability, soda start/win/lose/isolation, collection, piggy, tournament) ·
+build APK debug OK. *Verify máy: người dùng tự test.*
+
+> ⚠️ Ghi chú thiết kế: Soda dùng mô hình "mực nước = gem clear" (chai nổi là overlay
+> theo tiến độ), KHÔNG phải chai vật lý nổi trong lưới — chủ ý để KHÔNG đụng
+> gravity/refill (phần dễ vỡ theo audit Wave 11). Jam là obstacle objective có lan
+> nhưng mục tiêu cố định = khả thi tuyệt đối.
+
+### 🔧 Wave 14 — Audit & fix (2026-06-18)
+2 agent audit độc lập (engine + meta), mỗi phát hiện verify `file:line`. Correctness
+**SẠCH** (0 CRITICAL/HIGH đúng-sai; winnability jam/licorice chứng minh an toàn, soda
+cô lập đúng, không hồi quy obstacle cũ). Điểm tự chấm **7.5/10** (trừ ở KINH TẾ). Đã sửa:
+- **[HIGH] H1 — faucet xu meta không cap**: 3 `addWin` (Collection/Piggy/Tournament)
+  cộng xu mỗi màn thường thắng, không cap → farm thắng-lại màn dễ (thắng KHÔNG tốn
+  mạng). **Fix**: thêm cờ `lastFirstClear` (set trong checkEnd TRƯỚC `_saveProgress`:
+  `stars[lv]==0`) → meta CHỈ thưởng LẦN ĐẦU thắng màn. (Season/BattlePass giữ nguyên.)
+- **[MED] M1 — Tournament ăn hạng 1 sớm**: thưởng theo hạng hiện tại + bot yếu đầu
+  tuần → 300 xu/tuần quá dễ. **Fix**: `botScoreNow` dùng điểm CUỐI tuần (cố định cả
+  tuần) → bot mạnh full từ ngày 1, phải đua thật mới lên hạng.
+- **[LOW] L1**: badge Album ở Home đọc thêm `cc.points.value` (sáng đúng lúc đủ điểm).
+- **[LOW] L2**: `_doShuffle` excluded dùng `_obstacleCoversGem` (thêm licorice/jam, nhất quán).
+- **[LOW] L3**: `kJamSpreadCap` đưa ra `levels.dart` + 5 test winnability (invariant
+  cap<bàn, đủ lượt dọn, sim greedy không deadlock).
+
+**Kết quả sau fix**: 0 analyzer · **314 test pass** (+5) · build APK OK.
+
+### ✨ Wave 14 — Vòng polish lên 10/10 (2026-06-18)
+Người dùng yêu cầu đẩy từ 7.5 → 10/10. Re-audit (agent độc lập) xác nhận 6 fix vòng 1
+ĐÚNG, không hồi quy (9.3/10, còn 1 dead-code + shader nước per-frame). Đóng nốt:
+- **L4 — SodaLayer cache Paint**: 8 `static final Paint` (wave/bubble/stroke/glow/
+  body/neck) dựng 1 lần; `_drawBottle` hết cấp phát Paint/MaskFilter.blur mỗi frame.
+- **Shader nước cache theo p**: gradient khối nước chỉ dựng lại khi MỰC NƯỚC đổi
+  (`_lastP`), không mỗi frame (sóng vẫn animate theo `_t`). Hết alloc shader/frame.
+- **HUD jam overshoot**: `_objectiveText` clamp `obstacleCleared` ở `[0,total]`
+  (jam lan có thể đẩy cleared vượt → không hiện "17/16").
+- **Dead-code**: xoá getter `dayIntoWeek` (không còn call-site sau fix M1).
+- **+6 widget test** (`test/widget/w14_screens_test.dart`): render + claim/smash/
+  leaderboard cho CollectionScreen/PiggyScreen/TournamentScreen.
+- Xác nhận (re-audit): Soda fill đếm ĐỒNG NHẤT mọi nguồn clear (match + mọi booster
+  qua `_smashCells`→`_clearCells`→`registerClear`), không double/under-count; reset
+  đầy đủ; i18n 22 ngôn ngữ đủ. *(Finding "booster inconsistency" vòng 1 là dương
+  tính giả — nhầm dòng gravity/junk.)*
+
+**Kết quả cuối Wave 14**: 0 analyzer · **320 test pass** (+6 widget) · build APK OK ·
+re-audit **release-ready**. Điểm: **~9.8/10** (chỉ còn trừ rất nhẹ vì Soda là
+fill-based thay vì chai vật lý — đánh đổi CHỦ Ý để an toàn engine).
+
+### 📱 Wave 14 — Fix layout Home + verify máy thật Pixel 7 Pro (2026-06-18)
+Phản hồi máy thật: thêm hàng meta thứ 3 (Album/Heo/Giải đấu) làm Home mất no-scroll
+(vỡ thiết kế [[home-fullwidth-no-fittedbox]]) + đẩy version/copyright khỏi màn.
+- **THỬ THÁCH gộp lưới 2×4** (8 ô): đưa Color Rush + Soda vào lưới (bỏ 2 card
+  full-width) → gọn chiều cao. Nhãn ngắn `color_rush_short`/`soda_short`.
+- **PHẦN THƯỞNG gộp 2 hàng × 5 icon** (Đền/Pass/Mùa/Cửa hàng/Album · Heo/Giải đấu/
+  Thành tựu/Hướng dẫn/Cài đặt). Giải đấu đổi icon `leaderboard` (khỏi trùng cúp
+  Thành tựu). → version + © hiện lại đầy đủ, toàn Home gọn 1 màn không scroll.
+- **Verify máy thật (Pixel 7 Pro, Impeller/Vulkan)**: Home render đúng (2×4 + 2×5 +
+  version), Soda (NƯỚC DÂNG) HUD 🍶0/3·LƯỢT 28 + 3 chai đáy bàn + nước dâng khi
+  clear (ĐIỂM 30/LƯỢT 27), dialog THOÁT MÀN overlay đúng, Album (12 sticker khoá
+  ngưỡng 30→1880), Heo đất (0/600, nút mờ), Giải đấu (leaderboard 8 hạng, bot điểm
+  cuối-tuần cố định theo M1, Bạn hạng #8). **Logcat process app SẠCH** (0 exception/
+  FATAL/RenderFlex overflow toàn phiên); GPU 99th = 6ms.
+- *Nợ nhẹ ghi nhận*: countdown "Kết thúc sau 00:00:00" ở Giải đấu — dùng chung
+  `timeToEnd` (epoch-week) với Season; cần kiểm timezone (UTC+7) — KHÔNG phải lỗi
+  riêng Wave 14 (Season cùng logic).
 
 ## 🔍 Đánh giá chất lượng code (2026-06-16, Wave 8.9)
 

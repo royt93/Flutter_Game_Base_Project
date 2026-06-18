@@ -249,6 +249,21 @@ class GameScreen extends StatelessWidget {
         ],
       );
     }
+    // Soda (Wave 14): chế độ phụ — không tốn mạng, luôn cho chơi lại.
+    if (ctrl.isSoda.value) {
+      return NeonDialog.panel(
+        title: win ? 'victory'.tr : 'retry'.tr,
+        color: win ? NeonTheme.lime : NeonTheme.cyan,
+        icon: win ? Icons.emoji_events_rounded : Icons.local_drink_rounded,
+        message:
+            '${'soda_hud'.tr}: ${ctrl.sodaCollected.value} / ${ctrl.level.sodaTarget}',
+        content: win ? _celebration(ctrl) : null,
+        actions: [
+          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+        ],
+      );
+    }
     // Thử thách hằng ngày: chế độ phụ — không tốn mạng, luôn cho chơi lại (CÙNG
     // bàn theo ngày). Thắng lần đầu/ngày → khoe streak + thưởng; chơi lại đã
     // hoàn thành → báo done. Thua → hiện mục tiêu.
@@ -303,7 +318,9 @@ class GameScreen extends StatelessWidget {
       case ObjectiveType.dropDown:
         return '${ctrl.dropped.value} / ${ctrl.level.dropTarget}';
       case ObjectiveType.clearObstacle:
-        return '${ctrl.obstacleCleared.value} / ${ctrl.obstacleTotal.value}';
+        // jam lan thêm có thể đẩy cleared vượt total → clamp text (không hiện "17/16").
+        return '${ctrl.obstacleCleared.value.clamp(0, ctrl.obstacleTotal.value)}'
+            ' / ${ctrl.obstacleTotal.value}';
       case ObjectiveType.order:
         final orders = ctrl.level.orders;
         var done = 0;
@@ -315,6 +332,8 @@ class GameScreen extends StatelessWidget {
         return fmtNum(ctrl.score.value);
       case ObjectiveType.boss:
         return '${fmtNum(ctrl.bossHp.value)} / ${fmtNum(ctrl.bossMaxHp.value)}';
+      case ObjectiveType.soda:
+        return '${ctrl.sodaCollected.value} / ${ctrl.level.sodaTarget}';
     }
   }
 
@@ -408,6 +427,8 @@ class GameScreen extends StatelessWidget {
                         ? '${'gravity_title'.tr} ${ctrl.gravityDir.value == 0 ? '↓' : '↑'}'
                         : ctrl.isColorRush.value
                         ? 'color_rush_title'.tr
+                        : ctrl.isSoda.value
+                        ? 'soda_title'.tr
                         : ctrl.isEndless.value
                         ? 'endless_title'.tr
                         : 'stage_n'.trParams({'n': '${ctrl.currentLevel.value}'}),
@@ -835,6 +856,11 @@ class GameScreen extends StatelessWidget {
       leading = const Padding(
         padding: EdgeInsets.only(right: 5),
         child: NeonIcon(Icons.ac_unit_rounded, color: NeonTheme.cyan, size: 15),
+      );
+    } else if (obj == ObjectiveType.soda) {
+      leading = const Padding(
+        padding: EdgeInsets.only(right: 5),
+        child: NeonIcon(Icons.local_drink_rounded, color: NeonTheme.cyan, size: 15),
       );
     }
     return Row(

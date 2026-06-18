@@ -22,6 +22,10 @@ enum ObjectiveType {
   order,
   endless,
   boss,
+  // Wave 14 — Soda/Ngập nước (chế độ phụ): clear gem làm mực nước dâng, đẩy các
+  // "chai nổi" lên — đưa đủ chai chạm đỉnh để thắng. Thiết kế fill-based (không
+  // đụng gravity): mực nước = số gem clear tích luỹ; chai nổi theo mực nước.
+  soda,
 }
 
 /// 1 mục tiêu con của chế độ Order (thu đủ [target] gem màu [color]).
@@ -63,7 +67,25 @@ bool patternHas(JellyPattern p, int r, int c, int rows, int cols) {
 
 /// Loại chướng ngại (obstacle) phủ lên gem.
 /// - spread: "chocolate" tự lan sang ô kề mỗi lượt nếu KHÔNG bị chặn (clear kề).
-enum ObstacleType { none, ice, chain, stone, spread }
+/// - licorice (Wave 14): khoá 2 LỚP — cần clear ô kề 2 lần để gỡ (lock cứng).
+/// - jam (Wave 14): mứt — như chocolate (lan + khoá) NHƯNG là MỤC TIÊU clearObstacle;
+///   mục tiêu đếm số lớp BAN ĐẦU (lan thêm không tăng mục tiêu → luôn khả thi).
+enum ObstacleType { none, ice, chain, stone, spread, licorice, jam }
+
+/// Các màn clearObstacle (index ≡ 0 mod 6) chuyển obstacle sang LICORICE (Wave 14):
+/// khoá 2 lớp, cần 2 lần clear-kề/ô. Chọn 2 màn (mid + late game).
+const Set<int> kLicoriceLevels = {48, 84};
+
+/// Các màn clearObstacle chuyển sang JAM (mứt lan, Wave 14): lan như chocolate
+/// nhưng là mục tiêu phải dọn (đếm lớp ban đầu). Chọn 2 màn (mid + late).
+const Set<int> kJamLevels = {54, 90};
+
+/// Số lớp khởi đầu của 1 ô licorice (cần bấy nhiêu lần clear-kề để gỡ).
+const int kLicoriceLayers = 2;
+
+/// Trần số ô jam (mứt) trên bàn — chống lan phủ kín gây khoá bàn. Phải NHỎ hơn
+/// tổng ô bàn để luôn còn vùng tự do chơi (winnability guard, có test).
+const int kJamSpreadCap = 24;
 
 /// Các màn (score) có thêm hazard lan tỏa (chocolate) — không phải mục tiêu,
 /// chỉ là chướng ngại động người chơi phải kìm hãm.
@@ -159,6 +181,9 @@ class LevelConfig {
   /// Order: danh sách mục tiêu con (thu đủ nhiều màu). Rỗng nếu không phải Order.
   final List<OrderGoal> orders;
 
+  /// Soda: số "chai" cần đẩy nổi lên đỉnh (0 nếu không phải Soda).
+  final int sodaTarget;
+
   const LevelConfig({
     required this.index,
     required this.rows,
@@ -175,6 +200,7 @@ class LevelConfig {
     this.obstacle = ObstacleType.none,
     this.obstaclePattern = JellyPattern.none,
     this.orders = const [],
+    this.sodaTarget = 0,
   });
 }
 
@@ -366,23 +392,31 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
         dropTarget: (2 + index ~/ 18).clamp(2, 6),
       );
     case ObjectiveType.clearObstacle:
-      // ice (đầu) → chain (giữa) → stone (cuối)
-      final type = index < 30
-          ? ObstacleType.ice
-          : index < 60
-              ? ObstacleType.chain
-              : ObstacleType.stone;
-      // QUAN TRỌNG: chain & stone KHOÁ swap → pattern dày (checker/all) sẽ làm
-      // bí cứng bàn (mọi nước đi bị khoá). Chỉ ice (không khoá) mới dùng được
-      // pattern dày. chain/stone luôn dùng `center` (chừa viền tự do để chơi).
+      // ice (đầu) → chain (giữa) → stone (cuối); Wave 14 weave licorice/jam.
+      final licorice = kLicoriceLevels.contains(index);
+      final jam = kJamLevels.contains(index);
+      final type = licorice
+          ? ObstacleType.licorice
+          : jam
+              ? ObstacleType.jam
+              : index < 30
+                  ? ObstacleType.ice
+                  : index < 60
+                      ? ObstacleType.chain
+                      : ObstacleType.stone;
+      // QUAN TRỌNG: chain/stone/licorice/jam KHOÁ swap → pattern dày (checker/all)
+      // sẽ làm bí cứng bàn. Chỉ ice (không khoá) mới dùng pattern dày; còn lại
+      // luôn dùng `center` (chừa viền tự do để chơi).
       final pattern =
           type == ObstacleType.ice ? tierPattern() : JellyPattern.center;
+      // licorice 2 lớp / jam lan → cho thêm lượt để công bằng.
+      final extra = licorice ? 8 : (jam ? 7 : 5);
       return LevelConfig(
         index: index,
         rows: rows,
         cols: cols,
         colorCount: colorCount,
-        moves: moves + 5,
+        moves: moves + extra,
         objective: ObjectiveType.clearObstacle,
         obstacle: type,
         obstaclePattern: pattern,
@@ -390,8 +424,9 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
     case ObjectiveType.order:
     case ObjectiveType.endless:
     case ObjectiveType.boss:
+    case ObjectiveType.soda:
       // Không bao giờ rơi vào đây (order weave qua kOrderLevels ở case score;
-      // endless/boss là chế độ riêng) — fallback score để switch exhaustive.
+      // endless/boss/soda là chế độ riêng) — fallback score để switch exhaustive.
       return LevelConfig(
         index: index,
         rows: rows,
@@ -507,6 +542,28 @@ LevelConfig buildRhythmLevel() => const LevelConfig(
       targetScore: kRhythmTarget,
     );
 
+// --- Soda / Ngập nước (chế độ riêng — mực nước dâng, đẩy chai nổi lên đỉnh) ---
+const int kSodaLevelIndex = -6;
+const int kSodaMoves = 28;
+
+/// Số chai cần đẩy nổi lên đỉnh để thắng.
+const int kSodaBottles = 3;
+
+/// Số gem cần clear để đẩy 1 chai nổi lên đỉnh (mực nước dâng theo gem clear).
+const int kSodaFillPerBottle = 20;
+
+/// Cấu hình chế độ Soda: bàn 8×8, 6 màu, đưa [kSodaBottles] chai lên đỉnh trong
+/// [kSodaMoves] lượt. Khác biệt nằm ở cờ `isSoda` (clear gem → mực nước dâng).
+LevelConfig buildSodaLevel() => const LevelConfig(
+      index: kSodaLevelIndex,
+      rows: 8,
+      cols: 8,
+      colorCount: 6,
+      moves: kSodaMoves,
+      objective: ObjectiveType.soda,
+      sodaTarget: kSodaBottles,
+    );
+
 // --- Versus / Co-op (2 người, chạy engine Flame như mode thường) ---
 const int kVersusLevelIndex = -4;
 
@@ -599,6 +656,7 @@ LevelConfig buildDailyLevel(int epochDay) {
     case ObjectiveType.order:
     case ObjectiveType.endless:
     case ObjectiveType.boss:
+    case ObjectiveType.soda:
       return LevelConfig(
         index: kDailyLevelIndex,
         rows: rows,

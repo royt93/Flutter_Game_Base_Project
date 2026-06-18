@@ -79,6 +79,18 @@ class StorageKeys {
   static const String selectedSkin = 'sel_skin'; // id skin đang dùng
   static const String selectedTheme = 'sel_theme'; // id theme đang dùng
 
+  // Wave 14 — Album sưu tập (điểm lifetime + cờ mở từng sticker)
+  static const String collectionPoints = 'coll_points';
+  static String collectionClaimed(String id) => 'coll_$id'; // 1 = đã mở
+
+  // Wave 14 — Heo đất (xu đang tích trong ống)
+  static const String piggySaved = 'piggy_saved';
+
+  // Wave 14 — Giải đấu tuần (điểm tuần + tuần đang giữ + tuần đã nhận thưởng)
+  static const String tournamentWeek = 'tour_week';
+  static const String tournamentPoints = 'tour_points';
+  static const String tournamentClaimedWeek = 'tour_claimed_week';
+
   // Booster
   static const String bHammer = 'b_hammer';
   static const String bMoves = 'b_moves';

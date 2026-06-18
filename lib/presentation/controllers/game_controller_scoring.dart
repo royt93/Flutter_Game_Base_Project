@@ -37,6 +37,8 @@ extension GameControllerScoring on GameController {
       }
     }
     if (wasJelly) jellyCleared.value++;
+    // Soda (Wave 14): mỗi gem clear làm mực nước dâng → đẩy chai nổi lên.
+    if (isSoda.value) registerSodaFill(1);
     // Boss: ghi nhận đã đánh trúng màu điểm yếu trong nhịp này → ×2 sát thương.
     if (isBoss.value && color.index == bossWeakColor.value) {
       _weakHitPending = true;
@@ -106,6 +108,8 @@ extension GameControllerScoring on GameController {
         return false; // Endless không có "win"
       case ObjectiveType.boss:
         return bossMaxHp.value > 0 && bossHp.value <= 0; // hạ gục boss
+      case ObjectiveType.soda:
+        return level.sodaTarget > 0 && sodaCollected.value >= level.sodaTarget;
     }
   }
 
@@ -161,6 +165,8 @@ extension GameControllerScoring on GameController {
         return bossMaxHp.value == 0
             ? 0
             : (1 - bossHp.value / bossMaxHp.value).clamp(0.0, 1.0);
+      case ObjectiveType.soda:
+        return sodaProgress; // mực nước 0..1
     }
   }
 
@@ -301,6 +307,26 @@ extension GameControllerScoring on GameController {
       }
       return null;
     }
+    // Soda (Wave 14): chế độ riêng — thắng khi đủ chai nổi lên đỉnh, thua khi
+    // hết lượt. Thưởng xu theo sao, KHÔNG đụng win-streak/level-unlock/mạng.
+    if (isSoda.value) {
+      if (hasWon) {
+        _resolved = true;
+        lastStars = computeStars();
+        lastStreakBonus = 0;
+        lastCoinReward = discountSideModeReward(30 + lastStars * 15);
+        addCoins(lastCoinReward);
+        return 'win';
+      }
+      if (movesLeft.value <= 0) {
+        _resolved = true;
+        lastStars = 0;
+        lastCoinReward = 0;
+        lastStreakBonus = 0;
+        return 'lose';
+      }
+      return null;
+    }
     // Thử thách hằng ngày: thắng khi đạt mục tiêu, thua khi hết lượt. Thưởng
     // xu/shard + cộng streak CHỈ 1 lần/ngày (chơi lại không farm được). KHÔNG
     // đụng win-streak/level-unlock.
@@ -356,6 +382,9 @@ extension GameControllerScoring on GameController {
     if (hasWon) {
       _resolved = true;
       lastStars = computeStars();
+      // Wave 14: first-clear = chưa có sao cho màn này TRƯỚC khi _saveProgress ghi
+      // (thắng lại màn đã qua → false → meta Album/Heo/Giải đấu không cộng).
+      lastFirstClear = (stars[currentLevel.value] ?? 0) == 0;
       // win streak: tăng chuỗi + thưởng bonus theo chuỗi (từ bậc 2)
       winStreak.value++;
       if (winStreak.value > bestWinStreak.value) {
