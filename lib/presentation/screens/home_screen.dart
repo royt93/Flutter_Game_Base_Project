@@ -266,6 +266,50 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: NeonTheme.s8),
+          // Color Rush (Wave 11) — chế độ mới, card full-width nổi bật (ngang).
+          GestureDetector(
+            onTap: () {
+              g.startColorRush();
+              Get.to(() => const GameScreen());
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              decoration: BoxDecoration(
+                color: NeonTheme.panel.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: NeonTheme.magenta, width: 1.6),
+                boxShadow: NeonTheme.glow(NeonTheme.magenta, blur: 8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.local_fire_department_rounded,
+                      color: NeonTheme.magenta, size: 24),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'color_rush_title'.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Baloo2',
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                        shadows: const [
+                          Shadow(color: NeonTheme.magenta, blurRadius: 8)
+                        ],
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded,
+                      color: NeonTheme.magenta, size: 22),
+                ],
+              ),
+            ),
+          ),
           // Cách section Phần thưởng đúng 32px (khối Chơi ngay + Thử thách dời
           // xuống sát mép trên của Phần thưởng nhờ Spacer phía trên logo).
           const SizedBox(height: 32),

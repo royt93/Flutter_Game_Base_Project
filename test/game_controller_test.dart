@@ -104,6 +104,18 @@ void main() {
       c.addScore(3, 1);
       expect(c.checkEnd(), isNull);
     });
+
+    test('thắng màn thường: lastCoinReward tính ĐỦ bonus (1+sao)×10 ĐỒNG BỘ '
+        '(không chờ _saveProgress) — chống race quest earnCoins đếm thiếu', () {
+      c.startLevel(1);
+      c.addScore(1000, 1);
+      expect(c.checkEnd(), 'win');
+      // Ngay sau checkEnd (đồng bộ), lastCoinReward phải đã gồm phần (1+sao)×10
+      // (trước đây phần này cộng trong _saveProgress sau 1 await → đọc sớm thiếu).
+      final expected =
+          10 + c.lastStars * 10 + c.lastStreakBonus + (1 + c.lastStars) * 10;
+      expect(c.lastCoinReward, expected);
+    });
   });
 
   group('high score', () {

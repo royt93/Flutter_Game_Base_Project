@@ -147,4 +147,19 @@ Kết quả (8.9): 0 analyzer · **214 test pass** (+4: 2 mirror seed/determinis
 
 Kết quả: 0 analyzer · **180 test pass** (+5 `test/w8_audio_test.dart`) · build + chạy thật S24 Ultra (SM-S928B): Home/Boss/Gravity/Temple/Season/Battle Pass/Endless OK, logcat sạch (không exception app).
 
+## Wave 11 — ✅ DONE (audit-fix + 4 gameplay mới)
+
+Người dùng chốt: audit (option 4) → gameplay mới (option 3). Cả 4 gameplay làm chung 1
+wave phối hợp (đụng file lõi chung → không fan-out subagent).
+
+| Nhóm | Task | Trạng thái | File |
+|---|---|---|---|
+| Audit | Sửa 3 lỗi HIGH (Gravity side-mode · `_doColumnFlip` · race `lastCoinReward`) | ✅ done | (xem `feat.md`) |
+| Gameplay | Color Rush (chế độ phụ) | ✅ done | `done/w11-color-rush.md` |
+| Gameplay | Băng chuyền (Conveyor) | ✅ done | `done/w11-conveyor.md` |
+| Gameplay | Cổng dịch chuyển (Portal) | ✅ done | `done/w11-portal.md` |
+| Gameplay | Ô phát special (Dispenser) | ✅ done | `done/w11-dispenser.md` |
+
+Kết quả: 0 analyzer · **292 test pass** (+12) · build APK debug OK. Chưa verify máy thật.
+
 > Nguồn chân lý tổng thể: [`../feat.md`](../feat.md).

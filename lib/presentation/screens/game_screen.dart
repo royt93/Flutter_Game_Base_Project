@@ -220,6 +220,36 @@ class GameScreen extends StatelessWidget {
         ],
       );
     }
+    // Trọng lực động: chế độ phụ — không tốn mạng, luôn cho chơi lại.
+    if (ctrl.isGravity.value) {
+      return NeonDialog.panel(
+        title: win ? 'victory'.tr : 'retry'.tr,
+        color: win ? NeonTheme.lime : NeonTheme.cyan,
+        icon: win ? Icons.emoji_events_rounded : Icons.swap_vert_rounded,
+        message:
+            '${'hud_score'.tr}: ${fmtNum(ctrl.score.value)} / ${fmtNum(ctrl.targetScore.value)}',
+        content: win ? _celebration(ctrl) : null,
+        actions: [
+          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+        ],
+      );
+    }
+    // Color Rush: chế độ phụ — không tốn mạng, luôn cho chơi lại.
+    if (ctrl.isColorRush.value) {
+      return NeonDialog.panel(
+        title: win ? 'victory'.tr : 'retry'.tr,
+        color: win ? NeonTheme.lime : NeonTheme.orange,
+        icon: win ? Icons.emoji_events_rounded : Icons.local_fire_department_rounded,
+        message:
+            '${'hud_score'.tr}: ${fmtNum(ctrl.score.value)} / ${fmtNum(ctrl.targetScore.value)}',
+        content: win ? _celebration(ctrl) : null,
+        actions: [
+          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+        ],
+      );
+    }
     // Thử thách hằng ngày: chế độ phụ — không tốn mạng, luôn cho chơi lại (CÙNG
     // bàn theo ngày). Thắng lần đầu/ngày → khoe streak + thưởng; chơi lại đã
     // hoàn thành → báo done. Thua → hiện mục tiêu.
@@ -379,6 +409,8 @@ class GameScreen extends StatelessWidget {
                         ? 'rhythm_title'.tr
                         : ctrl.isGravity.value
                         ? '${'gravity_title'.tr} ${ctrl.gravityDir.value == 0 ? '↓' : '↑'}'
+                        : ctrl.isColorRush.value
+                        ? 'color_rush_title'.tr
                         : ctrl.isEndless.value
                         ? 'endless_title'.tr
                         : 'stage_n'.trParams({'n': '${ctrl.currentLevel.value}'}),
@@ -404,6 +436,8 @@ class GameScreen extends StatelessWidget {
                 ? _bossWeakHint(ctrl)
                 : ctrl.isRhythm.value
                 ? _rhythmHud(ctrl)
+                : ctrl.isColorRush.value
+                ? _colorRushHud(ctrl)
                 : const SizedBox.shrink(),
           ),
           const SizedBox(height: NeonTheme.s8),
@@ -417,6 +451,8 @@ class GameScreen extends StatelessWidget {
                   child: _bombStrip(ctrl.bombsLeft.value, ctrl.bombMinTimer.value),
                 )
               : const SizedBox.shrink()),
+          // Cơ chế Wave 11 (băng chuyền / cổng / dispenser): badge nhắc người chơi.
+          _mechanicStrip(ctrl),
         ],
       ),
     );
@@ -452,6 +488,100 @@ class GameScreen extends StatelessWidget {
       ),
     );
   }
+
+  /// Color Rush HUD: chip "MÀU NÓNG ●" (chấm theo màu đang nóng) + nhắc bội điểm.
+  Widget _colorRushHud(GameController ctrl) {
+    final hot = NeonTheme.gemColors[
+        ctrl.colorRushHot.value.clamp(0, NeonTheme.gemColors.length - 1)];
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.only(top: NeonTheme.s8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: NeonTheme.panel.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: hot.withValues(alpha: 0.7), width: 1.5),
+          boxShadow: NeonTheme.glow(hot, blur: 8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'color_rush_hot'.tr,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: hot,
+                boxShadow: NeonTheme.glow(hot, blur: 8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Dải badge cơ chế Wave 11 (băng chuyền / cổng / dispenser) — hiện theo màn.
+  Widget _mechanicStrip(GameController ctrl) {
+    final idx = ctrl.level.index;
+    final widgets = <Widget>[];
+    if (kConveyorSpec.containsKey(idx)) {
+      widgets.add(_mechBadge(
+          Icons.swap_horiz_rounded, 'conveyor_title'.tr, NeonTheme.cyan));
+    }
+    if (kPortalSpec.containsKey(idx)) {
+      widgets.add(
+          _mechBadge(Icons.blur_circular_rounded, 'portal_title'.tr, NeonTheme.lime));
+    }
+    if (kDispenserSpec.containsKey(idx)) {
+      widgets.add(Obx(() => _mechBadge(Icons.auto_awesome_rounded,
+          '${'dispenser_title'.tr} ${ctrl.dispenserCountdown.value}', NeonTheme.yellow)));
+    }
+    if (widgets.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: NeonTheme.s8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        alignment: WrapAlignment.center,
+        children: widgets,
+      ),
+    );
+  }
+
+  Widget _mechBadge(IconData icon, String label, Color color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: NeonTheme.panel.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.6), width: 1.4),
+          boxShadow: NeonTheme.glow(color, blur: 5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            NeonIcon(icon, color: color, size: 16),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
 
   /// Chỉ báo "ĐIỂM YẾU" của boss: chấm màu cần đánh trúng để ×2 sát thương.
   Widget _bossWeakHint(GameController ctrl) {

@@ -65,6 +65,9 @@ class GameController extends GetxController {
   final RxInt bombMinTimer = 0.obs; // đếm ngược NHỎ NHẤT còn lại (cho HUD cảnh báo)
   final RxBool bombExploded = false.obs; // 1 bom về 0 do đếm ngược → thua
 
+  // Dispenser (Wave 11): đếm ngược tới lần PHÁT special kế (engine sync cho HUD).
+  final RxInt dispenserCountdown = 0.obs;
+
   // --- Endless mode (Wave 6) ---
   final RxBool isEndless = false.obs;
   final RxInt endlessStage = 1.obs; // tăng theo điểm → khó hơn + đổi màu
@@ -89,6 +92,12 @@ class GameController extends GetxController {
   final RxInt gravityDir = 0.obs; // 0 = xuống (mặc định), 1 = lên (đã lật)
   LevelConfig? _gravityCfg;
   int _gravityMoveCount = 0;
+
+  // --- Color Rush (Wave 11) — màu "nóng" đổi mỗi N lượt, clear màu nóng → bội điểm ---
+  final RxBool isColorRush = false.obs;
+  final RxInt colorRushHot = 0.obs; // index GemColor đang "nóng"
+  int _colorRushMoveCount = 0;
+  LevelConfig? _colorRushCfg;
 
   // --- Rhythm mode (Wave 8) — ghép theo nhịp ---
   final RxBool isRhythm = false.obs;
@@ -256,9 +265,23 @@ class GameController extends GetxController {
       _endlessCfg ??
       _gravityCfg ??
       _rhythmCfg ??
+      _colorRushCfg ??
       _versusCfg ??
       _dailyCfg ??
       kLevels[currentLevel.value - 1];
+
+  /// True nếu đang ở CHẾ ĐỘ PHỤ (Endless/Boss/Gravity/Rhythm/Daily/Versus) —
+  /// KHÔNG thuộc 100 màn thường. Các chế độ này không tốn mạng, không đụng
+  /// win-streak / level-unlock / Battle Pass / Season. Gom 1 chỗ → tránh tái
+  /// diễn lỗi "quên 1 mode" ở các nhánh xử lý vòng đời màn chơi.
+  bool get isSideMode =>
+      isEndless.value ||
+      isBoss.value ||
+      isGravity.value ||
+      isRhythm.value ||
+      isColorRush.value ||
+      isDaily.value ||
+      isVersus.value;
 
   /// Đặt cờ chế độ ĐỘC QUYỀN (đúng 1 mode bật, hoặc tất cả false = màn thường)
   /// + xoá cfg các mode không bật. Gom 1 chỗ → 5 hàm start* khỏi lặp 8 dòng cờ.
@@ -267,12 +290,14 @@ class GameController extends GetxController {
     bool boss = false,
     bool gravity = false,
     bool rhythm = false,
+    bool colorRush = false,
     bool daily = false,
   }) {
     isEndless.value = endless;
     isBoss.value = boss;
     isGravity.value = gravity;
     isRhythm.value = rhythm;
+    isColorRush.value = colorRush;
     isDaily.value = daily;
     isVersus.value =
         false; // versus chỉ bật qua _initVersus; mọi start* khác tắt
@@ -280,6 +305,7 @@ class GameController extends GetxController {
     if (!boss) _bossCfg = null;
     if (!gravity) _gravityCfg = null;
     if (!rhythm) _rhythmCfg = null;
+    if (!colorRush) _colorRushCfg = null;
     if (!daily) _dailyCfg = null;
     _versusCfg = null;
   }
@@ -304,6 +330,7 @@ class GameController extends GetxController {
     bombsLeft.value = 0;
     bombMinTimer.value = 0;
     bombExploded.value = false;
+    dispenserCountdown.value = 0; // engine seed lại ở onLoad nếu màn có dispenser
     _resolved = false;
   }
 }

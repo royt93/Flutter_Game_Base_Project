@@ -66,4 +66,43 @@ void main() {
     c.startEndless();
     expect(c.isGravity.value, isFalse);
   });
+
+  // --- Cô lập side-mode (regression): trước đây checkEnd thiếu nhánh gravity →
+  //     gravity rơi vào nhánh màn thường (winStreak++, unlock, _saveProgress). ---
+  test('thắng Gravity là CHẾ ĐỘ PHỤ: checkEnd "win", KHÔNG đụng win-streak/'
+      'totalWins, vẫn thưởng xu', () {
+    c.startGravity();
+    final streakBefore = c.winStreak.value;
+    final winsBefore = c.totalWins.value;
+    c.score.value = kGravityTarget; // đạt mục tiêu điểm
+    expect(c.checkEnd(), 'win');
+    expect(c.winStreak.value, streakBefore); // không tăng chuỗi thắng màn thường
+    expect(c.totalWins.value, winsBefore); // không tính tổng thắng
+    expect(c.lastCoinReward, 20 + c.lastStars * 10); // thưởng riêng side-mode
+  });
+
+  test('thua Gravity → "lose", KHÔNG reset win-streak màn thường', () {
+    c.startGravity();
+    c.winStreak.value = 3; // chuỗi thắng tích luỹ trước đó
+    c.movesLeft.value = 0;
+    expect(c.checkEnd(), 'lose');
+    expect(c.winStreak.value, 3); // side mode không đụng tiến trình
+  });
+
+  test('isSideMode đúng cho mọi chế độ phụ, false ở màn thường', () {
+    c.startLevel(1);
+    expect(c.isSideMode, isFalse);
+    c.startGravity();
+    expect(c.isSideMode, isTrue);
+    c.startBoss(1);
+    expect(c.isSideMode, isTrue);
+    c.startEndless();
+    expect(c.isSideMode, isTrue);
+    c.startRhythm();
+    expect(c.isSideMode, isTrue);
+    c.startDaily();
+    expect(c.isSideMode, isTrue);
+    c.startLevel(2);
+    expect(c.isSideMode, isFalse);
+  });
 }

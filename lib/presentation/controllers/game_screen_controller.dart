@@ -40,11 +40,11 @@ class GameScreenController extends GetxController {
     // — tránh markNeedsBuild trong lúc GameScreen đang build.
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _applyPregameBoosters();
-      // Tutorial chỉ ở màn 1 thường — KHÔNG hiện ở chế độ phụ (Endless/Boss/Trọng lực),
-      // vì các chế độ đó giữ nguyên currentLevel (mặc định 1 khi mới cài).
-      if (!gameCtrl.isEndless.value &&
-          !gameCtrl.isBoss.value &&
-          !gameCtrl.isGravity.value &&
+      // Tutorial chỉ ở MÀN 1 THƯỜNG — KHÔNG hiện ở mọi chế độ phụ (Endless/Boss/
+      // Gravity/Rhythm/Color Rush/Daily/Versus), vì các chế độ đó giữ nguyên
+      // currentLevel (mặc định 1 khi mới cài) → trước đây tutorial bật nhầm ở
+      // Rhythm/Color Rush/Daily. Dùng isSideMode (1 nguồn) — xem side-mode-isolation.
+      if (!gameCtrl.isSideMode &&
           gameCtrl.currentLevel.value == 1 &&
           StorageService.to.getInt(StorageKeys.tutorialSeen, def: 0) == 0) {
         tutorialOpen.value = true;
@@ -161,17 +161,12 @@ class GameScreenController extends GetxController {
   }
 
   void _onGameEnd(String result) {
-    // Endless, Boss & Thử thách ngày là chế độ phụ — thua KHÔNG trừ mạng.
-    if (result == 'lose' &&
-        !gameCtrl.isEndless.value &&
-        !gameCtrl.isBoss.value &&
-        !gameCtrl.isDaily.value) {
+    // Chế độ phụ (Endless/Boss/Gravity/Rhythm/Daily) — thua KHÔNG trừ mạng.
+    if (result == 'lose' && !gameCtrl.isSideMode) {
       gameCtrl.consumeLife();
     }
     // Battle Pass + Sự kiện mùa: ghi tiến trình (chỉ màn thường, không chế độ phụ).
-    if (!gameCtrl.isEndless.value &&
-        !gameCtrl.isBoss.value &&
-        !gameCtrl.isDaily.value) {
+    if (!gameCtrl.isSideMode) {
       BattlePassController.maybe?.recordLevelEnd(
         win: result == 'win',
         stars: gameCtrl.lastStars,
@@ -220,6 +215,20 @@ class GameScreenController extends GetxController {
     if (gameCtrl.isRhythm.value) {
       // Rhythm: chơi lại không cần mạng.
       gameCtrl.startRhythm();
+      ui.value = GameUi.playing;
+      _newGame();
+      return;
+    }
+    if (gameCtrl.isGravity.value) {
+      // Trọng lực động: chơi lại không cần mạng (chế độ phụ).
+      gameCtrl.startGravity();
+      ui.value = GameUi.playing;
+      _newGame();
+      return;
+    }
+    if (gameCtrl.isColorRush.value) {
+      // Color Rush: chơi lại không cần mạng (chế độ phụ).
+      gameCtrl.startColorRush();
       ui.value = GameUi.playing;
       _newGame();
       return;

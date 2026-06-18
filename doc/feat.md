@@ -522,7 +522,7 @@ match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 
 
 ---
 
-*Cập nhật lần cuối: 2026-06-16 · Trạng thái: Đang phát triển (Wave 9 HOÀN TẤT: Thử thách hằng ngày + Diagonal gem + gộp tiền tệ 1 xu + revamp Home + **đóng lỗ hổng i18n (20 ngôn ngữ dịch 86-97%)** + dọn nợ kỹ thuật + **Cửa hàng trang trí (6 skin + 6 theme)**. **250 test pass**, 0 analyzer, build APK OK. Sẵn sàng phát hành đa ngôn ngữ; bước sau: chuẩn bị release store + verify máy thật)*
+*Cập nhật lần cuối: 2026-06-17 · Trạng thái: Đang phát triển (Wave 11: audit 4 tầng + sửa 3 lỗi HIGH [bug Gravity → getter `isSideMode`, `_doColumnFlip` lật đầy đủ, race `lastCoinReward`] + **4 gameplay mới** [Color Rush + Băng chuyền + Cổng + Dispenser]. **292 test pass**, 0 analyzer, build APK OK. Bước sau: verify máy thật + chuẩn bị release store)*
 
 ---
 
@@ -775,6 +775,93 @@ _objectiveText). 17+ site.
 Kết quả: 0 analyzer · **276 test pass** (+5 `test/w10_format_test.dart`: vi/en separator,
 số âm, locale null không lỗi) · build OK · **✅ verify máy Pixel 7 Pro**: chip xu hiện
 "10.000" (locale vi), logcat sạch.
+
+## 🔧 Wave 11 — Audit chất lượng + dọn nợ (2026-06-17)
+
+Người dùng chốt làm tuần tự: **audit (option 4) → gameplay mới (option 3)**. Phần audit:
+4 agent đọc song song 4 tầng (engine+logic / controllers / UI+widgets / core+data+i18n),
+mỗi phát hiện xác minh bằng đọc code kèm `file:line`. Tầng core/data+i18n **sạch** (chỉ nợ
+latent nhỏ). Đã sửa 3 lỗi HIGH đã xác minh:
+
+- **[HIGH] Bộ bug chế độ Trọng lực (Gravity) — "quên 1 mode" lan 4 chỗ**: `checkEnd`
+  KHÔNG có nhánh `isGravity` → Gravity (chế độ phụ, dùng `buildGravityLevel`, không set
+  `currentLevel`) rơi vào **nhánh màn thường**: thắng → `winStreak++` + `_saveProgress`
+  (ghi high-score + **mở khoá màn kế = currentLevel tồn đọng**); thua → `consumeLife` +
+  reset win-streak. Đồng thời `again()` thiếu nhánh Gravity (chơi lại biến thành màn
+  thường + bị cổng mạng chặn), `_resultPanel` thiếu nhánh Gravity (hiện nút "TIẾP THEO"
+  sai). **Sửa**: thêm nhánh `isGravity` vào `checkEnd` (side-mode: thắng theo điểm,
+  thưởng `20+sao×10`, KHÔNG đụng win-streak/unlock/mạng) + nhánh `again()` + nhánh
+  `_resultPanel`. Gom getter **`GameController.isSideMode`** (Endless/Boss/Gravity/Rhythm/
+  Daily/Versus) thay 3 điều kiện `!isEndless && !isBoss && !isDaily` trong `_onGameEnd`
+  → **đồng thời sửa Rhythm cũng bị trừ mạng + ghi BattlePass/Season oan** (cùng class lỗi).
+- **[HIGH] `_doColumnFlip` lật bàn KHÔNG đầy đủ**: chỉ swap `color`+`type`, bỏ qua cờ gem
+  (`isIngredient`/`isLucky`/`isJunk`) + 3 lưới theo ô (`obstacle`/`bomb`/`jelly`). Chế độ
+  Trọng lực động dùng bàn score thuần (vô hại), nhưng **booster Gravity Flip dùng được ở
+  MỌI màn** → ở Drop Down ingredient kẹt sai ô, ở màn obstacle/bom băng/đá/bom desync khỏi
+  màu. **Sửa**: lật đầy đủ cả lưới phụ (trước null-check) + toàn bộ cờ gem giữa ô đối xứng.
+- **[HIGH] Race `lastCoinReward`**: `checkEnd` set `lastCoinReward` THIẾU phần `(1+sao)×10`
+  rồi `unawaited(_saveProgress)`; `_onGameEnd` đọc NGAY (đồng bộ) truyền vào BattlePass
+  `recordLevelEnd` → quest **earnCoins đếm thiếu** khi lập high-score mới (vì bonus chỉ
+  cộng SAU `await` đầu của `_saveProgress`). **Sửa**: tính đủ `lastCoinReward` đồng bộ
+  trong `checkEnd`, `_saveProgress` chỉ persist (bỏ `+=`). Tổng xu cuối KHÔNG đổi.
+
+**Kết quả**: 0 analyzer issue · **280 test pass** (+4: 3 gravity side-mode isolation /
+isSideMode + 1 lastCoinReward đồng bộ) · không hồi quy.
+
+**Nợ ghi nhận (chưa sửa — ROI thấp / cần quyết định cân bằng)**: (a) `coinsEarnedTotal`
+(achievement "tổng xu kiếm") chỉ đếm màn thường, bỏ sót boss/rhythm/daily/wheel/season/
+BP/đền → mâu thuẫn comment "lifetime"; sửa = đổi nhịp achievement (quyết định balance, để
+hỏi). (b) `_findMove`/auto-shuffle không nhận diện nước "đập 2 special kề nhau" → có thể
+xáo bàn oan phá special (tần suất thấp). (c) combo-trigger 2-special ghi điểm combo cứng=2.
+(d) `fmtDur` chưa guard Duration âm + `fmtNum` fallback luôn dấu "." (đều latent, chưa kích
+hoạt). (e) `fontFamily:'Baloo2'` lặp ~100 chỗ (đã có default app-wide, vô hại). (f)
+`_TemplePainter.shouldRepaint` luôn true; `_LivesChip` cancel Timer trong build (nhánh full).
+
+## 🎮 Wave 11 — 4 gameplay mới (2026-06-17)
+
+Người dùng chốt làm **cả 4** (Color Rush + Băng chuyền + Cổng + Dispenser), song song,
+cập nhật task `doc/tasks/`. Vì cả 4 đụng cùng bộ file lõi (levels/controller/engine/HUD/
+i18n) → làm như MỘT wave phối hợp (code tuần tự, tránh xung đột file), KHÔNG fan-out
+subagent. Cả 4 thiết kế **tránh đụng gravity/refill** (phần dễ vỡ theo audit) → hook vào
+điểm an toàn.
+
+- **Color Rush (chế độ phụ)**: màu "nóng" đổi mỗi 4 lượt (tất định cyclic); clear gem màu
+  nóng → +15đ/gem (cộng thẳng). Đạt 3500đ trong 30 lượt. Cờ `isColorRush` + `buildColorRush
+  Level` + `startColorRush` (vào `isSideMode` — KHÔNG đụng mạng/streak/unlock); checkEnd
+  nhánh riêng (thưởng 20+sao×10). HUD chip "MÀU NÓNG ●", nút Home full-width nổi bật.
+- **Băng chuyền (weave màn score {25,61})**: hàng băng chuyền dịch gem 1 cột/lượt (cyclic,
+  wrap mép) sau khi settle → re-settle. Logic thuần `conveyorNewCol` (test bijection/wrap).
+  Engine `_advanceConveyor()` (hoán vị + animate trượt/teleport mép). `ConveyorLayer` mũi
+  tên chạy. +5 lượt cho công bằng.
+- **Cổng dịch chuyển (weave {43,85})**: cặp ô liên kết — clear 1 đầu → ECHO clear đầu kia
+  (1 hop). Logic thuần `buildPortalLinks`/`expandPortals` (2 chiều). Engine mở rộng tập
+  clear trong `_clearCells`. `PortalLayer` vòng xoáy cặp màu. (MVP: echo = clear trực tiếp,
+  không kích special đối tác.)
+- **Ô phát special / Dispenser (weave {13,19})**: ô nguồn mỗi N lượt biến gem thường tại
+  đó thành special (striped/bomb). `_tickDispensers()` trong `_finishMove`; `dispenser
+  Countdown` Rx + `DispenserLayer` lõi sáng + số đếm.
+
+Kiến trúc: theo đúng pattern weave `kBombLevels` (tra cứu spec theo chỉ số màn ở engine).
+Logic thuần tách ở `lib/logic/board_mechanics.dart`. Chọn 6 màn score chưa dùng (≡1 mod 6,
+không trùng order/spread/bomb): 13/19/25/43/61/85. Getter `isSideMode` đã có (Wave 11 audit)
+→ Color Rush chỉ thêm 1 cờ vào getter + 1 nhánh checkEnd/again/resultPanel. i18n en+vi
+(`color_rush_*`/`conveyor_title`/`portal_title`/`dispenser_title`/`guide_w11_*`), 20 ngôn
+ngữ fallback EN (coverage test ≥80% vẫn PASS). Guide thêm section "Cơ chế mới".
+
+**Kết quả**: 0 analyzer issue · **292 test pass** (+12: 4 pure board_mechanics + 2 level spec
++ 6 Color Rush) · build APK debug OK.
+
+**✅ Verify máy thật (S24 Ultra SM-S928B, USB, Impeller/Vulkan) — 2026-06-18**:
+- Home: card "TRUY QUÉT MÀU" full-width render đúng (icon lửa + chevron), no-scroll.
+- Color Rush: badge "TRUY QUÉT MÀU" + chip "MÀU NÓNG ●" (cyan) + HUD 0/3.500·LƯỢT 30; chơi
+  được (match → ĐIỂM↑, LƯỢT 30→29, swap sai revert không tốn lượt).
+- 3 cơ chế (qua build tạm weave màn 1, đã revert): màn 1 hiện đủ 3 badge "BĂNG CHUYỀN·CỔNG·
+  Ô PHÁT 4"; LƯỢT 31 (=26+5 conveyor); **dispenser đếm 4→3→2** mỗi lượt; băng chuyền dịch gem
+  tạo cascade lớn (**WOMBO COMBO x6**); thắng → CHIẾN THẮNG ⭐⭐⭐ +80 xu, coins 10.000→10.085
+  (persisted). Logcat sạch (không exception app; chỉ Monkey launcher + reflection thường).
+- **FIX phát hiện khi test**: tutorial lần-đầu BẬT NHẦM ở Color Rush/Rhythm/Daily (guard chỉ
+  loại Endless/Boss/Gravity) → cùng class "quên mode" → đổi sang `!isSideMode`. Verify lại:
+  vào Color Rush KHÔNG còn tutorial. [[side-mode-isolation]]
 
 ## 🔍 Đánh giá chất lượng code (2026-06-16, Wave 8.9)
 

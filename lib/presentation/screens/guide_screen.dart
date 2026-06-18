@@ -130,6 +130,12 @@ class GuideScreen extends StatelessWidget {
                       ],
                     ),
                     _section(
+                      color: NeonTheme.cyan,
+                      icon: Icons.bolt_rounded,
+                      title: 'guide_w11_title'.tr,
+                      body: 'guide_w11_body'.tr,
+                    ),
+                    _section(
                       color: NeonTheme.yellow,
                       icon: Icons.lightbulb_rounded,
                       title: '★',

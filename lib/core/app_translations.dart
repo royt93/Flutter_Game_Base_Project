@@ -390,6 +390,17 @@ class AppTranslations extends Translations {
     'daily_ch_reward': '+@c coins',
     'daily_ch_play': 'PLAY',
     'daily_ch_short': 'DAILY',
+    // Wave 11 — Color Rush (chế độ) + 3 cơ chế weave
+    'color_rush_title': 'COLOR RUSH',
+    'color_rush_short': 'COLOR RUSH',
+    'color_rush_hot': 'HOT COLOR',
+    'color_rush_desc': 'Clear the hot color for bonus points',
+    'conveyor_title': 'CONVEYOR',
+    'portal_title': 'PORTAL',
+    'dispenser_title': 'DISPENSER',
+    'guide_w11_title': 'New Mechanics',
+    'guide_w11_body':
+        'COLOR RUSH mode: a "hot color" changes every few moves — clear it for bonus points and race to the target. CONVEYOR belts shift gems one cell each move. PORTALS are linked cells: clearing one also clears its partner. DISPENSERS spawn a special gem every few moves.',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -651,6 +662,17 @@ class AppTranslations extends Translations {
     'daily_ch_reward': '+@c xu',
     'daily_ch_play': 'CHƠI',
     'daily_ch_short': 'HẰNG NGÀY',
+    // Wave 11 — Color Rush + 3 cơ chế weave
+    'color_rush_title': 'TRUY QUÉT MÀU',
+    'color_rush_short': 'QUÉT MÀU',
+    'color_rush_hot': 'MÀU NÓNG',
+    'color_rush_desc': 'Clear màu nóng để được điểm bội',
+    'conveyor_title': 'BĂNG CHUYỀN',
+    'portal_title': 'CỔNG',
+    'dispenser_title': 'Ô PHÁT',
+    'guide_w11_title': 'Cơ chế mới',
+    'guide_w11_body':
+        'Chế độ TRUY QUÉT MÀU: "màu nóng" đổi sau vài lượt — clear màu đó được điểm bội, đua tới mục tiêu. BĂNG CHUYỀN dịch gem 1 ô mỗi lượt. CỔNG là cặp ô liên kết: clear 1 đầu thì đầu kia cũng clear. Ô PHÁT sinh 1 gem special sau vài lượt.',
   };
 
   static const Map<String, String> _extraEs = {

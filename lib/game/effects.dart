@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../core/neon_theme.dart';
 import '../data/cosmetics.dart';
 import '../data/levels.dart' show ObstacleType;
+import '../logic/gem_data.dart' show Cell;
 
 /// Cache hiệu ứng dùng chung — pre-render 1 lần để tránh MaskFilter.blur mỗi frame
 /// (blur per-frame là nguyên nhân lag chính trên mobile).
@@ -775,6 +776,179 @@ class BombLayer extends PositionComponent {
               fontFamily: NeonTheme.fontFamily,
               color: Colors.white,
               fontSize: cellSize * 0.34,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
+      }
+    }
+  }
+}
+
+/// Wave 11 — dải BĂNG CHUYỀN: vẽ mũi tên chạy trên các hàng băng chuyền (gợi ý
+/// hướng dịch). Trang trí thuần, không chặn nhìn gem.
+class ConveyorLayer extends PositionComponent {
+  final Set<int> beltRows;
+  final int dir; // +1 phải, -1 trái
+  final int cols;
+  final double cellSize;
+  final Vector2 origin;
+  double _t = 0;
+
+  ConveyorLayer({
+    required this.beltRows,
+    required this.dir,
+    required this.cols,
+    required this.cellSize,
+    required this.origin,
+  });
+
+  @override
+  void update(double dt) => _t += dt;
+
+  @override
+  void render(Canvas canvas) {
+    final flow = (_t * dir * cellSize * 0.6) % cellSize;
+    final w = cols * cellSize;
+    for (final r in beltRows) {
+      final top = origin.y + r * cellSize;
+      final rect = Rect.fromLTWH(origin.x, top, w, cellSize);
+      canvas.drawRect(
+          rect, Paint()..color = NeonTheme.cyan.withValues(alpha: 0.07));
+      // mũi tên ›/‹ chạy theo hướng
+      final cy = top + cellSize / 2;
+      for (double x = -cellSize; x < w + cellSize; x += cellSize * 0.7) {
+        final ax = origin.x + ((x + flow) % (w + cellSize));
+        final p = Path();
+        final s = cellSize * 0.12;
+        if (dir > 0) {
+          p.moveTo(ax - s, cy - s);
+          p.lineTo(ax + s, cy);
+          p.lineTo(ax - s, cy + s);
+        } else {
+          p.moveTo(ax + s, cy - s);
+          p.lineTo(ax - s, cy);
+          p.lineTo(ax + s, cy + s);
+        }
+        canvas.drawPath(
+          p,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2
+            ..color = NeonTheme.cyan.withValues(alpha: 0.5),
+        );
+      }
+    }
+  }
+}
+
+/// Wave 11 — CỔNG dịch chuyển: vẽ vòng xoáy tại mỗi đầu cổng; 2 đầu cùng cặp
+/// dùng CÙNG màu để người chơi nhận ra liên kết.
+class PortalLayer extends PositionComponent {
+  final List<List<Cell>> pairs;
+  final int rows;
+  final int cols;
+  final double cellSize;
+  final Vector2 origin;
+  double _t = 0;
+
+  PortalLayer({
+    required this.pairs,
+    required this.rows,
+    required this.cols,
+    required this.cellSize,
+    required this.origin,
+  });
+
+  static const List<Color> _pairColors = [
+    NeonTheme.lime,
+    NeonTheme.yellow,
+    NeonTheme.purple,
+  ];
+
+  @override
+  void update(double dt) => _t += dt;
+
+  Offset _center(Cell c) => Offset(
+        origin.x + c.col * cellSize + cellSize / 2,
+        origin.y + c.row * cellSize + cellSize / 2,
+      );
+
+  @override
+  void render(Canvas canvas) {
+    for (int i = 0; i < pairs.length; i++) {
+      final col = _pairColors[i % _pairColors.length];
+      for (final cell in pairs[i]) {
+        final center = _center(cell);
+        final rot = _t * 2 + i;
+        NeonFx.drawGlow(canvas, center, cellSize * 0.5, col, opacity: 0.45);
+        for (int k = 0; k < 3; k++) {
+          final rad = cellSize * (0.22 + k * 0.09);
+          canvas.drawArc(
+            Rect.fromCircle(center: center, radius: rad),
+            rot + k * 2.0,
+            3.6,
+            false,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 2.4
+              ..color = col.withValues(alpha: 0.8 - k * 0.2),
+          );
+        }
+      }
+    }
+  }
+}
+
+/// Wave 11 — ô PHÁT special (dispenser): vẽ lõi phát sáng + vòng + đếm ngược
+/// tới lần phát kế. Đọc đếm ngược qua [countdown] (gọi mỗi frame, không Rx).
+class DispenserLayer extends PositionComponent {
+  final List<Cell> cells;
+  final int Function() countdown;
+  final double cellSize;
+  final Vector2 origin;
+  double _t = 0;
+
+  DispenserLayer({
+    required this.cells,
+    required this.countdown,
+    required this.cellSize,
+    required this.origin,
+  });
+
+  @override
+  void update(double dt) => _t += dt;
+
+  @override
+  void render(Canvas canvas) {
+    final pulse = 0.5 + 0.5 * math.sin(_t * 4);
+    final n = countdown();
+    for (final cell in cells) {
+      final center = Offset(
+        origin.x + cell.col * cellSize + cellSize / 2,
+        origin.y + cell.row * cellSize + cellSize / 2,
+      );
+      NeonFx.drawGlow(
+          canvas, center, cellSize * (0.34 + pulse * 0.12), NeonTheme.yellow,
+          opacity: 0.55);
+      canvas.drawCircle(
+        center,
+        cellSize * 0.30,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.4 + pulse * 1.2
+          ..color = NeonTheme.yellow.withValues(alpha: 0.9),
+      );
+      if (n > 0) {
+        final tp = TextPainter(
+          text: TextSpan(
+            text: '$n',
+            style: TextStyle(
+              fontFamily: NeonTheme.fontFamily,
+              color: Colors.white,
+              fontSize: cellSize * 0.26,
               fontWeight: FontWeight.w800,
             ),
           ),

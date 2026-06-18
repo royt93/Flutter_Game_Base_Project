@@ -249,6 +249,48 @@ extension GameControllerScoring on GameController {
       }
       return null;
     }
+    // Trọng lực động: chế độ riêng — thắng khi đạt điểm mục tiêu, thua khi hết
+    // lượt. Thưởng xu theo sao, KHÔNG đụng win-streak/level-unlock/mạng (như
+    // Boss/Rhythm). Trước đây thiếu nhánh này → gravity rơi vào nhánh màn
+    // thường (winStreak++, _saveProgress, unlock màn kế = currentLevel tồn đọng).
+    if (isGravity.value) {
+      if (hasWon) {
+        _resolved = true;
+        lastStars = computeStars();
+        lastStreakBonus = 0;
+        lastCoinReward = 20 + lastStars * 10;
+        addCoins(lastCoinReward);
+        return 'win';
+      }
+      if (movesLeft.value <= 0) {
+        _resolved = true;
+        lastStars = 0;
+        lastCoinReward = 0;
+        lastStreakBonus = 0;
+        return 'lose';
+      }
+      return null;
+    }
+    // Color Rush: chế độ riêng — thắng khi đạt điểm mục tiêu, thua khi hết lượt.
+    // Thưởng xu theo sao, KHÔNG đụng win-streak/level-unlock/mạng (side mode).
+    if (isColorRush.value) {
+      if (hasWon) {
+        _resolved = true;
+        lastStars = computeStars();
+        lastStreakBonus = 0;
+        lastCoinReward = 20 + lastStars * 10;
+        addCoins(lastCoinReward);
+        return 'win';
+      }
+      if (movesLeft.value <= 0) {
+        _resolved = true;
+        lastStars = 0;
+        lastCoinReward = 0;
+        lastStreakBonus = 0;
+        return 'lose';
+      }
+      return null;
+    }
     // Thử thách hằng ngày: thắng khi đạt mục tiêu, thua khi hết lượt. Thưởng
     // xu/shard + cộng streak CHỈ 1 lần/ngày (chơi lại không farm được). KHÔNG
     // đụng win-streak/level-unlock.
@@ -316,8 +358,12 @@ extension GameControllerScoring on GameController {
           ? winStreak.value.clamp(0, GameController._streakCap) *
                 GameController._streakStep
           : 0;
+      // Tính ĐỦ phần thưởng ĐỒNG BỘ tại đây (gồm phần shard cũ (1+sao)×10 đã gộp
+      // vào xu) → onGameEnd/BattlePass đọc lastCoinReward NGAY sau khi return 'win'
+      // thấy giá trị đầy đủ. Trước đây phần (1+sao)×10 cộng trong _saveProgress sau
+      // 1 await (chỉ khi có high-score mới) → quest "earnCoins" đếm thiếu.
       lastCoinReward =
-          10 + lastStars * 10 + lastStreakBonus; // 20/30/40 + bonus
+          10 + lastStars * 10 + lastStreakBonus + (1 + lastStars) * 10;
       totalWins.value++;
       unawaited(_store.setInt(StorageKeys.winStreak, winStreak.value));
       unawaited(_store.setInt(StorageKeys.totalWins, totalWins.value));

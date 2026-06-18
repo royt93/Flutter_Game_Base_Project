@@ -15,9 +15,8 @@ extension GameControllerProgress on GameController {
         stars[lv] = lastStars;
         await _store.setInt(StorageKeys.star(lv), lastStars);
       }
-      // Wave 9 (gộp tiền tệ): phần shard cũ (1 + sao) → xu ×10, gộp vào lastCoinReward
-      // TRƯỚC khi cộng (để dialog hiện đúng tổng).
-      lastCoinReward += (1 + lastStars) * 10;
+      // lastCoinReward đã được tính ĐỦ (gồm phần shard cũ (1+sao)×10) ngay trong
+      // checkEnd (đồng bộ) → ở đây chỉ persist, KHÔNG cộng lại (tránh đếm 2 lần).
       // Ghi đĩa TRƯỚC rồi mới cập nhật state RAM: nếu app bị kill giữa chừng,
       // RAM và đĩa không lệch nhau (tránh mất xu/unlock đã hiển thị).
       final newCoins =

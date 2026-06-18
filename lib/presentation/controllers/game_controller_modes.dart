@@ -77,6 +77,37 @@ extension GameControllerModes on GameController {
     }
   }
 
+  /// Bắt đầu chế độ Color Rush (chế độ riêng): màu "nóng" đổi mỗi
+  /// [kColorRushChangeEvery] lượt; clear gem màu nóng → điểm bội. Đạt điểm mục
+  /// tiêu trong số lượt. KHÔNG đụng mạng/win-streak/level-unlock (side mode).
+  void startColorRush() {
+    _colorRushCfg = buildColorRushLevel();
+    _enterMode(colorRush: true);
+    _colorRushMoveCount = 0;
+    colorRushHot.value = 0; // bắt đầu ở màu đầu (cyan) — tất định, test được
+    _resetRunState(
+      moves: _colorRushCfg!.moves,
+      target: _colorRushCfg!.targetScore,
+    );
+  }
+
+  /// Engine gọi sau MỖI nước đi hợp lệ ở Color Rush: cứ
+  /// [kColorRushChangeEvery] lượt thì xoay màu nóng sang màu kế (tất định).
+  void tickColorRush() {
+    if (!isColorRush.value) return;
+    _colorRushMoveCount++;
+    if (_colorRushMoveCount % kColorRushChangeEvery == 0) {
+      colorRushHot.value = (colorRushHot.value + 1) % level.colorCount;
+    }
+  }
+
+  /// Color Rush: thưởng điểm bội cho [gems] gem màu nóng vừa clear (cộng thẳng,
+  /// không qua hệ số combo).
+  void colorRushBonus(int gems) {
+    if (!isColorRush.value || gems <= 0) return;
+    score.value += gems * kColorRushBonusPerGem;
+  }
+
   /// Seed bàn cho engine: Thử thách ngày dùng `epochDay` (mọi người CÙNG bàn);
   /// các chế độ khác trả null (engine tự ngẫu nhiên). Versus truyền seed riêng.
   int? get boardSeed => isDaily.value ? _dailySeed : null;
@@ -145,6 +176,7 @@ extension GameControllerModes on GameController {
     if (isBoss.value) return bossStage.value;
     if (isEndless.value) return endlessStage.value;
     if (isGravity.value) return 2;
+    if (isColorRush.value) return 4;
     return (1 + (currentLevel.value - 1) ~/ 20).clamp(1, 5);
   }
 }

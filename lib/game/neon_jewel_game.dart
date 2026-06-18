@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import '../core/audio_manager.dart';
 import '../core/neon_theme.dart';
 import '../data/levels.dart';
+import '../logic/board_mechanics.dart';
 import '../logic/gem_data.dart';
 import '../logic/match_detector.dart';
 import '../presentation/controllers/game_controller.dart';
@@ -145,6 +146,35 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       cellSize: cellSize,
       origin: boardOrigin,
     )..priority = 2); // trên gem để thấy số đếm
+    // Wave 11 — cơ chế weave (băng chuyền / cổng / dispenser): đọc spec theo màn
+    // rồi gắn layer render tương ứng.
+    _buildMechanics();
+    if (_hasConveyor) {
+      boardLayer.add(ConveyorLayer(
+        beltRows: _conveyorRows,
+        dir: _conveyorDir,
+        cols: cols,
+        cellSize: cellSize,
+        origin: boardOrigin,
+      )..priority = -1); // dưới gem
+    }
+    if (_hasPortal) {
+      boardLayer.add(PortalLayer(
+        pairs: kPortalSpec[controller.level.index]!.pairs,
+        rows: rows,
+        cols: cols,
+        cellSize: cellSize,
+        origin: boardOrigin,
+      )..priority = 1); // trên gem (thấy vòng xoáy)
+    }
+    if (_hasDispenser) {
+      boardLayer.add(DispenserLayer(
+        cells: _dispenserCells,
+        countdown: () => controller.dispenserCountdown.value,
+        cellSize: cellSize,
+        origin: boardOrigin,
+      )..priority = 1);
+    }
     _fillInitialBoard();
     _placeIngredients();
     if (!_hasPossibleMove()) await _doShuffle();
@@ -157,6 +187,36 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   late List<List<int>> bomb;
 
   ObstacleType get _obstacleType => controller.level.obstacle;
+
+  // --- Wave 11: cơ chế weave (băng chuyền / cổng / dispenser) ---
+  Set<int> _conveyorRows = const {};
+  int _conveyorDir = 1;
+  final Map<Cell, Cell> _portalLink = {}; // ô → ô đối tác (2 chiều)
+  final List<Cell> _dispenserCells = [];
+  int _dispenserPeriod = 0;
+
+  bool get _hasConveyor => _conveyorRows.isNotEmpty;
+  bool get _hasPortal => _portalLink.isNotEmpty;
+  bool get _hasDispenser => _dispenserCells.isNotEmpty;
+
+  /// Đọc spec cơ chế Wave 11 theo chỉ số màn (giống bom). Versus/side-mode có
+  /// index ảo (≤0) → không trùng kConveyorSpec/kPortalSpec/kDispenserSpec.
+  void _buildMechanics() {
+    final idx = controller.level.index;
+    final cv = kConveyorSpec[idx];
+    if (cv != null) {
+      _conveyorRows = cv.beltRows;
+      _conveyorDir = cv.dir;
+    }
+    final pt = kPortalSpec[idx];
+    if (pt != null) _portalLink.addAll(buildPortalLinks(pt.pairs));
+    final dp = kDispenserSpec[idx];
+    if (dp != null) {
+      _dispenserCells.addAll(dp.cells);
+      _dispenserPeriod = dp.period;
+      controller.dispenserCountdown.value = dp.period;
+    }
+  }
 
   // Spread (chocolate): cờ "đã chặn được lan trong lượt này" + trần số ô (chống
   // khoá bàn). Mỗi lượt KHÔNG chặn → lan thêm 1 ô.
@@ -558,6 +618,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         await _settle();
         await _maybeGrowSpread(); // không chặn được → chocolate lan 1 ô
         await _ensurePlayable();
+        // Băng chuyền (Wave 11): dịch hàng băng chuyền 1 cột sau mỗi lượt.
+        if (_hasConveyor) await _advanceConveyor();
         // Trọng lực động: cứ N lượt thì bàn tự lật (đảo cột).
         if (controller.consumeGravityFlip()) {
           await _doColumnFlip();
@@ -1077,11 +1139,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   }
 
   Future<void> _clearCells(Set<Cell> cells) async {
+    // Cổng (Wave 11): clear 1 đầu cổng → echo clear đầu kia (1 hop).
+    if (_hasPortal) cells = expandPortals(cells, _portalLink);
     // obstacle bị tổn hại theo tập ô vừa clear (ice: trực tiếp; chain/stone: kề)
     _damageObstacles(cells);
     _defuseBombs(cells); // bom đếm ngược: clear gem trên ô bom → tháo ngòi
     final gems = <GemComponent>[];
     var luckyCount = 0;
+    var hotCount = 0; // Color Rush: số gem màu nóng vừa clear
     for (final cell in cells) {
       final g = grid[cell.row][cell.col];
       if (g == null) continue;
@@ -1094,10 +1159,15 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       final wasJelly = jelly[cell.row][cell.col] > 0;
       if (wasJelly) jelly[cell.row][cell.col]--;
       controller.registerClear(g.color, wasJelly);
+      if (controller.isColorRush.value &&
+          g.color.index == controller.colorRushHot.value) {
+        hotCount++;
+      }
       if (g.isLucky) luckyCount++;
       gems.add(g);
       grid[cell.row][cell.col] = null;
     }
+    if (hotCount > 0) controller.colorRushBonus(hotCount);
     if (gems.isNotEmpty) {
       // sóng xung kích tại trọng tâm cụm + rung bàn theo số gem
       var centroid = Vector2.zero();
@@ -1321,6 +1391,67 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     controller.bombMinTimer.value = count == 0 ? 0 : minT;
   }
 
+  /// Băng chuyền (Wave 11): dịch gem ở các hàng băng chuyền 1 cột theo
+  /// [_conveyorDir] (cyclic, wrap mép), rồi settle (match mới có thể hình thành).
+  /// Gọi sau khi bàn đã ổn định → mọi ô băng chuyền đều có gem (board full).
+  Future<void> _advanceConveyor() async {
+    if (!_hasConveyor || _ended) return;
+    final futures = <Future>[];
+    for (final r in _conveyorRows) {
+      if (r < 0 || r >= rows) continue;
+      final snapshot = [for (int c = 0; c < cols; c++) grid[r][c]];
+      for (int c = 0; c < cols; c++) {
+        final nc = conveyorNewCol(c, _conveyorDir, cols);
+        final g = snapshot[c];
+        grid[r][nc] = g; // hoán vị bijective → mỗi ô được gán đúng 1 lần
+        if (g == null) continue;
+        g.col = nc;
+        final wrapped =
+            (_conveyorDir > 0 && c == cols - 1) || (_conveyorDir < 0 && c == 0);
+        if (wrapped) {
+          g.position = _cellCenter(r, nc); // nhảy vòng mép → teleport tức thời
+        } else {
+          futures.add(_run(
+              g,
+              MoveToEffect(_cellCenter(r, nc),
+                  EffectController(duration: 0.22, curve: Curves.easeInOut))));
+        }
+      }
+    }
+    _flash(NeonTheme.cyan, peak: 0.1);
+    await Future.wait(futures);
+    await _settle();
+    await _ensurePlayable();
+  }
+
+  /// Dispenser (Wave 11): mỗi [_dispenserPeriod] lượt, biến gem THƯỜNG tại mỗi ô
+  /// nguồn thành 1 gem special ngẫu nhiên (striped/bomb) → điểm tựa chiến thuật.
+  void _tickDispensers() {
+    var n = controller.dispenserCountdown.value - 1;
+    if (n > 0) {
+      controller.dispenserCountdown.value = n;
+      return;
+    }
+    n = _dispenserPeriod; // reset chu kỳ
+    controller.dispenserCountdown.value = n;
+    const specials = [GemType.stripedH, GemType.stripedV, GemType.bomb];
+    for (final cell in _dispenserCells) {
+      final g = grid[cell.row][cell.col];
+      if (g == null || g.type != GemType.normal) continue; // không đè special sẵn
+      g.type = specials[_rnd.nextInt(specials.length)];
+      add(ShockwaveComponent(
+        position: _cellCenter(cell.row, cell.col),
+        color: NeonTheme.yellow,
+        maxRadius: cellSize * 1.4,
+        duration: 0.35,
+      )..priority = 55);
+      g.add(ScaleEffect.to(
+        Vector2.all(1.3),
+        EffectController(duration: 0.13, alternate: true, curve: Curves.easeOut),
+      ));
+    }
+  }
+
   /// Nạp & gắn aura shader neon (Wave 10). NUỐT mọi lỗi nạp shader (nền tảng
   /// không hỗ trợ / chạy test không có asset) → đơn giản là không có aura.
   Future<void> _addGlowAura() async {
@@ -1463,6 +1594,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     // Bom đếm ngược giảm 1 nhịp sau mỗi lượt; nổ → cờ thua. checkEnd ưu tiên
     // hasWon trước nên nước đi vừa đạt mục tiêu vẫn THẮNG dù bom cũng về 0.
     _tickBombs();
+    if (_hasDispenser) _tickDispensers(); // Wave 11: phát special định kỳ
+    controller.tickColorRush(); // Wave 11: đổi màu nóng mỗi N lượt (no-op nếu khác mode)
     final result = controller.checkEnd();
     if (result != null) {
       _ended = true;
@@ -1684,14 +1817,30 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   Future<void> _doColumnFlip() async {
     for (int c = 0; c < cols; c++) {
       for (int r = 0; r < rows ~/ 2; r++) {
+        final r2 = rows - 1 - r;
+        // Lật ĐẦY ĐỦ trạng thái theo ô giữa (r,c) và ô đối xứng (r2,c): cả lớp
+        // obstacle/bom/jelly (theo ô) lẫn gem (màu/loại + cờ ingredient/lucky/
+        // junk). Trước đây chỉ swap color/type → ở màn Drop Down/obstacle/bom,
+        // ingredient + băng/đá/bom bị kẹt sai ô sau khi lật (booster Gravity Flip
+        // dùng được ở mọi màn). Lật lưới phụ TRƯỚC null-check để luôn nhất quán.
+        final to = obstacle[r][c]; obstacle[r][c] = obstacle[r2][c]; obstacle[r2][c] = to;
+        final tb = bomb[r][c]; bomb[r][c] = bomb[r2][c]; bomb[r2][c] = tb;
+        final tj = jelly[r][c]; jelly[r][c] = jelly[r2][c]; jelly[r2][c] = tj;
         final a = grid[r][c];
-        final b = grid[rows - 1 - r][c];
+        final b = grid[r2][c];
         if (a == null || b == null) continue;
         final tColor = a.color, tType = a.type;
+        final tIng = a.isIngredient, tLucky = a.isLucky, tJunk = a.isJunk;
         a.color = b.color;
         a.type = b.type;
+        a.isIngredient = b.isIngredient;
+        a.isLucky = b.isLucky;
+        a.isJunk = b.isJunk;
         b.color = tColor;
         b.type = tType;
+        b.isIngredient = tIng;
+        b.isLucky = tLucky;
+        b.isJunk = tJunk;
         a.scale = Vector2.all(0.6);
         b.scale = Vector2.all(0.6);
         a.add(ScaleEffect.to(Vector2.all(1),

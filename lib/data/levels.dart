@@ -83,6 +83,57 @@ const Set<int> kBombLevels = {31, 49, 79};
 const int kBombCount = 3;
 const int kBombCountdown = 12;
 
+// ---------------------------------------------------------------------------
+// Wave 11 — 3 cơ chế WEAVE vào màn score (KHÔNG đổi objective, tra cứu theo
+// chỉ số màn ở engine — giống kBombLevels). Chọn các màn score CHƯA dùng cho
+// order/spread/bomb (score level = index ≡ 1 mod 6): 13/19/25/43/61/85.
+// ---------------------------------------------------------------------------
+
+/// Băng chuyền: các hàng [beltRows] dịch toàn bộ gem 1 cột/lượt theo [dir]
+/// (cyclic, gem trôi khỏi mép xuất hiện lại mép kia).
+class ConveyorSpec {
+  final Set<int> beltRows;
+  final int dir; // +1 = sang phải, -1 = sang trái
+  const ConveyorSpec(this.beltRows, this.dir);
+}
+
+/// Các màn score có băng chuyền (Wave 11).
+const Map<int, ConveyorSpec> kConveyorSpec = {
+  25: ConveyorSpec({3, 4}, 1),
+  61: ConveyorSpec({2, 5}, -1),
+};
+
+/// Cổng dịch chuyển: clear 1 đầu cổng → ECHO clear đầu kia (1 hop, không lặp).
+class PortalSpec {
+  final List<List<Cell>> pairs; // mỗi cặp [A, B]
+  const PortalSpec(this.pairs);
+}
+
+/// Các màn score có cổng dịch chuyển (Wave 11).
+const Map<int, PortalSpec> kPortalSpec = {
+  43: PortalSpec([
+    [Cell(1, 1), Cell(6, 6)],
+  ]),
+  85: PortalSpec([
+    [Cell(0, 3), Cell(7, 4)],
+    [Cell(2, 0), Cell(5, 7)],
+  ]),
+};
+
+/// Ô phát special định kỳ: mỗi [period] lượt, mỗi ô trong [cells] biến gem tại
+/// đó thành 1 gem special (striped/bomb) → điểm tựa chiến thuật.
+class DispenserSpec {
+  final List<Cell> cells; // ô nguồn (thường ở hàng trên)
+  final int period;
+  const DispenserSpec(this.cells, this.period);
+}
+
+/// Các màn score có ô phát special (Wave 11).
+const Map<int, DispenserSpec> kDispenserSpec = {
+  13: DispenserSpec([Cell(0, 2), Cell(0, 5)], 4),
+  19: DispenserSpec([Cell(0, 1), Cell(0, 6)], 3),
+};
+
 class LevelConfig {
   final int index;
   final int rows;
@@ -218,17 +269,23 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
       }
       final spread = kSpreadLevels.contains(index);
       final bomb = kBombLevels.contains(index);
+      // Wave 11: hazard băng chuyền → +lượt; cổng (định tuyến clear, trung tính)
+      // & dispenser (lợi thế) → KHÔNG thêm lượt.
+      final conveyor = kConveyorSpec.containsKey(index);
+      var bonusMoves = 0;
+      if (spread) {
+        bonusMoves = 6;
+      } else if (bomb) {
+        bonusMoves = 4;
+      } else if (conveyor) {
+        bonusMoves = 5;
+      }
       return LevelConfig(
         index: index,
         rows: rows,
         cols: cols,
         colorCount: colorCount,
-        // hazard (lan tỏa / bom) → thêm lượt cho công bằng
-        moves: spread
-            ? moves + 6
-            : bomb
-                ? moves + 4
-                : moves,
+        moves: moves + bonusMoves,
         objective: ObjectiveType.score,
         targetScore: 1000 + index * 220,
         obstacle: spread ? ObstacleType.spread : ObstacleType.none,
@@ -352,6 +409,29 @@ LevelConfig buildBossLevel() => const LevelConfig(
       colorCount: 6,
       moves: kBossMoves,
       objective: ObjectiveType.boss,
+    );
+
+// --- Color Rush (chế độ riêng — màu "nóng" đổi liên tục, đua điểm) ---
+const int kColorRushLevelIndex = -4;
+const int kColorRushMoves = 30;
+const int kColorRushTarget = 3500;
+
+/// Đổi màu "nóng" mỗi bao nhiêu lượt.
+const int kColorRushChangeEvery = 4;
+
+/// Điểm thưởng cho MỖI gem màu nóng được clear (cộng thẳng, không qua combo).
+const int kColorRushBonusPerGem = 15;
+
+/// Cấu hình Color Rush: tái dùng mục tiêu điểm (score) để dùng sẵn HUD/sao;
+/// khác biệt nằm ở cờ `isColorRush` (clear màu nóng → điểm bội, đổi màu mỗi N lượt).
+LevelConfig buildColorRushLevel() => const LevelConfig(
+      index: kColorRushLevelIndex,
+      rows: 8,
+      cols: 8,
+      colorCount: 6,
+      moves: kColorRushMoves,
+      objective: ObjectiveType.score,
+      targetScore: kColorRushTarget,
     );
 
 // --- Trọng lực động (chế độ riêng — lật trọng lực mỗi N lượt) ---
