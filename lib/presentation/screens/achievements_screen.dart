@@ -97,7 +97,6 @@ class AchievementsScreen extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Baloo2',
               color: Colors.white,
               fontSize: 13,
               fontWeight: FontWeight.w800,
@@ -111,7 +110,6 @@ class AchievementsScreen extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontFamily: 'Baloo2',
               color: Colors.white60,
               fontSize: 10,
               fontWeight: FontWeight.w600,
@@ -132,7 +130,6 @@ class AchievementsScreen extends StatelessWidget {
           const SizedBox(height: 3),
           Text('$cur / ${a.threshold}',
               style: const TextStyle(
-                fontFamily: 'Baloo2',
                 color: Colors.white54,
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
@@ -149,7 +146,6 @@ class AchievementsScreen extends StatelessWidget {
     if (claimed) {
       return Text('ach_claimed'.tr,
           style: const TextStyle(
-            fontFamily: 'Baloo2',
             color: NeonTheme.lime,
             fontSize: 11,
             fontWeight: FontWeight.w800,
@@ -183,7 +179,6 @@ class AchievementsScreen extends StatelessWidget {
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             Text('${'ach_claim'.tr} +${fmtNum(a.reward)}',
                 style: const TextStyle(
-                  fontFamily: 'Baloo2',
                   color: Colors.black,
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
@@ -198,7 +193,6 @@ class AchievementsScreen extends StatelessWidget {
       const SizedBox(width: 3),
       Text('+${fmtNum(a.reward)}',
           style: const TextStyle(
-            fontFamily: 'Baloo2',
             color: NeonTheme.yellow,
             fontSize: 11,
             fontWeight: FontWeight.w700,

@@ -152,7 +152,6 @@ class GuideScreen extends StatelessWidget {
   }
 
   TextStyle _title(double size, Color color) => TextStyle(
-        fontFamily: 'Baloo2',
         color: Colors.white,
         fontSize: size,
         fontWeight: FontWeight.w800,
@@ -214,7 +213,6 @@ class GuideScreen extends StatelessWidget {
                 if (name.isNotEmpty)
                   Text(name,
                       style: TextStyle(
-                        fontFamily: 'Baloo2',
                         color: color,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -229,7 +227,6 @@ class GuideScreen extends StatelessWidget {
   }
 
   final TextStyle _bodyStyle = const TextStyle(
-    fontFamily: 'Baloo2',
     color: Colors.white70,
     fontSize: 13,
     height: 1.45,

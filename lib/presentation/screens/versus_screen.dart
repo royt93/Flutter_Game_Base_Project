@@ -93,7 +93,6 @@ class _VersusScreenState extends State<VersusScreen> {
         children: [
           Text('versus_title'.tr,
               style: TextStyle(
-                fontFamily: 'Baloo2',
                 fontSize: 34,
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
@@ -148,13 +147,11 @@ class _VersusScreenState extends State<VersusScreen> {
                 children: [
                   Text(title,
                       style: const TextStyle(
-                          fontFamily: 'Baloo2',
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
                           color: Colors.white)),
                   Text(desc,
                       style: const TextStyle(
-                          fontFamily: 'Baloo2',
                           fontSize: 12,
                           color: Colors.white60)),
                 ],
@@ -174,7 +171,6 @@ class _VersusScreenState extends State<VersusScreen> {
         _count > 0 ? '$_count' : 'versus_go'.tr,
         key: ValueKey(_count),
         style: TextStyle(
-          fontFamily: 'Baloo2',
           fontSize: 96,
           fontWeight: FontWeight.w900,
           color: Colors.white,
@@ -229,7 +225,6 @@ class _VersusScreenState extends State<VersusScreen> {
                   Text(
                     '${(player == 1 ? 'versus_p1' : 'versus_p2').tr}  ${g.score.value}',
                     style: TextStyle(
-                        fontFamily: 'Baloo2',
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
@@ -260,7 +255,6 @@ class _VersusScreenState extends State<VersusScreen> {
             const SizedBox(width: 6),
             Text('$t',
                 style: TextStyle(
-                    fontFamily: 'Baloo2',
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                     color: low ? NeonTheme.magenta : Colors.white)),
@@ -269,7 +263,6 @@ class _VersusScreenState extends State<VersusScreen> {
               Text(
                 '${'coop_goal'.tr} ${c.combinedScore}/${VersusController.coopGoal}',
                 style: const TextStyle(
-                    fontFamily: 'Baloo2',
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: NeonTheme.lime),

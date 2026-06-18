@@ -142,7 +142,6 @@ class HomeScreen extends StatelessWidget {
           Text(
                 'NEON',
                 style: TextStyle(
-                  fontFamily: 'Baloo2',
                   fontSize: 72,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
@@ -159,7 +158,6 @@ class HomeScreen extends StatelessWidget {
           const Text(
             'JEWELS',
             style: TextStyle(
-              fontFamily: 'Baloo2',
               fontSize: 44,
               fontWeight: FontWeight.w700,
               color: NeonTheme.magenta,
@@ -293,7 +291,6 @@ class HomeScreen extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'Baloo2',
                         color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
@@ -410,7 +407,6 @@ class HomeScreen extends StatelessWidget {
             'v$kAppVersion',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontFamily: 'Baloo2',
               color: Colors.white,
               fontSize: 12,
               letterSpacing: 2,
@@ -426,7 +422,6 @@ class HomeScreen extends StatelessWidget {
             kCopyright,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Baloo2',
               color: Colors.white,
               fontSize: 10,
               letterSpacing: 1.5,
@@ -469,7 +464,6 @@ class HomeScreen extends StatelessWidget {
           () => Text(
             fmtNum(g.coins.value),
             style: const TextStyle(
-              fontFamily: 'Baloo2',
               color: Colors.white,
               fontWeight: FontWeight.w800,
               fontSize: 15,
@@ -488,7 +482,6 @@ class HomeScreen extends StatelessWidget {
       child: Text(
         text.toUpperCase(),
         style: TextStyle(
-          fontFamily: 'Baloo2',
           color: Colors.white.withValues(alpha: 0.6),
           fontSize: 12,
           fontWeight: FontWeight.w800,
@@ -531,7 +524,6 @@ class HomeScreen extends StatelessWidget {
                 Text(
                   'play_now'.tr,
                   style: const TextStyle(
-                    fontFamily: 'Baloo2',
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
@@ -583,7 +575,6 @@ class HomeScreen extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Baloo2',
                 color: Colors.white,
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
@@ -643,7 +634,6 @@ class HomeScreen extends StatelessWidget {
           Text(
             text,
             style: const TextStyle(
-              fontFamily: 'Baloo2',
               color: Colors.white,
               fontSize: 11,
               fontWeight: FontWeight.w800,
@@ -707,7 +697,6 @@ class HomeScreen extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Baloo2',
               color: Colors.white.withValues(alpha: 0.85),
               fontSize: small ? 9 : 10,
               fontWeight: FontWeight.w700,
@@ -920,7 +909,6 @@ class HomeScreen extends StatelessWidget {
               Text(
                 'daily_day'.trParams({'n': '$day'}),
                 style: const TextStyle(
-                  fontFamily: 'Baloo2',
                   color: Colors.white70,
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
@@ -938,7 +926,6 @@ class HomeScreen extends StatelessWidget {
               Text(
                 fmtNum(reward),
                 style: const TextStyle(
-                  fontFamily: 'Baloo2',
                   color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
@@ -1054,7 +1041,6 @@ class _LivesChipState extends State<_LivesChip> {
             Text(
               '$lives',
               style: const TextStyle(
-                fontFamily: 'Baloo2',
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
                 fontSize: 15,
@@ -1071,7 +1057,6 @@ class _LivesChipState extends State<_LivesChip> {
               Text(
                 fmtDur(next),
                 style: TextStyle(
-                  fontFamily: 'Baloo2',
                   color: Colors.white.withValues(alpha: 0.8),
                   fontWeight: FontWeight.w700,
                   fontSize: 12,

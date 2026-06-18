@@ -33,7 +33,6 @@ class NeonAppBar extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Baloo2',
                 color: Colors.white,
                 fontSize: 22,
                 fontWeight: FontWeight.w800,

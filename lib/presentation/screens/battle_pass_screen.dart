@@ -55,7 +55,6 @@ class BattlePassScreen extends StatelessWidget {
   Widget _sectionTitle(String s) => Text(
         s,
         style: const TextStyle(
-          fontFamily: 'Baloo2',
           color: Colors.white,
           fontSize: 16,
           fontWeight: FontWeight.w800,
@@ -88,7 +87,6 @@ class BattlePassScreen extends StatelessWidget {
               Text(
                 '${'bp_level'.tr} ${bp.level}',
                 style: const TextStyle(
-                  fontFamily: 'Baloo2',
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -98,7 +96,6 @@ class BattlePassScreen extends StatelessWidget {
               Text(
                 max ? 'temple_maxed'.tr : '${bp.xp.value} XP',
                 style: TextStyle(
-                  fontFamily: 'Baloo2',
                   color: NeonTheme.orange,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -149,7 +146,6 @@ class BattlePassScreen extends StatelessWidget {
                 child: Text(
                   q.descKey.trParams({'n': '${q.target}'}),
                   style: const TextStyle(
-                    fontFamily: 'Baloo2',
                     color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -159,7 +155,6 @@ class BattlePassScreen extends StatelessWidget {
               Text(
                 '+${q.xp} XP',
                 style: const TextStyle(
-                  fontFamily: 'Baloo2',
                   color: NeonTheme.orange,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
@@ -186,7 +181,6 @@ class BattlePassScreen extends StatelessWidget {
               Text(
                 '$p/${q.target}',
                 style: TextStyle(
-                  fontFamily: 'Baloo2',
                   color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -229,7 +223,6 @@ class BattlePassScreen extends StatelessWidget {
             child: Text(
               '${i + 1}',
               style: TextStyle(
-                fontFamily: 'Baloo2',
                 color: color,
                 fontWeight: FontWeight.w800,
                 fontSize: 14,
@@ -242,7 +235,6 @@ class BattlePassScreen extends StatelessWidget {
           Text(
             '${fmtNum(t.amount)} ${_rewardLabel(t.kind)}',
             style: const TextStyle(
-              fontFamily: 'Baloo2',
               color: Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.w800,
@@ -265,7 +257,6 @@ class BattlePassScreen extends StatelessWidget {
                 child: Text(
                   'daily_claim'.tr,
                   style: const TextStyle(
-                    fontFamily: 'Baloo2',
                     color: NeonTheme.lime,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
@@ -277,7 +268,6 @@ class BattlePassScreen extends StatelessWidget {
             Text(
               '${t.xpNeeded} XP',
               style: TextStyle(
-                fontFamily: 'Baloo2',
                 color: Colors.white.withValues(alpha: 0.55),
                 fontSize: 12,
                 fontWeight: FontWeight.w700,

@@ -29,7 +29,6 @@ class CoinChip extends StatelessWidget {
         const SizedBox(width: 5),
         Obx(() => Text(fmtNum(controller.coins.value),
             style: const TextStyle(
-              fontFamily: 'Baloo2',
               color: Colors.white,
               fontWeight: FontWeight.w800,
               fontSize: 14,

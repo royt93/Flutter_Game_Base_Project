@@ -241,26 +241,27 @@ const List<WorldConfig> kWorlds = [
 // gắn target với SỐ LƯỢT → độ khó = ít slack dần (kiểu Candy Crush), luôn khả thi.
 // ---------------------------------------------------------------------------
 
-/// Điểm/lượt KỲ VỌNG theo độ khó (ramp 45 → 105). 1 match-3 = 30đ → ~3 match-3
-/// hoặc 1-2 cascade mỗi lượt là khả thi cho người chơi gắn bó.
-double _scorePerMove(int index) => (45 + index * 0.55).clamp(45, 105).toDouble();
+/// Điểm/lượt KỲ VỌNG theo độ khó (ramp 42 → 82). 1 match-3 = 30đ. Hiệu chỉnh
+/// theo auto-playtest (Wave 13): bot KHÔNG special pass ~30%+ ⇒ người chơi (dùng
+/// special/booster, ~1.5-2× điểm) pass ~60-70%.
+double _scorePerMove(int index) => (42 + index * 0.40).clamp(42, 82).toDouble();
 
 /// Target điểm = base_moves × điểm/lượt kỳ vọng (làm tròn 10). [baseMoves] KHÔNG
 /// gồm bonus hazard → hazard cho thêm lượt = thêm slack (đúng ý đồ).
 int _scoreTarget(int index, int baseMoves) =>
     (baseMoves * _scorePerMove(index) / 10).round() * 10;
 
-/// Điểm/giây kỳ vọng cho Time Attack (ramp 35 → 60). Không giới hạn lượt nên
-/// áp lực đến từ thời gian.
-double _timePerSec(int index) => (35 + index * 0.25).clamp(35, 60).toDouble();
+/// Điểm/giây kỳ vọng cho Time Attack (ramp 22 → 34). Hiệu chỉnh mạnh theo
+/// playtest (target cũ khiến không kịp); time-attack nên NHANH/VUI, không phải tường.
+double _timePerSec(int index) => (22 + index * 0.14).clamp(22, 34).toDouble();
 int _timeTarget(int index, int timeLimit) =>
     (timeLimit * _timePerSec(index) / 10).round() * 10;
 
-/// Số gem màu mục tiêu cần thu (Collect): ramp nhẹ nhưng CLAMP theo lượt
-/// (~1.2 gem/lượt) — chỉ ~1/6 bàn là màu mục tiêu nên không thể đòi quá cao.
+/// Số gem màu mục tiêu cần thu (Collect): ramp nhẹ, CLAMP ~1.0 gem/lượt — chỉ
+/// ~1/6 bàn là màu mục tiêu (hiệu chỉnh xuống theo playtest).
 int _collectTarget(int index, int moves) {
-  final ramp = 8 + index ~/ 5;
-  final cap = (moves * 1.2).floor();
+  final ramp = 8 + index ~/ 6;
+  final cap = moves; // ~1 gem mục tiêu/lượt là trần khả thi
   return ramp < cap ? ramp : cap;
 }
 
@@ -275,8 +276,9 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
       : index <= 12
           ? 5
           : 6;
-  // lượt: ít dần khi khó hơn
-  final moves = (26 - index ~/ 8).clamp(15, 26);
+  // lượt: ít dần khi khó hơn (sàn 17 — playtest cho thấy sàn 15 làm màn cuối
+  // bị bóp lượt quá gắt, vd L85 chỉ 16 lượt).
+  final moves = (26 - index ~/ 8).clamp(17, 26);
 
   // màn 1 luôn là score (intro); sau đó xoay vòng 6 loại mục tiêu
   final objective = index == 1

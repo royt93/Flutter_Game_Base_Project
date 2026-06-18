@@ -148,7 +148,6 @@ class GameScreen extends StatelessWidget {
                   Text(
                     'tut_swipe_hint'.tr,
                     style: const TextStyle(
-                      fontFamily: 'Baloo2',
                       color: Colors.white38,
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
@@ -348,7 +347,6 @@ class GameScreen extends StatelessWidget {
             Text(
               '+${fmtNum(ctrl.lastCoinReward)}',
               style: const TextStyle(
-                fontFamily: 'Baloo2',
                 color: NeonTheme.yellow,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -373,7 +371,6 @@ class GameScreen extends StatelessWidget {
                 Text(
                   '${'streak_bonus'.trParams({'n': '${ctrl.winStreak.value}'})}  +${ctrl.lastStreakBonus}',
                   style: const TextStyle(
-                    fontFamily: 'Baloo2',
                     color: NeonTheme.orange,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
@@ -478,7 +475,6 @@ class GameScreen extends StatelessWidget {
           Text(
             '${'bomb_left'.tr}: $count  •  ${'bomb_timer'.tr}: $minTimer',
             style: TextStyle(
-              fontFamily: 'Baloo2',
               color: danger ? color : Colors.white,
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -594,7 +590,6 @@ class GameScreen extends StatelessWidget {
           Text(
             'boss_weak'.tr,
             style: const TextStyle(
-              fontFamily: 'Baloo2',
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: Colors.white70,
@@ -752,7 +747,6 @@ class GameScreen extends StatelessWidget {
       child: Text(
         text,
         style: const TextStyle(
-          fontFamily: 'Baloo2',
           color: Colors.white,
           fontSize: 13,
           fontWeight: FontWeight.w800,
@@ -772,7 +766,6 @@ class GameScreen extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontFamily: 'Baloo2',
             color: color,
             fontSize: 10,
             fontWeight: FontWeight.w700,
@@ -875,7 +868,6 @@ class GameScreen extends StatelessWidget {
         Text(
           '$cur/$target',
           style: TextStyle(
-            fontFamily: 'Baloo2',
             color: done ? NeonTheme.lime : Colors.white,
             fontSize: 15,
             fontWeight: FontWeight.w700,
@@ -886,7 +878,6 @@ class GameScreen extends StatelessWidget {
   }
 
   static const TextStyle _valueStyle = TextStyle(
-    fontFamily: 'Baloo2',
     color: Colors.white,
     fontSize: 17,
     fontWeight: FontWeight.w800,
@@ -1120,7 +1111,6 @@ class GameScreen extends StatelessWidget {
           Text(
             text,
             style: const TextStyle(
-              fontFamily: 'Baloo2',
               color: Colors.white,
               fontWeight: FontWeight.w800,
               fontSize: 14,
@@ -1175,7 +1165,6 @@ class GameScreen extends StatelessWidget {
                 Text(
                   'x$count',
                   style: const TextStyle(
-                    fontFamily: 'Baloo2',
                     color: Colors.white,
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
@@ -1190,7 +1179,6 @@ class GameScreen extends StatelessWidget {
                     Text(
                       fmtNum(price),
                       style: const TextStyle(
-                        fontFamily: 'Baloo2',
                         color: NeonTheme.yellow,
                         fontWeight: FontWeight.w800,
                         fontSize: 12,

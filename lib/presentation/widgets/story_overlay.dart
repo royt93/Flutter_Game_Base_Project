@@ -44,7 +44,6 @@ class StoryOverlay extends StatelessWidget {
                 Text(
                   beat.npcNameKey.tr,
                   style: TextStyle(
-                    fontFamily: 'Baloo2',
                     color: color,
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
@@ -57,7 +56,6 @@ class StoryOverlay extends StatelessWidget {
                   beat.lineKey(story.line.value).tr,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontFamily: 'Baloo2',
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

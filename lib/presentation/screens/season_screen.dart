@@ -97,7 +97,6 @@ class _SeasonScreenState extends State<SeasonScreen> {
                 child: Text(
                   sc.seasonName(),
                   style: TextStyle(
-                    fontFamily: 'Baloo2',
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -116,7 +115,6 @@ class _SeasonScreenState extends State<SeasonScreen> {
               Text(
                 '${'season_ends'.tr}: ${_fmtCountdown(sc.timeToEnd)}',
                 style: TextStyle(
-                  fontFamily: 'Baloo2',
                   color: Colors.white.withValues(alpha: 0.85),
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -132,7 +130,6 @@ class _SeasonScreenState extends State<SeasonScreen> {
               Text(
                 '${sc.points.value} ${'season_points'.tr}',
                 style: TextStyle(
-                  fontFamily: 'Baloo2',
                   color: accent,
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
@@ -144,7 +141,6 @@ class _SeasonScreenState extends State<SeasonScreen> {
           Text(
             'season_hint'.tr,
             style: TextStyle(
-              fontFamily: 'Baloo2',
               color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -186,7 +182,6 @@ class _SeasonScreenState extends State<SeasonScreen> {
               Text(
                 '${fmtNum(ms.amount)} ${_rewardLabel(ms.kind)}',
                 style: const TextStyle(
-                  fontFamily: 'Baloo2',
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
@@ -208,7 +203,6 @@ class _SeasonScreenState extends State<SeasonScreen> {
                     ),
                     child: Text('daily_claim'.tr,
                         style: const TextStyle(
-                          fontFamily: 'Baloo2',
                           color: NeonTheme.lime,
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -218,7 +212,6 @@ class _SeasonScreenState extends State<SeasonScreen> {
               else
                 Text('${ms.points} ${'season_pts_short'.tr}',
                     style: TextStyle(
-                      fontFamily: 'Baloo2',
                       color: Colors.white.withValues(alpha: 0.55),
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -241,7 +234,6 @@ class _SeasonScreenState extends State<SeasonScreen> {
             alignment: Alignment.centerRight,
             child: Text('$p/${ms.points}',
                 style: TextStyle(
-                  fontFamily: 'Baloo2',
                   color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 10,
                   fontWeight: FontWeight.w700,

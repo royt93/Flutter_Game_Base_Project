@@ -223,6 +223,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   bool _spreadHitThisMove = false;
   static const int _spreadCap = 16;
 
+  /// Wave 13 — trần số particle-burst gem THƯỜNG trong 1 lần clear (chống spike
+  /// cấp phát ở cascade lớn). Gem special không bị giới hạn này.
+  static const int _burstCap = 16;
+
   void _buildObstacle() {
     obstacle = List.generate(rows, (_) => List<int>.filled(cols, 0));
     final type = controller.level.obstacle;
@@ -811,6 +815,17 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       return has;
     }
 
+    // Nước đi qua COMBO special: đổi 2 ô kề mà (cả hai đều special) HOẶC (1 là
+    // rainbow) → kích nổ dù KHÔNG tạo match màu. Trước đây _findMove bỏ sót →
+    // bàn còn special vẫn bị tưởng "hết nước" rồi tự xáo, PHÁ special đang giữ.
+    bool comboMove(int r1, int c1, int r2, int c2) {
+      final a = grid[r1][c1], b = grid[r2][c2];
+      if (a == null || b == null) return false;
+      return (a.type != GemType.normal && b.type != GemType.normal) ||
+          a.type == GemType.rainbow ||
+          b.type == GemType.rainbow;
+    }
+
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
         if (g[r][c] == null) continue;
@@ -819,12 +834,12 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         if (_swapLocked(r, c)) continue;
         if (c + 1 < cols &&
             !_swapLocked(r, c + 1) &&
-            matchAfterSwap(r, c, r, c + 1)) {
+            (matchAfterSwap(r, c, r, c + 1) || comboMove(r, c, r, c + 1))) {
           return [Cell(r, c), Cell(r, c + 1)];
         }
         if (r + 1 < rows &&
             !_swapLocked(r + 1, c) &&
-            matchAfterSwap(r, c, r + 1, c)) {
+            (matchAfterSwap(r, c, r + 1, c) || comboMove(r, c, r + 1, c))) {
           return [Cell(r, c), Cell(r + 1, c)];
         }
       }
@@ -882,9 +897,13 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
       // kích hoạt special đã có sẵn nằm trong vùng xóa (chain reaction)
       var expanded = _expandSpecials(toClear);
-      // Cổng (Wave 11/12): thêm ô đối tác TRƯỚC addScore → điểm khớp số gem
-      // thực nổ (trước đây _clearCells expand sau khi đã tính điểm → thiếu điểm).
-      if (_hasPortal) expanded = expandPortals(expanded, _portalLink);
+      // Cổng (Wave 11/12/13): thêm ô đối tác TRƯỚC addScore → điểm khớp số gem
+      // thực nổ; rồi _expandSpecials LẠI để special tại ô đối tác cổng cũng KÍCH
+      // NỔ (chain reaction qua cổng) thay vì clear trơn (Wave 13).
+      if (_hasPortal) {
+        expanded = expandPortals(expanded, _portalLink);
+        expanded = _expandSpecials(expanded);
+      }
       // những ô sắp biến thành special mới thì giữ lại, không xóa
       expanded = expanded..removeWhere((cell) => newSpecials.containsKey(cell));
 
@@ -1187,9 +1206,16 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     }
 
     final futures = <Future>[];
+    // Wave 13: cap số particle-burst trong 1 lần clear (cascade lớn như rainbow/
+    // lightBall phá 30+ ô → 30+ ParticleSystem cùng lúc = spike alloc). Gem
+    // SPECIAL luôn nổ (quan trọng về thị giác); gem thường giới hạn [_burstCap].
+    var bursts = 0;
     for (final g in gems) {
-      _spawnBurst(g.position.clone(), neonColorOf(g.color),
-          big: g.type != GemType.normal);
+      final special = g.type != GemType.normal;
+      if (special || bursts < _burstCap) {
+        _spawnBurst(g.position.clone(), neonColorOf(g.color), big: special);
+        bursts++;
+      }
       futures.add(_run(
         g,
         ScaleEffect.to(

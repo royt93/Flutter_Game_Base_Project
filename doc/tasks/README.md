@@ -175,4 +175,16 @@ Audit lại 3 góc chưa soi → "chưa chín do CÂN BẰNG". Người dùng ch
 
 Kết quả: 0 analyzer · **294 test pass** · build APK OK. Verify máy: người dùng tự test (Pixel 7 Pro).
 
+## Wave 13 — ✅ DONE (dọn nợ + auto-playtest validate cân bằng)
+
+Người dùng chốt kết hợp option 3 (dọn nợ) + option 1 (auto-playtest).
+
+| Nhóm | Task | Trạng thái | File |
+|---|---|---|---|
+| Dọn nợ | _findMove special · cổng echo special · cap particle · bỏ fontFamily | ✅ done | `done/w13-debt-polish.md` |
+| Playtest | Simulator Monte Carlo → tinh chỉnh đến 0 màn "quá khó" | ✅ done | `done/w13-playtest-sim.md` |
+
+Kết quả: 0 analyzer · **294 test pass** · build APK OK. Curve validate bằng data
+(`dart run tool/playtest.dart`).
+
 > Nguồn chân lý tổng thể: [`../feat.md`](../feat.md).

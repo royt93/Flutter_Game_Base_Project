@@ -522,7 +522,7 @@ match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 
 
 ---
 
-*Cập nhật lần cuối: 2026-06-18 · Trạng thái: Đang phát triển (Wave 12: audit-fix CÂN BẰNG — sửa đường cong độ khó bất khả thi + chống lạm phát/farm side-mode + bù lỗi Wave 11 [1-lượt-1-tick, điểm cổng] + perf [cache gem shader/Path] + nội dung [7 thành tựu tier cao, Endless thưởng xu] + i18n 22 ngôn ngữ. **294 test pass**, 0 analyzer, build APK OK. Bước sau: playtest pass-rate + cân nhắc monetization)*
+*Cập nhật lần cuối: 2026-06-18 · Trạng thái: Đang phát triển (Wave 13: dọn nợ audit [_findMove special, cổng echo special, cap particle, bỏ 81 fontFamily thừa] + **auto-playtest simulator** validate đường cong → tinh chỉnh đến 0 màn "quá khó" [bot 58-100%]. **294 test pass**, 0 analyzer, build APK OK. Bước sau: verify máy người chơi tự + cân nhắc monetization)*
 
 ---
 
@@ -900,6 +900,32 @@ test trên Pixel 7 Pro.*
 > ⚠️ Còn nợ (ghi nhận): chưa có monetization (ads/IAP) — feat.md từng nhắc AppLovin nhưng
 > KHÔNG có trong source; game thuần offline, chưa có mô hình doanh thu. Đường cong mới cần
 > playtest pass-rate thực tế để tinh chỉnh.
+
+## 🧪 Wave 13 — Dọn nợ + Auto-playtest validate cân bằng (2026-06-18)
+
+Người dùng chốt kết hợp option 3 (dọn nợ) + option 1 (auto-playtest).
+
+**Phase 1 — Dọn nợ audit:**
+- `_findMove` + `comboMove`: nhận nước "đập 2 special kề / swap rainbow" (combo trigger
+  KHÔNG tạo match màu) → auto-shuffle không còn phá special người chơi đang giữ.
+- **Cổng echo KÍCH special**: `_expandSpecials` SAU `expandPortals` → clear ô đối tác cổng
+  mà là special thì nổ dây (trước clear trơn).
+- `_burstCap=16`: cap particle-burst gem THƯỜNG ở cascade lớn (special không giới hạn).
+- Bỏ **81 dòng `fontFamily:'Baloo2'` thừa** ở file widget thuần (ThemeData default lo);
+  GIỮ trong file CustomPainter (bắt buộc, không ThemeData).
+
+**Phase 2 — Auto-playtest simulator (`tool/playtest.dart`):**
+- Bot greedy Monte Carlo + mô hình special (match-4 nổ hàng+cột, match-5 xoá màu) chơi
+  mỗi màn 120 lần bằng `MatchDetector` + công thức điểm THẬT → báo pass-rate/điểm TB.
+- **PHÁT HIỆN bằng DATA**: curve Wave 12 (dù đã bỏ tường 1231đ/lượt) vẫn để **TimeAttack
+  ~0%** + nửa sau gắt cho bot không-booster. → TINH CHỈNH: `scorePerMove` 42→82 (was
+  45→105), `timePerSec` 22→34 (was 35→60), collect cap ~1 gem/lượt, **moves sàn 15→17**.
+- **KẾT QUẢ sau tinh chỉnh**: **0 màn "quá khó"** (tất cả ≥58% với bot KHÔNG booster →
+  người chơi thật cao hơn ~1.5-2×). Score 78-100%, Collect 71-100%, TimeAttack 58-100%.
+  Phân bố mượt: early dễ (onboarding) → late thách thức công bằng.
+
+**Kết quả**: 0 analyzer · **294 test pass** · build APK OK. Đường cong độ khó nay được
+**validate bằng dữ liệu** (chạy lại `dart run tool/playtest.dart` bất cứ lúc nào).
 
 ## 🔍 Đánh giá chất lượng code (2026-06-16, Wave 8.9)
 
