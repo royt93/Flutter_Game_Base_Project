@@ -26,6 +26,16 @@ class GemComponent extends PositionComponent {
   bool isLucky = false; // gem hiếm: match → thưởng bất ngờ
   bool isJunk = false; // Versus: gem RÁC do đối thủ bơm sang (xám + nứt)
 
+  // Cache render (Wave 12 perf): Path hình gem + Paint thân (RadialGradient
+  // shader) CHỈ phụ thuộc (shape, color, junk) — gần như bất biến trong 1 ván.
+  // Dựng lại CHỈ khi đổi → tránh tạo 64 Path + 64 shader MỖI FRAME (hotspot fps).
+  Path? _cPath;
+  Rect? _cBounds;
+  Paint? _cBodyPaint;
+  int _cColorIdx = -1;
+  int _cShape = -1;
+  bool _cJunk = false;
+
   GemComponent({
     required this.color,
     required this.type,
@@ -74,23 +84,32 @@ class GemComponent extends PositionComponent {
       opacity: selected ? 1.0 : (isSpecial ? 0.95 : (junk ? 0.5 : 0.75)),
     );
 
-    final path =
-        _shapePath(ActiveCosmetics.gemSkin.shapeFamily, color.index, center, r);
-    final bounds = path.getBounds();
-
-    // 2) Thân gem: gradient radial sáng giữa
-    final light = Color.lerp(bc, Colors.white, 0.6)!;
-    final dark = Color.lerp(bc, Colors.black, 0.35)!;
-    canvas.drawPath(
-      path,
-      Paint()
+    // Cache Path + Paint thân: dựng lại chỉ khi (color/shape/junk) đổi (đa số
+    // frame tái dùng — gem đứng yên, chỉ _pulse/glow đổi).
+    final shape = ActiveCosmetics.gemSkin.shapeFamily;
+    if (_cPath == null ||
+        color.index != _cColorIdx ||
+        shape != _cShape ||
+        junk != _cJunk) {
+      _cColorIdx = color.index;
+      _cShape = shape;
+      _cJunk = junk;
+      _cPath = _shapePath(shape, color.index, center, r);
+      _cBounds = _cPath!.getBounds();
+      final light = Color.lerp(bc, Colors.white, 0.6)!;
+      final dark = Color.lerp(bc, Colors.black, 0.35)!;
+      _cBodyPaint = Paint()
         ..shader = RadialGradient(
           center: const Alignment(-0.3, -0.4),
           radius: 0.95,
           colors: [light, bc, dark],
           stops: const [0.0, 0.55, 1.0],
-        ).createShader(bounds),
-    );
+        ).createShader(_cBounds!);
+    }
+    final path = _cPath!;
+
+    // 2) Thân gem: gradient radial sáng giữa (Paint cache)
+    canvas.drawPath(path, _cBodyPaint!);
 
     // 3) Viền neon đôi: ống màu dày mờ + lõi trắng mảnh → cảm giác "đèn neon"
     canvas.drawPath(

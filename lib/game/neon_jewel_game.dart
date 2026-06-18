@@ -366,7 +366,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       }
       // Hết giờ → kết thúc, NHƯNG chờ cascade hiện tại xong (_busy) để không
       // end giữa chuỗi nổ (tránh race score/dialog).
-      if (controller.timeLeft.value <= 0 && !_busy) _finishMove();
+      if (controller.timeLeft.value <= 0 && !_busy) _finishMove(consumed: false);
     }
 
     if (_trauma > 0) {
@@ -882,6 +882,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
       // kích hoạt special đã có sẵn nằm trong vùng xóa (chain reaction)
       var expanded = _expandSpecials(toClear);
+      // Cổng (Wave 11/12): thêm ô đối tác TRƯỚC addScore → điểm khớp số gem
+      // thực nổ (trước đây _clearCells expand sau khi đã tính điểm → thiếu điểm).
+      if (_hasPortal) expanded = expandPortals(expanded, _portalLink);
       // những ô sắp biến thành special mới thì giữ lại, không xóa
       expanded = expanded..removeWhere((cell) => newSpecials.containsKey(cell));
 
@@ -1589,13 +1592,19 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// `_ended` sẵn có để chặn tap/drag mà không cần kết thúc ván qua checkEnd.
   void setInputFrozen(bool frozen) => _ended = frozen;
 
-  void _finishMove() {
+  /// [consumed] = nước đi này có TỐN 1 LƯỢT thật không. Booster (búa/swap/bomb/
+  /// joker/royal/gravity-flip) KHÔNG tốn lượt → KHÔNG tick các cơ chế "theo lượt"
+  /// (bom/dispenser/colorRush) — trước đây tick nhầm: dùng booster bơm dispenser
+  /// (lợi) + làm bom nổ free (hại). Băng chuyền vốn đã chỉ chạy ở nước đi thật.
+  void _finishMove({bool consumed = true}) {
     onMoveResolved?.call(controller.comboCount.value); // versus: gửi rác theo combo
-    // Bom đếm ngược giảm 1 nhịp sau mỗi lượt; nổ → cờ thua. checkEnd ưu tiên
-    // hasWon trước nên nước đi vừa đạt mục tiêu vẫn THẮNG dù bom cũng về 0.
-    _tickBombs();
-    if (_hasDispenser) _tickDispensers(); // Wave 11: phát special định kỳ
-    controller.tickColorRush(); // Wave 11: đổi màu nóng mỗi N lượt (no-op nếu khác mode)
+    if (consumed) {
+      // Bom đếm ngược giảm 1 nhịp sau mỗi LƯỢT; nổ → cờ thua. checkEnd ưu tiên
+      // hasWon trước nên nước đi vừa đạt mục tiêu vẫn THẮNG dù bom cũng về 0.
+      _tickBombs();
+      if (_hasDispenser) _tickDispensers(); // Wave 11: phát special định kỳ
+      controller.tickColorRush(); // Wave 11: đổi màu nóng mỗi N lượt (no-op nếu khác mode)
+    }
     final result = controller.checkEnd();
     if (result != null) {
       _ended = true;
@@ -1746,7 +1755,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       await _ensurePlayable();
     } finally {
       _busy = false;
-      _finishMove();
+      _finishMove(consumed: false); // booster KHÔNG tốn lượt → không tick cơ chế theo lượt
     }
   }
 
@@ -1761,7 +1770,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       await _ensurePlayable();
     } finally {
       _busy = false;
-      _finishMove();
+      _finishMove(consumed: false); // booster KHÔNG tốn lượt → không tick cơ chế theo lượt
     }
   }
 
@@ -1863,7 +1872,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       await _doColumnFlip();
     } finally {
       _busy = false;
-      _finishMove();
+      _finishMove(consumed: false); // booster KHÔNG tốn lượt → không tick cơ chế theo lượt
     }
   }
 

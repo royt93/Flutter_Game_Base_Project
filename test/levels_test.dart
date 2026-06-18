@@ -72,6 +72,35 @@ void main() {
         expect(lv.cols, 8, reason: 'level ${lv.index} cols != 8');
       }
     });
+
+    // Wave 12 — chống TÁI PHÁT "tường độ khó" (target phi lý so với lượt/thời
+    // gian). Ngưỡng trần = mức khả thi tối đa cho người chơi gắn bó.
+    test('đường cong KHẢ THI: target không vượt thông lượng (chống tường)', () {
+      for (final lv in kLevels) {
+        switch (lv.objective) {
+          case ObjectiveType.score:
+            // ≤ ~110đ/lượt (1 match-3 = 30đ → ~3-4 match-3/lượt là trần khả thi)
+            expect(lv.targetScore, lessThanOrEqualTo(lv.moves * 110),
+                reason: 'L${lv.index}: ${lv.targetScore}đ / ${lv.moves} lượt '
+                    '= ${(lv.targetScore / lv.moves).round()}đ/lượt — quá cao');
+            break;
+          case ObjectiveType.collect:
+            // ≤ 1.5 gem mục tiêu/lượt (chỉ ~1/6 bàn là màu mục tiêu)
+            expect(lv.collectTarget, lessThanOrEqualTo((lv.moves * 1.5).ceil()),
+                reason: 'L${lv.index}: collect ${lv.collectTarget} / '
+                    '${lv.moves} lượt — quá cao');
+            break;
+          case ObjectiveType.timeAttack:
+            // ≤ ~75đ/giây
+            expect(lv.targetScore, lessThanOrEqualTo(lv.timeLimit * 75),
+                reason: 'L${lv.index}: ${lv.targetScore}đ / ${lv.timeLimit}s '
+                    '— quá cao');
+            break;
+          default:
+            break;
+        }
+      }
+    });
   });
 
   group('kWorlds — thế giới', () {

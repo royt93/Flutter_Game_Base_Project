@@ -121,4 +121,55 @@ const List<Achievement> kAchievements = [
       stat: AchStat.coinsEarned,
       threshold: 1000,
       reward: 100),
+  // Wave 12 — tier CAO (giữ chân dài hạn). Desc dùng chung theo stat → chỉ cần
+  // thêm key TITLE i18n (ach_<id>_t).
+  Achievement(
+      id: 'wins_60',
+      icon: Icons.military_tech_rounded,
+      color: Color(0xFF00FFFF),
+      stat: AchStat.totalWins,
+      threshold: 60,
+      reward: 200),
+  Achievement(
+      id: 'wins_100',
+      icon: Icons.emoji_events_rounded,
+      color: Color(0xFFFFD700),
+      stat: AchStat.totalWins,
+      threshold: 100,
+      reward: 350),
+  Achievement(
+      id: 'stars_180',
+      icon: Icons.star_rounded,
+      color: Color(0xFFFFFF00),
+      stat: AchStat.totalStars,
+      threshold: 180,
+      reward: 250),
+  Achievement(
+      id: 'stars_300',
+      icon: Icons.auto_awesome_rounded,
+      color: Color(0xFFFFD700),
+      stat: AchStat.totalStars,
+      threshold: 300,
+      reward: 500),
+  Achievement(
+      id: 'combo_12',
+      icon: Icons.flash_on_rounded,
+      color: Color(0xFFBC13FE),
+      stat: AchStat.bestCombo,
+      threshold: 12,
+      reward: 150),
+  Achievement(
+      id: 'streak_12',
+      icon: Icons.whatshot_rounded,
+      color: Color(0xFFFF00FF),
+      stat: AchStat.bestWinStreak,
+      threshold: 12,
+      reward: 200),
+  Achievement(
+      id: 'rich_5000',
+      icon: Icons.diamond_rounded,
+      color: Color(0xFFFFD700),
+      stat: AchStat.coinsEarned,
+      threshold: 5000,
+      reward: 300),
 ];

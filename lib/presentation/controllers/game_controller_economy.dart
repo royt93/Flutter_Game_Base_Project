@@ -10,10 +10,17 @@ extension GameControllerEconomy on GameController {
     unawaited(_store.setInt(StorageKeys.coins, coins.value));
   }
 
-  /// Cộng xu (thưởng thành tựu / vòng quay…) + persist.
+  /// Cộng xu (thưởng thành tựu / vòng quay / side-mode…) + persist.
   void addCoins(int amount) {
     if (isVersus.value || amount <= 0) return; // versus không đụng kinh tế
     _setCoins(coins.value + amount);
+    // Wave 12: tính vào "tổng xu kiếm" (lifetime) cho thành tựu coinsEarned —
+    // trước đây chỉ màn thường (_saveProgress) đếm, bỏ sót boss/rhythm/daily/
+    // wheel/season/BP/đền (mâu thuẫn comment "lifetime"). Màn thường KHÔNG dùng
+    // addCoins (đi _saveProgress riêng) nên không đếm 2 lần.
+    coinsEarnedTotal.value =
+        (coinsEarnedTotal.value + amount).clamp(0, GameController.maxCoins);
+    unawaited(_store.setInt(StorageKeys.coinsEarned, coinsEarnedTotal.value));
   }
 
   /// Tiêu xu (xây Đền Neon, mua skin/theme cửa hàng…). Trả về false nếu không đủ.
@@ -61,6 +68,22 @@ extension GameControllerEconomy on GameController {
 
   /// Ngày epoch công khai (đã chống chỉnh giờ lùi) — daily/wheel/quest/season dùng.
   int get todayEpochDay => _effectiveDay;
+
+  /// Wave 12 — CHỐNG FARM side-mode: giảm xu thưởng theo số trận side-mode đã
+  /// thưởng HÔM NAY ([kSideModeFullPlays] trận đầu full, sau ×[kSideModeReducedMul]).
+  /// Tự reset đếm khi sang ngày mới, tăng đếm + persist. Trả xu đã giảm.
+  int discountSideModeReward(int base) {
+    final today = _effectiveDay;
+    final day = _store.getInt(StorageKeys.sideModeDay, def: -1);
+    final wins =
+        day == today ? _store.getInt(StorageKeys.sideModeWins, def: 0) : 0;
+    final reward = wins < GameController.kSideModeFullPlays
+        ? base
+        : (base * GameController.kSideModeReducedMul).round();
+    unawaited(_store.setInt(StorageKeys.sideModeDay, today));
+    unawaited(_store.setInt(StorageKeys.sideModeWins, wins + 1));
+    return reward;
+  }
 
   // --------------------------------------------------------------------------
   // Daily reward (thưởng đăng nhập hằng ngày)

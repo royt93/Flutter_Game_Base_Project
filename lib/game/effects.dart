@@ -721,6 +721,30 @@ class NeonGlowAura extends PositionComponent {
 
 /// Lớp render bom đếm ngược (Wave 10): mỗi ô bom = lõi tối + viền neon + SỐ đếm
 /// ở tâm. Sắp nổ (≤3) → viền/đèn nhấp nháy đỏ-magenta cảnh báo.
+/// Cache TextPainter theo số nguyên (Wave 12 perf): `..layout()` là thao tác
+/// đắt của Skia/Impeller; số đếm chỉ đổi 1 lần/lượt nên layout mỗi frame là phí.
+class _NumTextCache {
+  final double fontSize;
+  final Map<int, TextPainter> _m = {};
+  _NumTextCache(this.fontSize);
+
+  TextPainter of(int n) => _m.putIfAbsent(
+        n,
+        () => TextPainter(
+          text: TextSpan(
+            text: '$n',
+            style: TextStyle(
+              fontFamily: NeonTheme.fontFamily,
+              color: Colors.white,
+              fontSize: fontSize,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout(),
+      );
+}
+
 class BombLayer extends PositionComponent {
   final List<List<int>> bomb;
   final int rows;
@@ -728,6 +752,7 @@ class BombLayer extends PositionComponent {
   final double cellSize;
   final Vector2 origin;
   double _t = 0;
+  late final _NumTextCache _num = _NumTextCache(cellSize * 0.34);
 
   BombLayer({
     required this.bomb,
@@ -769,18 +794,7 @@ class BombLayer extends PositionComponent {
             ..strokeWidth = low ? 3.0 + pulse * 1.5 : 2.2
             ..color = col,
         );
-        final tp = TextPainter(
-          text: TextSpan(
-            text: '$n',
-            style: TextStyle(
-              fontFamily: NeonTheme.fontFamily,
-              color: Colors.white,
-              fontSize: cellSize * 0.34,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
+        final tp = _num.of(n);
         tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
       }
     }
@@ -910,6 +924,7 @@ class DispenserLayer extends PositionComponent {
   final double cellSize;
   final Vector2 origin;
   double _t = 0;
+  late final _NumTextCache _num = _NumTextCache(cellSize * 0.26);
 
   DispenserLayer({
     required this.cells,
@@ -942,18 +957,7 @@ class DispenserLayer extends PositionComponent {
           ..color = NeonTheme.yellow.withValues(alpha: 0.9),
       );
       if (n > 0) {
-        final tp = TextPainter(
-          text: TextSpan(
-            text: '$n',
-            style: TextStyle(
-              fontFamily: NeonTheme.fontFamily,
-              color: Colors.white,
-              fontSize: cellSize * 0.26,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
+        final tp = _num.of(n);
         tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
       }
     }

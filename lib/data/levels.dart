@@ -235,6 +235,35 @@ const List<WorldConfig> kWorlds = [
   WorldConfig(index: 5, name: 'Violet Void', startLevel: 81, endLevel: 100),
 ];
 
+// ---------------------------------------------------------------------------
+// Wave 12 — Đường cong độ khó CÂN BẰNG (audit). Trước đây target tuyến tính
+// (1000+index*220) + moves co → màn cuối cần 500-1231đ/lượt = BẤT KHẢ THI. Nay
+// gắn target với SỐ LƯỢT → độ khó = ít slack dần (kiểu Candy Crush), luôn khả thi.
+// ---------------------------------------------------------------------------
+
+/// Điểm/lượt KỲ VỌNG theo độ khó (ramp 45 → 105). 1 match-3 = 30đ → ~3 match-3
+/// hoặc 1-2 cascade mỗi lượt là khả thi cho người chơi gắn bó.
+double _scorePerMove(int index) => (45 + index * 0.55).clamp(45, 105).toDouble();
+
+/// Target điểm = base_moves × điểm/lượt kỳ vọng (làm tròn 10). [baseMoves] KHÔNG
+/// gồm bonus hazard → hazard cho thêm lượt = thêm slack (đúng ý đồ).
+int _scoreTarget(int index, int baseMoves) =>
+    (baseMoves * _scorePerMove(index) / 10).round() * 10;
+
+/// Điểm/giây kỳ vọng cho Time Attack (ramp 35 → 60). Không giới hạn lượt nên
+/// áp lực đến từ thời gian.
+double _timePerSec(int index) => (35 + index * 0.25).clamp(35, 60).toDouble();
+int _timeTarget(int index, int timeLimit) =>
+    (timeLimit * _timePerSec(index) / 10).round() * 10;
+
+/// Số gem màu mục tiêu cần thu (Collect): ramp nhẹ nhưng CLAMP theo lượt
+/// (~1.2 gem/lượt) — chỉ ~1/6 bàn là màu mục tiêu nên không thể đòi quá cao.
+int _collectTarget(int index, int moves) {
+  final ramp = 8 + index ~/ 5;
+  final cap = (moves * 1.2).floor();
+  return ramp < cap ? ramp : cap;
+}
+
 /// 100 màn sinh tự động, độ khó tăng dần, xoay vòng 6 loại mục tiêu.
 final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
   final index = i + 1;
@@ -287,7 +316,8 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
         colorCount: colorCount,
         moves: moves + bonusMoves,
         objective: ObjectiveType.score,
-        targetScore: 1000 + index * 220,
+        // Wave 12: target gắn base_moves (chưa gồm bonus hazard) → khả thi.
+        targetScore: _scoreTarget(index, moves),
         obstacle: spread ? ObstacleType.spread : ObstacleType.none,
       );
     case ObjectiveType.collect:
@@ -298,7 +328,7 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
         colorCount: colorCount,
         moves: moves,
         objective: ObjectiveType.collect,
-        collectTarget: 14 + index ~/ 2,
+        collectTarget: _collectTarget(index, moves), // Wave 12: clamp theo lượt
         collectColor: GemColor.values[index % GemColor.values.length],
       );
     case ObjectiveType.clearJelly:
@@ -312,6 +342,7 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
         jelly: tierPattern(),
       );
     case ObjectiveType.timeAttack:
+      final timeLimit = (75 - index ~/ 4).clamp(45, 75); // càng cao càng gắt
       return LevelConfig(
         index: index,
         rows: rows,
@@ -319,8 +350,8 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
         colorCount: colorCount,
         moves: 999, // không giới hạn lượt (chạy theo thời gian)
         objective: ObjectiveType.timeAttack,
-        targetScore: 900 + index * 160,
-        timeLimit: (75 - index ~/ 4).clamp(45, 75), // càng cao càng gắt
+        targetScore: _timeTarget(index, timeLimit), // Wave 12: gắn thời gian
+        timeLimit: timeLimit,
       );
     case ObjectiveType.dropDown:
       return LevelConfig(

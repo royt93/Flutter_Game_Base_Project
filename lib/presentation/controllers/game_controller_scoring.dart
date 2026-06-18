@@ -191,8 +191,12 @@ extension GameControllerScoring on GameController {
       if (movesLeft.value <= 0) {
         _resolved = true;
         lastStars = 0;
-        lastCoinReward = 0;
         lastStreakBonus = 0;
+        // Wave 12: thưởng xu theo STAGE đạt được (endgame loop) — chống farm
+        // bằng diminishing returns chung. Stage cao = thưởng nhiều, khích lệ phá
+        // kỷ lục thay vì "chơi cho vui mà không được gì".
+        lastCoinReward = discountSideModeReward(endlessStage.value * 8);
+        addCoins(lastCoinReward);
         if (score.value > endlessHigh.value) {
           endlessHigh.value = score.value;
           unawaited(_store.setInt(StorageKeys.endlessHigh, endlessHigh.value));
@@ -208,11 +212,13 @@ extension GameControllerScoring on GameController {
         _resolved = true;
         lastStars = computeStars();
         lastStreakBonus = 0;
-        lastCoinReward =
-            40 +
-            bossStage.value * 20 +
-            lastStars * 10 +
-            (2 + bossStage.value) * 10; // gộp shard cũ (2+stage) → xu
+        // Wave 12: chống farm — giảm dần sau vài trận/ngày.
+        lastCoinReward = discountSideModeReward(
+          40 +
+              bossStage.value * 20 +
+              lastStars * 10 +
+              (2 + bossStage.value) * 10, // gộp shard cũ (2+stage) → xu
+        );
         addCoins(lastCoinReward);
         return 'win';
       }
@@ -232,11 +238,13 @@ extension GameControllerScoring on GameController {
         _resolved = true;
         lastStars = computeStars();
         lastStreakBonus = 0;
-        lastCoinReward =
-            20 +
-            lastStars * 10 +
-            groove.value * 3 +
-            (1 + lastStars) * 10; // gộp shard cũ (1+sao) → xu
+        // Wave 12: chống farm — giảm dần sau vài trận/ngày.
+        lastCoinReward = discountSideModeReward(
+          20 +
+              lastStars * 10 +
+              groove.value * 3 +
+              (1 + lastStars) * 10, // gộp shard cũ (1+sao) → xu
+        );
         addCoins(lastCoinReward);
         return 'win';
       }
@@ -258,7 +266,8 @@ extension GameControllerScoring on GameController {
         _resolved = true;
         lastStars = computeStars();
         lastStreakBonus = 0;
-        lastCoinReward = 20 + lastStars * 10;
+        // Wave 12: bump 50→75 (3★) cho ngang màn thường + chống farm (giảm dần).
+        lastCoinReward = discountSideModeReward(30 + lastStars * 15);
         addCoins(lastCoinReward);
         return 'win';
       }
@@ -278,7 +287,8 @@ extension GameControllerScoring on GameController {
         _resolved = true;
         lastStars = computeStars();
         lastStreakBonus = 0;
-        lastCoinReward = 20 + lastStars * 10;
+        // Wave 12: bump 50→75 (3★) cho ngang màn thường + chống farm (giảm dần).
+        lastCoinReward = discountSideModeReward(30 + lastStars * 15);
         addCoins(lastCoinReward);
         return 'win';
       }

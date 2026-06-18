@@ -162,4 +162,17 @@ wave phối hợp (đụng file lõi chung → không fan-out subagent).
 
 Kết quả: 0 analyzer · **292 test pass** (+12) · build APK debug OK. Chưa verify máy thật.
 
+## Wave 12 — ✅ DONE (audit-fix: cân bằng + bù Wave 11 + perf + nội dung)
+
+Audit lại 3 góc chưa soi → "chưa chín do CÂN BẰNG". Người dùng chốt làm cả 3.
+
+| Nhóm | Task | Trạng thái | File |
+|---|---|---|---|
+| Cân bằng | Đường cong độ khó (target gắn lượt) | ✅ done | `done/w12-balance-curve.md` |
+| Cân bằng | Chống lạm phát + cap farm side-mode | ✅ done | `done/w12-anti-inflation.md` |
+| Bù/Perf | 1-lượt-1-tick · điểm cổng · cache gem shader/text | ✅ done | `done/w12-wave11-fixes.md` |
+| Nội dung | 7 thành tựu tier cao · Endless thưởng xu | ✅ done | `done/w12-content-depth.md` |
+
+Kết quả: 0 analyzer · **294 test pass** · build APK OK. Verify máy: người dùng tự test (Pixel 7 Pro).
+
 > Nguồn chân lý tổng thể: [`../feat.md`](../feat.md).

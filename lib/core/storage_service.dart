@@ -38,6 +38,11 @@ class StorageKeys {
   // Wave 6 — Endless mode (high score riêng)
   static const String endlessHigh = 'endless_high';
 
+  // Wave 12 — chống farm side-mode: đếm số trận side-mode đã thưởng trong NGÀY
+  // (reset theo epoch-day) → thưởng giảm dần sau N trận đầu.
+  static const String sideModeDay = 'side_mode_day';
+  static const String sideModeWins = 'side_mode_wins';
+
   // Wave 7 — Meta build "Đền Neon"
   static const String shards = 'shards'; // (CŨ) mảnh neon — Wave 9 gộp về xu
   /// Wave 9: đã quy đổi shard cũ → xu (×10) chưa (1 = rồi). Chạy 1 lần.

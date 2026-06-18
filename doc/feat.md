@@ -522,7 +522,7 @@ match-3 + cascade · special gem (striped/wrapped/color) + combo 2-special · 5 
 
 ---
 
-*Cập nhật lần cuối: 2026-06-17 · Trạng thái: Đang phát triển (Wave 11: audit 4 tầng + sửa 3 lỗi HIGH [bug Gravity → getter `isSideMode`, `_doColumnFlip` lật đầy đủ, race `lastCoinReward`] + **4 gameplay mới** [Color Rush + Băng chuyền + Cổng + Dispenser]. **292 test pass**, 0 analyzer, build APK OK. Bước sau: verify máy thật + chuẩn bị release store)*
+*Cập nhật lần cuối: 2026-06-18 · Trạng thái: Đang phát triển (Wave 12: audit-fix CÂN BẰNG — sửa đường cong độ khó bất khả thi + chống lạm phát/farm side-mode + bù lỗi Wave 11 [1-lượt-1-tick, điểm cổng] + perf [cache gem shader/Path] + nội dung [7 thành tựu tier cao, Endless thưởng xu] + i18n 22 ngôn ngữ. **294 test pass**, 0 analyzer, build APK OK. Bước sau: playtest pass-rate + cân nhắc monetization)*
 
 ---
 
@@ -862,6 +862,44 @@ ngữ fallback EN (coverage test ≥80% vẫn PASS). Guide thêm section "Cơ ch
 - **FIX phát hiện khi test**: tutorial lần-đầu BẬT NHẦM ở Color Rush/Rhythm/Daily (guard chỉ
   loại Endless/Boss/Gravity) → cùng class "quên mode" → đổi sang `!isSideMode`. Verify lại:
   vào Color Rush KHÔNG còn tutorial. [[side-mode-isolation]]
+
+## ⚖️ Wave 12 — Audit-fix: cân bằng + bù Wave 11 + hiệu năng + nội dung (2026-06-18)
+
+Sau verify máy thật Wave 11, người dùng thấy "chưa nên release" → audit lại 3 góc CHƯA soi
+(Wave 11 đụng cùng thời điểm audit cũ): tương tác cơ chế mới, cân bằng/kinh tế, hiệu năng.
+Kết luận audit: **không phải code-correctness mà là CÂN BẰNG**. Người dùng chốt làm cả 3.
+
+**Phase A — Cân bằng (blocker chính):**
+- **Đường cong độ khó**: target tuyến tính (1000+index*220) + moves co → L43+ score cần
+  500-1231đ/lượt, L74+ collect 3-4.2 gem/lượt = BẤT KHẢ THI. Sửa: gắn target với SỐ LƯỢT
+  (`_scoreTarget` 45→100đ/lượt, `_collectTarget` ≤1.2/lượt, `_timeTarget` 36→60đ/giây) →
+  độ khó = ít slack dần (kiểu CCS), luôn khả thi. Test regression chống tường tái phát.
+- **Chống lạm phát** (kiếm ~1660/ngày, mua hết ~5 ngày): `discountSideModeReward` — 3 trận
+  side-mode đầu/ngày full, sau ×0.3 (chống farm Boss 180xu vô hạn). Gravity/ColorRush bump
+  50→75. Endless thưởng xu theo stage (endgame loop, trước=0). `coinsEarnedTotal` đếm MỌI
+  nguồn (sửa nợ "lifetime").
+
+**Phase B — Bù lỗi Wave 11 + hiệu năng:**
+- **[HIGH] "1 lượt = 1 tick"**: `_finishMove(consumed)` → dùng booster (không tốn lượt)
+  KHÔNG tick dispenser/bom/colorRush (trước: bơm dispenser lợi + bom nổ free hại).
+- **[MED] Điểm ô cổng**: expandPortals TRƯỚC addScore (khớp số gem thực nổ).
+- **[HIGH perf] GemComponent**: cache Path + RadialGradient shader (trước tạo 64 shader/
+  frame — hotspot fps lớn nhất) → dựng lại chỉ khi (color/shape/junk) đổi.
+- **[MED perf]** BombLayer/DispenserLayer cache TextPainter theo số (`_NumTextCache`).
+
+**Phase C — Chiều sâu nội dung:**
+- +7 thành tựu tier cao (Champion/Legend/Perfectionist/Tycoon... wins 60/100, stars 180/
+  300, combo 12, streak 12, coins 5000) — i18n title đủ **22 ngôn ngữ**.
+- Endless thưởng xu (endgame loop). Dịch đủ 16 key Wave 11/12 cho 20 ngôn ngữ (coverage
+  ≥80% pass lại — trước tụt 79.17% do thêm key EN-fallback).
+
+**Kết quả**: 0 analyzer · **294 test pass** (+2 regression: curve khả thi + farm cap; +
+sửa test achievement/gravity/colorRush reward) · build APK OK. *Verify máy: người dùng tự
+test trên Pixel 7 Pro.*
+
+> ⚠️ Còn nợ (ghi nhận): chưa có monetization (ads/IAP) — feat.md từng nhắc AppLovin nhưng
+> KHÔNG có trong source; game thuần offline, chưa có mô hình doanh thu. Đường cong mới cần
+> playtest pass-rate thực tế để tinh chỉnh.
 
 ## 🔍 Đánh giá chất lượng code (2026-06-16, Wave 8.9)
 

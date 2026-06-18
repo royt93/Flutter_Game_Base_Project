@@ -312,8 +312,8 @@ void main() {
       c.unlockedLevel.value = 100;
       c.coinsEarnedTotal.value = 5000;
       c.stars.clear();
-      for (var lv = 1; lv <= 40; lv++) {
-        c.stars[lv] = 3; // 120 sao
+      for (var lv = 1; lv <= 100; lv++) {
+        c.stars[lv] = 3; // 300 sao (phủ thành tựu tier cao Wave 12: stars_300)
       }
       for (final a in kAchievements) {
         expect(ac.isUnlocked(a), true, reason: a.id);

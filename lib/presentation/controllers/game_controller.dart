@@ -201,6 +201,12 @@ class GameController extends GetxController {
   static const int _streakCap = 6;
   static const int _streakStep = 5;
 
+  /// Wave 12 — chống farm side-mode (Boss/Rhythm/Gravity/ColorRush): [kSideModeFullPlays]
+  /// trận đầu MỖI NGÀY thưởng đầy, sau đó ×[kSideModeReducedMul] (vẫn chơi được,
+  /// chỉ hết lợi nhuận farm vô hạn).
+  static const int kSideModeFullPlays = 3;
+  static const double kSideModeReducedMul = 0.3;
+
   /// Trần xu an toàn: SharedPreferences trên Android/iOS lưu int 32-bit
   /// (max ~2.14 tỷ). Vượt ngưỡng → lưu xuống đĩa thành số âm. Clamp dưới ngưỡng.
   static const int maxCoins = 2000000000;

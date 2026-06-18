@@ -78,7 +78,8 @@ void main() {
     expect(c.checkEnd(), 'win');
     expect(c.winStreak.value, streakBefore); // không tăng chuỗi thắng màn thường
     expect(c.totalWins.value, winsBefore); // không tính tổng thắng
-    expect(c.lastCoinReward, 20 + c.lastStars * 10); // thưởng riêng side-mode
+    // Wave 12: thưởng side-mode = 30+sao*15 (trận đầu/ngày → full, chưa giảm).
+    expect(c.lastCoinReward, 30 + c.lastStars * 15);
   });
 
   test('thua Gravity → "lose", KHÔNG reset win-streak màn thường', () {
@@ -87,6 +88,16 @@ void main() {
     c.movesLeft.value = 0;
     expect(c.checkEnd(), 'lose');
     expect(c.winStreak.value, 3); // side mode không đụng tiến trình
+  });
+
+  test('Wave 12 — chống farm: thưởng side-mode giảm dần sau N trận/ngày', () {
+    // [kSideModeFullPlays] trận đầu trong ngày → full; sau đó × reduced.
+    for (int i = 0; i < GameController.kSideModeFullPlays; i++) {
+      expect(c.discountSideModeReward(100), 100, reason: 'trận ${i + 1} full');
+    }
+    final reduced = (100 * GameController.kSideModeReducedMul).round();
+    expect(c.discountSideModeReward(100), reduced); // trận thứ N+1 → giảm
+    expect(c.discountSideModeReward(100), reduced); // tiếp tục giảm
   });
 
   test('isSideMode đúng cho mọi chế độ phụ, false ở màn thường', () {

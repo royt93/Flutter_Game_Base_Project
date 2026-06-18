@@ -135,7 +135,8 @@ void main() {
       expect(c.checkEnd(), 'win');
       expect(c.winStreak.value, streak);
       expect(c.totalWins.value, wins);
-      expect(c.lastCoinReward, 20 + c.lastStars * 10);
+      // Wave 12: thưởng side-mode = 30+sao*15 (trận đầu/ngày → full).
+      expect(c.lastCoinReward, 30 + c.lastStars * 15);
     });
 
     test('thua Color Rush → lose, KHÔNG reset win-streak', () {
