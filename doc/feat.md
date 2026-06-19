@@ -1092,7 +1092,7 @@ máy thật).
 
 | Phase | Task | File | Status | Rủi ro |
 |---|---|---|---|---|
-| 0 | Ô tường/lỗ/no-drop + bản đồ ký tự + gravity lỗ-cắt-cột | `w15-0-blocked-cells.md` | 📋 todo | 🟡 TB |
+| 0 | Ô tường/lỗ/no-drop + bản đồ ký tự + gravity lỗ-cắt-cột | `w15-0-blocked-cells.md` | ✅ done | 🟡 TB |
 | 1 | Trượt chéo kiểu CCS (gravity vòng qua vật cản) | `w15-1-diagonal-slide.md` | 📋 todo | 🔴 Cao |
 | 2 | Gravity Streams (signature — hướng trọng lực theo vùng) | `w15-2-gravity-streams.md` | 📋 todo | 🔴 Cao nhất |
 | 3 | Gem nhốt (Cage) + ô no-drop + mục tiêu Giải cứu | `w15-3-caged-gem.md` | 📋 todo | 🟡 TB |
@@ -1100,8 +1100,22 @@ máy thật).
 | 5 | Thế giới 6-8 + màn 101-150 + playtest + i18n | `w15-5-content-worlds.md` | 📋 todo | 🟡 TB |
 
 **Chú thích status**: 📋 todo (chưa bắt đầu) · 🟡 in-progress (đang code) · ✅ done
-(code + test pass + verify). Hiện **toàn bộ ở `todo`** — đang chờ duyệt kế hoạch,
-CHƯA code phase nào.
+(code + test pass + verify).
+
+#### ✅ Phase 0 — Blocked cells + gravity lỗ-cắt-cột (2026-06-19)
+- **Settle engine THUẦN** `lib/logic/settle.dart`: `CellKind` (play/wall/noDrop) +
+  parse bản đồ ký tự + `settleColumnsDown` (wall chia cột thành đoạn độc lập, gem
+  dồn trong đoạn, refill từ đỉnh). Test không cần Flame.
+- **Wire engine**: `LevelConfig.layout` (nullable) + `layoutFromMap`; NeonJewelGame
+  `_cellKind`/`_isWall`/`layoutOverride` (seam test+Labyrinth); `_applyGravityAndRefill`
+  rẽ sang `_applyGravityWithLayout` (settle) khi có layout, GIỮ path cũ cho mọi bàn
+  đặc → **zero hồi quy**. Skip wall ở fill/findMove/cellAtPosition. `BoardFrame` bỏ
+  slot ô tường + `BlockedLayer` vẽ khối đá neon.
+- **Test**: +6 unit (settle) +2 widget (mount bàn có lỗ: tường trống, ô chơi đầy,
+  no-layout không hồi quy) = **332 test pass**, 0 analyzer.
+- **✅ Verify Redmi (23129RAA4G)**: weave tạm hình thoi vào màn 1 → bàn render đúng
+  (4 góc 2×2 tường tối/trống, gem chỉ ở ô chơi, bàn không-chữ-nhật), swipe tương
+  tác OK. Đã revert temp.
 
 **⏸️ Deferred (Wave 15, làm trước khi lên store — KHÔNG phải bây giờ)**:
 Polish & Accessibility — chế độ mù màu (palette + hoạ tiết phân biệt gem), reduced

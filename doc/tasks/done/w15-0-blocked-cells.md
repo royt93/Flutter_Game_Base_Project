@@ -3,7 +3,7 @@ id: w15-0-blocked-cells
 title: Nền tảng ô đặc biệt + lỗ-cắt-cột (bố cục đa dạng)
 wave: 15
 phase: 0
-status: todo
+status: done
 owner: claude
 ---
 
