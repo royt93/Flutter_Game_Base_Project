@@ -7,8 +7,14 @@ extension GameControllerModes on GameController {
     _enterMode(); // tất cả false = màn thường
     currentLevel.value = index;
     final cfg = kLevels[index - 1];
+    // Wave 16 DDA/Pity: đọc số thua LIÊN TIẾP màn này → trợ giúp ẩn. Thua nhiều
+    // (≥kPityMovesFails) → +lượt khởi đầu ẩn (engine đọc `pity` cho lucky/special).
+    pity.value = _store.getInt(StorageKeys.pityFails(index), def: 0);
+    final movesBonus = pity.value >= GameController.kPityMovesFails
+        ? GameController.kPityMovesBonus
+        : 0;
     _resetRunState(
-      moves: cfg.moves,
+      moves: cfg.moves + movesBonus,
       target: cfg.targetScore,
       time: cfg.timeLimit,
     );

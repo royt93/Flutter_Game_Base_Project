@@ -198,8 +198,13 @@ void main(List<String> args) {
     final tgt = lv.objective == ObjectiveType.collect
         ? lv.collectTarget
         : lv.targetScore;
-    var tag = '';
-    if (pass < 25) {
+    // Wave 16: in tier; Super-Hard ĐƯỢC MIỄN guard "quá khó" (CỐ Ý khó — đỉnh
+    // 5%, người chơi dùng special/booster vượt). Chỉ flag Normal/Hard pass<25%.
+    final tier = levelTier(lv.index);
+    var tag = tier == LevelTier.superHard
+        ? '★SUPER'
+        : (tier == LevelTier.hard ? 'HARD' : '');
+    if (pass < 25 && tier != LevelTier.superHard) {
       tag = '⚠ QUÁ KHÓ';
       hard.add(lv.index);
     } else if (pass > 98 && lv.index > 10) {

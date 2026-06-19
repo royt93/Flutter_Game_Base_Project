@@ -102,7 +102,9 @@ extension GameControllerProgress on GameController {
     for (final lv in kLevels) {
       await _store.remove(StorageKeys.highScore(lv.index));
       await _store.remove(StorageKeys.star(lv.index));
+      await _store.remove(StorageKeys.pityFails(lv.index)); // Wave 16: reset pity
     }
+    pity.value = 0;
     for (final n in kTempleNodes) {
       await _store.remove(StorageKeys.templeTier(n.id));
     }

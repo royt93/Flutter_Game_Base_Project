@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:neon_jewels/core/app_translations.dart';
 import 'package:neon_jewels/core/storage_service.dart';
+import 'package:neon_jewels/data/levels.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
 import 'package:neon_jewels/presentation/screens/achievements_screen.dart';
 import 'package:neon_jewels/presentation/screens/home_screen.dart';
@@ -75,6 +76,25 @@ void main() {
       for (var i = 0; i < 5; i++) {
         await tester.pump(const Duration(milliseconds: 300));
       }
+    });
+
+    testWidgets('Wave 16: tile hiện badge tier (Hard ⚡ / Super-Hard 🔥)', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1170, 2800);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final c = Get.put(GameController());
+      c.unlockedLevel.value = 25; // mở tới qua Super-Hard màn 20 (+ Hard 15-19)
+      StorageService.to.setInt(StorageKeys.viewMode, 1); // grid view
+      await tester.pumpWidget(appEn(const LevelSelectScreen()));
+      await tester.pump(const Duration(milliseconds: 200));
+      // màn 20 = Super-Hard (cuối TG1) → icon whatshot; 15-19 = Hard → bolt.
+      expect(levelTier(20), LevelTier.superHard);
+      expect(levelTier(16), LevelTier.hard);
+      expect(find.byIcon(Icons.whatshot_rounded), findsWidgets);
+      expect(find.byIcon(Icons.bolt_rounded), findsWidgets);
     });
 
     testWidgets('bấm chơi → mở pre-game panel (có booster mặc định)', (

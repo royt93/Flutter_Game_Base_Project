@@ -265,6 +265,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     _fillInitialBoard();
     _placeIngredients();
     if (!_hasPossibleMove()) await _doShuffle();
+    // Wave 16 DDA: thua nhiều → seed 1 special (giúp ẩn). SAU shuffle (shuffle đặt
+    // mọi gem về normal) để special không bị xoá.
+    _seedPitySpecial();
   }
 
   /// Lưới obstacle (0 = không, >0 = số lớp). Theo cấu hình màn.
@@ -505,6 +508,55 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       );
 
   GemColor _randomColor() => GemColor.values[_rnd.nextInt(colorCount)];
+
+  /// Wave 16 DDA/Pity: tỉ lệ gem may mắn refill. Thua liên tiếp ≥kPityLuckyFails →
+  /// tăng (giúp người chơi yếu, KÍN ĐÁO). 0 ở side-mode (controller.pity=0).
+  double get _luckyRate => controller.pity.value >= GameController.kPityLuckyFails
+      ? 0.073
+      : 0.028;
+
+  /// Wave 16 Phase 4 — RNG control CHIỀU PITY (chỉ GIÚP): thua liên tiếp + màn
+  /// collect → tăng nhẹ cơ may rớt MÀU MỤC TIÊU (giúp thu). KHÔNG dùng chiều
+  /// anti-player (game chưa IAP → bất công). Dùng cho refill (không cho fill đầu).
+  GemColor _refillColor() {
+    final lv = controller.level;
+    if (biasRefillToTarget(
+      controller.pity.value,
+      GameController.kPityLuckyFails,
+      lv.objective,
+      lv.collectColor != null,
+      _rnd.nextDouble(),
+      GameController.kPityCollectBias,
+    )) {
+      return lv.collectColor!;
+    }
+    return _randomColor();
+  }
+
+  /// Wave 16 DDA/Pity: thua ≥kPitySpecialFails → seed 1 gem special (striped) lúc
+  /// mở màn → tạo lợi thế ban đầu (giúp vượt ải). Chỉ màn thường.
+  void _seedPitySpecial() {
+    if (controller.isSideMode ||
+        controller.pity.value < GameController.kPitySpecialFails) {
+      return;
+    }
+    final cands = <GemComponent>[];
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        final g = grid[r][c];
+        if (g != null &&
+            g.type == GemType.normal &&
+            !g.isIngredient &&
+            obstacle[r][c] == 0 &&
+            !_isWall(r, c)) {
+          cands.add(g);
+        }
+      }
+    }
+    if (cands.isEmpty) return;
+    cands[_rnd.nextInt(cands.length)].type =
+        _rnd.nextBool() ? GemType.stripedH : GemType.stripedV;
+  }
 
   void _fillInitialBoard() {
     grid = List.generate(rows, (_) => List<GemComponent?>.filled(cols, null));
@@ -910,6 +962,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   }
 
   bool _hasPossibleMove() => _findMove() != null;
+
+  /// Có nước swap hợp lệ không (dùng cho test winnability — sau onLoad engine luôn
+  /// _ensurePlayable nên giá trị này phải true ở mọi layout/seed).
+  @visibleForTesting
+  bool get hasPossibleMove => _hasPossibleMove();
 
   /// Tìm 1 nước swap hợp lệ (tạo match). Trả về cặp ô, hoặc null nếu bí.
   List<Cell>? _findMove() {
@@ -1700,14 +1757,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         final targetRow = writeRow - i;
         final startRow = -1 - i;
         final g = GemComponent(
-          color: _randomColor(),
+          color: _refillColor(),
           type: GemType.normal,
           row: targetRow,
           col: c,
           position: _cellCenter(startRow, c),
           cellSize: cellSize,
         );
-        g.isLucky = _rnd.nextDouble() < 0.028; // ~2.8% gem may mắn hiếm
+        g.isLucky = _rnd.nextDouble() < _luckyRate; // ~2.8% gem may mắn hiếm
         grid[targetRow][c] = g;
         g.scale = Vector2.all(0.4);
         g.add(ScaleEffect.to(
@@ -1768,14 +1825,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       final startR = s.r - fd[0] * (s.depth + 1);
       final startC = s.c - fd[1] * (s.depth + 1);
       final g = GemComponent(
-        color: _randomColor(),
+        color: _refillColor(),
         type: GemType.normal,
         row: s.r,
         col: s.c,
         position: _cellCenter(startR, startC),
         cellSize: cellSize,
       );
-      g.isLucky = _rnd.nextDouble() < 0.028;
+      g.isLucky = _rnd.nextDouble() < _luckyRate;
       grid[s.r][s.c] = g;
       g.scale = Vector2.all(0.4);
       g.add(ScaleEffect.to(

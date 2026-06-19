@@ -47,8 +47,9 @@ const List<ObjectiveType> kRotatingObjectives = [
   ObjectiveType.clearObstacle,
 ];
 
-/// Cách rải jelly trên bàn.
-enum JellyPattern { none, all, checker, center }
+/// Cách rải jelly trên bàn. Wave 16: thêm `corner` (DEAD-ZONE) — rải vào 4 GÓC
+/// (mỗi góc 2×2) → mục tiêu ở góc cô lập, khó match (ít ô kề) → buộc dùng special.
+enum JellyPattern { none, all, checker, center, corner }
 
 /// Ô (r,c) có nằm trong pattern không (dùng chung cho jelly & obstacle).
 /// Tách thuần để test winnability không cần khởi tạo game Flame.
@@ -63,6 +64,9 @@ bool patternHas(JellyPattern p, int r, int c, int rows, int cols) {
     case JellyPattern.center:
       final r0 = (rows - 4) ~/ 2, c0 = (cols - 4) ~/ 2;
       return r >= r0 && r < r0 + 4 && c >= c0 && c < c0 + 4;
+    case JellyPattern.corner:
+      // 4 góc, mỗi góc 2×2 (16 ô) → dead-zone (mục tiêu ở góc cô lập).
+      return (r < 2 || r >= rows - 2) && (c < 2 || c >= cols - 2);
   }
 }
 
@@ -100,7 +104,22 @@ const Map<int, List<String>> kLayoutLevels = {
   // 145 — đảo nổi no-drop ('o' = gem bất động giữa bàn)
   145: ['........', '........', '..o..o..', '........', '........', '..o..o..',
         '........', '........'],
+  // Wave 16 — BOTTLENECK (nút thắt cổ chai): waist tường chia bàn thành các BĂNG.
+  // Tác dụng chính: match KHÔNG vượt qua tường → chặn combo dọc liên mạch (khó hơn).
+  // Refill KHÔNG kẹt: ô ngay dưới mỗi ô tường là isSource (tự spawn) → mỗi băng tự
+  // lấp độc lập, không cần gem lách qua khe. Score 109/121/133. Winnable: test mount
+  // dưới (w16_deadzone_test) check fill đầy + hasMove ở nhiều seed.
+  109: ['........', '........', '........', '##.##.##', '........', '........',
+        '........', '........'],
+  121: ['........', '........', '##.##.##', '........', '........', '##.##.##',
+        '........', '........'],
+  133: ['........', '##.##.##', '........', '........', '........', '##.##.##',
+        '........', '........'],
 };
+
+/// Wave 16 — màn clearJelly đặt mục tiêu ở 4 GÓC (DEAD-ZONE). Chọn màn clearJelly
+/// thế giới 6-8 (≡3 mod 6): 111, 129.
+const Set<int> kDeadZoneLevels = {111, 129};
 
 /// Dòng chảy (Gravity Streams) cho vài màn showcase.
 const Map<int, List<String>> kFlowLevels = {
@@ -328,27 +347,144 @@ const List<WorldConfig> kWorlds = [
 // gắn target với SỐ LƯỢT → độ khó = ít slack dần (kiểu Candy Crush), luôn khả thi.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Wave 16 — TIER ĐỘ KHÓ + nhịp RĂNG CƯA (infographic Match-3). Mỗi màn gắn nhãn
+// Normal/Hard/Super-Hard (phân bố ~70/25/5). Super-Hard ở ĐỈNH mỗi thế giới; 2 màn
+// đầu thế giới kế = RELIEF (nghỉ + nới) → đường cong răng cưa thay vì đơn điệu.
+// ---------------------------------------------------------------------------
+
+/// Nhãn độ khó của 1 màn (hiển thị badge + điều chỉnh slack).
+enum LevelTier { normal, hard, superHard }
+
+/// Tier của màn [index] (1-based). Super-Hard = màn cuối mỗi thế giới (đỉnh);
+/// Hard = 5 màn ngay trước đỉnh; còn lại Normal. Tất định → test + badge dùng được.
+LevelTier levelTier(int index) {
+  final w = worldOfLevel(index);
+  if (index == w.endLevel) return LevelTier.superHard;
+  // RELIEF (2 màn đầu thế giới sau Super-Hard) luôn Normal — ưu tiên trước Hard.
+  if (isReliefLevel(index)) return LevelTier.normal;
+  // Hard band ~25% kích thước thế giới (Wave 16 fix: trước đây HẰNG 5 màn → thế
+  // giới cuối ngắn (TG8=10 màn) bị 50% Hard). Scale theo size → giữ ~25% đều.
+  final size = w.endLevel - w.startLevel + 1;
+  final band = (size / 4).round().clamp(2, 5);
+  if (index >= w.endLevel - band && index < w.endLevel) return LevelTier.hard;
+  return LevelTier.normal;
+}
+
+/// Màn "nghỉ" (relief) ngay sau 1 Super-Hard: 2 màn đầu mỗi thế giới (trừ thế giới
+/// 1 — không có Super-Hard phía trước). Được nới lượt + giảm target (sawtooth).
+bool isReliefLevel(int index) {
+  final w = worldOfLevel(index);
+  return w.index > 1 && index >= w.startLevel && index <= w.startLevel + 1;
+}
+
+/// Hệ số ĐỘ KHÓ theo tier: Super-Hard gắt hơn (đỉnh), Hard nhỉnh, Relief dễ. Áp
+/// vào target (score/collect/time) → tier = ít/nhiều slack. Giữ winnability
+/// (playtest re-validate; Super-Hard được MIỄN guard "quá khó").
+double _tierMul(int index) {
+  if (isReliefLevel(index)) return 0.85;
+  switch (levelTier(index)) {
+    case LevelTier.superHard:
+      return 1.12;
+    case LevelTier.hard:
+      return 1.06;
+    case LevelTier.normal:
+      return 1.0;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Wave 16 Phase 4 — NEAR-MISS (infographic: cắt lượt màn khó tạo "suýt thắng").
+// ⚠️ Game OFFLINE chưa IAP → KHÔNG dùng để ép mua. Làm bản CÔNG BẰNG = difficulty
+// knob: chỉ Super-Hard (5%, đỉnh) cắt [kNearMissCut] lượt → độ khó đỉnh. Cờ tắt
+// được (đặt false để bỏ near-miss hoàn toàn). Phần "hại" (cắt để ép mua) HOÃN.
+// ---------------------------------------------------------------------------
+const bool kNearMissEnabled = true;
+const int kNearMissCut = 1; // số lượt cắt ở màn Super-Hard
+
+/// Số lượt bị CẮT (near-miss) ở màn [index]: [kNearMissCut] nếu Super-Hard & bật,
+/// ngược lại 0. Pure → test được + dùng chung.
+int nearMissCutFor(int index) =>
+    (kNearMissEnabled && levelTier(index) == LevelTier.superHard)
+        ? kNearMissCut
+        : 0;
+
+/// Refill có ÉP màu mục tiêu không (Phase 4 RNG control — CHIỀU GIÚP). Pure (test
+/// được): chỉ khi thua nhiều ([pity] ≥ [pityThreshold]) + màn collect + có màu mục
+/// tiêu + [roll] < [bias]. KHÔNG dùng chiều anti-player.
+bool biasRefillToTarget(int pity, int pityThreshold, ObjectiveType obj,
+        bool hasTarget, double roll, double bias) =>
+    pity >= pityThreshold && obj == ObjectiveType.collect && hasTarget &&
+    roll < bias;
+
+/// Điều chỉnh LƯỢT theo tier (sawtooth). relief +3 (nghỉ); Hard -1; Super-Hard -1
+/// (đỉnh) + near-miss (gated). ⚠️ LƯU Ý: bite này bị SÀN 17 nuốt từ ~L75 (base đã
+/// chạm sàn) → late-game tier dựa vào: _tierMul (score/time/collect) + _tierObjBonus
+/// (jelly/dropDown). Đây chỉ là đòn bẩy early-mid + bù cho clearObstacle (không có
+/// lever khác). KHÔNG phải "đòn bẩy duy nhất" — xem _collectCapMul / _tierObjBonus.
+int _tierMoveDelta(int index) {
+  if (isReliefLevel(index)) return 3;
+  switch (levelTier(index)) {
+    case LevelTier.superHard:
+      return -1 - nearMissCutFor(index);
+    case LevelTier.hard:
+      return -1;
+    case LevelTier.normal:
+      return 0;
+  }
+}
+
+/// Hệ số TRẦN collect theo tier (Wave 16 fix HIGH-2/3): trước đây cap=moves cho mọi
+/// tier → _tierMul bị nuốt (relief==normal==hard==super = 1.0 gem/lượt). Nay trần
+/// scale theo tier → bite hiện cả khi đã chạm sàn lượt: relief 0.85 (dễ rõ), normal
+/// 1.0, hard 1.08, super 1.15 (cần cascade — đỉnh). Vẫn ≤1.5 (ngưỡng winnable test).
+double _collectCapMul(int index) {
+  if (isReliefLevel(index)) return 0.85;
+  switch (levelTier(index)) {
+    case LevelTier.superHard:
+      return 1.15;
+    case LevelTier.hard:
+      return 1.08;
+    case LevelTier.normal:
+      return 1.0;
+  }
+}
+
+/// Bớt LƯỢT-THƯỞNG objective theo tier (jelly/dropDown). Bonus cộng SAU sàn 17 nên
+/// đây là đòn bẩy tier HIỆU QUẢ late-game (khác move-bite bị sàn nuốt từ ~L75). Hard
+/// -1, Super -2; relief/normal 0. KHÔNG áp clearObstacle (pin winnability test W14).
+int _tierObjBonus(int index) {
+  if (isReliefLevel(index)) return 0;
+  switch (levelTier(index)) {
+    case LevelTier.superHard:
+      return -2;
+    case LevelTier.hard:
+      return -1;
+    case LevelTier.normal:
+      return 0;
+  }
+}
+
 /// Điểm/lượt KỲ VỌNG theo độ khó (ramp 42 → 82). 1 match-3 = 30đ. Hiệu chỉnh
 /// theo auto-playtest (Wave 13): bot KHÔNG special pass ~30%+ ⇒ người chơi (dùng
 /// special/booster, ~1.5-2× điểm) pass ~60-70%.
 double _scorePerMove(int index) => (42 + index * 0.40).clamp(42, 82).toDouble();
 
-/// Target điểm = base_moves × điểm/lượt kỳ vọng (làm tròn 10). [baseMoves] KHÔNG
-/// gồm bonus hazard → hazard cho thêm lượt = thêm slack (đúng ý đồ).
+/// Target điểm = base_moves × điểm/lượt kỳ vọng × hệ số tier (làm tròn 10).
 int _scoreTarget(int index, int baseMoves) =>
-    (baseMoves * _scorePerMove(index) / 10).round() * 10;
+    (baseMoves * _scorePerMove(index) * _tierMul(index) / 10).round() * 10;
 
 /// Điểm/giây kỳ vọng cho Time Attack (ramp 22 → 34). Hiệu chỉnh mạnh theo
 /// playtest (target cũ khiến không kịp); time-attack nên NHANH/VUI, không phải tường.
 double _timePerSec(int index) => (22 + index * 0.14).clamp(22, 34).toDouble();
 int _timeTarget(int index, int timeLimit) =>
-    (timeLimit * _timePerSec(index) / 10).round() * 10;
+    (timeLimit * _timePerSec(index) * _tierMul(index) / 10).round() * 10;
 
 /// Số gem màu mục tiêu cần thu (Collect): ramp nhẹ, CLAMP ~1.0 gem/lượt — chỉ
 /// ~1/6 bàn là màu mục tiêu (hiệu chỉnh xuống theo playtest).
 int _collectTarget(int index, int moves) {
-  final ramp = 8 + index ~/ 6;
-  final cap = moves; // ~1 gem mục tiêu/lượt là trần khả thi
+  final ramp = ((8 + index ~/ 6) * _tierMul(index)).round();
+  final cap = (moves * _collectCapMul(index)).round();
   return ramp < cap ? ramp : cap;
 }
 
@@ -364,8 +500,13 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
           ? 5
           : 6;
   // lượt: ít dần khi khó hơn (sàn 17 — playtest cho thấy sàn 15 làm màn cuối
-  // bị bóp lượt quá gắt, vd L85 chỉ 16 lượt).
-  final moves = (26 - index ~/ 8).clamp(17, 26);
+  // bị bóp lượt quá gắt, vd L85 chỉ 16 lượt). Wave 16: + delta theo tier (relief
+  // +3 nghỉ, Super-Hard -1 siết đỉnh → nhịp răng cưa). Fix: clamp SÀN 17 lại SAU
+  // khi cộng delta → near-miss không kéo Super-Hard xuống <17 (L80/L100/.. vốn đã
+  // chạm sàn → near-miss tự vô hiệu, chỉ cắt ở màn còn dư lượt). Trần để mở (relief
+  // +3 được vượt 26, như hành vi cũ vốn cộng +3 NGOÀI clamp).
+  final moves =
+      ((26 - index ~/ 8).clamp(17, 26) + _tierMoveDelta(index)).clamp(17, 99);
 
   // màn 1 luôn là score (intro); sau đó xoay vòng 6 loại mục tiêu
   final objective = index == 1
@@ -428,14 +569,20 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
         collectColor: GemColor.values[index % GemColor.values.length],
       );
     case ObjectiveType.clearJelly:
+      // Wave 16 DEAD-ZONE: vài màn jelly đặt ở 4 GÓC (pattern corner) → mục tiêu
+      // ở góc cô lập, khó match → buộc dùng special/booster. Cùng số ô (16) như
+      // center nhưng vị trí khó hơn (không xô lệch tổng lượng).
+      final jelly = kDeadZoneLevels.contains(index)
+          ? JellyPattern.corner
+          : tierPattern();
       return LevelConfig(
         index: index,
         rows: rows,
         cols: cols,
         colorCount: colorCount,
-        moves: moves + 4, // jelly cần thêm lượt
+        moves: moves + 4 + _tierObjBonus(index), // jelly +lượt; tier bớt (bite)
         objective: ObjectiveType.clearJelly,
-        jelly: tierPattern(),
+        jelly: jelly,
       );
     case ObjectiveType.timeAttack:
       final timeLimit = (75 - index ~/ 4).clamp(45, 75); // càng cao càng gắt
@@ -455,7 +602,7 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
         rows: rows,
         cols: cols,
         colorCount: colorCount,
-        moves: moves + 6, // đưa item xuống cần thêm lượt
+        moves: moves + 6 + _tierObjBonus(index), // drop +lượt; tier bớt (bite)
         objective: ObjectiveType.dropDown,
         dropTarget: (2 + index ~/ 18).clamp(2, 6),
       );

@@ -422,6 +422,8 @@ extension GameControllerScoring on GameController {
       // Wave 14: first-clear = chưa có sao cho màn này TRƯỚC khi _saveProgress ghi
       // (thắng lại màn đã qua → false → meta Album/Heo/Giải đấu không cộng).
       lastFirstClear = (stars[currentLevel.value] ?? 0) == 0;
+      // Wave 16 DDA: thắng → reset số thua liên tiếp màn này (hết trợ giúp ẩn).
+      unawaited(_store.setInt(StorageKeys.pityFails(currentLevel.value), 0));
       // win streak: tăng chuỗi + thưởng bonus theo chuỗi (từ bậc 2)
       winStreak.value++;
       if (winStreak.value > bestWinStreak.value) {
@@ -454,6 +456,12 @@ extension GameControllerScoring on GameController {
       lastStreakBonus = 0;
       winStreak.value = 0;
       unawaited(_store.setInt(StorageKeys.winStreak, 0));
+      // Wave 16 DDA: thua → tăng số thua liên tiếp màn này → trợ giúp ẩn lần sau.
+      // Audit-fix: CLAMP ở kPityMovesFails (ngưỡng trợ giúp cao nhất) → trợ giúp
+      // bão hoà, không phình số + không thưởng thêm cho "cố thua farm" quá ngưỡng.
+      final f = _store.getInt(StorageKeys.pityFails(currentLevel.value), def: 0);
+      final next = (f + 1).clamp(0, GameController.kPityMovesFails);
+      unawaited(_store.setInt(StorageKeys.pityFails(currentLevel.value), next));
       unawaited(_saveProgress(win: false));
       return 'lose';
     }

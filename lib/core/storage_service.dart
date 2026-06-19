@@ -41,6 +41,9 @@ class StorageKeys {
   // Wave 15 — Survival mode (kỷ lục điểm sống sót)
   static const String survivalHigh = 'survival_high';
 
+  // Wave 16 — DDA/Pity: số lần thua LIÊN TIẾP màn [level] (reset khi thắng).
+  static String pityFails(int level) => 'pity_$level';
+
   // Wave 12 — chống farm side-mode: đếm số trận side-mode đã thưởng trong NGÀY
   // (reset theo epoch-day) → thưởng giảm dần sau N trận đầu.
   static const String sideModeDay = 'side_mode_day';

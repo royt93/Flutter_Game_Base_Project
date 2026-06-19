@@ -109,6 +109,18 @@ class GameController extends GetxController {
   final RxInt sodaFill = 0.obs; // tổng gem clear tích luỹ (mực nước)
   final RxInt sodaCollected = 0.obs; // số chai đã nổi lên đỉnh
 
+  // --- DDA / Pity System (Wave 16): trợ giúp ĐỘNG khi thua liên tiếp 1 màn thường.
+  // KÍN ĐÁO (không báo người chơi) → giữ cảm giác tự thắng. CHỈ màn thường.
+  /// Số lần thua LIÊN TIẾP màn hiện tại (đọc lúc startLevel; 0 ở side-mode).
+  final RxInt pity = 0.obs;
+  static const int kPityLuckyFails = 2; // ≥2: tăng tỉ lệ gem may mắn refill
+  static const int kPitySpecialFails = 3; // ≥3: seed 1 special lúc mở màn
+  static const int kPityMovesFails = 4; // ≥4: +lượt khởi đầu (relief ẩn)
+  static const int kPityMovesBonus = 2;
+  // Phase 4 RNG control (CHIỀU GIÚP): thua liên tiếp + màn collect → tỉ lệ refill
+  // ra MÀU MỤC TIÊU (giúp thu). KHÔNG dùng chiều anti-player.
+  static const double kPityCollectBias = 0.20;
+
   // --- Sinh tồn (Survival — Wave 15): đếm ngược, combo +giây, sống lâu = điểm ---
   final RxBool isSurvival = false.obs;
   LevelConfig? _survivalCfg;
@@ -344,6 +356,10 @@ class GameController extends GetxController {
     isDaily.value = daily;
     isVersus.value =
         false; // versus chỉ bật qua _initVersus; mọi start* khác tắt
+    // Wave 16 fix: pity là DDA của MÀN THƯỜNG (đọc theo currentLevel ở startLevel).
+    // Reset 0 khi vào side-mode → tránh rò rỉ boost (_luckyRate/_refillColor đọc
+    // thẳng pity.value) sang Survival/Endless... nếu vừa thua nhiều ở màn thường.
+    pity.value = 0;
     if (!endless) _endlessCfg = null;
     if (!boss) _bossCfg = null;
     if (!gravity) _gravityCfg = null;

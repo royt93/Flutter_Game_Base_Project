@@ -440,11 +440,36 @@ class LevelSelectScreen extends StatelessWidget {
         .scaleXY(begin: 1, end: 1.015, duration: 1200.ms, curve: Curves.easeInOut);
   }
 
+  /// Wave 16 — badge tier độ khó ở góc tile (Hard cam / Super-Hard đỏ; Normal
+  /// không hiện để đỡ rối). Chỉ hiện khi đã mở khoá.
+  Widget? _tierCorner(int index) {
+    final t = levelTier(index);
+    if (t == LevelTier.superHard) {
+      return _cornerChip(Icons.whatshot_rounded, const Color(0xFFFF3B5C));
+    }
+    if (t == LevelTier.hard) {
+      return _cornerChip(Icons.bolt_rounded, NeonTheme.orange);
+    }
+    return null;
+  }
+
+  Widget _cornerChip(IconData icon, Color color) => Container(
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: const Color(0xCC0B0B1F),
+          shape: BoxShape.circle,
+          border: Border.all(color: color, width: 1.2),
+          boxShadow: NeonTheme.glow(color, blur: 4),
+        ),
+        child: Icon(icon, color: color, size: 11),
+      );
+
   Widget _miniTile(
       GameController ctrl, LevelConfig lv, bool unlocked, bool isCurrent) {
     final c = unlocked ? _colorOf(lv.index) : Colors.grey.shade700;
     final star = ctrl.stars[lv.index] ?? 0;
-    return GestureDetector(
+    final corner = unlocked ? _tierCorner(lv.index) : null;
+    final tile = GestureDetector(
       onTap: unlocked ? () => _play(ctrl, lv.index) : null,
       child: Container(
         decoration: BoxDecoration(
@@ -485,6 +510,11 @@ class LevelSelectScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+    if (corner == null) return tile;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [tile, Positioned(top: -4, right: -4, child: corner)],
     );
   }
 

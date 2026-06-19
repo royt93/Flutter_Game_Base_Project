@@ -1253,6 +1253,111 @@ motion, đa dạng SFX, trail gem rơi.
 > Làm TUẦN TỰ từng phase, có cổng build+test+verify, KHÔNG fan-out subagent (đụng
 > cùng file lõi). Task chi tiết: `doc/tasks/todo/w15-*.md`.
 
+## 🌊 Wave 16 — KẾ HOẠCH: Kỹ thuật thiết kế Match-3 (từ infographic) (📋 PICKED 2026-06-19)
+
+> Người dùng đưa infographic "Bí quyết thiết kế level Match-3" + chốt làm **cả 4** nhóm.
+> Đối chiếu: game đã có ~60% (Portals W11, blocker tĩnh/động/điều-kiện W4/5/10/14/15,
+> bottleneck/walls W15, bot playtest W13). Phần THIẾU = meta/cân bằng/tâm lý → Wave 16.
+
+### 📋 Bảng theo dõi task Wave 16 (status)
+
+| Phase | Task | File | Status | Rủi ro |
+|---|---|---|---|---|
+| 1 | Difficulty tiers (70/25/5) + Sawtooth + badge | `w16-1-difficulty-tiers.md` | ✅ done | 🟡 TB |
+| 2 | Dead-zone objectives + bottleneck | `w16-2-dead-zone-bottleneck.md` | ✅ done | 🟡 TB |
+| 3 | DDA & Pity System (trợ giúp động) | `w16-3-dda-pity.md` | ✅ done | 🟢 Thấp |
+| 4 | Near-miss + RNG control (bản nhẹ/công bằng) | `w16-4-nearmiss-rng.md` | ✅ done | 🔴 nhạy cảm |
+
+**Chú thích**: 📋 todo · 🟡 in-progress · ✅ done. **→ TOÀN BỘ 4 PHASE ✅ DONE
+(2026-06-19)**: 388 test pass, 0 analyzer, playtest validated. Chi tiết bên dưới.
+
+#### ✅ Phase 1 — Difficulty tiers + Sawtooth + badge (2026-06-19)
+- **`LevelTier` + `levelTier(index)`**: Super-Hard = cuối mỗi thế giới (~5%), Hard = 5
+  màn trước đỉnh (~25%), còn lại Normal (~70%). Tất định.
+- **Sawtooth**: `isReliefLevel` = 2 màn đầu mỗi thế giới (sau Super-Hard) → Normal + nới
+  (`_tierMul` 0.85 + `_tierMoveDelta` +3). Hard/Super siết (mul 1.06/1.12, Super -1
+  lượt) → đường cong RĂNG CƯA.
+- **Badge UI**: tile Level Select góc Hard (⚡ cam) / Super-Hard (🔥 đỏ); Normal ẩn.
+- **Playtest**: in tier + MIỄN Super-Hard khỏi guard "quá khó". Chạy lại: 0 màn
+  Normal/Hard quá-khó; Super-Hard 48-68% bot (≈80-100% người chơi).
+- **Test**: +6 unit (phân bố 70/25/5, sawtooth, tất định, curve khả thi) +1 widget
+  (badge render) → **371 test pass**, 0 analyzer.
+
+#### ✅ Phase 2 — Dead-zone + Bottleneck (2026-06-19)
+- **Dead-zone**: `JellyPattern.corner` (4 góc 2×2 = 16 ô) → mục tiêu ở góc cô lập, khó
+  match (ít ô kề). Áp clearJelly {111,129} (`kDeadZoneLevels`). Cùng số ô như center
+  → không xô lệch tổng lượng, chỉ khó hơn về VỊ TRÍ.
+- **Bottleneck**: waist tường ('##.##.##') vào score {109,121,133} → khe hẹp giảm rơi
+  liên mạch → giảm combo tự động (khó hơn). **Winnability**: refill qua khe + trượt-chéo.
+- **Test**: +5 (corner pattern 16-ô-ở-góc, dead-zone config, +3 ENGINE-MOUNT bottleneck
+  fill ĐẦY 100% — winnable, không pocket kẹt; bài học Labyrinth) → 0 analyzer.
+
+#### ✅ Phase 3 — DDA & Pity System (2026-06-19)
+- Thua LIÊN TIẾP màn thường → trợ giúp ẩn tăng dần (KÍN ĐÁO, chỉ màn thường):
+  `StorageKeys.pityFails(level)` (reset khi thắng). ≥2: lucky rate 0.028→0.073; ≥3:
+  seed 1 special lúc mở màn; ≥4: +2 lượt khởi đầu. Const-gated.
+- **Test**: +5 (lose+1/win-reset, +lượt, side-mode ISOLATION pity=0, engine seed special
+  theo ngưỡng).
+
+#### ✅ Phase 4 — Near-miss + RNG control (bản CÔNG BẰNG) (2026-06-19)
+- **Near-miss = difficulty knob** (KHÔNG ép mua — game offline): chỉ Super-Hard cắt
+  `kNearMissCut`=1 lượt (gated `kNearMissEnabled`). `nearMissCutFor` pure.
+- **RNG control CHỈ chiều GIÚP** (pity): thua nhiều + collect → ép màu mục tiêu ~20%
+  refill (`biasRefillToTarget` pure). KHÔNG dùng anti-player (HOÃN tới khi có IAP+A/B).
+- **Test**: +7 (near-miss chỉ Super-Hard, RNG bias 5 nhánh điều kiện).
+- **Kết quả Wave 16**: 0 analyzer · **388 test pass** (+24) · playtest 0 màn Normal/Hard
+  quá-khó (Super-Hard cố ý khó, miễn guard).
+
+> 🎉 **WAVE 16 HOÀN TẤT (4/4 phase)** — tích hợp kỹ thuật thiết kế Match-3 từ infographic:
+> tier 70/25/5 + sawtooth + badge · dead-zone + bottleneck · DDA/Pity (giữ chân) ·
+> near-miss + RNG-pity (công bằng). Game từ "đủ tính năng" → "thiết kế chuyên nghiệp".
+
+> ⚠️ Quyết định đạo đức P4: game OFFLINE chưa IAP → làm bản NHẸ thiên CÔNG BẰNG
+> (near-miss = difficulty knob ở Super-Hard; RNG control CHỈ chiều pity-giúp). Phần
+> "hại" (anti-player RNG, near-miss ép mua) HOÃN tới khi có monetization + A/B.
+
+#### 🔍 Audit Wave 16 (2026-06-19) — 3 agent adversarial + fix toàn bộ
+**Điểm trước fix: 6.7/10** (cân bằng 6.5 · pity/DDA 6.5 · dead-zone/UI 8.5). Mọi màn
+winnable, không bug bất-khả-thắng. Đã fix tất cả phát hiện:
+- **🔴 HIGH-1 (bug thật) — pity rò sang side-mode**: `_enterMode` không reset `pity` →
+  thua nhiều màn thường rồi vào Survival/Endless thì `_luckyRate`/`_refillColor` (đọc
+  thẳng `pity.value`, không guard) bị bơm boost + lucky-coin né cap farm. **Fix**: thêm
+  `pity.value=0` trong `_enterMode` (cover mọi side-mode 1 chỗ) + test regression
+  "normal-then-side".
+- **🔴 HIGH-2/3 — tier "vô hình" trên collect**: `cap=moves` nuốt `_tierMul` từ ~L68 →
+  relief==normal==super đều 1.0 gem/lượt. **Fix**: `cap` theo tier (relief 0.85·moves)
+  → răng cưa hiện lại trên màn collect (L122 relief 0.85 < L128 normal 1.0/lượt). Hard/
+  Super giữ trần 1.0 (không thể vượt ceiling winnable — độ khó đỉnh đến từ ÍT lượt).
+- **🟡 M-2 — vỡ sàn lượt 17**: near-miss kéo L80/L140 xuống 16. **Fix**: clamp sàn 17
+  SAU khi cộng delta → near-miss tự vô hiệu ở màn đã chạm sàn, chỉ cắt nơi còn dư lượt.
+- **🟡 M-3 — TG8 50% Hard** (band hằng 5 trên thế giới 10 màn): **Fix** band scale theo
+  size (`size/4`, clamp 2-5) → TG8 còn ~30%, các TG khác giữ 25%.
+- **🟡 M-1/M-4 — lỗ hổng test**: curve-test chỉ kiểm `score` (không Super-Hard nào là
+  score → vacuous); bottleneck-test 1-seed + không check `hasMove`. **Fix**: curve-test
+  phủ collect/time + khẳng định chạm ≥1 Super-Hard mỗi loại; bottleneck-test 4 seed +
+  getter `hasPossibleMove` (winnable); sửa comment sai về cơ chế refill (qua `isSource`
+  dưới tường, không qua khe).
+- **Sau fix (đợt 1)**: **399 test pass** (+11) · 0 analyzer · playtest 0 màn quá-khó.
+
+#### 🔍🔍 Audit Wave 16 — VÒNG 2 (re-audit + vá gap sâu, 2026-06-19)
+Người dùng yêu cầu nâng điểm → vá GAP sâu (lý do trừ điểm: Hard tier gần như ==Normal
+trên objective không-điểm; exploit cố-thua chưa cap) rồi RE-AUDIT 3 agent verify. Kết quả
+re-audit: **cân bằng 8.5 · pity/isolation 9.0 · test 8.0** — 11 fix vòng 1 + 5 gap-fix dưới
+đều **VERIFIED ĐÚNG, 0 regression**.
+- **Hard tier có "răng" thật**: `_tierMoveDelta` Hard -1 (áp MỌI objective early-mid);
+  `_collectCapMul` (relief .85/normal 1.0/hard 1.08/super 1.15) → collect tier hiện rõ
+  (L80/L140 super 1.18 gem/lượt, L116 hard 1.06 vs normal 1.0); `_tierObjBonus` (hard -1,
+  super -2 bonus-lượt jelly/dropDown) → đòn bẩy KHÔNG bị sàn 17 nuốt late-game (bù cho
+  clearObstacle vốn pin winnability W14). Phân bố sau scale band: N 69.3% / H 25.3% / S 5.3%.
+- **Chống farm cố-thua**: clamp `pityFails` ghi đĩa ở `kPityMovesFails` → trợ giúp bão hoà.
+- **Test có răng hơn**: ngưỡng curve-test siết 110→85đ/lượt & 60→45đ/s (sát thực 76 & 38);
+  +3 test gap-fix (Hard collect khó hơn Normal, Hard ít lượt hơn, pity clamp); sửa 2 comment
+  sai (move-bite overclaim, test:78 `_ensurePlayable`→`_doShuffle` single-shot).
+- **Sau fix (đợt 2)**: **402 test pass** (+3) · 0 analyzer · playtest 0 màn quá-khó.
+- **Giới hạn còn lại (đã document, KHÔNG phải bug)**: từ ~L75 move-bite -1 bị sàn 17 nuốt
+  trên objective đếm; clearObstacle không có target-lever (winnability pin) → tier ở đó dựa
+  badge + hazard. 3 agent đồng thuận: winnable, không regression. **Điểm Wave 16: ~8.7/10.**
+
 ## 🔍 Đánh giá chất lượng code (2026-06-16, Wave 8.9)
 
 4 agent đọc song song 4 tầng (engine / controllers / UI / core) + verify claim nặng bằng đọc code thật & probe. **Điểm tổng: 7.5/10** — chạy ổn, kiến trúc tốt, không lỗi logic nghiêm trọng; nợ kỹ thuật tập trung 2 chỗ.
