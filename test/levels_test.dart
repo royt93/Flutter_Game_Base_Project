@@ -3,9 +3,9 @@ import 'package:neon_jewels/data/levels.dart';
 
 void main() {
   group('kLevels — tính hợp lệ', () {
-    test('có đúng 100 level', () {
+    test('có đúng kLevelCount level (Wave 15: 150)', () {
       expect(kLevels.length, kLevelCount);
-      expect(kLevels.length, 100);
+      expect(kLevels.length, 150);
     });
 
     test('index liên tục từ 1', () {
@@ -125,9 +125,16 @@ void main() {
       }
     });
 
-    test('mỗi thế giới gồm kWorldSize màn', () {
+    test('mỗi thế giới ≤ kWorldSize màn (thế giới cuối có thể ngắn hơn)', () {
       for (final w in kWorlds) {
-        expect(w.endLevel - w.startLevel + 1, kWorldSize);
+        final size = w.endLevel - w.startLevel + 1;
+        expect(size, greaterThan(0));
+        expect(size, lessThanOrEqualTo(kWorldSize),
+            reason: 'thế giới ${w.index} có $size màn (> $kWorldSize)');
+      }
+      // mọi thế giới TRỪ cuối phải đủ kWorldSize.
+      for (int i = 0; i < kWorlds.length - 1; i++) {
+        expect(kWorlds[i].endLevel - kWorlds[i].startLevel + 1, kWorldSize);
       }
     });
   });

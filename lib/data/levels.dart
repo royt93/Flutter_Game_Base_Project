@@ -71,7 +71,46 @@ bool patternHas(JellyPattern p, int r, int c, int rows, int cols) {
 /// - licorice (Wave 14): khoá 2 LỚP — cần clear ô kề 2 lần để gỡ (lock cứng).
 /// - jam (Wave 14): mứt — như chocolate (lan + khoá) NHƯNG là MỤC TIÊU clearObstacle;
 ///   mục tiêu đếm số lớp BAN ĐẦU (lan thêm không tăng mục tiêu → luôn khả thi).
-enum ObstacleType { none, ice, chain, stone, spread, licorice, jam }
+/// - cage (Wave 15): gem bị NHỐT — vẫn THAM GIA match (khác stone/licorice phủ kín)
+///   nhưng KHÔNG tự swap được; phải ghép chính gem đó (xếp hàng xóm) để vỡ lồng.
+///   2 lớp, vỡ 1 lớp mỗi lần gem nhốt nằm trong match → "giải cứu" khi hết lồng.
+enum ObstacleType { none, ice, chain, stone, spread, licorice, jam, cage }
+
+/// Số lớp lồng của 1 ô cage (cần bấy nhiêu lần ghép-chính-nó để giải cứu).
+const int kCageLayers = 2;
+
+/// Các màn clearObstacle chuyển sang CAGE (gem nhốt — Wave 15): mục tiêu "giải
+/// cứu" = dọn hết lớp lồng. {42,78} + thế giới 6-8 ({114,138}).
+const Set<int> kCageLevels = {42, 78, 114, 138};
+
+// ---------------------------------------------------------------------------
+// Wave 15 — WEAVE bố cục/dòng chảy vào màn SCORE thế giới 6-8 (101-150). Đọc theo
+// chỉ số màn (giống kBombLevels). Map: index → bản đồ ký tự. Chọn các màn score
+// (index ≡ 1 mod 6): 103/115/127/139/145.
+// ---------------------------------------------------------------------------
+
+/// Bố cục tường/lỗ (+ no-drop) cho vài màn showcase. Hình hở đỉnh/đáy → refill OK.
+const Map<int, List<String>> kLayoutLevels = {
+  // 103 — hình thoi (4 góc tường)
+  103: ['##....##', '#......#', '........', '........', '........', '........',
+        '#......#', '##....##'],
+  // 127 — cột trụ (tường dọc, gem lách qua bằng trượt chéo)
+  127: ['........', '.#....#.', '.#....#.', '........', '........', '.#....#.',
+        '.#....#.', '........'],
+  // 145 — đảo nổi no-drop ('o' = gem bất động giữa bàn)
+  145: ['........', '........', '..o..o..', '........', '........', '..o..o..',
+        '........', '........'],
+};
+
+/// Dòng chảy (Gravity Streams) cho vài màn showcase.
+const Map<int, List<String>> kFlowLevels = {
+  // 115 — band giữa chảy phải
+  115: ['vvvvvvvv', 'vvvvvvvv', 'vvvvvvvv', '>>>>>>>v', 'vvvvvvvv', 'vvvvvvvv',
+        'vvvvvvvv', 'vvvvvvvv'],
+  // 139 — 2 band ngược chiều (mạch điện)
+  139: ['vvvvvvvv', '>>>>>>>v', 'vvvvvvvv', 'vvvvvvvv', 'v<<<<<<<', 'vvvvvvvv',
+        'vvvvvvvv', 'vvvvvvvv'],
+};
 
 /// Các màn clearObstacle (index ≡ 0 mod 6) chuyển obstacle sang LICORICE (Wave 14):
 /// khoá 2 lớp, cần 2 lần clear-kề/ô. Chọn 2 màn (mid + late game).
@@ -189,6 +228,10 @@ class LevelConfig {
   /// (KHÔNG hồi quy 100 màn hiện tại). Dựng từ bản đồ ký tự qua [layoutFromMap].
   final List<List<CellKind>>? layout;
 
+  /// Wave 15 Phase 2 — DÒNG CHẢY (Gravity Streams): hướng trọng lực mỗi ô. null =
+  /// toàn bộ chảy XUỐNG như thường. Dựng từ bản đồ `v/^/</>` qua [flowFromMap].
+  final List<List<FlowDir>>? flow;
+
   const LevelConfig({
     required this.index,
     required this.rows,
@@ -207,12 +250,16 @@ class LevelConfig {
     this.orders = const [],
     this.sodaTarget = 0,
     this.layout,
+    this.flow,
   });
 }
 
 /// Dựng bố cục từ bản đồ ký tự (mỗi String = 1 hàng). `#`/`X` = tường, `o`/`O` =
 /// no-drop, còn lại = ô chơi. Số hàng/cột phải khớp rows/cols của màn.
 List<List<CellKind>> layoutFromMap(List<String> rowsText) => parseLayout(rowsText);
+
+/// Dựng lưới dòng chảy từ bản đồ `v/^/</>` (mỗi String = 1 hàng). Mặc định down.
+List<List<FlowDir>> flowFromMap(List<String> rowsText) => parseFlow(rowsText);
 
 /// Tạo cấu hình màn Order (mục tiêu hỗn hợp): thu đủ 3 màu khác nhau, target
 /// tăng nhẹ theo [index]. Chọn 3 màu tất định theo index (không phụ thuộc RNG
@@ -240,8 +287,8 @@ LevelConfig _buildOrderLevel(int index, int rows, int cols, int colorCount,
   );
 }
 
-/// Tổng số màn.
-const int kLevelCount = 100;
+/// Tổng số màn. Wave 15: mở rộng 100 → 150 (thế giới 6-8, weave cơ chế mới).
+const int kLevelCount = 150;
 
 /// Một "thế giới" (khu vực) gom [kWorldSize] màn, có chủ đề neon riêng.
 class WorldConfig {
@@ -262,13 +309,17 @@ class WorldConfig {
 /// Mỗi thế giới gồm 20 màn.
 const int kWorldSize = 20;
 
-/// 5 thế giới chủ đề neon (100 màn / 20).
+/// 8 thế giới chủ đề neon (150 màn). Thế giới 6-8 (Wave 15): 101-120 / 121-140 /
+/// 141-150 (thế giới cuối ngắn hơn — đỉnh cao thử thách).
 const List<WorldConfig> kWorlds = [
   WorldConfig(index: 1, name: 'Cyan Nebula', startLevel: 1, endLevel: 20),
   WorldConfig(index: 2, name: 'Magenta Pulse', startLevel: 21, endLevel: 40),
   WorldConfig(index: 3, name: 'Lime Circuit', startLevel: 41, endLevel: 60),
   WorldConfig(index: 4, name: 'Amber Comet', startLevel: 61, endLevel: 80),
   WorldConfig(index: 5, name: 'Violet Void', startLevel: 81, endLevel: 100),
+  WorldConfig(index: 6, name: 'Prism Maze', startLevel: 101, endLevel: 120),
+  WorldConfig(index: 7, name: 'Flux Stream', startLevel: 121, endLevel: 140),
+  WorldConfig(index: 8, name: 'Neon Apex', startLevel: 141, endLevel: 150),
 ];
 
 // ---------------------------------------------------------------------------
@@ -347,6 +398,11 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
       } else if (conveyor) {
         bonusMoves = 5;
       }
+      // Wave 15: weave bố cục/dòng chảy vào màn score thế giới 6-8.
+      final layoutMap = kLayoutLevels[index];
+      final flowMap = kFlowLevels[index];
+      // bàn có lỗ/dòng chảy → cho thêm lượt (khó định hướng hơn).
+      if (layoutMap != null || flowMap != null) bonusMoves += 4;
       return LevelConfig(
         index: index,
         rows: rows,
@@ -357,6 +413,8 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
         // Wave 12: target gắn base_moves (chưa gồm bonus hazard) → khả thi.
         targetScore: _scoreTarget(index, moves),
         obstacle: spread ? ObstacleType.spread : ObstacleType.none,
+        layout: layoutMap != null ? layoutFromMap(layoutMap) : null,
+        flow: flowMap != null ? flowFromMap(flowMap) : null,
       );
     case ObjectiveType.collect:
       return LevelConfig(
@@ -402,25 +460,30 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
         dropTarget: (2 + index ~/ 18).clamp(2, 6),
       );
     case ObjectiveType.clearObstacle:
-      // ice (đầu) → chain (giữa) → stone (cuối); Wave 14 weave licorice/jam.
+      // ice (đầu) → chain (giữa) → stone (cuối); Wave 14 weave licorice/jam;
+      // Wave 15 weave cage (gem nhốt — matchable + khoá swap).
       final licorice = kLicoriceLevels.contains(index);
       final jam = kJamLevels.contains(index);
-      final type = licorice
-          ? ObstacleType.licorice
-          : jam
-              ? ObstacleType.jam
-              : index < 30
-                  ? ObstacleType.ice
-                  : index < 60
-                      ? ObstacleType.chain
-                      : ObstacleType.stone;
-      // QUAN TRỌNG: chain/stone/licorice/jam KHOÁ swap → pattern dày (checker/all)
-      // sẽ làm bí cứng bàn. Chỉ ice (không khoá) mới dùng pattern dày; còn lại
-      // luôn dùng `center` (chừa viền tự do để chơi).
+      final cage = kCageLevels.contains(index);
+      final type = cage
+          ? ObstacleType.cage
+          : licorice
+              ? ObstacleType.licorice
+              : jam
+                  ? ObstacleType.jam
+                  : index < 30
+                      ? ObstacleType.ice
+                      : index < 60
+                          ? ObstacleType.chain
+                          : ObstacleType.stone;
+      // QUAN TRỌNG: chain/stone/licorice/jam/cage KHOÁ swap → pattern dày
+      // (checker/all) sẽ làm bí cứng bàn. Chỉ ice (không khoá) mới dùng pattern
+      // dày; còn lại luôn dùng `center` (chừa viền tự do để chơi). Cage còn cần
+      // THƯA (engine lọc (r+c) chẵn) để 2 ô nhốt không kề nhau (luôn ghép được).
       final pattern =
           type == ObstacleType.ice ? tierPattern() : JellyPattern.center;
-      // licorice 2 lớp / jam lan → cho thêm lượt để công bằng.
-      final extra = licorice ? 8 : (jam ? 7 : 5);
+      // licorice 2 lớp / jam lan / cage 2 lớp → cho thêm lượt để công bằng.
+      final extra = licorice ? 8 : (jam ? 7 : (cage ? 8 : 5));
       return LevelConfig(
         index: index,
         rows: rows,
@@ -572,6 +635,63 @@ LevelConfig buildSodaLevel() => const LevelConfig(
       moves: kSodaMoves,
       objective: ObjectiveType.soda,
       sodaTarget: kSodaBottles,
+    );
+
+// --- Sinh tồn (Survival — Wave 15): đếm ngược, combo +giây, sống lâu = điểm cao ---
+const int kSurvivalLevelIndex = -7;
+
+/// Thời gian khởi đầu Survival (giây). Combo ≥4 cộng thêm giây (engine addTime).
+const int kSurvivalTime = 50;
+
+/// Cấu hình Survival: TÁI DÙNG objective timeAttack (đồng hồ trong update + combo
+/// +giây sẵn có). KHÔNG có target để thắng (targetScore khổng lồ, không bao giờ
+/// đạt) — kết thúc khi HẾT GIỜ, điểm = thành tích (như Endless theo thời gian).
+/// Khác biệt nằm ở cờ `isSurvival` (checkEnd nhánh riêng + side-mode isolation).
+LevelConfig buildSurvivalLevel() => const LevelConfig(
+      index: kSurvivalLevelIndex,
+      rows: 8,
+      cols: 8,
+      colorCount: 6,
+      moves: 999, // không giới hạn lượt (chạy theo thời gian)
+      objective: ObjectiveType.timeAttack,
+      timeLimit: kSurvivalTime,
+      targetScore: 1 << 28, // không bao giờ đạt → không "win" sớm
+    );
+
+// --- Mê cung neon (Labyrinth — Wave 15): đưa tinh thể qua mê cung tường xuống đáy ---
+const int kLabyrinthLevelIndex = -8;
+const int kLabyrinthMoves = 30;
+
+/// Số tinh thể cần đưa xuống đáy để thắng.
+const int kLabyrinthTarget = 4;
+
+/// Bản đồ MÊ CUNG kiểu "phễu" (inverted-V) — Wave 15. Tường (#) xếp ANTI-CHÉO
+/// để luật trượt-chéo của engine LUÔN kích hoạt: tinh thể đậu trên tường có tường
+/// KỀ cùng hàng → trượt chéo ra mép rồi rơi thẳng xuống đáy. ĐÃ chứng minh khả thi
+/// bằng sim descent (mọi cột đặt được c1-c6 tới đáy) + test `labyrinth khả thi`.
+/// LƯU Ý: KHÔNG dùng hàng-tường-kẹp-giữa-hàng-mở (tinh thể sẽ kẹt — bản cũ lỗi).
+const List<String> kLabyrinthMap = [
+  '#......#',
+  '.#....#.',
+  '..#..#..',
+  '...##...',
+  '........',
+  '........',
+  '........',
+  '........',
+];
+
+/// Cấu hình Labyrinth: TÁI DÙNG objective dropDown (cơ chế tinh thể + thu ở đáy)
+/// + layout mê cung. Khác biệt ở cờ `isLabyrinth` (checkEnd nhánh riêng + isolation).
+LevelConfig buildLabyrinthLevel() => LevelConfig(
+      index: kLabyrinthLevelIndex,
+      rows: 8,
+      cols: 8,
+      colorCount: 6,
+      moves: kLabyrinthMoves,
+      objective: ObjectiveType.dropDown,
+      dropTarget: kLabyrinthTarget,
+      layout: layoutFromMap(kLabyrinthMap),
     );
 
 // --- Versus / Co-op (2 người, chạy engine Flame như mode thường) ---

@@ -250,6 +250,20 @@ class GameScreenController extends GetxController {
       _newGame();
       return;
     }
+    if (gameCtrl.isSurvival.value) {
+      // Sinh tồn: chơi lại không cần mạng (chế độ phụ).
+      gameCtrl.startSurvival();
+      ui.value = GameUi.playing;
+      _newGame();
+      return;
+    }
+    if (gameCtrl.isLabyrinth.value) {
+      // Mê cung: chơi lại không cần mạng (chế độ phụ).
+      gameCtrl.startLabyrinth();
+      ui.value = GameUi.playing;
+      _newGame();
+      return;
+    }
     if (gameCtrl.isDaily.value) {
       // Thử thách ngày: chơi lại CÙNG bàn (seed theo ngày), không cần mạng,
       // không thưởng lại (checkEnd tự chặn nếu đã hoàn thành hôm nay).

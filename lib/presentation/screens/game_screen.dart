@@ -264,6 +264,35 @@ class GameScreen extends StatelessWidget {
         ],
       );
     }
+    // Sinh tồn (Survival — Wave 15): chỉ có màn kết thúc (hết giờ) — điểm + kỷ lục.
+    if (ctrl.isSurvival.value) {
+      return NeonDialog.panel(
+        title: 'survival_over'.tr,
+        color: NeonTheme.orange,
+        icon: Icons.timer_rounded,
+        message: '${'hud_score'.tr}: ${fmtNum(ctrl.score.value)}\n'
+            '${'survival_best'.tr}: ${fmtNum(ctrl.survivalHigh.value)}',
+        actions: [
+          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.orange, onTap: sc.quit),
+        ],
+      );
+    }
+    // Mê cung neon (Labyrinth — Wave 15): chế độ phụ — không tốn mạng, chơi lại.
+    if (ctrl.isLabyrinth.value) {
+      return NeonDialog.panel(
+        title: win ? 'victory'.tr : 'retry'.tr,
+        color: win ? NeonTheme.lime : NeonTheme.cyan,
+        icon: win ? Icons.emoji_events_rounded : Icons.account_tree_rounded,
+        message:
+            '${'labyrinth_hud'.tr}: ${ctrl.dropped.value} / ${ctrl.level.dropTarget}',
+        content: win ? _celebration(ctrl) : null,
+        actions: [
+          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+        ],
+      );
+    }
     // Thử thách hằng ngày: chế độ phụ — không tốn mạng, luôn cho chơi lại (CÙNG
     // bàn theo ngày). Thắng lần đầu/ngày → khoe streak + thưởng; chơi lại đã
     // hoàn thành → báo done. Thua → hiện mục tiêu.
@@ -306,6 +335,9 @@ class GameScreen extends StatelessWidget {
   }
 
   String _objectiveText(GameController ctrl) {
+    // Survival (Wave 15): target giả khổng lồ (1<<28) → chỉ hiện ĐIỂM (như Endless),
+    // tránh "0 / 268.435.456" xấu xí.
+    if (ctrl.isSurvival.value) return fmtNum(ctrl.score.value);
     switch (ctrl.level.objective) {
       case ObjectiveType.score:
         return '${fmtNum(ctrl.score.value)} / ${fmtNum(ctrl.targetScore.value)}';
@@ -429,6 +461,10 @@ class GameScreen extends StatelessWidget {
                         ? 'color_rush_title'.tr
                         : ctrl.isSoda.value
                         ? 'soda_title'.tr
+                        : ctrl.isSurvival.value
+                        ? 'survival_title'.tr
+                        : ctrl.isLabyrinth.value
+                        ? 'labyrinth_title'.tr
                         : ctrl.isEndless.value
                         ? 'endless_title'.tr
                         : 'stage_n'.trParams({'n': '${ctrl.currentLevel.value}'}),

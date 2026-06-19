@@ -327,6 +327,43 @@ extension GameControllerScoring on GameController {
       }
       return null;
     }
+    // Sinh tồn (Survival — Wave 15): KHÔNG có "win" — sống tới khi HẾT GIỜ; điểm
+    // = thành tích (kỷ lục riêng). Thưởng xu theo điểm (chống farm). Như Endless.
+    if (isSurvival.value) {
+      if (isOutOfTime) {
+        _resolved = true;
+        lastStars = 0;
+        lastStreakBonus = 0;
+        lastCoinReward = discountSideModeReward((score.value ~/ 400) * 5);
+        addCoins(lastCoinReward);
+        if (score.value > survivalHigh.value) {
+          survivalHigh.value = score.value;
+          unawaited(_store.setInt(StorageKeys.survivalHigh, survivalHigh.value));
+        }
+        return 'lose'; // panel kết thúc (không có "next")
+      }
+      return null;
+    }
+    // Mê cung neon (Labyrinth — Wave 15): thắng khi đưa đủ tinh thể xuống đáy,
+    // thua khi hết lượt. Thưởng xu theo sao, side-mode isolation.
+    if (isLabyrinth.value) {
+      if (hasWon) {
+        _resolved = true;
+        lastStars = computeStars();
+        lastStreakBonus = 0;
+        lastCoinReward = discountSideModeReward(30 + lastStars * 15);
+        addCoins(lastCoinReward);
+        return 'win';
+      }
+      if (movesLeft.value <= 0) {
+        _resolved = true;
+        lastStars = 0;
+        lastCoinReward = 0;
+        lastStreakBonus = 0;
+        return 'lose';
+      }
+      return null;
+    }
     // Thử thách hằng ngày: thắng khi đạt mục tiêu, thua khi hết lượt. Thưởng
     // xu/shard + cộng streak CHỈ 1 lần/ngày (chơi lại không farm được). KHÔNG
     // đụng win-streak/level-unlock.

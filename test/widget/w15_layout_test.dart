@@ -32,7 +32,8 @@ void main() {
     '##....##',
   ]);
 
-  NeonJewelGame buildGame(List<List<CellKind>>? layout) {
+  NeonJewelGame buildGame(List<List<CellKind>>? layout,
+      {List<List<FlowDir>>? flow}) {
     final g = Get.put(GameController());
     g.currentLevel.value = 1; // màn score thường (objective không liên quan layout)
     return NeonJewelGame(
@@ -44,6 +45,7 @@ void main() {
       muteSfx: true,
       boardSeed: 42,
       layoutOverride: layout,
+      flowOverride: flow,
     );
   }
 
@@ -83,6 +85,32 @@ void main() {
         }
       }
       expect(filled, 64); // bàn đặc đầy đủ
+    });
+  });
+
+  test('Phase 2 — bàn có DÒNG CHẢY mount + fill đầy, không exception', () async {
+    await TestWidgetsFlutterBinding.instance.runAsync(() async {
+      // hàng giữa chảy phải, còn lại chảy xuống (S-bend).
+      final flow = flowFromMap([
+        'vvvvvvvv',
+        'vvvvvvvv',
+        'vvvvvvvv',
+        '>>>>>>>v',
+        'vvvvvvvv',
+        'vvvvvvvv',
+        'vvvvvvvv',
+        'vvvvvvvv',
+      ]);
+      final game = buildGame(null, flow: flow);
+      game.onGameResize(Vector2(560, 800));
+      await game.onLoad();
+      var filled = 0;
+      for (int r = 0; r < 8; r++) {
+        for (int c = 0; c < 8; c++) {
+          if (game.grid[r][c] != null) filled++;
+        }
+      }
+      expect(filled, 64); // mọi ô chơi có gem
     });
   });
 }

@@ -7,7 +7,7 @@ import '../core/neon_theme.dart';
 import '../data/cosmetics.dart';
 import '../data/levels.dart' show ObstacleType;
 import '../logic/gem_data.dart' show Cell;
-import '../logic/settle.dart' show CellKind;
+import '../logic/settle.dart' show CellKind, FlowDir, flowDelta;
 
 /// Cache hiệu ứng dùng chung — pre-render 1 lần để tránh MaskFilter.blur mỗi frame
 /// (blur per-frame là nguyên nhân lag chính trên mobile).
@@ -365,6 +365,77 @@ class BlockedLayer extends PositionComponent {
   }
 }
 
+/// Wave 15 Phase 2 — lớp DÒNG CHẢY (Gravity Streams): vẽ mũi tên neon + chấm sáng
+/// chạy ở các ô có hướng KHÁC down (down là mặc định → bỏ qua cho đỡ rối). Đọc lưới
+/// `flow` (cùng tham chiếu engine) → tĩnh suốt ván; chấm sáng animate theo `_t`.
+class FlowLayer extends PositionComponent {
+  final List<List<FlowDir>> flow;
+  final bool Function(int r, int c) isWall;
+  final int rows;
+  final int cols;
+  final double cellSize;
+  final Vector2 origin;
+  final Color accent;
+  double _t = 0;
+
+  FlowLayer({
+    required this.flow,
+    required this.isWall,
+    required this.rows,
+    required this.cols,
+    required this.cellSize,
+    required this.origin,
+    required this.accent,
+  });
+
+  @override
+  void update(double dt) => _t += dt;
+
+  @override
+  void render(Canvas canvas) {
+    final phase = (_t * 1.6) % 1.0; // chấm sáng chạy 0→1 theo hướng
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        final f = flow[r][c];
+        if (f == FlowDir.down || isWall(r, c)) continue;
+        final cx = origin.x + c * cellSize + cellSize / 2;
+        final cy = origin.y + r * cellSize + cellSize / 2;
+        final d = flowDelta(f); // [dr, dc]
+        final dx = d[1].toDouble(), dy = d[0].toDouble();
+        // nền ô tô nhẹ theo accent (đánh dấu vùng dòng chảy)
+        final rect = Rect.fromLTWH(origin.x + c * cellSize, origin.y + r * cellSize,
+                cellSize, cellSize)
+            .deflate(cellSize * 0.06);
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.16)),
+          Paint()..color = accent.withValues(alpha: 0.10),
+        );
+        // mũi tên chevron hướng dòng
+        final h = cellSize * 0.22;
+        final tip = Offset(cx + dx * h, cy + dy * h);
+        // vector vuông góc
+        final px = -dy, py = dx;
+        final p = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.4
+          ..strokeCap = StrokeCap.round
+          ..color = accent.withValues(alpha: 0.7);
+        canvas.drawLine(
+            tip, Offset(cx - dx * h * 0.2 + px * h, cy - dy * h * 0.2 + py * h), p);
+        canvas.drawLine(
+            tip, Offset(cx - dx * h * 0.2 - px * h, cy - dy * h * 0.2 - py * h), p);
+        // chấm sáng chạy theo hướng (từ -0.5 ô tới +0.5 ô)
+        final off = (phase - 0.5) * cellSize * 0.8;
+        canvas.drawCircle(
+          Offset(cx + dx * off, cy + dy * off),
+          cellSize * 0.06,
+          Paint()..color = Colors.white.withValues(alpha: 0.85),
+        );
+      }
+    }
+  }
+}
+
 /// Lớp jelly (obstacle): phủ ô có jelly bằng khối trong mờ phát sáng.
 /// Đọc trực tiếp lưới jelly (cùng tham chiếu với game) nên tự cập nhật khi phá.
 class JellyLayer extends PositionComponent {
@@ -468,6 +539,9 @@ class ObstacleLayer extends PositionComponent {
           case ObstacleType.jam:
             _drawJam(canvas, rect);
             break;
+          case ObstacleType.cage:
+            _drawCage(canvas, rect, obstacle[r][c]);
+            break;
           case ObstacleType.none:
             break;
         }
@@ -563,6 +637,40 @@ class ObstacleLayer extends PositionComponent {
         cellSize * 0.08,
         bubble,
       );
+    }
+  }
+
+  /// Gem nhốt (cage) — KHÔNG che gem (vẫn match được): chỉ vẽ SONG SẮT neon +
+  /// khung. Còn 2 lớp → 3 thanh dọc dày; còn 1 lớp → 1 thanh mảnh (lồng đã nứt).
+  void _drawCage(Canvas canvas, Rect rect, int layer) {
+    final rr = RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.14));
+    // khung neon
+    canvas.drawRRect(
+      rr,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = layer >= 2 ? 3 : 2
+        ..color = NeonTheme.cyan.withValues(alpha: layer >= 2 ? 0.9 : 0.55),
+    );
+    // song sắt dọc (2 lớp = 3 thanh; 1 lớp = 1 thanh giữa)
+    final bars = layer >= 2 ? const [0.32, 0.5, 0.68] : const [0.5];
+    final bar = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = cellSize * (layer >= 2 ? 0.05 : 0.035)
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white.withValues(alpha: layer >= 2 ? 0.75 : 0.5);
+    for (final fx in bars) {
+      canvas.drawLine(
+        Offset(rect.left + rect.width * fx, rect.top + rect.height * 0.12),
+        Offset(rect.left + rect.width * fx, rect.bottom - rect.height * 0.12),
+        bar,
+      );
+    }
+    // 2 chốt khoá nhỏ ở mép (gợi ý "ổ khoá")
+    if (layer >= 2) {
+      final lock = Paint()..color = NeonTheme.cyan.withValues(alpha: 0.85);
+      canvas.drawCircle(
+          Offset(rect.center.dx, rect.top + rect.height * 0.12), cellSize * 0.05, lock);
     }
   }
 

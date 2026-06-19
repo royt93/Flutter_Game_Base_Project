@@ -165,4 +165,114 @@ void main() {
       expect(res.spawns, isEmpty);
     });
   });
+
+  group('Wave 15 — settleBoardFlow (Gravity Streams)', () {
+    // map: kind+occupancy; flowMap: hướng mỗi ô (v/^/</>).
+    Set<String> filledAfter(List<String> map, List<String> flowMap) {
+      final s = _grid(map);
+      final flow = parseFlow(flowMap);
+      final res = settleBoardFlow(
+          s.rows, s.cols, s.kindAt, (r, c) => flow[r][c], s.occupied);
+      final movedFrom = {for (final m in res.moves) '${m.fromR},${m.fromC}'};
+      final occ = <String>{};
+      for (int r = 0; r < s.rows; r++) {
+        for (int c = 0; c < s.cols; c++) {
+          if (s.occupied(r, c) && !movedFrom.contains('$r,$c')) occ.add('$r,$c');
+        }
+      }
+      for (final m in res.moves) {
+        occ.add('${m.toR},${m.toC}');
+      }
+      for (final sp in res.spawns) {
+        occ.add('${sp.r},${sp.c}');
+      }
+      return occ;
+    }
+
+    Set<String> playOf(List<String> map) {
+      final s = _grid(map);
+      final out = <String>{};
+      for (int r = 0; r < s.rows; r++) {
+        for (int c = 0; c < s.cols; c++) {
+          if (s.kindAt(r, c) != CellKind.wall) out.add('$r,$c');
+        }
+      }
+      return out;
+    }
+
+    test('flow toàn down = settleBoard: bàn rỗng refill đầy', () {
+      const map = ['....', '....', '....'];
+      const flow = ['vvvv', 'vvvv', 'vvvv'];
+      expect(filledAfter(map, flow), equals(playOf(map)));
+    });
+
+    test('1 hàng flow PHẢI: spawn ở mép trái, chảy phải, lấp đầy', () {
+      const map = ['....'];
+      const flow = ['>>>>'];
+      expect(filledAfter(map, flow), equals(playOf(map)));
+    });
+
+    test('1 cột flow LÊN: spawn ở đáy, chảy lên, lấp đầy', () {
+      const map = ['.', '.', '.'];
+      const flow = ['^', '^', '^'];
+      expect(filledAfter(map, flow), equals(playOf(map)));
+    });
+
+    test('dòng chảy chữ S (down→phải→down) lấp đầy mọi ô chơi', () {
+      // cột trái chảy xuống, hàng giữa chảy phải, cột phải chảy xuống.
+      const map = ['....', '....', '....', '....'];
+      const flow = [
+        'v..v',
+        'v..v',
+        '>>>v',
+        'v..v',
+      ];
+      expect(filledAfter(map, flow), equals(playOf(map)));
+    });
+
+    test('tất định: cùng input → cùng kết quả', () {
+      const map = ['....', '....'];
+      const flow = ['>>>v', 'vvvv'];
+      final s = _grid(map);
+      final f = parseFlow(flow);
+      final a =
+          settleBoardFlow(s.rows, s.cols, s.kindAt, (r, c) => f[r][c], s.occupied);
+      final b =
+          settleBoardFlow(s.rows, s.cols, s.kindAt, (r, c) => f[r][c], s.occupied);
+      expect(a.moves, equals(b.moves));
+      expect(a.spawns, equals(b.spawns));
+    });
+
+    test('parseFlow + flowDirFromChar đúng', () {
+      expect(flowDirFromChar('^'), FlowDir.up);
+      expect(flowDirFromChar('<'), FlowDir.left);
+      expect(flowDirFromChar('>'), FlowDir.right);
+      expect(flowDirFromChar('.'), FlowDir.down);
+      expect(flowDelta(FlowDir.right), const [0, 1]);
+    });
+  });
+
+  group('Wave 15 — no-drop (gem bất động)', () {
+    // gem ở ô no-drop ('o') KHÔNG rơi; chặn gem trên rơi qua; ô dưới tự refill.
+    test('noDrop chặn rơi + giữ nguyên, ô dưới tự refill', () {
+      // row0 gem, row1 noDrop gem, row2 trống (cô lập dưới đảo nổi).
+      final s = _grid(const ['g', 'o', '.']);
+      final flow = parseFlow(const ['v', 'v', 'v']);
+      final res =
+          settleBoardFlow(s.rows, s.cols, s.kindAt, (r, c) => flow[r][c], s.occupied);
+      // gem row0 KHÔNG rơi (bị noDrop chặn) → không move.
+      expect(res.moves, isEmpty);
+      // row2 (dưới đảo) tự refill (source vì noDrop không cấp gem).
+      expect(res.spawns.map((sp) => '${sp.r},${sp.c}'), contains('2,0'));
+    });
+
+    test('ô no-drop TRỐNG tự refill tại chỗ', () {
+      // dùng lưới thủ công: 1 ô no-drop trống.
+      CellKind kind(int r, int c) => CellKind.noDrop;
+      bool occ(int r, int c) => false; // trống
+      final res = settleBoardFlow(1, 1, kind, (r, c) => FlowDir.down, occ);
+      expect(res.spawns.length, 1);
+      expect(res.spawns.first.r, 0);
+    });
+  });
 }

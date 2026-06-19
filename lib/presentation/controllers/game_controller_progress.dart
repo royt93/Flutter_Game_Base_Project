@@ -62,6 +62,7 @@ extension GameControllerProgress on GameController {
       StorageKeys.tutorialSeen,
       StorageKeys.viewMode,
       StorageKeys.endlessHigh,
+      StorageKeys.survivalHigh,
       StorageKeys.sideModeDay,
       StorageKeys.sideModeWins,
       StorageKeys.bpXp,

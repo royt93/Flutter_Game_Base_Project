@@ -3,7 +3,7 @@ id: w15-2-gravity-streams
 title: Dòng chảy Neon / Gravity Streams (cơ chế ĐỘC QUYỀN)
 wave: 15
 phase: 2
-status: todo
+status: done
 owner: claude
 ---
 

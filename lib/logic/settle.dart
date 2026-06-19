@@ -84,6 +84,46 @@ class SettleResult {
   const SettleResult(this.moves, this.spawns);
 }
 
+/// Hướng "trọng lực" cục bộ của 1 ô (Wave 15 Phase 2 — Gravity Streams). Mặc định
+/// [down] (khớp hành vi cũ). Gem chảy theo hướng của ô nó đang đứng.
+enum FlowDir { down, up, left, right }
+
+/// Ký tự bản đồ flow → FlowDir. `v`=down, `^`=up, `<`=left, `>`=right, còn lại=down.
+FlowDir flowDirFromChar(String ch) {
+  switch (ch) {
+    case '^':
+      return FlowDir.up;
+    case '<':
+      return FlowDir.left;
+    case '>':
+      return FlowDir.right;
+    case 'v':
+    case 'V':
+    default:
+      return FlowDir.down;
+  }
+}
+
+/// Parse bản đồ flow (mỗi String = 1 hàng) thành lưới [FlowDir].
+List<List<FlowDir>> parseFlow(List<String> rowsText) => [
+      for (final line in rowsText)
+        [for (final ch in line.split('')) flowDirFromChar(ch)],
+    ];
+
+/// (dr,dc) của 1 hướng flow.
+List<int> flowDelta(FlowDir f) {
+  switch (f) {
+    case FlowDir.down:
+      return const [1, 0];
+    case FlowDir.up:
+      return const [-1, 0];
+    case FlowDir.left:
+      return const [0, -1];
+    case FlowDir.right:
+      return const [0, 1];
+  }
+}
+
 /// Kết quả settle TỔNG QUÁT: move cho gem hiện có (orig→final) + ô spawn gem mới.
 class BoardSettle {
   final List<SettleMove> moves;
@@ -215,6 +255,175 @@ BoardSettle settleBoard(
     }
   }
   // depth = thứ hạng spawn trong cùng cột (đỉnh xa nhất → depth lớn) cho stagger.
+  final perCol = <int, int>{};
+  final spawns = <SettleSpawn>[];
+  for (int i = existing; i < total; i++) {
+    final c = finalC[i];
+    final d = perCol[c] ?? 0;
+    perCol[c] = d + 1;
+    spawns.add(SettleSpawn(finalR[i], c, d));
+  }
+  return BoardSettle(moves, spawns);
+}
+
+/// Settle theo DÒNG CHẢY (Phase 2 — Gravity Streams): mỗi ô có hướng [flowAt]; gem
+/// chảy 1 bước theo hướng ô nó đang đứng (nếu ô đích trống & là ô chơi). Refill ở
+/// "ô NGUỒN" (không có hàng xóm nào chảy vào). Giữ TRƯỢT CHÉO cho ô hướng [down]
+/// (kế thừa Phase 1). Default flow = down → tương đương [settleBoard].
+///
+/// Tất định (chọn nguồn theo ưu tiên hướng cố định khi tranh chấp 1 ô) & HỘI TỤ
+/// nếu **KHÔNG có chu trình hướng** (mỗi move đẩy gem gần sink hơn). Guard cap vòng
+/// lặp để an toàn nếu level lỡ tạo chu trình.
+BoardSettle settleBoardFlow(
+  int rows,
+  int cols,
+  CellKind Function(int r, int c) kindAt,
+  FlowDir Function(int r, int c) flowAt,
+  bool Function(int r, int c) occupied,
+) {
+  const empty = -1, wall = -2;
+  final g = List.generate(
+    rows,
+    (r) => List.generate(
+      cols,
+      (c) => kindAt(r, c) == CellKind.wall ? wall : (occupied(r, c) ? 0 : empty),
+    ),
+  );
+  final origR = <int>[], origC = <int>[];
+  var id = 0;
+  for (int r = 0; r < rows; r++) {
+    for (int c = 0; c < cols; c++) {
+      if (g[r][c] == 0) {
+        g[r][c] = id;
+        origR.add(r);
+        origC.add(c);
+        id++;
+      }
+    }
+  }
+  final existing = id;
+  var spawnCount = 0;
+  bool inb(int r, int c) => r >= 0 && r < rows && c >= 0 && c < cols;
+  bool play(int r, int c) => inb(r, c) && g[r][c] != wall;
+  // Wave 15 Phase 3 — ô no-drop: gem KHÔNG bị trọng lực kéo (đảo nổi). Không là
+  // nguồn/đích di chuyển; tự refill tại chỗ khi trống.
+  bool noDrop(int r, int c) => inb(r, c) && kindAt(r, c) == CellKind.noDrop;
+
+  // Ô nguồn: KHÔNG hàng xóm MOVABLE nào chảy vào (Z + flow[Z] == ô này). → gem chỉ
+  // có thể xuất hiện ở đây bằng spawn (đầu dòng chảy / đỉnh bàn). Ô no-drop KHÔNG
+  // cấp gem cho hàng xóm (gem của nó bất động).
+  bool isSource(int r, int c) {
+    if (g[r][c] == wall) return false;
+    for (final nb in const [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1]
+    ]) {
+      final zr = r + nb[0], zc = c + nb[1];
+      if (!play(zr, zc) || noDrop(zr, zc)) continue;
+      final dd = flowDelta(flowAt(zr, zc));
+      if (zr + dd[0] == r && zc + dd[1] == c) return false;
+    }
+    return true;
+  }
+
+  // 1 bước di chuyển đồng thời (snapshot): gom mọi gem muốn chảy → ô đích, tranh
+  // chấp chọn theo ưu tiên hướng vào (trên→trái→phải→dưới) → tất định.
+  bool movePass() {
+    final desired = <int, List<List<int>>>{};
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        if (g[r][c] < 0 || noDrop(r, c)) continue; // gem no-drop bất động
+        final dd = flowDelta(flowAt(r, c));
+        final tr = r + dd[0], tc = c + dd[1];
+        if (!inb(tr, tc) || g[tr][tc] != empty || noDrop(tr, tc)) continue;
+        final prio = dd[0] == 1
+            ? 0
+            : dd[1] == 1
+                ? 1
+                : dd[1] == -1
+                    ? 2
+                    : 3;
+        (desired[tr * cols + tc] ??= []).add([r, c, prio]);
+      }
+    }
+    var moved = false;
+    desired.forEach((key, srcs) {
+      srcs.sort((a, b) => a[2].compareTo(b[2]));
+      final s = srcs.first;
+      final tr = key ~/ cols, tc = key % cols;
+      g[tr][tc] = g[s[0]][s[1]];
+      g[s[0]][s[1]] = empty;
+      moved = true;
+    });
+    return moved;
+  }
+
+  // Trượt chéo — CHỈ cho ô hướng down (kế thừa Phase 1).
+  bool diagonalPass() {
+    var moved = false;
+    for (int c = 0; c < cols; c++) {
+      for (int r = rows - 2; r >= 0; r--) {
+        if (g[r][c] < 0 || noDrop(r, c) || flowAt(r, c) != FlowDir.down) continue;
+        if (g[r + 1][c] == empty) continue;
+        for (final dc in const [-1, 1]) {
+          final tc = c + dc;
+          if (tc < 0 || tc >= cols) continue;
+          if (g[r + 1][tc] != empty || noDrop(r + 1, tc) || g[r][tc] != wall) {
+            continue;
+          }
+          g[r + 1][tc] = g[r][c];
+          g[r][c] = empty;
+          moved = true;
+          break;
+        }
+      }
+    }
+    return moved;
+  }
+
+  bool spawnPass() {
+    var moved = false;
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        // spawn ở ô NGUỒN, hoặc ô no-drop trống (tự refill tại chỗ).
+        if (g[r][c] == empty && (isSource(r, c) || noDrop(r, c))) {
+          g[r][c] = existing + spawnCount;
+          spawnCount++;
+          moved = true;
+        }
+      }
+    }
+    return moved;
+  }
+
+  var any = true, guard = 0;
+  final guardMax = rows * cols * 12 + 32;
+  while (any && guard++ < guardMax) {
+    any = false;
+    if (movePass()) any = true;
+    if (diagonalPass()) any = true;
+    if (spawnPass()) any = true;
+  }
+
+  final total = existing + spawnCount;
+  final finalR = List.filled(total, -1), finalC = List.filled(total, -1);
+  for (int r = 0; r < rows; r++) {
+    for (int c = 0; c < cols; c++) {
+      final v = g[r][c];
+      if (v >= 0) {
+        finalR[v] = r;
+        finalC[v] = c;
+      }
+    }
+  }
+  final moves = <SettleMove>[];
+  for (int i = 0; i < existing; i++) {
+    if (finalR[i] != origR[i] || finalC[i] != origC[i]) {
+      moves.add(SettleMove(origR[i], origC[i], finalR[i], finalC[i]));
+    }
+  }
   final perCol = <int, int>{};
   final spawns = <SettleSpawn>[];
   for (int i = existing; i < total; i++) {

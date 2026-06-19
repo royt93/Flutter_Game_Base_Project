@@ -29,10 +29,16 @@ class StoryBeat {
 }
 
 /// Toàn bộ beat: 5 thế giới × 3 thời điểm = 15 beat (mỗi beat 2 dòng).
+/// Số thế giới CÓ cốt truyện (5 vệ thần neon — Luma/Vera/Cir/Ember/Nyx). Thế
+/// giới 6-8 (Wave 15) CHƯA có NPC/cốt truyện → vào thẳng màn (maybeShow → null).
+const int kStoryWorlds = 5;
+
 final List<StoryBeat> kStory = [
   for (final w in kWorlds)
-    for (final t in StoryTrigger.values)
-      StoryBeat(id: 'w${w.index}_${t.name}', world: w.index, trigger: t, npc: w.index),
+    if (w.index <= kStoryWorlds)
+      for (final t in StoryTrigger.values)
+        StoryBeat(
+            id: 'w${w.index}_${t.name}', world: w.index, trigger: t, npc: w.index),
 ];
 
 /// Tìm beat theo [trigger] + [world]. Null nếu không có.

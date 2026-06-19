@@ -109,6 +109,15 @@ class GameController extends GetxController {
   final RxInt sodaFill = 0.obs; // tổng gem clear tích luỹ (mực nước)
   final RxInt sodaCollected = 0.obs; // số chai đã nổi lên đỉnh
 
+  // --- Sinh tồn (Survival — Wave 15): đếm ngược, combo +giây, sống lâu = điểm ---
+  final RxBool isSurvival = false.obs;
+  LevelConfig? _survivalCfg;
+  final RxInt survivalHigh = 0.obs; // điểm cao nhất (kỷ lục Survival)
+
+  // --- Mê cung neon (Labyrinth — Wave 15): đưa tinh thể qua mê cung xuống đáy ---
+  final RxBool isLabyrinth = false.obs;
+  LevelConfig? _labyrinthCfg;
+
   // --- Rhythm mode (Wave 8) — ghép theo nhịp ---
   final RxBool isRhythm = false.obs;
   LevelConfig? _rhythmCfg;
@@ -276,6 +285,7 @@ class GameController extends GetxController {
     bestCombo.value = _store.getInt(StorageKeys.bestCombo, def: 0);
     coinsEarnedTotal.value = _store.getInt(StorageKeys.coinsEarned, def: 0);
     endlessHigh.value = _store.getInt(StorageKeys.endlessHigh, def: 0);
+    survivalHigh.value = _store.getInt(StorageKeys.survivalHigh, def: 0);
     _migrateShardsToCoins(); // Wave 9: shard cũ → xu (×10), chạy 1 lần
     _loadCosmetics(); // Wave 9: skin gem / theme bàn đã sở hữu + đang chọn
     refillLives();
@@ -288,6 +298,8 @@ class GameController extends GetxController {
       _rhythmCfg ??
       _colorRushCfg ??
       _sodaCfg ??
+      _survivalCfg ??
+      _labyrinthCfg ??
       _versusCfg ??
       _dailyCfg ??
       kLevels[currentLevel.value - 1];
@@ -303,6 +315,8 @@ class GameController extends GetxController {
       isRhythm.value ||
       isColorRush.value ||
       isSoda.value ||
+      isSurvival.value ||
+      isLabyrinth.value ||
       isDaily.value ||
       isVersus.value;
 
@@ -315,6 +329,8 @@ class GameController extends GetxController {
     bool rhythm = false,
     bool colorRush = false,
     bool soda = false,
+    bool survival = false,
+    bool labyrinth = false,
     bool daily = false,
   }) {
     isEndless.value = endless;
@@ -323,6 +339,8 @@ class GameController extends GetxController {
     isRhythm.value = rhythm;
     isColorRush.value = colorRush;
     isSoda.value = soda;
+    isSurvival.value = survival;
+    isLabyrinth.value = labyrinth;
     isDaily.value = daily;
     isVersus.value =
         false; // versus chỉ bật qua _initVersus; mọi start* khác tắt
@@ -332,6 +350,8 @@ class GameController extends GetxController {
     if (!rhythm) _rhythmCfg = null;
     if (!colorRush) _colorRushCfg = null;
     if (!soda) _sodaCfg = null;
+    if (!survival) _survivalCfg = null;
+    if (!labyrinth) _labyrinthCfg = null;
     if (!daily) _dailyCfg = null;
     _versusCfg = null;
   }

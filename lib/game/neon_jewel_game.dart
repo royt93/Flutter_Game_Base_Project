@@ -65,6 +65,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     this.muteSfx = false,
     this.boardSeed,
     this.layoutOverride,
+    this.flowOverride,
   });
 
   /// Audio SFX của bàn (null khi [muteSfx] — versus tắt để không chồng âm 2 bàn).
@@ -101,9 +102,16 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// màn không khai báo `layout` → KHÔNG hồi quy mọi màn/chế độ hiện có.
   late List<List<CellKind>> _cellKind;
 
+  /// Wave 15 Phase 2 — hướng dòng chảy mỗi ô (mặc định down).
+  late List<List<FlowDir>> _flowDir;
+
+  /// Dòng chảy đè (test/Labyrinth) — như [layoutOverride].
+  final List<List<FlowDir>>? flowOverride;
+
   /// Bố cục đang dùng: ưu tiên [layoutOverride] (test/Labyrinth) rồi tới config màn.
   List<List<CellKind>>? get _activeLayout =>
       layoutOverride ?? controller.level.layout;
+  List<List<FlowDir>>? get _activeFlow => flowOverride ?? controller.level.flow;
 
   void _buildLayout() {
     final layout = _activeLayout;
@@ -116,12 +124,23 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
             : CellKind.play,
       ),
     );
+    final flow = _activeFlow;
+    _flowDir = List.generate(
+      rows,
+      (r) => List.generate(
+        cols,
+        (c) => (flow != null && r < flow.length && c < flow[r].length)
+            ? flow[r][c]
+            : FlowDir.down,
+      ),
+    );
   }
 
   bool _isWall(int r, int c) => _cellKind[r][c] == CellKind.wall;
 
-  /// Bàn có ít nhất 1 ô tường/no-drop (cần dùng settle engine có lỗ).
-  bool get _hasLayout => _activeLayout != null;
+  /// Bàn có bố cục đặc biệt (tường/lỗ HOẶC dòng chảy) → dùng settle engine.
+  bool get _hasLayout => _activeLayout != null || _activeFlow != null;
+  bool get _hasFlow => _activeFlow != null;
 
   /// Lớp chứa gem — tách riêng để rung (shake) toàn bàn mà không ảnh hưởng nền.
   late final PositionComponent boardLayer;
@@ -156,7 +175,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       origin: boardOrigin,
       isWall: _isWall, // Wave 15: bỏ vẽ slot ở ô tường
     )..priority = -2);
-    if (_hasLayout) {
+    if (_activeLayout != null) {
       boardLayer.add(BlockedLayer(
         kind: _cellKind,
         rows: rows,
@@ -164,6 +183,17 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         cellSize: cellSize,
         origin: boardOrigin,
       )..priority = -1); // khối đá neon ở ô tường (dưới gem)
+    }
+    if (_hasFlow) {
+      boardLayer.add(FlowLayer(
+        flow: _flowDir,
+        isWall: _isWall,
+        rows: rows,
+        cols: cols,
+        cellSize: cellSize,
+        origin: boardOrigin,
+        accent: NeonTheme.cyan,
+      )..priority = 2); // mũi tên dòng chảy TRÊN gem (signature dễ thấy)
     }
     _buildJelly();
     boardLayer.add(JellyLayer(
@@ -305,13 +335,18 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       controller.obstacleTotal.value = 0; // không tính vào điều kiện thắng
       return;
     }
-    // licorice: 2 LỚP/ô (mục tiêu = số lớp = count × kLicoriceLayers).
-    final layers = type == ObstacleType.licorice ? kLicoriceLayers : 1;
+    // licorice/cage: 2 LỚP/ô (mục tiêu = số lớp). Cage còn THƯA (chỉ ô (r+c) chẵn
+    // trong pattern) → 2 ô nhốt không bao giờ kề nhau → luôn xếp được hàng xóm để
+    // ghép giải cứu (winnability).
+    final layers = type == ObstacleType.licorice
+        ? kLicoriceLayers
+        : (type == ObstacleType.cage ? kCageLayers : 1);
+    final sparse = type == ObstacleType.cage;
     int total = 0;
     final pattern = controller.level.obstaclePattern;
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
-        if (patternHas(pattern, r, c, rows, cols)) {
+        if (patternHas(pattern, r, c, rows, cols) && (!sparse || (r + c).isEven)) {
           obstacle[r][c] = layers;
           total += layers;
         }
@@ -1405,7 +1440,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final type = _obstacleType;
     if (type == ObstacleType.none) return;
     final reduce = <Cell>{};
-    if (type == ObstacleType.ice) {
+    if (type == ObstacleType.ice || type == ObstacleType.cage) {
+      // ice/cage: vỡ 1 lớp ở CHÍNH ô bị clear (gem đã nằm trong match).
       for (final cell in cleared) {
         if (obstacle[cell.row][cell.col] > 0) reduce.add(cell);
       }
@@ -1459,6 +1495,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         return const Color(0xFF7A4BFF);
       case ObstacleType.jam:
         return const Color(0xFFFF4D6D);
+      case ObstacleType.cage:
+        return NeonTheme.cyan;
       case ObstacleType.none:
         return Colors.white;
     }
@@ -1689,15 +1727,18 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     await Future.wait(futures);
   }
 
-  /// Wave 15 — trọng lực cho bàn CÓ BỐ CỤC (tường/lỗ): dùng settle engine thuần
-  /// [settleBoard] (rơi thẳng + TRƯỢT CHÉO vòng qua tường + refill từ đỉnh). Gem
-  /// có thể dời nhiều ô → áp move kiểu "gom component TRƯỚC + dọn ô gốc, rồi mới
-  /// đặt vào ô cuối" (an toàn cả khi ô-đích của gem này là ô-gốc của gem khác).
+  /// Wave 15 — trọng lực cho bàn CÓ BỐ CỤC (tường/lỗ/dòng chảy): dùng settle engine
+  /// thuần. Có dòng chảy → [settleBoardFlow] (gem chảy theo hướng ô); chỉ tường/lỗ
+  /// → [settleBoard] (rơi thẳng + trượt chéo). Gem có thể dời nhiều ô → áp move kiểu
+  /// "gom component TRƯỚC + dọn ô gốc, rồi đặt ô cuối" (an toàn khi đích = gốc khác).
   Future<void> _applyGravityWithLayout() async {
-    final res = settleBoard(
+    // settleBoardFlow tổng quát: flow mặc định down (== settleBoard + trượt chéo)
+    // và xử lý cả no-drop. `_flowDir` đã default down khi màn không khai báo flow.
+    final res = settleBoardFlow(
       rows,
       cols,
       (r, c) => _cellKind[r][c],
+      (r, c) => _flowDir[r][c],
       (r, c) => grid[r][c] != null,
     );
     final futures = <Future>[];
@@ -1721,12 +1762,17 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       ));
     }
     for (final s in res.spawns) {
+      // Vị trí xuất phát = NGƯỢC hướng dòng chảy (gem trôi vào từ đầu nguồn), xếp
+      // tầng theo depth. Down → từ trên; right → từ trái; v.v.
+      final fd = flowDelta(_hasFlow ? _flowDir[s.r][s.c] : FlowDir.down);
+      final startR = s.r - fd[0] * (s.depth + 1);
+      final startC = s.c - fd[1] * (s.depth + 1);
       final g = GemComponent(
         color: _randomColor(),
         type: GemType.normal,
         row: s.r,
         col: s.c,
-        position: _cellCenter(-1 - s.depth, s.c), // rơi từ trên xếp tầng
+        position: _cellCenter(startR, startC),
         cellSize: cellSize,
       );
       g.isLucky = _rnd.nextDouble() < 0.028;

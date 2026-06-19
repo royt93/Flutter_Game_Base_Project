@@ -187,11 +187,11 @@ class HomeScreen extends StatelessWidget {
             );
           }),
           const SizedBox(height: NeonTheme.s8),
-          // KHU THỬ THÁCH — lưới 2×4 (8 ô đều): gộp Color Rush + Soda vào lưới
-          // (bỏ 2 card full-width) → gọn chiều cao, version/copyright hiện đủ.
+          // KHU THỬ THÁCH — lưới 2×5 (10 mode): thêm Sinh tồn + Mê cung (Wave 15)
+          // mà KHÔNG tăng chiều cao (giữ no-scroll) → version/copyright vẫn hiện.
           _sectionLabel('challenge_modes'.tr),
           const SizedBox(height: NeonTheme.s8),
-          // Hàng 1: HẰNG NGÀY · VÔ TẬN · TRÙM · TRUY QUÉT MÀU.
+          // Hàng 1: HẰNG NGÀY · VÔ TẬN · TRÙM · QUÉT MÀU · TRỌNG LỰC.
           // Daily nổi bật: lime + badge 🔥/✓ ở góc (Obx theo streak).
           Row(
             children: [
@@ -247,12 +247,7 @@ class HomeScreen extends StatelessWidget {
                   },
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: NeonTheme.s8),
-          // Hàng 2: TRỌNG LỰC · NHỊP ĐIỆU · 2 NGƯỜI · NƯỚC DÂNG (Soda).
-          Row(
-            children: [
+              const SizedBox(width: NeonTheme.s8),
               Expanded(
                 child: _modeCard(
                   Icons.swap_vert_rounded,
@@ -264,7 +259,12 @@ class HomeScreen extends StatelessWidget {
                   },
                 ),
               ),
-              const SizedBox(width: NeonTheme.s8),
+            ],
+          ),
+          const SizedBox(height: NeonTheme.s8),
+          // Hàng 2: NHỊP ĐIỆU · 2 NGƯỜI · NƯỚC DÂNG · SINH TỒN · MÊ CUNG.
+          Row(
+            children: [
               Expanded(
                 child: _modeCard(
                   Icons.graphic_eq_rounded,
@@ -293,6 +293,30 @@ class HomeScreen extends StatelessWidget {
                   NeonTheme.cyan,
                   () {
                     g.startSoda();
+                    Get.to(() => const GameScreen());
+                  },
+                ),
+              ),
+              const SizedBox(width: NeonTheme.s8),
+              Expanded(
+                child: _modeCard(
+                  Icons.timer_rounded,
+                  'survival_short'.tr,
+                  NeonTheme.orange,
+                  () {
+                    g.startSurvival();
+                    Get.to(() => const GameScreen());
+                  },
+                ),
+              ),
+              const SizedBox(width: NeonTheme.s8),
+              Expanded(
+                child: _modeCard(
+                  Icons.account_tree_rounded,
+                  'labyrinth_short'.tr,
+                  NeonTheme.lime,
+                  () {
+                    g.startLabyrinth();
                     Get.to(() => const GameScreen());
                   },
                 ),
@@ -601,8 +625,8 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 26),
-            const SizedBox(height: 6),
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 5),
             Text(
               label,
               maxLines: 1,
@@ -610,9 +634,9 @@ class HomeScreen extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 11,
+                fontSize: 9, // Wave 15: nhỏ hơn cho vừa lưới 2×5 (ít ellipsis)
                 fontWeight: FontWeight.w800,
-                letterSpacing: 0.2,
+                letterSpacing: 0.1,
                 shadows: [Shadow(color: color, blurRadius: 8)],
               ),
             ),

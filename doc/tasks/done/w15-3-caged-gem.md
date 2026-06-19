@@ -3,7 +3,7 @@ id: w15-3-caged-gem
 title: Gem nhốt (Cage) + ô no-drop + mục tiêu Giải cứu
 wave: 15
 phase: 3
-status: todo
+status: done
 owner: claude
 ---
 

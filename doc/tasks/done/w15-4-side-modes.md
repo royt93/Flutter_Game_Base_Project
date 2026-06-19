@@ -3,7 +3,7 @@ id: w15-4-side-modes
 title: 2 chế độ phụ mới — Mê cung neon + Sinh tồn
 wave: 15
 phase: 4
-status: todo
+status: done
 owner: claude
 ---
 

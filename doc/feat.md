@@ -1094,13 +1094,13 @@ máy thật).
 |---|---|---|---|---|
 | 0 | Ô tường/lỗ/no-drop + bản đồ ký tự + gravity lỗ-cắt-cột | `w15-0-blocked-cells.md` | ✅ done | 🟡 TB |
 | 1 | Trượt chéo kiểu CCS (gravity vòng qua vật cản) | `w15-1-diagonal-slide.md` | ✅ done | 🔴 Cao |
-| 2 | Gravity Streams (signature — hướng trọng lực theo vùng) | `w15-2-gravity-streams.md` | 📋 todo | 🔴 Cao nhất |
-| 3 | Gem nhốt (Cage) + ô no-drop + mục tiêu Giải cứu | `w15-3-caged-gem.md` | 📋 todo | 🟡 TB |
-| 4 | 2 chế độ phụ: Mê cung neon + Sinh tồn | `w15-4-side-modes.md` | 📋 todo | 🟢 Thấp |
-| 5 | Thế giới 6-8 + màn 101-150 + playtest + i18n | `w15-5-content-worlds.md` | 📋 todo | 🟡 TB |
+| 2 | Gravity Streams (signature — hướng trọng lực theo vùng) | `w15-2-gravity-streams.md` | ✅ done | 🔴 Cao nhất |
+| 3 | Gem nhốt (Cage) + ô no-drop + mục tiêu Giải cứu | `w15-3-caged-gem.md` | ✅ done | 🟡 TB |
+| 4 | 2 chế độ phụ: Mê cung neon + Sinh tồn | `w15-4-side-modes.md` | ✅ done | 🟢 Thấp |
+| 5 | Thế giới 6-8 + màn 101-150 + playtest + i18n | `w15-5-content-worlds.md` | ✅ done | 🟡 TB |
 
-**Chú thích status**: 📋 todo (chưa bắt đầu) · 🟡 in-progress (đang code) · ✅ done
-(code + test pass + verify).
+**Chú thích status**: 📋 todo · 🟡 in-progress · ✅ done. **→ TOÀN BỘ 6 PHASE ✅ DONE
+(2026-06-19)**: 363 test pass, 0 analyzer, verify Oppo. Chi tiết từng phase bên dưới.
 
 #### ✅ Phase 0 — Blocked cells + gravity lỗ-cắt-cột (2026-06-19)
 - **Settle engine THUẦN** `lib/logic/settle.dart`: `CellKind` (play/wall/noDrop) +
@@ -1129,6 +1129,107 @@ máy thật).
 - **✅ Verify Redmi**: weave tạm thanh tường ngang màn 1 → render đúng; **đập búa 1
   gem dưới thanh** (ĐIỂM 0→40) → bàn refill ĐẦY, KHÔNG lỗ đen dưới thanh (hốc bị
   tường che lấp bằng trượt chéo). Đã revert temp.
+
+#### ✅ Phase 2 — Gravity Streams (signature độc quyền) (2026-06-19)
+- **`settleBoardFlow`** (settle.dart): `FlowDir` (down/up/left/right) mỗi ô; gem chảy
+  1 bước theo hướng ô nó đang đứng (single-step ĐỒNG THỜI snapshot + tranh chấp chọn
+  theo ưu tiên hướng → tất định). Refill ở "ô NGUỒN" (không hàng xóm nào chảy vào).
+  Giữ TRƯỢT CHÉO cho ô down (kế thừa Phase 1). HỘI TỤ nếu KHÔNG có chu trình hướng
+  (mỗi move đẩy gem gần sink hơn) + guard cap.
+- **Engine**: `_applyGravityWithLayout` dùng `settleBoardFlow` khi có flow; spawn xuất
+  phát NGƯỢC hướng dòng (gem trôi vào từ đầu nguồn). `flowOverride` seam. `FlowLayer`
+  (effects.dart) vẽ mũi tên neon + chấm sáng chạy ở ô KHÁC down (priority 2, trên gem
+  → signature dễ thấy).
+- **Test**: +7 (6 unit settleBoardFlow: down=settleBoard, flow phải/lên/chữ-S lấp đầy,
+  tất định, parse; +1 widget mount bàn flow fill 64 ô) → **344 test pass**, 0 analyzer.
+- **✅ Verify Redmi**: weave tạm flow (band giữa chảy phải + band dưới chảy trái) màn
+  1 → bàn render mũi tên+chấm sáng cyan đúng hướng ("mạch điện"), mount sạch, tương
+  tác OK, logcat KHÔNG lỗi app. Hành vi flow gravity = unit-tested. Đã revert temp.
+  *Nợ nhẹ*: mũi tên hơi nhỏ — tinh chỉnh thẩm mỹ ở vòng polish.
+
+#### ✅ Phase 3 — Gem nhốt (Cage) + no-drop + giải cứu (2026-06-19)
+- **Cage** tái dùng objective `clearObstacle` (KHÔNG cần ObjectiveType mới → tránh
+  sửa loạt switch): `ObstacleType.cage`, weave màn {42,78} (`kCageLevels`). Gem nhốt
+  **THAM GIA match** (`_matchColorAt` trả màu — khác stone/licorice phủ kín) nhưng
+  **swap-locked** (phải xếp hàng xóm để ghép chính nó). 2 lớp; vỡ 1 lớp mỗi lần gem
+  nhốt nằm trong match (nhánh self ice-style trong `_damageObstacles`) → "giải cứu"
+  khi hết lồng. Engine seed THƯA ((r+c) chẵn trong center) → 2 ô nhốt không kề →
+  luôn ghép được (winnability). `_drawCage` (song sắt cyan, không che gem).
+- **No-drop** (`CellKind.noDrop`): gem bất động trong settle (`settleBoardFlow`):
+  không là nguồn/đích di chuyển, tự refill tại chỗ, không cấp gem cho hàng xóm
+  (đảo nổi). Engine giờ LUÔN dùng `settleBoardFlow` cho bàn có layout (flow default
+  down → tương đương settleBoard + xử lý no-drop). `BlockedLayer` vẽ viền lime.
+- **Test**: +5 (3 cage: level config + engine seed thưa + obstacleTotal; 2 no-drop:
+  chặn rơi + tự refill) → **349 test pass**, 0 analyzer.
+- **✅ Verify Redmi**: temp biến màn 1 thành cage → objective "0/16" (8 lồng×2),
+  song sắt cyan thưa quanh gem (gem vẫn hiện), mount sạch. Hành vi vỡ-lồng = reuse
+  machinery clearObstacle (licorice/jam đã verify) + unit-test. Đã revert temp.
+
+#### ✅ Phase 4 — 2 chế độ phụ: Sinh tồn + Mê cung (2026-06-19)
+- **Sinh tồn (Survival)**: `isSurvival` + `buildSurvivalLevel()` — TÁI DÙNG objective
+  timeAttack (đồng hồ + combo +giây sẵn có). KHÔNG target thắng (targetScore=1<<28) →
+  kết thúc khi HẾT GIỜ, điểm = thành tích (kỷ lục `survivalHigh`). checkEnd nhánh
+  riêng (isOutOfTime → thưởng theo điểm, isolation, như Endless). HUD chip TIME sẵn có.
+- **Mê cung (Labyrinth)**: `isLabyrinth` + `buildLabyrinthLevel()` — TÁI DÙNG dropDown
+  (tinh thể + thu đáy) + **layout mê cung tường** (`kLabyrinthMap`). Tinh thể lách mê
+  cung (trượt chéo) xuống đáy. checkEnd nhánh riêng (đủ → win+thưởng; hết lượt → lose).
+- **Wiring chung**: flags + `_enterMode` + `level` getter + `isSideMode` + `again()` +
+  result panel + HUD badge + 2 nút Home (lưới THỬ THÁCH **2×5** = 10 mode, giữ no-scroll).
+  i18n en+vi (`survival_*`/`labyrinth_*`), 20 ngôn ngữ fallback EN.
+- **Test**: +8 unit/widget (start/checkEnd/ISOLATION cả 2 + engine mount mê cung: tường
+  trống/ô chơi đầy/tinh thể đặt) + **2 integration** (Home→Survival/Labyrinth) →
+  **357 test pass**, 0 analyzer.
+- **✅ Verify Oppo (CPH2577)**: chạy 2 integration test THẬT trên máy → "Home → Sinh
+  tồn → vào game" + "Home → Mê cung → vào game" đều PASS (isSurvival/isLabyrinth bật,
+  badge đúng). (Máy test đổi Redmi → Oppo theo yêu cầu người dùng 2026-06-19.)
+
+#### ✅ Phase 5 — Nội dung: thế giới 6-8 + màn 101-150 (2026-06-19)
+- **Mở rộng 100 → 150 màn + 8 thế giới**: `kLevelCount=150`; thêm thế giới 6 (Prism
+  Maze, 101-120) / 7 (Flux Stream, 121-140) / 8 (Neon Apex, 141-150 — finale ngắn).
+  `accentForWorld` tự wrap màu. i18n `world_name_6/7/8` (en+vi). Story giới hạn 5 thế
+  giới (`kStoryWorlds=5`); 6-8 vào thẳng màn (chưa có NPC).
+- **Weave cơ chế mới** vào màn score 101-150 (`kLayoutLevels`/`kFlowLevels`, đọc theo
+  chỉ số như kBombLevels): bố cục lỗ/tường (103 thoi · 127 trụ · 145 đảo no-drop),
+  Gravity Streams (115 chảy phải · 139 mạch 2 chiều) + cage ({114,138}). +4 lượt cho
+  màn có lỗ/dòng chảy (công bằng).
+- **Playtest**: `tool/playtest.dart` chạy 150 màn → **0 màn quá-khó** (đường cong
+  validate tới L150). Curve clamp sẵn → 101-150 thử thách công bằng.
+- **Polish (phản hồi máy thật Oppo)**: (1) Survival HUD MỤC TIÊU chỉ hiện ĐIỂM (bỏ
+  "0/268.435.456" target giả); (2) label item Home nhỏ lại (fontSize 11→9, icon 26→24)
+  cho vừa lưới 2×5 (ít ellipsis).
+- **Test**: +6 (`w15_content_test`: 150 màn/8 thế giới, accent wrap, weave layout/flow/
+  cage, no-drop, không objective riêng) + sửa 3 test cũ (levels/story cho 150/8/5) →
+  **363 test pass**, 0 analyzer.
+- **✅ Verify Oppo**: Home lưới 2×5 = 10 mode (label gọn, no-scroll giữ), World Map 150
+  màn load không crash, Survival vào game (badge + GIỜ 00:48 + MỤC TIÊU "0" sạch).
+
+> 🎉 **WAVE 15 HOÀN TẤT (6/6 phase)**: bố cục bàn đa dạng (lỗ/tường/no-drop) + trượt
+> chéo + **Gravity Streams (signature)** + gem nhốt (cage) + 2 chế độ phụ (Sinh tồn +
+> Mê cung) + 150 màn/8 thế giới. Lõi gravity tổng quát hoá hoàn toàn (settle engine
+> thuần: wall + chéo + flow + no-drop).
+
+### 🔍 Wave 15 — Audit & fix (2026-06-19)
+3 agent audit độc lập (engine / controller-mode / content-UI-i18n), mỗi phát hiện
+verify `file:line`. Điểm: engine 8.5 · controller/mode 9.5 · content 3→9 (sau fix) ·
+UI 8 · i18n 8.
+- **[CRITICAL] Mê cung BẤT KHẢ THẮNG → ĐÃ SỬA**: `kLabyrinthMap` cũ (hàng-tường kẹp
+  giữa hàng-mở) làm tinh thể KẸT trên tường (2 bên trống → luật trượt-chéo không kích
+  hoạt) → không bao giờ xuống đáy. Test cũ chỉ ép `dropped=target` nên không bắt được.
+  **Fix**: maze "phễu" anti-chéo (`#......#`/`.#....#.`/`..#..#..`/`...##...`) → tường
+  KỀ tinh thể cùng hàng → trượt chéo ra mép rồi rơi thẳng. Chứng minh khả thi bằng sim
+  descent + **test mới `MÊ CUNG khả thi`** (mọi cột đặt được tới đáy — guard chống tái lỗi).
+- **[HIGH→design-note] Cage**: gem nhốt clear MỖI match (như băng nhiều-lớp + khoá
+  swap) thay vì "đứng yên tới khi hết lồng" như task. Vẫn khả thi + đếm đúng (2 match/ô)
+  → giữ hành vi (đổi "gem stays" sang immovable sẽ gây desync gravity, rủi ro hơn). Doc
+  cập nhật cho khớp code.
+- **[LOW] đã sửa**: comment combo "≥3"→"≥4" (khớp engine `addTime` gate).
+- **Đã BÁC (không phải bug)**: movePass mất/đè gem · áp move desync · hội tụ vô hạn ·
+  no-drop cấp gem hàng xóm · wall gây crash · cage double-count · hồi quy bàn đặc ·
+  side-mode isolation (đạt) · thứ tự nhánh checkEnd (đúng) · survival không win sớm.
+- **Nợ nhẹ (ghi nhận)**: 12 key mới (`survival_*`/`labyrinth_*`/`world_name_6-8`) fallback
+  EN cho 20 ngôn ngữ (đúng convention W6/8/14, coverage ≥80% pass) — dịch sau · label
+  Home fontSize 9 sát ngưỡng đọc trên màn nhỏ · flow cycle latent (level hiện tránh được).
+- **Kết quả sau fix**: 0 analyzer · **364 test pass** (+1 winnability mê cung).
 
 **⏸️ Deferred (Wave 15, làm trước khi lên store — KHÔNG phải bây giờ)**:
 Polish & Accessibility — chế độ mù màu (palette + hoạ tiết phân biệt gem), reduced

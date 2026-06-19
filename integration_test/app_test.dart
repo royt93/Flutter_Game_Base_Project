@@ -154,5 +154,24 @@ void main() {
       await settle(tester);
       expect(Get.find<GameController>().selectedSkin.value, paid.id);
     });
+
+    testWidgets('Home → Sinh tồn (Survival) → vào game', (tester) async {
+      await app(withAudio: false);
+      await settle(tester, 1200);
+      await tester.tap(find.text('survival_short'.tr)); // card SINH TỒN
+      await settle(tester);
+      // vào thẳng game (side mode, không pre-game) → badge + HUD thời gian.
+      expect(Get.find<GameController>().isSurvival.value, isTrue);
+      expect(find.text('survival_title'.tr), findsOneWidget);
+    });
+
+    testWidgets('Home → Mê cung (Labyrinth) → vào game', (tester) async {
+      await app(withAudio: false);
+      await settle(tester, 1200);
+      await tester.tap(find.text('labyrinth_short'.tr)); // card MÊ CUNG
+      await settle(tester);
+      expect(Get.find<GameController>().isLabyrinth.value, isTrue);
+      expect(find.text('labyrinth_title'.tr), findsOneWidget);
+    });
   });
 }

@@ -117,6 +117,28 @@ extension GameControllerModes on GameController {
     _resetRunState(moves: _sodaCfg!.moves);
   }
 
+  /// Bắt đầu chế độ Sinh tồn (Survival — Wave 15): đồng hồ đếm ngược, combo ≥4 →
+  /// +giây; HẾT GIỜ → kết thúc, điểm = thành tích (kỷ lục riêng). Tái dùng đồng
+  /// hồ timeAttack. KHÔNG đụng mạng/win-streak/level-unlock (side mode).
+  void startSurvival() {
+    _survivalCfg = buildSurvivalLevel();
+    _enterMode(survival: true);
+    _resetRunState(
+      moves: _survivalCfg!.moves,
+      target: _survivalCfg!.targetScore,
+      time: _survivalCfg!.timeLimit,
+    );
+  }
+
+  /// Bắt đầu chế độ Mê cung neon (Labyrinth — Wave 15): đưa đủ tinh thể qua mê
+  /// cung tường xuống đáy. Tái dùng cơ chế dropDown + layout. KHÔNG đụng mạng/
+  /// win-streak/level-unlock (side mode).
+  void startLabyrinth() {
+    _labyrinthCfg = buildLabyrinthLevel();
+    _enterMode(labyrinth: true);
+    _resetRunState(moves: _labyrinthCfg!.moves);
+  }
+
   /// Soda: mỗi gem clear làm mực nước dâng 1 đơn vị; mỗi [kSodaFillPerBottle]
   /// đơn vị → 1 chai nổi lên đỉnh. Gọi từ registerClear (tính cả cascade).
   void registerSodaFill([int gems = 1]) {

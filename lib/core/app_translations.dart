@@ -134,6 +134,18 @@ class AppTranslations extends Translations {
 
   /// Key Wave 4 — English (mặc định + fallback cho ngôn ngữ chưa dịch).
   static const Map<String, String> _extraEn = {
+    // Wave 15 — Thế giới 6-8 (màn 101-150)
+    'world_name_6': 'Prism Maze',
+    'world_name_7': 'Flux Stream',
+    'world_name_8': 'Neon Apex',
+    // Wave 15 — Sinh tồn (Survival) + Mê cung (Labyrinth)
+    'survival_short': 'SURVIVAL',
+    'survival_title': 'SURVIVAL',
+    'survival_over': 'TIME UP!',
+    'survival_best': 'Best',
+    'labyrinth_short': 'LABYRINTH',
+    'labyrinth_title': 'NEON LABYRINTH',
+    'labyrinth_hud': 'CRYSTALS',
     // Wave 10 — Bom đếm ngược (HUD)
     'bomb_left': 'Bombs',
     'bomb_timer': 'Timer',
@@ -453,6 +465,18 @@ class AppTranslations extends Translations {
 
   /// Key Wave 4 — Tiếng Việt (override English).
   static const Map<String, String> _extraVi = {
+    // Wave 15 — Thế giới 6-8 (màn 101-150)
+    'world_name_6': 'Mê Cung Lăng Kính',
+    'world_name_7': 'Dòng Chảy Biến Thiên',
+    'world_name_8': 'Đỉnh Neon',
+    // Wave 15 — Sinh tồn (Survival) + Mê cung (Labyrinth)
+    'survival_short': 'SINH TỒN',
+    'survival_title': 'SINH TỒN',
+    'survival_over': 'HẾT GIỜ!',
+    'survival_best': 'Kỷ lục',
+    'labyrinth_short': 'MÊ CUNG',
+    'labyrinth_title': 'MÊ CUNG NEON',
+    'labyrinth_hud': 'TINH THỂ',
     // Wave 10 — Bom đếm ngược (HUD)
     'bomb_left': 'Bom',
     'bomb_timer': 'Đếm',

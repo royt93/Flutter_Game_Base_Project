@@ -81,11 +81,18 @@ void main() {
   });
 
   group('Story / Episode', () {
-    test('kStory có 15 beat (5 thế giới × 3 thời điểm)', () {
+    test('kStory có 15 beat (5 thế giới CÓ cốt truyện × 3 thời điểm)', () {
+      expect(kStory.length, kStoryWorlds * StoryTrigger.values.length);
       expect(kStory.length, 15);
-      for (final w in kWorlds) {
+      // chỉ 5 thế giới đầu có cốt truyện; 6-8 (Wave 15) vào thẳng màn.
+      for (final w in kWorlds.where((w) => w.index <= kStoryWorlds)) {
         for (final t in StoryTrigger.values) {
           expect(storyBeatFor(t, w.index), isNotNull);
+        }
+      }
+      for (final w in kWorlds.where((w) => w.index > kStoryWorlds)) {
+        for (final t in StoryTrigger.values) {
+          expect(storyBeatFor(t, w.index), isNull);
         }
       }
     });
