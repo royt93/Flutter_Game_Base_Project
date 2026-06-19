@@ -1085,6 +1085,28 @@ máy thật).
   layouts/cage/streams/no-drop; cập nhật `tool/playtest.dart` cho bàn có lỗ; i18n
   22 ngôn ngữ cho key mới (lớp merge `_w15ByLang`).
 
+### 📋 Bảng theo dõi task Wave 15 (status) — cập nhật 2026-06-19
+
+> Quy ước thư mục: task chuyển `doc/tasks/todo/` → `in-progress/` → `done/` theo
+> tiến độ. Cột "Status" dưới đây là nguồn tóm tắt nhanh.
+
+| Phase | Task | File | Status | Rủi ro |
+|---|---|---|---|---|
+| 0 | Ô tường/lỗ/no-drop + bản đồ ký tự + gravity lỗ-cắt-cột | `w15-0-blocked-cells.md` | 📋 todo | 🟡 TB |
+| 1 | Trượt chéo kiểu CCS (gravity vòng qua vật cản) | `w15-1-diagonal-slide.md` | 📋 todo | 🔴 Cao |
+| 2 | Gravity Streams (signature — hướng trọng lực theo vùng) | `w15-2-gravity-streams.md` | 📋 todo | 🔴 Cao nhất |
+| 3 | Gem nhốt (Cage) + ô no-drop + mục tiêu Giải cứu | `w15-3-caged-gem.md` | 📋 todo | 🟡 TB |
+| 4 | 2 chế độ phụ: Mê cung neon + Sinh tồn | `w15-4-side-modes.md` | 📋 todo | 🟢 Thấp |
+| 5 | Thế giới 6-8 + màn 101-150 + playtest + i18n | `w15-5-content-worlds.md` | 📋 todo | 🟡 TB |
+
+**Chú thích status**: 📋 todo (chưa bắt đầu) · 🟡 in-progress (đang code) · ✅ done
+(code + test pass + verify). Hiện **toàn bộ ở `todo`** — đang chờ duyệt kế hoạch,
+CHƯA code phase nào.
+
+**⏸️ Deferred (Wave 15, làm trước khi lên store — KHÔNG phải bây giờ)**:
+Polish & Accessibility — chế độ mù màu (palette + hoạ tiết phân biệt gem), reduced
+motion, đa dạng SFX, trail gem rơi.
+
 > ⚠️ Quy mô: đây là wave LỚN nhất, đụng đúng phần engine dễ vỡ nhất (gravity/refill).
 > Làm TUẦN TỰ từng phase, có cổng build+test+verify, KHÔNG fan-out subagent (đụng
 > cùng file lõi). Task chi tiết: `doc/tasks/todo/w15-*.md`.
