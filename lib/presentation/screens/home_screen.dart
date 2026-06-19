@@ -627,17 +627,22 @@ class HomeScreen extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 24),
             const SizedBox(height: 5),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 9, // Wave 15: nhỏ hơn cho vừa lưới 2×5 (ít ellipsis)
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.1,
-                shadows: [Shadow(color: color, blurRadius: 8)],
+            // Wave 15: FittedBox(scaleDown) → nhãn TỰ CO vừa bề rộng ô (nhãn ngắn
+            // giữ to, nhãn dài như SUPERVIVENCIA/ВЫЖИВАННЯ co lại, KHÔNG ellipsis).
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.2,
+                  shadows: [Shadow(color: color, blurRadius: 8)],
+                ),
               ),
             ),
           ],

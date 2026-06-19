@@ -103,6 +103,7 @@ class AppTranslations extends Translations {
           ...?_w6ByLang[e.key],
           ...?_w8ByLang[e.key],
           ...?_w14ByLang[e.key],
+          ...?_w15ByLang[e.key],
         }
     };
   }
@@ -3774,6 +3775,151 @@ class AppTranslations extends Translations {
 
   /// Wave 14 — Soda + obstacle licorice/jam + meta (Album/Heo/Giải đấu). en/vi
   /// nằm trong _extraEn/_extraVi; 20 ngôn ngữ còn lại ở đây (giữ parity ≥80%).
+  /// Wave 15 — dịch 10 key mới (survival/labyrinth/world_name_6-8) cho 20 ngôn
+  /// ngữ (en+vi đã ở _extraEn/_extraVi). Merge sau _w14ByLang.
+  static const Map<String, Map<String, String>> _w15ByLang = {
+    'es_ES': {
+      'survival_short': 'SUPERVIVENCIA', 'survival_title': 'SUPERVIVENCIA',
+      'survival_over': '¡SE ACABÓ EL TIEMPO!', 'survival_best': 'Récord',
+      'labyrinth_short': 'LABERINTO', 'labyrinth_title': 'LABERINTO NEÓN',
+      'labyrinth_hud': 'CRISTALES', 'world_name_6': 'Laberinto de Prisma',
+      'world_name_7': 'Corriente de Flujo', 'world_name_8': 'Cima Neón',
+    },
+    'fr_FR': {
+      'survival_short': 'SURVIE', 'survival_title': 'SURVIE',
+      'survival_over': 'TEMPS ÉCOULÉ !', 'survival_best': 'Record',
+      'labyrinth_short': 'LABYRINTHE', 'labyrinth_title': 'LABYRINTHE NÉON',
+      'labyrinth_hud': 'CRISTAUX', 'world_name_6': 'Dédale de Prisme',
+      'world_name_7': 'Courant de Flux', 'world_name_8': 'Apogée Néon',
+    },
+    'de_DE': {
+      'survival_short': 'ÜBERLEBEN', 'survival_title': 'ÜBERLEBEN',
+      'survival_over': 'ZEIT ABGELAUFEN!', 'survival_best': 'Rekord',
+      'labyrinth_short': 'LABYRINTH', 'labyrinth_title': 'NEON-LABYRINTH',
+      'labyrinth_hud': 'KRISTALLE', 'world_name_6': 'Prismen-Labyrinth',
+      'world_name_7': 'Fluxstrom', 'world_name_8': 'Neon-Gipfel',
+    },
+    'pt_BR': {
+      'survival_short': 'SOBREVIVÊNCIA', 'survival_title': 'SOBREVIVÊNCIA',
+      'survival_over': 'TEMPO ESGOTADO!', 'survival_best': 'Recorde',
+      'labyrinth_short': 'LABIRINTO', 'labyrinth_title': 'LABIRINTO NEON',
+      'labyrinth_hud': 'CRISTAIS', 'world_name_6': 'Labirinto de Prisma',
+      'world_name_7': 'Corrente de Fluxo', 'world_name_8': 'Ápice Neon',
+    },
+    'ru_RU': {
+      'survival_short': 'ВЫЖИВАНИЕ', 'survival_title': 'ВЫЖИВАНИЕ',
+      'survival_over': 'ВРЕМЯ ВЫШЛО!', 'survival_best': 'Рекорд',
+      'labyrinth_short': 'ЛАБИРИНТ', 'labyrinth_title': 'НЕОНОВЫЙ ЛАБИРИНТ',
+      'labyrinth_hud': 'КРИСТАЛЛЫ', 'world_name_6': 'Призменный Лабиринт',
+      'world_name_7': 'Поток Флюкса', 'world_name_8': 'Неоновый Пик',
+    },
+    'zh_CN': {
+      'survival_short': '生存', 'survival_title': '生存',
+      'survival_over': '时间到！', 'survival_best': '最佳',
+      'labyrinth_short': '迷宫', 'labyrinth_title': '霓虹迷宫',
+      'labyrinth_hud': '水晶', 'world_name_6': '棱镜迷宫',
+      'world_name_7': '流光涌动', 'world_name_8': '霓虹之巅',
+    },
+    'ja_JP': {
+      'survival_short': 'サバイバル', 'survival_title': 'サバイバル',
+      'survival_over': 'タイムアップ！', 'survival_best': 'ベスト',
+      'labyrinth_short': '迷宮', 'labyrinth_title': 'ネオン迷宮',
+      'labyrinth_hud': 'クリスタル', 'world_name_6': 'プリズム迷宮',
+      'world_name_7': 'フラックスの流れ', 'world_name_8': 'ネオンの頂',
+    },
+    'ko_KR': {
+      'survival_short': '서바이벌', 'survival_title': '서바이벌',
+      'survival_over': '시간 종료!', 'survival_best': '최고 기록',
+      'labyrinth_short': '미궁', 'labyrinth_title': '네온 미궁',
+      'labyrinth_hud': '크리스탈', 'world_name_6': '프리즘 미궁',
+      'world_name_7': '플럭스 물결', 'world_name_8': '네온 정점',
+    },
+    'it_IT': {
+      'survival_short': 'SOPRAVVIVENZA', 'survival_title': 'SOPRAVVIVENZA',
+      'survival_over': 'TEMPO SCADUTO!', 'survival_best': 'Record',
+      'labyrinth_short': 'LABIRINTO', 'labyrinth_title': 'LABIRINTO NEON',
+      'labyrinth_hud': 'CRISTALLI', 'world_name_6': 'Labirinto di Prisma',
+      'world_name_7': 'Flusso Mutevole', 'world_name_8': 'Apice Neon',
+    },
+    'id_ID': {
+      'survival_short': 'BERTAHAN', 'survival_title': 'BERTAHAN',
+      'survival_over': 'WAKTU HABIS!', 'survival_best': 'Terbaik',
+      'labyrinth_short': 'LABIRIN', 'labyrinth_title': 'LABIRIN NEON',
+      'labyrinth_hud': 'KRISTAL', 'world_name_6': 'Labirin Prisma',
+      'world_name_7': 'Arus Berubah', 'world_name_8': 'Puncak Neon',
+    },
+    'th_TH': {
+      'survival_short': 'เอาตัวรอด', 'survival_title': 'เอาตัวรอด',
+      'survival_over': 'หมดเวลา!', 'survival_best': 'สูงสุด',
+      'labyrinth_short': 'เขาวงกต', 'labyrinth_title': 'เขาวงกตนีออน',
+      'labyrinth_hud': 'คริสตัล', 'world_name_6': 'เขาวงกตปริซึม',
+      'world_name_7': 'สายธารพลังงาน', 'world_name_8': 'ยอดนีออน',
+    },
+    'hi_IN': {
+      'survival_short': 'उत्तरजीविता', 'survival_title': 'उत्तरजीविता',
+      'survival_over': 'समय समाप्त!', 'survival_best': 'सर्वश्रेष्ठ',
+      'labyrinth_short': 'भूलभुलैया', 'labyrinth_title': 'नियॉन भूलभुलैया',
+      'labyrinth_hud': 'क्रिस्टल', 'world_name_6': 'प्रिज़्म भूलभुलैया',
+      'world_name_7': 'प्रवाह धारा', 'world_name_8': 'नियॉन शिखर',
+    },
+    'ar_SA': {
+      'survival_short': 'البقاء', 'survival_title': 'البقاء',
+      'survival_over': 'انتهى الوقت!', 'survival_best': 'الأفضل',
+      'labyrinth_short': 'المتاهة', 'labyrinth_title': 'متاهة النيون',
+      'labyrinth_hud': 'البلورات', 'world_name_6': 'متاهة المنشور',
+      'world_name_7': 'تيار التدفق', 'world_name_8': 'قمة النيون',
+    },
+    'tr_TR': {
+      'survival_short': 'HAYATTA KALMA', 'survival_title': 'HAYATTA KALMA',
+      'survival_over': 'SÜRE DOLDU!', 'survival_best': 'Rekor',
+      'labyrinth_short': 'LABİRENT', 'labyrinth_title': 'NEON LABİRENT',
+      'labyrinth_hud': 'KRİSTALLER', 'world_name_6': 'Prizma Labirenti',
+      'world_name_7': 'Akış Nehri', 'world_name_8': 'Neon Zirve',
+    },
+    'nl_NL': {
+      'survival_short': 'OVERLEVING', 'survival_title': 'OVERLEVING',
+      'survival_over': 'TIJD OM!', 'survival_best': 'Beste',
+      'labyrinth_short': 'LABYRINT', 'labyrinth_title': 'NEON LABYRINT',
+      'labyrinth_hud': 'KRISTALLEN', 'world_name_6': 'Prismadoolhof',
+      'world_name_7': 'Fluxstroom', 'world_name_8': 'Neontop',
+    },
+    'pl_PL': {
+      'survival_short': 'PRZETRWANIE', 'survival_title': 'PRZETRWANIE',
+      'survival_over': 'KONIEC CZASU!', 'survival_best': 'Rekord',
+      'labyrinth_short': 'LABIRYNT', 'labyrinth_title': 'NEONOWY LABIRYNT',
+      'labyrinth_hud': 'KRYSZTAŁY', 'world_name_6': 'Pryzmatyczny Labirynt',
+      'world_name_7': 'Strumień Fluksu', 'world_name_8': 'Neonowy Szczyt',
+    },
+    'fil_PH': {
+      'survival_short': 'SURVIVAL', 'survival_title': 'SURVIVAL',
+      'survival_over': 'TAPOS NA ANG ORAS!', 'survival_best': 'Pinakamataas',
+      'labyrinth_short': 'LABERINTO', 'labyrinth_title': 'NEON NA LABERINTO',
+      'labyrinth_hud': 'KRISTAL', 'world_name_6': 'Laberinto ng Prisma',
+      'world_name_7': 'Agos ng Daloy', 'world_name_8': 'Tugatog ng Neon',
+    },
+    'ms_MY': {
+      'survival_short': 'KELANGSUNGAN', 'survival_title': 'KELANGSUNGAN',
+      'survival_over': 'MASA TAMAT!', 'survival_best': 'Terbaik',
+      'labyrinth_short': 'LABIRIN', 'labyrinth_title': 'LABIRIN NEON',
+      'labyrinth_hud': 'KRISTAL', 'world_name_6': 'Labirin Prisma',
+      'world_name_7': 'Aliran Fluks', 'world_name_8': 'Puncak Neon',
+    },
+    'uk_UA': {
+      'survival_short': 'ВИЖИВАННЯ', 'survival_title': 'ВИЖИВАННЯ',
+      'survival_over': 'ЧАС ВИЙШОВ!', 'survival_best': 'Рекорд',
+      'labyrinth_short': 'ЛАБІРИНТ', 'labyrinth_title': 'НЕОНОВИЙ ЛАБІРИНТ',
+      'labyrinth_hud': 'КРИСТАЛИ', 'world_name_6': 'Призмовий Лабіринт',
+      'world_name_7': 'Потік Флюксу', 'world_name_8': 'Неонова Вершина',
+    },
+    'bn_BD': {
+      'survival_short': 'টিকে থাকা', 'survival_title': 'টিকে থাকা',
+      'survival_over': 'সময় শেষ!', 'survival_best': 'সেরা',
+      'labyrinth_short': 'গোলকধাঁধা', 'labyrinth_title': 'নিয়ন গোলকধাঁধা',
+      'labyrinth_hud': 'স্ফটিক', 'world_name_6': 'প্রিজম গোলকধাঁধা',
+      'world_name_7': 'প্রবাহ স্রোত', 'world_name_8': 'নিয়ন শিখর',
+    },
+  };
+
   static const Map<String, Map<String, String>> _w14ByLang = {
     'es_ES': _w14Es,
     'fr_FR': _w14Fr,

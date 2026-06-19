@@ -1226,10 +1226,24 @@ UI 8 · i18n 8.
 - **Đã BÁC (không phải bug)**: movePass mất/đè gem · áp move desync · hội tụ vô hạn ·
   no-drop cấp gem hàng xóm · wall gây crash · cage double-count · hồi quy bàn đặc ·
   side-mode isolation (đạt) · thứ tự nhánh checkEnd (đúng) · survival không win sớm.
-- **Nợ nhẹ (ghi nhận)**: 12 key mới (`survival_*`/`labyrinth_*`/`world_name_6-8`) fallback
-  EN cho 20 ngôn ngữ (đúng convention W6/8/14, coverage ≥80% pass) — dịch sau · label
-  Home fontSize 9 sát ngưỡng đọc trên màn nhỏ · flow cycle latent (level hiện tránh được).
 - **Kết quả sau fix**: 0 analyzer · **364 test pass** (+1 winnability mê cung).
+
+#### 🧹 Wave 15 — Dọn nợ audit + verify Oppo (2026-06-19)
+Người dùng chốt kết hợp verify Mê cung + dọn nợ:
+- **i18n 20 ngôn ngữ**: dịch đủ 10 key mới (`survival_*`/`labyrinth_*`/`world_name_6-8`)
+  cho 20 ngôn ngữ (lớp merge mới `_w15ByLang`, 4 agent dịch song song) → hết fallback
+  EN. Coverage test ≥80% vẫn PASS.
+- **Label Home tự co**: bỏ fontSize cố định 9 → `FittedBox(scaleDown)` + fontSize 11 →
+  nhãn NGẮN giữ to, nhãn DÀI (SUPERVIVENCIA/ВЫЖИВАННЯ/HAYATTA KALMA) TỰ CO vừa ô,
+  KHÔNG ellipsis. Verify Oppo: "HẰNG NGÀY"/"TRÙM NEON"/"TRỌNG LỰC" hiện đầy đủ.
+- **✅ Verify Mê cung fix (Oppo)**: maze "phễu" anti-chéo render ĐÚNG (tường inverted-V
+  hiện rõ), mode load (badge "MÊ CUNG NEON", MỤC TIÊU ↓0/4, 30 lượt, 2 tinh thể ở đỉnh).
+  Winnability đã chứng minh bằng sim descent + test tự động (cơ chế trượt-chéo đã verify
+  Redmi Phase 1). *Descent trực tiếp không chụp được do tự-động-hoá chạm finicky — không
+  phải lỗi code.*
+- **Kết quả**: 0 analyzer · **364 test pass** (i18n coverage + winnability đều xanh).
+- *Nợ nhẹ còn lại*: cage "gem-stays" (giữ hành vi clear-mỗi-match, đã verify khả thi) ·
+  flow cycle latent (level hiện tránh được).
 
 **⏸️ Deferred (Wave 15, làm trước khi lên store — KHÔNG phải bây giờ)**:
 Polish & Accessibility — chế độ mù màu (palette + hoạ tiết phân biệt gem), reduced
