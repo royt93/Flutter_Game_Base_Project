@@ -121,10 +121,13 @@ class GameController extends GetxController {
   // ra MÀU MỤC TIÊU (giúp thu). KHÔNG dùng chiều anti-player.
   static const double kPityCollectBias = 0.20;
 
-  // --- Sinh tồn (Survival — Wave 15): đếm ngược, combo +giây, sống lâu = điểm ---
+  // --- Sinh tồn (Survival — Wave 17.1 "Triều dâng"): nước dâng từ đáy, clear thấp
+  // để đẩy lùi, chạm đỉnh = thua. Engine điều khiển triều + set cờ dưới đây ---
   final RxBool isSurvival = false.obs;
   LevelConfig? _survivalCfg;
   final RxInt survivalHigh = 0.obs; // điểm cao nhất (kỷ lục Survival)
+  final RxBool tideOverflow = false.obs; // engine set true khi nước chạm đỉnh → thua
+  final RxDouble tideLevel = 0.0.obs; // 0..1 mức nguy hiểm (cho HUD), engine cập nhật
 
   // --- Mê cung neon (Labyrinth — Wave 15): đưa tinh thể qua mê cung xuống đáy ---
   final RxBool isLabyrinth = false.obs;
@@ -395,6 +398,8 @@ class GameController extends GetxController {
     bombMinTimer.value = 0;
     bombExploded.value = false;
     dispenserCountdown.value = 0; // engine seed lại ở onLoad nếu màn có dispenser
+    tideOverflow.value = false; // Triều dâng (Survival): reset trạng thái ngập
+    tideLevel.value = 0.0;
     _resolved = false;
   }
 }

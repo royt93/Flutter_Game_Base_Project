@@ -1348,3 +1348,74 @@ class SodaLayer extends PositionComponent {
     canvas.drawRRect(body, _strokePaint);
   }
 }
+
+/// Wave 17.1 — Sinh tồn "Triều dâng": nước dâng từ đáy, tô LAM→ĐỎ theo nguy hiểm.
+/// Render-only (đọc `floodTop` từ engine mỗi frame). KHÔNG đụng logic match/refill.
+class TideLayer extends PositionComponent {
+  final double Function() floodTop; // hàng mặt nước (0=đỉnh .. rows=đáy/chưa nước)
+  final int rows;
+  final int cols;
+  final double cellSize;
+  final Vector2 origin;
+  double _t = 0;
+
+  TideLayer({
+    required this.floodTop,
+    required this.rows,
+    required this.cols,
+    required this.cellSize,
+    required this.origin,
+  });
+
+  static final Paint _wave = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.6;
+  static final Paint _bubble = Paint()
+    ..color = Colors.white.withValues(alpha: 0.14);
+
+  double _lastTop = -999;
+  Paint? _fill;
+
+  @override
+  void update(double dt) => _t += dt;
+
+  @override
+  void render(Canvas canvas) {
+    final w = cols * cellSize;
+    final h = rows * cellSize;
+    final top = floodTop().clamp(0.0, rows.toDouble());
+    if (top >= rows) return; // chưa có nước
+    final surfaceY = origin.y + top * cellSize;
+    final danger = ((rows - top) / rows).clamp(0.0, 1.0);
+    // màu: lam (an toàn) → đỏ (nguy hiểm) theo độ ngập
+    final c = Color.lerp(
+        const Color(0xFF00E5FF), const Color(0xFFFF3B5C), danger)!;
+    // shader nền: chỉ dựng lại khi mực nước đổi đáng kể (tránh cấp phát mỗi frame)
+    if (_fill == null || (top - _lastTop).abs() > 0.02) {
+      _lastTop = top;
+      _fill = Paint()
+        ..shader = ui.Gradient.linear(
+          Offset(origin.x, surfaceY),
+          Offset(origin.x, origin.y + h),
+          [c.withValues(alpha: 0.30), c.withValues(alpha: 0.14)],
+        );
+    }
+    canvas.drawRect(
+        Rect.fromLTWH(origin.x, surfaceY, w, origin.y + h - surfaceY), _fill!);
+    // sóng mặt nước (animate theo _t)
+    _wave.color = c.withValues(alpha: 0.85);
+    final path = Path()..moveTo(origin.x, surfaceY);
+    const amp = 4.0;
+    for (double x = 0; x <= w; x += 6) {
+      final y = surfaceY + math.sin((x / cellSize) * 1.6 + _t * 3) * amp;
+      path.lineTo(origin.x + x, y);
+    }
+    canvas.drawPath(path, _wave);
+    // bong bóng sủi
+    for (int i = 0; i < 5; i++) {
+      final bx = origin.x + ((i * 53 + (_t * 22).floor()) % w.toInt());
+      final by = origin.y + h - ((i * 37 + (_t * 30).floor()) % h.toInt());
+      if (by > surfaceY) canvas.drawCircle(Offset(bx, by), 2.2, _bubble);
+    }
+  }
+}

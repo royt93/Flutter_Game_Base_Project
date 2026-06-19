@@ -1387,3 +1387,36 @@ re-audit: **cân bằng 8.5 · pity/isolation 9.0 · test 8.0** — 11 fix vòng
 4. **Chỉnh giờ TIẾN** (daily/wheel) vẫn farm được — bản chất offline không trusted-time; muốn chặn cứng cần backend.
 
 **Thiết bị test**: S24 Ultra SM-S928B (**WiFi adb 192.168.21.76 — ổn định, không rớt như USB**) + Pixel 7 Pro (USB). Package `com.galaxyjoy.neon_jewels`. Build: `flutter build apk --debug`.
+
+## 🌊 Wave 17 + 18 — KHÁC-BIỆT-HOÁ chế độ & dọn chồng chéo meta (📋 PICKED 2026-06-19)
+
+> Xuất phát từ audit code (3 agent): toàn game dùng **1 engine match-3**; trong 10 mode
+> THỬ THÁCH có 4 khác cơ chế (A: Boss/Trọng lực/Nhịp điệu/2 người), 3 khác luật (B:
+> Vô tận/Quét màu/Soda), **3 gần như reskin** (C: Sinh tồn=TimeAttack, Mê cung=DropDown,
+> Hằng ngày=objective campaign). Khu PHẦN THƯỞNG: Mùa/Giải đấu/Album/Thành tựu trùng
+> ~70% khuôn "thắng→tích điểm→claim mốc"; kinh tế lệch faucet (chỉ Đền+Shop tiêu xu);
+> Hướng dẫn+Cài đặt là tiện ích bị nhét chung. README đã sửa trung thực (nhãn A/B/C).
+
+### 📋 Wave 17 — THỬ THÁCH: cho 3 mode reskin cơ chế RIÊNG (+ đào sâu mode B)
+| Phase | Task | File | Ưu tiên |
+|---|---|---|---|
+| 1 | ✅ **DONE** Sinh tồn → **Triều dâng** (nước dâng từ đáy `_floodTop`, clear dưới nước đẩy lùi, chạm đỉnh=thua; TideLayer lam→đỏ; HUD "TRIỀU %"; engine đọc isSurvival thật) | `done/w17-1-survival-rising-tide.md` | ✅ |
+| 2 | Mê cung → **tường động + sương mù** (tường dịch chuyển, fog) | `w17-2-labyrinth-moving-walls-fog.md` | 🔴 Cao |
+| 3 | Hằng ngày → **Mutator xoay ngày** (4 màu/trọng lực ngang/combo×2…) | `w17-3-daily-mutators.md` | 🔴 Cao |
+| 4 | Đào sâu mode B (Vô tận sự kiện / Soda vòi xả / Quét màu combo-màu) | `w17-4-deepen-b-modes.md` | 🟡 Thấp |
+
+### 📋 Wave 18 — PHẦN THƯỞNG: dọn chồng chéo + cân bằng kinh tế
+| Phase | Task | File | Ưu tiên |
+|---|---|---|---|
+| 1 | **Gộp Giải đấu + Sự kiện mùa** → 1 hệ "Mùa giải" (mốc + hạng, 1 đường điểm) | `w18-1-merge-tournament-season.md` | 🔴 Cao |
+| 2 | **Khác-biệt-hoá Album & Thành tựu** (Album=perk/set, Thành tựu=danh hiệu) | `w18-2-differentiate-album-achievements.md` | 🟡 TB |
+| 3 | **Thêm coin-sink** (nâng cấp booster vĩnh viễn / craft skin) chống lạm phát | `w18-3-coin-sinks.md` | 🟡 TB |
+| 4 | **Tách Hướng dẫn + Cài đặt** khỏi nhãn "Phần thưởng" (UI trung thực) | `w18-4-split-utilities-ui.md` | 🟢 Rẻ |
+
+**Nguyên tắc xuyên suốt**: (a) mọi mode phụ giữ `isSideMode` isolation; (b) mê cung/mutator
+PHẢI pass winnability-sim (bài học Labyrinth W15); (c) không p2w (offline, leaderboard bot
+tất định); (d) migrate meta phải anti-exploit (bài học reset-permanent-controllers); (e)
+mỗi phase kèm unit + widget test; (f) verify máy thật qua **cáp USB** (wireless yếu).
+
+**Thứ tự đề xuất**: 17.1 → 17.2 → 17.3 (3 reskin cấp bách) → 18.1 (gộp, đổi số ô Home) →
+18.4 (dọn UI sau khi số ô đổi) → 18.2 → 18.3 → 17.4 (nice-to-have cuối).

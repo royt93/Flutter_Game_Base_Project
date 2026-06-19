@@ -24,24 +24,26 @@ void main() {
   tearDown(Get.reset);
 
   group('Wave 15 — Survival (đơn vị)', () {
-    test('startSurvival: cờ + side-mode + đồng hồ + không target thắng', () {
+    test('startSurvival: cờ + side-mode + không giới hạn lượt + không target thắng',
+        () {
+      // Wave 17.1: Triều dâng — objective score (không timeAttack), lượt khổng lồ.
       g.startSurvival();
       expect(g.isSurvival.value, isTrue);
       expect(g.isSideMode, isTrue);
-      expect(g.timeLeft.value, kSurvivalTime);
-      expect(g.movesLeft.value, 999);
-      expect(g.level.objective, ObjectiveType.timeAttack);
-      // target khổng lồ → không bao giờ "thắng" sớm.
-      expect(g.hasWon, isFalse);
+      expect(g.movesLeft.value, greaterThan(1000)); // không giới hạn lượt (theo triều)
+      expect(g.level.objective, ObjectiveType.score);
+      expect(g.tideOverflow.value, isFalse); // chưa ngập
+      expect(g.tideLevel.value, 0.0);
+      expect(g.hasWon, isFalse); // target khổng lồ
     });
 
-    test('hết giờ → kết thúc, thưởng theo điểm, cập nhật kỷ lục, ISOLATION', () {
+    test('NƯỚC CHẠM ĐỈNH → kết thúc, thưởng theo điểm, kỷ lục, ISOLATION', () {
       final wsBefore = g.winStreak.value;
       final unlockBefore = g.unlockedLevel.value;
       final livesBefore = g.lives.value;
       g.startSurvival();
       g.score.value = 4000;
-      g.timeLeft.value = 0; // hết giờ
+      g.tideOverflow.value = true; // engine báo nước chạm đỉnh
       final r = g.checkEnd();
       expect(r, 'lose'); // không "win" — chỉ panel kết thúc
       expect(g.survivalHigh.value, 4000);
@@ -52,9 +54,9 @@ void main() {
       expect(g.lives.value, livesBefore);
     });
 
-    test('còn giờ → chưa kết thúc (null)', () {
+    test('chưa ngập → chưa kết thúc (null)', () {
       g.startSurvival();
-      g.timeLeft.value = 10;
+      expect(g.tideOverflow.value, isFalse);
       expect(g.checkEnd(), isNull);
     });
 

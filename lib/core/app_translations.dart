@@ -142,7 +142,7 @@ class AppTranslations extends Translations {
     // Wave 15 — Sinh tồn (Survival) + Mê cung (Labyrinth)
     'survival_short': 'SURVIVAL',
     'survival_title': 'SURVIVAL',
-    'survival_over': 'TIME UP!',
+    'survival_over': 'FLOODED!',
     'survival_best': 'Best',
     'labyrinth_short': 'LABYRINTH',
     'labyrinth_title': 'NEON LABYRINTH',
@@ -168,6 +168,7 @@ class AppTranslations extends Translations {
     'shop_equip': 'EQUIP',
     'shop_equipped': 'EQUIPPED',
     'hud_time': 'TIME',
+    'hud_tide': 'TIDE',
     'daily_title': 'DAILY REWARD',
     'daily_claim': 'CLAIM',
     'daily_claimed': 'Come back tomorrow!',
@@ -473,7 +474,7 @@ class AppTranslations extends Translations {
     // Wave 15 — Sinh tồn (Survival) + Mê cung (Labyrinth)
     'survival_short': 'SINH TỒN',
     'survival_title': 'SINH TỒN',
-    'survival_over': 'HẾT GIỜ!',
+    'survival_over': 'NGẬP RỒI!',
     'survival_best': 'Kỷ lục',
     'labyrinth_short': 'MÊ CUNG',
     'labyrinth_title': 'MÊ CUNG NEON',
@@ -499,6 +500,7 @@ class AppTranslations extends Translations {
     'shop_equip': 'DÙNG',
     'shop_equipped': 'ĐANG DÙNG',
     'hud_time': 'GIỜ',
+    'hud_tide': 'TRIỀU',
     'daily_title': 'QUÀ HẰNG NGÀY',
     'daily_claim': 'NHẬN',
     'daily_claimed': 'Mai quay lại nhé!',

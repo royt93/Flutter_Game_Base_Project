@@ -262,6 +262,19 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         origin: boardOrigin,
       )..priority = 3); // trên gem để thấy nước + chai
     }
+    // Sinh tồn (Wave 17.1 "Triều dâng"): lớp nước dâng từ đáy (overlay trên gem,
+    // đọc `_floodTop` mỗi frame). KHÔNG đụng gravity/refill — chỉ render + lose-line.
+    if (controller.isSurvival.value) {
+      _floodTop = rows.toDouble(); // bắt đầu chưa có nước
+      _tideElapsed = 0;
+      boardLayer.add(TideLayer(
+        floodTop: () => _floodTop,
+        rows: rows,
+        cols: cols,
+        cellSize: cellSize,
+        origin: boardOrigin,
+      )..priority = 3);
+    }
     _fillInitialBoard();
     _placeIngredients();
     if (!_hasPossibleMove()) await _doShuffle();
@@ -434,6 +447,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
   double _timeAccum = 0; // tích luỹ dt cho đồng hồ Time Attack
 
+  // Wave 17.1 — Sinh tồn "Triều dâng": mặt nước (hàng, 0=đỉnh .. rows=đáy/chưa nước)
+  // dâng theo thời gian; clear gem dưới nước đẩy lùi; chạm đỉnh = thua.
+  late double _floodTop = rows.toDouble();
+  double _tideElapsed = 0; // giây đã sống (để tăng tốc dâng)
+
   // Slow-motion ngắn khi combo lớn (wombo) — làm chậm MỌI hiệu ứng Flame.
   double _timeScale = 1.0;
   double _slowmoLeft = 0;
@@ -474,6 +492,22 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       // Hết giờ → kết thúc, NHƯNG chờ cascade hiện tại xong (_busy) để không
       // end giữa chuỗi nổ (tránh race score/dialog).
       if (controller.timeLeft.value <= 0 && !_busy) _finishMove(consumed: false);
+    }
+
+    // Sinh tồn "Triều dâng": nước dâng theo THỜI GIAN THỰC (không dính slow-mo),
+    // tăng tốc dần. Chạm đỉnh (floodTop ≤ 0) → thua (chờ cascade xong để khỏi race).
+    if (!_ended && controller.isSurvival.value) {
+      _tideElapsed += dt;
+      _floodTop -= tideRiseRate(_tideElapsed) * dt;
+      final danger = ((rows - _floodTop) / rows).clamp(0.0, 1.0);
+      if ((danger - controller.tideLevel.value).abs() > 0.004) {
+        controller.tideLevel.value = danger; // cập nhật HUD (throttle nhẹ)
+      }
+      if (_floodTop <= 0 && !_busy) {
+        _floodTop = 0;
+        controller.tideOverflow.value = true;
+        _finishMove(consumed: false); // → checkEnd nhánh survival → 'lose'
+      }
     }
 
     if (_trauma > 0) {
@@ -1078,6 +1112,20 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
       await _clearCells(expanded);
       controller.addScore(expanded.length, combo);
+      // Sinh tồn "Triều dâng": clear gem DƯỚI NƯỚC (row ≥ mặt nước) đẩy lùi triều →
+      // thưởng việc dọn THẤP (khác TimeAttack: vị trí clear có ý nghĩa chiến thuật).
+      if (controller.isSurvival.value && _floodTop < rows) {
+        var under = 0;
+        for (final cell in expanded) {
+          if (cell.row >= _floodTop) under++;
+        }
+        if (under > 0) {
+          _floodTop =
+              (_floodTop + kTidePushback * under).clamp(0.0, rows.toDouble());
+          controller.tideLevel.value =
+              ((rows - _floodTop) / rows).clamp(0.0, 1.0);
+        }
+      }
       // Giai điệu: màu nổi trội của bước này → bậc âm; combo → leo thang;
       // khoá theo world/stage → đổi tông. (ngũ cung + hợp âm khi wombo)
       final domColor = matches

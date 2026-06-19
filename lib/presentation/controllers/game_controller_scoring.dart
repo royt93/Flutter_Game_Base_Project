@@ -327,10 +327,11 @@ extension GameControllerScoring on GameController {
       }
       return null;
     }
-    // Sinh tồn (Survival — Wave 15): KHÔNG có "win" — sống tới khi HẾT GIỜ; điểm
-    // = thành tích (kỷ lục riêng). Thưởng xu theo điểm (chống farm). Như Endless.
+    // Sinh tồn (Survival — Wave 17.1 "Triều dâng"): KHÔNG có "win" — sống tới khi
+    // NƯỚC CHẠM ĐỈNH (engine set `tideOverflow`); điểm = thành tích (kỷ lục riêng).
+    // Thưởng xu theo điểm (chống farm). Như Endless nhưng kết thúc theo triều.
     if (isSurvival.value) {
-      if (isOutOfTime) {
+      if (tideOverflow.value) {
         _resolved = true;
         lastStars = 0;
         lastStreakBonus = 0;

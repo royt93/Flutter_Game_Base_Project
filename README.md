@@ -23,43 +23,53 @@ Mở **Bản đồ thế giới** (`WorldMapScreen`) — hoặc **lưới màn**
 
 ---
 
-### 🎯 Khu THỬ THÁCH — 10 chế độ phụ
+### 🎯 Khu THỬ THÁCH — 9 chế độ phụ + 1 PvP
 
-Các chế độ **không tốn mạng, không đụng tiến trình campaign** (cô lập qua `isSideMode`). Lưới 2 hàng × 5:
+Các chế độ **không tốn mạng, không đụng tiến trình campaign** (cô lập qua `isSideMode`). Lưới 2 hàng × 5.
 
-| # | Mode | Hàm khởi động | Mô tả |
-|---|------|---------------|-------|
-| 1 | **Hằng ngày** | `startDaily()` | Câu đố seed theo ngày, thưởng 1 lần/ngày, có chuỗi streak 🔥 |
-| 2 | **Vô tận** | `startEndless()` | Chơi vô hạn, stage tăng theo điểm, lưu high-score |
-| 3 | **Trùm Neon** | `startBoss(stage)` | Đấu boss có máu; combo lớn + trúng "điểm yếu màu" gây sát thương ×2; boss phản đòn |
-| 4 | **Quét màu** | `startColorRush()` | Color Rush — dồn clear 1 màu trong thời gian |
-| 5 | **Trọng lực** | `startGravity()` | Hướng trọng lực thay đổi động |
-| 6 | **Nhịp điệu** | `startRhythm()` | Ghép theo nhịp (BPM 100, cửa sổ ±0.14s), thanh groove |
-| 7 | **2 người** | `VersusScreen` | Versus/Co-op 1 máy: 2 bàn song song, junk-gem tấn công, mirror seed (công bằng) |
-| 8 | **Nước dâng (Soda)** | `startSoda()` | Soda fill-based — clear gem để chai/nước nổi lên |
-| 9 | **Sinh tồn** | `startSurvival()` | Đua thời gian, clear để +giây, lưu kỷ lục `survivalHigh` |
-| 10 | **Mê cung** | `startLabyrinth()` | Bàn mê cung tường, đưa gem xuống đích qua khe hẹp |
+> **Ghi chú trung thực (audit code):** toàn game dùng **một engine match-3 duy nhất**. Mức khác biệt thật của mỗi mode được gắn nhãn:
+> 🟢 **A** = đổi CƠ CHẾ (engine xử lý khác) · 🟡 **B** = đổi LUẬT/mục tiêu nhưng cùng vòng lặp · 🔴 **C** = gần như reskin (chỉ đổi target/HUD).
+
+| # | Mode | Hàm | Khác biệt thật | Loại |
+|---|------|-----|----------------|------|
+| 1 | **Trùm Neon** | `startBoss(stage)` | Thanh máu boss; clear gem gây sát thương (màu yếu/combo ×2); boss phản đòn rút lượt | 🟢 A |
+| 2 | **Trọng lực** | `startGravity()` | Mỗi 5 lượt engine **lật ngược cả bàn** (gem+obstacle+jelly) | 🟢 A |
+| 3 | **Nhịp điệu** | `startRhythm()` | Đồng hồ nhịp BPM; ghép đúng beat → groove → điểm ×1.5–2.5 | 🟢 A |
+| 4 | **2 người** | `VersusScreen` | 2 bàn song song; combo ≥3 gửi **gem rác** sang đối thủ; mirror seed | 🟢 A |
+| 5 | **Vô tận** | `startEndless()` | Ghép ≥4/≥5 **hoàn lượt** → chơi vô hạn, stage tăng dần | 🟡 B |
+| 6 | **Quét màu** | `startColorRush()` | Màu "nóng" xoay mỗi 4 lượt; clear màu đó **+15đ/gem** | 🟡 B |
+| 7 | **Nước dâng (Soda)** | `startSoda()` | Mỗi clear +1 fill; đủ 20 fill nổi 1 chai (objective riêng) | 🟡 B |
+| 8 | **Sinh tồn** | `startSurvival()` | ⚠️ Hiện = **TimeAttack đổi tên** (target vô cực); engine chưa đọc `isSurvival` | 🔴 C |
+| 9 | **Mê cung** | `startLabyrinth()` | ⚠️ Hiện = **DropDown + 1 layout tường** (cơ chế chung với màn campaign 103/127) | 🔴 C |
+| 10 | **Hằng ngày** | `startDaily()` | ⚠️ Hiện = **chọn lại 1 objective campaign** + seed bàn theo ngày + thưởng/streak | 🔴 C |
+
+> Đa dạng gameplay LỚN NHẤT thực ra nằm ở **Campaign** (bom đếm ngược, băng chuyền, cổng, dispenser, chocolate lan, jam, cage, tường, gravity-stream — gắn theo chỉ số màn). 3 mode 🔴 C đang chờ nâng cấp cơ chế riêng (xem `doc/tasks/todo/`).
 
 ---
 
-### 🎁 Khu PHẦN THƯỞNG — 10 mục meta / tiện ích
+### 🎁 Khu MỤC TIÊU & PHẦN THƯỞNG — 8 hệ meta
 
-Hệ thống "giữ chân" + tiện ích. Lưới 2 hàng × 5:
+Hệ thống "giữ chân". **Toàn bộ progression chạy qua `_onGameEnd`**; chế độ phụ bị loại (`isSideMode`), 3 hệ (Album/Heo/Giải đấu) còn yêu cầu `lastFirstClear` (chống farm).
 
-| # | Mục | Màn | Mô tả |
-|---|-----|-----|-------|
-| 1 | **Đền Neon** | `TempleScreen` | Meta xây tier bằng **tiêu xu** (chi phí ×10/tier) để nhận thưởng |
-| 2 | **Battle Pass** | `BattlePassScreen` | Tích XP qua chơi → claim phần thưởng theo bậc (badge khi có quà) |
-| 3 | **Sự kiện mùa** | `SeasonScreen` | Điểm theo mùa (keyed tuyệt đối chống chỉnh giờ), claim mốc |
-| 4 | **Cửa hàng** | `ShopScreen` | Mua skin gem / theme bằng xu; trang bị qua `ActiveCosmetics` |
-| 5 | **Album** | `CollectionScreen` | Bộ sưu tập — tích điểm thắng, claim mốc |
-| 6 | **Heo đất** | `PiggyScreen` | Heo tiết kiệm xu (có cap); đạt min → đập nhận xu |
-| 7 | **Giải đấu** | `TournamentScreen` | Bảng xếp hạng theo tuần, claim 1 lần/tuần, đổi tuần reset điểm |
-| 8 | **Thành tựu** | `AchievementsScreen` | Achievements + mô tả, badge khi có thưởng chưa nhận |
-| 9 | **Hướng dẫn** | `GuideScreen` | User-guide: cơ chế, booster, từng chế độ phụ |
-| 10 | **Cài đặt** | `SettingsScreen` | Âm thanh, ngôn ngữ, chế độ xem (map/grid), reset tiến trình… |
+| # | Mục | Màn | Vào (earn) | Ra (reward/sink) |
+|---|-----|-----|------------|------------------|
+| 1 | **Đền Neon** | `TempleScreen` | — | **Tiêu xu** xây tier (sink dài hạn) |
+| 2 | **Cửa hàng** | `ShopScreen` | — | **Tiêu xu** mua skin/theme (sink, không ảnh hưởng chơi) |
+| 3 | **Battle Pass** | `BattlePassScreen` | XP từ **quest ngày** | Xu **+ booster độc quyền** (nguồn chính) |
+| 4 | **Sự kiện mùa** | `SeasonScreen` | Điểm **mỗi khi thắng** | Xu + booster, reset 7 ngày |
+| 5 | **Album** | `CollectionScreen` | Điểm thắng **first-clear** | Xu/booster + sticker vĩnh viễn |
+| 6 | **Heo đất** | `PiggyScreen` | Xu tự bỏ ống khi thắng | Đập (≥120) → vào ví (net dương) |
+| 7 | **Giải đấu** | `TournamentScreen` | Điểm thắng first-clear | Xu theo hạng (đua 7 bot offline), reset tuần |
+| 8 | **Thành tựu** | `AchievementsScreen` | Tự đạt theo chỉ số lifetime | Xu |
 
-> **Top bar** còn có: ❤️ **Mạng** (hồi theo thời gian, mua đầy bằng xu) · 💰 **Xu** · 🎁 **Quà hằng ngày** (chuỗi 7 ngày 20→110) · 🎰 **Vòng quay may mắn**.
+> ⚠️ **Chồng chéo đã ghi nhận (audit):** Sự kiện mùa · Giải đấu · Album · Thành tựu trùng ~70% khuôn "thắng → tích điểm → claim mốc"; 1 lần thắng đẩy đồng thời nhiều thanh điểm. Kinh tế lệch về **faucet** (chỉ Đền Neon + Cửa hàng là sink xu). Kế hoạch gộp/khác-biệt-hoá ở `doc/tasks/todo/`.
+
+### 🔧 Tiện ích (KHÔNG phải phần thưởng)
+Nằm chung lưới Home nhưng là tiện ích thuần:
+- **Hướng dẫn** (`GuideScreen`) — giải thích luật, booster, từng chế độ.
+- **Cài đặt** (`SettingsScreen`) — âm thanh, ngôn ngữ, chế độ xem map/grid, reset tiến trình.
+
+> **Top bar:** ❤️ **Mạng** (hồi theo thời gian, mua đầy bằng xu) · 💰 **Xu** · 🎁 **Quà hằng ngày** (7 ngày 20→110) · 🎰 **Vòng quay may mắn**.
 
 ---
 

@@ -757,6 +757,13 @@ class GameScreen extends StatelessWidget {
 
   /// Ô thứ 3 của HUD: Time Attack hiện TIME (mm:ss, đỏ khi ≤10s), còn lại MOVES.
   Widget _movesOrTimeCell(GameController ctrl) {
+    // Sinh tồn "Triều dâng": hiện MỨC NGUY HIỂM nước dâng (%), đỏ khi ≥70%.
+    if (ctrl.isSurvival.value) {
+      final pct = (ctrl.tideLevel.value * 100).round();
+      final urgent = ctrl.tideLevel.value >= 0.7;
+      return _infoCell('hud_tide'.tr, _animValue('$pct%'),
+          urgent ? NeonTheme.magenta : NeonTheme.cyan);
+    }
     if (ctrl.level.objective == ObjectiveType.timeAttack) {
       final t = ctrl.timeLeft.value;
       final mm = (t ~/ 60).toString().padLeft(2, '0');

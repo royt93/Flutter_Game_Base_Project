@@ -787,22 +787,29 @@ LevelConfig buildSodaLevel() => const LevelConfig(
 // --- Sinh tồn (Survival — Wave 15): đếm ngược, combo +giây, sống lâu = điểm cao ---
 const int kSurvivalLevelIndex = -7;
 
-/// Thời gian khởi đầu Survival (giây). Combo ≥4 cộng thêm giây (engine addTime).
-const int kSurvivalTime = 50;
+// --- Wave 17.1 — Sinh tồn: cơ chế "TRIỀU DÂNG" (thay vì reskin TimeAttack) ---
+// Mực nước DÂNG từ đáy theo thời gian (tăng tốc dần); clear gem DƯỚI NƯỚC đẩy lùi
+// triều; nước chạm ĐỈNH (floodTop ≤ 0) → THUA. Khác hẳn TimeAttack: áp lực KHÔNG
+// GIAN (clear thấp để sống), engine ĐỌC isSurvival thật (cũ: không đọc dòng nào).
+const double kTideBaseRate = 0.06; // hàng/giây lúc mới vào (chậm)
+const double kTideAccel = 0.0018; // gia tốc dâng (hàng/giây mỗi giây sống)
+const double kTidePushback = 0.13; // đẩy lùi (hàng) mỗi gem DƯỚI NƯỚC bị clear
 
-/// Cấu hình Survival: TÁI DÙNG objective timeAttack (đồng hồ trong update + combo
-/// +giây sẵn có). KHÔNG có target để thắng (targetScore khổng lồ, không bao giờ
-/// đạt) — kết thúc khi HẾT GIỜ, điểm = thành tích (như Endless theo thời gian).
-/// Khác biệt nằm ở cờ `isSurvival` (checkEnd nhánh riêng + side-mode isolation).
+/// Tốc độ triều dâng (hàng/giây) tại [elapsed] giây đã sống — tăng tuyến tính.
+/// Pure → unit-test được + dùng chung engine.
+double tideRiseRate(double elapsed) => kTideBaseRate + kTideAccel * elapsed;
+
+/// Cấu hình Survival (Triều dâng): objective `score` để KHÔNG dính đồng hồ/+giây
+/// của timeAttack — kết thúc do TRIỀU (engine set `tideOverflow`), không do hết giờ.
+/// `moves`/`targetScore` đặt khổng lồ để không bao giờ hết lượt / "win" sớm.
 LevelConfig buildSurvivalLevel() => const LevelConfig(
       index: kSurvivalLevelIndex,
       rows: 8,
       cols: 8,
       colorCount: 6,
-      moves: 999, // không giới hạn lượt (chạy theo thời gian)
-      objective: ObjectiveType.timeAttack,
-      timeLimit: kSurvivalTime,
-      targetScore: 1 << 28, // không bao giờ đạt → không "win" sớm
+      moves: 1 << 24, // không giới hạn lượt (chạy theo triều)
+      objective: ObjectiveType.score,
+      targetScore: 1 << 28, // không bao giờ đạt → không "win"
     );
 
 // --- Mê cung neon (Labyrinth — Wave 15): đưa tinh thể qua mê cung tường xuống đáy ---
