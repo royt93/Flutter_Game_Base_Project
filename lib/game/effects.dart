@@ -7,6 +7,7 @@ import '../core/neon_theme.dart';
 import '../data/cosmetics.dart';
 import '../data/levels.dart' show ObstacleType;
 import '../logic/gem_data.dart' show Cell;
+import '../logic/settle.dart' show CellKind;
 
 /// Cache hiệu ứng dùng chung — pre-render 1 lần để tránh MaskFilter.blur mỗi frame
 /// (blur per-frame là nguyên nhân lag chính trên mobile).
@@ -220,11 +221,16 @@ class BoardFrame extends PositionComponent {
   final double cellSize;
   final Vector2 origin;
 
+  /// Wave 15: ô (r,c) có là tường không → bỏ vẽ slot (tạo lỗ/hình bàn). Mặc định
+  /// không có tường (mọi màn đặc hiện tại).
+  final bool Function(int r, int c)? isWall;
+
   BoardFrame({
     required this.rows,
     required this.cols,
     required this.cellSize,
     required this.origin,
+    this.isWall,
   });
 
   @override
@@ -260,6 +266,7 @@ class BoardFrame extends PositionComponent {
     final cr = Radius.circular(cellSize * 0.4);
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
+        if (isWall?.call(r, c) ?? false) continue; // Wave 15: lỗ — không vẽ slot
         final rect = Rect.fromLTWH(
           origin.x + c * cellSize,
           origin.y + r * cellSize,
@@ -287,6 +294,72 @@ class BoardFrame extends PositionComponent {
             ..strokeWidth = 1
             ..color = Colors.white.withValues(alpha: 0.06),
         );
+      }
+    }
+  }
+}
+
+/// Wave 15 — lớp ô CHẶN (tường/no-drop): vẽ khối đá neon ở ô `wall`, và viền
+/// neon mảnh ở ô `noDrop` (đảo nổi). Đọc trực tiếp lưới `kind` (cùng tham chiếu
+/// với engine) nên tĩnh suốt ván.
+class BlockedLayer extends PositionComponent {
+  final List<List<CellKind>> kind;
+  final int rows;
+  final int cols;
+  final double cellSize;
+  final Vector2 origin;
+
+  BlockedLayer({
+    required this.kind,
+    required this.rows,
+    required this.cols,
+    required this.cellSize,
+    required this.origin,
+  });
+
+  @override
+  void render(Canvas canvas) {
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        final k = kind[r][c];
+        if (k == CellKind.play) continue;
+        final rect = Rect.fromLTWH(
+          origin.x + c * cellSize,
+          origin.y + r * cellSize,
+          cellSize,
+          cellSize,
+        ).deflate(cellSize * 0.04);
+        final rr =
+            RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.18));
+        if (k == CellKind.wall) {
+          // khối đá tối + viền neon lạnh (cyan/tím nhẹ) + vạch chéo gờ đá
+          canvas.drawRRect(rr, Paint()..color = const Color(0xF21A1430));
+          canvas.drawRRect(
+            rr,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 2
+              ..color = NeonTheme.cyan.withValues(alpha: 0.45),
+          );
+          final p = Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.2
+            ..color = Colors.white.withValues(alpha: 0.10);
+          canvas.drawLine(
+            Offset(rect.left + rect.width * 0.2, rect.top + rect.height * 0.7),
+            Offset(rect.left + rect.width * 0.8, rect.top + rect.height * 0.3),
+            p,
+          );
+        } else {
+          // noDrop (đảo nổi): viền neon đứt nét sáng (gem ở đây không rơi)
+          canvas.drawRRect(
+            rr,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 2
+              ..color = NeonTheme.lime.withValues(alpha: 0.55),
+          );
+        }
       }
     }
   }

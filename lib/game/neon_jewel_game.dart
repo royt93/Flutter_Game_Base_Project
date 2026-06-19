@@ -16,6 +16,7 @@ import '../data/levels.dart';
 import '../logic/board_mechanics.dart';
 import '../logic/gem_data.dart';
 import '../logic/match_detector.dart';
+import '../logic/settle.dart';
 import '../presentation/controllers/game_controller.dart';
 import 'effects.dart';
 import 'gem_component.dart';
@@ -48,6 +49,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// bằng, bỏ may rủi mở bàn). null = ngẫu nhiên như mode thường.
   final int? boardSeed;
 
+  /// Wave 15 — BỐ CỤC ô đè (test/Labyrinth): nếu != null, dùng làm lưới tường/lỗ
+  /// thay cho `controller.level.layout`. Cho phép mount bàn có lỗ mà không cần
+  /// đổi level config (test seam + chế độ Mê cung dùng layout động).
+  final List<List<CellKind>>? layoutOverride;
+
   NeonJewelGame({
     required this.controller,
     required this.rows,
@@ -58,6 +64,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     this.onMoveResolved,
     this.muteSfx = false,
     this.boardSeed,
+    this.layoutOverride,
   });
 
   /// Audio SFX của bàn (null khi [muteSfx] — versus tắt để không chồng âm 2 bàn).
@@ -90,6 +97,32 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   late double cellSize;
   late Vector2 boardOrigin;
 
+  /// Wave 15 — bố cục ô (play/wall/noDrop). Mặc định toàn `play` (bàn đặc) nếu
+  /// màn không khai báo `layout` → KHÔNG hồi quy mọi màn/chế độ hiện có.
+  late List<List<CellKind>> _cellKind;
+
+  /// Bố cục đang dùng: ưu tiên [layoutOverride] (test/Labyrinth) rồi tới config màn.
+  List<List<CellKind>>? get _activeLayout =>
+      layoutOverride ?? controller.level.layout;
+
+  void _buildLayout() {
+    final layout = _activeLayout;
+    _cellKind = List.generate(
+      rows,
+      (r) => List.generate(
+        cols,
+        (c) => (layout != null && r < layout.length && c < layout[r].length)
+            ? layout[r][c]
+            : CellKind.play,
+      ),
+    );
+  }
+
+  bool _isWall(int r, int c) => _cellKind[r][c] == CellKind.wall;
+
+  /// Bàn có ít nhất 1 ô tường/no-drop (cần dùng settle engine có lỗ).
+  bool get _hasLayout => _activeLayout != null;
+
   /// Lớp chứa gem — tách riêng để rung (shake) toàn bàn mà không ảnh hưởng nền.
   late final PositionComponent boardLayer;
 
@@ -104,6 +137,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   Future<void> onLoad() async {
     await NeonFx.ensureInit(); // pre-render ảnh glow 1 lần (tránh blur mỗi frame)
     _layout();
+    _buildLayout(); // Wave 15: bố cục ô (tường/lỗ) — dựng trước fill/obstacle
     // Nền trang trí dùng Random RIÊNG (không seed) → KHÔNG tiêu `_rnd` của bàn.
     // Nhờ vậy `_rnd` (seeded) chỉ phục vụ logic bàn → 2 bàn versus cùng seed cho
     // layout mở đầu y hệt (mirror), miễn nhiễm với mọi thay đổi của nền.
@@ -120,7 +154,17 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       cols: cols,
       cellSize: cellSize,
       origin: boardOrigin,
+      isWall: _isWall, // Wave 15: bỏ vẽ slot ở ô tường
     )..priority = -2);
+    if (_hasLayout) {
+      boardLayer.add(BlockedLayer(
+        kind: _cellKind,
+        rows: rows,
+        cols: cols,
+        cellSize: cellSize,
+        origin: boardOrigin,
+      )..priority = -1); // khối đá neon ở ô tường (dưới gem)
+    }
     _buildJelly();
     boardLayer.add(JellyLayer(
       jelly: jelly,
@@ -431,6 +475,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     grid = List.generate(rows, (_) => List<GemComponent?>.filled(cols, null));
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
+        if (_isWall(r, c)) continue; // Wave 15: ô tường không chứa gem
         GemColor color;
         // tránh tạo match-3 ngay từ đầu
         do {
@@ -551,6 +596,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final c = lx ~/ cellSize;
     final r = ly ~/ cellSize;
     if (r < 0 || r >= rows || c < 0 || c >= cols) return null;
+    if (_isWall(r, c)) return null; // Wave 15: ô tường không tương tác
     return Cell(r, c);
   }
 
@@ -862,11 +908,13 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         // game tưởng còn nước đi nhưng người chơi không thực hiện được → kẹt.
         if (_swapLocked(r, c)) continue;
         if (c + 1 < cols &&
+            grid[r][c + 1] != null && // Wave 15: không "swap" vào ô tường
             !_swapLocked(r, c + 1) &&
             (matchAfterSwap(r, c, r, c + 1) || comboMove(r, c, r, c + 1))) {
           return [Cell(r, c), Cell(r, c + 1)];
         }
         if (r + 1 < rows &&
+            grid[r + 1][c] != null &&
             !_swapLocked(r + 1, c) &&
             (matchAfterSwap(r, c, r + 1, c) || comboMove(r, c, r + 1, c))) {
           return [Cell(r, c), Cell(r + 1, c)];
@@ -1579,6 +1627,12 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   }
 
   Future<void> _applyGravityAndRefill() async {
+    // Wave 15: bàn có bố cục (tường/lỗ) → dùng settle engine lỗ-cắt-cột. Bàn đặc
+    // (mọi màn/chế độ hiện có) giữ NGUYÊN path cũ → zero hồi quy.
+    if (_hasLayout) {
+      await _applyGravityWithLayout();
+      return;
+    }
     final futures = <Future>[];
     for (int c = 0; c < cols; c++) {
       int writeRow = rows - 1;
@@ -1631,6 +1685,60 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           ),
         ));
       }
+    }
+    await Future.wait(futures);
+  }
+
+  /// Wave 15 — trọng lực cho bàn CÓ BỐ CỤC (tường/lỗ): dùng settle engine thuần
+  /// (lỗ-cắt-cột). Mỗi cột bị wall chia thành đoạn độc lập; gem dồn trong đoạn,
+  /// ô trống refill từ đỉnh đoạn. Áp move theo thứ tự settle phát (đáy-trước →
+  /// an toàn, không ghi đè).
+  Future<void> _applyGravityWithLayout() async {
+    final res = settleColumnsDown(
+      rows,
+      cols,
+      (r, c) => _cellKind[r][c],
+      (r, c) => grid[r][c] != null,
+    );
+    final futures = <Future>[];
+    for (final m in res.moves) {
+      final g = grid[m.fromR][m.fromC]!;
+      grid[m.toR][m.toC] = g;
+      grid[m.fromR][m.fromC] = null;
+      g.row = m.toR;
+      g.col = m.toC;
+      futures.add(_run(
+        g,
+        MoveToEffect(
+          _cellCenter(m.toR, m.toC),
+          EffectController(duration: 0.26, curve: Curves.bounceOut),
+        ),
+      ));
+    }
+    for (final s in res.spawns) {
+      final g = GemComponent(
+        color: _randomColor(),
+        type: GemType.normal,
+        row: s.r,
+        col: s.c,
+        position: _cellCenter(-1 - s.depth, s.c), // rơi từ trên xếp tầng
+        cellSize: cellSize,
+      );
+      g.isLucky = _rnd.nextDouble() < 0.028;
+      grid[s.r][s.c] = g;
+      g.scale = Vector2.all(0.4);
+      g.add(ScaleEffect.to(
+        Vector2.all(1),
+        EffectController(duration: 0.28, curve: Curves.easeOutBack),
+      ));
+      boardLayer.add(g);
+      futures.add(_run(
+        g,
+        MoveToEffect(
+          _cellCenter(s.r, s.c),
+          EffectController(duration: 0.32, curve: Curves.bounceOut),
+        ),
+      ));
     }
     await Future.wait(futures);
   }

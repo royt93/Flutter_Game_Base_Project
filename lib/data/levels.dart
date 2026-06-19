@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../logic/gem_data.dart';
+import '../logic/settle.dart';
 
 /// Loại mục tiêu của màn chơi.
 /// - score: đạt điểm trong số lượt
@@ -184,6 +185,10 @@ class LevelConfig {
   /// Soda: số "chai" cần đẩy nổi lên đỉnh (0 nếu không phải Soda).
   final int sodaTarget;
 
+  /// Wave 15 — BỐ CỤC bàn (ô tường/lỗ/no-drop). null = bàn đặc chữ nhật như cũ
+  /// (KHÔNG hồi quy 100 màn hiện tại). Dựng từ bản đồ ký tự qua [layoutFromMap].
+  final List<List<CellKind>>? layout;
+
   const LevelConfig({
     required this.index,
     required this.rows,
@@ -201,8 +206,13 @@ class LevelConfig {
     this.obstaclePattern = JellyPattern.none,
     this.orders = const [],
     this.sodaTarget = 0,
+    this.layout,
   });
 }
+
+/// Dựng bố cục từ bản đồ ký tự (mỗi String = 1 hàng). `#`/`X` = tường, `o`/`O` =
+/// no-drop, còn lại = ô chơi. Số hàng/cột phải khớp rows/cols của màn.
+List<List<CellKind>> layoutFromMap(List<String> rowsText) => parseLayout(rowsText);
 
 /// Tạo cấu hình màn Order (mục tiêu hỗn hợp): thu đủ 3 màu khác nhau, target
 /// tăng nhẹ theo [index]. Chọn 3 màu tất định theo index (không phụ thuộc RNG
