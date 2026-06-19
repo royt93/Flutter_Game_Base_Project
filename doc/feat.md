@@ -1039,6 +1039,56 @@ máy thật).
 - **Kết quả**: 0 analyzer · **324 test pass** (+4 `w10_format_test`: cùng ngày,
   nhiều ngày, tràn cuối tháng, đã-qua-mốc) · playtest 0 màn quá-khó (curve không đổi).
 
+## 🌊 Wave 15 — KẾ HOẠCH: Bố cục bàn đa dạng + Gravity Streams + 2 side mode + content (📋 PICKED 2026-06-19)
+
+> Người dùng chốt làm: (1) Nội dung mới — Thế giới 6-8 + màn 101-150; (2) Cơ chế
+> gem/obstacle mới; (3) Chế độ phụ mới. **Polish & Accessibility → ⏸️ Deferred**
+> (mù màu/reduced-motion/SFX — làm trước khi lên store, KHÔNG phải bây giờ).
+>
+> Insight then chốt từ phản hồi: Candy Crush có **bố cục layout đa dạng** (bàn
+> không chữ nhật, lỗ/tường), **gem bị xích/nhốt**, **ô đá**. Đây là điểm khác biệt
+> lớn nhất so với game hiện tại (đang "Board chuẩn 8×8 đồng nhất mọi màn").
+
+### Quyết định đã chốt (qua AskUserQuestion)
+- **Trọng lực khi bàn có lỗ/tường**: KẾT HỢP **lỗ-cắt-cột** (MVP an toàn) **+ trượt
+  chéo kiểu CCS** (gem trượt chéo vòng qua vật cản).
+- **Cơ chế trọng lực ĐỘC QUYỀN (signature)**: **Dòng chảy Neon / Gravity Streams** —
+  vùng có mũi tên neon đổi HƯỚNG trọng lực (xuống/trái/phải/lên), gem chảy theo
+  hướng vùng → bàn như mạch điện. Rất khác CCS.
+- **Chế độ phụ mới**: làm **CẢ HAI** — Mê cung neon (Labyrinth) + Sinh tồn (Survival).
+
+### Khảo sát kiến trúc (đã làm — Explore agent)
+- Engine render/layout **đã động theo `rows/cols`** (không hardcode 8×8 trong logic
+  vẽ — `_layout`/`_cellCenter`/`BoardFrame` dùng biến). `MatchDetector` chạy trên
+  grid input → KHÔNG cần sửa cho blocked-cell.
+- Board **cố định 8×8 ở DEFINITION** (8 hàm `build*Level` + loop `kLevels`).
+- **Chưa có** khái niệm ô blocked/hole/no-drop. Obstacle hiện (7 loại) đều "phủ KÈM
+  gem", không phải "ô không có gem".
+- Phần khó & dễ vỡ nhất: **gravity/refill** (`_applyGravityAndRefill`, `_doShuffle`,
+  `_fillInitialBoard`, `_matchColorAt`, `_findMove`) — audit W11 từng cảnh báo.
+
+### Lộ trình phân PHASE (mỗi phase: build + test + verify trước khi sang phase kế)
+- **Phase 0 — Nền tảng ô đặc biệt + lỗ-cắt-cột**: thêm `CellKind` (play/wall/noDrop)
+  + bản đồ ký tự cho level; lưới `blocked`/`noDrop` trong engine; gravity/refill
+  nhận biết lỗ (cột bị cắt → refill theo đoạn liền mạch); `BlockedLayer` render
+  tường đá neon; sửa `_findMove`/`_doShuffle`/select. Winnability tests.
+- **Phase 1 — Trượt chéo (diagonal-slide)**: gem trượt chéo vòng qua vật cản khi
+  ô dưới bị chặn (kiểu CCS). Tổng quát hoá settle. Nhiều test winnability.
+- **Phase 2 — Gravity Streams (signature)**: lưới `flowDir` (hướng trọng lực/ô);
+  tổng quát hoá settle thành "chảy theo hướng cục bộ"; refill từ mép-nguồn mỗi
+  dòng; `FlowLayer` mũi tên neon chạy. (Phase nặng nhất.)
+- **Phase 3 — Gem nhốt (Cage) + no-drop + mục tiêu Giải cứu**: `ObstacleType.cage`
+  (gem có màu, MATCH được, nổ → mở lồng) + `ObjectiveType.rescue`; wire ô no-drop.
+- **Phase 4 — 2 chế độ phụ**: Mê cung neon (wall maze + đưa tinh thể xuống đích) +
+  Sinh tồn (đếm ngược, combo +giây). Cô lập side-mode (`isSideMode`).
+- **Phase 5 — Nội dung**: Thế giới 6-8 (3 accent màu mới) + màn 101-150, weave dần
+  layouts/cage/streams/no-drop; cập nhật `tool/playtest.dart` cho bàn có lỗ; i18n
+  22 ngôn ngữ cho key mới (lớp merge `_w15ByLang`).
+
+> ⚠️ Quy mô: đây là wave LỚN nhất, đụng đúng phần engine dễ vỡ nhất (gravity/refill).
+> Làm TUẦN TỰ từng phase, có cổng build+test+verify, KHÔNG fan-out subagent (đụng
+> cùng file lõi). Task chi tiết: `doc/tasks/todo/w15-*.md`.
+
 ## 🔍 Đánh giá chất lượng code (2026-06-16, Wave 8.9)
 
 4 agent đọc song song 4 tầng (engine / controllers / UI / core) + verify claim nặng bằng đọc code thật & probe. **Điểm tổng: 7.5/10** — chạy ổn, kiến trúc tốt, không lỗi logic nghiêm trọng; nợ kỹ thuật tập trung 2 chỗ.
