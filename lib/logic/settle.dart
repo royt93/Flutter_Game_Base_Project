@@ -84,6 +84,148 @@ class SettleResult {
   const SettleResult(this.moves, this.spawns);
 }
 
+/// Kết quả settle TỔNG QUÁT: move cho gem hiện có (orig→final) + ô spawn gem mới.
+class BoardSettle {
+  final List<SettleMove> moves;
+  final List<SettleSpawn> spawns;
+  const BoardSettle(this.moves, this.spawns);
+}
+
+/// Settle TỔNG QUÁT (Phase 1): trọng lực xuống **+ TRƯỢT CHÉO** vòng qua tường +
+/// refill từ đỉnh. Tất định & HỘI TỤ: mỗi bước chỉ đẩy gem xuống (hàng tăng) hoặc
+/// sinh gem mới (số gem ≤ số ô chơi) → tổng "Σ hàng" tăng nghiêm ngặt, dừng chắc.
+///
+/// Gem hiện có được đánh số theo thứ tự quét; trả về [SettleMove] (orig→final) CHỈ
+/// cho gem ĐỔI ô. Gem mới (spawn ở đỉnh, có thể trượt chéo vào hốc) → [SettleSpawn]
+/// (r,c = ô cuối; depth dùng cho stagger animation theo cột, engine tự tính lại).
+///
+/// Quy tắc trượt chéo (kiểu Candy Crush): gem (r,c) KHÔNG rơi thẳng được (ô dưới
+/// bị tường/đầy) → trượt xuống-chéo (r+1, c±1) nếu ô đó TRỐNG và ô ngay trên đích
+/// (r, c±1) KHÔNG phải gem (tường/trống → không ai rơi thẳng lấp đích). Thứ tự
+/// dc cố định [-1,+1] → tất định.
+BoardSettle settleBoard(
+  int rows,
+  int cols,
+  CellKind Function(int r, int c) kindAt,
+  bool Function(int r, int c) occupied, {
+  bool diagonal = true,
+}) {
+  const empty = -1, wall = -2;
+  final g = List.generate(
+    rows,
+    (r) => List.generate(
+      cols,
+      (c) => kindAt(r, c) == CellKind.wall ? wall : (occupied(r, c) ? 0 : empty),
+    ),
+  );
+  // Đánh số gem hiện có theo thứ tự quét + ghi ô gốc.
+  final origR = <int>[], origC = <int>[];
+  var id = 0;
+  for (int r = 0; r < rows; r++) {
+    for (int c = 0; c < cols; c++) {
+      if (g[r][c] == 0) {
+        g[r][c] = id;
+        origR.add(r);
+        origC.add(c);
+        id++;
+      }
+    }
+  }
+  final existing = id;
+  var spawnCount = 0;
+  bool isGem(int v) => v >= 0;
+
+  // Rơi thẳng 1 lượt quét (đáy-lên mỗi cột).
+  bool verticalPass() {
+    var moved = false;
+    for (int c = 0; c < cols; c++) {
+      for (int r = rows - 2; r >= 0; r--) {
+        if (isGem(g[r][c]) && g[r + 1][c] == empty) {
+          g[r + 1][c] = g[r][c];
+          g[r][c] = empty;
+          moved = true;
+        }
+      }
+    }
+    return moved;
+  }
+
+  // Trượt chéo 1 lượt: gem KHÔNG rơi thẳng được (ô dưới ≠ trống) → trượt (r+1,c±1)
+  // nếu ô đó TRỐNG và ô-trên-đích là TƯỜNG (đích không thể được lấp bằng rơi thẳng
+  // → không "ăn trộm" ô đáng lẽ rơi thẳng vào). Chạy SAU khi rơi-thẳng đã cạn.
+  bool diagonalPass() {
+    var moved = false;
+    for (int c = 0; c < cols; c++) {
+      for (int r = rows - 2; r >= 0; r--) {
+        if (!isGem(g[r][c]) || g[r + 1][c] == empty) continue;
+        for (final dc in const [-1, 1]) {
+          final tc = c + dc;
+          if (tc < 0 || tc >= cols) continue;
+          if (g[r + 1][tc] != empty) continue;
+          if (g[r][tc] != wall) continue; // ô-trên-đích phải là tường
+          g[r + 1][tc] = g[r][c];
+          g[r][c] = empty;
+          moved = true;
+          break;
+        }
+      }
+    }
+    return moved;
+  }
+
+  // Sinh gem mới ở mọi ô đỉnh (hàng 0) còn trống.
+  bool spawnPass() {
+    var moved = false;
+    for (int c = 0; c < cols; c++) {
+      if (g[0][c] == empty) {
+        g[0][c] = existing + spawnCount;
+        spawnCount++;
+        moved = true;
+      }
+    }
+    return moved;
+  }
+
+  var any = true, guard = 0;
+  final guardMax = rows * cols * 8 + 16;
+  while (any && guard++ < guardMax) {
+    any = false;
+    while (verticalPass()) {
+      any = true; // rơi thẳng tới cạn trước
+    }
+    if (diagonal && diagonalPass()) any = true;
+    if (spawnPass()) any = true;
+  }
+
+  final total = existing + spawnCount;
+  final finalR = List.filled(total, -1), finalC = List.filled(total, -1);
+  for (int r = 0; r < rows; r++) {
+    for (int c = 0; c < cols; c++) {
+      final v = g[r][c];
+      if (v >= 0) {
+        finalR[v] = r;
+        finalC[v] = c;
+      }
+    }
+  }
+  final moves = <SettleMove>[];
+  for (int i = 0; i < existing; i++) {
+    if (finalR[i] != origR[i] || finalC[i] != origC[i]) {
+      moves.add(SettleMove(origR[i], origC[i], finalR[i], finalC[i]));
+    }
+  }
+  // depth = thứ hạng spawn trong cùng cột (đỉnh xa nhất → depth lớn) cho stagger.
+  final perCol = <int, int>{};
+  final spawns = <SettleSpawn>[];
+  for (int i = existing; i < total; i++) {
+    final c = finalC[i];
+    final d = perCol[c] ?? 0;
+    perCol[c] = d + 1;
+    spawns.add(SettleSpawn(finalR[i], c, d));
+  }
+  return BoardSettle(moves, spawns);
+}
+
 /// Trọng lực LỖ-CẮT-CỘT (Phase 0): mỗi cột, wall chia thành các đoạn play liền
 /// mạch; gem trong đoạn dồn xuống đáy đoạn, ô trống còn lại của đoạn → spawn.
 ///

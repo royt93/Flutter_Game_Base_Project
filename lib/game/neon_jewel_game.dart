@@ -1690,28 +1690,33 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   }
 
   /// Wave 15 — trọng lực cho bàn CÓ BỐ CỤC (tường/lỗ): dùng settle engine thuần
-  /// (lỗ-cắt-cột). Mỗi cột bị wall chia thành đoạn độc lập; gem dồn trong đoạn,
-  /// ô trống refill từ đỉnh đoạn. Áp move theo thứ tự settle phát (đáy-trước →
-  /// an toàn, không ghi đè).
+  /// [settleBoard] (rơi thẳng + TRƯỢT CHÉO vòng qua tường + refill từ đỉnh). Gem
+  /// có thể dời nhiều ô → áp move kiểu "gom component TRƯỚC + dọn ô gốc, rồi mới
+  /// đặt vào ô cuối" (an toàn cả khi ô-đích của gem này là ô-gốc của gem khác).
   Future<void> _applyGravityWithLayout() async {
-    final res = settleColumnsDown(
+    final res = settleBoard(
       rows,
       cols,
       (r, c) => _cellKind[r][c],
       (r, c) => grid[r][c] != null,
     );
     final futures = <Future>[];
+    // 1) gom mọi gem cần dời (đọc grid hiện tại) + dọn ô gốc.
+    final placements = <(GemComponent, int, int)>[];
     for (final m in res.moves) {
-      final g = grid[m.fromR][m.fromC]!;
-      grid[m.toR][m.toC] = g;
+      placements.add((grid[m.fromR][m.fromC]!, m.toR, m.toC));
       grid[m.fromR][m.fromC] = null;
-      g.row = m.toR;
-      g.col = m.toC;
+    }
+    // 2) đặt vào ô cuối + animate.
+    for (final (g, r, c) in placements) {
+      grid[r][c] = g;
+      g.row = r;
+      g.col = c;
       futures.add(_run(
         g,
         MoveToEffect(
-          _cellCenter(m.toR, m.toC),
-          EffectController(duration: 0.26, curve: Curves.bounceOut),
+          _cellCenter(r, c),
+          EffectController(duration: 0.30, curve: Curves.bounceOut),
         ),
       ));
     }

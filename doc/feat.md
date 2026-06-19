@@ -1093,7 +1093,7 @@ máy thật).
 | Phase | Task | File | Status | Rủi ro |
 |---|---|---|---|---|
 | 0 | Ô tường/lỗ/no-drop + bản đồ ký tự + gravity lỗ-cắt-cột | `w15-0-blocked-cells.md` | ✅ done | 🟡 TB |
-| 1 | Trượt chéo kiểu CCS (gravity vòng qua vật cản) | `w15-1-diagonal-slide.md` | 📋 todo | 🔴 Cao |
+| 1 | Trượt chéo kiểu CCS (gravity vòng qua vật cản) | `w15-1-diagonal-slide.md` | ✅ done | 🔴 Cao |
 | 2 | Gravity Streams (signature — hướng trọng lực theo vùng) | `w15-2-gravity-streams.md` | 📋 todo | 🔴 Cao nhất |
 | 3 | Gem nhốt (Cage) + ô no-drop + mục tiêu Giải cứu | `w15-3-caged-gem.md` | 📋 todo | 🟡 TB |
 | 4 | 2 chế độ phụ: Mê cung neon + Sinh tồn | `w15-4-side-modes.md` | 📋 todo | 🟢 Thấp |
@@ -1116,6 +1116,19 @@ máy thật).
 - **✅ Verify Redmi (23129RAA4G)**: weave tạm hình thoi vào màn 1 → bàn render đúng
   (4 góc 2×2 tường tối/trống, gem chỉ ở ô chơi, bàn không-chữ-nhật), swipe tương
   tác OK. Đã revert temp.
+
+#### ✅ Phase 1 — Trượt chéo (diagonal-slide) (2026-06-19)
+- **`settleBoard`** (settle.dart): rơi thẳng-tới-cạn → **trượt chéo** (gem KHÔNG rơi
+  thẳng được + ô-trên-đích là TƯỜNG → trượt (r+1,c±1), tránh "ăn trộm" ô rơi thẳng)
+  → refill từ đỉnh. Tất định & hội tụ (Σ hàng tăng nghiêm ngặt). Trả move orig→final
+  (gem dời nhiều ô) + spawn.
+- **Engine**: `_applyGravityWithLayout` chuyển sang `settleBoard`; áp move kiểu "gom
+  component trước + dọn ô gốc rồi đặt ô cuối" (an toàn khi đích-này = gốc-kia).
+- **Test**: +5 unit (bàn rỗng refill ĐẦY mọi ô chơi qua trượt chéo, hình thoi đầy,
+  no-wall, tất định, không move thừa) → **337 test pass**, 0 analyzer.
+- **✅ Verify Redmi**: weave tạm thanh tường ngang màn 1 → render đúng; **đập búa 1
+  gem dưới thanh** (ĐIỂM 0→40) → bàn refill ĐẦY, KHÔNG lỗ đen dưới thanh (hốc bị
+  tường che lấp bằng trượt chéo). Đã revert temp.
 
 **⏸️ Deferred (Wave 15, làm trước khi lên store — KHÔNG phải bây giờ)**:
 Polish & Accessibility — chế độ mù màu (palette + hoạ tiết phân biệt gem), reduced

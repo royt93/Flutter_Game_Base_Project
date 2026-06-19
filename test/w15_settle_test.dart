@@ -92,4 +92,77 @@ void main() {
       expect(filled.spawns.length, 1); // mặc định refill
     });
   });
+
+  group('Wave 15 — settleBoard (trượt chéo + refill đầy)', () {
+    // Tái dựng tập ô CÓ GEM sau settle = gem không-đổi-ô + gem đã dời + gem mới.
+    Set<String> finalFilled(List<String> map) {
+      final s = _grid(map);
+      final res = settleBoard(s.rows, s.cols, s.kindAt, s.occupied);
+      final movedFrom = {for (final m in res.moves) '${m.fromR},${m.fromC}'};
+      final occ = <String>{};
+      for (int r = 0; r < s.rows; r++) {
+        for (int c = 0; c < s.cols; c++) {
+          if (s.occupied(r, c) && !movedFrom.contains('$r,$c')) occ.add('$r,$c');
+        }
+      }
+      for (final m in res.moves) {
+        occ.add('${m.toR},${m.toC}');
+      }
+      for (final sp in res.spawns) {
+        occ.add('${sp.r},${sp.c}');
+      }
+      return occ;
+    }
+
+    Set<String> playCells(List<String> map) {
+      final s = _grid(map);
+      final out = <String>{};
+      for (int r = 0; r < s.rows; r++) {
+        for (int c = 0; c < s.cols; c++) {
+          if (s.kindAt(r, c) != CellKind.wall) out.add('$r,$c');
+        }
+      }
+      return out;
+    }
+
+    test('bàn rỗng → refill ĐẦY mọi ô chơi, KHÔNG gem trong tường', () {
+      // hốc cột phải bị wall chặn đỉnh → chỉ lấp được nhờ TRƯỢT CHÉO từ cột trái.
+      const map = ['.#', '..', '..'];
+      expect(finalFilled(map), equals(playCells(map)));
+    });
+
+    test('hình thoi rỗng → đầy hết ô chơi (trượt chéo lấp 4 góc hốc)', () {
+      const map = [
+        '##....##',
+        '#......#',
+        '........',
+        '........',
+        '#......#',
+        '##....##',
+      ];
+      expect(finalFilled(map), equals(playCells(map)));
+    });
+
+    test('không có tường: cột nén xuống + refill đầy như thường', () {
+      const map = ['g.', '.g', '..'];
+      expect(finalFilled(map), equals(playCells(map)));
+    });
+
+    test('tất định: cùng input → cùng kết quả', () {
+      final s = _grid(const ['.#', '..', '..']);
+      final a = settleBoard(s.rows, s.cols, s.kindAt, s.occupied);
+      final b = settleBoard(s.rows, s.cols, s.kindAt, s.occupied);
+      expect(a.moves, equals(b.moves));
+      expect(a.spawns, equals(b.spawns));
+    });
+
+    test('gem giữ nguyên nếu đã ở đáy (không move thừa)', () {
+      // cột đầy gem, không tường → 0 move, 0 spawn.
+      const map = ['gg', 'gg'];
+      final s = _grid(map);
+      final res = settleBoard(s.rows, s.cols, s.kindAt, s.occupied);
+      expect(res.moves, isEmpty);
+      expect(res.spawns, isEmpty);
+    });
+  });
 }

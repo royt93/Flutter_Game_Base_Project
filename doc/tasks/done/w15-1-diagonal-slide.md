@@ -3,7 +3,7 @@ id: w15-1-diagonal-slide
 title: Trượt chéo kiểu Candy Crush (gravity vòng qua vật cản)
 wave: 15
 phase: 1
-status: todo
+status: done
 owner: claude
 ---
 
