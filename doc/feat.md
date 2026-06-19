@@ -1024,7 +1024,20 @@ Phản hồi máy thật: thêm hàng meta thứ 3 (Album/Heo/Giải đấu) là
   FATAL/RenderFlex overflow toàn phiên); GPU 99th = 6ms.
 - *Nợ nhẹ ghi nhận*: countdown "Kết thúc sau 00:00:00" ở Giải đấu — dùng chung
   `timeToEnd` (epoch-week) với Season; cần kiểm timezone (UTC+7) — KHÔNG phải lỗi
-  riêng Wave 14 (Season cùng logic).
+  riêng Wave 14 (Season cùng logic). → **ĐÃ SỬA bên dưới (Wave 14.1)**.
+
+### 🕒 Wave 14.1 — Fix timezone countdown Mùa/Giải đấu (2026-06-19)
+Gốc rễ: `timeToEnd` (cả `season_controller` lẫn `tournament_controller`) tái dựng
+mốc kết thúc bằng **UTC midnight** (`endDay * 86400000`) trong khi `todayEpochDay`
+lại tính từ **local date** (`DateTime(y,m,d)`). Hai hệ quy chiếu lệch đúng bằng
+offset múi giờ → ở UTC+7 countdown nhảy về `00:00:00` sớm 7 giờ (đúng triệu chứng
+máy thật).
+- **Fix**: helper chung `durationToLocalMidnight(now, daysLeft)` (`core/utils/format.dart`)
+  dựng mốc kết thúc từ thành phần ngày ĐỊA PHƯƠNG (`DateTime(y, m, d + daysLeft)`,
+  Dart tự chuẩn hoá tràn tháng) → khớp cách `todayEpochDay` tính. `daysLeft =
+  weekEnd/seasonEnd(today) − today` (luôn 1..N). Cả 2 controller gọi helper này.
+- **Kết quả**: 0 analyzer · **324 test pass** (+4 `w10_format_test`: cùng ngày,
+  nhiều ngày, tràn cuối tháng, đã-qua-mốc) · playtest 0 màn quá-khó (curve không đổi).
 
 ## 🔍 Đánh giá chất lượng code (2026-06-16, Wave 8.9)
 

@@ -11,6 +11,20 @@ String fmtDur(Duration d) {
   return '$m:$s';
 }
 
+/// Thời gian còn lại tới **nửa đêm GIỜ MÁY** sau [daysLeft] ngày kể từ hôm nay.
+///
+/// Dùng cho đếm ngược kết thúc Mùa / Giải đấu tuần. Mốc kết thúc dựng từ CÁC
+/// THÀNH PHẦN NGÀY ĐỊA PHƯƠNG (`DateTime(year, month, day + daysLeft)`) — khớp
+/// cách `todayEpochDay` tính (cũng theo local date). Trước đây mốc kết thúc bị
+/// tái dựng bằng UTC midnight (`endDay * 86400000`) trong khi epoch-day lại theo
+/// local → lệch đúng offset múi giờ (UTC+7 → countdown nhảy 00:00:00 sớm 7 giờ).
+/// Dart tự chuẩn hoá `day` tràn (vd 35 → tháng kế).
+Duration durationToLocalMidnight(DateTime now, int daysLeft) {
+  final end = DateTime(now.year, now.month, now.day + daysLeft);
+  final ms = end.millisecondsSinceEpoch - now.millisecondsSinceEpoch;
+  return ms <= 0 ? Duration.zero : Duration(milliseconds: ms);
+}
+
 /// Định dạng số nguyên lớn (xu, điểm, giá, máu boss…) với DẤU PHÂN TÁCH HÀNG
 /// NGHÌN theo NGÔN NGỮ hiện tại: vi → "10.000", en → "10,000", de → "10.000"…
 /// Dùng [NumberFormat] (intl) theo `Get.locale`; nếu locale lạ/chưa có dữ liệu

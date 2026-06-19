@@ -36,4 +36,33 @@ void main() {
       expect(() => fmtNum(10000), returnsNormally);
     });
   });
+
+  group('Wave 14 fix — durationToLocalMidnight (countdown không lệch múi giờ)', () {
+    test('ngày cuối tuần giải: tới nửa đêm GIỜ MÁY, không lệch UTC', () {
+      // 10:00 sáng giờ máy, daysLeft=1 (đang ngày chót) → nửa đêm tối nay = 14h.
+      // Trước fix: tái dựng UTC midnight → ở UTC+7 sẽ ra 7h (lệch -7h) hoặc 0.
+      final now = DateTime(2026, 6, 19, 10, 0);
+      expect(durationToLocalMidnight(now, 1), const Duration(hours: 14));
+    });
+
+    test('còn nhiều ngày: cộng đúng số ngày tới nửa đêm', () {
+      final now = DateTime(2026, 6, 19, 22, 30);
+      // còn 3 ngày → nửa đêm 2026-06-22 = 1 giờ 30 phút + 2 ngày.
+      expect(
+        durationToLocalMidnight(now, 3),
+        const Duration(days: 2, hours: 1, minutes: 30),
+      );
+    });
+
+    test('daysLeft tràn cuối tháng được chuẩn hoá', () {
+      final now = DateTime(2026, 6, 30, 12, 0);
+      // còn 1 ngày → nửa đêm 2026-07-01 (Dart tự chuyển tháng) = 12 giờ.
+      expect(durationToLocalMidnight(now, 1), const Duration(hours: 12));
+    });
+
+    test('đã qua mốc (daysLeft 0, đang nửa đêm) → Duration.zero', () {
+      final now = DateTime(2026, 6, 19, 0, 0);
+      expect(durationToLocalMidnight(now, 0), Duration.zero);
+    });
+  });
 }

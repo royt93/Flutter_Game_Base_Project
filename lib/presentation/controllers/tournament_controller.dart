@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:get/get.dart';
 import '../../core/storage_service.dart';
+import '../../core/utils/format.dart';
 import '../../data/battle_pass.dart' show RewardKind;
 import '../../data/tournament.dart';
 import 'game_controller.dart';
@@ -47,13 +48,12 @@ class TournamentController extends GetxController {
     if (_store.getInt(StorageKeys.tournamentWeek, def: -1) != week) _refresh();
   }
 
-  /// Thời gian còn lại tới khi hết tuần giải.
+  /// Thời gian còn lại tới khi hết tuần giải (mốc = nửa đêm giờ máy, không lệch
+  /// múi giờ — xem [durationToLocalMidnight]).
   Duration get timeToEnd {
-    final now = g.clock();
-    final endDay = tournamentWeekEnd(g.todayEpochDay);
-    final end = DateTime.fromMillisecondsSinceEpoch(endDay * 86400000);
-    final ms = end.millisecondsSinceEpoch - now.millisecondsSinceEpoch;
-    return ms <= 0 ? Duration.zero : Duration(milliseconds: ms);
+    final today = g.todayEpochDay;
+    final daysLeft = tournamentWeekEnd(today) - today;
+    return durationToLocalMidnight(g.clock(), daysLeft);
   }
 
   /// Điểm "mục tiêu tuần" của bot [i] — dùng điểm CUỐI TUẦN (cố định cả tuần) làm

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:get/get.dart';
 import '../../core/storage_service.dart';
+import '../../core/utils/format.dart';
 import '../../data/battle_pass.dart' show RewardKind;
 import '../../data/season.dart';
 import 'game_controller.dart';
@@ -49,13 +50,12 @@ class SeasonController extends GetxController {
   String seasonName() => seasonNameKey(idx).tr;
   int get worldAccent => seasonWorldAccent(idx);
 
-  /// Thời gian còn lại tới khi hết mùa.
+  /// Thời gian còn lại tới khi hết mùa (mốc = nửa đêm giờ máy, không lệch múi
+  /// giờ — xem [durationToLocalMidnight]).
   Duration get timeToEnd {
-    final now = g.clock();
-    final endDay = seasonEndDay(g.todayEpochDay);
-    final end = DateTime.fromMillisecondsSinceEpoch(endDay * 86400000);
-    final ms = end.millisecondsSinceEpoch - now.millisecondsSinceEpoch;
-    return ms <= 0 ? Duration.zero : Duration(milliseconds: ms);
+    final today = g.todayEpochDay;
+    final daysLeft = seasonEndDay(today) - today;
+    return durationToLocalMidnight(g.clock(), daysLeft);
   }
 
   bool isReached(int m) => points.value >= kSeasonMilestones[m].points;
