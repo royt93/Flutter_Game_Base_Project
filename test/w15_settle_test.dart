@@ -1,0 +1,95 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:neon_jewels/logic/settle.dart';
+
+/// Tiện ích: dựng lưới kind + occupancy từ bản đồ ký tự.
+/// - '#' = wall, 'o' = noDrop, 'g' = play CÓ gem, '.'/' ' = play TRỐNG.
+({
+  int rows,
+  int cols,
+  CellKind Function(int, int) kindAt,
+  bool Function(int, int) occupied,
+}) _grid(List<String> map) {
+  final rows = map.length, cols = map[0].length;
+  final kind = [
+    for (final line in map)
+      [
+        for (final ch in line.split(''))
+          ch == '#' ? CellKind.wall : (ch == 'o' ? CellKind.noDrop : CellKind.play),
+      ],
+  ];
+  final occ = [
+    for (final line in map) [for (final ch in line.split('')) ch == 'g' || ch == 'o'],
+  ];
+  return (
+    rows: rows,
+    cols: cols,
+    kindAt: (r, c) => kind[r][c],
+    occupied: (r, c) => occ[r][c],
+  );
+}
+
+void main() {
+  group('Wave 15 — parseLayout / cellKindFromChar', () {
+    test('ký tự → CellKind', () {
+      expect(cellKindFromChar('#'), CellKind.wall);
+      expect(cellKindFromChar('X'), CellKind.wall);
+      expect(cellKindFromChar('o'), CellKind.noDrop);
+      expect(cellKindFromChar('.'), CellKind.play);
+      expect(cellKindFromChar(' '), CellKind.play);
+    });
+
+    test('parse bản đồ thành lưới đúng kích thước', () {
+      final g = parseLayout(['#..', '..#']);
+      expect(g.length, 2);
+      expect(g[0].length, 3);
+      expect(g[0][0], CellKind.wall);
+      expect(g[1][2], CellKind.wall);
+      expect(g[0][1], CellKind.play);
+    });
+  });
+
+  group('Wave 15 — settleColumnsDown (lỗ-cắt-cột)', () {
+    test('cột đặc không wall: gem dồn xuống, spawn lấp đỉnh', () {
+      // 1 cột 4 hàng: gem ở hàng 0 và 2 (g), trống hàng 1,3.
+      final s = _grid(['g', '.', 'g', '.']);
+      final r = settleColumnsDown(s.rows, s.cols, s.kindAt, s.occupied);
+      // 2 gem dồn xuống hàng 2,3. Gem hàng 0→3? hàng 2→3, hàng 0→2.
+      // Quét đáy lên: rr=3 trống; rr=2 gem→write3 (move 2→3), write=2; rr=1 trống;
+      //   rr=0 gem→write2 (move 0→2), write=1. Trống top..1 = hàng 0,1 → 2 spawn.
+      expect(r.moves, contains(const SettleMove(2, 0, 3, 0)));
+      expect(r.moves, contains(const SettleMove(0, 0, 2, 0)));
+      expect(r.spawns.length, 2);
+      expect(r.spawns.map((s) => s.r).toSet(), {0, 1});
+    });
+
+    test('wall giữa cột chia 2 đoạn dồn độc lập', () {
+      // hàng: 0=g 1=. 2=# 3=. 4=g  (wall ở hàng 2)
+      // Đoạn trên [0..1]: gem hàng0 → dồn xuống hàng1 (move 0→1); spawn hàng0.
+      // Đoạn dưới [3..4]: gem hàng4 đã ở đáy; trống hàng3 → spawn hàng3.
+      final s = _grid(['g', '.', '#', '.', 'g']);
+      final r = settleColumnsDown(s.rows, s.cols, s.kindAt, s.occupied);
+      expect(r.moves, contains(const SettleMove(0, 0, 1, 0)));
+      // KHÔNG có gem nào nhảy QUA wall (không move tới/từ hàng 2, không vượt đoạn).
+      expect(r.moves.every((m) => (m.fromR < 2) == (m.toR < 2)), isTrue);
+      expect(r.spawns.map((s) => s.r).toSet(), {0, 3});
+    });
+
+    test('đoạn đầy không sinh spawn, không move thừa', () {
+      final s = _grid(['g', 'g', '#', 'g']);
+      final r = settleColumnsDown(s.rows, s.cols, s.kindAt, s.occupied);
+      expect(r.moves, isEmpty);
+      expect(r.spawns, isEmpty);
+    });
+
+    test('refillCapped=false: đoạn bị wall chặn đỉnh KHÔNG refill', () {
+      // hàng0=# (wall đỉnh), hàng1=. trống, hàng2=g
+      final s = _grid(['#', '.', 'g']);
+      final capped = settleColumnsDown(s.rows, s.cols, s.kindAt, s.occupied,
+          refillCapped: false);
+      // Đoạn [1..2] bị wall chặn đỉnh (top=1≠0) → không spawn.
+      expect(capped.spawns, isEmpty);
+      final filled = settleColumnsDown(s.rows, s.cols, s.kindAt, s.occupied);
+      expect(filled.spawns.length, 1); // mặc định refill
+    });
+  });
+}
