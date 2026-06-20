@@ -848,6 +848,28 @@ LevelConfig buildLabyrinthLevel() => LevelConfig(
       layout: layoutFromMap(kLabyrinthMap),
     );
 
+// --- W17.2: Mê cung tường động + sương mù ---
+
+/// Tường dịch chuyển sau mỗi N lượt thật (không tính booster).
+const int kMazeShiftMoves = 5;
+
+/// Số hàng từ ĐÁY không bị sương mù (hàng top bị che).
+const int kFogRadius = 4;
+
+/// Chuỗi bố cục mê cung tuần hoàn — mỗi kMazeShiftMoves lượt thì sang layout kế tiếp.
+/// BẤT BIẾN AN TOÀN: mọi layout đều có đường descent cho tinh thể qua luật anti-diagonal
+/// của settleBoardFlow (đã verify bằng sim descent trong test).
+const List<List<String>> kLabyrinthLayouts = [
+  // 0: Inverted-V sâu (rows 0–3) — bố cục gốc W15
+  ['#......#', '.#....#.', '..#..#..', '...##...', '........', '........', '........', '........'],
+  // 1: Inverted-V nông (rows 0–1) — thông thoáng, buộc combo theo chiều dọc
+  ['#......#', '.#....#.', '........', '........', '........', '........', '........', '........'],
+  // 2: Inverted-V ngược hướng (tường ở trong, hàng 0–1) — cản trung tâm, cạnh mở
+  ['...##...', '..#..#..', '........', '........', '........', '........', '........', '........'],
+  // 3: Chéo đơn trái (rows 0–3) — bất đối xứng, mở hẳn bên phải
+  ['#.......', '.#......', '..#.....', '...#....', '........', '........', '........', '........'],
+];
+
 // --- Versus / Co-op (2 người, chạy engine Flame như mode thường) ---
 const int kVersusLevelIndex = -4;
 

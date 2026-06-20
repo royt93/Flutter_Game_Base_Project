@@ -108,6 +108,12 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// Dòng chảy đè (test/Labyrinth) — như [layoutOverride].
   final List<List<FlowDir>>? flowOverride;
 
+  /// W17.2 — Mê cung tường động: index layout hiện tại trong kLabyrinthLayouts.
+  int _mazeShiftStep = 0;
+
+  /// W17.2 — Số lượt thật (consumed) đã đi kể từ lần shift tường gần nhất.
+  int _movesSinceShift = 0;
+
   /// Bố cục đang dùng: ưu tiên [layoutOverride] (test/Labyrinth) rồi tới config màn.
   List<List<CellKind>>? get _activeLayout =>
       layoutOverride ?? controller.level.layout;
@@ -274,6 +280,16 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         cellSize: cellSize,
         origin: boardOrigin,
       )..priority = 3);
+    }
+    // Mê cung (W17.2): lớp sương mù che hàng trên (fog-of-war, chỉ render).
+    if (controller.isLabyrinth.value) {
+      boardLayer.add(FogLayer(
+        rows: rows,
+        cols: cols,
+        cellSize: cellSize,
+        origin: boardOrigin,
+        clearRows: kFogRadius,
+      )..priority = 4); // trên mọi layer khác
     }
     _fillInitialBoard();
     _placeIngredients();
@@ -824,6 +840,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         if (controller.consumeGravityFlip()) {
           await _doColumnFlip();
         }
+        // W17.2: mê cung tường động — shift sau mỗi kMazeShiftMoves lượt thật.
+        if (controller.isLabyrinth.value) await _maybeMazeShift();
       }
     } finally {
       _busy = false;
@@ -1002,6 +1020,27 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   @visibleForTesting
   bool get hasPossibleMove => _hasPossibleMove();
 
+  /// W17.2 test seam: chỉ cập nhật _cellKind + xoá gem ở tường mới (không animate).
+  /// Dùng để test logic update mà không cần game loop chạy effect.
+  @visibleForTesting
+  void applyCellKindForTest(List<List<CellKind>> newLayout) {
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        final newKind = (r < newLayout.length && c < newLayout[r].length)
+            ? newLayout[r][c]
+            : CellKind.play;
+        if (newKind == CellKind.wall && _cellKind[r][c] != CellKind.wall) {
+          final g = grid[r][c];
+          if (g != null) {
+            grid[r][c] = null;
+            g.removeFromParent();
+          }
+        }
+        _cellKind[r][c] = newKind;
+      }
+    }
+  }
+
   /// Tìm 1 nước swap hợp lệ (tạo match). Trả về cặp ô, hoặc null nếu bí.
   List<Cell>? _findMove() {
     final g = _colorGrid();
@@ -1069,9 +1108,13 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   void _triggerHint() {
     final move = _findMove();
     if (move == null) return;
+    // W17.2: không hint ô trong vùng sương mù Labyrinth (hàng trên, cách đáy > kFogRadius).
+    final firstClearRow =
+        controller.isLabyrinth.value ? rows - kFogRadius : 0;
     _hintGems = [
       for (final cell in move)
-        if (grid[cell.row][cell.col] != null) grid[cell.row][cell.col]!
+        if (grid[cell.row][cell.col] != null && cell.row >= firstClearRow)
+          grid[cell.row][cell.col]!
     ];
     for (final g in _hintGems) {
       g.hint = true;
@@ -1897,6 +1940,43 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       ));
     }
     await Future.wait(futures);
+  }
+
+  /// W17.2 — Dịch chuyển tường mê cung sang layout kế tiếp trong kLabyrinthLayouts.
+  /// Gọi sau mỗi kMazeShiftMoves lượt thật ở chế độ Labyrinth.
+  Future<void> _maybeMazeShift() async {
+    _movesSinceShift++;
+    if (_movesSinceShift < kMazeShiftMoves) return;
+    _movesSinceShift = 0;
+    _mazeShiftStep = (_mazeShiftStep + 1) % kLabyrinthLayouts.length;
+    _flash(NeonTheme.cyan, peak: 0.40); // cue thị giác "tường đang dịch"
+    await _applyLayoutDynamic(
+        layoutFromMap(kLabyrinthLayouts[_mazeShiftStep]));
+  }
+
+  /// W17.2 — Áp [newLayout] lên bàn đang chạy: cập nhật _cellKind, xoá gem ở ô
+  /// vừa thành tường, settle lại + collect ingredient nếu có rơi xuống đáy.
+  Future<void> _applyLayoutDynamic(List<List<CellKind>> newLayout) async {
+    // 1) Cập nhật _cellKind; xoá gem ở ô vừa trở thành tường.
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        final newKind = (r < newLayout.length && c < newLayout[r].length)
+            ? newLayout[r][c]
+            : CellKind.play;
+        if (newKind == CellKind.wall && _cellKind[r][c] != CellKind.wall) {
+          final g = grid[r][c];
+          if (g != null) {
+            grid[r][c] = null;
+            g.removeFromParent();
+          }
+        }
+        _cellKind[r][c] = newKind;
+      }
+    }
+    // 2) Settle + cascade (fill ô trống + thu tinh thể ở đáy nếu có).
+    await _applyGravityWithLayout();
+    await _settle();
+    await _ensurePlayable();
   }
 
   /// Versus: áp [n] hàng RÁC — gem rơi từ trên đẩy bàn XUỐNG, mất [n] hàng đáy.

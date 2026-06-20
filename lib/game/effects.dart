@@ -1419,3 +1419,54 @@ class TideLayer extends PositionComponent {
     }
   }
 }
+
+/// W17.2 — lớp SƯƠNG MÙ (fog-of-war) cho chế độ Mê cung.
+/// Che các hàng trên (cách đáy > clearRows) bằng overlay tối gradient.
+/// Chỉ ảnh hưởng render; logic match/settle hoàn toàn không đổi.
+class FogLayer extends PositionComponent {
+  final int rows;
+  final int cols;
+  final double cellSize;
+  final Vector2 origin;
+
+  /// Số hàng từ đáy KHÔNG bị sương mù. Hàng 0..(rows-clearRows-1) bị che.
+  final int clearRows;
+
+  FogLayer({
+    required this.rows,
+    required this.cols,
+    required this.cellSize,
+    required this.origin,
+    required this.clearRows,
+  });
+
+  @override
+  void render(Canvas canvas) {
+    final foggedRows = rows - clearRows;
+    if (foggedRows <= 0) return;
+    for (int r = 0; r < foggedRows; r++) {
+      // gradient: hàng càng gần đỉnh → mờ đậm hơn
+      final t = 1.0 - r / foggedRows; // 1.0 ở row 0, gần 0 ở row foggedRows-1
+      final alpha = (0.55 * t + 0.20).clamp(0.0, 0.80);
+      final rect = Rect.fromLTWH(
+        origin.x,
+        origin.y + r * cellSize,
+        cols * cellSize,
+        cellSize,
+      );
+      canvas.drawRect(
+        rect,
+        Paint()..color = Color.fromRGBO(2, 2, 18, alpha),
+      );
+    }
+    // Viền neon nhẹ ở ranh giới fog/rõ
+    final boundY = origin.y + foggedRows * cellSize;
+    canvas.drawLine(
+      Offset(origin.x, boundY),
+      Offset(origin.x + cols * cellSize, boundY),
+      Paint()
+        ..color = const Color(0xFF00FFFF).withValues(alpha: 0.30)
+        ..strokeWidth = 1.5,
+    );
+  }
+}
