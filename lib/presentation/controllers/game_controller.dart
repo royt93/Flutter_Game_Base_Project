@@ -9,7 +9,9 @@ import '../../data/battle_pass.dart';
 import '../../data/collection.dart';
 import '../../data/cosmetics.dart';
 import '../../data/levels.dart';
+import '../../data/puzzles.dart';
 import '../../data/season.dart';
+import '../../data/side_mode_records.dart';
 import '../../data/story.dart';
 import '../../data/temple.dart';
 import '../../logic/gem_data.dart';
@@ -18,9 +20,10 @@ import 'achievement_controller.dart';
 import 'battle_pass_controller.dart';
 import 'collection_controller.dart';
 import 'piggy_controller.dart';
-import 'season_controller.dart';
+import 'puzzle_controller.dart';
+import 'season_league_controller.dart';
+import 'side_mode_record_controller.dart';
 import 'temple_controller.dart';
-import 'tournament_controller.dart';
 
 // GameController được tách vật lý thành nhiều file `part` theo trách nhiệm để
 // dễ bảo trì, NHƯNG vẫn là MỘT class duy nhất (giữ nguyên public API + mọi
@@ -77,6 +80,10 @@ class GameController extends GetxController {
   final RxInt endlessStage = 1.obs; // tăng theo điểm → khó hơn + đổi màu
   final RxInt endlessHigh = 0.obs; // high score riêng của Endless
   LevelConfig? _endlessCfg; // cấu hình màn endless (không thuộc kLevels)
+  final RxString endlessEvent = ''.obs; // tên event hiện tại: 'moves'/'scoreX2'/'gems'/''
+  int _endlessScoreX2Remaining = 0;
+  bool _endlessGemRainPending = false;
+  int _endlessLastEventCount = 0;
 
   // --- Boss neon (Wave 8) ---
   final RxBool isBoss = false.obs;
@@ -102,12 +109,16 @@ class GameController extends GetxController {
   final RxInt colorRushHot = 0.obs; // index GemColor đang "nóng"
   int _colorRushMoveCount = 0;
   LevelConfig? _colorRushCfg;
+  final RxInt colorRushStreak = 0.obs; // streak clear màu nóng liên tiếp (0..kColorRushMaxStreak)
+  bool _colorRushHotClearedThisMove = false;
 
   // --- Soda / Ngập nước (Wave 14) — clear gem → mực nước dâng, đẩy chai nổi lên ---
   final RxBool isSoda = false.obs;
   LevelConfig? _sodaCfg;
   final RxInt sodaFill = 0.obs; // tổng gem clear tích luỹ (mực nước)
   final RxInt sodaCollected = 0.obs; // số chai đã nổi lên đỉnh
+  final RxInt sodaNozzlePulse = 0.obs; // tăng mỗi lần nozzle phun (UI animate)
+  int _sodaMoveCount = 0;
 
   // --- DDA / Pity System (Wave 16): trợ giúp ĐỘNG khi thua liên tiếp 1 màn thường.
   // KÍN ĐÁO (không báo người chơi) → giữ cảm giác tự thắng. CHỈ màn thường.
@@ -163,6 +174,12 @@ class GameController extends GetxController {
   final RxInt dailyChStreak = 0.obs; // chuỗi ngày hoàn thành liên tiếp
   final RxInt dailyChBestStreak = 0.obs;
 
+  // --- Cấu đố (W19.2) — bàn seed cố định, KHÔNG refill, mục tiêu điểm ---
+  final RxBool isPuzzle = false.obs;
+  LevelConfig? _puzzleCfg;
+  PuzzleDef? _puzzleDef;
+  PuzzleDef? get currentPuzzle => _puzzleDef;
+
   /// Ngưỡng combo để gây sát thương GẤP ĐÔI (đánh đúng "phase yếu").
   static const int bossWeakCombo = 4;
 
@@ -211,6 +228,10 @@ class GameController extends GetxController {
   final RxInt boosterLightning = 0.obs; // sét phá nhiều gem cùng màu
   final RxInt boosterRoyal = 0.obs; // Royal Flush: nổ cả bàn
   final RxInt boosterGravity = 0.obs; // đảo trọng lực (đảo cột)
+
+  // W18.3 — Nâng cấp booster VĨNH VIỄN (coin-sink, mua 1 lần ở Cửa hàng).
+  final RxBool hammerUpgraded = false.obs; // búa phá 3×3 thay vì 1 ô
+  final RxBool movesUpgraded = false.obs; // +Lượt: +15 thay vì +10
 
   // --- Cửa hàng trang trí (Wave 9) ---
   /// Tập id skin gem / theme bàn đã sở hữu (item miễn phí luôn có sẵn).
@@ -281,6 +302,8 @@ class GameController extends GetxController {
     boosterLightning.value = _store.getInt(StorageKeys.bLightning, def: 1);
     boosterRoyal.value = _store.getInt(StorageKeys.bRoyal, def: 0);
     boosterGravity.value = _store.getInt(StorageKeys.bGravity, def: 1);
+    hammerUpgraded.value = _store.getInt(StorageKeys.upgHammer) == 1; // W18.3
+    movesUpgraded.value = _store.getInt(StorageKeys.upgMoves) == 1;
     for (final lv in kLevels) {
       final hs = _store.getInt(StorageKeys.highScore(lv.index), def: -1);
       if (hs >= 0) highScores[lv.index] = hs;
@@ -317,6 +340,7 @@ class GameController extends GetxController {
       _labyrinthCfg ??
       _versusCfg ??
       _dailyCfg ??
+      _puzzleCfg ??
       kLevels[currentLevel.value - 1];
 
   /// True nếu đang ở CHẾ ĐỘ PHỤ (Endless/Boss/Gravity/Rhythm/Daily/Versus) —
@@ -333,6 +357,7 @@ class GameController extends GetxController {
       isSurvival.value ||
       isLabyrinth.value ||
       isDaily.value ||
+      isPuzzle.value ||
       isVersus.value;
 
   /// Đặt cờ chế độ ĐỘC QUYỀN (đúng 1 mode bật, hoặc tất cả false = màn thường)
@@ -347,6 +372,7 @@ class GameController extends GetxController {
     bool survival = false,
     bool labyrinth = false,
     bool daily = false,
+    bool puzzle = false,
   }) {
     isEndless.value = endless;
     isBoss.value = boss;
@@ -357,6 +383,7 @@ class GameController extends GetxController {
     isSurvival.value = survival;
     isLabyrinth.value = labyrinth;
     isDaily.value = daily;
+    isPuzzle.value = puzzle;
     isVersus.value =
         false; // versus chỉ bật qua _initVersus; mọi start* khác tắt
     // Wave 16 fix: pity là DDA của MÀN THƯỜNG (đọc theo currentLevel ở startLevel).
@@ -372,6 +399,10 @@ class GameController extends GetxController {
     if (!survival) _survivalCfg = null;
     if (!labyrinth) _labyrinthCfg = null;
     if (!daily) _dailyCfg = null;
+    if (!puzzle) {
+      _puzzleCfg = null;
+      _puzzleDef = null;
+    }
     _versusCfg = null;
   }
 

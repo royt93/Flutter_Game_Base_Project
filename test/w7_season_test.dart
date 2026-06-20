@@ -3,14 +3,14 @@ import 'package:get/get.dart';
 import 'package:neon_jewels/core/storage_service.dart';
 import 'package:neon_jewels/data/season.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
-import 'package:neon_jewels/presentation/controllers/season_controller.dart';
+import 'package:neon_jewels/presentation/controllers/season_league_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late GameController g;
-  late SeasonController sc;
+  late SeasonLeagueController sc;
 
   Future<void> boot({DateTime? now}) async {
     SharedPreferences.setMockInitialValues({});
@@ -19,7 +19,7 @@ void main() {
     Get.put(StorageService(prefs));
     g = Get.put(GameController());
     g.clock = () => now ?? DateTime(2026, 6, 14);
-    sc = Get.put(SeasonController(g));
+    sc = Get.put(SeasonLeagueController(g));
   }
 
   setUp(() => boot());
@@ -56,11 +56,11 @@ void main() {
       while (sc.points.value < first.points) {
         sc.addWin(3);
       }
-      expect(sc.canClaim(0), isTrue);
+      expect(sc.canClaimMilestone(0), isTrue);
       final coins0 = g.coins.value;
-      expect(sc.claim(0), isTrue);
+      expect(sc.claimMilestone(0), isTrue);
       expect(sc.isClaimed(0), isTrue);
-      expect(sc.claim(0), isFalse);
+      expect(sc.claimMilestone(0), isFalse);
       expect(g.coins.value, coins0 + first.amount);
       expect(
           StorageService.to.getInt(StorageKeys.seasonClaimed(sc.idx, 0)), 1);
@@ -68,8 +68,8 @@ void main() {
 
     test('chưa đủ điểm → không claim', () {
       expect(sc.points.value, 0);
-      expect(sc.canClaim(0), isFalse);
-      expect(sc.claim(0), isFalse);
+      expect(sc.canClaimMilestone(0), isFalse);
+      expect(sc.claimMilestone(0), isFalse);
     });
   });
 

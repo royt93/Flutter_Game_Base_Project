@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import '../../core/app_info.dart';
 import '../../core/neon_theme.dart';
+import '../../data/side_mode_records.dart';
 import '../../core/storage_service.dart';
 import '../../core/utils/format.dart';
 import '../controllers/achievement_controller.dart';
@@ -13,8 +14,9 @@ import '../controllers/collection_controller.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/piggy_controller.dart';
-import '../controllers/season_controller.dart';
-import '../controllers/tournament_controller.dart';
+import '../controllers/puzzle_controller.dart';
+import '../controllers/season_league_controller.dart';
+import '../controllers/side_mode_record_controller.dart';
 import '../controllers/lucky_wheel_controller.dart';
 import '../controllers/story_controller.dart';
 import '../widgets/lucky_wheel_view.dart';
@@ -27,11 +29,11 @@ import 'game_screen.dart';
 import 'guide_screen.dart';
 import 'level_select_screen.dart';
 import 'piggy_screen.dart';
-import 'season_screen.dart';
+import 'puzzle_select_screen.dart';
+import 'season_league_screen.dart';
 import 'settings_screen.dart';
 import 'shop_screen.dart';
 import 'temple_screen.dart';
-import 'tournament_screen.dart';
 import 'versus_screen.dart';
 import 'world_map_screen.dart';
 
@@ -45,10 +47,11 @@ class HomeScreen extends StatelessWidget {
     final ac = Get.put(AchievementController(g), permanent: true);
     final lw = Get.put(LuckyWheelController(g), permanent: true);
     final bp = Get.put(BattlePassController(g), permanent: true);
-    final sc = Get.put(SeasonController(g), permanent: true);
+    final lc = Get.put(SeasonLeagueController(g), permanent: true);
     final cc = Get.put(CollectionController(g), permanent: true);
     final pc = Get.put(PiggyController(g), permanent: true);
-    final tc = Get.put(TournamentController(g), permanent: true);
+    Get.put(SideModeRecordController(g), permanent: true);
+    Get.put(PuzzleController(g), permanent: true);
     Get.put(StoryController(), permanent: true);
     g.refillLives(); // cập nhật mạng hồi được khi quay về Home
     return Scaffold(
@@ -56,7 +59,7 @@ class HomeScreen extends StatelessWidget {
         child: SafeArea(
           child: Stack(
             children: [
-              _menu(g, ac, bp, sc, cc, pc, tc),
+              _menu(g, ac, bp, lc, cc, pc),
               // Thanh trên: mạng (trái) + quà hằng ngày (phải)
               Positioned(
                 top: NeonTheme.s8,
@@ -121,10 +124,9 @@ class HomeScreen extends StatelessWidget {
     GameController g,
     AchievementController ac,
     BattlePassController bp,
-    SeasonController sc,
+    SeasonLeagueController lc,
     CollectionController cc,
     PiggyController pc,
-    TournamentController tc,
   ) {
     // FULL chiều rộng + KHÔNG scroll. PHÂN BỐ DỌC bằng Column(max) + Spacer:
     //  • Logo TRÊN CÙNG
@@ -177,6 +179,35 @@ class HomeScreen extends StatelessWidget {
               shadows: [Shadow(color: NeonTheme.magenta, blurRadius: 34)],
             ),
           ),
+          // W18.2: danh hiệu đang đeo (từ Thành tựu) — "khoe thành tích".
+          Obx(() {
+            final key = ac.equippedTitleKey;
+            if (key == null) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.workspace_premium_rounded,
+                      color: NeonTheme.yellow, size: 14),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      key.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: NeonTheme.yellow,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
           const Spacer(), // đẩy khối GIỮA (CHƠI NGAY + Thử thách) xuống
           // NÚT CHÍNH — TO + full-width + glow mạnh + nhịp đập nhẹ để hút mắt.
           _playButton(() {
@@ -211,52 +242,64 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(width: NeonTheme.s8),
               Expanded(
-                child: _modeCard(
-                  Icons.all_inclusive_rounded,
-                  'endless_title'.tr,
-                  NeonTheme.purple,
-                  () {
-                    g.startEndless();
-                    Get.to(() => const GameScreen());
-                  },
+                child: Obx(
+                  () => _modeCard(
+                    Icons.all_inclusive_rounded,
+                    'endless_title'.tr,
+                    NeonTheme.purple,
+                    () {
+                      g.startEndless();
+                      Get.to(() => const GameScreen());
+                    },
+                    corner: _modeRecordCorner(SideModeKind.endless),
+                  ),
                 ),
               ),
               const SizedBox(width: NeonTheme.s8),
               Expanded(
-                child: _modeCard(
-                  Icons.coronavirus_rounded,
-                  'boss_title'.tr,
-                  NeonTheme.orange,
-                  () {
-                    final stage =
-                        (1 + (g.unlockedLevel.value - 1) ~/ 20).clamp(1, 5);
-                    g.startBoss(stage);
-                    Get.to(() => const GameScreen());
-                  },
+                child: Obx(
+                  () => _modeCard(
+                    Icons.coronavirus_rounded,
+                    'boss_title'.tr,
+                    NeonTheme.orange,
+                    () {
+                      final stage =
+                          (1 + (g.unlockedLevel.value - 1) ~/ 20).clamp(1, 5);
+                      g.startBoss(stage);
+                      Get.to(() => const GameScreen());
+                    },
+                    corner: _modeRecordCorner(SideModeKind.boss),
+                  ),
                 ),
               ),
               const SizedBox(width: NeonTheme.s8),
               Expanded(
-                child: _modeCard(
-                  Icons.local_fire_department_rounded,
-                  'color_rush_short'.tr,
-                  NeonTheme.magenta,
-                  () {
-                    g.startColorRush();
-                    Get.to(() => const GameScreen());
-                  },
+                child: Obx(
+                  () => _modeCard(
+                    Icons.local_fire_department_rounded,
+                    'color_rush_short'.tr,
+                    NeonTheme.magenta,
+                    () {
+                      g.startColorRush();
+                      Get.to(() => const GameScreen());
+                    },
+                    corner: _modeRecordCorner(SideModeKind.colorRush),
+                  ),
                 ),
               ),
               const SizedBox(width: NeonTheme.s8),
               Expanded(
-                child: _modeCard(
-                  Icons.swap_vert_rounded,
-                  'gravity_title'.tr,
-                  NeonTheme.cyan,
-                  () {
-                    g.startGravity();
-                    Get.to(() => const GameScreen());
-                  },
+                child: Obx(
+                  () => _modeCard(
+                    Icons.swap_vert_rounded,
+                    'gravity_title'.tr,
+                    NeonTheme.cyan,
+                    () {
+                      g.startGravity();
+                      Get.to(() => const GameScreen());
+                    },
+                    corner: _modeRecordCorner(SideModeKind.gravity),
+                  ),
                 ),
               ),
             ],
@@ -266,14 +309,17 @@ class HomeScreen extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _modeCard(
-                  Icons.graphic_eq_rounded,
-                  'rhythm_title'.tr,
-                  NeonTheme.magenta,
-                  () {
-                    g.startRhythm();
-                    Get.to(() => const GameScreen());
-                  },
+                child: Obx(
+                  () => _modeCard(
+                    Icons.graphic_eq_rounded,
+                    'rhythm_title'.tr,
+                    NeonTheme.magenta,
+                    () {
+                      g.startRhythm();
+                      Get.to(() => const GameScreen());
+                    },
+                    corner: _modeRecordCorner(SideModeKind.rhythm),
+                  ),
                 ),
               ),
               const SizedBox(width: NeonTheme.s8),
@@ -287,38 +333,59 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(width: NeonTheme.s8),
               Expanded(
-                child: _modeCard(
-                  Icons.local_drink_rounded,
-                  'soda_short'.tr,
-                  NeonTheme.cyan,
-                  () {
-                    g.startSoda();
-                    Get.to(() => const GameScreen());
-                  },
+                child: Obx(
+                  () => _modeCard(
+                    Icons.local_drink_rounded,
+                    'soda_short'.tr,
+                    NeonTheme.cyan,
+                    () {
+                      g.startSoda();
+                      Get.to(() => const GameScreen());
+                    },
+                    corner: _modeRecordCorner(SideModeKind.soda),
+                  ),
                 ),
               ),
               const SizedBox(width: NeonTheme.s8),
               Expanded(
-                child: _modeCard(
-                  Icons.timer_rounded,
-                  'survival_short'.tr,
-                  NeonTheme.orange,
-                  () {
-                    g.startSurvival();
-                    Get.to(() => const GameScreen());
-                  },
+                child: Obx(
+                  () => _modeCard(
+                    Icons.timer_rounded,
+                    'survival_short'.tr,
+                    NeonTheme.orange,
+                    () {
+                      g.startSurvival();
+                      Get.to(() => const GameScreen());
+                    },
+                    corner: _modeRecordCorner(SideModeKind.survival),
+                  ),
                 ),
               ),
               const SizedBox(width: NeonTheme.s8),
               Expanded(
-                child: _modeCard(
-                  Icons.account_tree_rounded,
-                  'labyrinth_short'.tr,
-                  NeonTheme.lime,
-                  () {
-                    g.startLabyrinth();
-                    Get.to(() => const GameScreen());
-                  },
+                child: Obx(
+                  () => _modeCard(
+                    Icons.account_tree_rounded,
+                    'labyrinth_short'.tr,
+                    NeonTheme.lime,
+                    () {
+                      g.startLabyrinth();
+                      Get.to(() => const GameScreen());
+                    },
+                    corner: _modeRecordCorner(SideModeKind.labyrinth),
+                  ),
+                ),
+              ),
+              const SizedBox(width: NeonTheme.s8),
+              Expanded(
+                child: Obx(
+                  () => _modeCard(
+                    Icons.extension_rounded,
+                    'puzzle_short'.tr,
+                    NeonTheme.purple,
+                    () => Get.to(() => const PuzzleSelectScreen()),
+                    corner: _puzzleCorner(),
+                  ),
                 ),
               ),
             ],
@@ -326,9 +393,10 @@ class HomeScreen extends StatelessWidget {
           // Cách section Phần thưởng đúng 32px (khối Chơi ngay + Thử thách dời
           // xuống sát mép trên của Phần thưởng nhờ Spacer phía trên logo).
           const SizedBox(height: 32),
-          // KHU GIỮ CHÂN + TIỆN ÍCH — 2 hàng × 5 icon (gọn 1 màn, KHÔNG scroll).
-          // Hàng 1: Đền · Pass · Mùa · Cửa hàng · Album.
-          // Hàng 2: Heo đất · Giải đấu · Thành tựu · Hướng dẫn · Cài đặt.
+          // KHU PHẦN THƯỞNG (kinh tế) + TIỆN ÍCH riêng (gọn 1 màn, KHÔNG scroll).
+          // W18.4: khu "Phần thưởng" CHỈ còn hệ kinh tế. Hướng dẫn + Cài đặt là
+          // TIỆN ÍCH → tách xuống hàng riêng. W18.1: Giải đấu gộp vào Mùa giải.
+          // Hàng 1: Đền · Pass · Mùa giải · Cửa hàng. Hàng 2: Album · Heo · Thành tựu.
           _sectionLabel('meta_section'.tr),
           const SizedBox(height: NeonTheme.s8),
           Row(
@@ -358,14 +426,15 @@ class HomeScreen extends StatelessWidget {
               ),
               Expanded(
                 child: Obx(() {
-                  sc.points.value;
-                  sc.claimed.length;
+                  lc.points.value;
+                  lc.claimedMilestones.length;
+                  lc.claimedRankThisWeek.value;
                   return _circleNav(
-                    Icons.event_rounded,
-                    NeonTheme.accentForWorld(sc.worldAccent),
+                    Icons.workspace_premium_rounded,
+                    NeonTheme.accentForWorld(lc.worldAccent),
                     'season_title'.tr,
-                    () => Get.to(() => const SeasonScreen()),
-                    badge: sc.hasClaimable,
+                    () => Get.to(() => const SeasonLeagueScreen()),
+                    badge: lc.hasClaimable,
                     small: true,
                   );
                 }),
@@ -379,10 +448,16 @@ class HomeScreen extends StatelessWidget {
                   small: true,
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: NeonTheme.s8),
+          Row(
+            children: [
               Expanded(
                 child: Obx(() {
                   cc.points.value; // hasClaimable phụ thuộc điểm → đọc để rebuild
                   cc.claimed.length;
+                  cc.setRewardClaimed.value; // W18.2: rebuild khi thưởng bộ thay đổi
                   return _circleNav(
                     Icons.photo_album_rounded,
                     NeonTheme.cyan,
@@ -393,11 +468,6 @@ class HomeScreen extends StatelessWidget {
                   );
                 }),
               ),
-            ],
-          ),
-          const SizedBox(height: NeonTheme.s8),
-          Row(
-            children: [
               Expanded(
                 child: Obx(() {
                   pc.saved.value;
@@ -407,20 +477,6 @@ class HomeScreen extends StatelessWidget {
                     'piggy_title'.tr,
                     () => Get.to(() => const PiggyScreen()),
                     badge: pc.canSmash,
-                    small: true,
-                  );
-                }),
-              ),
-              Expanded(
-                child: Obx(() {
-                  tc.points.value;
-                  tc.claimedThisWeek.value;
-                  return _circleNav(
-                    Icons.leaderboard_rounded,
-                    NeonTheme.orange,
-                    'tour_title'.tr,
-                    () => Get.to(() => const TournamentScreen()),
-                    badge: tc.hasClaimable,
                     small: true,
                   );
                 }),
@@ -438,6 +494,8 @@ class HomeScreen extends StatelessWidget {
                   );
                 }),
               ),
+              // W18.4: Hướng dẫn + Cài đặt vào 2 ô cuối (tiện ích, không phải thưởng).
+              // Gộp cùng row thay vì section riêng → giữ no-scroll [[home-fullwidth-no-fittedbox]].
               Expanded(
                 child: _circleNav(
                   Icons.menu_book_rounded,
@@ -659,14 +717,14 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Badge góc của ô Daily: ✓ khi đã hoàn thành hôm nay, 🔥streak khi đang có
-  /// chuỗi, ngược lại null (ô lime đã đủ nổi bật). Gọi trong Obx (đọc streak Rx).
+  /// Badge góc của ô Daily: ✓ khi done; khi chưa done hiện 🔥streak + tất cả
+  /// mutator hôm nay (W17.3). Column pills xếp dọc — tối đa 3 pills (hiếm).
+  /// Badge góc card Daily: ✓ khi done, 🔥streak khi đang có chuỗi, null khác.
+  /// Mutator KHÔNG hiện ở Home (trông kỳ, chật) — chỉ hiện khi vào màn chơi (HUD).
   Widget? _dailyCorner(GameController g) {
     final done = g.dailyChallengeDoneToday;
+    if (done) return _cornerPill(Icons.check_rounded, NeonTheme.lime, null);
     final streak = g.dailyChStreak.value;
-    if (done) {
-      return _cornerPill(Icons.check_rounded, NeonTheme.lime, null);
-    }
     if (streak > 0) {
       return _cornerPill(
         Icons.local_fire_department_rounded,
@@ -675,6 +733,39 @@ class HomeScreen extends StatelessWidget {
       );
     }
     return null;
+  }
+
+  /// W19.1 — badge mốc kỷ lục (huy chương Bronze/Silver/Gold) cho card side-mode.
+  /// null nếu chưa đạt mốc nào. Gọi trong Obx (đọc claimedTier Rx).
+  Widget? _modeRecordCorner(SideModeKind kind) {
+    final rec = SideModeRecordController.maybe;
+    if (rec == null) return null;
+    final tier = rec.tierOf(kind);
+    if (tier == RecordTier.none) return null;
+    final Color color;
+    switch (tier) {
+      case RecordTier.gold:
+        color = NeonTheme.yellow;
+      case RecordTier.silver:
+        color = Colors.white;
+      case RecordTier.bronze:
+        color = NeonTheme.orange;
+      case RecordTier.none:
+        return null;
+    }
+    return _cornerPill(Icons.emoji_events_rounded, color, null);
+  }
+
+  /// W19.2 — badge góc card Cấu đố: ✓ khi giải hết, số đã giải khi đang dở.
+  Widget? _puzzleCorner() {
+    final pc = PuzzleController.maybe;
+    if (pc == null) return null;
+    final solved = pc.solvedCount;
+    if (solved == 0) return null;
+    if (pc.allSolved) {
+      return _cornerPill(Icons.workspace_premium_rounded, NeonTheme.yellow, null);
+    }
+    return _cornerPill(Icons.extension_rounded, NeonTheme.purple, '$solved');
   }
 
   Widget _cornerPill(IconData icon, Color color, String? text) => Container(

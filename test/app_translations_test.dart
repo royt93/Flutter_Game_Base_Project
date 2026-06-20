@@ -104,5 +104,32 @@ void main() {
       expect(keys['ru_RU']!['streak_bonus']!.contains('@n'), isTrue);
       expect(keys['bn_BD']!['daily_ch_reward']!.contains('@c'), isTrue);
     });
+
+    // ── Chống hồi quy W18.2/18.3: Album set reward + Achievement title + Upgrades
+    // đã dịch thật (không fallback English) cho các ngôn ngữ đại diện.
+    test('key W18.2/18.3 đã dịch thật cho 20 ngôn ngữ (mẫu)', () {
+      const sampleW18Keys = [
+        'coll_set_title',   // "Album Complete!" → ngôn ngữ rõ ràng khác
+        'ach_equip',        // "Equip" → đeo / equipped → tên hành động khác nhau
+        'shop_upgrades',    // "Upgrades" → nâng cấp / Mejoras / Verbesserungen…
+        'coll_set_reward',  // Có placeholder @n — check dưới; value sẽ khác
+        'upg_hammer_desc',  // "Smash a 3×3 area" → mô tả đủ dài để dịch khác
+      ];
+      const langs = [
+        'es_ES', 'de_DE', 'ru_RU', 'zh_CN', 'ja_JP',
+        'ar_SA', 'th_TH', 'uk_UA', 'bn_BD', 'ko_KR',
+      ];
+      final en = keys['en_US']!;
+      for (final lang in langs) {
+        for (final k in sampleW18Keys) {
+          // Mỗi key phải có giá trị khác English → chứng tỏ đã dịch
+          expect(keys[lang]![k], isNot(en[k]),
+              reason: '$lang/$k còn dùng English (W18.2/18.3 chưa dịch)');
+        }
+      }
+      // Placeholder @n giữ nguyên trong bản dịch
+      expect(keys['de_DE']!['coll_set_reward']!.contains('@n'), isTrue);
+      expect(keys['ja_JP']!['coll_set_reward']!.contains('@n'), isTrue);
+    });
   });
 }

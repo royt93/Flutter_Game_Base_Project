@@ -79,13 +79,18 @@ extension GameControllerProgress on GameController {
       StorageKeys.bLightning,
       StorageKeys.bRoyal,
       StorageKeys.bGravity,
+      StorageKeys.upgHammer, // W18.3
+      StorageKeys.upgMoves,
       StorageKeys.selectedSkin,
       StorageKeys.selectedTheme,
       StorageKeys.collectionPoints,
+      StorageKeys.collectionSetClaimed, // W18.2
+      StorageKeys.equippedTitle, // W18.2
       StorageKeys.piggySaved,
       StorageKeys.tournamentWeek,
       StorageKeys.tournamentPoints,
       StorageKeys.tournamentClaimedWeek,
+      StorageKeys.leagueMigrated, // W18.1
     ];
     for (final k in scalarKeys) {
       await _store.remove(k);
@@ -125,6 +130,17 @@ extension GameControllerProgress on GameController {
     for (final b in kStory) {
       await _store.remove(StorageKeys.storySeen(b.id));
     }
+    // W19.1 — xoá kỷ lục chế độ phụ (giá trị + bậc mốc + lượt chơi).
+    for (final spec in kSideModeRecords) {
+      await _store.remove(StorageKeys.recValue(spec.key));
+      await _store.remove(StorageKeys.recTier(spec.key));
+      await _store.remove(StorageKeys.recPlays(spec.key));
+    }
+    // W19.2 — xoá tiến trình Cấu đố (sao + mở khoá).
+    for (final p in kPuzzles) {
+      await _store.remove(StorageKeys.puzzleStars(p.id));
+    }
+    await _store.remove(StorageKeys.puzzleUnlocked);
 
     // 2) Xoá map in-memory rồi nạp lại GIÁ TRỊ MẶC ĐỊNH từ đĩa (đã trống) — đưa
     //    coins/booster/lives… về đúng như lần cài đầu thay vì giữ giá trị cũ.
@@ -136,12 +152,13 @@ extension GameControllerProgress on GameController {
     //    mất khi xoá đĩa). Bỏ bước này thì RAM giữ "đã nhận" → restart đọc đĩa
     //    trống ⇒ NHẬN LẠI thưởng Battle Pass / Season / Achievement / Temple.
     BattlePassController.maybe?.resetState();
-    SeasonController.maybe?.resetState();
+    SeasonLeagueController.maybe?.resetState(); // W18.1 (gộp Mùa + Giải đấu)
     AchievementController.maybe?.resetState();
     TempleController.maybe?.resetState();
     CollectionController.maybe?.resetState();
     PiggyController.maybe?.resetState();
-    TournamentController.maybe?.resetState();
+    SideModeRecordController.maybe?.resetState();
+    PuzzleController.maybe?.resetState();
 
     dlog(
       'resetProgress DONE unlocked=${unlockedLevel.value} '

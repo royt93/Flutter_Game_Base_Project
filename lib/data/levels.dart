@@ -251,6 +251,13 @@ class LevelConfig {
   /// toàn bộ chảy XUỐNG như thường. Dựng từ bản đồ `v/^/</>` qua [flowFromMap].
   final List<List<FlowDir>>? flow;
 
+  /// W17.3 Mutator: match-4/5 KHÔNG tạo gem special (thuần match-3). Chỉ áp khi
+  /// [isDaily] để tránh ảnh hưởng màn campaign.
+  final bool noSpecial;
+
+  /// W17.3 Mutator: combo bonus ×2 — phần tăng từ combo được nhân đôi.
+  final bool doubleCombo;
+
   const LevelConfig({
     required this.index,
     required this.rows,
@@ -270,6 +277,8 @@ class LevelConfig {
     this.sodaTarget = 0,
     this.layout,
     this.flow,
+    this.noSpecial = false,
+    this.doubleCombo = false,
   });
 }
 
@@ -668,6 +677,15 @@ const int kEndlessStartMoves = 20;
 /// Mỗi mốc điểm này → tăng 1 stage (khó hơn, đổi màu accent).
 const int kEndlessStageScore = 1500;
 
+/// Mỗi bao nhiêu stage thì bắn 1 event (W17.4).
+const int kEndlessEventEveryStage = 5;
+
+/// Lượt thưởng khi event type "moves" (W17.4).
+const int kEndlessEventMovesBonus = 4;
+
+/// Số lượt score ×2 khi event type "scoreX2" (W17.4).
+const int kEndlessEventScoreBoostMoves = 3;
+
 /// Tạo cấu hình màn Endless: bàn 8×8, 6 màu, lượt khởi đầu hữu hạn nhưng
 /// được hoàn khi ghép lớn — thua khi hết lượt. Difficulty tăng theo stage
 /// (xử lý động trong GameController, không cố định ở đây).
@@ -709,6 +727,9 @@ const int kColorRushChangeEvery = 4;
 
 /// Điểm thưởng cho MỖI gem màu nóng được clear (cộng thẳng, không qua combo).
 const int kColorRushBonusPerGem = 15;
+
+/// Multiplier cap cho ColorRush streak (tối đa ×3).
+const int kColorRushMaxStreak = 3;
 
 /// Cấu hình Color Rush: tái dùng mục tiêu điểm (score) để dùng sẵn HUD/sao;
 /// khác biệt nằm ở cờ `isColorRush` (clear màu nóng → điểm bội, đổi màu mỗi N lượt).
@@ -771,6 +792,12 @@ const int kSodaBottles = 3;
 
 /// Số gem cần clear để đẩy 1 chai nổi lên đỉnh (mực nước dâng theo gem clear).
 const int kSodaFillPerBottle = 20;
+
+/// Số lượt giữa mỗi lần nozzle phun (W17.4).
+const int kSodaNozzleEvery = 5;
+
+/// Lượng fill bổ sung mỗi lần nozzle phun (W17.4).
+const int kSodaNozzleBurst = 5;
 
 /// Cấu hình chế độ Soda: bàn 8×8, 6 màu, đưa [kSodaBottles] chai lên đỉnh trong
 /// [kSodaMoves] lượt. Khác biệt nằm ở cờ `isSoda` (clear gem → mực nước dâng).
@@ -885,6 +912,111 @@ LevelConfig buildVersusLevel() => const LevelConfig(
       targetScore: 0,
     );
 
+// ---------------------------------------------------------------------------
+// W17.3 — Daily Mutator (biến tấu thử thách hằng ngày)
+// ---------------------------------------------------------------------------
+
+/// Biến tấu áp cho thử thách hằng ngày. Mỗi ngày 1-2 mutator TẤT ĐỊNH theo
+/// `epochDay`. Ảnh hưởng cấu hình (colorCount, moves) hoặc runtime (scoring,
+/// special). Chỉ hoạt động khi [isDaily]; campaign không bị ảnh hưởng.
+enum DailyMutator {
+  only4Colors, // 4 màu thay 6 — dễ combo, khó tránh match ngoài ý
+  lowMoves,    // −7 lượt (min 16) — chặt, phải hiệu quả hơn
+  doubleCombo, // combo bonus ×2 — vui, thưởng nhiều khi cascade
+  noSpecial,   // match-4/5 không tạo gem special — thuần match-3 cổ điển
+  bonusMoves,  // +8 lượt — nhẹ nhàng, phù hợp kết hợp với mutator khó
+}
+
+/// Tên ngắn của [DailyMutator] (dùng cho i18n key: `daily_mut_<name>`).
+extension DailyMutatorName on DailyMutator {
+  String get keyName {
+    switch (this) {
+      case DailyMutator.only4Colors: return 'only4Colors';
+      case DailyMutator.lowMoves:    return 'lowMoves';
+      case DailyMutator.doubleCombo: return 'doubleCombo';
+      case DailyMutator.noSpecial:   return 'noSpecial';
+      case DailyMutator.bonusMoves:  return 'bonusMoves';
+    }
+  }
+}
+
+/// Chọn 1-2 mutator TẤT ĐỊNH theo [epochDay].
+/// Seed KHÁC [buildDailyLevel] (XOR 0xAB1234) → 2 RNG không tương quan nhau.
+/// 75% = 1 mutator; 25% = 2 mutator diverse (không trùng, không triệt tiêu nhau).
+List<DailyMutator> dailyMutatorsFor(int epochDay) {
+  final rnd = math.Random(epochDay ^ 0xAB1234);
+  final all = DailyMutator.values;
+  final m1 = all[rnd.nextInt(all.length)];
+  if (rnd.nextInt(4) != 0) return [m1]; // 75% → 1
+  // Loại cặp triệt tiêu nhau (lowMoves + bonusMoves ≈ net 0 ý nghĩa).
+  final others = all
+      .where((m) => m != m1 && !_mutatorsCancel(m1, m))
+      .toList();
+  if (others.isEmpty) return [m1];
+  return [m1, others[rnd.nextInt(others.length)]];
+}
+
+/// True nếu cặp mutator triệt tiêu nhau (moves giảm rồi lại tăng).
+bool _mutatorsCancel(DailyMutator a, DailyMutator b) =>
+    (a == DailyMutator.lowMoves && b == DailyMutator.bonusMoves) ||
+    (a == DailyMutator.bonusMoves && b == DailyMutator.lowMoves);
+
+/// Áp [mutators] lên [cfg]: điều chỉnh colorCount/moves (config) + đặt cờ
+/// runtime (noSpecial/doubleCombo). Trả [cfg] nguyên nếu [mutators] trống.
+/// [epochDay] cần để re-pick collectColor tất định khi only4Colors active.
+LevelConfig _applyDailyMutators(
+    LevelConfig cfg, List<DailyMutator> mutators, int epochDay) {
+  if (mutators.isEmpty) return cfg;
+  var colorCount = cfg.colorCount;
+  var moves = cfg.moves;
+  var collectColor = cfg.collectColor;
+  var noSpecial = false;
+  var doubleCombo = false;
+
+  for (final m in mutators) {
+    switch (m) {
+      case DailyMutator.only4Colors:
+        colorCount = 4;
+        // Re-pick collectColor tất định trong [0, 4) thay vì % 4 (tránh lệch phân phối).
+        if (collectColor != null && collectColor.index >= 4) {
+          final reRnd = math.Random(epochDay ^ 0xCC5678);
+          collectColor = GemColor.values[reRnd.nextInt(4)];
+        }
+      case DailyMutator.lowMoves:
+        moves = (moves - 7).clamp(16, 9999);
+      case DailyMutator.bonusMoves:
+        moves = moves + 8;
+      case DailyMutator.doubleCombo:
+        doubleCombo = true;
+      case DailyMutator.noSpecial:
+        noSpecial = true;
+    }
+  }
+
+  return LevelConfig(
+    index: cfg.index,
+    rows: cfg.rows,
+    cols: cfg.cols,
+    colorCount: colorCount,
+    moves: moves,
+    objective: cfg.objective,
+    targetScore: cfg.targetScore,
+    collectTarget: cfg.collectTarget,
+    collectColor: collectColor,
+    jelly: cfg.jelly,
+    timeLimit: cfg.timeLimit,
+    dropTarget: cfg.dropTarget,
+    obstacle: cfg.obstacle,
+    obstaclePattern: cfg.obstaclePattern,
+    orders: cfg.orders,
+    sodaTarget: cfg.sodaTarget,
+    layout: cfg.layout,
+    flow: cfg.flow,
+    noSpecial: noSpecial,
+    doubleCombo: doubleCombo,
+  );
+}
+
 // --- Thử thách hằng ngày (Wave 9 — puzzle theo NGÀY) ---
 const int kDailyLevelIndex = -5;
 
@@ -901,11 +1033,16 @@ const List<ObjectiveType> kDailyObjectives = [
   ObjectiveType.clearObstacle,
 ];
 
-/// Cấu hình màn "Thử thách hằng ngày" sinh TẤT ĐỊNH từ [epochDay] → mọi người
-/// chơi CÙNG bàn + CÙNG mục tiêu trong ngày (bàn seed bằng chính `epochDay`
-/// truyền cho engine). Cùng `epochDay` ⇒ cùng config (test được, không cần Flame).
-/// Bàn 8×8, 6 màu, độ khó nhỉnh hơn mid-game nhưng vẫn qua được.
-LevelConfig buildDailyLevel(int epochDay) {
+/// Cấu hình màn "Thử thách hằng ngày" sinh TẤT ĐỊNH từ [epochDay].
+/// [mutators] áp biến tấu bổ sung (W17.3); mặc định rỗng → giữ tương thích cũ.
+LevelConfig buildDailyLevel(int epochDay,
+    {List<DailyMutator> mutators = const []}) {
+  final base = _buildDailyBase(epochDay);
+  return mutators.isEmpty ? base : _applyDailyMutators(base, mutators, epochDay);
+}
+
+/// Cấu hình cơ bản không mutator (tách để test và _applyDailyMutators dùng).
+LevelConfig _buildDailyBase(int epochDay) {
   final rnd = math.Random(epochDay);
   const rows = 8, cols = 8, colorCount = 6;
   final objective = kDailyObjectives[epochDay % kDailyObjectives.length];
@@ -944,8 +1081,7 @@ LevelConfig buildDailyLevel(int epochDay) {
         dropTarget: 3 + rnd.nextInt(3), // 3..5
       );
     case ObjectiveType.clearObstacle:
-      // CHỈ dùng ICE: chain/stone khoá swap → pattern dày dễ làm bí bàn (xem ghi
-      // chú ở kLevels). Ice an toàn cho 1 màn chơi seed cứng.
+      // CHỈ dùng ICE: chain/stone khoá swap → pattern dày dễ làm bí bàn.
       return LevelConfig(
         index: kDailyLevelIndex,
         rows: rows,

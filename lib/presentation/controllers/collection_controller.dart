@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'package:get/get.dart';
 import '../../core/storage_service.dart';
-import '../../data/battle_pass.dart' show RewardKind;
 import '../../data/collection.dart';
 import 'game_controller.dart';
 
-/// Album sưu tập (Wave 14) — điểm tích luỹ VĨNH VIỄN; mở ô khi đạt mốc.
+/// Album sưu tập (Wave 14, đổi vai W18.2) — điểm tích luỹ VĨNH VIỄN; mở ô khi
+/// đạt mốc. W18.2: sticker là VẬT SƯU TẬP (claim = "thu thập", KHÔNG thưởng xu);
+/// hoàn tất CẢ BỘ → thưởng LỚN 1 lần (skin gem độc quyền + xu).
 /// Permanent controller (không tự mất khi reset đĩa → cần [resetState]).
 class CollectionController extends GetxController {
   final GameController g;
@@ -14,7 +15,8 @@ class CollectionController extends GetxController {
   final StorageService _store = StorageService.to;
 
   final RxInt points = 0.obs;
-  final RxSet<String> claimed = <String>{}.obs; // id sticker đã mở
+  final RxSet<String> claimed = <String>{}.obs; // id sticker đã thu thập
+  final RxBool setRewardClaimed = false.obs; // đã nhận thưởng hoàn tất bộ chưa
 
   static CollectionController? get maybe => Get.isRegistered<CollectionController>()
       ? Get.find<CollectionController>()
@@ -30,16 +32,27 @@ class CollectionController extends GetxController {
         claimed.add(it.id);
       }
     }
+    setRewardClaimed.value =
+        _store.getInt(StorageKeys.collectionSetClaimed) == 1;
   }
 
   bool isReached(int i) => points.value >= kCollectionItems[i].threshold;
   bool isClaimed(int i) => claimed.contains(kCollectionItems[i].id);
   bool canClaim(int i) => isReached(i) && !isClaimed(i);
-  bool get hasClaimable =>
-      List.generate(kCollectionItems.length, (i) => i).any(canClaim);
 
   int get unlockedCount => claimed.length;
   int get totalCount => kCollectionItems.length;
+
+  /// Đã thu thập HẾT sticker.
+  bool get allCollected => claimed.length == kCollectionItems.length;
+
+  /// Có thể nhận thưởng hoàn tất bộ (đủ sticker + chưa nhận).
+  bool get canClaimSet => allCollected && !setRewardClaimed.value;
+
+  /// Badge Home: còn sticker thu được HOẶC còn thưởng bộ chưa nhận.
+  bool get hasClaimable =>
+      Iterable<int>.generate(kCollectionItems.length).any(canClaim) ||
+      canClaimSet;
 
   /// Cộng điểm album khi thắng (gọi từ GameScreenController; chỉ màn thường).
   void addWin(int stars) {
@@ -51,38 +64,31 @@ class CollectionController extends GetxController {
   void resetState() {
     points.value = 0;
     claimed.clear();
+    setRewardClaimed.value = false;
   }
 
+  /// Thu thập sticker (W18.2: KHÔNG thưởng xu — vật sưu tập thuần).
   bool claim(int i) {
     if (!canClaim(i)) return false;
     final it = kCollectionItems[i];
     claimed.add(it.id);
     unawaited(_store.setInt(StorageKeys.collectionClaimed(it.id), 1));
-    switch (it.kind) {
-      case RewardKind.coins:
-        g.addCoins(it.amount);
-        break;
-      case RewardKind.hammer:
-        g.grantHammer(it.amount);
-        break;
-      case RewardKind.moves:
-        g.grantMovesBooster(it.amount);
-        break;
-      case RewardKind.color:
-        g.grantColor(it.amount);
-        break;
-      case RewardKind.joker:
-        g.grantJoker(it.amount);
-        break;
-      case RewardKind.lightning:
-        g.grantLightning(it.amount);
-        break;
-      case RewardKind.royal:
-        g.grantRoyal(it.amount);
-        break;
-      case RewardKind.gravity:
-        g.grantGravity(it.amount);
-        break;
+    return true;
+  }
+
+  /// Nhận thưởng HOÀN TẤT BỘ (1 lần): mở skin gem độc quyền + xu.
+  /// Nếu skin đã sở hữu từ Shop → bù đắp [kCollectionSetSkinPrice] xu thay thế.
+  /// Ghi cờ TRƯỚC khi trao (anti-double).
+  bool claimSetReward() {
+    if (!canClaimSet) return false;
+    setRewardClaimed.value = true;
+    unawaited(_store.setInt(StorageKeys.collectionSetClaimed, 1));
+    if (g.isSkinOwned(kCollectionSetSkin)) {
+      // Đã mua skin từ Shop → cộng xu bù (bằng giá skin) thay vì silent-skip.
+      g.addCoins(kCollectionSetSkinPrice);
+    } else {
+      g.grantSkin(kCollectionSetSkin);
+      g.addCoins(kCollectionSetCoins);
     }
     return true;
   }

@@ -23,9 +23,9 @@ Mở **Bản đồ thế giới** (`WorldMapScreen`) — hoặc **lưới màn**
 
 ---
 
-### 🎯 Khu THỬ THÁCH — 9 chế độ phụ + 1 PvP
+### 🎯 Khu THỬ THÁCH — 10 chế độ phụ + 1 PvP
 
-Các chế độ **không tốn mạng, không đụng tiến trình campaign** (cô lập qua `isSideMode`). Lưới 2 hàng × 5.
+Các chế độ **không tốn mạng, không đụng tiến trình campaign** (cô lập qua `isSideMode`). Lưới 2 hàng (5 + 6 ô).
 
 > **Ghi chú trung thực (audit code):** toàn game dùng **một engine match-3 duy nhất**. Mức khác biệt thật của mỗi mode được gắn nhãn:
 > 🟢 **A** = đổi CƠ CHẾ (engine xử lý khác) · 🟡 **B** = đổi LUẬT/mục tiêu nhưng cùng vòng lặp · 🔴 **C** = gần như reskin (chỉ đổi target/HUD).
@@ -36,14 +36,16 @@ Các chế độ **không tốn mạng, không đụng tiến trình campaign** 
 | 2 | **Trọng lực** | `startGravity()` | Mỗi 5 lượt engine **lật ngược cả bàn** (gem+obstacle+jelly) | 🟢 A |
 | 3 | **Nhịp điệu** | `startRhythm()` | Đồng hồ nhịp BPM; ghép đúng beat → groove → điểm ×1.5–2.5 | 🟢 A |
 | 4 | **2 người** | `VersusScreen` | 2 bàn song song; combo ≥3 gửi **gem rác** sang đối thủ; mirror seed | 🟢 A |
-| 5 | **Vô tận** | `startEndless()` | Ghép ≥4/≥5 **hoàn lượt** → chơi vô hạn, stage tăng dần | 🟡 B |
-| 6 | **Quét màu** | `startColorRush()` | Màu "nóng" xoay mỗi 4 lượt; clear màu đó **+15đ/gem** | 🟡 B |
-| 7 | **Nước dâng (Soda)** | `startSoda()` | Mỗi clear +1 fill; đủ 20 fill nổi 1 chai (objective riêng) | 🟡 B |
-| 8 | **Sinh tồn** | `startSurvival()` | ⚠️ Hiện = **TimeAttack đổi tên** (target vô cực); engine chưa đọc `isSurvival` | 🔴 C |
-| 9 | **Mê cung** | `startLabyrinth()` | ⚠️ Hiện = **DropDown + 1 layout tường** (cơ chế chung với màn campaign 103/127) | 🔴 C |
-| 10 | **Hằng ngày** | `startDaily()` | ⚠️ Hiện = **chọn lại 1 objective campaign** + seed bàn theo ngày + thưởng/streak | 🔴 C |
+| 5 | **Cấu đố** | `startPuzzle(def)` | **KHÔNG refill** (bàn hữu hạn) + bàn seed cố định + ngân sách lượt chặt; 8 cấu đố mở khoá dần, sao theo hiệu suất. Đảm bảo giải được (test greedy) | 🟢 A |
+| 6 | **Vô tận** | `startEndless()` | Ghép ≥4/≥5 **hoàn lượt** → chơi vô hạn; **sự kiện mỗi 5 stage** (+lượt / ×2 điểm / mưa gem) | 🟡 B |
+| 7 | **Quét màu** | `startColorRush()` | Màu "nóng" xoay mỗi 4 lượt; clear màu đó +15đ/gem × **streak ×1→×3** | 🟡 B |
+| 8 | **Nước dâng (Soda)** | `startSoda()` | Mỗi clear +1 fill; đủ 20 fill nổi 1 chai; **vòi phun +5 fill mỗi 5 lượt** | 🟡 B |
+| 9 | **Sinh tồn** | `startSurvival()` | Mực nước **Rising Tide** dâng mỗi N lượt; clear gem đẩy lùi nước; thua khi nước phủ toàn bàn; HUD tide-indicator riêng | 🟢 A |
+| 10 | **Mê cung** | `startLabyrinth()` | **Tường di động** thay đổi hình dạng bàn mỗi lượt + **fog-of-war** ẩn vùng tường; lưới không cố định | 🟢 A |
+| 11 | **Hằng ngày** | `startDaily()` | Bàn seed theo ngày + **mutator xoay ngày** (4 màu / ít lượt / ×2 combo / vô special / +lượt) + thưởng/streak 1 lần/ngày | 🟡 B |
 
-> Đa dạng gameplay LỚN NHẤT thực ra nằm ở **Campaign** (bom đếm ngược, băng chuyền, cổng, dispenser, chocolate lan, jam, cage, tường, gravity-stream — gắn theo chỉ số màn). 3 mode 🔴 C đang chờ nâng cấp cơ chế riêng (xem `doc/tasks/todo/`).
+> 🏅 **Kỷ lục & cột mốc (W19.1):** 8 mode (trừ Daily/Versus) có kỷ lục cá nhân (best-stage / best-score / số lần thắng) + 3 mốc **Bronze/Silver/Gold** (badge trên card Home + thưởng nhỏ xu, nhận 1 lần). Tạo lý do chơi lại — `lib/data/side_mode_records.dart`.
+> Đa dạng gameplay LỚN NHẤT vẫn nằm ở **Campaign** (bom đếm ngược, băng chuyền, cổng, dispenser, chocolate lan, jam, cage, tường, gravity-stream). **Hết mode 🔴 C** — Daily đã thành Mutator mode (🟡 B), thêm Cấu đố (🟢 A). Còn lại là refactor PHẦN THƯỞNG (xem `doc/tasks/todo/w18-*.md`).
 
 ---
 
@@ -62,10 +64,13 @@ Hệ thống "giữ chân". **Toàn bộ progression chạy qua `_onGameEnd`**; 
 | 7 | **Giải đấu** | `TournamentScreen` | Điểm thắng first-clear | Xu theo hạng (đua 7 bot offline), reset tuần |
 | 8 | **Thành tựu** | `AchievementsScreen` | Tự đạt theo chỉ số lifetime | Xu |
 
-> ⚠️ **Chồng chéo đã ghi nhận (audit):** Sự kiện mùa · Giải đấu · Album · Thành tựu trùng ~70% khuôn "thắng → tích điểm → claim mốc"; 1 lần thắng đẩy đồng thời nhiều thanh điểm. Kinh tế lệch về **faucet** (chỉ Đền Neon + Cửa hàng là sink xu). Kế hoạch gộp/khác-biệt-hoá ở `doc/tasks/todo/`.
+> ✅ **W18.1 đã xong — gộp Giải đấu + Sự kiện mùa thành "Mùa giải":** 1 đường điểm/tuần nuôi **2 trục thưởng KHÔNG trùng** — trục **MỐC** (6 ngưỡng → xu/booster) + trục **HẠNG** (đua 7 bot tất định → thưởng hạng). Hết cảnh "1 thắng đẩy 2 thanh điểm". Migrate an toàn (reuse key cũ → cờ đã-nhận được tôn trọng, chống nhận-lại-thưởng). 1 màn `SeasonLeagueScreen` thay 2 màn cũ.
+> ✅ **W18.4 đã xong:** khu thưởng chỉ còn ô kinh tế, Hướng dẫn + Cài đặt tách ra hàng **"Tiện ích"** riêng.
+> ✅ **W18.2 đã xong — khác-biệt-hoá Album & Thành tựu:** Album = **vật sưu tập** (sticker KHÔNG còn thưởng xu lặp) + hoàn tất bộ → **skin gem độc quyền + xu 1 lần**; Thành tựu = giữ xu + thêm **DANH HIỆU đeo được** (hiện dưới logo Home). Hết cảnh "2 hệ claim-mốc-xu na ná".
+> ✅ **W18.3 đã xong — coin-sink:** thêm **nâng cấp booster vĩnh viễn** ở Cửa hàng (Búa → phá 3×3 · +Lượt 10→15), mua 1 lần bằng xu (đắt, hút xu dư) — non-p2w, cân bằng faucet. **🎉 Hết toàn bộ kế hoạch W18 (4/4) + W17/W19.**
 
 ### 🔧 Tiện ích (KHÔNG phải phần thưởng)
-Nằm chung lưới Home nhưng là tiện ích thuần:
+Hàng **"Tiện ích"** riêng dưới khu Phần thưởng (W18.4 — hết bị nhầm là thưởng):
 - **Hướng dẫn** (`GuideScreen`) — giải thích luật, booster, từng chế độ.
 - **Cài đặt** (`SettingsScreen`) — âm thanh, ngôn ngữ, chế độ xem map/grid, reset tiến trình.
 

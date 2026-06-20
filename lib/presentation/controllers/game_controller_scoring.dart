@@ -5,13 +5,21 @@ extension GameControllerScoring on GameController {
   void addScore(int gemsCleared, int combo) {
     comboCount.value = combo;
     if (combo > runMaxCombo.value) runMaxCombo.value = combo;
-    final multiplier = 1 + (combo - 1) * 0.5;
+    // W17.3 doubleCombo mutator: phần bonus từ combo nhân đôi (×1.0 thay vì ×0.5).
+    final comboBonusMult = level.doubleCombo ? 1.0 : 0.5;
+    final multiplier = 1 + (combo - 1) * comboBonusMult;
     var gained = (gemsCleared * 10 * multiplier).round();
     // Rhythm: ghép đúng nhịp → thưởng điểm theo groove (×1.5 .. ×2.5).
     if (isRhythm.value && _rhythmBonusPending) {
       final grooveMult = 1.5 + groove.value / GameController.kGrooveMax;
       gained = (gained * grooveMult).round();
       _rhythmBonusPending = false;
+    }
+    // W17.4 Endless scoreX2 event: nhân đôi điểm trong kEndlessEventScoreBoostMoves lượt.
+    if (isEndless.value && _endlessScoreX2Remaining > 0) {
+      gained *= 2;
+      _endlessScoreX2Remaining--;
+      if (_endlessScoreX2Remaining == 0) endlessEvent.value = '';
     }
     score.value += gained;
     if (isBoss.value) _bossDamage(gemsCleared, combo);
@@ -192,6 +200,28 @@ extension GameControllerScoring on GameController {
     if (_resolved) return null;
     // versus: không tự kết thúc, đồng hồ ngoài quyết định
     if (isVersus.value) return null;
+    // Cấu đố (W19.2): thắng khi đạt điểm; thua khi hết lượt (bàn hữu hạn no-refill).
+    // Sao theo HIỆU SUẤT (lượt dư). KHÔNG đụng win-streak/level/mạng (side mode).
+    if (isPuzzle.value) {
+      final def = currentPuzzle;
+      if (score.value >= targetScore.value) {
+        _resolved = true;
+        lastStars = puzzleStarsFor(movesLeft.value, def?.maxMoves ?? level.moves);
+        lastStreakBonus = 0;
+        lastCoinReward = discountSideModeReward(20 + lastStars * 15);
+        addCoins(lastCoinReward);
+        if (def != null) PuzzleController.maybe?.recordWin(def.id, lastStars);
+        return 'win';
+      }
+      if (movesLeft.value <= 0) {
+        _resolved = true;
+        lastStars = 0;
+        lastCoinReward = 0;
+        lastStreakBonus = 0;
+        return 'lose';
+      }
+      return null;
+    }
     // Endless: không có "win"; thua khi hết lượt. KHÔNG đụng win-streak/level.
     if (isEndless.value) {
       if (movesLeft.value <= 0) {

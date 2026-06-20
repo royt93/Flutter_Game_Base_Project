@@ -47,6 +47,15 @@ extension GameControllerCosmetics on GameController {
     return true;
   }
 
+  /// W18.2: mở khoá skin MIỄN PHÍ (thưởng hoàn tất Album) — không trừ xu, không
+  /// tự trang bị. Trả false nếu đã sở hữu. Idempotent (an toàn gọi lại).
+  bool grantSkin(String id) {
+    if (ownedSkins.contains(id)) return false;
+    ownedSkins.add(id);
+    unawaited(_store.setInt(StorageKeys.ownedSkin(id), 1));
+    return true;
+  }
+
   void selectSkin(String id) {
     if (!ownedSkins.contains(id)) return;
     selectedSkin.value = id;

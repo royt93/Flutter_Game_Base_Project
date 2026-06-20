@@ -16,7 +16,9 @@ class AchievementsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = Get.find<GameController>();
-    final ac = Get.put(AchievementController(g));
+    final ac = Get.isRegistered<AchievementController>()
+        ? Get.find<AchievementController>()
+        : Get.put(AchievementController(g));
     return Scaffold(
       body: NeonBg(
         child: SafeArea(
@@ -29,8 +31,9 @@ class AchievementsScreen extends StatelessWidget {
               ),
               Expanded(
                 child: Obx(() {
-                  // chạm các Rx để Obx rebuild khi tiến trình/đã-nhận đổi
+                  // chạm các Rx để Obx rebuild khi tiến trình/đã-nhận/danh-hiệu đổi
                   ac.claimed.length;
+                  ac.equippedTitle.value;
                   g.totalWins.value;
                   g.bestCombo.value;
                   g.bestWinStreak.value;
@@ -144,12 +147,43 @@ class AchievementsScreen extends StatelessWidget {
   Widget _footer(
       AchievementController ac, Achievement a, bool canClaim, bool claimed) {
     if (claimed) {
-      return Text('ach_claimed'.tr,
-          style: const TextStyle(
-            color: NeonTheme.lime,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-          ));
+      // W18.2: đã nhận → đeo danh hiệu (toggle). Đang đeo → nhấn lại để gỡ.
+      final equipped = ac.equippedTitle.value == a.id;
+      return GestureDetector(
+        onTap: () => ac.equipTitle(a.id),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            color: equipped
+                ? NeonTheme.yellow.withValues(alpha: 0.22)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: equipped ? NeonTheme.yellow : Colors.white24,
+              width: 1.4,
+            ),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(
+              equipped
+                  ? Icons.workspace_premium_rounded
+                  : Icons.outlined_flag_rounded,
+              color: equipped ? NeonTheme.yellow : Colors.white60,
+              size: 13,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              equipped ? 'ach_equipped'.tr : 'ach_equip'.tr,
+              style: TextStyle(
+                color: equipped ? NeonTheme.yellow : Colors.white60,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ]),
+        ),
+      );
     }
     if (canClaim) {
       return GestureDetector(

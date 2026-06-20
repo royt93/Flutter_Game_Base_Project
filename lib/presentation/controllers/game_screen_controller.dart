@@ -1,17 +1,19 @@
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import '../../core/neon_theme.dart';
 import '../../core/storage_service.dart';
 import '../../data/levels.dart';
+import '../../data/side_mode_records.dart';
 import '../../data/story.dart';
 import '../../game/neon_jewel_game.dart';
 import 'battle_pass_controller.dart';
 import 'collection_controller.dart';
 import 'game_controller.dart';
 import 'piggy_controller.dart';
-import 'season_controller.dart';
+import 'season_league_controller.dart';
+import 'side_mode_record_controller.dart';
 import 'story_controller.dart';
-import 'tournament_controller.dart';
 
 /// Trạng thái UI của màn chơi (thay cho setState).
 enum GameUi { playing, quit, win, lose }
@@ -177,13 +179,31 @@ class GameScreenController extends GetxController {
         combo: gameCtrl.runMaxCombo.value,
       );
       if (result == 'win') {
-        SeasonController.maybe?.addWin(gameCtrl.lastStars);
-        // Wave 14 — meta giữ chân: album sưu tập + heo đất + giải đấu tuần. CHỈ
-        // tính LẦN ĐẦU thắng màn (first-clear) → chống farm thắng lại màn dễ.
+        // W18.1: Mùa giải (gộp Mùa + Giải đấu) — 1 điểm/thắng nuôi cả 2 trục
+        // (mốc + hạng). Mọi thắng đều tính (như Season cũ).
+        SeasonLeagueController.maybe?.addWin(gameCtrl.lastStars);
+        // Wave 14 — meta giữ chân: album sưu tập + heo đất. CHỈ tính LẦN ĐẦU
+        // thắng màn (first-clear) → chống farm thắng lại màn dễ.
         if (gameCtrl.lastFirstClear) {
           CollectionController.maybe?.addWin(gameCtrl.lastStars);
           PiggyController.maybe?.addWin(gameCtrl.lastStars);
-          TournamentController.maybe?.addWin(gameCtrl.lastStars);
+        }
+      }
+    } else {
+      // W19.1 — kỷ lục chế độ phụ (Endless/Boss/Rhythm/Gravity/Soda/ColorRush/
+      // Survival/Labyrinth). Daily/Versus trả null → bỏ qua. Banner ăn mừng nếu
+      // phá kỷ lục / mở mốc (game còn sống trong 350ms trước overlay).
+      final outcome =
+          SideModeRecordController.maybe?.recordResult(won: result == 'win');
+      if (outcome != null && outcome.hasCelebration && _game != null) {
+        if (outcome.newTier != RecordTier.none) {
+          final tierName = 'rec_tier_${outcome.newTier.name}'.tr;
+          game.showBanner(
+            'rec_milestone'.tr.replaceFirst('@t', tierName),
+            NeonTheme.yellow,
+          );
+        } else if (outcome.newBest) {
+          game.showBanner('rec_new_best'.tr, NeonTheme.cyan);
         }
       }
     }

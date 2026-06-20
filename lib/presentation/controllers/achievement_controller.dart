@@ -14,13 +14,19 @@ class AchievementController extends GetxController {
   /// id thành tựu đã nhận thưởng (reactive cho UI/badge).
   final RxSet<String> claimed = <String>{}.obs;
 
+  /// W18.2: id thành tựu đang ĐEO làm DANH HIỆU (hiện ở Home), '' = không đeo.
+  final RxString equippedTitle = ''.obs;
+
   static AchievementController? get maybe =>
       Get.isRegistered<AchievementController>()
           ? Get.find<AchievementController>()
           : null;
 
-  /// Xoá cờ "đã nhận" in-memory khi reset tiến trình (controller permanent).
-  void resetState() => claimed.clear();
+  /// Xoá cờ "đã nhận" + danh hiệu đeo in-memory khi reset (controller permanent).
+  void resetState() {
+    claimed.clear();
+    equippedTitle.value = '';
+  }
 
   @override
   void onInit() {
@@ -30,6 +36,35 @@ class AchievementController extends GetxController {
         claimed.add(a.id);
       }
     }
+    final stored = _store.getString(StorageKeys.equippedTitle) ?? '';
+    // M6 fix: chỉ nhận danh hiệu hợp lệ (id phải có trong claimed).
+    // Chống trường hợp đĩa lưu id nhưng achievement bị xoá khỏi kAchievements.
+    if (stored.isNotEmpty && claimed.contains(stored)) {
+      equippedTitle.value = stored;
+    } else if (stored.isNotEmpty) {
+      unawaited(_store.remove(StorageKeys.equippedTitle)); // dọn đĩa cũ
+    }
+  }
+
+  /// W18.2: đeo danh hiệu của thành tựu [id] (chỉ khi ĐÃ nhận). Đeo lại cái đang
+  /// đeo → gỡ (toggle). Trả true nếu đổi trạng thái.
+  bool equipTitle(String id) {
+    if (!claimed.contains(id)) return false;
+    final unequip = equippedTitle.value == id;
+    equippedTitle.value = unequip ? '' : id;
+    // Gỡ → remove key thay vì setString('') để nhất quán với pattern resetProgress.
+    if (unequip) {
+      unawaited(_store.remove(StorageKeys.equippedTitle));
+    } else {
+      unawaited(_store.setString(StorageKeys.equippedTitle, id));
+    }
+    return true;
+  }
+
+  /// Key i18n của danh hiệu đang đeo (null nếu không đeo). Dùng cho Home/Versus.
+  String? get equippedTitleKey {
+    if (equippedTitle.value.isEmpty) return null;
+    return 'ach_${equippedTitle.value}_t';
   }
 
   /// Giá trị hiện tại của chỉ số thành tựu đang theo dõi.

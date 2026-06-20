@@ -6,7 +6,7 @@ import 'package:neon_jewels/logic/gem_data.dart';
 import 'package:neon_jewels/presentation/controllers/achievement_controller.dart';
 import 'package:neon_jewels/presentation/controllers/battle_pass_controller.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
-import 'package:neon_jewels/presentation/controllers/season_controller.dart';
+import 'package:neon_jewels/presentation/controllers/season_league_controller.dart';
 import 'package:neon_jewels/presentation/controllers/temple_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -82,9 +82,9 @@ void main() {
       final bp = Get.put(BattlePassController(c), permanent: true);
       bp.xp.value = 500;
       bp.claimed.add(0);
-      final sc = Get.put(SeasonController(c), permanent: true);
+      final sc = Get.put(SeasonLeagueController(c), permanent: true);
       sc.points.value = 200;
-      sc.claimed.add('${sc.idx}_0');
+      sc.claimedMilestones.add('${sc.idx}_0');
       final ac = Get.put(AchievementController(c), permanent: true);
       ac.claimed.add('first_win');
       final tc = Get.put(TempleController(c), permanent: true);
@@ -95,7 +95,7 @@ void main() {
       expect(bp.xp.value, 0);
       expect(bp.claimed, isEmpty);
       expect(sc.points.value, 0);
-      expect(sc.claimed, isEmpty);
+      expect(sc.claimedMilestones, isEmpty);
       expect(ac.claimed, isEmpty);
       expect(tc.builtTier.values.every((t) => t == 0), isTrue);
     });

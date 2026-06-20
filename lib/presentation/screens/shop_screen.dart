@@ -55,6 +55,28 @@ class ShopScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(
                       NeonTheme.s16, 0, NeonTheme.s16, NeonTheme.s24),
                   children: [
+                    // W18.3 — coin-sink: nâng cấp booster vĩnh viễn.
+                    _sectionHeader('shop_upgrades'.tr, NeonTheme.orange),
+                    _UpgradeCard(
+                      g: g,
+                      icon: Icons.gavel_rounded,
+                      name: 'upg_hammer'.tr,
+                      desc: 'upg_hammer_desc'.tr,
+                      price: kUpgradeHammerPrice,
+                      upgraded: g.hammerUpgraded,
+                      onBuy: g.buyUpgradeHammer,
+                    ),
+                    const SizedBox(height: NeonTheme.s8),
+                    _UpgradeCard(
+                      g: g,
+                      icon: Icons.add_circle_rounded,
+                      name: 'upg_moves'.tr,
+                      desc: 'upg_moves_desc'.tr,
+                      price: kUpgradeMovesPrice,
+                      upgraded: g.movesUpgraded,
+                      onBuy: g.buyUpgradeMoves,
+                    ),
+                    const SizedBox(height: NeonTheme.s24),
                     _sectionHeader('shop_skins'.tr, NeonTheme.cyan),
                     _grid([
                       for (final s in kGemSkins)
@@ -96,6 +118,127 @@ class ShopScreen extends StatelessWidget {
         runSpacing: NeonTheme.s16,
         children: cards,
       );
+}
+
+/// W18.3 — thẻ nâng cấp booster vĩnh viễn (coin-sink). Mua 1 lần → "Đã có".
+/// Nhận [upgraded] là RxBool trực tiếp → Obx tự track, không cần callback wrapper.
+class _UpgradeCard extends StatelessWidget {
+  final GameController g;
+  final IconData icon;
+  final String name;
+  final String desc;
+  final int price;
+  final RxBool upgraded;
+  final bool Function() onBuy;
+
+  const _UpgradeCard({
+    required this.g,
+    required this.icon,
+    required this.name,
+    required this.desc,
+    required this.price,
+    required this.upgraded,
+    required this.onBuy,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      g.coins.value; // rebuild khi xu đổi (để nút mua disable/enable đúng)
+      final isOwned = upgraded.value; // RxBool → dependency tự đăng ký
+      const accent = NeonTheme.orange;
+      return Container(
+        padding: const EdgeInsets.all(12.0),
+        decoration: BoxDecoration(
+          color: NeonTheme.panel.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isOwned ? accent : accent.withValues(alpha: 0.4),
+            width: isOwned ? 2 : 1.2,
+          ),
+          boxShadow: isOwned ? NeonTheme.glow(accent, blur: 8) : null,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: accent, size: 30),
+            const SizedBox(width: 12.0),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name,
+                      style: const TextStyle(
+                        fontFamily: 'Baloo2',
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      )),
+                  Text(desc,
+                      style: TextStyle(
+                        fontFamily: 'Baloo2',
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      )),
+                ],
+              ),
+            ),
+            if (isOwned)
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.check_circle_rounded, color: NeonTheme.lime, size: 18),
+                const SizedBox(width: 4),
+                Text('shop_owned'.tr,
+                    style: const TextStyle(
+                      fontFamily: 'Baloo2',
+                      color: NeonTheme.lime,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    )),
+              ])
+            else
+              Builder(builder: (_) {
+                // H3 fix: visual disabled state khi không đủ xu.
+                final canAfford = g.coins.value >= price;
+                return GestureDetector(
+                  onTap: canAfford
+                      ? () {
+                          if (onBuy()) {
+                            _shopDialog(context,
+                                title: name,
+                                color: NeonTheme.lime,
+                                icon: Icons.check_circle_rounded,
+                                message: desc);
+                          }
+                        }
+                      : () => _shopDialog(context,
+                          title: 'not_enough_coins'.tr,
+                          color: NeonTheme.yellow,
+                          icon: Icons.account_balance_wallet_rounded),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: NeonTheme.panel.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: canAfford ? NeonTheme.yellow : Colors.white24,
+                        width: 1.5),
+                    ),
+                    child: Text('💰 ${fmtNum(price)}',
+                        style: TextStyle(
+                          fontFamily: 'Baloo2',
+                          color: canAfford ? Colors.white : Colors.white38,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        )),
+                  ),
+                );
+              }),  // Builder
+          ],
+        ),
+      );
+    });  // Obx
+  }
 }
 
 /// Khung thẻ chung: preview + tên + nút hành động (mua / dùng / đang dùng).

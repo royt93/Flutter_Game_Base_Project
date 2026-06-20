@@ -8,7 +8,8 @@ import 'package:neon_jewels/logic/gem_data.dart';
 import 'package:neon_jewels/presentation/controllers/collection_controller.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
 import 'package:neon_jewels/presentation/controllers/piggy_controller.dart';
-import 'package:neon_jewels/presentation/controllers/tournament_controller.dart';
+import 'package:neon_jewels/data/season.dart' show seasonPointsForWin;
+import 'package:neon_jewels/presentation/controllers/season_league_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -107,10 +108,10 @@ void main() {
 
   // ------------------------------------------------------------ Collection/Album
   group('Wave 14 — Collection', () {
-    test('addWin cộng điểm, đạt mốc → claim được + grant', () {
+    test('addWin cộng điểm, đạt mốc → thu thập sticker (W18.2: KHÔNG thưởng xu)', () {
       final cc = Get.put(CollectionController(c));
       final coins0 = c.coins.value;
-      final item = kCollectionItems[0]; // ngưỡng 30, thưởng coins 40
+      final item = kCollectionItems[0]; // ngưỡng 30
       // cộng đủ điểm: addWin(3) = 3+3*2 = 9/lần → cần ≥4 lần cho 30 điểm
       for (var i = 0; i < 4; i++) {
         cc.addWin(3);
@@ -119,8 +120,9 @@ void main() {
       expect(cc.canClaim(0), isTrue);
       expect(cc.claim(0), isTrue);
       expect(cc.isClaimed(0), isTrue);
-      expect(c.coins.value, coins0 + item.amount);
-      expect(cc.canClaim(0), isFalse, reason: 'không nhận lại');
+      // W18.2: sticker là vật sưu tập → KHÔNG cộng xu.
+      expect(c.coins.value, coins0);
+      expect(cc.canClaim(0), isFalse, reason: 'không thu lại');
     });
 
     test('persist + resetState', () async {
@@ -174,47 +176,47 @@ void main() {
       expect(botScore(100, 0, 6), greaterThanOrEqualTo(botScore(100, 0, 0)));
     });
 
-    test('addWin cộng điểm + hạng theo bot', () {
+    test('addWin cộng điểm + hạng theo bot (W18.1 gộp Mùa giải)', () {
       c.clock = () => DateTime(2026, 6, 18);
-      final tc = Get.put(TournamentController(c));
-      tc.addWin(3); // 12+18 = 30
-      expect(tc.points.value, tournamentPointsForWin(3));
+      final tc = Get.put(SeasonLeagueController(c));
+      tc.addWin(3); // 10+24 = 34 (pool dùng công thức Season)
+      expect(tc.points.value, seasonPointsForWin(3));
       expect(tc.playerRank, inInclusiveRange(1, kTournamentBots.length + 1));
     });
 
-    test('claim 1 lần/tuần + đổi tuần reset điểm', () {
+    test('claim hạng 1 lần/tuần + đổi tuần reset điểm', () {
       c.clock = () => DateTime(2026, 6, 18);
-      final tc = Get.put(TournamentController(c));
+      final tc = Get.put(SeasonLeagueController(c));
       tc.addWin(3);
       final coins0 = c.coins.value;
-      final r = tc.claim();
+      final r = tc.claimRank();
       expect(r, isNotNull);
       expect(c.coins.value, greaterThan(coins0));
-      expect(tc.canClaim, isFalse);
-      expect(tc.claim(), isNull, reason: 'không nhận 2 lần/tuần');
+      expect(tc.canClaimRank, isFalse);
+      expect(tc.claimRank(), isNull, reason: 'không nhận 2 lần/tuần');
       // sang tuần mới (≥7 ngày sau) → điểm reset
       c.clock = () => DateTime(2026, 6, 30);
       tc.addWin(1);
-      expect(tc.points.value, tournamentPointsForWin(1));
-      expect(tc.claimedThisWeek.value, isFalse);
+      expect(tc.points.value, seasonPointsForWin(1));
+      expect(tc.claimedRankThisWeek.value, isFalse);
     });
 
     test('resetState', () {
       c.clock = () => DateTime(2026, 6, 18);
-      final tc = Get.put(TournamentController(c));
+      final tc = Get.put(SeasonLeagueController(c));
       tc.addWin(3);
       tc.resetState();
       expect(tc.points.value, 0);
-      expect(tc.claimedThisWeek.value, isFalse);
+      expect(tc.claimedRankThisWeek.value, isFalse);
     });
 
     test('M1 fix: xếp hạng dùng điểm bot CUỐI tuần (cố định cả tuần)', () {
       c.clock = () => DateTime(2026, 6, 18);
-      final tc = Get.put(TournamentController(c));
-      // botScoreNow = botScore(week, i, kTournamentDays-1) — không phụ thuộc ngày
+      final tc = Get.put(SeasonLeagueController(c));
+      // botScoreNow = botScore(idx, i, kTournamentDays-1) — không phụ thuộc ngày
       // hiện tại → đầu tuần KHÔNG còn yếu → hết ăn hạng 1 sớm.
       for (var i = 0; i < kTournamentBots.length; i++) {
-        expect(tc.botScoreNow(i), botScore(tc.week, i, kTournamentDays - 1));
+        expect(tc.botScoreNow(i), botScore(tc.idx, i, kTournamentDays - 1));
       }
     });
   });

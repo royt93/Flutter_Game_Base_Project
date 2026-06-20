@@ -25,6 +25,10 @@ extension GameControllerModes on GameController {
     _endlessCfg = buildEndlessLevel();
     _enterMode(endless: true);
     endlessStage.value = 1;
+    endlessEvent.value = '';
+    _endlessScoreX2Remaining = 0;
+    _endlessGemRainPending = false;
+    _endlessLastEventCount = 0;
     _resetRunState(moves: _endlessCfg!.moves);
   }
 
@@ -91,6 +95,8 @@ extension GameControllerModes on GameController {
     _enterMode(colorRush: true);
     _colorRushMoveCount = 0;
     colorRushHot.value = 0; // bắt đầu ở màu đầu (cyan) — tất định, test được
+    colorRushStreak.value = 0;
+    _colorRushHotClearedThisMove = false;
     _resetRunState(
       moves: _colorRushCfg!.moves,
       target: _colorRushCfg!.targetScore,
@@ -99,19 +105,30 @@ extension GameControllerModes on GameController {
 
   /// Engine gọi sau MỖI nước đi hợp lệ ở Color Rush: cứ
   /// [kColorRushChangeEvery] lượt thì xoay màu nóng sang màu kế (tất định).
+  /// W17.4: cập nhật streak trước khi đổi màu.
   void tickColorRush() {
     if (!isColorRush.value) return;
     _colorRushMoveCount++;
+    if (_colorRushHotClearedThisMove) {
+      colorRushStreak.value =
+          (colorRushStreak.value + 1).clamp(0, kColorRushMaxStreak);
+    } else {
+      colorRushStreak.value = 0;
+    }
+    _colorRushHotClearedThisMove = false;
     if (_colorRushMoveCount % kColorRushChangeEvery == 0) {
       colorRushHot.value = (colorRushHot.value + 1) % level.colorCount;
+      colorRushStreak.value = 0; // màu mới → chuỗi mới
     }
   }
 
-  /// Color Rush: thưởng điểm bội cho [gems] gem màu nóng vừa clear (cộng thẳng,
-  /// không qua hệ số combo).
+  /// Color Rush: thưởng điểm bội cho [gems] gem màu nóng vừa clear.
+  /// W17.4: streak multiplier ×1→×2→×3.
   void colorRushBonus(int gems) {
     if (!isColorRush.value || gems <= 0) return;
-    score.value += gems * kColorRushBonusPerGem;
+    _colorRushHotClearedThisMove = true;
+    final mult = (colorRushStreak.value + 1).clamp(1, kColorRushMaxStreak);
+    score.value += gems * kColorRushBonusPerGem * mult;
   }
 
   /// Bắt đầu chế độ Soda (chế độ riêng): clear gem làm mực nước dâng, đẩy chai
@@ -120,6 +137,8 @@ extension GameControllerModes on GameController {
   void startSoda() {
     _sodaCfg = buildSodaLevel();
     _enterMode(soda: true);
+    _sodaMoveCount = 0;
+    sodaNozzlePulse.value = 0;
     _resetRunState(moves: _sodaCfg!.moves);
   }
 
@@ -161,19 +180,50 @@ extension GameControllerModes on GameController {
     return max == 0 ? 0 : (sodaFill.value / max).clamp(0.0, 1.0);
   }
 
-  /// Seed bàn cho engine: Thử thách ngày dùng `epochDay` (mọi người CÙNG bàn);
-  /// các chế độ khác trả null (engine tự ngẫu nhiên). Versus truyền seed riêng.
-  int? get boardSeed => isDaily.value ? _dailySeed : null;
+  /// W17.4: Engine gọi sau MỖI lượt khi [isSoda] — nozzle phun thêm fill định kỳ.
+  void tickSoda() {
+    if (!isSoda.value) return;
+    _sodaMoveCount++;
+    if (_sodaMoveCount % kSodaNozzleEvery == 0) {
+      registerSodaFill(kSodaNozzleBurst);
+      sodaNozzlePulse.value++;
+    }
+  }
+
+  /// Seed bàn cho engine: Daily dùng `epochDay` (mọi người CÙNG bàn); Cấu đố dùng
+  /// seed cố định của cấu đố (W19.2 — bàn tất định để học/tối ưu); còn lại null
+  /// (engine tự ngẫu nhiên). Versus truyền seed riêng.
+  int? get boardSeed {
+    if (isPuzzle.value) return _puzzleDef?.seed;
+    if (isDaily.value) return _dailySeed;
+    return null;
+  }
+
+  /// Bắt đầu 1 Cấu đố (W19.2): bàn seed cố định, KHÔNG refill (engine đọc isPuzzle),
+  /// mục tiêu điểm trong ngân sách lượt. KHÔNG tốn mạng/đụng campaign (side mode).
+  void startPuzzle(PuzzleDef def) {
+    _puzzleDef = def;
+    _puzzleCfg = buildPuzzleLevel(def);
+    _enterMode(puzzle: true);
+    _resetRunState(moves: def.maxMoves, target: def.target);
+  }
 
   /// Đã HOÀN THÀNH (thắng) Thử thách ngày HÔM NAY chưa (đã nhận thưởng).
   bool get dailyChallengeDoneToday =>
       _store.getInt(StorageKeys.dailyChLastDone, def: -1) == _effectiveDay;
 
+  /// Mutator hôm nay (tất định, tính từ effectiveDay). Dùng ở Home card không
+  /// cần startDaily() — giá trị cùng với mutators áp khi bắt đầu ván.
+  List<DailyMutator> get todayMutators => dailyMutatorsFor(todayEpochDay);
+
   /// Bắt đầu Thử thách hằng ngày: 1 màn seed theo NGÀY → mọi người cùng bàn +
   /// cùng mục tiêu. Chơi lại bao nhiêu lần cũng được nhưng chỉ THƯỞNG 1 lần/ngày.
   void startDaily() {
     _dailySeed = _effectiveDay;
-    _dailyCfg = buildDailyLevel(_dailySeed);
+    // W17.3: tính mutator tất định rồi bake vào config (noSpecial/doubleCombo trong
+    // LevelConfig; only4Colors/lowMoves/bonusMoves thay đổi colorCount/moves).
+    final mutators = dailyMutatorsFor(_dailySeed);
+    _dailyCfg = buildDailyLevel(_dailySeed, mutators: mutators);
     _enterMode(daily: true);
     _resetRunState(moves: _dailyCfg!.moves, target: _dailyCfg!.targetScore);
   }
@@ -209,7 +259,15 @@ extension GameControllerModes on GameController {
   /// Độ khó tăng dần = lượt hoàn ÍT đi khi stage cao → chơi lâu sẽ cạn lượt.
   void _endlessTick(int gemsCleared) {
     final newStage = 1 + score.value ~/ kEndlessStageScore;
-    if (newStage > endlessStage.value) endlessStage.value = newStage;
+    if (newStage > endlessStage.value) {
+      endlessStage.value = newStage;
+      // W17.4: kiểm tra ngưỡng event
+      final eventsExpected = newStage ~/ kEndlessEventEveryStage;
+      if (eventsExpected > _endlessLastEventCount) {
+        _endlessLastEventCount = eventsExpected;
+        _triggerEndlessEvent(_endlessLastEventCount);
+      }
+    }
     if (score.value > endlessHigh.value) {
       endlessHigh.value = score.value;
       unawaited(_store.setInt(StorageKeys.endlessHigh, endlessHigh.value));
@@ -221,6 +279,28 @@ extension GameControllerModes on GameController {
       refund = endlessStage.value <= 4 ? 1 : 0;
     }
     if (refund > 0) movesLeft.value += refund;
+  }
+
+  void _triggerEndlessEvent(int eventCount) {
+    final type = (eventCount - 1) % 3; // 0=moves, 1=scoreX2, 2=gems
+    switch (type) {
+      case 0:
+        movesLeft.value += kEndlessEventMovesBonus;
+        endlessEvent.value = 'moves';
+      case 1:
+        _endlessScoreX2Remaining = kEndlessEventScoreBoostMoves;
+        endlessEvent.value = 'scoreX2';
+      case _:
+        _endlessGemRainPending = true;
+        endlessEvent.value = 'gems';
+    }
+  }
+
+  /// Engine gọi để lấy và consume cờ gem rain (one-shot: tự reset sau khi đọc).
+  bool consumeEndlessGemRain() {
+    if (!_endlessGemRainPending) return false;
+    _endlessGemRainPending = false;
+    return true;
   }
 
   /// "Khoá" giai điệu (1..5) để AudioManager dịch tông: theo world của màn

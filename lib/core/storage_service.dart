@@ -79,6 +79,15 @@ class StorageKeys {
   /// Cờ "đã nhận thưởng" của thành tựu [id].
   static String achievementClaimed(String id) => 'ach_$id';
 
+  // W19.1 — Kỷ lục chế độ phụ ([key] = SideModeRecordSpec.key).
+  static String recValue(String key) => 'rec_${key}_v'; // giá trị chỉ số (best/count)
+  static String recTier(String key) => 'rec_${key}_t'; // bậc mốc đã nhận (0..3)
+  static String recPlays(String key) => 'rec_${key}_p'; // số lần chơi
+
+  // W19.2 — Cấu đố (Puzzle): sao tốt nhất từng cấu đố + số cấu đố đã mở khoá.
+  static String puzzleStars(int id) => 'pz_star_$id';
+  static const String puzzleUnlocked = 'pz_unlocked'; // id cao nhất đã mở (1-based)
+
   // Wave 9 — Cửa hàng trang trí (skin gem + theme bàn, mua bằng xu)
   static String ownedSkin(String id) => 'skin_$id'; // 1 = đã sở hữu
   static String ownedTheme(String id) => 'theme_$id';
@@ -88,6 +97,11 @@ class StorageKeys {
   // Wave 14 — Album sưu tập (điểm lifetime + cờ mở từng sticker)
   static const String collectionPoints = 'coll_points';
   static String collectionClaimed(String id) => 'coll_$id'; // 1 = đã mở
+  // W18.2 — đã nhận thưởng HOÀN TẤT BỘ album (1 lần)
+  static const String collectionSetClaimed = 'coll_set_done';
+
+  // W18.2 — Thành tựu: danh hiệu (title) đang ĐEO (id thành tựu, '' = không đeo)
+  static const String equippedTitle = 'ach_equipped_title';
 
   // Wave 14 — Heo đất (xu đang tích trong ống)
   static const String piggySaved = 'piggy_saved';
@@ -96,6 +110,10 @@ class StorageKeys {
   static const String tournamentWeek = 'tour_week';
   static const String tournamentPoints = 'tour_points';
   static const String tournamentClaimedWeek = 'tour_claimed_week';
+
+  // W18.1 — Mùa giải (gộp Mùa + Giải đấu). Dùng LẠI seasonPoints/seasonIdx (pool),
+  // seasonClaimed (mốc), tournamentClaimedWeek (hạng). Chỉ thêm cờ migrate 1 lần.
+  static const String leagueMigrated = 'league_migrated';
 
   // Booster
   static const String bHammer = 'b_hammer';
@@ -107,6 +125,10 @@ class StorageKeys {
   static const String bLightning = 'b_light';
   static const String bRoyal = 'b_royal';
   static const String bGravity = 'b_grav';
+
+  // W18.3 — Nâng cấp booster vĩnh viễn (coin-sink). 1 = đã nâng cấp.
+  static const String upgHammer = 'upg_hammer';
+  static const String upgMoves = 'upg_moves';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

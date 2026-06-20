@@ -1,14 +1,19 @@
 part of 'game_controller.dart';
 
+/// W18.3 — coin-sink: giá nâng cấp booster vĩnh viễn (đắt để hút xu dư) + hiệu lực.
+const int kUpgradeHammerPrice = 400; // búa 1 ô → 3×3
+const int kUpgradeMovesPrice = 350; // +Lượt 10 → 15
+const int kMovesUpgradedBonus = 15;
+
 /// Booster: dùng (use*), mua bằng xu (buy*) và tặng (grant*).
 extension GameControllerBooster on GameController {
   // --- Dùng booster ---
   bool useHammer() => _useBooster(StorageKeys.bHammer, boosterHammer);
 
-  /// +10 lượt. Trả về true nếu còn booster.
+  /// +10 lượt (W18.3: +15 nếu đã nâng cấp). Trả về true nếu còn booster.
   bool useMovesBooster() {
     if (!_useBooster(StorageKeys.bMoves, boosterMoves)) return false;
-    movesLeft.value += 10;
+    movesLeft.value += movesUpgraded.value ? kMovesUpgradedBonus : 10;
     return true;
   }
 
@@ -75,4 +80,47 @@ extension GameControllerBooster on GameController {
   void grantRoyal([int n = 1]) => _grant(StorageKeys.bRoyal, boosterRoyal, n);
   void grantGravity([int n = 1]) =>
       _grant(StorageKeys.bGravity, boosterGravity, n);
+
+  // --- W18.3: Nâng cấp booster VĨNH VIỄN (coin-sink) ---
+  /// Mua nâng cấp Búa (1 ô → 3×3). Trả false nếu đã nâng cấp / thiếu xu.
+  /// Ghi cờ TRƯỚC khi trừ xu (an toàn nếu kill giữa chừng → giữ nâng cấp).
+  bool buyUpgradeHammer() {
+    if (hammerUpgraded.value || coins.value < kUpgradeHammerPrice) return false;
+    hammerUpgraded.value = true;
+    unawaited(_store.setInt(StorageKeys.upgHammer, 1));
+    _setCoins(coins.value - kUpgradeHammerPrice);
+    return true;
+  }
+
+  /// Mua nâng cấp +Lượt (10 → 15). Trả false nếu đã nâng cấp / thiếu xu.
+  bool buyUpgradeMoves() {
+    if (movesUpgraded.value || coins.value < kUpgradeMovesPrice) return false;
+    movesUpgraded.value = true;
+    unawaited(_store.setInt(StorageKeys.upgMoves, 1));
+    _setCoins(coins.value - kUpgradeMovesPrice);
+    return true;
+  }
+
+  /// Trao phần thưởng theo [kind] + [amount] — gom 1 chỗ (trước đây switch 8-case
+  /// lặp ở Season/Tournament/BattlePass claim). W18.1.
+  void grantReward(RewardKind kind, int amount) {
+    switch (kind) {
+      case RewardKind.coins:
+        addCoins(amount);
+      case RewardKind.hammer:
+        grantHammer(amount);
+      case RewardKind.moves:
+        grantMovesBooster(amount);
+      case RewardKind.color:
+        grantColor(amount);
+      case RewardKind.joker:
+        grantJoker(amount);
+      case RewardKind.lightning:
+        grantLightning(amount);
+      case RewardKind.royal:
+        grantRoyal(amount);
+      case RewardKind.gravity:
+        grantGravity(amount);
+    }
+  }
 }

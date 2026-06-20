@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
-import '../../data/battle_pass.dart' show RewardKind;
+import '../../core/utils/format.dart';
 import '../../data/collection.dart';
 import '../controllers/collection_controller.dart';
 import '../controllers/game_controller.dart';
@@ -16,7 +16,11 @@ class CollectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = Get.find<GameController>();
-    final cc = Get.put(CollectionController(g));
+    // Dùng find trước (controller đã permanent từ Home); fallback put nếu test mount
+    // screen độc lập (không qua HomeScreen) → tránh ném exception.
+    final cc = Get.isRegistered<CollectionController>()
+        ? Get.find<CollectionController>()
+        : Get.put(CollectionController(g));
     const accent = NeonTheme.cyan;
     return Scaffold(
       body: NeonBg(
@@ -32,11 +36,13 @@ class CollectionScreen extends StatelessWidget {
                 child: Obx(() {
                   cc.points.value;
                   cc.claimed.length;
+                  cc.setRewardClaimed.value;
                   return ListView(
                     padding: const EdgeInsets.all(NeonTheme.s16),
                     children: [
                       _banner(cc, accent),
                       const SizedBox(height: NeonTheme.s16),
+                      _setReward(cc),
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -115,10 +121,85 @@ class CollectionScreen extends StatelessWidget {
         ),
       );
 
+  /// W18.2: thẻ thưởng HOÀN TẤT BỘ (skin gem độc quyền + xu) — chỉ hiện khi đủ.
+  Widget _setReward(CollectionController cc) {
+    if (!cc.allCollected) return const SizedBox.shrink();
+    final done = cc.setRewardClaimed.value;
+    const gold = NeonTheme.yellow;
+    return Container(
+      margin: const EdgeInsets.only(bottom: NeonTheme.s16),
+      padding: const EdgeInsets.all(NeonTheme.s16),
+      decoration: BoxDecoration(
+        color: NeonTheme.panel.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: gold, width: 1.6),
+        boxShadow: NeonTheme.glow(gold, blur: 12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.workspace_premium_rounded, color: gold, size: 28),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('coll_set_title'.tr,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    )),
+                // H1 fix: hiện đúng mô tả theo trường hợp — skin mới vs đã sở hữu.
+                Builder(builder: (context) {
+                  final g = Get.find<GameController>();
+                  final alreadyOwned = g.isSkinOwned(kCollectionSetSkin);
+                  final desc = alreadyOwned
+                      ? 'coll_set_owned_reward'.trParams(
+                          {'n': fmtNum(kCollectionSetSkinPrice)})
+                      : 'coll_set_reward'.trParams(
+                          {'n': fmtNum(kCollectionSetCoins)});
+                  return Text(
+                    desc,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.75),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+          if (done)
+            const Icon(Icons.check_circle_rounded, color: Colors.grey, size: 26)
+          else
+            GestureDetector(
+              onTap: cc.claimSetReward,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: NeonTheme.lime.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: NeonTheme.lime, width: 1.5),
+                  boxShadow: NeonTheme.glow(NeonTheme.lime, blur: 8),
+                ),
+                child: Text('daily_claim'.tr,
+                    style: const TextStyle(
+                      color: NeonTheme.lime,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    )),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _cell(CollectionController cc, int i) {
     final it = kCollectionItems[i];
     final color = NeonTheme.gemColors[it.colorIndex % NeonTheme.gemColors.length];
-    final reached = cc.isReached(i);
     final claimed = cc.isClaimed(i);
     final canClaim = cc.canClaim(i);
     return GestureDetector(
@@ -171,16 +252,16 @@ class CollectionScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 3),
+            // W18.2: vật sưu tập — "thu thập" (canClaim) / "đã có" (claimed) /
+            // ngưỡng điểm (chưa tới). KHÔNG còn thưởng xu riêng từng ô.
             if (canClaim)
-              const Text(
-                '🎁',
-                style: TextStyle(fontSize: 13),
-              )
+              const Icon(Icons.add_circle_rounded,
+                  color: NeonTheme.lime, size: 14)
             else if (claimed)
-              Icon(_rewardIcon(it.kind), color: color, size: 13)
+              Icon(Icons.check_rounded, color: color, size: 13)
             else
               Text(
-                reached ? '★' : '${it.threshold}',
+                '${it.threshold}',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 9,
@@ -191,18 +272,5 @@ class CollectionScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  IconData _rewardIcon(RewardKind k) {
-    switch (k) {
-      case RewardKind.coins:
-        return Icons.monetization_on_rounded;
-      case RewardKind.hammer:
-        return Icons.gavel_rounded;
-      case RewardKind.moves:
-        return Icons.add_circle_rounded;
-      default:
-        return Icons.bolt_rounded;
-    }
   }
 }

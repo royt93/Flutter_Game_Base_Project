@@ -840,6 +840,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         if (controller.consumeGravityFlip()) {
           await _doColumnFlip();
         }
+        // W17.4 Endless gem rain event: spawn special gems khi event kích hoạt.
+        if (controller.isEndless.value && controller.consumeEndlessGemRain()) {
+          _spawnEndlessGems(3);
+        }
         // W17.2: mê cung tường động — shift sau mỗi kMazeShiftMoves lượt thật.
         if (controller.isLabyrinth.value) await _maybeMazeShift();
       }
@@ -1132,13 +1136,18 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       final newSpecials = <Cell, GemType>{};
       for (final g in matches) {
         toClear.addAll(g.cells);
-        if (g.special != GemType.normal && g.specialAt != null) {
+        // W17.3 noSpecial mutator: không tạo gem special khi active.
+        if (!controller.level.noSpecial &&
+            g.special != GemType.normal &&
+            g.specialAt != null) {
           newSpecials[g.specialAt!] = g.special;
         }
       }
       // Giao điểm T/L → bomb (ưu tiên hơn striped tại ô đó)
-      for (final bomb in MatchDetector.bombCells(matches)) {
-        newSpecials[bomb] = GemType.bomb;
+      if (!controller.level.noSpecial) {
+        for (final bomb in MatchDetector.bombCells(matches)) {
+          newSpecials[bomb] = GemType.bomb;
+        }
       }
 
       // kích hoạt special đã có sẵn nằm trong vùng xóa (chain reaction)
@@ -1562,6 +1571,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       }
     }
     candidates.shuffle(_rnd);
+    // W17.3 noSpecial mutator: lucky gem vẫn thưởng xu/điểm nhưng KHÔNG biến
+    // gem thường thành special (tránh phá vỡ ràng buộc "không có special").
+    if (controller.level.noSpecial) {
+      for (int i = 0; i < count && i < candidates.length; i++) {
+        grid[candidates[i].row][candidates[i].col]?.isLucky = false;
+      }
+      return;
+    }
     const specials = [GemType.stripedH, GemType.stripedV, GemType.bomb];
     for (int i = 0; i < count && i < candidates.length; i++) {
       final cell = candidates[i];
@@ -1579,6 +1596,38 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         EffectController(duration: 0.13, alternate: true, curve: Curves.easeOut),
       ));
     }
+  }
+
+  /// W17.4 Endless gem rain event: spawn [count] gem special ngẫu nhiên.
+  void _spawnEndlessGems(int count) {
+    const specials = [GemType.stripedH, GemType.stripedV, GemType.bomb];
+    final candidates = <Cell>[];
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        final g = grid[r][c];
+        if (g != null &&
+            g.type == GemType.normal &&
+            !g.isIngredient &&
+            obstacle[r][c] == 0) {
+          candidates.add(Cell(r, c));
+        }
+      }
+    }
+    if (candidates.isEmpty) return;
+    candidates.shuffle(_rnd);
+    for (int i = 0; i < count && i < candidates.length; i++) {
+      final cell = candidates[i];
+      final g = grid[cell.row][cell.col]!;
+      g.type = specials[_rnd.nextInt(specials.length)];
+      _sfx?.playSpecial();
+      add(ShockwaveComponent(
+        position: _cellCenter(cell.row, cell.col),
+        color: NeonTheme.cyan,
+        maxRadius: cellSize * 1.4,
+        duration: 0.35,
+      )..priority = 55);
+    }
+    controller.endlessEvent.value = '';
   }
 
   /// Gỡ obstacle theo tập ô vừa clear:
@@ -1842,6 +1891,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           writeRow--;
         }
       }
+      // W19.2 Puzzle: KHÔNG sinh gem mới (bàn hữu hạn) → bỏ qua block refill.
+      if (controller.isPuzzle.value) continue;
       // sinh gem mới rơi từ phía trên
       final newCount = writeRow + 1;
       for (int i = 0; i < newCount; i++) {
@@ -1873,6 +1924,18 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       }
     }
     await Future.wait(futures);
+  }
+
+  /// W19.2 TEST-ONLY: tự chơi 1 nước greedy (swap đầu tiên tạo match). Trả false
+  /// nếu bí bàn. Dùng cho test winnability puzzle (no-refill). KHÔNG gọi gameplay.
+  Future<bool> debugGreedyMove() async {
+    final mv = _findMove();
+    if (mv == null) return false;
+    final a = grid[mv[0].row][mv[0].col];
+    final b = grid[mv[1].row][mv[1].col];
+    if (a == null || b == null) return false;
+    await _trySwap(a, b);
+    return true;
   }
 
   /// Wave 15 — trọng lực cho bàn CÓ BỐ CỤC (tường/lỗ/dòng chảy): dùng settle engine
@@ -2055,6 +2118,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       _tickBombs();
       if (_hasDispenser) _tickDispensers(); // Wave 11: phát special định kỳ
       controller.tickColorRush(); // Wave 11: đổi màu nóng mỗi N lượt (no-op nếu khác mode)
+      controller.tickSoda();     // W17.4: nozzle soda định kỳ (no-op nếu khác mode)
     }
     final result = controller.checkEnd();
     if (result != null) {
@@ -2131,7 +2195,20 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       case BoosterMode.hammer:
         boosterMode = BoosterMode.none;
         onBoosterUsed?.call(BoosterMode.hammer);
-        _smashCells({cell}, color: neonColorOf(grid[cell.row][cell.col]!.color));
+        // W18.3: búa nâng cấp → phá 3×3 (như bom) thay vì 1 ô.
+        if (controller.hammerUpgraded.value) {
+          final area = <Cell>{};
+          _addArea(area, cell, 1);
+          add(ShockwaveComponent(
+            position: _cellCenter(cell.row, cell.col),
+            color: NeonTheme.magenta,
+            maxRadius: cellSize * 2.2,
+          )..priority = 50);
+          _smashCells(area, color: NeonTheme.magenta);
+        } else {
+          _smashCells({cell},
+              color: neonColorOf(grid[cell.row][cell.col]!.color));
+        }
         break;
       case BoosterMode.bomb:
         boosterMode = BoosterMode.none;
@@ -2428,6 +2505,20 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       maxWidth: size.x * 0.7,
       duration: 0.9,
     )..priority = 71);
+  }
+
+  /// W19.1: hiện banner ăn mừng (NEW BEST / mở mốc) cuối ván side-mode + flash nhẹ.
+  void showBanner(String text, Color color) {
+    add(ComboTextComponent(
+      text: text,
+      color: color,
+      position: Vector2(size.x / 2, size.y * 0.3),
+      fontSize: 34,
+      maxWidth: size.x * 0.85,
+      epic: true,
+      duration: 1.3,
+    )..priority = 73);
+    _flash(color, peak: 0.22);
   }
 
   /// Chớp sáng toàn màn (rainbow / combo lớn).
