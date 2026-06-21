@@ -1420,3 +1420,98 @@ mỗi phase kèm unit + widget test; (f) verify máy thật qua **cáp USB** (wi
 
 **Thứ tự đề xuất**: 17.1 → 17.2 → 17.3 (3 reskin cấp bách) → 18.1 (gộp, đổi số ô Home) →
 18.4 (dọn UI sau khi số ô đổi) → 18.2 → 18.3 → 17.4 (nice-to-have cuối).
+
+> 🎉 **WAVE 17+18+19 HOÀN TẤT** (commit 77381ae, 2026-06-20): Tất cả 8 task (W17.1-4,
+> W18.1-4) + W19.1 Side Mode Records + W19.2 Puzzle Mode gộp trong mega-commit.
+> Kết quả: **557 test pass**, 0 analyzer, SeasonLeague (gộp), Album/Achievement
+> (danh hiệu), coin sinks (nâng cấp booster), UI tách tiện ích, daily mutators,
+> deepened B modes, side mode kỷ lục, puzzle 8 cấu đố.
+
+## 🔧 Wave 20.1 — Audit + dọn nợ kỹ thuật (✅ 2026-06-20)
+
+Audit 4 tầng (engine/logic · controllers · UI · test coverage) trên mega-commit W17-19.
+
+**Phát hiện và sửa:**
+- **🔴 HIGH (đã sửa) — Puzzle no-refill thiếu trong `_applyGravityWithLayout`**: Guard
+  `isPuzzle` chỉ tồn tại ở `_applyGravityAndRefill` (bàn không-layout). Khi bàn puzzle
+  có layout (wall/noDrop/flow), engine rẽ sang `_applyGravityWithLayout` và spawns
+  gem vô hạn — phá vỡ thiết kế no-refill. **Fix**: bọc `for (final s in res.spawns)`
+  trong `if (!controller.isPuzzle.value) { ... }` tại `neon_jewel_game.dart:1975`.
+- **Controllers:** SẠCH — SeasonLeague/SideModeRecord/PuzzleController đều đúng.
+- **UI/Screens:** SẠCH — layout 10 mode no-scroll, countdown timezone đúng, shop/album/achievement flow đúng.
+- **HIGH-2 (bác — không phải bug):** TideLayer `_floodTop` int-vs-double comparison (`kTidePushback = 0.13`, clamp OK).
+
+**5 test cases bổ sung (gap audit):**
+- Puzzle skip guard: `recordWin(3)` khi unlocked=1 không nhảy unlock
+- Puzzle board determinism: cùng seed → cùng layout
+- Season League tích lũy qua nhiều ván
+- Side Mode Record persist + reload anti-double-claim milestone
+- Daily mutator isolation: mutator KHÔNG leak sang side mode (ColorRush)
+
+**Kết quả**: 0 analyzer · **562 test pass** (+5) · build sạch.
+
+## 📦 Wave 20.2 — Nội dung: 200 màn + thế giới 9-10 (✅ 2026-06-20)
+
+Mở rộng 150 → **200 màn** / 8 → **10 thế giới**.
+
+**Thế giới mới:**
+- **World 9 "Void Circuit"** (151-170): accent orange (wrap), 20 màn
+- **World 10 "Zenith Neon"** (171-200): accent purple (wrap), 30 màn (finale dài)
+
+**Weave cơ chế mới vào W9-10 (score levels):**
+- `kLayoutLevels`: 163 (frame walls), 175 (staggered bottleneck), 193 (dual gate)
+- `kFlowLevels`: 169 (triple band), 181 (reverse-gravity center `^^^^`)
+- `kOrderLevels`: thêm 157, 187
+- `kBombLevels`: thêm 151, 199
+- `kDeadZoneLevels`: thêm 159, 177
+- `kCageLevels`: thêm 168, 192
+- `kLicoriceLevels`: thêm 156; `kJamLevels`: thêm 162
+
+**i18n**: `world_name_9`/`world_name_10` dịch đủ **22 ngôn ngữ** (`_w20ByLang`).
+
+**Playtest**: 200 màn → **0 màn quá khó** với bot. Pass-rate W9-10: 54-88% bot (~80-100% người chơi).
+
+**Kết quả**: 0 analyzer · **580 test pass** (+18: w20_content + fix w6/levels_test) · playtest validated.
+
+## 🎭 Wave 20.3 — Meta Social Offline: Ghost Replay + Progression Tree + Challenge Card (✅ 2026-06-20)
+
+Ba tính năng meta độc lập, không cần backend:
+
+### A. Ghost Replay (Bóng ma nước đi)
+- Record moves từng ván campaign (capped 150 moves, format 4-char per move)
+- Flush khi win với score mới hơn → `ghostMoves(level)` + `ghostScore(level)`
+- Ghost mode: load stored run, show `nextGhostMove()` hint + advance per swap
+- `GameController`: `recordMove`, `advanceGhost`, `nextGhostMove`, `startGhostMode`, `hasGhost`
+- Hook trong `NeonJewelGame._trySwap` sau `consumed = true`
+
+### B. Progression Tree (Cây tiến trình meta)
+- 3 node: Radiant (50★ → particle ×1.5), Blazing (150★ → particle ×2.0), Prestige (5 Gold → prestige)
+- `ProgressionTreeController`: `checkAndUnlock` sau mỗi win, persist + reload
+- `ActiveCosmetics.particleBurstMultiplier` → engine `_spawnBurst` áp multiplier
+- `ProgressionTreeScreen`: 3 card với progress bar
+
+### C. Challenge Card (Thử thách tuần)
+- 3 challenge tất định/tuần: win N campaign, earn N xu, play mode N lần
+- `ChallengeCardController`: track progress + claim + epoch-week reset
+- `ChallengeCardScreen`: 3 card với progress + claim button
+- Wiring: `_onGameEnd` → `onCampaignWin` / `onSideModePlayed` / `refreshCoins`
+
+**Home**: thêm 2 nút mới (Challenge Card ở Row 1, Progression Tree ở Row 2).
+
+**Kết quả**: 0 analyzer · **604 test pass** (+24: w20_3_meta_social_test) · build sạch.
+
+## 🎮 Wave 20.4 — Zen Mode (side mode mới) (✅ 2026-06-20)
+
+Chế độ phụ mới — **không thua**, tích điểm tự do, thư giãn.
+
+- `isZen` flag + `isSideMode` isolation (không trừ mạng, không ảnh hưởng tiến trình)
+- `startZen()`: 999 lượt, target unreachable (1<<28) → không kết thúc tự động
+- `checkEnd()`: luôn trả `null` (chơi mãi cho đến khi người dùng bấm X)
+- `endZenSession()`: gọi khi `quit()` → lưu `zenHigh`, thưởng xu nhỏ (điểm/1000 xu, cap 50)
+- HUD: ô moves hiển thị "∞" thay vì số đếm ngược
+- Badge ở Home: corner pill hiện high score khi đã có
+- `again()` nhánh Zen: chơi lại ngay không cần mạng
+- Nút Home: Row 1 lưới THỬ THÁCH (6 items/hàng)
+- i18n EN + VI + 20 ngôn ngữ qua `_w20ByLang`
+
+**Kết quả**: 0 analyzer · **611 test pass** (+7 Zen) · i18n coverage 79%+ (universal gaming terms ZEN/GHOST/★ format giữ nguyên English).

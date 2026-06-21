@@ -214,6 +214,26 @@ void main() {
       expect(rec2.tierOf(SideModeKind.endless), RecordTier.silver);
     });
 
+    test('persist + reload: milestone đã nhận KHÔNG bị claim lại sau restart', () async {
+      // Đạt gold (stage 30) → milestone bronze/silver/gold đều nhận
+      g.startEndless();
+      g.endlessStage.value = 30; // gold threshold
+      final coins0 = g.coins.value;
+      rec.recordResult(won: false);
+      final coinsAfterFirst = g.coins.value;
+      expect(coinsAfterFirst, greaterThan(coins0), reason: 'nhận xu milestone');
+
+      // Reload controller từ đĩa (simulate app restart)
+      final rec2 = SideModeRecordController(g);
+      rec2.onInit();
+      // Nhập lại result cùng stage → milestones đã claimed, không thưởng lại
+      final coinsBefore = g.coins.value;
+      g.startEndless();
+      g.endlessStage.value = 30;
+      rec2.recordResult(won: false);
+      expect(g.coins.value, coinsBefore, reason: 'anti-double: không thưởng milestone đã nhận');
+    });
+
     test('resetState xoá hết kỷ lục in-memory', () {
       g.startEndless();
       g.endlessStage.value = 30;

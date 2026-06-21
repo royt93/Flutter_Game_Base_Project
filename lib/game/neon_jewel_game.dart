@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 
 import '../core/audio_manager.dart';
 import '../core/neon_theme.dart';
+import '../data/cosmetics.dart';
 import '../data/levels.dart';
 import '../logic/board_mechanics.dart';
 import '../logic/gem_data.dart';
@@ -97,6 +98,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   late List<List<GemComponent?>> grid;
   late double cellSize;
   late Vector2 boardOrigin;
+  /// true sau khi _layout() chạy xong — dùng để guard ghost overlay tránh
+  /// LateInitializationError nếu overlay render trước onLoad() hoàn thành.
+  bool boardReady = false;
 
   /// Wave 15 — bố cục ô (play/wall/noDrop). Mặc định toàn `play` (bàn đặc) nếu
   /// màn không khai báo `layout` → KHÔNG hồi quy mọi màn/chế độ hiện có.
@@ -550,6 +554,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final boardW = cellSize * cols;
     final boardH = cellSize * rows;
     boardOrigin = Vector2((size.x - boardW) / 2, (size.y - boardH) / 2);
+    boardReady = true;
   }
 
   Vector2 _cellCenter(int r, int c) => Vector2(
@@ -814,6 +819,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       } else {
         consumed = true;
         controller.useMove();
+        controller.recordMove(a.row, a.col, b.row, b.col); // Ghost: ghi nước đi
+        controller.advanceGhost(); // Ghost: tiến ghost step
         controller.judgeRhythmBeat(); // Rhythm: phán định đúng/lệch nhịp tại nước đi
         if (controller.isRhythm.value && controller.lastBeatJudge.value == 1) {
           // đúng nhịp → nốt nhạc cao dần theo groove (phản hồi "khớp" nghe đã tai)
@@ -1972,7 +1979,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         ),
       ));
     }
-    for (final s in res.spawns) {
+    // W19.2 Puzzle: KHÔNG sinh gem mới (bàn hữu hạn) — giống guard ở _applyGravityAndRefill.
+    if (!controller.isPuzzle.value) { for (final s in res.spawns) {
       // Vị trí xuất phát = NGƯỢC hướng dòng chảy (gem trôi vào từ đầu nguồn), xếp
       // tầng theo depth. Down → từ trên; right → từ trái; v.v.
       final fd = flowDelta(_hasFlow ? _flowDir[s.r][s.c] : FlowDir.down);
@@ -2001,7 +2009,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           EffectController(duration: 0.32, curve: Curves.bounceOut),
         ),
       ));
-    }
+    } } // end for spawns / end if !isPuzzle
     await Future.wait(futures);
   }
 
@@ -2160,7 +2168,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   void _spawnBurst(Vector2 position, Color color, {bool big = false}) {
     // Particle nhẹ: không MaskFilter, dùng blend cộng (BlendMode.plus) tạo cảm giác
     // neon rực mà rẻ. Gem thường 9 hạt; gem special (big) 18 hạt + bay xa hơn.
-    final count = big ? 18 : 9;
+    // W20.3: ActiveCosmetics.particleBurstMultiplier từ Progression Tree (1.0/1.5/2.0).
+    final mul = ActiveCosmetics.particleBurstMultiplier;
+    final count = ((big ? 18 : 9) * mul).round().clamp(9, 36);
     final sizeMul = big ? 0.16 : 0.11;
     final particle = Particle.generate(
       count: count,

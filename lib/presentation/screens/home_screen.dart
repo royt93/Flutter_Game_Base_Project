@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import '../../core/app_info.dart';
 import '../../core/neon_theme.dart';
+import '../../data/progression_tree.dart';
 import '../../data/side_mode_records.dart';
 import '../../core/storage_service.dart';
 import '../../core/utils/format.dart';
@@ -14,6 +15,8 @@ import '../controllers/collection_controller.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/piggy_controller.dart';
+import '../controllers/challenge_card_controller.dart';
+import '../controllers/progression_tree_controller.dart';
 import '../controllers/puzzle_controller.dart';
 import '../controllers/season_league_controller.dart';
 import '../controllers/side_mode_record_controller.dart';
@@ -29,6 +32,8 @@ import 'game_screen.dart';
 import 'guide_screen.dart';
 import 'level_select_screen.dart';
 import 'piggy_screen.dart';
+import 'challenge_card_screen.dart';
+import 'progression_tree_screen.dart';
 import 'puzzle_select_screen.dart';
 import 'season_league_screen.dart';
 import 'settings_screen.dart';
@@ -52,6 +57,8 @@ class HomeScreen extends StatelessWidget {
     final pc = Get.put(PiggyController(g), permanent: true);
     Get.put(SideModeRecordController(g), permanent: true);
     Get.put(PuzzleController(g), permanent: true);
+    Get.put(ProgressionTreeController(g), permanent: true); // W20.3
+    Get.put(ChallengeCardController(g), permanent: true); // W20.3
     Get.put(StoryController(), permanent: true);
     g.refillLives(); // cập nhật mạng hồi được khi quay về Home
     return Scaffold(
@@ -302,6 +309,23 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              // W20.4 — Zen Mode
+              const SizedBox(width: NeonTheme.s8),
+              Expanded(
+                child: Obx(() => _modeCard(
+                  Icons.spa_rounded,
+                  'zen_short'.tr,
+                  NeonTheme.lime,
+                  () {
+                    g.startZen();
+                    Get.to(() => const GameScreen());
+                  },
+                  corner: g.zenHigh.value > 0
+                      ? _cornerPill(Icons.star_rounded, NeonTheme.lime,
+                          fmtNum(g.zenHigh.value))
+                      : null,
+                )),
+              ),
             ],
           ),
           const SizedBox(height: NeonTheme.s8),
@@ -448,6 +472,20 @@ class HomeScreen extends StatelessWidget {
                   small: true,
                 ),
               ),
+              // W20.3 — Challenge Card (thử thách tuần)
+              Expanded(
+                child: Obx(() {
+                  final ccCtrl = ChallengeCardController.maybe;
+                  return _circleNav(
+                    Icons.assignment_turned_in_rounded,
+                    NeonTheme.lime,
+                    'cc_title'.tr,
+                    () => Get.to(() => const ChallengeCardScreen()),
+                    badge: ccCtrl?.hasClaimable ?? false,
+                    small: true,
+                  );
+                }),
+              ),
             ],
           ),
           const SizedBox(height: NeonTheme.s8),
@@ -495,7 +533,6 @@ class HomeScreen extends StatelessWidget {
                 }),
               ),
               // W18.4: Hướng dẫn + Cài đặt vào 2 ô cuối (tiện ích, không phải thưởng).
-              // Gộp cùng row thay vì section riêng → giữ no-scroll [[home-fullwidth-no-fittedbox]].
               Expanded(
                 child: _circleNav(
                   Icons.menu_book_rounded,
@@ -513,6 +550,27 @@ class HomeScreen extends StatelessWidget {
                   () => Get.to(() => const SettingsScreen()),
                   small: true,
                 ),
+              ),
+              // W20.3 — Progression Tree (cây tiến trình meta)
+              Expanded(
+                child: Obx(() {
+                  final ptCtrl = ProgressionTreeController.maybe;
+                  // Fix: đọc g.stars.length (RxMap) để Obx rebuild khi sao thay đổi
+                  // → badge hiện ngay khi đủ sao, không chỉ sau khi unlock.
+                  g.stars.length;
+                  final anyNew = ptCtrl != null &&
+                      kPtNodes.any((n) => !ptCtrl.isUnlocked(n.id));
+                  return _circleNav(
+                    Icons.account_tree_rounded,
+                    NeonTheme.orange,
+                    'pt_title'.tr,
+                    () => Get.to(() => const ProgressionTreeScreen()),
+                    badge: anyNew &&
+                        (ptCtrl.totalStars >= 50 ||
+                            ptCtrl.goldMilestonesCount() >= 5),
+                    small: true,
+                  );
+                }),
               ),
             ],
           ),

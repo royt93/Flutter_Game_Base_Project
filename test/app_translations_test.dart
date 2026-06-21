@@ -76,7 +76,15 @@ void main() {
         entry.value.forEach((k, v) {
           if (v.trim() != en[k]?.trim()) diff++;
         });
-        final ratio = diff / entry.value.length;
+        // M4 fix: loại trừ "universal gaming terms" khỏi tính tỉ lệ dịch —
+        // những key này intentionally giữ nguyên English (ZEN, GHOST, ★ format).
+        const universalKeys = {
+          'zen_title', 'zen_short', 'ghost_play', 'ghost_hud',
+          'pt_star_cost', 'pt_gold_cost',
+        };
+        final adjustedTotal = entry.value.length -
+            entry.value.keys.where(universalKeys.contains).length;
+        final ratio = adjustedTotal > 0 ? diff / adjustedTotal : 1.0;
         expect(ratio, greaterThanOrEqualTo(0.80),
             reason: '${entry.key} chỉ dịch ${(ratio * 100).toStringAsFixed(1)}% '
                 '— nghi fallback English (thêm feature mới mà quên dịch?)');

@@ -85,7 +85,7 @@ const int kCageLayers = 2;
 
 /// Các màn clearObstacle chuyển sang CAGE (gem nhốt — Wave 15): mục tiêu "giải
 /// cứu" = dọn hết lớp lồng. {42,78} + thế giới 6-8 ({114,138}).
-const Set<int> kCageLevels = {42, 78, 114, 138};
+const Set<int> kCageLevels = {42, 78, 114, 138, 168, 192};
 
 // ---------------------------------------------------------------------------
 // Wave 15 — WEAVE bố cục/dòng chảy vào màn SCORE thế giới 6-8 (101-150). Đọc theo
@@ -115,11 +115,25 @@ const Map<int, List<String>> kLayoutLevels = {
         '........', '........'],
   133: ['........', '##.##.##', '........', '........', '........', '##.##.##',
         '........', '........'],
+  // Wave 20.2 — Thế giới 9-10 (163/175/193). Winnable: mỗi cột có ≥2 ô chơi liên
+  // tục, refill theo segment, trượt chéo fill hốc tường (verify bằng test mount).
+  // 163 — "Viền khung" (frame walls): 12 tường viền trong → trung tâm thông thoáng.
+  163: ['........', '.##..##.', '.#....#.', '........', '........', '.#....#.',
+        '.##..##.', '........'],
+  // 175 — "Giữa hàng" (D fix): tường nằm ở HÀNG GIỮA (row 3) → mỗi cột bị cắt
+  // thành đoạn 3+4 cell (đủ vertical match). Thiết kế cũ (staggered waist) tạo
+  // đoạn 2-cell ở col 2+5 → không match dọc được.
+  175: ['........', '........', '........', '#..##..#',
+        '........', '........', '........', '........'],
+  // 193 — "Cổng đôi" (dual gate): 2 hàng tường xen kẽ → mỗi cột bị cắt ≤1 lần;
+  // gem chảy qua khe nhỏ, tạo bottleneck kép mà vẫn refill đủ (test fill đầy W20).
+  193: ['........', '#.#.#.#.', '........', '........', '........', '........',
+        '.#.#.#.#', '........'],
 };
 
 /// Wave 16 — màn clearJelly đặt mục tiêu ở 4 GÓC (DEAD-ZONE). Chọn màn clearJelly
 /// thế giới 6-8 (≡3 mod 6): 111, 129.
-const Set<int> kDeadZoneLevels = {111, 129};
+const Set<int> kDeadZoneLevels = {111, 129, 159, 177};
 
 /// Dòng chảy (Gravity Streams) cho vài màn showcase.
 const Map<int, List<String>> kFlowLevels = {
@@ -129,15 +143,23 @@ const Map<int, List<String>> kFlowLevels = {
   // 139 — 2 band ngược chiều (mạch điện)
   139: ['vvvvvvvv', '>>>>>>>v', 'vvvvvvvv', 'vvvvvvvv', 'v<<<<<<<', 'vvvvvvvv',
         'vvvvvvvv', 'vvvvvvvv'],
+  // Wave 20.2 — Thế giới 9-10: 3 band phức tạp hơn.
+  // 169 — 3 band xen kẽ (phải/trái/phải): khó định hướng match hơn 139.
+  169: ['vvvvvvvv', 'vvvvvvvv', '>>>>>>>v', 'vvvvvvvv', 'v<<<<<<<', 'vvvvvvvv',
+        '>>>>>>>v', 'vvvvvvvv'],
+  // 181 — trọng lực ngược ở trung tâm (up): band giữa đẩy gem LÊN, gem "thoát"
+  // qua mép bàn và spawn lại bên dưới → vòng lặp chiến thuật độc đáo.
+  181: ['vvvvvvvv', 'vvvvvvvv', 'vvvvvvvv', '^^^^^^^^', '^^^^^^^^', 'vvvvvvvv',
+        'vvvvvvvv', 'vvvvvvvv'],
 };
 
 /// Các màn clearObstacle (index ≡ 0 mod 6) chuyển obstacle sang LICORICE (Wave 14):
 /// khoá 2 lớp, cần 2 lần clear-kề/ô. Chọn 2 màn (mid + late game).
-const Set<int> kLicoriceLevels = {48, 84};
+const Set<int> kLicoriceLevels = {48, 84, 156};
 
 /// Các màn clearObstacle chuyển sang JAM (mứt lan, Wave 14): lan như chocolate
 /// nhưng là mục tiêu phải dọn (đếm lớp ban đầu). Chọn 2 màn (mid + late).
-const Set<int> kJamLevels = {54, 90};
+const Set<int> kJamLevels = {54, 90, 162};
 
 /// Số lớp khởi đầu của 1 ô licorice (cần bấy nhiêu lần clear-kề để gỡ).
 const int kLicoriceLayers = 2;
@@ -153,12 +175,12 @@ const Set<int> kSpreadLevels = {55, 73, 91};
 /// Các màn (vốn là score) được CHUYỂN sang mục tiêu hỗn hợp Order (Wave 10):
 /// thu đủ 3 màu gem cùng lúc. Chọn 3 màn rải đều các thế giới (không trùng
 /// kSpreadLevels). Giữ NGUYÊN kRotatingObjectives → không xô lệch màn khác.
-const Set<int> kOrderLevels = {37, 67, 97};
+const Set<int> kOrderLevels = {37, 67, 97, 157, 187};
 
 /// Các màn score có HAZARD "bom đếm ngược" (Wave 10): mục tiêu vẫn là điểm,
 /// nhưng vài quả bom đếm lùi mỗi lượt — để 1 quả về 0 (chưa tháo) → THUA ngay.
 /// Tháo bom = clear gem nằm trên ô bom. Chọn màn score không trùng order/spread.
-const Set<int> kBombLevels = {31, 49, 79};
+const Set<int> kBombLevels = {31, 49, 79, 151, 199};
 
 /// Số quả bom seed mỗi màn bomb + số lượt đếm ngược khởi đầu (rộng rãi cho công bằng).
 const int kBombCount = 3;
@@ -315,8 +337,8 @@ LevelConfig _buildOrderLevel(int index, int rows, int cols, int colorCount,
   );
 }
 
-/// Tổng số màn. Wave 15: mở rộng 100 → 150 (thế giới 6-8, weave cơ chế mới).
-const int kLevelCount = 150;
+/// Tổng số màn. Wave 20.2: mở rộng 150 → 200 (thế giới 9-10, weave tiếp).
+const int kLevelCount = 200;
 
 /// Một "thế giới" (khu vực) gom [kWorldSize] màn, có chủ đề neon riêng.
 class WorldConfig {
@@ -337,8 +359,8 @@ class WorldConfig {
 /// Mỗi thế giới gồm 20 màn.
 const int kWorldSize = 20;
 
-/// 8 thế giới chủ đề neon (150 màn). Thế giới 6-8 (Wave 15): 101-120 / 121-140 /
-/// 141-150 (thế giới cuối ngắn hơn — đỉnh cao thử thách).
+/// 10 thế giới chủ đề neon (200 màn). Wave 15: TG 6-8 (101-150). Wave 20.2:
+/// TG 9 "Void Circuit" (151-170) và TG 10 "Zenith Neon" (171-200, 30 màn finale).
 const List<WorldConfig> kWorlds = [
   WorldConfig(index: 1, name: 'Cyan Nebula', startLevel: 1, endLevel: 20),
   WorldConfig(index: 2, name: 'Magenta Pulse', startLevel: 21, endLevel: 40),
@@ -348,6 +370,8 @@ const List<WorldConfig> kWorlds = [
   WorldConfig(index: 6, name: 'Prism Maze', startLevel: 101, endLevel: 120),
   WorldConfig(index: 7, name: 'Flux Stream', startLevel: 121, endLevel: 140),
   WorldConfig(index: 8, name: 'Neon Apex', startLevel: 141, endLevel: 150),
+  WorldConfig(index: 9, name: 'Void Circuit', startLevel: 151, endLevel: 170),
+  WorldConfig(index: 10, name: 'Zenith Neon', startLevel: 171, endLevel: 200),
 ];
 
 // ---------------------------------------------------------------------------

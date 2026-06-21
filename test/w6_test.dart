@@ -98,7 +98,10 @@ void main() {
     });
 
     test('trigger bắt đầu màn: intro ở startLevel, mid ở giữa, null nơi khác', () {
+      // Chỉ kiểm kStoryWorlds đầu (có đúng kWorldSize = 20 màn).
+      // Thế giới 8-10 có kích thước khác → mid point của W8 (151) = startLevel W9.
       for (final w in kWorlds) {
+        if (w.index > kStoryWorlds) break;
         expect(storyStartTriggerFor(w.startLevel), StoryTrigger.intro);
         expect(storyStartTriggerFor(w.startLevel + kWorldSize ~/ 2),
             StoryTrigger.mid);

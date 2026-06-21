@@ -222,6 +222,8 @@ extension GameControllerScoring on GameController {
       }
       return null;
     }
+    // Zen: không có "win" và KHÔNG "thua" — chơi mãi mãi. Người chơi tự thoát.
+    if (isZen.value) return null;
     // Endless: không có "win"; thua khi hết lượt. KHÔNG đụng win-streak/level.
     if (isEndless.value) {
       if (movesLeft.value <= 0) {

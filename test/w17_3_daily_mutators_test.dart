@@ -359,4 +359,37 @@ void main() {
       }
     });
   });
+
+  group('Mutator isolation: KHÔNG leak sang side mode', () {
+    late GameController c;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      Get.reset();
+      final prefs = await SharedPreferences.getInstance();
+      Get.put(StorageService(prefs));
+      c = Get.put(GameController());
+    });
+
+    tearDown(Get.reset);
+
+    test('startColorRush() sau startDaily() → level không có mutator Daily', () {
+      c.startDaily();
+      // Daily bật flag từ mutator (ví dụ doubleCombo hoặc noSpecial tuỳ ngày)
+      final dailyDoubleCombo = c.level.doubleCombo;
+      final dailyNoSpecial = c.level.noSpecial;
+      final dailyColorCount = c.level.colorCount;
+
+      // Chuyển sang ColorRush (side mode)
+      c.startColorRush();
+      expect(c.isColorRush.value, isTrue);
+      // Level ColorRush KHÔNG được giữ bất kỳ flag mutator nào từ Daily
+      expect(c.level.doubleCombo, isFalse,
+          reason: 'ColorRush không có doubleCombo (dailyDoubleCombo=$dailyDoubleCombo)');
+      expect(c.level.noSpecial, isFalse,
+          reason: 'ColorRush không có noSpecial (dailyNoSpecial=$dailyNoSpecial)');
+      expect(c.level.colorCount, 6,
+          reason: 'ColorRush dùng 6 màu (daily colorCount=$dailyColorCount)');
+    });
+  });
 }

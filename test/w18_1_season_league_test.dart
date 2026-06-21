@@ -189,4 +189,21 @@ void main() {
       expect(lc.playerRank, 1, reason: 'điểm vô địch → hạng 1');
     });
   });
+
+  group('Tích lũy điểm qua nhiều ván', () {
+    test('addWin nhiều lần → tổng đúng (không mất điểm)', () {
+      lc.addWin(3); // 3 sao
+      final p1 = lc.points.value;
+      lc.addWin(1); // 1 sao
+      final p2 = lc.points.value;
+      lc.addWin(2); // 2 sao
+      final p3 = lc.points.value;
+
+      expect(p2, greaterThan(p1), reason: 'thêm ván 2 → điểm tăng');
+      expect(p3, greaterThan(p2), reason: 'thêm ván 3 → điểm tăng');
+      // Tổng phải bằng đúng tổng điểm từng ván
+      final expected = seasonPointsForWin(3) + seasonPointsForWin(1) + seasonPointsForWin(2);
+      expect(p3, expected);
+    });
+  });
 }

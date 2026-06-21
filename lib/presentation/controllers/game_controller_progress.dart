@@ -9,6 +9,8 @@ extension GameControllerProgress on GameController {
       highScores[lv] = score.value;
       await _store.setInt(StorageKeys.highScore(lv), score.value);
     }
+    // Ghost: flush nước đi nếu score cải thiện (gọi trước khi clear _moveLog)
+    if (win) await _flushGhostIfBetter(lv, score.value);
     if (win) {
       final prevStar = stars[lv] ?? 0;
       if (lastStars > prevStar) {
@@ -51,6 +53,9 @@ extension GameControllerProgress on GameController {
       StorageKeys.dailyLastClaim,
       StorageKeys.dailyStreak,
       StorageKeys.maxDay,
+      StorageKeys.dailyChLastDone, // H3 fix: daily challenge streak reset
+      StorageKeys.dailyChStreak,
+      StorageKeys.dailyChBestStreak,
       StorageKeys.lives,
       StorageKeys.livesRegenAt,
       StorageKeys.winStreak,
@@ -63,6 +68,7 @@ extension GameControllerProgress on GameController {
       StorageKeys.viewMode,
       StorageKeys.endlessHigh,
       StorageKeys.survivalHigh,
+      StorageKeys.zenHigh,
       StorageKeys.sideModeDay,
       StorageKeys.sideModeWins,
       StorageKeys.bpXp,
@@ -91,6 +97,8 @@ extension GameControllerProgress on GameController {
       StorageKeys.tournamentPoints,
       StorageKeys.tournamentClaimedWeek,
       StorageKeys.leagueMigrated, // W18.1
+      StorageKeys.ccCoinsStart, // H2 fix: Challenge Card coin baseline
+      StorageKeys.ccWeekIdx,
     ];
     for (final k in scalarKeys) {
       await _store.remove(k);
@@ -141,6 +149,21 @@ extension GameControllerProgress on GameController {
       await _store.remove(StorageKeys.puzzleStars(p.id));
     }
     await _store.remove(StorageKeys.puzzleUnlocked);
+    // W20.3 — xoá ghost replay + progression tree nodes + challenge card progress.
+    for (final lv in kLevels) {
+      await _store.remove(StorageKeys.ghostMoves(lv.index));
+      await _store.remove(StorageKeys.ghostScore(lv.index));
+    }
+    // H3 fix: xoá Progression Tree nodes trên đĩa (không thì vẫn unlocked sau reset)
+    for (final n in kPtNodes) {
+      await _store.remove(StorageKeys.ptUnlocked(n.id));
+    }
+    // Bug fix: ccProgress/ccClaimed không clear qua .maybe?.resetState() nếu controller
+    // chưa đăng ký → xóa trực tiếp đây để đảm bảo sạch dù screen chưa mở.
+    for (int i = 0; i < 3; i++) {
+      await _store.remove(StorageKeys.ccProgress(i));
+      await _store.remove(StorageKeys.ccClaimed(i));
+    }
 
     // 2) Xoá map in-memory rồi nạp lại GIÁ TRỊ MẶC ĐỊNH từ đĩa (đã trống) — đưa
     //    coins/booster/lives… về đúng như lần cài đầu thay vì giữ giá trị cũ.
@@ -159,6 +182,8 @@ extension GameControllerProgress on GameController {
     PiggyController.maybe?.resetState();
     SideModeRecordController.maybe?.resetState();
     PuzzleController.maybe?.resetState();
+    ProgressionTreeController.maybe?.resetState();
+    ChallengeCardController.maybe?.resetState();
 
     dlog(
       'resetProgress DONE unlocked=${unlockedLevel.value} '

@@ -8,9 +8,11 @@ import '../../data/side_mode_records.dart';
 import '../../data/story.dart';
 import '../../game/neon_jewel_game.dart';
 import 'battle_pass_controller.dart';
+import 'challenge_card_controller.dart';
 import 'collection_controller.dart';
 import 'game_controller.dart';
 import 'piggy_controller.dart';
+import 'progression_tree_controller.dart';
 import 'season_league_controller.dart';
 import 'side_mode_record_controller.dart';
 import 'story_controller.dart';
@@ -179,17 +181,22 @@ class GameScreenController extends GetxController {
         combo: gameCtrl.runMaxCombo.value,
       );
       if (result == 'win') {
-        // W18.1: Mùa giải (gộp Mùa + Giải đấu) — 1 điểm/thắng nuôi cả 2 trục
-        // (mốc + hạng). Mọi thắng đều tính (như Season cũ).
+        // W18.1: Mùa giải (gộp Mùa + Giải đấu) — 1 điểm/thắng nuôi cả 2 trục.
         SeasonLeagueController.maybe?.addWin(gameCtrl.lastStars);
-        // Wave 14 — meta giữ chân: album sưu tập + heo đất. CHỈ tính LẦN ĐẦU
-        // thắng màn (first-clear) → chống farm thắng lại màn dễ.
+        // Wave 14 — meta giữ chân: album sưu tập + heo đất. Chỉ first-clear.
         if (gameCtrl.lastFirstClear) {
           CollectionController.maybe?.addWin(gameCtrl.lastStars);
           PiggyController.maybe?.addWin(gameCtrl.lastStars);
         }
+        // W20.3 — Challenge Card campaign win + Progression Tree.
+        ChallengeCardController.maybe?.onCampaignWin();
+        ChallengeCardController.maybe?.refreshCoins();
+        ProgressionTreeController.maybe?.checkAndUnlock();
       }
     } else {
+      // W20.3 — Side mode play count cho Challenge Card.
+      final modeKey = _sideModeKey(gameCtrl);
+      if (modeKey != null) ChallengeCardController.maybe?.onSideModePlayed(modeKey);
       // W19.1 — kỷ lục chế độ phụ (Endless/Boss/Rhythm/Gravity/Soda/ColorRush/
       // Survival/Labyrinth). Daily/Versus trả null → bỏ qua. Banner ăn mừng nếu
       // phá kỷ lục / mở mốc (game còn sống trong 350ms trước overlay).
@@ -212,6 +219,17 @@ class GameScreenController extends GetxController {
     });
   }
 
+  /// Trả về i18n key mode phụ để Challenge Card nhận biết (hoặc null).
+  static String? _sideModeKey(GameController g) {
+    if (g.isEndless.value) return 'endless_short';
+    if (g.isBoss.value) return 'boss_short';
+    if (g.isRhythm.value) return 'rhythm_short';
+    if (g.isGravity.value) return 'gravity_short';
+    if (g.isSoda.value) return 'soda_short';
+    if (g.isColorRush.value) return 'color_rush_short';
+    return null; // Daily/Survival/Labyrinth/Puzzle/Versus không track
+  }
+
   // --- điều khiển overlay ---
   void confirmQuit() {
     if (ui.value == GameUi.playing) ui.value = GameUi.quit;
@@ -221,10 +239,23 @@ class GameScreenController extends GetxController {
     if (ui.value == GameUi.quit) ui.value = GameUi.playing;
   }
 
+  bool _zenResultShown = false;
+
   void quit() {
+    // Zen Mode: lần đầu quit → lưu kỷ lục + hiện result panel thay vì về Home ngay.
+    if (gameCtrl.isZen.value && !_zenResultShown) {
+      gameCtrl.endZenSession();
+      _zenResultShown = true;
+      ui.value = GameUi.lose; // dùng lose panel cho Zen result
+      return;
+    }
+    _leaveGame();
+  }
+
+  void _leaveGame() {
     WakelockPlus.disable();
     Get.delete<GameScreenController>();
-    Get.back(); // rời màn chơi
+    Get.back();
   }
 
   void again() {
@@ -273,6 +304,14 @@ class GameScreenController extends GetxController {
     if (gameCtrl.isSurvival.value) {
       // Sinh tồn: chơi lại không cần mạng (chế độ phụ).
       gameCtrl.startSurvival();
+      ui.value = GameUi.playing;
+      _newGame();
+      return;
+    }
+    if (gameCtrl.isZen.value) {
+      // Zen Mode: chơi lại không cần mạng.
+      _zenResultShown = false;
+      gameCtrl.startZen();
       ui.value = GameUi.playing;
       _newGame();
       return;

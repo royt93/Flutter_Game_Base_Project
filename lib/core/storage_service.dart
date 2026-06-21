@@ -37,6 +37,7 @@ class StorageKeys {
 
   // Wave 6 — Endless mode (high score riêng)
   static const String endlessHigh = 'endless_high';
+  static const String zenHigh = 'zen_high'; // W20.4
 
   // Wave 15 — Survival mode (kỷ lục điểm sống sót)
   static const String survivalHigh = 'survival_high';
@@ -129,6 +130,21 @@ class StorageKeys {
   // W18.3 — Nâng cấp booster vĩnh viễn (coin-sink). 1 = đã nâng cấp.
   static const String upgHammer = 'upg_hammer';
   static const String upgMoves = 'upg_moves';
+
+  // Wave 20.3 — Ghost Replay: nước đi tốt nhất theo màn (campaign only).
+  // Format: "r1c1r2c2" × N moves, ghép liền (mỗi move = 4 char, coord 0-7).
+  static String ghostMoves(int level) => 'gm_mv_$level';
+  static String ghostScore(int level) => 'gm_sc_$level';
+
+  // Wave 20.3 — Progression Tree: nodes đã mở khoá.
+  static String ptUnlocked(String nodeId) => 'pt_node_$nodeId';
+
+  // Wave 20.3 — Challenge Card: thử thách tuần.
+  static const String ccWeekIdx = 'cc_week'; // tuần hiện tại (epochDay~/7)
+  static String ccProgress(int i) => 'cc_prog_$i'; // tiến trình thử thách #i
+  static String ccClaimed(int i) => 'cc_claimed_$i'; // 1 = đã claim
+  // H2 fix: baseline xu đầu tuần (dùng bởi ChallengeCardController.refreshCoins)
+  static const String ccCoinsStart = 'cc_coins_start';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

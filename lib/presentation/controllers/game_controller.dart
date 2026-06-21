@@ -9,6 +9,7 @@ import '../../data/battle_pass.dart';
 import '../../data/collection.dart';
 import '../../data/cosmetics.dart';
 import '../../data/levels.dart';
+import '../../data/progression_tree.dart';
 import '../../data/puzzles.dart';
 import '../../data/season.dart';
 import '../../data/side_mode_records.dart';
@@ -18,8 +19,10 @@ import '../../logic/gem_data.dart';
 import '../../logic/rhythm_clock.dart';
 import 'achievement_controller.dart';
 import 'battle_pass_controller.dart';
+import 'challenge_card_controller.dart';
 import 'collection_controller.dart';
 import 'piggy_controller.dart';
+import 'progression_tree_controller.dart';
 import 'puzzle_controller.dart';
 import 'season_league_controller.dart';
 import 'side_mode_record_controller.dart';
@@ -69,7 +72,8 @@ class GameController extends GetxController {
   // Bom đếm ngược (Wave 10) — hazard trên vài màn score. Engine sở hữu lưới bom,
   // đẩy trạng thái vào các Rx này cho HUD. bombExploded=true → checkEnd cho THUA.
   final RxInt bombsLeft = 0.obs; // số bom còn sống trên bàn
-  final RxInt bombMinTimer = 0.obs; // đếm ngược NHỎ NHẤT còn lại (cho HUD cảnh báo)
+  final RxInt bombMinTimer =
+      0.obs; // đếm ngược NHỎ NHẤT còn lại (cho HUD cảnh báo)
   final RxBool bombExploded = false.obs; // 1 bom về 0 do đếm ngược → thua
 
   // Dispenser (Wave 11): đếm ngược tới lần PHÁT special kế (engine sync cho HUD).
@@ -80,10 +84,15 @@ class GameController extends GetxController {
   final RxInt endlessStage = 1.obs; // tăng theo điểm → khó hơn + đổi màu
   final RxInt endlessHigh = 0.obs; // high score riêng của Endless
   LevelConfig? _endlessCfg; // cấu hình màn endless (không thuộc kLevels)
-  final RxString endlessEvent = ''.obs; // tên event hiện tại: 'moves'/'scoreX2'/'gems'/''
+  final RxString endlessEvent =
+      ''.obs; // tên event hiện tại: 'moves'/'scoreX2'/'gems'/''
   int _endlessScoreX2Remaining = 0;
   bool _endlessGemRainPending = false;
   int _endlessLastEventCount = 0;
+
+  // --- Zen Mode (W20.4) — không thua, tích điểm tự do ---
+  final RxBool isZen = false.obs;
+  final RxInt zenHigh = 0.obs;
 
   // --- Boss neon (Wave 8) ---
   final RxBool isBoss = false.obs;
@@ -109,7 +118,8 @@ class GameController extends GetxController {
   final RxInt colorRushHot = 0.obs; // index GemColor đang "nóng"
   int _colorRushMoveCount = 0;
   LevelConfig? _colorRushCfg;
-  final RxInt colorRushStreak = 0.obs; // streak clear màu nóng liên tiếp (0..kColorRushMaxStreak)
+  final RxInt colorRushStreak =
+      0.obs; // streak clear màu nóng liên tiếp (0..kColorRushMaxStreak)
   bool _colorRushHotClearedThisMove = false;
 
   // --- Soda / Ngập nước (Wave 14) — clear gem → mực nước dâng, đẩy chai nổi lên ---
@@ -137,8 +147,10 @@ class GameController extends GetxController {
   final RxBool isSurvival = false.obs;
   LevelConfig? _survivalCfg;
   final RxInt survivalHigh = 0.obs; // điểm cao nhất (kỷ lục Survival)
-  final RxBool tideOverflow = false.obs; // engine set true khi nước chạm đỉnh → thua
-  final RxDouble tideLevel = 0.0.obs; // 0..1 mức nguy hiểm (cho HUD), engine cập nhật
+  final RxBool tideOverflow =
+      false.obs; // engine set true khi nước chạm đỉnh → thua
+  final RxDouble tideLevel =
+      0.0.obs; // 0..1 mức nguy hiểm (cho HUD), engine cập nhật
 
   // --- Mê cung neon (Labyrinth — Wave 15): đưa tinh thể qua mê cung xuống đáy ---
   final RxBool isLabyrinth = false.obs;
@@ -182,6 +194,14 @@ class GameController extends GetxController {
 
   /// Ngưỡng combo để gây sát thương GẤP ĐÔI (đánh đúng "phase yếu").
   static const int bossWeakCombo = 4;
+
+  // --- Ghost Replay (W20.3) ---
+  final RxBool isGhostMode = false.obs;
+  final RxInt ghostScore = 0.obs; // điểm ghost run đã lưu
+  final RxInt ghostStep = 0.obs; // bước replay hiện tại
+  List<String> _ghostMoves =
+      []; // danh sách nước đi ghost (mỗi item "r1c1r2c2")
+  final List<String> _moveLog = []; // log nước đi ván hiện tại (ghi khi chơi)
 
   // --- Daily reward ---
   final RxInt dailyStreak = 0.obs;
@@ -237,6 +257,7 @@ class GameController extends GetxController {
   /// Tập id skin gem / theme bàn đã sở hữu (item miễn phí luôn có sẵn).
   final RxSet<String> ownedSkins = <String>{}.obs;
   final RxSet<String> ownedThemes = <String>{}.obs;
+
   /// Id skin / theme đang trang bị (áp qua [ActiveCosmetics]).
   final RxString selectedSkin = ''.obs;
   final RxString selectedTheme = ''.obs;
@@ -291,8 +312,10 @@ class GameController extends GetxController {
   void _load() {
     unlockedLevel.value = _store.getInt(StorageKeys.unlockedLevel, def: 1);
     // Xu khởi điểm (lần đầu cài/chưa có key): debug 10000 (dễ test mua), release 100.
-    coins.value =
-        _store.getInt(StorageKeys.coins, def: kDebugMode ? 10000 : 100);
+    coins.value = _store.getInt(
+      StorageKeys.coins,
+      def: kDebugMode ? 10000 : 100,
+    );
     boosterHammer.value = _store.getInt(StorageKeys.bHammer, def: 2);
     boosterMoves.value = _store.getInt(StorageKeys.bMoves, def: 2);
     boosterSwap.value = _store.getInt(StorageKeys.bSwap, def: 1);
@@ -324,6 +347,7 @@ class GameController extends GetxController {
     coinsEarnedTotal.value = _store.getInt(StorageKeys.coinsEarned, def: 0);
     endlessHigh.value = _store.getInt(StorageKeys.endlessHigh, def: 0);
     survivalHigh.value = _store.getInt(StorageKeys.survivalHigh, def: 0);
+    zenHigh.value = _store.getInt(StorageKeys.zenHigh, def: 0);
     _migrateShardsToCoins(); // Wave 9: shard cũ → xu (×10), chạy 1 lần
     _loadCosmetics(); // Wave 9: skin gem / theme bàn đã sở hữu + đang chọn
     refillLives();
@@ -358,6 +382,7 @@ class GameController extends GetxController {
       isLabyrinth.value ||
       isDaily.value ||
       isPuzzle.value ||
+      isZen.value ||
       isVersus.value;
 
   /// Đặt cờ chế độ ĐỘC QUYỀN (đúng 1 mode bật, hoặc tất cả false = màn thường)
@@ -373,6 +398,7 @@ class GameController extends GetxController {
     bool labyrinth = false,
     bool daily = false,
     bool puzzle = false,
+    bool zen = false,
   }) {
     isEndless.value = endless;
     isBoss.value = boss;
@@ -384,6 +410,11 @@ class GameController extends GetxController {
     isLabyrinth.value = labyrinth;
     isDaily.value = daily;
     isPuzzle.value = puzzle;
+    isZen.value = zen;
+    isGhostMode.value = false;
+    ghostScore.value = 0;
+    ghostStep.value = 0;
+    _ghostMoves = [];
     isVersus.value =
         false; // versus chỉ bật qua _initVersus; mọi start* khác tắt
     // Wave 16 fix: pity là DDA của MÀN THƯỜNG (đọc theo currentLevel ở startLevel).
@@ -404,6 +435,7 @@ class GameController extends GetxController {
       _puzzleDef = null;
     }
     _versusCfg = null;
+    _moveLog.clear(); // H1 fix: xóa log nước đi từ ván cũ khi bắt đầu mode mới
   }
 
   /// Reset state CHUNG của 1 ván mới (mọi mode dùng) → khỏi lặp 12 dòng/hàm.
@@ -428,7 +460,8 @@ class GameController extends GetxController {
     bombsLeft.value = 0;
     bombMinTimer.value = 0;
     bombExploded.value = false;
-    dispenserCountdown.value = 0; // engine seed lại ở onLoad nếu màn có dispenser
+    dispenserCountdown.value =
+        0; // engine seed lại ở onLoad nếu màn có dispenser
     tideOverflow.value = false; // Triều dâng (Survival): reset trạng thái ngập
     tideLevel.value = 0.0;
     _resolved = false;

@@ -204,4 +204,8 @@ class ActiveCosmetics {
 
   static GemSkin gemSkin = kGemSkins.first;
   static BoardTheme boardTheme = kBoardThemes.first;
+
+  // Wave 20.3 — Progression Tree effects
+  static double particleBurstMultiplier = 1.0; // 1.0/1.5/2.0 theo node radiant/blazing
+  static bool prestigeUnlocked = false; // node prestige
 }

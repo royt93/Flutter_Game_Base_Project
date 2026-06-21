@@ -274,5 +274,55 @@ void main() {
       expect(res.spawns.length, 1);
       expect(res.spawns.first.r, 0);
     });
+
+    // D fix: explicit convergence test cho Flow 181 (rows 3-4 chảy UP).
+    // Down rows (0-2, 5-7) đóng vai trò SINK → gem thoát ra và refill bình thường.
+    test('Flow 181 (up-flow trung tâm) hội tụ, không vô hạn loop', () {
+      // Mô phỏng flow của màn 181: row 3-4 = UP, còn lại = DOWN.
+      final flow181 = [
+        'vvvvvvvv',
+        'vvvvvvvv',
+        'vvvvvvvv',
+        '^^^^^^^^',
+        '^^^^^^^^',
+        'vvvvvvvv',
+        'vvvvvvvv',
+        'vvvvvvvv',
+      ];
+      final flowGrid = parseFlow(flow181);
+      CellKind kind(int r, int c) => CellKind.play;
+      FlowDir flowAt(int r, int c) => flowGrid[r][c];
+      // Bàn đầy (mọi ô có gem)
+      bool occ(int r, int c) => true;
+
+      // Gọi settle — phải hoàn thành (không throw, không timeout)
+      final res = settleBoardFlow(8, 8, kind, flowAt, occ);
+
+      // Với bàn đầy, không có gem di chuyển và không cần spawn
+      expect(res.moves, isEmpty,
+          reason: 'bàn đầy → không cần di chuyển gem');
+      expect(res.spawns, isEmpty,
+          reason: 'bàn đầy → không cần spawn mới');
+    });
+
+    test('Flow 181 bàn GẦN rỗng: hội tụ đầy đủ, spawn từ sources', () {
+      final flow181 = [
+        'vvvvvvvv', 'vvvvvvvv', 'vvvvvvvv', '^^^^^^^^',
+        '^^^^^^^^', 'vvvvvvvv', 'vvvvvvvv', 'vvvvvvvv',
+      ];
+      final flowGrid = parseFlow(flow181);
+      CellKind kind(int r, int c) => CellKind.play;
+      FlowDir flowAt(int r, int c) => flowGrid[r][c];
+      // Bàn trống hoàn toàn
+      bool occ(int r, int c) => false;
+
+      final res = settleBoardFlow(8, 8, kind, flowAt, occ);
+
+      // Phải có spawn cho mọi ô (64 source cells)
+      expect(res.spawns.length, 64,
+          reason: 'bàn trống → mỗi ô là source, cần 64 spawn');
+      // Không có moves (không gem nào cần dời)
+      expect(res.moves, isEmpty);
+    });
   });
 }

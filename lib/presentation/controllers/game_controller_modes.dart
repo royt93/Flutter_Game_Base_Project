@@ -21,6 +21,34 @@ extension GameControllerModes on GameController {
   }
 
   /// Bắt đầu chế độ Endless (thử thách tăng dần).
+  // ---------------------------------------------------------------------------
+  // Wave 20.4 — Zen Mode: không thua, tích điểm tự do
+  // ---------------------------------------------------------------------------
+
+  /// Bắt đầu Zen Mode — bàn 8×8, lượt vô hạn (999), KHÔNG kết thúc tự động.
+  /// Người chơi thoát bằng nút X → `endZenSession()` lưu kỷ lục.
+  void startZen() {
+    _enterMode(zen: true);
+    _resetRunState(
+      moves: 999,
+      target: 1 << 28, // unreachable — Zen không kết thúc tự động
+    );
+  }
+
+  /// Gọi khi người chơi thoát Zen Mode qua nút X: lưu high score + thưởng xu nhỏ.
+  void endZenSession() {
+    if (!isZen.value) return;
+    if (score.value > zenHigh.value) {
+      zenHigh.value = score.value;
+      unawaited(_store.setInt(StorageKeys.zenHigh, zenHigh.value));
+    }
+    // Thưởng xu theo điểm (nhỏ — Zen dễ farm, không giới hạn)
+    final reward = discountSideModeReward((score.value ~/ 1000).clamp(5, 50));
+    addCoins(reward);
+    lastCoinReward = reward;
+    lastStars = 0;
+  }
+
   void startEndless() {
     _endlessCfg = buildEndlessLevel();
     _enterMode(endless: true);
@@ -110,8 +138,10 @@ extension GameControllerModes on GameController {
     if (!isColorRush.value) return;
     _colorRushMoveCount++;
     if (_colorRushHotClearedThisMove) {
-      colorRushStreak.value =
-          (colorRushStreak.value + 1).clamp(0, kColorRushMaxStreak);
+      colorRushStreak.value = (colorRushStreak.value + 1).clamp(
+        0,
+        kColorRushMaxStreak,
+      );
     } else {
       colorRushStreak.value = 0;
     }
@@ -170,8 +200,10 @@ extension GameControllerModes on GameController {
     if (!isSoda.value || gems <= 0) return;
     sodaFill.value += gems;
     final target = level.sodaTarget;
-    sodaCollected.value =
-        (sodaFill.value ~/ kSodaFillPerBottle).clamp(0, target);
+    sodaCollected.value = (sodaFill.value ~/ kSodaFillPerBottle).clamp(
+      0,
+      target,
+    );
   }
 
   /// Soda: tiến độ mực nước 0..1 (cho overlay nước dâng).
@@ -312,4 +344,69 @@ extension GameControllerModes on GameController {
     if (isColorRush.value) return 4;
     return (1 + (currentLevel.value - 1) ~/ 20).clamp(1, 5);
   }
+
+  // ---------------------------------------------------------------------------
+  // Wave 20.3 — Ghost Replay
+  // ---------------------------------------------------------------------------
+
+  /// Ghi nhận 1 nước đi (được gọi từ engine khi swap hợp lệ ở màn campaign).
+  void recordMove(int r1, int c1, int r2, int c2) {
+    if (isSideMode || isGhostMode.value) return;
+    if (_moveLog.length >= 150) return; // cap
+    _moveLog.add('$r1$c1$r2$c2'); // format: "r1c1r2c2" (4 chars, coord 0-7)
+  }
+
+  /// Trả về nước đi ghost kế tiếp (r1,c1,r2,c2) hoặc null nếu hết / không ở ghost mode.
+  (int, int, int, int)? nextGhostMove() {
+    if (!isGhostMode.value) return null;
+    final step = ghostStep.value;
+    if (step >= _ghostMoves.length) return null;
+    final s = _ghostMoves[step];
+    if (s.length != 4) return null;
+    return (int.parse(s[0]), int.parse(s[1]), int.parse(s[2]), int.parse(s[3]));
+  }
+
+  /// Advance ghost step khi người chơi thực hiện 1 nước đi (bất kể đúng/sai ghost).
+  void advanceGhost() {
+    if (!isGhostMode.value) return;
+    final next = ghostStep.value + 1;
+    if (next <= _ghostMoves.length) ghostStep.value = next;
+  }
+
+  /// Bắt đầu màn [level] ở chế độ Ghost Replay.
+  ///
+  /// **Design intent**: Ghost mode là màn CAMPAIGN thật với ghost hint overlay —
+  /// KHÔNG phải side mode. Win/lose hoạt động bình thường: thắng → unlock màn
+  /// kế + win-streak; thua → trừ mạng. Ghost chỉ là visual guide (pulsing ring
+  /// trên 2 gem ghost sẽ swap). isGhostMode = true ngăn ghi đè ghost data mới
+  /// (recordMove returns early khi isGhostMode) để bảo toàn ghost gốc.
+  void startGhostMode(int level) {
+    startLevel(level);
+    final store = _store;
+    final movesStr = store.getString(StorageKeys.ghostMoves(level)) ?? '';
+    _ghostMoves = movesStr.isEmpty
+        ? []
+        : [
+            for (int i = 0; i + 4 <= movesStr.length; i += 4)
+              movesStr.substring(i, i + 4),
+          ];
+    ghostScore.value = store.getInt(StorageKeys.ghostScore(level));
+    ghostStep.value = 0;
+    isGhostMode.value = true;
+  }
+
+  /// Flush ghost: lưu moves khi win với score mới hơn.
+  Future<void> _flushGhostIfBetter(int level, int finishScore) async {
+    if (isSideMode || isGhostMode.value) return;
+    final existing = _store.getInt(StorageKeys.ghostScore(level));
+    if (finishScore > existing && _moveLog.isNotEmpty) {
+      await _store.setString(StorageKeys.ghostMoves(level), _moveLog.join());
+      await _store.setInt(StorageKeys.ghostScore(level), finishScore);
+    }
+    _moveLog.clear();
+  }
+
+  /// Có ghost data cho màn [level] không?
+  bool hasGhost(int level) =>
+      (_store.getString(StorageKeys.ghostMoves(level)) ?? '').isNotEmpty;
 }

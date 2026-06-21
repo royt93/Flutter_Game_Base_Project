@@ -3,9 +3,9 @@ import 'package:neon_jewels/data/levels.dart';
 
 void main() {
   group('kLevels — tính hợp lệ', () {
-    test('có đúng kLevelCount level (Wave 15: 150)', () {
+    test('có đúng kLevelCount level (Wave 20.2: 200)', () {
       expect(kLevels.length, kLevelCount);
-      expect(kLevels.length, 150);
+      expect(kLevels.length, 200);
     });
 
     test('index liên tục từ 1', () {
@@ -125,17 +125,20 @@ void main() {
       }
     });
 
-    test('mỗi thế giới ≤ kWorldSize màn (thế giới cuối có thể ngắn hơn)', () {
+    test('mỗi thế giới có ít nhất 10 màn và tối đa 50 màn', () {
+      // Wave 15: W8 = 10 màn (finale ngắn). Wave 20.2: W10 = 30 màn (finale dài).
+      // Quy tắc: mỗi world ≥10 và ≤50 màn; tổng = kLevelCount.
+      int total = 0;
       for (final w in kWorlds) {
         final size = w.endLevel - w.startLevel + 1;
-        expect(size, greaterThan(0));
-        expect(size, lessThanOrEqualTo(kWorldSize),
-            reason: 'thế giới ${w.index} có $size màn (> $kWorldSize)');
+        expect(size, greaterThanOrEqualTo(10),
+            reason: 'thế giới ${w.index} cần ≥10 màn');
+        expect(size, lessThanOrEqualTo(50),
+            reason: 'thế giới ${w.index} tối đa 50 màn');
+        total += size;
       }
-      // mọi thế giới TRỪ cuối phải đủ kWorldSize.
-      for (int i = 0; i < kWorlds.length - 1; i++) {
-        expect(kWorlds[i].endLevel - kWorlds[i].startLevel + 1, kWorldSize);
-      }
+      expect(total, kLevelCount,
+          reason: 'tổng màn từ kWorlds phải bằng kLevelCount');
     });
   });
 

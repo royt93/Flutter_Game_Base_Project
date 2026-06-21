@@ -59,20 +59,27 @@ class LevelSelectScreen extends StatelessWidget {
             : 'lives_none_msg'.tr;
         ScaffoldMessenger.of(ctx)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text(msg,
-                style: const TextStyle(fontFamily: 'Baloo2', fontSize: 13)),
-            backgroundColor: NeonTheme.panel,
-            behavior: SnackBarBehavior.floating,
-          ));
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                msg,
+                style: const TextStyle(fontFamily: 'Baloo2', fontSize: 13),
+              ),
+              backgroundColor: NeonTheme.panel,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
       }
       return;
     }
     // cốt truyện intro/mid trước khi vào màn (chỉ lần đầu mỗi beat)
     final t = storyStartTriggerFor(index);
     if (t != null &&
-        StoryController.to.maybeShow(t, worldOfLevel(index).index,
-            onComplete: () => _afterStory(ctrl, index))) {
+        StoryController.to.maybeShow(
+          t,
+          worldOfLevel(index).index,
+          onComplete: () => _afterStory(ctrl, index),
+        )) {
       return;
     }
     _afterStory(ctrl, index);
@@ -93,6 +100,11 @@ class LevelSelectScreen extends StatelessWidget {
     Get.to(() => const GameScreen());
   }
 
+  void _playGhost(GameController ctrl, int index) {
+    ctrl.startGhostMode(index);
+    Get.to(() => const GameScreen());
+  }
+
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.find<GameController>();
@@ -101,75 +113,97 @@ class LevelSelectScreen extends StatelessWidget {
       body: NeonBg(
         child: Stack(
           children: [
-          SafeArea(
-          child: Column(
-            children: [
-              NeonAppBar(
-                title: 'select_level'.tr,
-                color: NeonTheme.cyan,
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.map_rounded, color: NeonTheme.cyan),
-                    tooltip: 'world_map'.tr,
-                    onPressed: () {
-                      // chủ động đổi style → lưu local (world map)
-                      StorageService.to.setInt(StorageKeys.viewMode, 0);
-                      Get.off(() => const WorldMapScreen());
-                    },
-                  ),
-                  CoinChip(ctrl),
-                ],
-              ),
-              Expanded(
-                child: Obx(() {
-                  final current =
-                      ctrl.unlockedLevel.value.clamp(1, kLevels.length);
-                  return CustomScrollView(
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(NeonTheme.s24,
-                              NeonTheme.s8, NeonTheme.s24, NeonTheme.s16),
-                          child: _featured(ctrl, current),
+            SafeArea(
+              child: Column(
+                children: [
+                  NeonAppBar(
+                    title: 'select_level'.tr,
+                    color: NeonTheme.cyan,
+                    actions: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.map_rounded,
+                          color: NeonTheme.cyan,
                         ),
+                        tooltip: 'world_map'.tr,
+                        onPressed: () {
+                          // chủ động đổi style → lưu local (world map)
+                          StorageService.to.setInt(StorageKeys.viewMode, 0);
+                          Get.off(() => const WorldMapScreen());
+                        },
                       ),
-                      // gom màn theo từng thế giới (20 màn / thế giới)
-                      for (final w in kWorlds) ...[
-                        SliverToBoxAdapter(child: _worldHeader(ctrl, w, current)),
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(NeonTheme.s24, 0,
-                              NeonTheme.s24, NeonTheme.s16),
-                          sliver: SliverGrid(
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              mainAxisSpacing: NeonTheme.s8,
-                              crossAxisSpacing: NeonTheme.s8,
-                            ),
-                            delegate: SliverChildBuilderDelegate(
-                              (context, i) {
-                                final lv = kLevels[w.startLevel - 1 + i];
-                                return _miniTile(ctrl, lv, lv.index <= current,
-                                    lv.index == current);
-                              },
-                              childCount: w.endLevel - w.startLevel + 1,
+                      CoinChip(ctrl),
+                    ],
+                  ),
+                  Expanded(
+                    child: Obx(() {
+                      final current = ctrl.unlockedLevel.value.clamp(
+                        1,
+                        kLevels.length,
+                      );
+                      return CustomScrollView(
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                NeonTheme.s24,
+                                NeonTheme.s8,
+                                NeonTheme.s24,
+                                NeonTheme.s16,
+                              ),
+                              child: _featured(ctrl, current),
                             ),
                           ),
-                        ),
-                      ],
-                      const SliverToBoxAdapter(
-                          child: SizedBox(height: NeonTheme.s16)),
-                    ],
-                  );
-                }),
+                          // gom màn theo từng thế giới (20 màn / thế giới)
+                          for (final w in kWorlds) ...[
+                            SliverToBoxAdapter(
+                              child: _worldHeader(ctrl, w, current),
+                            ),
+                            SliverPadding(
+                              padding: const EdgeInsets.fromLTRB(
+                                NeonTheme.s24,
+                                0,
+                                NeonTheme.s24,
+                                NeonTheme.s16,
+                              ),
+                              sliver: SliverGrid(
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 4,
+                                      mainAxisSpacing: NeonTheme.s8,
+                                      crossAxisSpacing: NeonTheme.s8,
+                                    ),
+                                delegate: SliverChildBuilderDelegate((
+                                  context,
+                                  i,
+                                ) {
+                                  final lv = kLevels[w.startLevel - 1 + i];
+                                  return _miniTile(
+                                    ctrl,
+                                    lv,
+                                    lv.index <= current,
+                                    lv.index == current,
+                                  );
+                                }, childCount: w.endLevel - w.startLevel + 1),
+                              ),
+                            ),
+                          ],
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: NeonTheme.s16),
+                          ),
+                        ],
+                      );
+                    }),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        Obx(() => pg.open.value
-            ? _pregameOverlay(ctrl, pg)
-            : const SizedBox.shrink()),
-          const StoryOverlay(),
+            ),
+            Obx(
+              () => pg.open.value
+                  ? _pregameOverlay(ctrl, pg)
+                  : const SizedBox.shrink(),
+            ),
+            const StoryOverlay(),
           ],
         ),
       ),
@@ -188,42 +222,48 @@ class LevelSelectScreen extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Obx(() => _pregameOption(
-                  icon: Icons.av_timer_rounded,
-                  color: NeonTheme.lime,
-                  label: 'pregame_moves'.tr,
-                  count: ctrl.boosterMoves.value,
-                  selected: pg.useMoves.value,
-                  onTap: pg.toggleMoves,
-                )),
+            Obx(
+              () => _pregameOption(
+                icon: Icons.av_timer_rounded,
+                color: NeonTheme.lime,
+                label: 'pregame_moves'.tr,
+                count: ctrl.boosterMoves.value,
+                selected: pg.useMoves.value,
+                onTap: pg.toggleMoves,
+              ),
+            ),
             const SizedBox(height: NeonTheme.s8),
-            Obx(() => _pregameOption(
-                  icon: Icons.gavel_rounded,
-                  color: NeonTheme.orange,
-                  label: 'pregame_hammer'.tr,
-                  count: ctrl.boosterHammer.value,
-                  selected: pg.armHammer.value,
-                  onTap: pg.toggleHammer,
-                )),
+            Obx(
+              () => _pregameOption(
+                icon: Icons.gavel_rounded,
+                color: NeonTheme.orange,
+                label: 'pregame_hammer'.tr,
+                count: ctrl.boosterHammer.value,
+                selected: pg.armHammer.value,
+                onTap: pg.toggleHammer,
+              ),
+            ),
           ],
         ),
         actions: [
           NeonDialogAction(
-              label: 'pregame_skip'.tr,
-              color: NeonTheme.cyan,
-              onTap: () {
-                pg.useMoves.value = false;
-                pg.armHammer.value = false;
-                pg.start();
-                _enter(ctrl, pg.level.value);
-              }),
+            label: 'pregame_skip'.tr,
+            color: NeonTheme.cyan,
+            onTap: () {
+              pg.useMoves.value = false;
+              pg.armHammer.value = false;
+              pg.start();
+              _enter(ctrl, pg.level.value);
+            },
+          ),
           NeonDialogAction(
-              label: 'play_now'.tr,
-              color: NeonTheme.lime,
-              onTap: () {
-                pg.start();
-                _enter(ctrl, pg.level.value);
-              }),
+            label: 'play_now'.tr,
+            color: NeonTheme.lime,
+            onTap: () {
+              pg.start();
+              _enter(ctrl, pg.level.value);
+            },
+          ),
         ],
       ),
     );
@@ -248,36 +288,41 @@ class LevelSelectScreen extends StatelessWidget {
               : NeonTheme.panel.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-              color: owned ? color : Colors.white24,
-              width: selected ? 2.5 : 1.4),
+            color: owned ? color : Colors.white24,
+            width: selected ? 2.5 : 1.4,
+          ),
           boxShadow: selected ? NeonTheme.glow(color, blur: 10) : null,
         ),
-        child: Row(children: [
-          Icon(icon, color: owned ? color : Colors.white38, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(label,
+        child: Row(
+          children: [
+            Icon(icon, color: owned ? color : Colors.white38, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
                 style: TextStyle(
                   color: owned ? Colors.white : Colors.white38,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                )),
-          ),
-          Text('x$count',
+                ),
+              ),
+            ),
+            Text(
+              'x$count',
               style: TextStyle(
                 color: owned ? color : Colors.white38,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
-              )),
-          const SizedBox(width: 6),
-          Icon(
-            selected
-                ? Icons.check_circle_rounded
-                : Icons.circle_outlined,
-            color: selected ? color : Colors.white30,
-            size: 18,
-          ),
-        ]),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+              color: selected ? color : Colors.white30,
+              size: 18,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -296,24 +341,37 @@ class LevelSelectScreen extends StatelessWidget {
     }
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          NeonTheme.s24, NeonTheme.s8, NeonTheme.s24, NeonTheme.s8),
+        NeonTheme.s24,
+        NeonTheme.s8,
+        NeonTheme.s24,
+        NeonTheme.s8,
+      ),
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: NeonTheme.s16, vertical: 10),
+          horizontal: NeonTheme.s16,
+          vertical: 10,
+        ),
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [
-            c.withValues(alpha: reached ? 0.3 : 0.12),
-            NeonTheme.panel.withValues(alpha: 0.8),
-          ]),
+          gradient: LinearGradient(
+            colors: [
+              c.withValues(alpha: reached ? 0.3 : 0.12),
+              NeonTheme.panel.withValues(alpha: 0.8),
+            ],
+          ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: reached ? c : c.withValues(alpha: 0.4), width: 2),
+            color: reached ? c : c.withValues(alpha: 0.4),
+            width: 2,
+          ),
           boxShadow: reached ? NeonTheme.glow(c, blur: 10) : null,
         ),
         child: Row(
           children: [
-            Icon(reached ? Icons.public_rounded : Icons.lock_rounded,
-                color: reached ? c : Colors.white38, size: 24),
+            Icon(
+              reached ? Icons.public_rounded : Icons.lock_rounded,
+              color: reached ? c : Colors.white38,
+              size: 24,
+            ),
             const SizedBox(width: NeonTheme.s8),
             Expanded(
               child: Column(
@@ -342,23 +400,30 @@ class LevelSelectScreen extends StatelessWidget {
               ),
             ),
             // tiến trình: sao + số màn xong
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
-              const SizedBox(width: 3),
-              Text('$stars',
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                const SizedBox(width: 3),
+                Text(
+                  '$stars',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                  )),
-              const SizedBox(width: NeonTheme.s8),
-              Text('$done/${w.endLevel - w.startLevel + 1}',
+                  ),
+                ),
+                const SizedBox(width: NeonTheme.s8),
+                Text(
+                  '$done/${w.endLevel - w.startLevel + 1}',
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                  )),
-            ]),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -369,75 +434,155 @@ class LevelSelectScreen extends StatelessWidget {
     final lv = kLevels[index - 1];
     final c = _colorOf(index);
     final hs = ctrl.highScores[index];
+    // hasGhost đọc storage sync — KHÔNG dùng biến ngoài Obx vì không reactive.
+    // Bọc Row button trong Obx để tự rebuild sau khi ghost được flush khi win.
     return GestureDetector(
-      onTap: () => _play(ctrl, index),
-      child: Container(
-        padding: const EdgeInsets.all(NeonTheme.s16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [
-            c.withValues(alpha: 0.25),
-            NeonTheme.panel.withValues(alpha: 0.85),
-          ]),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: c, width: 2.5),
-          boxShadow: NeonTheme.glow(c, blur: 18),
-        ),
-        child: Row(
-          children: [
-            _emblem(index, c, 84),
-            const SizedBox(width: NeonTheme.s16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('stage_n'.trParams({'n': '$index'}),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        shadows: [Shadow(color: c, blurRadius: 12)],
-                      )),
-                  const SizedBox(height: 6),
-                  Row(children: [
-                    Icon(_objIcon(lv.objective), color: c, size: 16),
-                    const SizedBox(width: 6),
-                    Text(hs != null ? '★ $hs' : '★ —',
-                        style: const TextStyle(
-                          color: Colors.amber,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        )),
-                  ]),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: c,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: NeonTheme.glow(c, blur: 10),
-                    ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.play_arrow_rounded,
-                          color: Colors.white, size: 20),
-                      const SizedBox(width: 4),
-                      Text('play_now'.tr,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                          )),
-                    ]),
-                  ),
+          onTap: () => _play(ctrl, index),
+          child: Container(
+            padding: const EdgeInsets.all(NeonTheme.s16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  c.withValues(alpha: 0.25),
+                  NeonTheme.panel.withValues(alpha: 0.85),
                 ],
               ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: c, width: 2.5),
+              boxShadow: NeonTheme.glow(c, blur: 18),
             ),
-          ],
-        ),
-      ),
-    )
+            child: Row(
+              children: [
+                _emblem(index, c, 84),
+                const SizedBox(width: NeonTheme.s16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'stage_n'.trParams({'n': '$index'}),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          shadows: [Shadow(color: c, blurRadius: 12)],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(_objIcon(lv.objective), color: c, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            hs != null ? '★ $hs' : '★ —',
+                            style: const TextStyle(
+                              color: Colors.amber,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      // Obx để GHOST button tự hiện ngay sau khi win lần đầu (ghost flush).
+                      // Trigger: ctrl.highScores[index] (RxMap) cập nhật khi win → rebuild →
+                      // hasGhost() đọc storage lại (ghost flush xảy ra cùng lúc với highScore update).
+                      Obx(() {
+                        ctrl.highScores[index]; // Rx trigger
+                        final hasGhost = ctrl.hasGhost(index);
+                        return Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: c,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: NeonTheme.glow(c, blur: 10),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.play_arrow_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'play_now'.tr,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (hasGhost) ...[
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () => _playGhost(ctrl, index),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: NeonTheme.panel,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: NeonTheme.cyan.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                    ),
+                                    boxShadow: NeonTheme.glow(
+                                      NeonTheme.cyan,
+                                      blur: 6,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.visibility_rounded,
+                                        color: NeonTheme.cyan,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'ghost_play'.tr,
+                                        style: const TextStyle(
+                                          color: NeonTheme.cyan,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
         .animate(onPlay: (a) => a.repeat(reverse: true))
-        .scaleXY(begin: 1, end: 1.015, duration: 1200.ms, curve: Curves.easeInOut);
+        .scaleXY(
+          begin: 1,
+          end: 1.015,
+          duration: 1200.ms,
+          curve: Curves.easeInOut,
+        );
   }
 
   /// Wave 16 — badge tier độ khó ở góc tile (Hard cam / Super-Hard đỏ; Normal
@@ -453,44 +598,90 @@ class LevelSelectScreen extends StatelessWidget {
     return null;
   }
 
-  Widget _cornerChip(IconData icon, Color color) => Container(
-        padding: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          color: const Color(0xCC0B0B1F),
-          shape: BoxShape.circle,
-          border: Border.all(color: color, width: 1.2),
-          boxShadow: NeonTheme.glow(color, blur: 4),
+  /// Ghost corner chip — hiện khi màn có ghost run. LongPress tile → chơi ghost.
+  Widget _ghostCorner(GameController ctrl, int index) {
+    final gs = StorageService.to.getInt(StorageKeys.ghostScore(index));
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xCC0B0B1F),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: NeonTheme.cyan.withValues(alpha: 0.8),
+          width: 1,
         ),
-        child: Icon(icon, color: color, size: 11),
-      );
+        boxShadow: NeonTheme.glow(NeonTheme.cyan, blur: 4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.visibility_rounded, color: NeonTheme.cyan, size: 8),
+          if (gs > 0) ...[
+            const SizedBox(width: 2),
+            Text(
+              fmtNum(gs),
+              style: const TextStyle(
+                color: NeonTheme.cyan,
+                fontSize: 7,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _cornerChip(IconData icon, Color color) => Container(
+    padding: const EdgeInsets.all(2),
+    decoration: BoxDecoration(
+      color: const Color(0xCC0B0B1F),
+      shape: BoxShape.circle,
+      border: Border.all(color: color, width: 1.2),
+      boxShadow: NeonTheme.glow(color, blur: 4),
+    ),
+    child: Icon(icon, color: color, size: 11),
+  );
 
   Widget _miniTile(
-      GameController ctrl, LevelConfig lv, bool unlocked, bool isCurrent) {
+    GameController ctrl,
+    LevelConfig lv,
+    bool unlocked,
+    bool isCurrent,
+  ) {
     final c = unlocked ? _colorOf(lv.index) : Colors.grey.shade700;
     final star = ctrl.stars[lv.index] ?? 0;
-    final corner = unlocked ? _tierCorner(lv.index) : null;
+    final hasGhost = unlocked && ctrl.hasGhost(lv.index);
+    // Corner ưu tiên: ghost > tier badge (ghost quan trọng hơn badge)
+    final corner = hasGhost
+        ? _ghostCorner(ctrl, lv.index)
+        : (unlocked ? _tierCorner(lv.index) : null);
     final tile = GestureDetector(
       onTap: unlocked ? () => _play(ctrl, lv.index) : null,
+      onLongPress: hasGhost ? () => _playGhost(ctrl, lv.index) : null,
       child: Container(
         decoration: BoxDecoration(
           color: NeonTheme.panel.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: isCurrent ? Colors.white : c,
-              width: isCurrent ? 2.5 : 1.6),
+            color: isCurrent ? Colors.white : c,
+            width: isCurrent ? 2.5 : 1.6,
+          ),
           boxShadow: unlocked ? NeonTheme.glow(c, blur: 7) : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (unlocked)
-              Text('${lv.index}',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    shadows: [Shadow(color: c, blurRadius: 8)],
-                  ))
+              Text(
+                '${lv.index}',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  shadows: [Shadow(color: c, blurRadius: 8)],
+                ),
+              )
             else
               const Icon(Icons.lock_rounded, color: Colors.white38, size: 18),
             if (unlocked) ...[
@@ -514,7 +705,10 @@ class LevelSelectScreen extends StatelessWidget {
     if (corner == null) return tile;
     return Stack(
       clipBehavior: Clip.none,
-      children: [tile, Positioned(top: -4, right: -4, child: corner)],
+      children: [
+        tile,
+        Positioned(top: -4, right: -4, child: corner),
+      ],
     );
   }
 
@@ -529,17 +723,22 @@ class LevelSelectScreen extends StatelessWidget {
           colors: [light, c, Color.lerp(c, Colors.black, 0.3)!],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.85), width: 2),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.85),
+          width: 2,
+        ),
         boxShadow: NeonTheme.glow(c, blur: 12),
       ),
       alignment: Alignment.center,
-      child: Text('$index',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 34,
-            fontWeight: FontWeight.w900,
-            shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
-          )),
+      child: Text(
+        '$index',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 34,
+          fontWeight: FontWeight.w900,
+          shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
+        ),
+      ),
     );
   }
 }

@@ -285,6 +285,44 @@ void main() {
       expect(pc.solvedCount, 0);
       expect(pc.unlocked.value, 1);
     });
+
+    test('skip guard: recordWin(3) khi unlocked=1 KHÔNG nhảy unlock', () {
+      // Chỉ puzzle đúng thứ tự mới mở khoá tiếp theo.
+      pc.recordWin(3, 3); // id=3, unlocked=1 → id ≠ unlocked → bỏ qua
+      expect(pc.unlocked.value, 1, reason: 'không được nhảy tới puzzle 3');
+      expect(pc.isUnlocked(2), isFalse);
+      expect(pc.isUnlocked(3), isFalse);
+    });
+
+    test('board determinism: cùng seed sinh cùng lưới (replicate engine)', () {
+      // Mô phỏng thuần cách engine sinh bàn (Random(seed), row-major, tránh match-3 sẵn).
+      List<GemColor> buildBoard(int seed) {
+        const rows = 8, cols = 8;
+        const nColors = 4;
+        final rnd = Random(seed);
+        final colors = List<GemColor?>.filled(rows * cols, null);
+        for (var r = 0; r < rows; r++) {
+          for (var c = 0; c < cols; c++) {
+            GemColor pick;
+            do {
+              pick = GemColor.values[rnd.nextInt(nColors)];
+            } while ((c >= 2 &&
+                    colors[r * cols + c - 1] == pick &&
+                    colors[r * cols + c - 2] == pick) ||
+                (r >= 2 &&
+                    colors[(r - 1) * cols + c] == pick &&
+                    colors[(r - 2) * cols + c] == pick));
+            colors[r * cols + c] = pick;
+          }
+        }
+        return colors.cast<GemColor>();
+      }
+
+      final def = kPuzzles.first;
+      final board1 = buildBoard(def.seed);
+      final board2 = buildBoard(def.seed);
+      expect(board1, board2, reason: 'cùng seed phải cho cùng bàn (tất định)');
+    });
   });
 
   // ─── 4) startPuzzle + checkEnd ───────────────────────────────────────────

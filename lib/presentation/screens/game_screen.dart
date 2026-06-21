@@ -47,7 +47,12 @@ class GameScreen extends StatelessWidget {
                       Expanded(
                         child: Obx(() {
                           final v = sc.gameVersion.value;
-                          return GameWidget(key: ValueKey(v), game: sc.game);
+                          return Stack(children: [
+                            GameWidget(key: ValueKey(v), game: sc.game),
+                            // A fix: Ghost overlay — pulsing highlight trên 2 gem ghost sẽ swap
+                            if (ctrl.isGhostMode.value)
+                              _GhostHintOverlay(ctrl: ctrl, sc: sc),
+                          ]);
                         }),
                       ),
                       _buildBoosterBar(ctrl, sc),
@@ -171,6 +176,24 @@ class GameScreen extends StatelessWidget {
   }
 
   Widget _resultPanel(GameController ctrl, GameScreenController sc, bool win) {
+    // Zen Mode: result khi người chơi thoát — hiện điểm + kỷ lục + xu nhận.
+    if (ctrl.isZen.value) {
+      final isNewBest = ctrl.score.value >= ctrl.zenHigh.value;
+      return NeonDialog.panel(
+        title: 'zen_title'.tr,
+        color: NeonTheme.cyan,
+        icon: Icons.spa_rounded,
+        message:
+            '${'hud_score'.tr}: ${fmtNum(ctrl.score.value)}'
+            '${isNewBest ? '  🏆' : ''}\n'
+            '${'zen_best'.tr}: ${fmtNum(ctrl.zenHigh.value)}'
+            '${ctrl.lastCoinReward > 0 ? '  ·  +${fmtNum(ctrl.lastCoinReward)} 💰' : ''}',
+        actions: [
+          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+        ],
+      );
+    }
     // Endless: chỉ có màn kết thúc (hết lượt) — hiện điểm + kỷ lục, không sao.
     if (ctrl.isEndless.value) {
       return NeonDialog.panel(
@@ -465,6 +488,10 @@ class GameScreen extends StatelessWidget {
                         ? 'survival_title'.tr
                         : ctrl.isLabyrinth.value
                         ? 'labyrinth_title'.tr
+                        : ctrl.isGhostMode.value
+                        ? 'ghost_hud'.tr
+                        : ctrl.isZen.value
+                        ? 'zen_title'.tr
                         : ctrl.isEndless.value
                         ? 'endless_title'.tr
                         : 'stage_n'.trParams({'n': '${ctrl.currentLevel.value}'}),
@@ -763,6 +790,18 @@ class GameScreen extends StatelessWidget {
       final urgent = ctrl.tideLevel.value >= 0.7;
       return _infoCell('hud_tide'.tr, _animValue('$pct%'),
           urgent ? NeonTheme.magenta : NeonTheme.cyan);
+    }
+    if (ctrl.isZen.value) {
+      return _infoCell('zen_short'.tr, _animValue('∞'), NeonTheme.cyan);
+    }
+    if (ctrl.isGhostMode.value) {
+      // Ghost mode: hiện điểm ghost để người chơi so sánh
+      final gs = ctrl.ghostScore.value;
+      return _infoCell(
+        'ghost_hud'.tr,
+        _animValue(fmtNum(gs)),
+        NeonTheme.cyan,
+      );
     }
     if (ctrl.level.objective == ObjectiveType.timeAttack) {
       final t = ctrl.timeLeft.value;
@@ -1261,4 +1300,101 @@ class GameScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// A fix: Ghost board overlay — hiện pulsing ring tại 2 ô ghost sẽ swap kế tiếp.
+// Tọa độ Flame (boardOrigin, cellSize) tương đương logical pixel của GameWidget.
+// ---------------------------------------------------------------------------
+
+class _GhostHintOverlay extends StatefulWidget {
+  final GameController ctrl;
+  final GameScreenController sc;
+  const _GhostHintOverlay({required this.ctrl, required this.sc});
+
+  @override
+  State<_GhostHintOverlay> createState() => _GhostHintOverlayState();
+}
+
+class _GhostHintOverlayState extends State<_GhostHintOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _anim;
+  late Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _pulse = Tween<double>(begin: 0.55, end: 0.95).animate(
+      CurvedAnimation(parent: _anim, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      widget.ctrl.ghostStep.value; // rebuild khi ghost step tiến
+      final move = widget.ctrl.nextGhostMove();
+      final game = widget.sc.game;
+      // Guard: boardOrigin/cellSize là late fields — chờ _layout() xong
+      if (move == null || !game.boardReady) return const SizedBox.shrink();
+      return AnimatedBuilder(
+        animation: _pulse,
+        builder: (context2, child2) => CustomPaint(
+          painter: _GhostPainter(
+            r1: move.$1, c1: move.$2,
+            r2: move.$3, c2: move.$4,
+            boardOriginX: game.boardOrigin.x,
+            boardOriginY: game.boardOrigin.y,
+            cellSize: game.cellSize,
+            alpha: _pulse.value,
+          ),
+          child: const SizedBox.expand(),
+        ),
+      );
+    });
+  }
+}
+
+class _GhostPainter extends CustomPainter {
+  final int r1, c1, r2, c2;
+  final double boardOriginX, boardOriginY, cellSize, alpha;
+  const _GhostPainter({
+    required this.r1, required this.c1,
+    required this.r2, required this.c2,
+    required this.boardOriginX, required this.boardOriginY,
+    required this.cellSize, required this.alpha,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = NeonTheme.cyan.withValues(alpha: alpha * 0.7)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+    final glowPaint = Paint()
+      ..color = NeonTheme.cyan.withValues(alpha: alpha * 0.25)
+      ..style = PaintingStyle.fill;
+    final r = cellSize * 0.44;
+    for (final (row, col) in [(r1, c1), (r2, c2)]) {
+      final cx = boardOriginX + col * cellSize + cellSize / 2;
+      final cy = boardOriginY + row * cellSize + cellSize / 2;
+      canvas.drawCircle(Offset(cx, cy), r, glowPaint);
+      canvas.drawCircle(Offset(cx, cy), r, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_GhostPainter old) =>
+      old.r1 != r1 || old.c1 != c1 || old.r2 != r2 || old.c2 != c2 ||
+      (old.alpha - alpha).abs() > 0.005; // 0.005 đủ nhỏ để không bỏ frame (~3ms)
 }
