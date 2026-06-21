@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flame_audio/flame_audio.dart';
 import 'package:get/get.dart';
 
@@ -22,6 +24,7 @@ class AudioManager extends GetxService {
     FlameAudio.audioCache.prefix = 'asset/audio/';
     try {
       await FlameAudio.audioCache.loadAll([
+        ..._bgmTracks,
         for (int i = 1; i <= noteCount; i++) 'notes/n${_pad(i)}.mp3',
       ]);
       _ready = true;
@@ -36,13 +39,13 @@ class AudioManager extends GetxService {
   void startBgm({int track = 0}) {
     if (_bgmPlaying || muted.value) return;
     final name = _bgmTracks[track % _bgmTracks.length];
-    FlameAudio.bgm.play(name, volume: 0.35);
+    _ignoreAudio(FlameAudio.bgm.play(name, volume: 0.35));
     _bgmPlaying = true;
   }
 
   void stopBgm() {
     if (!_bgmPlaying) return;
-    FlameAudio.bgm.stop();
+    _ignoreAudio(FlameAudio.bgm.stop());
     _bgmPlaying = false;
   }
 
@@ -50,21 +53,21 @@ class AudioManager extends GetxService {
   /// Giữ `_bgmPlaying = true` để biết có nhạc cần resume khi quay lại.
   void pauseBgm() {
     if (!_bgmPlaying || muted.value) return;
-    FlameAudio.bgm.pause();
+    _ignoreAudio(FlameAudio.bgm.pause());
   }
 
   /// Phát tiếp khi app trở lại foreground (resumed). Không resume nếu user mute.
   void resumeBgm() {
     if (!_bgmPlaying || muted.value) return;
-    FlameAudio.bgm.resume();
+    _ignoreAudio(FlameAudio.bgm.resume());
   }
 
   void toggleMute() {
     muted.toggle();
     if (muted.value) {
-      FlameAudio.bgm.pause();
+      _ignoreAudio(FlameAudio.bgm.pause());
     } else {
-      FlameAudio.bgm.resume();
+      _ignoreAudio(FlameAudio.bgm.resume());
     }
   }
 
@@ -72,7 +75,7 @@ class AudioManager extends GetxService {
   void playNote(int step) {
     if (muted.value || !_ready) return;
     final idx = step.clamp(1, noteCount);
-    FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.6);
+    _ignoreAudio(FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.6));
   }
 
   // --------------------------------------------------------------------------
@@ -99,8 +102,11 @@ class AudioManager extends GetxService {
   /// - [combo] ≥ 1: combo càng sâu → leo bậc ngũ cung (đi lên).
   /// - [colorIndex] 0..5: màu gem quyết định bậc gốc (mỗi màu 1 giọng); -1 = theo combo.
   /// - [keyIndex] ≥ 1: khoá (world/stage) dịch nốt gốc.
-  static int noteIndexFor(
-      {required int combo, int colorIndex = -1, int keyIndex = 1}) {
+  static int noteIndexFor({
+    required int combo,
+    int colorIndex = -1,
+    int keyIndex = 1,
+  }) {
     final root = keyRoots[(keyIndex - 1) % keyRoots.length];
     // màu gem cho bậc gốc (mỗi màu 1 giọng); không có màu → bậc 0, combo tự dẫn.
     final baseDeg = colorIndex >= 0 ? colorIndex % pentatonic.length : 0;
@@ -110,39 +116,63 @@ class AudioManager extends GetxService {
   }
 
   /// Phát 1 bước cascade theo giai điệu (ngũ cung + màu + khoá + hợp âm wombo).
-  void playMelodic(
-      {required int combo, int colorIndex = -1, int keyIndex = 1}) {
+  void playMelodic({
+    required int combo,
+    int colorIndex = -1,
+    int keyIndex = 1,
+  }) {
     if (muted.value || !_ready) return;
     final idx = noteIndexFor(
-        combo: combo, colorIndex: colorIndex, keyIndex: keyIndex);
-    FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.6);
+      combo: combo,
+      colorIndex: colorIndex,
+      keyIndex: keyIndex,
+    );
+    _ignoreAudio(FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.6));
     // Wombo (combo lớn) → arpeggio quãng 3 + 5 ngũ cung tạo hợp âm giải toả.
     if (combo >= 6) {
-      _arpAfter(70, combo: combo, colorIndex: colorIndex, keyIndex: keyIndex,
-          addDegree: 2);
-      _arpAfter(140, combo: combo, colorIndex: colorIndex, keyIndex: keyIndex,
-          addDegree: 4);
+      _arpAfter(
+        70,
+        combo: combo,
+        colorIndex: colorIndex,
+        keyIndex: keyIndex,
+        addDegree: 2,
+      );
+      _arpAfter(
+        140,
+        combo: combo,
+        colorIndex: colorIndex,
+        keyIndex: keyIndex,
+        addDegree: 4,
+      );
     }
   }
 
-  void _arpAfter(int delayMs,
-      {required int combo,
-      required int colorIndex,
-      required int keyIndex,
-      required int addDegree}) {
+  void _arpAfter(
+    int delayMs, {
+    required int combo,
+    required int colorIndex,
+    required int keyIndex,
+    required int addDegree,
+  }) {
     Future.delayed(Duration(milliseconds: delayMs), () {
       if (muted.value || !_ready) return;
       final root = keyRoots[(keyIndex - 1) % keyRoots.length];
       final baseDeg = colorIndex >= 0 ? colorIndex % pentatonic.length : 0;
       final semitone = root + pentaSemitone(baseDeg + (combo - 1) + addDegree);
       final idx = semitone.clamp(0, noteCount - 1) + 1;
-      FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.5);
+      _ignoreAudio(FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.5));
     });
   }
 
   /// Âm cho gem special (nốt cao nhất, to hơn).
   void playSpecial() {
     if (muted.value || !_ready) return;
-    FlameAudio.play('notes/n${_pad(noteCount)}.mp3', volume: 0.85);
+    _ignoreAudio(
+      FlameAudio.play('notes/n${_pad(noteCount)}.mp3', volume: 0.85),
+    );
+  }
+
+  void _ignoreAudio(Future<dynamic> op) {
+    unawaited(op.catchError((_) {}));
   }
 }

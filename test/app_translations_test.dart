@@ -8,15 +8,17 @@ void main() {
 
   group('AppTranslations — tính toàn vẹn', () {
     test('English (en_US) là ngôn ngữ default đầu tiên', () {
-      expect(AppTranslations.supported.first,
-          const Locale('en', 'US'));
+      expect(AppTranslations.supported.first, const Locale('en', 'US'));
       expect(AppTranslations.fallback, const Locale('en', 'US'));
     });
 
     test('mọi locale hỗ trợ đều có bảng dịch', () {
       for (final l in AppTranslations.supported) {
-        expect(keys.containsKey(AppTranslations.codeOf(l)), isTrue,
-            reason: 'thiếu bảng dịch cho ${AppTranslations.codeOf(l)}');
+        expect(
+          keys.containsKey(AppTranslations.codeOf(l)),
+          isTrue,
+          reason: 'thiếu bảng dịch cho ${AppTranslations.codeOf(l)}',
+        );
       }
     });
 
@@ -24,16 +26,22 @@ void main() {
       final enKeys = keys['en_US']!.keys.toSet();
       for (final entry in keys.entries) {
         final langKeys = entry.value.keys.toSet();
-        expect(langKeys, enKeys,
-            reason: 'ngôn ngữ ${entry.key} có tập key khác English');
+        expect(
+          langKeys,
+          enKeys,
+          reason: 'ngôn ngữ ${entry.key} có tập key khác English',
+        );
       }
     });
 
     test('không có giá trị rỗng', () {
       for (final entry in keys.entries) {
         for (final kv in entry.value.entries) {
-          expect(kv.value.trim().isNotEmpty, isTrue,
-              reason: '${entry.key}/${kv.key} bị rỗng');
+          expect(
+            kv.value.trim().isNotEmpty,
+            isTrue,
+            reason: '${entry.key}/${kv.key} bị rỗng',
+          );
         }
       }
     });
@@ -45,10 +53,28 @@ void main() {
       expect(keys['vi_VN']!['stage_n']!.contains('@n'), isTrue);
     });
 
+    test('Challenge Card side-mode labels không rơi về raw i18n key', () {
+      const modeKeys = {
+        'endless_short',
+        'boss_short',
+        'rhythm_short',
+        'gravity_short',
+        'soda_short',
+        'color_rush_short',
+      };
+      for (final locale in ['en_US', 'vi_VN']) {
+        for (final k in modeKeys) {
+          expect(keys[locale]![k], isNot(k), reason: '$locale/$k chưa dịch');
+        }
+      }
+    });
+
     test('mỗi locale hỗ trợ có tên hiển thị (native name)', () {
       for (final l in AppTranslations.supported) {
-        expect(AppTranslations.languageNames[AppTranslations.codeOf(l)],
-            isNotNull);
+        expect(
+          AppTranslations.languageNames[AppTranslations.codeOf(l)],
+          isNotNull,
+        );
       }
     });
 
@@ -67,45 +93,76 @@ void main() {
     // ── Chống hồi quy lỗ hổng i18n (Wave 8.9): trước đây 20 ngôn ngữ chỉ ~50%
     // key được dịch (Wave 5/7/8/9 fallback English). Test cũ chỉ kiểm KEY đủ
     // (qua fallback merge) nên KHÔNG phát hiện. 2 test dưới kiểm VALUE đã dịch.
-    test('mỗi ngôn ngữ phải dịch ≥80% value (không fallback English hàng loạt)',
-        () {
-      final en = keys['en_US']!;
-      for (final entry in keys.entries) {
-        if (entry.key == 'en_US') continue;
-        var diff = 0;
-        entry.value.forEach((k, v) {
-          if (v.trim() != en[k]?.trim()) diff++;
-        });
-        // M4 fix: loại trừ "universal gaming terms" khỏi tính tỉ lệ dịch —
-        // những key này intentionally giữ nguyên English (ZEN, GHOST, ★ format).
-        const universalKeys = {
-          'zen_title', 'zen_short', 'ghost_play', 'ghost_hud',
-          'pt_star_cost', 'pt_gold_cost',
-        };
-        final adjustedTotal = entry.value.length -
-            entry.value.keys.where(universalKeys.contains).length;
-        final ratio = adjustedTotal > 0 ? diff / adjustedTotal : 1.0;
-        expect(ratio, greaterThanOrEqualTo(0.80),
-            reason: '${entry.key} chỉ dịch ${(ratio * 100).toStringAsFixed(1)}% '
-                '— nghi fallback English (thêm feature mới mà quên dịch?)');
-      }
-    });
+    test(
+      'mỗi ngôn ngữ phải dịch ≥80% value (không fallback English hàng loạt)',
+      () {
+        final en = keys['en_US']!;
+        for (final entry in keys.entries) {
+          if (entry.key == 'en_US') continue;
+          var diff = 0;
+          entry.value.forEach((k, v) {
+            if (v.trim() != en[k]?.trim()) diff++;
+          });
+          // M4 fix: loại trừ "universal gaming terms" khỏi tính tỉ lệ dịch —
+          // những key này intentionally giữ nguyên English (ZEN, GHOST, ★ format).
+          const universalKeys = {
+            'zen_title',
+            'zen_short',
+            'ghost_play',
+            'ghost_hud',
+            'pt_star_cost',
+            'pt_gold_cost',
+          };
+          final adjustedTotal =
+              entry.value.length -
+              entry.value.keys.where(universalKeys.contains).length;
+          final ratio = adjustedTotal > 0 ? diff / adjustedTotal : 1.0;
+          expect(
+            ratio,
+            greaterThanOrEqualTo(0.80),
+            reason:
+                '${entry.key} chỉ dịch ${(ratio * 100).toStringAsFixed(1)}% '
+                '— nghi fallback English (thêm feature mới mà quên dịch?)',
+          );
+        }
+      },
+    );
 
     test('key Wave 5/7/8/9 đã dịch thật cho 20 ngôn ngữ (mẫu)', () {
       // Các key mô tả/UI tiêu biểu (không phải tên riêng) phải KHÁC bản English.
       const sampleKeys = [
-        'achievements', 'win_streak', 'tut_1', 'season_hint', 'boss_hp',
-        'temple_tier', 'quest_win', 'ach_claim', 'bp_track', 'guide_versus_body',
+        'achievements',
+        'win_streak',
+        'tut_1',
+        'season_hint',
+        'boss_hp',
+        'temple_tier',
+        'quest_win',
+        'ach_claim',
+        'bp_track',
+        'guide_versus_body',
       ];
       const langs = [
-        'es_ES', 'de_DE', 'ru_RU', 'zh_CN', 'ja_JP', 'ko_KR',
-        'ar_SA', 'th_TH', 'hi_IN', 'uk_UA', 'bn_BD',
+        'es_ES',
+        'de_DE',
+        'ru_RU',
+        'zh_CN',
+        'ja_JP',
+        'ko_KR',
+        'ar_SA',
+        'th_TH',
+        'hi_IN',
+        'uk_UA',
+        'bn_BD',
       ];
       final en = keys['en_US']!;
       for (final k in sampleKeys) {
         for (final lang in langs) {
-          expect(keys[lang]![k], isNot(en[k]),
-              reason: '$lang/$k còn dùng English (chưa dịch Wave 5/7/8/9)');
+          expect(
+            keys[lang]![k],
+            isNot(en[k]),
+            reason: '$lang/$k còn dùng English (chưa dịch Wave 5/7/8/9)',
+          );
         }
       }
       // placeholder vẫn giữ nguyên sau khi dịch
@@ -117,22 +174,33 @@ void main() {
     // đã dịch thật (không fallback English) cho các ngôn ngữ đại diện.
     test('key W18.2/18.3 đã dịch thật cho 20 ngôn ngữ (mẫu)', () {
       const sampleW18Keys = [
-        'coll_set_title',   // "Album Complete!" → ngôn ngữ rõ ràng khác
-        'ach_equip',        // "Equip" → đeo / equipped → tên hành động khác nhau
-        'shop_upgrades',    // "Upgrades" → nâng cấp / Mejoras / Verbesserungen…
-        'coll_set_reward',  // Có placeholder @n — check dưới; value sẽ khác
-        'upg_hammer_desc',  // "Smash a 3×3 area" → mô tả đủ dài để dịch khác
+        'coll_set_title', // "Album Complete!" → ngôn ngữ rõ ràng khác
+        'ach_equip', // "Equip" → đeo / equipped → tên hành động khác nhau
+        'shop_upgrades', // "Upgrades" → nâng cấp / Mejoras / Verbesserungen…
+        'coll_set_reward', // Có placeholder @n — check dưới; value sẽ khác
+        'upg_hammer_desc', // "Smash a 3×3 area" → mô tả đủ dài để dịch khác
       ];
       const langs = [
-        'es_ES', 'de_DE', 'ru_RU', 'zh_CN', 'ja_JP',
-        'ar_SA', 'th_TH', 'uk_UA', 'bn_BD', 'ko_KR',
+        'es_ES',
+        'de_DE',
+        'ru_RU',
+        'zh_CN',
+        'ja_JP',
+        'ar_SA',
+        'th_TH',
+        'uk_UA',
+        'bn_BD',
+        'ko_KR',
       ];
       final en = keys['en_US']!;
       for (final lang in langs) {
         for (final k in sampleW18Keys) {
           // Mỗi key phải có giá trị khác English → chứng tỏ đã dịch
-          expect(keys[lang]![k], isNot(en[k]),
-              reason: '$lang/$k còn dùng English (W18.2/18.3 chưa dịch)');
+          expect(
+            keys[lang]![k],
+            isNot(en[k]),
+            reason: '$lang/$k còn dùng English (W18.2/18.3 chưa dịch)',
+          );
         }
       }
       // Placeholder @n giữ nguyên trong bản dịch
