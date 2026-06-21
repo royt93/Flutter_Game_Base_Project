@@ -125,7 +125,7 @@
 |---|------|-----------------|
 | 1 | Đang chơi, bấm nút X | Dialog xác nhận "Bạn có muốn thoát?" |
 | 2 | Bấm "Tiếp tục chơi" | Dialog đóng, game tiếp tục |
-| 3 | Bấm nút X → bấm "Thoát" | Về Home, tốn 1 mạng |
+| 3 | Bấm nút X → bấm "Thoát" | Về Home, **KHÔNG tốn mạng** (quit() không gọi consumeLife — đã verify ZFlip 5) |
 
 ---
 
