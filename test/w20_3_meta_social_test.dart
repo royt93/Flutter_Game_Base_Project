@@ -268,6 +268,36 @@ void main() {
       expect(ctrl.progress[1], 0);
       expect(ctrl.claimed[0], isFalse);
     });
+
+    test('_refresh: tuần mới reset tiến trình + coin baseline', () {
+      final store = StorageService.to;
+      final currentWeek = g.todayEpochDay ~/ 7;
+
+      // Simulate state đĩa từ TUẦN CŨ: ghi progress + weekIdx cũ trực tiếp
+      store.setInt(StorageKeys.ccWeekIdx, currentWeek - 1);
+      store.setInt(StorageKeys.ccProgress(0), 3);
+      store.setInt(StorageKeys.ccProgress(1), 2);
+      store.setInt(StorageKeys.ccProgress(2), 1);
+      store.setInt(StorageKeys.ccClaimed(0), 1); // claimed tuần cũ
+
+      // Tạo lại controller → _load() phát hiện savedWeek != currentWeek → _resetDisk()
+      Get.delete<ChallengeCardController>();
+      final ctrl2 = Get.put(ChallengeCardController(g));
+
+      // Tiến trình phải về 0 (reset tuần mới)
+      expect(ctrl2.progress[0], 0);
+      expect(ctrl2.progress[1], 0);
+      expect(ctrl2.progress[2], 0);
+      // Claimed phải về false
+      expect(ctrl2.claimed[0], isFalse);
+      // Week index phải được cập nhật lên tuần hiện tại
+      expect(store.getInt(StorageKeys.ccWeekIdx), currentWeek);
+      // Coin baseline phải được ghi lại (ccCoinsStart = coinsEarnedTotal lúc reset)
+      expect(
+        store.getInt(StorageKeys.ccCoinsStart),
+        g.coinsEarnedTotal.value,
+      );
+    });
   });
 
   // ─── Zen Mode (W20.4) ─────────────────────────────────────────────────────
@@ -318,6 +348,32 @@ void main() {
       expect(g.zenHigh.value, 3000); // giữ cao nhất
     });
 
+    test('endZenSession: guard no-op khi không phải Zen mode', () {
+      g.startLevel(1); // campaign, không phải zen
+      g.score.value = 5000;
+      g.coins.value = 100; // explicit baseline để no-op rõ ràng
+      expect(g.isZen.value, isFalse);
+      g.endZenSession(); // phải no-op hoàn toàn
+      expect(g.coins.value, 100); // không thay đổi
+      expect(g.zenHigh.value, 0); // không ghi high score
+      expect(g.lastCoinReward, 0); // không set reward
+    });
+
+    test('endZenSession: thưởng xu theo score (clamp 5..50 per 1000)', () {
+      // Fresh session → discountSideModeReward = full (wins < kSideModeFullPlays=3)
+      // score < 1000: base = (500 ~/ 1000) = 0 → clamp(5, 50) = 5
+      g.startZen();
+      g.score.value = 500;
+      g.endZenSession();
+      expect(g.lastCoinReward, 5); // min clamp = 5, full reward
+
+      // score = 50000: base = (50000 ~/ 1000) = 50 → clamp(5, 50) = 50
+      g.startZen();
+      g.score.value = 50000;
+      g.endZenSession();
+      expect(g.lastCoinReward, 50); // max clamp = 50, 2nd play hôm nay vẫn full
+    });
+
     test('recordMove KHÔNG ghi khi isZen (isSideMode)', () {
       g.startZen();
       g.recordMove(0, 1, 0, 2);
@@ -355,14 +411,24 @@ void main() {
       );
     });
 
-    test('recordMove không ghi khi isGhostMode (bảo toàn ghost data gốc)', () {
-      g.isGhostMode.value = true;
-      g.recordMove(0, 1, 0, 2); // phải no-op để không ghi đè ghost
-      expect(
-        g.hasGhost(1),
-        isFalse,
-        reason: 'ghost mode không ghi log mới (tránh hỏng ghost gốc)',
-      );
+    test('recordMove no-op trong ghost mode: không xoá ghost data gốc', () async {
+      final store = StorageService.to;
+      // Lưu ghost data cho level 1 trước
+      await store.setString(StorageKeys.ghostMoves(1), '01020304');
+      await store.setInt(StorageKeys.ghostScore(1), 800);
+
+      g.startGhostMode(1);
+      expect(g.isGhostMode.value, isTrue);
+      expect(g.hasGhost(1), isTrue);
+
+      // Gọi recordMove trong ghost mode → phải no-op
+      g.recordMove(5, 6, 7, 7);
+      g.recordMove(3, 4, 3, 5);
+
+      // Storage KHÔNG đổi
+      expect(store.getString(StorageKeys.ghostMoves(1)), '01020304');
+      // nextGhostMove vẫn trả đúng data ghost gốc (r1=0,c1=1,r2=0,c2=2)
+      expect(g.nextGhostMove(), (0, 1, 0, 2));
     });
 
     test('startGhostMode nạp ghost moves từ storage', () async {

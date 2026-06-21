@@ -6,10 +6,10 @@ import 'package:get/get.dart';
 /// Quản lý toàn bộ âm thanh: nhạc nền + SFX nốt nhạc theo combo.
 ///
 /// Dùng asset trong `asset/audio/`:
-/// - bkg.mp3 / bkg1.mp3 / bkg2.mp3: nhạc nền
+/// - bkg.ogg / bkg1.ogg / bkg2.ogg: nhạc nền
 /// - notes/n01..n24.mp3: 24 nốt tăng dần cao độ (combo càng cao nốt càng cao)
 class AudioManager extends GetxService {
-  static const _bgmTracks = ['bkg.mp3', 'bkg1.mp3', 'bkg2.mp3'];
+  static const _bgmTracks = ['bkg.ogg', 'bkg1.ogg', 'bkg2.ogg'];
   static const int noteCount = 24;
 
   final RxBool muted = false.obs;

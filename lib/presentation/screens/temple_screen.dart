@@ -43,7 +43,9 @@ class TempleScreen extends StatelessWidget {
   Widget _progressBar(TempleController t) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: NeonTheme.s16, vertical: NeonTheme.s8),
+        horizontal: NeonTheme.s16,
+        vertical: NeonTheme.s8,
+      ),
       child: Obx(() {
         t.builtTier.length; // chạm để rebuild
         final p = t.progress;
@@ -53,7 +55,6 @@ class TempleScreen extends StatelessWidget {
             Text(
               '${'temple_progress'.tr}: ${t.builtCount}/${t.totalCount}',
               style: const TextStyle(
-                fontFamily: 'Baloo2',
                 color: Colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -66,8 +67,7 @@ class TempleScreen extends StatelessWidget {
                 value: p,
                 minHeight: 8,
                 backgroundColor: NeonTheme.panel.withValues(alpha: 0.6),
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(NeonTheme.cyan),
+                valueColor: const AlwaysStoppedAnimation<Color>(NeonTheme.cyan),
               ),
             ),
           ],
@@ -78,37 +78,35 @@ class TempleScreen extends StatelessWidget {
 
   // --- Khung đền: nền vẽ + các node bấm được ---
   Widget _templeView(TempleController t) {
-    return LayoutBuilder(builder: (context, c) {
-      final size = Size(c.maxWidth, c.maxHeight);
-      return Obx(() {
-        t.builtTier.length;
-        t.selectedId.value;
-        return Stack(
-          children: [
-            // Nền: các tia nối node + ánh sáng tổng
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _TemplePainter(t),
-              ),
-            ),
-            // Node bấm được
-            for (final n in kTempleNodes)
-              Positioned(
-                left: n.pos.dx * size.width - 30,
-                top: n.pos.dy * size.height - 30,
-                child: GestureDetector(
-                  onTap: () => t.select(n.id),
-                  child: _NodeBadge(
-                    node: n,
-                    tier: t.tierOf(n),
-                    selected: t.selectedId.value == n.id,
+    return LayoutBuilder(
+      builder: (context, c) {
+        final size = Size(c.maxWidth, c.maxHeight);
+        return Obx(() {
+          t.builtTier.length;
+          t.selectedId.value;
+          return Stack(
+            children: [
+              // Nền: các tia nối node + ánh sáng tổng
+              Positioned.fill(child: CustomPaint(painter: _TemplePainter(t))),
+              // Node bấm được
+              for (final n in kTempleNodes)
+                Positioned(
+                  left: n.pos.dx * size.width - 30,
+                  top: n.pos.dy * size.height - 30,
+                  child: GestureDetector(
+                    onTap: () => t.select(n.id),
+                    child: _NodeBadge(
+                      node: n,
+                      tier: t.tierOf(n),
+                      selected: t.selectedId.value == n.id,
+                    ),
                   ),
                 ),
-              ),
-          ],
-        );
-      });
-    });
+            ],
+          );
+        });
+      },
+    );
   }
 
   // --- Panel dưới: hạng mục đang chọn + nút xây ---
@@ -124,7 +122,6 @@ class TempleScreen extends StatelessWidget {
             'temple_hint'.tr,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Baloo2',
               color: Colors.white.withValues(alpha: 0.8),
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -155,7 +152,6 @@ class TempleScreen extends StatelessWidget {
                 Text(
                   n.nameKey.tr,
                   style: TextStyle(
-                    fontFamily: 'Baloo2',
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -166,7 +162,6 @@ class TempleScreen extends StatelessWidget {
                 Text(
                   '${'temple_tier'.tr} $tier/${n.maxTier}',
                   style: TextStyle(
-                    fontFamily: 'Baloo2',
                     color: n.accent,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -178,7 +173,6 @@ class TempleScreen extends StatelessWidget {
             Text(
               n.descKey.tr,
               style: TextStyle(
-                fontFamily: 'Baloo2',
                 color: Colors.white.withValues(alpha: 0.85),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -190,7 +184,6 @@ class TempleScreen extends StatelessWidget {
                 child: Text(
                   'temple_maxed'.tr,
                   style: const TextStyle(
-                    fontFamily: 'Baloo2',
                     color: NeonTheme.lime,
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
@@ -200,13 +193,11 @@ class TempleScreen extends StatelessWidget {
             else
               Row(
                 children: [
-                  const Icon(Icons.monetization_on_rounded,
-                      color: NeonTheme.yellow, size: 18),
+                  const CoinIcon(),
                   const SizedBox(width: 5),
                   Text(
                     fmtNum(next.cost),
                     style: TextStyle(
-                      fontFamily: 'Baloo2',
                       color: t.canBuild(n) ? Colors.white : NeonTheme.magenta,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -215,9 +206,8 @@ class TempleScreen extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     '· +${next.rewardCoins} ${'coins_short'.tr}',
-                    style: TextStyle(
-                      fontFamily: 'Baloo2',
-                      color: Colors.white.withValues(alpha: 0.7),
+                    style: const TextStyle(
+                      color: Colors.white70,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -248,7 +238,6 @@ class TempleScreen extends StatelessWidget {
       );
     });
   }
-
 }
 
 /// Huy hiệu 1 hạng mục: vòng tròn sáng dần theo tier + chấm tier.
@@ -256,8 +245,11 @@ class _NodeBadge extends StatelessWidget {
   final TempleNode node;
   final int tier;
   final bool selected;
-  const _NodeBadge(
-      {required this.node, required this.tier, required this.selected});
+  const _NodeBadge({
+    required this.node,
+    required this.tier,
+    required this.selected,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -270,9 +262,7 @@ class _NodeBadge extends StatelessWidget {
         shape: BoxShape.circle,
         color: NeonTheme.panel.withValues(alpha: built ? 0.85 : 0.4),
         border: Border.all(
-          color: built
-              ? node.accent
-              : node.accent.withValues(alpha: 0.4),
+          color: built ? node.accent : node.accent.withValues(alpha: 0.4),
           width: selected ? 3 : 2,
         ),
         boxShadow: NeonTheme.glow(
@@ -315,7 +305,11 @@ class _NodeBadge extends StatelessWidget {
 /// Vẽ tia nối các node theo thứ tự (Cổng → Đền → Lõi) cho cảm giác liền mạch.
 class _TemplePainter extends CustomPainter {
   final TempleController t;
-  _TemplePainter(this.t);
+  // Snapshot per-node: phát hiện re-distribution (A+1, B-1 = cùng count khác visual).
+  final String _tierKey;
+
+  _TemplePainter(this.t)
+    : _tierKey = kTempleNodes.map((n) => t.tierOf(n)).join();
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -342,5 +336,5 @@ class _TemplePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _TemplePainter old) => true;
+  bool shouldRepaint(covariant _TemplePainter old) => old._tierKey != _tierKey;
 }

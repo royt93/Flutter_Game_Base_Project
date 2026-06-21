@@ -11,6 +11,7 @@ import '../../data/levels.dart';
 import '../../game/neon_jewel_game.dart' show BoosterMode;
 import '../controllers/game_controller.dart';
 import '../controllers/game_screen_controller.dart';
+import '../widgets/coin_chip.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_dialog.dart';
 import '../widgets/neon_icon.dart';
@@ -416,7 +417,7 @@ class GameScreen extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.monetization_on_rounded, color: NeonTheme.yellow, size: 20),
+            const CoinIcon(size: 20),
             const SizedBox(width: 6),
             Text(
               '+${fmtNum(ctrl.lastCoinReward)}',
@@ -1282,7 +1283,7 @@ class GameScreen extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.monetization_on_rounded, color: NeonTheme.yellow, size: 13),
+                    const CoinIcon(size: 13),
                     const SizedBox(width: 2),
                     Text(
                       fmtNum(price),

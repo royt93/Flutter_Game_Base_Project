@@ -1191,21 +1191,26 @@ class _LivesChip extends StatefulWidget {
 
 class _LivesChipState extends State<_LivesChip> {
   Timer? _timer;
+  Worker? _livesWorker;
 
   @override
   void initState() {
     super.initState();
     _syncTimer();
+    // Phản ứng thay đổi lives ngoài build() — loại bỏ side-effect trong Obx.
+    _livesWorker = ever(widget.g.lives, (_) => _syncTimer());
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _livesWorker?.dispose();
     super.dispose();
   }
 
   void _syncTimer() {
     _timer?.cancel();
+    _timer = null;
     if (widget.g.lives.value < GameController.maxLives) {
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
         widget.g.refillLives();
@@ -1225,14 +1230,7 @@ class _LivesChipState extends State<_LivesChip> {
       final lives = widget.g.lives.value;
       final full = lives >= GameController.maxLives;
       final next = widget.g.timeToNextLife;
-      if (full && _timer != null) {
-        _timer?.cancel();
-        _timer = null;
-      } else if (!full && _timer == null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _syncTimer();
-        });
-      }
+      // Timer quản lý bởi _livesWorker (ever) — build() chỉ render.
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(

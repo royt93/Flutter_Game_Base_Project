@@ -23,9 +23,7 @@ Future<void> app({bool withAudio = true}) async {
   // Dùng `manual` + overlays rỗng thay vì immersiveSticky để KHÔNG reserve
   // vùng cử chỉ mép trên (vốn nuốt tap nút X ở HUD).
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   await loadAppVersion();
 
@@ -34,11 +32,17 @@ Future<void> app({bool withAudio = true}) async {
   final locale = Get.put(LocaleService(store), permanent: true);
 
   if (withAudio) {
-    final audio = Get.put(AudioManager(), permanent: true);
-    audio.init().then((_) => audio.startBgm());
+    Get.put(AudioManager(), permanent: true);
   }
 
   runApp(NeonJewelsApp(initialLocale: locale.current.value));
+
+  // Sau first frame: tránh I/O contention với Flame init → giảm startup jank.
+  if (withAudio) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AudioManager.maybe?.init().then((_) => AudioManager.maybe?.startBgm());
+    });
+  }
 }
 
 /// Nạp version thật từ pubspec (qua package_info_plus) vào [kAppVersion].

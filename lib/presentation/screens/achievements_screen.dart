@@ -222,8 +222,7 @@ class AchievementsScreen extends StatelessWidget {
       );
     }
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      const Icon(Icons.monetization_on_rounded,
-          color: NeonTheme.yellow, size: 13),
+      const CoinIcon(size: 13),
       const SizedBox(width: 3),
       Text('+${fmtNum(a.reward)}',
           style: const TextStyle(
