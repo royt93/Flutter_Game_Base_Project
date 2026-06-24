@@ -23,11 +23,23 @@ extension GameControllerScoring on GameController {
     }
     score.value += gained;
     if (isBoss.value) _bossDamage(gemsCleared, combo);
+    if (isRush.value) _rushTimeBonus(gemsCleared, combo);
     if (combo > bestCombo.value && !isVersus.value) {
       bestCombo.value = combo;
       unawaited(_store.setInt(StorageKeys.bestCombo, combo));
     }
     if (isEndless.value) _endlessTick(gemsCleared);
+  }
+
+  /// Rush: mỗi match thêm thời gian. Cascade (combo ≥ 2) nhân đôi bonus.
+  void _rushTimeBonus(int gemsCleared, int combo) {
+    final base = (gemsCleared - 2).clamp(1, 5);
+    final bonus = combo >= 2 ? base * 2 : base;
+    timeLeft.value = (timeLeft.value + bonus).clamp(
+      0,
+      GameController.kRushMaxSeconds,
+    );
+    rushTimeBonus.value = bonus; // HUD fly-up "+Ns"
   }
 
   void registerClear(GemColor color, bool wasJelly) {
@@ -78,13 +90,16 @@ extension GameControllerScoring on GameController {
   void useMove() {
     if (isVersus.value) return; // versus: lượt vô hạn (đồng hồ quyết định)
     if (movesLeft.value > 0) movesLeft.value--;
-    // Boss phản đòn: mỗi 4 lượt rút thêm 1 lượt (áp lực tăng theo stage).
+    // Boss phản đòn (W21: cường độ tăng theo phase).
     if (isBoss.value && bossHp.value > 0) {
       _bossHitsSinceRetaliate++;
-      final every = bossStage.value >= 3 ? 3 : 4;
+      final phase = bossPhase;
+      final every = GameController.kBossAttackInterval[phase];
       if (_bossHitsSinceRetaliate >= every) {
         _bossHitsSinceRetaliate = 0;
-        if (movesLeft.value > 0) movesLeft.value--;
+        final dmg = GameController.kBossAttackDamage[phase];
+        movesLeft.value = (movesLeft.value - dmg).clamp(0, 999);
+        bossAttackSignal.value++; // HUD flash + phase badge
       }
     }
   }
@@ -206,7 +221,10 @@ extension GameControllerScoring on GameController {
       final def = currentPuzzle;
       if (score.value >= targetScore.value) {
         _resolved = true;
-        lastStars = puzzleStarsFor(movesLeft.value, def?.maxMoves ?? level.moves);
+        lastStars = puzzleStarsFor(
+          movesLeft.value,
+          def?.maxMoves ?? level.moves,
+        );
         lastStreakBonus = 0;
         lastCoinReward = discountSideModeReward(20 + lastStars * 15);
         addCoins(lastCoinReward);
@@ -224,6 +242,20 @@ extension GameControllerScoring on GameController {
     }
     // Zen: không có "win" và KHÔNG "thua" — chơi mãi mãi. Người chơi tự thoát.
     if (isZen.value) return null;
+    // Rush (W21): hết giờ → kết thúc. Thưởng xu theo điểm, lưu kỷ lục.
+    if (isRush.value) {
+      if (timeLeft.value <= 0) {
+        _resolved = true;
+        lastStars = 0;
+        lastStreakBonus = 0;
+        lastCoinReward = discountSideModeReward(
+          (score.value ~/ 1000).clamp(0, 80),
+        );
+        addCoins(lastCoinReward);
+        return 'lose';
+      }
+      return null;
+    }
     // Endless: không có "win"; thua khi hết lượt. KHÔNG đụng win-streak/level.
     if (isEndless.value) {
       if (movesLeft.value <= 0) {
@@ -371,7 +403,9 @@ extension GameControllerScoring on GameController {
         addCoins(lastCoinReward);
         if (score.value > survivalHigh.value) {
           survivalHigh.value = score.value;
-          unawaited(_store.setInt(StorageKeys.survivalHigh, survivalHigh.value));
+          unawaited(
+            _store.setInt(StorageKeys.survivalHigh, survivalHigh.value),
+          );
         }
         return 'lose'; // panel kết thúc (không có "next")
       }
@@ -492,7 +526,10 @@ extension GameControllerScoring on GameController {
       // Wave 16 DDA: thua → tăng số thua liên tiếp màn này → trợ giúp ẩn lần sau.
       // Audit-fix: CLAMP ở kPityMovesFails (ngưỡng trợ giúp cao nhất) → trợ giúp
       // bão hoà, không phình số + không thưởng thêm cho "cố thua farm" quá ngưỡng.
-      final f = _store.getInt(StorageKeys.pityFails(currentLevel.value), def: 0);
+      final f = _store.getInt(
+        StorageKeys.pityFails(currentLevel.value),
+        def: 0,
+      );
       final next = (f + 1).clamp(0, GameController.kPityMovesFails);
       unawaited(_store.setInt(StorageKeys.pityFails(currentLevel.value), next));
       unawaited(_saveProgress(win: false));

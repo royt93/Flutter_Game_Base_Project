@@ -196,12 +196,15 @@ class GameScreenController extends GetxController {
     } else {
       // W20.3 — Side mode play count cho Challenge Card.
       final modeKey = _sideModeKey(gameCtrl);
-      if (modeKey != null) ChallengeCardController.maybe?.onSideModePlayed(modeKey);
+      if (modeKey != null) {
+        ChallengeCardController.maybe?.onSideModePlayed(modeKey);
+      }
       // W19.1 — kỷ lục chế độ phụ (Endless/Boss/Rhythm/Gravity/Soda/ColorRush/
       // Survival/Labyrinth). Daily/Versus trả null → bỏ qua. Banner ăn mừng nếu
       // phá kỷ lục / mở mốc (game còn sống trong 350ms trước overlay).
-      final outcome =
-          SideModeRecordController.maybe?.recordResult(won: result == 'win');
+      final outcome = SideModeRecordController.maybe?.recordResult(
+        won: result == 'win',
+      );
       if (outcome != null && outcome.hasCelebration && _game != null) {
         if (outcome.newTier != RecordTier.none) {
           final tierName = 'rec_tier_${outcome.newTier.name}'.tr;
@@ -227,6 +230,7 @@ class GameScreenController extends GetxController {
     if (g.isGravity.value) return 'gravity_short';
     if (g.isSoda.value) return 'soda_short';
     if (g.isColorRush.value) return 'color_rush_short';
+    if (g.isRush.value) return 'rush_short';
     return null; // Daily/Survival/Labyrinth/Puzzle/Versus không track
   }
 
@@ -323,6 +327,13 @@ class GameScreenController extends GetxController {
       _newGame();
       return;
     }
+    if (gameCtrl.isRush.value) {
+      // Rush: chơi lại không cần mạng (chế độ phụ).
+      gameCtrl.startRush();
+      ui.value = GameUi.playing;
+      _newGame();
+      return;
+    }
     if (gameCtrl.isDaily.value) {
       // Thử thách ngày: chơi lại CÙNG bàn (seed theo ngày), không cần mạng,
       // không thưởng lại (checkEnd tự chặn nếu đã hoàn thành hôm nay).
@@ -355,8 +366,10 @@ class GameScreenController extends GetxController {
     void go() => goNext ? next() : quit();
     if (!gameCtrl.isEndless.value && lv == worldOfLevel(lv).endLevel) {
       if (StoryController.to.maybeShow(
-          StoryTrigger.outro, worldOfLevel(lv).index,
-          onComplete: go)) {
+        StoryTrigger.outro,
+        worldOfLevel(lv).index,
+        onComplete: go,
+      )) {
         return;
       }
     }

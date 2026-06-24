@@ -53,6 +53,29 @@ void main() {
       expect(keys['vi_VN']!['stage_n']!.contains('@n'), isTrue);
     });
 
+    test('mọi placeholder @... phải khớp English cho mọi locale', () {
+      final placeholder = RegExp(r'@[A-Za-z_][A-Za-z0-9_]*');
+      final en = keys['en_US']!;
+      for (final entry in keys.entries) {
+        if (entry.key == 'en_US') continue;
+        for (final k in en.keys) {
+          final expected = placeholder
+              .allMatches(en[k]!)
+              .map((m) => m.group(0)!)
+              .toSet();
+          final actual = placeholder
+              .allMatches(entry.value[k]!)
+              .map((m) => m.group(0)!)
+              .toSet();
+          expect(
+            actual,
+            expected,
+            reason: '${entry.key}/$k placeholder mismatch',
+          );
+        }
+      }
+    });
+
     test('Challenge Card side-mode labels không rơi về raw i18n key', () {
       const modeKeys = {
         'endless_short',

@@ -78,9 +78,10 @@
 | # | Bước | Kết quả mong đợi |
 |---|------|-----------------|
 | 1 | Chơi nhiều màn tích điểm | Heo đất tích lũy (progress bar) |
-| 2 | Heo đất đầy | Nút "Đập heo" xuất hiện |
-| 3 | Bấm "Đập heo" (tốn xu nhỏ) | Nhận xu phần thưởng lớn |
+| 2 | Heo đất đủ ngưỡng claim | Nút "Đập heo" xuất hiện |
+| 3 | Bấm "Đập heo" | Nhận đúng số xu đã tích, không trừ thêm phí |
 | 4 | Sau khi đập | Heo đất reset về 0 |
+| 5 | Khởi động lại app | Heo đất vẫn 0, không claim lại được |
 
 ---
 

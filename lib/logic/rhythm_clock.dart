@@ -2,26 +2,21 @@
 /// (qua [tick]), KHÔNG dùng `DateTime.now()`/`Random` (ràng buộc engine + để
 /// test inject được). Phán định "đúng nhịp" theo cửa sổ quanh mốc beat.
 class RhythmClock {
-  /// Nhịp mỗi phút (beats per minute).
-  final double bpm;
+  /// Nhịp mỗi phút (beats per minute). Có thể thay đổi trong ván (BPM dynamic).
+  double bpm;
 
   /// Nửa độ rộng cửa sổ "đúng nhịp" (giây) quanh mỗi mốc beat.
-  /// onBeat = khoảng cách tới mốc beat gần nhất ≤ [window].
-  final double window;
+  double window;
 
-  double _t = 0; // tổng thời gian tích luỹ (giây)
-  int _beats = 0; // số mốc beat đã đi qua
+  double _t = 0;
+  int _beats = 0;
 
   RhythmClock({this.bpm = 100, this.window = 0.14})
-      : assert(bpm > 0),
-        assert(window > 0);
+    : assert(bpm > 0),
+      assert(window > 0);
 
-  /// Độ dài 1 beat (giây).
   double get beatPeriod => 60.0 / bpm;
-
-  /// Số mốc beat đã đi qua kể từ [reset].
   int get beatCount => _beats;
-
   double get time => _t;
 
   void reset() {
@@ -29,8 +24,6 @@ class RhythmClock {
     _beats = 0;
   }
 
-  /// Tiến đồng hồ thêm [dt] giây. Trả về true nếu vừa CROSS qua ≥1 mốc beat
-  /// (để engine đập HUD / phát tick).
   bool tick(double dt) {
     if (dt <= 0) return false;
     _t += dt;
@@ -42,16 +35,42 @@ class RhythmClock {
     return false;
   }
 
-  /// Pha trong beat hiện tại, [0, 1).
   double get phase => (_t % beatPeriod) / beatPeriod;
 
-  /// Khoảng cách (giây) tới mốc beat gần nhất (trước hoặc sau).
+  /// Khoảng cách (giây) tới mốc beat gần nhất.
   double get distanceToBeat {
     final into = _t % beatPeriod;
     final rest = beatPeriod - into;
     return into < rest ? into : rest;
   }
 
-  /// Thời điểm hiện tại có nằm trong cửa sổ "đúng nhịp" không?
   bool get onBeat => distanceToBeat <= window;
+}
+
+// W21 — BPM dynamic theo groove level (pure functions, không dùng DateTime/Random).
+
+/// BPM theo groove (0-8):
+///   0-2  → 80  (slow, easy)
+///   3-5  → 100 (baseline)
+///   6-7  → 120 (fast)
+///   8    → 140 (max, hard)
+double rhythmBpmFor(int groove) {
+  if (groove >= 8) return 140;
+  if (groove >= 6) return 120;
+  if (groove >= 3) return 100;
+  return 80;
+}
+
+/// Judgment window theo groove:
+///   0-7  → 0.14s (normal)
+///   8    → 0.10s (strict)
+double rhythmWindowFor(int groove) => groove >= 8 ? 0.10 : 0.14;
+
+/// Phân loại nhịp theo khoảng cách tới beat.
+/// Trả về: 2=PERFECT, 1=GOOD, -1=LATE/EARLY, -2=MISS.
+int rhythmJudgeFor(double distance, double window) {
+  if (distance > window) return -2; // MISS
+  if (distance <= 0.05) return 2; // PERFECT
+  if (distance <= 0.10) return 1; // GOOD
+  return -1; // LATE/EARLY
 }

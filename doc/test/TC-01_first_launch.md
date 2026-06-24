@@ -47,6 +47,8 @@
 | 6 | Back về Home | Home hiển thị lại |
 | 7 | Bấm "Cửa hàng" | Màn Shop mở |
 | 8 | Back về Home | Home hiển thị lại |
+| 9 | Bấm Battle Pass / Season / Achievements / Collection / Temple / Tree / Challenge Card / Piggy / Wheel nếu hiện trên Home | Mỗi màn mở đúng route, Back về Home không mất state |
+| 10 | Tap nhanh 3 lần vào cùng một nút Home | Không push trùng nhiều route |
 
 ---
 

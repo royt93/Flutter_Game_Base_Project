@@ -11,7 +11,7 @@
 |------|------|----------|-------|
 | [TC-01_first_launch.md](TC-01_first_launch.md) | First Launch & Home | P0 | 6 |
 | [TC-02_campaign.md](TC-02_campaign.md) | Campaign (Level Select + Gameplay) | P0 | 16 |
-| [TC-03_side_modes.md](TC-03_side_modes.md) | 11 Side Modes | P1 | 12 |
+| [TC-03_side_modes.md](TC-03_side_modes.md) | 13 Challenge Entries / Side Modes | P1 | 13 |
 | [TC-04_versus.md](TC-04_versus.md) | Versus Mode | P1 | 4 |
 | [TC-05_booster_economy.md](TC-05_booster_economy.md) | Booster, Shop, Xu, Lucky Wheel | P1 | 9 |
 | [TC-06_meta_progression.md](TC-06_meta_progression.md) | Battle Pass, Season, Achievement, Collection, Temple, Tree, Card | P1 | 8 |
@@ -19,8 +19,11 @@
 | [TC-08_ghost_replay.md](TC-08_ghost_replay.md) | Ghost Replay, DDA/Pity, Win Streak | P2 | 5 |
 | [TC-09_advanced_gameplay.md](TC-09_advanced_gameplay.md) | Conveyor, Portal, Dispenser, Flow, Cage, Order, Jam | P2 | 11 |
 | [TC-10_regression_edge_cases.md](TC-10_regression_edge_cases.md) | Regression & Edge Cases | P1 | 12 |
+| [TC-11_animation_gameplay.md](TC-11_animation_gameplay.md) | Animation & Gameplay Smoke Matrix | P0 | 16 |
+| [TC-12_release_gap_closure.md](TC-12_release_gap_closure.md) | Release Gap Closure | P0/P1 | 12 |
+| [TC-AUDIT_coverage_gaps.md](TC-AUDIT_coverage_gaps.md) | Coverage Audit Report | - | - |
 
-**Tổng cộng: ~88 test case**
+**Tổng cộng: ~116 test case + audit report**
 
 ---
 
@@ -82,3 +85,7 @@ Chạy theo thứ tự để cover luồng đầy đủ từ install đến meta
 | Dấu tiếng Việt bị mất | TC-07-02, TC-10-07 | Baloo2, không Orbitron |
 | Side mode ảnh hưởng campaign | TC-10-05 | isSideMode check |
 | Daily reward nhận 2 lần (chỉnh giờ lùi) | TC-05-09 | effectiveDay max-day |
+| Update app mất progress | TC-12-01 | migration/persistence gate |
+| Background/resume làm hỏng timer/audio | TC-12-02 | lifecycle gate |
+| Tap nhanh mở nhiều route | TC-12-03 | route stack gate |
+| Font scale/RTL overflow | TC-12-04, TC-12-05 | accessibility/i18n gate |

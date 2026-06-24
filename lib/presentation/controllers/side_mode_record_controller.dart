@@ -47,8 +47,8 @@ class SideModeRecordController extends GetxController {
 
   static SideModeRecordController? get maybe =>
       Get.isRegistered<SideModeRecordController>()
-          ? Get.find<SideModeRecordController>()
-          : null;
+      ? Get.find<SideModeRecordController>()
+      : null;
 
   @override
   void onInit() {
@@ -92,6 +92,7 @@ class SideModeRecordController extends GetxController {
     if (g.isColorRush.value) return SideModeKind.colorRush;
     if (g.isSurvival.value) return SideModeKind.survival;
     if (g.isLabyrinth.value) return SideModeKind.labyrinth;
+    if (g.isRush.value) return SideModeKind.rush;
     return null;
   }
 
@@ -104,6 +105,8 @@ class SideModeRecordController extends GetxController {
         return g.score.value;
       case SideModeKind.boss:
         return won ? g.bossStage.value : 0; // chỉ tính khi HẠ được boss
+      case SideModeKind.rush:
+        return g.score.value; // bestScore — như Survival
       case SideModeKind.rhythm:
       case SideModeKind.gravity:
       case SideModeKind.colorRush:

@@ -8,9 +8,11 @@ import '../../core/debug_log.dart';
 import '../../core/neon_theme.dart';
 import '../../core/utils/format.dart';
 import '../../data/levels.dart';
+import '../../data/side_mode_records.dart';
 import '../../game/neon_jewel_game.dart' show BoosterMode;
 import '../controllers/game_controller.dart';
 import '../controllers/game_screen_controller.dart';
+import '../controllers/side_mode_record_controller.dart';
 import '../widgets/coin_chip.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_dialog.dart';
@@ -35,8 +37,11 @@ class GameScreen extends StatelessWidget {
         body: Obx(() {
           // Theme đổi màu theo thế giới (hoặc theo stage khi Endless).
           final accent = ctrl.isEndless.value
-              ? NeonTheme.worldAccents[(ctrl.endlessStage.value - 1) % NeonTheme.worldAccents.length]
-              : NeonTheme.accentForWorld(worldOfLevel(ctrl.currentLevel.value).index);
+              ? NeonTheme.worldAccents[(ctrl.endlessStage.value - 1) %
+                    NeonTheme.worldAccents.length]
+              : NeonTheme.accentForWorld(
+                  worldOfLevel(ctrl.currentLevel.value).index,
+                );
           return NeonBg(
             accent: accent,
             child: Stack(
@@ -48,12 +53,14 @@ class GameScreen extends StatelessWidget {
                       Expanded(
                         child: Obx(() {
                           final v = sc.gameVersion.value;
-                          return Stack(children: [
-                            GameWidget(key: ValueKey(v), game: sc.game),
-                            // A fix: Ghost overlay — pulsing highlight trên 2 gem ghost sẽ swap
-                            if (ctrl.isGhostMode.value)
-                              _GhostHintOverlay(ctrl: ctrl, sc: sc),
-                          ]);
+                          return Stack(
+                            children: [
+                              GameWidget(key: ValueKey(v), game: sc.game),
+                              // A fix: Ghost overlay — pulsing highlight trên 2 gem ghost sẽ swap
+                              if (ctrl.isGhostMode.value)
+                                _GhostHintOverlay(ctrl: ctrl, sc: sc),
+                            ],
+                          );
                         }),
                       ),
                       _buildBoosterBar(ctrl, sc),
@@ -66,7 +73,9 @@ class GameScreen extends StatelessWidget {
                 // Overlay hướng dẫn lần đầu (trên cùng)
                 Obx(() {
                   sc.tutorialStep.value; // observe để rebuild khi đổi bước
-                  return sc.tutorialOpen.value ? _tutorialOverlay(sc) : const SizedBox.shrink();
+                  return sc.tutorialOpen.value
+                      ? _tutorialOverlay(sc)
+                      : const SizedBox.shrink();
                 }),
                 // Overlay cốt truyện outro (sau khi thắng màn cuối thế giới)
                 const StoryOverlay(),
@@ -91,8 +100,16 @@ class GameScreen extends StatelessWidget {
             icon: Icons.exit_to_app_rounded,
             message: 'quit_msg'.tr,
             actions: [
-              NeonDialogAction(label: 'cancel'.tr, color: NeonTheme.cyan, onTap: sc.closeOverlay),
-              NeonDialogAction(label: 'confirm'.tr, color: NeonTheme.magenta, onTap: sc.quit),
+              NeonDialogAction(
+                label: 'cancel'.tr,
+                color: NeonTheme.cyan,
+                onTap: sc.closeOverlay,
+              ),
+              NeonDialogAction(
+                label: 'confirm'.tr,
+                color: NeonTheme.magenta,
+                onTap: sc.quit,
+              ),
             ],
           ),
         );
@@ -107,7 +124,11 @@ class GameScreen extends StatelessWidget {
   Widget _tutorialOverlay(GameScreenController sc) {
     final step = sc.tutorialStep.value;
     final last = step >= GameScreenController.tutorialSteps - 1;
-    const icons = [Icons.swipe_rounded, Icons.bolt_rounded, Icons.auto_awesome_rounded];
+    const icons = [
+      Icons.swipe_rounded,
+      Icons.bolt_rounded,
+      Icons.auto_awesome_rounded,
+    ];
     return NeonDialog.overlay(
       onBarrier: sc.tutorialNext,
       // vuốt trái → bước tiếp, vuốt phải → lùi bước
@@ -131,7 +152,9 @@ class GameScreen extends StatelessWidget {
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(GameScreenController.tutorialSteps, (i) {
+                children: List.generate(GameScreenController.tutorialSteps, (
+                  i,
+                ) {
                   final on = i == step;
                   return Container(
                     margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -140,7 +163,9 @@ class GameScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: on ? NeonTheme.cyan : Colors.white24,
                       borderRadius: BorderRadius.circular(4),
-                      boxShadow: on ? NeonTheme.glow(NeonTheme.cyan, blur: 6) : null,
+                      boxShadow: on
+                          ? NeonTheme.glow(NeonTheme.cyan, blur: 6)
+                          : null,
                     ),
                   );
                 }),
@@ -149,7 +174,11 @@ class GameScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.swipe_left_rounded, color: Colors.white38, size: 14),
+                  const Icon(
+                    Icons.swipe_left_rounded,
+                    color: Colors.white38,
+                    size: 14,
+                  ),
                   const SizedBox(width: 5),
                   Text(
                     'tut_swipe_hint'.tr,
@@ -164,7 +193,12 @@ class GameScreen extends StatelessWidget {
             ],
           ),
           actions: [
-            if (!last) NeonDialogAction(label: 'tut_skip'.tr, color: NeonTheme.magenta, onTap: sc.tutorialSkip),
+            if (!last)
+              NeonDialogAction(
+                label: 'tut_skip'.tr,
+                color: NeonTheme.magenta,
+                onTap: sc.tutorialSkip,
+              ),
             NeonDialogAction(
               label: last ? 'tut_start'.tr : 'tut_next'.tr,
               color: NeonTheme.lime,
@@ -190,8 +224,16 @@ class GameScreen extends StatelessWidget {
             '${'zen_best'.tr}: ${fmtNum(ctrl.zenHigh.value)}'
             '${ctrl.lastCoinReward > 0 ? '  ·  +${fmtNum(ctrl.lastCoinReward)} 💰' : ''}',
         actions: [
-          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
-          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+          NeonDialogAction(
+            label: 'btn_again'.tr,
+            color: NeonTheme.cyan,
+            onTap: sc.again,
+          ),
+          NeonDialogAction(
+            label: 'btn_home'.tr,
+            color: NeonTheme.purple,
+            onTap: sc.quit,
+          ),
         ],
       );
     }
@@ -206,8 +248,16 @@ class GameScreen extends StatelessWidget {
             '${'endless_best'.tr}: ${fmtNum(ctrl.endlessHigh.value)}  ·  '
             '${'stage_n'.trParams({'n': '${ctrl.endlessStage.value}'})}',
         actions: [
-          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
-          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+          NeonDialogAction(
+            label: 'btn_again'.tr,
+            color: NeonTheme.cyan,
+            onTap: sc.again,
+          ),
+          NeonDialogAction(
+            label: 'btn_home'.tr,
+            color: NeonTheme.purple,
+            onTap: sc.quit,
+          ),
         ],
       );
     }
@@ -222,8 +272,16 @@ class GameScreen extends StatelessWidget {
             '${fmtNum(ctrl.bossHp.value)}/${fmtNum(ctrl.bossMaxHp.value)}',
         content: win ? _celebration(ctrl) : null,
         actions: [
-          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
-          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.orange, onTap: sc.quit),
+          NeonDialogAction(
+            label: 'btn_again'.tr,
+            color: NeonTheme.cyan,
+            onTap: sc.again,
+          ),
+          NeonDialogAction(
+            label: 'btn_home'.tr,
+            color: NeonTheme.orange,
+            onTap: sc.quit,
+          ),
         ],
       );
     }
@@ -238,8 +296,16 @@ class GameScreen extends StatelessWidget {
             '  ·  ${'rhythm_groove'.tr} ${ctrl.groove.value}',
         content: win ? _celebration(ctrl) : null,
         actions: [
-          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
-          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+          NeonDialogAction(
+            label: 'btn_again'.tr,
+            color: NeonTheme.cyan,
+            onTap: sc.again,
+          ),
+          NeonDialogAction(
+            label: 'btn_home'.tr,
+            color: NeonTheme.purple,
+            onTap: sc.quit,
+          ),
         ],
       );
     }
@@ -253,8 +319,16 @@ class GameScreen extends StatelessWidget {
             '${'hud_score'.tr}: ${fmtNum(ctrl.score.value)} / ${fmtNum(ctrl.targetScore.value)}',
         content: win ? _celebration(ctrl) : null,
         actions: [
-          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
-          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+          NeonDialogAction(
+            label: 'btn_again'.tr,
+            color: NeonTheme.cyan,
+            onTap: sc.again,
+          ),
+          NeonDialogAction(
+            label: 'btn_home'.tr,
+            color: NeonTheme.purple,
+            onTap: sc.quit,
+          ),
         ],
       );
     }
@@ -263,13 +337,23 @@ class GameScreen extends StatelessWidget {
       return NeonDialog.panel(
         title: win ? 'victory'.tr : 'retry'.tr,
         color: win ? NeonTheme.lime : NeonTheme.orange,
-        icon: win ? Icons.emoji_events_rounded : Icons.local_fire_department_rounded,
+        icon: win
+            ? Icons.emoji_events_rounded
+            : Icons.local_fire_department_rounded,
         message:
             '${'hud_score'.tr}: ${fmtNum(ctrl.score.value)} / ${fmtNum(ctrl.targetScore.value)}',
         content: win ? _celebration(ctrl) : null,
         actions: [
-          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
-          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+          NeonDialogAction(
+            label: 'btn_again'.tr,
+            color: NeonTheme.cyan,
+            onTap: sc.again,
+          ),
+          NeonDialogAction(
+            label: 'btn_home'.tr,
+            color: NeonTheme.purple,
+            onTap: sc.quit,
+          ),
         ],
       );
     }
@@ -283,8 +367,16 @@ class GameScreen extends StatelessWidget {
             '${'soda_hud'.tr}: ${ctrl.sodaCollected.value} / ${ctrl.level.sodaTarget}',
         content: win ? _celebration(ctrl) : null,
         actions: [
-          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
-          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+          NeonDialogAction(
+            label: 'btn_again'.tr,
+            color: NeonTheme.cyan,
+            onTap: sc.again,
+          ),
+          NeonDialogAction(
+            label: 'btn_home'.tr,
+            color: NeonTheme.purple,
+            onTap: sc.quit,
+          ),
         ],
       );
     }
@@ -294,11 +386,45 @@ class GameScreen extends StatelessWidget {
         title: 'survival_over'.tr,
         color: NeonTheme.orange,
         icon: Icons.timer_rounded,
-        message: '${'hud_score'.tr}: ${fmtNum(ctrl.score.value)}\n'
+        message:
+            '${'hud_score'.tr}: ${fmtNum(ctrl.score.value)}\n'
             '${'survival_best'.tr}: ${fmtNum(ctrl.survivalHigh.value)}',
         actions: [
-          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
-          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.orange, onTap: sc.quit),
+          NeonDialogAction(
+            label: 'btn_again'.tr,
+            color: NeonTheme.cyan,
+            onTap: sc.again,
+          ),
+          NeonDialogAction(
+            label: 'btn_home'.tr,
+            color: NeonTheme.orange,
+            onTap: sc.quit,
+          ),
+        ],
+      );
+    }
+    // Rush: chế độ phụ tính điểm cao, kết thúc khi hết giờ.
+    if (ctrl.isRush.value) {
+      final best = SideModeRecordController.maybe?.recordOf(SideModeKind.rush);
+      return NeonDialog.panel(
+        title: 'rush_title'.tr,
+        color: NeonTheme.yellow,
+        icon: Icons.bolt_rounded,
+        message:
+            '${'hud_score'.tr}: ${fmtNum(ctrl.score.value)}'
+            '${best == null ? '' : '\n${'rush_best'.tr}: ${fmtNum(best)}'}'
+            '${ctrl.lastCoinReward > 0 ? '\n+${fmtNum(ctrl.lastCoinReward)} ${'coins_short'.tr}' : ''}',
+        actions: [
+          NeonDialogAction(
+            label: 'btn_again'.tr,
+            color: NeonTheme.cyan,
+            onTap: sc.again,
+          ),
+          NeonDialogAction(
+            label: 'btn_home'.tr,
+            color: NeonTheme.purple,
+            onTap: sc.quit,
+          ),
         ],
       );
     }
@@ -312,8 +438,16 @@ class GameScreen extends StatelessWidget {
             '${'labyrinth_hud'.tr}: ${ctrl.dropped.value} / ${ctrl.level.dropTarget}',
         content: win ? _celebration(ctrl) : null,
         actions: [
-          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
-          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+          NeonDialogAction(
+            label: 'btn_again'.tr,
+            color: NeonTheme.cyan,
+            onTap: sc.again,
+          ),
+          NeonDialogAction(
+            label: 'btn_home'.tr,
+            color: NeonTheme.purple,
+            onTap: sc.quit,
+          ),
         ],
       );
     }
@@ -323,9 +457,9 @@ class GameScreen extends StatelessWidget {
     if (ctrl.isDaily.value) {
       final msg = win
           ? (ctrl.lastCoinReward > 0
-              ? '${'daily_ch_streak'.tr}: ${ctrl.dailyChStreak.value}\n'
-                  '${'daily_ch_reward'.trParams({'c': fmtNum(ctrl.lastCoinReward)})}'
-              : 'daily_ch_done'.tr)
+                ? '${'daily_ch_streak'.tr}: ${ctrl.dailyChStreak.value}\n'
+                      '${'daily_ch_reward'.trParams({'c': fmtNum(ctrl.lastCoinReward)})}'
+                : 'daily_ch_done'.tr)
           : '${'hud_goal'.tr}: ${_objectiveText(ctrl)}';
       return NeonDialog.panel(
         title: win ? 'victory'.tr : 'retry'.tr,
@@ -334,8 +468,16 @@ class GameScreen extends StatelessWidget {
         message: msg,
         content: win ? _celebration(ctrl) : null,
         actions: [
-          NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
-          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: sc.quit),
+          NeonDialogAction(
+            label: 'btn_again'.tr,
+            color: NeonTheme.cyan,
+            onTap: sc.again,
+          ),
+          NeonDialogAction(
+            label: 'btn_home'.tr,
+            color: NeonTheme.purple,
+            onTap: sc.quit,
+          ),
         ],
       );
     }
@@ -346,14 +488,29 @@ class GameScreen extends StatelessWidget {
       title: win ? 'victory'.tr : 'retry'.tr,
       color: win ? NeonTheme.lime : NeonTheme.magenta,
       icon: win ? Icons.emoji_events_rounded : Icons.refresh_rounded,
-      message: noLives ? 'lives_none_title'.tr : '${'hud_goal'.tr}: ${_objectiveText(ctrl)}',
+      message: noLives
+          ? 'lives_none_title'.tr
+          : '${'hud_goal'.tr}: ${_objectiveText(ctrl)}',
       content: win ? _celebration(ctrl) : null,
       actions: [
-        if (!noLives) NeonDialogAction(label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: sc.again),
+        if (!noLives)
+          NeonDialogAction(
+            label: 'btn_again'.tr,
+            color: NeonTheme.cyan,
+            onTap: sc.again,
+          ),
         if (win && cur < kLevels.length)
-          NeonDialogAction(label: 'btn_next'.tr, color: NeonTheme.lime, onTap: sc.proceedNextOrHome)
+          NeonDialogAction(
+            label: 'btn_next'.tr,
+            color: NeonTheme.lime,
+            onTap: sc.proceedNextOrHome,
+          )
         else
-          NeonDialogAction(label: 'btn_home'.tr, color: NeonTheme.purple, onTap: win ? sc.proceedNextOrHome : sc.quit),
+          NeonDialogAction(
+            label: 'btn_home'.tr,
+            color: NeonTheme.purple,
+            onTap: win ? sc.proceedNextOrHome : sc.quit,
+          ),
       ],
     );
   }
@@ -361,7 +518,9 @@ class GameScreen extends StatelessWidget {
   String _objectiveText(GameController ctrl) {
     // Survival (Wave 15): target giả khổng lồ (1<<28) → chỉ hiện ĐIỂM (như Endless),
     // tránh "0 / 268.435.456" xấu xí.
-    if (ctrl.isSurvival.value) return fmtNum(ctrl.score.value);
+    if (ctrl.isSurvival.value || ctrl.isRush.value) {
+      return fmtNum(ctrl.score.value);
+    }
     switch (ctrl.level.objective) {
       case ObjectiveType.score:
         return '${fmtNum(ctrl.score.value)} / ${fmtNum(ctrl.targetScore.value)}';
@@ -380,7 +539,11 @@ class GameScreen extends StatelessWidget {
       case ObjectiveType.order:
         final orders = ctrl.level.orders;
         var done = 0;
-        for (var i = 0; i < orders.length && i < ctrl.orderProgress.length; i++) {
+        for (
+          var i = 0;
+          i < orders.length && i < ctrl.orderProgress.length;
+          i++
+        ) {
           if (ctrl.orderProgress[i] >= orders[i].target) done++;
         }
         return '$done / ${orders.length}';
@@ -404,12 +567,19 @@ class GameScreen extends StatelessWidget {
             final on = i < earned;
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Icon(
-                Icons.star_rounded,
-                size: 42,
-                color: on ? Colors.amber : Colors.white24,
-                shadows: on ? const [Shadow(color: Colors.amber, blurRadius: 18)] : null,
-              ).animate().scale(delay: (i * 160).ms, duration: 420.ms, curve: Curves.elasticOut),
+              child:
+                  Icon(
+                    Icons.star_rounded,
+                    size: 42,
+                    color: on ? Colors.amber : Colors.white24,
+                    shadows: on
+                        ? const [Shadow(color: Colors.amber, blurRadius: 18)]
+                        : null,
+                  ).animate().scale(
+                    delay: (i * 160).ms,
+                    duration: 420.ms,
+                    curve: Curves.elasticOut,
+                  ),
             );
           }),
         ),
@@ -441,7 +611,11 @@ class GameScreen extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.local_fire_department_rounded, color: NeonTheme.orange, size: 16),
+                const Icon(
+                  Icons.local_fire_department_rounded,
+                  color: NeonTheme.orange,
+                  size: 16,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '${'streak_bonus'.trParams({'n': '${ctrl.winStreak.value}'})}  +${ctrl.lastStreakBonus}',
@@ -462,47 +636,70 @@ class GameScreen extends StatelessWidget {
   // -------------------------------------------------------------------- HUD
   Widget _buildHud(GameController ctrl, GameScreenController sc) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(NeonTheme.s24, NeonTheme.s16, NeonTheme.s24, NeonTheme.s8),
+      padding: const EdgeInsets.fromLTRB(
+        NeonTheme.s24,
+        NeonTheme.s16,
+        NeonTheme.s24,
+        NeonTheme.s8,
+      ),
       child: Column(
         children: [
           SizedBox(
             height: 48,
             child: Row(
               children: [
-                NeonIconButton(Icons.close_rounded, color: NeonTheme.magenta, size: 28, onTap: sc.confirmQuit),
-                const Spacer(),
-                Obx(
-                  () => _stageBadge(
-                    ctrl.isDaily.value
-                        ? 'daily_ch_title'.tr
-                        : ctrl.isBoss.value
-                        ? '${'boss_title'.tr} ${ctrl.bossStage.value}'
-                        : ctrl.isRhythm.value
-                        ? 'rhythm_title'.tr
-                        : ctrl.isGravity.value
-                        ? '${'gravity_title'.tr} ${ctrl.gravityDir.value == 0 ? '↓' : '↑'}'
-                        : ctrl.isColorRush.value
-                        ? 'color_rush_title'.tr
-                        : ctrl.isSoda.value
-                        ? 'soda_title'.tr
-                        : ctrl.isSurvival.value
-                        ? 'survival_title'.tr
-                        : ctrl.isLabyrinth.value
-                        ? 'labyrinth_title'.tr
-                        : ctrl.isGhostMode.value
-                        ? 'ghost_hud'.tr
-                        : ctrl.isZen.value
-                        ? 'zen_title'.tr
-                        : ctrl.isEndless.value
-                        ? 'endless_title'.tr
-                        : 'stage_n'.trParams({'n': '${ctrl.currentLevel.value}'}),
+                NeonIconButton(
+                  Icons.close_rounded,
+                  color: NeonTheme.magenta,
+                  size: 28,
+                  onTap: sc.confirmQuit,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Obx(
+                        () => _stageBadge(
+                          ctrl.isDaily.value
+                              ? 'daily_ch_title'.tr
+                              : ctrl.isBoss.value
+                              ? '${'boss_title'.tr} ${ctrl.bossStage.value}'
+                              : ctrl.isRhythm.value
+                              ? 'rhythm_title'.tr
+                              : ctrl.isGravity.value
+                              ? '${'gravity_title'.tr} ${ctrl.gravityDir.value == 0 ? '↓' : '↑'}'
+                              : ctrl.isColorRush.value
+                              ? 'color_rush_title'.tr
+                              : ctrl.isSoda.value
+                              ? 'soda_title'.tr
+                              : ctrl.isSurvival.value
+                              ? 'survival_title'.tr
+                              : ctrl.isLabyrinth.value
+                              ? 'labyrinth_title'.tr
+                              : ctrl.isRush.value
+                              ? 'rush_title'.tr
+                              : ctrl.isGhostMode.value
+                              ? 'ghost_hud'.tr
+                              : ctrl.isZen.value
+                              ? 'zen_title'.tr
+                              : ctrl.isEndless.value
+                              ? 'endless_title'.tr
+                              : 'stage_n'.trParams({
+                                  'n': '${ctrl.currentLevel.value}',
+                                }),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 if (AudioManager.maybe != null)
                   Obx(
                     () => NeonIconButton(
-                      AudioManager.maybe!.muted.value ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                      AudioManager.maybe!.muted.value
+                          ? Icons.volume_off_rounded
+                          : Icons.volume_up_rounded,
                       color: NeonTheme.cyan,
                       size: 28,
                       onTap: AudioManager.maybe!.toggleMute,
@@ -527,12 +724,17 @@ class GameScreen extends StatelessWidget {
           const SizedBox(height: NeonTheme.s8),
           Obx(() => _animatedBar(ctrl.objectiveProgress)),
           // Bom đếm ngược (Wave 10): chỉ báo cảnh báo khi còn bom trên bàn.
-          Obx(() => ctrl.bombsLeft.value > 0
-              ? Padding(
-                  padding: const EdgeInsets.only(top: NeonTheme.s8),
-                  child: _bombStrip(ctrl.bombsLeft.value, ctrl.bombMinTimer.value),
-                )
-              : const SizedBox.shrink()),
+          Obx(
+            () => ctrl.bombsLeft.value > 0
+                ? Padding(
+                    padding: const EdgeInsets.only(top: NeonTheme.s8),
+                    child: _bombStrip(
+                      ctrl.bombsLeft.value,
+                      ctrl.bombMinTimer.value,
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
           // Cơ chế Wave 11 (băng chuyền / cổng / dispenser): badge nhắc người chơi.
           _mechanicStrip(ctrl),
         ],
@@ -572,8 +774,11 @@ class GameScreen extends StatelessWidget {
 
   /// Color Rush HUD: chip "MÀU NÓNG ●" (chấm theo màu đang nóng) + nhắc bội điểm.
   Widget _colorRushHud(GameController ctrl) {
-    final hot = NeonTheme.gemColors[
-        ctrl.colorRushHot.value.clamp(0, NeonTheme.gemColors.length - 1)];
+    final hot =
+        NeonTheme.gemColors[ctrl.colorRushHot.value.clamp(
+          0,
+          NeonTheme.gemColors.length - 1,
+        )];
     return Center(
       child: Container(
         margin: const EdgeInsets.only(top: NeonTheme.s8),
@@ -616,16 +821,33 @@ class GameScreen extends StatelessWidget {
     final idx = ctrl.level.index;
     final widgets = <Widget>[];
     if (kConveyorSpec.containsKey(idx)) {
-      widgets.add(_mechBadge(
-          Icons.swap_horiz_rounded, 'conveyor_title'.tr, NeonTheme.cyan));
+      widgets.add(
+        _mechBadge(
+          Icons.swap_horiz_rounded,
+          'conveyor_title'.tr,
+          NeonTheme.cyan,
+        ),
+      );
     }
     if (kPortalSpec.containsKey(idx)) {
       widgets.add(
-          _mechBadge(Icons.blur_circular_rounded, 'portal_title'.tr, NeonTheme.lime));
+        _mechBadge(
+          Icons.blur_circular_rounded,
+          'portal_title'.tr,
+          NeonTheme.lime,
+        ),
+      );
     }
     if (kDispenserSpec.containsKey(idx)) {
-      widgets.add(Obx(() => _mechBadge(Icons.auto_awesome_rounded,
-          '${'dispenser_title'.tr} ${ctrl.dispenserCountdown.value}', NeonTheme.yellow)));
+      widgets.add(
+        Obx(
+          () => _mechBadge(
+            Icons.auto_awesome_rounded,
+            '${'dispenser_title'.tr} ${ctrl.dispenserCountdown.value}',
+            NeonTheme.yellow,
+          ),
+        ),
+      );
     }
     if (widgets.isEmpty) return const SizedBox.shrink();
     return Padding(
@@ -640,117 +862,288 @@ class GameScreen extends StatelessWidget {
   }
 
   Widget _mechBadge(IconData icon, String label, Color color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: NeonTheme.panel.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.6), width: 1.4),
-          boxShadow: NeonTheme.glow(color, blur: 5),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: NeonTheme.panel.withValues(alpha: 0.55),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: color.withValues(alpha: 0.6), width: 1.4),
+      boxShadow: NeonTheme.glow(color, blur: 5),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        NeonIcon(icon, color: color, size: 16),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            NeonIcon(icon, color: color, size: 16),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      );
+      ],
+    ),
+  );
 
   /// Chỉ báo "ĐIỂM YẾU" của boss: chấm màu cần đánh trúng để ×2 sát thương.
   Widget _bossWeakHint(GameController ctrl) {
-    final c = NeonTheme.gemColors[ctrl.bossWeakColor.value];
+    final weakC = NeonTheme.gemColors[ctrl.bossWeakColor.value];
+    final phase = ctrl.bossPhase;
+    final ratio = ctrl.bossMaxHp.value == 0
+        ? 0.0
+        : (ctrl.bossHp.value / ctrl.bossMaxHp.value).clamp(0.0, 1.0);
+    // Màu HP bar: cyan (P0) → yellow (P1) → red (P2)
+    final barColor = phase == 2
+        ? NeonTheme.magenta
+        : phase == 1
+        ? NeonTheme.yellow
+        : NeonTheme.cyan;
+    final phaseLabel = phase == 2
+        ? 'PHASE 3'
+        : phase == 1
+        ? 'PHASE 2'
+        : 'PHASE 1';
+
     return Padding(
       padding: const EdgeInsets.only(top: NeonTheme.s8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
         children: [
-          Text(
-            'boss_weak'.tr,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            width: 18,
-            height: 18,
-            decoration: BoxDecoration(
-              color: c,
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: c, blurRadius: 10)],
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '×2',
-            style: TextStyle(fontFamily: 'Baloo2', fontSize: 13, fontWeight: FontWeight.w800, color: c),
+          // HP bar với màu theo phase
+          Stack(
+                alignment: Alignment.centerLeft,
+                children: [
+                  Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.white12,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  FractionallySizedBox(
+                    widthFactor: ratio,
+                    child: Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: barColor,
+                        borderRadius: BorderRadius.circular(4),
+                        boxShadow: [BoxShadow(color: barColor, blurRadius: 6)],
+                      ),
+                    ),
+                  ),
+                ],
+              )
+              .animate(key: ValueKey('boss_hp_phase_$phase'))
+              .shimmer(
+                duration: 600.ms,
+                color: barColor.withValues(alpha: 0.6),
+              ),
+          const SizedBox(height: 6),
+          // Hàng 2: phase badge + weak color hint. Wrap để chịu được font scale lớn.
+          Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  // Phase badge
+                  Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: barColor.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: barColor, width: 1),
+                        ),
+                        child: Text(
+                          phaseLabel,
+                          style: TextStyle(
+                            fontFamily: 'Baloo2',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: barColor,
+                          ),
+                        ),
+                      )
+                      .animate(key: ValueKey('boss_phase_badge_$phase'))
+                      .fadeIn(duration: 300.ms)
+                      .scale(begin: const Offset(0.8, 0.8)),
+                  Text(
+                    'boss_weak'.tr,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: weakC,
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: weakC, blurRadius: 10)],
+                    ),
+                  ),
+                  Text(
+                    '×2',
+                    style: TextStyle(
+                      fontFamily: 'Baloo2',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: weakC,
+                    ),
+                  ),
+                ],
+              )
+              .animate(key: ValueKey('boss_weak_${ctrl.bossWeakColor.value}'))
+              .fadeIn(duration: 300.ms),
+          // Flash khi boss attack
+          Obx(
+            () => ctrl.bossAttackSignal.value > 0
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child:
+                        Text(
+                              'BOSS STRIKE!',
+                              style: TextStyle(
+                                fontFamily: 'Baloo2',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                                color: barColor,
+                                shadows: [
+                                  Shadow(color: barColor, blurRadius: 12),
+                                ],
+                              ),
+                            )
+                            .animate(key: ValueKey(ctrl.bossAttackSignal.value))
+                            .fadeIn(duration: 90.ms)
+                            .shake(duration: 260.ms, hz: 8)
+                            .fadeOut(delay: 350.ms, duration: 180.ms),
+                  )
+                : const SizedBox.shrink(),
           ),
         ],
       ),
-    ).animate(key: ValueKey(ctrl.bossWeakColor.value)).fadeIn(duration: 300.ms);
+    );
   }
 
-  /// HUD chế độ Nhịp điệu: chấm đập theo beat + thanh groove + nhãn đúng/lệch.
+  /// HUD chế độ Nhịp điệu (W21): 4-dot indicator + groove bar + judgment badge + BPM.
   Widget _rhythmHud(GameController ctrl) {
-    final judge = ctrl.lastBeatJudge.value;
-    final accent = judge == 1
+    final groove = ctrl.groove.value;
+    // Màu accent theo groove: cyan (thấp) → lime (giữa) → yellow (cao)
+    final accent = groove >= GameController.kGrooveMax
+        ? NeonTheme.yellow
+        : groove >= GameController.kGrooveMax ~/ 2
         ? NeonTheme.lime
-        : judge == -1
-        ? NeonTheme.magenta
         : NeonTheme.cyan;
+    final badgeColor = ctrl.rhythmJudge.value == 2
+        ? NeonTheme.yellow
+        : ctrl.rhythmJudge.value == 1
+        ? NeonTheme.lime
+        : ctrl.rhythmJudge.value == -1
+        ? NeonTheme.orange
+        : NeonTheme.magenta;
+    final badgeText = ctrl.rhythmJudge.value == 2
+        ? 'PERFECT'
+        : ctrl.rhythmJudge.value == 1
+        ? 'GOOD'
+        : ctrl.rhythmJudge.value == -1
+        ? 'LATE'
+        : ctrl.rhythmJudge.value == -2
+        ? 'MISS'
+        : '';
+
     return Padding(
       padding: const EdgeInsets.only(top: NeonTheme.s8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
         children: [
-          // chấm đập mỗi beat (re-animate khi rhythmBeat đổi)
-          Container(
-                width: 16,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: NeonTheme.cyan,
-                  shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(color: NeonTheme.cyan, blurRadius: 12)],
-                ),
-              )
-              .animate(key: ValueKey(ctrl.rhythmBeat.value))
-              .scale(begin: const Offset(1.5, 1.5), end: const Offset(1, 1), duration: 260.ms, curve: Curves.easeOut),
-          const SizedBox(width: 12),
-          // thanh groove
           Row(
-            children: List.generate(GameController.kGrooveMax, (i) {
-              final on = i < ctrl.groove.value;
-              return Container(
-                width: 8,
-                height: 14,
-                margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                decoration: BoxDecoration(
-                  color: on ? accent : Colors.white12,
-                  borderRadius: BorderRadius.circular(3),
-                  boxShadow: on ? [BoxShadow(color: accent, blurRadius: 6)] : null,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 4 dot nhịp — dot active = beat % 4
+              Row(
+                children: List.generate(4, (i) {
+                  final active = ctrl.rhythmBeat.value % 4 == i;
+                  final dotColor = active ? accent : Colors.white24;
+                  return Container(
+                        width: active ? 14 : 8,
+                        height: active ? 14 : 8,
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        decoration: BoxDecoration(
+                          color: dotColor,
+                          shape: BoxShape.circle,
+                          boxShadow: active
+                              ? [BoxShadow(color: accent, blurRadius: 10)]
+                              : null,
+                        ),
+                      )
+                      .animate(key: ValueKey('${ctrl.rhythmBeat.value}_$i'))
+                      .scale(
+                        begin: active
+                            ? const Offset(1.4, 1.4)
+                            : const Offset(1, 1),
+                        end: const Offset(1, 1),
+                        duration: 200.ms,
+                        curve: Curves.easeOut,
+                      );
+                }),
+              ),
+              const SizedBox(width: 10),
+              // thanh groove
+              Row(
+                children: List.generate(GameController.kGrooveMax, (i) {
+                  final on = i < groove;
+                  return Container(
+                    width: 7,
+                    height: 13,
+                    margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                    decoration: BoxDecoration(
+                      color: on ? accent : Colors.white12,
+                      borderRadius: BorderRadius.circular(3),
+                      boxShadow: on
+                          ? [BoxShadow(color: accent, blurRadius: 5)]
+                          : null,
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(width: 10),
+              // BPM label
+              Text(
+                '${ctrl.rhythmBpm.value.toInt()} BPM',
+                style: TextStyle(
+                  fontFamily: 'Baloo2',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: accent.withValues(alpha: 0.85),
                 ),
-              );
-            }),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Text(
-            judge == 1
-                ? 'rhythm_onbeat'.tr
-                : judge == -1
-                ? 'rhythm_offbeat'.tr
-                : 'rhythm_groove'.tr,
-            style: TextStyle(fontFamily: 'Baloo2', fontSize: 12, fontWeight: FontWeight.w800, color: accent),
-          ),
+          // Judgment badge fly-up (key = rhythmJudge value → re-animate mỗi lần đánh)
+          if (badgeText.isNotEmpty)
+            Text(
+                  badgeText,
+                  style: TextStyle(
+                    fontFamily: 'Baloo2',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: badgeColor,
+                    shadows: [Shadow(color: badgeColor, blurRadius: 12)],
+                  ),
+                )
+                .animate(
+                  key: ValueKey(
+                    '${ctrl.rhythmJudge.value}_${ctrl.rhythmBeat.value}',
+                  ),
+                )
+                .fadeIn(duration: 120.ms)
+                .slideY(begin: 0.3, end: 0, duration: 200.ms)
+                .then()
+                .fadeOut(delay: 300.ms, duration: 200.ms),
         ],
       ),
     );
@@ -762,17 +1155,32 @@ class GameScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: NeonTheme.panel.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: NeonTheme.cyan.withValues(alpha: 0.4), width: 1.5),
+        border: Border.all(
+          color: NeonTheme.cyan.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
         boxShadow: NeonTheme.glow(NeonTheme.cyan, blur: 6),
       ),
       child: Row(
         children: [
-          Expanded(child: Obx(() => _infoCell('hud_score'.tr, _animValue(fmtNum(ctrl.score.value)), NeonTheme.cyan))),
+          Expanded(
+            child: Obx(
+              () => _infoCell(
+                'hud_score'.tr,
+                _animValue(fmtNum(ctrl.score.value)),
+                NeonTheme.cyan,
+              ),
+            ),
+          ),
           _divider(),
           Expanded(
             child: Obx(
               () => ctrl.isEndless.value
-                  ? _infoCell('hud_stage'.tr, _animValue('${ctrl.endlessStage.value}'), NeonTheme.lime)
+                  ? _infoCell(
+                      'hud_stage'.tr,
+                      _animValue('${ctrl.endlessStage.value}'),
+                      NeonTheme.lime,
+                    )
                   : _infoCell('hud_goal'.tr, _goalValue(ctrl), NeonTheme.lime),
             ),
           ),
@@ -783,14 +1191,17 @@ class GameScreen extends StatelessWidget {
     );
   }
 
-  /// Ô thứ 3 của HUD: Time Attack hiện TIME (mm:ss, đỏ khi ≤10s), còn lại MOVES.
+  /// Ô thứ 3 của HUD: Time Attack/Rush hiện TIME (mm:ss), còn lại MOVES.
   Widget _movesOrTimeCell(GameController ctrl) {
     // Sinh tồn "Triều dâng": hiện MỨC NGUY HIỂM nước dâng (%), đỏ khi ≥70%.
     if (ctrl.isSurvival.value) {
       final pct = (ctrl.tideLevel.value * 100).round();
       final urgent = ctrl.tideLevel.value >= 0.7;
-      return _infoCell('hud_tide'.tr, _animValue('$pct%'),
-          urgent ? NeonTheme.magenta : NeonTheme.cyan);
+      return _infoCell(
+        'hud_tide'.tr,
+        _animValue('$pct%'),
+        urgent ? NeonTheme.magenta : NeonTheme.cyan,
+      );
     }
     if (ctrl.isZen.value) {
       return _infoCell('zen_short'.tr, _animValue('∞'), NeonTheme.cyan);
@@ -798,20 +1209,29 @@ class GameScreen extends StatelessWidget {
     if (ctrl.isGhostMode.value) {
       // Ghost mode: hiện điểm ghost để người chơi so sánh
       final gs = ctrl.ghostScore.value;
+      return _infoCell('ghost_hud'.tr, _animValue(fmtNum(gs)), NeonTheme.cyan);
+    }
+    if (ctrl.level.objective == ObjectiveType.timeAttack || ctrl.isRush.value) {
+      final t = ctrl.timeLeft.value;
+      final urgent = ctrl.isRush.value ? t <= 15 : t <= 10;
       return _infoCell(
-        'ghost_hud'.tr,
-        _animValue(fmtNum(gs)),
-        NeonTheme.cyan,
+        'hud_time'.tr,
+        _animValue(_fmtClock(t)),
+        urgent ? NeonTheme.magenta : NeonTheme.orange,
       );
     }
-    if (ctrl.level.objective == ObjectiveType.timeAttack) {
-      final t = ctrl.timeLeft.value;
-      final mm = (t ~/ 60).toString().padLeft(2, '0');
-      final ss = (t % 60).toString().padLeft(2, '0');
-      final urgent = t <= 10;
-      return _infoCell('hud_time'.tr, _animValue('$mm:$ss'), urgent ? NeonTheme.magenta : NeonTheme.orange);
-    }
-    return _infoCell('hud_moves'.tr, _animValue('${ctrl.movesLeft.value}'), NeonTheme.orange);
+    return _infoCell(
+      'hud_moves'.tr,
+      _animValue('${ctrl.movesLeft.value}'),
+      NeonTheme.orange,
+    );
+  }
+
+  String _fmtClock(int seconds) {
+    final t = seconds.clamp(0, 1 << 30);
+    final mm = (t ~/ 60).toString().padLeft(2, '0');
+    final ss = (t % 60).toString().padLeft(2, '0');
+    return '$mm:$ss';
   }
 
   Widget _animatedBar(double progress) {
@@ -821,7 +1241,10 @@ class GameScreen extends StatelessWidget {
       curve: Curves.easeOutCubic,
       builder: (_, v, _) => Container(
         height: 8,
-        decoration: BoxDecoration(color: NeonTheme.panel, borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(
+          color: NeonTheme.panel,
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Align(
           alignment: Alignment.centerLeft,
           child: FractionallySizedBox(
@@ -829,7 +1252,9 @@ class GameScreen extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                gradient: const LinearGradient(colors: [NeonTheme.cyan, NeonTheme.lime]),
+                gradient: const LinearGradient(
+                  colors: [NeonTheme.cyan, NeonTheme.lime],
+                ),
                 boxShadow: NeonTheme.glow(NeonTheme.lime, blur: 8),
               ),
             ),
@@ -850,6 +1275,8 @@ class GameScreen extends StatelessWidget {
       ),
       child: Text(
         text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: const TextStyle(
           color: Colors.white,
           fontSize: 13,
@@ -861,7 +1288,11 @@ class GameScreen extends StatelessWidget {
     );
   }
 
-  Widget _divider() => Container(width: 1.2, height: 38, color: Colors.white.withValues(alpha: 0.12));
+  Widget _divider() => Container(
+    width: 1.2,
+    height: 38,
+    color: Colors.white.withValues(alpha: 0.12),
+  );
 
   Widget _infoCell(String label, Widget value, Color color) {
     return Column(
@@ -902,9 +1333,11 @@ class GameScreen extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            for (var i = 0;
-                i < orders.length && i < ctrl.orderProgress.length;
-                i++) ...[
+            for (
+              var i = 0;
+              i < orders.length && i < ctrl.orderProgress.length;
+              i++
+            ) ...[
               if (i > 0) const SizedBox(width: 8),
               _orderChip(
                 NeonTheme.gemColors[orders[i].color.index],
@@ -923,7 +1356,11 @@ class GameScreen extends StatelessWidget {
         width: 14,
         height: 14,
         margin: const EdgeInsets.only(right: 5),
-        decoration: BoxDecoration(shape: BoxShape.circle, color: c, boxShadow: NeonTheme.glow(c, blur: 6)),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: c,
+          boxShadow: NeonTheme.glow(c, blur: 6),
+        ),
       );
     } else if (obj == ObjectiveType.clearJelly) {
       leading = const Padding(
@@ -943,7 +1380,11 @@ class GameScreen extends StatelessWidget {
     } else if (obj == ObjectiveType.soda) {
       leading = const Padding(
         padding: EdgeInsets.only(right: 5),
-        child: NeonIcon(Icons.local_drink_rounded, color: NeonTheme.cyan, size: 15),
+        child: NeonIcon(
+          Icons.local_drink_rounded,
+          color: NeonTheme.cyan,
+          size: 15,
+        ),
       );
     }
     return Row(
@@ -968,9 +1409,7 @@ class GameScreen extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: color,
-            border: done
-                ? Border.all(color: NeonTheme.lime, width: 1.5)
-                : null,
+            border: done ? Border.all(color: NeonTheme.lime, width: 1.5) : null,
             boxShadow: NeonTheme.glow(color, blur: 6),
           ),
         ),
@@ -996,15 +1435,21 @@ class GameScreen extends StatelessWidget {
   Widget _buildBoosterBar(GameController ctrl, GameScreenController sc) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: NeonTheme.s24, vertical: NeonTheme.s8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: NeonTheme.s24,
+        vertical: NeonTheme.s8,
+      ),
       child: Row(
         children: [
           Obx(
-            () => _pill(
-              Icons.monetization_on_rounded,
-              NeonTheme.yellow,
-              fmtNum(ctrl.coins.value),
-            ).animate(key: ValueKey(sc.coinShake.value)).shake(duration: 450.ms, hz: 6),
+            () =>
+                _pill(
+                      Icons.monetization_on_rounded,
+                      NeonTheme.yellow,
+                      fmtNum(ctrl.coins.value),
+                    )
+                    .animate(key: ValueKey(sc.coinShake.value))
+                    .shake(duration: 450.ms, hz: 6),
           ),
           const SizedBox(width: NeonTheme.s16),
           // Swap: đổi 2 gem bất kỳ
@@ -1131,8 +1576,10 @@ class GameScreen extends StatelessWidget {
               label: '+10',
               price: 40,
               onTap: () {
-                dlog('MOVES tap count=${ctrl.boosterMoves.value} '
-                    'moves=${ctrl.movesLeft.value} coins=${ctrl.coins.value}');
+                dlog(
+                  'MOVES tap count=${ctrl.boosterMoves.value} '
+                  'moves=${ctrl.movesLeft.value} coins=${ctrl.coins.value}',
+                );
                 if (ctrl.boosterMoves.value > 0) {
                   ctrl.useMovesBooster();
                 } else if (!ctrl.buyMoves()) {
@@ -1193,7 +1640,9 @@ class GameScreen extends StatelessWidget {
       price: price,
       armed: armed,
       onTap: () {
-        dlog('booster $mode count=$count coins=${ctrl.coins.value} armed=$armed');
+        dlog(
+          'booster $mode count=$count coins=${ctrl.coins.value} armed=$armed',
+        );
         if (armed || count > 0) {
           sc.toggleArm(mode);
         } else if (!buy()) {
@@ -1253,7 +1702,9 @@ class GameScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: armed ? color.withValues(alpha: 0.35) : NeonTheme.panel.withValues(alpha: 0.6),
+            color: armed
+                ? color.withValues(alpha: 0.35)
+                : NeonTheme.panel.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: color, width: armed ? 3 : 2),
             boxShadow: NeonTheme.glow(color, blur: armed ? 16 : 7),
@@ -1266,7 +1717,12 @@ class GameScreen extends StatelessWidget {
                 const SizedBox(width: 3),
                 Text(
                   label,
-                  style: TextStyle(fontFamily: 'Baloo2', color: color, fontWeight: FontWeight.w800, fontSize: 12),
+                  style: TextStyle(
+                    fontFamily: 'Baloo2',
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
                 ),
               ],
               const SizedBox(width: 6),
@@ -1329,9 +1785,10 @@ class _GhostHintOverlayState extends State<_GhostHintOverlay>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
-    _pulse = Tween<double>(begin: 0.55, end: 0.95).animate(
-      CurvedAnimation(parent: _anim, curve: Curves.easeInOut),
-    );
+    _pulse = Tween<double>(
+      begin: 0.55,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _anim, curve: Curves.easeInOut));
   }
 
   @override
@@ -1352,8 +1809,10 @@ class _GhostHintOverlayState extends State<_GhostHintOverlay>
         animation: _pulse,
         builder: (context2, child2) => CustomPaint(
           painter: _GhostPainter(
-            r1: move.$1, c1: move.$2,
-            r2: move.$3, c2: move.$4,
+            r1: move.$1,
+            c1: move.$2,
+            r2: move.$3,
+            c2: move.$4,
             boardOriginX: game.boardOrigin.x,
             boardOriginY: game.boardOrigin.y,
             cellSize: game.cellSize,
@@ -1370,10 +1829,14 @@ class _GhostPainter extends CustomPainter {
   final int r1, c1, r2, c2;
   final double boardOriginX, boardOriginY, cellSize, alpha;
   const _GhostPainter({
-    required this.r1, required this.c1,
-    required this.r2, required this.c2,
-    required this.boardOriginX, required this.boardOriginY,
-    required this.cellSize, required this.alpha,
+    required this.r1,
+    required this.c1,
+    required this.r2,
+    required this.c2,
+    required this.boardOriginX,
+    required this.boardOriginY,
+    required this.cellSize,
+    required this.alpha,
   });
 
   @override
@@ -1396,6 +1859,9 @@ class _GhostPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_GhostPainter old) =>
-      old.r1 != r1 || old.c1 != c1 || old.r2 != r2 || old.c2 != c2 ||
+      old.r1 != r1 ||
+      old.c1 != c1 ||
+      old.r2 != r2 ||
+      old.c2 != c2 ||
       (old.alpha - alpha).abs() > 0.005; // 0.005 đủ nhỏ để không bỏ frame (~3ms)
 }

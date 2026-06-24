@@ -98,6 +98,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   late List<List<GemComponent?>> grid;
   late double cellSize;
   late Vector2 boardOrigin;
+
   /// true sau khi _layout() chạy xong — dùng để guard ghost overlay tránh
   /// LateInitializationError nếu overlay render trước onLoad() hoàn thành.
   bool boardReady = false;
@@ -170,130 +171,158 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     // Nền trang trí dùng Random RIÊNG (không seed) → KHÔNG tiêu `_rnd` của bàn.
     // Nhờ vậy `_rnd` (seeded) chỉ phục vụ logic bàn → 2 bàn versus cùng seed cho
     // layout mở đầu y hệt (mirror), miễn nhiễm với mọi thay đổi của nền.
-    add(NeonBackground(
-        area: size, palette: NeonTheme.gemColors, rnd: math.Random())
-      ..priority = -10);
+    add(
+      NeonBackground(
+        area: size,
+        palette: NeonTheme.gemColors,
+        rnd: math.Random(),
+      )..priority = -10,
+    );
     // Aura neon bằng FRAGMENT SHADER (Wave 10) — tự TẮT nếu nền tảng/GPU không
     // hỗ trợ (try/catch) → fallback giữ nguyên hình ảnh cũ. 1 draw/frame.
     await _addGlowAura();
     boardLayer = PositionComponent()..priority = 0;
     add(boardLayer);
-    boardLayer.add(BoardFrame(
-      rows: rows,
-      cols: cols,
-      cellSize: cellSize,
-      origin: boardOrigin,
-      isWall: _isWall, // Wave 15: bỏ vẽ slot ở ô tường
-    )..priority = -2);
-    if (_activeLayout != null) {
-      boardLayer.add(BlockedLayer(
-        kind: _cellKind,
+    boardLayer.add(
+      BoardFrame(
         rows: rows,
         cols: cols,
         cellSize: cellSize,
         origin: boardOrigin,
-      )..priority = -1); // khối đá neon ở ô tường (dưới gem)
+        isWall: _isWall, // Wave 15: bỏ vẽ slot ở ô tường
+      )..priority = -2,
+    );
+    if (_activeLayout != null) {
+      boardLayer.add(
+        BlockedLayer(
+          kind: _cellKind,
+          rows: rows,
+          cols: cols,
+          cellSize: cellSize,
+          origin: boardOrigin,
+        )..priority = -1,
+      ); // khối đá neon ở ô tường (dưới gem)
     }
     if (_hasFlow) {
-      boardLayer.add(FlowLayer(
-        flow: _flowDir,
-        isWall: _isWall,
+      boardLayer.add(
+        FlowLayer(
+          flow: _flowDir,
+          isWall: _isWall,
+          rows: rows,
+          cols: cols,
+          cellSize: cellSize,
+          origin: boardOrigin,
+          accent: NeonTheme.cyan,
+        )..priority = 2,
+      ); // mũi tên dòng chảy TRÊN gem (signature dễ thấy)
+    }
+    _buildJelly();
+    boardLayer.add(
+      JellyLayer(
+        jelly: jelly,
         rows: rows,
         cols: cols,
         cellSize: cellSize,
         origin: boardOrigin,
-        accent: NeonTheme.cyan,
-      )..priority = 2); // mũi tên dòng chảy TRÊN gem (signature dễ thấy)
-    }
-    _buildJelly();
-    boardLayer.add(JellyLayer(
-      jelly: jelly,
-      rows: rows,
-      cols: cols,
-      cellSize: cellSize,
-      origin: boardOrigin,
-    )..priority = -1);
+      )..priority = -1,
+    );
     _buildObstacle();
-    boardLayer.add(ObstacleLayer(
-      obstacle: obstacle,
-      type: controller.level.obstacle,
-      rows: rows,
-      cols: cols,
-      cellSize: cellSize,
-      origin: boardOrigin,
-    )..priority = -1);
+    boardLayer.add(
+      ObstacleLayer(
+        obstacle: obstacle,
+        type: controller.level.obstacle,
+        rows: rows,
+        cols: cols,
+        cellSize: cellSize,
+        origin: boardOrigin,
+      )..priority = -1,
+    );
     _buildBombs();
-    boardLayer.add(BombLayer(
-      bomb: bomb,
-      rows: rows,
-      cols: cols,
-      cellSize: cellSize,
-      origin: boardOrigin,
-    )..priority = 2); // trên gem để thấy số đếm
+    boardLayer.add(
+      BombLayer(
+        bomb: bomb,
+        rows: rows,
+        cols: cols,
+        cellSize: cellSize,
+        origin: boardOrigin,
+      )..priority = 2,
+    ); // trên gem để thấy số đếm
     // Wave 11 — cơ chế weave (băng chuyền / cổng / dispenser): đọc spec theo màn
     // rồi gắn layer render tương ứng.
     _buildMechanics();
     if (_hasConveyor) {
-      boardLayer.add(ConveyorLayer(
-        beltRows: _conveyorRows,
-        dir: _conveyorDir,
-        cols: cols,
-        cellSize: cellSize,
-        origin: boardOrigin,
-      )..priority = -1); // dưới gem
+      boardLayer.add(
+        ConveyorLayer(
+          beltRows: _conveyorRows,
+          dir: _conveyorDir,
+          cols: cols,
+          cellSize: cellSize,
+          origin: boardOrigin,
+        )..priority = -1,
+      ); // dưới gem
     }
     if (_hasPortal) {
-      boardLayer.add(PortalLayer(
-        pairs: kPortalSpec[controller.level.index]!.pairs,
-        rows: rows,
-        cols: cols,
-        cellSize: cellSize,
-        origin: boardOrigin,
-      )..priority = 1); // trên gem (thấy vòng xoáy)
+      boardLayer.add(
+        PortalLayer(
+          pairs: kPortalSpec[controller.level.index]!.pairs,
+          rows: rows,
+          cols: cols,
+          cellSize: cellSize,
+          origin: boardOrigin,
+        )..priority = 1,
+      ); // trên gem (thấy vòng xoáy)
     }
     if (_hasDispenser) {
-      boardLayer.add(DispenserLayer(
-        cells: _dispenserCells,
-        countdown: () => controller.dispenserCountdown.value,
-        cellSize: cellSize,
-        origin: boardOrigin,
-      )..priority = 1);
+      boardLayer.add(
+        DispenserLayer(
+          cells: _dispenserCells,
+          countdown: () => controller.dispenserCountdown.value,
+          cellSize: cellSize,
+          origin: boardOrigin,
+        )..priority = 1,
+      );
     }
     // Soda (Wave 14): lớp "nước dâng" + chai nổi (overlay trên gem, đọc tiến độ
     // mực nước từ controller mỗi frame). KHÔNG đụng gravity/refill.
     if (controller.isSoda.value) {
-      boardLayer.add(SodaLayer(
-        progress: () => controller.sodaProgress,
-        collected: () => controller.sodaCollected.value,
-        target: controller.level.sodaTarget,
-        rows: rows,
-        cols: cols,
-        cellSize: cellSize,
-        origin: boardOrigin,
-      )..priority = 3); // trên gem để thấy nước + chai
+      boardLayer.add(
+        SodaLayer(
+          progress: () => controller.sodaProgress,
+          collected: () => controller.sodaCollected.value,
+          target: controller.level.sodaTarget,
+          rows: rows,
+          cols: cols,
+          cellSize: cellSize,
+          origin: boardOrigin,
+        )..priority = 3,
+      ); // trên gem để thấy nước + chai
     }
     // Sinh tồn (Wave 17.1 "Triều dâng"): lớp nước dâng từ đáy (overlay trên gem,
     // đọc `_floodTop` mỗi frame). KHÔNG đụng gravity/refill — chỉ render + lose-line.
     if (controller.isSurvival.value) {
       _floodTop = rows.toDouble(); // bắt đầu chưa có nước
       _tideElapsed = 0;
-      boardLayer.add(TideLayer(
-        floodTop: () => _floodTop,
-        rows: rows,
-        cols: cols,
-        cellSize: cellSize,
-        origin: boardOrigin,
-      )..priority = 3);
+      boardLayer.add(
+        TideLayer(
+          floodTop: () => _floodTop,
+          rows: rows,
+          cols: cols,
+          cellSize: cellSize,
+          origin: boardOrigin,
+        )..priority = 3,
+      );
     }
     // Mê cung (W17.2): lớp sương mù che hàng trên (fog-of-war, chỉ render).
     if (controller.isLabyrinth.value) {
-      boardLayer.add(FogLayer(
-        rows: rows,
-        cols: cols,
-        cellSize: cellSize,
-        origin: boardOrigin,
-        clearRows: kFogRadius,
-      )..priority = 4); // trên mọi layer khác
+      boardLayer.add(
+        FogLayer(
+          rows: rows,
+          cols: cols,
+          cellSize: cellSize,
+          origin: boardOrigin,
+          clearRows: kFogRadius,
+        )..priority = 4,
+      ); // trên mọi layer khác
     }
     _fillInitialBoard();
     _placeIngredients();
@@ -382,7 +411,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final pattern = controller.level.obstaclePattern;
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
-        if (patternHas(pattern, r, c, rows, cols) && (!sparse || (r + c).isEven)) {
+        if (patternHas(pattern, r, c, rows, cols) &&
+            (!sparse || (r + c).isEven)) {
           obstacle[r][c] = layers;
           total += layers;
         }
@@ -399,8 +429,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// phần còn lại sinh dần qua [_replenishIngredients].
   void _placeIngredients() {
     if (controller.level.objective != ObjectiveType.dropDown) return;
-    final initial =
-        controller.level.dropTarget.clamp(0, _maxConcurrentIngredients);
+    final initial = controller.level.dropTarget.clamp(
+      0,
+      _maxConcurrentIngredients,
+    );
     final chosen = <int>{};
     while (chosen.length < initial && chosen.length < cols) {
       chosen.add(_rnd.nextInt(cols));
@@ -422,22 +454,25 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         if (grid[r][c]?.isIngredient ?? false) active++;
       }
     }
-    final desired =
-        remaining < _maxConcurrentIngredients ? remaining : _maxConcurrentIngredients;
+    final desired = remaining < _maxConcurrentIngredients
+        ? remaining
+        : _maxConcurrentIngredients;
     if (active >= desired) return;
     final free = [
       for (int c = 0; c < cols; c++)
-        if (grid[0][c] != null && !grid[0][c]!.isIngredient) c
+        if (grid[0][c] != null && !grid[0][c]!.isIngredient) c,
     ]..shuffle(_rnd);
     for (final c in free) {
       if (active >= desired) break;
       grid[0][c]!.isIngredient = true;
-      add(ShockwaveComponent(
-        position: _cellCenter(0, c),
-        color: const Color(0xFFFFC83D),
-        maxRadius: cellSize * 1.3,
-        duration: 0.3,
-      )..priority = 50);
+      add(
+        ShockwaveComponent(
+          position: _cellCenter(0, c),
+          color: const Color(0xFFFFC83D),
+          maxRadius: cellSize * 1.3,
+          duration: 0.3,
+        )..priority = 50,
+      );
       active++;
     }
   }
@@ -503,6 +538,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
     // Time Attack: đếm ngược thời gian, hết giờ → kết thúc ván.
     if (!_ended &&
+        !controller.isRush.value &&
         controller.level.objective == ObjectiveType.timeAttack) {
       _timeAccum += dt;
       while (_timeAccum >= 1.0 && controller.timeLeft.value > 0) {
@@ -511,7 +547,21 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       }
       // Hết giờ → kết thúc, NHƯNG chờ cascade hiện tại xong (_busy) để không
       // end giữa chuỗi nổ (tránh race score/dialog).
-      if (controller.timeLeft.value <= 0 && !_busy) _finishMove(consumed: false);
+      if (controller.timeLeft.value <= 0 && !_busy) {
+        _finishMove(consumed: false);
+      }
+    }
+
+    // Rush: đồng hồ đếm ngược, hết giờ → kết thúc (chờ cascade xong).
+    if (!_ended && controller.isRush.value) {
+      _timeAccum += dt;
+      while (_timeAccum >= 1.0 && controller.timeLeft.value > 0) {
+        _timeAccum -= 1.0;
+        controller.tickTime(1);
+      }
+      if (controller.timeLeft.value <= 0 && !_busy) {
+        _finishMove(consumed: false);
+      }
     }
 
     // Sinh tồn "Triều dâng": nước dâng theo THỜI GIAN THỰC (không dính slow-mo),
@@ -558,17 +608,16 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   }
 
   Vector2 _cellCenter(int r, int c) => Vector2(
-        boardOrigin.x + c * cellSize + cellSize / 2,
-        boardOrigin.y + r * cellSize + cellSize / 2,
-      );
+    boardOrigin.x + c * cellSize + cellSize / 2,
+    boardOrigin.y + r * cellSize + cellSize / 2,
+  );
 
   GemColor _randomColor() => GemColor.values[_rnd.nextInt(colorCount)];
 
   /// Wave 16 DDA/Pity: tỉ lệ gem may mắn refill. Thua liên tiếp ≥kPityLuckyFails →
   /// tăng (giúp người chơi yếu, KÍN ĐÁO). 0 ở side-mode (controller.pity=0).
-  double get _luckyRate => controller.pity.value >= GameController.kPityLuckyFails
-      ? 0.073
-      : 0.028;
+  double get _luckyRate =>
+      controller.pity.value >= GameController.kPityLuckyFails ? 0.073 : 0.028;
 
   /// Wave 16 Phase 4 — RNG control CHIỀU PITY (chỉ GIÚP): thua liên tiếp + màn
   /// collect → tăng nhẹ cơ may rớt MÀU MỤC TIÊU (giúp thu). KHÔNG dùng chiều
@@ -609,8 +658,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       }
     }
     if (cands.isEmpty) return;
-    cands[_rnd.nextInt(cands.length)].type =
-        _rnd.nextBool() ? GemType.stripedH : GemType.stripedV;
+    cands[_rnd.nextInt(cands.length)].type = _rnd.nextBool()
+        ? GemType.stripedH
+        : GemType.stripedV;
   }
 
   void _fillInitialBoard() {
@@ -634,35 +684,39 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         grid[r][c] = g;
         // pop-in xếp tầng theo đường chéo cho màn mở đầu "wow"
         g.scale = Vector2.zero();
-        g.add(ScaleEffect.to(
-          Vector2.all(1),
-          EffectController(
-            duration: 0.35,
-            curve: Curves.easeOutBack,
-            startDelay: (r + c) * 0.03,
+        g.add(
+          ScaleEffect.to(
+            Vector2.all(1),
+            EffectController(
+              duration: 0.35,
+              curve: Curves.easeOutBack,
+              startDelay: (r + c) * 0.03,
+            ),
           ),
-        ));
+        );
         boardLayer.add(g);
       }
     }
   }
 
   bool _wouldMatchAt(int r, int c, GemColor color) {
-    if (c >= 2 && grid[r][c - 1]?.color == color && grid[r][c - 2]?.color == color) {
+    if (c >= 2 &&
+        grid[r][c - 1]?.color == color &&
+        grid[r][c - 2]?.color == color) {
       return true;
     }
-    if (r >= 2 && grid[r - 1][c]?.color == color && grid[r - 2][c]?.color == color) {
+    if (r >= 2 &&
+        grid[r - 1][c]?.color == color &&
+        grid[r - 2][c]?.color == color) {
       return true;
     }
     return false;
   }
 
   List<List<GemColor?>> _colorGrid() => [
-        for (int r = 0; r < rows; r++)
-          [
-            for (int c = 0; c < cols; c++) _matchColorAt(r, c),
-          ],
-      ];
+    for (int r = 0; r < rows; r++)
+      [for (int c = 0; c < cols; c++) _matchColorAt(r, c)],
+  ];
 
   /// Màu dùng cho match-detection: ingredient & stone (còn lớp) bị loại (null)
   /// → không tham gia match.
@@ -807,7 +861,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       _swapInGrid(a, b);
 
       // Combo kích hoạt khi: cả 2 đều special, HOẶC 1 trong 2 là rainbow.
-      final comboTrigger = (a.type != GemType.normal && b.type != GemType.normal) ||
+      final comboTrigger =
+          (a.type != GemType.normal && b.type != GemType.normal) ||
           a.type == GemType.rainbow ||
           b.type == GemType.rainbow;
       final matches = MatchDetector.findMatches(_colorGrid());
@@ -821,7 +876,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         controller.useMove();
         controller.recordMove(a.row, a.col, b.row, b.col); // Ghost: ghi nước đi
         controller.advanceGhost(); // Ghost: tiến ghost step
-        controller.judgeRhythmBeat(); // Rhythm: phán định đúng/lệch nhịp tại nước đi
+        controller
+            .judgeRhythmBeat(); // Rhythm: phán định đúng/lệch nhịp tại nước đi
         if (controller.isRhythm.value && controller.lastBeatJudge.value == 1) {
           // đúng nhịp → nốt nhạc cao dần theo groove (phản hồi "khớp" nghe đã tai)
           _sfx?.playNote(controller.groove.value.clamp(1, 24));
@@ -905,7 +961,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         for (int c = 0; c < cols; c++) {
           if (grid[r][c]?.color == targetColor) {
             cells.add(Cell(r, c));
-            if (other.type == GemType.stripedH || other.type == GemType.stripedV) {
+            if (other.type == GemType.stripedH ||
+                other.type == GemType.stripedV) {
               for (int k = 0; k < cols; k++) {
                 cells.add(Cell(r, k));
               }
@@ -1003,7 +1060,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// Hình học thuần ở [MatchDetector.diagonalCells] (test được).
   void _addDiagonals(Set<Cell> cells, Cell center, {int thickness = 0}) {
     cells.addAll(
-        MatchDetector.diagonalCells(rows, cols, center, thickness: thickness));
+      MatchDetector.diagonalCells(rows, cols, center, thickness: thickness),
+    );
   }
 
   /// Nếu bàn không còn nước đi hợp lệ → tự xáo (tối đa vài lần) để người chơi
@@ -1013,12 +1071,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     while (!_hasPossibleMove() && guard < 5) {
       guard++;
       // báo cho người chơi biết bàn tự xáo (vì hết nước đi)
-      add(ComboTextComponent(
-        text: 'SHUFFLE!',
-        color: NeonTheme.purple,
-        position: Vector2(size.x / 2, size.y * 0.42),
-        maxWidth: size.x * 0.9,
-      )..priority = 70);
+      add(
+        ComboTextComponent(
+          text: 'SHUFFLE!',
+          color: NeonTheme.purple,
+          position: Vector2(size.x / 2, size.y * 0.42),
+          maxWidth: size.x * 0.9,
+        )..priority = 70,
+      );
       await _doShuffle();
       await _resolveAll();
     }
@@ -1120,12 +1180,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final move = _findMove();
     if (move == null) return;
     // W17.2: không hint ô trong vùng sương mù Labyrinth (hàng trên, cách đáy > kFogRadius).
-    final firstClearRow =
-        controller.isLabyrinth.value ? rows - kFogRadius : 0;
+    final firstClearRow = controller.isLabyrinth.value ? rows - kFogRadius : 0;
     _hintGems = [
       for (final cell in move)
         if (grid[cell.row][cell.col] != null && cell.row >= firstClearRow)
-          grid[cell.row][cell.col]!
+          grid[cell.row][cell.col]!,
     ];
     for (final g in _hintGems) {
       g.hint = true;
@@ -1171,6 +1230,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
       await _clearCells(expanded);
       controller.addScore(expanded.length, combo);
+      if (controller.isRush.value && controller.rushTimeBonus.value > 0) {
+        _spawnTimeBonus(controller.rushTimeBonus.value);
+      }
       // Sinh tồn "Triều dâng": clear gem DƯỚI NƯỚC (row ≥ mặt nước) đẩy lùi triều →
       // thưởng việc dọn THẤP (khác TimeAttack: vị trí clear có ý nghĩa chiến thuật).
       if (controller.isSurvival.value && _floodTop < rows) {
@@ -1179,10 +1241,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           if (cell.row >= _floodTop) under++;
         }
         if (under > 0) {
-          _floodTop =
-              (_floodTop + kTidePushback * under).clamp(0.0, rows.toDouble());
-          controller.tideLevel.value =
-              ((rows - _floodTop) / rows).clamp(0.0, 1.0);
+          _floodTop = (_floodTop + kTidePushback * under).clamp(
+            0.0,
+            rows.toDouble(),
+          );
+          controller.tideLevel.value = ((rows - _floodTop) / rows).clamp(
+            0.0,
+            1.0,
+          );
         }
       }
       // Giai điệu: màu nổi trội của bước này → bậc âm; combo → leo thang;
@@ -1192,7 +1258,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           .color
           .index;
       _sfx?.playMelodic(
-          combo: combo, colorIndex: domColor, keyIndex: controller.melodyKey);
+        combo: combo,
+        colorIndex: domColor,
+        keyIndex: controller.melodyKey,
+      );
       if (combo >= 2) _spawnComboText(combo);
       // Time Attack: combo lớn thưởng thêm giây
       if (combo >= 4 &&
@@ -1208,18 +1277,27 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         final g = grid[cell.row][cell.col];
         if (g == null) return;
         g.type = type;
-        final col = type == GemType.rainbow ? Colors.white : neonColorOf(g.color);
-        add(ShockwaveComponent(
-          position: _cellCenter(cell.row, cell.col),
-          color: col,
-          maxRadius: cellSize * 1.4,
-          duration: 0.35,
-        )..priority = 55);
-        g.add(ScaleEffect.to(
-          Vector2.all(1.35),
-          EffectController(
-              duration: 0.13, alternate: true, curve: Curves.easeOut),
-        ));
+        final col = type == GemType.rainbow
+            ? Colors.white
+            : neonColorOf(g.color);
+        add(
+          ShockwaveComponent(
+            position: _cellCenter(cell.row, cell.col),
+            color: col,
+            maxRadius: cellSize * 1.4,
+            duration: 0.35,
+          )..priority = 55,
+        );
+        g.add(
+          ScaleEffect.to(
+            Vector2.all(1.35),
+            EffectController(
+              duration: 0.13,
+              alternate: true,
+              curve: Curves.easeOut,
+            ),
+          ),
+        );
       });
 
       await _applyGravityAndRefill();
@@ -1257,19 +1335,23 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       final futures = <Future>[];
       for (final g in atBottom) {
         _spawnBurst(g.position.clone(), NeonTheme.lime);
-        add(ShockwaveComponent(
-          position: g.position.clone(),
-          color: NeonTheme.lime,
-          maxRadius: cellSize * 1.7,
-          duration: 0.35,
-        )..priority = 50);
-        futures.add(_run(
-          g,
-          ScaleEffect.to(
-            Vector2.zero(),
-            EffectController(duration: 0.2, curve: Curves.easeIn),
+        add(
+          ShockwaveComponent(
+            position: g.position.clone(),
+            color: NeonTheme.lime,
+            maxRadius: cellSize * 1.7,
+            duration: 0.35,
+          )..priority = 50,
+        );
+        futures.add(
+          _run(
+            g,
+            ScaleEffect.to(
+              Vector2.zero(),
+              EffectController(duration: 0.2, curve: Curves.easeIn),
+            ),
           ),
-        ));
+        );
       }
       _shake(6);
       await Future.wait(futures);
@@ -1312,12 +1394,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final target = (candidates.toList()..shuffle(_rnd)).first;
     obstacle[target.row][target.col] = 1;
     _shake(4);
-    add(ShockwaveComponent(
-      position: _cellCenter(target.row, target.col),
-      color: const Color(0xFFB05CFF),
-      maxRadius: cellSize * 1.25,
-      duration: 0.35,
-    )..priority = 48);
+    add(
+      ShockwaveComponent(
+        position: _cellCenter(target.row, target.col),
+        color: const Color(0xFFB05CFF),
+        maxRadius: cellSize * 1.25,
+        duration: 0.35,
+      )..priority = 48,
+    );
     await Future.delayed(const Duration(milliseconds: 170));
   }
 
@@ -1353,12 +1437,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final target = (candidates.toList()..shuffle(_rnd)).first;
     obstacle[target.row][target.col] = 1;
     _shake(4);
-    add(ShockwaveComponent(
-      position: _cellCenter(target.row, target.col),
-      color: const Color(0xFFFF4D6D),
-      maxRadius: cellSize * 1.25,
-      duration: 0.35,
-    )..priority = 48);
+    add(
+      ShockwaveComponent(
+        position: _cellCenter(target.row, target.col),
+        color: const Color(0xFFFF4D6D),
+        maxRadius: cellSize * 1.25,
+        duration: 0.35,
+      )..priority = 48,
+    );
     await Future.delayed(const Duration(milliseconds: 170));
   }
 
@@ -1373,40 +1459,52 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       final extra = <Cell>[];
       switch (g.type) {
         case GemType.stripedH:
-          _addBeam(_cellCenter(cell.row, 0), _cellCenter(cell.row, cols - 1),
-              neonColorOf(g.color));
+          _addBeam(
+            _cellCenter(cell.row, 0),
+            _cellCenter(cell.row, cols - 1),
+            neonColorOf(g.color),
+          );
           for (int c = 0; c < cols; c++) {
             extra.add(Cell(cell.row, c));
           }
           break;
         case GemType.stripedV:
-          _addBeam(_cellCenter(0, cell.col), _cellCenter(rows - 1, cell.col),
-              neonColorOf(g.color));
+          _addBeam(
+            _cellCenter(0, cell.col),
+            _cellCenter(rows - 1, cell.col),
+            neonColorOf(g.color),
+          );
           for (int r = 0; r < rows; r++) {
             extra.add(Cell(r, cell.col));
           }
           break;
         case GemType.bomb:
-          add(ShockwaveComponent(
-            position: _cellCenter(cell.row, cell.col),
-            color: neonColorOf(g.color),
-            maxRadius: cellSize * 2.2,
-          )..priority = 50);
+          add(
+            ShockwaveComponent(
+              position: _cellCenter(cell.row, cell.col),
+              color: neonColorOf(g.color),
+              maxRadius: cellSize * 2.2,
+            )..priority = 50,
+          );
           _flash(neonColorOf(g.color), peak: 0.14);
           _shake(8);
           for (int dr = -1; dr <= 1; dr++) {
             for (int dc = -1; dc <= 1; dc++) {
               final r = cell.row + dr, c = cell.col + dc;
-              if (r >= 0 && r < rows && c >= 0 && c < cols) extra.add(Cell(r, c));
+              if (r >= 0 && r < rows && c >= 0 && c < cols) {
+                extra.add(Cell(r, c));
+              }
             }
           }
           break;
         case GemType.rainbow:
-          add(ShockwaveComponent(
-            position: _cellCenter(cell.row, cell.col),
-            color: Colors.white,
-            maxRadius: cellSize * 4,
-          )..priority = 50);
+          add(
+            ShockwaveComponent(
+              position: _cellCenter(cell.row, cell.col),
+              color: Colors.white,
+              maxRadius: cellSize * 4,
+            )..priority = 50,
+          );
           _flash(Colors.white, peak: 0.4);
           _shake(12);
           for (int r = 0; r < rows; r++) {
@@ -1421,12 +1519,18 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           final dcol = neonColorOf(g.color);
           final mMin = -math.min(cell.row, cell.col);
           final mMax = math.min(rows - 1 - cell.row, cols - 1 - cell.col);
-          _addBeam(_cellCenter(cell.row + mMin, cell.col + mMin),
-              _cellCenter(cell.row + mMax, cell.col + mMax), dcol);
+          _addBeam(
+            _cellCenter(cell.row + mMin, cell.col + mMin),
+            _cellCenter(cell.row + mMax, cell.col + mMax),
+            dcol,
+          );
           final aMin = math.max(-cell.row, cell.col - (cols - 1));
           final aMax = math.min(rows - 1 - cell.row, cell.col);
-          _addBeam(_cellCenter(cell.row + aMin, cell.col - aMin),
-              _cellCenter(cell.row + aMax, cell.col - aMax), dcol);
+          _addBeam(
+            _cellCenter(cell.row + aMin, cell.col - aMin),
+            _cellCenter(cell.row + aMax, cell.col - aMax),
+            dcol,
+          );
           _flash(dcol, peak: 0.16);
           _shake(9);
           for (int r = 0; r < rows; r++) {
@@ -1442,27 +1546,42 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           // Light Ball (Wave 10): sao 8 hướng — beam HÀNG + CỘT + 2 CHÉO, flash
           // mạnh, phá toàn bộ ô trên hàng/cột/2 chéo qua ô này.
           final lcol = neonColorOf(g.color);
-          _addBeam(_cellCenter(cell.row, 0), _cellCenter(cell.row, cols - 1),
-              lcol);
-          _addBeam(_cellCenter(0, cell.col), _cellCenter(rows - 1, cell.col),
-              lcol);
+          _addBeam(
+            _cellCenter(cell.row, 0),
+            _cellCenter(cell.row, cols - 1),
+            lcol,
+          );
+          _addBeam(
+            _cellCenter(0, cell.col),
+            _cellCenter(rows - 1, cell.col),
+            lcol,
+          );
           final mMin = -math.min(cell.row, cell.col);
           final mMax = math.min(rows - 1 - cell.row, cols - 1 - cell.col);
-          _addBeam(_cellCenter(cell.row + mMin, cell.col + mMin),
-              _cellCenter(cell.row + mMax, cell.col + mMax), lcol);
+          _addBeam(
+            _cellCenter(cell.row + mMin, cell.col + mMin),
+            _cellCenter(cell.row + mMax, cell.col + mMax),
+            lcol,
+          );
           final aMin = math.max(-cell.row, cell.col - (cols - 1));
           final aMax = math.min(rows - 1 - cell.row, cell.col);
-          _addBeam(_cellCenter(cell.row + aMin, cell.col - aMin),
-              _cellCenter(cell.row + aMax, cell.col - aMax), lcol);
-          add(ShockwaveComponent(
-            position: _cellCenter(cell.row, cell.col),
-            color: Colors.white,
-            maxRadius: cellSize * 3,
-          )..priority = 50);
+          _addBeam(
+            _cellCenter(cell.row + aMin, cell.col - aMin),
+            _cellCenter(cell.row + aMax, cell.col - aMax),
+            lcol,
+          );
+          add(
+            ShockwaveComponent(
+              position: _cellCenter(cell.row, cell.col),
+              color: Colors.white,
+              maxRadius: cellSize * 3,
+            )..priority = 50,
+          );
           _flash(Colors.white, peak: 0.3);
           _shake(13);
           extra.addAll(
-              MatchDetector.lightBallCells(rows, cols, Cell(cell.row, cell.col)));
+            MatchDetector.lightBallCells(rows, cols, Cell(cell.row, cell.col)),
+          );
           break;
         case GemType.normal:
           break;
@@ -1517,11 +1636,13 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         centroid += g.position;
       }
       centroid /= gems.length.toDouble();
-      add(ShockwaveComponent(
-        position: centroid,
-        color: neonColorOf(gems.first.color),
-        maxRadius: cellSize * (1.4 + gems.length * 0.25),
-      )..priority = 50);
+      add(
+        ShockwaveComponent(
+          position: centroid,
+          color: neonColorOf(gems.first.color),
+          maxRadius: cellSize * (1.4 + gems.length * 0.25),
+        )..priority = 50,
+      );
       _shake((gems.length * 0.8).clamp(2.0, 14.0));
     }
 
@@ -1536,13 +1657,15 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         _spawnBurst(g.position.clone(), neonColorOf(g.color), big: special);
         bursts++;
       }
-      futures.add(_run(
-        g,
-        ScaleEffect.to(
-          Vector2.zero(),
-          EffectController(duration: 0.18, curve: Curves.easeIn),
+      futures.add(
+        _run(
+          g,
+          ScaleEffect.to(
+            Vector2.zero(),
+            EffectController(duration: 0.18, curve: Curves.easeIn),
+          ),
         ),
-      ));
+      );
     }
     await Future.wait(futures);
     for (final g in gems) {
@@ -1557,14 +1680,16 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     controller.addScore(count * 8, 2);
     controller.addCoins(count * 5);
     _flash(Colors.white, peak: 0.18);
-    add(ComboTextComponent(
-      text: 'LUCKY!',
-      color: NeonTheme.yellow,
-      position: Vector2(size.x / 2, size.y * 0.32),
-      fontSize: 30,
-      maxWidth: size.x * 0.7,
-      duration: 0.9,
-    )..priority = 71);
+    add(
+      ComboTextComponent(
+        text: 'LUCKY!',
+        color: NeonTheme.yellow,
+        position: Vector2(size.x / 2, size.y * 0.32),
+        fontSize: 30,
+        maxWidth: size.x * 0.7,
+        duration: 0.9,
+      )..priority = 71,
+    );
     final candidates = <Cell>[];
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
@@ -1592,16 +1717,24 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       final g = grid[cell.row][cell.col]!;
       g.type = specials[_rnd.nextInt(specials.length)];
       g.isLucky = false;
-      add(ShockwaveComponent(
-        position: _cellCenter(cell.row, cell.col),
-        color: Colors.white,
-        maxRadius: cellSize * 1.4,
-        duration: 0.35,
-      )..priority = 55);
-      g.add(ScaleEffect.to(
-        Vector2.all(1.3),
-        EffectController(duration: 0.13, alternate: true, curve: Curves.easeOut),
-      ));
+      add(
+        ShockwaveComponent(
+          position: _cellCenter(cell.row, cell.col),
+          color: Colors.white,
+          maxRadius: cellSize * 1.4,
+          duration: 0.35,
+        )..priority = 55,
+      );
+      g.add(
+        ScaleEffect.to(
+          Vector2.all(1.3),
+          EffectController(
+            duration: 0.13,
+            alternate: true,
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
     }
   }
 
@@ -1627,12 +1760,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       final g = grid[cell.row][cell.col]!;
       g.type = specials[_rnd.nextInt(specials.length)];
       _sfx?.playSpecial();
-      add(ShockwaveComponent(
-        position: _cellCenter(cell.row, cell.col),
-        color: NeonTheme.cyan,
-        maxRadius: cellSize * 1.4,
-        duration: 0.35,
-      )..priority = 55);
+      add(
+        ShockwaveComponent(
+          position: _cellCenter(cell.row, cell.col),
+          color: NeonTheme.cyan,
+          maxRadius: cellSize * 1.4,
+          duration: 0.35,
+        )..priority = 55,
+      );
     }
     controller.endlessEvent.value = '';
   }
@@ -1659,7 +1794,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           Cell(cell.row, cell.col + 1),
         ];
         for (final n in neighbours) {
-          if (n.row < 0 || n.row >= rows || n.col < 0 || n.col >= cols) continue;
+          if (n.row < 0 || n.row >= rows || n.col < 0 || n.col >= cols) {
+            continue;
+          }
           if (obstacle[n.row][n.col] > 0) reduce.add(n);
         }
       }
@@ -1676,12 +1813,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       } else {
         controller.registerObstacleClear(1);
       }
-      add(ShockwaveComponent(
-        position: _cellCenter(cell.row, cell.col),
-        color: _obstacleColor(type),
-        maxRadius: cellSize * 1.1,
-        duration: 0.3,
-      )..priority = 48);
+      add(
+        ShockwaveComponent(
+          position: _cellCenter(cell.row, cell.col),
+          color: _obstacleColor(type),
+          maxRadius: cellSize * 1.1,
+          duration: 0.3,
+        )..priority = 48,
+      );
     }
   }
 
@@ -1735,12 +1874,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       if (bomb[cell.row][cell.col] > 0) {
         bomb[cell.row][cell.col] = 0;
         changed = true;
-        add(ShockwaveComponent(
-          position: _cellCenter(cell.row, cell.col),
-          color: NeonTheme.lime,
-          maxRadius: cellSize * 1.2,
-          duration: 0.3,
-        )..priority = 49);
+        add(
+          ShockwaveComponent(
+            position: _cellCenter(cell.row, cell.col),
+            color: NeonTheme.lime,
+            maxRadius: cellSize * 1.2,
+            duration: 0.3,
+          )..priority = 49,
+        );
       }
     }
     if (changed) _syncBombHud();
@@ -1757,12 +1898,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           bomb[r][c]--;
           if (bomb[r][c] == 0) {
             exploded = true;
-            add(ShockwaveComponent(
-              position: _cellCenter(r, c),
-              color: NeonTheme.magenta,
-              maxRadius: cellSize * 2.2,
-              duration: 0.5,
-            )..priority = 60);
+            add(
+              ShockwaveComponent(
+                position: _cellCenter(r, c),
+                color: NeonTheme.magenta,
+                maxRadius: cellSize * 2.2,
+                duration: 0.5,
+              )..priority = 60,
+            );
           }
         }
       }
@@ -1811,10 +1954,15 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         if (wrapped) {
           g.position = _cellCenter(r, nc); // nhảy vòng mép → teleport tức thời
         } else {
-          futures.add(_run(
+          futures.add(
+            _run(
               g,
-              MoveToEffect(_cellCenter(r, nc),
-                  EffectController(duration: 0.22, curve: Curves.easeInOut))));
+              MoveToEffect(
+                _cellCenter(r, nc),
+                EffectController(duration: 0.22, curve: Curves.easeInOut),
+              ),
+            ),
+          );
         }
       }
     }
@@ -1837,18 +1985,28 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     const specials = [GemType.stripedH, GemType.stripedV, GemType.bomb];
     for (final cell in _dispenserCells) {
       final g = grid[cell.row][cell.col];
-      if (g == null || g.type != GemType.normal) continue; // không đè special sẵn
+      if (g == null || g.type != GemType.normal) {
+        continue; // không đè special sẵn
+      }
       g.type = specials[_rnd.nextInt(specials.length)];
-      add(ShockwaveComponent(
-        position: _cellCenter(cell.row, cell.col),
-        color: NeonTheme.yellow,
-        maxRadius: cellSize * 1.4,
-        duration: 0.35,
-      )..priority = 55);
-      g.add(ScaleEffect.to(
-        Vector2.all(1.3),
-        EffectController(duration: 0.13, alternate: true, curve: Curves.easeOut),
-      ));
+      add(
+        ShockwaveComponent(
+          position: _cellCenter(cell.row, cell.col),
+          color: NeonTheme.yellow,
+          maxRadius: cellSize * 1.4,
+          duration: 0.35,
+        )..priority = 55,
+      );
+      g.add(
+        ScaleEffect.to(
+          Vector2.all(1.3),
+          EffectController(
+            duration: 0.13,
+            alternate: true,
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
     }
   }
 
@@ -1856,13 +2014,16 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// không hỗ trợ / chạy test không có asset) → đơn giản là không có aura.
   Future<void> _addGlowAura() async {
     try {
-      final program =
-          await ui.FragmentProgram.fromAsset('shaders/neon_glow.frag');
-      add(NeonGlowAura(
-        shader: program.fragmentShader(),
-        area: size.clone(),
-        color: NeonTheme.cyan,
-      )..priority = -9);
+      final program = await ui.FragmentProgram.fromAsset(
+        'shaders/neon_glow.frag',
+      );
+      add(
+        NeonGlowAura(
+          shader: program.fragmentShader(),
+          area: size.clone(),
+          color: NeonTheme.cyan,
+        )..priority = -9,
+      );
     } catch (_) {
       // nền tảng/GPU không hỗ trợ shader → bỏ qua (fallback hình ảnh cũ)
     }
@@ -1887,13 +2048,15 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
             grid[r][c] = null;
             g.row = writeRow;
             g.col = c;
-            futures.add(_run(
-              g,
-              MoveToEffect(
-                _cellCenter(writeRow, c),
-                EffectController(duration: 0.26, curve: Curves.bounceOut),
+            futures.add(
+              _run(
+                g,
+                MoveToEffect(
+                  _cellCenter(writeRow, c),
+                  EffectController(duration: 0.26, curve: Curves.bounceOut),
+                ),
               ),
-            ));
+            );
           }
           writeRow--;
         }
@@ -1916,18 +2079,22 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         g.isLucky = _rnd.nextDouble() < _luckyRate; // ~2.8% gem may mắn hiếm
         grid[targetRow][c] = g;
         g.scale = Vector2.all(0.4);
-        g.add(ScaleEffect.to(
-          Vector2.all(1),
-          EffectController(duration: 0.28, curve: Curves.easeOutBack),
-        ));
-        boardLayer.add(g);
-        futures.add(_run(
-          g,
-          MoveToEffect(
-            _cellCenter(targetRow, c),
-            EffectController(duration: 0.32, curve: Curves.bounceOut),
+        g.add(
+          ScaleEffect.to(
+            Vector2.all(1),
+            EffectController(duration: 0.28, curve: Curves.easeOutBack),
           ),
-        ));
+        );
+        boardLayer.add(g);
+        futures.add(
+          _run(
+            g,
+            MoveToEffect(
+              _cellCenter(targetRow, c),
+              EffectController(duration: 0.32, curve: Curves.bounceOut),
+            ),
+          ),
+        );
       }
     }
     await Future.wait(futures);
@@ -1971,45 +2138,53 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       grid[r][c] = g;
       g.row = r;
       g.col = c;
-      futures.add(_run(
-        g,
-        MoveToEffect(
-          _cellCenter(r, c),
-          EffectController(duration: 0.30, curve: Curves.bounceOut),
+      futures.add(
+        _run(
+          g,
+          MoveToEffect(
+            _cellCenter(r, c),
+            EffectController(duration: 0.30, curve: Curves.bounceOut),
+          ),
         ),
-      ));
+      );
     }
     // W19.2 Puzzle: KHÔNG sinh gem mới (bàn hữu hạn) — giống guard ở _applyGravityAndRefill.
-    if (!controller.isPuzzle.value) { for (final s in res.spawns) {
-      // Vị trí xuất phát = NGƯỢC hướng dòng chảy (gem trôi vào từ đầu nguồn), xếp
-      // tầng theo depth. Down → từ trên; right → từ trái; v.v.
-      final fd = flowDelta(_hasFlow ? _flowDir[s.r][s.c] : FlowDir.down);
-      final startR = s.r - fd[0] * (s.depth + 1);
-      final startC = s.c - fd[1] * (s.depth + 1);
-      final g = GemComponent(
-        color: _refillColor(),
-        type: GemType.normal,
-        row: s.r,
-        col: s.c,
-        position: _cellCenter(startR, startC),
-        cellSize: cellSize,
-      );
-      g.isLucky = _rnd.nextDouble() < _luckyRate;
-      grid[s.r][s.c] = g;
-      g.scale = Vector2.all(0.4);
-      g.add(ScaleEffect.to(
-        Vector2.all(1),
-        EffectController(duration: 0.28, curve: Curves.easeOutBack),
-      ));
-      boardLayer.add(g);
-      futures.add(_run(
-        g,
-        MoveToEffect(
-          _cellCenter(s.r, s.c),
-          EffectController(duration: 0.32, curve: Curves.bounceOut),
-        ),
-      ));
-    } } // end for spawns / end if !isPuzzle
+    if (!controller.isPuzzle.value) {
+      for (final s in res.spawns) {
+        // Vị trí xuất phát = NGƯỢC hướng dòng chảy (gem trôi vào từ đầu nguồn), xếp
+        // tầng theo depth. Down → từ trên; right → từ trái; v.v.
+        final fd = flowDelta(_hasFlow ? _flowDir[s.r][s.c] : FlowDir.down);
+        final startR = s.r - fd[0] * (s.depth + 1);
+        final startC = s.c - fd[1] * (s.depth + 1);
+        final g = GemComponent(
+          color: _refillColor(),
+          type: GemType.normal,
+          row: s.r,
+          col: s.c,
+          position: _cellCenter(startR, startC),
+          cellSize: cellSize,
+        );
+        g.isLucky = _rnd.nextDouble() < _luckyRate;
+        grid[s.r][s.c] = g;
+        g.scale = Vector2.all(0.4);
+        g.add(
+          ScaleEffect.to(
+            Vector2.all(1),
+            EffectController(duration: 0.28, curve: Curves.easeOutBack),
+          ),
+        );
+        boardLayer.add(g);
+        futures.add(
+          _run(
+            g,
+            MoveToEffect(
+              _cellCenter(s.r, s.c),
+              EffectController(duration: 0.32, curve: Curves.bounceOut),
+            ),
+          ),
+        );
+      }
+    } // end for spawns / end if !isPuzzle
     await Future.wait(futures);
   }
 
@@ -2021,8 +2196,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     _movesSinceShift = 0;
     _mazeShiftStep = (_mazeShiftStep + 1) % kLabyrinthLayouts.length;
     _flash(NeonTheme.cyan, peak: 0.40); // cue thị giác "tường đang dịch"
-    await _applyLayoutDynamic(
-        layoutFromMap(kLabyrinthLayouts[_mazeShiftStep]));
+    await _applyLayoutDynamic(layoutFromMap(kLabyrinthLayouts[_mazeShiftStep]));
   }
 
   /// W17.2 — Áp [newLayout] lên bàn đang chạy: cập nhật _cellKind, xoá gem ở ô
@@ -2064,11 +2238,15 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         final g = grid[r][c];
         if (g == null) continue;
         grid[r][c] = null;
-        futures.add(_run(
-                g,
-                ScaleEffect.to(Vector2.zero(),
-                    EffectController(duration: 0.16, curve: Curves.easeIn)))
-            .then((_) => g.removeFromParent()));
+        futures.add(
+          _run(
+            g,
+            ScaleEffect.to(
+              Vector2.zero(),
+              EffectController(duration: 0.16, curve: Curves.easeIn),
+            ),
+          ).then((_) => g.removeFromParent()),
+        );
       }
       // 2) đẩy gem còn lại XUỐNG n hàng (từ đáy lên để không ghi đè)
       for (int r = rows - 1 - n; r >= 0; r--) {
@@ -2077,10 +2255,15 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         grid[r + n][c] = g;
         grid[r][c] = null;
         g.row = r + n;
-        futures.add(_run(
+        futures.add(
+          _run(
             g,
-            MoveToEffect(_cellCenter(r + n, c),
-                EffectController(duration: 0.26, curve: Curves.easeIn))));
+            MoveToEffect(
+              _cellCenter(r + n, c),
+              EffectController(duration: 0.26, curve: Curves.easeIn),
+            ),
+          ),
+        );
       }
       // 3) thêm n gem RÁC ở các hàng trên, rơi từ trên xuống
       for (int r = 0; r < n; r++) {
@@ -2099,10 +2282,15 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         )..isJunk = true; // đánh dấu rác để render xám + nứt
         grid[r][c] = g;
         boardLayer.add(g);
-        futures.add(_run(
+        futures.add(
+          _run(
             g,
-            MoveToEffect(_cellCenter(r, c),
-                EffectController(duration: 0.30, curve: Curves.bounceOut))));
+            MoveToEffect(
+              _cellCenter(r, c),
+              EffectController(duration: 0.30, curve: Curves.bounceOut),
+            ),
+          ),
+        );
       }
     }
     await Future.wait(futures);
@@ -2119,14 +2307,17 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// (bom/dispenser/colorRush) — trước đây tick nhầm: dùng booster bơm dispenser
   /// (lợi) + làm bom nổ free (hại). Băng chuyền vốn đã chỉ chạy ở nước đi thật.
   void _finishMove({bool consumed = true}) {
-    onMoveResolved?.call(controller.comboCount.value); // versus: gửi rác theo combo
+    onMoveResolved?.call(
+      controller.comboCount.value,
+    ); // versus: gửi rác theo combo
     if (consumed) {
       // Bom đếm ngược giảm 1 nhịp sau mỗi LƯỢT; nổ → cờ thua. checkEnd ưu tiên
       // hasWon trước nên nước đi vừa đạt mục tiêu vẫn THẮNG dù bom cũng về 0.
       _tickBombs();
       if (_hasDispenser) _tickDispensers(); // Wave 11: phát special định kỳ
-      controller.tickColorRush(); // Wave 11: đổi màu nóng mỗi N lượt (no-op nếu khác mode)
-      controller.tickSoda();     // W17.4: nozzle soda định kỳ (no-op nếu khác mode)
+      controller
+          .tickColorRush(); // Wave 11: đổi màu nóng mỗi N lượt (no-op nếu khác mode)
+      controller.tickSoda(); // W17.4: nozzle soda định kỳ (no-op nếu khác mode)
     }
     final result = controller.checkEnd();
     if (result != null) {
@@ -2178,7 +2369,8 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       generator: (i) {
         final angle = _rnd.nextDouble() * math.pi * 2;
         final speed = (big ? 90 : 60) + _rnd.nextDouble() * (big ? 220 : 150);
-        final velocity = Vector2(math.cos(angle), math.sin(angle))..scale(speed);
+        final velocity = Vector2(math.cos(angle), math.sin(angle))
+          ..scale(speed);
         return AcceleratedParticle(
           acceleration: Vector2(0, 160),
           speed: velocity,
@@ -2194,7 +2386,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         );
       },
     );
-    add(ParticleSystemComponent(particle: particle, position: position)..priority = 40);
+    add(
+      ParticleSystemComponent(particle: particle, position: position)
+        ..priority = 40,
+    );
   }
 
   /// Xử lý chạm bàn khi đang kích hoạt booster.
@@ -2209,15 +2404,18 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         if (controller.hammerUpgraded.value) {
           final area = <Cell>{};
           _addArea(area, cell, 1);
-          add(ShockwaveComponent(
-            position: _cellCenter(cell.row, cell.col),
-            color: NeonTheme.magenta,
-            maxRadius: cellSize * 2.2,
-          )..priority = 50);
+          add(
+            ShockwaveComponent(
+              position: _cellCenter(cell.row, cell.col),
+              color: NeonTheme.magenta,
+              maxRadius: cellSize * 2.2,
+            )..priority = 50,
+          );
           _smashCells(area, color: NeonTheme.magenta);
         } else {
-          _smashCells({cell},
-              color: neonColorOf(grid[cell.row][cell.col]!.color));
+          _smashCells({
+            cell,
+          }, color: neonColorOf(grid[cell.row][cell.col]!.color));
         }
         break;
       case BoosterMode.bomb:
@@ -2225,11 +2423,13 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         onBoosterUsed?.call(BoosterMode.bomb);
         final area = <Cell>{};
         _addArea(area, cell, 1); // 3x3
-        add(ShockwaveComponent(
-          position: _cellCenter(cell.row, cell.col),
-          color: NeonTheme.orange,
-          maxRadius: cellSize * 2.4,
-        )..priority = 50);
+        add(
+          ShockwaveComponent(
+            position: _cellCenter(cell.row, cell.col),
+            color: NeonTheme.orange,
+            maxRadius: cellSize * 2.4,
+          )..priority = 50,
+        );
         _flash(NeonTheme.orange, peak: 0.2);
         _smashCells(area, color: NeonTheme.orange);
         break;
@@ -2252,11 +2452,13 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         final g = grid[cell.row][cell.col];
         if (g != null) {
           g.type = GemType.rainbow; // biến thành gem vạn năng (Rainbow)
-          add(ShockwaveComponent(
-            position: _cellCenter(cell.row, cell.col),
-            color: Colors.white,
-            maxRadius: cellSize * 1.6,
-          )..priority = 55);
+          add(
+            ShockwaveComponent(
+              position: _cellCenter(cell.row, cell.col),
+              color: Colors.white,
+              maxRadius: cellSize * 1.6,
+            )..priority = 55,
+          );
           _flash(Colors.white, peak: 0.25);
         }
         break;
@@ -2293,7 +2495,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       await _ensurePlayable();
     } finally {
       _busy = false;
-      _finishMove(consumed: false); // booster KHÔNG tốn lượt → không tick cơ chế theo lượt
+      _finishMove(
+        consumed: false,
+      ); // booster KHÔNG tốn lượt → không tick cơ chế theo lượt
     }
   }
 
@@ -2308,7 +2512,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       await _ensurePlayable();
     } finally {
       _busy = false;
-      _finishMove(consumed: false); // booster KHÔNG tốn lượt → không tick cơ chế theo lượt
+      _finishMove(
+        consumed: false,
+      ); // booster KHÔNG tốn lượt → không tick cơ chế theo lượt
     }
   }
 
@@ -2325,8 +2531,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       }
     }
     if (counts.isEmpty) return;
-    final color =
-        counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+    final color = counts.entries
+        .reduce((a, b) => a.value >= b.value ? a : b)
+        .key;
     final all = <Cell>[];
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
@@ -2337,8 +2544,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final pick = all.take(7).toList();
     // tia sét nối các gem
     for (int i = 0; i < pick.length - 1; i++) {
-      _addBeam(_cellCenter(pick[i].row, pick[i].col),
-          _cellCenter(pick[i + 1].row, pick[i + 1].col), neonColorOf(color));
+      _addBeam(
+        _cellCenter(pick[i].row, pick[i].col),
+        _cellCenter(pick[i + 1].row, pick[i + 1].col),
+        neonColorOf(color),
+      );
     }
     _flash(neonColorOf(color), peak: 0.25);
     await _smashCells(pick.toSet(), color: neonColorOf(color));
@@ -2370,9 +2580,15 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         // junk). Trước đây chỉ swap color/type → ở màn Drop Down/obstacle/bom,
         // ingredient + băng/đá/bom bị kẹt sai ô sau khi lật (booster Gravity Flip
         // dùng được ở mọi màn). Lật lưới phụ TRƯỚC null-check để luôn nhất quán.
-        final to = obstacle[r][c]; obstacle[r][c] = obstacle[r2][c]; obstacle[r2][c] = to;
-        final tb = bomb[r][c]; bomb[r][c] = bomb[r2][c]; bomb[r2][c] = tb;
-        final tj = jelly[r][c]; jelly[r][c] = jelly[r2][c]; jelly[r2][c] = tj;
+        final to = obstacle[r][c];
+        obstacle[r][c] = obstacle[r2][c];
+        obstacle[r2][c] = to;
+        final tb = bomb[r][c];
+        bomb[r][c] = bomb[r2][c];
+        bomb[r2][c] = tb;
+        final tj = jelly[r][c];
+        jelly[r][c] = jelly[r2][c];
+        jelly[r2][c] = tj;
         final a = grid[r][c];
         final b = grid[r2][c];
         if (a == null || b == null) continue;
@@ -2390,10 +2606,18 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         b.isJunk = tJunk;
         a.scale = Vector2.all(0.6);
         b.scale = Vector2.all(0.6);
-        a.add(ScaleEffect.to(Vector2.all(1),
-            EffectController(duration: 0.25, curve: Curves.easeOutBack)));
-        b.add(ScaleEffect.to(Vector2.all(1),
-            EffectController(duration: 0.25, curve: Curves.easeOutBack)));
+        a.add(
+          ScaleEffect.to(
+            Vector2.all(1),
+            EffectController(duration: 0.25, curve: Curves.easeOutBack),
+          ),
+        );
+        b.add(
+          ScaleEffect.to(
+            Vector2.all(1),
+            EffectController(duration: 0.25, curve: Curves.easeOutBack),
+          ),
+        );
       }
     }
     _flash(NeonTheme.cyan, peak: 0.2);
@@ -2410,7 +2634,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       await _doColumnFlip();
     } finally {
       _busy = false;
-      _finishMove(consumed: false); // booster KHÔNG tốn lượt → không tick cơ chế theo lượt
+      _finishMove(
+        consumed: false,
+      ); // booster KHÔNG tốn lượt → không tick cơ chế theo lượt
     }
   }
 
@@ -2441,13 +2667,16 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     // xáo tới khi không có match sẵn (tối đa 20 lần thử)
     for (int attempt = 0; attempt < 20; attempt++) {
       colors.shuffle(_rnd);
-      final test =
-          List.generate(rows, (_) => List<GemColor?>.filled(cols, null));
+      final test = List.generate(
+        rows,
+        (_) => List<GemColor?>.filled(cols, null),
+      );
       for (int i = 0; i < cells.length; i++) {
         final cell = cells[i];
         // Ô phủ kín (stone/spread/licorice/jam) không match → loại khỏi test
         // shuffle để khớp _matchColorAt (nhất quán, tránh ước lượng thừa match).
-        final excluded = (grid[cell.row][cell.col]?.isIngredient ?? false) ||
+        final excluded =
+            (grid[cell.row][cell.col]?.isIngredient ?? false) ||
             (obstacle[cell.row][cell.col] > 0 &&
                 _obstacleCoversGem(_obstacleType));
         test[cell.row][cell.col] = excluded ? null : colors[i];
@@ -2460,10 +2689,15 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       g.color = colors[i];
       g.type = GemType.normal;
       g.scale = Vector2.all(0.5);
-      futures.add(_run(
+      futures.add(
+        _run(
           g,
-          ScaleEffect.to(Vector2.all(1),
-              EffectController(duration: 0.3, curve: Curves.elasticOut))));
+          ScaleEffect.to(
+            Vector2.all(1),
+            EffectController(duration: 0.3, curve: Curves.elasticOut),
+          ),
+        ),
+      );
     }
     _shake(6);
     await Future.wait(futures);
@@ -2483,15 +2717,17 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final color = NeonTheme.gemColors[combo % NeonTheme.gemColors.length];
     final fontSize = (24 + combo * 4).clamp(24, epic ? 46 : 40).toDouble();
     final label = epic ? 'WOMBO COMBO x$combo!' : 'COMBO x$combo!';
-    add(ComboTextComponent(
-      text: label,
-      color: color,
-      position: Vector2(size.x / 2, size.y * 0.4),
-      fontSize: fontSize,
-      maxWidth: size.x * 0.92,
-      epic: epic,
-      duration: epic ? 1.3 : 0.9,
-    )..priority = 70);
+    add(
+      ComboTextComponent(
+        text: label,
+        color: color,
+        position: Vector2(size.x / 2, size.y * 0.4),
+        fontSize: fontSize,
+        maxWidth: size.x * 0.92,
+        epic: epic,
+        duration: epic ? 1.3 : 0.9,
+      )..priority = 70,
+    );
     if (epic) {
       _flash(color, peak: 0.32);
       _shake(12);
@@ -2507,27 +2743,31 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
   /// Time Attack: hiện "+Ns" bay lên (phần thưởng thời gian combo lớn).
   void _spawnTimeBonus(int seconds) {
-    add(ComboTextComponent(
-      text: '+${seconds}s',
-      color: NeonTheme.lime,
-      position: Vector2(size.x / 2, size.y * 0.26),
-      fontSize: 30,
-      maxWidth: size.x * 0.7,
-      duration: 0.9,
-    )..priority = 71);
+    add(
+      ComboTextComponent(
+        text: '+${seconds}s',
+        color: NeonTheme.lime,
+        position: Vector2(size.x / 2, size.y * 0.26),
+        fontSize: 30,
+        maxWidth: size.x * 0.7,
+        duration: 0.9,
+      )..priority = 71,
+    );
   }
 
   /// W19.1: hiện banner ăn mừng (NEW BEST / mở mốc) cuối ván side-mode + flash nhẹ.
   void showBanner(String text, Color color) {
-    add(ComboTextComponent(
-      text: text,
-      color: color,
-      position: Vector2(size.x / 2, size.y * 0.3),
-      fontSize: 34,
-      maxWidth: size.x * 0.85,
-      epic: true,
-      duration: 1.3,
-    )..priority = 73);
+    add(
+      ComboTextComponent(
+        text: text,
+        color: color,
+        position: Vector2(size.x / 2, size.y * 0.3),
+        fontSize: 34,
+        maxWidth: size.x * 0.85,
+        epic: true,
+        duration: 1.3,
+      )..priority = 73,
+    );
     _flash(color, peak: 0.22);
   }
 

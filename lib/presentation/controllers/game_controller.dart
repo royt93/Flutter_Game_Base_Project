@@ -94,12 +94,20 @@ class GameController extends GetxController {
   final RxBool isZen = false.obs;
   final RxInt zenHigh = 0.obs;
 
+  // W21 — Rush Mode (Tốc chiến): 2 phút, vô hạn lượt, match → +giây.
+  final RxBool isRush = false.obs;
+  final RxInt rushTimeBonus = 0.obs; // giây vừa được cộng (HUD fly-up)
+  static const int kRushInitialSeconds = 120;
+  static const int kRushMaxSeconds = 300;
+
   // --- Boss neon (Wave 8) ---
   final RxBool isBoss = false.obs;
   final RxInt bossHp = 0.obs;
   final RxInt bossMaxHp = 0.obs;
   final RxInt bossStage = 1.obs; // chọn từ Home (1..n) → máu + né tăng
   final RxInt bossWeakColor = 0.obs; // index màu điểm yếu (đổi theo phase)
+  final RxInt bossAttackSignal =
+      0.obs; // tăng mỗi lần boss phản đòn → HUD flash
   LevelConfig? _bossCfg;
   int _bossHitsSinceRetaliate = 0;
 
@@ -163,6 +171,10 @@ class GameController extends GetxController {
   final RxInt rhythmBeat = 0.obs; // tăng mỗi mốc beat → đập HUD
   final RxInt groove = 0.obs; // chuỗi đúng nhịp (0..[kGrooveMax])
   final RxInt lastBeatJudge = 0.obs; // 0 chưa đánh, 1 đúng nhịp, -1 lệch nhịp
+  // W21 — Rhythm upgrade
+  final RxInt rhythmJudge =
+      0.obs; // 2=PERFECT, 1=GOOD, -1=LATE, -2=MISS, 0=neutral
+  final RxDouble rhythmBpm = 80.0.obs; // BPM hiện tại (cho HUD)
   bool _rhythmBonusPending = false;
 
   /// Trần groove (đúng nhịp liên tiếp) → hệ số thưởng điểm tối đa.
@@ -194,6 +206,23 @@ class GameController extends GetxController {
 
   /// Ngưỡng combo để gây sát thương GẤP ĐÔI (đánh đúng "phase yếu").
   static const int bossWeakCombo = 4;
+
+  // W21 — Boss phase thresholds & attack config
+  static const double kBossPhase2Threshold = 0.65; // HP xuống 65% → phase 2
+  static const double kBossPhase3Threshold = 0.32; // HP xuống 32% → phase 3
+  // Interval (số lượt) trước khi boss retaliate, theo phase [0,1,2].
+  static const List<int> kBossAttackInterval = [4, 3, 2];
+  // Số lượt bị trừ khi boss retaliate, theo phase [0,1,2].
+  static const List<int> kBossAttackDamage = [1, 2, 3];
+
+  /// Phase boss hiện tại (0 = đầu, 1 = giữa, 2 = cuối). Computed từ HP ratio.
+  int get bossPhase {
+    if (bossMaxHp.value == 0) return 0;
+    final ratio = bossHp.value / bossMaxHp.value;
+    if (ratio <= kBossPhase3Threshold) return 2;
+    if (ratio <= kBossPhase2Threshold) return 1;
+    return 0;
+  }
 
   // --- Ghost Replay (W20.3) ---
   final RxBool isGhostMode = false.obs;
@@ -383,7 +412,8 @@ class GameController extends GetxController {
       isDaily.value ||
       isPuzzle.value ||
       isZen.value ||
-      isVersus.value;
+      isVersus.value ||
+      isRush.value;
 
   /// Đặt cờ chế độ ĐỘC QUYỀN (đúng 1 mode bật, hoặc tất cả false = màn thường)
   /// + xoá cfg các mode không bật. Gom 1 chỗ → 5 hàm start* khỏi lặp 8 dòng cờ.
@@ -399,6 +429,7 @@ class GameController extends GetxController {
     bool daily = false,
     bool puzzle = false,
     bool zen = false,
+    bool rush = false,
   }) {
     isEndless.value = endless;
     isBoss.value = boss;
@@ -411,6 +442,7 @@ class GameController extends GetxController {
     isDaily.value = daily;
     isPuzzle.value = puzzle;
     isZen.value = zen;
+    isRush.value = rush;
     isGhostMode.value = false;
     ghostScore.value = 0;
     ghostStep.value = 0;

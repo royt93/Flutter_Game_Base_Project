@@ -109,6 +109,7 @@ class AppTranslations extends Translations {
           ...?_w182ByLang[e.key],
           ...?_w183ByLang[e.key],
           ...?_w20ByLang[e.key],
+          ...?_w21ByLang[e.key],
         },
     };
   }
@@ -163,6 +164,12 @@ class AppTranslations extends Translations {
     'cc_earn_coins': 'Earn @n coins this week',
     'cc_play_mode': 'Play @m @n times',
     'cc_claim': 'CLAIM',
+    // Wave 21 — Rush Mode (Tốc chiến)
+    'rush_title': 'RUSH',
+    'rush_short': 'RUSH',
+    'rush_desc': '2 min · unlimited moves · matches add time',
+    'rush_best': 'Best',
+    'rush_time_bonus': '+@ns',
     'endless_short': 'ENDLESS',
     'boss_short': 'BOSS',
     'rhythm_short': 'RHYTHM',
@@ -576,6 +583,12 @@ class AppTranslations extends Translations {
     'cc_earn_coins': 'Kiếm @n xu trong tuần này',
     'cc_play_mode': 'Chơi @m @n lần',
     'cc_claim': 'NHẬN',
+    // Wave 21 — Rush Mode (Tốc chiến)
+    'rush_title': 'TỐC CHIẾN',
+    'rush_short': 'TỐC CHIẾN',
+    'rush_desc': '2 phút · lượt vô hạn · ghép = +giây',
+    'rush_best': 'Điểm cao',
+    'rush_time_bonus': '+@ns',
     'endless_short': 'VÔ TẬN',
     'boss_short': 'TRÙM NEON',
     'rhythm_short': 'NHỊP ĐIỆU',
@@ -9350,7 +9363,7 @@ class AppTranslations extends Translations {
 
   /// Wave 20.2 — Tên thế giới 9-10 ("Void Circuit" / "Zenith Neon") dịch 20 ngôn ngữ.
   static const Map<String, Map<String, String>> _w20ByLang = {
-    'es': {
+    'es_ES': {
       'world_name_9': 'Circuito Vacío',
       'world_name_10': 'Cénit Neón',
       'zen_title': 'ZEN',
@@ -9376,7 +9389,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': 'Juega @m @n veces',
       'cc_claim': 'RECLAMAR',
     },
-    'fr': {
+    'fr_FR': {
       'world_name_9': 'Circuit du Vide',
       'world_name_10': 'Zénith Néon',
       'zen_title': 'ZEN',
@@ -9403,7 +9416,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': 'Jouer @m @n fois',
       'cc_claim': 'RÉCUPÉRER',
     },
-    'de': {
+    'de_DE': {
       'world_name_9': 'Leerkreis',
       'world_name_10': 'Neon-Zenit',
       'zen_title': 'ZEN',
@@ -9430,7 +9443,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': '@m @n Mal spielen',
       'cc_claim': 'EINLÖSEN',
     },
-    'pt': {
+    'pt_BR': {
       'world_name_9': 'Circuito do Vazio',
       'world_name_10': 'Zênite Neon',
       'zen_title': 'ZEN',
@@ -9456,7 +9469,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': 'Jogar @m @n vezes',
       'cc_claim': 'RESGATAR',
     },
-    'ru': {
+    'ru_RU': {
       'world_name_9': 'Схема Пустоты',
       'world_name_10': 'Зенит Неона',
       'zen_title': 'ZEN',
@@ -9482,7 +9495,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': 'Сыграть в @m @n раз',
       'cc_claim': 'ПОЛУЧИТЬ',
     },
-    'zh': {
+    'zh_CN': {
       'world_name_9': '虚空回路',
       'world_name_10': '霓虹之巅',
       'zen_title': 'ZEN',
@@ -9507,7 +9520,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': '玩 @m @n 次',
       'cc_claim': '领取',
     },
-    'ja': {
+    'ja_JP': {
       'world_name_9': 'ヴォイド・サーキット',
       'world_name_10': 'ネオン・ゼニス',
       'zen_title': 'ZEN',
@@ -9532,7 +9545,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': '@m を @n 回プレイ',
       'cc_claim': '受け取る',
     },
-    'ko': {
+    'ko_KR': {
       'world_name_9': '공허 회로',
       'world_name_10': '네온 정점',
       'zen_title': 'ZEN',
@@ -9557,7 +9570,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': '@m @n 회 플레이',
       'cc_claim': '수령',
     },
-    'it': {
+    'it_IT': {
       'world_name_9': 'Circuito del Vuoto',
       'world_name_10': 'Zenith Neon',
       'zen_title': 'ZEN',
@@ -9584,7 +9597,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': 'Gioca a @m @n volte',
       'cc_claim': 'RISCATTA',
     },
-    'id': {
+    'id_ID': {
       'world_name_9': 'Sirkuit Hampa',
       'world_name_10': 'Puncak Neon',
       'zen_title': 'ZEN',
@@ -9609,7 +9622,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': 'Main @m @n kali',
       'cc_claim': 'KLAIM',
     },
-    'th': {
+    'th_TH': {
       'world_name_9': 'วงจรแห่งความว่าง',
       'world_name_10': 'จุดสูงสุดนีออน',
       'zen_title': 'ZEN',
@@ -9634,7 +9647,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': 'เล่น @m @n ครั้ง',
       'cc_claim': 'รับ',
     },
-    'hi': {
+    'hi_IN': {
       'world_name_9': 'शून्य परिपथ',
       'world_name_10': 'नियॉन शिखर',
       'zen_title': 'ZEN',
@@ -9659,7 +9672,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': '@m @n बार खेलें',
       'cc_claim': 'पाएँ',
     },
-    'ar': {
+    'ar_SA': {
       'world_name_9': 'دائرة الفراغ',
       'world_name_10': 'ذروة النيون',
       'zen_title': 'ZEN',
@@ -9684,7 +9697,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': 'العب @m @n مرات',
       'cc_claim': 'استلام',
     },
-    'tr': {
+    'tr_TR': {
       'world_name_9': 'Boşluk Devresi',
       'world_name_10': 'Neon Zirve',
       'zen_title': 'ZEN',
@@ -9709,7 +9722,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': '@m @n kez oyna',
       'cc_claim': 'AL',
     },
-    'nl': {
+    'nl_NL': {
       'world_name_9': 'Leegte Circuit',
       'world_name_10': 'Neon Zenit',
       'zen_title': 'ZEN',
@@ -9735,7 +9748,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': 'Speel @m @n keer',
       'cc_claim': 'CLAIMEN',
     },
-    'pl': {
+    'pl_PL': {
       'world_name_9': 'Obwód Próżni',
       'world_name_10': 'Neonowy Zenit',
       'zen_title': 'ZEN',
@@ -9761,7 +9774,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': 'Zagraj w @m @n razy',
       'cc_claim': 'ODBIERZ',
     },
-    'fil': {
+    'fil_PH': {
       'world_name_9': 'Void na Sirkito',
       'world_name_10': 'Tuktok ng Neon',
       'zen_title': 'ZEN',
@@ -9786,7 +9799,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': 'Maglaro ng @m @n beses',
       'cc_claim': 'KUNIN',
     },
-    'ms': {
+    'ms_MY': {
       'world_name_9': 'Litar Kekosongan',
       'world_name_10': 'Puncak Neon',
       'zen_title': 'ZEN',
@@ -9811,7 +9824,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': 'Main @m @n kali',
       'cc_claim': 'TUNTUT',
     },
-    'uk': {
+    'uk_UA': {
       'world_name_9': 'Схема Порожнечі',
       'world_name_10': 'Зеніт Неону',
       'zen_title': 'ZEN',
@@ -9837,7 +9850,7 @@ class AppTranslations extends Translations {
       'cc_play_mode': 'Зіграти в @m @n разів',
       'cc_claim': 'ОТРИМАТИ',
     },
-    'bn': {
+    'bn_BD': {
       'world_name_9': 'শূন্য বর্তনী',
       'world_name_10': 'নিয়ন শীর্ষ',
       'zen_title': 'ZEN',
@@ -9862,6 +9875,150 @@ class AppTranslations extends Translations {
       'cc_earn_coins': 'এই সপ্তাহে @n কয়েন উপার্জন করুন',
       'cc_play_mode': '@m @n বার খেলুন',
       'cc_claim': 'নিন',
+    },
+  };
+
+  /// Wave 21 — Rush Mode (Tốc chiến): 20 ngôn ngữ.
+  static const Map<String, Map<String, String>> _w21ByLang = {
+    'es_ES': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 min · movimientos ilimitados · combinar = +tiempo',
+      'rush_best': 'Mejor',
+      'rush_time_bonus': '+@ns',
+    },
+    'fr_FR': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 min · mouvements illimités · combo = +temps',
+      'rush_best': 'Meilleur',
+      'rush_time_bonus': '+@ns',
+    },
+    'de_DE': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 Min · unbegrenzte Züge · Match = +Zeit',
+      'rush_best': 'Bestleistung',
+      'rush_time_bonus': '+@ns',
+    },
+    'pt_BR': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 min · movimentos ilimitados · combinar = +tempo',
+      'rush_best': 'Melhor',
+      'rush_time_bonus': '+@ns',
+    },
+    'ru_RU': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 мин · ходы без лимита · комбо = +время',
+      'rush_best': 'Рекорд',
+      'rush_time_bonus': '+@ns',
+    },
+    'zh_CN': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2分钟 · 无限步数 · 消除 = +时间',
+      'rush_best': '最高',
+      'rush_time_bonus': '+@ns',
+    },
+    'ja_JP': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2分 · 手数無制限 · マッチ = +時間',
+      'rush_best': 'ベスト',
+      'rush_time_bonus': '+@ns',
+    },
+    'ko_KR': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2분 · 무제한 이동 · 매치 = +시간',
+      'rush_best': '최고점',
+      'rush_time_bonus': '+@ns',
+    },
+    'it_IT': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 min · mosse illimitate · combo = +tempo',
+      'rush_best': 'Migliore',
+      'rush_time_bonus': '+@ns',
+    },
+    'id_ID': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 menit · langkah tak terbatas · cocokkan = +waktu',
+      'rush_best': 'Terbaik',
+      'rush_time_bonus': '+@ns',
+    },
+    'th_TH': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 นาที · ไม่จำกัดการเดิน · จับคู่ = +เวลา',
+      'rush_best': 'สูงสุด',
+      'rush_time_bonus': '+@ns',
+    },
+    'hi_IN': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 मिनट · असीमित चालें · मिलान = +समय',
+      'rush_best': 'सर्वश्रेष्ठ',
+      'rush_time_bonus': '+@ns',
+    },
+    'ar_SA': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': 'دقيقتان · حركات غير محدودة · مطابقة = +وقت',
+      'rush_best': 'الأفضل',
+      'rush_time_bonus': '+@ns',
+    },
+    'tr_TR': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 dk · sınırsız hamle · eşleştir = +süre',
+      'rush_best': 'En İyi',
+      'rush_time_bonus': '+@ns',
+    },
+    'nl_NL': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 min · onbeperkte zetten · match = +tijd',
+      'rush_best': 'Beste',
+      'rush_time_bonus': '+@ns',
+    },
+    'pl_PL': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 min · nieograniczone ruchy · dopasuj = +czas',
+      'rush_best': 'Najlepszy',
+      'rush_time_bonus': '+@ns',
+    },
+    'fil_PH': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 min · walang limitasyong galaw · tugma = +oras',
+      'rush_best': 'Pinakamataas',
+      'rush_time_bonus': '+@ns',
+    },
+    'ms_MY': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 min · langkah tanpa had · padankan = +masa',
+      'rush_best': 'Terbaik',
+      'rush_time_bonus': '+@ns',
+    },
+    'uk_UA': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '2 хв · необмежені ходи · збіг = +час',
+      'rush_best': 'Рекорд',
+      'rush_time_bonus': '+@ns',
+    },
+    'bn_BD': {
+      'rush_title': 'RUSH',
+      'rush_short': 'RUSH',
+      'rush_desc': '২ মিনিট · সীমাহীন চাল · মিল = +সময়',
+      'rush_best': 'সেরা',
+      'rush_time_bonus': '+@ns',
     },
   };
 }

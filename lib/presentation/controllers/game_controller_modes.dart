@@ -25,6 +25,17 @@ extension GameControllerModes on GameController {
   // Wave 20.4 — Zen Mode: không thua, tích điểm tự do
   // ---------------------------------------------------------------------------
 
+  /// Bắt đầu Rush Mode (Tốc chiến) — vô hạn lượt, 2 phút ban đầu.
+  /// Mỗi match thêm thời gian: match-3 = +1s, match-4 = +2s... (cap 5 phút).
+  void startRush() {
+    _enterMode(rush: true);
+    _resetRunState(
+      moves: 999, // vô hạn — HUD hiển thị "∞"
+      target: 1 << 28, // không kết thúc theo điểm
+      time: GameController.kRushInitialSeconds,
+    );
+  }
+
   /// Bắt đầu Zen Mode — bàn 8×8, lượt vô hạn (999), KHÔNG kết thúc tự động.
   /// Người chơi thoát bằng nút X → `endZenSession()` lưu kỷ lục.
   void startZen() {
@@ -85,32 +96,46 @@ extension GameControllerModes on GameController {
   void startRhythm() {
     _rhythmCfg = buildRhythmLevel();
     _enterMode(rhythm: true);
+    rhythm.bpm = rhythmBpmFor(0);
+    rhythm.window = rhythmWindowFor(0);
     rhythm.reset();
     rhythmBeat.value = 0;
     groove.value = 0;
     lastBeatJudge.value = 0;
+    rhythmJudge.value = 0;
+    rhythmBpm.value = rhythm.bpm;
     _rhythmBonusPending = false;
     _resetRunState(moves: _rhythmCfg!.moves, target: _rhythmCfg!.targetScore);
   }
 
   /// Engine gọi mỗi frame ở chế độ Rhythm: tiến đồng hồ nhịp, đập HUD mỗi beat.
+  /// W21: cập nhật BPM + window theo groove hiện tại (dynamic difficulty).
   void tickRhythm(double dt) {
     if (!isRhythm.value) return;
+    // Đồng bộ BPM + window theo groove (chỉ cập nhật khi thực sự thay đổi).
+    final newBpm = rhythmBpmFor(groove.value);
+    if (rhythm.bpm != newBpm) {
+      rhythm.bpm = newBpm;
+      rhythm.window = rhythmWindowFor(groove.value);
+    }
+    rhythmBpm.value = rhythm.bpm; // luôn sync (kể cả khi không thay đổi)
     if (rhythm.tick(dt)) rhythmBeat.value = rhythm.beatCount;
   }
 
   /// Engine gọi lúc người chơi thực hiện nước đi HỢP LỆ: phán định đúng/lệch
-  /// nhịp. Đúng nhịp → groove++ + bật cờ thưởng điểm (tiêu thụ ở [addScore]);
-  /// lệch nhịp → groove-- + tắt thưởng.
+  /// nhịp. W21: phân loại chi tiết PERFECT/GOOD/LATE/MISS qua [rhythmJudge].
   void judgeRhythmBeat() {
     if (!isRhythm.value) return;
-    if (rhythm.onBeat) {
+    final dist = rhythm.distanceToBeat;
+    final judge = rhythmJudgeFor(dist, rhythm.window);
+    rhythmJudge.value = judge; // 2=PERFECT, 1=GOOD, -1=LATE, -2=MISS
+    // lastBeatJudge giữ tương thích: 1 = hit (PERFECT hoặc GOOD), -1 = miss
+    lastBeatJudge.value = judge >= 1 ? 1 : -1;
+    if (judge >= 1) {
       groove.value = (groove.value + 1).clamp(0, GameController.kGrooveMax);
-      lastBeatJudge.value = 1;
       _rhythmBonusPending = true;
     } else {
       groove.value = (groove.value - 1).clamp(0, GameController.kGrooveMax);
-      lastBeatJudge.value = -1;
       _rhythmBonusPending = false;
     }
   }

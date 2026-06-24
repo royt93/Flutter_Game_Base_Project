@@ -1,6 +1,6 @@
 # TC-03 — Side Modes (Các chế độ phụ)
 
-**Phạm vi:** 11 chế độ phụ: Endless, Boss, Gravity, Rhythm, Color Rush, Soda, Survival, Labyrinth, Daily Challenge, Puzzle, Zen  
+**Phạm vi:** 13 challenge entries: Daily, Endless, Boss, Color Rush, Gravity, Zen, Rhythm, 2 Players, Soda, Survival, Labyrinth, Puzzle, Rush  
 **Điều kiện tiên quyết:** Không cần mạng; side mode KHÔNG tốn mạng, KHÔNG unlock màn campaign  
 **Mức ưu tiên:** P1 (High)
 
@@ -88,14 +88,14 @@
 
 ---
 
-## TC-03-08 — Survival Mode (Sinh tồn)
+## TC-03-08 — Survival Mode (Sinh tồn / Triều dâng)
 
 | # | Bước | Kết quả mong đợi |
 |---|------|-----------------|
-| 1 | Bấm "Sinh tồn" | Game bắt đầu, đồng hồ đếm ngược |
-| 2 | Thực hiện combo ≥4 | Đồng hồ +N giây |
-| 3 | Không ghép được | Đồng hồ cạn dần |
-| 4 | Hết giờ | Game kết thúc, điểm được lưu làm kỷ lục |
+| 1 | Bấm "Sinh tồn" | Game bắt đầu, overlay triều dâng xuất hiện |
+| 2 | Đợi không chơi | Nước dâng từ đáy lên theo thời gian |
+| 3 | Clear gem dưới nước | Nước bị đẩy lùi |
+| 4 | Nước chạm đỉnh | Game kết thúc, điểm được lưu làm kỷ lục |
 | 5 | Mở lại Survival | Corner chip hiển thị điểm kỷ lục cũ |
 
 ---
@@ -147,3 +147,14 @@
 | 3 | Bấm X | Dialog xác nhận thoát |
 | 4 | Xác nhận thoát | Điểm cao nhất lưu làm kỷ lục Zen |
 | 5 | Mở lại Zen | Corner hiển thị điểm cao cũ |
+
+---
+
+## TC-03-13 — Rush Mode
+
+| # | Bước | Kết quả mong đợi |
+|---|------|-----------------|
+| 1 | Bấm "Rush" | Game bắt đầu với timer 02:00 |
+| 2 | Ghép liên tục | Score tăng nhanh, match tốt có time bonus |
+| 3 | Timer hết | Game kết thúc, điểm lưu làm kỷ lục Rush |
+| 4 | Bấm Again | Restart vẫn là Rush, không rơi về campaign |

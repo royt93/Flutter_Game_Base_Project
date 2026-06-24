@@ -8,7 +8,17 @@
 library;
 
 /// Chế độ phụ có theo dõi kỷ lục.
-enum SideModeKind { endless, boss, rhythm, gravity, soda, colorRush, survival, labyrinth }
+enum SideModeKind {
+  endless,
+  boss,
+  rhythm,
+  gravity,
+  soda,
+  colorRush,
+  survival,
+  labyrinth,
+  rush,
+}
 
 /// Loại chỉ số được track:
 /// - bestStage: stage cao nhất đạt được (Endless / Boss) — chỉ tăng.
@@ -136,6 +146,14 @@ const List<SideModeRecordSpec> kSideModeRecords = [
     bronze: 1,
     silver: 5,
     gold: 15,
+  ),
+  SideModeRecordSpec(
+    kind: SideModeKind.rush,
+    key: 'rush',
+    metric: RecordMetric.bestScore,
+    bronze: 5000,
+    silver: 20000,
+    gold: 60000,
   ),
 ];
 

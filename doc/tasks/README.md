@@ -187,4 +187,22 @@ Người dùng chốt kết hợp option 3 (dọn nợ) + option 1 (auto-playtes
 Kết quả: 0 analyzer · **294 test pass** · build APK OK. Curve validate bằng data
 (`dart run tool/playtest.dart`).
 
+## Wave 21 — 📋 TODO (kỹ thuật + gameplay + meta)
+
+Kết hợp 3 hướng: dọn nợ kỹ thuật · cải tiến gameplay · meta/retention mới.
+Baseline: 611 test pass · 0 analyzer · build APK OK.
+
+| Phase | Task | Mô tả | Trạng thái | File |
+|---|---|---|---|---|
+| 1 | Tech Debt | Fix ad UX Versus + dọn UI widget + siết levelUnlock | ✅ done | `done/w21-1-tech-debt.md` |
+| 2 | i18n Coverage | Dịch 20 ngôn ngữ key còn thiếu W5/7/8 (~2,400 strings) | ✅ done | `done/w21-2-i18n-coverage.md` |
+| 3 | Boss Upgrade | Phase HP + 3 attack pattern (block/meteor/shuffle) | ✅ done | `done/w21-3-boss-upgrade.md` |
+| 4 | Rhythm Upgrade | BPM dynamic theo groove + judgment animation | 📋 todo | `todo/w21-4-rhythm-upgrade.md` |
+| 5 | World Map Events | Treasure chest + mini-boss node + avatar đi bộ | 📋 todo | `todo/w21-5-world-map-events.md` |
+| 6 | Offline Leaderboard | Bot score tất định top 10 cho Campaign + Daily | 📋 todo | `todo/w21-6-offline-leaderboard.md` |
+| 7 | Mode Rush | Mode mới "Tốc chiến": 2 phút, vô hạn lượt, match → +giây | ✅ done | `done/w21-7-new-mode-rush.md` |
+
+**Thứ tự đề xuất**: 1 → 2 → 7 → 3 → 4 → 5 → 6
+(kỹ thuật trước, mode mới sớm, upgrade mode sau, World Map + Leaderboard cuối)
+
 > Nguồn chân lý tổng thể: [`../feat.md`](../feat.md).

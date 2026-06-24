@@ -143,9 +143,7 @@ class HomeScreen extends StatelessWidget {
       builder: (context, constraints) {
         return SingleChildScrollView(
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: constraints.maxHeight,
-            ),
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: IntrinsicHeight(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -157,455 +155,289 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.max,
                   children: [
-          // Logo TO, nổi bật trên cùng.
-          _GemSparkle(size: 24, gap: 12),
-          const SizedBox(height: NeonTheme.s8),
-          Text(
-                'NEON',
-                style: TextStyle(
-                  fontSize: 72,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: 9,
-                  shadows: NeonTheme.gemColors
-                      .take(3)
-                      .map((c) => Shadow(color: c, blurRadius: 30))
-                      .toList(),
-                ),
-              )
-              .animate(onPlay: (c) => c.repeat(reverse: true))
-              .shimmer(duration: 2200.ms, color: NeonTheme.cyan)
-              .scaleXY(begin: 1, end: 1.04, duration: 1600.ms),
-          const Text(
-            'JEWELS',
-            style: TextStyle(
-              fontSize: 44,
-              fontWeight: FontWeight.w700,
-              color: NeonTheme.magenta,
-              letterSpacing: 14,
-              shadows: [Shadow(color: NeonTheme.magenta, blurRadius: 34)],
-            ),
-          ),
-          // W18.2: danh hiệu đang đeo (từ Thành tựu) — "khoe thành tích".
-          Obx(() {
-            final key = ac.equippedTitleKey;
-            if (key == null) return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.workspace_premium_rounded,
-                      color: NeonTheme.yellow, size: 14),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      key.tr,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: NeonTheme.yellow,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1,
+                    // Logo TO, nổi bật trên cùng.
+                    _GemSparkle(size: 24, gap: 12),
+                    const SizedBox(height: NeonTheme.s8),
+                    Text(
+                          'NEON',
+                          style: TextStyle(
+                            fontSize: 72,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 9,
+                            shadows: NeonTheme.gemColors
+                                .take(3)
+                                .map((c) => Shadow(color: c, blurRadius: 30))
+                                .toList(),
+                          ),
+                        )
+                        .animate(onPlay: (c) => c.repeat(reverse: true))
+                        .shimmer(duration: 2200.ms, color: NeonTheme.cyan)
+                        .scaleXY(begin: 1, end: 1.04, duration: 1600.ms),
+                    const Text(
+                      'JEWELS',
+                      style: TextStyle(
+                        fontSize: 44,
+                        fontWeight: FontWeight.w700,
+                        color: NeonTheme.magenta,
+                        letterSpacing: 14,
+                        shadows: [
+                          Shadow(color: NeonTheme.magenta, blurRadius: 34),
+                        ],
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          }),
-          const Spacer(), // đẩy khối GIỮA (CHƠI NGAY + Thử thách) xuống
-          // NÚT CHÍNH — TO + full-width + glow mạnh + nhịp đập nhẹ để hút mắt.
-          _playButton(() {
-            final grid =
-                StorageService.to.getInt(StorageKeys.viewMode, def: 0) == 1;
-            Get.to(
-              () => grid ? const LevelSelectScreen() : const WorldMapScreen(),
-            );
-          }),
-          const SizedBox(height: NeonTheme.s8),
-          // KHU THỬ THÁCH — lưới 2×5 (10 mode): thêm Sinh tồn + Mê cung (Wave 15)
-          // mà KHÔNG tăng chiều cao (giữ no-scroll) → version/copyright vẫn hiện.
-          _sectionLabel('challenge_modes'.tr),
-          const SizedBox(height: NeonTheme.s8),
-          // Hàng 1: HẰNG NGÀY · VÔ TẬN · TRÙM · QUÉT MÀU · TRỌNG LỰC.
-          // Daily nổi bật: lime + badge 🔥/✓ ở góc (Obx theo streak).
-          Row(
-            children: [
-              Expanded(
-                child: Obx(
-                  () => _modeCard(
-                    Icons.event_rounded,
-                    'daily_ch_short'.tr,
-                    NeonTheme.lime,
-                    () {
-                      g.startDaily();
-                      Get.to(() => const GameScreen());
-                    },
-                    corner: _dailyCorner(g),
-                  ),
-                ),
-              ),
-              const SizedBox(width: NeonTheme.s8),
-              Expanded(
-                child: Obx(
-                  () => _modeCard(
-                    Icons.all_inclusive_rounded,
-                    'endless_title'.tr,
-                    NeonTheme.purple,
-                    () {
-                      g.startEndless();
-                      Get.to(() => const GameScreen());
-                    },
-                    corner: _modeRecordCorner(SideModeKind.endless),
-                  ),
-                ),
-              ),
-              const SizedBox(width: NeonTheme.s8),
-              Expanded(
-                child: Obx(
-                  () => _modeCard(
-                    Icons.coronavirus_rounded,
-                    'boss_title'.tr,
-                    NeonTheme.orange,
-                    () {
-                      final stage =
-                          (1 + (g.unlockedLevel.value - 1) ~/ 20).clamp(1, 5);
-                      g.startBoss(stage);
-                      Get.to(() => const GameScreen());
-                    },
-                    corner: _modeRecordCorner(SideModeKind.boss),
-                  ),
-                ),
-              ),
-              const SizedBox(width: NeonTheme.s8),
-              Expanded(
-                child: Obx(
-                  () => _modeCard(
-                    Icons.local_fire_department_rounded,
-                    'color_rush_short'.tr,
-                    NeonTheme.magenta,
-                    () {
-                      g.startColorRush();
-                      Get.to(() => const GameScreen());
-                    },
-                    corner: _modeRecordCorner(SideModeKind.colorRush),
-                  ),
-                ),
-              ),
-              const SizedBox(width: NeonTheme.s8),
-              Expanded(
-                child: Obx(
-                  () => _modeCard(
-                    Icons.swap_vert_rounded,
-                    'gravity_title'.tr,
-                    NeonTheme.cyan,
-                    () {
-                      g.startGravity();
-                      Get.to(() => const GameScreen());
-                    },
-                    corner: _modeRecordCorner(SideModeKind.gravity),
-                  ),
-                ),
-              ),
-              // W20.4 — Zen Mode
-              const SizedBox(width: NeonTheme.s8),
-              Expanded(
-                child: Obx(() => _modeCard(
-                  Icons.spa_rounded,
-                  'zen_short'.tr,
-                  NeonTheme.lime,
-                  () {
-                    g.startZen();
-                    Get.to(() => const GameScreen());
-                  },
-                  corner: g.zenHigh.value > 0
-                      ? _cornerPill(Icons.star_rounded, NeonTheme.lime,
-                          fmtNum(g.zenHigh.value))
-                      : null,
-                )),
-              ),
-            ],
-          ),
-          const SizedBox(height: NeonTheme.s8),
-          // Hàng 2: NHỊP ĐIỆU · 2 NGƯỜI · NƯỚC DÂNG · SINH TỒN · MÊ CUNG.
-          Row(
-            children: [
-              Expanded(
-                child: Obx(
-                  () => _modeCard(
-                    Icons.graphic_eq_rounded,
-                    'rhythm_title'.tr,
-                    NeonTheme.magenta,
-                    () {
-                      g.startRhythm();
-                      Get.to(() => const GameScreen());
-                    },
-                    corner: _modeRecordCorner(SideModeKind.rhythm),
-                  ),
-                ),
-              ),
-              const SizedBox(width: NeonTheme.s8),
-              Expanded(
-                child: _modeCard(
-                  Icons.groups_rounded,
-                  'versus_title'.tr,
-                  NeonTheme.yellow,
-                  () => Get.to(() => const VersusScreen()),
-                ),
-              ),
-              const SizedBox(width: NeonTheme.s8),
-              Expanded(
-                child: Obx(
-                  () => _modeCard(
-                    Icons.local_drink_rounded,
-                    'soda_short'.tr,
-                    NeonTheme.cyan,
-                    () {
-                      g.startSoda();
-                      Get.to(() => const GameScreen());
-                    },
-                    corner: _modeRecordCorner(SideModeKind.soda),
-                  ),
-                ),
-              ),
-              const SizedBox(width: NeonTheme.s8),
-              Expanded(
-                child: Obx(
-                  () => _modeCard(
-                    Icons.timer_rounded,
-                    'survival_short'.tr,
-                    NeonTheme.orange,
-                    () {
-                      g.startSurvival();
-                      Get.to(() => const GameScreen());
-                    },
-                    corner: _modeRecordCorner(SideModeKind.survival),
-                  ),
-                ),
-              ),
-              const SizedBox(width: NeonTheme.s8),
-              Expanded(
-                child: Obx(
-                  () => _modeCard(
-                    Icons.account_tree_rounded,
-                    'labyrinth_short'.tr,
-                    NeonTheme.lime,
-                    () {
-                      g.startLabyrinth();
-                      Get.to(() => const GameScreen());
-                    },
-                    corner: _modeRecordCorner(SideModeKind.labyrinth),
-                  ),
-                ),
-              ),
-              const SizedBox(width: NeonTheme.s8),
-              Expanded(
-                child: Obx(
-                  () => _modeCard(
-                    Icons.extension_rounded,
-                    'puzzle_short'.tr,
-                    NeonTheme.purple,
-                    () => Get.to(() => const PuzzleSelectScreen()),
-                    corner: _puzzleCorner(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          // Cách section Phần thưởng đúng 32px (khối Chơi ngay + Thử thách dời
-          // xuống sát mép trên của Phần thưởng nhờ Spacer phía trên logo).
-          const SizedBox(height: 32),
-          // KHU PHẦN THƯỞNG (kinh tế) + TIỆN ÍCH riêng (gọn 1 màn, KHÔNG scroll).
-          // W18.4: khu "Phần thưởng" CHỈ còn hệ kinh tế. Hướng dẫn + Cài đặt là
-          // TIỆN ÍCH → tách xuống hàng riêng. W18.1: Giải đấu gộp vào Mùa giải.
-          // Hàng 1: Đền · Pass · Mùa giải · Cửa hàng. Hàng 2: Album · Heo · Thành tựu.
-          _sectionLabel('meta_section'.tr),
-          const SizedBox(height: NeonTheme.s8),
-          Row(
-            children: [
-              Expanded(
-                child: _circleNav(
-                  Icons.account_balance_rounded,
-                  NeonTheme.cyan,
-                  'temple_title'.tr,
-                  () => Get.to(() => const TempleScreen()),
-                  small: true,
-                ),
-              ),
-              Expanded(
-                child: Obx(() {
-                  bp.xp.value;
-                  bp.claimed.length;
-                  return _circleNav(
-                    Icons.military_tech_rounded,
-                    NeonTheme.orange,
-                    'bp_title'.tr,
-                    () => Get.to(() => const BattlePassScreen()),
-                    badge: bp.hasClaimable,
-                    small: true,
-                  );
-                }),
-              ),
-              Expanded(
-                child: Obx(() {
-                  lc.points.value;
-                  lc.claimedMilestones.length;
-                  lc.claimedRankThisWeek.value;
-                  return _circleNav(
-                    Icons.workspace_premium_rounded,
-                    NeonTheme.accentForWorld(lc.worldAccent),
-                    'season_title'.tr,
-                    () => Get.to(() => const SeasonLeagueScreen()),
-                    badge: lc.hasClaimable,
-                    small: true,
-                  );
-                }),
-              ),
-              Expanded(
-                child: _circleNav(
-                  Icons.storefront_rounded,
-                  NeonTheme.magenta,
-                  'shop_title'.tr,
-                  () => Get.to(() => const ShopScreen()),
-                  small: true,
-                ),
-              ),
-              // W20.3 — Challenge Card (thử thách tuần)
-              Expanded(
-                child: Obx(() {
-                  final ccCtrl = ChallengeCardController.maybe;
-                  return _circleNav(
-                    Icons.assignment_turned_in_rounded,
-                    NeonTheme.lime,
-                    'cc_title'.tr,
-                    () => Get.to(() => const ChallengeCardScreen()),
-                    badge: ccCtrl?.hasClaimable ?? false,
-                    small: true,
-                  );
-                }),
-              ),
-            ],
-          ),
-          const SizedBox(height: NeonTheme.s8),
-          Row(
-            children: [
-              Expanded(
-                child: Obx(() {
-                  cc.points.value; // hasClaimable phụ thuộc điểm → đọc để rebuild
-                  cc.claimed.length;
-                  cc.setRewardClaimed.value; // W18.2: rebuild khi thưởng bộ thay đổi
-                  return _circleNav(
-                    Icons.photo_album_rounded,
-                    NeonTheme.cyan,
-                    'coll_title'.tr,
-                    () => Get.to(() => const CollectionScreen()),
-                    badge: cc.hasClaimable,
-                    small: true,
-                  );
-                }),
-              ),
-              Expanded(
-                child: Obx(() {
-                  pc.saved.value;
-                  return _circleNav(
-                    Icons.savings_rounded,
-                    NeonTheme.magenta,
-                    'piggy_title'.tr,
-                    () => Get.to(() => const PiggyScreen()),
-                    badge: pc.canSmash,
-                    small: true,
-                  );
-                }),
-              ),
-              Expanded(
-                child: Obx(() {
-                  ac.claimed.length;
-                  return _circleNav(
-                    Icons.emoji_events_rounded,
-                    NeonTheme.yellow,
-                    'achievements'.tr,
-                    () => Get.to(() => const AchievementsScreen()),
-                    badge: ac.hasUnclaimed,
-                    small: true,
-                  );
-                }),
-              ),
-              // W18.4: Hướng dẫn + Cài đặt vào 2 ô cuối (tiện ích, không phải thưởng).
-              Expanded(
-                child: _circleNav(
-                  Icons.menu_book_rounded,
-                  NeonTheme.magenta,
-                  'guide'.tr,
-                  () => Get.to(() => const GuideScreen()),
-                  small: true,
-                ),
-              ),
-              Expanded(
-                child: _circleNav(
-                  Icons.settings_rounded,
-                  NeonTheme.purple,
-                  'settings'.tr,
-                  () => Get.to(() => const SettingsScreen()),
-                  small: true,
-                ),
-              ),
-              // W20.3 — Progression Tree (cây tiến trình meta)
-              Expanded(
-                child: Obx(() {
-                  final ptCtrl = ProgressionTreeController.maybe;
-                  // Fix: đọc g.stars.length (RxMap) để Obx rebuild khi sao thay đổi
-                  // → badge hiện ngay khi đủ sao, không chỉ sau khi unlock.
-                  g.stars.length;
-                  final anyNew = ptCtrl != null &&
-                      kPtNodes.any((n) => !ptCtrl.isUnlocked(n.id));
-                  return _circleNav(
-                    Icons.account_tree_rounded,
-                    NeonTheme.orange,
-                    'pt_title'.tr,
-                    () => Get.to(() => const ProgressionTreeScreen()),
-                    badge: anyNew &&
-                        (ptCtrl.totalStars >= 50 ||
-                            ptCtrl.goldMilestonesCount() >= 5),
-                    small: true,
-                  );
-                }),
-              ),
-            ],
-          ),
-          // ĐÚNG 16px giữa Phần thưởng và version, rồi version + copyright
-          // sát đáy device (edge-to-edge, căn giữa).
-          const SizedBox(height: NeonTheme.s16),
-          Text(
-            'v$kAppVersion',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              letterSpacing: 2,
-              fontWeight: FontWeight.w700,
-              shadows: [
-                Shadow(color: NeonTheme.cyan, blurRadius: 12),
-                Shadow(color: NeonTheme.cyan, blurRadius: 4),
-              ],
-            ),
-          ),
-          const SizedBox(height: 2),
-          const Text(
-            kCopyright,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              letterSpacing: 1.5,
-              fontWeight: FontWeight.w600,
-              shadows: [
-                Shadow(color: NeonTheme.magenta, blurRadius: 12),
-                Shadow(color: NeonTheme.magenta, blurRadius: 4),
-              ],
-            ),
-          ),
+                    // W18.2: danh hiệu đang đeo (từ Thành tựu) — "khoe thành tích".
+                    Obx(() {
+                      final key = ac.equippedTitleKey;
+                      if (key == null) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.workspace_premium_rounded,
+                              color: NeonTheme.yellow,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                key.tr,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: NeonTheme.yellow,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    const Spacer(), // đẩy khối GIỮA (CHƠI NGAY + Thử thách) xuống
+                    // NÚT CHÍNH — TO + full-width + glow mạnh + nhịp đập nhẹ để hút mắt.
+                    _playButton(() {
+                      final grid =
+                          StorageService.to.getInt(
+                            StorageKeys.viewMode,
+                            def: 0,
+                          ) ==
+                          1;
+                      Get.to(
+                        () => grid
+                            ? const LevelSelectScreen()
+                            : const WorldMapScreen(),
+                      );
+                    }),
+                    const SizedBox(height: NeonTheme.s8),
+                    // KHU THỬ THÁCH — grid cố định 5 cột trên phone.
+                    // 13 mode = 5 + 5 + 3, hàng cuối căn giữa; tránh card quá hẹp
+                    // và tránh ô trống giả làm bố cục lệch.
+                    _sectionLabel('challenge_modes'.tr),
+                    const SizedBox(height: NeonTheme.s8),
+                    _challengeModeGrid(g),
+                    // Cách section Phần thưởng đúng 32px (khối Chơi ngay + Thử thách dời
+                    // xuống sát mép trên của Phần thưởng nhờ Spacer phía trên logo).
+                    const SizedBox(height: 32),
+                    // KHU PHẦN THƯỞNG (kinh tế) + TIỆN ÍCH riêng (gọn 1 màn, KHÔNG scroll).
+                    // W18.4: khu "Phần thưởng" CHỈ còn hệ kinh tế. Hướng dẫn + Cài đặt là
+                    // TIỆN ÍCH → tách xuống hàng riêng. W18.1: Giải đấu gộp vào Mùa giải.
+                    // Hàng 1: Đền · Pass · Mùa giải · Cửa hàng. Hàng 2: Album · Heo · Thành tựu.
+                    _sectionLabel('meta_section'.tr),
+                    const SizedBox(height: NeonTheme.s8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _circleNav(
+                            Icons.account_balance_rounded,
+                            NeonTheme.cyan,
+                            'temple_title'.tr,
+                            () => Get.to(() => const TempleScreen()),
+                            small: true,
+                          ),
+                        ),
+                        Expanded(
+                          child: Obx(() {
+                            bp.xp.value;
+                            bp.claimed.length;
+                            return _circleNav(
+                              Icons.military_tech_rounded,
+                              NeonTheme.orange,
+                              'bp_title'.tr,
+                              () => Get.to(() => const BattlePassScreen()),
+                              badge: bp.hasClaimable,
+                              small: true,
+                            );
+                          }),
+                        ),
+                        Expanded(
+                          child: Obx(() {
+                            lc.points.value;
+                            lc.claimedMilestones.length;
+                            lc.claimedRankThisWeek.value;
+                            return _circleNav(
+                              Icons.workspace_premium_rounded,
+                              NeonTheme.accentForWorld(lc.worldAccent),
+                              'season_title'.tr,
+                              () => Get.to(() => const SeasonLeagueScreen()),
+                              badge: lc.hasClaimable,
+                              small: true,
+                            );
+                          }),
+                        ),
+                        Expanded(
+                          child: _circleNav(
+                            Icons.storefront_rounded,
+                            NeonTheme.magenta,
+                            'shop_title'.tr,
+                            () => Get.to(() => const ShopScreen()),
+                            small: true,
+                          ),
+                        ),
+                        // W20.3 — Challenge Card (thử thách tuần)
+                        Expanded(
+                          child: Obx(() {
+                            final ccCtrl = ChallengeCardController.maybe;
+                            return _circleNav(
+                              Icons.assignment_turned_in_rounded,
+                              NeonTheme.lime,
+                              'cc_title'.tr,
+                              () => Get.to(() => const ChallengeCardScreen()),
+                              badge: ccCtrl?.hasClaimable ?? false,
+                              small: true,
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: NeonTheme.s8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Obx(() {
+                            cc
+                                .points
+                                .value; // hasClaimable phụ thuộc điểm → đọc để rebuild
+                            cc.claimed.length;
+                            cc
+                                .setRewardClaimed
+                                .value; // W18.2: rebuild khi thưởng bộ thay đổi
+                            return _circleNav(
+                              Icons.photo_album_rounded,
+                              NeonTheme.cyan,
+                              'coll_title'.tr,
+                              () => Get.to(() => const CollectionScreen()),
+                              badge: cc.hasClaimable,
+                              small: true,
+                            );
+                          }),
+                        ),
+                        Expanded(
+                          child: Obx(() {
+                            pc.saved.value;
+                            return _circleNav(
+                              Icons.savings_rounded,
+                              NeonTheme.magenta,
+                              'piggy_title'.tr,
+                              () => Get.to(() => const PiggyScreen()),
+                              badge: pc.canSmash,
+                              small: true,
+                            );
+                          }),
+                        ),
+                        Expanded(
+                          child: Obx(() {
+                            ac.claimed.length;
+                            return _circleNav(
+                              Icons.emoji_events_rounded,
+                              NeonTheme.yellow,
+                              'achievements'.tr,
+                              () => Get.to(() => const AchievementsScreen()),
+                              badge: ac.hasUnclaimed,
+                              small: true,
+                            );
+                          }),
+                        ),
+                        // W18.4: Hướng dẫn + Cài đặt vào 2 ô cuối (tiện ích, không phải thưởng).
+                        Expanded(
+                          child: _circleNav(
+                            Icons.menu_book_rounded,
+                            NeonTheme.magenta,
+                            'guide'.tr,
+                            () => Get.to(() => const GuideScreen()),
+                            small: true,
+                          ),
+                        ),
+                        Expanded(
+                          child: _circleNav(
+                            Icons.settings_rounded,
+                            NeonTheme.purple,
+                            'settings'.tr,
+                            () => Get.to(() => const SettingsScreen()),
+                            small: true,
+                          ),
+                        ),
+                        // W20.3 — Progression Tree (cây tiến trình meta)
+                        Expanded(
+                          child: Obx(() {
+                            final ptCtrl = ProgressionTreeController.maybe;
+                            // Fix: đọc g.stars.length (RxMap) để Obx rebuild khi sao thay đổi
+                            // → badge hiện ngay khi đủ sao, không chỉ sau khi unlock.
+                            g.stars.length;
+                            final anyNew =
+                                ptCtrl != null &&
+                                kPtNodes.any((n) => !ptCtrl.isUnlocked(n.id));
+                            return _circleNav(
+                              Icons.account_tree_rounded,
+                              NeonTheme.orange,
+                              'pt_title'.tr,
+                              () => Get.to(() => const ProgressionTreeScreen()),
+                              badge:
+                                  anyNew &&
+                                  (ptCtrl.totalStars >= 50 ||
+                                      ptCtrl.goldMilestonesCount() >= 5),
+                              small: true,
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
+                    // ĐÚNG 16px giữa Phần thưởng và version, rồi version + copyright
+                    // sát đáy device (edge-to-edge, căn giữa).
+                    const SizedBox(height: NeonTheme.s16),
+                    Text(
+                      'v$kAppVersion',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w700,
+                        shadows: [
+                          Shadow(color: NeonTheme.cyan, blurRadius: 12),
+                          Shadow(color: NeonTheme.cyan, blurRadius: 4),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      kCopyright,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w600,
+                        shadows: [
+                          Shadow(color: NeonTheme.magenta, blurRadius: 12),
+                          Shadow(color: NeonTheme.magenta, blurRadius: 4),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -667,6 +499,186 @@ class HomeScreen extends StatelessWidget {
 
   /// Thẻ chế độ gọn (icon + nhãn) — dùng trong hàng "Thử thách".
 
+  Widget _challengeModeGrid(GameController g) {
+    final cards = <Widget>[
+      Obx(
+        () => _modeCard(
+          Icons.event_rounded,
+          'daily_ch_short'.tr,
+          NeonTheme.lime,
+          () {
+            g.startDaily();
+            Get.to(() => const GameScreen());
+          },
+          corner: _dailyCorner(g),
+        ),
+      ),
+      Obx(
+        () => _modeCard(
+          Icons.all_inclusive_rounded,
+          'endless_title'.tr,
+          NeonTheme.purple,
+          () {
+            g.startEndless();
+            Get.to(() => const GameScreen());
+          },
+          corner: _modeRecordCorner(SideModeKind.endless),
+        ),
+      ),
+      Obx(
+        () => _modeCard(
+          Icons.coronavirus_rounded,
+          'boss_title'.tr,
+          NeonTheme.orange,
+          () {
+            final stage = (1 + (g.unlockedLevel.value - 1) ~/ 20).clamp(1, 5);
+            g.startBoss(stage);
+            Get.to(() => const GameScreen());
+          },
+          corner: _modeRecordCorner(SideModeKind.boss),
+        ),
+      ),
+      Obx(
+        () => _modeCard(
+          Icons.local_fire_department_rounded,
+          'color_rush_short'.tr,
+          NeonTheme.magenta,
+          () {
+            g.startColorRush();
+            Get.to(() => const GameScreen());
+          },
+          corner: _modeRecordCorner(SideModeKind.colorRush),
+        ),
+      ),
+      Obx(
+        () => _modeCard(
+          Icons.swap_vert_rounded,
+          'gravity_title'.tr,
+          NeonTheme.cyan,
+          () {
+            g.startGravity();
+            Get.to(() => const GameScreen());
+          },
+          corner: _modeRecordCorner(SideModeKind.gravity),
+        ),
+      ),
+      Obx(
+        () => _modeCard(
+          Icons.spa_rounded,
+          'zen_short'.tr,
+          NeonTheme.lime,
+          () {
+            g.startZen();
+            Get.to(() => const GameScreen());
+          },
+          corner: g.zenHigh.value > 0
+              ? _cornerPill(
+                  Icons.star_rounded,
+                  NeonTheme.lime,
+                  fmtNum(g.zenHigh.value),
+                )
+              : null,
+        ),
+      ),
+      Obx(
+        () => _modeCard(
+          Icons.graphic_eq_rounded,
+          'rhythm_title'.tr,
+          NeonTheme.magenta,
+          () {
+            g.startRhythm();
+            Get.to(() => const GameScreen());
+          },
+          corner: _modeRecordCorner(SideModeKind.rhythm),
+        ),
+      ),
+      _modeCard(
+        Icons.groups_rounded,
+        'versus_title'.tr,
+        NeonTheme.yellow,
+        () => Get.to(() => const VersusScreen()),
+      ),
+      Obx(
+        () => _modeCard(
+          Icons.local_drink_rounded,
+          'soda_short'.tr,
+          NeonTheme.cyan,
+          () {
+            g.startSoda();
+            Get.to(() => const GameScreen());
+          },
+          corner: _modeRecordCorner(SideModeKind.soda),
+        ),
+      ),
+      Obx(
+        () => _modeCard(
+          Icons.timer_rounded,
+          'survival_short'.tr,
+          NeonTheme.orange,
+          () {
+            g.startSurvival();
+            Get.to(() => const GameScreen());
+          },
+          corner: _modeRecordCorner(SideModeKind.survival),
+        ),
+      ),
+      Obx(
+        () => _modeCard(
+          Icons.account_tree_rounded,
+          'labyrinth_short'.tr,
+          NeonTheme.lime,
+          () {
+            g.startLabyrinth();
+            Get.to(() => const GameScreen());
+          },
+          corner: _modeRecordCorner(SideModeKind.labyrinth),
+        ),
+      ),
+      Obx(
+        () => _modeCard(
+          Icons.extension_rounded,
+          'puzzle_short'.tr,
+          NeonTheme.purple,
+          () => Get.to(() => const PuzzleSelectScreen()),
+          corner: _puzzleCorner(),
+        ),
+      ),
+      Obx(
+        () => _modeCard(
+          Icons.bolt_rounded,
+          'rush_short'.tr,
+          NeonTheme.yellow,
+          () {
+            g.startRush();
+            Get.to(() => const GameScreen());
+          },
+          corner: _modeRecordCorner(SideModeKind.rush),
+        ),
+      ),
+    ];
+
+    return Column(
+      children: [
+        _modeGridRow(cards.sublist(0, 5)),
+        const SizedBox(height: NeonTheme.s8),
+        _modeGridRow(cards.sublist(5, 10)),
+        const SizedBox(height: NeonTheme.s8),
+        _modeGridRow([null, cards[10], cards[11], cards[12], null]),
+      ],
+    );
+  }
+
+  Widget _modeGridRow(List<Widget?> slots) {
+    return Row(
+      children: [
+        for (var i = 0; i < slots.length; i++) ...[
+          Expanded(child: slots[i] ?? const SizedBox.shrink()),
+          if (i != slots.length - 1) const SizedBox(width: NeonTheme.s8),
+        ],
+      ],
+    );
+  }
+
   /// Nút "CHƠI NGAY" NỔI BẬT: full-width, cao, gradient + glow mạnh + nhịp đập
   /// nhẹ (scale lặp) để hút mắt — tâm điểm hành động chính của Home.
   Widget _playButton(VoidCallback onTap) {
@@ -727,22 +739,24 @@ class HomeScreen extends StatelessWidget {
     VoidCallback onTap, {
     Widget? corner,
   }) {
+    const slotHeight = 60.0;
     final card = GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
         decoration: BoxDecoration(
           color: NeonTheme.panel.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color, width: 1.6),
           boxShadow: NeonTheme.glow(color, blur: 8),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.max,
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 5),
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 3),
             // Wave 15: FittedBox(scaleDown) → nhãn TỰ CO vừa bề rộng ô (nhãn ngắn
             // giữ to, nhãn dài như SUPERVIVENCIA/ВЫЖИВАННЯ co lại, KHÔNG ellipsis).
             FittedBox(
@@ -754,7 +768,7 @@ class HomeScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 11,
+                  fontSize: 9.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.2,
                   shadows: [Shadow(color: color, blurRadius: 8)],
@@ -765,13 +779,19 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
-    if (corner == null) return card;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        card,
-        Positioned(top: -6, right: -6, child: corner),
-      ],
+    final child = corner == null
+        ? card
+        : Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(child: card),
+              Positioned(top: -6, right: -6, child: corner),
+            ],
+          );
+    return SizedBox(
+      key: ValueKey('home_mode_card_$label'),
+      height: slotHeight,
+      child: child,
     );
   }
 
@@ -821,7 +841,11 @@ class HomeScreen extends StatelessWidget {
     final solved = pc.solvedCount;
     if (solved == 0) return null;
     if (pc.allSolved) {
-      return _cornerPill(Icons.workspace_premium_rounded, NeonTheme.yellow, null);
+      return _cornerPill(
+        Icons.workspace_premium_rounded,
+        NeonTheme.yellow,
+        null,
+      );
     }
     return _cornerPill(Icons.extension_rounded, NeonTheme.purple, '$solved');
   }
@@ -878,45 +902,62 @@ class HomeScreen extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          badge
-              ? Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    circle,
-                    Positioned(
-                      right: -1,
-                      top: -1,
-                      child: Container(
-                        width: 13,
-                        height: 13,
-                        decoration: BoxDecoration(
-                          color: NeonTheme.lime,
-                          shape: BoxShape.circle,
-                          boxShadow: NeonTheme.glow(NeonTheme.lime, blur: 8),
+      child: SizedBox(
+        width: double.infinity,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              badge
+                  ? Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        circle,
+                        Positioned(
+                          right: -1,
+                          top: -1,
+                          child: Container(
+                            width: 13,
+                            height: 13,
+                            decoration: BoxDecoration(
+                              color: NeonTheme.lime,
+                              shape: BoxShape.circle,
+                              boxShadow: NeonTheme.glow(
+                                NeonTheme.lime,
+                                blur: 8,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
+                    )
+                  : circle,
+              SizedBox(height: small ? 5 : 7),
+              SizedBox(
+                width: double.infinity,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    softWrap: false,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: small ? 8.2 : 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: small ? 0 : 0.3,
+                      shadows: [
+                        Shadow(color: color, blurRadius: small ? 5 : 8),
+                      ],
                     ),
-                  ],
-                )
-              : circle,
-          SizedBox(height: small ? 5 : 7),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.85),
-              fontSize: small ? 9 : 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.3,
-              shadows: [Shadow(color: color, blurRadius: 8)],
-            ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

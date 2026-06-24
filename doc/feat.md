@@ -1515,3 +1515,22 @@ Chế độ phụ mới — **không thua**, tích điểm tự do, thư giãn.
 - i18n EN + VI + 20 ngôn ngữ qua `_w20ByLang`
 
 **Kết quả**: 0 analyzer · **611 test pass** (+7 Zen) · i18n coverage 79%+ (universal gaming terms ZEN/GHOST/★ format giữ nguyên English).
+
+---
+
+## 🌊 Wave 21 — Kỹ thuật + Gameplay + Meta (📋 PICKED 2026-06-22)
+
+Kết hợp 3 hướng: dọn nợ kỹ thuật · cải tiến gameplay (Boss/Rhythm/World Map) · meta mới (Leaderboard + Mode Rush).
+Task chi tiết: [`tasks/todo/w21-*.md`](tasks/todo/).
+
+| Phase | Task | Ưu tiên |
+|---|---|---|
+| 1 | **Tech Debt**: Fix ad UX Versus + dọn UI widget tái dùng + siết levelUnlock | 🔴 Cao |
+| 2 | **i18n Coverage**: Dịch 20 ngôn ngữ key W5/7/8 còn thiếu (~2,400 strings) | 🔴 Cao |
+| 3 | **Boss Upgrade**: Phase HP (3 giai đoạn) + 3 attack pattern (block/meteor/shuffle) | 🟡 TB |
+| 4 | **Rhythm Upgrade**: BPM dynamic theo groove + judgment animation (PERFECT/GOOD/MISS) | 🟡 TB |
+| 5 | **World Map Events**: Treasure chest node + mini-boss node + avatar đi bộ dọc path | 🟡 TB |
+| 6 | **Offline Leaderboard**: Bot score tất định top 10 cho Campaign + Daily | 🟡 TB |
+| 7 | **Mode Rush (Tốc chiến)**: 2 phút, không giới hạn lượt, match-N gem → +N giây | 🟢 Mới |
+
+**Thứ tự đề xuất**: 1 → 2 → 7 → 3 → 4 → 5 → 6

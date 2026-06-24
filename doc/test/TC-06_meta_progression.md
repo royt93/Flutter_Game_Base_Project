@@ -61,11 +61,12 @@
 
 | # | Bước | Kết quả mong đợi |
 |---|------|-----------------|
-| 1 | Mở Collection | Album sưu tập gem skin hiển thị |
-| 2 | Thắng màn / event | Mảnh sưu tập được thêm |
-| 3 | Hoàn thành 1 bộ (set) | Bộ đó unlock skin tương ứng |
-| 4 | Bấm dùng skin từ collection | Skin active trong game |
-| 5 | Có mảnh mới | Badge đỏ trên nút Collection |
+| 1 | Mở Collection | Album sticker hiển thị tiến trình 0/12 hoặc số đã thu |
+| 2 | Thắng first-clear campaign | Collection points tăng theo sao |
+| 3 | Đủ points cho sticker | Sticker có nút claim/collect |
+| 4 | Claim sticker | Sticker chuyển trạng thái đã thu, không cộng xu |
+| 5 | Claim lại sticker đã thu | Không nhận lại/không duplicate |
+| 6 | Restart app | Sticker đã thu và points còn đúng |
 
 ---
 
