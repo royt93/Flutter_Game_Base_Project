@@ -1,0 +1,28 @@
+name: CI
+
+# Cổng nhanh cho mọi push/PR: analyze + toàn bộ test host (BỎ QUA nhóm 'slow' của
+# integration vì cần thiết bị thật — chạy ở nightly.yml).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.1
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Analyze (0 issue bắt buộc)
+        run: flutter analyze
+      - name: Test host (loại nhóm slow cần device)
+        run: flutter test --exclude-tags slow

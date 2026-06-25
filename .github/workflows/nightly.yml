@@ -1,0 +1,62 @@
+name: Nightly device checks
+
+# Vì sao KHÔNG chạy integration_test (drive UI) trên emulator:
+#   integration_test dùng LiveTestWidgetsFlutterBinding (real-time). Game có animation
+#   Flame liên tục → trên emulator các case vào GameScreen/lifecycle TREO (đã quan sát:
+#   Wave5 "Cửa hàng" và TC-12 "Rush resume" did-not-complete). Nên:
+#     • emulator  → chỉ chạy GATE khởi động (build+install+launch+logcat), không drive UI.
+#     • thiết bị thật/device-farm → chạy integration đầy đủ (Wave5 + nhóm slow).
+on:
+  schedule:
+    - cron: '17 18 * * *' # 18:17 UTC mỗi ngày (lệch :00 tránh giờ cao điểm)
+  workflow_dispatch:
+
+jobs:
+  # Đáng tin trên emulator: không drive UI nên không dính idle/treo.
+  gate-emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        api-level: [34]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.1
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Build + install + launch + logcat gate
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          profile: pixel_6
+          script: bash tool/release_device_gate.sh emulator-5554
+
+  # Integration đầy đủ (Wave5 + nhóm slow) — CHỈ chạy trên runner có thiết bị thật.
+  # Cần self-hosted runner gắn nhãn 'android-device' (hoặc thay bằng Firebase Test Lab).
+  # Bỏ qua tự động nếu chưa cấu hình runner; kích hoạt thủ công qua workflow_dispatch.
+  integration-real-device:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: [self-hosted, android-device]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.1
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Integration đầy đủ trên thiết bị thật (gồm nhóm slow)
+        env:
+          DEVICE_SERIAL: ${{ vars.ANDROID_DEVICE_SERIAL }}
+        run: flutter test integration_test/ -d "$DEVICE_SERIAL"
