@@ -131,6 +131,52 @@ const List<GemSkin> kGemSkins = [
     shapeFamily: 2,
     glowScale: 1.15,
   ),
+  // W23.4 — skin tier cao (coin-sink)
+  GemSkin(
+    id: 'galaxy',
+    name: 'Galaxy',
+    price: 1100,
+    colors: [
+      Color(0xFF40C4FF),
+      Color(0xFFE040FB),
+      Color(0xFF69F0AE),
+      Color(0xFFFFD740),
+      Color(0xFFFF6E40),
+      Color(0xFFB388FF),
+    ],
+    shapeFamily: 2,
+    glowScale: 1.25,
+  ),
+  GemSkin(
+    id: 'neon_pop',
+    name: 'Neon Pop',
+    price: 1300,
+    colors: [
+      Color(0xFF00E5FF),
+      Color(0xFFFF1744),
+      Color(0xFF76FF03),
+      Color(0xFFFFEA00),
+      Color(0xFFFF9100),
+      Color(0xFFD500F9),
+    ],
+    shapeFamily: 1,
+    glowScale: 1.2,
+  ),
+  GemSkin(
+    id: 'gold_lux',
+    name: 'Gold Lux',
+    price: 1500,
+    colors: [
+      Color(0xFF4DD0E1),
+      Color(0xFFF06292),
+      Color(0xFF81C784),
+      Color(0xFFFFD54F),
+      Color(0xFFFF8A65),
+      Color(0xFFBA68C8),
+    ],
+    shapeFamily: 0,
+    glowScale: 1.35,
+  ),
 ];
 
 /// 6 theme bàn. [0] = mặc định miễn phí (đúng tông cyan/purple gốc).
@@ -188,6 +234,34 @@ const List<BoardTheme> kBoardThemes = [
     border2: Color(0xFF9A9AC8),
     slotTint: Color(0x10FFFFFF),
     accent: Color(0xFFBFC4FF),
+  ),
+  // W23.4 — theme tier cao (coin-sink)
+  BoardTheme(
+    id: 'nebula',
+    name: 'Nebula',
+    price: 1000,
+    border1: Color(0xFF7C4DFF),
+    border2: Color(0xFF18FFFF),
+    slotTint: Color(0x147C4DFF),
+    accent: Color(0xFF7C4DFF),
+  ),
+  BoardTheme(
+    id: 'lava',
+    name: 'Lava',
+    price: 1200,
+    border1: Color(0xFFFF3D00),
+    border2: Color(0xFFFFC400),
+    slotTint: Color(0x14FF3D00),
+    accent: Color(0xFFFF3D00),
+  ),
+  BoardTheme(
+    id: 'cyberpunk',
+    name: 'Cyberpunk',
+    price: 1500,
+    border1: Color(0xFFFFEA00),
+    border2: Color(0xFFFF00E5),
+    slotTint: Color(0x14FFEA00),
+    accent: Color(0xFFFFEA00),
   ),
 ];
 
