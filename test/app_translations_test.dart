@@ -116,48 +116,42 @@ void main() {
     // ── Chống hồi quy lỗ hổng i18n (Wave 8.9): trước đây 20 ngôn ngữ chỉ ~50%
     // key được dịch (Wave 5/7/8/9 fallback English). Test cũ chỉ kiểm KEY đủ
     // (qua fallback merge) nên KHÔNG phát hiện. 2 test dưới kiểm VALUE đã dịch.
-    test('mỗi ngôn ngữ phải dịch ≥80% value (không fallback English hàng loạt)', () {
-      final en = keys['en_US']!;
-      for (final entry in keys.entries) {
-        if (entry.key == 'en_US') continue;
-        var diff = 0;
-        entry.value.forEach((k, v) {
-          if (v.trim() != en[k]?.trim()) diff++;
-        });
-        // M4 fix: loại trừ "universal gaming terms" khỏi tính tỉ lệ dịch —
-        // những key này intentionally giữ nguyên English (ZEN, GHOST, ★ format).
-        const universalKeys = {
-          'zen_title',
-          'zen_short',
-          'ghost_play',
-          'ghost_hud',
-          'pt_star_cost',
-          'pt_gold_cost',
-          // W22 — key tính năng mới (Leaderboard/Onboarding/Game Feel/Chest) hiện
-          // chỉ en+vi; localize 20 ngôn ngữ là việc Wave 23 (loại khỏi ratio tạm thời).
-          'reduce_motion',
-          'leaderboard_title',
-          'lb_tab_campaign', 'lb_tab_daily', 'lb_level', 'lb_player',
-          'lb_daily_note',
-          'tour_t0', 'tour_t1', 'tour_t2', 'tour_t3',
-          'tour_m0', 'tour_m1', 'tour_m2', 'tour_m3',
-          'tour_skip', 'tour_next', 'tour_done',
-          'chest_reward_title', 'chest_got_coins', 'chest_got_hammer',
-          'chest_got_moves', 'chest_ok',
-        };
-        final adjustedTotal =
-            entry.value.length -
-            entry.value.keys.where(universalKeys.contains).length;
-        final ratio = adjustedTotal > 0 ? diff / adjustedTotal : 1.0;
-        expect(
-          ratio,
-          greaterThanOrEqualTo(0.80),
-          reason:
-              '${entry.key} chỉ dịch ${(ratio * 100).toStringAsFixed(1)}% '
-              '— nghi fallback English (thêm feature mới mà quên dịch?)',
-        );
-      }
-    });
+    test(
+      'mỗi ngôn ngữ phải dịch ≥80% value (không fallback English hàng loạt)',
+      () {
+        final en = keys['en_US']!;
+        for (final entry in keys.entries) {
+          if (entry.key == 'en_US') continue;
+          var diff = 0;
+          entry.value.forEach((k, v) {
+            if (v.trim() != en[k]?.trim()) diff++;
+          });
+          // M4 fix: loại trừ "universal gaming terms" khỏi tính tỉ lệ dịch —
+          // những key này intentionally giữ nguyên English (ZEN, GHOST, ★ format).
+          // W23.1: key W21.6+W22 ĐÃ localize 20 ngôn ngữ (_w22ByLang) → KHÔNG còn
+          // loại trừ; chúng tính vào ratio như mọi key khác.
+          const universalKeys = {
+            'zen_title',
+            'zen_short',
+            'ghost_play',
+            'ghost_hud',
+            'pt_star_cost',
+            'pt_gold_cost',
+          };
+          final adjustedTotal =
+              entry.value.length -
+              entry.value.keys.where(universalKeys.contains).length;
+          final ratio = adjustedTotal > 0 ? diff / adjustedTotal : 1.0;
+          expect(
+            ratio,
+            greaterThanOrEqualTo(0.80),
+            reason:
+                '${entry.key} chỉ dịch ${(ratio * 100).toStringAsFixed(1)}% '
+                '— nghi fallback English (thêm feature mới mà quên dịch?)',
+          );
+        }
+      },
+    );
 
     test('key Wave 5/7/8/9 đã dịch thật cho 20 ngôn ngữ (mẫu)', () {
       // Các key mô tả/UI tiêu biểu (không phải tên riêng) phải KHÁC bản English.
