@@ -18,6 +18,7 @@ import '../logic/board_mechanics.dart';
 import '../logic/gem_data.dart';
 import '../logic/match_detector.dart';
 import '../logic/settle.dart';
+import '../logic/juice.dart';
 import '../presentation/controllers/game_controller.dart';
 import 'effects.dart';
 import 'gem_component.dart';
@@ -2728,13 +2729,18 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         duration: epic ? 1.3 : 0.9,
       )..priority = 70,
     );
-    if (epic) {
-      _flash(color, peak: 0.32);
-      _shake(12);
-      _triggerSlowmo(0.45); // slow-mo kịch tính cho wombo
+    // W22.1 — thang cường độ leo dần (combo 3 / 4-5 / >=6), tôn trọng cờ giảm
+    // hiệu ứng động. Logic thuần ở logic/juice.dart (test cô lập).
+    final tier = dampenJuice(
+      juiceTierFor(combo),
+      reduced: controller.juiceReduced.value,
+    );
+    if (tier.flash > 0) _flash(color, peak: tier.flash);
+    if (tier.shake > 0) _shake(tier.shake);
+    if (tier.slowmo) _triggerSlowmo(0.45); // slow-mo kịch tính cho wombo
+    if (tier.haptic == JuiceHaptic.heavy) {
       HapticFeedback.heavyImpact();
-    } else if (combo >= 4) {
-      _flash(color, peak: 0.18);
+    } else if (tier.haptic == JuiceHaptic.medium) {
       HapticFeedback.mediumImpact();
     } else {
       HapticFeedback.lightImpact();

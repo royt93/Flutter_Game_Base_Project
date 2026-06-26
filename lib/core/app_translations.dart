@@ -148,6 +148,7 @@ class AppTranslations extends Translations {
     'lb_level': 'Level',
     'lb_player': 'YOU',
     'lb_daily_note': "Today's top 10 — finish Daily to join the board.",
+    'reduce_motion': 'Reduce motion effects',
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',
@@ -574,6 +575,7 @@ class AppTranslations extends Translations {
     'lb_level': 'Màn',
     'lb_player': 'BẠN',
     'lb_daily_note': 'Top 10 hôm nay — hoàn thành Hằng ngày để vào bảng.',
+    'reduce_motion': 'Giảm hiệu ứng động',
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',

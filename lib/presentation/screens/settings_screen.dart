@@ -30,22 +30,22 @@ class SettingsController extends GetxController {
     dlog('RESET confirm → gọi resetProgress');
     await Get.find<GameController>().resetProgress();
     showResetConfirm.value = false;
-    dlog('RESET xong: unlockedLevel='
-        '${Get.find<GameController>().unlockedLevel.value}');
+    dlog(
+      'RESET xong: unlockedLevel='
+      '${Get.find<GameController>().unlockedLevel.value}',
+    );
   }
 }
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  TextStyle _t(double size,
-          {Color color = Colors.white, FontWeight w = FontWeight.w700}) =>
-      TextStyle(
-        color: color,
-        fontSize: size,
-        fontWeight: w,
-        letterSpacing: 1,
-      );
+  TextStyle _t(
+    double size, {
+    Color color = Colors.white,
+    FontWeight w = FontWeight.w700,
+  }) =>
+      TextStyle(color: color, fontSize: size, fontWeight: w, letterSpacing: 1);
 
   @override
   Widget build(BuildContext context) {
@@ -62,8 +62,12 @@ class SettingsScreen extends StatelessWidget {
                   NeonAppBar(title: 'settings'.tr, color: NeonTheme.purple),
                   Expanded(
                     child: ListView(
-                      padding: const EdgeInsets.fromLTRB(NeonTheme.s24,
-                          NeonTheme.s16, NeonTheme.s24, NeonTheme.s24),
+                      padding: const EdgeInsets.fromLTRB(
+                        NeonTheme.s24,
+                        NeonTheme.s16,
+                        NeonTheme.s24,
+                        NeonTheme.s24,
+                      ),
                       children: [
                         // --- Âm thanh ---
                         _card(
@@ -73,12 +77,37 @@ class SettingsScreen extends StatelessWidget {
                             children: [
                               Text('sound'.tr, style: _t(16)),
                               if (AudioManager.maybe != null)
-                                Obx(() => Switch(
-                                      value: !AudioManager.maybe!.muted.value,
-                                      activeThumbColor: NeonTheme.cyan,
-                                      onChanged: (_) =>
-                                          AudioManager.maybe!.toggleMute(),
-                                    )),
+                                Obx(
+                                  () => Switch(
+                                    value: !AudioManager.maybe!.muted.value,
+                                    activeThumbColor: NeonTheme.cyan,
+                                    onChanged: (_) =>
+                                        AudioManager.maybe!.toggleMute(),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: NeonTheme.s16),
+                        // --- Giảm hiệu ứng động (W22.1 accessibility) ---
+                        _card(
+                          color: NeonTheme.magenta,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: Text('reduce_motion'.tr, style: _t(16)),
+                              ),
+                              Obx(
+                                () => Switch(
+                                  value: Get.find<GameController>()
+                                      .juiceReduced
+                                      .value,
+                                  activeThumbColor: NeonTheme.magenta,
+                                  onChanged: (_) => Get.find<GameController>()
+                                      .toggleJuiceReduced(),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -100,7 +129,9 @@ class SettingsScreen extends StatelessWidget {
                                     child: Container(
                                       margin: const EdgeInsets.only(bottom: 8),
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 14, vertical: 12),
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
@@ -110,8 +141,10 @@ class SettingsScreen extends StatelessWidget {
                                           width: 2,
                                         ),
                                         boxShadow: selected
-                                            ? NeonTheme.glow(NeonTheme.lime,
-                                                blur: 8)
+                                            ? NeonTheme.glow(
+                                                NeonTheme.lime,
+                                                blur: 8,
+                                              )
                                             : null,
                                       ),
                                       child: Row(
@@ -125,9 +158,11 @@ class SettingsScreen extends StatelessWidget {
                                             style: _t(15, w: FontWeight.w600),
                                           ),
                                           if (selected)
-                                            const Icon(Icons.check_circle,
-                                                color: NeonTheme.lime,
-                                                size: 22),
+                                            const Icon(
+                                              Icons.check_circle,
+                                              color: NeonTheme.lime,
+                                              size: 22,
+                                            ),
                                         ],
                                       ),
                                     ),
@@ -144,8 +179,10 @@ class SettingsScreen extends StatelessWidget {
                           onTap: ui.askReset,
                           child: Row(
                             children: [
-                              const Icon(Icons.restart_alt,
-                                  color: NeonTheme.magenta),
+                              const Icon(
+                                Icons.restart_alt,
+                                color: NeonTheme.magenta,
+                              ),
                               const SizedBox(width: 12),
                               Text('reset_progress'.tr, style: _t(16)),
                             ],
@@ -158,49 +195,56 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             // --- Overlay xác nhận reset (trong cây, không qua route) ---
-            Obx(() => ui.showResetConfirm.value
-                ? NeonDialog.overlay(
-                    onBarrier: ui.cancelReset,
-                    panel: NeonDialog.panel(
-                      title: 'reset_progress'.tr,
-                      color: NeonTheme.magenta,
-                      icon: Icons.restart_alt_rounded,
-                      message: 'reset_confirm_msg'.tr,
-                      actions: [
-                        NeonDialogAction(
-                          label: 'cancel'.tr,
-                          color: NeonTheme.cyan,
-                          onTap: ui.cancelReset,
-                        ),
-                        NeonDialogAction(
-                          label: 'confirm'.tr,
-                          color: NeonTheme.magenta,
-                          onTap: () async {
-                            await ui.doReset();
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('reset_done'.tr,
-                                    style: _t(14, w: FontWeight.w600)),
-                                backgroundColor: NeonTheme.panel,
-                                behavior: SnackBarBehavior.floating,
-                                margin: const EdgeInsets.all(NeonTheme.s16),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  )
-                : const SizedBox.shrink()),
+            Obx(
+              () => ui.showResetConfirm.value
+                  ? NeonDialog.overlay(
+                      onBarrier: ui.cancelReset,
+                      panel: NeonDialog.panel(
+                        title: 'reset_progress'.tr,
+                        color: NeonTheme.magenta,
+                        icon: Icons.restart_alt_rounded,
+                        message: 'reset_confirm_msg'.tr,
+                        actions: [
+                          NeonDialogAction(
+                            label: 'cancel'.tr,
+                            color: NeonTheme.cyan,
+                            onTap: ui.cancelReset,
+                          ),
+                          NeonDialogAction(
+                            label: 'confirm'.tr,
+                            color: NeonTheme.magenta,
+                            onTap: () async {
+                              await ui.doReset();
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'reset_done'.tr,
+                                    style: _t(14, w: FontWeight.w600),
+                                  ),
+                                  backgroundColor: NeonTheme.panel,
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.all(NeonTheme.s16),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _card(
-      {required Color color, required Widget child, VoidCallback? onTap}) {
+  Widget _card({
+    required Color color,
+    required Widget child,
+    VoidCallback? onTap,
+  }) {
     final box = Container(
       width: double.infinity,
       padding: const EdgeInsets.all(NeonTheme.s16),

@@ -3,8 +3,19 @@ id: w22-1-game-feel-juice
 title: Game Feel / Juice — trail gem rơi + visual gem hiếm + tinh chỉnh
 wave: 22
 phase: 1
-status: todo
+status: done
 owner: claude
+---
+
+> ✅ **Done 2026-06-26** (verify trên Vivo V2352A):
+> - 1.3 thang cường độ: `lib/logic/juice.dart` (PURE, 7 test) — combo 3/4-5/≥6, wire vào
+>   `neon_jewel_game.dart _spawnComboText`.
+> - 1.2 visual gem hiếm: vầng cầu vồng pulse + 4 sparkle trong `gem_component.dart` (isLucky).
+> - Cờ `juiceReduced` (accessibility): `StorageKeys.juiceReduced` + `GameController.juiceReduced`
+>   + toggle Settings "Giảm hiệu ứng động" — verify bật→persist `juice_reduced=1`, dampenJuice tắt
+>   slow-mo + giảm shake/flash.
+> - analyze 0, full suite 757 pass.
+> **Còn lại (defer):** 1.1 trail khi gem rơi — perf-risky nhất, ít giá trị nhất; để wave sau.
 ---
 
 # Phase 1 — Game Feel / Juice

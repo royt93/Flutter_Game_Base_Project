@@ -40,6 +40,9 @@ class StorageKeys {
   static const String tutorialSeen = 'tutorial_seen';
   static const String viewMode = 'view_mode'; // 0 = world map, 1 = grid
 
+  /// W22.1 — "giảm hiệu ứng động" (accessibility): 0 = đầy đủ, 1 = giảm.
+  static const String juiceReduced = 'juice_reduced';
+
   // Wave 6 — Endless mode (high score riêng)
   static const String endlessHigh = 'endless_high';
   static const String zenHigh = 'zen_high'; // W20.4

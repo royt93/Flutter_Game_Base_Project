@@ -44,10 +44,10 @@ class GemComponent extends PositionComponent {
     required Vector2 position,
     required double cellSize,
   }) : super(
-          position: position,
-          size: Vector2.all(cellSize * 0.9),
-          anchor: Anchor.center,
-        ) {
+         position: position,
+         size: Vector2.all(cellSize * 0.9),
+         anchor: Anchor.center,
+       ) {
     _pulse = (row * 7 + col * 13) % 100 / 100 * math.pi * 2;
   }
 
@@ -83,6 +83,30 @@ class GemComponent extends PositionComponent {
       type == GemType.rainbow ? Colors.white : (junk ? NeonTheme.magenta : c),
       opacity: selected ? 1.0 : (isSpecial ? 0.95 : (junk ? 0.5 : 0.75)),
     );
+
+    // W22.1 — gem hiếm (lucky): vầng cầu vồng pulse + 4 sparkle xoay → nhận ra ngay.
+    if (isLucky && !isSpecial && !junk) {
+      final hue = (_pulse * 40) % 360;
+      final lucky = HSVColor.fromAHSV(1, hue, 0.7, 1).toColor();
+      canvas.drawCircle(
+        center,
+        s * (0.5 + pulseAmt * 0.12),
+        Paint()
+          ..color = lucky.withValues(alpha: 0.30 + pulseAmt * 0.30)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+      );
+      for (var k = 0; k < 4; k++) {
+        final a = _pulse * 1.5 + k * math.pi / 2;
+        final sp = center + Offset(math.cos(a), math.sin(a)) * s * 0.5;
+        canvas.drawCircle(
+          sp,
+          s * 0.05 * (0.6 + pulseAmt * 0.6),
+          Paint()
+            ..color = Colors.white.withValues(alpha: 0.6 + pulseAmt * 0.4)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
+        );
+      }
+    }
 
     // Cache Path + Paint thân: dựng lại chỉ khi (color/shape/junk) đổi (đa số
     // frame tái dùng — gem đứng yên, chỉ _pulse/glow đổi).
@@ -149,7 +173,11 @@ class GemComponent extends PositionComponent {
     // 5) Overlay special + vòng sáng xoay gây chú ý
     if (isSpecial) {
       _drawAttentionRing(
-          canvas, center, s, type == GemType.rainbow ? Colors.white : c);
+        canvas,
+        center,
+        s,
+        type == GemType.rainbow ? Colors.white : c,
+      );
     }
     _renderSpecial(canvas, s, center, c);
 
@@ -187,8 +215,13 @@ class GemComponent extends PositionComponent {
     final pulseAmt = 0.5 + 0.5 * math.sin(_pulse);
     const gold = Color(0xFFFFC83D);
 
-    NeonFx.drawGlow(canvas, center, s * (0.8 + pulseAmt * 0.18), gold,
-        opacity: 0.95);
+    NeonFx.drawGlow(
+      canvas,
+      center,
+      s * (0.8 + pulseAmt * 0.18),
+      gold,
+      opacity: 0.95,
+    );
 
     // đĩa tròn gradient
     canvas.drawCircle(
@@ -268,10 +301,12 @@ class GemComponent extends PositionComponent {
       case 0:
         return Path()..addOval(Rect.fromCircle(center: c, radius: r));
       case 1:
-        return Path()
-          ..addRRect(RRect.fromRectAndRadius(
-              Rect.fromCircle(center: c, radius: r * 0.92),
-              Radius.circular(r * 0.3)));
+        return Path()..addRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCircle(center: c, radius: r * 0.92),
+            Radius.circular(r * 0.3),
+          ),
+        );
       case 2:
         return _polygon(c, r * 1.1, 3, -math.pi / 2);
       case 3:
@@ -306,7 +341,10 @@ class GemComponent extends PositionComponent {
     final p = Path();
     for (int i = 0; i < sides; i++) {
       final a = rotation + i * 2 * math.pi / sides;
-      final pt = Offset(c.dx + radius * math.cos(a), c.dy + radius * math.sin(a));
+      final pt = Offset(
+        c.dx + radius * math.cos(a),
+        c.dy + radius * math.sin(a),
+      );
       i == 0 ? p.moveTo(pt.dx, pt.dy) : p.lineTo(pt.dx, pt.dy);
     }
     return p..close();
@@ -316,10 +354,22 @@ class GemComponent extends PositionComponent {
   Path _heart(Offset c, double r) {
     final p = Path();
     p.moveTo(c.dx, c.dy + r * 0.95);
-    p.cubicTo(c.dx - r * 1.35, c.dy - r * 0.15, c.dx - r * 0.55, c.dy - r * 1.15,
-        c.dx, c.dy - r * 0.4);
-    p.cubicTo(c.dx + r * 0.55, c.dy - r * 1.15, c.dx + r * 1.35, c.dy - r * 0.15,
-        c.dx, c.dy + r * 0.95);
+    p.cubicTo(
+      c.dx - r * 1.35,
+      c.dy - r * 0.15,
+      c.dx - r * 0.55,
+      c.dy - r * 1.15,
+      c.dx,
+      c.dy - r * 0.4,
+    );
+    p.cubicTo(
+      c.dx + r * 0.55,
+      c.dy - r * 1.15,
+      c.dx + r * 1.35,
+      c.dy - r * 0.15,
+      c.dx,
+      c.dy + r * 0.95,
+    );
     return p..close();
   }
 
@@ -327,10 +377,22 @@ class GemComponent extends PositionComponent {
   Path _spade(Offset c, double r) {
     final p = Path();
     p.moveTo(c.dx, c.dy - r * 1.0);
-    p.cubicTo(c.dx + r * 1.35, c.dy + r * 0.15, c.dx + r * 0.55, c.dy + r * 1.0,
-        c.dx, c.dy + r * 0.35);
-    p.cubicTo(c.dx - r * 0.55, c.dy + r * 1.0, c.dx - r * 1.35, c.dy + r * 0.15,
-        c.dx, c.dy - r * 1.0);
+    p.cubicTo(
+      c.dx + r * 1.35,
+      c.dy + r * 0.15,
+      c.dx + r * 0.55,
+      c.dy + r * 1.0,
+      c.dx,
+      c.dy + r * 0.35,
+    );
+    p.cubicTo(
+      c.dx - r * 0.55,
+      c.dy + r * 1.0,
+      c.dx - r * 1.35,
+      c.dy + r * 0.15,
+      c.dx,
+      c.dy - r * 1.0,
+    );
     p.close();
     p.moveTo(c.dx - r * 0.38, c.dy + r * 0.95);
     p.lineTo(c.dx + r * 0.38, c.dy + r * 0.95);
@@ -344,11 +406,21 @@ class GemComponent extends PositionComponent {
   Path _club(Offset c, double r) {
     final cr = r * 0.5;
     final p = Path()
-      ..addOval(Rect.fromCircle(center: Offset(c.dx, c.dy - r * 0.42), radius: cr))
       ..addOval(
-          Rect.fromCircle(center: Offset(c.dx - r * 0.55, c.dy + r * 0.18), radius: cr))
+        Rect.fromCircle(center: Offset(c.dx, c.dy - r * 0.42), radius: cr),
+      )
       ..addOval(
-          Rect.fromCircle(center: Offset(c.dx + r * 0.55, c.dy + r * 0.18), radius: cr));
+        Rect.fromCircle(
+          center: Offset(c.dx - r * 0.55, c.dy + r * 0.18),
+          radius: cr,
+        ),
+      )
+      ..addOval(
+        Rect.fromCircle(
+          center: Offset(c.dx + r * 0.55, c.dy + r * 0.18),
+          radius: cr,
+        ),
+      );
     p.moveTo(c.dx - r * 0.34, c.dy + r * 0.98);
     p.lineTo(c.dx + r * 0.34, c.dy + r * 0.98);
     p.lineTo(c.dx + r * 0.13, c.dy + r * 0.3);
@@ -390,10 +462,14 @@ class GemComponent extends PositionComponent {
       ..color = const Color(0xFF2A2A33).withValues(alpha: 0.8);
     for (int i = 0; i < 3; i++) {
       final a = i * 2.094 + 0.5; // 3 nhánh lệch ~120°
-      final mid = Offset(center.dx + math.cos(a) * r * 0.45,
-          center.dy + math.sin(a) * r * 0.45);
-      final end = Offset(center.dx + math.cos(a + 0.4) * r * 0.92,
-          center.dy + math.sin(a + 0.4) * r * 0.92);
+      final mid = Offset(
+        center.dx + math.cos(a) * r * 0.45,
+        center.dy + math.sin(a) * r * 0.45,
+      );
+      final end = Offset(
+        center.dx + math.cos(a + 0.4) * r * 0.92,
+        center.dy + math.sin(a + 0.4) * r * 0.92,
+      );
       canvas.drawPath(
         Path()
           ..moveTo(center.dx, center.dy)
@@ -430,8 +506,11 @@ class GemComponent extends PositionComponent {
         paint,
       );
     }
-    canvas.drawCircle(center, s * 0.06 * (0.8 + 0.4 * pulse),
-        Paint()..color = Colors.white.withValues(alpha: 0.95));
+    canvas.drawCircle(
+      center,
+      s * 0.06 * (0.8 + 0.4 * pulse),
+      Paint()..color = Colors.white.withValues(alpha: 0.95),
+    );
   }
 
   /// Vòng cung sáng xoay quanh gem special → bắt mắt người chơi.
@@ -455,60 +534,77 @@ class GemComponent extends PositionComponent {
     // Vạch neon đậm: ống màu dày + lõi trắng (dùng cho striped).
     void neonBar(Offset a, Offset b) {
       canvas.drawLine(
-          a,
-          b,
-          Paint()
-            ..color = c
-            ..strokeWidth = s * 0.16
-            ..strokeCap = StrokeCap.round);
+        a,
+        b,
+        Paint()
+          ..color = c
+          ..strokeWidth = s * 0.16
+          ..strokeCap = StrokeCap.round,
+      );
       canvas.drawLine(
-          a,
-          b,
-          Paint()
-            ..color = Colors.white
-            ..strokeWidth = s * 0.07
-            ..strokeCap = StrokeCap.round);
+        a,
+        b,
+        Paint()
+          ..color = Colors.white
+          ..strokeWidth = s * 0.07
+          ..strokeCap = StrokeCap.round,
+      );
     }
 
     switch (type) {
       case GemType.stripedH:
         for (final fy in [-0.2, 0.2]) {
-          neonBar(Offset(s * 0.16, center.dy + s * fy),
-              Offset(s * 0.84, center.dy + s * fy));
+          neonBar(
+            Offset(s * 0.16, center.dy + s * fy),
+            Offset(s * 0.84, center.dy + s * fy),
+          );
         }
         break;
       case GemType.stripedV:
         for (final fx in [-0.2, 0.2]) {
-          neonBar(Offset(center.dx + s * fx, s * 0.16),
-              Offset(center.dx + s * fx, s * 0.84));
+          neonBar(
+            Offset(center.dx + s * fx, s * 0.16),
+            Offset(center.dx + s * fx, s * 0.84),
+          );
         }
         break;
       case GemType.bomb:
         // lõi tối + vòng sáng nhịp + tia năng lượng
-        canvas.drawCircle(center, s * 0.2,
-            Paint()..color = Colors.black.withValues(alpha: 0.5));
         canvas.drawCircle(
-            center,
-            s * 0.2 * pulse,
-            Paint()
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = s * 0.06
-              ..color = Colors.white);
+          center,
+          s * 0.2,
+          Paint()..color = Colors.black.withValues(alpha: 0.5),
+        );
+        canvas.drawCircle(
+          center,
+          s * 0.2 * pulse,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = s * 0.06
+            ..color = Colors.white,
+        );
         for (int i = 0; i < 8; i++) {
           final a = i * math.pi / 4 + _pulse * 0.5;
           canvas.drawLine(
-            Offset(center.dx + math.cos(a) * s * 0.22,
-                center.dy + math.sin(a) * s * 0.22),
-            Offset(center.dx + math.cos(a) * s * 0.34,
-                center.dy + math.sin(a) * s * 0.34),
+            Offset(
+              center.dx + math.cos(a) * s * 0.22,
+              center.dy + math.sin(a) * s * 0.22,
+            ),
+            Offset(
+              center.dx + math.cos(a) * s * 0.34,
+              center.dy + math.sin(a) * s * 0.34,
+            ),
             Paint()
               ..color = Colors.white
               ..strokeWidth = s * 0.05
               ..strokeCap = StrokeCap.round,
           );
         }
-        canvas.drawCircle(center, s * 0.07,
-            Paint()..color = Colors.white.withValues(alpha: pulse));
+        canvas.drawCircle(
+          center,
+          s * 0.07,
+          Paint()..color = Colors.white.withValues(alpha: pulse),
+        );
         break;
       case GemType.rainbow:
         // vòng cầu vồng xoay + lõi trắng sáng
@@ -516,21 +612,29 @@ class GemComponent extends PositionComponent {
         for (int i = 0; i < colors.length; i++) {
           final a = i / colors.length * math.pi * 2 + _pulse;
           canvas.drawCircle(
-            Offset(center.dx + math.cos(a) * s * 0.24,
-                center.dy + math.sin(a) * s * 0.24),
+            Offset(
+              center.dx + math.cos(a) * s * 0.24,
+              center.dy + math.sin(a) * s * 0.24,
+            ),
             s * 0.08,
             Paint()..color = colors[i],
           );
         }
-        canvas.drawCircle(center, s * 0.12 * pulse,
-            Paint()..color = Colors.white.withValues(alpha: 0.9));
+        canvas.drawCircle(
+          center,
+          s * 0.12 * pulse,
+          Paint()..color = Colors.white.withValues(alpha: 0.9),
+        );
         break;
       case GemType.diagonal:
         // 2 vạch neon chéo (hình X) + lõi sáng nhịp → gợi ý "nổ 2 đường chéo"
         neonBar(Offset(s * 0.18, s * 0.18), Offset(s * 0.82, s * 0.82));
         neonBar(Offset(s * 0.18, s * 0.82), Offset(s * 0.82, s * 0.18));
-        canvas.drawCircle(center, s * 0.09 * pulse,
-            Paint()..color = Colors.white.withValues(alpha: 0.95));
+        canvas.drawCircle(
+          center,
+          s * 0.09 * pulse,
+          Paint()..color = Colors.white.withValues(alpha: 0.95),
+        );
         break;
       case GemType.lightBall:
         // Light Ball (Wave 10): sao 8 hướng — 4 vạch (ngang/dọc/2 chéo) + lõi
@@ -542,18 +646,25 @@ class GemComponent extends PositionComponent {
         for (int i = 0; i < 8; i++) {
           final a = i * math.pi / 4 + _pulse * 0.8;
           canvas.drawLine(
-            Offset(center.dx + math.cos(a) * s * 0.16,
-                center.dy + math.sin(a) * s * 0.16),
-            Offset(center.dx + math.cos(a) * s * 0.30,
-                center.dy + math.sin(a) * s * 0.30),
+            Offset(
+              center.dx + math.cos(a) * s * 0.16,
+              center.dy + math.sin(a) * s * 0.16,
+            ),
+            Offset(
+              center.dx + math.cos(a) * s * 0.30,
+              center.dy + math.sin(a) * s * 0.30,
+            ),
             Paint()
               ..color = Colors.white.withValues(alpha: 0.85)
               ..strokeWidth = s * 0.045
               ..strokeCap = StrokeCap.round,
           );
         }
-        canvas.drawCircle(center, s * 0.15 * pulse,
-            Paint()..color = Colors.white);
+        canvas.drawCircle(
+          center,
+          s * 0.15 * pulse,
+          Paint()..color = Colors.white,
+        );
         break;
       case GemType.normal:
         break;

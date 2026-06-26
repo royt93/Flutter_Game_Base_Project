@@ -321,6 +321,14 @@ class GameController extends GetxController {
   /// (max ~2.14 tỷ). Vượt ngưỡng → lưu xuống đĩa thành số âm. Clamp dưới ngưỡng.
   static const int maxCoins = 2000000000;
 
+  /// W22.1 — "giảm hiệu ứng động" (accessibility): tắt slow-mo, giảm shake/flash/trail.
+  final RxBool juiceReduced = false.obs;
+
+  void toggleJuiceReduced() {
+    juiceReduced.value = !juiceReduced.value;
+    _store.setInt(StorageKeys.juiceReduced, juiceReduced.value ? 1 : 0);
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -339,6 +347,7 @@ class GameController extends GetxController {
   }
 
   void _load() {
+    juiceReduced.value = _store.getInt(StorageKeys.juiceReduced, def: 0) == 1;
     unlockedLevel.value = _store.getInt(StorageKeys.unlockedLevel, def: 1);
     // Xu khởi điểm (lần đầu cài/chưa có key): debug 10000 (dễ test mua), release 100.
     coins.value = _store.getInt(
