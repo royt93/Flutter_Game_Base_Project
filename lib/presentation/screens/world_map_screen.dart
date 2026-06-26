@@ -295,6 +295,9 @@ class _AnimatedMapState extends State<_AnimatedMap>
   late final List<_Star> _stars;
   late final ScrollController _scroll;
 
+  // W22.5 — phần thưởng rương vừa nhận (hiện overlay; null = không hiện).
+  ChestReward? _chestReward;
+
   double get _totalH => widget.topPad * 2 + kLevelCount * widget.vGap;
 
   @override
@@ -339,52 +342,57 @@ class _AnimatedMapState extends State<_AnimatedMap>
         widget.topPad + i * widget.vGap,
       );
     });
-    return SingleChildScrollView(
-      controller: _scroll,
-      child: SizedBox(
-        width: widget.width,
-        height: _totalH,
-        child: Stack(
-          children: [
-            // nền động: sao lấp lánh + path + xung năng lượng
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _anim,
-                builder: (_, _) => CustomPaint(
-                  painter: _MapPainter(
-                    centers: centers,
-                    current: widget.current,
-                    t: _anim.value,
-                    stars: _stars,
-                    width: widget.width,
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          controller: _scroll,
+          child: SizedBox(
+            width: widget.width,
+            height: _totalH,
+            child: Stack(
+              children: [
+                // nền động: sao lấp lánh + path + xung năng lượng
+                Positioned.fill(
+                  child: AnimatedBuilder(
+                    animation: _anim,
+                    builder: (_, _) => CustomPaint(
+                      painter: _MapPainter(
+                        centers: centers,
+                        current: widget.current,
+                        t: _anim.value,
+                        stars: _stars,
+                        width: widget.width,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                // banner thế giới
+                for (final w in kWorlds)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    top: widget.topPad + (w.startLevel - 1) * widget.vGap - 56,
+                    child: Center(child: _worldBadge(w)),
+                  ),
+                // node từng màn
+                for (int i = 0; i < kLevelCount; i++)
+                  Positioned(
+                    left: centers[i].dx - widget.nodeSize / 2,
+                    top: centers[i].dy - widget.nodeSize / 2,
+                    child: _node(
+                      kLevels[i],
+                      i + 1 <= widget.current,
+                      i + 1 == widget.current,
+                    ),
+                  ),
+                // W22.5 — rương báu giữa mỗi thế giới (lệch khỏi node màn)
+                ..._chestNodes(centers),
+              ],
             ),
-            // banner thế giới
-            for (final w in kWorlds)
-              Positioned(
-                left: 0,
-                right: 0,
-                top: widget.topPad + (w.startLevel - 1) * widget.vGap - 56,
-                child: Center(child: _worldBadge(w)),
-              ),
-            // node từng màn
-            for (int i = 0; i < kLevelCount; i++)
-              Positioned(
-                left: centers[i].dx - widget.nodeSize / 2,
-                top: centers[i].dy - widget.nodeSize / 2,
-                child: _node(
-                  kLevels[i],
-                  i + 1 <= widget.current,
-                  i + 1 == widget.current,
-                ),
-              ),
-            // W22.5 — rương báu giữa mỗi thế giới (lệch khỏi node màn)
-            ..._chestNodes(centers),
-          ],
+          ),
         ),
-      ),
+        if (_chestReward != null) _chestRewardOverlay(_chestReward!),
+      ],
     );
   }
 
@@ -418,7 +426,8 @@ class _AnimatedMapState extends State<_AnimatedMap>
     return GestureDetector(
       onTap: (unlocked && !claimed)
           ? () {
-              if (g.claimWorldChest(w) > 0) setState(() {});
+              final r = g.claimWorldChest(w);
+              if (r != null) setState(() => _chestReward = r);
             }
           : null,
       child: Container(
@@ -437,6 +446,40 @@ class _AnimatedMapState extends State<_AnimatedMap>
           color: color,
           size: sz * 0.5,
         ),
+      ),
+    );
+  }
+
+  // W22.5 — popup nhận thưởng rương (xu / Búa / +Lượt).
+  Widget _chestRewardOverlay(ChestReward r) {
+    final IconData icon;
+    final String msg;
+    switch (r.kind) {
+      case ChestRewardKind.coins:
+        icon = Icons.monetization_on_rounded;
+        msg = 'chest_got_coins'.trParams({'n': '${r.amount}'});
+      case ChestRewardKind.hammer:
+        icon = Icons.gavel_rounded;
+        msg = 'chest_got_hammer'.tr;
+      case ChestRewardKind.moves:
+        icon = Icons.add_circle_rounded;
+        msg = 'chest_got_moves'.tr;
+    }
+    void close() => setState(() => _chestReward = null);
+    return NeonDialog.overlay(
+      onBarrier: close,
+      panel: NeonDialog.panel(
+        title: 'chest_reward_title'.tr,
+        message: msg,
+        color: NeonTheme.yellow,
+        icon: icon,
+        actions: [
+          NeonDialogAction(
+            label: 'chest_ok'.tr,
+            color: NeonTheme.lime,
+            onTap: close,
+          ),
+        ],
       ),
     );
   }

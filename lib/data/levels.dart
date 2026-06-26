@@ -1320,6 +1320,28 @@ int chestCoinReward(int worldIndex) {
   return 50 + (mix % 11) * 10 + worldIndex * 5; // 50..150 + bonus world
 }
 
+/// W22.5 — loại phần thưởng rương.
+enum ChestRewardKind { coins, hammer, moves }
+
+/// Phần thưởng rương (loại + số lượng).
+class ChestReward {
+  final ChestRewardKind kind;
+  final int amount;
+  const ChestReward(this.kind, this.amount);
+}
+
+/// Phần thưởng rương thế giới [worldIndex] — TẤT ĐỊNH (no Random): 60% xu, 25% Búa,
+/// 15% +Lượt. Xu dùng [chestCoinReward]; booster 1 cái.
+ChestReward chestRewardOf(int worldIndex) {
+  final mix = (worldIndex * 2654435761) & 0x7fffffff;
+  final roll = mix % 20;
+  if (roll < 12) {
+    return ChestReward(ChestRewardKind.coins, chestCoinReward(worldIndex));
+  }
+  if (roll < 17) return const ChestReward(ChestRewardKind.hammer, 1);
+  return const ChestReward(ChestRewardKind.moves, 1);
+}
+
 /// Thế giới chứa [level] (1-based). Trả về world cuối nếu vượt ngưỡng.
 WorldConfig worldOfLevel(int level) {
   for (final w in kWorlds) {

@@ -164,6 +164,12 @@ class AppTranslations extends Translations {
     'tour_skip': 'Skip',
     'tour_next': 'Next',
     'tour_done': "Let's play",
+    // W22.5 — World Map chest reward
+    'chest_reward_title': 'TREASURE!',
+    'chest_got_coins': '+@n coins',
+    'chest_got_hammer': '+1 Hammer booster',
+    'chest_got_moves': '+1 Extra Moves booster',
+    'chest_ok': 'Awesome!',
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',
@@ -606,6 +612,12 @@ class AppTranslations extends Translations {
     'tour_skip': 'Bỏ qua',
     'tour_next': 'Tiếp',
     'tour_done': 'Chơi ngay',
+    // W22.5 — World Map chest reward
+    'chest_reward_title': 'RƯƠNG BÁU!',
+    'chest_got_coins': '+@n xu',
+    'chest_got_hammer': '+1 booster Búa',
+    'chest_got_moves': '+1 booster Thêm Lượt',
+    'chest_ok': 'Tuyệt!',
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',

@@ -91,13 +91,21 @@ extension GameControllerEconomy on GameController {
       _store.getInt(StorageKeys.chestClaimed(world)) == 1;
 
   /// Nhận rương thế giới [w]: ghi guard-key TRƯỚC (idempotent — kill giữa chừng
-  /// không farm lặp), rồi cộng xu. Trả số xu nhận (0 nếu chưa mở / đã nhận).
-  int claimWorldChest(WorldConfig w) {
-    if (!isChestUnlocked(w) || isChestClaimed(w.index)) return 0;
+  /// không farm lặp), rồi trao thưởng (xu / Búa / +Lượt). Trả [ChestReward] đã trao,
+  /// null nếu chưa mở khoá / đã nhận.
+  ChestReward? claimWorldChest(WorldConfig w) {
+    if (!isChestUnlocked(w) || isChestClaimed(w.index)) return null;
     unawaited(_store.setInt(StorageKeys.chestClaimed(w.index), 1));
-    final reward = chestCoinReward(w.index);
-    addCoins(reward);
-    return reward;
+    final r = chestRewardOf(w.index);
+    switch (r.kind) {
+      case ChestRewardKind.coins:
+        addCoins(r.amount);
+      case ChestRewardKind.hammer:
+        grantHammer(r.amount);
+      case ChestRewardKind.moves:
+        grantMovesBooster(r.amount);
+    }
+    return r;
   }
 
   /// Wave 12 — CHỐNG FARM side-mode: giảm xu thưởng theo số trận side-mode đã
