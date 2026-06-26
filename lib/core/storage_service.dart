@@ -43,6 +43,9 @@ class StorageKeys {
   /// W22.1 — "giảm hiệu ứng động" (accessibility): 0 = đầy đủ, 1 = giảm.
   static const String juiceReduced = 'juice_reduced';
 
+  /// W22.3 — đã xem tour giới thiệu Home lần đầu chưa (0 = chưa, 1 = rồi).
+  static const String homeTourSeen = 'home_tour_seen';
+
   // Wave 6 — Endless mode (high score riêng)
   static const String endlessHigh = 'endless_high';
   static const String zenHigh = 'zen_high'; // W20.4

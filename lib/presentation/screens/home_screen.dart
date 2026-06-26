@@ -121,6 +121,12 @@ class HomeScreen extends StatelessWidget {
                 () =>
                     lw.open.value ? _wheelOverlay(lw) : const SizedBox.shrink(),
               ),
+              // W22.3 — tour giới thiệu Home lần đầu
+              Obx(
+                () => hc.introOpen.value
+                    ? _introOverlay(hc)
+                    : const SizedBox.shrink(),
+              ),
             ],
           ),
         ),
@@ -1076,6 +1082,61 @@ class HomeScreen extends StatelessWidget {
             label: 'btn_home'.tr,
             color: NeonTheme.cyan,
             onTap: lw.closeWheel,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // W22.3 — tour giới thiệu Home (carousel 4 bước). Đọc introStep trong Obx cha
+  // (overlay) → tự rebuild khi đổi bước.
+  Widget _introOverlay(HomeController hc) {
+    final step = hc.introStep.value.clamp(0, HomeController.introSteps - 1);
+    const titles = ['tour_t0', 'tour_t1', 'tour_t2', 'tour_t3'];
+    const msgs = ['tour_m0', 'tour_m1', 'tour_m2', 'tour_m3'];
+    const icons = [
+      Icons.videogame_asset_rounded,
+      Icons.dashboard_customize_rounded,
+      Icons.card_giftcard_rounded,
+      Icons.celebration_rounded,
+    ];
+    final last = step >= HomeController.introSteps - 1;
+    return NeonDialog.overlay(
+      onBarrier: hc.closeIntro,
+      panel: NeonDialog.panel(
+        title: titles[step].tr,
+        message: msgs[step].tr,
+        color: NeonTheme.cyan,
+        icon: icons[step],
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              HomeController.introSteps,
+              (i) => Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i == step ? NeonTheme.cyan : Colors.white24,
+                ),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          if (!last)
+            NeonDialogAction(
+              label: 'tour_skip'.tr,
+              color: NeonTheme.magenta,
+              onTap: hc.closeIntro,
+            ),
+          NeonDialogAction(
+            label: last ? 'tour_done'.tr : 'tour_next'.tr,
+            color: NeonTheme.lime,
+            onTap: hc.introNext,
           ),
         ],
       ),

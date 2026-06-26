@@ -17,7 +17,8 @@ void main() {
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
+    // home_tour_seen=1: bỏ qua tour onboarding (W22.3) để test tương tác Home khác.
+    SharedPreferences.setMockInitialValues({'home_tour_seen': 1});
     Get.reset();
     Get.put(StorageService(await SharedPreferences.getInstance()));
   });

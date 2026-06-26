@@ -3,8 +3,20 @@ id: w22-3-onboarding
 title: First-launch Onboarding — tour Home lần đầu
 wave: 22
 phase: 3
-status: todo
+status: done
 owner: claude
+---
+
+> ✅ **Done 2026-06-26** (verify end-to-end trên Samsung S24 Ultra SM-S928B):
+> - Triển khai dạng **welcome carousel 4 bước** (NeonDialog.overlay in-tree, KHÔNG Get.dialog
+>   vì app render trên Flame full-screen) thay vì spotlight-cutout — robust đa cỡ màn, không cần
+>   đo GlobalKey rect (giảm rủi ro layout).
+> - `StorageKeys.homeTourSeen` + `HomeController` (introOpen/introStep/onReady/introNext/closeIntro)
+>   + overlay `_introOverlay` trong HomeScreen + i18n en/vi (tour_t0..3, tour_m0..3, skip/next/done).
+> - Thêm vào `resetProgress()`; test cũ `w5_screens_test` opt-out qua `home_tour_seen=1`.
+> - 5 unit test + analyze 0 + full suite 762 pass. Verify: hiện lần đầu → advance 4 bước → đóng
+>   + persist `home_tour_seen=1` → Home sạch.
+> **Defer:** spotlight-cutout (highlight đúng widget) — nâng cấp sau nếu cần.
 ---
 
 # Phase 3 — First-launch Onboarding

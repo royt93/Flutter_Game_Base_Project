@@ -149,6 +149,21 @@ class AppTranslations extends Translations {
     'lb_player': 'YOU',
     'lb_daily_note': "Today's top 10 — finish Daily to join the board.",
     'reduce_motion': 'Reduce motion effects',
+    // W22.3 — Home onboarding tour
+    'tour_t0': 'WELCOME!',
+    'tour_m0':
+        'Swap to line up 3+ gems of the same color. Tap PLAY NOW to start the 200-level campaign.',
+    'tour_t1': 'CHALLENGES',
+    'tour_m1':
+        'Beyond the campaign: Endless, Boss, Rush, Rhythm and many more side modes.',
+    'tour_t2': 'REWARDS',
+    'tour_m2':
+        'Shop, Battle Pass, Leaderboard, daily gifts and more await down here.',
+    'tour_t3': "LET'S GO!",
+    'tour_m3': 'Lives and coins sit up top. Have fun, traveler!',
+    'tour_skip': 'Skip',
+    'tour_next': 'Next',
+    'tour_done': "Let's play",
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',
@@ -576,6 +591,21 @@ class AppTranslations extends Translations {
     'lb_player': 'BẠN',
     'lb_daily_note': 'Top 10 hôm nay — hoàn thành Hằng ngày để vào bảng.',
     'reduce_motion': 'Giảm hiệu ứng động',
+    // W22.3 — Home onboarding tour
+    'tour_t0': 'CHÀO MỪNG!',
+    'tour_m0':
+        'Tráo để xếp 3+ viên cùng màu. Nhấn CHƠI NGAY để vào chiến dịch 200 màn.',
+    'tour_t1': 'THỬ THÁCH',
+    'tour_m1':
+        'Ngoài chiến dịch: Vô tận, Trùm, Tốc chiến, Nhịp điệu và nhiều chế độ phụ.',
+    'tour_t2': 'PHẦN THƯỞNG',
+    'tour_m2':
+        'Cửa hàng, Battle Pass, Bảng xếp hạng, quà hằng ngày… đều ở phía dưới.',
+    'tour_t3': 'BẮT ĐẦU THÔI!',
+    'tour_m3': 'Mạng và xu ở phía trên. Chúc bạn chơi vui!',
+    'tour_skip': 'Bỏ qua',
+    'tour_next': 'Tiếp',
+    'tour_done': 'Chơi ngay',
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',

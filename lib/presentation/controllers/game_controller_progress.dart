@@ -70,6 +70,7 @@ extension GameControllerProgress on GameController {
       StorageKeys.coinsEarned,
       StorageKeys.wheelLastSpin,
       StorageKeys.tutorialSeen,
+      StorageKeys.homeTourSeen, // W22.3 — reset → tour hiện lại (fresh)
       StorageKeys.viewMode,
       StorageKeys.endlessHigh,
       StorageKeys.survivalHigh,
