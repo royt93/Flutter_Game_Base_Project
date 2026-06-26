@@ -41,17 +41,27 @@ class QuestTemplate {
   }
 }
 
+/// W23 — thưởng khi HOÀN THÀNH CẢ 3 quest trong ngày (1 lần/ngày, anti-farm).
+const int kDailyQuestBonusCoins = 200;
+const int kDailyQuestBonusXp = 60;
+
 /// Kho mẫu nhiệm vụ — chọn 3 cái/ngày theo seed = epoch-day (xác định, test được).
+/// W23: mở rộng thêm tier cao để bộ quest đa dạng hơn theo ngày.
 const List<QuestTemplate> kQuestPool = [
   QuestTemplate(QuestType.winLevels, 3, 40),
   QuestTemplate(QuestType.winLevels, 5, 70),
+  QuestTemplate(QuestType.winLevels, 7, 100),
   QuestTemplate(QuestType.playLevels, 5, 30),
+  QuestTemplate(QuestType.playLevels, 8, 50),
   QuestTemplate(QuestType.earnCoins, 120, 40),
   QuestTemplate(QuestType.earnCoins, 250, 70),
+  QuestTemplate(QuestType.earnCoins, 400, 100),
   QuestTemplate(QuestType.reachCombo, 5, 40),
   QuestTemplate(QuestType.reachCombo, 7, 70),
+  QuestTemplate(QuestType.reachCombo, 9, 100),
   QuestTemplate(QuestType.collectStars, 6, 50),
   QuestTemplate(QuestType.collectStars, 10, 90),
+  QuestTemplate(QuestType.collectStars, 14, 120),
 ];
 
 /// 3 nhiệm vụ của ngày [epochDay] — xác định theo seed, không trùng type.

@@ -80,6 +80,7 @@ extension GameControllerProgress on GameController {
       StorageKeys.bpXp,
       StorageKeys.bpLevel,
       StorageKeys.questDay,
+      StorageKeys.questBonusDay, // W23 — thưởng hoàn-thành-cả-bộ quest
       StorageKeys.seasonPoints,
       StorageKeys.seasonIdx,
       StorageKeys.bHammer,

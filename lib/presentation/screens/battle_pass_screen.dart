@@ -36,6 +36,7 @@ class BattlePassScreen extends StatelessWidget {
                       const SizedBox(height: NeonTheme.s8),
                       for (int i = 0; i < bp.todayQuests.length; i++)
                         _questCard(bp, i),
+                      _questBonusCard(bp), // W23 — thưởng hoàn thành cả bộ
                       const SizedBox(height: NeonTheme.s24),
                       _sectionTitle('bp_track'.tr),
                       const SizedBox(height: NeonTheme.s8),
@@ -53,14 +54,14 @@ class BattlePassScreen extends StatelessWidget {
   }
 
   Widget _sectionTitle(String s) => Text(
-        s,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1,
-        ),
-      );
+    s,
+    style: const TextStyle(
+      color: Colors.white,
+      fontSize: 16,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 1,
+    ),
+  );
 
   Widget _xpHeader(BattlePassController bp) {
     final max = bp.level >= kPassTiers.length;
@@ -81,8 +82,11 @@ class BattlePassScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.military_tech_rounded,
-                  color: NeonTheme.orange, size: 24),
+              const Icon(
+                Icons.military_tech_rounded,
+                color: NeonTheme.orange,
+                size: 24,
+              ),
               const SizedBox(width: 8),
               Text(
                 '${'bp_level'.tr} ${bp.level}',
@@ -110,10 +114,83 @@ class BattlePassScreen extends StatelessWidget {
               value: max ? 1 : into / span,
               minHeight: 8,
               backgroundColor: NeonTheme.bgDark2,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(NeonTheme.orange),
+              valueColor: const AlwaysStoppedAnimation<Color>(NeonTheme.orange),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // W23 — thẻ thưởng "hoàn thành CẢ bộ quest" (1 lần/ngày).
+  Widget _questBonusCard(BattlePassController bp) {
+    final claimable = bp.dailyBonusClaimable;
+    final claimed = bp.dailyBonusClaimed;
+    final color = claimable
+        ? NeonTheme.lime
+        : (claimed ? Colors.white38 : NeonTheme.orange);
+    return Container(
+      margin: const EdgeInsets.only(top: NeonTheme.s8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: NeonTheme.s16,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: claimable
+            ? NeonTheme.lime.withValues(alpha: 0.14)
+            : NeonTheme.panel.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: claimable ? NeonTheme.lime : Colors.white24,
+          width: claimable ? 1.6 : 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.workspace_premium_rounded, color: color, size: 28),
+          const SizedBox(width: NeonTheme.s8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'quest_bonus_title'.tr,
+                  style: TextStyle(color: color, fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  '+$kDailyQuestBonusCoins ${'coins_short'.tr} · +$kDailyQuestBonusXp XP',
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          if (claimed)
+            Text(
+              'daily_claimed'.tr,
+              style: const TextStyle(color: Colors.white38, fontSize: 12),
+            )
+          else if (claimable)
+            GestureDetector(
+              onTap: bp.claimDailyBonus,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: NeonTheme.lime.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: NeonTheme.lime, width: 1.4),
+                ),
+                child: Text(
+                  'daily_claim'.tr,
+                  style: const TextStyle(
+                    color: NeonTheme.lime,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -139,8 +216,11 @@ class BattlePassScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(done ? Icons.check_circle_rounded : Icons.flag_rounded,
-                  color: done ? NeonTheme.lime : NeonTheme.cyan, size: 18),
+              Icon(
+                done ? Icons.check_circle_rounded : Icons.flag_rounded,
+                color: done ? NeonTheme.lime : NeonTheme.cyan,
+                size: 18,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -173,7 +253,8 @@ class BattlePassScreen extends StatelessWidget {
                     minHeight: 6,
                     backgroundColor: NeonTheme.bgDark2,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                        done ? NeonTheme.lime : NeonTheme.cyan),
+                      done ? NeonTheme.lime : NeonTheme.cyan,
+                    ),
                   ),
                 ),
               ),
@@ -247,8 +328,10 @@ class BattlePassScreen extends StatelessWidget {
             GestureDetector(
               onTap: () => bp.claim(i),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: NeonTheme.lime.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),

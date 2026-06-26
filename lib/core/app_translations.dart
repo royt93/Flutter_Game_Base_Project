@@ -171,6 +171,7 @@ class AppTranslations extends Translations {
     'chest_got_hammer': '+1 Hammer booster',
     'chest_got_moves': '+1 Extra Moves booster',
     'chest_ok': 'Awesome!',
+    'quest_bonus_title': 'ALL QUESTS BONUS',
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',
@@ -619,6 +620,7 @@ class AppTranslations extends Translations {
     'chest_got_hammer': '+1 booster Búa',
     'chest_got_moves': '+1 booster Thêm Lượt',
     'chest_ok': 'Tuyệt!',
+    'quest_bonus_title': 'THƯỞNG TRỌN BỘ',
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',

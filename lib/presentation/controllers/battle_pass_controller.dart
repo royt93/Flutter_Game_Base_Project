@@ -21,8 +21,10 @@ class BattlePassController extends GetxController {
   final List<bool> _credited = [false, false, false];
   late List<QuestTemplate> todayQuests;
   int _questDay = -1;
+  int _bonusDay = -1; // W23 — epoch-day đã nhận thưởng hoàn-thành-cả-3
 
-  static BattlePassController? get maybe => Get.isRegistered<BattlePassController>()
+  static BattlePassController? get maybe =>
+      Get.isRegistered<BattlePassController>()
       ? Get.find<BattlePassController>()
       : null;
 
@@ -56,6 +58,7 @@ class BattlePassController extends GetxController {
         _credited[i] = _store.getInt(StorageKeys.questCredited(i)) == 1;
       }
     }
+    _bonusDay = _store.getInt(StorageKeys.questBonusDay, def: -1); // W23
   }
 
   /// Cấp pass hiện tại = số tier có ngưỡng XP <= xp.
@@ -69,6 +72,17 @@ class BattlePassController extends GetxController {
 
   bool questDone(int i) =>
       i < todayQuests.length && questProgress[i] >= todayQuests[i].target;
+
+  /// W23 — đã hoàn thành CẢ bộ quest hôm nay.
+  bool get allQuestsDone =>
+      todayQuests.isNotEmpty &&
+      List.generate(todayQuests.length, questDone).every((d) => d);
+
+  /// Đã nhận thưởng "hoàn thành cả bộ" hôm nay chưa.
+  bool get dailyBonusClaimed => _bonusDay == g.todayEpochDay;
+
+  /// Có thể nhận thưởng bonus (đủ quest + chưa nhận hôm nay).
+  bool get dailyBonusClaimable => allQuestsDone && !dailyBonusClaimed;
 
   /// XP còn thiếu để lên cấp kế (0 nếu đã max).
   int get xpToNext {
@@ -128,6 +142,19 @@ class BattlePassController extends GetxController {
     if (_questDay != g.todayEpochDay) _loadQuests();
   }
 
+  /// W23 — nhận thưởng hoàn thành CẢ bộ quest (1 lần/ngày). Ghi mốc ngày TRƯỚC
+  /// (idempotent; dùng todayEpochDay anti-cheat). Trả xu thưởng (0 nếu chưa đủ ĐK).
+  int claimDailyBonus() {
+    _ensureToday();
+    if (!dailyBonusClaimable) return 0;
+    _bonusDay = g.todayEpochDay;
+    unawaited(_store.setInt(StorageKeys.questBonusDay, _bonusDay));
+    g.addCoins(kDailyQuestBonusCoins);
+    _addXp(kDailyQuestBonusXp);
+    questProgress.refresh(); // báo UI rebuild (trạng thái claimed đổi)
+    return kDailyQuestBonusCoins;
+  }
+
   /// Xoá sạch state in-memory khi người chơi reset tiến trình. Controller này
   /// `permanent: true` nên KHÔNG tự mất khi GameController xoá đĩa — không gọi
   /// hàm này thì RAM vẫn giữ "đã nhận" → restart đọc đĩa trống ⇒ nhận lại thưởng.
@@ -139,6 +166,7 @@ class BattlePassController extends GetxController {
       _credited[i] = false;
     }
     _questDay = -1;
+    _bonusDay = -1; // W23 — reset thưởng hoàn-thành-cả-bộ
     _loadQuests(); // đĩa đã trống → nạp lại bộ quest hôm nay từ đầu
   }
 

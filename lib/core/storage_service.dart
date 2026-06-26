@@ -84,6 +84,9 @@ class StorageKeys {
       'quest_prog_$idx'; // tiến trình quest #idx
   static String questCredited(int idx) => 'quest_cred_$idx'; // 1 = đã cộng XP
 
+  /// W23 — epoch-day đã nhận thưởng "hoàn thành cả 3 quest" (1 lần/ngày).
+  static const String questBonusDay = 'quest_bonus_day';
+
   // Wave 7 — Sự kiện theo mùa (tuần)
   static const String seasonIdx = 'season_idx'; // chỉ số mùa của điểm đang giữ
   static const String seasonPoints = 'season_points'; // điểm mùa hiện tại
