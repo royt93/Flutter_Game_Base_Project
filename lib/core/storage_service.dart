@@ -49,6 +49,9 @@ class StorageKeys {
   /// W22.5 — đã nhận rương báu thế giới [w] chưa (1 = rồi). 1 rương/thế giới.
   static String chestClaimed(int world) => 'chest_claimed_$world';
 
+  /// W23.2 — đã hạ mini-boss thế giới [w] chưa (1 = rồi). Thưởng 1 lần.
+  static String miniBossCleared(int world) => 'miniboss_cleared_$world';
+
   // Wave 6 — Endless mode (high score riêng)
   static const String endlessHigh = 'endless_high';
   static const String zenHigh = 'zen_high'; // W20.4

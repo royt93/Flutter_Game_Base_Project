@@ -108,6 +108,20 @@ extension GameControllerEconomy on GameController {
     return r;
   }
 
+  // ---- W23.2 mini-boss: thưởng "đã hạ" 1 lần/thế giới ----
+  bool isMiniBossCleared(int world) =>
+      _store.getInt(StorageKeys.miniBossCleared(world)) == 1;
+
+  /// Thưởng lần ĐẦU hạ mini-boss thế giới [world]: ghi guard-key TRƯỚC (idempotent),
+  /// rồi cộng xu bonus. Trả xu bonus (0 nếu world<=0 hoặc đã hạ trước đó).
+  int grantMiniBossClear(int world) {
+    if (world <= 0 || isMiniBossCleared(world)) return 0;
+    unawaited(_store.setInt(StorageKeys.miniBossCleared(world), 1));
+    const bonus = 120; // thưởng 1 lần khi hạ mini-boss đầu tiên
+    addCoins(bonus);
+    return bonus;
+  }
+
   /// Wave 12 — CHỐNG FARM side-mode: giảm xu thưởng theo số trận side-mode đã
   /// thưởng HÔM NAY ([kSideModeFullPlays] trận đầu full, sau ×[kSideModeReducedMul]).
   /// Tự reset đếm khi sang ngày mới, tăng đếm + persist. Trả xu đã giảm.

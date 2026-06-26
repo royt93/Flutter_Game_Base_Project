@@ -324,6 +324,11 @@ class GameController extends GetxController {
   /// W22.1 — "giảm hiệu ứng động" (accessibility): tắt slow-mo, giảm shake/flash/trail.
   final RxBool juiceReduced = false.obs;
 
+  /// W23.2 — thế giới của mini-boss đang đánh (0 = boss thường). Set ở [startBoss].
+  int _miniBossWorld = 0;
+  bool get isMiniBoss => _miniBossWorld > 0;
+  int get miniBossWorld => _miniBossWorld;
+
   void toggleJuiceReduced() {
     juiceReduced.value = !juiceReduced.value;
     ActiveCosmetics.reducedMotion = juiceReduced.value; // render đọc tĩnh
@@ -454,6 +459,7 @@ class GameController extends GetxController {
     isPuzzle.value = puzzle;
     isZen.value = zen;
     isRush.value = rush;
+    _miniBossWorld = 0; // W23.2 — reset; startBoss set lại nếu là mini-boss
     isGhostMode.value = false;
     ghostScore.value = 0;
     ghostStep.value = 0;

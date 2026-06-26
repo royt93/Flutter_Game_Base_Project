@@ -121,6 +121,9 @@ extension GameControllerProgress on GameController {
     for (final w in kWorlds) {
       await _store.remove(StorageKeys.chestClaimed(w.index)); // W22.5
     }
+    for (final wi in kMiniBossWorlds) {
+      await _store.remove(StorageKeys.miniBossCleared(wi)); // W23.2
+    }
     for (final lv in kLevels) {
       await _store.remove(StorageKeys.highScore(lv.index));
       await _store.remove(StorageKeys.star(lv.index));

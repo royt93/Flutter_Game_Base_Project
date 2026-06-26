@@ -506,12 +506,16 @@ class _AnimatedMapState extends State<_AnimatedMap>
 
   Widget _miniBossNode(WorldConfig w) {
     final reached = widget.current >= w.startLevel;
+    final cleared = widget.ctrl.isMiniBossCleared(w.index);
     final sz = widget.nodeSize * 0.84;
-    final color = reached ? NeonTheme.magenta : Colors.grey.shade700;
+    final color = !reached
+        ? Colors.grey.shade700
+        : (cleared ? NeonTheme.lime : NeonTheme.magenta);
     return GestureDetector(
       onTap: reached
           ? () {
-              widget.ctrl.startBoss(1, hpScale: 0.5); // mini-boss HP thấp
+              // mini-boss HP thấp; đã hạ vẫn đánh lại được nhưng KHÔNG thưởng lại.
+              widget.ctrl.startBoss(1, hpScale: 0.5, miniBossWorld: w.index);
               Get.to(() => const GameScreen());
             }
           : null,
@@ -520,12 +524,14 @@ class _AnimatedMapState extends State<_AnimatedMap>
         height: sz,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: NeonTheme.panel.withValues(alpha: 0.85),
+          color: NeonTheme.panel.withValues(alpha: cleared ? 0.6 : 0.85),
           border: Border.all(color: color, width: 2),
           boxShadow: reached ? NeonTheme.glow(color, blur: 10) : null,
         ),
         child: Icon(
-          reached ? Icons.coronavirus_rounded : Icons.lock_rounded,
+          !reached
+              ? Icons.lock_rounded
+              : (cleared ? Icons.verified_rounded : Icons.coronavirus_rounded),
           color: color,
           size: sz * 0.5,
         ),

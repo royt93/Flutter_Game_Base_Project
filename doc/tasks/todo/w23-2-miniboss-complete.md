@@ -3,8 +3,15 @@ id: w23-2-miniboss-complete
 title: Mini-boss hoàn thiện — cleared persist + thưởng + attack pattern
 wave: 23
 phase: 2
-status: todo
+status: partial
 owner: claude
+---
+
+> 🟡 **2A done 2026-06-26**: `isMiniBoss`/`miniBossWorld` (set ở `startBoss`, reset ở
+> `_enterMode`); `StorageKeys.miniBossCleared(world)`; `grantMiniBossClear` (guard-key TRƯỚC,
+> +120 xu 1 lần) gọi ở boss-win; node mini-boss đã-hạ → icon verified + dim (đánh lại không
+> thưởng lại); thêm vào `resetProgress`. 6 unit test, analyze 0, full suite 783 pass.
+> **2B (defer)**: attack pattern Meteor/Shuffle (cần hook engine Flame) — wave sau.
 ---
 
 # Phase 2 — Mini-boss hoàn thiện

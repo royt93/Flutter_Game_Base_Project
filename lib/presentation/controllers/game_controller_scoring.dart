@@ -290,6 +290,8 @@ extension GameControllerScoring on GameController {
               (2 + bossStage.value) * 10, // gộp shard cũ (2+stage) → xu
         );
         addCoins(lastCoinReward);
+        // W23.2 — mini-boss: thưởng "đã hạ" 1 lần (guard-key trong economy).
+        grantMiniBossClear(_miniBossWorld);
         return 'win';
       }
       if (movesLeft.value <= 0) {
