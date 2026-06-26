@@ -1313,6 +1313,10 @@ int chestLevelOf(WorldConfig w) => (w.startLevel + w.endLevel) ~/ 2;
 /// Danh sách màn có rương báu (1 rương / thế giới).
 final List<int> kChestLevels = kWorlds.map(chestLevelOf).toList();
 
+/// W22.5 — thế giới (1-based) có MINI-BOSS node (sau màn cuối thế giới đó).
+/// Đặt ở các thế giới chẵn để rải đều hành trình.
+const List<int> kMiniBossWorlds = [2, 4, 6, 8, 10];
+
 /// Phần thưởng xu của rương thế giới [worldIndex] (1-based) — TẤT ĐỊNH theo world
 /// (seed = world) để không farm bằng reload. Dải ~50–150 xu, tăng nhẹ theo world.
 int chestCoinReward(int worldIndex) {

@@ -105,11 +105,32 @@ void main() {
     );
   });
 
+  group('mini-boss (W22.5)', () {
+    test('kMiniBossWorlds = thế giới chẵn [2,4,6,8,10]', () {
+      expect(kMiniBossWorlds, [2, 4, 6, 8, 10]);
+    });
+
+    test('startBoss hpScale<1 → HP thấp hơn boss thường cùng stage', () {
+      g.startBoss(1);
+      final full = g.bossMaxHp.value;
+      g.startBoss(1, hpScale: 0.5);
+      expect(g.bossMaxHp.value, lessThan(full));
+      expect(g.bossMaxHp.value, (full * 0.5).round());
+    });
+
+    test('mini-boss là side-mode → không trừ mạng', () {
+      final lives = g.lives.value;
+      g.startBoss(1, hpScale: 0.5);
+      expect(g.isSideMode, isTrue);
+      expect(g.lives.value, lives);
+    });
+  });
+
   group('WorldMapScreen widget', () {
-    testWidgets('mount → render chest node (gift icon) không crash', (
+    testWidgets('mount → render chest + mini-boss + avatar không crash', (
       tester,
     ) async {
-      g.unlockedLevel.value = 30; // mở vài world để có chest unlocked
+      g.unlockedLevel.value = 45; // tới world 3 → world 2 mini-boss reachable
       await tester.pumpWidget(
         GetMaterialApp(
           translations: AppTranslations(),
@@ -120,10 +141,17 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(WorldMapScreen), findsOneWidget);
-      // chest nodes dựng trong Stack (kể cả ngoài viewport)
       expect(
         find.byIcon(Icons.card_giftcard_rounded, skipOffstage: false),
         findsWidgets,
+      );
+      expect(
+        find.byIcon(Icons.coronavirus_rounded, skipOffstage: false),
+        findsWidgets,
+      );
+      expect(
+        find.byIcon(Icons.person_rounded, skipOffstage: false),
+        findsOneWidget,
       );
     });
   });

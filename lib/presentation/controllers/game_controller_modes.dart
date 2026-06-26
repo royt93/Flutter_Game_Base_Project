@@ -286,11 +286,13 @@ extension GameControllerModes on GameController {
   }
 
   /// Bắt đầu trận Boss neon (chế độ riêng). [stage] tăng máu + đổi điểm yếu.
-  void startBoss(int stage) {
+  void startBoss(int stage, {double hpScale = 1.0}) {
     _bossCfg = buildBossLevel();
     _enterMode(boss: true);
     bossStage.value = stage.clamp(1, 99);
-    bossMaxHp.value = kBossBaseHp + (bossStage.value - 1) * 700;
+    // W22.5 — hpScale < 1 cho mini-boss (HP thấp hơn boss thường cùng stage).
+    bossMaxHp.value = ((kBossBaseHp + (bossStage.value - 1) * 700) * hpScale)
+        .round();
     bossHp.value = bossMaxHp.value;
     bossWeakColor.value = (stage - 1) % level.colorCount;
     _bossHitsSinceRetaliate = 0;

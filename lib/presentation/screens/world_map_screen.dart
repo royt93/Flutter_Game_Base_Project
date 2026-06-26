@@ -387,6 +387,10 @@ class _AnimatedMapState extends State<_AnimatedMap>
                   ),
                 // W22.5 — rương báu giữa mỗi thế giới (lệch khỏi node màn)
                 ..._chestNodes(centers),
+                // W22.5 — mini-boss node ở thế giới chẵn (cạnh màn cuối)
+                ..._miniBossNodes(centers),
+                // W22.5 — avatar người chơi nổi trên node hiện tại
+                _avatar(centers),
               ],
             ),
           ),
@@ -443,6 +447,85 @@ class _AnimatedMapState extends State<_AnimatedMap>
         ),
         child: Icon(
           claimed ? Icons.check_rounded : Icons.card_giftcard_rounded,
+          color: color,
+          size: sz * 0.5,
+        ),
+      ),
+    );
+  }
+
+  // W22.5 — avatar người chơi: nổi phía trên node màn hiện tại (cosmetic).
+  Widget _avatar(List<Offset> centers) {
+    final i = widget.current - 1;
+    if (i < 0 || i >= centers.length) return const SizedBox.shrink();
+    final c = centers[i];
+    final sz = widget.nodeSize * 0.5;
+    return Positioned(
+      left: c.dx - sz / 2,
+      top: c.dy - widget.nodeSize * 0.95,
+      child: IgnorePointer(
+        child: Container(
+          width: sz,
+          height: sz,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [NeonTheme.cyan, NeonTheme.magenta],
+            ),
+            boxShadow: NeonTheme.glow(NeonTheme.cyan, blur: 8),
+          ),
+          child: Icon(
+            Icons.person_rounded,
+            color: Colors.white,
+            size: sz * 0.6,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // W22.5 — mini-boss node: thế giới chẵn, cạnh màn cuối; vào Boss HP thấp (×0.5).
+  List<Widget> _miniBossNodes(List<Offset> centers) {
+    final out = <Widget>[];
+    for (final wi in kMiniBossWorlds) {
+      final w = kWorlds[wi - 1];
+      final idx = w.endLevel - 1;
+      if (idx < 0 || idx >= centers.length) continue;
+      final c = centers[idx];
+      final off = c.dx > widget.width / 2 ? -widget.nodeSize : widget.nodeSize;
+      out.add(
+        Positioned(
+          left: c.dx + off - widget.nodeSize * 0.42,
+          top: c.dy - widget.nodeSize * 0.42 + widget.nodeSize * 0.9,
+          child: _miniBossNode(w),
+        ),
+      );
+    }
+    return out;
+  }
+
+  Widget _miniBossNode(WorldConfig w) {
+    final reached = widget.current >= w.startLevel;
+    final sz = widget.nodeSize * 0.84;
+    final color = reached ? NeonTheme.magenta : Colors.grey.shade700;
+    return GestureDetector(
+      onTap: reached
+          ? () {
+              widget.ctrl.startBoss(1, hpScale: 0.5); // mini-boss HP thấp
+              Get.to(() => const GameScreen());
+            }
+          : null,
+      child: Container(
+        width: sz,
+        height: sz,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: NeonTheme.panel.withValues(alpha: 0.85),
+          border: Border.all(color: color, width: 2),
+          boxShadow: reached ? NeonTheme.glow(color, blur: 10) : null,
+        ),
+        child: Icon(
+          reached ? Icons.coronavirus_rounded : Icons.lock_rounded,
           color: color,
           size: sz * 0.5,
         ),
