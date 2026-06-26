@@ -61,6 +61,19 @@ JuiceTier juiceTierFor(int combo) {
   );
 }
 
+/// W22.1.1 — số hạt trail phát khi gem RƠI trong 1 frame. [fallDist] = quãng rơi (px),
+/// [cellSize] = cạnh ô. Chỉ phát khi rơi đủ nhanh (≥0.6 ô) & KHÔNG giảm-hiệu-ứng.
+/// Cap 2 hạt/frame/gem (chống bão particle khi cascade dài). 0 = không phát.
+int trailParticlesFor(
+  double fallDist,
+  double cellSize, {
+  required bool reduced,
+}) {
+  if (reduced || cellSize <= 0) return 0;
+  if (fallDist < cellSize * 0.6) return 0;
+  return fallDist > cellSize * 1.5 ? 2 : 1;
+}
+
 /// Khi bật "giảm hiệu ứng động" (accessibility): tắt slow-mo, giảm shake 50%,
 /// giảm flash. Trả về tier đã làm dịu. Haptic giữ nguyên (không gây chóng mặt).
 JuiceTier dampenJuice(JuiceTier t, {required bool reduced}) {

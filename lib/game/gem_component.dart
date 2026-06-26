@@ -1,9 +1,11 @@
 import 'dart:math' as math;
 import 'package:flame/components.dart';
+import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
 import '../core/neon_theme.dart';
 import '../data/cosmetics.dart';
 import '../logic/gem_data.dart';
+import '../logic/juice.dart';
 import 'effects.dart';
 
 /// Ánh xạ GemColor (logic) sang màu neon thật (render) — theo skin đang chọn
@@ -20,6 +22,7 @@ class GemComponent extends PositionComponent {
   int col;
 
   double _pulse = 0; // pha dao động cho hiệu ứng nhấp nháy
+  double _lastY = double.nan; // W22.1.1 — theo dõi rơi để phát trail
   bool selected = false;
   bool hint = false; // nhấp nháy gợi ý khi người chơi bị stuck
   bool isIngredient = false; // Drop Down: item cần đưa xuống đáy
@@ -55,6 +58,47 @@ class GemComponent extends PositionComponent {
   void update(double dt) {
     super.update(dt);
     _pulse += dt * 3.0;
+    _maybeTrail();
+  }
+
+  // W22.1.1 — trail mờ khi gem RƠI nhanh. trailParticlesFor chỉ trả >0 ở frame
+  // đỉnh vận tốc (≥0.6 ô/frame) → số particle tự bound; tôn trọng reducedMotion.
+  void _maybeTrail() {
+    final y = position.y;
+    if (!_lastY.isNaN) {
+      final n = trailParticlesFor(
+        y - _lastY,
+        size.x,
+        reduced: ActiveCosmetics.reducedMotion,
+      );
+      final game = n > 0 ? findGame() : null;
+      if (game != null) {
+        final c = neonColorOf(color);
+        game.add(
+          ParticleSystemComponent(
+            position: absolutePosition.clone(),
+            priority: 30,
+            particle: Particle.generate(
+              count: n,
+              lifespan: 0.18,
+              generator: (_) => ComputedParticle(
+                renderer: (canvas, p) {
+                  final t = 1 - p.progress;
+                  canvas.drawCircle(
+                    Offset.zero,
+                    size.x * 0.18 * t,
+                    Paint()
+                      ..color = c.withValues(alpha: 0.30 * t)
+                      ..blendMode = BlendMode.plus,
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    _lastY = y;
   }
 
   @override

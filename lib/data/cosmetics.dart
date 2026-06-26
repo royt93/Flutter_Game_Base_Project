@@ -194,8 +194,10 @@ const List<BoardTheme> kBoardThemes = [
 GemSkin gemSkinById(String id) =>
     kGemSkins.firstWhere((s) => s.id == id, orElse: () => kGemSkins.first);
 
-BoardTheme boardThemeById(String id) =>
-    kBoardThemes.firstWhere((t) => t.id == id, orElse: () => kBoardThemes.first);
+BoardTheme boardThemeById(String id) => kBoardThemes.firstWhere(
+  (t) => t.id == id,
+  orElse: () => kBoardThemes.first,
+);
 
 /// Trang trí ĐANG áp dụng — đọc bởi tầng render (Flame) mà không cần Get.find
 /// mỗi khung hình. GameController cập nhật 2 trường này khi load / khi đổi chọn.
@@ -206,6 +208,11 @@ class ActiveCosmetics {
   static BoardTheme boardTheme = kBoardThemes.first;
 
   // Wave 20.3 — Progression Tree effects
-  static double particleBurstMultiplier = 1.0; // 1.0/1.5/2.0 theo node radiant/blazing
+  static double particleBurstMultiplier =
+      1.0; // 1.0/1.5/2.0 theo node radiant/blazing
   static bool prestigeUnlocked = false; // node prestige
+
+  /// W22.1 — "giảm hiệu ứng động" (accessibility); render đọc tĩnh mỗi frame
+  /// (không Get.find). Cập nhật bởi GameController khi load/toggle.
+  static bool reducedMotion = false;
 }

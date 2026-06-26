@@ -41,6 +41,25 @@ void main() {
     });
   });
 
+  group('trailParticlesFor — gem fall trail', () {
+    const cell = 60.0;
+    test('rơi chậm (<0.6 ô) → 0 hạt', () {
+      expect(trailParticlesFor(cell * 0.5, cell, reduced: false), 0);
+      expect(trailParticlesFor(0, cell, reduced: false), 0);
+    });
+    test('rơi vừa (>=0.6 ô) → 1 hạt; rơi nhanh (>1.5 ô) → 2 hạt (cap)', () {
+      expect(trailParticlesFor(cell * 0.8, cell, reduced: false), 1);
+      expect(trailParticlesFor(cell * 2.0, cell, reduced: false), 2);
+      expect(trailParticlesFor(cell * 9.0, cell, reduced: false), 2); // cap
+    });
+    test('reduced=true → luôn 0 (accessibility)', () {
+      expect(trailParticlesFor(cell * 5, cell, reduced: true), 0);
+    });
+    test('cellSize<=0 → 0 (an toàn)', () {
+      expect(trailParticlesFor(100, 0, reduced: false), 0);
+    });
+  });
+
   group('dampenJuice — accessibility', () {
     test('reduced=false: giữ nguyên', () {
       final t = juiceTierFor(6);

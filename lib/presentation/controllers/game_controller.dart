@@ -326,6 +326,7 @@ class GameController extends GetxController {
 
   void toggleJuiceReduced() {
     juiceReduced.value = !juiceReduced.value;
+    ActiveCosmetics.reducedMotion = juiceReduced.value; // render đọc tĩnh
     _store.setInt(StorageKeys.juiceReduced, juiceReduced.value ? 1 : 0);
   }
 
@@ -348,6 +349,7 @@ class GameController extends GetxController {
 
   void _load() {
     juiceReduced.value = _store.getInt(StorageKeys.juiceReduced, def: 0) == 1;
+    ActiveCosmetics.reducedMotion = juiceReduced.value;
     unlockedLevel.value = _store.getInt(StorageKeys.unlockedLevel, def: 1);
     // Xu khởi điểm (lần đầu cài/chưa có key): debug 10000 (dễ test mua), release 100.
     coins.value = _store.getInt(
