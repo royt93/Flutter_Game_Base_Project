@@ -141,6 +141,13 @@ class AppTranslations extends Translations {
 
   /// Key Wave 4 — English (mặc định + fallback cho ngôn ngữ chưa dịch).
   static const Map<String, String> _extraEn = {
+    // Wave 21.6 — Offline Leaderboard
+    'leaderboard_title': 'LEADERBOARD',
+    'lb_tab_campaign': 'Campaign',
+    'lb_tab_daily': 'Daily',
+    'lb_level': 'Level',
+    'lb_player': 'YOU',
+    'lb_daily_note': "Today's top 10 — finish Daily to join the board.",
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',
@@ -560,6 +567,13 @@ class AppTranslations extends Translations {
 
   /// Key Wave 4 — Tiếng Việt (override English).
   static const Map<String, String> _extraVi = {
+    // Wave 21.6 — Offline Leaderboard
+    'leaderboard_title': 'BẢNG XẾP HẠNG',
+    'lb_tab_campaign': 'Chiến dịch',
+    'lb_tab_daily': 'Hằng ngày',
+    'lb_level': 'Màn',
+    'lb_player': 'BẠN',
+    'lb_daily_note': 'Top 10 hôm nay — hoàn thành Hằng ngày để vào bảng.',
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',

@@ -33,6 +33,7 @@ import 'guide_screen.dart';
 import 'level_select_screen.dart';
 import 'piggy_screen.dart';
 import 'challenge_card_screen.dart';
+import 'leaderboard_screen.dart';
 import 'progression_tree_screen.dart';
 import 'puzzle_select_screen.dart';
 import 'season_league_screen.dart';
@@ -311,6 +312,16 @@ class HomeScreen extends StatelessWidget {
                               small: true,
                             );
                           }),
+                        ),
+                        // W21.6 — Offline Leaderboard
+                        Expanded(
+                          child: _circleNav(
+                            Icons.leaderboard_rounded,
+                            NeonTheme.yellow,
+                            'leaderboard_title'.tr,
+                            () => Get.to(() => const LeaderboardScreen()),
+                            small: true,
+                          ),
                         ),
                       ],
                     ),
