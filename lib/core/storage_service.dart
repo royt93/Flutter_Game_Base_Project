@@ -12,6 +12,7 @@ class StorageKeys {
   // Daily reward
   static const String dailyLastClaim = 'daily_last_claim'; // epoch-day
   static const String dailyStreak = 'daily_streak';
+
   /// Ngày (epoch-day) CAO NHẤT từng thấy — chống chỉnh giờ LÙI để nhận lại quà.
   static const String maxDay = 'max_epoch_day';
 
@@ -20,6 +21,10 @@ class StorageKeys {
   static const String dailyChLastDone = 'daily_ch_last_done';
   static const String dailyChStreak = 'daily_ch_streak';
   static const String dailyChBestStreak = 'daily_ch_best_streak';
+
+  /// W22.4A — điểm cao nhất CỦA NGÀY cho Daily Leaderboard, dạng `'<epochDay>|<score>'`.
+  /// Sang ngày mới → coi như chưa có (đọc so khớp epochDay). Pure offline.
+  static const String dailyBestScore = 'daily_best_score';
 
   // Lives / energy
   static const String lives = 'lives';
@@ -54,6 +59,7 @@ class StorageKeys {
   static const String shards = 'shards'; // (CŨ) mảnh neon — Wave 9 gộp về xu
   /// Wave 9: đã quy đổi shard cũ → xu (×10) chưa (1 = rồi). Chạy 1 lần.
   static const String shardsMigrated = 'shards_migrated';
+
   /// Tier hiện tại của 1 hạng mục đền (0 = chưa xây).
   static String templeTier(String id) => 'temple_$id';
 
@@ -62,7 +68,8 @@ class StorageKeys {
   static const String bpLevel = 'bp_level'; // cấp pass hiện tại
   static String bpClaimed(int level) => 'bp_claimed_$level'; // 1 = đã nhận
   static const String questDay = 'quest_day'; // epoch-day của bộ quest hiện tại
-  static String questProgress(int idx) => 'quest_prog_$idx'; // tiến trình quest #idx
+  static String questProgress(int idx) =>
+      'quest_prog_$idx'; // tiến trình quest #idx
   static String questCredited(int idx) => 'quest_cred_$idx'; // 1 = đã cộng XP
 
   // Wave 7 — Sự kiện theo mùa (tuần)
@@ -81,13 +88,15 @@ class StorageKeys {
   static String achievementClaimed(String id) => 'ach_$id';
 
   // W19.1 — Kỷ lục chế độ phụ ([key] = SideModeRecordSpec.key).
-  static String recValue(String key) => 'rec_${key}_v'; // giá trị chỉ số (best/count)
+  static String recValue(String key) =>
+      'rec_${key}_v'; // giá trị chỉ số (best/count)
   static String recTier(String key) => 'rec_${key}_t'; // bậc mốc đã nhận (0..3)
   static String recPlays(String key) => 'rec_${key}_p'; // số lần chơi
 
   // W19.2 — Cấu đố (Puzzle): sao tốt nhất từng cấu đố + số cấu đố đã mở khoá.
   static String puzzleStars(int id) => 'pz_star_$id';
-  static const String puzzleUnlocked = 'pz_unlocked'; // id cao nhất đã mở (1-based)
+  static const String puzzleUnlocked =
+      'pz_unlocked'; // id cao nhất đã mở (1-based)
 
   // Wave 9 — Cửa hàng trang trí (skin gem + theme bàn, mua bằng xu)
   static String ownedSkin(String id) => 'skin_$id'; // 1 = đã sở hữu

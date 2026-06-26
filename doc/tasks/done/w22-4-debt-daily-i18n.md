@@ -3,8 +3,18 @@ id: w22-4-debt-daily-i18n
 title: Đóng nợ — Daily Leaderboard score + i18n tên thế giới
 wave: 22
 phase: 4
-status: todo
+status: done
 owner: claude
+---
+
+> ✅ **Done 2026-06-26.**
+> - **4A** implement: `StorageKeys.dailyBestScore` (`'<day>|<score>'`), ghi ở
+>   `game_controller_scoring.dart` nhánh daily-win, đọc trong `LeaderboardController.dailyBoard()`
+>   (`dailyPlayerScore()`), screen ẩn note khi đã có điểm, thêm vào `resetProgress()`. +2 test.
+> - **4B** hoá ra ĐÃ XONG sẵn: `worldNameKey()` (`levels.dart:1139`) + `world_map_screen.dart:362`
+>   + `level_select_screen.dart:391` đều đã `.tr`; `world_name_1..10` dịch đủ 22 ngôn ngữ.
+>   (Báo cáo "chưa wire" trước đó là sai — đã xác minh code.)
+> - analyze 0, full suite 750 pass.
 ---
 
 # Phase 4 — Đóng nợ (2 việc nhỏ, thắng dễ)

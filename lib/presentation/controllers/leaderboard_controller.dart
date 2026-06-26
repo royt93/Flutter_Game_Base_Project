@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../../core/leaderboard_engine.dart';
+import '../../core/storage_service.dart';
 import '../../data/levels.dart';
 import '../../data/tournament.dart' show tournamentWeek;
 import 'game_controller.dart';
@@ -42,12 +43,25 @@ class LeaderboardController extends GetxController {
     return buildLeaderboard(target, player, week * 211 + lv);
   }
 
-  /// Bảng Daily: bot seed theo NGÀY. Người chơi ẩn (chưa có cơ chế điểm daily
-  /// riêng — xem doc/tasks/todo/w21-6 mục "Nguồn điểm người chơi daily").
+  /// Điểm Daily của người chơi HÔM NAY (`'<day>|<score>'`); -1 nếu chưa hoàn thành.
+  int dailyPlayerScore() {
+    final day = g.todayEpochDay;
+    final raw = StorageService.to.getString(StorageKeys.dailyBestScore);
+    if (raw == null) return -1;
+    final parts = raw.split('|');
+    if (parts.length == 2 && int.tryParse(parts[0]) == day) {
+      return int.tryParse(parts[1]) ?? -1;
+    }
+    return -1;
+  }
+
+  /// Bảng Daily: bot seed theo NGÀY + người chơi (nếu đã hoàn thành Daily hôm nay,
+  /// điểm từ [StorageKeys.dailyBestScore] — W22.4A).
   List<LbEntry> dailyBoard() {
     final day = g.todayEpochDay;
     // baseTarget biến thiên theo ngày để bảng daily không trùng campaign.
     final target = _targetOf((day % kLevelCount) + 1);
-    return buildLeaderboard(target, -1, day, includePlayer: false);
+    final player = dailyPlayerScore();
+    return buildLeaderboard(target, player, day, includePlayer: player >= 0);
   }
 }

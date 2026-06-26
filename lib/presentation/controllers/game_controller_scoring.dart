@@ -439,6 +439,27 @@ extension GameControllerScoring on GameController {
         _resolved = true;
         lastStars = computeStars();
         lastStreakBonus = 0;
+        // W22.4A — Daily Leaderboard: lưu điểm cao nhất CỦA NGÀY ('<day>|<score>').
+        // Ghi mỗi lần thắng (replay điểm cao hơn vẫn cập nhật); sang ngày mới reset.
+        {
+          final today = _effectiveDay;
+          final raw = _store.getString(StorageKeys.dailyBestScore);
+          var best = 0;
+          if (raw != null) {
+            final parts = raw.split('|');
+            if (parts.length == 2 && int.tryParse(parts[0]) == today) {
+              best = int.tryParse(parts[1]) ?? 0;
+            }
+          }
+          if (score.value > best) {
+            unawaited(
+              _store.setString(
+                StorageKeys.dailyBestScore,
+                '$today|${score.value}',
+              ),
+            );
+          }
+        }
         if (!dailyChallengeDoneToday) {
           final last = _store.getInt(StorageKeys.dailyChLastDone, def: -1);
           // liền mạch (hôm qua đã hoàn thành) → +1; gãy/lần đầu → reset về 1

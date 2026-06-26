@@ -43,7 +43,8 @@ class LeaderboardScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(NeonTheme.s16),
                     children: [
                       if (isCampaign) _levelPicker(lb, accent),
-                      if (!isCampaign) _dailyNote(),
+                      // Daily: chỉ nhắc "hoàn thành Daily" khi người chơi chưa có điểm.
+                      if (!isCampaign && playerRank(board) == 0) _dailyNote(),
                       const SizedBox(height: NeonTheme.s8),
                       for (var i = 0; i < board.length; i++)
                         _row(i + 1, board[i], accent),

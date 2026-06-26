@@ -64,6 +64,26 @@ void main() {
       expect(rankHigh, lessThanOrEqualTo(rankZero));
       expect(rankHigh, 1);
     });
+
+    test('W22.4A — điểm Daily hôm nay → người chơi xuất hiện ở tab Daily', () {
+      final lb = Get.put(LeaderboardController(g));
+      final today = g.todayEpochDay;
+      // chưa có điểm → ẩn
+      expect(lb.dailyPlayerScore(), -1);
+      expect(playerRank(lb.dailyBoard()), 0);
+      // ghi điểm Daily hôm nay
+      StorageService.to.setString(StorageKeys.dailyBestScore, '$today|99999');
+      expect(lb.dailyPlayerScore(), 99999);
+      expect(playerRank(lb.dailyBoard()), 1); // điểm khủng → hạng 1
+    });
+
+    test('W22.4A — điểm Daily ngày CŨ bị bỏ qua (ẩn người chơi)', () {
+      final lb = Get.put(LeaderboardController(g));
+      final stale = g.todayEpochDay - 3;
+      StorageService.to.setString(StorageKeys.dailyBestScore, '$stale|99999');
+      expect(lb.dailyPlayerScore(), -1); // khác ngày → bỏ
+      expect(playerRank(lb.dailyBoard()), 0);
+    });
   });
 
   group('LeaderboardScreen widget', () {

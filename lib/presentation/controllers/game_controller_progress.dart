@@ -21,10 +21,14 @@ extension GameControllerProgress on GameController {
       // checkEnd (đồng bộ) → ở đây chỉ persist, KHÔNG cộng lại (tránh đếm 2 lần).
       // Ghi đĩa TRƯỚC rồi mới cập nhật state RAM: nếu app bị kill giữa chừng,
       // RAM và đĩa không lệch nhau (tránh mất xu/unlock đã hiển thị).
-      final newCoins =
-          (coins.value + lastCoinReward).clamp(0, GameController.maxCoins);
-      final newEarned = (coinsEarnedTotal.value + lastCoinReward)
-          .clamp(0, GameController.maxCoins);
+      final newCoins = (coins.value + lastCoinReward).clamp(
+        0,
+        GameController.maxCoins,
+      );
+      final newEarned = (coinsEarnedTotal.value + lastCoinReward).clamp(
+        0,
+        GameController.maxCoins,
+      );
       await _store.setInt(StorageKeys.coins, newCoins);
       await _store.setInt(StorageKeys.coinsEarned, newEarned);
       coins.value = newCoins;
@@ -56,6 +60,7 @@ extension GameControllerProgress on GameController {
       StorageKeys.dailyChLastDone, // H3 fix: daily challenge streak reset
       StorageKeys.dailyChStreak,
       StorageKeys.dailyChBestStreak,
+      StorageKeys.dailyBestScore, // W22.4A — điểm Daily Leaderboard
       StorageKeys.lives,
       StorageKeys.livesRegenAt,
       StorageKeys.winStreak,
@@ -115,7 +120,9 @@ extension GameControllerProgress on GameController {
     for (final lv in kLevels) {
       await _store.remove(StorageKeys.highScore(lv.index));
       await _store.remove(StorageKeys.star(lv.index));
-      await _store.remove(StorageKeys.pityFails(lv.index)); // Wave 16: reset pity
+      await _store.remove(
+        StorageKeys.pityFails(lv.index),
+      ); // Wave 16: reset pity
     }
     pity.value = 0;
     for (final n in kTempleNodes) {
