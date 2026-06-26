@@ -46,6 +46,9 @@ class StorageKeys {
   /// W22.3 — đã xem tour giới thiệu Home lần đầu chưa (0 = chưa, 1 = rồi).
   static const String homeTourSeen = 'home_tour_seen';
 
+  /// W22.5 — đã nhận rương báu thế giới [w] chưa (1 = rồi). 1 rương/thế giới.
+  static String chestClaimed(int world) => 'chest_claimed_$world';
+
   // Wave 6 — Endless mode (high score riêng)
   static const String endlessHigh = 'endless_high';
   static const String zenHigh = 'zen_high'; // W20.4

@@ -118,6 +118,9 @@ extension GameControllerProgress on GameController {
     for (final t in kBoardThemes) {
       await _store.remove(StorageKeys.ownedTheme(t.id));
     }
+    for (final w in kWorlds) {
+      await _store.remove(StorageKeys.chestClaimed(w.index)); // W22.5
+    }
     for (final lv in kLevels) {
       await _store.remove(StorageKeys.highScore(lv.index));
       await _store.remove(StorageKeys.star(lv.index));

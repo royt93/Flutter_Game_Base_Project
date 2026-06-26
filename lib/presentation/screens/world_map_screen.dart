@@ -43,19 +43,26 @@ class WorldMapScreen extends StatelessWidget {
             : 'lives_none_msg'.tr;
         ScaffoldMessenger.of(ctx)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text(msg,
-                style: const TextStyle(fontFamily: 'Baloo2', fontSize: 13)),
-            backgroundColor: NeonTheme.panel,
-            behavior: SnackBarBehavior.floating,
-          ));
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                msg,
+                style: const TextStyle(fontFamily: 'Baloo2', fontSize: 13),
+              ),
+              backgroundColor: NeonTheme.panel,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
       }
       return;
     }
     final t = storyStartTriggerFor(index);
     if (t != null &&
-        StoryController.to.maybeShow(t, worldOfLevel(index).index,
-            onComplete: () => _afterStory(ctrl, index))) {
+        StoryController.to.maybeShow(
+          t,
+          worldOfLevel(index).index,
+          onComplete: () => _afterStory(ctrl, index),
+        )) {
       return;
     }
     _afterStory(ctrl, index);
@@ -87,8 +94,10 @@ class WorldMapScreen extends StatelessWidget {
                     color: NeonTheme.cyan,
                     actions: [
                       IconButton(
-                        icon: const Icon(Icons.grid_view_rounded,
-                            color: NeonTheme.cyan),
+                        icon: const Icon(
+                          Icons.grid_view_rounded,
+                          color: NeonTheme.cyan,
+                        ),
                         tooltip: 'grid_view'.tr,
                         onPressed: () {
                           // chủ động đổi style → lưu local (grid)
@@ -102,8 +111,10 @@ class WorldMapScreen extends StatelessWidget {
                   Expanded(
                     child: LayoutBuilder(
                       builder: (_, c) => Obx(() {
-                        final current =
-                            ctrl.unlockedLevel.value.clamp(1, kLevels.length);
+                        final current = ctrl.unlockedLevel.value.clamp(
+                          1,
+                          kLevels.length,
+                        );
                         ctrl.stars.length; // observe
                         return _AnimatedMap(
                           ctrl: ctrl,
@@ -119,9 +130,11 @@ class WorldMapScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              Obx(() => pg.open.value
-                  ? _pregameOverlay(ctrl, pg)
-                  : const SizedBox.shrink()),
+              Obx(
+                () => pg.open.value
+                    ? _pregameOverlay(ctrl, pg)
+                    : const SizedBox.shrink(),
+              ),
               const StoryOverlay(),
             ],
           ),
@@ -141,41 +154,63 @@ class WorldMapScreen extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Obx(() => _pgOption(Icons.av_timer_rounded, NeonTheme.lime,
-                'pregame_moves'.tr, ctrl.boosterMoves.value,
-                pg.useMoves.value, pg.toggleMoves)),
+            Obx(
+              () => _pgOption(
+                Icons.av_timer_rounded,
+                NeonTheme.lime,
+                'pregame_moves'.tr,
+                ctrl.boosterMoves.value,
+                pg.useMoves.value,
+                pg.toggleMoves,
+              ),
+            ),
             const SizedBox(height: NeonTheme.s8),
-            Obx(() => _pgOption(Icons.gavel_rounded, NeonTheme.orange,
-                'pregame_hammer'.tr, ctrl.boosterHammer.value,
-                pg.armHammer.value, pg.toggleHammer)),
+            Obx(
+              () => _pgOption(
+                Icons.gavel_rounded,
+                NeonTheme.orange,
+                'pregame_hammer'.tr,
+                ctrl.boosterHammer.value,
+                pg.armHammer.value,
+                pg.toggleHammer,
+              ),
+            ),
           ],
         ),
         actions: [
           NeonDialogAction(
-              label: 'pregame_skip'.tr,
-              color: NeonTheme.cyan,
-              onTap: () {
-                pg.useMoves.value = false;
-                pg.armHammer.value = false;
-                pg.start();
-                ctrl.startLevel(pg.level.value);
-                Get.to(() => const GameScreen());
-              }),
+            label: 'pregame_skip'.tr,
+            color: NeonTheme.cyan,
+            onTap: () {
+              pg.useMoves.value = false;
+              pg.armHammer.value = false;
+              pg.start();
+              ctrl.startLevel(pg.level.value);
+              Get.to(() => const GameScreen());
+            },
+          ),
           NeonDialogAction(
-              label: 'play_now'.tr,
-              color: NeonTheme.lime,
-              onTap: () {
-                pg.start();
-                ctrl.startLevel(pg.level.value);
-                Get.to(() => const GameScreen());
-              }),
+            label: 'play_now'.tr,
+            color: NeonTheme.lime,
+            onTap: () {
+              pg.start();
+              ctrl.startLevel(pg.level.value);
+              Get.to(() => const GameScreen());
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _pgOption(IconData icon, Color color, String label, int count,
-      bool selected, VoidCallback onTap) {
+  Widget _pgOption(
+    IconData icon,
+    Color color,
+    String label,
+    int count,
+    bool selected,
+    VoidCallback onTap,
+  ) {
     final owned = count > 0;
     return GestureDetector(
       onTap: owned ? onTap : null,
@@ -187,33 +222,43 @@ class WorldMapScreen extends StatelessWidget {
               : NeonTheme.panel.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-              color: owned ? color : Colors.white24,
-              width: selected ? 2.5 : 1.4),
+            color: owned ? color : Colors.white24,
+            width: selected ? 2.5 : 1.4,
+          ),
           boxShadow: selected ? NeonTheme.glow(color, blur: 10) : null,
         ),
-        child: Row(children: [
-          Icon(icon, color: owned ? color : Colors.white38, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(label,
+        child: Row(
+          children: [
+            Icon(icon, color: owned ? color : Colors.white38, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
                 style: TextStyle(
                   fontFamily: 'Baloo2',
                   color: owned ? Colors.white : Colors.white38,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                )),
-          ),
-          Text('x$count',
+                ),
+              ),
+            ),
+            Text(
+              'x$count',
               style: TextStyle(
                 fontFamily: 'Baloo2',
                 color: owned ? color : Colors.white38,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
-              )),
-          const SizedBox(width: 6),
-          Icon(selected ? Icons.check_circle_rounded : Icons.circle_outlined,
-              color: selected ? color : Colors.white30, size: 18),
-        ]),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+              color: selected ? color : Colors.white30,
+              size: 18,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -256,8 +301,9 @@ class _AnimatedMapState extends State<_AnimatedMap>
   void initState() {
     super.initState();
     _anim = AnimationController(
-        vsync: this, duration: const Duration(seconds: 6))
-      ..repeat();
+      vsync: this,
+      duration: const Duration(seconds: 6),
+    )..repeat();
     final rng = math.Random(7);
     // sao lấp lánh rải đều toàn bản đồ
     _stars = List.generate(140, (i) {
@@ -288,8 +334,10 @@ class _AnimatedMapState extends State<_AnimatedMap>
   @override
   Widget build(BuildContext context) {
     final centers = List<Offset>.generate(kLevelCount, (i) {
-      return Offset(widget.width * WorldMapScreen.fx(i),
-          widget.topPad + i * widget.vGap);
+      return Offset(
+        widget.width * WorldMapScreen.fx(i),
+        widget.topPad + i * widget.vGap,
+      );
     });
     return SingleChildScrollView(
       controller: _scroll,
@@ -326,10 +374,68 @@ class _AnimatedMapState extends State<_AnimatedMap>
               Positioned(
                 left: centers[i].dx - widget.nodeSize / 2,
                 top: centers[i].dy - widget.nodeSize / 2,
-                child: _node(kLevels[i], i + 1 <= widget.current,
-                    i + 1 == widget.current),
+                child: _node(
+                  kLevels[i],
+                  i + 1 <= widget.current,
+                  i + 1 == widget.current,
+                ),
               ),
+            // W22.5 — rương báu giữa mỗi thế giới (lệch khỏi node màn)
+            ..._chestNodes(centers),
           ],
+        ),
+      ),
+    );
+  }
+
+  // W22.5 — rương báu: 1 node/thế giới tại màn trung điểm, lệch sang bên trống.
+  List<Widget> _chestNodes(List<Offset> centers) {
+    final out = <Widget>[];
+    for (final w in kWorlds) {
+      final idx = chestLevelOf(w) - 1;
+      if (idx < 0 || idx >= centers.length) continue;
+      final c = centers[idx];
+      final off = c.dx > widget.width / 2 ? -widget.nodeSize : widget.nodeSize;
+      out.add(
+        Positioned(
+          left: c.dx + off - widget.nodeSize * 0.42,
+          top: c.dy - widget.nodeSize * 0.42,
+          child: _chestNode(w),
+        ),
+      );
+    }
+    return out;
+  }
+
+  Widget _chestNode(WorldConfig w) {
+    final g = widget.ctrl;
+    final unlocked = g.isChestUnlocked(w);
+    final claimed = g.isChestClaimed(w.index);
+    final sz = widget.nodeSize * 0.84;
+    final color = claimed
+        ? Colors.white38
+        : (unlocked ? NeonTheme.yellow : Colors.grey.shade700);
+    return GestureDetector(
+      onTap: (unlocked && !claimed)
+          ? () {
+              if (g.claimWorldChest(w) > 0) setState(() {});
+            }
+          : null,
+      child: Container(
+        width: sz,
+        height: sz,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: NeonTheme.panel.withValues(alpha: 0.85),
+          border: Border.all(color: color, width: 2),
+          boxShadow: (unlocked && !claimed)
+              ? NeonTheme.glow(color, blur: 10)
+              : null,
+        ),
+        child: Icon(
+          claimed ? Icons.check_rounded : Icons.card_giftcard_rounded,
+          color: color,
+          size: sz * 0.5,
         ),
       ),
     );
@@ -345,40 +451,52 @@ class _AnimatedMapState extends State<_AnimatedMap>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [
-          c.withValues(alpha: reached ? 0.32 : 0.12),
-          NeonTheme.panel.withValues(alpha: 0.85),
-        ]),
+        gradient: LinearGradient(
+          colors: [
+            c.withValues(alpha: reached ? 0.32 : 0.12),
+            NeonTheme.panel.withValues(alpha: 0.85),
+          ],
+        ),
         borderRadius: BorderRadius.circular(13),
         border: Border.all(
-            color: reached ? c : c.withValues(alpha: 0.4), width: 1.5),
+          color: reached ? c : c.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
         boxShadow: reached ? NeonTheme.glow(c, blur: 8) : null,
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(reached ? Icons.public_rounded : Icons.lock_rounded,
-            color: reached ? c : Colors.white38, size: 14),
-        const SizedBox(width: 6),
-        Text(
-          '${'world_n'.trParams({'n': '${w.index}'})} · ${worldNameKey(w.index).tr}',
-          style: TextStyle(
-            fontFamily: 'Baloo2',
-            color: Colors.white,
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            shadows: [Shadow(color: c, blurRadius: 8)],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            reached ? Icons.public_rounded : Icons.lock_rounded,
+            color: reached ? c : Colors.white38,
+            size: 14,
           ),
-        ),
-        const SizedBox(width: 7),
-        const Icon(Icons.star_rounded, color: Colors.amber, size: 12),
-        const SizedBox(width: 2),
-        Text('$stars',
+          const SizedBox(width: 6),
+          Text(
+            '${'world_n'.trParams({'n': '${w.index}'})} · ${worldNameKey(w.index).tr}',
+            style: TextStyle(
+              fontFamily: 'Baloo2',
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              shadows: [Shadow(color: c, blurRadius: 8)],
+            ),
+          ),
+          const SizedBox(width: 7),
+          const Icon(Icons.star_rounded, color: Colors.amber, size: 12),
+          const SizedBox(width: 2),
+          Text(
+            '$stars',
             style: const TextStyle(
               fontFamily: 'Baloo2',
               color: Colors.white,
               fontSize: 10,
               fontWeight: FontWeight.w800,
-            )),
-      ]),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -407,31 +525,39 @@ class _AnimatedMapState extends State<_AnimatedMap>
               : null,
           color: unlocked ? null : NeonTheme.panel.withValues(alpha: 0.6),
           border: Border.all(
-              color: isCurrent ? Colors.white : c, width: isCurrent ? 2.5 : 1.6),
-          boxShadow: unlocked ? NeonTheme.glow(c, blur: isCurrent ? 14 : 8) : null,
+            color: isCurrent ? Colors.white : c,
+            width: isCurrent ? 2.5 : 1.6,
+          ),
+          boxShadow: unlocked
+              ? NeonTheme.glow(c, blur: isCurrent ? 14 : 8)
+              : null,
         ),
         alignment: Alignment.center,
         child: unlocked
             ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('${lv.index}',
-                      style: const TextStyle(
-                        fontFamily: 'Baloo2',
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        height: 1,
-                        shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
-                      )),
+                  Text(
+                    '${lv.index}',
+                    style: const TextStyle(
+                      fontFamily: 'Baloo2',
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
+                      shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+                    ),
+                  ),
                   if (star > 0)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
                         3,
-                        (s) => Icon(Icons.star_rounded,
-                            size: 6,
-                            color: s < star ? Colors.amber : Colors.white24),
+                        (s) => Icon(
+                          Icons.star_rounded,
+                          size: 6,
+                          color: s < star ? Colors.amber : Colors.white24,
+                        ),
                       ),
                     ),
                 ],
@@ -452,21 +578,25 @@ class _AnimatedMapState extends State<_AnimatedMap>
             height: size + 22,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: SweepGradient(colors: [
-                c.withValues(alpha: 0),
-                c.withValues(alpha: 0.7),
-                Colors.white.withValues(alpha: 0.9),
-                c.withValues(alpha: 0.7),
-                c.withValues(alpha: 0),
-              ]),
+              gradient: SweepGradient(
+                colors: [
+                  c.withValues(alpha: 0),
+                  c.withValues(alpha: 0.7),
+                  Colors.white.withValues(alpha: 0.9),
+                  c.withValues(alpha: 0.7),
+                  c.withValues(alpha: 0),
+                ],
+              ),
             ),
-          )
-              .animate(onPlay: (a) => a.repeat())
-              .rotate(duration: 2400.ms),
+          ).animate(onPlay: (a) => a.repeat()).rotate(duration: 2400.ms),
           core
               .animate(onPlay: (a) => a.repeat(reverse: true))
               .scaleXY(
-                  begin: 1, end: 1.12, duration: 760.ms, curve: Curves.easeInOut),
+                begin: 1,
+                end: 1.12,
+                duration: 760.ms,
+                curve: Curves.easeInOut,
+              ),
         ],
       ),
     );
@@ -478,11 +608,12 @@ class _Star {
   final double phase;
   final double size;
   final Color color;
-  const _Star(
-      {required this.pos,
-      required this.phase,
-      required this.size,
-      required this.color});
+  const _Star({
+    required this.pos,
+    required this.phase,
+    required this.size,
+    required this.color,
+  });
 }
 
 /// Vẽ nền động: sao lấp lánh + đường path (sáng tới màn đã đi, mờ tới khoá)
@@ -506,7 +637,8 @@ class _MapPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // 1) sao lấp lánh
     for (final s in stars) {
-      final tw = 0.35 + 0.65 * (0.5 + 0.5 * math.sin((t + s.phase) * math.pi * 2));
+      final tw =
+          0.35 + 0.65 * (0.5 + 0.5 * math.sin((t + s.phase) * math.pi * 2));
       final p = Offset(s.pos.dx * width, s.pos.dy);
       canvas.drawCircle(
         p,
@@ -521,22 +653,30 @@ class _MapPainter extends CustomPainter {
     // 2) đường path: base mờ + đoạn đã đi sáng
     for (var i = 0; i < centers.length - 1; i++) {
       final reached = (i + 1) < current;
-      _segment(canvas, centers[i], centers[i + 1],
-          Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = reached ? 8 : 6
-            ..strokeCap = StrokeCap.round
-            ..color = reached
-                ? NeonTheme.cyan.withValues(alpha: 0.65)
-                : Colors.white.withValues(alpha: 0.10));
+      _segment(
+        canvas,
+        centers[i],
+        centers[i + 1],
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = reached ? 8 : 6
+          ..strokeCap = StrokeCap.round
+          ..color = reached
+              ? NeonTheme.cyan.withValues(alpha: 0.65)
+              : Colors.white.withValues(alpha: 0.10),
+      );
       if (reached) {
         // lõi sáng mảnh
-        _segment(canvas, centers[i], centers[i + 1],
-            Paint()
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = 2.5
-              ..strokeCap = StrokeCap.round
-              ..color = Colors.white.withValues(alpha: 0.5));
+        _segment(
+          canvas,
+          centers[i],
+          centers[i + 1],
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.5
+            ..strokeCap = StrokeCap.round
+            ..color = Colors.white.withValues(alpha: 0.5),
+        );
       }
     }
 

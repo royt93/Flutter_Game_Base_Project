@@ -18,8 +18,10 @@ extension GameControllerEconomy on GameController {
     // trước đây chỉ màn thường (_saveProgress) đếm, bỏ sót boss/rhythm/daily/
     // wheel/season/BP/đền (mâu thuẫn comment "lifetime"). Màn thường KHÔNG dùng
     // addCoins (đi _saveProgress riêng) nên không đếm 2 lần.
-    coinsEarnedTotal.value =
-        (coinsEarnedTotal.value + amount).clamp(0, GameController.maxCoins);
+    coinsEarnedTotal.value = (coinsEarnedTotal.value + amount).clamp(
+      0,
+      GameController.maxCoins,
+    );
     unawaited(_store.setInt(StorageKeys.coinsEarned, coinsEarnedTotal.value));
   }
 
@@ -69,14 +71,44 @@ extension GameControllerEconomy on GameController {
   /// Ngày epoch công khai (đã chống chỉnh giờ lùi) — daily/wheel/quest/season dùng.
   int get todayEpochDay => _effectiveDay;
 
+  // ---- W22.5 World Map: rương báu (1/thế giới) ----
+  /// Số màn đã hoàn thành trong thế giới [w] (unlockedLevel đã vượt qua).
+  int _worldCleared(WorldConfig w) {
+    var n = 0;
+    for (var lv = w.startLevel; lv <= w.endLevel; lv++) {
+      if (unlockedLevel.value > lv) n++;
+    }
+    return n;
+  }
+
+  /// Rương mở khoá khi hoàn thành >=80% màn của thế giới.
+  bool isChestUnlocked(WorldConfig w) {
+    final size = w.endLevel - w.startLevel + 1;
+    return _worldCleared(w) >= (size * 0.8).ceil();
+  }
+
+  bool isChestClaimed(int world) =>
+      _store.getInt(StorageKeys.chestClaimed(world)) == 1;
+
+  /// Nhận rương thế giới [w]: ghi guard-key TRƯỚC (idempotent — kill giữa chừng
+  /// không farm lặp), rồi cộng xu. Trả số xu nhận (0 nếu chưa mở / đã nhận).
+  int claimWorldChest(WorldConfig w) {
+    if (!isChestUnlocked(w) || isChestClaimed(w.index)) return 0;
+    unawaited(_store.setInt(StorageKeys.chestClaimed(w.index), 1));
+    final reward = chestCoinReward(w.index);
+    addCoins(reward);
+    return reward;
+  }
+
   /// Wave 12 — CHỐNG FARM side-mode: giảm xu thưởng theo số trận side-mode đã
   /// thưởng HÔM NAY ([kSideModeFullPlays] trận đầu full, sau ×[kSideModeReducedMul]).
   /// Tự reset đếm khi sang ngày mới, tăng đếm + persist. Trả xu đã giảm.
   int discountSideModeReward(int base) {
     final today = _effectiveDay;
     final day = _store.getInt(StorageKeys.sideModeDay, def: -1);
-    final wins =
-        day == today ? _store.getInt(StorageKeys.sideModeWins, def: 0) : 0;
+    final wins = day == today
+        ? _store.getInt(StorageKeys.sideModeWins, def: 0)
+        : 0;
     final reward = wins < GameController.kSideModeFullPlays
         ? base
         : (base * GameController.kSideModeReducedMul).round();

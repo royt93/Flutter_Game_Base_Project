@@ -3,8 +3,19 @@ id: w21-5-world-map-events
 title: World Map — Event chest + mini-boss node + nhân vật đi bộ
 wave: 21
 phase: 5
-status: todo
+status: partial
 owner: claude
+---
+
+> 🟡 **Phần CHEST đã implement 2026-06-26** (W22 Phase 2):
+> - Data: `chestLevelOf(w)` (trung điểm, xử lý TG không đều), `kChestLevels`,
+>   `chestCoinReward(world)` (tất định, levels.dart).
+> - Storage: `StorageKeys.chestClaimed(world)`; Economy: `isChestUnlocked` (≥80% màn TG),
+>   `isChestClaimed`, `claimWorldChest` (guard-key TRƯỚC → idempotent chống farm).
+> - UI: `_chestNodes`/`_chestNode` trong world_map (node rương lệch khỏi node màn; khoá/mở/đã nhận).
+> - resetProgress xoá chest keys; 6 unit test; analyze 0; full suite 768 pass. Map render sạch (verify Samsung).
+> **CÒN LẠI (defer):** mini-boss node (B) + avatar đi bộ (C) + reward overlay đẹp + chest reward
+> ngẫu-nhiên-booster (hiện chỉ xu). Để wave sau.
 ---
 
 # Phase 5 — World Map Events

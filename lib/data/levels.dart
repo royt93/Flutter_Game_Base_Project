@@ -96,39 +96,111 @@ const Set<int> kCageLevels = {42, 78, 114, 138, 168, 192};
 /// Bố cục tường/lỗ (+ no-drop) cho vài màn showcase. Hình hở đỉnh/đáy → refill OK.
 const Map<int, List<String>> kLayoutLevels = {
   // 103 — hình thoi (4 góc tường)
-  103: ['##....##', '#......#', '........', '........', '........', '........',
-        '#......#', '##....##'],
+  103: [
+    '##....##',
+    '#......#',
+    '........',
+    '........',
+    '........',
+    '........',
+    '#......#',
+    '##....##',
+  ],
   // 127 — cột trụ (tường dọc, gem lách qua bằng trượt chéo)
-  127: ['........', '.#....#.', '.#....#.', '........', '........', '.#....#.',
-        '.#....#.', '........'],
+  127: [
+    '........',
+    '.#....#.',
+    '.#....#.',
+    '........',
+    '........',
+    '.#....#.',
+    '.#....#.',
+    '........',
+  ],
   // 145 — đảo nổi no-drop ('o' = gem bất động giữa bàn)
-  145: ['........', '........', '..o..o..', '........', '........', '..o..o..',
-        '........', '........'],
+  145: [
+    '........',
+    '........',
+    '..o..o..',
+    '........',
+    '........',
+    '..o..o..',
+    '........',
+    '........',
+  ],
   // Wave 16 — BOTTLENECK (nút thắt cổ chai): waist tường chia bàn thành các BĂNG.
   // Tác dụng chính: match KHÔNG vượt qua tường → chặn combo dọc liên mạch (khó hơn).
   // Refill KHÔNG kẹt: ô ngay dưới mỗi ô tường là isSource (tự spawn) → mỗi băng tự
   // lấp độc lập, không cần gem lách qua khe. Score 109/121/133. Winnable: test mount
   // dưới (w16_deadzone_test) check fill đầy + hasMove ở nhiều seed.
-  109: ['........', '........', '........', '##.##.##', '........', '........',
-        '........', '........'],
-  121: ['........', '........', '##.##.##', '........', '........', '##.##.##',
-        '........', '........'],
-  133: ['........', '##.##.##', '........', '........', '........', '##.##.##',
-        '........', '........'],
+  109: [
+    '........',
+    '........',
+    '........',
+    '##.##.##',
+    '........',
+    '........',
+    '........',
+    '........',
+  ],
+  121: [
+    '........',
+    '........',
+    '##.##.##',
+    '........',
+    '........',
+    '##.##.##',
+    '........',
+    '........',
+  ],
+  133: [
+    '........',
+    '##.##.##',
+    '........',
+    '........',
+    '........',
+    '##.##.##',
+    '........',
+    '........',
+  ],
   // Wave 20.2 — Thế giới 9-10 (163/175/193). Winnable: mỗi cột có ≥2 ô chơi liên
   // tục, refill theo segment, trượt chéo fill hốc tường (verify bằng test mount).
   // 163 — "Viền khung" (frame walls): 12 tường viền trong → trung tâm thông thoáng.
-  163: ['........', '.##..##.', '.#....#.', '........', '........', '.#....#.',
-        '.##..##.', '........'],
+  163: [
+    '........',
+    '.##..##.',
+    '.#....#.',
+    '........',
+    '........',
+    '.#....#.',
+    '.##..##.',
+    '........',
+  ],
   // 175 — "Giữa hàng" (D fix): tường nằm ở HÀNG GIỮA (row 3) → mỗi cột bị cắt
   // thành đoạn 3+4 cell (đủ vertical match). Thiết kế cũ (staggered waist) tạo
   // đoạn 2-cell ở col 2+5 → không match dọc được.
-  175: ['........', '........', '........', '#..##..#',
-        '........', '........', '........', '........'],
+  175: [
+    '........',
+    '........',
+    '........',
+    '#..##..#',
+    '........',
+    '........',
+    '........',
+    '........',
+  ],
   // 193 — "Cổng đôi" (dual gate): 2 hàng tường xen kẽ → mỗi cột bị cắt ≤1 lần;
   // gem chảy qua khe nhỏ, tạo bottleneck kép mà vẫn refill đủ (test fill đầy W20).
-  193: ['........', '#.#.#.#.', '........', '........', '........', '........',
-        '.#.#.#.#', '........'],
+  193: [
+    '........',
+    '#.#.#.#.',
+    '........',
+    '........',
+    '........',
+    '........',
+    '.#.#.#.#',
+    '........',
+  ],
 };
 
 /// Wave 16 — màn clearJelly đặt mục tiêu ở 4 GÓC (DEAD-ZONE). Chọn màn clearJelly
@@ -138,19 +210,51 @@ const Set<int> kDeadZoneLevels = {111, 129, 159, 177};
 /// Dòng chảy (Gravity Streams) cho vài màn showcase.
 const Map<int, List<String>> kFlowLevels = {
   // 115 — band giữa chảy phải
-  115: ['vvvvvvvv', 'vvvvvvvv', 'vvvvvvvv', '>>>>>>>v', 'vvvvvvvv', 'vvvvvvvv',
-        'vvvvvvvv', 'vvvvvvvv'],
+  115: [
+    'vvvvvvvv',
+    'vvvvvvvv',
+    'vvvvvvvv',
+    '>>>>>>>v',
+    'vvvvvvvv',
+    'vvvvvvvv',
+    'vvvvvvvv',
+    'vvvvvvvv',
+  ],
   // 139 — 2 band ngược chiều (mạch điện)
-  139: ['vvvvvvvv', '>>>>>>>v', 'vvvvvvvv', 'vvvvvvvv', 'v<<<<<<<', 'vvvvvvvv',
-        'vvvvvvvv', 'vvvvvvvv'],
+  139: [
+    'vvvvvvvv',
+    '>>>>>>>v',
+    'vvvvvvvv',
+    'vvvvvvvv',
+    'v<<<<<<<',
+    'vvvvvvvv',
+    'vvvvvvvv',
+    'vvvvvvvv',
+  ],
   // Wave 20.2 — Thế giới 9-10: 3 band phức tạp hơn.
   // 169 — 3 band xen kẽ (phải/trái/phải): khó định hướng match hơn 139.
-  169: ['vvvvvvvv', 'vvvvvvvv', '>>>>>>>v', 'vvvvvvvv', 'v<<<<<<<', 'vvvvvvvv',
-        '>>>>>>>v', 'vvvvvvvv'],
+  169: [
+    'vvvvvvvv',
+    'vvvvvvvv',
+    '>>>>>>>v',
+    'vvvvvvvv',
+    'v<<<<<<<',
+    'vvvvvvvv',
+    '>>>>>>>v',
+    'vvvvvvvv',
+  ],
   // 181 — trọng lực ngược ở trung tâm (up): band giữa đẩy gem LÊN, gem "thoát"
   // qua mép bàn và spawn lại bên dưới → vòng lặp chiến thuật độc đáo.
-  181: ['vvvvvvvv', 'vvvvvvvv', 'vvvvvvvv', '^^^^^^^^', '^^^^^^^^', 'vvvvvvvv',
-        'vvvvvvvv', 'vvvvvvvv'],
+  181: [
+    'vvvvvvvv',
+    'vvvvvvvv',
+    'vvvvvvvv',
+    '^^^^^^^^',
+    '^^^^^^^^',
+    'vvvvvvvv',
+    'vvvvvvvv',
+    'vvvvvvvv',
+  ],
 };
 
 /// Các màn clearObstacle (index ≡ 0 mod 6) chuyển obstacle sang LICORICE (Wave 14):
@@ -306,7 +410,8 @@ class LevelConfig {
 
 /// Dựng bố cục từ bản đồ ký tự (mỗi String = 1 hàng). `#`/`X` = tường, `o`/`O` =
 /// no-drop, còn lại = ô chơi. Số hàng/cột phải khớp rows/cols của màn.
-List<List<CellKind>> layoutFromMap(List<String> rowsText) => parseLayout(rowsText);
+List<List<CellKind>> layoutFromMap(List<String> rowsText) =>
+    parseLayout(rowsText);
 
 /// Dựng lưới dòng chảy từ bản đồ `v/^/</>` (mỗi String = 1 hàng). Mặc định down.
 List<List<FlowDir>> flowFromMap(List<String> rowsText) => parseFlow(rowsText);
@@ -314,8 +419,13 @@ List<List<FlowDir>> flowFromMap(List<String> rowsText) => parseFlow(rowsText);
 /// Tạo cấu hình màn Order (mục tiêu hỗn hợp): thu đủ 3 màu khác nhau, target
 /// tăng nhẹ theo [index]. Chọn 3 màu tất định theo index (không phụ thuộc RNG
 /// → test được). Cho thêm lượt vì mục tiêu nặng hơn 1 màu đơn.
-LevelConfig _buildOrderLevel(int index, int rows, int cols, int colorCount,
-    int baseMoves) {
+LevelConfig _buildOrderLevel(
+  int index,
+  int rows,
+  int cols,
+  int colorCount,
+  int baseMoves,
+) {
   final n = GemColor.values.length;
   // Màu khởi đầu XOAY theo level (37/67/97 ≡1 mod 6 → nếu dùng index%n sẽ TRÙNG
   // bộ màu). Dùng base = (index~/7)%n cho 3 bộ màu KHÁC nhau giữa các màn order,
@@ -439,15 +549,23 @@ const int kNearMissCut = 1; // số lượt cắt ở màn Super-Hard
 /// ngược lại 0. Pure → test được + dùng chung.
 int nearMissCutFor(int index) =>
     (kNearMissEnabled && levelTier(index) == LevelTier.superHard)
-        ? kNearMissCut
-        : 0;
+    ? kNearMissCut
+    : 0;
 
 /// Refill có ÉP màu mục tiêu không (Phase 4 RNG control — CHIỀU GIÚP). Pure (test
 /// được): chỉ khi thua nhiều ([pity] ≥ [pityThreshold]) + màn collect + có màu mục
 /// tiêu + [roll] < [bias]. KHÔNG dùng chiều anti-player.
-bool biasRefillToTarget(int pity, int pityThreshold, ObjectiveType obj,
-        bool hasTarget, double roll, double bias) =>
-    pity >= pityThreshold && obj == ObjectiveType.collect && hasTarget &&
+bool biasRefillToTarget(
+  int pity,
+  int pityThreshold,
+  ObjectiveType obj,
+  bool hasTarget,
+  double roll,
+  double bias,
+) =>
+    pity >= pityThreshold &&
+    obj == ObjectiveType.collect &&
+    hasTarget &&
     roll < bias;
 
 /// Điều chỉnh LƯỢT theo tier (sawtooth). relief +3 (nghỉ); Hard -1; Super-Hard -1
@@ -530,16 +648,18 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
   final colorCount = index <= 3
       ? 4
       : index <= 12
-          ? 5
-          : 6;
+      ? 5
+      : 6;
   // lượt: ít dần khi khó hơn (sàn 17 — playtest cho thấy sàn 15 làm màn cuối
   // bị bóp lượt quá gắt, vd L85 chỉ 16 lượt). Wave 16: + delta theo tier (relief
   // +3 nghỉ, Super-Hard -1 siết đỉnh → nhịp răng cưa). Fix: clamp SÀN 17 lại SAU
   // khi cộng delta → near-miss không kéo Super-Hard xuống <17 (L80/L100/.. vốn đã
   // chạm sàn → near-miss tự vô hiệu, chỉ cắt ở màn còn dư lượt). Trần để mở (relief
   // +3 được vượt 26, như hành vi cũ vốn cộng +3 NGOÀI clamp).
-  final moves =
-      ((26 - index ~/ 8).clamp(17, 26) + _tierMoveDelta(index)).clamp(17, 99);
+  final moves = ((26 - index ~/ 8).clamp(17, 26) + _tierMoveDelta(index)).clamp(
+    17,
+    99,
+  );
 
   // màn 1 luôn là score (intro); sau đó xoay vòng 6 loại mục tiêu
   final objective = index == 1
@@ -550,8 +670,8 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
   JellyPattern tierPattern() => index < 30
       ? JellyPattern.center
       : index < 60
-          ? JellyPattern.checker
-          : JellyPattern.all;
+      ? JellyPattern.checker
+      : JellyPattern.all;
 
   switch (objective) {
     case ObjectiveType.score:
@@ -648,20 +768,21 @@ final List<LevelConfig> kLevels = List.generate(kLevelCount, (i) {
       final type = cage
           ? ObstacleType.cage
           : licorice
-              ? ObstacleType.licorice
-              : jam
-                  ? ObstacleType.jam
-                  : index < 30
-                      ? ObstacleType.ice
-                      : index < 60
-                          ? ObstacleType.chain
-                          : ObstacleType.stone;
+          ? ObstacleType.licorice
+          : jam
+          ? ObstacleType.jam
+          : index < 30
+          ? ObstacleType.ice
+          : index < 60
+          ? ObstacleType.chain
+          : ObstacleType.stone;
       // QUAN TRỌNG: chain/stone/licorice/jam/cage KHOÁ swap → pattern dày
       // (checker/all) sẽ làm bí cứng bàn. Chỉ ice (không khoá) mới dùng pattern
       // dày; còn lại luôn dùng `center` (chừa viền tự do để chơi). Cage còn cần
       // THƯA (engine lọc (r+c) chẵn) để 2 ô nhốt không kề nhau (luôn ghép được).
-      final pattern =
-          type == ObstacleType.ice ? tierPattern() : JellyPattern.center;
+      final pattern = type == ObstacleType.ice
+          ? tierPattern()
+          : JellyPattern.center;
       // licorice 2 lớp / jam lan / cage 2 lớp → cho thêm lượt để công bằng.
       final extra = licorice ? 8 : (jam ? 7 : (cage ? 8 : 5));
       return LevelConfig(
@@ -714,13 +835,13 @@ const int kEndlessEventScoreBoostMoves = 3;
 /// được hoàn khi ghép lớn — thua khi hết lượt. Difficulty tăng theo stage
 /// (xử lý động trong GameController, không cố định ở đây).
 LevelConfig buildEndlessLevel() => const LevelConfig(
-      index: kEndlessLevelIndex,
-      rows: 8,
-      cols: 8,
-      colorCount: 6,
-      moves: kEndlessStartMoves,
-      objective: ObjectiveType.endless,
-    );
+  index: kEndlessLevelIndex,
+  rows: 8,
+  cols: 8,
+  colorCount: 6,
+  moves: kEndlessStartMoves,
+  objective: ObjectiveType.endless,
+);
 
 // --- Boss neon (chế độ riêng — đánh trùm theo lượt) ---
 const int kBossLevelIndex = -1;
@@ -733,13 +854,13 @@ const int kBossBaseHp = 1200;
 
 /// Tạo cấu hình trận boss: bàn 8×8, 6 màu, đánh trùm trong [kBossMoves] lượt.
 LevelConfig buildBossLevel() => const LevelConfig(
-      index: kBossLevelIndex,
-      rows: 8,
-      cols: 8,
-      colorCount: 6,
-      moves: kBossMoves,
-      objective: ObjectiveType.boss,
-    );
+  index: kBossLevelIndex,
+  rows: 8,
+  cols: 8,
+  colorCount: 6,
+  moves: kBossMoves,
+  objective: ObjectiveType.boss,
+);
 
 // --- Color Rush (chế độ riêng — màu "nóng" đổi liên tục, đua điểm) ---
 const int kColorRushLevelIndex = -4;
@@ -758,14 +879,14 @@ const int kColorRushMaxStreak = 3;
 /// Cấu hình Color Rush: tái dùng mục tiêu điểm (score) để dùng sẵn HUD/sao;
 /// khác biệt nằm ở cờ `isColorRush` (clear màu nóng → điểm bội, đổi màu mỗi N lượt).
 LevelConfig buildColorRushLevel() => const LevelConfig(
-      index: kColorRushLevelIndex,
-      rows: 8,
-      cols: 8,
-      colorCount: 6,
-      moves: kColorRushMoves,
-      objective: ObjectiveType.score,
-      targetScore: kColorRushTarget,
-    );
+  index: kColorRushLevelIndex,
+  rows: 8,
+  cols: 8,
+  colorCount: 6,
+  moves: kColorRushMoves,
+  objective: ObjectiveType.score,
+  targetScore: kColorRushTarget,
+);
 
 // --- Trọng lực động (chế độ riêng — lật trọng lực mỗi N lượt) ---
 const int kGravityLevelIndex = -2;
@@ -778,14 +899,14 @@ const int kGravityFlipEvery = 5;
 /// Cấu hình chế độ Trọng lực động: dùng mục tiêu điểm (score) để tận dụng sẵn
 /// HUD/sao; điểm khác biệt là engine tự lật bàn định kỳ (xem GameController).
 LevelConfig buildGravityLevel() => const LevelConfig(
-      index: kGravityLevelIndex,
-      rows: 8,
-      cols: 8,
-      colorCount: 6,
-      moves: kGravityMoves,
-      objective: ObjectiveType.score,
-      targetScore: kGravityTarget,
-    );
+  index: kGravityLevelIndex,
+  rows: 8,
+  cols: 8,
+  colorCount: 6,
+  moves: kGravityMoves,
+  objective: ObjectiveType.score,
+  targetScore: kGravityTarget,
+);
 
 // --- Rhythm mode (chế độ riêng — ghép gem theo nhịp nhạc) ---
 const int kRhythmLevelIndex = -3;
@@ -798,14 +919,14 @@ const double kRhythmBpm = 100;
 /// Cấu hình chế độ Nhịp điệu: tái dùng mục tiêu điểm (score) để dùng sẵn HUD/sao;
 /// khác biệt nằm ở cờ `isRhythm` của GameController (đúng nhịp → groove + thưởng điểm).
 LevelConfig buildRhythmLevel() => const LevelConfig(
-      index: kRhythmLevelIndex,
-      rows: 8,
-      cols: 8,
-      colorCount: 6,
-      moves: kRhythmMoves,
-      objective: ObjectiveType.score,
-      targetScore: kRhythmTarget,
-    );
+  index: kRhythmLevelIndex,
+  rows: 8,
+  cols: 8,
+  colorCount: 6,
+  moves: kRhythmMoves,
+  objective: ObjectiveType.score,
+  targetScore: kRhythmTarget,
+);
 
 // --- Soda / Ngập nước (chế độ riêng — mực nước dâng, đẩy chai nổi lên đỉnh) ---
 const int kSodaLevelIndex = -6;
@@ -826,14 +947,14 @@ const int kSodaNozzleBurst = 5;
 /// Cấu hình chế độ Soda: bàn 8×8, 6 màu, đưa [kSodaBottles] chai lên đỉnh trong
 /// [kSodaMoves] lượt. Khác biệt nằm ở cờ `isSoda` (clear gem → mực nước dâng).
 LevelConfig buildSodaLevel() => const LevelConfig(
-      index: kSodaLevelIndex,
-      rows: 8,
-      cols: 8,
-      colorCount: 6,
-      moves: kSodaMoves,
-      objective: ObjectiveType.soda,
-      sodaTarget: kSodaBottles,
-    );
+  index: kSodaLevelIndex,
+  rows: 8,
+  cols: 8,
+  colorCount: 6,
+  moves: kSodaMoves,
+  objective: ObjectiveType.soda,
+  sodaTarget: kSodaBottles,
+);
 
 // --- Sinh tồn (Survival — Wave 15): đếm ngược, combo +giây, sống lâu = điểm cao ---
 const int kSurvivalLevelIndex = -7;
@@ -854,14 +975,14 @@ double tideRiseRate(double elapsed) => kTideBaseRate + kTideAccel * elapsed;
 /// của timeAttack — kết thúc do TRIỀU (engine set `tideOverflow`), không do hết giờ.
 /// `moves`/`targetScore` đặt khổng lồ để không bao giờ hết lượt / "win" sớm.
 LevelConfig buildSurvivalLevel() => const LevelConfig(
-      index: kSurvivalLevelIndex,
-      rows: 8,
-      cols: 8,
-      colorCount: 6,
-      moves: 1 << 24, // không giới hạn lượt (chạy theo triều)
-      objective: ObjectiveType.score,
-      targetScore: 1 << 28, // không bao giờ đạt → không "win"
-    );
+  index: kSurvivalLevelIndex,
+  rows: 8,
+  cols: 8,
+  colorCount: 6,
+  moves: 1 << 24, // không giới hạn lượt (chạy theo triều)
+  objective: ObjectiveType.score,
+  targetScore: 1 << 28, // không bao giờ đạt → không "win"
+);
 
 // --- Mê cung neon (Labyrinth — Wave 15): đưa tinh thể qua mê cung tường xuống đáy ---
 const int kLabyrinthLevelIndex = -8;
@@ -889,15 +1010,15 @@ const List<String> kLabyrinthMap = [
 /// Cấu hình Labyrinth: TÁI DÙNG objective dropDown (cơ chế tinh thể + thu ở đáy)
 /// + layout mê cung. Khác biệt ở cờ `isLabyrinth` (checkEnd nhánh riêng + isolation).
 LevelConfig buildLabyrinthLevel() => LevelConfig(
-      index: kLabyrinthLevelIndex,
-      rows: 8,
-      cols: 8,
-      colorCount: 6,
-      moves: kLabyrinthMoves,
-      objective: ObjectiveType.dropDown,
-      dropTarget: kLabyrinthTarget,
-      layout: layoutFromMap(kLabyrinthMap),
-    );
+  index: kLabyrinthLevelIndex,
+  rows: 8,
+  cols: 8,
+  colorCount: 6,
+  moves: kLabyrinthMoves,
+  objective: ObjectiveType.dropDown,
+  dropTarget: kLabyrinthTarget,
+  layout: layoutFromMap(kLabyrinthMap),
+);
 
 // --- W17.2: Mê cung tường động + sương mù ---
 
@@ -912,13 +1033,49 @@ const int kFogRadius = 4;
 /// của settleBoardFlow (đã verify bằng sim descent trong test).
 const List<List<String>> kLabyrinthLayouts = [
   // 0: Inverted-V sâu (rows 0–3) — bố cục gốc W15
-  ['#......#', '.#....#.', '..#..#..', '...##...', '........', '........', '........', '........'],
+  [
+    '#......#',
+    '.#....#.',
+    '..#..#..',
+    '...##...',
+    '........',
+    '........',
+    '........',
+    '........',
+  ],
   // 1: Inverted-V nông (rows 0–1) — thông thoáng, buộc combo theo chiều dọc
-  ['#......#', '.#....#.', '........', '........', '........', '........', '........', '........'],
+  [
+    '#......#',
+    '.#....#.',
+    '........',
+    '........',
+    '........',
+    '........',
+    '........',
+    '........',
+  ],
   // 2: Inverted-V ngược hướng (tường ở trong, hàng 0–1) — cản trung tâm, cạnh mở
-  ['...##...', '..#..#..', '........', '........', '........', '........', '........', '........'],
+  [
+    '...##...',
+    '..#..#..',
+    '........',
+    '........',
+    '........',
+    '........',
+    '........',
+    '........',
+  ],
   // 3: Chéo đơn trái (rows 0–3) — bất đối xứng, mở hẳn bên phải
-  ['#.......', '.#......', '..#.....', '...#....', '........', '........', '........', '........'],
+  [
+    '#.......',
+    '.#......',
+    '..#.....',
+    '...#....',
+    '........',
+    '........',
+    '........',
+    '........',
+  ],
 ];
 
 // --- Versus / Co-op (2 người, chạy engine Flame như mode thường) ---
@@ -927,14 +1084,14 @@ const int kVersusLevelIndex = -4;
 /// Cấu hình 1 bàn Versus: 7×7 (gọn để 2 bàn trên 1 màn), 6 màu, mục tiêu điểm
 /// (không có điều kiện thắng từ engine — đồng hồ ngoài quyết định). Lượt "vô hạn".
 LevelConfig buildVersusLevel() => const LevelConfig(
-      index: kVersusLevelIndex,
-      rows: 7,
-      cols: 7,
-      colorCount: 6,
-      moves: 999999,
-      objective: ObjectiveType.score,
-      targetScore: 0,
-    );
+  index: kVersusLevelIndex,
+  rows: 7,
+  cols: 7,
+  colorCount: 6,
+  moves: 999999,
+  objective: ObjectiveType.score,
+  targetScore: 0,
+);
 
 // ---------------------------------------------------------------------------
 // W17.3 — Daily Mutator (biến tấu thử thách hằng ngày)
@@ -945,21 +1102,26 @@ LevelConfig buildVersusLevel() => const LevelConfig(
 /// special). Chỉ hoạt động khi [isDaily]; campaign không bị ảnh hưởng.
 enum DailyMutator {
   only4Colors, // 4 màu thay 6 — dễ combo, khó tránh match ngoài ý
-  lowMoves,    // −7 lượt (min 16) — chặt, phải hiệu quả hơn
+  lowMoves, // −7 lượt (min 16) — chặt, phải hiệu quả hơn
   doubleCombo, // combo bonus ×2 — vui, thưởng nhiều khi cascade
-  noSpecial,   // match-4/5 không tạo gem special — thuần match-3 cổ điển
-  bonusMoves,  // +8 lượt — nhẹ nhàng, phù hợp kết hợp với mutator khó
+  noSpecial, // match-4/5 không tạo gem special — thuần match-3 cổ điển
+  bonusMoves, // +8 lượt — nhẹ nhàng, phù hợp kết hợp với mutator khó
 }
 
 /// Tên ngắn của [DailyMutator] (dùng cho i18n key: `daily_mut_<name>`).
 extension DailyMutatorName on DailyMutator {
   String get keyName {
     switch (this) {
-      case DailyMutator.only4Colors: return 'only4Colors';
-      case DailyMutator.lowMoves:    return 'lowMoves';
-      case DailyMutator.doubleCombo: return 'doubleCombo';
-      case DailyMutator.noSpecial:   return 'noSpecial';
-      case DailyMutator.bonusMoves:  return 'bonusMoves';
+      case DailyMutator.only4Colors:
+        return 'only4Colors';
+      case DailyMutator.lowMoves:
+        return 'lowMoves';
+      case DailyMutator.doubleCombo:
+        return 'doubleCombo';
+      case DailyMutator.noSpecial:
+        return 'noSpecial';
+      case DailyMutator.bonusMoves:
+        return 'bonusMoves';
     }
   }
 }
@@ -973,9 +1135,7 @@ List<DailyMutator> dailyMutatorsFor(int epochDay) {
   final m1 = all[rnd.nextInt(all.length)];
   if (rnd.nextInt(4) != 0) return [m1]; // 75% → 1
   // Loại cặp triệt tiêu nhau (lowMoves + bonusMoves ≈ net 0 ý nghĩa).
-  final others = all
-      .where((m) => m != m1 && !_mutatorsCancel(m1, m))
-      .toList();
+  final others = all.where((m) => m != m1 && !_mutatorsCancel(m1, m)).toList();
   if (others.isEmpty) return [m1];
   return [m1, others[rnd.nextInt(others.length)]];
 }
@@ -989,7 +1149,10 @@ bool _mutatorsCancel(DailyMutator a, DailyMutator b) =>
 /// runtime (noSpecial/doubleCombo). Trả [cfg] nguyên nếu [mutators] trống.
 /// [epochDay] cần để re-pick collectColor tất định khi only4Colors active.
 LevelConfig _applyDailyMutators(
-    LevelConfig cfg, List<DailyMutator> mutators, int epochDay) {
+  LevelConfig cfg,
+  List<DailyMutator> mutators,
+  int epochDay,
+) {
   if (mutators.isEmpty) return cfg;
   var colorCount = cfg.colorCount;
   var moves = cfg.moves;
@@ -1059,10 +1222,14 @@ const List<ObjectiveType> kDailyObjectives = [
 
 /// Cấu hình màn "Thử thách hằng ngày" sinh TẤT ĐỊNH từ [epochDay].
 /// [mutators] áp biến tấu bổ sung (W17.3); mặc định rỗng → giữ tương thích cũ.
-LevelConfig buildDailyLevel(int epochDay,
-    {List<DailyMutator> mutators = const []}) {
+LevelConfig buildDailyLevel(
+  int epochDay, {
+  List<DailyMutator> mutators = const [],
+}) {
   final base = _buildDailyBase(epochDay);
-  return mutators.isEmpty ? base : _applyDailyMutators(base, mutators, epochDay);
+  return mutators.isEmpty
+      ? base
+      : _applyDailyMutators(base, mutators, epochDay);
 }
 
 /// Cấu hình cơ bản không mutator (tách để test và _applyDailyMutators dùng).
@@ -1114,8 +1281,9 @@ LevelConfig _buildDailyBase(int epochDay) {
         moves: moves + 5,
         objective: ObjectiveType.clearObstacle,
         obstacle: ObstacleType.ice,
-        obstaclePattern:
-            rnd.nextBool() ? JellyPattern.checker : JellyPattern.center,
+        obstaclePattern: rnd.nextBool()
+            ? JellyPattern.checker
+            : JellyPattern.center,
       );
     case ObjectiveType.score:
     case ObjectiveType.timeAttack:
@@ -1137,6 +1305,20 @@ LevelConfig _buildDailyBase(int epochDay) {
 
 /// Key i18n tên thế giới (1-based). Dùng `.tr` để lấy bản dịch.
 String worldNameKey(int worldIndex) => 'world_name_$worldIndex';
+
+/// W22.5 — Màn TRUNG ĐIỂM của thế giới [w] (nơi đặt rương báu). Xử lý cả thế
+/// giới không đều (TG8=141-150→145, TG10=171-200→185).
+int chestLevelOf(WorldConfig w) => (w.startLevel + w.endLevel) ~/ 2;
+
+/// Danh sách màn có rương báu (1 rương / thế giới).
+final List<int> kChestLevels = kWorlds.map(chestLevelOf).toList();
+
+/// Phần thưởng xu của rương thế giới [worldIndex] (1-based) — TẤT ĐỊNH theo world
+/// (seed = world) để không farm bằng reload. Dải ~50–150 xu, tăng nhẹ theo world.
+int chestCoinReward(int worldIndex) {
+  final mix = (worldIndex * 2654435761) & 0x7fffffff;
+  return 50 + (mix % 11) * 10 + worldIndex * 5; // 50..150 + bonus world
+}
 
 /// Thế giới chứa [level] (1-based). Trả về world cuối nếu vượt ngưỡng.
 WorldConfig worldOfLevel(int level) {
