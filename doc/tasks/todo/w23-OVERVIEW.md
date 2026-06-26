@@ -16,7 +16,7 @@ Sau Wave 22 (Leaderboard, Onboarding, Game Feel, World Map chest/mini-boss). Wav
 |---|---|---|---|---|---|
 | 1 | ✅ **i18n localize W22** (done 2026-06-26) | `w23-1-i18n-w22.md` | 🔴 Cao | TB | DONE: `_w22ByLang` 20 ngôn ngữ × 23 key, gỡ exclusion; test ≥80% pass |
 | 2 | **Mini-boss hoàn thiện** | `w23-2-miniboss-complete.md` | 🟡 TB | TB | Persist `miniBossCleared(world)` + thưởng khi thắng + (tùy) attack pattern Meteor/Shuffle (defer từ w21-3) |
-| 3 | **Avatar walking animation** | (trong w21-5) | 🟢 Thấp | S | Hiện avatar tĩnh ở node hiện tại → AnimatedPositioned "đi" mượt khi mở map / sau khi thắng |
+| 3 | ✅ **Avatar walking animation** (done 2026-06-26) | (trong w21-5) | 🟢 Thấp | S | DONE: TweenAnimationBuilder "đi" từ node trước→hiện tại + bob, re-run khi current đổi |
 | 4 | **Nội dung mới** | `w23-4-content.md` | 🟢 Thấp | TB+ | Gem skin/board theme mới (coin-sink), hoặc Daily Quest mở rộng, hoặc Clan/Friends offline (idea pool) |
 
 **Thứ tự đề xuất**: 1 (đóng nợ test) → 2 → 3 → 4.

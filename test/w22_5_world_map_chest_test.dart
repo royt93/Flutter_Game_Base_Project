@@ -154,6 +154,34 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'W23.3 — avatar walking: render giữa & sau animation, không crash',
+      (tester) async {
+        g.unlockedLevel.value = 8; // current=8 → đi từ node 7 → 8
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('vi', 'VN'),
+            fallbackLocale: const Locale('en', 'US'),
+            home: const WorldMapScreen(),
+          ),
+        );
+        // giữa animation (750ms): avatar đang "đi"
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(
+          find.byIcon(Icons.person_rounded, skipOffstage: false),
+          findsOneWidget,
+        );
+        // sau khi settle: vẫn render, không lỗi animation
+        await tester.pump(const Duration(milliseconds: 800));
+        expect(
+          find.byIcon(Icons.person_rounded, skipOffstage: false),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   test(

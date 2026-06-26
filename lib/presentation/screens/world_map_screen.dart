@@ -456,31 +456,47 @@ class _AnimatedMapState extends State<_AnimatedMap>
 
   // W22.5 — avatar người chơi: nổi phía trên node màn hiện tại (cosmetic).
   Widget _avatar(List<Offset> centers) {
-    final i = widget.current - 1;
-    if (i < 0 || i >= centers.length) return const SizedBox.shrink();
-    final c = centers[i];
+    final cur = widget.current - 1; // node hiện tại (0-based)
+    if (cur < 0 || cur >= centers.length) return const SizedBox.shrink();
+    final to = centers[cur];
+    final from = cur > 0
+        ? centers[cur - 1]
+        : to; // node trước (màn 1 → đứng yên)
     final sz = widget.nodeSize * 0.5;
-    return Positioned(
-      left: c.dx - sz / 2,
-      top: c.dy - widget.nodeSize * 0.95,
-      child: IgnorePointer(
-        child: Container(
-          width: sz,
-          height: sz,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [NeonTheme.cyan, NeonTheme.magenta],
+    // W23.3 — avatar "đi" từ node trước → node hiện tại khi mở map (1 lần).
+    // key theo current → đi lại khi mở thêm màn (current đổi).
+    return TweenAnimationBuilder<double>(
+      key: ValueKey(widget.current),
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 750),
+      curve: Curves.easeInOut,
+      builder: (_, t, _) {
+        final p = Offset.lerp(from, to, t)!;
+        final bob =
+            math.sin(t * math.pi * 4) * 4 * (1 - t); // nhún khi bước, tắt dần
+        return Positioned(
+          left: p.dx - sz / 2,
+          top: p.dy - widget.nodeSize * 0.95 + bob,
+          child: IgnorePointer(
+            child: Container(
+              width: sz,
+              height: sz,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [NeonTheme.cyan, NeonTheme.magenta],
+                ),
+                boxShadow: NeonTheme.glow(NeonTheme.cyan, blur: 8),
+              ),
+              child: Icon(
+                Icons.person_rounded,
+                color: Colors.white,
+                size: sz * 0.6,
+              ),
             ),
-            boxShadow: NeonTheme.glow(NeonTheme.cyan, blur: 8),
           ),
-          child: Icon(
-            Icons.person_rounded,
-            color: Colors.white,
-            size: sz * 0.6,
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 
