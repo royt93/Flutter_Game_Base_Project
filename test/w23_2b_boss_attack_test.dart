@@ -11,13 +11,13 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('bossAttackPatternFor (pure)', () {
-    test('phase 0-1 → block; phase 2 → shuffle', () {
+    test('leo thang: 0→block, 1→shuffle, 2→meteor', () {
       expect(bossAttackPatternFor(0), BossAttack.block);
-      expect(bossAttackPatternFor(1), BossAttack.block);
-      expect(bossAttackPatternFor(2), BossAttack.shuffle);
+      expect(bossAttackPatternFor(1), BossAttack.shuffle);
+      expect(bossAttackPatternFor(2), BossAttack.meteor);
     });
-    test('phase ngoài dải cao → vẫn shuffle (clamp ngữ nghĩa)', () {
-      expect(bossAttackPatternFor(5), BossAttack.shuffle);
+    test('phase ngoài dải cao → vẫn meteor', () {
+      expect(bossAttackPatternFor(5), BossAttack.meteor);
     });
   });
 
@@ -32,14 +32,18 @@ void main() {
     });
     tearDown(Get.reset);
 
-    test('HP đầy → phase 0 → block; HP thấp → phase 2 → shuffle', () {
+    test('HP đầy → block; HP ~50% → shuffle; HP thấp → meteor', () {
       g.startBoss(1);
       expect(g.bossPhase, 0);
       expect(g.bossAttackPattern, BossAttack.block);
-      // hạ HP xuống <=32% → phase 2
+      // ~50% HP → phase 1 → shuffle
+      g.bossHp.value = (g.bossMaxHp.value * 0.5).round();
+      expect(g.bossPhase, 1);
+      expect(g.bossAttackPattern, BossAttack.shuffle);
+      // <=32% → phase 2 → meteor
       g.bossHp.value = (g.bossMaxHp.value * 0.2).round();
       expect(g.bossPhase, 2);
-      expect(g.bossAttackPattern, BossAttack.shuffle);
+      expect(g.bossAttackPattern, BossAttack.meteor);
     });
   });
 }

@@ -30,6 +30,10 @@ class ClanController extends GetxController {
     super.onInit();
     contributionRx.value = _loadContribution();
     rewardWeekRx.value = _store.getInt(StorageKeys.clanRewardWeek, def: -1);
+    leagueRewardWeekRx.value = _store.getInt(
+      StorageKeys.clanLeagueRewardWeek,
+      def: -1,
+    );
   }
 
   /// Đọc đóng góp tuần HIỆN TẠI (`'<week>|<pts>'`); tuần cũ → 0.
@@ -55,6 +59,30 @@ class ClanController extends GetxController {
   List<ClanMember> roster() => buildClanRoster(playerContribution, _week);
   int total() => clanTotal(roster());
 
+  /// W23 (sâu hơn) — BXH Clan: clan người chơi (tổng [total]) đấu clan bot tuần này.
+  List<ClanStanding> clanLeague() => buildClanLeague(total(), _week);
+  int leagueRank() => clanLeagueRank(clanLeague());
+
+  /// Tuần đã nhận thưởng xếp hạng Clan-vs-Clan (Rx).
+  final RxInt leagueRewardWeekRx = (-1).obs;
+
+  bool get leagueRewardClaimed => leagueRewardWeekRx.value == _week;
+
+  /// Đủ điều kiện nhận: clan top 3 tuần này + chưa nhận.
+  bool get leagueRewardClaimable =>
+      clanLeagueRewardFor(leagueRank()) > 0 && !leagueRewardClaimed;
+
+  /// Nhận thưởng xếp hạng (1 lần/tuần). Ghi mốc tuần TRƯỚC (idempotent, anti-cheat
+  /// qua todayEpochDay). Trả xu thưởng (0 nếu ngoài top 3 / đã nhận).
+  int claimLeagueReward() {
+    if (!leagueRewardClaimable) return 0;
+    final reward = clanLeagueRewardFor(leagueRank());
+    leagueRewardWeekRx.value = _week;
+    unawaited(_store.setInt(StorageKeys.clanLeagueRewardWeek, _week));
+    g.addCoins(reward);
+    return reward;
+  }
+
   bool get weeklyRewardClaimed => rewardWeekRx.value == _week;
   bool get weeklyRewardClaimable =>
       total() >= kClanWeeklyGoal && !weeklyRewardClaimed;
@@ -73,5 +101,6 @@ class ClanController extends GetxController {
   void resetState() {
     contributionRx.value = 0;
     rewardWeekRx.value = -1;
+    leagueRewardWeekRx.value = -1;
   }
 }

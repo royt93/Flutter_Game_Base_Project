@@ -83,6 +83,7 @@ extension GameControllerProgress on GameController {
       StorageKeys.questBonusDay, // W23 — thưởng hoàn-thành-cả-bộ quest
       StorageKeys.clanPointsWeek, // W23 — Clan
       StorageKeys.clanRewardWeek,
+      StorageKeys.clanLeagueRewardWeek,
       StorageKeys.seasonPoints,
       StorageKeys.seasonIdx,
       StorageKeys.bHammer,

@@ -33,6 +33,9 @@ class ClanScreen extends StatelessWidget {
                 child: Obx(() {
                   cl.contributionRx.value;
                   cl.rewardWeekRx.value;
+                  cl
+                      .leagueRewardWeekRx
+                      .value; // W23 — rebuild khi nhận thưởng hạng
                   final roster = cl.roster();
                   final total = clanTotal(roster);
                   return ListView(
@@ -42,6 +45,50 @@ class ClanScreen extends StatelessWidget {
                       const SizedBox(height: NeonTheme.s8),
                       for (var i = 0; i < roster.length; i++)
                         _row(i + 1, roster[i], accent),
+                      // W23 (sâu hơn) — BXH Clan vs Clan
+                      const SizedBox(height: NeonTheme.s16),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: NeonTheme.s8),
+                        child: Text(
+                          'clan_league'.tr,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                      if (cl.leagueRewardClaimable)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: NeonTheme.s8),
+                          child: GestureDetector(
+                            onTap: cl.claimLeagueReward,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: NeonTheme.lime.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: NeonTheme.lime,
+                                  width: 1.4,
+                                ),
+                              ),
+                              child: Text(
+                                '${'daily_claim'.tr} top ${cl.leagueRank()} '
+                                '+${clanLeagueRewardFor(cl.leagueRank())}',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: NeonTheme.lime,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ..._leagueRows(cl, NeonTheme.purple),
                     ],
                   );
                 }),
@@ -168,6 +215,65 @@ class ClanScreen extends StatelessWidget {
           ),
           Text(
             '${m.contribution}',
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // W23 (sâu hơn) — BXH Clan vs Clan.
+  List<Widget> _leagueRows(ClanController cl, Color accent) {
+    final league = cl.clanLeague();
+    return [
+      for (var i = 0; i < league.length; i++)
+        _leagueRow(i + 1, league[i], accent),
+    ];
+  }
+
+  Widget _leagueRow(int rank, ClanStanding s, Color accent) {
+    final color = s.isYou ? accent : Colors.white;
+    return Container(
+      margin: const EdgeInsets.only(bottom: NeonTheme.s8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: NeonTheme.s16,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: s.isYou
+            ? accent.withValues(alpha: 0.16)
+            : NeonTheme.panel.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: s.isYou ? accent : Colors.white12,
+          width: s.isYou ? 1.6 : 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 34,
+            child: Text(
+              '$rank',
+              style: TextStyle(
+                color: rank <= 3 ? accent : Colors.white54,
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              s.isYou ? 'clan_title'.tr : s.name,
+              style: TextStyle(color: color, fontWeight: FontWeight.w700),
+            ),
+          ),
+          Text(
+            '${s.total}',
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w800,

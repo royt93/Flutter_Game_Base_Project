@@ -93,6 +93,9 @@ class StorageKeys {
   /// W23 — Clan: tuần đã nhận thưởng mục tiêu (1 lần/tuần).
   static const String clanRewardWeek = 'clan_reward_week';
 
+  /// W23 — Clan: tuần đã nhận thưởng XẾP HẠNG Clan-vs-Clan (top 3, 1 lần/tuần).
+  static const String clanLeagueRewardWeek = 'clan_league_reward_week';
+
   // Wave 7 — Sự kiện theo mùa (tuần)
   static const String seasonIdx = 'season_idx'; // chỉ số mùa của điểm đang giữ
   static const String seasonPoints = 'season_points'; // điểm mùa hiện tại

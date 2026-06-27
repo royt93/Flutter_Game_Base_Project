@@ -67,6 +67,60 @@ void main() {
     });
   });
 
+  group('Clan vs Clan (BXH)', () {
+    test('rivalClanTotal: tất định + dải 500..1399', () {
+      for (var w = 0; w < 40; w++) {
+        for (var i = 0; i < kRivalClanNames.length; i++) {
+          final v = rivalClanTotal(w, i);
+          expect(v, rivalClanTotal(w, i));
+          expect(v, inInclusiveRange(500, 1399));
+        }
+      }
+    });
+    test('buildClanLeague: gồm clan người chơi, giảm dần, có rank', () {
+      final lg = buildClanLeague(700, 5);
+      expect(lg.length, kRivalClanNames.length + 1);
+      for (var i = 1; i < lg.length; i++) {
+        expect(lg[i - 1].total, greaterThanOrEqualTo(lg[i].total));
+      }
+      expect(clanLeagueRank(lg), greaterThan(0));
+    });
+    test('clan người chơi tổng khủng → hạng 1', () {
+      expect(clanLeagueRank(buildClanLeague(999999, 5)), 1);
+    });
+    test('controller.clanLeague/leagueRank khớp engine', () {
+      final lg = cl.clanLeague();
+      expect(lg.any((s) => s.isYou), isTrue);
+      expect(cl.leagueRank(), clanLeagueRank(lg));
+    });
+
+    test('clanLeagueRewardFor: 1→300, 2→200, 3→100, ngoài top3→0', () {
+      expect(clanLeagueRewardFor(1), 300);
+      expect(clanLeagueRewardFor(2), 200);
+      expect(clanLeagueRewardFor(3), 100);
+      expect(clanLeagueRewardFor(4), 0);
+      expect(clanLeagueRewardFor(0), 0);
+    });
+
+    test('clan lên hạng 1 → nhận thưởng hạng 1 lần (anti-farm)', () {
+      // bơm đóng góp khủng → clan vượt mọi clan bot → hạng 1
+      for (var i = 0; i < 300; i++) {
+        cl.addContribution(3);
+      }
+      expect(cl.leagueRank(), 1);
+      expect(cl.leagueRewardClaimable, isTrue);
+      final before = g.coins.value;
+      final r = cl.claimLeagueReward();
+      expect(r, clanLeagueRewardFor(1));
+      expect(g.coins.value, before + r);
+      expect(cl.leagueRewardClaimed, isTrue);
+      // lần 2 → 0, xu không đổi
+      final coins2 = g.coins.value;
+      expect(cl.claimLeagueReward(), 0);
+      expect(g.coins.value, coins2);
+    });
+  });
+
   group('controller — đóng góp tuần + reset tuần', () {
     test('addContribution tích luỹ + persist', () {
       expect(cl.playerContribution, 0);

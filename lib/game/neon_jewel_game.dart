@@ -18,6 +18,7 @@ import '../logic/board_mechanics.dart';
 import '../logic/gem_data.dart';
 import '../logic/match_detector.dart';
 import '../logic/settle.dart';
+import '../logic/boss_attack.dart';
 import '../logic/juice.dart';
 import '../presentation/controllers/game_controller.dart';
 import 'effects.dart';
@@ -874,6 +875,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         _swapInGrid(a, b);
       } else {
         consumed = true;
+        final bossSigBefore = controller.bossAttackSignal.value; // W23.2B
         controller.useMove();
         controller.recordMove(a.row, a.col, b.row, b.col); // Ghost: ghi nước đi
         controller.advanceGhost(); // Ghost: tiến ghost step
@@ -910,6 +912,17 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         }
         // W17.2: mê cung tường động — shift sau mỗi kMazeShiftMoves lượt thật.
         if (controller.isLabyrinth.value) await _maybeMazeShift();
+        // W23.2B — boss attack theo phase: SAU khi cascade settle (tránh phá
+        // animation match của người chơi). shuffle=xáo bàn; meteor=scramble vùng.
+        if (controller.isBoss.value &&
+            controller.bossAttackSignal.value > bossSigBefore) {
+          final atk = controller.bossAttackPattern;
+          if (atk == BossAttack.shuffle) {
+            await _doShuffle();
+          } else if (atk == BossAttack.meteor) {
+            await _doMeteor();
+          }
+        }
       }
     } finally {
       _busy = false;
@@ -2702,6 +2715,61 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       );
     }
     _shake(6);
+    await Future.wait(futures);
+  }
+
+  /// W23.2B — Meteor attack (phase 2): scramble màu 1 vùng 3×3 ngẫu nhiên, KHÔNG
+  /// clear/ghi điểm (gây hại: phá bố cục người chơi). Tránh tạo match SẴN (không
+  /// thưởng điểm free). Tái dùng primitive recolor của _doShuffle.
+  Future<void> _doMeteor() async {
+    final all = <Cell>[];
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        if (grid[r][c] != null) all.add(Cell(r, c));
+      }
+    }
+    if (all.isEmpty) return;
+    final ctr = all[_rnd.nextInt(all.length)];
+    final region = <Cell>[];
+    final colors = <GemColor>[];
+    for (int dr = -1; dr <= 1; dr++) {
+      for (int dc = -1; dc <= 1; dc++) {
+        final r = ctr.row + dr, c = ctr.col + dc;
+        if (r >= 0 && r < rows && c >= 0 && c < cols && grid[r][c] != null) {
+          region.add(Cell(r, c));
+          colors.add(grid[r][c]!.color);
+        }
+      }
+    }
+    if (region.length < 2) return;
+    for (int attempt = 0; attempt < 12; attempt++) {
+      colors.shuffle(_rnd);
+      final test = List.generate(
+        rows,
+        (r) => List<GemColor?>.generate(cols, (c) => grid[r][c]?.color),
+      );
+      for (int i = 0; i < region.length; i++) {
+        test[region[i].row][region[i].col] = colors[i];
+      }
+      if (!MatchDetector.hasMatch(test)) break;
+    }
+    _shake(8); // thiên thạch rơi
+    final futures = <Future>[];
+    for (int i = 0; i < region.length; i++) {
+      final g = grid[region[i].row][region[i].col]!;
+      g.color = colors[i];
+      g.type = GemType.normal;
+      g.scale = Vector2.all(0.4);
+      futures.add(
+        _run(
+          g,
+          ScaleEffect.to(
+            Vector2.all(1),
+            EffectController(duration: 0.3, curve: Curves.elasticOut),
+          ),
+        ),
+      );
+    }
     await Future.wait(futures);
   }
 

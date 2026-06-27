@@ -83,3 +83,68 @@ int clanPlayerRank(List<ClanMember> roster) {
   }
   return 0;
 }
+
+// ===== W23 (sâu hơn) — Clan vs Clan: BXH giữa clan người chơi + clan bot =====
+
+/// Tên clan đối thủ (proper noun — KHÔNG dịch).
+const List<String> kRivalClanNames = [
+  'Void Kings',
+  'Prism Pack',
+  'Hex Legion',
+  'Lumen Guild',
+  'Pulse Crew',
+];
+
+/// Thưởng xu theo HẠNG clan cuối tuần (1-based): top 1/2/3; ngoài top 3 → 0.
+int clanLeagueRewardFor(int rank) {
+  switch (rank) {
+    case 1:
+      return 300;
+    case 2:
+      return 200;
+    case 3:
+      return 100;
+    default:
+      return 0;
+  }
+}
+
+/// 1 dòng BXH Clan.
+class ClanStanding {
+  final String name;
+  final int total;
+  final bool isYou; // clan của người chơi
+  const ClanStanding(this.name, this.total, {this.isYou = false});
+}
+
+/// Tổng đóng góp tuần [week] của clan đối thủ [idx] — TẤT ĐỊNH (no Random).
+int rivalClanTotal(int week, int idx) {
+  final mix = (week * 2654435761 + idx * 97 + 555) & 0x7fffffff;
+  return 500 + (mix % 900); // 500..1399 / tuần
+}
+
+/// BXH Clan (giảm dần): clan đối thủ + clan người chơi ([playerClanTotal]).
+/// Tie: clan người chơi xếp trên.
+List<ClanStanding> buildClanLeague(int playerClanTotal, int week) {
+  final list = <ClanStanding>[
+    for (var i = 0; i < kRivalClanNames.length; i++)
+      ClanStanding(kRivalClanNames[i], rivalClanTotal(week, i)),
+    ClanStanding('', playerClanTotal.clamp(0, 1 << 30), isYou: true),
+  ];
+  list.sort((a, b) {
+    final c = b.total.compareTo(a.total);
+    if (c != 0) return c;
+    if (a.isYou) return -1;
+    if (b.isYou) return 1;
+    return 0;
+  });
+  return list;
+}
+
+/// Hạng (1-based) clan người chơi trong BXH Clan; 0 nếu không có.
+int clanLeagueRank(List<ClanStanding> league) {
+  for (var i = 0; i < league.length; i++) {
+    if (league[i].isYou) return i + 1;
+  }
+  return 0;
+}
