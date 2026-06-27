@@ -73,14 +73,24 @@ void main() {
       expect(playerRank(b), 0);
     });
 
-    test('tie-break: người chơi trên bot cùng điểm', () {
+    test('tie-break: người chơi đứng TRÊN bot cùng điểm', () {
       // chọn điểm trùng bot hạng 0 ở period cố định
       const period = 7;
       final botTop = lbBotScore(2000, 0, period);
       final b = buildLeaderboard(2000, botTop, period);
-      // người chơi phải đứng trước (hoặc bằng) mọi bot cùng điểm
       final pr = playerRank(b);
       expect(pr, greaterThan(0));
+      // mọi bot có CÙNG điểm với người chơi phải xếp SAU người chơi
+      final playerIdx = pr - 1;
+      for (var i = 0; i < b.length; i++) {
+        if (!b[i].isPlayer && b[i].score == botTop) {
+          expect(
+            i,
+            greaterThan(playerIdx),
+            reason: 'bot cùng điểm phải đứng sau người chơi',
+          );
+        }
+      }
     });
   });
 }

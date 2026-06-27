@@ -123,6 +123,19 @@ void main() {
       g.useMove(); // lượt 2 → trigger damage 3, nhưng movesLeft clamp 0
       expect(g.movesLeft.value, 0);
     });
+
+    test('boss đã gục (HP=0) → useMove KHÔNG phản đòn (guard bossHp>0)', () {
+      g.bossHp.value = 0; // boss hết máu
+      final beforeMoves = g.movesLeft.value;
+      final beforeSig = g.bossAttackSignal.value;
+      // dùng nhiều lượt hơn cả interval phase 2 (2) → vẫn không retaliate
+      for (var i = 0; i < 6; i++) {
+        if (g.movesLeft.value > 0) g.useMove();
+      }
+      // chỉ trừ đúng số lượt đã dùng, KHÔNG có damage boss thêm
+      expect(g.movesLeft.value, beforeMoves - 6);
+      expect(g.bossAttackSignal.value, beforeSig); // không phát tín hiệu đòn
+    });
   });
 
   // ─── isolation ────────────────────────────────────────────────────────────
