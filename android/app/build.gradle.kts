@@ -30,12 +30,18 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("../keystore.jks")
+            storePassword = project.findProperty("KS_PW") as String? ?: ""
+            keyAlias = project.findProperty("KS_ALIAS") as String? ?: ""
+            keyPassword = project.findProperty("KS_PW") as String? ?: ""
+        }
+    }
+
     buildTypes {
         release {
-            storeFile file ("keystore.jks")
-            storePassword KS_PW
-            keyAlias KS_ALIAS
-            keyPassword KS_PW
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
