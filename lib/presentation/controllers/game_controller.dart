@@ -229,6 +229,18 @@ class GameController extends GetxController {
   /// W23.2B — kiểu đòn boss theo phase hiện tại (engine ánh xạ ra hiệu ứng).
   BossAttack get bossAttackPattern => bossAttackPatternFor(bossPhase);
 
+  /// Key i18n nhãn đòn boss (HUD flash) theo phase.
+  String get bossAttackLabelKey {
+    switch (bossAttackPattern) {
+      case BossAttack.meteor:
+        return 'boss_atk_meteor';
+      case BossAttack.shuffle:
+        return 'boss_atk_shuffle';
+      case BossAttack.block:
+        return 'boss_atk_block';
+    }
+  }
+
   // --- Ghost Replay (W20.3) ---
   final RxBool isGhostMode = false.obs;
   final RxInt ghostScore = 0.obs; // điểm ghost run đã lưu

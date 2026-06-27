@@ -1007,7 +1007,7 @@ class GameScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 4),
                     child:
                         Text(
-                              'BOSS STRIKE!',
+                              ctrl.bossAttackLabelKey.tr,
                               style: TextStyle(
                                 fontFamily: 'Baloo2',
                                 fontSize: 12,

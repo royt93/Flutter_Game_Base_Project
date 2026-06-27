@@ -15,11 +15,12 @@ enum BossAttack {
   meteor,
 }
 
-/// Chọn kiểu đòn theo [phase] (0/1/2). Leo thang:
-/// - phase 0-1: block (trừ lượt)
-/// - phase 2 (boss nổi giận): shuffle (xáo bàn)
-/// Meteor để dành cho bản engine sau (chưa trả về để tránh hiệu ứng chưa wire).
+/// Chọn kiểu đòn theo [phase] (0/1/2). Leo thang độ khó:
+/// - phase 0 (100-66% HP): block (chỉ trừ lượt)
+/// - phase 1 (65-33%): shuffle (xáo bàn — phá nước đi)
+/// - phase 2 (32-0%, nổi giận): meteor (scramble màu 1 vùng — phá bố cục, KHÔNG ghi điểm)
 BossAttack bossAttackPatternFor(int phase) {
-  if (phase >= 2) return BossAttack.shuffle;
+  if (phase >= 2) return BossAttack.meteor;
+  if (phase == 1) return BossAttack.shuffle;
   return BossAttack.block;
 }
