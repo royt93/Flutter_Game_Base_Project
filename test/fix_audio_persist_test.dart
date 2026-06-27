@@ -95,7 +95,9 @@ void main() {
 
     test('sau nhiều toggle, muted.value khớp storage', () async {
       final a = await mk();
-      for (int i = 0; i < 5; i++) a.toggleMute();
+      for (int i = 0; i < 5; i++) {
+        a.toggleMute();
+      }
       final stored = StorageService.to.getBool(StorageKeys.audioMuted);
       expect(stored, equals(a.muted.value));
     });

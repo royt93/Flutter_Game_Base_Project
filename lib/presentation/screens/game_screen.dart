@@ -1210,7 +1210,11 @@ class GameScreen extends StatelessWidget {
                       _animValue('${ctrl.endlessStage.value}'),
                       NeonTheme.lime,
                     )
-                  : _infoCell('hud_goal'.tr, _goalValue(ctrl), NeonTheme.lime),
+                  : _infoCell(
+                      ctrl.isZen.value ? 'hud_score'.tr : 'hud_goal'.tr,
+                      _goalValue(ctrl),
+                      NeonTheme.lime,
+                    ),
             ),
           ),
           _divider(),
@@ -1352,6 +1356,10 @@ class GameScreen extends StatelessWidget {
   );
 
   Widget _goalValue(GameController ctrl) {
+    // Zen: không có mục tiêu cố định — chỉ hiện điểm hiện tại (không có "/target")
+    if (ctrl.isZen.value) {
+      return Text(fmtNum(ctrl.score.value), style: _valueStyle);
+    }
     final obj = ctrl.level.objective;
     // Order (Wave 10): nhiều mục tiêu màu cùng lúc → dãy chip nhỏ (dot + đếm),
     // FittedBox co vừa ô goal hẹp.

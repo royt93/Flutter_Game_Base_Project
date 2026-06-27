@@ -921,12 +921,13 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
             await _doShuffle();
           } else if (atk == BossAttack.meteor) {
             await _doMeteor();
+            // Meteor xóa gem → cần gravity để lấp ô trống ngay, không chờ lượt kế
+            await _applyGravityAndRefill();
           }
-          // Sau boss attack, resolve ngay bất kỳ match sẵn nào trên bàn.
-          // _doShuffle tránh tạo match (20 lần thử) nhưng vẫn có thể thất bại;
-          // _doMeteor cũng vậy. Nếu để lại, người chơi thấy 6-in-a-row mà không
-          // hiểu tại sao không nổ → settle() loại bỏ hiện tượng khó hiểu này.
-          await _settle();
+          // Lưu ý: nếu sau shuffle xuất hiện match sẵn (hiếm, _doShuffle thất bại
+          // sau 20 lần thử), match đó sẽ được giải quyết vào lượt kế của người chơi.
+          // Không gọi _settle() ở đây vì nó chạy gravity toàn bàn và tạo hiệu ứng
+          // "board giật về bottom" không liên quan đến nước đi của người chơi.
         }
       }
     } finally {

@@ -27,6 +27,7 @@ class _VersusScreenState extends State<VersusScreen> {
   _Phase _phase = _Phase.select;
   int _count = 3;
   Timer? _countTimer;
+  bool _showExitOverlay = false; // dialog xác nhận thoát
 
   VersusController get _ctrl => Get.find<VersusController>(tag: _tag);
   bool get _hasCtrl => Get.isRegistered<VersusController>(tag: _tag);
@@ -34,8 +35,25 @@ class _VersusScreenState extends State<VersusScreen> {
   @override
   void dispose() {
     _countTimer?.cancel();
+    // Pause games trước khi xóa → dừng game loop ngay, không render trong lúc teardown
+    if (_hasCtrl) {
+      _ctrl.game1.paused = true;
+      _ctrl.game2.paused = true;
+    }
     if (_hasCtrl) Get.delete<VersusController>(tag: _tag);
     super.dispose();
+  }
+
+  void _requestExit() => setState(() => _showExitOverlay = true);
+  void _cancelExit() => setState(() => _showExitOverlay = false);
+
+  // Pause games TRƯỚC khi navigate → không còn render frame trong animation thoát
+  void _exitNow() {
+    if (_hasCtrl) {
+      _ctrl.game1.paused = true;
+      _ctrl.game2.paused = true;
+    }
+    Get.back();
   }
 
   void _pick(VersusMode mode) {
@@ -74,12 +92,42 @@ class _VersusScreenState extends State<VersusScreen> {
       body: NeonBg(
         accent: NeonTheme.magenta,
         child: SafeArea(
-          child: switch (_phase) {
-            _Phase.select => _buildSelect(),
-            _Phase.countdown => _buildCountdown(),
-            _Phase.playing => _buildPlaying(),
-          },
+          child: Stack(
+            children: [
+              switch (_phase) {
+                _Phase.select => _buildSelect(),
+                _Phase.countdown => _buildCountdown(),
+                _Phase.playing => _buildPlaying(),
+              },
+              // Dialog xác nhận thoát — overlay trong-cây (GameWidget không chặn)
+              if (_showExitOverlay) _buildExitOverlay(),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildExitOverlay() {
+    return NeonDialog.overlay(
+      onBarrier: _cancelExit,
+      panel: NeonDialog.panel(
+        title: 'quit_title'.tr,
+        color: NeonTheme.magenta,
+        icon: Icons.exit_to_app_rounded,
+        message: 'quit_msg'.tr,
+        actions: [
+          NeonDialogAction(
+            label: 'cancel'.tr,
+            color: NeonTheme.cyan,
+            onTap: _cancelExit,
+          ),
+          NeonDialogAction(
+            label: 'btn_home'.tr,
+            color: NeonTheme.magenta,
+            onTap: _exitNow,
+          ),
+        ],
       ),
     );
   }
@@ -220,7 +268,7 @@ class _VersusScreenState extends State<VersusScreen> {
               color: Colors.white70,
               size: 28,
             ),
-            onPressed: Get.back,
+            onPressed: _requestExit,
           ),
         ),
       ],
@@ -308,7 +356,7 @@ class _VersusScreenState extends State<VersusScreen> {
               ),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-              onPressed: Get.back,
+              onPressed: _requestExit,
             ),
             const Spacer(),
             Icon(

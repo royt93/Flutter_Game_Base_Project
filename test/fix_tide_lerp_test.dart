@@ -39,7 +39,9 @@ void main() {
 
       target = 2.0; // nước dâng mạnh
       // simulate ~3 giây = 180 frame
-      for (int i = 0; i < 180; i++) t.update(0.016);
+      for (int i = 0; i < 180; i++) {
+        t.update(0.016);
+      }
 
       expect(t.displayTopForTesting, closeTo(2.0, 0.1));
     });
@@ -52,14 +54,24 @@ void main() {
       expect(t.displayTopForTesting, closeTo(5.0, 0.01));
     });
 
-    test('khi nước rút (top tăng), displayTop đổi ngay — không lerp', () {
-      var target = 3.0;
-      final t = make(() => target);
-      t.update(0.016); // init tại 3
+    test(
+      'khi nước rút (pushback), displayTop LERP lên — không snap (Fix: bidirectional)',
+      () {
+        var target = 3.0;
+        final t = make(() => target);
+        t.update(0.016); // init tại 3
 
-      target = 7.0; // nước rút
-      t.update(0.016);
-      expect(t.displayTopForTesting, closeTo(7.0, 0.01));
-    });
+        target = 7.0; // pushback: nước bị đẩy lùi 4 hàng
+        t.update(0.016); // 1 frame: receedSpeed=3.0 → +3*0.016=0.048
+        // Phải TĂNG (đang lerp) nhưng chưa tới target
+        expect(t.displayTopForTesting, greaterThan(3.0));
+        expect(t.displayTopForTesting, lessThan(7.0));
+        // Sau nhiều frame (~1.5 giây): hội tụ về 7.0
+        for (int i = 0; i < 100; i++) {
+          t.update(0.016);
+        }
+        expect(t.displayTopForTesting, closeTo(7.0, 0.1));
+      },
+    );
   });
 }

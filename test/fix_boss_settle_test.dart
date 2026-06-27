@@ -2,7 +2,6 @@ import 'package:flame/components.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:neon_jewels/core/storage_service.dart';
-import 'package:neon_jewels/data/levels.dart';
 import 'package:neon_jewels/game/neon_jewel_game.dart';
 import 'package:neon_jewels/logic/gem_data.dart';
 import 'package:neon_jewels/logic/match_detector.dart';
@@ -118,7 +117,9 @@ void main() {
         final sig0 = g.bossAttackSignal.value;
         // Phase 0: kBossAttackInterval[0] = 4 lượt mới phản đòn 1 lần
         final every = GameController.kBossAttackInterval[0];
-        for (int i = 0; i < every; i++) g.useMove();
+        for (int i = 0; i < every; i++) {
+          g.useMove();
+        }
         expect(
           g.bossAttackSignal.value,
           greaterThan(sig0),
@@ -129,7 +130,9 @@ void main() {
       test('signal tăng đúng 2 khi useMove gấp đôi interval', () {
         g.startBoss(1);
         final interval = GameController.kBossAttackInterval[0]; // 4
-        for (int i = 0; i < interval * 2; i++) g.useMove();
+        for (int i = 0; i < interval * 2; i++) {
+          g.useMove();
+        }
         expect(g.bossAttackSignal.value, greaterThanOrEqualTo(2));
       });
     },

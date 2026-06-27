@@ -8,7 +8,7 @@ import 'package:neon_jewels/presentation/widgets/neon_button.dart';
 /// trong Row với text cố định → tổng > chiều rộng panel).
 void main() {
   group('Temple panel Row layout (Fix 7)', () {
-    Widget _buildPanel({required double screenWidth}) {
+    Widget buildPanel({required double screenWidth}) {
       return MaterialApp(
         home: Scaffold(
           body: SizedBox(
@@ -63,7 +63,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(_buildPanel(screenWidth: 360));
+      await tester.pumpWidget(buildPanel(screenWidth: 360));
       await tester.pump();
 
       // Không có RenderFlex overflow error
@@ -80,7 +80,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(_buildPanel(screenWidth: 320));
+      await tester.pumpWidget(buildPanel(screenWidth: 320));
       await tester.pump();
 
       expect(tester.takeException(), isNull);
@@ -90,7 +90,7 @@ void main() {
     testWidgets('Expanded bọc NeonButton tồn tại trong widget tree', (
       tester,
     ) async {
-      await tester.pumpWidget(_buildPanel(screenWidth: 400));
+      await tester.pumpWidget(buildPanel(screenWidth: 400));
       await tester.pump();
 
       // Tìm Expanded widget
@@ -101,7 +101,7 @@ void main() {
     });
 
     testWidgets('text chi phí + reward hiển thị đủ', (tester) async {
-      await tester.pumpWidget(_buildPanel(screenWidth: 375));
+      await tester.pumpWidget(buildPanel(screenWidth: 375));
       await tester.pump();
 
       expect(find.text('80'), findsOneWidget);
