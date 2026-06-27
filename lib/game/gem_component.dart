@@ -63,12 +63,15 @@ class GemComponent extends PositionComponent {
 
   // W22.1.1 — trail mờ khi gem RƠI nhanh. trailParticlesFor chỉ trả >0 ở frame
   // đỉnh vận tốc (≥0.6 ô/frame) → số particle tự bound; tôn trọng reducedMotion.
+  /// W23 — gọi sau khi gem TELEPORT (băng chuyền vòng mép) để KHÔNG phát trail giả.
+  void resetTrail() => _lastY = position.y;
+
   void _maybeTrail() {
     final y = position.y;
     if (!_lastY.isNaN) {
       final n = trailParticlesFor(
         y - _lastY,
-        size.x,
+        size.x / 0.9, // size = cellSize*0.9 → quy đổi về cellSize thật
         reduced: ActiveCosmetics.reducedMotion,
       );
       final game = n > 0 ? findGame() : null;

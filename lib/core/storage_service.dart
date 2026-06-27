@@ -87,6 +87,12 @@ class StorageKeys {
   /// W23 — epoch-day đã nhận thưởng "hoàn thành cả 3 quest" (1 lần/ngày).
   static const String questBonusDay = 'quest_bonus_day';
 
+  /// W23 — Clan: đóng góp tuần của người chơi, dạng `'<week>|<pts>'` (đổi tuần → reset).
+  static const String clanPointsWeek = 'clan_points_week';
+
+  /// W23 — Clan: tuần đã nhận thưởng mục tiêu (1 lần/tuần).
+  static const String clanRewardWeek = 'clan_reward_week';
+
   // Wave 7 — Sự kiện theo mùa (tuần)
   static const String seasonIdx = 'season_idx'; // chỉ số mùa của điểm đang giữ
   static const String seasonPoints = 'season_points'; // điểm mùa hiện tại

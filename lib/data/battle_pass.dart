@@ -73,10 +73,11 @@ List<QuestTemplate> dailyQuests(int epochDay) {
     final q = kQuestPool[(epochDay + i * 3) % kQuestPool.length];
     if (usedTypes.add(q.type)) out.add(q);
   }
-  // phòng hờ thiếu → bù từ đầu kho
+  // phòng hờ thiếu → bù từ đầu kho (chỉ chạy nếu pool < 3 type — không nên xảy ra)
   for (int i = 0; out.length < 3; i++) {
     out.add(kQuestPool[(epochDay + i) % kQuestPool.length]);
   }
+  assert(out.length == 3, 'dailyQuests phải trả đúng 3 quest');
   return out.take(3).toList();
 }
 

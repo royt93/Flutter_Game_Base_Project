@@ -15,11 +15,13 @@ import '../../data/season.dart';
 import '../../data/side_mode_records.dart';
 import '../../data/story.dart';
 import '../../data/temple.dart';
+import '../../logic/boss_attack.dart';
 import '../../logic/gem_data.dart';
 import '../../logic/rhythm_clock.dart';
 import 'achievement_controller.dart';
 import 'battle_pass_controller.dart';
 import 'challenge_card_controller.dart';
+import 'clan_controller.dart';
 import 'collection_controller.dart';
 import 'piggy_controller.dart';
 import 'progression_tree_controller.dart';
@@ -223,6 +225,9 @@ class GameController extends GetxController {
     if (ratio <= kBossPhase2Threshold) return 1;
     return 0;
   }
+
+  /// W23.2B — kiểu đòn boss theo phase hiện tại (engine ánh xạ ra hiệu ứng).
+  BossAttack get bossAttackPattern => bossAttackPatternFor(bossPhase);
 
   // --- Ghost Replay (W20.3) ---
   final RxBool isGhostMode = false.obs;

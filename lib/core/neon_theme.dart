@@ -26,6 +26,14 @@ class NeonTheme {
   static const Color orange = Color(0xFFFF6B00);
   static const Color purple = Color(0xFFBC4BFF);
 
+  // W24 — màu ACCENT UI (KHÔNG phải màu gem; chỉ cho icon/nút để đa dạng hoá Home).
+  static const Color blue = Color(0xFF2979FF);
+  static const Color pink = Color(0xFFFF6EC7);
+  static const Color teal = Color(0xFF1DE9B6);
+  static const Color red = Color(0xFFFF5252);
+  static const Color indigo = Color(0xFF536DFE);
+  static const Color gold = Color(0xFFFFB300);
+
   static const List<Color> gemColors = [
     cyan,
     magenta,
@@ -55,10 +63,22 @@ class NeonTheme {
   );
 
   /// Đổ bóng phát sáng quanh widget theo màu neon.
-  static List<BoxShadow> glow(Color color, {double blur = 18, double spread = 1}) {
+  static List<BoxShadow> glow(
+    Color color, {
+    double blur = 18,
+    double spread = 1,
+  }) {
     return [
-      BoxShadow(color: color.withValues(alpha: 0.8), blurRadius: blur, spreadRadius: spread),
-      BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: blur * 2, spreadRadius: spread),
+      BoxShadow(
+        color: color.withValues(alpha: 0.8),
+        blurRadius: blur,
+        spreadRadius: spread,
+      ),
+      BoxShadow(
+        color: color.withValues(alpha: 0.4),
+        blurRadius: blur * 2,
+        spreadRadius: spread,
+      ),
     ];
   }
 }

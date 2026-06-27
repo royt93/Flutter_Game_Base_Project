@@ -11,7 +11,10 @@ owner: claude
 > `_enterMode`); `StorageKeys.miniBossCleared(world)`; `grantMiniBossClear` (guard-key TRƯỚC,
 > +120 xu 1 lần) gọi ở boss-win; node mini-boss đã-hạ → icon verified + dim (đánh lại không
 > thưởng lại); thêm vào `resetProgress`. 6 unit test, analyze 0, full suite 783 pass.
-> **2B (defer)**: attack pattern Meteor/Shuffle (cần hook engine Flame) — wave sau.
+> **2B (một phần done 2026-06-27)**: selector `bossAttackPatternFor(phase)` (PURE, `logic/boss_attack.dart`)
+> + getter `GameController.bossAttackPattern` (phase 0-1=block, 2=shuffle) + 4 test. **Còn lại (defer
+> device)**: wire HIỆU ỨNG engine — game react `bossAttackSignal` để gọi `_doShuffle` (shuffle) / clear-cell
+> (meteor); cần verify visual trên device nên chưa wire (tránh ship gameplay mù).
 ---
 
 # Phase 2 — Mini-boss hoàn thiện

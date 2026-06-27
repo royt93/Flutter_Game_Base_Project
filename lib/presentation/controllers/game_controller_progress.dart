@@ -81,6 +81,8 @@ extension GameControllerProgress on GameController {
       StorageKeys.bpLevel,
       StorageKeys.questDay,
       StorageKeys.questBonusDay, // W23 — thưởng hoàn-thành-cả-bộ quest
+      StorageKeys.clanPointsWeek, // W23 — Clan
+      StorageKeys.clanRewardWeek,
       StorageKeys.seasonPoints,
       StorageKeys.seasonIdx,
       StorageKeys.bHammer,
@@ -199,6 +201,7 @@ extension GameControllerProgress on GameController {
     PuzzleController.maybe?.resetState();
     ProgressionTreeController.maybe?.resetState();
     ChallengeCardController.maybe?.resetState();
+    ClanController.maybe?.resetState(); // W23
 
     dlog(
       'resetProgress DONE unlocked=${unlockedLevel.value} '

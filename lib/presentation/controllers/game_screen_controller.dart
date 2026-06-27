@@ -8,6 +8,7 @@ import '../../data/side_mode_records.dart';
 import '../../data/story.dart';
 import '../../game/neon_jewel_game.dart';
 import 'battle_pass_controller.dart';
+import 'clan_controller.dart';
 import 'challenge_card_controller.dart';
 import 'collection_controller.dart';
 import 'game_controller.dart';
@@ -183,6 +184,8 @@ class GameScreenController extends GetxController {
       if (result == 'win') {
         // W18.1: Mùa giải (gộp Mùa + Giải đấu) — 1 điểm/thắng nuôi cả 2 trục.
         SeasonLeagueController.maybe?.addWin(gameCtrl.lastStars);
+        // W23 — Clan: đóng góp tuần khi thắng campaign.
+        ClanController.maybe?.addContribution(gameCtrl.lastStars);
         // Wave 14 — meta giữ chân: album sưu tập + heo đất. Chỉ first-clear.
         if (gameCtrl.lastFirstClear) {
           CollectionController.maybe?.addWin(gameCtrl.lastStars);

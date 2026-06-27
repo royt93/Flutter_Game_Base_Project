@@ -16,6 +16,7 @@ import '../controllers/game_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/piggy_controller.dart';
 import '../controllers/challenge_card_controller.dart';
+import '../controllers/clan_controller.dart';
 import '../controllers/progression_tree_controller.dart';
 import '../controllers/puzzle_controller.dart';
 import '../controllers/season_league_controller.dart';
@@ -33,6 +34,7 @@ import 'guide_screen.dart';
 import 'level_select_screen.dart';
 import 'piggy_screen.dart';
 import 'challenge_card_screen.dart';
+import 'clan_screen.dart';
 import 'leaderboard_screen.dart';
 import 'progression_tree_screen.dart';
 import 'puzzle_select_screen.dart';
@@ -60,6 +62,7 @@ class HomeScreen extends StatelessWidget {
     Get.put(PuzzleController(g), permanent: true);
     Get.put(ProgressionTreeController(g), permanent: true); // W20.3
     Get.put(ChallengeCardController(g), permanent: true); // W20.3
+    Get.put(ClanController(g), permanent: true); // W23 — Clan offline
     Get.put(StoryController(), permanent: true);
     g.refillLives(); // cập nhật mạng hồi được khi quay về Home
     return Scaffold(
@@ -329,6 +332,16 @@ class HomeScreen extends StatelessWidget {
                             small: true,
                           ),
                         ),
+                        // W23 — Clan offline
+                        Expanded(
+                          child: _circleNav(
+                            Icons.groups_rounded,
+                            NeonTheme.teal,
+                            'clan_title'.tr,
+                            () => Get.to(() => const ClanScreen()),
+                            small: true,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: NeonTheme.s8),
@@ -345,7 +358,7 @@ class HomeScreen extends StatelessWidget {
                                 .value; // W18.2: rebuild khi thưởng bộ thay đổi
                             return _circleNav(
                               Icons.photo_album_rounded,
-                              NeonTheme.cyan,
+                              NeonTheme.pink,
                               'coll_title'.tr,
                               () => Get.to(() => const CollectionScreen()),
                               badge: cc.hasClaimable,
@@ -358,7 +371,7 @@ class HomeScreen extends StatelessWidget {
                             pc.saved.value;
                             return _circleNav(
                               Icons.savings_rounded,
-                              NeonTheme.magenta,
+                              NeonTheme.red,
                               'piggy_title'.tr,
                               () => Get.to(() => const PiggyScreen()),
                               badge: pc.canSmash,
@@ -371,7 +384,7 @@ class HomeScreen extends StatelessWidget {
                             ac.claimed.length;
                             return _circleNav(
                               Icons.emoji_events_rounded,
-                              NeonTheme.yellow,
+                              NeonTheme.gold,
                               'achievements'.tr,
                               () => Get.to(() => const AchievementsScreen()),
                               badge: ac.hasUnclaimed,
@@ -383,7 +396,7 @@ class HomeScreen extends StatelessWidget {
                         Expanded(
                           child: _circleNav(
                             Icons.menu_book_rounded,
-                            NeonTheme.magenta,
+                            NeonTheme.blue,
                             'guide'.tr,
                             () => Get.to(() => const GuideScreen()),
                             small: true,
@@ -410,7 +423,7 @@ class HomeScreen extends StatelessWidget {
                                 kPtNodes.any((n) => !ptCtrl.isUnlocked(n.id));
                             return _circleNav(
                               Icons.account_tree_rounded,
-                              NeonTheme.orange,
+                              NeonTheme.indigo,
                               'pt_title'.tr,
                               () => Get.to(() => const ProgressionTreeScreen()),
                               badge:
@@ -583,7 +596,7 @@ class HomeScreen extends StatelessWidget {
         () => _modeCard(
           Icons.spa_rounded,
           'zen_short'.tr,
-          NeonTheme.lime,
+          NeonTheme.teal,
           () {
             g.startZen();
             Get.to(() => const GameScreen());
@@ -601,7 +614,7 @@ class HomeScreen extends StatelessWidget {
         () => _modeCard(
           Icons.graphic_eq_rounded,
           'rhythm_title'.tr,
-          NeonTheme.magenta,
+          NeonTheme.pink,
           () {
             g.startRhythm();
             Get.to(() => const GameScreen());
@@ -619,7 +632,7 @@ class HomeScreen extends StatelessWidget {
         () => _modeCard(
           Icons.local_drink_rounded,
           'soda_short'.tr,
-          NeonTheme.cyan,
+          NeonTheme.blue,
           () {
             g.startSoda();
             Get.to(() => const GameScreen());
@@ -631,7 +644,7 @@ class HomeScreen extends StatelessWidget {
         () => _modeCard(
           Icons.timer_rounded,
           'survival_short'.tr,
-          NeonTheme.orange,
+          NeonTheme.red,
           () {
             g.startSurvival();
             Get.to(() => const GameScreen());
@@ -643,7 +656,7 @@ class HomeScreen extends StatelessWidget {
         () => _modeCard(
           Icons.account_tree_rounded,
           'labyrinth_short'.tr,
-          NeonTheme.lime,
+          NeonTheme.indigo,
           () {
             g.startLabyrinth();
             Get.to(() => const GameScreen());
@@ -655,7 +668,7 @@ class HomeScreen extends StatelessWidget {
         () => _modeCard(
           Icons.extension_rounded,
           'puzzle_short'.tr,
-          NeonTheme.purple,
+          NeonTheme.gold,
           () => Get.to(() => const PuzzleSelectScreen()),
           corner: _puzzleCorner(),
         ),

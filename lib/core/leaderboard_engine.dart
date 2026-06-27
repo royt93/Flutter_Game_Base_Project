@@ -60,6 +60,11 @@ List<LbEntry> buildLeaderboard(
   int period, {
   bool includePlayer = true,
 }) {
+  // distinct tên bot trong cùng bảng phụ thuộc rank < số tên trong pool.
+  assert(
+    kLbBotCount <= kLeaderboardNames.length,
+    'kLbBotCount phải <= số tên trong kLeaderboardNames để tên không trùng',
+  );
   final list = <LbEntry>[
     for (var r = 0; r < kLbBotCount; r++)
       LbEntry(lbBotName(r, period), lbBotScore(baseTarget, r, period)),

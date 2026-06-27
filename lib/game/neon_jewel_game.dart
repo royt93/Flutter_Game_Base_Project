@@ -1954,6 +1954,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
             (_conveyorDir > 0 && c == cols - 1) || (_conveyorDir < 0 && c == 0);
         if (wrapped) {
           g.position = _cellCenter(r, nc); // nhảy vòng mép → teleport tức thời
+          g.resetTrail(); // W23 — tránh phát trail giả do nhảy quãng lớn
         } else {
           futures.add(
             _run(
