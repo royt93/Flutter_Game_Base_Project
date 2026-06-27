@@ -39,6 +39,8 @@ extension GameControllerModes on GameController {
   /// Bắt đầu Zen Mode — bàn 8×8, lượt vô hạn (999), KHÔNG kết thúc tự động.
   /// Người chơi thoát bằng nút X → `endZenSession()` lưu kỷ lục.
   void startZen() {
+    _zenCfg =
+        buildZenLevel(); // phải set trước _enterMode để level getter dùng đúng cfg
     _enterMode(zen: true);
     _resetRunState(
       moves: 999,

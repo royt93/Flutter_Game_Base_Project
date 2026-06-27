@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flame_audio/flame_audio.dart';
 import 'package:get/get.dart';
+import 'storage_service.dart';
 
 /// Quản lý toàn bộ âm thanh: nhạc nền + SFX nốt nhạc theo combo.
 ///
@@ -21,6 +22,13 @@ class AudioManager extends GetxService {
       Get.isRegistered<AudioManager>() ? Get.find<AudioManager>() : null;
 
   Future<void> init() async {
+    // Khôi phục trạng thái mute đã lưu trước khi load audio
+    final savedMuted = StorageService.to.getBool(
+      StorageKeys.audioMuted,
+      def: false,
+    );
+    muted.value = savedMuted;
+
     FlameAudio.audioCache.prefix = 'asset/audio/';
     try {
       await FlameAudio.audioCache.loadAll([
@@ -64,10 +72,16 @@ class AudioManager extends GetxService {
 
   void toggleMute() {
     muted.toggle();
+    // Lưu trạng thái mute vào disk để giữ qua các lần khởi động
+    unawaited(StorageService.to.setBool(StorageKeys.audioMuted, muted.value));
     if (muted.value) {
       _ignoreAudio(FlameAudio.bgm.pause());
-    } else {
+    } else if (_bgmPlaying) {
+      // BGM đang được track là "đang chạy" (chỉ bị pause bởi mute) → resume
       _ignoreAudio(FlameAudio.bgm.resume());
+    } else {
+      // BGM chưa bao giờ start (mute trước khi vào game) → start ngay
+      startBgm();
     }
   }
 

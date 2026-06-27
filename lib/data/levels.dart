@@ -1078,6 +1078,21 @@ const List<List<String>> kLabyrinthLayouts = [
   ],
 ];
 
+// --- Zen Mode (chơi tự do, không thua, không target cố định) ---
+const int kZenLevelIndex = -5;
+
+/// Cấu hình Zen: 8×8 bàn thường, 6 màu, lượt 999, target = max int (không hiện).
+/// Dùng để HUD đọc đúng objective thay vì fallthrough về màn campaign cũ.
+LevelConfig buildZenLevel() => const LevelConfig(
+  index: kZenLevelIndex,
+  rows: 8,
+  cols: 8,
+  colorCount: 6,
+  moves: 999,
+  objective: ObjectiveType.score,
+  targetScore: 1 << 28,
+);
+
 // --- Versus / Co-op (2 người, chạy engine Flame như mode thường) ---
 const int kVersusLevelIndex = -4;
 

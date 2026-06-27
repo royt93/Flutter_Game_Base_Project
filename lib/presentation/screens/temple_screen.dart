@@ -193,43 +193,55 @@ class TempleScreen extends StatelessWidget {
             else
               Row(
                 children: [
-                  const CoinIcon(),
-                  const SizedBox(width: 5),
-                  Text(
-                    fmtNum(next.cost),
-                    style: TextStyle(
-                      color: t.canBuild(n) ? Colors.white : NeonTheme.magenta,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  // Khu vực chi phí + phần thưởng
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CoinIcon(),
+                      const SizedBox(width: 6),
+                      Text(
+                        fmtNum(next.cost),
+                        style: TextStyle(
+                          color: t.canBuild(n)
+                              ? Colors.white
+                              : NeonTheme.magenta,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '· +${next.rewardCoins} ${'coins_short'.tr}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '· +${next.rewardCoins} ${'coins_short'.tr}',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                  const SizedBox(width: NeonTheme.s16),
+                  // Nút xây — Expanded để lấp đầy phần còn lại, tránh overflow
+                  Expanded(
+                    child: NeonButton(
+                      label: 'temple_build'.tr,
+                      color: t.canBuild(n) ? n.accent : Colors.grey,
+                      icon: Icons.construction_rounded,
+                      width: double.infinity,
+                      onTap: () {
+                        if (t.build(n)) {
+                          Get.snackbar(
+                            'temple_built'.tr,
+                            '${n.nameKey.tr} · ${'temple_tier'.tr} ${t.tierOf(n)}',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: NeonTheme.panel,
+                            colorText: Colors.white,
+                            margin: const EdgeInsets.all(NeonTheme.s16),
+                            duration: const Duration(seconds: 2),
+                          );
+                        }
+                      },
                     ),
-                  ),
-                  const Spacer(),
-                  NeonButton(
-                    label: 'temple_build'.tr,
-                    color: t.canBuild(n) ? n.accent : Colors.grey,
-                    icon: Icons.construction_rounded,
-                    onTap: () {
-                      if (t.build(n)) {
-                        Get.snackbar(
-                          'temple_built'.tr,
-                          '${n.nameKey.tr} · ${'temple_tier'.tr} ${t.tierOf(n)}',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: NeonTheme.panel,
-                          colorText: Colors.white,
-                          margin: const EdgeInsets.all(NeonTheme.s16),
-                          duration: const Duration(seconds: 2),
-                        );
-                      }
-                    },
                   ),
                 ],
               ),

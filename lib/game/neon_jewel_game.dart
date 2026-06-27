@@ -922,6 +922,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           } else if (atk == BossAttack.meteor) {
             await _doMeteor();
           }
+          // Sau boss attack, resolve ngay bất kỳ match sẵn nào trên bàn.
+          // _doShuffle tránh tạo match (20 lần thử) nhưng vẫn có thể thất bại;
+          // _doMeteor cũng vậy. Nếu để lại, người chơi thấy 6-in-a-row mà không
+          // hiểu tại sao không nổ → settle() loại bỏ hiện tượng khó hiểu này.
+          await _settle();
         }
       }
     } finally {

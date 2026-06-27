@@ -131,6 +131,10 @@ class VersusController extends GetxController {
   @override
   void onClose() {
     _timer?.cancel();
+    // Pause cả 2 game trước khi xóa controller tránh game loop vẫn chạy
+    // trong khi teardown → gây lag ở màn tiếp theo.
+    game1.paused = true;
+    game2.paused = true;
     if (Get.isRegistered<GameController>(tag: 'vp1')) {
       Get.delete<GameController>(tag: 'vp1');
     }

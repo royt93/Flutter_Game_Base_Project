@@ -91,25 +91,40 @@ class _VersusScreenState extends State<VersusScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('versus_title'.tr,
-              style: TextStyle(
-                fontSize: 34,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                shadows: [Shadow(color: NeonTheme.magenta, blurRadius: 16)],
-              )),
+          Text(
+            'versus_title'.tr,
+            style: TextStyle(
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              shadows: [Shadow(color: NeonTheme.magenta, blurRadius: 16)],
+            ),
+          ),
           const SizedBox(height: NeonTheme.s8),
-          Text('versus_pick'.tr,
-              style: const TextStyle(
-                  fontFamily: 'Baloo2', fontSize: 14, color: Colors.white70)),
+          Text(
+            'versus_pick'.tr,
+            style: const TextStyle(
+              fontFamily: 'Baloo2',
+              fontSize: 14,
+              color: Colors.white70,
+            ),
+          ),
           const SizedBox(height: NeonTheme.s24 * 1.5),
-          _modeButton('versus_mode'.tr, 'versus_mode_desc'.tr,
-              Icons.sports_kabaddi_rounded, NeonTheme.magenta,
-              () => _pick(VersusMode.versus)),
+          _modeButton(
+            'versus_mode'.tr,
+            'versus_mode_desc'.tr,
+            Icons.sports_kabaddi_rounded,
+            NeonTheme.magenta,
+            () => _pick(VersusMode.versus),
+          ),
           const SizedBox(height: NeonTheme.s16),
-          _modeButton('coop_mode'.tr, 'coop_mode_desc'.tr,
-              Icons.handshake_rounded, NeonTheme.lime,
-              () => _pick(VersusMode.coop)),
+          _modeButton(
+            'coop_mode'.tr,
+            'coop_mode_desc'.tr,
+            Icons.handshake_rounded,
+            NeonTheme.lime,
+            () => _pick(VersusMode.coop),
+          ),
           const SizedBox(height: NeonTheme.s24 * 1.5),
           NeonButton(
             label: 'btn_home'.tr,
@@ -122,15 +137,22 @@ class _VersusScreenState extends State<VersusScreen> {
     );
   }
 
-  Widget _modeButton(String title, String desc, IconData icon, Color color,
-      VoidCallback onTap) {
+  Widget _modeButton(
+    String title,
+    String desc,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(
-            vertical: NeonTheme.s16, horizontal: NeonTheme.s24),
+          vertical: NeonTheme.s16,
+          horizontal: NeonTheme.s24,
+        ),
         decoration: BoxDecoration(
           color: NeonTheme.panel.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(18),
@@ -145,15 +167,18 @@ class _VersusScreenState extends State<VersusScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white)),
-                  Text(desc,
-                      style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.white60)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    desc,
+                    style: const TextStyle(fontSize: 12, color: Colors.white60),
+                  ),
                 ],
               ),
             ),
@@ -166,21 +191,39 @@ class _VersusScreenState extends State<VersusScreen> {
 
   // ------------------------------------------------------------- đếm ngược
   Widget _buildCountdown() {
-    return Center(
-      child: Text(
-        _count > 0 ? '$_count' : 'versus_go'.tr,
-        key: ValueKey(_count),
-        style: TextStyle(
-          fontSize: 96,
-          fontWeight: FontWeight.w900,
-          color: Colors.white,
-          shadows: [Shadow(color: NeonTheme.magenta, blurRadius: 24)],
+    return Stack(
+      children: [
+        Center(
+          child:
+              Text(
+                _count > 0 ? '$_count' : 'versus_go'.tr,
+                key: ValueKey(_count),
+                style: TextStyle(
+                  fontSize: 96,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  shadows: [Shadow(color: NeonTheme.magenta, blurRadius: 24)],
+                ),
+              ).animate().scale(
+                begin: const Offset(0.4, 0.4),
+                end: const Offset(1, 1),
+                duration: 400.ms,
+                curve: Curves.easeOutBack,
+              ),
         ),
-      ).animate().scale(
-          begin: const Offset(0.4, 0.4),
-          end: const Offset(1, 1),
-          duration: 400.ms,
-          curve: Curves.easeOutBack),
+        Positioned(
+          top: 8,
+          right: 8,
+          child: IconButton(
+            icon: const Icon(
+              Icons.close_rounded,
+              color: Colors.white70,
+              size: 28,
+            ),
+            onPressed: Get.back,
+          ),
+        ),
+      ],
     );
   }
 
@@ -203,9 +246,11 @@ class _VersusScreenState extends State<VersusScreen> {
             Expanded(child: _playerPane(c, 1, NeonTheme.magenta)),
           ],
         ),
-        Obx(() => c.finished.value
-            ? NeonDialog.overlay(panel: _resultPanel(c))
-            : const SizedBox.shrink()),
+        Obx(
+          () => c.finished.value
+              ? NeonDialog.overlay(panel: _resultPanel(c))
+              : const SizedBox.shrink(),
+        ),
       ],
     );
   }
@@ -217,21 +262,24 @@ class _VersusScreenState extends State<VersusScreen> {
       padding: const EdgeInsets.all(NeonTheme.s8),
       child: Column(
         children: [
-          Obx(() => Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.person_rounded, color: accent, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${(player == 1 ? 'versus_p1' : 'versus_p2').tr}  ${g.score.value}',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        shadows: [Shadow(color: accent, blurRadius: 8)]),
+          Obx(
+            () => Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.person_rounded, color: accent, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  '${(player == 1 ? 'versus_p1' : 'versus_p2').tr}  ${g.score.value}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    shadows: [Shadow(color: accent, blurRadius: 8)],
                   ),
-                ],
-              )),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 4),
           Expanded(child: GameWidget(game: game)),
         ],
@@ -241,33 +289,55 @@ class _VersusScreenState extends State<VersusScreen> {
 
   Widget _centerBar(VersusController c) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(vertical: 6, horizontal: NeonTheme.s16),
+      padding: const EdgeInsets.symmetric(
+        vertical: 4,
+        horizontal: NeonTheme.s8,
+      ),
       color: Colors.black.withValues(alpha: 0.35),
       child: Obx(() {
         final t = c.timeLeft.value;
         final low = t <= 10;
         return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.timer_rounded,
-                color: low ? NeonTheme.magenta : NeonTheme.cyan, size: 18),
+            // Nút thoát
+            IconButton(
+              icon: const Icon(
+                Icons.close_rounded,
+                color: Colors.white54,
+                size: 20,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              onPressed: Get.back,
+            ),
+            const Spacer(),
+            Icon(
+              Icons.timer_rounded,
+              color: low ? NeonTheme.magenta : NeonTheme.cyan,
+              size: 18,
+            ),
             const SizedBox(width: 6),
-            Text('$t',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: low ? NeonTheme.magenta : Colors.white)),
+            Text(
+              '$t',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: low ? NeonTheme.magenta : Colors.white,
+              ),
+            ),
             if (c.mode == VersusMode.coop) ...[
               const SizedBox(width: NeonTheme.s16),
               Text(
                 '${'coop_goal'.tr} ${c.combinedScore}/${VersusController.coopGoal}',
                 style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: NeonTheme.lime),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: NeonTheme.lime,
+                ),
               ),
             ],
+            const Spacer(),
+            const SizedBox(width: 36), // cân bằng với nút X bên trái
           ],
         );
       }),
@@ -295,9 +365,15 @@ class _VersusScreenState extends State<VersusScreen> {
           : '${'versus_p1'.tr} ${c.score1}  ·  ${'versus_p2'.tr} ${c.score2}',
       actions: [
         NeonDialogAction(
-            label: 'btn_again'.tr, color: NeonTheme.cyan, onTap: _replay),
+          label: 'btn_again'.tr,
+          color: NeonTheme.cyan,
+          onTap: _replay,
+        ),
         NeonDialogAction(
-            label: 'btn_home'.tr, color: NeonTheme.purple, onTap: Get.back),
+          label: 'btn_home'.tr,
+          color: NeonTheme.purple,
+          onTap: Get.back,
+        ),
       ],
     );
   }

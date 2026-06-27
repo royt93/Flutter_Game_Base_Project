@@ -95,6 +95,7 @@ class GameController extends GetxController {
   // --- Zen Mode (W20.4) — không thua, tích điểm tự do ---
   final RxBool isZen = false.obs;
   final RxInt zenHigh = 0.obs;
+  LevelConfig? _zenCfg;
 
   // W21 — Rush Mode (Tốc chiến): 2 phút, vô hạn lượt, match → +giây.
   final RxBool isRush = false.obs;
@@ -427,6 +428,7 @@ class GameController extends GetxController {
 
   LevelConfig get level =>
       _bossCfg ??
+      _zenCfg ??
       _endlessCfg ??
       _gravityCfg ??
       _rhythmCfg ??
@@ -499,6 +501,7 @@ class GameController extends GetxController {
     pity.value = 0;
     if (!endless) _endlessCfg = null;
     if (!boss) _bossCfg = null;
+    if (!zen) _zenCfg = null;
     if (!gravity) _gravityCfg = null;
     if (!rhythm) _rhythmCfg = null;
     if (!colorRush) _colorRushCfg = null;

@@ -40,11 +40,20 @@ class NeonFx {
   }
 
   /// Vẽ vầng sáng neon rẻ tiền bằng ảnh đĩa cache (không dùng MaskFilter).
-  static void drawGlow(Canvas canvas, Offset center, double radius, Color color,
-      {double opacity = 1.0}) {
+  static void drawGlow(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    Color color, {
+    double opacity = 1.0,
+  }) {
     final disc = softDisc;
     if (disc == null) return;
-    final rect = Rect.fromCenter(center: center, width: radius * 2, height: radius * 2);
+    final rect = Rect.fromCenter(
+      center: center,
+      width: radius * 2,
+      height: radius * 2,
+    );
     canvas.drawImageRect(
       disc,
       Rect.fromLTWH(0, 0, disc.width.toDouble(), disc.height.toDouble()),
@@ -89,7 +98,11 @@ class NeonBackground extends PositionComponent {
   double _time = 0;
   late final Paint _vignette;
 
-  NeonBackground({required this.area, required this.palette, required this.rnd}) {
+  NeonBackground({
+    required this.area,
+    required this.palette,
+    required this.rnd,
+  }) {
     _vignette = Paint()
       ..shader = ui.Gradient.radial(
         Offset(area.x / 2, area.y * 0.42),
@@ -98,32 +111,39 @@ class NeonBackground extends PositionComponent {
         const [0.5, 0.82, 1.0],
       );
     for (int i = 0; i < 9; i++) {
-      _orbs.add(_Orb(
-        Vector2(rnd.nextDouble() * area.x, rnd.nextDouble() * area.y),
-        Vector2(rnd.nextDouble() * 2 - 1, rnd.nextDouble() * 2 - 1)..scale(12),
-        70 + rnd.nextDouble() * 100,
-        palette[rnd.nextInt(palette.length)],
-      ));
+      _orbs.add(
+        _Orb(
+          Vector2(rnd.nextDouble() * area.x, rnd.nextDouble() * area.y),
+          Vector2(rnd.nextDouble() * 2 - 1, rnd.nextDouble() * 2 - 1)
+            ..scale(12),
+          70 + rnd.nextDouble() * 100,
+          palette[rnd.nextInt(palette.length)],
+        ),
+      );
     }
     // nebula lớn, trôi rất chậm — tạo nền không gian sâu, lung linh
     for (int i = 0; i < 3; i++) {
-      _nebula.add(_Orb(
-        Vector2(rnd.nextDouble() * area.x, rnd.nextDouble() * area.y),
-        Vector2(rnd.nextDouble() * 2 - 1, rnd.nextDouble() * 2 - 1)..scale(4),
-        area.x * (0.4 + rnd.nextDouble() * 0.3),
-        palette[rnd.nextInt(palette.length)],
-      ));
+      _nebula.add(
+        _Orb(
+          Vector2(rnd.nextDouble() * area.x, rnd.nextDouble() * area.y),
+          Vector2(rnd.nextDouble() * 2 - 1, rnd.nextDouble() * 2 - 1)..scale(4),
+          area.x * (0.4 + rnd.nextDouble() * 0.3),
+          palette[rnd.nextInt(palette.length)],
+        ),
+      );
     }
     for (int i = 0; i < 64; i++) {
       final sparkle = i % 5 == 0; // ~20% là sao 4 cánh
-      _stars.add(_Star(
-        Offset(rnd.nextDouble() * area.x, rnd.nextDouble() * area.y),
-        rnd.nextDouble() * math.pi * 2,
-        (sparkle ? 2.5 : 1.0) + rnd.nextDouble() * 2.2,
-        0.8 + rnd.nextDouble() * 2.0,
-        sparkle,
-        palette[rnd.nextInt(palette.length)],
-      ));
+      _stars.add(
+        _Star(
+          Offset(rnd.nextDouble() * area.x, rnd.nextDouble() * area.y),
+          rnd.nextDouble() * math.pi * 2,
+          (sparkle ? 2.5 : 1.0) + rnd.nextDouble() * 2.2,
+          0.8 + rnd.nextDouble() * 2.0,
+          sparkle,
+          palette[rnd.nextInt(palette.length)],
+        ),
+      );
     }
   }
 
@@ -144,12 +164,22 @@ class NeonBackground extends PositionComponent {
   void render(Canvas canvas) {
     // nebula lớn (sâu, mờ) → orb vừa → sao → vignette
     for (final n in _nebula) {
-      NeonFx.drawGlow(canvas, Offset(n.pos.x, n.pos.y), n.radius, n.color,
-          opacity: 0.09);
+      NeonFx.drawGlow(
+        canvas,
+        Offset(n.pos.x, n.pos.y),
+        n.radius,
+        n.color,
+        opacity: 0.09,
+      );
     }
     for (final o in _orbs) {
-      NeonFx.drawGlow(canvas, Offset(o.pos.x, o.pos.y), o.radius, o.color,
-          opacity: 0.18);
+      NeonFx.drawGlow(
+        canvas,
+        Offset(o.pos.x, o.pos.y),
+        o.radius,
+        o.color,
+        opacity: 0.18,
+      );
     }
     _renderStars(canvas);
     canvas.drawRect(Rect.fromLTWH(0, 0, area.x, area.y), _vignette);
@@ -166,11 +196,20 @@ class NeonBackground extends PositionComponent {
           ..strokeCap = StrokeCap.round;
         final r = s.size * (0.6 + 0.4 * tw);
         canvas.drawLine(
-            Offset(s.pos.dx - r, s.pos.dy), Offset(s.pos.dx + r, s.pos.dy), paint);
+          Offset(s.pos.dx - r, s.pos.dy),
+          Offset(s.pos.dx + r, s.pos.dy),
+          paint,
+        );
         canvas.drawLine(
-            Offset(s.pos.dx, s.pos.dy - r), Offset(s.pos.dx, s.pos.dy + r), paint);
-        canvas.drawCircle(s.pos, 1.2,
-            Paint()..color = Colors.white.withValues(alpha: 0.9 * tw));
+          Offset(s.pos.dx, s.pos.dy - r),
+          Offset(s.pos.dx, s.pos.dy + r),
+          paint,
+        );
+        canvas.drawCircle(
+          s.pos,
+          1.2,
+          Paint()..color = Colors.white.withValues(alpha: 0.9 * tw),
+        );
       } else {
         canvas.drawCircle(
           s.pos,
@@ -266,7 +305,9 @@ class BoardFrame extends PositionComponent {
     final cr = Radius.circular(cellSize * 0.4);
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
-        if (isWall?.call(r, c) ?? false) continue; // Wave 15: lỗ — không vẽ slot
+        if (isWall?.call(r, c) ?? false) {
+          continue; // Wave 15: lỗ — không vẽ slot
+        }
         final rect = Rect.fromLTWH(
           origin.x + c * cellSize,
           origin.y + r * cellSize,
@@ -283,7 +324,10 @@ class BoardFrame extends PositionComponent {
           bottomRight: bottom && right ? cr : Radius.zero,
         );
         final shade = (r + c).isEven ? 0.07 : 0.03;
-        canvas.drawRRect(rr, Paint()..color = Colors.white.withValues(alpha: shade));
+        canvas.drawRRect(
+          rr,
+          Paint()..color = Colors.white.withValues(alpha: shade),
+        );
         if (theme.slotTint.a > 0) {
           canvas.drawRRect(rr, Paint()..color = theme.slotTint);
         }
@@ -329,8 +373,10 @@ class BlockedLayer extends PositionComponent {
           cellSize,
           cellSize,
         ).deflate(cellSize * 0.04);
-        final rr =
-            RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.18));
+        final rr = RRect.fromRectAndRadius(
+          rect,
+          Radius.circular(cellSize * 0.18),
+        );
         if (k == CellKind.wall) {
           // khối đá tối + viền neon lạnh (cyan/tím nhẹ) + vạch chéo gờ đá
           canvas.drawRRect(rr, Paint()..color = const Color(0xF21A1430));
@@ -403,9 +449,12 @@ class FlowLayer extends PositionComponent {
         final d = flowDelta(f); // [dr, dc]
         final dx = d[1].toDouble(), dy = d[0].toDouble();
         // nền ô tô nhẹ theo accent (đánh dấu vùng dòng chảy)
-        final rect = Rect.fromLTWH(origin.x + c * cellSize, origin.y + r * cellSize,
-                cellSize, cellSize)
-            .deflate(cellSize * 0.06);
+        final rect = Rect.fromLTWH(
+          origin.x + c * cellSize,
+          origin.y + r * cellSize,
+          cellSize,
+          cellSize,
+        ).deflate(cellSize * 0.06);
         canvas.drawRRect(
           RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.16)),
           Paint()..color = accent.withValues(alpha: 0.10),
@@ -421,9 +470,15 @@ class FlowLayer extends PositionComponent {
           ..strokeCap = StrokeCap.round
           ..color = accent.withValues(alpha: 0.7);
         canvas.drawLine(
-            tip, Offset(cx - dx * h * 0.2 + px * h, cy - dy * h * 0.2 + py * h), p);
+          tip,
+          Offset(cx - dx * h * 0.2 + px * h, cy - dy * h * 0.2 + py * h),
+          p,
+        );
         canvas.drawLine(
-            tip, Offset(cx - dx * h * 0.2 - px * h, cy - dy * h * 0.2 - py * h), p);
+          tip,
+          Offset(cx - dx * h * 0.2 - px * h, cy - dy * h * 0.2 - py * h),
+          p,
+        );
         // chấm sáng chạy theo hướng (từ -0.5 ô tới +0.5 ô)
         final off = (phase - 0.5) * cellSize * 0.8;
         canvas.drawCircle(
@@ -464,18 +519,17 @@ class JellyLayer extends PositionComponent {
           cellSize,
           cellSize,
         ).deflate(cellSize * 0.04);
-        final rr = RRect.fromRectAndRadius(rect, Radius.circular(cellSize * 0.26));
+        final rr = RRect.fromRectAndRadius(
+          rect,
+          Radius.circular(cellSize * 0.26),
+        );
         canvas.drawRRect(
           rr,
           Paint()
-            ..shader = ui.Gradient.linear(
-              rect.topLeft,
-              rect.bottomRight,
-              [
-                const Color(0xFF00F0FF).withValues(alpha: 0.28),
-                const Color(0xFFBC4BFF).withValues(alpha: 0.28),
-              ],
-            ),
+            ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, [
+              const Color(0xFF00F0FF).withValues(alpha: 0.28),
+              const Color(0xFFBC4BFF).withValues(alpha: 0.28),
+            ]),
         );
         canvas.drawRRect(
           rr,
@@ -572,10 +626,16 @@ class ObstacleLayer extends PositionComponent {
       ..strokeWidth = 1.4
       ..color = Colors.white.withValues(alpha: 0.55);
     canvas.drawLine(rect.topCenter, rect.center, crack);
-    canvas.drawLine(rect.center,
-        Offset(rect.left + rect.width * 0.28, rect.bottom), crack);
-    canvas.drawLine(rect.center,
-        Offset(rect.right - rect.width * 0.2, rect.bottom), crack);
+    canvas.drawLine(
+      rect.center,
+      Offset(rect.left + rect.width * 0.28, rect.bottom),
+      crack,
+    );
+    canvas.drawLine(
+      rect.center,
+      Offset(rect.right - rect.width * 0.2, rect.bottom),
+      crack,
+    );
   }
 
   void _drawStone(Canvas canvas, Rect rect) {
@@ -598,13 +658,15 @@ class ObstacleLayer extends PositionComponent {
     // hạt sạn
     final fleck = Paint()..color = Colors.white.withValues(alpha: 0.18);
     canvas.drawCircle(
-        Offset(rect.left + rect.width * 0.32, rect.top + rect.height * 0.35),
-        cellSize * 0.05,
-        fleck);
+      Offset(rect.left + rect.width * 0.32, rect.top + rect.height * 0.35),
+      cellSize * 0.05,
+      fleck,
+    );
     canvas.drawCircle(
-        Offset(rect.left + rect.width * 0.66, rect.top + rect.height * 0.6),
-        cellSize * 0.04,
-        fleck);
+      Offset(rect.left + rect.width * 0.66, rect.top + rect.height * 0.6),
+      cellSize * 0.04,
+      fleck,
+    );
   }
 
   /// Chocolate lan tỏa: khối tối bong bóng + viền neon tím hồng.
@@ -670,7 +732,10 @@ class ObstacleLayer extends PositionComponent {
     if (layer >= 2) {
       final lock = Paint()..color = NeonTheme.cyan.withValues(alpha: 0.85);
       canvas.drawCircle(
-          Offset(rect.center.dx, rect.top + rect.height * 0.12), cellSize * 0.05, lock);
+        Offset(rect.center.dx, rect.top + rect.height * 0.12),
+        cellSize * 0.05,
+        lock,
+      );
     }
   }
 
@@ -708,7 +773,9 @@ class ObstacleLayer extends PositionComponent {
     if (layer >= 2) {
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-            rect.deflate(cellSize * 0.12), Radius.circular(cellSize * 0.12)),
+          rect.deflate(cellSize * 0.12),
+          Radius.circular(cellSize * 0.12),
+        ),
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.6
@@ -766,15 +833,19 @@ class ObstacleLayer extends PositionComponent {
       canvas.drawLine(rect.topLeft, rect.bottomRight, p);
       canvas.drawLine(rect.bottomLeft, rect.topRight, p);
     }
-    canvas.drawCircle(rect.center, cellSize * 0.12,
-        Paint()..color = const Color(0xFF4A3A00).withValues(alpha: 0.8));
     canvas.drawCircle(
-        rect.center,
-        cellSize * 0.12,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = cellSize * 0.05
-          ..color = const Color(0xFFFFE36E));
+      rect.center,
+      cellSize * 0.12,
+      Paint()..color = const Color(0xFF4A3A00).withValues(alpha: 0.8),
+    );
+    canvas.drawCircle(
+      rect.center,
+      cellSize * 0.12,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = cellSize * 0.05
+        ..color = const Color(0xFFFFE36E),
+    );
   }
 }
 
@@ -869,7 +940,8 @@ class ComboTextComponent extends PositionComponent {
   @override
   void render(Canvas canvas) {
     final p = _t.clamp(0.0, 1.0);
-    var scale = 0.6 + 0.7 * Curves.elasticOut.transform(p.clamp(0.0, 0.6) / 0.6);
+    var scale =
+        0.6 + 0.7 * Curves.elasticOut.transform(p.clamp(0.0, 0.6) / 0.6);
     // epic: thêm rung scale + lắc xoay nhẹ
     final epicWobble = epic ? math.sin(_t * 40) * 0.04 : 0.0;
     scale += epicWobble;
@@ -956,11 +1028,7 @@ class NeonGlowAura extends PositionComponent {
   Color color;
   double _t = 0;
 
-  NeonGlowAura({
-    required this.shader,
-    required this.area,
-    required this.color,
-  });
+  NeonGlowAura({required this.shader, required this.area, required this.color});
 
   @override
   void update(double dt) => _t += dt;
@@ -992,20 +1060,20 @@ class _NumTextCache {
   _NumTextCache(this.fontSize);
 
   TextPainter of(int n) => _m.putIfAbsent(
-        n,
-        () => TextPainter(
-          text: TextSpan(
-            text: '$n',
-            style: TextStyle(
-              fontFamily: NeonTheme.fontFamily,
-              color: Colors.white,
-              fontSize: fontSize,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout(),
-      );
+    n,
+    () => TextPainter(
+      text: TextSpan(
+        text: '$n',
+        style: TextStyle(
+          fontFamily: NeonTheme.fontFamily,
+          color: Colors.white,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(),
+  );
 }
 
 class BombLayer extends PositionComponent {
@@ -1044,11 +1112,18 @@ class BombLayer extends PositionComponent {
             ? Color.lerp(NeonTheme.orange, NeonTheme.magenta, pulse)!
             : NeonTheme.magenta;
         final radius = cellSize * 0.30;
-        NeonFx.drawGlow(canvas, center,
-            radius * (low ? 1.8 + pulse * 0.6 : 1.4), col,
-            opacity: low ? 0.9 : 0.6);
+        NeonFx.drawGlow(
+          canvas,
+          center,
+          radius * (low ? 1.8 + pulse * 0.6 : 1.4),
+          col,
+          opacity: low ? 0.9 : 0.6,
+        );
         canvas.drawCircle(
-            center, radius, Paint()..color = const Color(0xCC0A0A1A));
+          center,
+          radius,
+          Paint()..color = const Color(0xCC0A0A1A),
+        );
         canvas.drawCircle(
           center,
           radius,
@@ -1093,7 +1168,9 @@ class ConveyorLayer extends PositionComponent {
       final top = origin.y + r * cellSize;
       final rect = Rect.fromLTWH(origin.x, top, w, cellSize);
       canvas.drawRect(
-          rect, Paint()..color = NeonTheme.cyan.withValues(alpha: 0.07));
+        rect,
+        Paint()..color = NeonTheme.cyan.withValues(alpha: 0.07),
+      );
       // mũi tên ›/‹ chạy theo hướng
       final cy = top + cellSize / 2;
       for (double x = -cellSize; x < w + cellSize; x += cellSize * 0.7) {
@@ -1149,9 +1226,9 @@ class PortalLayer extends PositionComponent {
   void update(double dt) => _t += dt;
 
   Offset _center(Cell c) => Offset(
-        origin.x + c.col * cellSize + cellSize / 2,
-        origin.y + c.row * cellSize + cellSize / 2,
-      );
+    origin.x + c.col * cellSize + cellSize / 2,
+    origin.y + c.row * cellSize + cellSize / 2,
+  );
 
   @override
   void render(Canvas canvas) {
@@ -1209,8 +1286,12 @@ class DispenserLayer extends PositionComponent {
         origin.y + cell.row * cellSize + cellSize / 2,
       );
       NeonFx.drawGlow(
-          canvas, center, cellSize * (0.34 + pulse * 0.12), NeonTheme.yellow,
-          opacity: 0.55);
+        canvas,
+        center,
+        cellSize * (0.34 + pulse * 0.12),
+        NeonTheme.yellow,
+        opacity: 0.55,
+      );
       canvas.drawCircle(
         center,
         cellSize * 0.30,
@@ -1303,7 +1384,12 @@ class SodaLayer extends PositionComponent {
             ],
           );
       }
-      final fill = Rect.fromLTWH(origin.x, surfaceY, w, origin.y + h - surfaceY);
+      final fill = Rect.fromLTWH(
+        origin.x,
+        surfaceY,
+        w,
+        origin.y + h - surfaceY,
+      );
       canvas.drawRect(fill, _fillPaint!);
       // bề mặt gợn sóng
       final wave = Path()..moveTo(origin.x, surfaceY);
@@ -1326,7 +1412,9 @@ class SodaLayer extends PositionComponent {
     for (int i = 0; i < target; i++) {
       final cx = origin.x + w * (i + 1) / (target + 1);
       final reached = i < got;
-      final cy = reached ? origin.y + cellSize * 0.45 : surfaceY - cellSize * 0.1;
+      final cy = reached
+          ? origin.y + cellSize * 0.45
+          : surfaceY - cellSize * 0.1;
       _drawBottle(canvas, Offset(cx, cy), reached);
     }
   }
@@ -1342,7 +1430,10 @@ class SodaLayer extends PositionComponent {
     // cổ chai
     canvas.drawRect(
       Rect.fromCenter(
-          center: c.translate(0, -bh * 0.45), width: bw * 0.4, height: bh * 0.3),
+        center: c.translate(0, -bh * 0.45),
+        width: bw * 0.4,
+        height: bh * 0.3,
+      ),
       reached ? _neckReached : _neckFloat,
     );
     canvas.drawRRect(body, _strokePaint);
@@ -1352,7 +1443,8 @@ class SodaLayer extends PositionComponent {
 /// Wave 17.1 — Sinh tồn "Triều dâng": nước dâng từ đáy, tô LAM→ĐỎ theo nguy hiểm.
 /// Render-only (đọc `floodTop` từ engine mỗi frame). KHÔNG đụng logic match/refill.
 class TideLayer extends PositionComponent {
-  final double Function() floodTop; // hàng mặt nước (0=đỉnh .. rows=đáy/chưa nước)
+  final double Function()
+  floodTop; // hàng mặt nước (0=đỉnh .. rows=đáy/chưa nước)
   final int rows;
   final int cols;
   final double cellSize;
@@ -1375,21 +1467,39 @@ class TideLayer extends PositionComponent {
 
   double _lastTop = -999;
   Paint? _fill;
+  double _displayTop = double.infinity; // lerp mượt khi nước dâng
+  static const double _lerpSpeed = 1.8; // hàng/giây
+
+  @visibleForTesting
+  double get displayTopForTesting => _displayTop;
 
   @override
-  void update(double dt) => _t += dt;
+  void update(double dt) {
+    _t += dt;
+    final target = floodTop();
+    if (_displayTop == double.infinity) {
+      _displayTop = target;
+    } else if (_displayTop > target) {
+      _displayTop = math.max(target, _displayTop - _lerpSpeed * dt * rows);
+    } else {
+      _displayTop = target;
+    }
+  }
 
   @override
   void render(Canvas canvas) {
     final w = cols * cellSize;
     final h = rows * cellSize;
-    final top = floodTop().clamp(0.0, rows.toDouble());
+    final top = _displayTop.clamp(0.0, rows.toDouble());
     if (top >= rows) return; // chưa có nước
     final surfaceY = origin.y + top * cellSize;
     final danger = ((rows - top) / rows).clamp(0.0, 1.0);
     // màu: lam (an toàn) → đỏ (nguy hiểm) theo độ ngập
     final c = Color.lerp(
-        const Color(0xFF00E5FF), const Color(0xFFFF3B5C), danger)!;
+      const Color(0xFF00E5FF),
+      const Color(0xFFFF3B5C),
+      danger,
+    )!;
     // shader nền: chỉ dựng lại khi mực nước đổi đáng kể (tránh cấp phát mỗi frame)
     if (_fill == null || (top - _lastTop).abs() > 0.02) {
       _lastTop = top;
@@ -1401,7 +1511,9 @@ class TideLayer extends PositionComponent {
         );
     }
     canvas.drawRect(
-        Rect.fromLTWH(origin.x, surfaceY, w, origin.y + h - surfaceY), _fill!);
+      Rect.fromLTWH(origin.x, surfaceY, w, origin.y + h - surfaceY),
+      _fill!,
+    );
     // sóng mặt nước (animate theo _t)
     _wave.color = c.withValues(alpha: 0.85);
     final path = Path()..moveTo(origin.x, surfaceY);
@@ -1454,10 +1566,7 @@ class FogLayer extends PositionComponent {
         cols * cellSize,
         cellSize,
       );
-      canvas.drawRect(
-        rect,
-        Paint()..color = Color.fromRGBO(2, 2, 18, alpha),
-      );
+      canvas.drawRect(rect, Paint()..color = Color.fromRGBO(2, 2, 18, alpha));
     }
     // Viền neon nhẹ ở ranh giới fog/rõ
     final boundY = origin.y + foggedRows * cellSize;
