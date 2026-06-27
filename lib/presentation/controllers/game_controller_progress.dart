@@ -84,6 +84,7 @@ extension GameControllerProgress on GameController {
       StorageKeys.clanPointsWeek, // W23 — Clan
       StorageKeys.clanRewardWeek,
       StorageKeys.clanLeagueRewardWeek,
+      StorageKeys.clanContribLifetime,
       StorageKeys.seasonPoints,
       StorageKeys.seasonIdx,
       StorageKeys.bHammer,
@@ -136,6 +137,7 @@ extension GameControllerProgress on GameController {
       ); // Wave 16: reset pity
     }
     pity.value = 0;
+    clanContribLifetime.value = 0; // W23 — reset tích luỹ Clan
     for (final n in kTempleNodes) {
       await _store.remove(StorageKeys.templeTier(n.id));
     }

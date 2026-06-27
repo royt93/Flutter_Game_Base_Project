@@ -297,6 +297,7 @@ extension GameControllerModes on GameController {
     bossHp.value = bossMaxHp.value;
     bossWeakColor.value = (stage - 1) % level.colorCount;
     _bossHitsSinceRetaliate = 0;
+    _lastBossPhase = 0; // W23 — reset theo dõi đổi phase
     _resetRunState(moves: _bossCfg!.moves);
   }
 
@@ -309,6 +310,11 @@ extension GameControllerModes on GameController {
     if (combo >= GameController.bossWeakCombo) dmg *= 2;
     _weakHitPending = false; // tiêu thụ cờ cho nhịp kế
     bossHp.value = (bossHp.value - dmg).clamp(0, bossMaxHp.value);
+    // W23 — boss LÊN phase mới → bắn signal cho HUD flash "PHASE N!".
+    if (bossPhase > _lastBossPhase) {
+      _lastBossPhase = bossPhase;
+      bossPhaseUpSignal.value++;
+    }
     // phase 2 (máu < 50%) → đổi điểm yếu 1 lần (xác định theo phase, không nhấp nháy)
     final phase2 = bossHp.value <= bossMaxHp.value ~/ 2;
     bossWeakColor.value =

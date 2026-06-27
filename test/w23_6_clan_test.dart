@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:neon_jewels/core/app_translations.dart';
 import 'package:neon_jewels/core/clan_engine.dart';
+import 'package:neon_jewels/data/achievements.dart';
+import 'package:neon_jewels/presentation/controllers/achievement_controller.dart';
 import 'package:neon_jewels/core/storage_service.dart';
 import 'package:neon_jewels/data/tournament.dart' show tournamentWeek;
 import 'package:neon_jewels/presentation/controllers/clan_controller.dart';
@@ -118,6 +120,38 @@ void main() {
       final coins2 = g.coins.value;
       expect(cl.claimLeagueReward(), 0);
       expect(g.coins.value, coins2);
+    });
+  });
+
+  group('W23 — thành tựu Clan (đóng góp tích luỹ)', () {
+    test('addContribution cộng dồn clanContribLifetime + persist', () {
+      expect(g.clanContribLifetime.value, 0);
+      cl.addContribution(3);
+      cl.addContribution(3);
+      final expected = clanPointsForWin(3) * 2;
+      expect(g.clanContribLifetime.value, expected);
+      expect(
+        StorageService.to.getInt(StorageKeys.clanContribLifetime),
+        expected,
+      );
+    });
+
+    test('đạt 100 tích luỹ → mở khoá thành tựu clan_contrib1', () {
+      final ac = Get.put(AchievementController(g));
+      final a = kAchievements.firstWhere((x) => x.id == 'clan_contrib1');
+      expect(ac.isUnlocked(a), isFalse);
+      // bơm đóng góp tới >=100
+      while (g.clanContribLifetime.value < a.threshold) {
+        cl.addContribution(3);
+      }
+      expect(ac.isUnlocked(a), isTrue);
+    });
+
+    test('resetProgress → clanContribLifetime về 0', () async {
+      cl.addContribution(3);
+      expect(g.clanContribLifetime.value, greaterThan(0));
+      await g.resetProgress();
+      expect(g.clanContribLifetime.value, 0);
     });
   });
 

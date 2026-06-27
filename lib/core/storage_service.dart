@@ -90,6 +90,9 @@ class StorageKeys {
   /// W23 — Clan: đóng góp tuần của người chơi, dạng `'<week>|<pts>'` (đổi tuần → reset).
   static const String clanPointsWeek = 'clan_points_week';
 
+  /// W23 — Clan: tổng đóng góp TÍCH LUỸ (lifetime) cho thành tựu.
+  static const String clanContribLifetime = 'clan_contrib_lifetime';
+
   /// W23 — Clan: tuần đã nhận thưởng mục tiêu (1 lần/tuần).
   static const String clanRewardWeek = 'clan_reward_week';
 

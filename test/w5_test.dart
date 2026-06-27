@@ -228,10 +228,12 @@ void main() {
       expect(c.coinsEarnedTotal.value, 0);
       // cờ thành tựu trong store đã bị xoá
       expect(
-          StorageService.to.getInt(
-              StorageKeys.achievementClaimed('first_win'),
-              def: 0),
-          0);
+        StorageService.to.getInt(
+          StorageKeys.achievementClaimed('first_win'),
+          def: 0,
+        ),
+        0,
+      );
     });
   });
 
@@ -299,8 +301,15 @@ void main() {
           case AchStat.coinsEarned:
             c.coinsEarnedTotal.value = a.threshold;
             break;
+          case AchStat.clanContribTotal:
+            c.clanContribLifetime.value = a.threshold;
+            break;
         }
-        expect(ac.isUnlocked(a), true, reason: 'thành tựu ${a.id} phải mở khoá');
+        expect(
+          ac.isUnlocked(a),
+          true,
+          reason: 'thành tựu ${a.id} phải mở khoá',
+        );
       }
     });
 
@@ -311,6 +320,7 @@ void main() {
       c.bestWinStreak.value = 20;
       c.unlockedLevel.value = 100;
       c.coinsEarnedTotal.value = 5000;
+      c.clanContribLifetime.value = 5000; // W23 — phủ thành tựu Clan
       c.stars.clear();
       for (var lv = 1; lv <= 100; lv++) {
         c.stars[lv] = 3; // 300 sao (phủ thành tựu tier cao Wave 12: stars_300)
@@ -334,10 +344,16 @@ void main() {
     test('các màn spread là score + obstacle=spread + thêm lượt', () {
       for (final lv in kSpreadLevels) {
         final cfg = kLevels[lv - 1];
-        expect(cfg.objective, ObjectiveType.score,
-            reason: 'màn $lv phải là score');
-        expect(cfg.obstacle, ObstacleType.spread,
-            reason: 'màn $lv phải có obstacle spread');
+        expect(
+          cfg.objective,
+          ObjectiveType.score,
+          reason: 'màn $lv phải là score',
+        );
+        expect(
+          cfg.obstacle,
+          ObstacleType.spread,
+          reason: 'màn $lv phải có obstacle spread',
+        );
       }
     });
 

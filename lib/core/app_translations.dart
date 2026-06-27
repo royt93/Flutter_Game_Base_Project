@@ -179,6 +179,9 @@ class AppTranslations extends Translations {
     'boss_atk_block': 'BLOCK!',
     'boss_atk_shuffle': 'SHUFFLE!',
     'boss_atk_meteor': 'METEOR!',
+    'ach_desc_clanContribTotal': 'Contribute @n to your clan',
+    'ach_clan_contrib1_t': 'Team Player',
+    'ach_clan_contrib2_t': 'Clan Champion',
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',
@@ -634,6 +637,9 @@ class AppTranslations extends Translations {
     'boss_atk_block': 'CHẶN!',
     'boss_atk_shuffle': 'XÁO BÀN!',
     'boss_atk_meteor': 'THIÊN THẠCH!',
+    'ach_desc_clanContribTotal': 'Đóng góp @n cho clan',
+    'ach_clan_contrib1_t': 'Đồng Đội',
+    'ach_clan_contrib2_t': 'Vô Địch Clan',
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',
@@ -10673,6 +10679,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': '¡BLOQUEO!',
       'boss_atk_shuffle': '¡MEZCLA!',
       'boss_atk_meteor': '¡METEORO!',
+      'ach_desc_clanContribTotal': 'Aporta @n a tu clan',
+      'ach_clan_contrib1_t': 'Compañero',
+      'ach_clan_contrib2_t': 'Campeón del Clan',
     },
     'fr_FR': {
       'quest_bonus_title': 'BONUS DE QUÊTES',
@@ -10682,6 +10691,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'BLOCAGE !',
       'boss_atk_shuffle': 'MÉLANGE !',
       'boss_atk_meteor': 'MÉTÉORE !',
+      'ach_desc_clanContribTotal': 'Contribuez @n à votre clan',
+      'ach_clan_contrib1_t': 'Coéquipier',
+      'ach_clan_contrib2_t': 'Champion du Clan',
     },
     'de_DE': {
       'quest_bonus_title': 'QUEST-BONUS',
@@ -10691,6 +10703,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'BLOCK!',
       'boss_atk_shuffle': 'MISCHEN!',
       'boss_atk_meteor': 'METEOR!',
+      'ach_desc_clanContribTotal': 'Trage @n zum Clan bei',
+      'ach_clan_contrib1_t': 'Teamplayer',
+      'ach_clan_contrib2_t': 'Clan-Champion',
     },
     'pt_BR': {
       'quest_bonus_title': 'BÔNUS DE MISSÕES',
@@ -10700,6 +10715,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'BLOQUEIO!',
       'boss_atk_shuffle': 'EMBARALHAR!',
       'boss_atk_meteor': 'METEORO!',
+      'ach_desc_clanContribTotal': 'Contribua @n ao seu clã',
+      'ach_clan_contrib1_t': 'Companheiro',
+      'ach_clan_contrib2_t': 'Campeão do Clã',
     },
     'ru_RU': {
       'quest_bonus_title': 'БОНУС ЗА КВЕСТЫ',
@@ -10709,6 +10727,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'БЛОК!',
       'boss_atk_shuffle': 'ПЕРЕМЕШ!',
       'boss_atk_meteor': 'МЕТЕОР!',
+      'ach_desc_clanContribTotal': 'Внесите @n в клан',
+      'ach_clan_contrib1_t': 'Командный игрок',
+      'ach_clan_contrib2_t': 'Чемпион клана',
     },
     'zh_CN': {
       'quest_bonus_title': '任务全完成奖励',
@@ -10718,6 +10739,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': '阻挡！',
       'boss_atk_shuffle': '洗牌！',
       'boss_atk_meteor': '陨石！',
+      'ach_desc_clanContribTotal': '为战队贡献@n',
+      'ach_clan_contrib1_t': '团队一员',
+      'ach_clan_contrib2_t': '战队冠军',
     },
     'ja_JP': {
       'quest_bonus_title': 'クエスト全達成ボーナス',
@@ -10727,6 +10751,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'ブロック！',
       'boss_atk_shuffle': 'シャッフル！',
       'boss_atk_meteor': 'メテオ！',
+      'ach_desc_clanContribTotal': 'クランに@n貢献',
+      'ach_clan_contrib1_t': 'チームプレイヤー',
+      'ach_clan_contrib2_t': 'クラン王者',
     },
     'ko_KR': {
       'quest_bonus_title': '퀘스트 보너스',
@@ -10736,6 +10763,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': '차단!',
       'boss_atk_shuffle': '셔플!',
       'boss_atk_meteor': '메테오!',
+      'ach_desc_clanContribTotal': '클랜에 @n 기여',
+      'ach_clan_contrib1_t': '팀 플레이어',
+      'ach_clan_contrib2_t': '클랜 챔피언',
     },
     'it_IT': {
       'quest_bonus_title': 'BONUS MISSIONI',
@@ -10745,6 +10775,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'BLOCCO!',
       'boss_atk_shuffle': 'MESCOLA!',
       'boss_atk_meteor': 'METEORA!',
+      'ach_desc_clanContribTotal': 'Contribuisci @n al clan',
+      'ach_clan_contrib1_t': 'Compagno',
+      'ach_clan_contrib2_t': 'Campione del Clan',
     },
     'id_ID': {
       'quest_bonus_title': 'BONUS SEMUA QUEST',
@@ -10754,6 +10787,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'BLOKIR!',
       'boss_atk_shuffle': 'ACAK!',
       'boss_atk_meteor': 'METEOR!',
+      'ach_desc_clanContribTotal': 'Sumbang @n ke klan',
+      'ach_clan_contrib1_t': 'Pemain Tim',
+      'ach_clan_contrib2_t': 'Juara Klan',
     },
     'th_TH': {
       'quest_bonus_title': 'โบนัสเควสครบ',
@@ -10763,6 +10799,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'บล็อก!',
       'boss_atk_shuffle': 'สับเปลี่ยน!',
       'boss_atk_meteor': 'อุกกาบาต!',
+      'ach_desc_clanContribTotal': 'สมทบ @n ให้แคลน',
+      'ach_clan_contrib1_t': 'เพื่อนร่วมทีม',
+      'ach_clan_contrib2_t': 'แชมป์แคลน',
     },
     'hi_IN': {
       'quest_bonus_title': 'सभी क्वेस्ट बोनस',
@@ -10772,6 +10811,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'ब्लॉक!',
       'boss_atk_shuffle': 'फेरबदल!',
       'boss_atk_meteor': 'उल्का!',
+      'ach_desc_clanContribTotal': 'क्लैन में @n योगदान',
+      'ach_clan_contrib1_t': 'टीम खिलाड़ी',
+      'ach_clan_contrib2_t': 'क्लैन चैंपियन',
     },
     'ar_SA': {
       'quest_bonus_title': 'مكافأة كل المهام',
@@ -10781,6 +10823,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'حظر!',
       'boss_atk_shuffle': 'خلط!',
       'boss_atk_meteor': 'نيزك!',
+      'ach_desc_clanContribTotal': 'ساهم بـ@n لعشيرتك',
+      'ach_clan_contrib1_t': 'لاعب جماعي',
+      'ach_clan_contrib2_t': 'بطل العشيرة',
     },
     'tr_TR': {
       'quest_bonus_title': 'GÖREV BONUSU',
@@ -10790,6 +10835,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'ENGEL!',
       'boss_atk_shuffle': 'KARIŞTIR!',
       'boss_atk_meteor': 'METEOR!',
+      'ach_desc_clanContribTotal': 'Klanına @n katkı yap',
+      'ach_clan_contrib1_t': 'Takım Oyuncusu',
+      'ach_clan_contrib2_t': 'Klan Şampiyonu',
     },
     'nl_NL': {
       'quest_bonus_title': 'QUEST-BONUS',
@@ -10799,6 +10847,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'BLOK!',
       'boss_atk_shuffle': 'SCHUDDEN!',
       'boss_atk_meteor': 'METEOOR!',
+      'ach_desc_clanContribTotal': 'Draag @n bij aan je clan',
+      'ach_clan_contrib1_t': 'Teamspeler',
+      'ach_clan_contrib2_t': 'Clankampioen',
     },
     'pl_PL': {
       'quest_bonus_title': 'BONUS ZA ZADANIA',
@@ -10808,6 +10859,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'BLOK!',
       'boss_atk_shuffle': 'TASOWANIE!',
       'boss_atk_meteor': 'METEOR!',
+      'ach_desc_clanContribTotal': 'Wnieś @n do klanu',
+      'ach_clan_contrib1_t': 'Gracz zespołowy',
+      'ach_clan_contrib2_t': 'Mistrz Klanu',
     },
     'fil_PH': {
       'quest_bonus_title': 'BONUS NG QUEST',
@@ -10817,6 +10871,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'HARANG!',
       'boss_atk_shuffle': 'HALO!',
       'boss_atk_meteor': 'METEOR!',
+      'ach_desc_clanContribTotal': 'Mag-ambag ng @n sa clan',
+      'ach_clan_contrib1_t': 'Kakampi',
+      'ach_clan_contrib2_t': 'Kampeon ng Clan',
     },
     'ms_MY': {
       'quest_bonus_title': 'BONUS QUEST',
@@ -10826,6 +10883,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'SEKAT!',
       'boss_atk_shuffle': 'KOCOK!',
       'boss_atk_meteor': 'METEOR!',
+      'ach_desc_clanContribTotal': 'Sumbang @n ke klan',
+      'ach_clan_contrib1_t': 'Pemain Pasukan',
+      'ach_clan_contrib2_t': 'Juara Klan',
     },
     'uk_UA': {
       'quest_bonus_title': 'БОНУС ЗА КВЕСТИ',
@@ -10835,6 +10895,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'БЛОК!',
       'boss_atk_shuffle': 'ПЕРЕМІШ!',
       'boss_atk_meteor': 'МЕТЕОР!',
+      'ach_desc_clanContribTotal': 'Внесіть @n у клан',
+      'ach_clan_contrib1_t': 'Командний гравець',
+      'ach_clan_contrib2_t': 'Чемпіон клану',
     },
     'bn_BD': {
       'quest_bonus_title': 'সব কোয়েস্ট বোনাস',
@@ -10844,6 +10907,9 @@ class AppTranslations extends Translations {
       'boss_atk_block': 'ব্লক!',
       'boss_atk_shuffle': 'এলোমেলো!',
       'boss_atk_meteor': 'উল্কা!',
+      'ach_desc_clanContribTotal': 'ক্ল্যানে @n অবদান',
+      'ach_clan_contrib1_t': 'টিম প্লেয়ার',
+      'ach_clan_contrib2_t': 'ক্ল্যান চ্যাম্পিয়ন',
     },
   };
 }

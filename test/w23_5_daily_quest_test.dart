@@ -41,6 +41,57 @@ void main() {
         expect(qs.map((q) => q.type).toSet().length, 3);
       }
     });
+    test('dailyQuests tất định: cùng ngày → cùng bộ (type+target)', () {
+      for (var d = 0; d < 40; d++) {
+        final a = dailyQuests(d);
+        final b = dailyQuests(d);
+        expect(a.map((q) => q.type).toList(), b.map((q) => q.type).toList());
+        expect(
+          a.map((q) => q.target).toList(),
+          b.map((q) => q.target).toList(),
+        );
+      }
+    });
+    test('dailyQuests ngày khác → bộ KHÁC (xoay vòng, không kẹt 1 bộ)', () {
+      final sigs = <String>{};
+      for (var d = 0; d < 14; d++) {
+        sigs.add(dailyQuests(d).map((q) => '${q.type}:${q.target}').join('|'));
+      }
+      expect(sigs.length, greaterThan(1));
+    });
+  });
+
+  group('sang ngày mới (anti-farm + reset tiến trình)', () {
+    test(
+      'claim ngày A → ngày A+1 reset: progress về 0, được claim lại',
+      () async {
+        // tự chứa: ghim clock TRƯỚC onInit (tránh maxDay monotonic của setUp)
+        Get.reset();
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        Get.put(StorageService(prefs));
+        final g2 = GameController();
+        g2.clock = () => DateTime(2026, 6, 20); // ngày A
+        Get.put(g2);
+        final bp2 = Get.put(BattlePassController(g2));
+
+        // hoàn thành + nhận thưởng ngày A
+        for (var i = 0; i < bp2.todayQuests.length; i++) {
+          bp2.questProgress[i] = bp2.todayQuests[i].target;
+        }
+        expect(bp2.claimDailyBonus(), kDailyQuestBonusCoins);
+        expect(bp2.dailyBonusClaimed, isTrue);
+
+        // tiến sang ngày A+1 (forward — hợp lệ với chống-lùi-giờ)
+        g2.clock = () => DateTime(2026, 6, 21);
+        // claimDailyBonus trigger _ensureToday → nạp lại quest ngày mới, KHÔNG
+        // cộng tiến trình (trả 0 vì chưa hoàn thành) → quan sát trạng thái reset
+        expect(bp2.claimDailyBonus(), 0);
+        expect(bp2.questProgress, [0, 0, 0]); // tiến trình reset sang ngày mới
+        expect(bp2.dailyBonusClaimed, isFalse); // mốc nhận thuộc ngày A
+        expect(bp2.dailyBonusClaimable, isFalse); // chưa đủ bộ ngày mới
+      },
+    );
   });
 
   void completeAllQuests() {

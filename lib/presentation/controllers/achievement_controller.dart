@@ -19,8 +19,8 @@ class AchievementController extends GetxController {
 
   static AchievementController? get maybe =>
       Get.isRegistered<AchievementController>()
-          ? Get.find<AchievementController>()
-          : null;
+      ? Get.find<AchievementController>()
+      : null;
 
   /// Xoá cờ "đã nhận" + danh hiệu đeo in-memory khi reset (controller permanent).
   void resetState() {
@@ -82,6 +82,8 @@ class AchievementController extends GetxController {
         return g.unlockedLevel.value;
       case AchStat.coinsEarned:
         return g.coinsEarnedTotal.value;
+      case AchStat.clanContribTotal:
+        return g.clanContribLifetime.value;
     }
   }
 

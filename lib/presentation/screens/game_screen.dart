@@ -1025,6 +1025,35 @@ class GameScreen extends StatelessWidget {
                   )
                 : const SizedBox.shrink(),
           ),
+          // W23 — Flash khi boss LÊN phase mới ("PHASE 2!" / "PHASE 3!")
+          Obx(
+            () => ctrl.bossPhaseUpSignal.value > 0
+                ? Text(
+                        'PHASE ${ctrl.bossPhase + 1}!',
+                        style: const TextStyle(
+                          fontFamily: 'Baloo2',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: NeonTheme.magenta,
+                          shadows: [
+                            Shadow(color: NeonTheme.magenta, blurRadius: 18),
+                          ],
+                        ),
+                      )
+                      .animate(
+                        key: ValueKey(
+                          'phaseup_${ctrl.bossPhaseUpSignal.value}',
+                        ),
+                      )
+                      .fadeIn(duration: 120.ms)
+                      .scale(
+                        begin: const Offset(0.6, 0.6),
+                        end: const Offset(1.15, 1.15),
+                        duration: 360.ms,
+                      )
+                      .fadeOut(delay: 650.ms, duration: 250.ms)
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );

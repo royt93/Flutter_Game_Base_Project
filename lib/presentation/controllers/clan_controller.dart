@@ -51,9 +51,18 @@ class ClanController extends GetxController {
 
   /// Cộng đóng góp clan khi thắng campaign. Đổi tuần → reset nền về 0 trước khi cộng.
   void addContribution(int stars) {
-    final pts = _loadContribution() + clanPointsForWin(stars);
+    final add = clanPointsForWin(stars);
+    final pts = _loadContribution() + add;
     contributionRx.value = pts;
     unawaited(_store.setString(StorageKeys.clanPointsWeek, '$_week|$pts'));
+    // W23 — tích luỹ lifetime cho thành tựu (không reset theo tuần).
+    g.clanContribLifetime.value += add;
+    unawaited(
+      _store.setInt(
+        StorageKeys.clanContribLifetime,
+        g.clanContribLifetime.value,
+      ),
+    );
   }
 
   List<ClanMember> roster() => buildClanRoster(playerContribution, _week);

@@ -1,6 +1,7 @@
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+
 import '../../core/neon_theme.dart';
 import '../../core/storage_service.dart';
 import '../../data/levels.dart';
@@ -8,8 +9,8 @@ import '../../data/side_mode_records.dart';
 import '../../data/story.dart';
 import '../../game/neon_jewel_game.dart';
 import 'battle_pass_controller.dart';
-import 'clan_controller.dart';
 import 'challenge_card_controller.dart';
+import 'clan_controller.dart';
 import 'collection_controller.dart';
 import 'game_controller.dart';
 import 'piggy_controller.dart';
@@ -24,6 +25,7 @@ enum GameUi { playing, quit, win, lose }
 /// Controller GetX cho màn chơi: vòng đời (wakelock), instance game, overlay.
 class GameScreenController extends GetxController {
   final GameController gameCtrl;
+
   GameScreenController(this.gameCtrl);
 
   final Rx<GameUi> ui = GameUi.playing.obs;
@@ -37,6 +39,7 @@ class GameScreenController extends GetxController {
   final RxInt tutorialStep = 0.obs;
 
   NeonJewelGame? _game;
+
   NeonJewelGame get game => _game!;
 
   @override
@@ -205,16 +208,11 @@ class GameScreenController extends GetxController {
       // W19.1 — kỷ lục chế độ phụ (Endless/Boss/Rhythm/Gravity/Soda/ColorRush/
       // Survival/Labyrinth). Daily/Versus trả null → bỏ qua. Banner ăn mừng nếu
       // phá kỷ lục / mở mốc (game còn sống trong 350ms trước overlay).
-      final outcome = SideModeRecordController.maybe?.recordResult(
-        won: result == 'win',
-      );
+      final outcome = SideModeRecordController.maybe?.recordResult(won: result == 'win');
       if (outcome != null && outcome.hasCelebration && _game != null) {
         if (outcome.newTier != RecordTier.none) {
           final tierName = 'rec_tier_${outcome.newTier.name}'.tr;
-          game.showBanner(
-            'rec_milestone'.tr.replaceFirst('@t', tierName),
-            NeonTheme.yellow,
-          );
+          game.showBanner('rec_milestone'.tr.replaceFirst('@t', tierName), NeonTheme.yellow);
         } else if (outcome.newBest) {
           game.showBanner('rec_new_best'.tr, NeonTheme.cyan);
         }
@@ -368,11 +366,7 @@ class GameScreenController extends GetxController {
     final goNext = lv < kLevels.length;
     void go() => goNext ? next() : quit();
     if (!gameCtrl.isEndless.value && lv == worldOfLevel(lv).endLevel) {
-      if (StoryController.to.maybeShow(
-        StoryTrigger.outro,
-        worldOfLevel(lv).index,
-        onComplete: go,
-      )) {
+      if (StoryController.to.maybeShow(StoryTrigger.outro, worldOfLevel(lv).index, onComplete: go)) {
         return;
       }
     }
