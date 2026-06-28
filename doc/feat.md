@@ -106,6 +106,7 @@ lib/
 ## 4. Roadmap tính năng
 
 ### ✅ Implemented (done + build pass Android & iOS + 37 test pass)
+- [x] **App Store screenshot editor:** scaffold riêng tại `store-assets/`; 8 slide English cho iPhone + 8 slide cho iPad, capture trực tiếp từ Pixel 7 Pro, prefill Neon Jewels/tagline/caption, production build pass và dev server chạy tại `http://localhost:3000`.
 - [x] **Setup dự án Flutter** (`com.galaxyjoy.neonjewels`) + deps: get, flame, flame_audio, shared_preferences, google_fonts, flutter_animate
 - [x] **Logic board (pure Dart):** match-3 detection ngang/dọc, run 4→striped, run 5→rainbow — `lib/logic/` (unit-tested kỹ)
 - [x] **Render board bằng Flame:** `GemComponent` 6 màu neon, glow pulsing, gradient radial, tap-chọn-rồi-swap
