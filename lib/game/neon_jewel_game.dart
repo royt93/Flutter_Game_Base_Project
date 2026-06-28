@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/audio_manager.dart';
+import '../core/debug_log.dart';
 import '../core/neon_theme.dart';
 import '../data/cosmetics.dart';
 import '../data/levels.dart';
@@ -165,6 +166,18 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   @override
   Color backgroundColor() => const Color(0x00000000); // để nền gradient Flutter lộ ra
 
+  // PROBE chẩn đoán (tạm): log mỗi lần Flame báo GameWidget đổi size → xác nhận
+  // giả thuyết HUD reflow đẩy board. Xoá sau khi tìm ra root cause.
+  Vector2? _lastResizeSize;
+  @override
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+    if (_lastResizeSize == null || _lastResizeSize != size) {
+      dlog('PROBE onGameResize size=$size (board sẽ dịch nếu size.y đổi)');
+      _lastResizeSize = size.clone();
+    }
+  }
+
   @override
   Future<void> onLoad() async {
     await NeonFx.ensureInit(); // pre-render ảnh glow 1 lần (tránh blur mỗi frame)
@@ -303,10 +316,12 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     // đọc `_floodTop` mỗi frame). KHÔNG đụng gravity/refill — chỉ render + lose-line.
     if (controller.isSurvival.value) {
       _floodTop = rows.toDouble(); // bắt đầu chưa có nước
+      _floodTopVisual = rows.toDouble();
       _tideElapsed = 0;
       boardLayer.add(
         TideLayer(
-          floodTop: () => _floodTop,
+          // Đọc mặt nước ĐÃ LÀM MƯỢT (smooth bằng dt thật ở update) → không giật.
+          floodTop: () => _floodTopVisual,
           rows: rows,
           cols: cols,
           cellSize: cellSize,
@@ -507,6 +522,10 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   // Wave 17.1 — Sinh tồn "Triều dâng": mặt nước (hàng, 0=đỉnh .. rows=đáy/chưa nước)
   // dâng theo thời gian; clear gem dưới nước đẩy lùi; chạm đỉnh = thua.
   late double _floodTop = rows.toDouble();
+  // Mặt nước HIỂN THỊ (lerp mượt). Tách khỏi _floodTop để smoothing chạy bằng dt
+  // THẬT trong update() (xem dưới) — KHÔNG để TideLayer tự lerp vì Flame truyền
+  // dt đã nhân _timeScale xuống child → lệch nhịp với _floodTop khi slow-mo.
+  late double _floodTopVisual = rows.toDouble();
   double _tideElapsed = 0; // giây đã sống (để tăng tốc dâng)
 
   // Slow-motion ngắn khi combo lớn (wombo) — làm chậm MỌI hiệu ứng Flame.
@@ -580,6 +599,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         controller.tideOverflow.value = true;
         _finishMove(consumed: false); // → checkEnd nhánh survival → 'lose'
       }
+    }
+    // Làm mượt mặt nước HIỂN THỊ bằng dt THẬT (ngoài slow-mo) → pushback không giật.
+    // Phải chạy mỗi frame khi có nước, kể cả lúc _busy/cascade (nước vẫn cần mượt).
+    if (controller.isSurvival.value) {
+      _floodTopVisual = smoothTideTop(_floodTopVisual, _floodTop, dt);
     }
 
     if (_trauma > 0) {

@@ -1467,40 +1467,20 @@ class TideLayer extends PositionComponent {
 
   double _lastTop = -999;
   Paint? _fill;
-  // _displayTop: giá trị hiển thị thật (lerp cả 2 chiều).
-  // Root cause jank: kTidePushback làm _floodTop NHẢY LÊN đột ngột khi clear
-  // gem dưới nước → snap ngay = nhìn thấy. Fix: lerp cả khi nước lùi/pushback.
-  double _displayTop = double.infinity;
-  // riseSpeed: theo kịp tide tự nhiên (0.06 rows/giây) với buffer nhỏ
-  static const double _riseSpeed = 5.0; // rows/giây khi nước dâng
-  // receedSpeed: mượt hoá pushback (kTidePushback*count có thể lớn ~1 row)
-  static const double _receedSpeed = 3.0; // rows/giây khi nước bị đẩy lùi
 
-  @visibleForTesting
-  double get displayTopForTesting => _displayTop;
+  // LƯU Ý: TideLayer KHÔNG tự lerp mặt nước. Việc làm mượt (smoothTideTop) được
+  // engine thực hiện trong update() bằng dt THẬT — vì Flame truyền dt đã nhân
+  // _timeScale (slow-mo) xuống child, nếu lerp ở đây sẽ lệch nhịp với _floodTop.
+  // `floodTop()` ở đây đã trả về giá trị _floodTopVisual đã được làm mượt sẵn.
 
   @override
-  void update(double dt) {
-    _t += dt;
-    final target = floodTop();
-    if (_displayTop == double.infinity) {
-      _displayTop = target; // khởi tạo lần đầu
-      return;
-    }
-    if (target < _displayTop) {
-      // nước dâng (top giảm): bám sát _floodTop nhanh, tránh lag thấy được
-      _displayTop = math.max(target, _displayTop - _riseSpeed * dt);
-    } else if (target > _displayTop) {
-      // pushback/nước lùi: lerp mượt thay vì snap → không còn hiệu ứng "nhảy"
-      _displayTop = math.min(target, _displayTop + _receedSpeed * dt);
-    }
-  }
+  void update(double dt) => _t += dt; // chỉ chạy sóng/bong bóng theo thời gian
 
   @override
   void render(Canvas canvas) {
     final w = cols * cellSize;
     final h = rows * cellSize;
-    final top = _displayTop.clamp(0.0, rows.toDouble());
+    final top = floodTop().clamp(0.0, rows.toDouble());
     if (top >= rows) return; // chưa có nước
     final surfaceY = origin.y + top * cellSize;
     final danger = ((rows - top) / rows).clamp(0.0, 1.0);

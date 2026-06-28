@@ -971,6 +971,21 @@ const double kTidePushback = 0.13; // đẩy lùi (hàng) mỗi gem DƯỚI NƯ�
 /// Pure → unit-test được + dùng chung engine.
 double tideRiseRate(double elapsed) => kTideBaseRate + kTideAccel * elapsed;
 
+/// Tốc độ làm mượt MẶT NƯỚC HIỂN THỊ (hàng/giây) khi triều bị ĐẨY LÙI đột ngột
+/// (clear gem dưới nước → `floodTop` nhảy lên `kTidePushback × N`). Lerp chậm hơn
+/// để mắt thấy nước "rút" mượt thay vì giật. Khi nước DÂNG tự nhiên thì bám sát.
+const double kTideVisualReceedSpeed = 3.0;
+
+/// Làm mượt giá trị mặt nước hiển thị [current] tiến về [target] qua [dt] giây.
+/// - Nước DÂNG (target < current): bám sát ngay (floodTop tự nó đã mượt từng frame).
+/// - Nước LÙI/pushback (target > current): lerp ở [kTideVisualReceedSpeed] → hết giật.
+/// PURE — dùng ở engine (dt THẬT, không dính slow-mo) + unit-test được.
+double smoothTideTop(double current, double target, double dt) {
+  if (target <= current) return target; // dâng → bám sát (đã mượt sẵn)
+  final next = current + kTideVisualReceedSpeed * dt;
+  return next < target ? next : target; // lùi → lerp, không vượt target
+}
+
 /// Cấu hình Survival (Triều dâng): objective `score` để KHÔNG dính đồng hồ/+giây
 /// của timeAttack — kết thúc do TRIỀU (engine set `tideOverflow`), không do hết giờ.
 /// `moves`/`targetScore` đặt khổng lồ để không bao giờ hết lượt / "win" sớm.

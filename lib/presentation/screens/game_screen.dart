@@ -1000,13 +1000,21 @@ class GameScreen extends StatelessWidget {
               )
               .animate(key: ValueKey('boss_weak_${ctrl.bossWeakColor.value}'))
               .fadeIn(duration: 300.ms),
-          // Flash khi boss attack
-          Obx(
-            () => ctrl.bossAttackSignal.value > 0
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child:
-                        Text(
+          // Flash boss-attack + phase-up: GỘP vào 1 vùng CHIỀU CAO CỐ ĐỊNH 24px.
+          // Root cause "board giật về bottom" (probe xác nhận: GameWidget co 19px):
+          // trước đây 2 dòng flash xuất hiện/biến mất làm Column HUD đổi height →
+          // Expanded(GameWidget) co lại → board re-center → cả bàn dịch. Đặt height
+          // cố định + Stack overlay → HUD KHÔNG bao giờ đổi height → board đứng yên.
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 24,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Flash khi boss attack
+                Obx(
+                  () => ctrl.bossAttackSignal.value > 0
+                      ? Text(
                               ctrl.bossAttackLabelKey.tr,
                               style: TextStyle(
                                 fontFamily: 'Baloo2',
@@ -1021,38 +1029,43 @@ class GameScreen extends StatelessWidget {
                             .animate(key: ValueKey(ctrl.bossAttackSignal.value))
                             .fadeIn(duration: 90.ms)
                             .shake(duration: 260.ms, hz: 8)
-                            .fadeOut(delay: 350.ms, duration: 180.ms),
-                  )
-                : const SizedBox.shrink(),
-          ),
-          // W23 — Flash khi boss LÊN phase mới ("PHASE 2!" / "PHASE 3!")
-          Obx(
-            () => ctrl.bossPhaseUpSignal.value > 0
-                ? Text(
-                        'PHASE ${ctrl.bossPhase + 1}!',
-                        style: const TextStyle(
-                          fontFamily: 'Baloo2',
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: NeonTheme.magenta,
-                          shadows: [
-                            Shadow(color: NeonTheme.magenta, blurRadius: 18),
-                          ],
-                        ),
-                      )
-                      .animate(
-                        key: ValueKey(
-                          'phaseup_${ctrl.bossPhaseUpSignal.value}',
-                        ),
-                      )
-                      .fadeIn(duration: 120.ms)
-                      .scale(
-                        begin: const Offset(0.6, 0.6),
-                        end: const Offset(1.15, 1.15),
-                        duration: 360.ms,
-                      )
-                      .fadeOut(delay: 650.ms, duration: 250.ms)
-                : const SizedBox.shrink(),
+                            .fadeOut(delay: 350.ms, duration: 180.ms)
+                      : const SizedBox.shrink(),
+                ),
+                // W23 — Flash khi boss LÊN phase mới ("PHASE 2!" / "PHASE 3!")
+                Obx(
+                  () => ctrl.bossPhaseUpSignal.value > 0
+                      ? Text(
+                              'PHASE ${ctrl.bossPhase + 1}!',
+                              style: const TextStyle(
+                                fontFamily: 'Baloo2',
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                color: NeonTheme.magenta,
+                                shadows: [
+                                  Shadow(
+                                    color: NeonTheme.magenta,
+                                    blurRadius: 18,
+                                  ),
+                                ],
+                              ),
+                            )
+                            .animate(
+                              key: ValueKey(
+                                'phaseup_${ctrl.bossPhaseUpSignal.value}',
+                              ),
+                            )
+                            .fadeIn(duration: 120.ms)
+                            .scale(
+                              begin: const Offset(0.6, 0.6),
+                              end: const Offset(1.15, 1.15),
+                              duration: 360.ms,
+                            )
+                            .fadeOut(delay: 650.ms, duration: 250.ms)
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ),
           ),
         ],
       ),

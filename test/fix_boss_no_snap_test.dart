@@ -2,7 +2,6 @@ import 'package:flame/components.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:neon_jewels/core/storage_service.dart';
-import 'package:neon_jewels/data/levels.dart';
 import 'package:neon_jewels/game/neon_jewel_game.dart';
 import 'package:neon_jewels/logic/boss_attack.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
