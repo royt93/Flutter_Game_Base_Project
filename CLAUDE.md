@@ -9,8 +9,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Run all unit/widget tests
-flutter test
+# Run the everyday suite (unit + widget). Excludes `slow`-tagged integration
+# tests, which drive the real app on a device (~5-8 min/case). See dart_test.yaml.
+flutter test --exclude-tags slow
 
 # Run a single test file
 flutter test test/levels_test.dart
@@ -18,7 +19,7 @@ flutter test test/levels_test.dart
 # Run a specific test by name
 flutter test test/w20_content_test.dart --plain-name "kLevelCount"
 
-# Run integration tests on device
+# Run the full slow integration suite on a device (nightly / device-farm)
 flutter test integration_test/app_test.dart -d <device-id>
 
 # Static analysis (must be 0 issues before committing)
@@ -78,7 +79,7 @@ Pure Dart constants and data classes.
 `GameScreen` is a `StatelessWidget` driven entirely by `GameScreenController` (GetX). UI state is `GameUi` enum: `playing | quit | win | lose`. Win/lose dialogs are **in-tree overlays** (`NeonDialog.overlay`), NOT `Get.dialog` or `showDialog` (those are no-ops under full-screen Flame).
 
 #### Permanent Controllers
-All registered in `HomeScreen.build` via `Get.put(..., permanent: true)`. Includes: `GameController`, `AchievementController`, `BattlePassController`, `SeasonLeagueController`, `SideModeRecordController`, `PuzzleController`, `ProgressionTreeController`, `ChallengeCardController`, and others.
+All registered in `HomeScreen.build` via `Get.put(..., permanent: true)`. Includes: `GameController`, `AchievementController`, `LuckyWheelController`, `BattlePassController`, `SeasonLeagueController`, `CollectionController`, `PiggyController`, `SideModeRecordController`, `PuzzleController`, `ProgressionTreeController` (W20.3), `ChallengeCardController` (W20.3), `ClanController` (W23, offline), `StoryController`. Every non-`GameController` controller takes the `GameController` in its constructor. When adding a new permanent controller with persisted state, wire its `resetState()` into `resetProgress()` (see Reward Anti-Exploit below).
 
 ## Key Conventions
 
