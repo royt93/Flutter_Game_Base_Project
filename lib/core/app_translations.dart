@@ -112,6 +112,7 @@ class AppTranslations extends Translations {
           ...?_w21ByLang[e.key],
           ...?_w22ByLang[e.key],
           ...?_w23ByLang[e.key],
+          ...?_w25ByLang[e.key],
         },
     };
   }
@@ -179,6 +180,8 @@ class AppTranslations extends Translations {
     'boss_atk_block': 'BLOCK!',
     'boss_atk_shuffle': 'SHUFFLE!',
     'boss_atk_meteor': 'METEOR!',
+    'boss_type_pulse': 'Pulse',
+    'boss_type_void': 'Void',
     'ach_desc_clanContribTotal': 'Contribute @n to your clan',
     'ach_clan_contrib1_t': 'Team Player',
     'ach_clan_contrib2_t': 'Clan Champion',
@@ -637,6 +640,8 @@ class AppTranslations extends Translations {
     'boss_atk_block': 'CHẶN!',
     'boss_atk_shuffle': 'XÁO BÀN!',
     'boss_atk_meteor': 'THIÊN THẠCH!',
+    'boss_type_pulse': 'Xung Kích',
+    'boss_type_void': 'Hắc Ám',
     'ach_desc_clanContribTotal': 'Đóng góp @n cho clan',
     'ach_clan_contrib1_t': 'Đồng Đội',
     'ach_clan_contrib2_t': 'Vô Địch Clan',
@@ -10911,5 +10916,30 @@ class AppTranslations extends Translations {
       'ach_clan_contrib1_t': 'টিম প্লেয়ার',
       'ach_clan_contrib2_t': 'ক্ল্যান চ্যাম্পিয়ন',
     },
+  };
+
+  /// W25.1 — tên 2 loại boss (pulse=Xung Kích / voidType=Hắc Ám) cho 20 ngôn ngữ.
+  /// en+vi nằm trong _extraEn/_extraVi. Merge sau _w23ByLang trong [keys].
+  static const Map<String, Map<String, String>> _w25ByLang = {
+    'es_ES': {'boss_type_pulse': 'Pulso', 'boss_type_void': 'Vacío'},
+    'fr_FR': {'boss_type_pulse': 'Pulsation', 'boss_type_void': 'Vide'},
+    'de_DE': {'boss_type_pulse': 'Puls', 'boss_type_void': 'Leere'},
+    'pt_BR': {'boss_type_pulse': 'Pulso', 'boss_type_void': 'Vazio'},
+    'ru_RU': {'boss_type_pulse': 'Пульс', 'boss_type_void': 'Пустота'},
+    'zh_CN': {'boss_type_pulse': '脉冲', 'boss_type_void': '虚空'},
+    'ja_JP': {'boss_type_pulse': 'パルス', 'boss_type_void': '虚空'},
+    'ko_KR': {'boss_type_pulse': '펄스', 'boss_type_void': '공허'},
+    'it_IT': {'boss_type_pulse': 'Impulso', 'boss_type_void': 'Vuoto'},
+    'id_ID': {'boss_type_pulse': 'Denyut', 'boss_type_void': 'Kehampaan'},
+    'th_TH': {'boss_type_pulse': 'พัลส์', 'boss_type_void': 'ความว่างเปล่า'},
+    'hi_IN': {'boss_type_pulse': 'स्पंदन', 'boss_type_void': 'शून्य'},
+    'ar_SA': {'boss_type_pulse': 'نبض', 'boss_type_void': 'الفراغ'},
+    'tr_TR': {'boss_type_pulse': 'Nabız', 'boss_type_void': 'Boşluk'},
+    'nl_NL': {'boss_type_pulse': 'Puls', 'boss_type_void': 'Leegte'},
+    'pl_PL': {'boss_type_pulse': 'Puls', 'boss_type_void': 'Pustka'},
+    'fil_PH': {'boss_type_pulse': 'Pulso', 'boss_type_void': 'Kawalan'},
+    'ms_MY': {'boss_type_pulse': 'Denyut', 'boss_type_void': 'Kekosongan'},
+    'uk_UA': {'boss_type_pulse': 'Пульс', 'boss_type_void': 'Порожнеча'},
+    'bn_BD': {'boss_type_pulse': 'স্পন্দন', 'boss_type_void': 'শূন্যতা'},
   };
 }

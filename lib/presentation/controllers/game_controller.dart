@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show Color;
 import 'package:get/get.dart';
 import '../../core/debug_log.dart';
+import '../../core/neon_theme.dart';
 import '../../core/storage_service.dart';
 import '../../data/achievements.dart';
 import '../../data/battle_pass.dart';
@@ -109,6 +111,8 @@ class GameController extends GetxController {
   final RxInt bossMaxHp = 0.obs;
   final RxInt bossStage = 1.obs; // chọn từ Home (1..n) → máu + né tăng
   final RxInt bossWeakColor = 0.obs; // index màu điểm yếu (đổi theo phase)
+  // W25.1 — loại boss (khác PROFILE đòn): pulse (cổ điển) / voidType (hung hãn).
+  final Rx<BossType> bossType = BossType.pulse.obs;
   final RxInt bossAttackSignal =
       0.obs; // tăng mỗi lần boss phản đòn → HUD flash
   // W23 — tăng mỗi lần boss LÊN phase mới → HUD flash "PHASE N!".
@@ -231,7 +235,9 @@ class GameController extends GetxController {
   }
 
   /// W23.2B — kiểu đòn boss theo phase hiện tại (engine ánh xạ ra hiệu ứng).
-  BossAttack get bossAttackPattern => bossAttackPatternFor(bossPhase);
+  /// W25.1 — profile đòn phụ thuộc [bossType].
+  BossAttack get bossAttackPattern =>
+      bossAttackPatternFor(bossPhase, bossType.value);
 
   /// Key i18n nhãn đòn boss (HUD flash) theo phase.
   String get bossAttackLabelKey {
@@ -244,6 +250,63 @@ class GameController extends GetxController {
         return 'boss_atk_block';
     }
   }
+
+  /// W25.1 — Key i18n tên loại boss (HUD/intro).
+  String get bossTypeNameKey => bossType.value == BossType.voidType
+      ? 'boss_type_void'
+      : 'boss_type_pulse';
+
+  /// W25.2 — NGUỒN DUY NHẤT cho "identity" mode: màu accent (nền+aura) + key tên
+  /// mở-màn. Gộp về 1 chỗ (review #6) để không lệch giữa nhiều dispatch. Side-mode
+  /// → spec riêng; campaign → accent theo thế giới, không mở-màn.
+  ({Color accent, String? introKey}) get _modeSpec {
+    if (isBoss.value) return (accent: NeonTheme.red, introKey: 'boss_title');
+    if (isRhythm.value) {
+      return (accent: NeonTheme.pink, introKey: 'rhythm_title');
+    }
+    if (isSurvival.value) {
+      return (accent: NeonTheme.cyan, introKey: 'survival_title');
+    }
+    if (isLabyrinth.value) {
+      return (accent: NeonTheme.purple, introKey: 'labyrinth_title');
+    }
+    if (isColorRush.value) {
+      return (accent: NeonTheme.orange, introKey: 'color_rush_title');
+    }
+    if (isSoda.value) return (accent: NeonTheme.blue, introKey: 'soda_title');
+    if (isEndless.value) {
+      // review #3: giữ XOAY accent theo stage (không cố định 1 màu).
+      return (
+        accent:
+            NeonTheme.worldAccents[(endlessStage.value - 1) %
+                NeonTheme.worldAccents.length],
+        introKey: 'endless_title',
+      );
+    }
+    if (isDaily.value) {
+      return (accent: NeonTheme.lime, introKey: 'daily_ch_title');
+    }
+    if (isPuzzle.value) {
+      return (accent: NeonTheme.gold, introKey: 'puzzle_title');
+    }
+    if (isZen.value) return (accent: NeonTheme.teal, introKey: 'zen_title');
+    if (isGravity.value) {
+      return (accent: NeonTheme.indigo, introKey: 'gravity_title');
+    }
+    if (isRush.value) return (accent: NeonTheme.red, introKey: 'rush_title');
+    // Versus chạy ở VersusScreen riêng (không dùng mở-màn GameScreen) → introKey null.
+    if (isVersus.value) return (accent: NeonTheme.yellow, introKey: null);
+    return (
+      accent: NeonTheme.accentForWorld(worldOfLevel(currentLevel.value).index),
+      introKey: null,
+    );
+  }
+
+  /// Màu accent theo mode (nền + aura). Xem [_modeSpec].
+  Color get modeAccent => _modeSpec.accent;
+
+  /// Key i18n tên mode cho MỞ-MÀN (null → không hiện intro). Xem [_modeSpec].
+  String? get modeIntroKey => _modeSpec.introKey;
 
   // --- Ghost Replay (W20.3) ---
   final RxBool isGhostMode = false.obs;

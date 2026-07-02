@@ -2,6 +2,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../../core/audio_manager.dart';
 import '../../core/neon_theme.dart';
 import '../../core/storage_service.dart';
 import '../../data/levels.dart';
@@ -38,6 +39,10 @@ class GameScreenController extends GetxController {
   final RxBool tutorialOpen = false.obs;
   final RxInt tutorialStep = 0.obs;
 
+  // --- W25.2: Mở-màn per-mode (overlay ~1.3s, tự tắt, không chặn input) ---
+  final RxBool showModeIntro = false.obs;
+  String modeIntroLabelKey = '';
+
   NeonJewelGame? _game;
 
   NeonJewelGame get game => _game!;
@@ -59,6 +64,15 @@ class GameScreenController extends GetxController {
           gameCtrl.currentLevel.value == 1 &&
           StorageService.to.getInt(StorageKeys.tutorialSeen, def: 0) == 0) {
         tutorialOpen.value = true;
+      }
+      // W25.2 — Mở-màn: side-mode hiện tên mode (~1.3s). Overlay `_ModeIntroOverlay`
+      // tự ẩn qua AnimationController.addStatusListener (KHÔNG Timer/flutter_animate
+      // → không rò pending-Timer trong widget test).
+      final introKey = gameCtrl.modeIntroKey;
+      if (introKey != null) {
+        modeIntroLabelKey = introKey;
+        showModeIntro.value = true;
+        AudioManager.maybe?.playSpecial();
       }
     });
   }
@@ -208,11 +222,16 @@ class GameScreenController extends GetxController {
       // W19.1 — kỷ lục chế độ phụ (Endless/Boss/Rhythm/Gravity/Soda/ColorRush/
       // Survival/Labyrinth). Daily/Versus trả null → bỏ qua. Banner ăn mừng nếu
       // phá kỷ lục / mở mốc (game còn sống trong 350ms trước overlay).
-      final outcome = SideModeRecordController.maybe?.recordResult(won: result == 'win');
+      final outcome = SideModeRecordController.maybe?.recordResult(
+        won: result == 'win',
+      );
       if (outcome != null && outcome.hasCelebration && _game != null) {
         if (outcome.newTier != RecordTier.none) {
           final tierName = 'rec_tier_${outcome.newTier.name}'.tr;
-          game.showBanner('rec_milestone'.tr.replaceFirst('@t', tierName), NeonTheme.yellow);
+          game.showBanner(
+            'rec_milestone'.tr.replaceFirst('@t', tierName),
+            NeonTheme.yellow,
+          );
         } else if (outcome.newBest) {
           game.showBanner('rec_new_best'.tr, NeonTheme.cyan);
         }
@@ -366,7 +385,11 @@ class GameScreenController extends GetxController {
     final goNext = lv < kLevels.length;
     void go() => goNext ? next() : quit();
     if (!gameCtrl.isEndless.value && lv == worldOfLevel(lv).endLevel) {
-      if (StoryController.to.maybeShow(StoryTrigger.outro, worldOfLevel(lv).index, onComplete: go)) {
+      if (StoryController.to.maybeShow(
+        StoryTrigger.outro,
+        worldOfLevel(lv).index,
+        onComplete: go,
+      )) {
         return;
       }
     }

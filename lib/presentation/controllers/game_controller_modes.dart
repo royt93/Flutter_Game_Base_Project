@@ -298,6 +298,8 @@ extension GameControllerModes on GameController {
         .round();
     bossHp.value = bossMaxHp.value;
     bossWeakColor.value = (stage - 1) % level.colorCount;
+    // W25.1 — loại boss theo stage: chẵn = Hắc Ám (hung hãn), lẻ = Xung Kích.
+    bossType.value = stage.isEven ? BossType.voidType : BossType.pulse;
     _bossHitsSinceRetaliate = 0;
     _lastBossPhase = 0; // W23 — reset theo dõi đổi phase
     _resetRunState(moves: _bossCfg!.moves);

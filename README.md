@@ -1,7 +1,7 @@
 # 💎 Neon Jewels
 
 Game **match-3** phong cách neon, viết bằng **Flutter + Flame + GetX**.
-© Saigon Phantom Labs · Engine match-3 thuần Dart (testable), 22 ngôn ngữ, 150 màn / 8 thế giới.
+© Saigon Phantom Labs · Engine match-3 thuần Dart (testable), 22 ngôn ngữ, 200 màn / 10 thế giới.
 
 > Tài liệu chi tiết tính năng & lịch sử phát triển: [`doc/feat.md`](doc/feat.md).
 > Trạng thái task: [`doc/tasks/`](doc/tasks/) (done / in-progress / todo).
@@ -14,7 +14,7 @@ Game **match-3** phong cách neon, viết bằng **Flutter + Flame + GetX**.
 
 Mở **Bản đồ thế giới** (`WorldMapScreen`) — hoặc **lưới màn** (`LevelSelectScreen`) nếu bật chế độ xem dạng grid. Đây là **mạch chơi chính**:
 
-- **150 màn** chia **8 thế giới** (Tinh Vân Lam → Neon Apex).
+- **200 màn** chia **10 thế giới** (Tinh Vân Lam → Zenith Neon).
 - Xoay vòng **6 loại mục tiêu**: Điểm số · Thu thập màu · Tính giờ · Dọn jelly · Đưa gem xuống (drop) · Dọn chướng ngại.
 - **Tier độ khó** (Wave 16): Normal ~70% · Hard ~25% (⚡) · Super-Hard ~5% (🔥, cuối mỗi thế giới) + nhịp **răng cưa** (màn "nghỉ" relief sau đỉnh).
 - Có **cốt truyện** (story intro/mid), **tốn mạng**, **win-streak**, mở khoá tuần tự, **DDA/pity** (trợ giúp ẩn khi thua liên tiếp).
@@ -23,7 +23,7 @@ Mở **Bản đồ thế giới** (`WorldMapScreen`) — hoặc **lưới màn**
 
 ---
 
-### 🎯 Khu THỬ THÁCH — 10 chế độ phụ + 1 PvP
+### 🎯 Khu THỬ THÁCH — 12 chế độ phụ + 1 PvP (bảng dưới là 11 cốt lõi; W20-21 thêm Zen + Rush)
 
 Các chế độ **không tốn mạng, không đụng tiến trình campaign** (cô lập qua `isSideMode`). Lưới 2 hàng (5 + 6 ô).
 
@@ -93,7 +93,7 @@ Hàng **"Tiện ích"** riêng dưới khu Phần thưởng (W18.4 — hết b�
 ```bash
 flutter pub get
 flutter run                  # chạy trên thiết bị/emulator
-flutter test                 # 402 test (unit + widget + integration)
+flutter test                 # 800+ test (unit + widget + integration)
 flutter analyze              # 0 issue
 dart run tool/playtest.dart  # mô phỏng bot validate độ khó
 ```
@@ -103,7 +103,7 @@ dart run tool/playtest.dart  # mô phỏng bot validate độ khó
 ```
 lib/
   core/          # theme, storage, i18n, utils, app_info
-  data/          # levels.dart (150 màn, tier, layout), story
+  data/          # levels.dart (200 màn, tier, layout), story
   logic/         # engine thuần Dart: settle, match, board, rhythm, versus
   game/          # NeonJewelGame (Flame): render + tương tác bàn
   presentation/

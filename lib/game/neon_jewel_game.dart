@@ -162,6 +162,9 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   GemComponent? _selected;
   bool _busy = false;
   bool _ended = false; // ván đã kết thúc (thắng/thua) → chặn input
+  // W25.1 — Meteor telegraph: vùng đã báo ở lượt trước, rơi ở lượt kế (đọc-và-né).
+  Set<Cell>? _pendingMeteor;
+  _MeteorWarning? _meteorWarn;
 
   @override
   Color backgroundColor() => const Color(0x00000000); // để nền gradient Flutter lộ ra
@@ -937,16 +940,38 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         // W17.2: mê cung tường động — shift sau mỗi kMazeShiftMoves lượt thật.
         if (controller.isLabyrinth.value) await _maybeMazeShift();
         // W23.2B — boss attack theo phase: SAU khi cascade settle (tránh phá
-        // animation match của người chơi). shuffle=xáo bàn; meteor=scramble vùng.
-        if (controller.isBoss.value &&
-            controller.bossAttackSignal.value > bossSigBefore) {
-          final atk = controller.bossAttackPattern;
-          if (atk == BossAttack.shuffle) {
-            await _doShuffle();
-          } else if (atk == BossAttack.meteor) {
-            await _doMeteor();
-            // Meteor xóa gem → cần gravity để lấp ô trống ngay, không chờ lượt kế
-            await _applyGravityAndRefill();
+        // animation match của người chơi). shuffle=xáo bàn; meteor=XÓA gem 1 vùng.
+        if (controller.isBoss.value) {
+          // 1) Thiên thạch đã TELEGRAPH ở lượt trước → RƠI bây giờ (nếu boss còn sống).
+          if (_pendingMeteor != null) {
+            final region = _pendingMeteor!;
+            _clearMeteorWarning();
+            if (controller.bossHp.value > 0 && !_ended) {
+              await _doMeteorAt(region);
+              await _meteorSettleNoScore(); // lấp lỗ + dọn match refill (KHÔNG điểm)
+            }
+          }
+          // 2) Boss vừa phản đòn lượt này?
+          if (controller.bossAttackSignal.value > bossSigBefore) {
+            final atk = controller.bossAttackPattern;
+            if (atk == BossAttack.shuffle) {
+              await _doShuffle();
+            } else if (atk == BossAttack.meteor) {
+              // TELEGRAPH: chọn vùng + cảnh báo; thiên thạch rơi vào LƯỢT KẾ.
+              final cells = _pickMeteorCells();
+              if (cells.length >= 2) {
+                _showMeteorWarning(cells);
+                // Nếu đây là nước CUỐI (đã hết lượt sau retaliate) → rơi NGAY, kẻo
+                // ván kết thúc trước lượt kế và đòn không bao giờ land (fix review #5).
+                if (controller.movesLeft.value <= 0 &&
+                    controller.bossHp.value > 0) {
+                  _clearMeteorWarning();
+                  await _doMeteorAt(cells);
+                  await _meteorSettleNoScore();
+                }
+              }
+            }
+            // block: đã trừ lượt trong useMove — engine không cần làm gì.
           }
           // Lưu ý: nếu sau shuffle xuất hiện match sẵn (hiếm, _doShuffle thất bại
           // sau 20 lần thử), match đó sẽ được giải quyết vào lượt kế của người chơi.
@@ -1640,7 +1665,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     return result;
   }
 
-  Future<void> _clearCells(Set<Cell> cells) async {
+  Future<void> _clearCells(Set<Cell> cells, {bool scoring = true}) async {
     // Cổng (Wave 11): clear 1 đầu cổng → echo clear đầu kia (1 hop).
     if (_hasPortal) cells = expandPortals(cells, _portalLink);
     // obstacle bị tổn hại theo tập ô vừa clear (ice: trực tiếp; chain/stone: kề)
@@ -1660,15 +1685,18 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
               _obstacleType == ObstacleType.jam)) {
         continue;
       }
-      // cập nhật mục tiêu: thu thập màu + phá jelly tại ô này
-      final wasJelly = jelly[cell.row][cell.col] > 0;
-      if (wasJelly) jelly[cell.row][cell.col]--;
-      controller.registerClear(g.color, wasJelly);
-      if (controller.isColorRush.value &&
-          g.color.index == controller.colorRushHot.value) {
-        hotCount++;
+      // cập nhật mục tiêu: thu thập màu + phá jelly tại ô này.
+      // scoring=false (vd Meteor boss): XÓA gem nhưng KHÔNG tiến mục tiêu/điểm/lucky.
+      if (scoring) {
+        final wasJelly = jelly[cell.row][cell.col] > 0;
+        if (wasJelly) jelly[cell.row][cell.col]--;
+        controller.registerClear(g.color, wasJelly);
+        if (controller.isColorRush.value &&
+            g.color.index == controller.colorRushHot.value) {
+          hotCount++;
+        }
+        if (g.isLucky) luckyCount++;
       }
-      if (g.isLucky) luckyCount++;
       gems.add(g);
       grid[cell.row][cell.col] = null;
     }
@@ -2066,7 +2094,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
         NeonGlowAura(
           shader: program.fragmentShader(),
           area: size.clone(),
-          color: NeonTheme.cyan,
+          color: controller.modeAccent, // W25.2 — aura theo mode
         )..priority = -9,
       );
     } catch (_) {
@@ -2367,6 +2395,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final result = controller.checkEnd();
     if (result != null) {
       _ended = true;
+      _clearMeteorWarning(); // W25.1 — gỡ telegraph lơ lửng khi ván kết thúc
       _clearHint();
       onGameEnd(result);
     }
@@ -2748,59 +2777,63 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     await Future.wait(futures);
   }
 
-  /// W23.2B — Meteor attack (phase 2): scramble màu 1 vùng 3×3 ngẫu nhiên, KHÔNG
-  /// clear/ghi điểm (gây hại: phá bố cục người chơi). Tránh tạo match SẴN (không
-  /// thưởng điểm free). Tái dùng primitive recolor của _doShuffle.
-  Future<void> _doMeteor() async {
-    final all = <Cell>[];
-    for (int r = 0; r < rows; r++) {
-      for (int c = 0; c < cols; c++) {
-        if (grid[r][c] != null) all.add(Cell(r, c));
+  /// W25.1 — chọn vùng 3×3 cho Meteor: tâm ngẫu nhiên trong ô PLAY có gem THƯỜNG.
+  /// Loại gem special (review #2): meteor không xoá mất rainbow/bomb/striped người
+  /// chơi dày công tạo. Trả Set rỗng nếu không đủ ô. PURE `pickMeteorRegion`.
+  Set<Cell> _pickMeteorCells() {
+    final region = pickMeteorRegion(
+      rows,
+      cols,
+      (r, c) =>
+          _cellKind[r][c] == CellKind.play &&
+          grid[r][c] != null &&
+          grid[r][c]!.type == GemType.normal,
+      _rnd,
+    );
+    return region.map((p) => Cell(p.$1, p.$2)).toSet();
+  }
+
+  /// W25.1 — Meteor attack: XÓA gem 1 vùng 3×3 (tạo lỗ → gravity lấp → refill),
+  /// KHÔNG ghi điểm/không tiến mục tiêu (đòn boss phá bố cục). Dispatch gọi
+  /// `_meteorSettleNoScore()` ngay sau. Telegraph: xem dispatch.
+  Future<void> _doMeteorAt(Set<Cell> cells) async {
+    if (cells.length < 2) return;
+    _shake(10); // thiên thạch rơi mạnh
+    await _clearCells(cells, scoring: false);
+  }
+
+  /// W25.2 fix#1 — sau meteor: gravity + dọn MỌI match do REFILL sinh ra mà KHÔNG
+  /// ghi điểm/không tiến mục tiêu. Bản scramble cũ tránh match sẵn; bản clear-cell
+  /// refill ngẫu nhiên có thể để match free → đòn boss KHÔNG được tặng điểm/special.
+  Future<void> _meteorSettleNoScore() async {
+    await _applyGravityAndRefill();
+    var guard = 0;
+    while (guard++ < 8) {
+      final matches = MatchDetector.findMatches(_colorGrid());
+      if (matches.isEmpty) break;
+      final toClear = <Cell>{};
+      for (final m in matches) {
+        toClear.addAll(m.cells);
       }
+      await _clearCells(toClear, scoring: false);
+      await _applyGravityAndRefill();
     }
-    if (all.isEmpty) return;
-    final ctr = all[_rnd.nextInt(all.length)];
-    final region = <Cell>[];
-    final colors = <GemColor>[];
-    for (int dr = -1; dr <= 1; dr++) {
-      for (int dc = -1; dc <= 1; dc++) {
-        final r = ctr.row + dr, c = ctr.col + dc;
-        if (r >= 0 && r < rows && c >= 0 && c < cols && grid[r][c] != null) {
-          region.add(Cell(r, c));
-          colors.add(grid[r][c]!.color);
-        }
-      }
-    }
-    if (region.length < 2) return;
-    for (int attempt = 0; attempt < 12; attempt++) {
-      colors.shuffle(_rnd);
-      final test = List.generate(
-        rows,
-        (r) => List<GemColor?>.generate(cols, (c) => grid[r][c]?.color),
-      );
-      for (int i = 0; i < region.length; i++) {
-        test[region[i].row][region[i].col] = colors[i];
-      }
-      if (!MatchDetector.hasMatch(test)) break;
-    }
-    _shake(8); // thiên thạch rơi
-    final futures = <Future>[];
-    for (int i = 0; i < region.length; i++) {
-      final g = grid[region[i].row][region[i].col]!;
-      g.color = colors[i];
-      g.type = GemType.normal;
-      g.scale = Vector2.all(0.4);
-      futures.add(
-        _run(
-          g,
-          ScaleEffect.to(
-            Vector2.all(1),
-            EffectController(duration: 0.3, curve: Curves.elasticOut),
-          ),
-        ),
-      );
-    }
-    await Future.wait(futures);
+  }
+
+  /// W25.1 — hiện cảnh báo vùng meteor (telegraph) + ghi vùng CHỜ rơi ở lượt kế.
+  void _showMeteorWarning(Set<Cell> cells) {
+    _clearMeteorWarning();
+    _pendingMeteor = cells;
+    final centers = [for (final c in cells) _cellCenter(c.row, c.col)];
+    _meteorWarn = _MeteorWarning(centers, cellSize)..priority = 55;
+    boardLayer.add(_meteorWarn!);
+  }
+
+  /// Gỡ cảnh báo + xoá vùng chờ (khi rơi xong hoặc ván kết thúc).
+  void _clearMeteorWarning() {
+    _meteorWarn?.removeFromParent();
+    _meteorWarn = null;
+    _pendingMeteor = null;
   }
 
   /// Tăng "trauma" rung — vòng update sẽ áp dụng & tự giảm về 0 (không trôi tâm).
@@ -2879,5 +2912,37 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// Chớp sáng toàn màn (rainbow / combo lớn).
   void _flash(Color color, {double peak = 0.3}) {
     add(FlashOverlay(area: size, color: color, peak: peak)..priority = 80);
+  }
+}
+
+/// W25.1 — Cảnh báo vùng thiên thạch sắp rơi (telegraph meteor): ô vuông đỏ
+/// nhấp nháy tại các ô sẽ bị phá ở LƯỢT KẾ → người chơi đọc-và-né.
+class _MeteorWarning extends PositionComponent {
+  _MeteorWarning(this.centers, this.cell);
+  final List<Vector2> centers;
+  final double cell;
+  double _t = 0;
+
+  @override
+  void update(double dt) => _t += dt;
+
+  @override
+  void render(Canvas canvas) {
+    final a = 0.30 + 0.35 * (0.5 + 0.5 * math.sin(_t * 9));
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..color = NeonTheme.red.withValues(alpha: a);
+    final fill = Paint()..color = NeonTheme.red.withValues(alpha: a * 0.22);
+    final s = cell * 0.88;
+    for (final ctr in centers) {
+      final rect = Rect.fromCenter(
+        center: Offset(ctr.x, ctr.y),
+        width: s,
+        height: s,
+      );
+      canvas.drawRect(rect, fill);
+      canvas.drawRect(rect, stroke);
+    }
   }
 }

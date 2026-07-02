@@ -7,6 +7,7 @@ import '../../core/audio_manager.dart';
 import '../../core/debug_log.dart';
 import '../../core/neon_theme.dart';
 import '../../core/utils/format.dart';
+import '../../data/cosmetics.dart';
 import '../../data/levels.dart';
 import '../../data/side_mode_records.dart';
 import '../../game/neon_jewel_game.dart' show BoosterMode;
@@ -35,13 +36,8 @@ class GameScreen extends StatelessWidget {
       },
       child: Scaffold(
         body: Obx(() {
-          // Theme đổi màu theo thế giới (hoặc theo stage khi Endless).
-          final accent = ctrl.isEndless.value
-              ? NeonTheme.worldAccents[(ctrl.endlessStage.value - 1) %
-                    NeonTheme.worldAccents.length]
-              : NeonTheme.accentForWorld(
-                  worldOfLevel(ctrl.currentLevel.value).index,
-                );
+          // W25.2 — Theme đổi màu theo MODE (side-mode có màu riêng); campaign theo thế giới.
+          final accent = ctrl.modeAccent;
           return NeonBg(
             accent: accent,
             child: Stack(
@@ -79,6 +75,19 @@ class GameScreen extends StatelessWidget {
                 }),
                 // Overlay cốt truyện outro (sau khi thắng màn cuối thế giới)
                 const StoryOverlay(),
+                // W25.2 — Mở-màn per-mode (tên mode + màu accent, ~1.3s, không chặn input)
+                Obx(
+                  () => sc.showModeIntro.value
+                      ? _ModeIntroOverlay(
+                          label: sc.modeIntroLabelKey.tr,
+                          accent: ctrl.modeAccent,
+                          reduced: ActiveCosmetics.reducedMotion,
+                          onDone: () {
+                            if (!sc.isClosed) sc.showModeIntro.value = false;
+                          },
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ],
             ),
           );
@@ -664,7 +673,7 @@ class GameScreen extends StatelessWidget {
                           ctrl.isDaily.value
                               ? 'daily_ch_title'.tr
                               : ctrl.isBoss.value
-                              ? '${'boss_title'.tr} ${ctrl.bossStage.value}'
+                              ? '${ctrl.bossTypeNameKey.tr} · ${'boss_title'.tr} ${ctrl.bossStage.value}'
                               : ctrl.isRhythm.value
                               ? 'rhythm_title'.tr
                               : ctrl.isGravity.value
@@ -1914,4 +1923,97 @@ class _GhostPainter extends CustomPainter {
       old.r2 != r2 ||
       old.c2 != c2 ||
       (old.alpha - alpha).abs() > 0.005; // 0.005 đủ nhỏ để không bỏ frame (~3ms)
+}
+
+/// W25.2 — Overlay mở-màn per-mode: tên mode + màu accent, fade+scale ngắn rồi
+/// TỰ ẨN qua AnimationController (Ticker tự dispose khi unmount → KHÔNG để lại
+/// Dart Timer pending trong widget test). Bọc IgnorePointer → không chặn chơi.
+class _ModeIntroOverlay extends StatefulWidget {
+  const _ModeIntroOverlay({
+    required this.label,
+    required this.accent,
+    required this.reduced,
+    required this.onDone,
+  });
+  final String label;
+  final Color accent;
+  final bool reduced;
+  final VoidCallback onDone;
+
+  @override
+  State<_ModeIntroOverlay> createState() => _ModeIntroOverlayState();
+}
+
+class _ModeIntroOverlayState extends State<_ModeIntroOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 1300),
+        )..addStatusListener((s) {
+          if (s == AnimationStatus.completed) widget.onDone();
+        });
+    _c.forward();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _c,
+          builder: (context, _) {
+            final t = _c.value;
+            // fade in [0,0.14] · giữ · fade out [0.86,1]
+            final opacity = t < 0.14
+                ? t / 0.14
+                : (t > 0.86 ? (1 - t) / 0.14 : 1.0);
+            final scale = widget.reduced
+                ? 1.0
+                : (t < 0.24 ? 0.72 + 0.28 * (t / 0.24) : 1.0);
+            return Opacity(
+              opacity: opacity.clamp(0.0, 1.0),
+              child: Transform.scale(
+                scale: scale,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 30,
+                    vertical: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: NeonTheme.panel.withValues(alpha: 0.72),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: widget.accent, width: 2.5),
+                    boxShadow: NeonTheme.glow(widget.accent, blur: 22),
+                  ),
+                  child: Text(
+                    widget.label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      shadows: [Shadow(color: widget.accent, blurRadius: 18)],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
