@@ -726,6 +726,14 @@ class GameScreen extends StatelessWidget {
                 ? _rhythmHud(ctrl)
                 : ctrl.isColorRush.value
                 ? _colorRushHud(ctrl)
+                : ctrl.isGravity.value
+                ? _gravityHud(ctrl)
+                : ctrl.isSoda.value
+                ? _sodaHud(ctrl)
+                : ctrl.isLabyrinth.value
+                ? _labyrinthHud(ctrl)
+                : ctrl.isDaily.value
+                ? _dailyHud(ctrl)
                 : const SizedBox.shrink(),
           ),
           const SizedBox(height: NeonTheme.s8),
@@ -819,7 +827,223 @@ class GameScreen extends StatelessWidget {
                 boxShadow: NeonTheme.glow(hot, blur: 8),
               ),
             ),
+            // W26.1 — streak ×N (chuỗi clear màu nóng liên tiếp, ×1→×3 → hiện ×2..×4).
+            if (ctrl.colorRushStreak.value > 0) ...[
+              const SizedBox(width: 10),
+              Builder(
+                builder: (_) {
+                  final s = ctrl.colorRushStreak.value;
+                  final sc = s >= 3
+                      ? NeonTheme.red
+                      : (s == 2 ? NeonTheme.orange : NeonTheme.yellow);
+                  final chip = Text(
+                    '×${s + 1}',
+                    style: TextStyle(
+                      color: sc,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      shadows: [Shadow(color: sc, blurRadius: 8)],
+                    ),
+                  );
+                  return ActiveCosmetics.reducedMotion
+                      ? chip
+                      : chip
+                            .animate(key: ValueKey(s))
+                            .scale(
+                              begin: const Offset(1.4, 1.4),
+                              end: const Offset(1, 1),
+                              duration: 240.ms,
+                              curve: Curves.easeOutBack,
+                            );
+                },
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Decoration panel HUD chủ đạo dùng chung (W26.1) — accent theo mode.
+  BoxDecoration _hudDeco(Color accent) => BoxDecoration(
+    color: NeonTheme.panel.withValues(alpha: 0.55),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: accent.withValues(alpha: 0.7), width: 1.5),
+    boxShadow: NeonTheme.glow(accent, blur: 8),
+  );
+
+  /// HUD Gravity (W26.1): mũi tên hướng rơi + đếm ngược lượt tới lần lật bàn.
+  Widget _gravityHud(GameController ctrl) {
+    final accent = ctrl.modeAccent;
+    final up = ctrl.gravityDir.value == 1;
+    // Đọc movesLeft để Obx ngoài rebuild mỗi lượt → countdown lật luôn tươi.
+    ctrl.movesLeft.value;
+    final n = ctrl.gravityMovesUntilFlip;
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.only(top: NeonTheme.s8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: _hudDeco(accent),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            NeonIcon(
+              up ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+              color: accent,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${'hud_flip_in'.tr} $n',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// HUD Soda (W26.1): thanh mực nước (sodaProgress) + số chai; flash khi vòi phun.
+  Widget _sodaHud(GameController ctrl) {
+    final accent = ctrl.modeAccent;
+    final p = ctrl.sodaProgress.clamp(0.0, 1.0);
+    final pulse = ctrl.sodaNozzlePulse.value; // đổi → flash vòi phun
+    final target = ctrl.level.sodaTarget;
+    final bar = Container(
+      margin: const EdgeInsets.only(top: NeonTheme.s8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: _hudDeco(accent),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NeonIcon(Icons.local_drink_rounded, color: accent, size: 18),
+          const SizedBox(width: 8),
+          // Ống mực nước ngang: fill theo tiến độ chai.
+          Container(
+            width: 60,
+            height: 8,
+            decoration: BoxDecoration(
+              color: Colors.white12,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: p == 0 ? 0.001 : p,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(4),
+                  boxShadow: NeonTheme.glow(accent, blur: 6),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${ctrl.sodaCollected.value}/$target',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ActiveCosmetics.reducedMotion) return Center(child: bar);
+    return Center(
+      child: bar
+          .animate(key: ValueKey(pulse))
+          .shimmer(duration: 320.ms, color: accent.withValues(alpha: 0.5)),
+    );
+  }
+
+  /// HUD Labyrinth (W26.1): badge "tường di động" — nhấp nháy mỗi lượt (dropped đổi).
+  Widget _labyrinthHud(GameController ctrl) {
+    final accent = ctrl.modeAccent;
+    final tick =
+        ctrl.dropped.value; // đổi mỗi lượt gem rơi → nháy báo tường dịch
+    final badge = Container(
+      margin: const EdgeInsets.only(top: NeonTheme.s8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: _hudDeco(accent),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NeonIcon(Icons.grid_on_rounded, color: accent, size: 18),
+          const SizedBox(width: 8),
+          Text(
+            'hud_maze_walls'.tr,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ActiveCosmetics.reducedMotion) return Center(child: badge);
+    return Center(
+      child: badge
+          .animate(key: ValueKey(tick))
+          .shake(hz: 3, offset: const Offset(1.5, 0), duration: 260.ms),
+    );
+  }
+
+  /// HUD Daily (W26.1): badge từng mutator hôm nay + chuỗi ngày (streak).
+  Widget _dailyHud(GameController ctrl) {
+    final accent = ctrl.modeAccent;
+    final muts = ctrl.todayMutators;
+    final streak = ctrl.dailyChStreak.value;
+    final children = <Widget>[];
+    for (final m in muts) {
+      children.add(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(color: accent.withValues(alpha: 0.6)),
+          ),
+          child: Text(
+            'daily_mut_${m.keyName}'.tr,
+            style: TextStyle(
+              color: accent,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      );
+    }
+    if (streak > 0) {
+      children.add(
+        Text(
+          '🔥 ${'hud_streak'.tr} $streak',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
+    if (children.isEmpty) return const SizedBox.shrink();
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.only(top: NeonTheme.s8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: _hudDeco(accent),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: children,
         ),
       ),
     );

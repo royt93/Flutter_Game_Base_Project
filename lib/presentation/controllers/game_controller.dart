@@ -160,6 +160,13 @@ class GameController extends GetxController {
   // ra MÀU MỤC TIÊU (giúp thu). KHÔNG dùng chiều anti-player.
   static const double kPityCollectBias = 0.20;
 
+  // W25.1 Phase 1B — ColorRush: refill nghiêng về màu nóng (đổi cách gem rơi).
+  static const double kColorRushRefillBias = 0.35;
+  // W25.1 Phase 1C — Thử Thách (hard variant, tự chọn sau Gold): đổi lượt lấy
+  // thưởng cao hơn. KHÔNG ép — người chơi tự bật, KHÔNG đụng campaign/lives.
+  static const double kHardVariantMovesMul = 0.85; // -15% lượt
+  static const double kHardVariantRewardMul = 1.5; // +50% xu thưởng
+
   // --- Sinh tồn (Survival — Wave 17.1 "Triều dâng"): nước dâng từ đáy, clear thấp
   // để đẩy lùi, chạm đỉnh = thua. Engine điều khiển triều + set cờ dưới đây ---
   final RxBool isSurvival = false.obs;
@@ -307,6 +314,18 @@ class GameController extends GetxController {
 
   /// Key i18n tên mode cho MỞ-MÀN (null → không hiện intro). Xem [_modeSpec].
   String? get modeIntroKey => _modeSpec.introKey;
+
+  /// W26.1 — Nhạc nền theo nhóm mode (1 trong 3 track sẵn có, không cần asset mới).
+  /// track1 = mode căng · track2 = mode nhịp/vui · track0 = campaign/còn lại.
+  int get bgmTrack {
+    if (isBoss.value || isSurvival.value || isRush.value || isVersus.value) {
+      return 1;
+    }
+    if (isRhythm.value || isColorRush.value || isSoda.value || isDaily.value) {
+      return 2;
+    }
+    return 0;
+  }
 
   // --- Ghost Replay (W20.3) ---
   final RxBool isGhostMode = false.obs;
@@ -523,6 +542,15 @@ class GameController extends GetxController {
       isVersus.value ||
       isRush.value;
 
+  /// W25.3 — số mode phụ đã đạt mốc Platinum (tối đa 9, đọc chéo
+  /// [SideModeRecordController], không lưu trữ riêng). Dùng cho achievement
+  /// danh hiệu + node Progression Tree.
+  int get platinumMilestonesCount =>
+      SideModeRecordController.maybe?.claimedTier.values
+          .where((t) => t >= RecordTier.platinum.index)
+          .length ??
+      0;
+
   /// Đặt cờ chế độ ĐỘC QUYỀN (đúng 1 mode bật, hoặc tất cả false = màn thường)
   /// + xoá cfg các mode không bật. Gom 1 chỗ → 5 hàm start* khỏi lặp 8 dòng cờ.
   void _enterMode({
@@ -585,7 +613,16 @@ class GameController extends GetxController {
     score.value = 0;
     comboCount.value = 0;
     runMaxCombo.value = 0;
-    movesLeft.value = moves;
+    // W25.1 Phase 1C — "Thử Thách" (hard variant, tự chọn sau Gold): ít lượt
+    // hơn, đổi lấy thưởng cao hơn ở discountSideModeReward(). Chỉ áp dụng khi
+    // mode có đếm lượt thật (moves > 0) — không đụng mode time/score-thuần.
+    final hvKind = SideModeRecordController.maybe?.activeKind;
+    final hardVariantOn =
+        hvKind != null &&
+        (SideModeRecordController.maybe?.hardVariantEnabled(hvKind) ?? false);
+    movesLeft.value = (hardVariantOn && moves > 0)
+        ? (moves * kHardVariantMovesMul).ceil()
+        : moves;
     targetScore.value = target;
     collected.value = 0;
     jellyCleared.value = 0;

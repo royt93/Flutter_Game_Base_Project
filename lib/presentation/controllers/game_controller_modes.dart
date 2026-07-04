@@ -94,6 +94,10 @@ extension GameControllerModes on GameController {
     return false;
   }
 
+  /// W26.1 — số lượt còn lại tới lần lật bàn kế (HUD Gravity). 1..kGravityFlipEvery.
+  int get gravityMovesUntilFlip =>
+      kGravityFlipEvery - (_gravityMoveCount % kGravityFlipEvery);
+
   /// Bắt đầu chế độ Nhịp điệu (chế độ riêng). Ghép đúng nhịp → groove + thưởng điểm.
   void startRhythm() {
     _rhythmCfg = buildRhythmLevel();

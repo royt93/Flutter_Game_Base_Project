@@ -131,9 +131,16 @@ extension GameControllerEconomy on GameController {
     final wins = day == today
         ? _store.getInt(StorageKeys.sideModeWins, def: 0)
         : 0;
-    final reward = wins < GameController.kSideModeFullPlays
+    var reward = wins < GameController.kSideModeFullPlays
         ? base
         : (base * GameController.kSideModeReducedMul).round();
+    // W25.1 Phase 1C — "Thử Thách" đang bật → thưởng cao hơn (đổi lấy ít lượt
+    // hơn ở _resetRunState). Áp SAU chống-farm để không phá cơ chế đó.
+    final hvKind = SideModeRecordController.maybe?.activeKind;
+    if (hvKind != null &&
+        (SideModeRecordController.maybe?.hardVariantEnabled(hvKind) ?? false)) {
+      reward = (reward * GameController.kHardVariantRewardMul).round();
+    }
     unawaited(_store.setInt(StorageKeys.sideModeDay, today));
     unawaited(_store.setInt(StorageKeys.sideModeWins, wins + 1));
     return reward;

@@ -96,6 +96,11 @@ class BattlePassController extends GetxController {
     unawaited(_store.setInt(StorageKeys.bpXp, xp.value));
   }
 
+  /// W25.3 — bonus XP nhỏ từ nguồn NGOÀI campaign (vd mốc điểm side-mode/
+  /// tuần). Tách biệt hoàn toàn khỏi [recordLevelEnd] — không đụng gate
+  /// `!isSideMode`, không đổi công thức lên cấp hiện có.
+  void grantBonusXp(int n) => _addXp(n);
+
   /// Gọi khi 1 màn kết thúc (từ GameScreenController). Endless KHÔNG tính
   /// (tránh farm). Cập nhật tiến trình 3 quest + cộng XP khi quest xong.
   void recordLevelEnd({

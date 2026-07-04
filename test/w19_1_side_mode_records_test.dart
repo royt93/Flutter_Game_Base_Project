@@ -40,7 +40,9 @@ void main() {
     });
 
     test('tierFor trả đúng bậc theo giá trị', () {
-      final s = specForKind(SideModeKind.endless); // 5/15/30
+      final s = specForKind(
+        SideModeKind.endless,
+      ); // 5/15/30/60 (W25.3 +platinum)
       expect(s.tierFor(0), RecordTier.none);
       expect(s.tierFor(4), RecordTier.none);
       expect(s.tierFor(5), RecordTier.bronze);
@@ -48,15 +50,18 @@ void main() {
       expect(s.tierFor(15), RecordTier.silver);
       expect(s.tierFor(29), RecordTier.silver);
       expect(s.tierFor(30), RecordTier.gold);
-      expect(s.tierFor(999), RecordTier.gold);
+      expect(s.tierFor(59), RecordTier.gold);
+      expect(s.tierFor(60), RecordTier.platinum);
+      expect(s.tierFor(999), RecordTier.platinum);
     });
 
     test('thresholdFor khớp ngưỡng', () {
-      final s = specForKind(SideModeKind.boss); // 1/3/5
+      final s = specForKind(SideModeKind.boss); // 1/3/5/8 (W25.3 +platinum)
       expect(s.thresholdFor(RecordTier.none), 0);
       expect(s.thresholdFor(RecordTier.bronze), 1);
       expect(s.thresholdFor(RecordTier.silver), 3);
       expect(s.thresholdFor(RecordTier.gold), 5);
+      expect(s.thresholdFor(RecordTier.platinum), 8);
     });
 
     test('RecordTier.index dùng để so sánh tiến triển', () {
@@ -66,20 +71,29 @@ void main() {
       expect(RecordTier.gold.index, 3);
     });
 
-    test('endless/boss = bestStage, survival = bestScore, còn lại winCount', () {
-      expect(specForKind(SideModeKind.endless).metric, RecordMetric.bestStage);
-      expect(specForKind(SideModeKind.boss).metric, RecordMetric.bestStage);
-      expect(specForKind(SideModeKind.survival).metric, RecordMetric.bestScore);
-      for (final k in [
-        SideModeKind.rhythm,
-        SideModeKind.gravity,
-        SideModeKind.colorRush,
-        SideModeKind.soda,
-        SideModeKind.labyrinth,
-      ]) {
-        expect(specForKind(k).metric, RecordMetric.winCount, reason: '$k');
-      }
-    });
+    test(
+      'endless/boss = bestStage, survival = bestScore, còn lại winCount',
+      () {
+        expect(
+          specForKind(SideModeKind.endless).metric,
+          RecordMetric.bestStage,
+        );
+        expect(specForKind(SideModeKind.boss).metric, RecordMetric.bestStage);
+        expect(
+          specForKind(SideModeKind.survival).metric,
+          RecordMetric.bestScore,
+        );
+        for (final k in [
+          SideModeKind.rhythm,
+          SideModeKind.gravity,
+          SideModeKind.colorRush,
+          SideModeKind.soda,
+          SideModeKind.labyrinth,
+        ]) {
+          expect(specForKind(k).metric, RecordMetric.winCount, reason: '$k');
+        }
+      },
+    );
   });
 
   // ─── 2) Controller — recordResult ────────────────────────────────────────
@@ -128,7 +142,8 @@ void main() {
       final coinsBefore = g.coins.value;
       final o = rec.recordResult(won: false)!;
       expect(o.newTier, RecordTier.gold);
-      final expected = kTierReward[RecordTier.bronze]! +
+      final expected =
+          kTierReward[RecordTier.bronze]! +
           kTierReward[RecordTier.silver]! +
           kTierReward[RecordTier.gold]!;
       expect(o.milestoneCoins, expected);
@@ -214,25 +229,36 @@ void main() {
       expect(rec2.tierOf(SideModeKind.endless), RecordTier.silver);
     });
 
-    test('persist + reload: milestone đã nhận KHÔNG bị claim lại sau restart', () async {
-      // Đạt gold (stage 30) → milestone bronze/silver/gold đều nhận
-      g.startEndless();
-      g.endlessStage.value = 30; // gold threshold
-      final coins0 = g.coins.value;
-      rec.recordResult(won: false);
-      final coinsAfterFirst = g.coins.value;
-      expect(coinsAfterFirst, greaterThan(coins0), reason: 'nhận xu milestone');
+    test(
+      'persist + reload: milestone đã nhận KHÔNG bị claim lại sau restart',
+      () async {
+        // Đạt gold (stage 30) → milestone bronze/silver/gold đều nhận
+        g.startEndless();
+        g.endlessStage.value = 30; // gold threshold
+        final coins0 = g.coins.value;
+        rec.recordResult(won: false);
+        final coinsAfterFirst = g.coins.value;
+        expect(
+          coinsAfterFirst,
+          greaterThan(coins0),
+          reason: 'nhận xu milestone',
+        );
 
-      // Reload controller từ đĩa (simulate app restart)
-      final rec2 = SideModeRecordController(g);
-      rec2.onInit();
-      // Nhập lại result cùng stage → milestones đã claimed, không thưởng lại
-      final coinsBefore = g.coins.value;
-      g.startEndless();
-      g.endlessStage.value = 30;
-      rec2.recordResult(won: false);
-      expect(g.coins.value, coinsBefore, reason: 'anti-double: không thưởng milestone đã nhận');
-    });
+        // Reload controller từ đĩa (simulate app restart)
+        final rec2 = SideModeRecordController(g);
+        rec2.onInit();
+        // Nhập lại result cùng stage → milestones đã claimed, không thưởng lại
+        final coinsBefore = g.coins.value;
+        g.startEndless();
+        g.endlessStage.value = 30;
+        rec2.recordResult(won: false);
+        expect(
+          g.coins.value,
+          coinsBefore,
+          reason: 'anti-double: không thưởng milestone đã nhận',
+        );
+      },
+    );
 
     test('resetState xoá hết kỷ lục in-memory', () {
       g.startEndless();
@@ -276,14 +302,15 @@ void main() {
 
   group('HomeScreen — badge kỷ lục', () {
     Widget appEn(Widget home) => GetMaterialApp(
-          translations: AppTranslations(),
-          locale: const Locale('en', 'US'),
-          fallbackLocale: AppTranslations.fallback,
-          home: home,
-        );
+      translations: AppTranslations(),
+      locale: const Locale('en', 'US'),
+      fallbackLocale: AppTranslations.fallback,
+      home: home,
+    );
 
-    testWidgets('mode đã đạt gold → hiện huy chương; controller load đúng',
-        (tester) async {
+    testWidgets('mode đã đạt gold → hiện huy chương; controller load đúng', (
+      tester,
+    ) async {
       // Seed sẵn endless = gold trên đĩa.
       SharedPreferences.setMockInitialValues({
         'rec_endless_v': 30,

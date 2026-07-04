@@ -36,11 +36,16 @@ class SideModeRecordController extends GetxController {
   /// Giá trị chỉ số hiện tại của từng mode (best stage/score hoặc số lần thắng).
   final RxMap<SideModeKind, int> record = <SideModeKind, int>{}.obs;
 
-  /// Bậc mốc ĐÃ NHẬN của từng mode (index RecordTier: 0=none..3=gold).
+  /// Bậc mốc ĐÃ NHẬN của từng mode (index RecordTier: 0=none..4=platinum).
   final RxMap<SideModeKind, int> claimedTier = <SideModeKind, int>{}.obs;
 
   /// Số lần đã chơi từng mode (thống kê).
   final RxMap<SideModeKind, int> plays = <SideModeKind, int>{}.obs;
+
+  /// W25.1 Phase 1C — "Thử Thách" (hard variant, tự chọn sau Gold): true = đang
+  /// bật cho mode đó (ít lượt hơn, đổi lấy thưởng cao hơn — xem
+  /// [GameController.kHardVariantMovesMul]/[kHardVariantRewardMul]).
+  final RxMap<SideModeKind, bool> hardVariant = <SideModeKind, bool>{}.obs;
 
   /// Kết quả lần ghi nhận gần nhất (cho overlay đọc).
   RecordOutcome? lastOutcome;
@@ -61,6 +66,8 @@ class SideModeRecordController extends GetxController {
       record[spec.kind] = _store.getInt(StorageKeys.recValue(spec.key));
       claimedTier[spec.kind] = _store.getInt(StorageKeys.recTier(spec.key));
       plays[spec.kind] = _store.getInt(StorageKeys.recPlays(spec.key));
+      hardVariant[spec.kind] =
+          _store.getInt(StorageKeys.recHardVariant(spec.key)) == 1;
     }
   }
 
@@ -69,18 +76,40 @@ class SideModeRecordController extends GetxController {
     record.clear();
     claimedTier.clear();
     plays.clear();
+    hardVariant.clear();
     lastOutcome = null;
     for (final spec in kSideModeRecords) {
       record[spec.kind] = 0;
       claimedTier[spec.kind] = 0;
       plays[spec.kind] = 0;
+      hardVariant[spec.kind] = false;
+      unawaited(_store.remove(StorageKeys.recHardVariant(spec.key)));
     }
   }
 
   int recordOf(SideModeKind k) => record[k] ?? 0;
   int playsOf(SideModeKind k) => plays[k] ?? 0;
   RecordTier tierOf(SideModeKind k) =>
-      RecordTier.values[(claimedTier[k] ?? 0).clamp(0, 3)];
+      RecordTier.values[(claimedTier[k] ?? 0).clamp(0, 4)];
+
+  /// W25.1 Phase 1C — "Thử Thách" đang bật cho mode [k]?
+  bool hardVariantEnabled(SideModeKind k) => hardVariant[k] ?? false;
+
+  /// Bật/tắt "Thử Thách" cho mode [k] — chỉ cho phép sau khi đạt Gold ở mode đó
+  /// (mẫu "lý do chơi tiếp sau Gold", KHÔNG trùng Platinum — đây là lựa chọn
+  /// CHỦ ĐỘNG trước ván, không phải mốc điểm số thụ động). Trả trạng thái mới.
+  bool toggleHardVariant(SideModeKind k) {
+    if (tierOf(k).index < RecordTier.gold.index) return hardVariantEnabled(k);
+    final now = !hardVariantEnabled(k);
+    hardVariant[k] = now;
+    unawaited(
+      _store.setInt(
+        StorageKeys.recHardVariant(specForKind(k).key),
+        now ? 1 : 0,
+      ),
+    );
+    return now;
+  }
 
   /// Chế độ phụ ĐANG chơi (null nếu không phải mode có kỷ lục: daily/versus/màn thường).
   SideModeKind? get activeKind {

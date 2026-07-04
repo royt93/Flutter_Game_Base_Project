@@ -1,7 +1,10 @@
+import 'package:flame/game.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:neon_jewels/core/storage_service.dart';
 import 'package:neon_jewels/data/levels.dart';
+import 'package:neon_jewels/game/neon_jewel_game.dart';
+import 'package:neon_jewels/logic/gem_data.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -49,28 +52,34 @@ void main() {
       expect(c.score.value, before + 150);
     });
 
-    test('streak resets to 0 after miss (tickColorRush without prior colorRushBonus)', () {
-      // Build up a streak
-      c.colorRushBonus(1);
-      c.tickColorRush(); // streak = 1
-      // Miss: tick without bonus
-      c.tickColorRush(); // streak → 0
-      expect(c.colorRushStreak.value, 0);
-    });
+    test(
+      'streak resets to 0 after miss (tickColorRush without prior colorRushBonus)',
+      () {
+        // Build up a streak
+        c.colorRushBonus(1);
+        c.tickColorRush(); // streak = 1
+        // Miss: tick without bonus
+        c.tickColorRush(); // streak → 0
+        expect(c.colorRushStreak.value, 0);
+      },
+    );
 
-    test('streak resets on hot color change (every kColorRushChangeEvery moves)', () {
-      // Build streak to 2
-      c.colorRushBonus(1);
-      c.tickColorRush(); // move 1: streak = 1
-      c.colorRushBonus(1);
-      c.tickColorRush(); // move 2: streak = 2
-      c.colorRushBonus(1);
-      c.tickColorRush(); // move 3: streak = 3
-      c.colorRushBonus(1);
-      // move 4 triggers color change (kColorRushChangeEvery == 4)
-      c.tickColorRush(); // streak first → 4 but clamped, then reset to 0 on color change
-      expect(c.colorRushStreak.value, 0);
-    });
+    test(
+      'streak resets on hot color change (every kColorRushChangeEvery moves)',
+      () {
+        // Build streak to 2
+        c.colorRushBonus(1);
+        c.tickColorRush(); // move 1: streak = 1
+        c.colorRushBonus(1);
+        c.tickColorRush(); // move 2: streak = 2
+        c.colorRushBonus(1);
+        c.tickColorRush(); // move 3: streak = 3
+        c.colorRushBonus(1);
+        // move 4 triggers color change (kColorRushChangeEvery == 4)
+        c.tickColorRush(); // streak first → 4 but clamped, then reset to 0 on color change
+        expect(c.colorRushStreak.value, 0);
+      },
+    );
 
     test('streak capped at kColorRushMaxStreak (3)', () {
       // tick 4 times with hot color cleared each time
@@ -107,13 +116,16 @@ void main() {
       expect(c.endlessEvent.value, '');
     });
 
-    test('event 1 (stage 5): endlessEvent = moves, movesLeft += kEndlessEventMovesBonus', () {
-      final movesBefore = c.movesLeft.value;
-      c.score.value = kEndlessStageScore * 4; // stage=5 threshold
-      c.addScore(0, 1);
-      expect(c.endlessEvent.value, 'moves');
-      expect(c.movesLeft.value, movesBefore + kEndlessEventMovesBonus);
-    });
+    test(
+      'event 1 (stage 5): endlessEvent = moves, movesLeft += kEndlessEventMovesBonus',
+      () {
+        final movesBefore = c.movesLeft.value;
+        c.score.value = kEndlessStageScore * 4; // stage=5 threshold
+        c.addScore(0, 1);
+        expect(c.endlessEvent.value, 'moves');
+        expect(c.movesLeft.value, movesBefore + kEndlessEventMovesBonus);
+      },
+    );
 
     test('event 2 (stage 10): endlessEvent = scoreX2', () {
       // Jump straight to stage 10
@@ -123,14 +135,17 @@ void main() {
       expect(c.endlessEvent.value, 'scoreX2');
     });
 
-    test('event 3 (stage 15): endlessEvent = gems, consumeEndlessGemRain returns true then false', () {
-      c.endlessStage.value = 14;
-      c.score.value = kEndlessStageScore * 14; // stage=15
-      c.addScore(0, 1);
-      expect(c.endlessEvent.value, 'gems');
-      expect(c.consumeEndlessGemRain(), isTrue);
-      expect(c.consumeEndlessGemRain(), isFalse);
-    });
+    test(
+      'event 3 (stage 15): endlessEvent = gems, consumeEndlessGemRain returns true then false',
+      () {
+        c.endlessStage.value = 14;
+        c.score.value = kEndlessStageScore * 14; // stage=15
+        c.addScore(0, 1);
+        expect(c.endlessEvent.value, 'gems');
+        expect(c.consumeEndlessGemRain(), isTrue);
+        expect(c.consumeEndlessGemRain(), isFalse);
+      },
+    );
 
     test('event 4 (stage 20): cycles back to moves', () {
       c.endlessStage.value = 19;
@@ -139,42 +154,51 @@ void main() {
       expect(c.endlessEvent.value, 'moves');
     });
 
-    test('scoreX2 event: addScore doubles gained for kEndlessEventScoreBoostMoves calls then stops', () {
-      // Trigger scoreX2 event at stage 10
-      c.endlessStage.value = 9;
-      c.score.value = kEndlessStageScore * 9;
-      c.addScore(0, 1); // triggers event → _endlessScoreX2Remaining = kEndlessEventScoreBoostMoves
-      expect(c.endlessEvent.value, 'scoreX2');
+    test(
+      'scoreX2 event: addScore doubles gained for kEndlessEventScoreBoostMoves calls then stops',
+      () {
+        // Trigger scoreX2 event at stage 10
+        c.endlessStage.value = 9;
+        c.score.value = kEndlessStageScore * 9;
+        c.addScore(
+          0,
+          1,
+        ); // triggers event → _endlessScoreX2Remaining = kEndlessEventScoreBoostMoves
+        expect(c.endlessEvent.value, 'scoreX2');
 
-      // Each addScore call should double gained
-      // gained for 4 gems, combo 1 = 4*10*1 = 40; ×2 = 80
-      for (int i = 0; i < kEndlessEventScoreBoostMoves; i++) {
-        final before = c.score.value;
-        c.addScore(4, 1);
-        final gained = c.score.value - before;
-        // gained should be doubled (80 instead of 40), minus any refund from _endlessTick
-        // Note: _endlessTick may also add refund moves, but score delta is from addScore
-        expect(gained, greaterThanOrEqualTo(80));
-      }
-      // After kEndlessEventScoreBoostMoves calls, event clears
-      expect(c.endlessEvent.value, '');
-    });
+        // Each addScore call should double gained
+        // gained for 4 gems, combo 1 = 4*10*1 = 40; ×2 = 80
+        for (int i = 0; i < kEndlessEventScoreBoostMoves; i++) {
+          final before = c.score.value;
+          c.addScore(4, 1);
+          final gained = c.score.value - before;
+          // gained should be doubled (80 instead of 40), minus any refund from _endlessTick
+          // Note: _endlessTick may also add refund moves, but score delta is from addScore
+          expect(gained, greaterThanOrEqualTo(80));
+        }
+        // After kEndlessEventScoreBoostMoves calls, event clears
+        expect(c.endlessEvent.value, '');
+      },
+    );
 
-    test('startEndless() resets event state (event clears, no spurious event on re-start)', () {
-      // Trigger an event first
-      c.endlessStage.value = 4;
-      c.score.value = kEndlessStageScore * 4;
-      c.addScore(0, 1);
-      expect(c.endlessEvent.value, 'moves'); // event 1 fired
-      // Restart
-      c.startEndless();
-      expect(c.endlessEvent.value, '');
-      // After restart, stage 5 should fire event again (counter reset)
-      c.endlessStage.value = 4;
-      c.score.value = kEndlessStageScore * 4;
-      c.addScore(0, 1);
-      expect(c.endlessEvent.value, 'moves'); // fires again after reset
-    });
+    test(
+      'startEndless() resets event state (event clears, no spurious event on re-start)',
+      () {
+        // Trigger an event first
+        c.endlessStage.value = 4;
+        c.score.value = kEndlessStageScore * 4;
+        c.addScore(0, 1);
+        expect(c.endlessEvent.value, 'moves'); // event 1 fired
+        // Restart
+        c.startEndless();
+        expect(c.endlessEvent.value, '');
+        // After restart, stage 5 should fire event again (counter reset)
+        c.endlessStage.value = 4;
+        c.score.value = kEndlessStageScore * 4;
+        c.addScore(0, 1);
+        expect(c.endlessEvent.value, 'moves'); // fires again after reset
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -193,14 +217,17 @@ void main() {
       expect(c.sodaNozzlePulse.value, pulseBefore);
     });
 
-    test('tickSoda 5th time: sodaFill += kSodaNozzleBurst, sodaNozzlePulse = 1', () {
-      final fillBefore = c.sodaFill.value;
-      for (int i = 0; i < 5; i++) {
-        c.tickSoda();
-      }
-      expect(c.sodaFill.value, fillBefore + kSodaNozzleBurst);
-      expect(c.sodaNozzlePulse.value, 1);
-    });
+    test(
+      'tickSoda 5th time: sodaFill += kSodaNozzleBurst, sodaNozzlePulse = 1',
+      () {
+        final fillBefore = c.sodaFill.value;
+        for (int i = 0; i < 5; i++) {
+          c.tickSoda();
+        }
+        expect(c.sodaFill.value, fillBefore + kSodaNozzleBurst);
+        expect(c.sodaNozzlePulse.value, 1);
+      },
+    );
 
     test('tickSoda 10th time: second burst, sodaNozzlePulse = 2', () {
       for (int i = 0; i < 10; i++) {
@@ -222,5 +249,78 @@ void main() {
       expect(c.sodaNozzlePulse.value, 0);
       expect(c.sodaFill.value, 0);
     });
+  });
+
+  group('W25.1 Phase 1B — ColorRush refill bias (nâng B→A)', () {
+    test(
+      'biasRefillToHotColor — pure: chỉ true khi isColorRush & roll<bias',
+      () {
+        expect(
+          biasRefillToHotColor(false, 0.0, 0.5),
+          isFalse,
+        ); // không ColorRush
+        expect(biasRefillToHotColor(true, 0.4, 0.5), isTrue); // roll < bias
+        expect(biasRefillToHotColor(true, 0.5, 0.5), isFalse); // roll == bias
+        expect(biasRefillToHotColor(true, 0.9, 0.5), isFalse); // roll > bias
+      },
+    );
+
+    test(
+      'ColorRush bật → _refillColor() nghiêng rõ rệt về màu nóng (thống kê)',
+      () async {
+        await TestWidgetsFlutterBinding.instance.runAsync(() async {
+          c.startColorRush();
+          c.colorRushHot.value = 2; // màu nóng cố định để đếm
+          final game = NeonJewelGame(
+            controller: c,
+            rows: 8,
+            cols: 8,
+            colorCount: 6,
+            onGameEnd: (_) {},
+            muteSfx: true,
+            boardSeed: 5,
+          );
+          game.onGameResize(Vector2(560, 800));
+          await game.onLoad();
+
+          var hotCount = 0;
+          const trials = 500;
+          for (var i = 0; i < trials; i++) {
+            if (game.refillColorForTest() == GemColor.values[2]) hotCount++;
+          }
+          // Kỳ vọng ~35% (bias) + ~1/6 (random còn lại) ≈ 46% — chắc chắn cao
+          // hơn nhiều so với 1/6 (~16.7%) nếu KHÔNG có bias.
+          expect(hotCount / trials, greaterThan(0.30));
+        });
+      },
+    );
+
+    test(
+      'ColorRush TẮT → _refillColor() không thiên vị màu nào (không bias)',
+      () async {
+        await TestWidgetsFlutterBinding.instance.runAsync(() async {
+          c.startLevel(1); // campaign — isColorRush = false
+          final game = NeonJewelGame(
+            controller: c,
+            rows: 8,
+            cols: 8,
+            colorCount: 6,
+            onGameEnd: (_) {},
+            muteSfx: true,
+            boardSeed: 5,
+          );
+          game.onGameResize(Vector2(560, 800));
+          await game.onLoad();
+
+          var hotCount = 0;
+          const trials = 500;
+          for (var i = 0; i < trials; i++) {
+            if (game.refillColorForTest() == GemColor.values[2]) hotCount++;
+          }
+          // Không bias → ~1/6 (~16.7%), cho biên rộng tránh flaky.
+          expect(hotCount / trials, lessThan(0.30));
+        });
+      },
+    );
   });
 }

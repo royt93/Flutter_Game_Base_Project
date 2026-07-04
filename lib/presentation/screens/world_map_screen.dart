@@ -1,9 +1,11 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
 import '../../core/storage_service.dart';
+import '../../data/cosmetics.dart';
 import '../../data/levels.dart';
 import '../../data/story.dart';
 import '../controllers/game_controller.dart';
@@ -342,6 +344,24 @@ class _AnimatedMapState extends State<_AnimatedMap>
         widget.topPad + i * widget.vGap,
       );
     });
+    // W26.2 — màu path theo world của mỗi level + 1 landmark/world.
+    final segAccent = List<Color>.generate(
+      kLevelCount,
+      (i) => NeonTheme.accentForWorld(worldOfLevel(i + 1).index),
+    );
+    final landmarks = <WorldLandmarkMark>[
+      for (final w in kWorlds)
+        (
+          pos: Offset(
+            widget.width * (w.index.isOdd ? 0.16 : 0.84),
+            widget.topPad +
+                (w.startLevel - 1 + w.endLevel - 1) / 2 * widget.vGap,
+          ),
+          kind: NeonTheme.landmarkForWorld(w.index),
+          accent: NeonTheme.accentForWorld(w.index),
+        ),
+    ];
+    final reducedMotion = ActiveCosmetics.reducedMotion;
     return Stack(
       children: [
         SingleChildScrollView(
@@ -362,6 +382,9 @@ class _AnimatedMapState extends State<_AnimatedMap>
                         t: _anim.value,
                         stars: _stars,
                         width: widget.width,
+                        segAccent: segAccent,
+                        landmarks: landmarks,
+                        reducedMotion: reducedMotion,
                       ),
                     ),
                   ),
@@ -615,6 +638,18 @@ class _AnimatedMapState extends State<_AnimatedMap>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // W26.2 — glyph landmark riêng theo thế giới.
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CustomPaint(
+              painter: _LandmarkIconPainter(
+                accent: reached ? c : c.withValues(alpha: 0.4),
+                kind: NeonTheme.landmarkForWorld(w.index),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
           Icon(
             reached ? Icons.public_rounded : Icons.lock_rounded,
             color: reached ? c : Colors.white38,
@@ -764,14 +799,203 @@ class _Star {
   });
 }
 
+/// W26.2 — 1 landmark/thế giới, vị trí + màu tính sẵn ở [_AnimatedMapState.build].
+typedef WorldLandmarkMark = ({Offset pos, WorldLandmark kind, Color accent});
+
+/// W26.2 — glyph riêng theo thế giới (nebula/pulse/circuit/comet/...), dùng
+/// chung cho lớp landmark trên map lẫn icon nhỏ trong [_worldBadge]. `t`
+/// (0..1 lặp) tạo pulse/xoay nhẹ — đóng băng khi `reducedMotion`.
+void paintLandmarkGlyph(
+  Canvas canvas,
+  Offset center,
+  double r,
+  Color accent,
+  WorldLandmark kind, {
+  double t = 0,
+  bool reducedMotion = false,
+}) {
+  final tt = reducedMotion ? 0.0 : t;
+  canvas.drawCircle(
+    center,
+    r * 0.9,
+    Paint()
+      ..color = accent.withValues(alpha: 0.3)
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * 0.5),
+  );
+  Paint strokeP({double w = 0.12, double alpha = 0.9, Color? color}) => Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = r * w
+    ..strokeCap = StrokeCap.round
+    ..color = (color ?? accent).withValues(alpha: alpha);
+
+  switch (kind) {
+    case WorldLandmark.nebula:
+      for (var i = 0; i < 3; i++) {
+        final phase = tt * math.pi * 2 + i * (math.pi * 2 / 3);
+        final path = Path();
+        for (var a = 0.0; a <= math.pi * 1.4; a += 0.25) {
+          final rad = r * (0.22 + 0.5 * (a / (math.pi * 1.4)));
+          final p =
+              center + Offset(math.cos(a + phase), math.sin(a + phase)) * rad;
+          if (a == 0) {
+            path.moveTo(p.dx, p.dy);
+          } else {
+            path.lineTo(p.dx, p.dy);
+          }
+        }
+        canvas.drawPath(path, strokeP(w: 0.1, alpha: 0.55 - i * 0.12));
+      }
+      break;
+    case WorldLandmark.pulse:
+      for (var i = 0; i < 3; i++) {
+        final rr = r * (0.32 + 0.22 * i);
+        canvas.drawCircle(center, rr, strokeP(alpha: 0.6 - i * 0.15));
+      }
+      break;
+    case WorldLandmark.circuit:
+      canvas.drawLine(
+        center + Offset(-r * 0.7, 0),
+        center + Offset(r * 0.7, 0),
+        strokeP(),
+      );
+      canvas.drawLine(
+        center + Offset(0, -r * 0.5),
+        center + Offset(0, r * 0.5),
+        strokeP(),
+      );
+      canvas.drawLine(
+        center + Offset(-r * 0.4, -r * 0.4),
+        center + Offset(r * 0.4, -r * 0.4),
+        strokeP(),
+      );
+      for (final o in [
+        const Offset(-0.7, 0),
+        const Offset(0.7, 0),
+        const Offset(0, -0.5),
+        const Offset(0, 0.5),
+      ]) {
+        canvas.drawCircle(
+          center + o * r,
+          r * 0.08,
+          Paint()..color = accent.withValues(alpha: 0.85),
+        );
+      }
+      break;
+    case WorldLandmark.comet:
+      const dir = Offset(-0.74, -0.67); // hướng đuôi sao chổi (~-2.4 rad)
+      for (var i = 0; i < 5; i++) {
+        final p = center - dir * (r * 0.22 * i);
+        canvas.drawCircle(
+          p,
+          r * (0.22 - i * 0.035),
+          Paint()..color = accent.withValues(alpha: 0.85 - i * 0.16),
+        );
+      }
+      break;
+    case WorldLandmark.void_:
+      canvas.drawCircle(center, r * 0.55, strokeP());
+      canvas.drawCircle(
+        center,
+        r * 0.32,
+        Paint()..color = Colors.black.withValues(alpha: 0.8),
+      );
+      break;
+    case WorldLandmark.prism:
+      for (var i = 0; i < 3; i++) {
+        final off = Offset(i * r * 0.18 - r * 0.18, i * r * 0.06);
+        final path = Path()
+          ..moveTo(center.dx + off.dx, center.dy + off.dy - r * 0.5)
+          ..lineTo(center.dx + off.dx - r * 0.42, center.dy + off.dy + r * 0.35)
+          ..lineTo(center.dx + off.dx + r * 0.42, center.dy + off.dy + r * 0.35)
+          ..close();
+        canvas.drawPath(path, strokeP(alpha: 0.75 - i * 0.15));
+      }
+      break;
+    case WorldLandmark.stream:
+      for (var i = 0; i < 3; i++) {
+        final path = Path();
+        var first = true;
+        for (var x = -r * 0.8; x <= r * 0.8; x += r * 0.08) {
+          final y =
+              math.sin(x / r * 3 + tt * math.pi * 2 + i) * r * 0.18 +
+              (i - 1) * r * 0.22;
+          final p = center + Offset(x, y);
+          if (first) {
+            path.moveTo(p.dx, p.dy);
+            first = false;
+          } else {
+            path.lineTo(p.dx, p.dy);
+          }
+        }
+        canvas.drawPath(path, strokeP(w: 0.1, alpha: 0.7 - i * 0.15));
+      }
+      break;
+    case WorldLandmark.apex:
+      final path = Path()
+        ..moveTo(center.dx, center.dy - r * 0.6)
+        ..lineTo(center.dx - r * 0.55, center.dy + r * 0.45)
+        ..lineTo(center.dx + r * 0.55, center.dy + r * 0.45)
+        ..close();
+      canvas.drawPath(path, Paint()..color = accent.withValues(alpha: 0.7));
+      canvas.drawPath(path, strokeP());
+      canvas.drawLine(
+        center + Offset(-r * 0.14, -r * 0.4),
+        center + Offset(r * 0.14, -r * 0.4),
+        strokeP(w: 0.1, alpha: 0.8, color: Colors.white),
+      );
+      break;
+    case WorldLandmark.crackedCircuit:
+      canvas.drawLine(
+        center + Offset(-r * 0.7, 0),
+        center + Offset(r * 0.7, 0),
+        strokeP(),
+      );
+      canvas.drawLine(
+        center + Offset(0, -r * 0.5),
+        center + Offset(0, r * 0.5),
+        strokeP(),
+      );
+      final crack = Path()
+        ..moveTo(center.dx - r * 0.5, center.dy - r * 0.35)
+        ..lineTo(center.dx - r * 0.1, center.dy - r * 0.05)
+        ..lineTo(center.dx - r * 0.3, center.dy + r * 0.1)
+        ..lineTo(center.dx + r * 0.5, center.dy + r * 0.45);
+      canvas.drawPath(
+        crack,
+        strokeP(w: 0.09, alpha: 0.85, color: Colors.white),
+      );
+      break;
+    case WorldLandmark.zenith:
+      final path = Path();
+      for (var i = 0; i < 10; i++) {
+        final a = -math.pi / 2 + i * math.pi / 5;
+        final rr = i.isEven ? r * 0.55 : r * 0.22;
+        final p = center + Offset(math.cos(a), math.sin(a)) * rr;
+        if (i == 0) {
+          path.moveTo(p.dx, p.dy);
+        } else {
+          path.lineTo(p.dx, p.dy);
+        }
+      }
+      path.close();
+      canvas.drawPath(path, Paint()..color = accent.withValues(alpha: 0.85));
+      canvas.drawPath(path, strokeP(alpha: 0.6, color: Colors.white));
+      break;
+  }
+}
+
 /// Vẽ nền động: sao lấp lánh + đường path (sáng tới màn đã đi, mờ tới khoá)
-/// + các xung năng lượng chạy dọc path về phía node hiện tại.
+/// + các xung năng lượng chạy dọc path về phía node hiện tại + dải nền/
+/// landmark riêng theo thế giới (W26.2).
 class _MapPainter extends CustomPainter {
   final List<Offset> centers;
   final int current;
   final double t; // 0..1 lặp
   final List<_Star> stars;
   final double width;
+  final List<Color> segAccent; // màu world của level i+1, size = centers.length
+  final List<WorldLandmarkMark> landmarks;
+  final bool reducedMotion;
 
   _MapPainter({
     required this.centers,
@@ -779,10 +1003,32 @@ class _MapPainter extends CustomPainter {
     required this.t,
     required this.stars,
     required this.width,
+    required this.segAccent,
+    required this.landmarks,
+    required this.reducedMotion,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    // 0) W26.2 — dải nền nhạt riêng theo thế giới (dưới cùng, trước sao)
+    for (final m in landmarks) {
+      final band = Rect.fromLTWH(0, m.pos.dy - 46, width, 92);
+      canvas.drawRect(
+        band,
+        Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(0, band.top),
+            Offset(0, band.bottom),
+            [
+              m.accent.withValues(alpha: 0.0),
+              m.accent.withValues(alpha: 0.07),
+              m.accent.withValues(alpha: 0.0),
+            ],
+            [0.0, 0.5, 1.0],
+          ),
+      );
+    }
+
     // 1) sao lấp lánh
     for (final s in stars) {
       final tw =
@@ -810,7 +1056,7 @@ class _MapPainter extends CustomPainter {
           ..strokeWidth = reached ? 8 : 6
           ..strokeCap = StrokeCap.round
           ..color = reached
-              ? NeonTheme.cyan.withValues(alpha: 0.65)
+              ? segAccent[i].withValues(alpha: 0.65)
               : Colors.white.withValues(alpha: 0.10),
       );
       if (reached) {
@@ -847,10 +1093,23 @@ class _MapPainter extends CustomPainter {
           pos,
           9,
           Paint()
-            ..color = NeonTheme.cyan.withValues(alpha: 0.5)
+            ..color = segAccent[seg].withValues(alpha: 0.5)
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
         );
       }
+    }
+
+    // 4) W26.2 — landmark riêng theo thế giới
+    for (final m in landmarks) {
+      paintLandmarkGlyph(
+        canvas,
+        m.pos,
+        20,
+        m.accent,
+        m.kind,
+        t: t,
+        reducedMotion: reducedMotion,
+      );
     }
   }
 
@@ -866,4 +1125,27 @@ class _MapPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _MapPainter old) =>
       old.t != t || old.current != current;
+}
+
+/// W26.2 — icon landmark tĩnh (không animate) cho [_worldBadge].
+class _LandmarkIconPainter extends CustomPainter {
+  final Color accent;
+  final WorldLandmark kind;
+  const _LandmarkIconPainter({required this.accent, required this.kind});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    paintLandmarkGlyph(
+      canvas,
+      Offset(size.width / 2, size.height / 2),
+      size.width / 2,
+      accent,
+      kind,
+      reducedMotion: true,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _LandmarkIconPainter old) =>
+      old.accent != accent || old.kind != kind;
 }

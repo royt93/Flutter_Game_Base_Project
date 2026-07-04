@@ -14,8 +14,8 @@ class ProgressionTreeController extends GetxController {
 
   static ProgressionTreeController? get maybe =>
       Get.isRegistered<ProgressionTreeController>()
-          ? Get.find<ProgressionTreeController>()
-          : null;
+      ? Get.find<ProgressionTreeController>()
+      : null;
 
   final RxSet<String> unlockedNodes = <String>{}.obs;
 
@@ -41,6 +41,7 @@ class ProgressionTreeController extends GetxController {
   void checkAndUnlock() {
     final stars = _g.totalStars;
     final goldCount = goldMilestonesCount();
+    final platinumCount = platinumMilestonesCount();
 
     bool newUnlock = false;
     final store = StorageService.to;
@@ -48,6 +49,8 @@ class ProgressionTreeController extends GetxController {
       if (unlockedNodes.contains(n.id)) continue;
       final met = n.starCost > 0
           ? stars >= n.starCost
+          : n.platinumCost > 0
+          ? platinumCount >= n.platinumCost
           : goldCount >= n.goldCost;
       if (met) {
         unlockedNodes.add(n.id);
@@ -60,7 +63,9 @@ class ProgressionTreeController extends GetxController {
 
   /// Áp hiệu ứng visual theo nodes đã mở khoá.
   void _applyEffects() {
-    if (unlockedNodes.contains('blazing')) {
+    if (unlockedNodes.contains('ascendant')) {
+      ActiveCosmetics.particleBurstMultiplier = 2.5;
+    } else if (unlockedNodes.contains('blazing')) {
       ActiveCosmetics.particleBurstMultiplier = 2.0;
     } else if (unlockedNodes.contains('radiant')) {
       ActiveCosmetics.particleBurstMultiplier = 1.5;
@@ -89,6 +94,15 @@ class ProgressionTreeController extends GetxController {
     if (recCtrl == null) return 0;
     return recCtrl.claimedTier.values
         .where((t) => t >= RecordTier.gold.index)
+        .length;
+  }
+
+  /// W25.3 — số mode phụ đã đạt mốc Platinum (mở node `ascendant`).
+  int platinumMilestonesCount() {
+    final recCtrl = SideModeRecordController.maybe;
+    if (recCtrl == null) return 0;
+    return recCtrl.claimedTier.values
+        .where((t) => t >= RecordTier.platinum.index)
         .length;
   }
 }

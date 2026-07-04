@@ -7,8 +7,9 @@ class PtNode {
   final String id;
   final String titleKey; // i18n key
   final String descKey;
-  final int starCost; // tổng sao cần (0 = dùng goldCost)
+  final int starCost; // tổng sao cần (0 = dùng goldCost/platinumCost)
   final int goldCost; // số Gold Milestone cần
+  final int platinumCost; // W25.3 — số Platinum Milestone cần
   final Color color;
   const PtNode({
     required this.id,
@@ -16,6 +17,7 @@ class PtNode {
     required this.descKey,
     this.starCost = 0,
     this.goldCost = 0,
+    this.platinumCost = 0,
     required this.color,
   });
 }
@@ -41,6 +43,14 @@ const List<PtNode> kPtNodes = [
     descKey: 'pt_prestige_desc',
     goldCost: 5,
     color: NeonTheme.yellow,
+  ),
+  // W25.3 — liên kết mốc Platinum side-mode với Progression Tree (cosmetic).
+  PtNode(
+    id: 'ascendant',
+    titleKey: 'pt_ascendant_title',
+    descKey: 'pt_ascendant_desc',
+    platinumCost: 3,
+    color: NeonTheme.red,
   ),
 ];
 

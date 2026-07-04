@@ -843,25 +843,52 @@ class HomeScreen extends StatelessWidget {
     return null;
   }
 
-  /// W19.1 — badge mốc kỷ lục (huy chương Bronze/Silver/Gold) cho card side-mode.
-  /// null nếu chưa đạt mốc nào. Gọi trong Obx (đọc claimedTier Rx).
+  /// W19.1 — badge mốc kỷ lục (huy chương Bronze/Silver/Gold/Platinum) cho card
+  /// side-mode. W25.1 Phase 1C — thêm pill "Thử Thách" (tap để bật/tắt hard
+  /// variant) khi đã đạt Gold. null nếu không có gì hiện. Gọi trong Obx (đọc
+  /// claimedTier/hardVariant Rx).
   Widget? _modeRecordCorner(SideModeKind kind) {
     final rec = SideModeRecordController.maybe;
     if (rec == null) return null;
     final tier = rec.tierOf(kind);
-    if (tier == RecordTier.none) return null;
-    final Color color;
-    switch (tier) {
-      case RecordTier.gold:
-        color = NeonTheme.yellow;
-      case RecordTier.silver:
-        color = Colors.white;
-      case RecordTier.bronze:
-        color = NeonTheme.orange;
-      case RecordTier.none:
-        return null;
+    final pills = <Widget>[];
+    if (tier != RecordTier.none) {
+      final color = switch (tier) {
+        RecordTier.platinum => Colors.white70,
+        RecordTier.gold => NeonTheme.yellow,
+        RecordTier.silver => Colors.white,
+        RecordTier.bronze => NeonTheme.orange,
+        RecordTier.none => Colors.transparent,
+      };
+      pills.add(_cornerPill(Icons.emoji_events_rounded, color, null));
     }
-    return _cornerPill(Icons.emoji_events_rounded, color, null);
+    if (tier.index >= RecordTier.gold.index) {
+      final on = rec.hardVariantEnabled(kind);
+      pills.add(
+        Tooltip(
+          message: (on ? 'hard_variant_on' : 'hard_variant_off').tr,
+          child: GestureDetector(
+            onTap: () => rec.toggleHardVariant(kind),
+            child: _cornerPill(
+              Icons.whatshot_rounded,
+              on ? NeonTheme.red : Colors.white24,
+              null,
+            ),
+          ),
+        ),
+      );
+    }
+    if (pills.isEmpty) return null;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        for (int i = 0; i < pills.length; i++) ...[
+          if (i > 0) const SizedBox(height: 3),
+          pills[i],
+        ],
+      ],
+    );
   }
 
   /// W19.2 — badge góc card Cấu đố: ✓ khi giải hết, số đã giải khi đang dở.

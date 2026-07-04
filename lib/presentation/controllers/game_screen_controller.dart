@@ -74,6 +74,8 @@ class GameScreenController extends GetxController {
         showModeIntro.value = true;
         AudioManager.maybe?.playSpecial();
       }
+      // W26.1 — nhạc nền theo nhóm mode (chỉ đổi khi khác track hiện tại).
+      AudioManager.maybe?.startBgm(track: gameCtrl.bgmTrack);
     });
   }
 
@@ -115,6 +117,9 @@ class GameScreenController extends GetxController {
   @override
   void onClose() {
     WakelockPlus.disable();
+    AudioManager.maybe?.startBgm(
+      track: 0,
+    ); // W26.1 — về nhạc mặc định khi rời ván
     super.onClose();
   }
 
@@ -224,6 +229,13 @@ class GameScreenController extends GetxController {
       // phá kỷ lục / mở mốc (game còn sống trong 350ms trước overlay).
       final outcome = SideModeRecordController.maybe?.recordResult(
         won: result == 'win',
+      );
+      // W25.3 — điểm side-mode/tuần: MỌI side-mode (kể cả Daily/Versus/Puzzle/
+      // Zen không có record), tách biệt hoàn toàn khỏi campaign.
+      ChallengeCardController.maybe?.addSideModePoints(
+        won: result == 'win',
+        reachedNewMilestone:
+            outcome != null && outcome.newTier != RecordTier.none,
       );
       if (outcome != null && outcome.hasCelebration && _game != null) {
         if (outcome.newTier != RecordTier.none) {

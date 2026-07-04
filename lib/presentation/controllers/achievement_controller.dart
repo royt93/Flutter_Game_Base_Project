@@ -84,6 +84,8 @@ class AchievementController extends GetxController {
         return g.coinsEarnedTotal.value;
       case AchStat.clanContribTotal:
         return g.clanContribLifetime.value;
+      case AchStat.platinumMilestones:
+        return g.platinumMilestonesCount;
     }
   }
 

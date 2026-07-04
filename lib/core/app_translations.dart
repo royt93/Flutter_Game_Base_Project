@@ -113,6 +113,9 @@ class AppTranslations extends Translations {
           ...?_w22ByLang[e.key],
           ...?_w23ByLang[e.key],
           ...?_w25ByLang[e.key],
+          ...?_w26ByLang[e.key],
+          ...?_w253ByLang[e.key],
+          ...?_w254ByLang[e.key],
         },
     };
   }
@@ -185,6 +188,10 @@ class AppTranslations extends Translations {
     'ach_desc_clanContribTotal': 'Contribute @n to your clan',
     'ach_clan_contrib1_t': 'Team Player',
     'ach_clan_contrib2_t': 'Clan Champion',
+    'ach_desc_platinumMilestones': 'Reach Platinum in @n side-modes',
+    'ach_platinum_1_t': 'Platinum Debut',
+    'ach_platinum_4_t': 'Platinum Collector',
+    'ach_platinum_9_t': 'Platinum Master',
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',
@@ -200,6 +207,9 @@ class AppTranslations extends Translations {
     'pt_blazing_desc': 'Particle burst ×2.0 on gem blast (150 ★)',
     'pt_prestige_title': 'Prestige',
     'pt_prestige_desc': 'Unlock Prestige Gem Skin (5 Gold milestones)',
+    'pt_ascendant_title': 'Ascendant',
+    'pt_ascendant_desc':
+        'Unlock Ascendant particle effect (3 Platinum milestones)',
     'pt_unlocked': '✓ UNLOCKED',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -207,6 +217,9 @@ class AppTranslations extends Translations {
     'cc_win_campaign': 'Win @n campaign levels',
     'cc_earn_coins': 'Earn @n coins this week',
     'cc_play_mode': 'Play @m @n times',
+    'cc_reach_tier': 'Reach @t — @m',
+    'cc_side_weekly_title': 'Side-Mode Weekly Points',
+    'cc_side_weekly_claim': 'Claim',
     'cc_claim': 'CLAIM',
     // Wave 21 — Rush Mode (Tốc chiến)
     'rush_title': 'RUSH',
@@ -519,6 +532,10 @@ class AppTranslations extends Translations {
     'rec_tier_bronze': 'Bronze',
     'rec_tier_silver': 'Silver',
     'rec_tier_gold': 'Gold',
+    'rec_tier_platinum': 'Platinum',
+    // W25.1 Phase 1C — "Thử Thách" (hard variant, tự chọn sau Gold)
+    'hard_variant_on': 'Challenge: ON (fewer moves, +50% coins)',
+    'hard_variant_off': 'Challenge: OFF (tap to unlock harder run)',
     // W19.2 — Puzzle mode
     'puzzle_short': 'PUZZLE',
     'puzzle_title': 'PUZZLES',
@@ -553,6 +570,10 @@ class AppTranslations extends Translations {
     'color_rush_title': 'COLOR RUSH',
     'color_rush_short': 'COLOR RUSH',
     'color_rush_hot': 'HOT COLOR',
+    // Wave 26.1 — HUD chủ đạo per-mode
+    'hud_flip_in': 'Flip in',
+    'hud_maze_walls': 'Moving walls',
+    'hud_streak': 'Streak',
     'color_rush_desc': 'Clear the hot color for bonus points',
     'conveyor_title': 'CONVEYOR',
     'portal_title': 'PORTAL',
@@ -645,6 +666,10 @@ class AppTranslations extends Translations {
     'ach_desc_clanContribTotal': 'Đóng góp @n cho clan',
     'ach_clan_contrib1_t': 'Đồng Đội',
     'ach_clan_contrib2_t': 'Vô Địch Clan',
+    'ach_desc_platinumMilestones': 'Đạt Bạch Kim ở @n chế độ phụ',
+    'ach_platinum_1_t': 'Bạch Kim Đầu Tiên',
+    'ach_platinum_4_t': 'Bộ Sưu Tập Bạch Kim',
+    'ach_platinum_9_t': 'Bậc Thầy Bạch Kim',
     // Wave 20.4 — Zen Mode
     'zen_title': 'ZEN',
     'zen_short': 'ZEN',
@@ -660,6 +685,8 @@ class AppTranslations extends Translations {
     'pt_blazing_desc': 'Particle nổ gem ×2.0 (cần 150 ★)',
     'pt_prestige_title': 'Uy Danh',
     'pt_prestige_desc': 'Mở khoá Skin Uy Danh (5 mốc Vàng bất kỳ chế độ)',
+    'pt_ascendant_title': 'Siêu Việt',
+    'pt_ascendant_desc': 'Mở khoá hiệu ứng hạt Siêu Việt (3 mốc Bạch Kim)',
     'pt_unlocked': '✓ ĐÃ MỞ',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -667,6 +694,9 @@ class AppTranslations extends Translations {
     'cc_win_campaign': 'Thắng @n màn campaign',
     'cc_earn_coins': 'Kiếm @n xu trong tuần này',
     'cc_play_mode': 'Chơi @m @n lần',
+    'cc_reach_tier': 'Đạt @t — @m',
+    'cc_side_weekly_title': 'Điểm Side-Mode Tuần',
+    'cc_side_weekly_claim': 'Nhận',
     'cc_claim': 'NHẬN',
     // Wave 21 — Rush Mode (Tốc chiến)
     'rush_title': 'TỐC CHIẾN',
@@ -977,6 +1007,10 @@ class AppTranslations extends Translations {
     'rec_tier_bronze': 'Đồng',
     'rec_tier_silver': 'Bạc',
     'rec_tier_gold': 'Vàng',
+    'rec_tier_platinum': 'Bạch Kim',
+    // W25.1 Phase 1C — "Thử Thách" (hard variant, tự chọn sau Gold)
+    'hard_variant_on': 'Thử Thách: BẬT (ít lượt hơn, +50% xu)',
+    'hard_variant_off': 'Thử Thách: TẮT (bấm để mở ván khó hơn)',
     // W19.2 — Chế độ Cấu đố
     'puzzle_short': 'CẤU ĐỐ',
     'puzzle_title': 'CẤU ĐỐ',
@@ -1010,6 +1044,10 @@ class AppTranslations extends Translations {
     'color_rush_title': 'TRUY QUÉT MÀU',
     'color_rush_short': 'QUÉT MÀU',
     'color_rush_hot': 'MÀU NÓNG',
+    // Wave 26.1 — HUD chủ đạo per-mode
+    'hud_flip_in': 'Lật sau',
+    'hud_maze_walls': 'Tường di động',
+    'hud_streak': 'Chuỗi',
     'color_rush_desc': 'Clear màu nóng để được điểm bội',
     'conveyor_title': 'BĂNG CHUYỀN',
     'portal_title': 'CỔNG',
@@ -10941,5 +10979,471 @@ class AppTranslations extends Translations {
     'ms_MY': {'boss_type_pulse': 'Denyut', 'boss_type_void': 'Kekosongan'},
     'uk_UA': {'boss_type_pulse': 'Пульс', 'boss_type_void': 'Порожнеча'},
     'bn_BD': {'boss_type_pulse': 'স্পন্দন', 'boss_type_void': 'শূন্যতা'},
+  };
+
+  /// W26.1 — nhãn HUD chủ đạo (Gravity/Labyrinth/Daily) cho 20 ngôn ngữ.
+  /// en+vi nằm trong _extraEn/_extraVi. Merge sau _w25ByLang trong [keys].
+  static const Map<String, Map<String, String>> _w26ByLang = {
+    'es_ES': {
+      'hud_flip_in': 'Gira en',
+      'hud_maze_walls': 'Muros móviles',
+      'hud_streak': 'Racha',
+    },
+    'fr_FR': {
+      'hud_flip_in': 'Bascule dans',
+      'hud_maze_walls': 'Murs mobiles',
+      'hud_streak': 'Série',
+    },
+    'de_DE': {
+      'hud_flip_in': 'Dreht in',
+      'hud_maze_walls': 'Bewegliche Wände',
+      'hud_streak': 'Serie',
+    },
+    'pt_BR': {
+      'hud_flip_in': 'Vira em',
+      'hud_maze_walls': 'Paredes móveis',
+      'hud_streak': 'Sequência',
+    },
+    'ru_RU': {
+      'hud_flip_in': 'Поворот через',
+      'hud_maze_walls': 'Движущиеся стены',
+      'hud_streak': 'Серия',
+    },
+    'zh_CN': {
+      'hud_flip_in': '翻转倒计',
+      'hud_maze_walls': '移动墙壁',
+      'hud_streak': '连胜',
+    },
+    'ja_JP': {
+      'hud_flip_in': '反転まで',
+      'hud_maze_walls': '動く壁',
+      'hud_streak': '連続',
+    },
+    'ko_KR': {
+      'hud_flip_in': '반전까지',
+      'hud_maze_walls': '움직이는 벽',
+      'hud_streak': '연속',
+    },
+    'it_IT': {
+      'hud_flip_in': 'Ribalta tra',
+      'hud_maze_walls': 'Muri mobili',
+      'hud_streak': 'Serie',
+    },
+    'id_ID': {
+      'hud_flip_in': 'Balik dalam',
+      'hud_maze_walls': 'Dinding bergerak',
+      'hud_streak': 'Rentetan',
+    },
+    'th_TH': {
+      'hud_flip_in': 'พลิกใน',
+      'hud_maze_walls': 'กำแพงเคลื่อน',
+      'hud_streak': 'สตรีค',
+    },
+    'hi_IN': {
+      'hud_flip_in': 'पलटेगा',
+      'hud_maze_walls': 'चलती दीवारें',
+      'hud_streak': 'श्रृंखला',
+    },
+    'ar_SA': {
+      'hud_flip_in': 'ينقلب خلال',
+      'hud_maze_walls': 'جدران متحركة',
+      'hud_streak': 'سلسلة',
+    },
+    'tr_TR': {
+      'hud_flip_in': 'Döner',
+      'hud_maze_walls': 'Hareketli duvarlar',
+      'hud_streak': 'Seri',
+    },
+    'nl_NL': {
+      'hud_flip_in': 'Draait in',
+      'hud_maze_walls': 'Bewegende muren',
+      'hud_streak': 'Reeks',
+    },
+    'pl_PL': {
+      'hud_flip_in': 'Obrót za',
+      'hud_maze_walls': 'Ruchome ściany',
+      'hud_streak': 'Seria',
+    },
+    'fil_PH': {
+      'hud_flip_in': 'Babaligtad sa',
+      'hud_maze_walls': 'Gumagalaw na dingding',
+      'hud_streak': 'Sunod-sunod',
+    },
+    'ms_MY': {
+      'hud_flip_in': 'Terbalik dalam',
+      'hud_maze_walls': 'Dinding bergerak',
+      'hud_streak': 'Rentetan',
+    },
+    'uk_UA': {
+      'hud_flip_in': 'Переворот через',
+      'hud_maze_walls': 'Рухомі стіни',
+      'hud_streak': 'Серія',
+    },
+    'bn_BD': {
+      'hud_flip_in': 'উল্টাবে',
+      'hud_maze_walls': 'চলন্ত দেয়াল',
+      'hud_streak': 'ধারা',
+    },
+  };
+
+  /// W25.3 — trục điểm side-mode/tuần + quest kỹ năng + mốc Platinum + node
+  /// Progression Tree. Merge sau [_w26ByLang] trong [keys].
+  static const Map<String, Map<String, String>> _w253ByLang = {
+    'es_ES': {
+      'rec_tier_platinum': 'Platino',
+      'cc_side_weekly_title': 'Puntos Semanales de Modo Secundario',
+      'cc_side_weekly_claim': 'Reclamar',
+      'cc_reach_tier': 'Alcanza @t — @m',
+      'ach_platinum_1_t': 'Debut de Platino',
+      'ach_platinum_4_t': 'Coleccionista de Platino',
+      'ach_platinum_9_t': 'Maestro de Platino',
+      'ach_desc_platinumMilestones': 'Alcanza Platino en @n modos secundarios',
+      'pt_ascendant_title': 'Ascendente',
+      'pt_ascendant_desc':
+          'Desbloquea el efecto de partículas Ascendente (3 hitos de Platino)',
+    },
+    'fr_FR': {
+      'rec_tier_platinum': 'Platine',
+      'cc_side_weekly_title': 'Points Hebdo Mode Secondaire',
+      'cc_side_weekly_claim': 'Réclamer',
+      'cc_reach_tier': 'Atteindre @t — @m',
+      'ach_platinum_1_t': 'Premier Platine',
+      'ach_platinum_4_t': 'Collectionneur Platine',
+      'ach_platinum_9_t': 'Maître Platine',
+      'ach_desc_platinumMilestones':
+          'Atteindre Platine dans @n modes secondaires',
+      'pt_ascendant_title': 'Ascendant',
+      'pt_ascendant_desc':
+          "Débloquer l'effet de particules Ascendant (3 jalons Platine)",
+    },
+    'de_DE': {
+      'rec_tier_platinum': 'Platin',
+      'cc_side_weekly_title': 'Nebenmodus-Wochenpunkte',
+      'cc_side_weekly_claim': 'Abholen',
+      'cc_reach_tier': 'Erreiche @t — @m',
+      'ach_platinum_1_t': 'Erstes Platin',
+      'ach_platinum_4_t': 'Platin-Sammler',
+      'ach_platinum_9_t': 'Platin-Meister',
+      'ach_desc_platinumMilestones': 'Erreiche Platin in @n Nebenmodi',
+      'pt_ascendant_title': 'Aufstieg',
+      'pt_ascendant_desc':
+          'Schalte den Aufstieg-Partikeleffekt frei (3 Platin-Meilensteine)',
+    },
+    'pt_BR': {
+      'rec_tier_platinum': 'Platina',
+      'cc_side_weekly_title': 'Pontos Semanais de Modo Secundário',
+      'cc_side_weekly_claim': 'Resgatar',
+      'cc_reach_tier': 'Alcance @t — @m',
+      'ach_platinum_1_t': 'Estreia de Platina',
+      'ach_platinum_4_t': 'Colecionador de Platina',
+      'ach_platinum_9_t': 'Mestre de Platina',
+      'ach_desc_platinumMilestones': 'Alcance Platina em @n modos secundários',
+      'pt_ascendant_title': 'Ascendente',
+      'pt_ascendant_desc':
+          'Desbloqueie o efeito de partículas Ascendente (3 marcos de Platina)',
+    },
+    'ru_RU': {
+      'rec_tier_platinum': 'Платина',
+      'cc_side_weekly_title': 'Еженедельные очки побочных режимов',
+      'cc_side_weekly_claim': 'Забрать',
+      'cc_reach_tier': 'Достичь @t — @m',
+      'ach_platinum_1_t': 'Первая платина',
+      'ach_platinum_4_t': 'Коллекционер платины',
+      'ach_platinum_9_t': 'Мастер платины',
+      'ach_desc_platinumMilestones': 'Достигните платины в @n побочных режимах',
+      'pt_ascendant_title': 'Вознесённый',
+      'pt_ascendant_desc':
+          'Откройте эффект частиц "Вознесённый" (3 платинових рубежа)',
+    },
+    'zh_CN': {
+      'rec_tier_platinum': '白金',
+      'cc_side_weekly_title': '支线模式周积分',
+      'cc_side_weekly_claim': '领取',
+      'cc_reach_tier': '达成 @t — @m',
+      'ach_platinum_1_t': '白金首秀',
+      'ach_platinum_4_t': '白金收藏家',
+      'ach_platinum_9_t': '白金大师',
+      'ach_desc_platinumMilestones': '在 @n 个支线模式中达成白金',
+      'pt_ascendant_title': '超越',
+      'pt_ascendant_desc': '解锁超越粒子效果（3个白金里程碑）',
+    },
+    'ja_JP': {
+      'rec_tier_platinum': 'プラチナ',
+      'cc_side_weekly_title': 'サブモード週間ポイント',
+      'cc_side_weekly_claim': '受け取る',
+      'cc_reach_tier': '@t に到達 — @m',
+      'ach_platinum_1_t': 'プラチナデビュー',
+      'ach_platinum_4_t': 'プラチナコレクター',
+      'ach_platinum_9_t': 'プラチナマスター',
+      'ach_desc_platinumMilestones': '@n 個のサブモードでプラチナに到達',
+      'pt_ascendant_title': 'アセンダント',
+      'pt_ascendant_desc': 'アセンダントパーティクル効果を解放（プラチナ3マイルストーン）',
+    },
+    'ko_KR': {
+      'rec_tier_platinum': '플래티넘',
+      'cc_side_weekly_title': '서브모드 주간 포인트',
+      'cc_side_weekly_claim': '받기',
+      'cc_reach_tier': '@t 달성 — @m',
+      'ach_platinum_1_t': '첫 플래티넘',
+      'ach_platinum_4_t': '플래티넘 컬렉터',
+      'ach_platinum_9_t': '플래티넘 마스터',
+      'ach_desc_platinumMilestones': '@n개 서브모드에서 플래티넘 달성',
+      'pt_ascendant_title': '어센던트',
+      'pt_ascendant_desc': '어센던트 파티클 효과 잠금 해제 (플래티넘 3개 마일스톤)',
+    },
+    'it_IT': {
+      'rec_tier_platinum': 'Platino',
+      'cc_side_weekly_title': 'Punti Settimanali Modalità Secondarie',
+      'cc_side_weekly_claim': 'Riscuoti',
+      'cc_reach_tier': 'Raggiungi @t — @m',
+      'ach_platinum_1_t': 'Debutto Platino',
+      'ach_platinum_4_t': 'Collezionista di Platino',
+      'ach_platinum_9_t': 'Maestro del Platino',
+      'ach_desc_platinumMilestones':
+          'Raggiungi il Platino in @n modalità secondarie',
+      'pt_ascendant_title': 'Ascendente',
+      'pt_ascendant_desc':
+          "Sblocca l'effetto particellare Ascendente (3 traguardi Platino)",
+    },
+    'id_ID': {
+      'rec_tier_platinum': 'Platinum',
+      'cc_side_weekly_title': 'Poin Mingguan Mode Sampingan',
+      'cc_side_weekly_claim': 'Klaim',
+      'cc_reach_tier': 'Capai @t — @m',
+      'ach_platinum_1_t': 'Debut Platinum',
+      'ach_platinum_4_t': 'Kolektor Platinum',
+      'ach_platinum_9_t': 'Master Platinum',
+      'ach_desc_platinumMilestones': 'Capai Platinum di @n mode sampingan',
+      'pt_ascendant_title': 'Ascendant',
+      'pt_ascendant_desc':
+          'Buka efek partikel Ascendant (3 pencapaian Platinum)',
+    },
+    'th_TH': {
+      'rec_tier_platinum': 'แพลทินัม',
+      'cc_side_weekly_title': 'แต้มรายสัปดาห์โหมดรอง',
+      'cc_side_weekly_claim': 'รับรางวัล',
+      'cc_reach_tier': 'ถึง @t — @m',
+      'ach_platinum_1_t': 'แพลทินัมครั้งแรก',
+      'ach_platinum_4_t': 'นักสะสมแพลทินัม',
+      'ach_platinum_9_t': 'ปรมาจารย์แพลทินัม',
+      'ach_desc_platinumMilestones': 'ถึงแพลทินัมใน @n โหมดรอง',
+      'pt_ascendant_title': 'ผู้ก้าวข้าม',
+      'pt_ascendant_desc':
+          'ปลดล็อกเอฟเฟกต์อนุภาคผู้ก้าวข้าม (3 เป้าหมายแพลทินัม)',
+    },
+    'hi_IN': {
+      'rec_tier_platinum': 'प्लेटिनम',
+      'cc_side_weekly_title': 'साइड-मोड साप्ताहिक अंक',
+      'cc_side_weekly_claim': 'प्राप्त करें',
+      'cc_reach_tier': '@t प्राप्त करें — @m',
+      'ach_platinum_1_t': 'पहला प्लेटिनम',
+      'ach_platinum_4_t': 'प्लेटिनम कलेक्टर',
+      'ach_platinum_9_t': 'प्लेटिनम मास्टर',
+      'ach_desc_platinumMilestones': '@n साइड-मोड में प्लेटिनम प्राप्त करें',
+      'pt_ascendant_title': 'असेंडेंट',
+      'pt_ascendant_desc':
+          'असेंडेंट पार्टिकल इफेक्ट अनलॉक करें (3 प्लेटिनम माइलस्टोन)',
+    },
+    'ar_SA': {
+      'rec_tier_platinum': 'بلاتيني',
+      'cc_side_weekly_title': 'نقاط الأنماط الجانبية الأسبوعية',
+      'cc_side_weekly_claim': 'استلام',
+      'cc_reach_tier': 'الوصول إلى @t — @m',
+      'ach_platinum_1_t': 'أول بلاتيني',
+      'ach_platinum_4_t': 'جامع البلاتين',
+      'ach_platinum_9_t': 'أستاذ البلاتين',
+      'ach_desc_platinumMilestones': 'حقق البلاتين في @n أنماط جانبية',
+      'pt_ascendant_title': 'المتصاعد',
+      'pt_ascendant_desc': 'افتح تأثير جسيمات المتصاعد (3 معالم بلاتينية)',
+    },
+    'tr_TR': {
+      'rec_tier_platinum': 'Platin',
+      'cc_side_weekly_title': 'Yan Mod Haftalık Puanları',
+      'cc_side_weekly_claim': 'Al',
+      'cc_reach_tier': '@t seviyesine ulaş — @m',
+      'ach_platinum_1_t': 'İlk Platin',
+      'ach_platinum_4_t': 'Platin Koleksiyoncusu',
+      'ach_platinum_9_t': 'Platin Ustası',
+      'ach_desc_platinumMilestones': "@n yan modda Platin'e ulaş",
+      'pt_ascendant_title': 'Yükselen',
+      'pt_ascendant_desc':
+          'Yükselen parçacık efektinin kilidini aç (3 Platin kilometre taşı)',
+    },
+    'nl_NL': {
+      'rec_tier_platinum': 'Platina',
+      'cc_side_weekly_title': 'Wekelijkse Punten Nevenmodus',
+      'cc_side_weekly_claim': 'Claim',
+      'cc_reach_tier': 'Bereik @t — @m',
+      'ach_platinum_1_t': 'Eerste Platina',
+      'ach_platinum_4_t': 'Platina Verzamelaar',
+      'ach_platinum_9_t': 'Platina Meester',
+      'ach_desc_platinumMilestones': 'Bereik Platina in @n nevenmodi',
+      'pt_ascendant_title': 'Ascendant',
+      'pt_ascendant_desc':
+          'Ontgrendel het Ascendant-deeltjeseffect (3 Platina-mijlpalen)',
+    },
+    'pl_PL': {
+      'rec_tier_platinum': 'Platyna',
+      'cc_side_weekly_title': 'Tygodniowe Punkty Trybów Dodatkowych',
+      'cc_side_weekly_claim': 'Odbierz',
+      'cc_reach_tier': 'Osiągnij @t — @m',
+      'ach_platinum_1_t': 'Pierwsza Platyna',
+      'ach_platinum_4_t': 'Kolekcjoner Platyny',
+      'ach_platinum_9_t': 'Mistrz Platyny',
+      'ach_desc_platinumMilestones':
+          'Osiągnij Platynę w @n trybach dodatkowych',
+      'pt_ascendant_title': 'Wstępujący',
+      'pt_ascendant_desc':
+          'Odblokuj efekt cząsteczek Wstępujący (3 kamienie milowe Platyny)',
+    },
+    'fil_PH': {
+      'rec_tier_platinum': 'Platinum',
+      'cc_side_weekly_title': 'Lingguhang Puntos ng Side-Mode',
+      'cc_side_weekly_claim': 'Kunin',
+      'cc_reach_tier': 'Abutin ang @t — @m',
+      'ach_platinum_1_t': 'Unang Platinum',
+      'ach_platinum_4_t': 'Kolektor ng Platinum',
+      'ach_platinum_9_t': 'Dalubhasa sa Platinum',
+      'ach_desc_platinumMilestones': 'Abutin ang Platinum sa @n side-mode',
+      'pt_ascendant_title': 'Ascendant',
+      'pt_ascendant_desc':
+          'I-unlock ang Ascendant particle effect (3 Platinum milestones)',
+    },
+    'ms_MY': {
+      'rec_tier_platinum': 'Platinum',
+      'cc_side_weekly_title': 'Mata Mingguan Mod Sampingan',
+      'cc_side_weekly_claim': 'Tuntut',
+      'cc_reach_tier': 'Capai @t — @m',
+      'ach_platinum_1_t': 'Platinum Pertama',
+      'ach_platinum_4_t': 'Pengumpul Platinum',
+      'ach_platinum_9_t': 'Master Platinum',
+      'ach_desc_platinumMilestones': 'Capai Platinum dalam @n mod sampingan',
+      'pt_ascendant_title': 'Ascendant',
+      'pt_ascendant_desc': 'Buka kesan zarah Ascendant (3 pencapaian Platinum)',
+    },
+    'uk_UA': {
+      'rec_tier_platinum': 'Платина',
+      'cc_side_weekly_title': 'Щотижневі очки побічних режимів',
+      'cc_side_weekly_claim': 'Забрати',
+      'cc_reach_tier': 'Досягти @t — @m',
+      'ach_platinum_1_t': 'Перша платина',
+      'ach_platinum_4_t': 'Колекціонер платини',
+      'ach_platinum_9_t': 'Майстер платини',
+      'ach_desc_platinumMilestones': 'Досягніть платини в @n побічних режимах',
+      'pt_ascendant_title': 'Вознесений',
+      'pt_ascendant_desc':
+          'Відкрийте ефект частинок "Вознесений" (3 платинові рубежі)',
+    },
+    'bn_BD': {
+      'rec_tier_platinum': 'প্লাটিনাম',
+      'cc_side_weekly_title': 'সাইড-মোড সাপ্তাহিক পয়েন্ট',
+      'cc_side_weekly_claim': 'সংগ্রহ করুন',
+      'cc_reach_tier': '@t অর্জন করুন — @m',
+      'ach_platinum_1_t': 'প্রথম প্লাটিনাম',
+      'ach_platinum_4_t': 'প্লাটিনাম সংগ্রাহক',
+      'ach_platinum_9_t': 'প্লাটিনাম মাস্টার',
+      'ach_desc_platinumMilestones': '@n টি সাইড-মোডে প্লাটিনাম অর্জন করুন',
+      'pt_ascendant_title': 'অ্যাসেন্ডেন্ট',
+      'pt_ascendant_desc':
+          'অ্যাসেন্ডেন্ট পার্টিকেল ইফেক্ট আনলক করুন (৩টি প্লাটিনাম মাইলস্টোন)',
+    },
+  };
+
+  /// W25.1 Phase 1C — "Thử Thách" (hard variant, tự chọn sau Gold). Merge sau
+  /// [_w253ByLang] trong [keys].
+  static const Map<String, Map<String, String>> _w254ByLang = {
+    'es_ES': {
+      'hard_variant_on': 'Desafío: ACTIVADO (menos movimientos, +50% monedas)',
+      'hard_variant_off':
+          'Desafío: DESACTIVADO (toca para desbloquear una ronda más difícil)',
+    },
+    'fr_FR': {
+      'hard_variant_on': 'Défi : ACTIVÉ (moins de coups, +50% pièces)',
+      'hard_variant_off':
+          'Défi : DÉSACTIVÉ (touchez pour débloquer une partie plus difficile)',
+    },
+    'de_DE': {
+      'hard_variant_on': 'Herausforderung: AN (weniger Züge, +50% Münzen)',
+      'hard_variant_off':
+          'Herausforderung: AUS (tippen für schwierigere Runde)',
+    },
+    'pt_BR': {
+      'hard_variant_on': 'Desafio: LIGADO (menos jogadas, +50% moedas)',
+      'hard_variant_off':
+          'Desafio: DESLIGADO (toque para desbloquear uma partida mais difícil)',
+    },
+    'ru_RU': {
+      'hard_variant_on': 'Испытание: ВКЛ (меньше ходов, +50% монет)',
+      'hard_variant_off':
+          'Испытание: ВЫКЛ (нажмите, чтобы открыть более сложный раунд)',
+    },
+    'zh_CN': {
+      'hard_variant_on': '挑战：开启（回合更少，+50%金币）',
+      'hard_variant_off': '挑战：关闭（点击解锁更难的一局）',
+    },
+    'ja_JP': {
+      'hard_variant_on': 'チャレンジ：ON（手数減、+50%コイン）',
+      'hard_variant_off': 'チャレンジ：OFF（タップでより難しいラウンドを解放）',
+    },
+    'ko_KR': {
+      'hard_variant_on': '챌린지: 켜짐 (턴 감소, +50% 코인)',
+      'hard_variant_off': '챌린지: 꺼짐 (탭하여 더 어려운 라운드 잠금 해제)',
+    },
+    'it_IT': {
+      'hard_variant_on': 'Sfida: ATTIVA (meno mosse, +50% monete)',
+      'hard_variant_off':
+          'Sfida: DISATTIVA (tocca per sbloccare una partita più difficile)',
+    },
+    'id_ID': {
+      'hard_variant_on': 'Tantangan: AKTIF (langkah lebih sedikit, +50% koin)',
+      'hard_variant_off':
+          'Tantangan: NONAKTIF (ketuk untuk membuka ronde lebih sulit)',
+    },
+    'th_TH': {
+      'hard_variant_on': 'ท้าทาย: เปิด (จำนวนตาน้อยลง, +50% เหรียญ)',
+      'hard_variant_off': 'ท้าทาย: ปิด (แตะเพื่อปลดล็อกรอบที่ยากขึ้น)',
+    },
+    'hi_IN': {
+      'hard_variant_on': 'चुनौती: चालू (कम चालें, +50% सिक्के)',
+      'hard_variant_off': 'चुनौती: बंद (कठिन राउंड अनलॉक करने के लिए टैप करें)',
+    },
+    'ar_SA': {
+      'hard_variant_on': 'التحدي: تشغيل (حركات أقل، +50% عملات)',
+      'hard_variant_off': 'التحدي: إيقاف (اضغط لفتح جولة أصعب)',
+    },
+    'tr_TR': {
+      'hard_variant_on': 'Meydan Okuma: AÇIK (daha az hamle, +%50 jeton)',
+      'hard_variant_off':
+          'Meydan Okuma: KAPALI (daha zor bir tur açmak için dokun)',
+    },
+    'nl_NL': {
+      'hard_variant_on': 'Uitdaging: AAN (minder zetten, +50% munten)',
+      'hard_variant_off':
+          'Uitdaging: UIT (tik om een moeilijkere ronde te ontgrendelen)',
+    },
+    'pl_PL': {
+      'hard_variant_on': 'Wyzwanie: WŁ (mniej ruchów, +50% monet)',
+      'hard_variant_off':
+          'Wyzwanie: WYŁ (dotknij, aby odblokować trudniejszą rundę)',
+    },
+    'fil_PH': {
+      'hard_variant_on': 'Hamon: NAKA-ON (mas kaunting galaw, +50% coins)',
+      'hard_variant_off':
+          'Hamon: NAKA-OFF (i-tap para i-unlock ang mas mahirap na round)',
+    },
+    'ms_MY': {
+      'hard_variant_on': 'Cabaran: HIDUP (langkah lebih sedikit, +50% syiling)',
+      'hard_variant_off':
+          'Cabaran: MATI (ketik untuk buka pusingan lebih sukar)',
+    },
+    'uk_UA': {
+      'hard_variant_on': 'Виклик: УВІМК (менше ходів, +50% монет)',
+      'hard_variant_off':
+          'Виклик: ВИМК (торкніться, щоб відкрити складніший раунд)',
+    },
+    'bn_BD': {
+      'hard_variant_on': 'চ্যালেঞ্জ: চালু (কম চাল, +৫০% কয়েন)',
+      'hard_variant_off': 'চ্যালেঞ্জ: বন্ধ (কঠিন রাউন্ড আনলক করতে ট্যাপ করুন)',
+    },
   };
 }

@@ -75,10 +75,10 @@ void main() {
   // ─── Progression Tree ─────────────────────────────────────────────────────
 
   group('Progression Tree — data', () {
-    test('kPtNodes có 3 node với id unique', () {
-      expect(kPtNodes.length, 3);
+    test('kPtNodes có 4 node với id unique (W25.3 — thêm ascendant)', () {
+      expect(kPtNodes.length, 4);
       final ids = kPtNodes.map((n) => n.id).toSet();
-      expect(ids.length, 3);
+      expect(ids.length, 4);
     });
 
     test('radiant + blazing dùng starCost > 0', () {
@@ -92,6 +92,13 @@ void main() {
       final prestige = ptNodeById('prestige')!;
       expect(prestige.goldCost, greaterThan(0));
       expect(prestige.starCost, 0);
+    });
+
+    test('ascendant dùng platinumCost > 0 (W25.3)', () {
+      final ascendant = ptNodeById('ascendant')!;
+      expect(ascendant.platinumCost, greaterThan(0));
+      expect(ascendant.starCost, 0);
+      expect(ascendant.goldCost, 0);
     });
   });
 
@@ -293,10 +300,7 @@ void main() {
       // Week index phải được cập nhật lên tuần hiện tại
       expect(store.getInt(StorageKeys.ccWeekIdx), currentWeek);
       // Coin baseline phải được ghi lại (ccCoinsStart = coinsEarnedTotal lúc reset)
-      expect(
-        store.getInt(StorageKeys.ccCoinsStart),
-        g.coinsEarnedTotal.value,
-      );
+      expect(store.getInt(StorageKeys.ccCoinsStart), g.coinsEarnedTotal.value);
     });
   });
 
@@ -411,25 +415,28 @@ void main() {
       );
     });
 
-    test('recordMove no-op trong ghost mode: không xoá ghost data gốc', () async {
-      final store = StorageService.to;
-      // Lưu ghost data cho level 1 trước
-      await store.setString(StorageKeys.ghostMoves(1), '01020304');
-      await store.setInt(StorageKeys.ghostScore(1), 800);
+    test(
+      'recordMove no-op trong ghost mode: không xoá ghost data gốc',
+      () async {
+        final store = StorageService.to;
+        // Lưu ghost data cho level 1 trước
+        await store.setString(StorageKeys.ghostMoves(1), '01020304');
+        await store.setInt(StorageKeys.ghostScore(1), 800);
 
-      g.startGhostMode(1);
-      expect(g.isGhostMode.value, isTrue);
-      expect(g.hasGhost(1), isTrue);
+        g.startGhostMode(1);
+        expect(g.isGhostMode.value, isTrue);
+        expect(g.hasGhost(1), isTrue);
 
-      // Gọi recordMove trong ghost mode → phải no-op
-      g.recordMove(5, 6, 7, 7);
-      g.recordMove(3, 4, 3, 5);
+        // Gọi recordMove trong ghost mode → phải no-op
+        g.recordMove(5, 6, 7, 7);
+        g.recordMove(3, 4, 3, 5);
 
-      // Storage KHÔNG đổi
-      expect(store.getString(StorageKeys.ghostMoves(1)), '01020304');
-      // nextGhostMove vẫn trả đúng data ghost gốc (r1=0,c1=1,r2=0,c2=2)
-      expect(g.nextGhostMove(), (0, 1, 0, 2));
-    });
+        // Storage KHÔNG đổi
+        expect(store.getString(StorageKeys.ghostMoves(1)), '01020304');
+        // nextGhostMove vẫn trả đúng data ghost gốc (r1=0,c1=1,r2=0,c2=2)
+        expect(g.nextGhostMove(), (0, 1, 0, 2));
+      },
+    );
 
     test('startGhostMode nạp ghost moves từ storage', () async {
       // Lưu ghost data trước

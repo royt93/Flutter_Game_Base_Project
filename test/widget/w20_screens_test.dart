@@ -29,16 +29,16 @@ void main() {
   tearDown(Get.reset);
 
   Widget appEn(Widget home) => GetMaterialApp(
-        translations: AppTranslations(),
-        locale: const Locale('en', 'US'),
-        fallbackLocale: AppTranslations.fallback,
-        home: home,
-      );
+    translations: AppTranslations(),
+    locale: const Locale('en', 'US'),
+    fallbackLocale: AppTranslations.fallback,
+    home: home,
+  );
 
   // ─── ProgressionTreeScreen ────────────────────────────────────────────────
 
   group('ProgressionTreeScreen', () {
-    testWidgets('render 3 nodes với lock icon khi chưa unlock', (tester) async {
+    testWidgets('render 4 nodes với lock icon khi chưa unlock', (tester) async {
       Get.put(ProgressionTreeController(g));
       tester.view.physicalSize = const Size(1170, 2532);
       tester.view.devicePixelRatio = 3.0;
@@ -48,17 +48,20 @@ void main() {
       await tester.pumpWidget(appEn(const ProgressionTreeScreen()));
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 3 nodes hiển thị
+      // 4 nodes hiển thị (W25.3 — thêm node Ascendant)
       expect(find.text('Radiant'), findsOneWidget);
       expect(find.text('Blazing'), findsOneWidget);
       expect(find.text('Prestige'), findsOneWidget);
+      expect(find.text('Ascendant'), findsOneWidget);
       // Tất cả đều khoá (lock icon)
-      expect(find.byIcon(Icons.lock_outline_rounded), findsNWidgets(3));
+      expect(find.byIcon(Icons.lock_outline_rounded), findsNWidgets(4));
     });
 
     testWidgets('node Radiant hiện UNLOCKED khi đủ sao', (tester) async {
       // 20 màn × 3 sao = 60 sao → đủ 50 sao cho Radiant
-      for (int i = 1; i <= 20; i++) { g.stars[i] = 3; }
+      for (int i = 1; i <= 20; i++) {
+        g.stars[i] = 3;
+      }
       final ctrl = Get.put(ProgressionTreeController(g));
       ctrl.checkAndUnlock();
 
@@ -74,11 +77,13 @@ void main() {
       expect(find.text('✓ UNLOCKED'), findsOneWidget);
       // Stars icon cho node đã unlock
       expect(find.byIcon(Icons.stars_rounded), findsOneWidget);
-      // 2 node còn lại vẫn lock
-      expect(find.byIcon(Icons.lock_outline_rounded), findsNWidgets(2));
+      // 3 node còn lại vẫn lock (W25.3 — thêm node Ascendant)
+      expect(find.byIcon(Icons.lock_outline_rounded), findsNWidgets(3));
     });
 
-    testWidgets('hiện progress bar + cost cho node chưa unlock', (tester) async {
+    testWidgets('hiện progress bar + cost cho node chưa unlock', (
+      tester,
+    ) async {
       Get.put(ProgressionTreeController(g));
       tester.view.physicalSize = const Size(1170, 2532);
       tester.view.devicePixelRatio = 3.0;
@@ -89,7 +94,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Mỗi node lock có LinearProgressIndicator (progress bar)
-      expect(find.byType(LinearProgressIndicator), findsNWidgets(kPtNodes.length));
+      expect(
+        find.byType(LinearProgressIndicator),
+        findsNWidgets(kPtNodes.length),
+      );
     });
   });
 
@@ -106,18 +114,23 @@ void main() {
       await tester.pumpWidget(appEn(const ChallengeCardScreen()));
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 3 progress bar cho 3 thử thách
-      expect(find.byType(LinearProgressIndicator), findsNWidgets(3));
+      // 3 progress bar cho 3 thử thách + 1 cho panel điểm side-mode/tuần (W25.3)
+      expect(find.byType(LinearProgressIndicator), findsNWidgets(4));
       // Nút CLAIM chưa hiện (chưa hoàn thành)
       expect(find.text('CLAIM'), findsNothing);
     });
 
-    testWidgets('CLAIM button hiện khi hoàn thành thử thách campaign', (tester) async {
+    testWidgets('CLAIM button hiện khi hoàn thành thử thách campaign', (
+      tester,
+    ) async {
       final ctrl = Get.put(ChallengeCardController(g));
       // Force complete challenge 0 (winCampaign)
-      final target = ctrl.challenges.firstWhere(
-          (c) => c.type == ChallengeType.winCampaign).target;
-      for (int i = 0; i < target; i++) { ctrl.onCampaignWin(); }
+      final target = ctrl.challenges
+          .firstWhere((c) => c.type == ChallengeType.winCampaign)
+          .target;
+      for (int i = 0; i < target; i++) {
+        ctrl.onCampaignWin();
+      }
 
       tester.view.physicalSize = const Size(1170, 2532);
       tester.view.devicePixelRatio = 3.0;
@@ -134,9 +147,12 @@ void main() {
     testWidgets('CLAIM: nhận xu + nút biến mất', (tester) async {
       final ctrl = Get.put(ChallengeCardController(g));
       final idx = ctrl.challenges.indexWhere(
-          (c) => c.type == ChallengeType.winCampaign);
+        (c) => c.type == ChallengeType.winCampaign,
+      );
       final target = ctrl.challenges[idx].target;
-      for (int i = 0; i < target; i++) { ctrl.onCampaignWin(); }
+      for (int i = 0; i < target; i++) {
+        ctrl.onCampaignWin();
+      }
 
       tester.view.physicalSize = const Size(1170, 2532);
       tester.view.devicePixelRatio = 3.0;

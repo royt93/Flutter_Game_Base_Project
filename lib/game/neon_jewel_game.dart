@@ -653,6 +653,15 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// anti-player (game chưa IAP → bất công). Dùng cho refill (không cho fill đầu).
   GemColor _refillColor() {
     final lv = controller.level;
+    // W25.1 Phase 1B — ColorRush: refill nghiêng về màu nóng (đổi cách gem rơi,
+    // không chỉ +điểm — đây là "quyết định cơ chế thật" của mode).
+    if (biasRefillToHotColor(
+      controller.isColorRush.value,
+      _rnd.nextDouble(),
+      GameController.kColorRushRefillBias,
+    )) {
+      return GemColor.values[controller.colorRushHot.value];
+    }
     if (biasRefillToTarget(
       controller.pity.value,
       GameController.kPityLuckyFails,
@@ -1159,6 +1168,11 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   /// _ensurePlayable nên giá trị này phải true ở mọi layout/seed).
   @visibleForTesting
   bool get hasPossibleMove => _hasPossibleMove();
+
+  /// W25.1 Phase 1B test seam: gọi trực tiếp _refillColor() để test thống kê
+  /// bias ColorRush mà không cần simulate 1 swap/match thật.
+  @visibleForTesting
+  GemColor refillColorForTest() => _refillColor();
 
   /// W17.2 test seam: chỉ cập nhật _cellKind + xoá gem ở tường mới (không animate).
   /// Dùng để test logic update mà không cần game loop chạy effect.

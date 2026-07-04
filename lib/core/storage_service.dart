@@ -118,8 +118,10 @@ class StorageKeys {
   // W19.1 — Kỷ lục chế độ phụ ([key] = SideModeRecordSpec.key).
   static String recValue(String key) =>
       'rec_${key}_v'; // giá trị chỉ số (best/count)
-  static String recTier(String key) => 'rec_${key}_t'; // bậc mốc đã nhận (0..3)
+  static String recTier(String key) => 'rec_${key}_t'; // bậc mốc đã nhận (0..4)
   static String recPlays(String key) => 'rec_${key}_p'; // số lần chơi
+  // W25.1 Phase 1C — Thử Thách (hard variant, tự chọn sau Gold): 1 = đang bật.
+  static String recHardVariant(String key) => 'rec_${key}_hv';
 
   // W19.2 — Cấu đố (Puzzle): sao tốt nhất từng cấu đố + số cấu đố đã mở khoá.
   static String puzzleStars(int id) => 'pz_star_$id';
@@ -182,6 +184,10 @@ class StorageKeys {
   static String ccClaimed(int i) => 'cc_claimed_$i'; // 1 = đã claim
   // H2 fix: baseline xu đầu tuần (dùng bởi ChallengeCardController.refreshCoins)
   static const String ccCoinsStart = 'cc_coins_start';
+
+  // W25.3 — trục điểm side-mode/tuần (tách biệt campaign).
+  static const String ccSideWeekPoints = 'cc_side_pts';
+  static const String ccSideMilestone = 'cc_side_milestone'; // 0..3 mốc đã nhận
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

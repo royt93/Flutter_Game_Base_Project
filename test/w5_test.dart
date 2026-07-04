@@ -4,11 +4,13 @@ import 'package:get/get.dart';
 import 'package:neon_jewels/core/storage_service.dart';
 import 'package:neon_jewels/data/achievements.dart';
 import 'package:neon_jewels/data/levels.dart';
+import 'package:neon_jewels/data/side_mode_records.dart';
 import 'package:neon_jewels/data/wheel.dart';
 import 'package:neon_jewels/presentation/controllers/achievement_controller.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
 import 'package:neon_jewels/presentation/controllers/lucky_wheel_controller.dart';
 import 'package:neon_jewels/presentation/controllers/pregame_controller.dart';
+import 'package:neon_jewels/presentation/controllers/side_mode_record_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Random giả: nextInt luôn trả [value] (mod max) → ép vòng quay vào ô cụ thể.
@@ -274,6 +276,7 @@ void main() {
   group('Achievement coverage (mọi thành tựu)', () {
     test('mỗi thành tựu mở khoá khi đạt ngưỡng', () {
       final ac = Get.put(AchievementController(c));
+      final rec = Get.put(SideModeRecordController(c));
       for (final a in kAchievements) {
         switch (a.stat) {
           case AchStat.totalWins:
@@ -304,6 +307,12 @@ void main() {
           case AchStat.clanContribTotal:
             c.clanContribLifetime.value = a.threshold;
             break;
+          case AchStat.platinumMilestones:
+            rec.claimedTier.clear();
+            for (final s in kSideModeRecords.take(a.threshold)) {
+              rec.claimedTier[s.kind] = RecordTier.platinum.index;
+            }
+            break;
         }
         expect(
           ac.isUnlocked(a),
@@ -315,12 +324,17 @@ void main() {
 
     test('đạt hết → claim tất cả → hasUnclaimed false + xu tăng', () {
       final ac = Get.put(AchievementController(c));
+      final rec = Get.put(SideModeRecordController(c));
       c.totalWins.value = 100;
       c.bestCombo.value = 20;
       c.bestWinStreak.value = 20;
       c.unlockedLevel.value = 100;
       c.coinsEarnedTotal.value = 5000;
       c.clanContribLifetime.value = 5000; // W23 — phủ thành tựu Clan
+      for (final s in kSideModeRecords) {
+        rec.claimedTier[s.kind] =
+            RecordTier.platinum.index; // W25.3 — phủ platinum_1/4/9
+      }
       c.stars.clear();
       for (var lv = 1; lv <= 100; lv++) {
         c.stars[lv] = 3; // 300 sao (phủ thành tựu tier cao Wave 12: stars_300)

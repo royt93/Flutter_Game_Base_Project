@@ -568,6 +568,11 @@ bool biasRefillToTarget(
     hasTarget &&
     roll < bias;
 
+/// W25.1 Phase 1B — ColorRush: refill NGHIÊNG về màu nóng (đổi cách gem RƠI,
+/// không chỉ +điểm) — pure, test độc lập. roll < bias → nên trả màu nóng.
+bool biasRefillToHotColor(bool isColorRush, double roll, double bias) =>
+    isColorRush && roll < bias;
+
 /// Điều chỉnh LƯỢT theo tier (sawtooth). relief +3 (nghỉ); Hard -1; Super-Hard -1
 /// (đỉnh) + near-miss (gated). ⚠️ LƯU Ý: bite này bị SÀN 17 nuốt từ ~L75 (base đã
 /// chạm sàn) → late-game tier dựa vào: _tierMul (score/time/collect) + _tierObjBonus

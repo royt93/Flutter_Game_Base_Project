@@ -45,16 +45,41 @@ class NeonTheme {
 
   /// Màu chủ đạo (accent) theo từng thế giới (1-based). Nguồn DUY NHẤT —
   /// dùng cho banner world, node map, background theo world, viền bàn.
+  /// W26.2: đủ 10 màu riêng biệt cho 10 thế giới (trước chỉ 5 → World 6-10
+  /// lặp màu World 1-5 qua modulo).
   static const List<Color> worldAccents = [
     cyan, // World 1 — Cyan Nebula
     magenta, // World 2 — Magenta Pulse
     lime, // World 3 — Lime Circuit
     orange, // World 4 — Amber Comet
     purple, // World 5 — Violet Void
+    teal, // World 6 — Prism Maze
+    pink, // World 7 — Flux Stream
+    gold, // World 8 — Neon Apex
+    red, // World 9 — Void Circuit
+    indigo, // World 10 — Zenith Neon
   ];
 
   static Color accentForWorld(int worldIndex) =>
       worldAccents[(worldIndex - 1) % worldAccents.length];
+
+  /// W26.2 — biểu tượng landmark riêng theo thế giới, dùng cho World Map
+  /// (glyph vẽ tại [paintLandmarkGlyph] trong world_map_screen.dart) và badge.
+  static WorldLandmark landmarkForWorld(int worldIndex) =>
+      worldLandmarks[(worldIndex - 1) % worldLandmarks.length];
+
+  static const List<WorldLandmark> worldLandmarks = [
+    WorldLandmark.nebula, // 1 Cyan Nebula
+    WorldLandmark.pulse, // 2 Magenta Pulse
+    WorldLandmark.circuit, // 3 Lime Circuit
+    WorldLandmark.comet, // 4 Amber Comet
+    WorldLandmark.void_, // 5 Violet Void
+    WorldLandmark.prism, // 6 Prism Maze
+    WorldLandmark.stream, // 7 Flux Stream
+    WorldLandmark.apex, // 8 Neon Apex
+    WorldLandmark.crackedCircuit, // 9 Void Circuit
+    WorldLandmark.zenith, // 10 Zenith Neon
+  ];
 
   static const LinearGradient bgGradient = LinearGradient(
     begin: Alignment.topLeft,
@@ -81,4 +106,18 @@ class NeonTheme {
       ),
     ];
   }
+}
+
+/// W26.2 — biểu tượng landmark riêng cho 10 thế giới trên World Map.
+enum WorldLandmark {
+  nebula,
+  pulse,
+  circuit,
+  comet,
+  void_,
+  prism,
+  stream,
+  apex,
+  crackedCircuit,
+  zenith,
 }

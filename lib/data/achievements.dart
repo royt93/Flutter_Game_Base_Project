@@ -9,6 +9,7 @@ enum AchStat {
   unlockedLevel,
   coinsEarned,
   clanContribTotal, // W23 — tổng đóng góp Clan tích luỹ
+  platinumMilestones, // W25.3 — số mode phụ đã đạt mốc Platinum (tối đa 9)
 }
 
 /// Một thành tựu: đạt [threshold] của [stat] → mở khoá, nhận [reward] xu.
@@ -208,5 +209,30 @@ const List<Achievement> kAchievements = [
     stat: AchStat.clanContribTotal,
     threshold: 500,
     reward: 150,
+  ),
+  // W25.3 — Platinum side-mode: danh hiệu đeo được qua equipTitle() có sẵn.
+  Achievement(
+    id: 'platinum_1',
+    icon: Icons.workspace_premium_rounded,
+    color: Color(0xFFE0E0E0),
+    stat: AchStat.platinumMilestones,
+    threshold: 1,
+    reward: 100,
+  ),
+  Achievement(
+    id: 'platinum_4',
+    icon: Icons.workspace_premium_rounded,
+    color: Color(0xFFB9F2FF),
+    stat: AchStat.platinumMilestones,
+    threshold: 4,
+    reward: 300,
+  ),
+  Achievement(
+    id: 'platinum_9',
+    icon: Icons.workspace_premium_rounded,
+    color: Color(0xFFFF2BD6),
+    stat: AchStat.platinumMilestones,
+    threshold: 9,
+    reward: 700,
   ),
 ];

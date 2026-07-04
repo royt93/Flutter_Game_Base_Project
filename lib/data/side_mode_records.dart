@@ -26,17 +26,20 @@ enum SideModeKind {
 /// - winCount: tổng số lần THẮNG tích luỹ (các mode có "win" cố định mục tiêu).
 enum RecordMetric { bestStage, bestScore, winCount }
 
-/// Bậc cột mốc. Thứ tự index DÙNG để so sánh tiến triển (none<bronze<silver<gold).
-enum RecordTier { none, bronze, silver, gold }
+/// Bậc cột mốc. Thứ tự index DÙNG để so sánh tiến triển
+/// (none<bronze<silver<gold<platinum). W25.3: thêm platinum ở CUỐI — giữ
+/// nguyên index 3 cũ của gold để không phá dữ liệu đã lưu.
+enum RecordTier { none, bronze, silver, gold, platinum }
 
 /// Thưởng xu khi đạt mốc (nhỏ — giữ vai cosmetic chính cho Album/Shop).
 const Map<RecordTier, int> kTierReward = {
   RecordTier.bronze: 30,
   RecordTier.silver: 60,
   RecordTier.gold: 120,
+  RecordTier.platinum: 220,
 };
 
-/// Đặc tả 1 chế độ phụ: chỉ số + 3 ngưỡng mốc.
+/// Đặc tả 1 chế độ phụ: chỉ số + 4 ngưỡng mốc.
 class SideModeRecordSpec {
   final SideModeKind kind;
   final String key; // prefix lưu trữ ('endless', 'boss', …)
@@ -44,6 +47,7 @@ class SideModeRecordSpec {
   final int bronze;
   final int silver;
   final int gold;
+  final int platinum;
 
   const SideModeRecordSpec({
     required this.kind,
@@ -52,10 +56,12 @@ class SideModeRecordSpec {
     required this.bronze,
     required this.silver,
     required this.gold,
+    required this.platinum,
   });
 
   /// Bậc mốc đạt được với [value] (none nếu chưa tới bronze).
   RecordTier tierFor(int value) {
+    if (value >= platinum) return RecordTier.platinum;
     if (value >= gold) return RecordTier.gold;
     if (value >= silver) return RecordTier.silver;
     if (value >= bronze) return RecordTier.bronze;
@@ -73,7 +79,34 @@ class SideModeRecordSpec {
         return silver;
       case RecordTier.gold:
         return gold;
+      case RecordTier.platinum:
+        return platinum;
     }
+  }
+}
+
+/// Key i18n tên ngắn hiển thị theo mode (dùng cho quest kỹ năng W25.3) — tái
+/// dùng nguyên vẹn các key `_short` đã dịch đủ 22 ngôn ngữ, không dịch lại.
+String shortKeyFor(SideModeKind k) {
+  switch (k) {
+    case SideModeKind.endless:
+      return 'endless_short';
+    case SideModeKind.boss:
+      return 'boss_short';
+    case SideModeKind.rhythm:
+      return 'rhythm_short';
+    case SideModeKind.gravity:
+      return 'gravity_short';
+    case SideModeKind.soda:
+      return 'soda_short';
+    case SideModeKind.colorRush:
+      return 'color_rush_short';
+    case SideModeKind.survival:
+      return 'survival_short';
+    case SideModeKind.labyrinth:
+      return 'labyrinth_short';
+    case SideModeKind.rush:
+      return 'rush_short';
   }
 }
 
@@ -90,6 +123,7 @@ const List<SideModeRecordSpec> kSideModeRecords = [
     bronze: 5,
     silver: 15,
     gold: 30,
+    platinum: 60,
   ),
   SideModeRecordSpec(
     kind: SideModeKind.boss,
@@ -98,6 +132,7 @@ const List<SideModeRecordSpec> kSideModeRecords = [
     bronze: 1,
     silver: 3,
     gold: 5,
+    platinum: 8,
   ),
   SideModeRecordSpec(
     kind: SideModeKind.survival,
@@ -106,6 +141,7 @@ const List<SideModeRecordSpec> kSideModeRecords = [
     bronze: 2000,
     silver: 5000,
     gold: 10000,
+    platinum: 20000,
   ),
   SideModeRecordSpec(
     kind: SideModeKind.rhythm,
@@ -114,6 +150,7 @@ const List<SideModeRecordSpec> kSideModeRecords = [
     bronze: 1,
     silver: 5,
     gold: 15,
+    platinum: 30,
   ),
   SideModeRecordSpec(
     kind: SideModeKind.gravity,
@@ -122,6 +159,7 @@ const List<SideModeRecordSpec> kSideModeRecords = [
     bronze: 1,
     silver: 5,
     gold: 15,
+    platinum: 30,
   ),
   SideModeRecordSpec(
     kind: SideModeKind.colorRush,
@@ -130,6 +168,7 @@ const List<SideModeRecordSpec> kSideModeRecords = [
     bronze: 1,
     silver: 5,
     gold: 15,
+    platinum: 30,
   ),
   SideModeRecordSpec(
     kind: SideModeKind.soda,
@@ -138,6 +177,7 @@ const List<SideModeRecordSpec> kSideModeRecords = [
     bronze: 1,
     silver: 5,
     gold: 15,
+    platinum: 30,
   ),
   SideModeRecordSpec(
     kind: SideModeKind.labyrinth,
@@ -146,6 +186,7 @@ const List<SideModeRecordSpec> kSideModeRecords = [
     bronze: 1,
     silver: 5,
     gold: 15,
+    platinum: 30,
   ),
   SideModeRecordSpec(
     kind: SideModeKind.rush,
@@ -154,6 +195,7 @@ const List<SideModeRecordSpec> kSideModeRecords = [
     bronze: 5000,
     silver: 20000,
     gold: 60000,
+    platinum: 120000,
   ),
 ];
 

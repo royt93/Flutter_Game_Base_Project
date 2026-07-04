@@ -15,6 +15,7 @@ class AudioManager extends GetxService {
 
   final RxBool muted = false.obs;
   bool _bgmPlaying = false;
+  int _currentTrack = 0; // W26.1 — track đang phát, để đổi nhạc theo mode
   bool _ready = false;
 
   /// Lấy instance nếu đã đăng ký (an toàn khi gọi từ game/widget test).
@@ -45,10 +46,20 @@ class AudioManager extends GetxService {
   String _pad(int i) => i.toString().padLeft(2, '0');
 
   void startBgm({int track = 0}) {
-    if (_bgmPlaying || muted.value) return;
-    final name = _bgmTracks[track % _bgmTracks.length];
-    _ignoreAudio(FlameAudio.bgm.play(name, volume: 0.35));
+    final t = track % _bgmTracks.length;
+    if (muted.value) {
+      _currentTrack = t; // nhớ track để unmute phát đúng
+      return;
+    }
+    if (_bgmPlaying && t == _currentTrack) {
+      return; // đang phát đúng track → no-op
+    }
+    if (_bgmPlaying) {
+      _ignoreAudio(FlameAudio.bgm.stop()); // đổi track: dừng track cũ
+    }
+    _ignoreAudio(FlameAudio.bgm.play(_bgmTracks[t], volume: 0.35));
     _bgmPlaying = true;
+    _currentTrack = t;
   }
 
   void stopBgm() {
@@ -80,8 +91,8 @@ class AudioManager extends GetxService {
       // BGM đang được track là "đang chạy" (chỉ bị pause bởi mute) → resume
       _ignoreAudio(FlameAudio.bgm.resume());
     } else {
-      // BGM chưa bao giờ start (mute trước khi vào game) → start ngay
-      startBgm();
+      // BGM chưa start (mute trước khi vào game) → start đúng track đã nhớ
+      startBgm(track: _currentTrack);
     }
   }
 
