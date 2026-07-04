@@ -7,6 +7,10 @@ owner: claude
 created: 2026-07-05
 ---
 
+> 🟡 **2026-07-05** — Đã hỏi user chọn phase bắt đầu (AskUserQuestion, Phase 1 device-verify là
+> recommended). User tạm dừng để đi ngủ, **chưa chốt phase nào** — hẹn tiếp tục phiên sau. Không có
+> code nào bị đụng trong lượt này.
+
 # Wave 27 — Tổng hợp
 
 | Phase | Hạng mục | File | Loại | Ưu tiên | Đụng engine? | Trạng thái |
