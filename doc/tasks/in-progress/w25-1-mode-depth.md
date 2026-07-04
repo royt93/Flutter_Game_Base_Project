@@ -86,16 +86,19 @@ Lấy mode "đổi luật cùng vòng lặp" và cho nó **1 quyết định cơ
 
 ## Acceptance
 - [x] Boss có telegraph + ≥2 bộ đòn phân biệt được bằng mắt; playtest bot vẫn thắng được. (Device
-  Samsung A11 xác nhận tên loại boss + phase hiện đúng; nhìn mắt riêng "telegraph→meteor phase 2"
-  chưa làm thêm 1 lần verify sâu — không chặn vì unit test đã phủ logic chọn đòn.)
+  Samsung A11 xác nhận tên loại boss + phase hiện đúng; **2026-07-04 verify thêm trên device
+  R5CX613VZBR — nhìn thấy trực tiếp vòng tròn tím cảnh báo telegraph ở vùng sắp bị meteor đánh
+  trong lúc chơi Boss "Xung Kích · TRÙM NEON 1" — telegraph→meteor xác nhận bằng mắt, không còn
+  treo.**)
 - [x] 1 mode B đã lên A (ColorRush — nhánh engine refill-bias thật, mô tả trong progress note Đợt 2).
 - [x] ≥1 mode phụ có progression sau-Gold; persist (`recHardVariant` key) + vào `resetProgress`
   (test xác nhận `resetProgress()` xoá cờ về false).
 - [x] `flutter analyze` 0 issue · unit test cho selector đòn mới (`w25_boss_depth_test.dart`) +
   progression persist (`w25_1_hard_variant_test.dart`) · suite xanh (969 passed).
 
-**Chưa verify device riêng cho 1B/1C** (thuần logic/economy, rủi ro thấp) — có thể làm thêm nếu
-user muốn chắc trước khi tự commit.
+**1B/1C**: vẫn chưa có phiên verify device riêng biệt cho refill-bias ColorRush/hard-variant (thuần
+logic/economy, rủi ro thấp) — làm thêm nếu user muốn chắc trước khi tự commit. Boss telegraph (1A)
+đã verify xong 2026-07-04.
 
 ## Lưu ý
 - Boss/Rhythm đụng game loop Flame → rủi ro cao hơn phase khác; tách sub-phase nếu cần.
