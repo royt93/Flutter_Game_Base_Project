@@ -7,15 +7,18 @@ owner: claude
 created: 2026-07-05
 ---
 
-> 🟡 **2026-07-05** — Đã hỏi user chọn phase bắt đầu (AskUserQuestion, Phase 1 device-verify là
-> recommended). User tạm dừng để đi ngủ, **chưa chốt phase nào** — hẹn tiếp tục phiên sau. Không có
-> code nào bị đụng trong lượt này.
+> 🟢 **2026-07-05** — **Phase 1 hoàn tất**: 1A (2026-07-04), 1B (ColorRush refill-bias, mật độ màu
+> nóng/đổi màu/không lag) và 1C ("Thử Thách" — icon sau Gold, lượt -15%, thưởng +51%, tắt trả về
+> bình thường, không leak sang campaign) đều đã device-verify xong (chi tiết ở
+> [[w27-1-device-verify-1abc]]). Không có code nào bị đụng — chỉ verify bằng device. Còn 1 mục tuỳ
+> chọn ở 1A (verify thêm 1 stage chẵn) đã **skip theo quyết định user** (mất quá nhiều thời gian, không
+> bắt buộc). Sẵn sàng chuyển sang Phase 2 khi có chỉ đạo.
 
 # Wave 27 — Tổng hợp
 
 | Phase | Hạng mục | File | Loại | Ưu tiên | Đụng engine? | Trạng thái |
 |---|---|---|---|---|---|---|
-| 1 | Device-verify 1A/1B/1C (Wave 25.1) | [[w27-1-device-verify-1abc]] | Verify (không sửa code) | Cao | Không | Todo |
+| 1 | Device-verify 1A/1B/1C (Wave 25.1) | [[w27-1-device-verify-1abc]] | Verify (không sửa code) | Cao | Không | **Done** |
 | 2 | ALL-CAPS → title case, mọi ngôn ngữ | [[w27-2-allcaps-titlecase]] | i18n string audit | Trung | Không | Todo |
 | 3 | Audit jargon Album (Collection) — đổi tên + mô tả | [[w27-3-collection-glossary]] | Content + UI nhỏ | Trung | Không | Todo |
 
