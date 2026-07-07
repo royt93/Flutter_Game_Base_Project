@@ -3,7 +3,7 @@ id: w26-2-world-map-identity
 title: World Map — bản sắc thị giác riêng mỗi thế giới (landmark + background)
 wave: 26
 phase: 2
-status: in-progress
+status: done
 owner: claude
 created: 2026-07-03
 ---
@@ -53,16 +53,17 @@ Map **tĩnh về bản sắc** — 10 thế giới chỉ khác nhau ở **màu a
 gợi "đây là Tinh Vân Lam" vs "Zenith Neon" ngoài màu. Thiếu chiều sâu thị giác/giữ chân.
 
 ## Việc — bản sắc riêng mỗi thế giới
-- [ ] **Landmark/biểu tượng per-world**: mỗi thế giới có 1 hình đặc trưng vẽ trên map (silhouette/glyph
+- [x] **Landmark/biểu tượng per-world**: mỗi thế giới có 1 hình đặc trưng vẽ trên map (silhouette/glyph
   neon) — vd Cyan Nebula=tinh vân xoáy · Magenta Pulse=sóng xung · Lime Circuit=mạch điện ·
   Amber Comet=sao chổi · Violet Void=hố đen · Prism Maze=lăng kính · Flux Stream=dòng chảy ·
   Neon Apex=đỉnh núi · Void Circuit=mạch vỡ · Zenith Neon=thiên đỉnh. Vẽ bằng CustomPainter
   (tái dùng blur/halo của `_MapPainter`) hoặc glyph — KHÔNG cần asset ảnh.
-- [ ] **Background per-world**: gradient/particle nền đổi theo thế giới đang xem (không chỉ accent) —
+- [x] **Background per-world**: gradient/particle nền đổi theo thế giới đang xem (không chỉ accent) —
   đọc thế giới của vùng node đang hiển thị. Tái dùng `NeonBg`/particle sẵn có, tham số hoá theo world.
-- [ ] **Banner ranh giới thế giới**: khi cuộn qua node cuối 1 TG → node đầu TG kế, hiện banner tên +
+- [x] **Banner ranh giới thế giới**: khi cuộn qua node cuối 1 TG → node đầu TG kế, hiện banner tên +
   landmark thế giới mới (đã có banner khu vực cơ bản — nâng thành mốc chuyển-thế-giới rõ hơn).
-- [ ] (tùy) **Đường path đổi kiểu theo world**: độ cong / mật độ sao / màu xung khác nhẹ mỗi thế giới.
+- [~] (tùy) **Đường path đổi kiểu theo world**: SKIP theo quyết định — giá trị thị giác thấp so với
+  landmark+màu+dải nền đã đủ phân biệt.
 
 ## Điểm móc
 - `lib/presentation/screens/world_map_screen.dart`: `_MapPainter:490` (`_segment` quadraticBezier,
@@ -74,10 +75,10 @@ gợi "đây là Tinh Vân Lam" vs "Zenith Neon" ngoài màu. Thiếu chiều s�
 - Reduced-motion: tôn trọng `ActiveCosmetics.reducedMotion` (tắt particle nền động).
 
 ## Acceptance
-- [ ] 10 thế giới phân biệt được bằng landmark + nền, không chỉ màu; chụp 2-3 TG cạnh nhau thấy rõ khác.
-- [ ] Map render mượt, không tụt FPS trên máy yếu (A11); avatar/chest/miniboss node vẫn đúng vị trí.
-- [ ] `flutter analyze` 0 · widget test `WorldMapScreen` mount mỗi world không crash (skipOffstage:false).
-- [ ] Không đụng logic unlock/navigation/economy (thuần thị giác).
+- [x] 10 thế giới phân biệt được bằng landmark + nền, không chỉ màu; chụp 2-3 TG cạnh nhau thấy rõ khác.
+- [x] Map render mượt, không tụt FPS trên máy yếu (A11); avatar/chest/miniboss node vẫn đúng vị trí.
+- [x] `flutter analyze` 0 · widget test `WorldMapScreen` mount mỗi world không crash (skipOffstage:false).
+- [x] Không đụng logic unlock/navigation/economy (thuần thị giác).
 
 ## Lưu ý
 - Thuần render/CustomPainter → rủi ro thấp, không device (verify feel cần device A11).

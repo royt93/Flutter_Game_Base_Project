@@ -14,7 +14,7 @@ việc **cần device** lại một mẻ (làm khi máy ổn định), đóng v�
 
 | Phase | Task | File | Ưu tiên | Cần device? | Ghi chú |
 |---|---|---|---|---|---|
-| 1 | **Device-verify batch** | `w24-1-device-verify.md` | 🔴 Cao | ✅ Có | Verify + tinh chỉnh các thứ chưa thấy mắt: gem trail (FPS), juice combo, chest/mini-boss node, avatar walk, clan/leaderboard/quest-bonus UI; + checklist B3 split-screen, B4 perf/resume |
+| 1 | **Device-verify batch** | ↪ `../done/w24-1-device-verify.md` | 🔴 Cao | ✅ Có | ✅ **DONE** — verify hết + tìm/fix 1 bug thật (dt-clamp insta-lose khi resume background), 1 false-alarm (ad device-level, không phải app) |
 | 2 | **2B engine: boss shuffle/meteor** | `w23-2-miniboss-complete.md` | 🟡 TB | ✅ Có | Wire hiệu ứng: game react `bossAttackSignal` → `_doShuffle` (shuffle, phase 2) / clear-cell (meteor); selector `bossAttackPatternFor` đã có (W23.2B) |
 | 3 | **Localize key W23 còn lại** | `w24-3-i18n-w23.md` | 🟢 Thấp | ❌ | 3 key en+vi (`quest_bonus_title`, `clan_title`, `clan_goal`) → dịch 20 ngôn ngữ (thêm vào `_w22ByLang` hoặc `_w24ByLang`). Hiện ratio vẫn ≥80% nhưng nên đóng cho sạch |
 | 4 | **Clan content sâu hơn** | `w24-4-clan-plus.md` | 🟢 Thấp | ❌ | Clan vs Clan (giải tuần giữa nhiều clan bot), chat-emote tất định, hoặc đóng góp từ side-mode (hiện chỉ campaign). Pure offline + testable |

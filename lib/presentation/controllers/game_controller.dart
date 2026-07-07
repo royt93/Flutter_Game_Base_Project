@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Color;
+import 'package:flutter/material.dart' show Color, IconData, Icons;
 import 'package:get/get.dart';
 import '../../core/debug_log.dart';
 import '../../core/neon_theme.dart';
@@ -43,6 +43,9 @@ part 'game_controller_booster.dart';
 part 'game_controller_cosmetics.dart';
 part 'game_controller_lives.dart';
 part 'game_controller_progress.dart';
+
+/// W25.2 — kiểu animation icon mở-màn theo mode (dùng bởi [_ModeIntroOverlay]).
+enum ModeIntroMotion { shake, spin, pulse, riseFade, bounce, none }
 
 /// Quản lý state ván chơi + tiến trình (GetX).
 class GameController extends GetxController {
@@ -98,6 +101,9 @@ class GameController extends GetxController {
   final RxBool isZen = false.obs;
   final RxInt zenHigh = 0.obs;
   LevelConfig? _zenCfg;
+
+  // W25.4 SPIKE (debug-only, throwaway, xem w25-4-new-genre-spike.md) — KHÔNG ship.
+  final RxBool isRotateSpike = false.obs;
 
   // W21 — Rush Mode (Tốc chiến): 2 phút, vô hạn lượt, match → +giây.
   final RxBool isRush = false.obs;
@@ -264,23 +270,71 @@ class GameController extends GetxController {
       : 'boss_type_pulse';
 
   /// W25.2 — NGUỒN DUY NHẤT cho "identity" mode: màu accent (nền+aura) + key tên
-  /// mở-màn. Gộp về 1 chỗ (review #6) để không lệch giữa nhiều dispatch. Side-mode
-  /// → spec riêng; campaign → accent theo thế giới, không mở-màn.
-  ({Color accent, String? introKey}) get _modeSpec {
-    if (isBoss.value) return (accent: NeonTheme.red, introKey: 'boss_title');
+  /// mở-màn + icon/motion mở-màn + câu luật thắng 1 dòng. Gộp về 1 chỗ (review
+  /// #6) để không lệch giữa nhiều dispatch. Side-mode → spec riêng; campaign →
+  /// accent theo thế giới, không mở-màn.
+  ({
+    Color accent,
+    String? introKey,
+    IconData? icon,
+    ModeIntroMotion motion,
+    String? ruleKey,
+  })
+  get _modeSpec {
+    if (isBoss.value) {
+      return (
+        accent: NeonTheme.red,
+        introKey: 'boss_title',
+        icon: Icons.coronavirus_rounded,
+        motion: ModeIntroMotion.shake,
+        ruleKey: 'rule_boss',
+      );
+    }
     if (isRhythm.value) {
-      return (accent: NeonTheme.pink, introKey: 'rhythm_title');
+      return (
+        accent: NeonTheme.pink,
+        introKey: 'rhythm_title',
+        icon: Icons.graphic_eq_rounded,
+        motion: ModeIntroMotion.pulse,
+        ruleKey: 'rule_rhythm',
+      );
     }
     if (isSurvival.value) {
-      return (accent: NeonTheme.cyan, introKey: 'survival_title');
+      return (
+        accent: NeonTheme.cyan,
+        introKey: 'survival_title',
+        icon: Icons.waves_rounded,
+        motion: ModeIntroMotion.riseFade,
+        ruleKey: 'rule_survival',
+      );
     }
     if (isLabyrinth.value) {
-      return (accent: NeonTheme.purple, introKey: 'labyrinth_title');
+      return (
+        accent: NeonTheme.purple,
+        introKey: 'labyrinth_title',
+        icon: Icons.account_tree_rounded,
+        motion: ModeIntroMotion.spin,
+        ruleKey: 'rule_labyrinth',
+      );
     }
     if (isColorRush.value) {
-      return (accent: NeonTheme.orange, introKey: 'color_rush_title');
+      return (
+        accent: NeonTheme.orange,
+        introKey: 'color_rush_title',
+        icon: Icons.bolt_rounded,
+        motion: ModeIntroMotion.pulse,
+        ruleKey: 'rule_color_rush',
+      );
     }
-    if (isSoda.value) return (accent: NeonTheme.blue, introKey: 'soda_title');
+    if (isSoda.value) {
+      return (
+        accent: NeonTheme.blue,
+        introKey: 'soda_title',
+        icon: Icons.local_drink_rounded,
+        motion: ModeIntroMotion.riseFade,
+        ruleKey: 'rule_soda',
+      );
+    }
     if (isEndless.value) {
       // review #3: giữ XOAY accent theo stage (không cố định 1 màu).
       return (
@@ -288,24 +342,72 @@ class GameController extends GetxController {
             NeonTheme.worldAccents[(endlessStage.value - 1) %
                 NeonTheme.worldAccents.length],
         introKey: 'endless_title',
+        icon: Icons.all_inclusive_rounded,
+        motion: ModeIntroMotion.none,
+        ruleKey: 'rule_endless',
       );
     }
     if (isDaily.value) {
-      return (accent: NeonTheme.lime, introKey: 'daily_ch_title');
+      return (
+        accent: NeonTheme.lime,
+        introKey: 'daily_ch_title',
+        icon: Icons.today_rounded,
+        motion: ModeIntroMotion.bounce,
+        ruleKey: 'rule_daily',
+      );
     }
     if (isPuzzle.value) {
-      return (accent: NeonTheme.gold, introKey: 'puzzle_title');
+      return (
+        accent: NeonTheme.gold,
+        introKey: 'puzzle_title',
+        icon: Icons.extension_rounded,
+        motion: ModeIntroMotion.bounce,
+        ruleKey: 'rule_puzzle',
+      );
     }
-    if (isZen.value) return (accent: NeonTheme.teal, introKey: 'zen_title');
+    if (isZen.value) {
+      return (
+        accent: NeonTheme.teal,
+        introKey: 'zen_title',
+        icon: Icons.spa_rounded,
+        motion: ModeIntroMotion.none,
+        ruleKey: 'rule_zen',
+      );
+    }
     if (isGravity.value) {
-      return (accent: NeonTheme.indigo, introKey: 'gravity_title');
+      return (
+        accent: NeonTheme.indigo,
+        introKey: 'gravity_title',
+        icon: Icons.south_rounded,
+        motion: ModeIntroMotion.spin,
+        ruleKey: 'rule_gravity',
+      );
     }
-    if (isRush.value) return (accent: NeonTheme.red, introKey: 'rush_title');
+    if (isRush.value) {
+      return (
+        accent: NeonTheme.red,
+        introKey: 'rush_title',
+        icon: Icons.rocket_launch_rounded,
+        motion: ModeIntroMotion.shake,
+        ruleKey: 'rule_rush',
+      );
+    }
     // Versus chạy ở VersusScreen riêng (không dùng mở-màn GameScreen) → introKey null.
-    if (isVersus.value) return (accent: NeonTheme.yellow, introKey: null);
+    if (isVersus.value) {
+      return (
+        accent: NeonTheme.yellow,
+        introKey: null,
+        icon: null,
+        motion: ModeIntroMotion.none,
+        ruleKey: null,
+      );
+    }
     return (
       accent: NeonTheme.accentForWorld(worldOfLevel(currentLevel.value).index),
       introKey: null,
+      icon: null,
+      motion: ModeIntroMotion.none,
+      ruleKey: null,
     );
   }
 
@@ -314,6 +416,16 @@ class GameController extends GetxController {
 
   /// Key i18n tên mode cho MỞ-MÀN (null → không hiện intro). Xem [_modeSpec].
   String? get modeIntroKey => _modeSpec.introKey;
+
+  /// W25.2 — Icon mở-màn theo mode (null → không icon). Xem [_modeSpec].
+  IconData? get modeIntroIcon => _modeSpec.icon;
+
+  /// W25.2 — Kiểu animation icon mở-màn theo mode. Xem [_modeSpec].
+  ModeIntroMotion get modeIntroMotion => _modeSpec.motion;
+
+  /// W25.2 — Key i18n câu luật thắng 1 dòng cho MỞ-MÀN (null → không hiện).
+  /// Xem [_modeSpec].
+  String? get modeRuleKey => _modeSpec.ruleKey;
 
   /// W26.1 — Nhạc nền theo nhóm mode (1 trong 3 track sẵn có, không cần asset mới).
   /// track1 = mode căng · track2 = mode nhịp/vui · track0 = campaign/còn lại.
@@ -540,7 +652,8 @@ class GameController extends GetxController {
       isPuzzle.value ||
       isZen.value ||
       isVersus.value ||
-      isRush.value;
+      isRush.value ||
+      isRotateSpike.value;
 
   /// W25.3 — số mode phụ đã đạt mốc Platinum (tối đa 9, đọc chéo
   /// [SideModeRecordController], không lưu trữ riêng). Dùng cho achievement
@@ -566,6 +679,7 @@ class GameController extends GetxController {
     bool puzzle = false,
     bool zen = false,
     bool rush = false,
+    bool rotateSpike = false,
   }) {
     isEndless.value = endless;
     isBoss.value = boss;
@@ -579,6 +693,7 @@ class GameController extends GetxController {
     isPuzzle.value = puzzle;
     isZen.value = zen;
     isRush.value = rush;
+    isRotateSpike.value = rotateSpike;
     _miniBossWorld = 0; // W23.2 — reset; startBoss set lại nếu là mini-boss
     isGhostMode.value = false;
     ghostScore.value = 0;

@@ -1,4 +1,6 @@
-import 'package:flame/game.dart';
+import 'dart:math' show pi, sin;
+
+import 'package:flame/game.dart' hide Matrix4;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
@@ -80,7 +82,12 @@ class GameScreen extends StatelessWidget {
                   () => sc.showModeIntro.value
                       ? _ModeIntroOverlay(
                           label: sc.modeIntroLabelKey.tr,
+                          rule: sc.modeRuleLabelKey.isEmpty
+                              ? null
+                              : sc.modeRuleLabelKey.tr,
                           accent: ctrl.modeAccent,
+                          icon: ctrl.modeIntroIcon,
+                          motion: ctrl.modeIntroMotion,
                           reduced: ActiveCosmetics.reducedMotion,
                           onDone: () {
                             if (!sc.isClosed) sc.showModeIntro.value = false;
@@ -2151,12 +2158,18 @@ class _GhostPainter extends CustomPainter {
 class _ModeIntroOverlay extends StatefulWidget {
   const _ModeIntroOverlay({
     required this.label,
+    this.rule,
     required this.accent,
+    this.icon,
+    this.motion = ModeIntroMotion.none,
     required this.reduced,
     required this.onDone,
   });
   final String label;
+  final String? rule;
   final Color accent;
+  final IconData? icon;
+  final ModeIntroMotion motion;
   final bool reduced;
   final VoidCallback onDone;
 
@@ -2202,6 +2215,24 @@ class _ModeIntroOverlayState extends State<_ModeIntroOverlay>
             final scale = widget.reduced
                 ? 1.0
                 : (t < 0.24 ? 0.72 + 0.28 * (t / 0.24) : 1.0);
+            final motion = widget.reduced
+                ? ModeIntroMotion.none
+                : widget.motion;
+            double iconDx = 0, iconDy = 0, iconRotate = 0, iconScale = 1;
+            switch (motion) {
+              case ModeIntroMotion.shake:
+                iconDx = sin(t * 40) * 8 * (1 - t);
+              case ModeIntroMotion.spin:
+                iconRotate = t * 2 * pi;
+              case ModeIntroMotion.pulse:
+                iconScale = 1 + 0.15 * sin(t * 6 * pi);
+              case ModeIntroMotion.riseFade:
+                iconDy = (1 - t) * 14;
+              case ModeIntroMotion.bounce:
+                iconDy = -sin(t * 3 * pi).abs() * 10 * (1 - t);
+              case ModeIntroMotion.none:
+                break;
+            }
             return Opacity(
               opacity: opacity.clamp(0.0, 1.0),
               child: Transform.scale(
@@ -2217,16 +2248,53 @@ class _ModeIntroOverlayState extends State<_ModeIntroOverlay>
                     border: Border.all(color: widget.accent, width: 2.5),
                     boxShadow: NeonTheme.glow(widget.accent, blur: 22),
                   ),
-                  child: Text(
-                    widget.label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                      shadows: [Shadow(color: widget.accent, blurRadius: 18)],
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.icon != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Transform(
+                            transform: Matrix4.identity()
+                              ..translateByDouble(iconDx, iconDy, 0, 1)
+                              ..rotateZ(iconRotate)
+                              ..scaleByDouble(iconScale, iconScale, 1, 1),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              widget.icon,
+                              color: widget.accent,
+                              size: 40,
+                            ),
+                          ),
+                        ),
+                      Text(
+                        widget.label,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                          shadows: [
+                            Shadow(color: widget.accent, blurRadius: 18),
+                          ],
+                        ),
+                      ),
+                      if (widget.rule != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            widget.rule!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.75),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),

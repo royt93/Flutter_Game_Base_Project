@@ -321,6 +321,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       _floodTop = rows.toDouble(); // bắt đầu chưa có nước
       _floodTopVisual = rows.toDouble();
       _tideElapsed = 0;
+      _survivalDangerCueFired = false;
       boardLayer.add(
         TideLayer(
           // Đọc mặt nước ĐÃ LÀM MƯỢT (smooth bằng dt thật ở update) → không giật.
@@ -530,6 +531,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   // dt đã nhân _timeScale xuống child → lệch nhịp với _floodTop khi slow-mo.
   late double _floodTopVisual = rows.toDouble();
   double _tideElapsed = 0; // giây đã sống (để tăng tốc dâng)
+  bool _survivalDangerCueFired = false; // W25.2 — hysteresis cho tension cue
 
   // Slow-motion ngắn khi combo lớn (wombo) — làm chậm MỌI hiệu ứng Flame.
   double _timeScale = 1.0;
@@ -543,6 +545,13 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
 
   @override
   void update(double dt) {
+    // Cap dt: frame đầu sau khi app resume từ background có thể mang dt bằng
+    // cả thời gian bị nền (vd 30s) → mọi đồng hồ thời gian thực (Rush/Time
+    // Attack/Survival tide) nhảy vọt tức thời gây thua oan. Clamp về tối đa
+    // 1.5s — đủ cao để không đụng 1 frame giật bình thường (Rush vẫn tick
+    // đúng khi dt~1.1s), đủ thấp để chặn spike hàng chục giây khi resume.
+    dt = dt.clamp(0.0, 1.5);
+
     // slow-mo: đếm ngược theo thời gian thực, làm chậm super.update (hiệu ứng)
     if (_slowmoLeft > 0) {
       _slowmoLeft -= dt;
@@ -596,6 +605,13 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
       final danger = ((rows - _floodTop) / rows).clamp(0.0, 1.0);
       if ((danger - controller.tideLevel.value).abs() > 0.004) {
         controller.tideLevel.value = danger; // cập nhật HUD (throttle nhẹ)
+      }
+      // W25.2 — tension cue khi nước cao, hysteresis tránh spam quanh ngưỡng.
+      if (danger >= 0.75 && !_survivalDangerCueFired) {
+        _survivalDangerCueFired = true;
+        _sfx?.playNote(24);
+      } else if (danger < 0.6) {
+        _survivalDangerCueFired = false;
       }
       if (_floodTop <= 0 && !_busy) {
         _floodTop = 0;
@@ -802,6 +818,14 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final gem = grid[cell.row][cell.col];
     if (gem == null) return;
 
+    // W25.4 SPIKE (debug-only, throwaway): input xoay nhóm 2x2 thay swap.
+    if (controller.isRotateSpike.value) {
+      _tryRotate(
+        Cell(cell.row.clamp(0, rows - 2), cell.col.clamp(0, cols - 2)),
+      );
+      return;
+    }
+
     // Đang kích hoạt booster → xử lý theo loại
     if (boosterMode != BoosterMode.none) {
       _handleBoosterTap(cell);
@@ -845,7 +869,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   @override
   void onDragStart(DragStartEvent event) {
     super.onDragStart(event);
-    if (_busy || _ended) {
+    if (_busy || _ended || controller.isRotateSpike.value) {
       _dragCell = null;
       return;
     }
@@ -882,6 +906,74 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   void onDragEnd(DragEndEvent event) {
     super.onDragEnd(event);
     _dragCell = null;
+  }
+
+  // --------------------------------------------------------------------------
+  // W25.4 SPIKE (debug-only, throwaway, xem w25-4-new-genre-spike.md) — KHÔNG ship.
+  // --------------------------------------------------------------------------
+
+  /// Xoay 4 gem trong khối 2x2 neo tại [anchor] (góc trên-trái).
+  /// order[i] = index NGUỒN cấp cho vị trí đích i (0=TL,1=TR,2=BR,3=BL).
+  Future<void> _rotateBlock(Cell anchor, {required bool clockwise}) async {
+    final r = anchor.row, c = anchor.col;
+    final cells = [
+      Cell(r, c),
+      Cell(r, c + 1),
+      Cell(r + 1, c + 1),
+      Cell(r + 1, c),
+    ];
+    final gems = cells.map((p) => grid[p.row][p.col]!).toList();
+    final positions = gems.map((g) => g.position.clone()).toList();
+    final order = clockwise ? [3, 0, 1, 2] : [1, 2, 3, 0];
+    await Future.wait([
+      for (var i = 0; i < 4; i++)
+        _run(
+          gems[order[i]],
+          MoveToEffect(positions[i], EffectController(duration: 0.15)),
+        ),
+    ]);
+    for (var i = 0; i < 4; i++) {
+      final g = gems[order[i]];
+      grid[cells[i].row][cells[i].col] = g;
+      g.row = cells[i].row;
+      g.col = cells[i].col;
+    }
+  }
+
+  Future<void> _tryRotate(Cell anchor) async {
+    if (_busy || _ended) return;
+    final r = anchor.row, c = anchor.col;
+    final cells = [
+      Cell(r, c),
+      Cell(r, c + 1),
+      Cell(r + 1, c + 1),
+      Cell(r + 1, c),
+    ];
+    if (cells.any(
+      (p) => grid[p.row][p.col] == null || _swapLocked(p.row, p.col),
+    )) {
+      return;
+    }
+    _busy = true;
+    var consumed = false;
+    try {
+      await _rotateBlock(anchor, clockwise: true);
+      final matches = MatchDetector.findMatches(_colorGrid());
+      if (matches.isEmpty) {
+        await _rotateBlock(
+          anchor,
+          clockwise: false,
+        ); // không hợp lệ → xoay ngược lại
+      } else {
+        consumed = true;
+        controller.useMove();
+        await _settle();
+        await _ensurePlayable();
+      }
+    } finally {
+      _busy = false;
+      if (consumed) _finishMove();
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -962,6 +1054,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
           }
           // 2) Boss vừa phản đòn lượt này?
           if (controller.bossAttackSignal.value > bossSigBefore) {
+            _sfx?.playSpecial(); // W25.2 — sting riêng khi boss trả đòn
             final atk = controller.bossAttackPattern;
             if (atk == BossAttack.shuffle) {
               await _doShuffle();

@@ -42,6 +42,7 @@ class GameScreenController extends GetxController {
   // --- W25.2: Mở-màn per-mode (overlay ~1.3s, tự tắt, không chặn input) ---
   final RxBool showModeIntro = false.obs;
   String modeIntroLabelKey = '';
+  String modeRuleLabelKey = '';
 
   NeonJewelGame? _game;
 
@@ -71,6 +72,7 @@ class GameScreenController extends GetxController {
       final introKey = gameCtrl.modeIntroKey;
       if (introKey != null) {
         modeIntroLabelKey = introKey;
+        modeRuleLabelKey = gameCtrl.modeRuleKey ?? '';
         showModeIntro.value = true;
         AudioManager.maybe?.playSpecial();
       }

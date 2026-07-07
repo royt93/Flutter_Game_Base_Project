@@ -3,7 +3,7 @@ id: w26-1-mode-contrast-hud-audio
 title: Tương phản mode (đợt 2) — HUD chủ đạo 4 mode đồng phục + ColorRush streak + nhạc per-mode
 wave: 26
 phase: 1
-status: in-progress
+status: done
 owner: claude
 created: 2026-07-03
 ---
@@ -48,29 +48,29 @@ vẫn chỉ score/goal/moves. Thêm 1 widget chỉ-số-chủ-đạo mỗi mode.
 - Điểm móc: `lib/presentation/screens/game_screen.dart` nhánh HUD chủ đạo (dòng ~724-728, hiện
   `isBoss?_bossWeakHint : isRhythm?_rhythmHud : isColorRush?_colorRushHud : SizedBox`) → thêm else-if;
   và ô thứ 3 `_movesOrTimeCell` (dòng ~1250). Tái dùng `ctrl.modeAccent` (W25-2) cho màu.
-- [ ] **Gravity**: "Lật bàn sau: N lượt" + mũi tên hướng (engine lật mỗi 5 lượt) — đọc bộ đếm hiện có.
-- [ ] **Soda**: thanh fill "X/20 → chai" (mỗi clear +1 fill; +5 mỗi 5 lượt) — đọc state soda.
-- [ ] **Labyrinth**: chỉ báo "tường đổi sau N lượt" + fog-radius (lưới đổi mỗi lượt).
-- [ ] **Daily**: badge mutator ngày (4 màu / ít lượt / ×2 combo / vô special / +lượt) + streak ngày.
+- [x] **Gravity**: "Lật bàn sau: N lượt" + mũi tên hướng (engine lật mỗi 5 lượt) — đọc bộ đếm hiện có.
+- [x] **Soda**: thanh fill "X/20 → chai" (mỗi clear +1 fill; +5 mỗi 5 lượt) — đọc state soda.
+- [x] **Labyrinth**: chỉ báo "tường đổi sau N lượt" + fog-radius (lưới đổi mỗi lượt).
+- [x] **Daily**: badge mutator ngày (4 màu / ít lượt / ×2 combo / vô special / +lượt) + streak ngày.
 
 ## 1B. ColorRush streak ×N (review #6 cũ chỉ ra thiếu)
 `_colorRushHud` (dòng ~785) hiện chỉ hiện màu nóng, KHÔNG hiện chuỗi clear-liên-tiếp ×1→×3.
-- [ ] Thêm hiển thị streak multiplier hiện tại (×1/×2/×3) + animation khi tăng bậc.
+- [x] Thêm hiển thị streak multiplier hiện tại (×1/×2/×3) + animation khi tăng bậc.
 
 ## 1C. Nhạc nền per-mode (tái dùng 3 track sẵn có — KHÔNG cần asset mới)
 `AudioManager.startBgm({int track})` hỗ trợ 3 track (`bkg/bkg1/bkg2.ogg`) nhưng luôn dùng track 0.
-- [ ] Map nhóm mode → track: vd track1 = mode căng (Boss/Survival/Rush/Versus), track2 = mode nhịp/vui
+- [x] Map nhóm mode → track: vd track1 = mode căng (Boss/Survival/Rush/Versus), track2 = mode nhịp/vui
   (Rhythm/ColorRush/Soda/Daily), track0 = campaign/Zen/còn lại.
-- [ ] Gọi `startBgm(track)` khi vào ván (game_screen_controller.onInit theo `gameCtrl` mode flags);
+- [x] Gọi `startBgm(track)` khi vào ván (game_screen_controller.onInit theo `gameCtrl` mode flags);
   về track0 khi rời ván (Home). Tránh giật: chỉ đổi track khi khác track hiện tại.
-- [ ] Tôn trọng cờ mute nhạc (Settings) sẵn có.
+- [x] Tôn trọng cờ mute nhạc (Settings) sẵn có.
 
 ## Acceptance
-- [ ] 4 mode đồng phục có chỉ-số-chủ-đạo riêng; chụp cạnh nhau phân biệt được bằng HUD.
-- [ ] ColorRush hiện streak ×N đúng theo chuỗi clear.
-- [ ] Nhạc đổi theo nhóm mode; không giật khi vào/ra ván; mute tôn trọng.
-- [ ] `flutter analyze` 0 · full suite (exclude slow) xanh · widget test HUD-per-mode mount đúng nhánh.
-- [ ] Tôn trọng `ActiveCosmetics.reducedMotion` (giảm animation streak/HUD nếu bật).
+- [x] 4 mode đồng phục có chỉ-số-chủ-đạo riêng; chụp cạnh nhau phân biệt được bằng HUD.
+- [x] ColorRush hiện streak ×N đúng theo chuỗi clear.
+- [x] Nhạc đổi theo nhóm mode; không giật khi vào/ra ván; mute tôn trọng.
+- [x] `flutter analyze` 0 · full suite (exclude slow) xanh · widget test HUD-per-mode mount đúng nhánh.
+- [x] Tôn trọng `ActiveCosmetics.reducedMotion` (giảm animation streak/HUD nếu bật).
 
 ## Lưu ý
 - Phần lớn tầng render/HUD/audio → rủi ro thấp-TB, làm được không cần device (verify feel cần device).

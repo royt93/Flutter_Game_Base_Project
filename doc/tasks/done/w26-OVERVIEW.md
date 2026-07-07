@@ -16,10 +16,10 @@ Gom 4 hạng mục feature/enhance thành 1 batch. **2 hạng mục MỚI** có 
 
 | Phase | Hạng mục | File | Loại | Ưu tiên | Đụng engine? | Trạng thái |
 |---|---|---|---|---|---|---|
-| 1 | **Hoàn tất tương phản: HUD + nhạc per-mode** | `../in-progress/w26-1-mode-contrast-hud-audio.md` | Enhance (W25-2 đợt 2) | 🔴 Cao | ⚠️ Ít | ✅ **DONE** |
-| 2 | **World Map — bản sắc thị giác per-world** | `../in-progress/w26-2-world-map-identity.md` | Enhance (polish) | 🟡 TB | ❌ Không | ✅ **DONE** |
-| 3 | **Meta/giữ chân** | `../in-progress/w25-3-meta-retention.md` | Feature mới (đã rã) | 🟡 TB | ❌ Không | ✅ **DONE** |
-| 4 | **Boss depth 1B + 1C** | ↪ `../in-progress/w25-1-mode-depth.md` | Enhance (đã rã) | 🟢 Thấp | ✅ Có (1B) | ✅ **DONE** |
+| 1 | **Hoàn tất tương phản: HUD + nhạc per-mode** | `../done/w26-1-mode-contrast-hud-audio.md` | Enhance (W25-2 đợt 2) | 🔴 Cao | ⚠️ Ít | ✅ **DONE** |
+| 2 | **World Map — bản sắc thị giác per-world** | `../done/w26-2-world-map-identity.md` | Enhance (polish) | 🟡 TB | ❌ Không | ✅ **DONE** |
+| 3 | **Meta/giữ chân** | `../done/w25-3-meta-retention.md` | Feature mới (đã rã) | 🟡 TB | ❌ Không | ✅ **DONE** |
+| 4 | **Boss depth 1B + 1C** | ↪ `../done/w25-1-mode-depth.md` | Enhance (đã rã) | 🟢 Thấp | ✅ Có (1B) | ✅ **DONE** |
 
 ### Phase 1 — HUD/nhạc per-mode ✅ (chi tiết: `w26-1-mode-contrast-hud-audio.md`)
 - 4 mode đồng phục (Gravity/Soda/Labyrinth/Daily) có HUD chủ đạo riêng; ColorRush thêm chip streak
@@ -66,7 +66,7 @@ Gom 4 hạng mục feature/enhance thành 1 batch. **2 hạng mục MỚI** có 
   Deferred "đường đi node-based" trong `feat.md:448` **đã hoàn thành**. Phase 2 ở đây CHỈ là **bản sắc
   thị giác per-world** (landmark/lâu đài, background riêng) — map hiện "tĩnh, chỉ khác màu accent"
   (w21-5). Đừng rã/làm lại cái đã có.
-- **Meta (Phase 3)** = `w25-3-meta-retention.md` (todo, đã rã đầy đủ). Không viết lại.
+- **Meta (Phase 3)** = `w25-3-meta-retention.md` (done, đã rã đầy đủ). Không viết lại.
 - **Boss 1B/1C (Phase 4)** = `w25-1-mode-depth.md` (done — cả 1A+1B+1C hoàn tất, code+test xanh;
   chỉ còn thiếu device-verify riêng cho 1B/1C, không chặn "done"). Không viết lại.
 

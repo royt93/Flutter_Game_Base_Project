@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:neon_jewels/core/neon_theme.dart';
@@ -64,6 +65,44 @@ void main() {
 
       g.isZen.value = true;
       expect(g.modeIntroKey, 'zen_title');
+    });
+  });
+
+  group('modeIntroIcon — icon mở-màn theo mode', () {
+    test('campaign → null (không icon)', () {
+      expect(g.modeIntroIcon, isNull);
+    });
+
+    test('side-mode → icon đúng', () {
+      g.isBoss.value = true;
+      expect(g.modeIntroIcon, Icons.coronavirus_rounded);
+      g.isBoss.value = false;
+
+      g.isLabyrinth.value = true;
+      expect(g.modeIntroIcon, Icons.account_tree_rounded);
+      g.isLabyrinth.value = false;
+
+      g.isZen.value = true;
+      expect(g.modeIntroIcon, Icons.spa_rounded);
+    });
+  });
+
+  group('modeRuleKey — luật thắng 1 dòng theo mode', () {
+    test('campaign → null (không có luật riêng)', () {
+      expect(g.modeRuleKey, isNull);
+    });
+
+    test('side-mode → rule key đúng', () {
+      g.isBoss.value = true;
+      expect(g.modeRuleKey, 'rule_boss');
+      g.isBoss.value = false;
+
+      g.isLabyrinth.value = true;
+      expect(g.modeRuleKey, 'rule_labyrinth');
+      g.isLabyrinth.value = false;
+
+      g.isZen.value = true;
+      expect(g.modeRuleKey, 'rule_zen');
     });
   });
 }
