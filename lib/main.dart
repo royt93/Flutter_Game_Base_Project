@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'core/app_info.dart';
 import 'core/app_translations.dart';
 import 'core/audio_manager.dart';
@@ -58,14 +59,14 @@ Future<void> loadAppVersion() async {
 
 class NeonJewelsApp extends StatefulWidget {
   final Locale initialLocale;
+
   const NeonJewelsApp({super.key, required this.initialLocale});
 
   @override
   State<NeonJewelsApp> createState() => _NeonJewelsAppState();
 }
 
-class _NeonJewelsAppState extends State<NeonJewelsApp>
-    with WidgetsBindingObserver {
+class _NeonJewelsAppState extends State<NeonJewelsApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -108,15 +109,19 @@ class _NeonJewelsAppState extends State<NeonJewelsApp>
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: NeonTheme.fontFamily, // Baloo2 mặc định toàn app
-        scaffoldBackgroundColor: NeonTheme.bgDark,
-        colorScheme: const ColorScheme.dark(
-          primary: NeonTheme.cyan,
-          secondary: NeonTheme.magenta,
-        ),
-      ),
+      theme:
+          ThemeData(
+            useMaterial3: true,
+            fontFamily: NeonTheme.fontFamily, // Baloo2 mặc định toàn app
+            scaffoldBackgroundColor: NeonTheme.bgDark,
+            colorScheme: const ColorScheme.dark(primary: NeonTheme.cyan, secondary: NeonTheme.magenta),
+            // ponytail: Baloo2 thiếu vài glyph Cyrillic hiếm (ví dụ "ї" trong
+            // "Українська") → fallback sang font hệ thống Android khi thiếu.
+          ).copyWith(
+            textTheme: ThemeData(
+              fontFamily: NeonTheme.fontFamily,
+            ).textTheme.apply(fontFamilyFallback: const ['sans-serif']),
+          ),
       home: const HomeScreen(),
     );
   }
