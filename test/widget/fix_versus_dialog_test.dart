@@ -35,7 +35,7 @@ void main() {
       await tester.pumpWidget(appEn(const VersusScreen()));
       await tester.pump();
       // Select phase có HOME (safe back), không có X/close_rounded ở đây
-      expect(find.text('HOME'), findsOneWidget);
+      expect(find.text('Home'), findsOneWidget);
       expect(
         find.byIcon(Icons.close_rounded),
         findsNothing,
@@ -50,7 +50,7 @@ void main() {
       await tester.pump();
 
       // Vào countdown
-      await tester.tap(find.text('VERSUS'));
+      await tester.tap(find.text('Versus'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
@@ -63,12 +63,12 @@ void main() {
 
       // Dialog xuất hiện với nút HUỶ (CANCEL) và HOME
       expect(
-        find.text('CANCEL'),
+        find.text('Cancel'),
         findsOneWidget,
         reason: 'Dialog phải có nút HUỶ để user có thể quay lại chơi',
       );
       expect(
-        find.text('HOME'),
+        find.text('Home'),
         findsAtLeast(1),
         reason: 'Dialog phải có nút thoát về trang chủ',
       );
@@ -80,22 +80,22 @@ void main() {
       await tester.pumpWidget(appEn(const VersusScreen()));
       await tester.pump();
 
-      await tester.tap(find.text('VERSUS'));
+      await tester.tap(find.text('Versus'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
       // Mở dialog
       await tester.tap(find.byIcon(Icons.close_rounded).first);
       await tester.pump();
-      expect(find.text('CANCEL'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
 
       // Tap HUỶ → dialog đóng
-      await tester.tap(find.text('CANCEL'));
+      await tester.tap(find.text('Cancel'));
       await tester.pump();
 
       // Dialog biến mất
       expect(
-        find.text('CANCEL'),
+        find.text('Cancel'),
         findsNothing,
         reason: 'Sau khi tap HUỶ, dialog phải đóng lại',
       );
@@ -113,7 +113,7 @@ void main() {
       await tester.pumpWidget(appEn(const VersusScreen()));
       await tester.pump();
 
-      await tester.tap(find.text('VERSUS'));
+      await tester.tap(find.text('Versus'));
       await tester.pump();
       // Bỏ qua countdown (4 giây)
       await tester.pump(const Duration(seconds: 4));
@@ -127,7 +127,7 @@ void main() {
 
       // Dialog phải xuất hiện (không thoát thẳng)
       expect(
-        find.text('CANCEL'),
+        find.text('Cancel'),
         findsOneWidget,
         reason:
             'Tap X khi đang chơi phải hiện dialog xác nhận, không thoát thẳng',

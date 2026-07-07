@@ -152,7 +152,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 300));
     // thẻ bonus hiện (nhãn vi) + nút CLAIM (daily_claim) khả dụng
-    expect(find.text('THƯỞNG TRỌN BỘ', skipOffstage: false), findsOneWidget);
+    expect(find.text('Thưởng Trọn Bộ', skipOffstage: false), findsOneWidget);
     expect(bp.dailyBonusClaimable, isTrue);
   });
 }

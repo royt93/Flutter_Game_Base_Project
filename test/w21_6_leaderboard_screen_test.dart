@@ -100,7 +100,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(LeaderboardScreen), findsOneWidget);
       // skipOffstage:false — người chơi có thể ở cuối ListView (offstage).
-      expect(find.text('BẠN', skipOffstage: false), findsOneWidget);
+      expect(find.text('Bạn', skipOffstage: false), findsOneWidget);
     });
 
     testWidgets('đổi sang tab Daily không crash', (tester) async {
@@ -109,7 +109,7 @@ void main() {
       await tester.tap(find.text('Hằng ngày'));
       await tester.pump(const Duration(milliseconds: 300));
       // Daily ẩn người chơi (kể cả offstage)
-      expect(find.text('BẠN', skipOffstage: false), findsNothing);
+      expect(find.text('Bạn', skipOffstage: false), findsNothing);
       expect(find.byType(LeaderboardScreen), findsOneWidget);
     });
   });

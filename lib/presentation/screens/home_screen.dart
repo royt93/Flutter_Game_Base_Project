@@ -516,12 +516,12 @@ class HomeScreen extends StatelessWidget {
     child: Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 2),
       child: Text(
-        text.toUpperCase(),
+        text,
         style: TextStyle(
           color: Colors.white.withValues(alpha: 0.6),
           fontSize: 12,
           fontWeight: FontWeight.w800,
-          letterSpacing: 2,
+          letterSpacing: 1,
         ),
       ),
     ),

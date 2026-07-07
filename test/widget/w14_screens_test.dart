@@ -28,24 +28,25 @@ void main() {
   tearDown(Get.reset);
 
   Widget appEn(Widget home) => GetMaterialApp(
-        translations: AppTranslations(),
-        locale: const Locale('en', 'US'),
-        fallbackLocale: AppTranslations.fallback,
-        home: home,
-      );
+    translations: AppTranslations(),
+    locale: const Locale('en', 'US'),
+    fallbackLocale: AppTranslations.fallback,
+    home: home,
+  );
 
   // ----------------------------------------------------------- Collection
   group('CollectionScreen', () {
     testWidgets('render tiêu đề + đếm 0/12 + sticker ẩn', (tester) async {
       await tester.pumpWidget(appEn(const CollectionScreen()));
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('ALBUM'), findsWidgets);
+      expect(find.text('Album'), findsWidgets);
       expect(find.text('0/12'), findsOneWidget);
       expect(find.text('???'), findsWidgets); // sticker chưa mở
     });
 
-    testWidgets('đủ điểm → thu thập sticker (W18.2: vật sưu tập, KHÔNG xu)',
-        (tester) async {
+    testWidgets('đủ điểm → thu thập sticker (W18.2: vật sưu tập, KHÔNG xu)', (
+      tester,
+    ) async {
       final cc = Get.put(CollectionController(c));
       cc.points.value = 100; // mở được item 0 (30) + item 1 (80)
       c.coins.value = 0;
@@ -68,8 +69,8 @@ void main() {
       pc.saved.value = 200;
       await tester.pumpWidget(appEn(const PiggyScreen()));
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('PIGGY BANK'), findsWidgets);
-      expect(find.text('SMASH'), findsOneWidget);
+      expect(find.text('Piggy Bank'), findsWidgets);
+      expect(find.text('Smash'), findsOneWidget);
       expect(find.text('200'), findsOneWidget);
     });
 
@@ -79,7 +80,7 @@ void main() {
       c.coins.value = 0;
       await tester.pumpWidget(appEn(const PiggyScreen()));
       await tester.pump(const Duration(milliseconds: 100));
-      await tester.tap(find.text('SMASH'));
+      await tester.tap(find.text('Smash'));
       await tester.pump(const Duration(milliseconds: 300)); // dialog
       expect(pc.saved.value, 0);
       expect(c.coins.value, 300);
@@ -109,7 +110,9 @@ void main() {
       expect(find.text(kTournamentBots.first.name), findsOneWidget);
     });
 
-    testWidgets('có điểm → bấm claim hạng → đánh dấu đã nhận tuần', (tester) async {
+    testWidgets('có điểm → bấm claim hạng → đánh dấu đã nhận tuần', (
+      tester,
+    ) async {
       c.clock = () => DateTime(2026, 6, 18);
       final lc = Get.put(SeasonLeagueController(c));
       lc.addWin(3); // có điểm để claim

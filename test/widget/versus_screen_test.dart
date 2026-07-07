@@ -11,18 +11,18 @@ void main() {
   tearDown(Get.reset);
 
   Widget appEn(Widget home) => GetMaterialApp(
-        translations: AppTranslations(),
-        locale: const Locale('en', 'US'),
-        fallbackLocale: AppTranslations.fallback,
-        home: home,
-      );
+    translations: AppTranslations(),
+    locale: const Locale('en', 'US'),
+    fallbackLocale: AppTranslations.fallback,
+    home: home,
+  );
 
   testWidgets('VersusScreen phase chọn hiện 2 chế độ', (tester) async {
     await tester.pumpWidget(appEn(const VersusScreen()));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('2 PLAYERS'), findsWidgets);
-    expect(find.text('VERSUS'), findsOneWidget);
-    expect(find.text('CO-OP'), findsOneWidget);
+    expect(find.text('2 Players'), findsWidgets);
+    expect(find.text('Versus'), findsOneWidget);
+    expect(find.text('Co-Op'), findsOneWidget);
     expect(find.text('Race for the highest score'), findsOneWidget);
   });
 }

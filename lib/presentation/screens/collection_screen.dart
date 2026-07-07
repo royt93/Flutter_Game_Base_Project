@@ -8,10 +8,20 @@ import '../controllers/game_controller.dart';
 import '../widgets/coin_chip.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
+import '../widgets/neon_dialog.dart';
 
 /// Album sưu tập — lưới sticker mở khoá theo điểm tích luỹ (Wave 14).
-class CollectionScreen extends StatelessWidget {
+/// W27.3: tap ô sticker (mở hay chưa) mở dialog chi tiết tên + mô tả ngắn
+/// không-jargon — cần state cục bộ (index đang xem) nên chuyển sang Stateful.
+class CollectionScreen extends StatefulWidget {
   const CollectionScreen({super.key});
+
+  @override
+  State<CollectionScreen> createState() => _CollectionScreenState();
+}
+
+class _CollectionScreenState extends State<CollectionScreen> {
+  int? _detailIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -25,41 +35,52 @@ class CollectionScreen extends StatelessWidget {
     return Scaffold(
       body: NeonBg(
         child: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
-              NeonAppBar(
-                title: 'coll_title'.tr,
-                color: accent,
-                actions: [CoinChip(g)],
+              Column(
+                children: [
+                  NeonAppBar(
+                    title: 'coll_title'.tr,
+                    color: accent,
+                    actions: [CoinChip(g)],
+                  ),
+                  Expanded(
+                    child: Obx(() {
+                      cc.points.value;
+                      cc.claimed.length;
+                      cc.setRewardClaimed.value;
+                      return ListView(
+                        padding: const EdgeInsets.all(NeonTheme.s16),
+                        children: [
+                          _banner(cc, accent),
+                          const SizedBox(height: NeonTheme.s16),
+                          _setReward(cc),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: kCollectionItems.length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  mainAxisSpacing: NeonTheme.s8,
+                                  crossAxisSpacing: NeonTheme.s8,
+                                  childAspectRatio: 0.78,
+                                ),
+                            itemBuilder: (_, i) => _cell(cc, i),
+                          ),
+                        ],
+                      );
+                    }),
+                  ),
+                ],
               ),
-              Expanded(
-                child: Obx(() {
-                  cc.points.value;
-                  cc.claimed.length;
-                  cc.setRewardClaimed.value;
-                  return ListView(
-                    padding: const EdgeInsets.all(NeonTheme.s16),
-                    children: [
-                      _banner(cc, accent),
-                      const SizedBox(height: NeonTheme.s16),
-                      _setReward(cc),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: kCollectionItems.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          mainAxisSpacing: NeonTheme.s8,
-                          crossAxisSpacing: NeonTheme.s8,
-                          childAspectRatio: 0.78,
-                        ),
-                        itemBuilder: (_, i) => _cell(cc, i),
-                      ),
-                    ],
-                  );
-                }),
-              ),
+              if (_detailIndex != null)
+                Obx(
+                  () => NeonDialog.overlay(
+                    panel: _detailPanel(cc, _detailIndex!),
+                    onBarrier: () => setState(() => _detailIndex = null),
+                  ),
+                ),
             ],
           ),
         ),
@@ -68,58 +89,58 @@ class CollectionScreen extends StatelessWidget {
   }
 
   Widget _banner(CollectionController cc, Color accent) => Container(
-        padding: const EdgeInsets.all(NeonTheme.s16),
-        decoration: BoxDecoration(
-          color: NeonTheme.panel.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: accent, width: 1.5),
-          boxShadow: NeonTheme.glow(accent, blur: 12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    padding: const EdgeInsets.all(NeonTheme.s16),
+    decoration: BoxDecoration(
+      color: NeonTheme.panel.withValues(alpha: 0.7),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: accent, width: 1.5),
+      boxShadow: NeonTheme.glow(accent, blur: 12),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Icon(Icons.photo_album_rounded, color: accent, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  '${cc.unlockedCount}/${cc.totalCount}',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    shadows: [Shadow(color: accent, blurRadius: 12)],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.auto_awesome_rounded, color: accent, size: 18),
-                const SizedBox(width: 5),
-                Text(
-                  '${cc.points.value} ${'coll_points'.tr}',
-                  style: TextStyle(
-                    color: accent,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
+            Icon(Icons.photo_album_rounded, color: accent, size: 24),
+            const SizedBox(width: 8),
             Text(
-              'coll_hint'.tr,
+              '${cc.unlockedCount}/${cc.totalCount}',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                shadows: [Shadow(color: accent, blurRadius: 12)],
               ),
             ),
           ],
         ),
-      );
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Icon(Icons.auto_awesome_rounded, color: accent, size: 18),
+            const SizedBox(width: 5),
+            Text(
+              '${cc.points.value} ${'coll_points'.tr}',
+              style: TextStyle(
+                color: accent,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'coll_hint'.tr,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.7),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
 
   /// W18.2: thẻ thưởng HOÀN TẤT BỘ (skin gem độc quyền + xu) — chỉ hiện khi đủ.
   Widget _setReward(CollectionController cc) {
@@ -143,30 +164,36 @@ class CollectionScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('coll_set_title'.tr,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                    )),
+                Text(
+                  'coll_set_title'.tr,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 // H1 fix: hiện đúng mô tả theo trường hợp — skin mới vs đã sở hữu.
-                Builder(builder: (context) {
-                  final g = Get.find<GameController>();
-                  final alreadyOwned = g.isSkinOwned(kCollectionSetSkin);
-                  final desc = alreadyOwned
-                      ? 'coll_set_owned_reward'.trParams(
-                          {'n': fmtNum(kCollectionSetSkinPrice)})
-                      : 'coll_set_reward'.trParams(
-                          {'n': fmtNum(kCollectionSetCoins)});
-                  return Text(
-                    desc,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.75),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  );
-                }),
+                Builder(
+                  builder: (context) {
+                    final g = Get.find<GameController>();
+                    final alreadyOwned = g.isSkinOwned(kCollectionSetSkin);
+                    final desc = alreadyOwned
+                        ? 'coll_set_owned_reward'.trParams({
+                            'n': fmtNum(kCollectionSetSkinPrice),
+                          })
+                        : 'coll_set_reward'.trParams({
+                            'n': fmtNum(kCollectionSetCoins),
+                          });
+                    return Text(
+                      desc,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -176,20 +203,24 @@ class CollectionScreen extends StatelessWidget {
             GestureDetector(
               onTap: cc.claimSetReward,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: NeonTheme.lime.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: NeonTheme.lime, width: 1.5),
                   boxShadow: NeonTheme.glow(NeonTheme.lime, blur: 8),
                 ),
-                child: Text('daily_claim'.tr,
-                    style: const TextStyle(
-                      color: NeonTheme.lime,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                    )),
+                child: Text(
+                  'daily_claim'.tr,
+                  style: const TextStyle(
+                    color: NeonTheme.lime,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
             ),
         ],
@@ -199,18 +230,26 @@ class CollectionScreen extends StatelessWidget {
 
   Widget _cell(CollectionController cc, int i) {
     final it = kCollectionItems[i];
-    final color = NeonTheme.gemColors[it.colorIndex % NeonTheme.gemColors.length];
+    final color =
+        NeonTheme.gemColors[it.colorIndex % NeonTheme.gemColors.length];
     final claimed = cc.isClaimed(i);
     final canClaim = cc.canClaim(i);
     return GestureDetector(
-      onTap: canClaim ? () => cc.claim(i) : null,
+      // W27.3: tap LUÔN mở dialog chi tiết (tên + mô tả) — claim trước nếu đủ
+      // điều kiện, để player thấy trạng thái "vừa mở" ngay trong dialog.
+      onTap: () {
+        if (canClaim) cc.claim(i);
+        setState(() => _detailIndex = i);
+      },
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: NeonTheme.panel.withValues(alpha: claimed ? 0.7 : 0.4),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: claimed ? color : (canClaim ? NeonTheme.lime : Colors.white24),
+            color: claimed
+                ? color
+                : (canClaim ? NeonTheme.lime : Colors.white24),
             width: claimed || canClaim ? 1.8 : 1.2,
           ),
           boxShadow: canClaim
@@ -232,7 +271,11 @@ class CollectionScreen extends StatelessWidget {
                 boxShadow: claimed ? NeonTheme.glow(color, blur: 10) : null,
               ),
               child: claimed
-                  ? const Icon(Icons.star_rounded, color: Colors.white, size: 22)
+                  ? const Icon(
+                      Icons.star_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    )
                   : Icon(
                       Icons.lock_rounded,
                       color: Colors.white.withValues(alpha: 0.4),
@@ -255,8 +298,11 @@ class CollectionScreen extends StatelessWidget {
             // W18.2: vật sưu tập — "thu thập" (canClaim) / "đã có" (claimed) /
             // ngưỡng điểm (chưa tới). KHÔNG còn thưởng xu riêng từng ô.
             if (canClaim)
-              const Icon(Icons.add_circle_rounded,
-                  color: NeonTheme.lime, size: 14)
+              const Icon(
+                Icons.add_circle_rounded,
+                color: NeonTheme.lime,
+                size: 14,
+              )
             else if (claimed)
               Icon(Icons.check_rounded, color: color, size: 13)
             else
@@ -271,6 +317,42 @@ class CollectionScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// W27.3: dialog chi tiết 1 sticker — tên + mô tả ngắn không-jargon, xem được
+  /// cả khi CHƯA mở khoá (mô tả giúp biết "mục tiêu"; ảnh sticker vẫn mờ/khoá,
+  /// tên hiển thị thật để không lặp lại "???" đã có ở ô lưới).
+  Widget _detailPanel(CollectionController cc, int i) {
+    final it = kCollectionItems[i];
+    final color =
+        NeonTheme.gemColors[it.colorIndex % NeonTheme.gemColors.length];
+    final claimed = cc.isClaimed(i);
+    return NeonDialog.panel(
+      title: it.nameKey.tr,
+      color: color,
+      icon: claimed ? Icons.star_rounded : Icons.lock_rounded,
+      message: it.descKey.tr,
+      content: claimed
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                '${cc.points.value}/${it.threshold} ${'coll_points'.tr}',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+      actions: [
+        NeonDialogAction(
+          label: 'coll_close'.tr,
+          color: color,
+          onTap: () => setState(() => _detailIndex = null),
+        ),
+      ],
     );
   }
 }

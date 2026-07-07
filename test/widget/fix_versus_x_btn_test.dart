@@ -32,7 +32,7 @@ void main() {
       await tester.pumpWidget(appEn(const VersusScreen()));
       await tester.pump();
       // Màn select hiện nút HOME (back)
-      expect(find.text('HOME'), findsOneWidget);
+      expect(find.text('Home'), findsOneWidget);
     });
 
     testWidgets('phase COUNTDOWN: hiện icon X (close_rounded)', (tester) async {
@@ -40,7 +40,7 @@ void main() {
       await tester.pump();
 
       // Tap VERSUS mode → trigger _pick → chuyển sang countdown
-      await tester.tap(find.text('VERSUS'));
+      await tester.tap(find.text('Versus'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
@@ -53,7 +53,7 @@ void main() {
       await tester.pump();
 
       // Vào countdown
-      await tester.tap(find.text('VERSUS'));
+      await tester.tap(find.text('Versus'));
       await tester.pump();
 
       // Chờ đếm ngược hết (3 giây) → vào playing

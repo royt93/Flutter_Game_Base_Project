@@ -74,7 +74,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Radiant node: hiện "✓ UNLOCKED" (pt_unlocked key)
-      expect(find.text('✓ UNLOCKED'), findsOneWidget);
+      expect(find.text('✓ Unlocked'), findsOneWidget);
       // Stars icon cho node đã unlock
       expect(find.byIcon(Icons.stars_rounded), findsOneWidget);
       // 3 node còn lại vẫn lock (W25.3 — thêm node Ascendant)
@@ -117,7 +117,7 @@ void main() {
       // 3 progress bar cho 3 thử thách + 1 cho panel điểm side-mode/tuần (W25.3)
       expect(find.byType(LinearProgressIndicator), findsNWidgets(4));
       // Nút CLAIM chưa hiện (chưa hoàn thành)
-      expect(find.text('CLAIM'), findsNothing);
+      expect(find.text('Claim'), findsNothing);
     });
 
     testWidgets('CLAIM button hiện khi hoàn thành thử thách campaign', (
@@ -141,7 +141,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // CLAIM button hiện cho thử thách đã hoàn thành
-      expect(find.text('CLAIM'), findsOneWidget);
+      expect(find.text('Claim'), findsOneWidget);
     });
 
     testWidgets('CLAIM: nhận xu + nút biến mất', (tester) async {
@@ -163,7 +163,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       final coinsBefore = g.coins.value;
-      await tester.tap(find.text('CLAIM'));
+      await tester.tap(find.text('Claim'));
       // pump(100ms) thay vì pumpAndSettle — LinearProgressIndicator có animation
       // vô hạn nên pumpAndSettle sẽ timeout. claimReward() là synchronous →
       // 1 pump frame đủ để Obx rebuild.
@@ -172,7 +172,7 @@ void main() {
       // Xu tăng, CLAIM biến mất (thay bằng check icon)
       expect(g.coins.value, greaterThan(coinsBefore));
       expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
-      expect(find.text('CLAIM'), findsNothing);
+      expect(find.text('Claim'), findsNothing);
     });
   });
 }

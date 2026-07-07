@@ -241,7 +241,7 @@ void main() {
       await tester.pumpWidget(appEn(const GameScreen()));
       await tester.pump(const Duration(milliseconds: 120));
 
-      expect(find.text('TIME'), findsOneWidget);
+      expect(find.text('Time'), findsOneWidget);
       expect(find.text('02:00'), findsOneWidget);
       expect(find.text('999'), findsNothing);
       expect(find.textContaining('268'), findsNothing);
@@ -267,9 +267,9 @@ void main() {
       sc.ui.value = GameUi.lose;
       await tester.pump();
 
-      expect(find.text('RUSH'), findsWidgets);
+      expect(find.text('Rush'), findsWidgets);
       expect(find.textContaining('42,000'), findsWidgets);
-      await tester.tap(find.text('AGAIN'));
+      await tester.tap(find.text('Again'));
       await tester.pump(const Duration(milliseconds: 80));
 
       expect(g.isRush.value, isTrue);

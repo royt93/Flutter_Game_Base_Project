@@ -23,32 +23,37 @@ void main() {
   tearDown(Get.reset);
 
   Widget appEn(Widget home) => GetMaterialApp(
-        translations: AppTranslations(),
-        locale: const Locale('en', 'US'),
-        fallbackLocale: AppTranslations.fallback,
-        home: home,
-      );
+    translations: AppTranslations(),
+    locale: const Locale('en', 'US'),
+    fallbackLocale: AppTranslations.fallback,
+    home: home,
+  );
 
   final paidSkin = kGemSkins.firstWhere((s) => s.price > 0); // aurora
 
-  testWidgets('render tiêu đề + 2 mục + tên skin + nhãn EQUIPPED mặc định',
-      (tester) async {
+  testWidgets('render tiêu đề + 2 mục + tên skin + nhãn EQUIPPED mặc định', (
+    tester,
+  ) async {
     await tester.pumpWidget(appEn(const ShopScreen()));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('SHOP'), findsOneWidget);
+    expect(find.text('Shop'), findsOneWidget);
     expect(find.text('Gem Skins'), findsOneWidget);
     expect(find.text('Classic'), findsOneWidget); // skin mặc định
     expect(find.text(paidSkin.name), findsOneWidget); // skin trả phí
-    expect(find.text('EQUIPPED'), findsWidgets); // classic đang dùng
+    expect(find.text('Equipped'), findsWidgets); // classic đang dùng
     // mục theme bàn nằm dưới fold → cuộn tới để xác nhận render
-    await tester.scrollUntilVisible(find.text('Board Themes'), 200,
-        scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.text('Board Themes'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Board Themes'), findsOneWidget);
     expect(find.text('Midnight'), findsOneWidget); // theme mặc định
   });
 
-  testWidgets('đủ xu: bấm giá → mua + tự trang bị + dialog thành công',
-      (tester) async {
+  testWidgets('đủ xu: bấm giá → mua + tự trang bị + dialog thành công', (
+    tester,
+  ) async {
     c.coins.value = 5000;
     await tester.pumpWidget(appEn(const ShopScreen()));
     await tester.pump(const Duration(milliseconds: 100));
@@ -62,8 +67,9 @@ void main() {
     expect(find.text(paidSkin.name), findsWidgets);
   });
 
-  testWidgets('thiếu xu: bấm giá → không mua + dialog neon (không snackbar)',
-      (tester) async {
+  testWidgets('thiếu xu: bấm giá → không mua + dialog neon (không snackbar)', (
+    tester,
+  ) async {
     c.coins.value = 0;
     await tester.pumpWidget(appEn(const ShopScreen()));
     await tester.pump(const Duration(milliseconds: 100));

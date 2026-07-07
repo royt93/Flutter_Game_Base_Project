@@ -74,6 +74,6 @@ void main() {
     await pumpNarrow(tester, const VersusScreen());
 
     expect(find.byType(VersusScreen), findsOneWidget);
-    expect(find.text('2 PLAYERS'), findsOneWidget);
+    expect(find.text('2 Players'), findsOneWidget);
   });
 }

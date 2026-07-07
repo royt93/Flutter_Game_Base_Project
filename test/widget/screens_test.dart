@@ -54,8 +54,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('NEON'), findsOneWidget);
     expect(find.text('JEWELS'), findsOneWidget);
-    expect(find.text('PLAY NOW'), findsOneWidget);
-    expect(find.text('SETTINGS'), findsOneWidget);
+    expect(find.text('Play Now'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 
   testWidgets('HomeScreen thử thách dùng 13 card cùng size', (tester) async {
@@ -111,7 +111,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 30));
     await tester.pumpWidget(appEn(const LevelSelectScreen()));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('SELECT LEVEL'), findsOneWidget);
+    expect(find.text('Select Level'), findsOneWidget);
     expect(find.text('1'), findsWidgets); // emblem nổi bật + mini tile
   });
 
@@ -128,7 +128,7 @@ void main() {
   testWidgets('GuideScreen hiển thị các mục hướng dẫn', (tester) async {
     await tester.pumpWidget(appEn(const GuideScreen()));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('HOW TO PLAY'), findsWidgets);
+    expect(find.text('How To Play'), findsWidgets);
     expect(find.text('Special Gems'), findsOneWidget);
     expect(find.text('Game Modes'), findsOneWidget);
   });
@@ -149,9 +149,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 160));
 
     expect(tester.takeException(), isNull);
-    expect(find.textContaining('BOSS'), findsWidgets);
-    expect(find.text('PHASE 1'), findsOneWidget);
-    expect(find.textContaining('WEAK'), findsOneWidget);
+    expect(find.textContaining('Boss'), findsWidgets);
+    expect(find.text('Phase 1'), findsOneWidget);
+    expect(find.textContaining('Weak'), findsOneWidget);
     expect(find.text('x2'), findsWidgets);
   });
 
@@ -171,7 +171,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 160));
 
     expect(tester.takeException(), isNull);
-    expect(find.textContaining('BOSS'), findsWidgets);
-    expect(find.text('PHASE 1'), findsOneWidget);
+    expect(find.textContaining('Boss'), findsWidgets);
+    expect(find.text('Phase 1'), findsOneWidget);
   });
 }

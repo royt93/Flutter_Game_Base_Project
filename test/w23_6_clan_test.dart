@@ -199,7 +199,7 @@ void main() {
     expect(cl.weeklyRewardClaimed, isFalse);
   });
 
-  testWidgets('ClanScreen mount → hiện roster (BẠN) + goal, không crash', (
+  testWidgets('ClanScreen mount → hiện roster (Bạn) + goal, không crash', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -212,7 +212,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(ClanScreen), findsOneWidget);
-    expect(find.text('BẠN', skipOffstage: false), findsOneWidget);
+    expect(find.text('Bạn', skipOffstage: false), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

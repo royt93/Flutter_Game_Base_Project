@@ -1132,11 +1132,7 @@ class GameScreen extends StatelessWidget {
         : phase == 1
         ? NeonTheme.yellow
         : NeonTheme.cyan;
-    final phaseLabel = phase == 2
-        ? 'PHASE 3'
-        : phase == 1
-        ? 'PHASE 2'
-        : 'PHASE 1';
+    final phaseLabel = '${'boss_phase'.tr} ${phase + 1}';
 
     return Padding(
       padding: const EdgeInsets.only(top: NeonTheme.s8),

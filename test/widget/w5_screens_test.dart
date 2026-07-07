@@ -36,7 +36,7 @@ void main() {
       Get.put(GameController());
       await tester.pumpWidget(appEn(const AchievementsScreen()));
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('ACHIEVEMENTS'), findsOneWidget);
+      expect(find.text('Achievements'), findsOneWidget);
       expect(find.text('First Win'), findsOneWidget); // ach_first_win_t
       expect(find.byIcon(Icons.lock_rounded), findsWidgets); // chưa đạt → khoá
     });
@@ -47,7 +47,7 @@ void main() {
       Get.put(GameController());
       await tester.pumpWidget(appEn(const WorldMapScreen()));
       await tester.pump(const Duration(milliseconds: 120));
-      expect(find.text('WORLD MAP'), findsOneWidget);
+      expect(find.text('World Map'), findsOneWidget);
       expect(find.text('1'), findsWidgets); // node màn 1
       expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);
     });
@@ -106,9 +106,9 @@ void main() {
       StorageService.to.setInt(StorageKeys.storySeen('w1_intro'), 1);
       await tester.pumpWidget(appEn(const LevelSelectScreen()));
       await tester.pump(const Duration(milliseconds: 120));
-      await tester.tap(find.text('PLAY NOW').first); // tile nổi bật
+      await tester.tap(find.text('Play Now').first); // tile nổi bật
       await tester.pump(const Duration(milliseconds: 250));
-      expect(find.text('GET READY'), findsOneWidget); // pregame_title
+      expect(find.text('Get Ready'), findsOneWidget); // pregame_title
       expect(find.text('+10 starting moves'), findsOneWidget);
     });
   });
@@ -121,7 +121,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(appEn(const HomeScreen()));
       await tester.pump(const Duration(milliseconds: 120));
-      expect(find.text('ACHIEVEMENTS'), findsOneWidget);
+      expect(find.text('Achievements'), findsOneWidget);
       expect(find.byIcon(Icons.casino_rounded), findsOneWidget); // wheel
       expect(find.byIcon(Icons.card_giftcard_rounded), findsOneWidget); // daily
     });
@@ -135,8 +135,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 120));
       await tester.tap(find.byIcon(Icons.casino_rounded));
       await tester.pump(const Duration(milliseconds: 200));
-      expect(find.text('LUCKY WHEEL'), findsOneWidget);
-      expect(find.text('SPIN'), findsOneWidget);
+      expect(find.text('Lucky Wheel'), findsOneWidget);
+      expect(find.text('Spin'), findsOneWidget);
     });
 
     testWidgets('bấm thành tựu → mở AchievementsScreen', (tester) async {
@@ -146,9 +146,9 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(appEn(const HomeScreen()));
       await tester.pump(const Duration(milliseconds: 120));
-      await tester.ensureVisible(find.text('ACHIEVEMENTS'));
+      await tester.ensureVisible(find.text('Achievements'));
       await tester.pump();
-      await tester.tap(find.text('ACHIEVEMENTS'));
+      await tester.tap(find.text('Achievements'));
       await tester.pump(); // bắt đầu chuyển route
       await tester.pump(const Duration(milliseconds: 400));
       // màn thành tựu hiện coin chip + thẻ
