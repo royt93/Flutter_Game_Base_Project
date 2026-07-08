@@ -3,7 +3,7 @@ id: w21-5-world-map-events
 title: World Map — Event chest + mini-boss node + nhân vật đi bộ
 wave: 21
 phase: 5
-status: partial
+status: done
 owner: claude
 ---
 
@@ -14,8 +14,27 @@ owner: claude
 >   `isChestClaimed`, `claimWorldChest` (guard-key TRƯỚC → idempotent chống farm).
 > - UI: `_chestNodes`/`_chestNode` trong world_map (node rương lệch khỏi node màn; khoá/mở/đã nhận).
 > - resetProgress xoá chest keys; 6 unit test; analyze 0; full suite 768 pass. Map render sạch (verify Samsung).
-> **CÒN LẠI (defer):** mini-boss node (B) + avatar đi bộ (C) + reward overlay đẹp + chest reward
-> ngẫu-nhiên-booster (hiện chỉ xu). Để wave sau.
+>
+> ✅ **Mini-boss node (B) + avatar đi bộ (C) đã implement** (W22.5/W23.2/W23.3 — xem
+> `w23-2-miniboss-complete.md` cho phần "hoàn thiện" của mini-boss, riêng NODE + HP thấp +
+> cleared-persist + avatar walking animation đã xong ở đây).
+>
+> ✅ **Reward overlay đẹp + chest reward ngẫu-nhiên-booster đã implement (2026-07-08)**:
+> - `chestRewardOf(world)` đã ngẫu nhiên TẤT ĐỊNH theo world (hash seed=world, không dùng
+>   `Random` object nhưng cùng nguyên tắc "tất định theo world" như Daily Quest):
+>   60% xu (`chestCoinReward`), 25% Búa (`grantHammer`), 15% +Lượt (`grantMovesBooster`).
+>   `claimWorldChest` vẫn ghi guard-key `chestClaimed(world)` TRƯỚC khi gọi reward — không
+>   cần storage key mới.
+> - `_chestRewardOverlay` (world_map_screen.dart) nay dùng `NeonDialog.overlay` + `content:`
+>   slot: icon nảy elastic (tái dùng kiểu star-reveal ở game_screen `_celebration`) + xu đếm
+>   lên bằng `TweenAnimationBuilder<int>` (tái dùng kiểu `_animatedBar`). Đóng khi tap OK/backdrop.
+> - Test mới: tap rương xu (world 2, tất định) → overlay hiện, đếm xu đúng, OK đóng
+>   (`test/w22_5_world_map_chest_test.dart`). Cùng file đã có test tất định theo world +
+>   guard-key-trước-khi-thưởng (idempotent) từ trước.
+> - `flutter analyze` 0 issue; `flutter test --exclude-tags slow` 964 pass.
+>
+> **TẤT CẢ hạng mục Phase 5 (chest + mini-boss node + avatar + reward overlay + random
+> booster) đã hoàn thành.** File này chuyển sang `done/`.
 ---
 
 # Phase 5 — World Map Events

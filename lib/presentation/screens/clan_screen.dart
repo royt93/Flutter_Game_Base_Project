@@ -130,6 +130,11 @@ class ClanScreen extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 2),
+          Text(
+            'clan_goal_hint'.tr,
+            style: const TextStyle(color: Colors.white38, fontSize: 11),
+          ),
           const SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(6),

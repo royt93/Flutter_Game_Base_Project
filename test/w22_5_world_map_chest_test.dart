@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:neon_jewels/core/app_translations.dart';
 import 'package:neon_jewels/core/storage_service.dart';
+import 'package:neon_jewels/core/utils/format.dart';
 import 'package:neon_jewels/data/levels.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
 import 'package:neon_jewels/presentation/screens/world_map_screen.dart';
@@ -182,6 +183,49 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    // W21.5 — reward overlay đẹp: tap rương mở → NeonDialog.overlay hiện
+    // icon nảy (elastic) + xu đếm lên (coins) hoặc icon booster; OK đóng lại.
+    testWidgets('tap rương xu (world 2) → overlay đếm xu, OK đóng', (
+      tester,
+    ) async {
+      final w = kWorlds[1]; // world 2 → chestRewardOf = coins (tất định)
+      final expected = chestRewardOf(w.index);
+      expect(expected.kind, ChestRewardKind.coins);
+      g.unlockedLevel.value = w.endLevel; // đủ 80% để mở khoá
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('vi', 'VN'),
+          fallbackLocale: const Locale('en', 'US'),
+          home: const WorldMapScreen(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // map auto-scroll tới node hiện tại (world 3) → rương world 2 có thể
+      // nằm ngoài viewport; cuộn tới trước khi tap.
+      final finder = find.byKey(ValueKey('chest_node_${w.index}'));
+      await tester.ensureVisible(finder);
+      await tester.pump();
+      await tester.tap(finder);
+      await tester.pump();
+      expect(
+        g.isChestClaimed(w.index),
+        isTrue,
+      ); // guard-key đã ghi ngay khi tap
+      // overlay render: icon xu + OK button.
+      expect(
+        find.byIcon(Icons.monetization_on_rounded, skipOffstage: false),
+        findsWidgets,
+      );
+      await tester.pump(const Duration(milliseconds: 700)); // đếm xu xong
+      expect(find.text('+${fmtNum(expected.amount)}'), findsOneWidget);
+
+      await tester.tap(find.text('chest_ok'.tr));
+      await tester.pump();
+      expect(find.text('+${fmtNum(expected.amount)}'), findsNothing); // đã đóng
+    });
   });
 
   test(

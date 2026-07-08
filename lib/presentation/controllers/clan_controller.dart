@@ -7,6 +7,8 @@ import 'game_controller.dart';
 
 /// Clan/Friends offline (Wave 23). Người chơi + 9 bot (đóng góp tuần tất định).
 /// Cả clan góp điểm → đạt [kClanWeeklyGoal] thì mở thưởng (1 lần/tuần, anti-farm).
+/// W24.4 — đóng góp người chơi đến từ CẢ campaign (thắng màn, theo sao) LẪN
+/// side-mode (thắng, điểm cố định) — hai nguồn cộng chung 1 bộ đếm tuần/lifetime.
 /// Permanent controller → cần [resetState] khi resetProgress (chống nhận lại thưởng).
 class ClanController extends GetxController {
   final GameController g;
@@ -50,8 +52,15 @@ class ClanController extends GetxController {
   int get playerContribution => contributionRx.value;
 
   /// Cộng đóng góp clan khi thắng campaign. Đổi tuần → reset nền về 0 trước khi cộng.
-  void addContribution(int stars) {
-    final add = clanPointsForWin(stars);
+  void addContribution(int stars) => _addPoints(clanPointsForWin(stars));
+
+  /// W24.4 — Cộng đóng góp clan khi THẮNG side-mode (Endless/Boss/Survival/...).
+  /// Dùng chung bộ đếm tuần + lifetime với [addContribution] (campaign) — chỉ khác
+  /// mức điểm cố định (không có sao). KHÔNG đụng win-streak/level-unlock/lives:
+  /// gọi độc lập từ nhánh side-mode của `_onGameEnd`, chỉ ghi vào clan.
+  void addSideModeContribution() => _addPoints(kClanPointsForSideModeWin);
+
+  void _addPoints(int add) {
     final pts = _loadContribution() + add;
     contributionRx.value = pts;
     unawaited(_store.setString(StorageKeys.clanPointsWeek, '$_week|$pts'));

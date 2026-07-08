@@ -16,8 +16,14 @@ owner: claude
 > + 4 test. **Shuffle attack ĐÃ WIRE** trong `neon_jewel_game` (mẫu move-handler): capture
 > `bossAttackSignal` trước `useMove`, nếu boss + signal tăng + pattern=shuffle → `await _doShuffle()`
 > SAU cascade settle (chỉ chạy khi isBoss → non-boss không ảnh hưởng). analyze 0, suite 810.
-> **Còn lại**: (a) verify live shuffle khi cày boss xuống phase 2 (<32% HP) — spot-check tay;
-> (b) **Meteor** (clear-cell) — selector chưa trả về, cần engine clear-region mới → wave sau.
+> **Meteor (done 2026-07-08)**: `bossAttackPatternFor` trả `BossAttack.meteor` ở phase ≥2
+> (<32% HP, ngưỡng `kBossPhase3Threshold`); wire trong `neon_jewel_game` cùng mẫu shuffle —
+> telegraph 1 lượt (`_pendingMeteor`/`_showMeteorWarning`) rồi `_doMeteorAt` (clear-cell, tái
+> dùng animation nổ có sẵn) + `_meteorSettleNoScore` (refill KHÔNG cộng điểm) ở lượt kế; vùng
+> chọn qua `pickMeteorRegion` (pure, 3×3 quanh tâm ngẫu nhiên, chỉ ô play có gem — không đụng
+> wall/noDrop). analyze 0, suite 963 pass.
+> **Còn lại**: verify live shuffle + meteor khi cày boss xuống phase 2/3 — spot-check tay trên
+> máy thật (chưa làm, theo quy ước R3 verify device tách riêng trước khi ship).
 ---
 
 # Phase 2 — Mini-boss hoàn thiện

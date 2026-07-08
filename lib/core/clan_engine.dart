@@ -31,6 +31,10 @@ const int kClanWeeklyReward = 250;
 /// Điểm đóng góp khi NGƯỜI CHƠI thắng 1 màn (theo sao).
 int clanPointsForWin(int stars) => 8 + stars * 4;
 
+/// W24.4 — Điểm đóng góp khi thắng 1 ván SIDE-MODE bất kỳ (không có sao) — cố định,
+/// thấp hơn campaign (khuyến khích campaign vẫn là nguồn chính, side-mode chỉ bù thêm).
+const int kClanPointsForSideModeWin = 10;
+
 /// 1 thành viên clan trên bảng đóng góp tuần.
 class ClanMember {
   final String name;

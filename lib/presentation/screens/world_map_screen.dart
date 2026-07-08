@@ -451,6 +451,7 @@ class _AnimatedMapState extends State<_AnimatedMap>
         ? Colors.white38
         : (unlocked ? NeonTheme.yellow : Colors.grey.shade700);
     return GestureDetector(
+      key: ValueKey('chest_node_${w.index}'),
       onTap: (unlocked && !claimed)
           ? () {
               final r = g.claimWorldChest(w);
@@ -578,14 +579,16 @@ class _AnimatedMapState extends State<_AnimatedMap>
     );
   }
 
-  // W22.5 — popup nhận thưởng rương (xu / Búa / +Lượt).
+  // W21.5 — popup nhận thưởng rương (xu / Búa / +Lượt): icon nảy (elastic,
+  // tái dùng kiểu star-reveal ở game_screen) + xu đếm lên (tái dùng kiểu
+  // TweenAnimationBuilder của _animatedBar).
   Widget _chestRewardOverlay(ChestReward r) {
     final IconData icon;
     final String msg;
     switch (r.kind) {
       case ChestRewardKind.coins:
         icon = Icons.monetization_on_rounded;
-        msg = 'chest_got_coins'.trParams({'n': '${r.amount}'});
+        msg = '';
       case ChestRewardKind.hammer:
         icon = Icons.gavel_rounded;
         msg = 'chest_got_hammer'.tr;
@@ -598,9 +601,35 @@ class _AnimatedMapState extends State<_AnimatedMap>
       onBarrier: close,
       panel: NeonDialog.panel(
         title: 'chest_reward_title'.tr,
-        message: msg,
+        message: msg.isEmpty ? null : msg,
         color: NeonTheme.yellow,
-        icon: icon,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: Colors.white,
+              size: 52,
+              shadows: [Shadow(color: NeonTheme.yellow, blurRadius: 24)],
+            ).animate().scale(duration: 420.ms, curve: Curves.elasticOut),
+            if (r.kind == ChestRewardKind.coins) ...[
+              const SizedBox(height: 10),
+              TweenAnimationBuilder<int>(
+                tween: IntTween(begin: 0, end: r.amount),
+                duration: const Duration(milliseconds: 700),
+                curve: Curves.easeOutCubic,
+                builder: (_, v, _) => Text(
+                  '+${fmtNum(v)}',
+                  style: const TextStyle(
+                    color: NeonTheme.yellow,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           NeonDialogAction(
             label: 'chest_ok'.tr,

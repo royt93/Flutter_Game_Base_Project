@@ -239,6 +239,11 @@ class GameScreenController extends GetxController {
         reachedNewMilestone:
             outcome != null && outcome.newTier != RecordTier.none,
       );
+      // W24.4 — Clan: side-mode thắng cũng đóng góp (trước đây chỉ campaign).
+      // Chỉ ghi vào bộ đếm clan — KHÔNG đụng win-streak/level-unlock/lives.
+      if (result == 'win') {
+        ClanController.maybe?.addSideModeContribution();
+      }
       if (outcome != null && outcome.hasCelebration && _game != null) {
         if (outcome.newTier != RecordTier.none) {
           final tierName = 'rec_tier_${outcome.newTier.name}'.tr;

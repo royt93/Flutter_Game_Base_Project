@@ -117,6 +117,7 @@ class AppTranslations extends Translations {
           ...?_w253ByLang[e.key],
           ...?_w254ByLang[e.key],
           ...?_w252ByLang[e.key],
+          ...?_w24bByLang[e.key],
         },
     };
   }
@@ -193,6 +194,7 @@ class AppTranslations extends Translations {
     'quest_bonus_title': 'All Quests Bonus',
     'clan_title': 'Clan',
     'clan_goal': 'Weekly clan goal',
+    'clan_goal_hint': 'Campaign and side-mode wins both count',
     'clan_league': 'Clan standings',
     'boss_atk_block': 'Block!',
     'boss_atk_shuffle': 'Shuffle!',
@@ -700,6 +702,7 @@ class AppTranslations extends Translations {
     'quest_bonus_title': 'Thưởng Trọn Bộ',
     'clan_title': 'Biệt Đội',
     'clan_goal': 'Mục tiêu clan tuần',
+    'clan_goal_hint': 'Thắng màn thường lẫn chế độ phụ đều được tính',
     'clan_league': 'Bxh Biệt đội',
     'boss_atk_block': 'Chặn!',
     'boss_atk_shuffle': 'Xáo Bàn!',
@@ -12145,5 +12148,60 @@ class AppTranslations extends Translations {
       'hard_variant_on': 'চ্যালেঞ্জ: চালু (কম চাল, +৫০% কয়েন)',
       'hard_variant_off': 'চ্যালেঞ্জ: বন্ধ (কঠিন রাউন্ড আনলক করতে ট্যাপ করুন)',
     },
+  };
+
+  /// W24.4 — chú thích "chiến dịch + chế độ phụ đều tính" trên goal card Clan,
+  /// cho 20 ngôn ngữ (en+vi nằm trong _extraEn/_extraVi). Merge sau _w254ByLang
+  /// trong [keys]. Tên riêng "w24b" để tránh trùng ký hiệu với task W24 khác
+  /// đang chạy song song (dùng "_w24ByLang").
+  static const Map<String, Map<String, String>> _w24bByLang = {
+    'es_ES': {
+      'clan_goal_hint':
+          'Cuentan tanto victorias de campaña como de modo lateral',
+    },
+    'fr_FR': {
+      'clan_goal_hint':
+          'Les victoires en campagne et en mode secondaire comptent',
+    },
+    'de_DE': {'clan_goal_hint': 'Kampagnen- und Nebenmodus-Siege zählen beide'},
+    'pt_BR': {
+      'clan_goal_hint': 'Vitórias da campanha e dos modos secundários contam',
+    },
+    'ru_RU': {
+      'clan_goal_hint': 'Победы в кампании и доп. режимах засчитываются',
+    },
+    'zh_CN': {'clan_goal_hint': '战役与支线模式的胜利都计入贡献'},
+    'ja_JP': {'clan_goal_hint': 'キャンペーンもサイドモードの勝利も加算されます'},
+    'ko_KR': {'clan_goal_hint': '캠페인과 사이드 모드 승리 모두 반영됩니다'},
+    'it_IT': {
+      'clan_goal_hint':
+          'Contano sia le vittorie in campagna che nelle modalità secondarie',
+    },
+    'id_ID': {
+      'clan_goal_hint':
+          'Kemenangan kampanye dan mode sampingan sama-sama dihitung',
+    },
+    'th_TH': {'clan_goal_hint': 'นับทั้งชัยชนะแคมเปญและโหมดเสริม'},
+    'hi_IN': {'clan_goal_hint': 'कैंपेन और साइड-मोड दोनों की जीत गिनी जाती है'},
+    'ar_SA': {
+      'clan_goal_hint': 'تُحتسب انتصارات الحملة والأوضاع الجانبية معًا',
+    },
+    'tr_TR': {
+      'clan_goal_hint': 'Kampanya ve yan mod zaferlerinin ikisi de sayılır',
+    },
+    'nl_NL': {
+      'clan_goal_hint': 'Zowel campagne- als zijmodus-overwinningen tellen mee',
+    },
+    'pl_PL': {
+      'clan_goal_hint': 'Liczą się zwycięstwa z kampanii i trybów pobocznych',
+    },
+    'fil_PH': {'clan_goal_hint': 'Bilang ang panalo sa campaign at side-mode'},
+    'ms_MY': {
+      'clan_goal_hint': 'Kemenangan kempen dan mod sampingan turut dikira',
+    },
+    'uk_UA': {
+      'clan_goal_hint': 'Перемоги в кампанії й додаткових режимах враховуються',
+    },
+    'bn_BD': {'clan_goal_hint': 'ক্যাম্পেইন ও সাইড-মোড উভয়ের জয়ই গণনা হয়'},
   };
 }

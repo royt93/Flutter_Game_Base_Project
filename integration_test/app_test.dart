@@ -5,9 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:neon_jewels/core/clan_engine.dart';
+import 'package:neon_jewels/core/storage_service.dart';
+import 'package:neon_jewels/core/utils/format.dart';
 import 'package:neon_jewels/data/cosmetics.dart';
+import 'package:neon_jewels/data/levels.dart';
 import 'package:neon_jewels/main.dart';
+import 'package:neon_jewels/presentation/controllers/clan_controller.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
+import 'package:neon_jewels/presentation/controllers/game_screen_controller.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +39,26 @@ void main() {
     }
   }
 
+  // W22.3 — tour giới thiệu Home (carousel, che toàn màn) tự mở khi
+  // storage chưa có homeTourSeen (state THẬT SỰ mới trên máy, ví dụ cài lần
+  // đầu). Che mất "Play Now" → phải bỏ qua trước khi thao tác trên Home.
+  Future<void> skipHomeTourIfAny(WidgetTester t) async {
+    if (find.text('tour_skip'.tr).evaluate().isNotEmpty) {
+      await t.tap(find.text('tour_skip'.tr));
+      await settle(t);
+    }
+  }
+
+  Future<void> bootApp(WidgetTester t) async {
+    await app(withAudio: false);
+    await settle(t, 1200);
+    // viewMode ghi xuống SharedPreferences THẬT trên đĩa (không bị Get.reset
+    // xoá giữa các test) → test trước đổi grid view sẽ làm mọi test sau (kể
+    // cả lần chạy khác) mở nhầm màn khi bấm "Play Now". Ép về map mặc định.
+    await StorageService.to.setInt(StorageKeys.viewMode, 0);
+    await skipHomeTourIfAny(t);
+  }
+
   // Home → World Map → node màn 1 → (cốt truyện nếu state mới) → (pre-game nếu
   // CÒN booster) → vào game. Pre-game CHỈ hiện khi sở hữu booster (PregameController
   // .hasAny); hết booster thì vào thẳng game → test phải chịu được CẢ HAI (độc lập
@@ -51,13 +77,15 @@ void main() {
 
   group('Neon Jewels — Wave 5 end-to-end', () {
     testWidgets('Home → World Map (mặc định) → grid view', (tester) async {
-      await app(withAudio: false);
-      await settle(tester, 1200);
+      await bootApp(tester);
       expect(find.text('NEON'), findsOneWidget);
       expect(find.text('play_now'.tr), findsOneWidget);
 
       await tester.tap(find.text('play_now'.tr));
-      await settle(tester);
+      await settle(
+        tester,
+        1500,
+      ); // World Map: 200 node → build chậm hơn trên máy yếu
       expect(find.text('world_map'.tr), findsOneWidget); // mặc định bản đồ
 
       await tester.tap(find.byIcon(Icons.grid_view_rounded));
@@ -66,8 +94,7 @@ void main() {
     });
 
     testWidgets('Home → Thành tựu', (tester) async {
-      await app(withAudio: false);
-      await settle(tester, 1200);
+      await bootApp(tester);
       await tester.tap(find.text('achievements'.tr));
       await settle(tester);
       expect(find.text('achievements'.tr), findsWidgets);
@@ -75,10 +102,12 @@ void main() {
     });
 
     testWidgets('Home → Vòng quay may mắn → quay', (tester) async {
-      await app(withAudio: false);
-      await settle(tester, 1200);
+      await bootApp(tester);
       await tester.tap(find.byIcon(Icons.casino_rounded));
-      await settle(tester);
+      await settle(
+        tester,
+        1500,
+      ); // Wheel: dựng animation quay → chậm hơn trên máy yếu
       expect(find.text('wheel_title'.tr), findsOneWidget);
       expect(find.text('wheel_spin'.tr), findsOneWidget);
       await tester.tap(find.text('wheel_spin'.tr));
@@ -88,8 +117,7 @@ void main() {
     });
 
     testWidgets('Home → Quà hằng ngày', (tester) async {
-      await app(withAudio: false);
-      await settle(tester, 1200);
+      await bootApp(tester);
       await tester.tap(find.byIcon(Icons.card_giftcard_rounded));
       await settle(tester);
       expect(find.text('daily_title'.tr), findsOneWidget);
@@ -98,16 +126,14 @@ void main() {
     testWidgets('World Map → node → (pre-game) → vào game (HUD)', (
       tester,
     ) async {
-      await app(withAudio: false);
-      await settle(tester, 1200);
+      await bootApp(tester);
       await enterLevelOne(tester);
       expect(find.textContaining('hud_score'.tr), findsOneWidget);
       expect(find.textContaining('hud_goal'.tr), findsOneWidget);
     });
 
     testWidgets('Trong game bấm X → dialog thoát', (tester) async {
-      await app(withAudio: false);
-      await settle(tester, 1200);
+      await bootApp(tester);
       await enterLevelOne(tester);
       // màn 1 lần đầu có thể hiện tutorial → bỏ qua để chạm được nút X
       if (find.text('tut_skip'.tr).evaluate().isNotEmpty) {
@@ -124,8 +150,7 @@ void main() {
     });
 
     testWidgets('Đổi ngôn ngữ trong Settings', (tester) async {
-      await app(withAudio: false);
-      await settle(tester, 1200);
+      await bootApp(tester);
       await tester.tap(find.text('settings'.tr));
       await settle(tester);
       expect(find.text('English'), findsOneWidget);
@@ -133,8 +158,7 @@ void main() {
     });
 
     testWidgets('Mở Hướng dẫn từ Home', (tester) async {
-      await app(withAudio: false);
-      await settle(tester, 1200);
+      await bootApp(tester);
       await tester.tap(find.text('guide'.tr));
       await settle(tester);
       expect(find.text('guide_special_title'.tr), findsOneWidget);
@@ -142,8 +166,7 @@ void main() {
     });
 
     testWidgets('Home → Cửa hàng → mua + trang bị skin', (tester) async {
-      await app(withAudio: false);
-      await settle(tester, 1200);
+      await bootApp(tester);
       // cấp đủ xu để mua (mặc định chỉ 50)
       Get.find<GameController>().coins.value = 5000;
       await tester.tap(find.byIcon(Icons.storefront_rounded));
@@ -159,22 +182,81 @@ void main() {
     });
 
     testWidgets('Home → Sinh tồn (Survival) → vào game', (tester) async {
-      await app(withAudio: false);
-      await settle(tester, 1200);
+      await bootApp(tester);
       await tester.tap(find.text('survival_short'.tr)); // card SINH TỒN
-      await settle(tester);
+      await settle(tester, 1500); // chờ overlay intro mode (1300ms) tắt hẳn
       // vào thẳng game (side mode, không pre-game) → badge + HUD thời gian.
       expect(Get.find<GameController>().isSurvival.value, isTrue);
       expect(find.text('survival_title'.tr), findsOneWidget);
     });
 
     testWidgets('Home → Mê cung (Labyrinth) → vào game', (tester) async {
-      await app(withAudio: false);
-      await settle(tester, 1200);
+      await bootApp(tester);
+      await tester.tap(find.text('labyrinth_short'.tr)); // card MÊ CUNG
+      await settle(tester, 1500); // chờ overlay intro mode (1300ms) tắt hẳn
+      expect(Get.find<GameController>().isLabyrinth.value, isTrue);
+      expect(find.text('labyrinth_title'.tr), findsOneWidget);
+    });
+
+    // W21.5 — reward overlay: rương world 2 (thưởng tất định = xu) → icon nảy
+    // + xu đếm lên, OK đóng, đánh dấu đã nhận (chống farm reload).
+    testWidgets('World Map → mở rương world 2 → overlay đếm xu, OK đóng', (
+      tester,
+    ) async {
+      await bootApp(tester);
+
+      final g = Get.find<GameController>();
+      final w = kWorlds[1]; // world 2 → chestRewardOf tất định = coins
+      final expected = chestRewardOf(w.index);
+      expect(expected.kind, ChestRewardKind.coins);
+      g.unlockedLevel.value = w.endLevel; // đủ 80% để mở khoá rương
+
+      await tester.tap(find.text('play_now'.tr)); // Home → World Map
+      await settle(
+        tester,
+        1500,
+      ); // World Map: 200 node → build chậm hơn trên máy yếu
+
+      final chest = find.byKey(ValueKey('chest_node_${w.index}'));
+      await tester.ensureVisible(chest);
+      await settle(tester);
+      await tester.tap(chest);
+      await settle(tester);
+
+      expect(g.isChestClaimed(w.index), isTrue); // guard-key ghi ngay khi tap
+      expect(find.text('+${fmtNum(expected.amount)}'), findsOneWidget);
+
+      await tester.tap(find.text('chest_ok'.tr));
+      await settle(tester);
+      expect(find.text('+${fmtNum(expected.amount)}'), findsNothing);
+      expect(g.claimWorldChest(w), isNull); // claim lại → không cho thêm
+    });
+
+    // W24.4 — thắng chế độ phụ cộng chung bộ đếm Clan (điểm cố định, không
+    // đụng win-streak/unlock/lives). Dùng callback thật (onGameEnd) thay vì
+    // ghép gem thủ công — đây chính là code path production gọi khi thắng.
+    testWidgets('Thắng chế độ phụ (Mê cung) → cộng điểm đóng góp Clan tuần', (
+      tester,
+    ) async {
+      await bootApp(tester);
+
       await tester.tap(find.text('labyrinth_short'.tr)); // card MÊ CUNG
       await settle(tester);
       expect(Get.find<GameController>().isLabyrinth.value, isTrue);
-      expect(find.text('labyrinth_title'.tr), findsOneWidget);
+
+      final cl = Get.find<ClanController>();
+      final before = cl.playerContribution;
+
+      Get.find<GameScreenController>().game.onGameEnd('win');
+      await settle(tester);
+
+      expect(cl.playerContribution, before + kClanPointsForSideModeWin);
+
+      await tester.tap(find.text('btn_home'.tr)); // overlay thắng → Home
+      await settle(tester);
+      await tester.tap(find.text('clan_title'.tr)); // Home → Clan
+      await settle(tester);
+      expect(find.text('${cl.total()} / $kClanWeeklyGoal'), findsOneWidget);
     });
   });
 }

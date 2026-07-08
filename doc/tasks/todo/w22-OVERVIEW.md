@@ -16,7 +16,7 @@ SẴN CÓ (rủi ro thấp), không xây mới từ đầu.
 | Phase | Task | File plan | Ưu tiên | Quy mô | Ghi chú quan trọng |
 |---|---|---|---|---|---|
 | 1 | **Game Feel / Juice** | `w22-1-game-feel-juice.md` | 🔴 Cao | S–TB | Shake/slow-mo/combo-text/particle ĐÃ CÓ — chỉ thêm **trail gem rơi** + **visual gem hiếm** + tinh chỉnh threshold |
-| 2 | **World Map Events** | `w21-5-world-map-events.md` (đã có) | 🟡 TB | TB | Dùng plan w21-5 (chest + mini-boss + avatar). KHÔNG viết lại |
+| 2 | ✅ **World Map Events** (DONE 2026-07-08) | `w21-5-world-map-events.md` (→ `done/`) | 🟡 TB | TB | Chest + mini-boss node + avatar + reward overlay đẹp + random booster — tất cả đã xong |
 | 3 | **First-launch Onboarding** | `w22-3-onboarding.md` | 🟡 TB | S–TB | Tutorial HOW TO PLAY L1 ĐÃ CÓ — Wave 22 thêm **tour Home** (giới thiệu side-mode/shop/LB) 1 lần |
 | 4 | **Đóng nợ: Daily LB score + i18n tên TG** | `w22-4-debt-daily-i18n.md` | 🟢 Thấp | S | Cả 2 đều nhỏ; i18n tên TG chỉ cần wire `.tr` (key đã có sẵn 22 ngôn ngữ) |
 

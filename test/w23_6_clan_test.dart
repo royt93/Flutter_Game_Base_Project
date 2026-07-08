@@ -199,6 +199,80 @@ void main() {
     expect(cl.weeklyRewardClaimed, isFalse);
   });
 
+  group('W24.4 — đóng góp từ side-mode', () {
+    test('addSideModeContribution cộng dồn đúng bộ đếm tuần + lifetime', () {
+      expect(cl.playerContribution, 0);
+      expect(g.clanContribLifetime.value, 0);
+      cl.addSideModeContribution();
+      expect(cl.playerContribution, kClanPointsForSideModeWin);
+      expect(g.clanContribLifetime.value, kClanPointsForSideModeWin);
+      cl.addSideModeContribution();
+      expect(cl.playerContribution, kClanPointsForSideModeWin * 2);
+    });
+
+    test('side-mode và campaign cộng CHUNG 1 bộ đếm (không tách trục)', () {
+      cl.addContribution(3); // campaign
+      cl.addSideModeContribution(); // side-mode
+      expect(
+        cl.playerContribution,
+        clanPointsForWin(3) + kClanPointsForSideModeWin,
+      );
+    });
+
+    test('side-mode contribution KHÔNG đụng win-streak/level-unlock/lives', () {
+      final unlockedBefore = g.unlockedLevel.value;
+      final streakBefore = g.winStreak.value;
+      final livesBefore = g.lives.value;
+      for (var i = 0; i < 5; i++) {
+        cl.addSideModeContribution();
+      }
+      expect(g.unlockedLevel.value, unlockedBefore);
+      expect(g.winStreak.value, streakBefore);
+      expect(g.lives.value, livesBefore);
+    });
+
+    test('resetState → side-mode contribution về 0 (không nhận lại)', () {
+      cl.addSideModeContribution();
+      expect(cl.playerContribution, greaterThan(0));
+      cl.resetState();
+      expect(cl.playerContribution, 0);
+      expect(g.clanContribLifetime.value, greaterThan(0)); // reset riêng ở g
+    });
+
+    test(
+      'resetProgress → xoá cả đĩa lẫn RAM, side-mode contribution về 0',
+      () async {
+        cl.addSideModeContribution();
+        cl.addSideModeContribution();
+        expect(cl.playerContribution, greaterThan(0));
+        await g.resetProgress();
+        expect(cl.playerContribution, 0);
+        expect(g.clanContribLifetime.value, 0);
+        // Khởi tạo controller mới đọc đĩa (đã xoá) → vẫn 0, không rò rỉ qua storage.
+        final cl2 = ClanController(g)..onInit();
+        expect(cl2.playerContribution, 0);
+      },
+    );
+
+    test(
+      'side-mode contribution giúp đạt mục tiêu tuần + claim thưởng (anti-farm)',
+      () {
+        while (cl.total() < kClanWeeklyGoal) {
+          cl.addSideModeContribution();
+        }
+        expect(cl.weeklyRewardClaimable, isTrue);
+        final before = g.coins.value;
+        final r = cl.claimWeeklyReward();
+        expect(r, kClanWeeklyReward);
+        expect(g.coins.value, before + kClanWeeklyReward);
+        // Guard-key (rewardWeekRx) đã ghi TRƯỚC grant xu → claim lại trả 0.
+        final coins2 = g.coins.value;
+        expect(cl.claimWeeklyReward(), 0);
+        expect(g.coins.value, coins2);
+      },
+    );
+  });
+
   testWidgets('ClanScreen mount → hiện roster (Bạn) + goal, không crash', (
     tester,
   ) async {
@@ -213,6 +287,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(ClanScreen), findsOneWidget);
     expect(find.text('Bạn', skipOffstage: false), findsOneWidget);
+    // W24.4 — chú thích side-mode cũng tính, hiện trên goal card (vi_VN).
+    expect(
+      find.text(
+        'Thắng màn thường lẫn chế độ phụ đều được tính',
+        skipOffstage: false,
+      ),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 }
