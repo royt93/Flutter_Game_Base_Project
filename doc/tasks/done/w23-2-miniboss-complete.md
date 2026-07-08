@@ -3,7 +3,7 @@ id: w23-2-miniboss-complete
 title: Mini-boss hoàn thiện — cleared persist + thưởng + attack pattern
 wave: 23
 phase: 2
-status: partial
+status: done
 owner: claude
 ---
 
@@ -22,8 +22,12 @@ owner: claude
 > dùng animation nổ có sẵn) + `_meteorSettleNoScore` (refill KHÔNG cộng điểm) ở lượt kế; vùng
 > chọn qua `pickMeteorRegion` (pure, 3×3 quanh tâm ngẫu nhiên, chỉ ô play có gem — không đụng
 > wall/noDrop). analyze 0, suite 963 pass.
-> **Còn lại**: verify live shuffle + meteor khi cày boss xuống phase 2/3 — spot-check tay trên
-> máy thật (chưa làm, theo quy ước R3 verify device tách riêng trước khi ship).
+> **Device-verify xong 2026-07-08** (Pixel 7 Pro `2B051FDH3006MU`): cày mini-boss Ải 1 xuống
+> Giai Đoạn 2 → thấy shuffle nổ đúng lượt (mất 1+2=3 lượt khớp `kBossAttackDamage[1]`, bàn xáo
+> lại full khớp `_doShuffle`); cày tiếp xuống Giai Đoạn 3 (<32% HP) → thấy icon telegraph
+> meteor xuất hiện đúng ô (`_showMeteorWarning`), mất 1+3=4 lượt khớp `kBossAttackDamage[2]`;
+> thắng boss ở combo lớn ngay sau đó (Chiến Thắng 3 sao, +120 xu — đúng thưởng mini-boss ×3).
+> Logcat sạch suốt trận (không crash/ANR), không ad che UI. Đóng task.
 ---
 
 # Phase 2 — Mini-boss hoàn thiện
@@ -52,12 +56,12 @@ riêng, và attack pattern (chỉ Block — Meteor/Shuffle defer từ w21-3).
 - ⚠️ Cần hook engine (NeonJewelGame) → rủi ro cao hơn 2A; có thể tách lần sau.
 
 ## Acceptance
-- [ ] Thắng mini-boss lần đầu → `miniBossCleared(world)=1` + thưởng 1 lần; đánh lại không thưởng.
-- [ ] Thua mini-boss KHÔNG trừ mạng ([[side-mode-isolation]]).
-- [ ] `isMiniBoss` reset đúng khi vào mode khác (không "rò" sang boss thường).
-- [ ] `resetProgress` xoá `miniBossCleared_*`.
-- [ ] (2B nếu làm) attack pattern theo phase, không phá invariant thắng-được.
-- [ ] Unit test (cleared persist + thưởng 1 lần + reset) + widget (node cleared visual). analyze 0.
+- [x] Thắng mini-boss lần đầu → `miniBossCleared(world)=1` + thưởng 1 lần; đánh lại không thưởng.
+- [x] Thua mini-boss KHÔNG trừ mạng ([[side-mode-isolation]]).
+- [x] `isMiniBoss` reset đúng khi vào mode khác (không "rò" sang boss thường).
+- [x] `resetProgress` xoá `miniBossCleared_*`.
+- [x] (2B nếu làm) attack pattern theo phase, không phá invariant thắng-được.
+- [x] Unit test (cleared persist + thưởng 1 lần + reset) + widget (node cleared visual). analyze 0.
 
 ## Lưu ý
 - 2A rủi ro thấp (logic + persist). 2B đụng engine Flame → cân nhắc tách phase riêng.
