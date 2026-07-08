@@ -26,10 +26,10 @@ judge), Gravity (`settleBoardFlow`), weave (conveyor/portal/dispenser). Vấn đ
 
 | Phase | Task | File | Hướng user | Ưu tiên | Đụng engine? |
 |---|---|---|---|---|---|
-| 1 | **Chiều sâu mode lõi** | `w25-1-mode-depth.md` | (1) chiều sâu | 🔴 Cao | ✅ Có (Boss/Rhythm) |
-| 2 | **Tương phản cảm giác** | `w25-2-mode-contrast.md` | (3) same-y | 🟡 TB | ⚠️ Ít (HUD/audio/palette) |
-| 3 | **Meta gắn mode phụ** | `w25-3-meta-retention.md` | (4) meta nhạt | 🟡 TB | ❌ Không (data/controller) |
-| 4 | **Spike thể loại mới** | `w25-4-new-genre-spike.md` | (2) bề rộng | 🔵 Thấp / optional | ✅ Có (mới hoàn toàn) |
+| 1 | **Chiều sâu mode lõi** | ↪ `../done/w25-1-mode-depth.md` | (1) chiều sâu | 🔴 Cao | ✅ **DONE** |
+| 2 | **Tương phản cảm giác** | ↪ `../done/w25-2-mode-contrast.md` | (3) same-y | 🟡 TB | ✅ **DONE** — code+test xanh, verify device thật (2026-07-07) |
+| 3 | **Meta gắn mode phụ** | ↪ `../done/w25-3-meta-retention.md` | (4) meta nhạt | 🟡 TB | ✅ **DONE** |
+| 4 | **Spike thể loại mới** | `w25-4-new-genre-spike.md` | (2) bề rộng | 🔵 Thấp / optional | ❌ **NO-GO** — đã thử "xoay nhóm 2x2", bỏ vì feel không hơn swap (2026-07-07) |
 
 **Thứ tự đề xuất**: 1 → 2 → 3 → (4 chỉ làm nếu 1-3 xong và vẫn muốn bề rộng).
 

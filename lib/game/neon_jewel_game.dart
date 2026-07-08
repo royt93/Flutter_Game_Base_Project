@@ -818,14 +818,6 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
     final gem = grid[cell.row][cell.col];
     if (gem == null) return;
 
-    // W25.4 SPIKE (debug-only, throwaway): input xoay nhóm 2x2 thay swap.
-    if (controller.isRotateSpike.value) {
-      _tryRotate(
-        Cell(cell.row.clamp(0, rows - 2), cell.col.clamp(0, cols - 2)),
-      );
-      return;
-    }
-
     // Đang kích hoạt booster → xử lý theo loại
     if (boosterMode != BoosterMode.none) {
       _handleBoosterTap(cell);
@@ -869,7 +861,7 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   @override
   void onDragStart(DragStartEvent event) {
     super.onDragStart(event);
-    if (_busy || _ended || controller.isRotateSpike.value) {
+    if (_busy || _ended) {
       _dragCell = null;
       return;
     }
@@ -906,74 +898,6 @@ class NeonJewelGame extends FlameGame with TapCallbacks, DragCallbacks {
   void onDragEnd(DragEndEvent event) {
     super.onDragEnd(event);
     _dragCell = null;
-  }
-
-  // --------------------------------------------------------------------------
-  // W25.4 SPIKE (debug-only, throwaway, xem w25-4-new-genre-spike.md) — KHÔNG ship.
-  // --------------------------------------------------------------------------
-
-  /// Xoay 4 gem trong khối 2x2 neo tại [anchor] (góc trên-trái).
-  /// order[i] = index NGUỒN cấp cho vị trí đích i (0=TL,1=TR,2=BR,3=BL).
-  Future<void> _rotateBlock(Cell anchor, {required bool clockwise}) async {
-    final r = anchor.row, c = anchor.col;
-    final cells = [
-      Cell(r, c),
-      Cell(r, c + 1),
-      Cell(r + 1, c + 1),
-      Cell(r + 1, c),
-    ];
-    final gems = cells.map((p) => grid[p.row][p.col]!).toList();
-    final positions = gems.map((g) => g.position.clone()).toList();
-    final order = clockwise ? [3, 0, 1, 2] : [1, 2, 3, 0];
-    await Future.wait([
-      for (var i = 0; i < 4; i++)
-        _run(
-          gems[order[i]],
-          MoveToEffect(positions[i], EffectController(duration: 0.15)),
-        ),
-    ]);
-    for (var i = 0; i < 4; i++) {
-      final g = gems[order[i]];
-      grid[cells[i].row][cells[i].col] = g;
-      g.row = cells[i].row;
-      g.col = cells[i].col;
-    }
-  }
-
-  Future<void> _tryRotate(Cell anchor) async {
-    if (_busy || _ended) return;
-    final r = anchor.row, c = anchor.col;
-    final cells = [
-      Cell(r, c),
-      Cell(r, c + 1),
-      Cell(r + 1, c + 1),
-      Cell(r + 1, c),
-    ];
-    if (cells.any(
-      (p) => grid[p.row][p.col] == null || _swapLocked(p.row, p.col),
-    )) {
-      return;
-    }
-    _busy = true;
-    var consumed = false;
-    try {
-      await _rotateBlock(anchor, clockwise: true);
-      final matches = MatchDetector.findMatches(_colorGrid());
-      if (matches.isEmpty) {
-        await _rotateBlock(
-          anchor,
-          clockwise: false,
-        ); // không hợp lệ → xoay ngược lại
-      } else {
-        consumed = true;
-        controller.useMove();
-        await _settle();
-        await _ensurePlayable();
-      }
-    } finally {
-      _busy = false;
-      if (consumed) _finishMove();
-    }
   }
 
   // --------------------------------------------------------------------------

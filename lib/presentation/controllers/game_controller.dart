@@ -102,9 +102,6 @@ class GameController extends GetxController {
   final RxInt zenHigh = 0.obs;
   LevelConfig? _zenCfg;
 
-  // W25.4 SPIKE (debug-only, throwaway, xem w25-4-new-genre-spike.md) — KHÔNG ship.
-  final RxBool isRotateSpike = false.obs;
-
   // W21 — Rush Mode (Tốc chiến): 2 phút, vô hạn lượt, match → +giây.
   final RxBool isRush = false.obs;
   final RxInt rushTimeBonus = 0.obs; // giây vừa được cộng (HUD fly-up)
@@ -652,8 +649,7 @@ class GameController extends GetxController {
       isPuzzle.value ||
       isZen.value ||
       isVersus.value ||
-      isRush.value ||
-      isRotateSpike.value;
+      isRush.value;
 
   /// W25.3 — số mode phụ đã đạt mốc Platinum (tối đa 9, đọc chéo
   /// [SideModeRecordController], không lưu trữ riêng). Dùng cho achievement
@@ -679,7 +675,6 @@ class GameController extends GetxController {
     bool puzzle = false,
     bool zen = false,
     bool rush = false,
-    bool rotateSpike = false,
   }) {
     isEndless.value = endless;
     isBoss.value = boss;
@@ -693,7 +688,6 @@ class GameController extends GetxController {
     isPuzzle.value = puzzle;
     isZen.value = zen;
     isRush.value = rush;
-    isRotateSpike.value = rotateSpike;
     _miniBossWorld = 0; // W23.2 — reset; startBoss set lại nếu là mini-boss
     isGhostMode.value = false;
     ghostScore.value = 0;
