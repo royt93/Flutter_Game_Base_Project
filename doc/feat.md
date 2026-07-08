@@ -1519,7 +1519,7 @@ Chế độ phụ mới — **không thua**, tích điểm tự do, thư giãn.
 
 ---
 
-## 🌊 Wave 21 — Kỹ thuật + Gameplay + Meta (📋 PICKED 2026-06-22)
+## 🌊 Wave 21 — Kỹ thuật + Gameplay + Meta (✅ DONE 2026-06-23)
 
 Kết hợp 3 hướng: dọn nợ kỹ thuật · cải tiến gameplay (Boss/Rhythm/World Map) · meta mới (Leaderboard + Mode Rush).
 Task chi tiết: [`tasks/todo/w21-*.md`](tasks/todo/).
@@ -1535,3 +1535,85 @@ Task chi tiết: [`tasks/todo/w21-*.md`](tasks/todo/).
 | 7 | **Mode Rush (Tốc chiến)**: 2 phút, không giới hạn lượt, match-N gem → +N giây | 🟢 Mới |
 
 **Thứ tự đề xuất**: 1 → 2 → 7 → 3 → 4 → 5 → 6
+
+**Kết quả cả 7 phase — tất cả DONE, task chi tiết chuyển `tasks/done/w21-*.md`:**
+1. Tech Debt: khảo sát xác nhận cả 3 mục (ad UX Versus, widget tái dùng, levelUnlock) đã fix ở wave trước.
+2. i18n Coverage: fix bug thật — `_w20ByLang` dùng key ngắn (`'es'`, `'fr'`...) thay vì locale đầy đủ, khiến fallback English âm thầm.
+3. Boss Upgrade: Phase HP (3 giai đoạn) + retaliation cường độ theo phase.
+4. Rhythm Upgrade: BPM dynamic + judgment animation PERFECT/GOOD/MISS.
+5. World Map Events: chest node + mini-boss node + avatar đi bộ dọc path (sau này W22 bồi thêm chest reward overlay).
+6. Offline Leaderboard: bot score tất định top 10 cho Campaign + Daily.
+7. Mode Rush: 2 phút không giới hạn lượt, match-N gem cộng giây.
+
+---
+
+## 🌊 Wave 22 — Polish/Onboarding/Đóng nợ (✅ DONE 2026-07-08)
+
+| Phase | Task | Kết quả |
+|---|---|---|
+| 1 | Game Feel/Juice | `juiceTierFor` scale theo combo (kWomboCombo=6, combo≥4 shake mạnh, combo==3 shake nhẹ) + `dampenJuice` cho accessibility (giảm nửa shake, còn 0.4x flash, giữ haptic). Trail particles theo fall-distance — **DEFERRED** |
+| 2 | World Map Events | chuyển tiếp từ w21-5, chest reward overlay hoàn thiện |
+| 3 | First-launch Onboarding | Home tour, key `homeTourSeen`, skip đóng ngay + set seen, `resetProgress` xoá key |
+| 4 | Đóng nợ Daily Leaderboard + i18n | dọn nợ nhỏ còn lại |
+
+**Test**: `w22_1_juice_test.dart` (8 case, monotonicity combo 0-12), `w22_3_onboarding_test.dart` (5 case: mở khi chưa xem/skip khi đã xem/hoàn tất set seen/skip set seen ngay/reset xoá key).
+
+---
+
+## 🌊 Wave 23 — i18n W22 + Mini-boss hoàn thiện + Avatar + Content mới (✅ DONE 2026-06-2x → 2026-07-08)
+
+| Phase | Task | Kết quả |
+|---|---|---|
+| 1 | i18n W22 | `app_translations_test.dart` siết ≥80% ratio thật (không chỉ key-count), spot-check value cụ thể theo ngôn ngữ |
+| 2 | Mini-boss hoàn thiện (2A+2B) | `miniBossCleared` 1 lần/world + không trừ mạng khi thua + reset đúng khi đổi mode. 2B: `bossAttackPatternFor(phase, type)` — **deterministic phase-gated**, không phải RNG (chỉ `pickMeteorRegion` dùng Random để chọn toạ độ). Device-verify Pixel 7 Pro xong, task move `done/` |
+| 3 | Avatar walking animation | đi bộ dọc World Map path |
+| 4 | Nội dung mới | +3 gem skin + 3 board theme (coin-sink 1000-1500), Daily Quest mở rộng pool 9→14 tier + thưởng hoàn-thành-cả-bộ anti-farm. Clan/Friends offline dời sang W24 |
+
+**Test**: `w23_2_miniboss_test.dart` + `w23_2b_boss_attack_test.dart` (phase boundary 0/1/2/out-of-range, HP-based mapping, label key, hpScale, anti-farm claim).
+
+---
+
+## 🌊 Wave 24 — Device-verify batch + đóng nợ nhỏ + content (✅ DONE 2026-07-08)
+
+| Phase | Task | Kết quả |
+|---|---|---|
+| 1 | Device-verify batch | verify hết feature W22-23 (gem trail, juice, WorldMap node, avatar walk, UI clan/leaderboard/quest-bonus) trên device. Tìm+fix **1 bug thật**: dt-clamp insta-lose khi resume từ background. 1 false-alarm (ad device-level, không phải app) |
+| 2 | Boss shuffle/meteor wiring | `bossAttackSignal` → engine react: shuffle board (phase 2) / clear-cell (meteor). =w23-2, đã done |
+| 3 | Localize key W23 còn lại | soát lại thấy `_w23ByLang` đã có bản dịch thật đủ 20 ngôn ngữ cho cả 3 key, không cần sửa |
+| 4 | Clan content sâu hơn | chọn "đóng góp từ side-mode" — thắng side-mode cộng chung bộ đếm clan (điểm cố định, không đụng win-streak/unlock/lives) |
+
+---
+
+## 🌊 Wave 25 — Chiều sâu mode + tương phản cảm giác (✅ DONE, 1 NO-GO, 2026-07-07/08)
+
+Trigger: user feedback "các mode chơi game sơ sài quá".
+
+| Phase | Task | Kết quả |
+|---|---|---|
+| 1 | Chiều sâu mode lõi | mode depth 1A xong |
+| 2 | Tương phản cảm giác | device-verified 2026-07-07 |
+| 3 | Meta gắn mode phụ | meta-retention rã đầy đủ |
+| 4 | Spike thể loại mới | **NO-GO** — rotate 2x2 group bị từ chối, ghi nhận verdict, xoá prototype |
+
+---
+
+## 🌊 Wave 26 — HUD/nhạc per-mode + World Map identity + Boss depth (✅ DONE, device-verified 2026-07-08)
+
+| Phase | Task | Kết quả |
+|---|---|---|
+| 1 | Tương phản mode đợt 2 | HUD chủ đạo 4 mode đồng phục + ColorRush streak + nhạc per-mode |
+| 2 | World Map identity | `worldAccents` 5→10 màu, mỗi thế giới bản sắc thị giác riêng (landmark + background) |
+| 3 | Meta gắn side-mode | = w25-3, đã rã đầy đủ |
+| 4 | Boss depth 1B+1C | ColorRush hot-color bias + hard variant |
+
+**Test**: rising counts 923→937→949→969 pass qua các phase. Device-verify R5CX613VZBR.
+
+---
+
+## 🌊 Wave 27 — i18n Title Case + Collection glossary (✅ DONE 2026-07-04/05)
+
+| Phase | Task | Kết quả |
+|---|---|---|
+| 1 | Device-verify 1A/1B/1C | done 2026-07-04/05, 1 optional item skip theo quyết định user |
+| 2 | ALL-CAPS → Title Case i18n | 2050 giá trị / 15 ngôn ngữ, fix 33 test assertion, `flutter analyze` 0 issue, 959/959 pass |
+| 3 | Collection glossary | 6 tên jargon đổi thành tên khái niệm thật sau feedback user (vd `prism_shard`→**Crystal Shard**, `nebula_core`→**Glowing Core**, `aurora_wing`→**Rainbow Wing**), 22 ngôn ngữ, thêm field `descKey` vào `CollectionItem`, `CollectionScreen` chuyển `StatefulWidget` với tap-to-detail `NeonDialog.overlay` |
