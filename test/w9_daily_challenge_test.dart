@@ -56,8 +56,10 @@ void main() {
 
     test('mục tiêu xoay theo ngày (epochDay % số mục tiêu)', () {
       for (var d = 0; d < kDailyObjectives.length * 3; d++) {
-        expect(buildDailyLevel(d).objective,
-            kDailyObjectives[d % kDailyObjectives.length]);
+        expect(
+          buildDailyLevel(d).objective,
+          kDailyObjectives[d % kDailyObjectives.length],
+        );
       }
     });
 
@@ -175,6 +177,70 @@ void main() {
       expect(c.checkEnd(), 'lose');
       expect(c.lastCoinReward, 0);
       expect(c.dailyChallengeDoneToday, isFalse);
+    });
+
+    // Audit gap W22.4A: dailyPlayerScore() (đọc) đã có test riêng
+    // (w21_6_leaderboard_screen_test.dart) nhưng chỉ seed storage TAY —
+    // KHÔNG đi qua đường ghi thật trong checkEnd(). Test dưới ép thắng nhiều
+    // lần thật (forceWin + checkEnd) để khoá tính đơn điệu + rollover ngày.
+    group('dailyBestScore — tính đơn điệu qua đường ghi thật (checkEnd)', () {
+      String? readBest() =>
+          StorageService.to.getString(StorageKeys.dailyBestScore);
+
+      test('điểm cao hơn cùng ngày → ghi đè; điểm thấp hơn → giữ nguyên', () {
+        c.clock = () => DateTime(2026, 6, 16);
+        final today = c.todayEpochDay;
+
+        c.startDaily();
+        forceWin(c);
+        c.score.value = 300;
+        c.checkEnd();
+        expect(readBest(), '$today|300');
+
+        // chơi lại cùng ngày, điểm THẤP hơn → không ghi đè
+        c.startDaily();
+        forceWin(c);
+        c.score.value = 150;
+        c.checkEnd();
+        expect(readBest(), '$today|300');
+
+        // chơi lại cùng ngày, điểm CAO hơn → ghi đè
+        c.startDaily();
+        forceWin(c);
+        c.score.value = 500;
+        c.checkEnd();
+        expect(readBest(), '$today|500');
+      });
+
+      test('sang ngày mới → reset best (điểm ngày cũ không mang qua)', () {
+        c.clock = () => DateTime(2026, 6, 16);
+        final day1 = c.todayEpochDay;
+        c.startDaily();
+        forceWin(c);
+        c.score.value = 999;
+        c.checkEnd();
+        expect(readBest(), '$day1|999');
+
+        // ngày mới, điểm THẤP hơn điểm ngày cũ vẫn được ghi (best ngày mới = 0)
+        // Dùng 6/18 (mục tiêu collect, không phải score) để gán score.value
+        // tuỳ ý sau forceWin mà không vô tình làm hasWon=false.
+        c.clock = () => DateTime(2026, 6, 18);
+        final day2 = c.todayEpochDay;
+        c.startDaily();
+        forceWin(c);
+        c.score.value = 10;
+        c.checkEnd();
+        expect(readBest(), '$day2|10');
+      });
+
+      test('thua (chưa đạt mục tiêu) → KHÔNG ghi dailyBestScore', () {
+        c.clock = () => DateTime(2026, 6, 16);
+        c.startDaily();
+        c.movesLeft.value = 0;
+        c.score.value = 999;
+        expect(c.checkEnd(), 'lose');
+        expect(readBest(), isNull);
+      });
     });
   });
 }

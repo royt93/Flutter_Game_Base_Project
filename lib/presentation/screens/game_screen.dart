@@ -539,15 +539,21 @@ class GameScreen extends StatelessWidget {
     }
     switch (ctrl.level.objective) {
       case ObjectiveType.score:
-        return '${fmtNum(ctrl.score.value)} / ${fmtNum(ctrl.targetScore.value)}';
+        // 1 swap combo/rainbow có thể đẩy score vượt target → clamp text (không hiện "1180/1100").
+        return '${fmtNum(ctrl.score.value.clamp(0, ctrl.targetScore.value))}'
+            ' / ${fmtNum(ctrl.targetScore.value)}';
       case ObjectiveType.collect:
-        return '${ctrl.collected.value} / ${ctrl.level.collectTarget}';
+        // cascade dài có thể đẩy collected vượt target → clamp text (không hiện "13/8").
+        return '${ctrl.collected.value.clamp(0, ctrl.level.collectTarget)}'
+            ' / ${ctrl.level.collectTarget}';
       case ObjectiveType.clearJelly:
         return '${ctrl.jellyCleared.value} / ${ctrl.jellyTotal.value}';
       case ObjectiveType.timeAttack:
-        return '${fmtNum(ctrl.score.value)} / ${fmtNum(ctrl.targetScore.value)}';
+        return '${fmtNum(ctrl.score.value.clamp(0, ctrl.targetScore.value))}'
+            ' / ${fmtNum(ctrl.targetScore.value)}';
       case ObjectiveType.dropDown:
-        return '${ctrl.dropped.value} / ${ctrl.level.dropTarget}';
+        return '${ctrl.dropped.value.clamp(0, ctrl.level.dropTarget)}'
+            ' / ${ctrl.level.dropTarget}';
       case ObjectiveType.clearObstacle:
         // jam lan thêm có thể đẩy cleared vượt total → clamp text (không hiện "17/16").
         return '${ctrl.obstacleCleared.value.clamp(0, ctrl.obstacleTotal.value)}'

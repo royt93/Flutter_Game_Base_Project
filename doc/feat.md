@@ -1363,7 +1363,7 @@ re-audit: **cân bằng 8.5 · pity/isolation 9.0 · test 8.0** — 11 fix vòng
 
 4 agent đọc song song 4 tầng (engine / controllers / UI / core) + verify claim nặng bằng đọc code thật & probe. **Điểm tổng: 7.5/10** — chạy ổn, kiến trúc tốt, không lỗi logic nghiêm trọng; nợ kỹ thuật tập trung 2 chỗ.
 
-**🔴 CRITICAL (đã verify bằng probe đếm key):** i18n — **EN + VI đầy đủ, nhưng 20 ngôn ngữ còn lại ~49-51% key hiện tiếng Anh**. Wave 5/7/8 (achievements, win_streak, ach_desc_*, guide_*, battle-pass, season, boss, rhythm, versus) chưa bao giờ dịch cho 20 ngôn ngữ. Test `app_translations_test.dart` chỉ kiểm **key đủ** (qua fallback merge), KHÔNG kiểm **value đã dịch** → ru ngủ. **Blocker phát hành đa ngôn ngữ** (~2.440 chuỗi cần dịch). Xem memory `i18n-coverage-gap`.
+**🔴 CRITICAL (đã verify bằng probe đếm key) — ✅ ĐÃ VÁ (xem mục "Vá gap i18n Wave 4" bên dưới):** i18n — ~~EN + VI đầy đủ, nhưng 20 ngôn ngữ còn lại ~49-51% key hiện tiếng Anh~~. Wave 5/7/8 (achievements, win_streak, ach_desc_*, guide_*, battle-pass, season, boss, rhythm, versus) chưa bao giờ dịch cho 20 ngôn ngữ. Test `app_translations_test.dart` chỉ kiểm **key đủ** (qua fallback merge), KHÔNG kiểm **value đã dịch** → ru ngủ. Đã dịch đủ 432 key Wave 4 (`_extraEn`) cho cả 20 ngôn ngữ + thêm test regression scoped riêng ≥95%.
 
 **🟡 Thật, rủi ro thấp:** (a) `GameController` 958 LOC god-controller (tách economy/clock — L, rủi ro cao, hoãn sau release); (b) copy-paste UI (`_coinChip` ×4, `_fmtDur` ×4, TextStyle inline ~26, magic number layout) — dọn S, rủi ro ~0; (c) `levelUnlock` ghi RAM trước await disk — khe kill hẹp, siết S.
 
@@ -1617,3 +1617,36 @@ Trigger: user feedback "các mode chơi game sơ sài quá".
 | 1 | Device-verify 1A/1B/1C | done 2026-07-04/05, 1 optional item skip theo quyết định user |
 | 2 | ALL-CAPS → Title Case i18n | 2050 giá trị / 15 ngôn ngữ, fix 33 test assertion, `flutter analyze` 0 issue, 959/959 pass |
 | 3 | Collection glossary | 6 tên jargon đổi thành tên khái niệm thật sau feedback user (vd `prism_shard`→**Crystal Shard**, `nebula_core`→**Glowing Core**, `aurora_wing`→**Rainbow Wing**), 22 ngôn ngữ, thêm field `descKey` vào `CollectionItem`, `CollectionScreen` chuyển `StatefulWidget` với tap-to-detail `NeonDialog.overlay` |
+
+---
+
+## 🔍 Audit toàn codebase + vá 5 gap test quan trọng nhất (✅ DONE 2026-07-08)
+
+Audit full logic/data/Flame/GetX + test coverage w25-27. Kết quả: logic/data/Flame/UI sạch, 5 gap test tồn tại. Đã vá cả 5.
+
+| # | Gap | Vá | File |
+|---|---|---|---|
+| 1 | Clan side-mode contribution: test cũ gọi thẳng `addSideModeContribution()`, bỏ sót đường dây thật `game_screen_controller.dart` → `game.onGameEnd()` | +2 test đi qua wiring thật (win cộng điểm, lose không cộng) | `test/w23_6_clan_test.dart` |
+| 2 | Boss `voidType` attack pattern: 0 test tồn tại cho nhánh escalation riêng (shuffle mở màn, meteor chỉ phase 2, không block) | +5 test (escalation, out-of-range, no-block, so sánh với pulse) | `test/w23_2b_boss_attack_test.dart` |
+| 3 | Collection glossary rename (W27.3): 0 test cho 6 tên/mô tả mới dịch đúng 22 ngôn ngữ + dialog tap-to-detail hiện đúng nội dung | +1 test i18n (toàn bộ 22 ngôn ngữ, không chỉ mẫu) + 1 widget test (tap sticker chưa mở → dialog tên thật + mô tả, đóng mất tên) | `test/app_translations_test.dart`, `test/widget/w14_screens_test.dart` |
+| 4 | Title Case (W27.2, 2050 giá trị ALL-CAPS→Title Case) 0 test khoá lại — ai đó `.toUpperCase()` giá trị mới sẽ lọt qua im lặng | +1 test regression quét toàn bộ en_US + vi_VN, phát hiện ALL-CAPS (charset Việt tường minh, tránh false-positive range Unicode trùng Cyrillic/Devanagari) | `test/app_translations_test.dart` |
+| 5 | `CoinChip` 0 test; `fmtDur` không có test biên; `dailyBestScore` chỉ có test seed storage tay, chưa qua đường ghi thật `checkEnd()` | +2 widget test CoinChip (hiển thị số xu, reactive); +4 test biên fmtDur (0s/59s/60s/3599s, quirk ≥1h wrap về 00); +3 test dailyBestScore qua `forceWin`+`checkEnd()` thật (ghi đè cùng ngày, giữ nguyên nếu thấp hơn, reset ngày mới, không ghi khi thua) | `test/widget/common_widgets_test.dart`, `test/w10_format_test.dart`, `test/w9_daily_challenge_test.dart` |
+
+**Kết quả**: tất cả test file liên quan pass, `flutter analyze` 0 issue.
+
+## 🌐 Vá gap i18n Wave 4 — dịch đủ 432 key cho 20 ngôn ngữ (✅ DONE 2026-07-08)
+
+`_extraEn` (432 key: rule_*, tutorial, leaderboard, chest, quest, clan,
+boss_type, ach_desc_*, story dialogue...) chỉ dịch ~5% cho mỗi ngôn ngữ
+trong 20 ngôn ngữ (es/fr/de/pt/ru/zh/ja/ko/it/id/th/hi/ar/tr/nl/pl/fil/ms/
+uk/bn) — phần còn lại rơi về fallback English im lặng qua `keys` getter.
+Test `≥80% dịch` cũ không bắt được vì tính trên TOÀN BỘ key mọi wave, bị
+wave khác (đã dịch đủ) pha loãng.
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 1 | Dịch 432 key/ngôn ngữ × 20 ngôn ngữ (Agent tool, 1 agent/ngôn ngữ, không dùng Workflow) | Toàn bộ 20 `_extraXx` map đạt 432/432 key khớp `_extraEn` |
+| 2 | Sửa riêng fil_PH: agent đầu bỏ dịch 73 key thật (Leaderboard/Shop/Tournament/tên world/collection...), không phải loanword hợp lệ — xác nhận qua so sánh Ms/Id/Tr đều dịch đủ các key này | +1 agent dịch bổ sung 73 key, splice thay thế |
+| 3 | Test regression scoped riêng Wave 4 (không pha loãng), assert ≥95% dịch/ngôn ngữ, loại trừ ~59 key hợp lệ giữ English (proper noun NPC/world/item, placeholder thuần, tên mode/rank quốc tế — xác định bằng thống kê giống English ở ≥3/20 ngôn ngữ dịch độc lập) | `test/app_translations_test.dart` — test mới pass cả 20 ngôn ngữ |
+
+**Kết quả**: `flutter analyze` 0 issue · `flutter test --exclude-tags slow` toàn bộ pass.

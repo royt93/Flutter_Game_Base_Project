@@ -19,6 +19,43 @@ void main() {
     test('phase ngoài dải cao → vẫn meteor', () {
       expect(bossAttackPatternFor(5), BossAttack.meteor);
     });
+
+    // W25.1 voidType — audit gap: 0 test tồn tại trước bản vá này. Profile
+    // "hung hãn sớm nhưng KHÔNG dồn meteor sớm" (review #4) chưa từng được
+    // khoá bằng test; regression đổi ngưỡng escalation sẽ ship im lặng.
+    group('voidType (W25.1) — shuffle mở màn, meteor CHỈ ở phase 2', () {
+      test('leo thang: 0→shuffle, 1→shuffle, 2→meteor', () {
+        expect(bossAttackPatternFor(0, BossType.voidType), BossAttack.shuffle);
+        expect(bossAttackPatternFor(1, BossType.voidType), BossAttack.shuffle);
+        expect(bossAttackPatternFor(2, BossType.voidType), BossAttack.meteor);
+      });
+
+      test('phase ngoài dải cao → vẫn meteor', () {
+        expect(bossAttackPatternFor(5, BossType.voidType), BossAttack.meteor);
+      });
+
+      test('KHÔNG có block ở bất kỳ phase nào (khác pulse)', () {
+        for (final phase in [0, 1, 2, 3]) {
+          expect(
+            bossAttackPatternFor(phase, BossType.voidType),
+            isNot(BossAttack.block),
+            reason: 'voidType phase $phase không được trả block',
+          );
+        }
+      });
+
+      test('voidType phase 0 khác pulse phase 0 (shuffle vs block)', () {
+        expect(bossAttackPatternFor(0), BossAttack.block);
+        expect(bossAttackPatternFor(0, BossType.voidType), BossAttack.shuffle);
+      });
+
+      test('voidType phase 1 GIỐNG pulse phase 1 (cùng shuffle)', () {
+        expect(
+          bossAttackPatternFor(1, BossType.voidType),
+          bossAttackPatternFor(1),
+        );
+      });
+    });
   });
 
   group('GameController.bossAttackPattern theo HP', () {

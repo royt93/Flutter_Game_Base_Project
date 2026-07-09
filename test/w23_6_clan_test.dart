@@ -9,6 +9,7 @@ import 'package:neon_jewels/core/storage_service.dart';
 import 'package:neon_jewels/data/tournament.dart' show tournamentWeek;
 import 'package:neon_jewels/presentation/controllers/clan_controller.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
+import 'package:neon_jewels/presentation/controllers/game_screen_controller.dart';
 import 'package:neon_jewels/presentation/screens/clan_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -229,6 +230,35 @@ void main() {
       expect(g.unlockedLevel.value, unlockedBefore);
       expect(g.winStreak.value, streakBefore);
       expect(g.lives.value, livesBefore);
+    });
+
+    test(
+      'wiring thật: GameScreenController._onGameEnd (win) qua game.onGameEnd '
+      'cộng điểm clan cho side-mode — KHÔNG gọi addSideModeContribution() '
+      'trực tiếp (audit gap: test cũ chỉ gọi thẳng, bỏ sót đường dây thật '
+      'ở game_screen_controller.dart)',
+      () {
+        g.startColorRush();
+        expect(g.isSideMode, isTrue);
+        final sc = GameScreenController(g);
+        sc.again(); // tạo _game thật qua đường công khai (như w21_rush_test)
+        expect(cl.playerContribution, 0);
+
+        sc.game.onGameEnd('win');
+
+        expect(cl.playerContribution, kClanPointsForSideModeWin);
+        expect(g.clanContribLifetime.value, kClanPointsForSideModeWin);
+      },
+    );
+
+    test('wiring thật: thua side-mode KHÔNG cộng điểm clan', () {
+      g.startColorRush();
+      final sc = GameScreenController(g);
+      sc.again();
+
+      sc.game.onGameEnd('lose');
+
+      expect(cl.playerContribution, 0);
     });
 
     test('resetState → side-mode contribution về 0 (không nhận lại)', () {

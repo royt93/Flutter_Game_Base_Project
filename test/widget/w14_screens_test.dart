@@ -60,6 +60,36 @@ void main() {
       expect(cc.claimed.length, greaterThanOrEqualTo(1));
       expect(c.coins.value, 0, reason: 'thu thập KHÔNG cộng xu (W18.2)');
     });
+
+    // Audit gap W27.3: 0 test cho dialog chi tiết tap-to-detail trước bản vá
+    // này — chỉ test data/i18n layer (app_translations_test.dart) không đủ,
+    // cần khoá luôn đường dây UI thật (tap ô → dialog đúng tên/mô tả mới).
+    testWidgets(
+      'W27.3: tap sticker CHƯA mở → dialog hiện tên thật (không "???") + '
+      'mô tả không-jargon, đóng lại mất tên',
+      (tester) async {
+        // Lưới 12 sticker + banner cao hơn khung test mặc định (800x600) →
+        // phóng viewport để ô prism_shard (hàng 3) nằm trong vùng hit-test.
+        addTearDown(tester.view.resetPhysicalSize);
+        tester.view.physicalSize = const Size(800, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        final cc = Get.put(CollectionController(c));
+        cc.points.value = 0; // prism_shard (ngưỡng 640) CHƯA mở khoá
+        await tester.pumpWidget(appEn(const CollectionScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.text('Crystal Shard'), findsNothing);
+        await tester.tap(find.text('640')); // ngưỡng ô prism_shard
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.text('Crystal Shard'), findsOneWidget);
+        expect(
+          find.text('A crystal shard splitting light into rainbow colors.'),
+          findsOneWidget,
+        );
+        await tester.tap(find.text('Close'));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.text('Crystal Shard'), findsNothing);
+      },
+    );
   });
 
   // -------------------------------------------------------------- Piggy
