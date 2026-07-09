@@ -3,7 +3,7 @@ id: w25-4-new-genre-spike
 title: Spike thể loại mới (optional) — bề rộng ngoài match-3
 wave: 25
 phase: 4
-status: todo
+status: done
 owner: claude
 created: 2026-07-02
 ---
