@@ -204,3 +204,20 @@ Baseline: 611 test pass · 0 analyzer · build APK OK.
 
 > Wave 21 xong hết 7/7 phase. Các wave sau (22-27 + audit + i18n Wave 4 gap)
 > đã tiếp tục và cũng DONE — xem [`../feat.md`](../feat.md), nguồn chân lý tổng thể.
+
+## Wave 28 — 📋 TODO (audit tính năng cũ 2026-07-09, chưa chọn hướng)
+
+Audit kỹ 12+ side mode + 12 hệ thống meta + core mechanics (3 Explore agent, đọc
+code thật). 4 hướng độc lập, chưa bắt đầu — chọn 1/vài hướng rồi chuyển `in-progress`.
+
+| # | Task | Trạng thái | File |
+|---|---|---|---|
+| — | Tổng quan + đề xuất ưu tiên | 📋 todo | `todo/w28-OVERVIEW.md` |
+| 1 | Enhance mode yếu + mechanic phí (Versus/Puzzle/Zen/ColorRush/Gravity) | 📋 todo | `todo/w28-1-enhance-weak-modes.md` |
+| 2 | Social/Viral (share/invite/rate app) | 📋 todo | `todo/w28-2-social-viral.md` |
+| 3 | Cứu dead-feature risk (Piggy/Collection/Progression Tree/Lucky Wheel) | 📋 todo | `todo/w28-3-dead-feature-rescue.md` |
+| 4 | Tính năng match-3 hoàn toàn mới (Boss Rush luân chuyển / Ghost PvP async) | 📋 todo | `todo/w28-4-new-mode.md` |
+| 5 | Weekly Rotating World Event | 📋 todo | `todo/w28-5-weekly-world-event.md` |
+| 6 | Gem Fusion/Crafting | 📋 todo | `todo/w28-6-gem-fusion.md` |
+| 7 | Neon Companion (Pet cosmetic) | 📋 todo | `todo/w28-7-neon-companion.md` |
+| 8 | Local Split-Screen Realtime Versus | 📋 todo | `todo/w28-8-split-screen-versus.md` |

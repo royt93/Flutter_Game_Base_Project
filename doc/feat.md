@@ -1650,3 +1650,42 @@ wave khác (đã dịch đủ) pha loãng.
 | 3 | Test regression scoped riêng Wave 4 (không pha loãng), assert ≥95% dịch/ngôn ngữ, loại trừ ~59 key hợp lệ giữ English (proper noun NPC/world/item, placeholder thuần, tên mode/rank quốc tế — xác định bằng thống kê giống English ở ≥3/20 ngôn ngữ dịch độc lập) | `test/app_translations_test.dart` — test mới pass cả 20 ngôn ngữ |
 
 **Kết quả**: `flutter analyze` 0 issue · `flutter test --exclude-tags slow` toàn bộ pass.
+
+## 🔍 Wave 28 — Audit tính năng cũ (📋 TODO, chưa chọn hướng, 2026-07-09)
+
+3 Explore agent đọc code thật, audit toàn bộ 12+ side mode + 12 hệ thống
+meta-progression + core mechanics/i18n/tech-debt. Chi tiết task board:
+`doc/tasks/todo/w28-OVERVIEW.md` + 4 file con `w28-1..4`.
+
+**Tóm tắt phát hiện chính**:
+- Mode yếu nhất (kém depth): Versus (không PvP thật), Puzzle (khoá cứng sau 8
+  cấu đố), Zen (không leaderboard/milestone riêng), ColorRush (mục tiêu cụt),
+  Gravity (bàn phẳng).
+- Meta "dead feature" risk: Piggy Bank, Collection, Progression Tree, Lucky
+  Wheel — built nhưng thiếu lý do quay lại. Challenge Card là hub synergy tốt
+  nhất (nối Battle Pass + Season + Side-Mode Record).
+- Mechanic phí: Flow/Gravity-Stream chỉ 1/200 level dùng; Conveyor/Portal/
+  Dispenser mỗi loại chỉ 2/200 level.
+- Gap rõ nhất: **0** tính năng share/invite/rate app (grep xác nhận không tồn
+  tại key nào) — thiếu hoàn toàn viral/growth loop.
+- Tech debt nhỏ: 1 dòng debug `PROBE` tạm còn sót trong `neon_jewel_game.dart`.
+
+### 📋 Ideas — Wave 28 (đã rã task `w28-5..8`, xem `doc/tasks/todo/`)
+
+- **Weekly Rotating World Event**: buff/debuff toàn cầu đổi mỗi tuần ở World
+  Map (VD "Tuần Nhân Đôi Xu", "Tuần Không Đặc Biệt") — tái dùng Daily mutator
+  engine (Wave 17.3) nhưng ở scope tuần/toàn app thay vì per-level, tạo lý do
+  quay lại thường xuyên hơn Season League (vốn cũng tuần nhưng thầm lặng).
+- **Gem Fusion/Crafting**: ghép 2 gem đặc biệt cùng loại (2 striped → 1 bomb,
+  2 bomb → 1 rainbow...) bằng thao tác chủ động ngoài match tự nhiên — thêm 1
+  lớp chiến thuật input mới, khác hẳn cơ chế "match để tạo" hiện tại.
+- **Neon Companion (Pet cosmetic)**: vật nuôi thu thập riêng (khác Collection
+  sticker hiện có), hiện cạnh HUD, có thể tặng hiệu ứng nhỏ khi active — thêm
+  1 lớp thu thập mới thay vì sửa Collection cũ (đỡ đụng economy đã cân bằng).
+- **Local Split-Screen Realtime Versus**: 2 bàn riêng cùng lúc trên 1 màn hình
+  (không phải lượt-so-điểm như Versus hiện tại, cũng không phải ghost-async
+  của `w28-4`) — 2 người thật thao tác đồng thời, cạnh tranh trực tiếp.
+
+*(Idea cũ còn treo từ Wave 5 chưa làm: "screen shake + slow-motion combo lớn",
+"gem hiếm phát sáng pulsing/trail", "shader glow chuẩn neon" — polish nhỏ, có
+thể gộp vào bất kỳ wave polish sau này, không cần task riêng.)*
