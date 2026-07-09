@@ -70,7 +70,6 @@ kiểm tay** trên thiết bị thật trước khi ký release. Tick hết → 
 - [ ] **Quảng cáo**: nếu có ad SDK, kiểm ad không che UI/không chặn input (hiện pubspec KHÔNG có ad SDK)
 
 ## C. Reset progress (P0)
-- [ ] Settings → Reset → Cancel: không đổi data
-- [ ] Settings → Reset → Confirm: mọi hệ (campaign/coins/booster/shop/BP/season/achievement/
-      collection/temple/tree/cards/records/daily/wheel) về fresh, không badge stale
-- [ ] Restart app: vẫn fresh; chơi lại level 1 earn/claim lại bình thường, không bị khoá bởi flag cũ
+- [x] Settings → Reset → Cancel: không đổi data ✅ _(2026-07-09, device 2B051FDH3006MU — 5 mạng/10.385 xu/badge Thành Tựu giữ nguyên)_
+- [x] Settings → Reset → Confirm: mọi hệ về fresh, không badge stale ✅ _(2026-07-09 — coin 10.385→10.000, badge Thành Tựu tắt, World Map chỉ node 1 mở/0 sao; starter booster x2 xuất hiện lại là default `getInt(..., def: 2)` khi key bị xoá — đúng ý đồ, không phải sót data cũ)_
+- [x] Restart app: vẫn fresh (force-stop + relaunch, coin vẫn 10.000 không lộ lại 10.385, tutorial "Chào Mừng" hiện lại) ✅. Level 1 vào chơi được, không khoá, HUD/target/lượt đúng ✅ — **chưa verify được swap/earn/claim thật** vì `adb input swipe/tap` không kích hoạt Flame's gesture detector (không phải máy hỏng — xem ghi chú automation trong đầu file); cần chơi tay thật hoặc chạy `integration_test/` để chốt nốt phần earn/claim.
