@@ -889,8 +889,6 @@ class GameScreen extends StatelessWidget {
   Widget _gravityHud(GameController ctrl) {
     final accent = ctrl.modeAccent;
     final up = ctrl.gravityDir.value == 1;
-    // Đọc movesLeft để Obx ngoài rebuild mỗi lượt → countdown lật luôn tươi.
-    ctrl.movesLeft.value;
     final n = ctrl.gravityMovesUntilFlip;
     return Center(
       child: Container(

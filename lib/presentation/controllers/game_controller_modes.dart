@@ -78,7 +78,7 @@ extension GameControllerModes on GameController {
     _gravityCfg = buildGravityLevel();
     _enterMode(gravity: true);
     gravityDir.value = 0;
-    _gravityMoveCount = 0;
+    _gravityMoveCount.value = 0;
     _resetRunState(moves: _gravityCfg!.moves, target: _gravityCfg!.targetScore);
   }
 
@@ -86,8 +86,8 @@ extension GameControllerModes on GameController {
   /// [kGravityFlipEvery] lượt → engine lật bàn. Cập nhật hướng hiển thị.
   bool consumeGravityFlip() {
     if (!isGravity.value) return false;
-    _gravityMoveCount++;
-    if (_gravityMoveCount % kGravityFlipEvery == 0) {
+    _gravityMoveCount.value++;
+    if (_gravityMoveCount.value % kGravityFlipEvery == 0) {
       gravityDir.value = gravityDir.value == 0 ? 1 : 0;
       return true;
     }
@@ -95,8 +95,10 @@ extension GameControllerModes on GameController {
   }
 
   /// W26.1 — số lượt còn lại tới lần lật bàn kế (HUD Gravity). 1..kGravityFlipEvery.
+  /// Reactive qua RxInt để HUD rebuild đúng lúc counter đổi, không lệ thuộc
+  /// vào movesLeft đổi trước (tránh hiện số cũ 1 lượt trong lúc bàn vừa lật).
   int get gravityMovesUntilFlip =>
-      kGravityFlipEvery - (_gravityMoveCount % kGravityFlipEvery);
+      kGravityFlipEvery - (_gravityMoveCount.value % kGravityFlipEvery);
 
   /// Bắt đầu chế độ Nhịp điệu (chế độ riêng). Ghép đúng nhịp → groove + thưởng điểm.
   void startRhythm() {

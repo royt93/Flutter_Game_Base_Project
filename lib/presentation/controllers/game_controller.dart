@@ -132,7 +132,7 @@ class GameController extends GetxController {
   final RxBool isGravity = false.obs;
   final RxInt gravityDir = 0.obs; // 0 = xuống (mặc định), 1 = lên (đã lật)
   LevelConfig? _gravityCfg;
-  int _gravityMoveCount = 0;
+  final RxInt _gravityMoveCount = 0.obs;
 
   // --- Color Rush (Wave 11) — màu "nóng" đổi mỗi N lượt, clear màu nóng → bội điểm ---
   final RxBool isColorRush = false.obs;
