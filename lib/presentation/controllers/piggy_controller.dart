@@ -47,9 +47,12 @@ class PiggyController extends GetxController {
   }
 
   /// Đập heo → cộng toàn bộ xu đang tích vào ví, làm rỗng ống. Trả về số xu nhận.
+  /// Đập lúc ống ĐẦY (isFull) thưởng thêm 10% (khuyến khích chờ đầy mới đập).
   int smash() {
     if (!canSmash) return 0;
-    final amount = saved.value;
+    final base = saved.value;
+    final bonus = isFull ? (base * 0.10).round() : 0;
+    final amount = base + bonus;
     saved.value = 0;
     unawaited(_store.setInt(StorageKeys.piggySaved, 0));
     g.addCoins(amount);

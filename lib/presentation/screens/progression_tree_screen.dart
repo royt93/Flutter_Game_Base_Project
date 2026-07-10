@@ -34,8 +34,9 @@ class ProgressionTreeScreen extends StatelessWidget {
                     itemBuilder: (context2, i) {
                       final node = kPtNodes[i];
                       final unlocked = ctrl.isUnlocked(node.id);
-                      final cost =
-                          node.starCost > 0 ? node.starCost : node.goldCost;
+                      final cost = node.starCost > 0
+                          ? node.starCost
+                          : node.goldCost;
                       final current = node.starCost > 0 ? stars : gold;
                       final progress = (current / cost).clamp(0.0, 1.0);
                       return _NodeCard(
@@ -129,15 +130,14 @@ class _NodeCard extends StatelessWidget {
                   Text(
                     usesGold
                         ? 'pt_gold_cost'.tr
-                            .replaceFirst('@n', current.toString())
-                            .replaceFirst('@t', cost.toString())
+                              .replaceFirst('@n', current.toString())
+                              .replaceFirst('@t', cost.toString())
                         : 'pt_star_cost'.tr
-                            .replaceFirst('@n', current.toString())
-                            .replaceFirst('@t', cost.toString()),
-                    style:
-                        const TextStyle(color: Colors.white54, fontSize: 11),
+                              .replaceFirst('@n', current.toString())
+                              .replaceFirst('@t', cost.toString()),
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
                   ),
-                ] else
+                ] else ...[
                   Text(
                     'pt_unlocked'.tr,
                     style: TextStyle(
@@ -146,6 +146,18 @@ class _NodeCard extends StatelessWidget {
                       fontSize: 12,
                     ),
                   ),
+                  if (node.id == 'ascendant') ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'pt_ascendant_bonus_hint'.tr,
+                      style: TextStyle(
+                        color: node.color.withValues(alpha: 0.85),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
               ],
             ),
           ),

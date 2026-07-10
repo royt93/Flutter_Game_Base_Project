@@ -13,8 +13,22 @@ extension GameControllerModes on GameController {
     final movesBonus = pity.value >= GameController.kPityMovesFails
         ? GameController.kPityMovesBonus
         : 0;
+    // W28.3 — node `ascendant` (Progression Tree): +1 lượt miễn phí/ngày, dùng
+    // đúng pattern epoch-day-once (giống dailyLastClaim), thừa hưởng chống
+    // lùi giờ qua todayEpochDay.
+    final ascendantBonus =
+        (ProgressionTreeController.maybe?.isUnlocked('ascendant') ?? false) &&
+            _store.getInt(StorageKeys.ptAscendantFreeMoveDay, def: -1) !=
+                todayEpochDay
+        ? 1
+        : 0;
+    if (ascendantBonus > 0) {
+      unawaited(
+        _store.setInt(StorageKeys.ptAscendantFreeMoveDay, todayEpochDay),
+      );
+    }
     _resetRunState(
-      moves: cfg.moves + movesBonus,
+      moves: cfg.moves + movesBonus + ascendantBonus,
       target: cfg.targetScore,
       time: cfg.timeLimit,
     );

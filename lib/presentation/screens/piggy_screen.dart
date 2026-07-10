@@ -47,11 +47,16 @@ class PiggyScreen extends StatelessWidget {
                               color: NeonTheme.panel.withValues(alpha: 0.5),
                               shape: BoxShape.circle,
                               border: Border.all(color: color, width: 3),
-                              boxShadow: NeonTheme.glow(color,
-                                  blur: 14 + pc.progress * 18),
+                              boxShadow: NeonTheme.glow(
+                                color,
+                                blur: 14 + pc.progress * 18,
+                              ),
                             ),
-                            child: Icon(Icons.savings_rounded,
-                                color: color, size: 86),
+                            child: Icon(
+                              Icons.savings_rounded,
+                              color: color,
+                              size: 86,
+                            ),
                           ),
                           const SizedBox(height: NeonTheme.s24),
                           Text(
@@ -79,18 +84,20 @@ class PiggyScreen extends StatelessWidget {
                               value: pc.progress,
                               minHeight: 10,
                               backgroundColor: NeonTheme.bgDark2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(color),
+                              valueColor: AlwaysStoppedAnimation<Color>(color),
                             ),
                           ),
                           const SizedBox(height: NeonTheme.s24),
                           // Nút đập.
                           GestureDetector(
-                            onTap:
-                                pc.canSmash ? () => _smash(context, pc) : null,
+                            onTap: pc.canSmash
+                                ? () => _smash(context, pc)
+                                : null,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 28, vertical: 14),
+                                horizontal: 28,
+                                vertical: 14,
+                              ),
                               decoration: BoxDecoration(
                                 color: pc.canSmash
                                     ? NeonTheme.lime.withValues(alpha: 0.2)
@@ -109,11 +116,13 @@ class PiggyScreen extends StatelessWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.gavel_rounded,
-                                      color: pc.canSmash
-                                          ? NeonTheme.lime
-                                          : Colors.white38,
-                                      size: 22),
+                                  Icon(
+                                    Icons.gavel_rounded,
+                                    color: pc.canSmash
+                                        ? NeonTheme.lime
+                                        : Colors.white38,
+                                    size: 22,
+                                  ),
                                   const SizedBox(width: 8),
                                   Text(
                                     'piggy_smash'.tr,
@@ -133,8 +142,9 @@ class PiggyScreen extends StatelessWidget {
                           Text(
                             pc.canSmash
                                 ? 'piggy_ready'.tr
-                                : 'piggy_min'.trParams(
-                                    {'n': '${PiggyController.kPiggyMin}'}),
+                                : 'piggy_min'.trParams({
+                                    'n': '${PiggyController.kPiggyMin}',
+                                  }),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.7),
@@ -142,6 +152,18 @@ class PiggyScreen extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+                          if (full) ...[
+                            const SizedBox(height: NeonTheme.s8),
+                            Text(
+                              'piggy_full_bonus_hint'.tr,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: NeonTheme.lime,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     );

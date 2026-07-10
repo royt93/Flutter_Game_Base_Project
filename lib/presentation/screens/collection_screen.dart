@@ -49,11 +49,13 @@ class _CollectionScreenState extends State<CollectionScreen> {
                       cc.points.value;
                       cc.claimed.length;
                       cc.setRewardClaimed.value;
+                      cc.milestonesClaimed.length;
                       return ListView(
                         padding: const EdgeInsets.all(NeonTheme.s16),
                         children: [
                           _banner(cc, accent),
                           const SizedBox(height: NeonTheme.s16),
+                          ..._milestones(cc),
                           _setReward(cc),
                           GridView.builder(
                             shrinkWrap: true,
@@ -143,6 +145,86 @@ class _CollectionScreenState extends State<CollectionScreen> {
   );
 
   /// W18.2: thẻ thưởng HOÀN TẤT BỘ (skin gem độc quyền + xu) — chỉ hiện khi đủ.
+  /// W28.3 — mốc thưởng giữa chừng 25/50/75% sticker. Ẩn tier đã nhận.
+  List<Widget> _milestones(CollectionController cc) {
+    const pcts = [25, 50, 75];
+    return [
+      for (
+        var t = 0;
+        t < CollectionController.kCollectionMilestoneCounts.length;
+        t++
+      )
+        if (!cc.milestonesClaimed.contains(t))
+          Padding(
+            padding: const EdgeInsets.only(bottom: NeonTheme.s16),
+            child: Container(
+              padding: const EdgeInsets.all(NeonTheme.s8),
+              decoration: BoxDecoration(
+                color: NeonTheme.panel.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: NeonTheme.cyan, width: 1.3),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.star_rounded,
+                    color: NeonTheme.cyan,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'coll_milestone_desc'.trParams({
+                        'pct': '${pcts[t]}',
+                        'n':
+                            '${CollectionController.kCollectionMilestoneCoins[t]}',
+                      }),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (cc.canClaimMilestone(t))
+                    GestureDetector(
+                      onTap: () => cc.claimMilestone(t),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: NeonTheme.lime.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: NeonTheme.lime, width: 1.3),
+                        ),
+                        child: Text(
+                          'daily_claim'.tr,
+                          style: const TextStyle(
+                            color: NeonTheme.lime,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Text(
+                      '${cc.unlockedCount}/${CollectionController.kCollectionMilestoneCounts[t]}',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+    ];
+  }
+
   Widget _setReward(CollectionController cc) {
     if (!cc.allCollected) return const SizedBox.shrink();
     final done = cc.setRewardClaimed.value;

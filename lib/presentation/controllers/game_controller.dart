@@ -25,6 +25,7 @@ import 'battle_pass_controller.dart';
 import 'challenge_card_controller.dart';
 import 'clan_controller.dart';
 import 'collection_controller.dart';
+import 'lucky_wheel_controller.dart';
 import 'piggy_controller.dart';
 import 'progression_tree_controller.dart';
 import 'puzzle_controller.dart';

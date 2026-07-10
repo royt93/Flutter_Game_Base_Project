@@ -102,6 +102,15 @@ void main() {
       final cc = collectAll();
       expect(cc.hasClaimable, isTrue);
       cc.claimSetReward();
+      // W28.3: hasClaimable còn xét cả mốc thưởng giữa chừng — claim hết
+      // để cô lập test này vào đúng tín hiệu "thưởng bộ".
+      for (
+        var t = 0;
+        t < CollectionController.kCollectionMilestoneCounts.length;
+        t++
+      ) {
+        cc.claimMilestone(t);
+      }
       expect(cc.hasClaimable, isFalse);
     });
 
@@ -113,24 +122,32 @@ void main() {
       expect(cc.claimed, isEmpty);
     });
 
-    test('player đã mua skin từ Shop → claimSetReward bù đắp kCollectionSetSkinPrice xu', () {
-      // Giả lập player mua skin 'void' trước từ Shop (giá 900 xu)
-      g.ownedSkins.add(kCollectionSetSkin);
-      final cc = collectAll();
-      final coins0 = g.coins.value;
-      expect(cc.claimSetReward(), isTrue);
-      // skin đã có → bù đắp kCollectionSetSkinPrice xu thay vì kCollectionSetCoins
-      expect(g.isSkinOwned(kCollectionSetSkin), isTrue);
-      expect(g.coins.value, coins0 + kCollectionSetSkinPrice,
-          reason: 'bù đắp bằng giá skin (900 xu) khi skin đã sở hữu từ Shop');
-      expect(g.coins.value - coins0,
+    test(
+      'player đã mua skin từ Shop → claimSetReward bù đắp kCollectionSetSkinPrice xu',
+      () {
+        // Giả lập player mua skin 'void' trước từ Shop (giá 900 xu)
+        g.ownedSkins.add(kCollectionSetSkin);
+        final cc = collectAll();
+        final coins0 = g.coins.value;
+        expect(cc.claimSetReward(), isTrue);
+        // skin đã có → bù đắp kCollectionSetSkinPrice xu thay vì kCollectionSetCoins
+        expect(g.isSkinOwned(kCollectionSetSkin), isTrue);
+        expect(
+          g.coins.value,
+          coins0 + kCollectionSetSkinPrice,
+          reason: 'bù đắp bằng giá skin (900 xu) khi skin đã sở hữu từ Shop',
+        );
+        expect(
+          g.coins.value - coins0,
           greaterThan(kCollectionSetCoins),
-          reason: 'xu bù (900) > xu thường (200) → công bằng cho player đã mua');
-      // lần 2 → false (đã claim)
-      final coins1 = g.coins.value;
-      expect(cc.claimSetReward(), isFalse);
-      expect(g.coins.value, coins1);
-    });
+          reason: 'xu bù (900) > xu thường (200) → công bằng cho player đã mua',
+        );
+        // lần 2 → false (đã claim)
+        final coins1 = g.coins.value;
+        expect(cc.claimSetReward(), isFalse);
+        expect(g.coins.value, coins1);
+      },
+    );
   });
 
   // ─── Thành tựu — danh hiệu đeo được ─────────────────────────────────────
@@ -181,17 +198,23 @@ void main() {
       expect(ac2.equippedTitle.value, 'first_win');
     });
 
-    test('gỡ danh hiệu → key bị remove (không còn empty string trên đĩa)', () async {
-      final ac = Get.put(AchievementController(g));
-      g.totalWins.value = 1;
-      ac.claim(kAchievements.firstWhere((x) => x.id == 'first_win'));
-      ac.equipTitle('first_win');
-      ac.equipTitle('first_win'); // gỡ
-      expect(ac.equippedTitle.value, '');
-      // đĩa phải null (đã remove) chứ không phải ''
-      expect(StorageService.to.getString(StorageKeys.equippedTitle), isNull,
-          reason: 'gỡ danh hiệu nên xoá key, không setString empty');
-    });
+    test(
+      'gỡ danh hiệu → key bị remove (không còn empty string trên đĩa)',
+      () async {
+        final ac = Get.put(AchievementController(g));
+        g.totalWins.value = 1;
+        ac.claim(kAchievements.firstWhere((x) => x.id == 'first_win'));
+        ac.equipTitle('first_win');
+        ac.equipTitle('first_win'); // gỡ
+        expect(ac.equippedTitle.value, '');
+        // đĩa phải null (đã remove) chứ không phải ''
+        expect(
+          StorageService.to.getString(StorageKeys.equippedTitle),
+          isNull,
+          reason: 'gỡ danh hiệu nên xoá key, không setString empty',
+        );
+      },
+    );
 
     test('resetState gỡ danh hiệu', () {
       final ac = Get.put(AchievementController(g));

@@ -18,7 +18,14 @@ class CollectionController extends GetxController {
   final RxSet<String> claimed = <String>{}.obs; // id sticker đã thu thập
   final RxBool setRewardClaimed = false.obs; // đã nhận thưởng hoàn tất bộ chưa
 
-  static CollectionController? get maybe => Get.isRegistered<CollectionController>()
+  /// Mốc thưởng giữa chừng (W28.3): 25/50/75% số sticker → xu nhỏ, tạo động
+  /// lực dù chưa hoàn tất cả bộ.
+  static const List<int> kCollectionMilestoneCounts = [3, 6, 9];
+  static const List<int> kCollectionMilestoneCoins = [40, 80, 120];
+  final RxSet<int> milestonesClaimed = <int>{}.obs; // tier 0/1/2
+
+  static CollectionController? get maybe =>
+      Get.isRegistered<CollectionController>()
       ? Get.find<CollectionController>()
       : null;
 
@@ -34,6 +41,12 @@ class CollectionController extends GetxController {
     }
     setRewardClaimed.value =
         _store.getInt(StorageKeys.collectionSetClaimed) == 1;
+    milestonesClaimed.clear();
+    for (var t = 0; t < kCollectionMilestoneCounts.length; t++) {
+      if (_store.getInt(StorageKeys.collectionMilestoneClaimed(t)) == 1) {
+        milestonesClaimed.add(t);
+      }
+    }
   }
 
   bool isReached(int i) => points.value >= kCollectionItems[i].threshold;
@@ -49,10 +62,13 @@ class CollectionController extends GetxController {
   /// Có thể nhận thưởng hoàn tất bộ (đủ sticker + chưa nhận).
   bool get canClaimSet => allCollected && !setRewardClaimed.value;
 
-  /// Badge Home: còn sticker thu được HOẶC còn thưởng bộ chưa nhận.
+  /// Badge Home: còn sticker thu được, còn mốc/thưởng bộ chưa nhận.
   bool get hasClaimable =>
       Iterable<int>.generate(kCollectionItems.length).any(canClaim) ||
-      canClaimSet;
+      canClaimSet ||
+      Iterable<int>.generate(
+        kCollectionMilestoneCounts.length,
+      ).any(canClaimMilestone);
 
   /// Cộng điểm album khi thắng (gọi từ GameScreenController; chỉ màn thường).
   void addWin(int stars) {
@@ -65,6 +81,20 @@ class CollectionController extends GetxController {
     points.value = 0;
     claimed.clear();
     setRewardClaimed.value = false;
+    milestonesClaimed.clear();
+  }
+
+  bool canClaimMilestone(int tier) =>
+      unlockedCount >= kCollectionMilestoneCounts[tier] &&
+      !milestonesClaimed.contains(tier);
+
+  /// Nhận thưởng mốc giữa chừng (W28.3): xu nhỏ theo tier 0/1/2.
+  bool claimMilestone(int tier) {
+    if (!canClaimMilestone(tier)) return false;
+    milestonesClaimed.add(tier);
+    unawaited(_store.setInt(StorageKeys.collectionMilestoneClaimed(tier), 1));
+    g.addCoins(kCollectionMilestoneCoins[tier]);
+    return true;
   }
 
   /// Thu thập sticker (W18.2: KHÔNG thưởng xu — vật sưu tập thuần).

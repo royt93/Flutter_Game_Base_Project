@@ -69,6 +69,7 @@ extension GameControllerProgress on GameController {
       StorageKeys.bestCombo,
       StorageKeys.coinsEarned,
       StorageKeys.wheelLastSpin,
+      StorageKeys.wheelCoinStreak, // W28.3
       StorageKeys.tutorialSeen,
       StorageKeys.homeTourSeen, // W22.3 — reset → tour hiện lại (fresh)
       StorageKeys.viewMode,
@@ -111,6 +112,7 @@ extension GameControllerProgress on GameController {
       StorageKeys.leagueMigrated, // W18.1
       StorageKeys.ccCoinsStart, // H2 fix: Challenge Card coin baseline
       StorageKeys.ccWeekIdx,
+      StorageKeys.ptAscendantFreeMoveDay, // W28.3
     ];
     for (final k in scalarKeys) {
       await _store.remove(k);
@@ -185,6 +187,15 @@ extension GameControllerProgress on GameController {
       await _store.remove(StorageKeys.ccProgress(i));
       await _store.remove(StorageKeys.ccClaimed(i));
     }
+    // W28.3 — mốc thưởng giữa chừng album; xoá trực tiếp phòng khi controller
+    // chưa đăng ký (cùng lý do với ccProgress/ccClaimed ở trên).
+    for (
+      int t = 0;
+      t < CollectionController.kCollectionMilestoneCounts.length;
+      t++
+    ) {
+      await _store.remove(StorageKeys.collectionMilestoneClaimed(t));
+    }
 
     // 2) Xoá map in-memory rồi nạp lại GIÁ TRỊ MẶC ĐỊNH từ đĩa (đã trống) — đưa
     //    coins/booster/lives… về đúng như lần cài đầu thay vì giữ giá trị cũ.
@@ -201,6 +212,7 @@ extension GameControllerProgress on GameController {
     TempleController.maybe?.resetState();
     CollectionController.maybe?.resetState();
     PiggyController.maybe?.resetState();
+    LuckyWheelController.maybe?.resetState(); // W28.3 fix: trước đây thiếu
     SideModeRecordController.maybe?.resetState();
     PuzzleController.maybe?.resetState();
     ProgressionTreeController.maybe?.resetState();

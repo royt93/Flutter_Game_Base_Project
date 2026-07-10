@@ -19,6 +19,23 @@ class LuckyWheelController extends GetxController {
   /// Bộ sinh ngẫu nhiên — inject được để test xác định.
   Random rng = Random();
 
+  static LuckyWheelController? get maybe =>
+      Get.isRegistered<LuckyWheelController>()
+      ? Get.find<LuckyWheelController>()
+      : null;
+
+  /// W28.3 — pity chống chuỗi vận đen: liên tiếp ra "xu" đủ ngưỡng → lần quay
+  /// kế được đảm bảo booster. Streak tính XUYÊN NGÀY (persisted), chỉ reset
+  /// khi ra booster. Silent — không UI báo trước (giống DDA campaign).
+  static const int kWheelPityStreak = 3;
+  final RxInt coinStreak = 0.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    coinStreak.value = _store.getInt(StorageKeys.wheelCoinStreak, def: 0);
+  }
+
   /// Còn lượt quay miễn phí hôm nay?
   bool get canSpin =>
       _store.getInt(StorageKeys.wheelLastSpin, def: -1) != g.todayEpochDay;
@@ -34,13 +51,24 @@ class LuckyWheelController extends GetxController {
   /// (-1 nếu không quay được).
   int spin() {
     if (!canSpin || spinning.value) return -1;
-    final idx = rng.nextInt(kWheel.length);
+    final forceBooster = coinStreak.value >= kWheelPityStreak;
+    final idx = forceBooster ? _pickBoosterIndex() : rng.nextInt(kWheel.length);
     resultIndex.value = idx;
     spinning.value = true;
     // Ghi mốc "đã quay hôm nay" TRƯỚC khi trao thưởng → chặn quay lại exploit.
     unawaited(_store.setInt(StorageKeys.wheelLastSpin, g.todayEpochDay));
+    coinStreak.value = kWheel[idx].isCoins ? coinStreak.value + 1 : 0;
+    unawaited(_store.setInt(StorageKeys.wheelCoinStreak, coinStreak.value));
     _applyReward(kWheel[idx]);
     return idx;
+  }
+
+  int _pickBoosterIndex() {
+    final boosterIdxs = [
+      for (var i = 0; i < kWheel.length; i++)
+        if (!kWheel[i].isCoins) i,
+    ];
+    return boosterIdxs[rng.nextInt(boosterIdxs.length)];
   }
 
   void _applyReward(WheelSlice s) {
@@ -65,4 +93,12 @@ class LuckyWheelController extends GetxController {
 
   /// View gọi khi animation xoay xong (chỉ tắt cờ spinning — thưởng đã trao).
   void finishSpin() => spinning.value = false;
+
+  /// Xoá state in-memory khi reset tiến trình (đĩa đã được xoá riêng).
+  void resetState() {
+    coinStreak.value = 0;
+    open.value = false;
+    spinning.value = false;
+    resultIndex.value = -1;
+  }
 }

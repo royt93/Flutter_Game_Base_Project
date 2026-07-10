@@ -120,6 +120,7 @@ class AppTranslations extends Translations {
           ...?_w24bByLang[e.key],
           ...?_w281ByLang[e.key],
           ...?_w285ByLang[e.key],
+          ...?_w283ByLang[e.key],
         },
     };
   }
@@ -667,6 +668,12 @@ class AppTranslations extends Translations {
     'event_combo_desc': '+20% coins from level rewards this week!',
     'event_bigcoin_name': 'Jackpot Week',
     'event_bigcoin_desc': '+50% coins from level rewards this week!',
+    // W28.3 — Dead-feature rescue: Piggy full-bonus hint, Collection
+    // milestone row (shared template for 3 tiers), Progression Tree
+    // ascendant hint. Lucky Wheel pity is silent — no key needed.
+    'piggy_full_bonus_hint': 'Piggy full! Smash now for +10% bonus coins.',
+    'coll_milestone_desc': 'Milestone @pct% — @n coins',
+    'pt_ascendant_bonus_hint': '+1 free move per day',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -1179,6 +1186,12 @@ class AppTranslations extends Translations {
     'event_combo_desc': '+20% xu thưởng màn tuần này!',
     'event_bigcoin_name': 'Tuần Đại Thắng',
     'event_bigcoin_desc': '+50% xu thưởng màn tuần này!',
+    // W28.3 — Cứu 4 tính năng "chết": Piggy hint đầy ống, dòng mốc Collection
+    // (dùng chung template cho cả 3 tier), hint node Progression Tree
+    // ascendant. Lucky Wheel pity ẩn — không cần key.
+    'piggy_full_bonus_hint': 'Đầy ống! Đập nhận thêm 10% xu thưởng.',
+    'coll_milestone_desc': 'Mốc @pct% — @n xu',
+    'pt_ascendant_bonus_hint': '+1 lượt chơi miễn phí mỗi ngày',
   };
 
   static const Map<String, String> _extraEs = {
@@ -21318,6 +21331,128 @@ class AppTranslations extends Translations {
       'event_combo_desc': 'এই সপ্তাহে লেভেল পুরস্কার থেকে +২০% কয়েন!',
       'event_bigcoin_name': 'জ্যাকপট সপ্তাহ',
       'event_bigcoin_desc': 'এই সপ্তাহে লেভেল পুরস্কার থেকে +৫০% কয়েন!',
+    },
+  };
+
+  /// W28.3 — Dead-feature rescue: Piggy full-bonus hint, Collection milestone
+  /// row (template dùng chung 3 tier), Progression Tree ascendant hint.
+  /// en+vi ở _extraEn/_extraVi. Lucky Wheel pity ẩn — không có key.
+  static const Map<String, Map<String, String>> _w283ByLang = {
+    'es_ES': {
+      'piggy_full_bonus_hint':
+          '¡Alcancía llena! Rómpela ahora para +10% de monedas extra.',
+      'coll_milestone_desc': 'Hito @pct% — @n monedas',
+      'pt_ascendant_bonus_hint': '+1 movimiento gratis al día',
+    },
+    'fr_FR': {
+      'piggy_full_bonus_hint':
+          'Tirelire pleine ! Casse-la maintenant pour +10% de pièces bonus.',
+      'coll_milestone_desc': 'Palier @pct% — @n pièces',
+      'pt_ascendant_bonus_hint': '+1 coup gratuit par jour',
+    },
+    'de_DE': {
+      'piggy_full_bonus_hint':
+          'Sparschwein voll! Jetzt zerschlagen für +10% Bonusmünzen.',
+      'coll_milestone_desc': 'Meilenstein @pct% — @n Münzen',
+      'pt_ascendant_bonus_hint': '+1 kostenloser Zug pro Tag',
+    },
+    'pt_BR': {
+      'piggy_full_bonus_hint':
+          'Cofrinho cheio! Quebre agora para +10% de moedas bônus.',
+      'coll_milestone_desc': 'Marco @pct% — @n moedas',
+      'pt_ascendant_bonus_hint': '+1 jogada grátis por dia',
+    },
+    'ru_RU': {
+      'piggy_full_bonus_hint':
+          'Копилка полна! Разбей сейчас — +10% бонусных монет.',
+      'coll_milestone_desc': 'Рубеж @pct% — @n монет',
+      'pt_ascendant_bonus_hint': '+1 бесплатный ход в день',
+    },
+    'zh_CN': {
+      'piggy_full_bonus_hint': '存钱罐已满！现在打破可获得+10%额外金币。',
+      'coll_milestone_desc': '里程碑 @pct%——@n 金币',
+      'pt_ascendant_bonus_hint': '每天+1次免费移动',
+    },
+    'ja_JP': {
+      'piggy_full_bonus_hint': '貯金箱満タン！今割ると+10%ボーナスコイン。',
+      'coll_milestone_desc': 'マイルストーン@pct%——@nコイン',
+      'pt_ascendant_bonus_hint': '1日+1回の無料手数',
+    },
+    'ko_KR': {
+      'piggy_full_bonus_hint': '저금통이 가득 찼어요! 지금 깨면 보너스 코인 +10%.',
+      'coll_milestone_desc': '마일스톤 @pct% — 코인 @n개',
+      'pt_ascendant_bonus_hint': '매일 +1 무료 이동',
+    },
+    'it_IT': {
+      'piggy_full_bonus_hint':
+          'Salvadanaio pieno! Rompilo ora per +10% monete bonus.',
+      'coll_milestone_desc': 'Traguardo @pct% — @n monete',
+      'pt_ascendant_bonus_hint': '+1 mossa gratis al giorno',
+    },
+    'id_ID': {
+      'piggy_full_bonus_hint':
+          'Celengan penuh! Pecahkan sekarang untuk +10% koin bonus.',
+      'coll_milestone_desc': 'Tonggak @pct% — @n koin',
+      'pt_ascendant_bonus_hint': '+1 langkah gratis per hari',
+    },
+    'th_TH': {
+      'piggy_full_bonus_hint': 'กระปุกเต็มแล้ว! ทุบตอนนี้รับโบนัสเหรียญ +10%',
+      'coll_milestone_desc': 'หมุดหมาย @pct% — @n เหรียญ',
+      'pt_ascendant_bonus_hint': '+1 ตาฟรีต่อวัน',
+    },
+    'hi_IN': {
+      'piggy_full_bonus_hint':
+          'गुल्लक भर गया! अभी फोड़ें और पाएं +10% बोनस सिक्के।',
+      'coll_milestone_desc': 'माइलस्टोन @pct% — @n सिक्के',
+      'pt_ascendant_bonus_hint': 'रोज़ाना +1 मुफ़्त चाल',
+    },
+    'ar_SA': {
+      'piggy_full_bonus_hint':
+          'حصالتك ممتلئة! اكسرها الآن واحصل على +10% عملات إضافية.',
+      'coll_milestone_desc': 'إنجاز @pct% — @n عملة',
+      'pt_ascendant_bonus_hint': '+1 حركة مجانية يوميًا',
+    },
+    'tr_TR': {
+      'piggy_full_bonus_hint':
+          'Kumbara dolu! Şimdi kır, +%10 bonus altın kazan.',
+      'coll_milestone_desc': 'Kilometre taşı %@pct — @n altın',
+      'pt_ascendant_bonus_hint': 'Günde +1 ücretsiz hamle',
+    },
+    'nl_NL': {
+      'piggy_full_bonus_hint':
+          'Spaarpot vol! Breek hem nu voor +10% bonusmunten.',
+      'coll_milestone_desc': 'Mijlpaal @pct% — @n munten',
+      'pt_ascendant_bonus_hint': '+1 gratis zet per dag',
+    },
+    'pl_PL': {
+      'piggy_full_bonus_hint':
+          'Skarbonka pełna! Rozbij ją teraz, aby zdobyć +10% bonusowych monet.',
+      'coll_milestone_desc': 'Kamień milowy @pct% — @n monet',
+      'pt_ascendant_bonus_hint': '+1 darmowy ruch dziennie',
+    },
+    'fil_PH': {
+      'piggy_full_bonus_hint':
+          'Puno na ang alkansya! Basagin na para sa +10% bonus na barya.',
+      'coll_milestone_desc': 'Milestone @pct% — @n barya',
+      'pt_ascendant_bonus_hint': '+1 libreng galaw araw-araw',
+    },
+    'ms_MY': {
+      'piggy_full_bonus_hint':
+          'Tabung penuh! Pecahkan sekarang untuk +10% bonus duit syiling.',
+      'coll_milestone_desc': 'Pencapaian @pct% — @n duit syiling',
+      'pt_ascendant_bonus_hint': '+1 langkah percuma setiap hari',
+    },
+    'uk_UA': {
+      'piggy_full_bonus_hint':
+          'Скарбничка повна! Розбий зараз — +10% бонусних монет.',
+      'coll_milestone_desc': 'Рубіж @pct% — @n монет',
+      'pt_ascendant_bonus_hint': '+1 безкоштовний хід щодня',
+    },
+    'bn_BD': {
+      'piggy_full_bonus_hint':
+          'গুল্লক পূর্ণ! এখনই ভাঙুন, +১০% বোনাস কয়েন পান।',
+      'coll_milestone_desc': 'মাইলফলক @pct% — @n কয়েন',
+      'pt_ascendant_bonus_hint': 'প্রতিদিন +১ বিনামূল্যে চাল',
     },
   };
 }

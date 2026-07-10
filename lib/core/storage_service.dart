@@ -38,6 +38,7 @@ class StorageKeys {
   static const String bestCombo = 'best_combo';
   static const String coinsEarned = 'coins_earned'; // tổng xu kiếm (lifetime)
   static const String wheelLastSpin = 'wheel_last_spin'; // epoch-day
+  static const String wheelCoinStreak = 'wheel_coin_streak'; // W28.3 pity
   static const String tutorialSeen = 'tutorial_seen';
   static const String viewMode = 'view_mode'; // 0 = world map, 1 = grid
 
@@ -140,6 +141,8 @@ class StorageKeys {
   static String collectionClaimed(String id) => 'coll_$id'; // 1 = đã mở
   // W18.2 — đã nhận thưởng HOÀN TẤT BỘ album (1 lần)
   static const String collectionSetClaimed = 'coll_set_done';
+  // W28.3 — mốc thưởng giữa chừng album (tier 0/1/2 = 25/50/75%)
+  static String collectionMilestoneClaimed(int tier) => 'coll_milestone_$tier';
 
   // W18.2 — Thành tựu: danh hiệu (title) đang ĐEO (id thành tựu, '' = không đeo)
   static const String equippedTitle = 'ach_equipped_title';
@@ -178,6 +181,8 @@ class StorageKeys {
 
   // Wave 20.3 — Progression Tree: nodes đã mở khoá.
   static String ptUnlocked(String nodeId) => 'pt_node_$nodeId';
+  // W28.3 — node `ascendant`: epoch-day lần cuối dùng lượt miễn phí/ngày.
+  static const String ptAscendantFreeMoveDay = 'pt_ascendant_free_move_day';
 
   // Wave 20.3 — Challenge Card: thử thách tuần.
   static const String ccWeekIdx = 'cc_week'; // tuần hiện tại (epochDay~/7)
