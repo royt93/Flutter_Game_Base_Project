@@ -1689,3 +1689,38 @@ meta-progression + core mechanics/i18n/tech-debt. Chi tiết task board:
 *(Idea cũ còn treo từ Wave 5 chưa làm: "screen shake + slow-motion combo lớn",
 "gem hiếm phát sáng pulsing/trail", "shader glow chuẩn neon" — polish nhỏ, có
 thể gộp vào bất kỳ wave polish sau này, không cần task riêng.)*
+
+## 🐷 Wave 28.3 — Dead-feature rescue: Piggy / Collection / Progression Tree / Lucky Wheel (✅ DONE 2026-07-09)
+
+> Theo `doc/tasks/todo/w28-3-dead-feature-rescue.md` (từ audit Wave 28): 4 hệ
+> meta bị coi "dead feature" — không tạo giá trị/động lực quay lại. Mỗi hệ
+> thêm ĐÚNG 1 cơ chế nhỏ, tái dùng pattern có sẵn (không phát minh cơ chế mới),
+> không đổi cap/formula cũ nào. Tự audit sau khi làm xong: **9/10**.
+
+- [x] **Piggy Bank**: đập ống lúc ĐẦY (saved == `kPiggyCap` 600) → +10% bonus
+  (660 xu thay vì 600). Đập lúc chưa đầy vẫn trả đúng số cũ. Bonus tính thẳng
+  từ `saved.value` tại thời điểm đập, không tích luỹ → không có bề mặt exploit.
+  UI hint `piggy_full_bonus_hint` khi đầy ống.
+- [x] **Collection**: 3 mốc thưởng giữa chừng 25/50/75% số sticker (3/6/9 trên
+  12 item) — 40/80/120 xu, tách biệt thưởng-hoàn-tất-bộ cũ. Key mới
+  `StorageKeys.collectionMilestoneClaimed(tier)`, chống claim đôi.
+- [x] **Progression Tree**: node `ascendant` (trước chỉ visual) → +1 lượt chơi
+  miễn phí/ngày, áp dụng tại `startLevel()` cùng chỗ với `movesBonus` pity
+  (Wave 16), dùng đúng pattern epoch-day-once (`ptAscendantFreeMoveDay`), thừa
+  hưởng chống chỉnh giờ lùi qua `todayEpochDay`.
+- [x] **Lucky Wheel**: pity ẩn — 3 lần quay liên tiếp ra ô xu → lần thứ 4 bắt
+  buộc rơi vào booster (hard-guarantee, không soft-bias). Silent, không thêm
+  UI/i18n báo trước (giống tinh thần DDA Wave 16.3). `coinStreak` persist
+  xuyên ngày, chỉ reset khi ra booster.
+- [x] **Bug fix tiện tay**: `LuckyWheelController` trước đây thiếu
+  `resetState()` — `resetProgress()` xoá key `wheelLastSpin` chay nhưng
+  `coinStreak` sống sót qua reset. Đã thêm `resetState()` + gọi trong
+  `resetProgress()` + thêm `wheelCoinStreak` vào `scalarKeys`.
+- [x] **Kết quả**: 0 analyzer issue · **1038 test pass** (+16 test mới,
+  `test/w28_3_dead_feature_rescue_test.dart`) · i18n 22 ngôn ngữ
+  (`_w283ByLang`) cho 3 key UI mới (Lucky Wheel cố ý không có key — silent).
+- [ ] *Còn nợ nhỏ (ghi nhận, chưa sửa)*: ascendant bonus tiêu thụ lúc
+  `startLevel()` (vào màn), không phải lúc thắng — đúng convention sẵn có của
+  `movesBonus` nên KHÔNG phải lỗi mới, chỉ là điểm cần nhớ nếu sau này đổi
+  logic. Lucky Wheel pity không có cách quan sát/verify trên máy thật (cần 3+
+  ngày liên tiếp) — đã phủ đủ bằng unit test tất định, không verify device.
