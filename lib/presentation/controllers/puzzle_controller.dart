@@ -19,6 +19,13 @@ class PuzzleController extends GetxController {
   /// id cấu đố cao nhất đã MỞ KHOÁ (1-based). Mặc định 1 (cấu đố đầu luôn mở).
   final RxInt unlocked = 1.obs;
 
+  /// W28.1 — Bật/tắt biến thể khó cho cấu đố cuối (id 8). KHÔNG persist —
+  /// chọn lại mỗi ván, giống cách chọn trước khi bắt đầu.
+  final RxBool hardVariantOn = false.obs;
+
+  /// Biến thể khó chỉ mở khi đã đạt 3 sao ở cấu đố cuối (id 8).
+  bool get hardVariantUnlocked => (stars[kPuzzles.length] ?? 0) >= 3;
+
   static PuzzleController? get maybe => Get.isRegistered<PuzzleController>()
       ? Get.find<PuzzleController>()
       : null;
@@ -34,8 +41,9 @@ class PuzzleController extends GetxController {
       final s = _store.getInt(StorageKeys.puzzleStars(p.id), def: 0);
       if (s > 0) stars[p.id] = s;
     }
-    unlocked.value =
-        _store.getInt(StorageKeys.puzzleUnlocked, def: 1).clamp(1, kPuzzles.length);
+    unlocked.value = _store
+        .getInt(StorageKeys.puzzleUnlocked, def: 1)
+        .clamp(1, kPuzzles.length);
   }
 
   void resetState() {

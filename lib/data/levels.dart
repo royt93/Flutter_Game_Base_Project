@@ -255,6 +255,17 @@ const Map<int, List<String>> kFlowLevels = {
     'vvvvvvvv',
     'vvvvvvvv',
   ],
+  // W28.1 — 205: 4 band xen kẽ (khó nhất, cuối World 10).
+  205: [
+    'vvvvvvvv',
+    '>>>>>>>v',
+    'vvvvvvvv',
+    'v<<<<<<<',
+    'vvvvvvvv',
+    '>>>>>>>v',
+    'vvvvvvvv',
+    'v<<<<<<<',
+  ],
 };
 
 /// Các màn clearObstacle (index ≡ 0 mod 6) chuyển obstacle sang LICORICE (Wave 14):
@@ -308,6 +319,7 @@ class ConveyorSpec {
 const Map<int, ConveyorSpec> kConveyorSpec = {
   25: ConveyorSpec({3, 4}, 1),
   61: ConveyorSpec({2, 5}, -1),
+  202: ConveyorSpec({2, 5}, 1), // W28.1
 };
 
 /// Cổng dịch chuyển: clear 1 đầu cổng → ECHO clear đầu kia (1 hop, không lặp).
@@ -325,6 +337,11 @@ const Map<int, PortalSpec> kPortalSpec = {
     [Cell(0, 3), Cell(7, 4)],
     [Cell(2, 0), Cell(5, 7)],
   ]),
+  204: PortalSpec([
+    // W28.1
+    [Cell(0, 0), Cell(7, 7)],
+    [Cell(0, 7), Cell(7, 0)],
+  ]),
 };
 
 /// Ô phát special định kỳ: mỗi [period] lượt, mỗi ô trong [cells] biến gem tại
@@ -339,6 +356,7 @@ class DispenserSpec {
 const Map<int, DispenserSpec> kDispenserSpec = {
   13: DispenserSpec([Cell(0, 2), Cell(0, 5)], 4),
   19: DispenserSpec([Cell(0, 1), Cell(0, 6)], 3),
+  206: DispenserSpec([Cell(0, 1), Cell(0, 4), Cell(0, 7)], 3), // W28.1
 };
 
 class LevelConfig {
@@ -448,7 +466,8 @@ LevelConfig _buildOrderLevel(
 }
 
 /// Tổng số màn. Wave 20.2: mở rộng 150 → 200 (thế giới 9-10, weave tiếp).
-const int kLevelCount = 200;
+/// W28.1: mở rộng 200 → 208 (nối dài thế giới 10, không đụng level cũ).
+const int kLevelCount = 208;
 
 /// Một "thế giới" (khu vực) gom [kWorldSize] màn, có chủ đề neon riêng.
 class WorldConfig {
@@ -481,7 +500,7 @@ const List<WorldConfig> kWorlds = [
   WorldConfig(index: 7, name: 'Flux Stream', startLevel: 121, endLevel: 140),
   WorldConfig(index: 8, name: 'Neon Apex', startLevel: 141, endLevel: 150),
   WorldConfig(index: 9, name: 'Void Circuit', startLevel: 151, endLevel: 170),
-  WorldConfig(index: 10, name: 'Zenith Neon', startLevel: 171, endLevel: 200),
+  WorldConfig(index: 10, name: 'Zenith Neon', startLevel: 171, endLevel: 208),
 ];
 
 // ---------------------------------------------------------------------------
@@ -1112,6 +1131,11 @@ LevelConfig buildZenLevel() => const LevelConfig(
   objective: ObjectiveType.score,
   targetScore: 1 << 28,
 );
+
+/// W28.1 — mốc điểm Zen thưởng xu 1 lần (song song với `zenHigh`, không phá
+/// tinh thần thư giãn — không tier/winCount như side mode khác).
+const List<int> kZenMilestones = [5000, 15000, 40000, 100000];
+const List<int> kZenMilestoneCoins = [20, 50, 120, 250];
 
 // --- Versus / Co-op (2 người, chạy engine Flame như mode thường) ---
 const int kVersusLevelIndex = -4;

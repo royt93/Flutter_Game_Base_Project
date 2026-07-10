@@ -3,11 +3,20 @@ id: w28-8-split-screen-versus
 title: "Local Split-Screen Realtime Versus"
 wave: 28
 phase: 8
-status: todo
+status: done
 owner: claude
 ---
 
 # Phase 8 — Local Split-Screen Realtime Versus
+
+## Kết quả (phát hiện lúc verify Wave 28.1, `.claude/plans/fuzzy-mapping-shannon.md`)
+
+Đã implement thật — không phải làm mới. `lib/presentation/screens/versus_screen.dart`
+`_buildPlaying()` dựng 2 `GameWidget` độc lập từ `c.game1`/`c.game2` (2 `FlameGame`
+instance riêng), xếp `Column` dọc, người trên (`_playerPane(c, 2, ...)`) xoay 180°
+qua `RotatedBox`. Đúng concept "2 bàn Flame riêng biệt cùng lúc trên 1 màn hình,
+2 người thao tác đồng thời" nêu dưới đây. Không cần làm thêm; giữ mục "Rủi ro" bên
+dưới làm checklist nếu sau này cần tối ưu performance/input trên máy yếu.
 
 ## Concept
 

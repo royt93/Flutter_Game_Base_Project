@@ -25,10 +25,10 @@ void main() {
   tearDown(Get.reset);
 
   group('chestLevelOf — xử lý cả thế giới không đều', () {
-    test('TG1=10, TG8=145, TG10=185', () {
+    test('TG1=10, TG8=145, TG10=189 (W28.1: TG10 nối dài 171-208)', () {
       expect(chestLevelOf(kWorlds[0]), 10); // 1..20
       expect(chestLevelOf(kWorlds[7]), 145); // 141..150
-      expect(chestLevelOf(kWorlds[9]), 185); // 171..200
+      expect(chestLevelOf(kWorlds[9]), 189); // 171..208
     });
     test('kChestLevels = 1 rương / thế giới', () {
       expect(kChestLevels.length, kWorlds.length);

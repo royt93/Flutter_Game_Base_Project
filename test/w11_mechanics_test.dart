@@ -54,19 +54,27 @@ void main() {
 
   // ===== Level specs — Wave 11 weave =====
   group('Wave 11 level specs', () {
-    test('conveyor/portal/dispenser đều là màn SCORE và RỜI NHAU', () {
+    test('conveyor/portal/dispenser RỜI NHAU (W1-10 là màn SCORE)', () {
       final all = [
         ...kConveyorSpec.keys,
         ...kPortalSpec.keys,
         ...kDispenserSpec.keys,
       ];
       // không trùng nhau + không trùng order/spread/bomb
-      expect(all.toSet().length, all.length, reason: 'không trùng giữa 3 cơ chế');
+      expect(
+        all.toSet().length,
+        all.length,
+        reason: 'không trùng giữa 3 cơ chế',
+      );
       for (final idx in all) {
         expect(kOrderLevels.contains(idx), isFalse);
         expect(kSpreadLevels.contains(idx), isFalse);
         expect(kBombLevels.contains(idx), isFalse);
-        expect(kLevels[idx - 1].objective, ObjectiveType.score);
+        // W28.1 (201-208): overlay gắn độc lập objective (relax rule cũ),
+        // level cũ (≤200) vẫn giữ nguyên tắc mechanic luôn gắn màn score.
+        if (idx <= 200) {
+          expect(kLevels[idx - 1].objective, ObjectiveType.score);
+        }
       }
     });
 
@@ -100,20 +108,23 @@ void main() {
       expect(c.colorRushHot.value, 0);
     });
 
-    test('tickColorRush đổi màu nóng mỗi kColorRushChangeEvery lượt (cyclic)', () {
-      c.startColorRush();
-      final n = c.level.colorCount;
-      for (int i = 1; i < kColorRushChangeEvery; i++) {
-        c.tickColorRush();
-        expect(c.colorRushHot.value, 0, reason: 'lượt $i chưa đổi');
-      }
-      c.tickColorRush(); // lượt thứ N → đổi
-      expect(c.colorRushHot.value, 1);
-      for (int i = 0; i < kColorRushChangeEvery; i++) {
-        c.tickColorRush();
-      }
-      expect(c.colorRushHot.value, 2 % n);
-    });
+    test(
+      'tickColorRush đổi màu nóng mỗi kColorRushChangeEvery lượt (cyclic)',
+      () {
+        c.startColorRush();
+        final n = c.level.colorCount;
+        for (int i = 1; i < kColorRushChangeEvery; i++) {
+          c.tickColorRush();
+          expect(c.colorRushHot.value, 0, reason: 'lượt $i chưa đổi');
+        }
+        c.tickColorRush(); // lượt thứ N → đổi
+        expect(c.colorRushHot.value, 1);
+        for (int i = 0; i < kColorRushChangeEvery; i++) {
+          c.tickColorRush();
+        }
+        expect(c.colorRushHot.value, 2 % n);
+      },
+    );
 
     test('colorRushBonus cộng điểm bội; no-op khi không phải mode', () {
       c.startColorRush();

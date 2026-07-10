@@ -118,6 +118,7 @@ class AppTranslations extends Translations {
           ...?_w254ByLang[e.key],
           ...?_w252ByLang[e.key],
           ...?_w24bByLang[e.key],
+          ...?_w281ByLang[e.key],
         },
     };
   }
@@ -653,6 +654,9 @@ class AppTranslations extends Translations {
     'tour_claimed': 'Reward claimed this week',
     'tour_claim_reward': 'Claim @n coins',
     'tour_play_hint': 'Win levels to climb the ranks!',
+    // W28.1 — Puzzle hard variant toggle (Puzzle 8, mở khi đạt 3 sao).
+    'puzzle_hard_on': 'Hard Mode: On (fewer moves)',
+    'puzzle_hard_off': 'Hard Mode: Off (tap to try a harder run)',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -1155,6 +1159,8 @@ class AppTranslations extends Translations {
     'tour_claimed': 'Đã nhận thưởng tuần này',
     'tour_claim_reward': 'Nhận @n xu',
     'tour_play_hint': 'Thắng màn để leo hạng!',
+    'puzzle_hard_on': 'Chế Độ Khó: Bật (ít lượt hơn)',
+    'puzzle_hard_off': 'Chế Độ Khó: Tắt (bấm để thử ván khó hơn)',
   };
 
   static const Map<String, String> _extraEs = {
@@ -1185,29 +1191,37 @@ class AppTranslations extends Translations {
     'not_enough_coins': 'Monedas insuficientes',
     'rule_boss': 'Derrota al Jefe antes de quedarte sin movimientos',
     'rule_rhythm': 'Combina al ritmo para mantener tu groove',
-    'rule_survival': 'Sobrevive el mayor tiempo posible antes de que suba la marea',
+    'rule_survival':
+        'Sobrevive el mayor tiempo posible antes de que suba la marea',
     'rule_labyrinth': 'Encuentra el camino hacia la salida',
-    'rule_color_rush': 'Encadena combinaciones del mismo color para un bono de racha',
-    'rule_soda': 'Sube el refresco hasta arriba antes de quedarte sin movimientos',
+    'rule_color_rush':
+        'Encadena combinaciones del mismo color para un bono de racha',
+    'rule_soda':
+        'Sube el refresco hasta arriba antes de quedarte sin movimientos',
     'rule_endless': 'Sigue jugando: la puntuación sube cuanto más aguantes',
     'rule_daily': 'Supera el reto de hoy para conseguir recompensas',
     'rule_puzzle': 'Resuelve el puzle con movimientos limitados',
     'rule_zen': 'Relájate, sin límite de movimientos',
     'rule_gravity': 'Adáptate mientras la gravedad cambia de dirección',
-    'rule_rush': 'Consigue la mayor puntuación posible antes de que se acabe el tiempo',
+    'rule_rush':
+        'Consigue la mayor puntuación posible antes de que se acabe el tiempo',
     'leaderboard_title': 'Clasificación',
     'lb_tab_campaign': 'Campaña',
     'lb_tab_daily': 'Diario',
     'lb_level': 'Nivel',
     'lb_player': 'Tú',
-    'lb_daily_note': 'Los 10 mejores de hoy: completa el Diario para unirte a la clasificación.',
+    'lb_daily_note':
+        'Los 10 mejores de hoy: completa el Diario para unirte a la clasificación.',
     'reduce_motion': 'Reducir efectos de movimiento',
     'tour_t0': '¡Bienvenido!',
-    'tour_m0': 'Intercambia para alinear 3 o más gemas del mismo color. Toca Jugar Ahora para empezar la campaña de 200 niveles.',
+    'tour_m0':
+        'Intercambia para alinear 3 o más gemas del mismo color. Toca Jugar Ahora para empezar la campaña de 200 niveles.',
     'tour_t1': 'Desafíos',
-    'tour_m1': 'Más allá de la campaña: Sin Fin, Jefe, Rush, Ritmo y muchos más modos alternativos.',
+    'tour_m1':
+        'Más allá de la campaña: Sin Fin, Jefe, Rush, Ritmo y muchos más modos alternativos.',
     'tour_t2': 'Recompensas',
-    'tour_m2': 'Tienda, Pase de Batalla, Clasificación, regalos diarios y mucho más te esperan aquí abajo.',
+    'tour_m2':
+        'Tienda, Pase de Batalla, Clasificación, regalos diarios y mucho más te esperan aquí abajo.',
     'tour_t3': '¡Vamos allá!',
     'tour_m3': 'Las vidas y monedas están arriba. ¡Diviértete, viajero!',
     'tour_skip': 'Omitir',
@@ -1221,7 +1235,8 @@ class AppTranslations extends Translations {
     'quest_bonus_title': 'Bono de Todas las Misiones',
     'clan_title': 'Clan',
     'clan_goal': 'Objetivo semanal del clan',
-    'clan_goal_hint': 'Cuentan tanto las victorias de campaña como las de modos alternativos',
+    'clan_goal_hint':
+        'Cuentan tanto las victorias de campaña como las de modos alternativos',
     'clan_league': 'Clasificación de clanes',
     'boss_atk_block': '¡Bloqueo!',
     'boss_atk_shuffle': '¡Mezcla!',
@@ -1247,9 +1262,11 @@ class AppTranslations extends Translations {
     'pt_blazing_title': 'Ardiente',
     'pt_blazing_desc': 'Ráfaga de partículas ×2.0 al explotar gemas (150 ★)',
     'pt_prestige_title': 'Prestigio',
-    'pt_prestige_desc': 'Desbloquea la Skin de Gema de Prestigio (5 hitos de Oro)',
+    'pt_prestige_desc':
+        'Desbloquea la Skin de Gema de Prestigio (5 hitos de Oro)',
     'pt_ascendant_title': 'Ascendente',
-    'pt_ascendant_desc': 'Desbloquea el efecto de partículas Ascendente (3 hitos de Platino)',
+    'pt_ascendant_desc':
+        'Desbloquea el efecto de partículas Ascendente (3 hitos de Platino)',
     'pt_unlocked': '✓ Desbloqueado',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -1263,7 +1280,8 @@ class AppTranslations extends Translations {
     'cc_claim': 'Reclamar',
     'rush_title': 'Rush',
     'rush_short': 'Rush',
-    'rush_desc': '2 min · movimientos ilimitados · las combinaciones suman tiempo',
+    'rush_desc':
+        '2 min · movimientos ilimitados · las combinaciones suman tiempo',
     'rush_best': 'Mejor',
     'rush_time_bonus': '+@ns',
     'endless_short': 'Sin Fin',
@@ -1286,11 +1304,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'Temporizador',
     'guide_w10_title': 'Novedades',
     'guide_lightball': 'Bola de Luz',
-    'guide_lightball_desc': 'Combina 7 o más gemas para crear una Bola de Luz: estalla en 8 direcciones (fila + columna + ambas diagonales). La gema más rara y poderosa.',
+    'guide_lightball_desc':
+        'Combina 7 o más gemas para crear una Bola de Luz: estalla en 8 direcciones (fila + columna + ambas diagonales). La gema más rara y poderosa.',
     'guide_bombdown': 'Bomba de Cuenta Atrás',
-    'guide_bombdown_desc': 'Algunos niveles tienen bombas que cuentan atrás en cada movimiento. Elimina la gema sobre una bomba para desactivarla. Si alguna bomba llega a 0, ¡pierdes al instante!',
+    'guide_bombdown_desc':
+        'Algunos niveles tienen bombas que cuentan atrás en cada movimiento. Elimina la gema sobre una bomba para desactivarla. Si alguna bomba llega a 0, ¡pierdes al instante!',
     'guide_order': 'Objetivos Mixtos',
-    'guide_order_desc': 'Los niveles de Orden te piden recolectar varios colores de gemas a la vez. Completa cada objetivo de color para ganar.',
+    'guide_order_desc':
+        'Los niveles de Orden te piden recolectar varios colores de gemas a la vez. Completa cada objetivo de color para ganar.',
     'shop_title': 'Tienda',
     'shop_skins': 'Skins de Gemas',
     'shop_themes': 'Temas de Tablero',
@@ -1333,9 +1354,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'Mañana',
     'wheel_got_booster': 'Potenciador',
     'tut_title': 'Cómo Jugar',
-    'tut_1': 'Intercambia dos gemas adyacentes para alinear 3 o más del mismo color.',
-    'tut_2': 'Combina 4 en fila para crear una gema Rayada que limpia toda una línea!',
-    'tut_3': 'Combina 5 para crear una gema Arcoíris: elimina todas las gemas de un color.',
+    'tut_1':
+        'Intercambia dos gemas adyacentes para alinear 3 o más del mismo color.',
+    'tut_2':
+        'Combina 4 en fila para crear una gema Rayada que limpia toda una línea!',
+    'tut_3':
+        'Combina 5 para crear una gema Arcoíris: elimina todas las gemas de un color.',
     'tut_next': 'Siguiente',
     'tut_skip': 'Omitir',
     'tut_start': 'Vamos Allá',
@@ -1362,10 +1386,13 @@ class AppTranslations extends Translations {
     'npc_name_4': 'Ember',
     'npc_name_5': 'Nyx',
     'guide_story_title': 'Historia',
-    'guide_story_body': 'Conoce a un guardián neón en cada mundo. Te saludan, te animan a mitad de camino y te envían al siguiente reino a medida que avanzas.',
+    'guide_story_body':
+        'Conoce a un guardián neón en cada mundo. Te saludan, te animan a mitad de camino y te envían al siguiente reino a medida que avanzas.',
     'story_w1_intro_title': 'La Nebulosa Cian',
-    'story_w1_intro_l1': 'Bienvenido, viajero. Soy Luma, luz de la Nebulosa Cian.',
-    'story_w1_intro_l2': '¡Las gemas aquí se han apagado. Combínalas para devolverles el brillo!',
+    'story_w1_intro_l1':
+        'Bienvenido, viajero. Soy Luma, luz de la Nebulosa Cian.',
+    'story_w1_intro_l2':
+        '¡Las gemas aquí se han apagado. Combínalas para devolverles el brillo!',
     'story_w1_mid_title': 'Vuelve una Chispa',
     'story_w1_mid_l1': 'La nebulosa vuelve a brillar: tienes un don.',
     'story_w1_mid_l2': 'Pero reinos más profundos te esperan. ¡Sigue adelante!',
@@ -1377,22 +1404,26 @@ class AppTranslations extends Translations {
     'story_w2_intro_l2': 'Combina al ritmo y el reino bailará contigo.',
     'story_w2_mid_title': 'En Sintonía',
     'story_w2_mid_l1': 'Tus combos resuenan por todo el pulso: ¡precioso!',
-    'story_w2_mid_l2': 'Mitad del camino recorrido. El ritmo se vuelve más intenso.',
+    'story_w2_mid_l2':
+        'Mitad del camino recorrido. El ritmo se vuelve más intenso.',
     'story_w2_outro_title': 'Latido Estable',
-    'story_w2_outro_l1': 'El pulso vuelve a ser estable y brillante. ¡Increíble!',
+    'story_w2_outro_l1':
+        'El pulso vuelve a ser estable y brillante. ¡Increíble!',
     'story_w2_outro_l2': 'Chispas de un circuito verde parpadean más adelante.',
     'story_w3_intro_title': 'El Circuito Lima',
     'story_w3_intro_l1': '¡Bip! Soy Cir, guardián del Circuito Lima.',
     'story_w3_intro_l2': 'Conecta las gemas para devolver la energía a la red.',
     'story_w3_mid_title': 'Carga Completa',
     'story_w3_mid_l1': 'Los circuitos zumban a plena carga: ¡buen trabajo!',
-    'story_w3_mid_l2': 'El cableado se complica a partir de aquí. Mantente atento.',
+    'story_w3_mid_l2':
+        'El cableado se complica a partir de aquí. Mantente atento.',
     'story_w3_outro_title': 'Sistema Restaurado',
     'story_w3_outro_l1': 'Toda la red brilla en verde. ¡Sistema restaurado!',
     'story_w3_outro_l2': 'Un ardiente cometa ámbar cruza la oscuridad...',
     'story_w4_intro_title': 'El Cometa Ámbar',
     'story_w4_intro_l1': 'Soy Ember, jinete del Cometa Ámbar.',
-    'story_w4_intro_l2': '¡Arrasa entre las gemas antes de que el cometa se apague!',
+    'story_w4_intro_l2':
+        '¡Arrasa entre las gemas antes de que el cometa se apague!',
     'story_w4_mid_title': 'Brillando con Fuerza',
     'story_w4_mid_l1': 'Ahora vuelas: ¡el cometa arde con más fuerza!',
     'story_w4_mid_l2': 'La cola se alarga. No pierdas la chispa.',
@@ -1406,7 +1437,8 @@ class AppTranslations extends Translations {
     'story_w5_mid_l1': 'Ni siquiera el vacío puede apagar tu brillo.',
     'story_w5_mid_l2': 'El tramo final: la oscuridad más profunda te espera.',
     'story_w5_outro_title': 'Una Leyenda Neón',
-    'story_w5_outro_l1': '¡Iluminaste todo el Vacío! El cosmos vuelve a estar completo.',
+    'story_w5_outro_l1':
+        '¡Iluminaste todo el Vacío! El cosmos vuelve a estar completo.',
     'story_w5_outro_l2': 'Eres una auténtica Leyenda Neón. Gracias, viajero.',
     'story_next': 'Siguiente',
     'story_skip': 'Omitir',
@@ -1417,7 +1449,8 @@ class AppTranslations extends Translations {
     'temple_build': 'Construir',
     'temple_built': '¡Construido!',
     'temple_maxed': 'Máximo',
-    'temple_hint': 'Toca una estructura para construirla con monedas ganadas en los niveles.',
+    'temple_hint':
+        'Toca una estructura para construirla con monedas ganadas en los niveles.',
     'coins_short': 'monedas',
     'temple_gate': 'Puerta Neón',
     'temple_gate_desc': 'La entrada resplandeciente de tu templo.',
@@ -1450,7 +1483,8 @@ class AppTranslations extends Translations {
     'season_ends': 'Termina en',
     'season_points': 'puntos de temporada',
     'season_pts_short': 'pts',
-    'season_hint': 'Gana niveles durante la temporada para conseguir puntos y desbloquear recompensas.',
+    'season_hint':
+        'Gana niveles durante la temporada para conseguir puntos y desbloquear recompensas.',
     'season_cyan': 'Oleada Cian',
     'season_magenta': 'Tormenta Magenta',
     'season_lime': 'Arrebato Lima',
@@ -1467,7 +1501,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': '¡En el Ritmo!',
     'rhythm_offbeat': 'Fuera de Ritmo',
     'guide_rhythm_title': 'Modo Ritmo',
-    'guide_rhythm_body': 'Intercambia justo al ritmo (fíjate en el punto pulsante) para llenar tu medidor de Groove y puntuar hasta 2.5×. Los intercambios fuera de ritmo bajan tu groove. Alcanza la puntuación objetivo antes de quedarte sin movimientos.',
+    'guide_rhythm_body':
+        'Intercambia justo al ritmo (fíjate en el punto pulsante) para llenar tu medidor de Groove y puntuar hasta 2.5×. Los intercambios fuera de ritmo bajan tu groove. Alcanza la puntuación objetivo antes de quedarte sin movimientos.',
     'versus_title': '2 Jugadores',
     'versus_pick': 'Elige un modo',
     'versus_mode': 'Versus',
@@ -1484,7 +1519,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'Objetivo',
     'versus_go': '¡Ya!',
     'guide_versus_title': '2 Jugadores (local)',
-    'guide_versus_body': 'Dos jugadores, un dispositivo. Versus: compite por la puntuación más alta en 60s; los combos grandes envían filas de basura al rival. Cooperativo: combinad puntuaciones para alcanzar el objetivo compartido antes de que se acabe el tiempo. El tablero superior se rota para jugar cara a cara.',
+    'guide_versus_body':
+        'Dos jugadores, un dispositivo. Versus: compite por la puntuación más alta en 60s; los combos grandes envían filas de basura al rival. Cooperativo: combinad puntuaciones para alcanzar el objetivo compartido antes de que se acabe el tiempo. El tablero superior se rota para jugar cara a cara.',
     'challenge_modes': 'Desafíos',
     'meta_section': 'Recompensas',
     'daily_ch_title': 'Desafío Diario',
@@ -1506,7 +1542,8 @@ class AppTranslations extends Translations {
     'rec_tier_gold': 'Oro',
     'rec_tier_platinum': 'Platino',
     'hard_variant_on': 'Desafío: Activado (menos movimientos, +50% monedas)',
-    'hard_variant_off': 'Desafío: Desactivado (toca para desbloquear una partida más difícil)',
+    'hard_variant_off':
+        'Desafío: Desactivado (toca para desbloquear una partida más difícil)',
     'puzzle_short': 'Puzle',
     'puzzle_title': 'Puzles',
     'puzzle_sub': '¡Tablero finito, sin relleno!',
@@ -1543,18 +1580,22 @@ class AppTranslations extends Translations {
     'portal_title': 'Portal',
     'dispenser_title': 'Dispensador',
     'guide_w11_title': 'Nuevas Mecánicas',
-    'guide_w11_body': 'Modo Color Rush: un "color caliente" cambia cada pocos movimientos; elimínalo para puntos extra y corre hacia el objetivo. Las cintas transportadoras desplazan las gemas una celda por movimiento. Los portales son celdas enlazadas: al eliminar una también se elimina su pareja. Los dispensadores generan una gema especial cada pocos movimientos.',
+    'guide_w11_body':
+        'Modo Color Rush: un "color caliente" cambia cada pocos movimientos; elimínalo para puntos extra y corre hacia el objetivo. Las cintas transportadoras desplazan las gemas una celda por movimiento. Los portales son celdas enlazadas: al eliminar una también se elimina su pareja. Los dispensadores generan una gema especial cada pocos movimientos.',
     'soda_title': 'Sube el Refresco',
     'soda_short': 'Refresco',
     'soda_hud': 'Botellas',
-    'soda_desc': 'Elimina gemas para subir el nivel del refresco y hacer flotar las botellas hasta arriba',
+    'soda_desc':
+        'Elimina gemas para subir el nivel del refresco y hacer flotar las botellas hasta arriba',
     'obstacle_licorice': 'Regaliz',
     'obstacle_jam': 'Mermelada',
     'guide_w14_title': 'Refresco y Nuevos Obstáculos',
-    'guide_w14_body': 'Modo Sube el Refresco: al eliminar gemas sube el nivel del refresco, que hace flotar las botellas hacia arriba; lleva suficientes botellas a la fila superior para ganar. El Regaliz bloquea una celda y necesita dos eliminaciones cercanas para romperse. La Mermelada se extiende a una celda vecina en cada movimiento a menos que elimines a su lado.',
+    'guide_w14_body':
+        'Modo Sube el Refresco: al eliminar gemas sube el nivel del refresco, que hace flotar las botellas hacia arriba; lleva suficientes botellas a la fila superior para ganar. El Regaliz bloquea una celda y necesita dos eliminaciones cercanas para romperse. La Mermelada se extiende a una celda vecina en cada movimiento a menos que elimines a su lado.',
     'coll_title': 'Álbum',
     'coll_points': 'pts de álbum',
-    'coll_hint': 'Gana niveles para conseguir puntos de álbum y desbloquear pegatinas.',
+    'coll_hint':
+        'Gana niveles para conseguir puntos de álbum y desbloquear pegatinas.',
     'coll_cyan_spark': 'Chispa Cian',
     'coll_magenta_bloom': 'Flor Magenta',
     'coll_lime_leaf': 'Hoja Lima',
@@ -1568,17 +1609,23 @@ class AppTranslations extends Translations {
     'coll_pulsar_heart': 'Corazón Latente',
     'coll_singularity': 'Gema Infinita',
     'coll_desc_cyan_spark': 'Una brillante chispa de luz cian.',
-    'coll_desc_magenta_bloom': 'Una flor de luz magenta en pleno florecimiento.',
+    'coll_desc_magenta_bloom':
+        'Una flor de luz magenta en pleno florecimiento.',
     'coll_desc_lime_leaf': 'Una hoja verde lima resplandeciente.',
     'coll_desc_amber_sun': 'Un cálido sol dorado.',
     'coll_desc_orange_ember': 'Un ascua naranja resplandeciente.',
     'coll_desc_violet_dusk': 'Un profundo cielo de ocaso violeta.',
-    'coll_desc_prism_shard': 'Un fragmento de cristal que divide la luz en colores del arcoíris.',
-    'coll_desc_nebula_core': 'El núcleo resplandeciente de una colorida nube estelar.',
-    'coll_desc_aurora_wing': 'Un ala con el color brillante de una aurora boreal.',
-    'coll_desc_quasar_eye': 'Un brillo con forma de ojo como una estrella lejana.',
+    'coll_desc_prism_shard':
+        'Un fragmento de cristal que divide la luz en colores del arcoíris.',
+    'coll_desc_nebula_core':
+        'El núcleo resplandeciente de una colorida nube estelar.',
+    'coll_desc_aurora_wing':
+        'Un ala con el color brillante de una aurora boreal.',
+    'coll_desc_quasar_eye':
+        'Un brillo con forma de ojo como una estrella lejana.',
     'coll_desc_pulsar_heart': 'Un corazón de luz que late como un faro.',
-    'coll_desc_singularity': 'Un único punto de luz más denso que cualquier otra cosa: la pegatina más rara.',
+    'coll_desc_singularity':
+        'Un único punto de luz más denso que cualquier otra cosa: la pegatina más rara.',
     'coll_close': 'Cerrar',
     'piggy_title': 'Hucha',
     'piggy_smash': 'Romper',
@@ -1624,11 +1671,14 @@ class AppTranslations extends Translations {
     'not_enough_coins': 'Pièces insuffisantes',
     'rule_boss': 'Vaincs le Boss avant d\'être à court de coups',
     'rule_rhythm': 'Enchaîne les coups en rythme pour garder ton groove',
-    'rule_survival': 'Survis le plus longtemps possible avant la montée des eaux',
+    'rule_survival':
+        'Survis le plus longtemps possible avant la montée des eaux',
     'rule_labyrinth': 'Trouve ton chemin vers la sortie',
-    'rule_color_rush': 'Enchaîne les alignements d\'une même couleur pour un bonus de série',
+    'rule_color_rush':
+        'Enchaîne les alignements d\'une même couleur pour un bonus de série',
     'rule_soda': 'Fais monter le soda jusqu\'en haut avant la fin des coups',
-    'rule_endless': 'Continue à jouer — le score grimpe plus tu tiens longtemps',
+    'rule_endless':
+        'Continue à jouer — le score grimpe plus tu tiens longtemps',
     'rule_daily': 'Termine le défi du jour pour des récompenses',
     'rule_puzzle': 'Résous le puzzle en un nombre de coups limité',
     'rule_zen': 'Détends-toi — pas de limite de coups',
@@ -1639,14 +1689,18 @@ class AppTranslations extends Translations {
     'lb_tab_daily': 'Quotidien',
     'lb_level': 'Niveau',
     'lb_player': 'Toi',
-    'lb_daily_note': 'Top 10 du jour — termine le Quotidien pour rejoindre le classement.',
+    'lb_daily_note':
+        'Top 10 du jour — termine le Quotidien pour rejoindre le classement.',
     'reduce_motion': 'Réduire les effets de mouvement',
     'tour_t0': 'Bienvenue !',
-    'tour_m0': 'Échange pour aligner 3 gemmes ou plus de la même couleur. Appuie sur Jouer pour démarrer la campagne de 200 niveaux.',
+    'tour_m0':
+        'Échange pour aligner 3 gemmes ou plus de la même couleur. Appuie sur Jouer pour démarrer la campagne de 200 niveaux.',
     'tour_t1': 'Défis',
-    'tour_m1': 'Au-delà de la campagne : Infini, Boss, Rush, Rythme et bien d\'autres modes annexes.',
+    'tour_m1':
+        'Au-delà de la campagne : Infini, Boss, Rush, Rythme et bien d\'autres modes annexes.',
     'tour_t2': 'Récompenses',
-    'tour_m2': 'Boutique, Passe de combat, Classement, cadeaux quotidiens et plus t\'attendent ici.',
+    'tour_m2':
+        'Boutique, Passe de combat, Classement, cadeaux quotidiens et plus t\'attendent ici.',
     'tour_t3': 'C\'est parti !',
     'tour_m3': 'Vies et pièces sont en haut. Amuse-toi bien, voyageur !',
     'tour_skip': 'Passer',
@@ -1660,7 +1714,8 @@ class AppTranslations extends Translations {
     'quest_bonus_title': 'Bonus Toutes Quêtes',
     'clan_title': 'Clan',
     'clan_goal': 'Objectif hebdo du clan',
-    'clan_goal_hint': 'Les victoires en campagne et en modes annexes comptent toutes les deux',
+    'clan_goal_hint':
+        'Les victoires en campagne et en modes annexes comptent toutes les deux',
     'clan_league': 'Classement des clans',
     'boss_atk_block': 'Blocage !',
     'boss_atk_shuffle': 'Mélange !',
@@ -1688,7 +1743,8 @@ class AppTranslations extends Translations {
     'pt_prestige_title': 'Prestige',
     'pt_prestige_desc': 'Débloque le skin de gemme Prestige (5 paliers Or)',
     'pt_ascendant_title': 'Ascendant',
-    'pt_ascendant_desc': 'Débloque l\'effet de particules Ascendant (3 paliers Platine)',
+    'pt_ascendant_desc':
+        'Débloque l\'effet de particules Ascendant (3 paliers Platine)',
     'pt_unlocked': '✓ Débloqué',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -1725,11 +1781,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'Minuteur',
     'guide_w10_title': 'Nouveautés',
     'guide_lightball': 'Boule de Lumière',
-    'guide_lightball_desc': 'Aligne 7 gemmes ou plus pour créer une Boule de Lumière — elle explose dans 8 directions (ligne + colonne + les deux diagonales). La gemme la plus rare et la plus puissante.',
+    'guide_lightball_desc':
+        'Aligne 7 gemmes ou plus pour créer une Boule de Lumière — elle explose dans 8 directions (ligne + colonne + les deux diagonales). La gemme la plus rare et la plus puissante.',
     'guide_bombdown': 'Bombe à Retardement',
-    'guide_bombdown_desc': 'Certains niveaux ont des bombes qui décomptent à chaque coup. Élimine la gemme posée sur une bombe pour la désamorcer. Si une bombe atteint 0, tu perds instantanément !',
+    'guide_bombdown_desc':
+        'Certains niveaux ont des bombes qui décomptent à chaque coup. Élimine la gemme posée sur une bombe pour la désamorcer. Si une bombe atteint 0, tu perds instantanément !',
     'guide_order': 'Objectifs Multiples',
-    'guide_order_desc': 'Les niveaux à objectifs demandent de collecter plusieurs couleurs de gemmes à la fois. Termine chaque objectif de couleur pour gagner.',
+    'guide_order_desc':
+        'Les niveaux à objectifs demandent de collecter plusieurs couleurs de gemmes à la fois. Termine chaque objectif de couleur pour gagner.',
     'shop_title': 'Boutique',
     'shop_skins': 'Skins de Gemmes',
     'shop_themes': 'Thèmes de Plateau',
@@ -1772,9 +1831,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'Demain',
     'wheel_got_booster': 'Booster',
     'tut_title': 'Comment Jouer',
-    'tut_1': 'Échange deux gemmes adjacentes pour aligner 3 gemmes ou plus de la même couleur.',
-    'tut_2': 'Aligne 4 gemmes pour créer une gemme Rayée qui efface toute une ligne !',
-    'tut_3': 'Aligne 5 gemmes pour créer une gemme Arc-en-ciel — elle efface toutes les gemmes d\'une couleur.',
+    'tut_1':
+        'Échange deux gemmes adjacentes pour aligner 3 gemmes ou plus de la même couleur.',
+    'tut_2':
+        'Aligne 4 gemmes pour créer une gemme Rayée qui efface toute une ligne !',
+    'tut_3':
+        'Aligne 5 gemmes pour créer une gemme Arc-en-ciel — elle efface toutes les gemmes d\'une couleur.',
     'tut_next': 'Suivant',
     'tut_skip': 'Passer',
     'tut_start': 'C\'est Parti',
@@ -1801,37 +1863,49 @@ class AppTranslations extends Translations {
     'npc_name_4': 'Ember',
     'npc_name_5': 'Nyx',
     'guide_story_title': 'Histoire',
-    'guide_story_body': 'Rencontre un gardien néon dans chaque monde. Ils t\'accueillent, t\'encouragent à mi-parcours et t\'envoient vers le royaume suivant à mesure que tu avances.',
+    'guide_story_body':
+        'Rencontre un gardien néon dans chaque monde. Ils t\'accueillent, t\'encouragent à mi-parcours et t\'envoient vers le royaume suivant à mesure que tu avances.',
     'story_w1_intro_title': 'La Nébuleuse Cyan',
-    'story_w1_intro_l1': 'Bienvenue, voyageur. Je suis Luma, lumière de la Nébuleuse Cyan.',
-    'story_w1_intro_l2': 'Les joyaux ici se sont ternis. Aligne-les pour raviver leur éclat !',
+    'story_w1_intro_l1':
+        'Bienvenue, voyageur. Je suis Luma, lumière de la Nébuleuse Cyan.',
+    'story_w1_intro_l2':
+        'Les joyaux ici se sont ternis. Aligne-les pour raviver leur éclat !',
     'story_w1_mid_title': 'Une Étincelle Renaît',
     'story_w1_mid_l1': 'La nébuleuse scintille à nouveau — tu as un don.',
-    'story_w1_mid_l2': 'Mais des royaumes plus profonds t\'attendent. Continue !',
+    'story_w1_mid_l2':
+        'Mais des royaumes plus profonds t\'attendent. Continue !',
     'story_w1_outro_title': 'Nébuleuse Restaurée',
     'story_w1_outro_l1': 'La Nébuleuse Cyan brille comme jamais. Merci !',
     'story_w1_outro_l2': 'Une pulsation magenta t\'appelle au loin. Suis-la...',
     'story_w2_intro_title': 'La Pulsation Magenta',
-    'story_w2_intro_l1': 'Je suis Vera. Tu sens ce battement ? C\'est la Pulsation Magenta.',
+    'story_w2_intro_l1':
+        'Je suis Vera. Tu sens ce battement ? C\'est la Pulsation Magenta.',
     'story_w2_intro_l2': 'Aligne en rythme et le royaume dansera avec toi.',
     'story_w2_mid_title': 'En Rythme',
-    'story_w2_mid_l1': 'Tes combos résonnent à travers la pulsation — magnifique !',
-    'story_w2_mid_l2': 'La moitié du voyage est faite. Le rythme s\'intensifie.',
+    'story_w2_mid_l1':
+        'Tes combos résonnent à travers la pulsation — magnifique !',
+    'story_w2_mid_l2':
+        'La moitié du voyage est faite. Le rythme s\'intensifie.',
     'story_w2_outro_title': 'Battement Stable',
-    'story_w2_outro_l1': 'La pulsation est de nouveau stable et vive. Incroyable !',
-    'story_w2_outro_l2': 'Des étincelles d\'un circuit vert scintillent au loin.',
+    'story_w2_outro_l1':
+        'La pulsation est de nouveau stable et vive. Incroyable !',
+    'story_w2_outro_l2':
+        'Des étincelles d\'un circuit vert scintillent au loin.',
     'story_w3_intro_title': 'Le Circuit Citron Vert',
     'story_w3_intro_l1': 'Bip ! Je suis Cir, gardien du Circuit Citron Vert.',
     'story_w3_intro_l2': 'Connecte les gemmes pour redonner vie au réseau.',
     'story_w3_mid_title': 'Pleine Charge',
-    'story_w3_mid_l1': 'Les circuits ronronnent à pleine charge — beau travail !',
-    'story_w3_mid_l2': 'Le câblage devient plus complexe à partir d\'ici. Reste attentif.',
+    'story_w3_mid_l1':
+        'Les circuits ronronnent à pleine charge — beau travail !',
+    'story_w3_mid_l2':
+        'Le câblage devient plus complexe à partir d\'ici. Reste attentif.',
     'story_w3_outro_title': 'Système Restauré',
     'story_w3_outro_l1': 'Tout le réseau brille de vert. Système restauré !',
     'story_w3_outro_l2': 'Une comète ambrée ardente traverse l\'obscurité...',
     'story_w4_intro_title': 'La Comète Ambrée',
     'story_w4_intro_l1': 'Je suis Ember, cavalière de la Comète Ambrée.',
-    'story_w4_intro_l2': 'Enflamme les gemmes avant que la comète ne s\'éteigne !',
+    'story_w4_intro_l2':
+        'Enflamme les gemmes avant que la comète ne s\'éteigne !',
     'story_w4_mid_title': 'Ardeur Flamboyante',
     'story_w4_mid_l1': 'Tu voles maintenant — la comète brûle plus fort !',
     'story_w4_mid_l2': 'La traînée s\'allonge. Ne perds pas l\'étincelle.',
@@ -1840,12 +1914,15 @@ class AppTranslations extends Translations {
     'story_w4_outro_l2': 'Seul le silencieux Vide Violet demeure...',
     'story_w5_intro_title': 'Le Vide Violet',
     'story_w5_intro_l1': 'Je suis Nyx, gardienne du Vide Violet.',
-    'story_w5_intro_l2': 'Ici la lumière est faible. Sois l\'étincelle qui le remplit.',
+    'story_w5_intro_l2':
+        'Ici la lumière est faible. Sois l\'étincelle qui le remplit.',
     'story_w5_mid_title': 'Lumière dans l\'Obscurité',
     'story_w5_mid_l1': 'Même le vide ne peut ternir ton éclat.',
-    'story_w5_mid_l2': 'La dernière ligne droite — l\'obscurité la plus profonde attend.',
+    'story_w5_mid_l2':
+        'La dernière ligne droite — l\'obscurité la plus profonde attend.',
     'story_w5_outro_title': 'Une Légende Néon',
-    'story_w5_outro_l1': 'Tu as illuminé tout le Vide ! Le cosmos est de nouveau entier.',
+    'story_w5_outro_l1':
+        'Tu as illuminé tout le Vide ! Le cosmos est de nouveau entier.',
     'story_w5_outro_l2': 'Tu es une véritable Légende Néon. Merci, voyageur.',
     'story_next': 'Suivant',
     'story_skip': 'Passer',
@@ -1856,12 +1933,14 @@ class AppTranslations extends Translations {
     'temple_build': 'Construire',
     'temple_built': 'Construit !',
     'temple_maxed': 'Maximisé',
-    'temple_hint': 'Appuie sur une structure pour la construire avec les pièces gagnées en jouant.',
+    'temple_hint':
+        'Appuie sur une structure pour la construire avec les pièces gagnées en jouant.',
     'coins_short': 'pièces',
     'temple_gate': 'Porte Néon',
     'temple_gate_desc': 'L\'entrée lumineuse de ton temple.',
     'temple_pillar': 'Pilier de Lumière',
-    'temple_pillar_desc': 'Des piliers canalisant l\'énergie néon vers le haut.',
+    'temple_pillar_desc':
+        'Des piliers canalisant l\'énergie néon vers le haut.',
     'temple_altar': 'Autel des Étoiles',
     'temple_altar_desc': 'Le cœur du temple où la lumière se rassemble.',
     'temple_spire': 'Flèche Radieuse',
@@ -1889,7 +1968,8 @@ class AppTranslations extends Translations {
     'season_ends': 'Se termine dans',
     'season_points': 'points de saison',
     'season_pts_short': 'pts',
-    'season_hint': 'Gagne des niveaux pendant la saison pour gagner des points et débloquer des récompenses.',
+    'season_hint':
+        'Gagne des niveaux pendant la saison pour gagner des points et débloquer des récompenses.',
     'season_cyan': 'Vague Cyan',
     'season_magenta': 'Tempête Magenta',
     'season_lime': 'Ruée Citron Vert',
@@ -1906,7 +1986,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'En Rythme !',
     'rhythm_offbeat': 'Hors Rythme',
     'guide_rhythm_title': 'Mode Rythme',
-    'guide_rhythm_body': 'Échange juste sur le battement (surveille le point qui pulse) pour remplir ta jauge de Groove et marquer jusqu\'à 2,5× les points. Les échanges hors rythme font chuter ton groove. Atteins le score cible avant la fin des coups.',
+    'guide_rhythm_body':
+        'Échange juste sur le battement (surveille le point qui pulse) pour remplir ta jauge de Groove et marquer jusqu\'à 2,5× les points. Les échanges hors rythme font chuter ton groove. Atteins le score cible avant la fin des coups.',
     'versus_title': '2 Joueurs',
     'versus_pick': 'Choisis un mode',
     'versus_mode': 'Versus',
@@ -1923,7 +2004,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'Objectif',
     'versus_go': 'Partez !',
     'guide_versus_title': '2 Joueurs (local)',
-    'guide_versus_body': 'Deux joueurs, un appareil. Versus : course au meilleur score en 60s — les gros combos envoient des rangées de déchets à ton rival. Coopératif : combinez vos scores pour atteindre l\'objectif commun avant la fin du temps. Le plateau du haut est retourné pour jouer face à face.',
+    'guide_versus_body':
+        'Deux joueurs, un appareil. Versus : course au meilleur score en 60s — les gros combos envoient des rangées de déchets à ton rival. Coopératif : combinez vos scores pour atteindre l\'objectif commun avant la fin du temps. Le plateau du haut est retourné pour jouer face à face.',
     'challenge_modes': 'Défis',
     'meta_section': 'Récompenses',
     'daily_ch_title': 'Défi Quotidien',
@@ -1945,7 +2027,8 @@ class AppTranslations extends Translations {
     'rec_tier_gold': 'Or',
     'rec_tier_platinum': 'Platine',
     'hard_variant_on': 'Défi : Activé (moins de coups, +50% pièces)',
-    'hard_variant_off': 'Défi : Désactivé (appuie pour débloquer un mode plus dur)',
+    'hard_variant_off':
+        'Défi : Désactivé (appuie pour débloquer un mode plus dur)',
     'puzzle_short': 'Puzzle',
     'puzzle_title': 'Puzzles',
     'puzzle_sub': 'Plateau fini — pas de remplissage !',
@@ -1982,18 +2065,22 @@ class AppTranslations extends Translations {
     'portal_title': 'Portail',
     'dispenser_title': 'Distributeur',
     'guide_w11_title': 'Nouvelles Mécaniques',
-    'guide_w11_body': 'Mode Ruée des Couleurs : une « couleur chaude » change toutes les quelques manches — élimine-la pour des points bonus et file vers l\'objectif. Les tapis roulants déplacent les gemmes d\'une case à chaque coup. Les portails sont des cases liées : en éliminer une élimine aussi sa jumelle. Les distributeurs créent une gemme spéciale toutes les quelques manches.',
+    'guide_w11_body':
+        'Mode Ruée des Couleurs : une « couleur chaude » change toutes les quelques manches — élimine-la pour des points bonus et file vers l\'objectif. Les tapis roulants déplacent les gemmes d\'une case à chaque coup. Les portails sont des cases liées : en éliminer une élimine aussi sa jumelle. Les distributeurs créent une gemme spéciale toutes les quelques manches.',
     'soda_title': 'Montée du Soda',
     'soda_short': 'Soda',
     'soda_hud': 'Bouteilles',
-    'soda_desc': 'Élimine des gemmes pour faire monter le soda et faire flotter les bouteilles vers le haut',
+    'soda_desc':
+        'Élimine des gemmes pour faire monter le soda et faire flotter les bouteilles vers le haut',
     'obstacle_licorice': 'Réglisse',
     'obstacle_jam': 'Confiture',
     'guide_w14_title': 'Soda et Nouveaux Obstacles',
-    'guide_w14_body': 'Mode Montée du Soda : éliminer des gemmes fait monter le niveau de soda qui fait flotter les bouteilles — amène assez de bouteilles jusqu\'en haut pour gagner. La réglisse verrouille une case et nécessite deux éliminations proches pour se briser. La confiture se propage à une case voisine à chaque coup, sauf si tu élimines juste à côté.',
+    'guide_w14_body':
+        'Mode Montée du Soda : éliminer des gemmes fait monter le niveau de soda qui fait flotter les bouteilles — amène assez de bouteilles jusqu\'en haut pour gagner. La réglisse verrouille une case et nécessite deux éliminations proches pour se briser. La confiture se propage à une case voisine à chaque coup, sauf si tu élimines juste à côté.',
     'coll_title': 'Album',
     'coll_points': 'pts album',
-    'coll_hint': 'Gagne des niveaux pour obtenir des points d\'album et débloquer des stickers.',
+    'coll_hint':
+        'Gagne des niveaux pour obtenir des points d\'album et débloquer des stickers.',
     'coll_cyan_spark': 'Étincelle Cyan',
     'coll_magenta_bloom': 'Floraison Magenta',
     'coll_lime_leaf': 'Feuille Citron Vert',
@@ -2007,17 +2094,22 @@ class AppTranslations extends Translations {
     'coll_pulsar_heart': 'Cœur Battant',
     'coll_singularity': 'Gemme Infinie',
     'coll_desc_cyan_spark': 'Une étincelle de lumière cyan éclatante.',
-    'coll_desc_magenta_bloom': 'Une fleur de lumière magenta en pleine éclosion.',
+    'coll_desc_magenta_bloom':
+        'Une fleur de lumière magenta en pleine éclosion.',
     'coll_desc_lime_leaf': 'Une feuille vert citron lumineuse.',
     'coll_desc_amber_sun': 'Un soleil doré et chaleureux.',
     'coll_desc_orange_ember': 'Une braise orange incandescente.',
     'coll_desc_violet_dusk': 'Un ciel crépusculaire violet profond.',
-    'coll_desc_prism_shard': 'Un éclat de cristal qui divise la lumière en couleurs arc-en-ciel.',
+    'coll_desc_prism_shard':
+        'Un éclat de cristal qui divise la lumière en couleurs arc-en-ciel.',
     'coll_desc_nebula_core': 'Le noyau lumineux d\'un nuage stellaire coloré.',
-    'coll_desc_aurora_wing': 'Une aile aux couleurs chatoyantes d\'aurore boréale.',
-    'coll_desc_quasar_eye': 'Une lueur vive en forme d\'œil, comme une étoile lointaine.',
+    'coll_desc_aurora_wing':
+        'Une aile aux couleurs chatoyantes d\'aurore boréale.',
+    'coll_desc_quasar_eye':
+        'Une lueur vive en forme d\'œil, comme une étoile lointaine.',
     'coll_desc_pulsar_heart': 'Un cœur de lumière qui pulse comme un phare.',
-    'coll_desc_singularity': 'Un point de lumière unique, plus dense que tout le reste — le sticker le plus rare.',
+    'coll_desc_singularity':
+        'Un point de lumière unique, plus dense que tout le reste — le sticker le plus rare.',
     'coll_close': 'Fermer',
     'piggy_title': 'Tirelire',
     'piggy_smash': 'Casser',
@@ -2068,25 +2160,31 @@ class AppTranslations extends Translations {
     'rule_labyrinth': 'Finde deinen Weg zum Ausgang',
     'rule_color_rush': 'Verkette Matches gleicher Farbe für einen Serien-Bonus',
     'rule_soda': 'Lass die Limonade nach oben steigen, bevor die Züge ausgehen',
-    'rule_endless': 'Spiel weiter — je länger du durchhältst, desto höher die Punktzahl',
+    'rule_endless':
+        'Spiel weiter — je länger du durchhältst, desto höher die Punktzahl',
     'rule_daily': 'Schließe die heutige Herausforderung für Belohnungen ab',
     'rule_puzzle': 'Löse das Rätsel mit begrenzten Zügen',
     'rule_zen': 'Entspann dich — kein Zuglimit',
     'rule_gravity': 'Passe dich an, wenn die Schwerkraft die Richtung wechselt',
-    'rule_rush': 'Erziele so schnell wie möglich Punkte, bevor die Zeit abläuft',
+    'rule_rush':
+        'Erziele so schnell wie möglich Punkte, bevor die Zeit abläuft',
     'leaderboard_title': 'Bestenliste',
     'lb_tab_campaign': 'Kampagne',
     'lb_tab_daily': 'Täglich',
     'lb_level': 'Level',
     'lb_player': 'Du',
-    'lb_daily_note': 'Die heutigen Top 10 — schließe „Täglich" ab, um dabei zu sein.',
+    'lb_daily_note':
+        'Die heutigen Top 10 — schließe „Täglich" ab, um dabei zu sein.',
     'reduce_motion': 'Bewegungseffekte reduzieren',
     'tour_t0': 'Willkommen!',
-    'tour_m0': 'Tausche Edelsteine, um 3 oder mehr derselben Farbe in eine Reihe zu bringen. Tippe auf „Jetzt spielen", um die 200-Level-Kampagne zu starten.',
+    'tour_m0':
+        'Tausche Edelsteine, um 3 oder mehr derselben Farbe in eine Reihe zu bringen. Tippe auf „Jetzt spielen", um die 200-Level-Kampagne zu starten.',
     'tour_t1': 'Herausforderungen',
-    'tour_m1': 'Neben der Kampagne: Endlos, Boss, Rush, Rhythm und viele weitere Extramodi.',
+    'tour_m1':
+        'Neben der Kampagne: Endlos, Boss, Rush, Rhythm und viele weitere Extramodi.',
     'tour_t2': 'Belohnungen',
-    'tour_m2': 'Shop, Battle Pass, Bestenliste, tägliche Geschenke und mehr warten hier unten.',
+    'tour_m2':
+        'Shop, Battle Pass, Bestenliste, tägliche Geschenke und mehr warten hier unten.',
     'tour_t3': 'Los geht\'s!',
     'tour_m3': 'Leben und Münzen findest du oben. Viel Spaß, Reisender!',
     'tour_skip': 'Überspringen',
@@ -2126,9 +2224,11 @@ class AppTranslations extends Translations {
     'pt_blazing_title': 'Lodernd',
     'pt_blazing_desc': 'Partikelschub ×2,0 bei Edelstein-Explosion (150 ★)',
     'pt_prestige_title': 'Prestige',
-    'pt_prestige_desc': 'Schalte Prestige-Edelstein-Skin frei (5 Gold-Meilensteine)',
+    'pt_prestige_desc':
+        'Schalte Prestige-Edelstein-Skin frei (5 Gold-Meilensteine)',
     'pt_ascendant_title': 'Aufsteigend',
-    'pt_ascendant_desc': 'Schalte Aufsteigend-Partikeleffekt frei (3 Platin-Meilensteine)',
+    'pt_ascendant_desc':
+        'Schalte Aufsteigend-Partikeleffekt frei (3 Platin-Meilensteine)',
     'pt_unlocked': '✓ Freigeschaltet',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -2165,11 +2265,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'Timer',
     'guide_w10_title': 'Neuheiten',
     'guide_lightball': 'Lichtball',
-    'guide_lightball_desc': 'Kombiniere 7+ Edelsteine, um einen Lichtball zu erschaffen — er explodiert in 8 Richtungen (Reihe + Spalte + beide Diagonalen). Der seltenste, stärkste Edelstein.',
+    'guide_lightball_desc':
+        'Kombiniere 7+ Edelsteine, um einen Lichtball zu erschaffen — er explodiert in 8 Richtungen (Reihe + Spalte + beide Diagonalen). Der seltenste, stärkste Edelstein.',
     'guide_bombdown': 'Countdown-Bombe',
-    'guide_bombdown_desc': 'Manche Level haben Bomben, die bei jedem Zug herunterzählen. Entferne den Edelstein auf einer Bombe, um sie zu entschärfen. Erreicht eine Bombe 0, verlierst du sofort!',
+    'guide_bombdown_desc':
+        'Manche Level haben Bomben, die bei jedem Zug herunterzählen. Entferne den Edelstein auf einer Bombe, um sie zu entschärfen. Erreicht eine Bombe 0, verlierst du sofort!',
     'guide_order': 'Gemischte Ziele',
-    'guide_order_desc': 'Order-Level verlangen, mehrere Edelsteinfarben gleichzeitig zu sammeln. Erfülle jedes Farbziel, um zu gewinnen.',
+    'guide_order_desc':
+        'Order-Level verlangen, mehrere Edelsteinfarben gleichzeitig zu sammeln. Erfülle jedes Farbziel, um zu gewinnen.',
     'shop_title': 'Shop',
     'shop_skins': 'Edelstein-Skins',
     'shop_themes': 'Spielfeld-Themen',
@@ -2212,9 +2315,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'Morgen',
     'wheel_got_booster': 'Booster',
     'tut_title': 'Spielanleitung',
-    'tut_1': 'Tausche zwei benachbarte Edelsteine, um 3 oder mehr derselben Farbe in eine Reihe zu bringen.',
-    'tut_2': 'Kombiniere 4 in einer Reihe, um einen gestreiften Edelstein zu erschaffen, der eine ganze Linie leert!',
-    'tut_3': 'Kombiniere 5, um einen Regenbogen-Edelstein zu erschaffen — er entfernt alle Edelsteine einer Farbe.',
+    'tut_1':
+        'Tausche zwei benachbarte Edelsteine, um 3 oder mehr derselben Farbe in eine Reihe zu bringen.',
+    'tut_2':
+        'Kombiniere 4 in einer Reihe, um einen gestreiften Edelstein zu erschaffen, der eine ganze Linie leert!',
+    'tut_3':
+        'Kombiniere 5, um einen Regenbogen-Edelstein zu erschaffen — er entfernt alle Edelsteine einer Farbe.',
     'tut_next': 'Weiter',
     'tut_skip': 'Überspringen',
     'tut_start': 'Los geht\'s',
@@ -2241,10 +2347,13 @@ class AppTranslations extends Translations {
     'npc_name_4': 'Ember',
     'npc_name_5': 'Nyx',
     'guide_story_title': 'Geschichte',
-    'guide_story_body': 'Triff in jeder Welt einen Neon-Wächter. Sie begrüßen dich, feuern dich auf halbem Weg an und schicken dich weiter in das nächste Reich, während du tiefer vordringst.',
+    'guide_story_body':
+        'Triff in jeder Welt einen Neon-Wächter. Sie begrüßen dich, feuern dich auf halbem Weg an und schicken dich weiter in das nächste Reich, während du tiefer vordringst.',
     'story_w1_intro_title': 'Der Cyan-Nebel',
-    'story_w1_intro_l1': 'Willkommen, Reisender. Ich bin Luma, das Licht des Cyan-Nebels.',
-    'story_w1_intro_l2': 'Die Edelsteine hier sind erloschen. Kombiniere sie, um das Leuchten zurückzubringen!',
+    'story_w1_intro_l1':
+        'Willkommen, Reisender. Ich bin Luma, das Licht des Cyan-Nebels.',
+    'story_w1_intro_l2':
+        'Die Edelsteine hier sind erloschen. Kombiniere sie, um das Leuchten zurückzubringen!',
     'story_w1_mid_title': 'Ein Funke kehrt zurück',
     'story_w1_mid_l1': 'Der Nebel funkelt wieder — du hast eine Gabe.',
     'story_w1_mid_l2': 'Doch tiefere Reiche warten. Mach weiter!',
@@ -2252,26 +2361,35 @@ class AppTranslations extends Translations {
     'story_w1_outro_l1': 'Der Cyan-Nebel erstrahlt wie nie zuvor. Danke dir!',
     'story_w1_outro_l2': 'Ein Magenta-Puls ruft aus der Ferne. Folge ihm...',
     'story_w2_intro_title': 'Der Magenta-Puls',
-    'story_w2_intro_l1': 'Ich bin Vera. Spürst du den Takt? Das ist der Magenta-Puls.',
-    'story_w2_intro_l2': 'Kombiniere im Rhythmus, und das Reich wird mit dir tanzen.',
+    'story_w2_intro_l1':
+        'Ich bin Vera. Spürst du den Takt? Das ist der Magenta-Puls.',
+    'story_w2_intro_l2':
+        'Kombiniere im Rhythmus, und das Reich wird mit dir tanzen.',
     'story_w2_mid_title': 'Im Rhythmus',
     'story_w2_mid_l1': 'Deine Combos hallen durch den Puls — wunderschön!',
-    'story_w2_mid_l2': 'Die halbe Reise ist geschafft. Der Rhythmus wird wilder.',
+    'story_w2_mid_l2':
+        'Die halbe Reise ist geschafft. Der Rhythmus wird wilder.',
     'story_w2_outro_title': 'Ruhiger Takt',
     'story_w2_outro_l1': 'Der Puls ist wieder ruhig und hell. Unglaublich!',
     'story_w2_outro_l2': 'Funken eines grünen Schaltkreises flackern voraus.',
     'story_w3_intro_title': 'Der Lime-Schaltkreis',
     'story_w3_intro_l1': 'Piep! Ich bin Cir, Hüter des Lime-Schaltkreises.',
-    'story_w3_intro_l2': 'Verbinde die Edelsteine, um das Netz wieder mit Energie zu versorgen.',
+    'story_w3_intro_l2':
+        'Verbinde die Edelsteine, um das Netz wieder mit Energie zu versorgen.',
     'story_w3_mid_title': 'Volle Ladung',
-    'story_w3_mid_l1': 'Die Schaltkreise summen mit voller Ladung — gute Arbeit!',
-    'story_w3_mid_l2': 'Die Verkabelung wird von hier an kniffliger. Bleib wachsam.',
+    'story_w3_mid_l1':
+        'Die Schaltkreise summen mit voller Ladung — gute Arbeit!',
+    'story_w3_mid_l2':
+        'Die Verkabelung wird von hier an kniffliger. Bleib wachsam.',
     'story_w3_outro_title': 'System wiederhergestellt',
-    'story_w3_outro_l1': 'Das gesamte Netz leuchtet grün. System wiederhergestellt!',
-    'story_w3_outro_l2': 'Ein brennender Amber-Komet zieht durch die Dunkelheit...',
+    'story_w3_outro_l1':
+        'Das gesamte Netz leuchtet grün. System wiederhergestellt!',
+    'story_w3_outro_l2':
+        'Ein brennender Amber-Komet zieht durch die Dunkelheit...',
     'story_w4_intro_title': 'Der Amber-Komet',
     'story_w4_intro_l1': 'Ich bin Ember, Reiterin des Amber-Kometen.',
-    'story_w4_intro_l2': 'Rase durch die Edelsteine, bevor der Komet verblasst!',
+    'story_w4_intro_l2':
+        'Rase durch die Edelsteine, bevor der Komet verblasst!',
     'story_w4_mid_title': 'Hell brennend',
     'story_w4_mid_l1': 'Du fliegst jetzt — der Komet brennt heller!',
     'story_w4_mid_l2': 'Der Schweif wird lang. Verlier den Funken nicht.',
@@ -2280,12 +2398,14 @@ class AppTranslations extends Translations {
     'story_w4_outro_l2': 'Nur die stille Violette Leere bleibt noch...',
     'story_w5_intro_title': 'Die Violette Leere',
     'story_w5_intro_l1': 'Ich bin Nyx, Wächterin der Violetten Leere.',
-    'story_w5_intro_l2': 'Hier ist das Licht schwach. Sei der Funke, der es erfüllt.',
+    'story_w5_intro_l2':
+        'Hier ist das Licht schwach. Sei der Funke, der es erfüllt.',
     'story_w5_mid_title': 'Licht in der Dunkelheit',
     'story_w5_mid_l1': 'Selbst die Leere kann dein Leuchten nicht trüben.',
     'story_w5_mid_l2': 'Die letzte Etappe — die tiefste Dunkelheit wartet.',
     'story_w5_outro_title': 'Eine Neon-Legende',
-    'story_w5_outro_l1': 'Du hast die gesamte Leere erhellt! Der Kosmos ist wieder vollständig.',
+    'story_w5_outro_l1':
+        'Du hast die gesamte Leere erhellt! Der Kosmos ist wieder vollständig.',
     'story_w5_outro_l2': 'Du bist eine wahre Neon-Legende. Danke, Reisender.',
     'story_next': 'Weiter',
     'story_skip': 'Überspringen',
@@ -2296,7 +2416,8 @@ class AppTranslations extends Translations {
     'temple_build': 'Bauen',
     'temple_built': 'Gebaut!',
     'temple_maxed': 'Maximiert',
-    'temple_hint': 'Tippe auf ein Bauwerk, um es mit Münzen aus Levels zu bauen.',
+    'temple_hint':
+        'Tippe auf ein Bauwerk, um es mit Münzen aus Levels zu bauen.',
     'coins_short': 'Münzen',
     'temple_gate': 'Neon-Tor',
     'temple_gate_desc': 'Der leuchtende Eingang zu deinem Tempel.',
@@ -2305,7 +2426,8 @@ class AppTranslations extends Translations {
     'temple_altar': 'Sternenaltar',
     'temple_altar_desc': 'Das Herz des Tempels, wo sich Licht sammelt.',
     'temple_spire': 'Strahlende Turmspitze',
-    'temple_spire_desc': 'Ein hoch aufragendes Leuchtfeuer, das die Leere durchdringt.',
+    'temple_spire_desc':
+        'Ein hoch aufragendes Leuchtfeuer, das die Leere durchdringt.',
     'temple_core': 'Neon-Kern',
     'temple_core_desc': 'Die ultimative Quelle allen Neonlichts.',
     'bp_title': 'Battle Pass',
@@ -2329,7 +2451,8 @@ class AppTranslations extends Translations {
     'season_ends': 'Endet in',
     'season_points': 'Saisonpunkte',
     'season_pts_short': 'Pkt.',
-    'season_hint': 'Gewinne während der Saison Level, um Punkte zu sammeln und Belohnungen freizuschalten.',
+    'season_hint':
+        'Gewinne während der Saison Level, um Punkte zu sammeln und Belohnungen freizuschalten.',
     'season_cyan': 'Cyan-Anstieg',
     'season_magenta': 'Magenta-Sturm',
     'season_lime': 'Lime-Rausch',
@@ -2346,7 +2469,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'Im Takt!',
     'rhythm_offbeat': 'Aus dem Takt',
     'guide_rhythm_title': 'Rhythm-Modus',
-    'guide_rhythm_body': 'Tausche genau im Takt (achte auf den pulsierenden Punkt), um deinen Groove-Balken aufzubauen und bis zu 2,5-fache Punkte zu erzielen. Taktfremde Tausche senken deinen Groove. Erreiche die Zielpunktzahl, bevor die Züge ausgehen.',
+    'guide_rhythm_body':
+        'Tausche genau im Takt (achte auf den pulsierenden Punkt), um deinen Groove-Balken aufzubauen und bis zu 2,5-fache Punkte zu erzielen. Taktfremde Tausche senken deinen Groove. Erreiche die Zielpunktzahl, bevor die Züge ausgehen.',
     'versus_title': '2 Spieler',
     'versus_pick': 'Wähle einen Modus',
     'versus_mode': 'Versus',
@@ -2363,7 +2487,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'Ziel',
     'versus_go': 'Los!',
     'guide_versus_title': '2 Spieler (lokal)',
-    'guide_versus_body': 'Zwei Spieler, ein Gerät. Versus: Wettkampf um die höhere Punktzahl in 60s — große Combos schicken Müllreihen zu deinem Rivalen. Koop: Kombiniert eure Punkte, um das gemeinsame Ziel vor Ablauf der Zeit zu erreichen. Das obere Spielfeld ist gedreht, damit ihr euch gegenübersitzen könnt.',
+    'guide_versus_body':
+        'Zwei Spieler, ein Gerät. Versus: Wettkampf um die höhere Punktzahl in 60s — große Combos schicken Müllreihen zu deinem Rivalen. Koop: Kombiniert eure Punkte, um das gemeinsame Ziel vor Ablauf der Zeit zu erreichen. Das obere Spielfeld ist gedreht, damit ihr euch gegenübersitzen könnt.',
     'challenge_modes': 'Herausforderungen',
     'meta_section': 'Belohnungen',
     'daily_ch_title': 'Tägliche Herausforderung',
@@ -2385,7 +2510,8 @@ class AppTranslations extends Translations {
     'rec_tier_gold': 'Gold',
     'rec_tier_platinum': 'Platin',
     'hard_variant_on': 'Herausforderung: An (weniger Züge, +50% Münzen)',
-    'hard_variant_off': 'Herausforderung: Aus (tippen, um schwereren Lauf freizuschalten)',
+    'hard_variant_off':
+        'Herausforderung: Aus (tippen, um schwereren Lauf freizuschalten)',
     'puzzle_short': 'Rätsel',
     'puzzle_title': 'Rätsel',
     'puzzle_sub': 'Begrenztes Spielfeld — kein Nachfüllen!',
@@ -2397,7 +2523,8 @@ class AppTranslations extends Translations {
     'utilities': 'Werkzeuge',
     'coll_set_title': 'Album komplett!',
     'coll_set_reward': 'Exklusiver Skin + @n Münzen',
-    'coll_set_owned_reward': 'Skin bereits vorhanden — +@n Münzen Rückerstattung',
+    'coll_set_owned_reward':
+        'Skin bereits vorhanden — +@n Münzen Rückerstattung',
     'ach_equip': 'Ausrüsten',
     'ach_equipped': 'Ausgerüstet',
     'shop_upgrades': 'Upgrades',
@@ -2422,18 +2549,22 @@ class AppTranslations extends Translations {
     'portal_title': 'Portal',
     'dispenser_title': 'Spender',
     'guide_w11_title': 'Neue Mechaniken',
-    'guide_w11_body': 'Color-Rush-Modus: Eine „heiße Farbe" wechselt alle paar Züge — räume sie für Bonuspunkte und erreiche das Ziel. Förderbänder verschieben Edelsteine bei jedem Zug um ein Feld. Portale sind verbundene Felder: Räumst du eines, wird auch sein Partner geräumt. Spender erzeugen alle paar Züge einen Spezial-Edelstein.',
+    'guide_w11_body':
+        'Color-Rush-Modus: Eine „heiße Farbe" wechselt alle paar Züge — räume sie für Bonuspunkte und erreiche das Ziel. Förderbänder verschieben Edelsteine bei jedem Zug um ein Feld. Portale sind verbundene Felder: Räumst du eines, wird auch sein Partner geräumt. Spender erzeugen alle paar Züge einen Spezial-Edelstein.',
     'soda_title': 'Limo-Anstieg',
     'soda_short': 'Limo',
     'soda_hud': 'Flaschen',
-    'soda_desc': 'Räume Edelsteine, um die Limonade steigen zu lassen und die Flaschen nach oben schweben zu lassen',
+    'soda_desc':
+        'Räume Edelsteine, um die Limonade steigen zu lassen und die Flaschen nach oben schweben zu lassen',
     'obstacle_licorice': 'Lakritze',
     'obstacle_jam': 'Marmelade',
     'guide_w14_title': 'Limo & neue Hindernisse',
-    'guide_w14_body': 'Limo-Anstieg-Modus: Das Räumen von Edelsteinen hebt den Limonadenpegel, wodurch Flaschen nach oben schweben — bring genug Flaschen in die oberste Reihe, um zu gewinnen. Lakritze blockiert ein Feld und braucht zwei nahe Räumungen, um zu brechen. Marmelade breitet sich bei jedem Zug auf ein Nachbarfeld aus, außer du räumst daneben.',
+    'guide_w14_body':
+        'Limo-Anstieg-Modus: Das Räumen von Edelsteinen hebt den Limonadenpegel, wodurch Flaschen nach oben schweben — bring genug Flaschen in die oberste Reihe, um zu gewinnen. Lakritze blockiert ein Feld und braucht zwei nahe Räumungen, um zu brechen. Marmelade breitet sich bei jedem Zug auf ein Nachbarfeld aus, außer du räumst daneben.',
     'coll_title': 'Album',
     'coll_points': 'Album-Pkt.',
-    'coll_hint': 'Gewinne Level, um Album-Punkte zu sammeln und Sticker freizuschalten.',
+    'coll_hint':
+        'Gewinne Level, um Album-Punkte zu sammeln und Sticker freizuschalten.',
     'coll_cyan_spark': 'Cyan-Funke',
     'coll_magenta_bloom': 'Magenta-Blüte',
     'coll_lime_leaf': 'Lime-Blatt',
@@ -2452,12 +2583,16 @@ class AppTranslations extends Translations {
     'coll_desc_amber_sun': 'Eine warme goldene Sonne.',
     'coll_desc_orange_ember': 'Eine glühende orangefarbene Glut.',
     'coll_desc_violet_dusk': 'Ein tiefvioletter Dämmerungshimmel.',
-    'coll_desc_prism_shard': 'Ein Kristallsplitter, der Licht in Regenbogenfarben zerlegt.',
+    'coll_desc_prism_shard':
+        'Ein Kristallsplitter, der Licht in Regenbogenfarben zerlegt.',
     'coll_desc_nebula_core': 'Der leuchtende Kern einer bunten Sternenwolke.',
     'coll_desc_aurora_wing': 'Ein Flügel in schimmernden Nordlicht-Farben.',
-    'coll_desc_quasar_eye': 'Ein helles, augenförmiges Leuchten wie ein ferner Stern.',
-    'coll_desc_pulsar_heart': 'Ein Herz aus Licht, das wie ein Leuchtfeuer pulsiert.',
-    'coll_desc_singularity': 'Ein einzelner Lichtpunkt, dichter als alles andere — der seltenste Sticker.',
+    'coll_desc_quasar_eye':
+        'Ein helles, augenförmiges Leuchten wie ein ferner Stern.',
+    'coll_desc_pulsar_heart':
+        'Ein Herz aus Licht, das wie ein Leuchtfeuer pulsiert.',
+    'coll_desc_singularity':
+        'Ein einzelner Lichtpunkt, dichter als alles andere — der seltenste Sticker.',
     'coll_close': 'Schließen',
     'piggy_title': 'Sparschwein',
     'piggy_smash': 'Zerschlagen',
@@ -2504,9 +2639,12 @@ class AppTranslations extends Translations {
     'rule_rhythm': 'Combine no ritmo para manter o embalo',
     'rule_survival': 'Sobreviva o máximo que puder antes que a enchente suba',
     'rule_labyrinth': 'Encontre o caminho até a saída',
-    'rule_color_rush': 'Encadeie combinações da mesma cor para um bônus de sequência',
-    'rule_soda': 'Encha o refrigerante até o topo antes que os movimentos acabem',
-    'rule_endless': 'Continue jogando — a pontuação sobe quanto mais você aguentar',
+    'rule_color_rush':
+        'Encadeie combinações da mesma cor para um bônus de sequência',
+    'rule_soda':
+        'Encha o refrigerante até o topo antes que os movimentos acabem',
+    'rule_endless':
+        'Continue jogando — a pontuação sobe quanto mais você aguentar',
     'rule_daily': 'Complete o desafio de hoje para ganhar recompensas',
     'rule_puzzle': 'Resolva o quebra-cabeça com movimentos limitados',
     'rule_zen': 'Relaxe — sem limite de movimentos',
@@ -2517,14 +2655,18 @@ class AppTranslations extends Translations {
     'lb_tab_daily': 'Diário',
     'lb_level': 'Nível',
     'lb_player': 'Você',
-    'lb_daily_note': 'Top 10 de hoje — termine o Diário para entrar no ranking.',
+    'lb_daily_note':
+        'Top 10 de hoje — termine o Diário para entrar no ranking.',
     'reduce_motion': 'Reduzir efeitos de movimento',
     'tour_t0': 'Bem-vindo!',
-    'tour_m0': 'Troque para alinhar 3+ joias da mesma cor. Toque em Jogar Agora para começar a campanha de 200 níveis.',
+    'tour_m0':
+        'Troque para alinhar 3+ joias da mesma cor. Toque em Jogar Agora para começar a campanha de 200 níveis.',
     'tour_t1': 'Desafios',
-    'tour_m1': 'Além da campanha: Infinito, Chefe, Corrida, Ritmo e muitos outros modos secundários.',
+    'tour_m1':
+        'Além da campanha: Infinito, Chefe, Corrida, Ritmo e muitos outros modos secundários.',
     'tour_t2': 'Recompensas',
-    'tour_m2': 'Loja, Passe de Batalha, Classificação, presentes diários e muito mais esperam por aqui embaixo.',
+    'tour_m2':
+        'Loja, Passe de Batalha, Classificação, presentes diários e muito mais esperam por aqui embaixo.',
     'tour_t3': 'Vamos Lá!',
     'tour_m3': 'Vidas e moedas ficam no topo. Divirta-se, viajante!',
     'tour_skip': 'Pular',
@@ -2564,9 +2706,11 @@ class AppTranslations extends Translations {
     'pt_blazing_title': 'Flamejante',
     'pt_blazing_desc': 'Explosão de partículas ×2,0 ao estourar joia (150 ★)',
     'pt_prestige_title': 'Prestígio',
-    'pt_prestige_desc': 'Desbloqueie a Skin de Joia Prestígio (5 marcos de Ouro)',
+    'pt_prestige_desc':
+        'Desbloqueie a Skin de Joia Prestígio (5 marcos de Ouro)',
     'pt_ascendant_title': 'Ascendente',
-    'pt_ascendant_desc': 'Desbloqueie o efeito de partícula Ascendente (3 marcos de Platina)',
+    'pt_ascendant_desc':
+        'Desbloqueie o efeito de partícula Ascendente (3 marcos de Platina)',
     'pt_unlocked': '✓ Desbloqueado',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -2603,11 +2747,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'Cronômetro',
     'guide_w10_title': 'Novidades',
     'guide_lightball': 'Bola de Luz',
-    'guide_lightball_desc': 'Combine 7+ joias para criar uma Bola de Luz — ela explode em 8 direções (linha + coluna + ambas as diagonais). A joia mais rara e poderosa.',
+    'guide_lightball_desc':
+        'Combine 7+ joias para criar uma Bola de Luz — ela explode em 8 direções (linha + coluna + ambas as diagonais). A joia mais rara e poderosa.',
     'guide_bombdown': 'Bomba Regressiva',
-    'guide_bombdown_desc': 'Alguns níveis têm bombas com contagem regressiva a cada movimento. Elimine a joia sobre uma bomba para desarmá-la. Se alguma bomba chegar a 0, você perde na hora!',
+    'guide_bombdown_desc':
+        'Alguns níveis têm bombas com contagem regressiva a cada movimento. Elimine a joia sobre uma bomba para desarmá-la. Se alguma bomba chegar a 0, você perde na hora!',
     'guide_order': 'Metas Mistas',
-    'guide_order_desc': 'Níveis de Ordem pedem para você coletar várias cores de joias ao mesmo tempo. Complete todas as metas de cor para vencer.',
+    'guide_order_desc':
+        'Níveis de Ordem pedem para você coletar várias cores de joias ao mesmo tempo. Complete todas as metas de cor para vencer.',
     'shop_title': 'Loja',
     'shop_skins': 'Skins de Joias',
     'shop_themes': 'Temas do Tabuleiro',
@@ -2650,9 +2797,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'Amanhã',
     'wheel_got_booster': 'Turbo',
     'tut_title': 'Como Jogar',
-    'tut_1': 'Troque duas joias adjacentes para alinhar 3 ou mais da mesma cor.',
-    'tut_2': 'Combine 4 em linha para criar uma joia Listrada que limpa uma linha inteira!',
-    'tut_3': 'Combine 5 para criar uma joia Arco-Íris — ela limpa todas as joias de uma cor.',
+    'tut_1':
+        'Troque duas joias adjacentes para alinhar 3 ou mais da mesma cor.',
+    'tut_2':
+        'Combine 4 em linha para criar uma joia Listrada que limpa uma linha inteira!',
+    'tut_3':
+        'Combine 5 para criar uma joia Arco-Íris — ela limpa todas as joias de uma cor.',
     'tut_next': 'Próximo',
     'tut_skip': 'Pular',
     'tut_start': 'Vamos Lá',
@@ -2679,10 +2829,13 @@ class AppTranslations extends Translations {
     'npc_name_4': 'Ember',
     'npc_name_5': 'Nyx',
     'guide_story_title': 'História',
-    'guide_story_body': 'Conheça um guardião neon em cada mundo. Eles te recebem, te aplaudem na metade do caminho e te enviam ao próximo reino conforme você avança.',
+    'guide_story_body':
+        'Conheça um guardião neon em cada mundo. Eles te recebem, te aplaudem na metade do caminho e te enviam ao próximo reino conforme você avança.',
     'story_w1_intro_title': 'A Nebulosa Ciano',
-    'story_w1_intro_l1': 'Bem-vindo, viajante. Eu sou Luma, luz da Nebulosa Ciano.',
-    'story_w1_intro_l2': 'As joias aqui perderam o brilho. Combine-as para trazer de volta o brilho!',
+    'story_w1_intro_l1':
+        'Bem-vindo, viajante. Eu sou Luma, luz da Nebulosa Ciano.',
+    'story_w1_intro_l2':
+        'As joias aqui perderam o brilho. Combine-as para trazer de volta o brilho!',
     'story_w1_mid_title': 'Uma Centelha Retorna',
     'story_w1_mid_l1': 'A nebulosa brilha novamente — você tem um dom.',
     'story_w1_mid_l2': 'Mas reinos mais profundos aguardam. Continue!',
@@ -2694,7 +2847,8 @@ class AppTranslations extends Translations {
     'story_w2_intro_l2': 'Combine no ritmo e o reino vai dançar com você.',
     'story_w2_mid_title': 'Em Ritmo',
     'story_w2_mid_l1': 'Seus combos ecoam pelo pulso — lindo!',
-    'story_w2_mid_l2': 'Metade da jornada concluída. O ritmo fica mais selvagem.',
+    'story_w2_mid_l2':
+        'Metade da jornada concluída. O ritmo fica mais selvagem.',
     'story_w2_outro_title': 'Batida Estável',
     'story_w2_outro_l1': 'O pulso está estável e brilhante de novo. Incrível!',
     'story_w2_outro_l2': 'Faíscas de um circuito verde cintilam à frente.',
@@ -2703,9 +2857,11 @@ class AppTranslations extends Translations {
     'story_w3_intro_l2': 'Conecte as joias para religar a grade.',
     'story_w3_mid_title': 'Carga Total',
     'story_w3_mid_l1': 'Circuitos zumbindo em carga total — ótimo trabalho!',
-    'story_w3_mid_l2': 'A fiação fica mais complicada daqui em diante. Fique atento.',
+    'story_w3_mid_l2':
+        'A fiação fica mais complicada daqui em diante. Fique atento.',
     'story_w3_outro_title': 'Sistema Restaurado',
-    'story_w3_outro_l1': 'A grade inteira está brilhando verde. Sistema restaurado!',
+    'story_w3_outro_l1':
+        'A grade inteira está brilhando verde. Sistema restaurado!',
     'story_w3_outro_l2': 'Um cometa âmbar em chamas cruza a escuridão...',
     'story_w4_intro_title': 'O Cometa Âmbar',
     'story_w4_intro_l1': 'Eu sou Ember, cavaleira do Cometa Âmbar.',
@@ -2723,8 +2879,10 @@ class AppTranslations extends Translations {
     'story_w5_mid_l1': 'Nem o vazio consegue apagar seu brilho.',
     'story_w5_mid_l2': 'A reta final — a escuridão mais profunda aguarda.',
     'story_w5_outro_title': 'Uma Lenda Neon',
-    'story_w5_outro_l1': 'Você iluminou todo o Vazio! O cosmos está inteiro de novo.',
-    'story_w5_outro_l2': 'Você é uma verdadeira Lenda Neon. Obrigado, viajante.',
+    'story_w5_outro_l1':
+        'Você iluminou todo o Vazio! O cosmos está inteiro de novo.',
+    'story_w5_outro_l2':
+        'Você é uma verdadeira Lenda Neon. Obrigado, viajante.',
     'story_next': 'Próximo',
     'story_skip': 'Pular',
     'story_done': 'Continuar',
@@ -2734,7 +2892,8 @@ class AppTranslations extends Translations {
     'temple_build': 'Construir',
     'temple_built': 'Construído!',
     'temple_maxed': 'Máximo',
-    'temple_hint': 'Toque em uma estrutura para construí-la com moedas ganhas nos níveis.',
+    'temple_hint':
+        'Toque em uma estrutura para construí-la com moedas ganhas nos níveis.',
     'coins_short': 'moedas',
     'temple_gate': 'Portão Neon',
     'temple_gate_desc': 'A entrada brilhante do seu templo.',
@@ -2767,7 +2926,8 @@ class AppTranslations extends Translations {
     'season_ends': 'Termina em',
     'season_points': 'pontos de temporada',
     'season_pts_short': 'pts',
-    'season_hint': 'Vença níveis durante a temporada para ganhar pontos e desbloquear recompensas.',
+    'season_hint':
+        'Vença níveis durante a temporada para ganhar pontos e desbloquear recompensas.',
     'season_cyan': 'Onda Ciano',
     'season_magenta': 'Tempestade Magenta',
     'season_lime': 'Corrida Lima',
@@ -2784,7 +2944,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'No Ritmo!',
     'rhythm_offbeat': 'Fora do Ritmo',
     'guide_rhythm_title': 'Modo Ritmo',
-    'guide_rhythm_body': 'Troque no ritmo certo (observe o ponto pulsante) para aumentar seu medidor de Embalo e pontuar até 2,5× mais. Trocas fora do ritmo derrubam seu embalo. Alcance a pontuação alvo antes que os movimentos acabem.',
+    'guide_rhythm_body':
+        'Troque no ritmo certo (observe o ponto pulsante) para aumentar seu medidor de Embalo e pontuar até 2,5× mais. Trocas fora do ritmo derrubam seu embalo. Alcance a pontuação alvo antes que os movimentos acabem.',
     'versus_title': '2 Jogadores',
     'versus_pick': 'Escolha um modo',
     'versus_mode': 'Versus',
@@ -2801,7 +2962,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'Meta',
     'versus_go': 'Vai!',
     'guide_versus_title': '2 Jogadores (local)',
-    'guide_versus_body': 'Dois jogadores, um dispositivo. Versus: corram pela maior pontuação em 60s — combos grandes enviam linhas de bagunça ao rival. Cooperativo: somem pontuações para alcançar a meta compartilhada antes que o tempo acabe. O tabuleiro de cima é rotacionado para jogo face a face.',
+    'guide_versus_body':
+        'Dois jogadores, um dispositivo. Versus: corram pela maior pontuação em 60s — combos grandes enviam linhas de bagunça ao rival. Cooperativo: somem pontuações para alcançar a meta compartilhada antes que o tempo acabe. O tabuleiro de cima é rotacionado para jogo face a face.',
     'challenge_modes': 'Desafios',
     'meta_section': 'Recompensas',
     'daily_ch_title': 'Desafio Diário',
@@ -2823,7 +2985,8 @@ class AppTranslations extends Translations {
     'rec_tier_gold': 'Ouro',
     'rec_tier_platinum': 'Platina',
     'hard_variant_on': 'Desafio: Ativado (menos movimentos, +50% moedas)',
-    'hard_variant_off': 'Desafio: Desativado (toque para desbloquear uma corrida mais difícil)',
+    'hard_variant_off':
+        'Desafio: Desativado (toque para desbloquear uma corrida mais difícil)',
     'puzzle_short': 'Quebra-Cabeça',
     'puzzle_title': 'Quebra-Cabeças',
     'puzzle_sub': 'Tabuleiro finito — sem reposição!',
@@ -2860,18 +3023,22 @@ class AppTranslations extends Translations {
     'portal_title': 'Portal',
     'dispenser_title': 'Dispensador',
     'guide_w11_title': 'Novas Mecânicas',
-    'guide_w11_body': 'Modo Corrida de Cores: uma "cor quente" muda a cada poucos movimentos — limpe-a para pontos bônus e corra até a meta. Esteiras deslocam joias uma célula a cada movimento. Portais são células conectadas: limpar uma também limpa sua parceira. Dispensadores geram uma joia especial a cada poucos movimentos.',
+    'guide_w11_body':
+        'Modo Corrida de Cores: uma "cor quente" muda a cada poucos movimentos — limpe-a para pontos bônus e corra até a meta. Esteiras deslocam joias uma célula a cada movimento. Portais são células conectadas: limpar uma também limpa sua parceira. Dispensadores geram uma joia especial a cada poucos movimentos.',
     'soda_title': 'Refrigerante em Ascensão',
     'soda_short': 'Refrigerante',
     'soda_hud': 'Garrafas',
-    'soda_desc': 'Limpe joias para subir o nível do refrigerante e flutuar as garrafas até o topo',
+    'soda_desc':
+        'Limpe joias para subir o nível do refrigerante e flutuar as garrafas até o topo',
     'obstacle_licorice': 'Alcaçuz',
     'obstacle_jam': 'Geleia',
     'guide_w14_title': 'Refrigerante e Novos Obstáculos',
-    'guide_w14_body': 'Modo Refrigerante em Ascensão: limpar joias sobe o nível do refrigerante que flutua as garrafas para cima — leve garrafas suficientes até a linha do topo para vencer. Alcaçuz trava uma célula e precisa de duas eliminações próximas para quebrar. Geleia se espalha para uma vizinha a cada movimento a menos que você limpe ao lado dela.',
+    'guide_w14_body':
+        'Modo Refrigerante em Ascensão: limpar joias sobe o nível do refrigerante que flutua as garrafas para cima — leve garrafas suficientes até a linha do topo para vencer. Alcaçuz trava uma célula e precisa de duas eliminações próximas para quebrar. Geleia se espalha para uma vizinha a cada movimento a menos que você limpe ao lado dela.',
     'coll_title': 'Álbum',
     'coll_points': 'pts de álbum',
-    'coll_hint': 'Vença níveis para ganhar pontos de álbum e desbloquear figurinhas.',
+    'coll_hint':
+        'Vença níveis para ganhar pontos de álbum e desbloquear figurinhas.',
     'coll_cyan_spark': 'Faísca Ciano',
     'coll_magenta_bloom': 'Flor Magenta',
     'coll_lime_leaf': 'Folha Lima',
@@ -2890,12 +3057,16 @@ class AppTranslations extends Translations {
     'coll_desc_amber_sun': 'Um sol dourado e quente.',
     'coll_desc_orange_ember': 'Uma brasa laranja brilhante.',
     'coll_desc_violet_dusk': 'Um profundo céu violeta ao entardecer.',
-    'coll_desc_prism_shard': 'Um fragmento de cristal que divide a luz em cores do arco-íris.',
-    'coll_desc_nebula_core': 'O núcleo brilhante de uma nuvem estelar colorida.',
+    'coll_desc_prism_shard':
+        'Um fragmento de cristal que divide a luz em cores do arco-íris.',
+    'coll_desc_nebula_core':
+        'O núcleo brilhante de uma nuvem estelar colorida.',
     'coll_desc_aurora_wing': 'Uma asa com cores cintilantes de aurora boreal.',
-    'coll_desc_quasar_eye': 'Um brilho vívido em forma de olho, como uma estrela distante.',
+    'coll_desc_quasar_eye':
+        'Um brilho vívido em forma de olho, como uma estrela distante.',
     'coll_desc_pulsar_heart': 'Um coração de luz que pulsa como um farol.',
-    'coll_desc_singularity': 'Um único ponto de luz mais denso que qualquer coisa — a figurinha mais rara.',
+    'coll_desc_singularity':
+        'Um único ponto de luz mais denso que qualquer coisa — a figurinha mais rara.',
     'coll_close': 'Fechar',
     'piggy_title': 'Cofrinho',
     'piggy_smash': 'Quebrar',
@@ -2953,14 +3124,18 @@ class AppTranslations extends Translations {
     'lb_tab_daily': 'Ежедневно',
     'lb_level': 'Уровень',
     'lb_player': 'Ты',
-    'lb_daily_note': 'Топ-10 за сегодня — пройди Ежедневное испытание, чтобы попасть в список.',
+    'lb_daily_note':
+        'Топ-10 за сегодня — пройди Ежедневное испытание, чтобы попасть в список.',
     'reduce_motion': 'Уменьшить эффекты движения',
     'tour_t0': 'Добро пожаловать!',
-    'tour_m0': 'Меняй местами камни, чтобы собрать 3+ одного цвета. Нажми «Играть», чтобы начать кампанию из 200 уровней.',
+    'tour_m0':
+        'Меняй местами камни, чтобы собрать 3+ одного цвета. Нажми «Играть», чтобы начать кампанию из 200 уровней.',
     'tour_t1': 'Испытания',
-    'tour_m1': 'Помимо кампании: Бесконечность, Босс, Рывок, Ритм и другие режимы.',
+    'tour_m1':
+        'Помимо кампании: Бесконечность, Босс, Рывок, Ритм и другие режимы.',
     'tour_t2': 'Награды',
-    'tour_m2': 'Магазин, Боевой пропуск, Таблица лидеров, ежедневные подарки и многое другое ждут здесь.',
+    'tour_m2':
+        'Магазин, Боевой пропуск, Таблица лидеров, ежедневные подарки и многое другое ждут здесь.',
     'tour_t3': 'Вперёд!',
     'tour_m3': 'Жизни и монеты — сверху. Удачи, путник!',
     'tour_skip': 'Пропустить',
@@ -3002,7 +3177,8 @@ class AppTranslations extends Translations {
     'pt_prestige_title': 'Престиж',
     'pt_prestige_desc': 'Открой скин камней «Престиж» (5 золотых рубежей)',
     'pt_ascendant_title': 'Вознесение',
-    'pt_ascendant_desc': 'Открой эффект частиц «Вознесение» (3 платиновых рубежа)',
+    'pt_ascendant_desc':
+        'Открой эффект частиц «Вознесение» (3 платиновых рубежа)',
     'pt_unlocked': '✓ Открыто',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -3039,11 +3215,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'Таймер',
     'guide_w10_title': 'Что нового',
     'guide_lightball': 'Световой шар',
-    'guide_lightball_desc': 'Собери 7+ камней, чтобы создать Световой шар — он взрывается в 8 направлениях (строка + столбец + обе диагонали). Самый редкий и мощный камень.',
+    'guide_lightball_desc':
+        'Собери 7+ камней, чтобы создать Световой шар — он взрывается в 8 направлениях (строка + столбец + обе диагонали). Самый редкий и мощный камень.',
     'guide_bombdown': 'Бомба с обратным отсчётом',
-    'guide_bombdown_desc': 'На некоторых уровнях бомбы отсчитывают время с каждым ходом. Собери камень на бомбе, чтобы обезвредить её. Если хоть одна бомба дойдёт до 0 — мгновенное поражение!',
+    'guide_bombdown_desc':
+        'На некоторых уровнях бомбы отсчитывают время с каждым ходом. Собери камень на бомбе, чтобы обезвредить её. Если хоть одна бомба дойдёт до 0 — мгновенное поражение!',
     'guide_order': 'Смешанные цели',
-    'guide_order_desc': 'На уровнях с заказами нужно собрать сразу несколько цветов камней. Выполни все цветовые цели, чтобы победить.',
+    'guide_order_desc':
+        'На уровнях с заказами нужно собрать сразу несколько цветов камней. Выполни все цветовые цели, чтобы победить.',
     'shop_title': 'Магазин',
     'shop_skins': 'Скины камней',
     'shop_themes': 'Темы поля',
@@ -3086,9 +3265,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'Завтра',
     'wheel_got_booster': 'Бустер',
     'tut_title': 'Как играть',
-    'tut_1': 'Меняй местами два соседних камня, чтобы собрать 3 и более одного цвета.',
-    'tut_2': 'Собери 4 в ряд, чтобы создать Полосатый камень — он очищает всю линию!',
-    'tut_3': 'Собери 5, чтобы создать Радужный камень — он убирает все камни одного цвета.',
+    'tut_1':
+        'Меняй местами два соседних камня, чтобы собрать 3 и более одного цвета.',
+    'tut_2':
+        'Собери 4 в ряд, чтобы создать Полосатый камень — он очищает всю линию!',
+    'tut_3':
+        'Собери 5, чтобы создать Радужный камень — он убирает все камни одного цвета.',
     'tut_next': 'Далее',
     'tut_skip': 'Пропустить',
     'tut_start': 'Вперёд',
@@ -3115,10 +3297,13 @@ class AppTranslations extends Translations {
     'npc_name_4': 'Эмбер',
     'npc_name_5': 'Никс',
     'guide_story_title': 'История',
-    'guide_story_body': 'Встречай неонового хранителя в каждом мире. Они приветствуют тебя, подбадривают на полпути и провожают в следующий мир по мере твоего пути.',
+    'guide_story_body':
+        'Встречай неонового хранителя в каждом мире. Они приветствуют тебя, подбадривают на полпути и провожают в следующий мир по мере твоего пути.',
     'story_w1_intro_title': 'Голубая туманность',
-    'story_w1_intro_l1': 'Добро пожаловать, путник. Я Люма, свет Голубой туманности.',
-    'story_w1_intro_l2': 'Камни здесь потускнели. Собирай их, чтобы вернуть сияние!',
+    'story_w1_intro_l1':
+        'Добро пожаловать, путник. Я Люма, свет Голубой туманности.',
+    'story_w1_intro_l2':
+        'Камни здесь потускнели. Собирай их, чтобы вернуть сияние!',
     'story_w1_mid_title': 'Искра возвращается',
     'story_w1_mid_l1': 'Туманность снова сверкает — у тебя есть дар.',
     'story_w1_mid_l2': 'Но глубже ждут новые миры. Продолжай!',
@@ -3154,7 +3339,8 @@ class AppTranslations extends Translations {
     'story_w4_outro_l2': 'Осталась лишь безмолвная Фиолетовая пустота...',
     'story_w5_intro_title': 'Фиолетовая пустота',
     'story_w5_intro_l1': 'Я Никс, хранитель Фиолетовой пустоты.',
-    'story_w5_intro_l2': 'Здесь свет едва теплится. Стань искрой, что наполнит её.',
+    'story_w5_intro_l2':
+        'Здесь свет едва теплится. Стань искрой, что наполнит её.',
     'story_w5_mid_title': 'Свет во тьме',
     'story_w5_mid_l1': 'Даже пустота не может погасить твоё сияние.',
     'story_w5_mid_l2': 'Последний рывок — впереди самая глубокая тьма.',
@@ -3170,7 +3356,8 @@ class AppTranslations extends Translations {
     'temple_build': 'Строить',
     'temple_built': 'Построено!',
     'temple_maxed': 'Максимум',
-    'temple_hint': 'Нажми на постройку, чтобы возвести её за монеты, заработанные на уровнях.',
+    'temple_hint':
+        'Нажми на постройку, чтобы возвести её за монеты, заработанные на уровнях.',
     'coins_short': 'монет',
     'temple_gate': 'Неоновые врата',
     'temple_gate_desc': 'Сияющий вход в твой храм.',
@@ -3203,7 +3390,8 @@ class AppTranslations extends Translations {
     'season_ends': 'Закончится через',
     'season_points': 'очков сезона',
     'season_pts_short': 'очк.',
-    'season_hint': 'Побеждай на уровнях во время сезона, чтобы получать очки и открывать награды.',
+    'season_hint':
+        'Побеждай на уровнях во время сезона, чтобы получать очки и открывать награды.',
     'season_cyan': 'Голубой всплеск',
     'season_magenta': 'Пурпурная буря',
     'season_lime': 'Лаймовый рывок',
@@ -3220,7 +3408,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'В такт!',
     'rhythm_offbeat': 'Не в такт',
     'guide_rhythm_title': 'Режим Ритм',
-    'guide_rhythm_body': 'Меняй камни точно в такт (следи за пульсирующей точкой), чтобы наполнять шкалу Драйва и получать до 2.5× очков. Ходы не в такт сбивают драйв. Набери нужный счёт, пока не кончились ходы.',
+    'guide_rhythm_body':
+        'Меняй камни точно в такт (следи за пульсирующей точкой), чтобы наполнять шкалу Драйва и получать до 2.5× очков. Ходы не в такт сбивают драйв. Набери нужный счёт, пока не кончились ходы.',
     'versus_title': '2 игрока',
     'versus_pick': 'Выбери режим',
     'versus_mode': 'Дуэль',
@@ -3237,7 +3426,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'Цель',
     'versus_go': 'Старт!',
     'guide_versus_title': '2 игрока (локально)',
-    'guide_versus_body': 'Два игрока, одно устройство. Дуэль: соревнуйтесь за более высокий счёт за 60 секунд — большие комбо отправляют мусорные ряды сопернику. Кооператив: объедините счёт, чтобы достичь общей цели, пока не кончилось время. Верхнее поле развёрнуто для игры лицом к лицу.',
+    'guide_versus_body':
+        'Два игрока, одно устройство. Дуэль: соревнуйтесь за более высокий счёт за 60 секунд — большие комбо отправляют мусорные ряды сопернику. Кооператив: объедините счёт, чтобы достичь общей цели, пока не кончилось время. Верхнее поле развёрнуто для игры лицом к лицу.',
     'challenge_modes': 'Испытания',
     'meta_section': 'Награды',
     'daily_ch_title': 'Ежедневное испытание',
@@ -3259,7 +3449,8 @@ class AppTranslations extends Translations {
     'rec_tier_gold': 'Золото',
     'rec_tier_platinum': 'Платина',
     'hard_variant_on': 'Испытание: Вкл (меньше ходов, +50% монет)',
-    'hard_variant_off': 'Испытание: Выкл (нажми, чтобы открыть усложнённый забег)',
+    'hard_variant_off':
+        'Испытание: Выкл (нажми, чтобы открыть усложнённый забег)',
     'puzzle_short': 'Головоломка',
     'puzzle_title': 'Головоломки',
     'puzzle_sub': 'Ограниченное поле — без пополнения!',
@@ -3296,18 +3487,22 @@ class AppTranslations extends Translations {
     'portal_title': 'Портал',
     'dispenser_title': 'Диспенсер',
     'guide_w11_title': 'Новые механики',
-    'guide_w11_body': 'Режим Цветовой рывок: «горячий цвет» меняется каждые несколько ходов — убирай его ради бонусных очков и стремись к цели. Конвейерные ленты сдвигают камни на клетку с каждым ходом. Порталы — связанные клетки: собрав одну, собираешь и её пару. Диспенсеры создают спецкамень каждые несколько ходов.',
+    'guide_w11_body':
+        'Режим Цветовой рывок: «горячий цвет» меняется каждые несколько ходов — убирай его ради бонусных очков и стремись к цели. Конвейерные ленты сдвигают камни на клетку с каждым ходом. Порталы — связанные клетки: собрав одну, собираешь и её пару. Диспенсеры создают спецкамень каждые несколько ходов.',
     'soda_title': 'Подъём газировки',
     'soda_short': 'Газировка',
     'soda_hud': 'Бутылки',
-    'soda_desc': 'Собирай камни, чтобы поднять уровень газировки и вознести бутылки наверх',
+    'soda_desc':
+        'Собирай камни, чтобы поднять уровень газировки и вознести бутылки наверх',
     'obstacle_licorice': 'Лакрица',
     'obstacle_jam': 'Джем',
     'guide_w14_title': 'Газировка и новые препятствия',
-    'guide_w14_body': 'Режим Подъём газировки: сбор камней поднимает уровень газировки, вознося бутылки вверх — подними достаточно бутылок в верхний ряд, чтобы победить. Лакрица блокирует клетку, и её нужно разбить двумя соседними сборами. Джем распространяется на соседнюю клетку с каждым ходом, если не собрать рядом с ним.',
+    'guide_w14_body':
+        'Режим Подъём газировки: сбор камней поднимает уровень газировки, вознося бутылки вверх — подними достаточно бутылок в верхний ряд, чтобы победить. Лакрица блокирует клетку, и её нужно разбить двумя соседними сборами. Джем распространяется на соседнюю клетку с каждым ходом, если не собрать рядом с ним.',
     'coll_title': 'Альбом',
     'coll_points': 'очков альбома',
-    'coll_hint': 'Побеждай на уровнях, чтобы получать очки альбома и открывать наклейки.',
+    'coll_hint':
+        'Побеждай на уровнях, чтобы получать очки альбома и открывать наклейки.',
     'coll_cyan_spark': 'Голубая искра',
     'coll_magenta_bloom': 'Пурпурный цветок',
     'coll_lime_leaf': 'Лаймовый лист',
@@ -3326,12 +3521,14 @@ class AppTranslations extends Translations {
     'coll_desc_amber_sun': 'Тёплое золотое солнце.',
     'coll_desc_orange_ember': 'Тлеющий оранжевый уголёк.',
     'coll_desc_violet_dusk': 'Глубокое фиолетовое небо сумерек.',
-    'coll_desc_prism_shard': 'Кристальный осколок, дробящий свет на цвета радуги.',
+    'coll_desc_prism_shard':
+        'Кристальный осколок, дробящий свет на цвета радуги.',
     'coll_desc_nebula_core': 'Сияющее ядро разноцветного звёздного облака.',
     'coll_desc_aurora_wing': 'Крыло, переливающееся цветом северного сияния.',
     'coll_desc_quasar_eye': 'Яркое сияние в форме глаза, как далёкая звезда.',
     'coll_desc_pulsar_heart': 'Сердце света, пульсирующее как маяк.',
-    'coll_desc_singularity': 'Единственная точка света, плотнее всего на свете — самая редкая наклейка.',
+    'coll_desc_singularity':
+        'Единственная точка света, плотнее всего на свете — самая редкая наклейка.',
     'coll_close': 'Закрыть',
     'piggy_title': 'Копилка',
     'piggy_smash': 'Разбить',
@@ -3655,7 +3852,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': '踩点成功！',
     'rhythm_offbeat': '踩点失败',
     'guide_rhythm_title': '节奏模式',
-    'guide_rhythm_body': '踩着节拍交换（注意跳动的光点）来积累律动值，最高可获得2.5倍分数。踩错节拍会降低律动值。在步数耗尽前达到目标分数。',
+    'guide_rhythm_body':
+        '踩着节拍交换（注意跳动的光点）来积累律动值，最高可获得2.5倍分数。踩错节拍会降低律动值。在步数耗尽前达到目标分数。',
     'versus_title': '双人对战',
     'versus_pick': '选择模式',
     'versus_mode': '对战',
@@ -3672,7 +3870,8 @@ class AppTranslations extends Translations {
     'coop_goal': '目标',
     'versus_go': '开始！',
     'guide_versus_title': '双人模式（本地）',
-    'guide_versus_body': '两名玩家共用一台设备。对战模式：60秒内比拼更高分数——大连击会向对手发送干扰行。合作模式：合并分数，在时间耗尽前达成共同目标。上方棋盘会旋转以便面对面游玩。',
+    'guide_versus_body':
+        '两名玩家共用一台设备。对战模式：60秒内比拼更高分数——大连击会向对手发送干扰行。合作模式：合并分数，在时间耗尽前达成共同目标。上方棋盘会旋转以便面对面游玩。',
     'challenge_modes': '挑战',
     'meta_section': '奖励',
     'daily_ch_title': '每日挑战',
@@ -3731,7 +3930,8 @@ class AppTranslations extends Translations {
     'portal_title': '传送门',
     'dispenser_title': '发射器',
     'guide_w11_title': '全新机制',
-    'guide_w11_body': '色彩冲刺模式：每隔几步会出现一个"热门颜色"——消除它可获得额外分数，冲击目标分数。传送带每步移动一格宝石。传送门是成对的格子：消除一个也会消除它的搭档。发射器每隔几步生成一个特殊宝石。',
+    'guide_w11_body':
+        '色彩冲刺模式：每隔几步会出现一个"热门颜色"——消除它可获得额外分数，冲击目标分数。传送带每步移动一格宝石。传送门是成对的格子：消除一个也会消除它的搭档。发射器每隔几步生成一个特殊宝石。',
     'soda_title': '汽水上升',
     'soda_short': '汽水',
     'soda_hud': '瓶子',
@@ -3739,7 +3939,8 @@ class AppTranslations extends Translations {
     'obstacle_licorice': '甘草糖',
     'obstacle_jam': '果酱',
     'guide_w14_title': '汽水与全新障碍',
-    'guide_w14_body': '汽水上升模式：消除宝石会提升汽水高度，让瓶子向上漂浮——将足够的瓶子送到顶行即可获胜。甘草糖锁住一个格子，需要附近两次消除才能打破。果酱每步都会蔓延到相邻格子，除非在它旁边消除。',
+    'guide_w14_body':
+        '汽水上升模式：消除宝石会提升汽水高度，让瓶子向上漂浮——将足够的瓶子送到顶行即可获胜。甘草糖锁住一个格子，需要附近两次消除才能打破。果酱每步都会蔓延到相邻格子，除非在它旁边消除。',
     'coll_title': '图鉴',
     'coll_points': '图鉴积分',
     'coll_hint': '获胜关卡可获得图鉴积分并解锁贴纸。',
@@ -3910,9 +4111,11 @@ class AppTranslations extends Translations {
     'bomb_timer': 'タイマー',
     'guide_w10_title': '新機能',
     'guide_lightball': 'ライトボール',
-    'guide_lightball_desc': '7つ以上マッチするとライトボールが誕生——縦・横・両斜め、8方向に爆発する。最もレアで強力なジュエル。',
+    'guide_lightball_desc':
+        '7つ以上マッチするとライトボールが誕生——縦・横・両斜め、8方向に爆発する。最もレアで強力なジュエル。',
     'guide_bombdown': 'カウントダウン爆弾',
-    'guide_bombdown_desc': '一部のレベルには1手ごとにカウントダウンする爆弾がある。爆弾の上のジュエルを消せば解除できる。0になると即敗北！',
+    'guide_bombdown_desc':
+        '一部のレベルには1手ごとにカウントダウンする爆弾がある。爆弾の上のジュエルを消せば解除できる。0になると即敗北！',
     'guide_order': '複合目標',
     'guide_order_desc': 'オーダーレベルでは複数の色を同時に集める必要がある。すべての色の目標を達成すればクリア。',
     'shop_title': 'ショップ',
@@ -4091,7 +4294,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'オンビート！',
     'rhythm_offbeat': 'オフビート',
     'guide_rhythm_title': 'リズムモード',
-    'guide_rhythm_body': 'ビートに合わせて（点滅するドットを見て）入れ替えるとグルーヴメーターが上がり、最大2.5倍のスコアを獲得できる。ビートを外すとグルーヴが下がる。ムーブがなくなる前に目標スコアに到達しよう。',
+    'guide_rhythm_body':
+        'ビートに合わせて（点滅するドットを見て）入れ替えるとグルーヴメーターが上がり、最大2.5倍のスコアを獲得できる。ビートを外すとグルーヴが下がる。ムーブがなくなる前に目標スコアに到達しよう。',
     'versus_title': '2人プレイ',
     'versus_pick': 'モードを選択',
     'versus_mode': 'バーサス',
@@ -4108,7 +4312,8 @@ class AppTranslations extends Translations {
     'coop_goal': '目標',
     'versus_go': 'スタート！',
     'guide_versus_title': '2人プレイ（ローカル）',
-    'guide_versus_body': '1台の端末で2人プレイ。バーサス：60秒で高スコアを競い、大きなコンボは相手にお邪魔ブロックを送る。協力プレイ：スコアを合算して時間切れ前に共通目標を達成しよう。上側の盤面は対面プレイ用に反転表示される。',
+    'guide_versus_body':
+        '1台の端末で2人プレイ。バーサス：60秒で高スコアを競い、大きなコンボは相手にお邪魔ブロックを送る。協力プレイ：スコアを合算して時間切れ前に共通目標を達成しよう。上側の盤面は対面プレイ用に反転表示される。',
     'challenge_modes': 'チャレンジ',
     'meta_section': '報酬',
     'daily_ch_title': 'デイリーチャレンジ',
@@ -4167,7 +4372,8 @@ class AppTranslations extends Translations {
     'portal_title': 'ポータル',
     'dispenser_title': 'ディスペンサー',
     'guide_w11_title': '新ギミック',
-    'guide_w11_body': 'カラーラッシュモード：数手ごとに「ホットカラー」が変わる——消すとボーナスポイント、目標を目指そう。コンベアベルトは1手ごとにジュエルを1マス移動させる。ポータルは対になったマスで、片方を消すともう片方も消える。ディスペンサーは数手ごとにスペシャルジュエルを生成する。',
+    'guide_w11_body':
+        'カラーラッシュモード：数手ごとに「ホットカラー」が変わる——消すとボーナスポイント、目標を目指そう。コンベアベルトは1手ごとにジュエルを1マス移動させる。ポータルは対になったマスで、片方を消すともう片方も消える。ディスペンサーは数手ごとにスペシャルジュエルを生成する。',
     'soda_title': 'ソーダライズ',
     'soda_short': 'ソーダ',
     'soda_hud': 'ボトル',
@@ -4175,7 +4381,8 @@ class AppTranslations extends Translations {
     'obstacle_licorice': 'リコリス',
     'obstacle_jam': 'ジャム',
     'guide_w14_title': 'ソーダと新障害物',
-    'guide_w14_body': 'ソーダライズモード：ジュエルを消すとソーダの水位が上がりボトルが浮き上がる——十分な数のボトルを最上段まで運べばクリア。リコリスはマスをロックし、近くを2回消すと解除される。ジャムは隣で消さない限り毎手隣のマスに広がる。',
+    'guide_w14_body':
+        'ソーダライズモード：ジュエルを消すとソーダの水位が上がりボトルが浮き上がる——十分な数のボトルを最上段まで運べばクリア。リコリスはマスをロックし、近くを2回消すと解除される。ジャムは隣で消さない限り毎手隣のマスに広がる。',
     'coll_title': 'アルバム',
     'coll_points': 'アルバムpt',
     'coll_hint': 'レベルをクリアしてアルバムポイントを獲得し、ステッカーを解放しよう。',
@@ -4346,9 +4553,11 @@ class AppTranslations extends Translations {
     'bomb_timer': '타이머',
     'guide_w10_title': '새로운 기능',
     'guide_lightball': '라이트 볼',
-    'guide_lightball_desc': '보석 7개 이상을 맞추면 라이트 볼이 생성됩니다 — 8방향(가로+세로+양쪽 대각선)으로 터집니다. 가장 희귀하고 강력한 보석입니다.',
+    'guide_lightball_desc':
+        '보석 7개 이상을 맞추면 라이트 볼이 생성됩니다 — 8방향(가로+세로+양쪽 대각선)으로 터집니다. 가장 희귀하고 강력한 보석입니다.',
     'guide_bombdown': '카운트다운 폭탄',
-    'guide_bombdown_desc': '일부 레벨에는 이동마다 카운트다운되는 폭탄이 있습니다. 폭탄 위 보석을 없애 해체하세요. 폭탄이 0이 되면 즉시 패배합니다!',
+    'guide_bombdown_desc':
+        '일부 레벨에는 이동마다 카운트다운되는 폭탄이 있습니다. 폭탄 위 보석을 없애 해체하세요. 폭탄이 0이 되면 즉시 패배합니다!',
     'guide_order': '혼합 목표',
     'guide_order_desc': '오더 레벨에서는 여러 보석 색을 동시에 모아야 합니다. 모든 색 목표를 달성하면 승리합니다.',
     'shop_title': '상점',
@@ -4422,7 +4631,8 @@ class AppTranslations extends Translations {
     'npc_name_4': '엠버',
     'npc_name_5': '닉스',
     'guide_story_title': '스토리',
-    'guide_story_body': '각 월드에서 네온 수호자를 만나보세요. 그들은 여러분을 맞이하고, 여정 중반에 응원해주며, 더 깊이 나아갈 때 다음 세계로 보내줍니다.',
+    'guide_story_body':
+        '각 월드에서 네온 수호자를 만나보세요. 그들은 여러분을 맞이하고, 여정 중반에 응원해주며, 더 깊이 나아갈 때 다음 세계로 보내줍니다.',
     'story_w1_intro_title': '시안 성운',
     'story_w1_intro_l1': '어서 오세요, 여행자님. 저는 시안 성운의 빛, 루마입니다.',
     'story_w1_intro_l2': '이곳의 보석들이 빛을 잃었어요. 맞춰서 다시 빛나게 해주세요!',
@@ -4527,7 +4737,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': '박자 맞음!',
     'rhythm_offbeat': '박자 놓침',
     'guide_rhythm_title': '리듬 모드',
-    'guide_rhythm_body': '박자에 맞춰 스왑하면(맥동하는 점을 확인하세요) 그루브 게이지가 올라가 점수가 최대 2.5배까지 오릅니다. 박자를 놓치면 그루브가 떨어집니다. 이동 횟수가 다 되기 전에 목표 점수에 도달하세요.',
+    'guide_rhythm_body':
+        '박자에 맞춰 스왑하면(맥동하는 점을 확인하세요) 그루브 게이지가 올라가 점수가 최대 2.5배까지 오릅니다. 박자를 놓치면 그루브가 떨어집니다. 이동 횟수가 다 되기 전에 목표 점수에 도달하세요.',
     'versus_title': '2인 플레이',
     'versus_pick': '모드를 선택하세요',
     'versus_mode': 'versus',
@@ -4544,7 +4755,8 @@ class AppTranslations extends Translations {
     'coop_goal': '목표',
     'versus_go': '시작!',
     'guide_versus_title': '2인 플레이 (로컬)',
-    'guide_versus_body': '한 기기로 두 명이 플레이합니다. 버서스: 60초 안에 더 높은 점수를 향해 경쟁하며, 큰 콤보는 상대에게 방해 줄을 보냅니다. 협동: 점수를 합쳐 시간이 끝나기 전에 공동 목표를 달성하세요. 위쪽 보드는 마주보고 플레이할 수 있도록 회전되어 있습니다.',
+    'guide_versus_body':
+        '한 기기로 두 명이 플레이합니다. 버서스: 60초 안에 더 높은 점수를 향해 경쟁하며, 큰 콤보는 상대에게 방해 줄을 보냅니다. 협동: 점수를 합쳐 시간이 끝나기 전에 공동 목표를 달성하세요. 위쪽 보드는 마주보고 플레이할 수 있도록 회전되어 있습니다.',
     'challenge_modes': '도전 과제',
     'meta_section': '보상',
     'daily_ch_title': '데일리 챌린지',
@@ -4603,7 +4815,8 @@ class AppTranslations extends Translations {
     'portal_title': '포탈',
     'dispenser_title': '디스펜서',
     'guide_w11_title': '새로운 메커니즘',
-    'guide_w11_body': '컬러 러시 모드: 몇 수마다 "핫 컬러"가 바뀝니다 — 없애면 보너스 점수를 받고 목표를 향해 달려가세요. 컨베이어 벨트는 매 수마다 보석을 한 칸씩 옮깁니다. 포탈은 서로 연결된 칸으로, 하나를 없애면 짝도 함께 없어집니다. 디스펜서는 몇 수마다 특수 보석을 생성합니다.',
+    'guide_w11_body':
+        '컬러 러시 모드: 몇 수마다 "핫 컬러"가 바뀝니다 — 없애면 보너스 점수를 받고 목표를 향해 달려가세요. 컨베이어 벨트는 매 수마다 보석을 한 칸씩 옮깁니다. 포탈은 서로 연결된 칸으로, 하나를 없애면 짝도 함께 없어집니다. 디스펜서는 몇 수마다 특수 보석을 생성합니다.',
     'soda_title': '소다 라이즈',
     'soda_short': '소다',
     'soda_hud': '병',
@@ -4611,7 +4824,8 @@ class AppTranslations extends Translations {
     'obstacle_licorice': '리코리스',
     'obstacle_jam': '잼',
     'guide_w14_title': '소다 & 새로운 장애물',
-    'guide_w14_body': '소다 라이즈 모드: 보석을 없애면 소다 수위가 올라가 병이 위로 떠오릅니다 — 병을 최상단 줄까지 충분히 올리면 승리합니다. 리코리스는 칸을 잠그며 근처에서 두 번 없애야 풀립니다. 잼은 바로 옆에서 없애지 않으면 매 수마다 이웃 칸으로 퍼집니다.',
+    'guide_w14_body':
+        '소다 라이즈 모드: 보석을 없애면 소다 수위가 올라가 병이 위로 떠오릅니다 — 병을 최상단 줄까지 충분히 올리면 승리합니다. 리코리스는 칸을 잠그며 근처에서 두 번 없애야 풀립니다. 잼은 바로 옆에서 없애지 않으면 매 수마다 이웃 칸으로 퍼집니다.',
     'coll_title': '앨범',
     'coll_points': '앨범 포인트',
     'coll_hint': '레벨에서 승리해 앨범 포인트를 얻고 스티커를 해금하세요.',
@@ -4684,29 +4898,36 @@ class AppTranslations extends Translations {
     'not_enough_coins': 'Monete insufficienti',
     'rule_boss': 'Sconfiggi il Boss prima che finiscano le mosse',
     'rule_rhythm': 'Abbina a ritmo per mantenere il tuo groove',
-    'rule_survival': 'Sopravvivi il più a lungo possibile prima che l\'alluvione salga',
+    'rule_survival':
+        'Sopravvivi il più a lungo possibile prima che l\'alluvione salga',
     'rule_labyrinth': 'Trova la via per l\'uscita',
-    'rule_color_rush': 'Incatena abbinamenti dello stesso colore per un bonus striscia',
+    'rule_color_rush':
+        'Incatena abbinamenti dello stesso colore per un bonus striscia',
     'rule_soda': 'Fai salire la soda fino in cima prima che finiscano le mosse',
     'rule_endless': 'Continua a giocare — il punteggio sale più resisti',
     'rule_daily': 'Completa la sfida di oggi per ottenere premi',
     'rule_puzzle': 'Risolvi il puzzle con un numero limitato di mosse',
     'rule_zen': 'Rilassati — nessun limite di mosse',
     'rule_gravity': 'Adattati mentre la gravità cambia direzione',
-    'rule_rush': 'Fai punti il più velocemente possibile prima che scada il tempo',
+    'rule_rush':
+        'Fai punti il più velocemente possibile prima che scada il tempo',
     'leaderboard_title': 'Classifica',
     'lb_tab_campaign': 'Campagna',
     'lb_tab_daily': 'Giornaliera',
     'lb_level': 'Livello',
     'lb_player': 'Tu',
-    'lb_daily_note': 'Top 10 di oggi — completa la Sfida Giornaliera per entrare in classifica.',
+    'lb_daily_note':
+        'Top 10 di oggi — completa la Sfida Giornaliera per entrare in classifica.',
     'reduce_motion': 'Riduci gli effetti di movimento',
     'tour_t0': 'Benvenuto!',
-    'tour_m0': 'Scambia per allineare 3 o più gemme dello stesso colore. Tocca Gioca Ora per iniziare la campagna da 200 livelli.',
+    'tour_m0':
+        'Scambia per allineare 3 o più gemme dello stesso colore. Tocca Gioca Ora per iniziare la campagna da 200 livelli.',
     'tour_t1': 'Sfide',
-    'tour_m1': 'Oltre la campagna: Infinito, Boss, Corsa, Ritmo e molte altre modalità speciali.',
+    'tour_m1':
+        'Oltre la campagna: Infinito, Boss, Corsa, Ritmo e molte altre modalità speciali.',
     'tour_t2': 'Premi',
-    'tour_m2': 'Negozio, Battle Pass, Classifica, regali giornalieri e altro ti aspettano qui sotto.',
+    'tour_m2':
+        'Negozio, Battle Pass, Classifica, regali giornalieri e altro ti aspettano qui sotto.',
     'tour_t3': 'Si Parte!',
     'tour_m3': 'Vite e monete sono in alto. Divertiti, viaggiatore!',
     'tour_skip': 'Salta',
@@ -4720,7 +4941,8 @@ class AppTranslations extends Translations {
     'quest_bonus_title': 'Bonus Tutte le Missioni',
     'clan_title': 'Clan',
     'clan_goal': 'Obiettivo settimanale del clan',
-    'clan_goal_hint': 'Contano sia le vittorie in campagna che nelle modalità speciali',
+    'clan_goal_hint':
+        'Contano sia le vittorie in campagna che nelle modalità speciali',
     'clan_league': 'Classifica clan',
     'boss_atk_block': 'Blocco!',
     'boss_atk_shuffle': 'Rimescola!',
@@ -4730,7 +4952,8 @@ class AppTranslations extends Translations {
     'ach_desc_clanContribTotal': 'Contribuisci con @n al tuo clan',
     'ach_clan_contrib1_t': 'Giocatore di Squadra',
     'ach_clan_contrib2_t': 'Campione del Clan',
-    'ach_desc_platinumMilestones': 'Raggiungi il Platino in @n modalità speciali',
+    'ach_desc_platinumMilestones':
+        'Raggiungi il Platino in @n modalità speciali',
     'ach_platinum_1_t': 'Debutto Platino',
     'ach_platinum_4_t': 'Collezionista di Platino',
     'ach_platinum_9_t': 'Maestro del Platino',
@@ -4742,13 +4965,16 @@ class AppTranslations extends Translations {
     'ghost_no_data': 'Nessuna partita fantasma ancora',
     'pt_title': 'Albero di Progressione',
     'pt_radiant_title': 'Radiante',
-    'pt_radiant_desc': 'Scoppio di particelle ×1.5 all\'esplosione delle gemme (50 ★)',
+    'pt_radiant_desc':
+        'Scoppio di particelle ×1.5 all\'esplosione delle gemme (50 ★)',
     'pt_blazing_title': 'Ardente',
-    'pt_blazing_desc': 'Scoppio di particelle ×2.0 all\'esplosione delle gemme (150 ★)',
+    'pt_blazing_desc':
+        'Scoppio di particelle ×2.0 all\'esplosione delle gemme (150 ★)',
     'pt_prestige_title': 'Prestigio',
     'pt_prestige_desc': 'Sblocca la Skin Gemma Prestigio (5 traguardi Oro)',
     'pt_ascendant_title': 'Ascendente',
-    'pt_ascendant_desc': 'Sblocca l\'effetto particellare Ascendente (3 traguardi Platino)',
+    'pt_ascendant_desc':
+        'Sblocca l\'effetto particellare Ascendente (3 traguardi Platino)',
     'pt_unlocked': '✓ Sbloccato',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -4785,11 +5011,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'Timer',
     'guide_w10_title': 'Novità',
     'guide_lightball': 'Sfera di Luce',
-    'guide_lightball_desc': 'Abbina 7 o più gemme per creare una Sfera di Luce — esplode in 8 direzioni (riga + colonna + entrambe le diagonali). La gemma più rara e potente.',
+    'guide_lightball_desc':
+        'Abbina 7 o più gemme per creare una Sfera di Luce — esplode in 8 direzioni (riga + colonna + entrambe le diagonali). La gemma più rara e potente.',
     'guide_bombdown': 'Bomba a Conto alla Rovescia',
-    'guide_bombdown_desc': 'Alcuni livelli hanno bombe che fanno il conto alla rovescia a ogni mossa. Elimina la gemma sopra una bomba per disinnescarla. Se una bomba arriva a 0, perdi subito!',
+    'guide_bombdown_desc':
+        'Alcuni livelli hanno bombe che fanno il conto alla rovescia a ogni mossa. Elimina la gemma sopra una bomba per disinnescarla. Se una bomba arriva a 0, perdi subito!',
     'guide_order': 'Obiettivi Misti',
-    'guide_order_desc': 'I livelli Ordine ti chiedono di raccogliere più colori di gemme insieme. Completa ogni obiettivo colore per vincere.',
+    'guide_order_desc':
+        'I livelli Ordine ti chiedono di raccogliere più colori di gemme insieme. Completa ogni obiettivo colore per vincere.',
     'shop_title': 'Negozio',
     'shop_skins': 'Skin Gemme',
     'shop_themes': 'Temi Tabellone',
@@ -4832,9 +5061,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'Domani',
     'wheel_got_booster': 'Booster',
     'tut_title': 'Come Giocare',
-    'tut_1': 'Scambia due gemme adiacenti per allineare 3 o più dello stesso colore.',
-    'tut_2': 'Abbina 4 in fila per creare una gemma a Righe che elimina un\'intera linea!',
-    'tut_3': 'Abbina 5 per creare una gemma Arcobaleno — elimina ogni gemma di un colore.',
+    'tut_1':
+        'Scambia due gemme adiacenti per allineare 3 o più dello stesso colore.',
+    'tut_2':
+        'Abbina 4 in fila per creare una gemma a Righe che elimina un\'intera linea!',
+    'tut_3':
+        'Abbina 5 per creare una gemma Arcobaleno — elimina ogni gemma di un colore.',
     'tut_next': 'Avanti',
     'tut_skip': 'Salta',
     'tut_start': 'Si Parte',
@@ -4861,10 +5093,13 @@ class AppTranslations extends Translations {
     'npc_name_4': 'Ember',
     'npc_name_5': 'Nyx',
     'guide_story_title': 'Storia',
-    'guide_story_body': 'Incontra un guardiano neon in ogni mondo. Ti accoglie, ti incoraggia a metà percorso e ti manda verso il regno successivo mentre procedi.',
+    'guide_story_body':
+        'Incontra un guardiano neon in ogni mondo. Ti accoglie, ti incoraggia a metà percorso e ti manda verso il regno successivo mentre procedi.',
     'story_w1_intro_title': 'La Nebulosa Ciano',
-    'story_w1_intro_l1': 'Benvenuto, viaggiatore. Sono Luma, luce della Nebulosa Ciano.',
-    'story_w1_intro_l2': 'Le gemme qui si sono affievolite. Abbinale per far tornare il bagliore!',
+    'story_w1_intro_l1':
+        'Benvenuto, viaggiatore. Sono Luma, luce della Nebulosa Ciano.',
+    'story_w1_intro_l2':
+        'Le gemme qui si sono affievolite. Abbinale per far tornare il bagliore!',
     'story_w1_mid_title': 'Una Scintilla Ritorna',
     'story_w1_mid_l1': 'La nebulosa scintilla di nuovo — hai un dono.',
     'story_w1_mid_l2': 'Ma regni più profondi ti aspettano. Continua!',
@@ -4876,18 +5111,22 @@ class AppTranslations extends Translations {
     'story_w2_intro_l2': 'Abbina a ritmo e il regno danzerà con te.',
     'story_w2_mid_title': 'A Ritmo',
     'story_w2_mid_l1': 'Le tue combo risuonano nell\'impulso — bellissimo!',
-    'story_w2_mid_l2': 'Metà del viaggio è fatta. Il ritmo diventa più selvaggio.',
+    'story_w2_mid_l2':
+        'Metà del viaggio è fatta. Il ritmo diventa più selvaggio.',
     'story_w2_outro_title': 'Battito Costante',
-    'story_w2_outro_l1': 'L\'impulso è di nuovo stabile e luminoso. Incredibile!',
+    'story_w2_outro_l1':
+        'L\'impulso è di nuovo stabile e luminoso. Incredibile!',
     'story_w2_outro_l2': 'Scintille di un circuito verde brillano più avanti.',
     'story_w3_intro_title': 'Il Circuito Lime',
     'story_w3_intro_l1': 'Bip! Sono Cir, custode del Circuito Lime.',
     'story_w3_intro_l2': 'Connetti le gemme per riportare in vita la rete.',
     'story_w3_mid_title': 'Carica Piena',
     'story_w3_mid_l1': 'I circuiti ronzano a carica piena — ottimo lavoro!',
-    'story_w3_mid_l2': 'I collegamenti diventano più complicati da qui. Resta vigile.',
+    'story_w3_mid_l2':
+        'I collegamenti diventano più complicati da qui. Resta vigile.',
     'story_w3_outro_title': 'Sistema Ripristinato',
-    'story_w3_outro_l1': 'L\'intera rete brilla di verde. Sistema ripristinato!',
+    'story_w3_outro_l1':
+        'L\'intera rete brilla di verde. Sistema ripristinato!',
     'story_w3_outro_l2': 'Una cometa ambra infuocata sfreccia nel buio...',
     'story_w4_intro_title': 'La Cometa Ambra',
     'story_w4_intro_l1': 'Sono Ember, cavaliere della Cometa Ambra.',
@@ -4900,12 +5139,14 @@ class AppTranslations extends Translations {
     'story_w4_outro_l2': 'Resta solo il silenzioso Vuoto Viola...',
     'story_w5_intro_title': 'Il Vuoto Viola',
     'story_w5_intro_l1': 'Sono Nyx, guardiana del Vuoto Viola.',
-    'story_w5_intro_l2': 'Qui la luce è debole. Sii tu la scintilla che lo riempie.',
+    'story_w5_intro_l2':
+        'Qui la luce è debole. Sii tu la scintilla che lo riempie.',
     'story_w5_mid_title': 'Luce nel Buio',
     'story_w5_mid_l1': 'Nemmeno il vuoto può offuscare il tuo splendore.',
     'story_w5_mid_l2': 'Il tratto finale — il buio più profondo attende.',
     'story_w5_outro_title': 'Una Leggenda Neon',
-    'story_w5_outro_l1': 'Hai illuminato l\'intero Vuoto! Il cosmo è di nuovo intero.',
+    'story_w5_outro_l1':
+        'Hai illuminato l\'intero Vuoto! Il cosmo è di nuovo intero.',
     'story_w5_outro_l2': 'Sei una vera Leggenda Neon. Grazie, viaggiatore.',
     'story_next': 'Avanti',
     'story_skip': 'Salta',
@@ -4916,7 +5157,8 @@ class AppTranslations extends Translations {
     'temple_build': 'Costruisci',
     'temple_built': 'Costruito!',
     'temple_maxed': 'Al Massimo',
-    'temple_hint': 'Tocca una struttura per costruirla con le monete guadagnate nei livelli.',
+    'temple_hint':
+        'Tocca una struttura per costruirla con le monete guadagnate nei livelli.',
     'coins_short': 'monete',
     'temple_gate': 'Portale Neon',
     'temple_gate_desc': 'L\'ingresso luminoso del tuo tempio.',
@@ -4949,7 +5191,8 @@ class AppTranslations extends Translations {
     'season_ends': 'Termina tra',
     'season_points': 'punti stagione',
     'season_pts_short': 'pt',
-    'season_hint': 'Vinci livelli durante la stagione per guadagnare punti e sbloccare premi.',
+    'season_hint':
+        'Vinci livelli durante la stagione per guadagnare punti e sbloccare premi.',
     'season_cyan': 'Ondata Ciano',
     'season_magenta': 'Tempesta Magenta',
     'season_lime': 'Corsa Lime',
@@ -4966,7 +5209,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'A Tempo!',
     'rhythm_offbeat': 'Fuori Tempo',
     'guide_rhythm_title': 'Modalità Ritmo',
-    'guide_rhythm_body': 'Scambia esattamente a tempo (osserva il punto pulsante) per aumentare il tuo Groove e ottenere fino a 2.5× punti. Scambi fuori tempo fanno scendere il groove. Raggiungi il punteggio obiettivo prima che finiscano le mosse.',
+    'guide_rhythm_body':
+        'Scambia esattamente a tempo (osserva il punto pulsante) per aumentare il tuo Groove e ottenere fino a 2.5× punti. Scambi fuori tempo fanno scendere il groove. Raggiungi il punteggio obiettivo prima che finiscano le mosse.',
     'versus_title': '2 Giocatori',
     'versus_pick': 'Scegli una modalità',
     'versus_mode': 'Versus',
@@ -4983,7 +5227,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'Obiettivo',
     'versus_go': 'Via!',
     'guide_versus_title': '2 Giocatori (locale)',
-    'guide_versus_body': 'Due giocatori, un dispositivo. Versus: gareggiate per il punteggio più alto in 60s — le combo grandi mandano righe di detriti all\'avversario. Co-Op: unite i punteggi per raggiungere l\'obiettivo comune prima che scada il tempo. Il tabellone in alto è ruotato per il gioco faccia a faccia.',
+    'guide_versus_body':
+        'Due giocatori, un dispositivo. Versus: gareggiate per il punteggio più alto in 60s — le combo grandi mandano righe di detriti all\'avversario. Co-Op: unite i punteggi per raggiungere l\'obiettivo comune prima che scada il tempo. Il tabellone in alto è ruotato per il gioco faccia a faccia.',
     'challenge_modes': 'Sfide',
     'meta_section': 'Premi',
     'daily_ch_title': 'Sfida Giornaliera',
@@ -5005,7 +5250,8 @@ class AppTranslations extends Translations {
     'rec_tier_gold': 'Oro',
     'rec_tier_platinum': 'Platino',
     'hard_variant_on': 'Sfida: Attiva (meno mosse, +50% monete)',
-    'hard_variant_off': 'Sfida: Disattiva (tocca per sbloccare una run più difficile)',
+    'hard_variant_off':
+        'Sfida: Disattiva (tocca per sbloccare una run più difficile)',
     'puzzle_short': 'Puzzle',
     'puzzle_title': 'Puzzle',
     'puzzle_sub': 'Tabellone finito — nessun rifornimento!',
@@ -5042,18 +5288,22 @@ class AppTranslations extends Translations {
     'portal_title': 'Portale',
     'dispenser_title': 'Distributore',
     'guide_w11_title': 'Nuove Meccaniche',
-    'guide_w11_body': 'Modalità Color Rush: un "colore caldo" cambia ogni poche mosse — eliminalo per punti bonus e corri verso l\'obiettivo. I nastri trasportatori spostano le gemme di una cella a ogni mossa. I portali sono celle collegate: eliminarne una elimina anche la sua gemella. I distributori generano una gemma speciale ogni poche mosse.',
+    'guide_w11_body':
+        'Modalità Color Rush: un "colore caldo" cambia ogni poche mosse — eliminalo per punti bonus e corri verso l\'obiettivo. I nastri trasportatori spostano le gemme di una cella a ogni mossa. I portali sono celle collegate: eliminarne una elimina anche la sua gemella. I distributori generano una gemma speciale ogni poche mosse.',
     'soda_title': 'Soda in Salita',
     'soda_short': 'Soda',
     'soda_hud': 'Bottiglie',
-    'soda_desc': 'Elimina le gemme per far salire la soda e portare le bottiglie a galla fino in cima',
+    'soda_desc':
+        'Elimina le gemme per far salire la soda e portare le bottiglie a galla fino in cima',
     'obstacle_licorice': 'Liquirizia',
     'obstacle_jam': 'Marmellata',
     'guide_w14_title': 'Soda e Nuovi Ostacoli',
-    'guide_w14_body': 'Modalità Soda in Salita: eliminare le gemme fa salire il livello della soda che porta le bottiglie verso l\'alto — porta abbastanza bottiglie in cima per vincere. La Liquirizia blocca una cella e serve eliminare due gemme vicine per romperla. La Marmellata si diffonde a una cella vicina ogni mossa a meno che tu non elimini accanto a essa.',
+    'guide_w14_body':
+        'Modalità Soda in Salita: eliminare le gemme fa salire il livello della soda che porta le bottiglie verso l\'alto — porta abbastanza bottiglie in cima per vincere. La Liquirizia blocca una cella e serve eliminare due gemme vicine per romperla. La Marmellata si diffonde a una cella vicina ogni mossa a meno che tu non elimini accanto a essa.',
     'coll_title': 'Album',
     'coll_points': 'punti album',
-    'coll_hint': 'Vinci livelli per guadagnare punti album e sbloccare adesivi.',
+    'coll_hint':
+        'Vinci livelli per guadagnare punti album e sbloccare adesivi.',
     'coll_cyan_spark': 'Scintilla Ciano',
     'coll_magenta_bloom': 'Fiore Magenta',
     'coll_lime_leaf': 'Foglia Lime',
@@ -5072,12 +5322,16 @@ class AppTranslations extends Translations {
     'coll_desc_amber_sun': 'Un caldo sole dorato.',
     'coll_desc_orange_ember': 'Una brace arancione luminosa.',
     'coll_desc_violet_dusk': 'Un profondo cielo crepuscolare viola.',
-    'coll_desc_prism_shard': 'Una scheggia di cristallo che divide la luce nei colori dell\'arcobaleno.',
-    'coll_desc_nebula_core': 'Il nucleo splendente di una colorata nube stellare.',
+    'coll_desc_prism_shard':
+        'Una scheggia di cristallo che divide la luce nei colori dell\'arcobaleno.',
+    'coll_desc_nebula_core':
+        'Il nucleo splendente di una colorata nube stellare.',
     'coll_desc_aurora_wing': 'Un\'ala scintillante color aurora boreale.',
-    'coll_desc_quasar_eye': 'Un occhio luminoso che brilla come una stella lontana.',
+    'coll_desc_quasar_eye':
+        'Un occhio luminoso che brilla come una stella lontana.',
     'coll_desc_pulsar_heart': 'Un cuore di luce che pulsa come un faro.',
-    'coll_desc_singularity': 'Un singolo punto di luce più denso di ogni altra cosa — l\'adesivo più raro.',
+    'coll_desc_singularity':
+        'Un singolo punto di luce più denso di ogni altra cosa — l\'adesivo più raro.',
     'coll_close': 'Chiudi',
     'piggy_title': 'Salvadanaio',
     'piggy_smash': 'Rompi',
@@ -5136,14 +5390,18 @@ class AppTranslations extends Translations {
     'lb_tab_daily': 'Harian',
     'lb_level': 'Level',
     'lb_player': 'Anda',
-    'lb_daily_note': '10 teratas hari ini — selesaikan Harian untuk sertai papan.',
+    'lb_daily_note':
+        '10 teratas hari ini — selesaikan Harian untuk sertai papan.',
     'reduce_motion': 'Kurangkan kesan pergerakan',
     'tour_t0': 'Selamat Datang!',
-    'tour_m0': 'Tukar untuk susun 3+ permata warna sama. Ketik Main Sekarang untuk mula kempen 200-level.',
+    'tour_m0':
+        'Tukar untuk susun 3+ permata warna sama. Ketik Main Sekarang untuk mula kempen 200-level.',
     'tour_t1': 'Cabaran',
-    'tour_m1': 'Selain kempen: Endless, Boss, Rush, Rhythm dan banyak lagi mod sampingan.',
+    'tour_m1':
+        'Selain kempen: Endless, Boss, Rush, Rhythm dan banyak lagi mod sampingan.',
     'tour_t2': 'Ganjaran',
-    'tour_m2': 'Kedai, Battle Pass, Papan Pendahulu, hadiah harian dan banyak lagi menanti di bawah.',
+    'tour_m2':
+        'Kedai, Battle Pass, Papan Pendahulu, hadiah harian dan banyak lagi menanti di bawah.',
     'tour_t3': 'Jom Mula!',
     'tour_m3': 'Nyawa dan syiling di atas. Selamat berseronok, pengembara!',
     'tour_skip': 'Langkau',
@@ -5222,11 +5480,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'Pemasa',
     'guide_w10_title': 'Apa Yang Baharu',
     'guide_lightball': 'Bola Cahaya',
-    'guide_lightball_desc': 'Padankan 7+ permata untuk cipta Bola Cahaya — ia meletup ke 8 arah (baris + lajur + kedua-dua pepenjuru). Permata paling jarang dan berkuasa.',
+    'guide_lightball_desc':
+        'Padankan 7+ permata untuk cipta Bola Cahaya — ia meletup ke 8 arah (baris + lajur + kedua-dua pepenjuru). Permata paling jarang dan berkuasa.',
     'guide_bombdown': 'Bom Detik Detik',
-    'guide_bombdown_desc': 'Sesetengah level ada bom mengira detik setiap langkah. Bersihkan permata di atas bom untuk lenyapkannya. Jika mana-mana bom sampai 0, anda kalah serta-merta!',
+    'guide_bombdown_desc':
+        'Sesetengah level ada bom mengira detik setiap langkah. Bersihkan permata di atas bom untuk lenyapkannya. Jika mana-mana bom sampai 0, anda kalah serta-merta!',
     'guide_order': 'Matlamat Bercampur',
-    'guide_order_desc': 'Level Order minta anda kumpul beberapa warna permata serentak. Lengkapkan setiap matlamat warna untuk menang.',
+    'guide_order_desc':
+        'Level Order minta anda kumpul beberapa warna permata serentak. Lengkapkan setiap matlamat warna untuk menang.',
     'shop_title': 'Kedai',
     'shop_skins': 'Kulit Permata',
     'shop_themes': 'Tema Papan',
@@ -5269,9 +5530,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'Esok',
     'wheel_got_booster': 'Booster',
     'tut_title': 'Cara Bermain',
-    'tut_1': 'Tukar dua permata bersebelahan untuk susun 3 atau lebih warna sama.',
-    'tut_2': 'Padankan 4 berturut-turut untuk cipta permata Berjalur yang bersihkan satu baris penuh!',
-    'tut_3': 'Padankan 5 untuk cipta permata Pelangi — ia bersihkan semua permata satu warna.',
+    'tut_1':
+        'Tukar dua permata bersebelahan untuk susun 3 atau lebih warna sama.',
+    'tut_2':
+        'Padankan 4 berturut-turut untuk cipta permata Berjalur yang bersihkan satu baris penuh!',
+    'tut_3':
+        'Padankan 5 untuk cipta permata Pelangi — ia bersihkan semua permata satu warna.',
     'tut_next': 'Seterusnya',
     'tut_skip': 'Langkau',
     'tut_start': 'Jom Mula',
@@ -5298,19 +5562,25 @@ class AppTranslations extends Translations {
     'npc_name_4': 'Ember',
     'npc_name_5': 'Nyx',
     'guide_story_title': 'Cerita',
-    'guide_story_body': 'Temui penjaga neon di setiap dunia. Mereka menyambut anda, menyorak semasa separuh jalan, dan menghantar anda ke alam seterusnya semasa anda melangkah lebih dalam.',
+    'guide_story_body':
+        'Temui penjaga neon di setiap dunia. Mereka menyambut anda, menyorak semasa separuh jalan, dan menghantar anda ke alam seterusnya semasa anda melangkah lebih dalam.',
     'story_w1_intro_title': 'Nebula Sian',
-    'story_w1_intro_l1': 'Selamat datang, pengembara. Saya Luma, cahaya Nebula Sian.',
-    'story_w1_intro_l2': 'Permata di sini telah malap. Padankan untuk kembalikan sinarnya!',
+    'story_w1_intro_l1':
+        'Selamat datang, pengembara. Saya Luma, cahaya Nebula Sian.',
+    'story_w1_intro_l2':
+        'Permata di sini telah malap. Padankan untuk kembalikan sinarnya!',
     'story_w1_mid_title': 'Percikan Kembali',
     'story_w1_mid_l1': 'Nebula bersinar semula — anda mempunyai kurniaan.',
     'story_w1_mid_l2': 'Namun alam lebih dalam menanti. Teruskan!',
     'story_w1_outro_title': 'Nebula Dipulihkan',
-    'story_w1_outro_l1': 'Nebula Sian bersinar lebih dari sebelumnya. Terima kasih!',
+    'story_w1_outro_l1':
+        'Nebula Sian bersinar lebih dari sebelumnya. Terima kasih!',
     'story_w1_outro_l2': 'Denyut magenta memanggil dari kejauhan. Ikutinya...',
     'story_w2_intro_title': 'Denyut Magenta',
-    'story_w2_intro_l1': 'Saya Vera. Anda rasa denyutan itu? Itulah Denyut Magenta.',
-    'story_w2_intro_l2': 'Padankan mengikut rentak dan alam ini akan menari bersama anda.',
+    'story_w2_intro_l1':
+        'Saya Vera. Anda rasa denyutan itu? Itulah Denyut Magenta.',
+    'story_w2_intro_l2':
+        'Padankan mengikut rentak dan alam ini akan menari bersama anda.',
     'story_w2_mid_title': 'Dalam Rentak',
     'story_w2_mid_l1': 'Kombo anda bergema di seluruh denyutan — indah!',
     'story_w2_mid_l2': 'Separuh perjalanan selesai. Rentak semakin liar.',
@@ -5337,7 +5607,8 @@ class AppTranslations extends Translations {
     'story_w4_outro_l2': 'Hanya Lompang Ungu yang senyap tinggal...',
     'story_w5_intro_title': 'Lompang Ungu',
     'story_w5_intro_l1': 'Saya Nyx, penjaga Lompang Ungu.',
-    'story_w5_intro_l2': 'Di sini cahaya lemah. Jadilah percikan yang mengisinya.',
+    'story_w5_intro_l2':
+        'Di sini cahaya lemah. Jadilah percikan yang mengisinya.',
     'story_w5_mid_title': 'Cahaya Dalam Gelap',
     'story_w5_mid_l1': 'Malah lompang pun tidak dapat malapkan sinar anda.',
     'story_w5_mid_l2': 'Rentetan terakhir — kegelapan paling dalam menanti.',
@@ -5386,7 +5657,8 @@ class AppTranslations extends Translations {
     'season_ends': 'Tamat dalam',
     'season_points': 'mata musim',
     'season_pts_short': 'mata',
-    'season_hint': 'Menang level semasa musim untuk kumpul mata dan buka ganjaran.',
+    'season_hint':
+        'Menang level semasa musim untuk kumpul mata dan buka ganjaran.',
     'season_cyan': 'Lonjakan Sian',
     'season_magenta': 'Ribut Magenta',
     'season_lime': 'Repuh Lime',
@@ -5403,7 +5675,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'Tepat Rentak!',
     'rhythm_offbeat': 'Luar Rentak',
     'guide_rhythm_title': 'Mod Rhythm',
-    'guide_rhythm_body': 'Tukar tepat pada rentak (perhati titik berdenyut) untuk bina meter Groove dan skor sehingga 2.5× mata. Tukar luar rentak menurunkan groove anda. Capai skor sasaran sebelum langkah habis.',
+    'guide_rhythm_body':
+        'Tukar tepat pada rentak (perhati titik berdenyut) untuk bina meter Groove dan skor sehingga 2.5× mata. Tukar luar rentak menurunkan groove anda. Capai skor sasaran sebelum langkah habis.',
     'versus_title': '2 Pemain',
     'versus_pick': 'Pilih mod',
     'versus_mode': 'Versus',
@@ -5420,7 +5693,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'Matlamat',
     'versus_go': 'Mula!',
     'guide_versus_title': '2 Pemain (tempatan)',
-    'guide_versus_body': 'Dua pemain, satu peranti. Versus: berlumba untuk skor lebih tinggi dalam 60s — kombo besar hantar baris sampah kepada lawan. Kerjasama: gabungkan skor untuk capai matlamat bersama sebelum masa tamat. Papan atas diputar untuk main bersemuka.',
+    'guide_versus_body':
+        'Dua pemain, satu peranti. Versus: berlumba untuk skor lebih tinggi dalam 60s — kombo besar hantar baris sampah kepada lawan. Kerjasama: gabungkan skor untuk capai matlamat bersama sebelum masa tamat. Papan atas diputar untuk main bersemuka.',
     'challenge_modes': 'Cabaran',
     'meta_section': 'Ganjaran',
     'daily_ch_title': 'Cabaran Harian',
@@ -5479,15 +5753,18 @@ class AppTranslations extends Translations {
     'portal_title': 'Portal',
     'dispenser_title': 'Dispenser',
     'guide_w11_title': 'Mekanik Baharu',
-    'guide_w11_body': 'Mod Color Rush: "warna panas" berubah setiap beberapa langkah — bersihkan untuk mata bonus dan kejar sasaran. Tali sawat conveyor menganjak permata satu sel setiap langkah. Portal ialah sel berpasangan: bersihkan satu turut bersihkan pasangannya. Dispenser hasilkan permata istimewa setiap beberapa langkah.',
+    'guide_w11_body':
+        'Mod Color Rush: "warna panas" berubah setiap beberapa langkah — bersihkan untuk mata bonus dan kejar sasaran. Tali sawat conveyor menganjak permata satu sel setiap langkah. Portal ialah sel berpasangan: bersihkan satu turut bersihkan pasangannya. Dispenser hasilkan permata istimewa setiap beberapa langkah.',
     'soda_title': 'Soda Rise',
     'soda_short': 'Soda',
     'soda_hud': 'Botol',
-    'soda_desc': 'Bersihkan permata untuk naikkan paras soda dan apungkan botol ke atas',
+    'soda_desc':
+        'Bersihkan permata untuk naikkan paras soda dan apungkan botol ke atas',
     'obstacle_licorice': 'Licorice',
     'obstacle_jam': 'Jem',
     'guide_w14_title': 'Soda & Halangan Baharu',
-    'guide_w14_body': 'Mod Soda Rise: bersihkan permata naikkan paras soda yang apungkan botol ke atas — bawa cukup botol ke baris atas untuk menang. Licorice mengunci sel dan perlu dua pembersihan berdekatan untuk pecah. Jem merebak ke jiran setiap langkah melainkan anda bersihkan sebelahnya.',
+    'guide_w14_body':
+        'Mod Soda Rise: bersihkan permata naikkan paras soda yang apungkan botol ke atas — bawa cukup botol ke baris atas untuk menang. Licorice mengunci sel dan perlu dua pembersihan berdekatan untuk pecah. Jem merebak ke jiran setiap langkah melainkan anda bersihkan sebelahnya.',
     'coll_title': 'Album',
     'coll_points': 'mata album',
     'coll_hint': 'Menang level untuk kumpul mata album dan buka pelekat.',
@@ -5509,12 +5786,15 @@ class AppTranslations extends Translations {
     'coll_desc_amber_sun': 'Matahari keemasan yang hangat.',
     'coll_desc_orange_ember': 'Bara oren yang bersinar.',
     'coll_desc_violet_dusk': 'Langit senja ungu yang dalam.',
-    'coll_desc_prism_shard': 'Serpihan kristal memecah cahaya kepada warna pelangi.',
+    'coll_desc_prism_shard':
+        'Serpihan kristal memecah cahaya kepada warna pelangi.',
     'coll_desc_nebula_core': 'Teras bersinar awan bintang berwarna-warni.',
     'coll_desc_aurora_wing': 'Sayap warna cahaya utara yang berkilauan.',
     'coll_desc_quasar_eye': 'Mata bersinar terang seperti bintang jauh.',
-    'coll_desc_pulsar_heart': 'Jantung cahaya yang berdenyut seperti mercu tanda.',
-    'coll_desc_singularity': 'Satu titik cahaya lebih padat dari segalanya — pelekat paling jarang.',
+    'coll_desc_pulsar_heart':
+        'Jantung cahaya yang berdenyut seperti mercu tanda.',
+    'coll_desc_singularity':
+        'Satu titik cahaya lebih padat dari segalanya — pelekat paling jarang.',
     'piggy_title': 'Bank Kecil',
     'piggy_smash': 'Pecahkan',
     'piggy_ready': 'Bank kecil sedia dipecahkan!',
@@ -5575,11 +5855,14 @@ class AppTranslations extends Translations {
     'lb_daily_note': 'ท็อป 10 ของวันนี้ — เล่นภารกิจรายวันให้จบเพื่อติดอันดับ',
     'reduce_motion': 'ลดเอฟเฟกต์การเคลื่อนไหว',
     'tour_t0': 'ยินดีต้อนรับ!',
-    'tour_m0': 'สลับอัญมณีให้เรียงกัน 3 ชิ้นขึ้นไปในสีเดียวกัน แตะเล่นเลยเพื่อเริ่มแคมเปญ 200 ด่าน',
+    'tour_m0':
+        'สลับอัญมณีให้เรียงกัน 3 ชิ้นขึ้นไปในสีเดียวกัน แตะเล่นเลยเพื่อเริ่มแคมเปญ 200 ด่าน',
     'tour_t1': 'ความท้าทาย',
-    'tour_m1': 'นอกเหนือจากแคมเปญ: Endless, Boss, Rush, Rhythm และโหมดเสริมอีกมากมาย',
+    'tour_m1':
+        'นอกเหนือจากแคมเปญ: Endless, Boss, Rush, Rhythm และโหมดเสริมอีกมากมาย',
     'tour_t2': 'รางวัล',
-    'tour_m2': 'ร้านค้า, Battle Pass, อันดับ, ของขวัญรายวัน และอื่นๆ รอคุณอยู่ตรงนี้',
+    'tour_m2':
+        'ร้านค้า, Battle Pass, อันดับ, ของขวัญรายวัน และอื่นๆ รอคุณอยู่ตรงนี้',
     'tour_t3': 'ไปกันเลย!',
     'tour_m3': 'ชีวิตและเหรียญอยู่ด้านบน สนุกให้เต็มที่นะนักเดินทาง!',
     'tour_skip': 'ข้าม',
@@ -5621,7 +5904,8 @@ class AppTranslations extends Translations {
     'pt_prestige_title': 'เพรสทีจ',
     'pt_prestige_desc': 'ปลดล็อกสกินอัญมณีเพรสทีจ (5 หมุดหมายทอง)',
     'pt_ascendant_title': 'แอสเซนแดนต์',
-    'pt_ascendant_desc': 'ปลดล็อกเอฟเฟกต์อนุภาคแอสเซนแดนต์ (3 หมุดหมายแพลทินัม)',
+    'pt_ascendant_desc':
+        'ปลดล็อกเอฟเฟกต์อนุภาคแอสเซนแดนต์ (3 หมุดหมายแพลทินัม)',
     'pt_unlocked': '✓ ปลดล็อกแล้ว',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -5658,11 +5942,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'นับถอยหลัง',
     'guide_w10_title': 'มีอะไรใหม่',
     'guide_lightball': 'ลูกแสง',
-    'guide_lightball_desc': 'จับคู่อัญมณี 7 ชิ้นขึ้นไปเพื่อสร้างลูกแสง — มันระเบิดออกไป 8 ทิศทาง (แถว + คอลัมน์ + แนวทแยงทั้งสอง) อัญมณีที่หายากและทรงพลังที่สุด',
+    'guide_lightball_desc':
+        'จับคู่อัญมณี 7 ชิ้นขึ้นไปเพื่อสร้างลูกแสง — มันระเบิดออกไป 8 ทิศทาง (แถว + คอลัมน์ + แนวทแยงทั้งสอง) อัญมณีที่หายากและทรงพลังที่สุด',
     'guide_bombdown': 'ระเบิดนับถอยหลัง',
-    'guide_bombdown_desc': 'บางด่านมีระเบิดที่นับถอยหลังทุกตา เคลียร์อัญมณีบนระเบิดเพื่อกู้ระเบิด ถ้าระเบิดลูกไหนนับถึง 0 คุณจะแพ้ทันที!',
+    'guide_bombdown_desc':
+        'บางด่านมีระเบิดที่นับถอยหลังทุกตา เคลียร์อัญมณีบนระเบิดเพื่อกู้ระเบิด ถ้าระเบิดลูกไหนนับถึง 0 คุณจะแพ้ทันที!',
     'guide_order': 'เป้าหมายผสม',
-    'guide_order_desc': 'ด่านประเภทนี้ให้คุณเก็บอัญมณีหลายสีพร้อมกัน ทำเป้าหมายของทุกสีให้ครบเพื่อชนะ',
+    'guide_order_desc':
+        'ด่านประเภทนี้ให้คุณเก็บอัญมณีหลายสีพร้อมกัน ทำเป้าหมายของทุกสีให้ครบเพื่อชนะ',
     'shop_title': 'ร้านค้า',
     'shop_skins': 'สกินอัญมณี',
     'shop_themes': 'ธีมกระดาน',
@@ -5707,7 +5994,8 @@ class AppTranslations extends Translations {
     'tut_title': 'วิธีเล่น',
     'tut_1': 'สลับอัญมณีที่อยู่ติดกันให้เรียงกัน 3 ชิ้นขึ้นไปในสีเดียวกัน',
     'tut_2': 'จับคู่ 4 ชิ้นเรียงกันเพื่อสร้างอัญมณีลายทางที่เคลียร์ได้ทั้งแถว!',
-    'tut_3': 'จับคู่ 5 ชิ้นเพื่อสร้างอัญมณีสายรุ้ง — เคลียร์อัญมณีสีเดียวกันทั้งหมด',
+    'tut_3':
+        'จับคู่ 5 ชิ้นเพื่อสร้างอัญมณีสายรุ้ง — เคลียร์อัญมณีสีเดียวกันทั้งหมด',
     'tut_next': 'ถัดไป',
     'tut_skip': 'ข้าม',
     'tut_start': 'ไปกันเลย',
@@ -5734,10 +6022,13 @@ class AppTranslations extends Translations {
     'npc_name_4': 'เอมเบอร์',
     'npc_name_5': 'นิกซ์',
     'guide_story_title': 'เรื่องราว',
-    'guide_story_body': 'พบผู้พิทักษ์นีออนในแต่ละโลก พวกเขาจะทักทายคุณ ให้กำลังใจระหว่างทาง และส่งคุณไปยังดินแดนถัดไปเมื่อคุณเดินทางลึกขึ้น',
+    'guide_story_body':
+        'พบผู้พิทักษ์นีออนในแต่ละโลก พวกเขาจะทักทายคุณ ให้กำลังใจระหว่างทาง และส่งคุณไปยังดินแดนถัดไปเมื่อคุณเดินทางลึกขึ้น',
     'story_w1_intro_title': 'เนบิวลาสีฟ้า',
-    'story_w1_intro_l1': 'ยินดีต้อนรับนักเดินทาง ฉันคือลูมา แสงแห่งเนบิวลาสีฟ้า',
-    'story_w1_intro_l2': 'อัญมณีที่นี่หรี่แสงลง จับคู่พวกมันเพื่อคืนแสงเรืองรอง!',
+    'story_w1_intro_l1':
+        'ยินดีต้อนรับนักเดินทาง ฉันคือลูมา แสงแห่งเนบิวลาสีฟ้า',
+    'story_w1_intro_l2':
+        'อัญมณีที่นี่หรี่แสงลง จับคู่พวกมันเพื่อคืนแสงเรืองรอง!',
     'story_w1_mid_title': 'ประกายที่กลับมา',
     'story_w1_mid_l1': 'เนบิวลาส่องแสงอีกครั้ง — คุณมีของขวัญ',
     'story_w1_mid_l2': 'แต่ดินแดนที่ลึกกว่ารออยู่ ไปกันต่อเถอะ!',
@@ -5745,7 +6036,8 @@ class AppTranslations extends Translations {
     'story_w1_outro_l1': 'เนบิวลาสีฟ้าเปล่งประกายกว่าที่เคย ขอบคุณนะ!',
     'story_w1_outro_l2': 'พัลส์สีชมพูเรียกหาจากที่ไกลออกไป ตามมันไปเถอะ...',
     'story_w2_intro_title': 'พัลส์สีชมพู',
-    'story_w2_intro_l1': 'ฉันคือเวร่า รู้สึกถึงจังหวะนั้นไหม? นั่นคือพัลส์สีชมพู',
+    'story_w2_intro_l1':
+        'ฉันคือเวร่า รู้สึกถึงจังหวะนั้นไหม? นั่นคือพัลส์สีชมพู',
     'story_w2_intro_l2': 'จับคู่ให้ตรงจังหวะแล้วดินแดนนี้จะเต้นไปกับคุณ',
     'story_w2_mid_title': 'เข้าจังหวะ',
     'story_w2_mid_l1': 'คอมโบของคุณสะท้อนไปทั่วพัลส์ — สวยงามมาก!',
@@ -5778,7 +6070,8 @@ class AppTranslations extends Translations {
     'story_w5_mid_l1': 'แม้แต่ห้วงมืดก็ไม่อาจทำให้แสงของคุณหรี่ลง',
     'story_w5_mid_l2': 'ระยะสุดท้าย — ความมืดที่ลึกที่สุดรออยู่',
     'story_w5_outro_title': 'ตำนานนีออน',
-    'story_w5_outro_l1': 'คุณจุดประกายให้ทั่วทั้งห้วงมืด! จักรวาลสมบูรณ์อีกครั้ง',
+    'story_w5_outro_l1':
+        'คุณจุดประกายให้ทั่วทั้งห้วงมืด! จักรวาลสมบูรณ์อีกครั้ง',
     'story_w5_outro_l2': 'คุณคือตำนานนีออนตัวจริง ขอบคุณนะ นักเดินทาง',
     'story_next': 'ถัดไป',
     'story_skip': 'ข้าม',
@@ -5839,7 +6132,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'ตรงจังหวะ!',
     'rhythm_offbeat': 'ผิดจังหวะ',
     'guide_rhythm_title': 'โหมดริทึม',
-    'guide_rhythm_body': 'สลับอัญมณีให้ตรงจังหวะ (ดูจุดที่กระพริบ) เพื่อสะสมมิเตอร์กรูฟและทำคะแนนได้สูงสุด 2.5 เท่า การสลับผิดจังหวะจะลดกรูฟลง ทำคะแนนให้ถึงเป้าหมายก่อนตาหมด',
+    'guide_rhythm_body':
+        'สลับอัญมณีให้ตรงจังหวะ (ดูจุดที่กระพริบ) เพื่อสะสมมิเตอร์กรูฟและทำคะแนนได้สูงสุด 2.5 เท่า การสลับผิดจังหวะจะลดกรูฟลง ทำคะแนนให้ถึงเป้าหมายก่อนตาหมด',
     'versus_title': '2 ผู้เล่น',
     'versus_pick': 'เลือกโหมด',
     'versus_mode': 'ปะทะ',
@@ -5856,7 +6150,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'เป้าหมาย',
     'versus_go': 'ไป!',
     'guide_versus_title': '2 ผู้เล่น (ในเครื่องเดียว)',
-    'guide_versus_body': 'สองผู้เล่น หนึ่งเครื่อง โหมดปะทะ: แข่งกันทำคะแนนสูงสุดใน 60 วินาที — คอมโบใหญ่จะส่งแถวขยะไปให้คู่แข่ง โหมดร่วมมือ: รวมคะแนนกันเพื่อทำเป้าหมายร่วมให้สำเร็จก่อนหมดเวลา กระดานด้านบนจะกลับด้านเพื่อให้เล่นแบบหันหน้าเข้าหากันได้',
+    'guide_versus_body':
+        'สองผู้เล่น หนึ่งเครื่อง โหมดปะทะ: แข่งกันทำคะแนนสูงสุดใน 60 วินาที — คอมโบใหญ่จะส่งแถวขยะไปให้คู่แข่ง โหมดร่วมมือ: รวมคะแนนกันเพื่อทำเป้าหมายร่วมให้สำเร็จก่อนหมดเวลา กระดานด้านบนจะกลับด้านเพื่อให้เล่นแบบหันหน้าเข้าหากันได้',
     'challenge_modes': 'ความท้าทาย',
     'meta_section': 'รางวัล',
     'daily_ch_title': 'ภารกิจประจำวัน',
@@ -5915,7 +6210,8 @@ class AppTranslations extends Translations {
     'portal_title': 'พอร์ทัล',
     'dispenser_title': 'เครื่องจ่าย',
     'guide_w11_title': 'กลไกใหม่',
-    'guide_w11_body': 'โหมดคัลเลอร์รัช: "สีร้อนแรง" จะเปลี่ยนทุก ๆ ไม่กี่ตา — เคลียร์สีนั้นเพื่อรับคะแนนโบนัสและไปให้ถึงเป้าหมาย สายพานจะเลื่อนอัญมณีไปหนึ่งช่องทุกตา พอร์ทัลคือช่องที่เชื่อมกัน — เคลียร์ช่องหนึ่งจะเคลียร์คู่ของมันด้วย เครื่องจ่ายจะสร้างอัญมณีพิเศษทุก ๆ ไม่กี่ตา',
+    'guide_w11_body':
+        'โหมดคัลเลอร์รัช: "สีร้อนแรง" จะเปลี่ยนทุก ๆ ไม่กี่ตา — เคลียร์สีนั้นเพื่อรับคะแนนโบนัสและไปให้ถึงเป้าหมาย สายพานจะเลื่อนอัญมณีไปหนึ่งช่องทุกตา พอร์ทัลคือช่องที่เชื่อมกัน — เคลียร์ช่องหนึ่งจะเคลียร์คู่ของมันด้วย เครื่องจ่ายจะสร้างอัญมณีพิเศษทุก ๆ ไม่กี่ตา',
     'soda_title': 'โซดาพุ่ง',
     'soda_short': 'โซดา',
     'soda_hud': 'ขวด',
@@ -5923,7 +6219,8 @@ class AppTranslations extends Translations {
     'obstacle_licorice': 'ลิโคริซ',
     'obstacle_jam': 'แยม',
     'guide_w14_title': 'โซดาและอุปสรรคใหม่',
-    'guide_w14_body': 'โหมดโซดาพุ่ง: การเคลียร์อัญมณีจะเพิ่มระดับโซดาซึ่งลอยขวดขึ้น — นำขวดให้ถึงแถวบนสุดให้พอเพื่อชนะ ลิโคริซล็อกช่องไว้และต้องเคลียร์บริเวณใกล้เคียงสองครั้งจึงจะแตก แยมจะลามไปช่องข้างเคียงทุกตาเว้นแต่คุณจะเคลียร์ข้างๆ มัน',
+    'guide_w14_body':
+        'โหมดโซดาพุ่ง: การเคลียร์อัญมณีจะเพิ่มระดับโซดาซึ่งลอยขวดขึ้น — นำขวดให้ถึงแถวบนสุดให้พอเพื่อชนะ ลิโคริซล็อกช่องไว้และต้องเคลียร์บริเวณใกล้เคียงสองครั้งจึงจะแตก แยมจะลามไปช่องข้างเคียงทุกตาเว้นแต่คุณจะเคลียร์ข้างๆ มัน',
     'coll_title': 'อัลบั้ม',
     'coll_points': 'คะแนนอัลบั้ม',
     'coll_hint': 'ชนะด่านต่างๆ เพื่อสะสมคะแนนอัลบั้มและปลดล็อกสติกเกอร์',
@@ -5950,7 +6247,8 @@ class AppTranslations extends Translations {
     'coll_desc_aurora_wing': 'ปีกที่เปล่งประกายดั่งแสงเหนือ',
     'coll_desc_quasar_eye': 'ดวงตาเรืองแสงสดใสดั่งดาวไกล',
     'coll_desc_pulsar_heart': 'หัวใจแห่งแสงที่เต้นระริกดั่งประภาคาร',
-    'coll_desc_singularity': 'จุดแสงเดียวที่หนาแน่นกว่าสิ่งใด — สติกเกอร์ที่หายากที่สุด',
+    'coll_desc_singularity':
+        'จุดแสงเดียวที่หนาแน่นกว่าสิ่งใด — สติกเกอร์ที่หายากที่สุด',
     'coll_close': 'ปิด',
     'piggy_title': 'กระปุกออมสิน',
     'piggy_smash': 'ทุบ',
@@ -6011,14 +6309,17 @@ class AppTranslations extends Translations {
     'lb_tab_daily': 'दैनिक',
     'lb_level': 'लेवल',
     'lb_player': 'आप',
-    'lb_daily_note': 'आज के टॉप 10 — बोर्ड में शामिल होने के लिए दैनिक चुनौती पूरी करें।',
+    'lb_daily_note':
+        'आज के टॉप 10 — बोर्ड में शामिल होने के लिए दैनिक चुनौती पूरी करें।',
     'reduce_motion': 'मोशन इफ़ेक्ट कम करें',
     'tour_t0': 'स्वागत है!',
-    'tour_m0': '3+ एक जैसे रंग के रत्न मिलाने के लिए स्वैप करें। 200-लेवल कैंपेन शुरू करने के लिए Play Now दबाएं।',
+    'tour_m0':
+        '3+ एक जैसे रंग के रत्न मिलाने के लिए स्वैप करें। 200-लेवल कैंपेन शुरू करने के लिए Play Now दबाएं।',
     'tour_t1': 'चुनौतियां',
     'tour_m1': 'कैंपेन के अलावा: एंडलेस, बॉस, रश, रिदम और कई अन्य साइड मोड।',
     'tour_t2': 'इनाम',
-    'tour_m2': 'शॉप, बैटल पास, लीडरबोर्ड, दैनिक उपहार और भी बहुत कुछ यहां नीचे मौजूद है।',
+    'tour_m2':
+        'शॉप, बैटल पास, लीडरबोर्ड, दैनिक उपहार और भी बहुत कुछ यहां नीचे मौजूद है।',
     'tour_t3': 'चलिए शुरू करते हैं!',
     'tour_m3': 'जीवन और सिक्के ऊपर दिखते हैं। मज़े करें, यात्री!',
     'tour_skip': 'छोड़ें',
@@ -6060,7 +6361,8 @@ class AppTranslations extends Translations {
     'pt_prestige_title': 'प्रेस्टीज',
     'pt_prestige_desc': 'प्रेस्टीज जेम स्किन अनलॉक करें (5 गोल्ड माइलस्टोन)',
     'pt_ascendant_title': 'एसेंडेंट',
-    'pt_ascendant_desc': 'एसेंडेंट पार्टिकल इफ़ेक्ट अनलॉक करें (3 प्लैटिनम माइलस्टोन)',
+    'pt_ascendant_desc':
+        'एसेंडेंट पार्टिकल इफ़ेक्ट अनलॉक करें (3 प्लैटिनम माइलस्टोन)',
     'pt_unlocked': '✓ अनलॉक',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -6097,11 +6399,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'टाइमर',
     'guide_w10_title': 'नया क्या है',
     'guide_lightball': 'लाइट बॉल',
-    'guide_lightball_desc': '7+ रत्न मिलाकर लाइट बॉल बनाएं — यह 8 दिशाओं में फटता है (पंक्ति + कॉलम + दोनों विकर्ण)। सबसे दुर्लभ, सबसे शक्तिशाली रत्न।',
+    'guide_lightball_desc':
+        '7+ रत्न मिलाकर लाइट बॉल बनाएं — यह 8 दिशाओं में फटता है (पंक्ति + कॉलम + दोनों विकर्ण)। सबसे दुर्लभ, सबसे शक्तिशाली रत्न।',
     'guide_bombdown': 'काउंटडाउन बम',
-    'guide_bombdown_desc': 'कुछ लेवल में बम हर मूव पर काउंटडाउन करते हैं। बम को निष्क्रिय करने के लिए उस पर लगे रत्न को साफ़ करें। अगर कोई बम 0 पर पहुंच गया, तो आप तुरंत हार जाएंगे!',
+    'guide_bombdown_desc':
+        'कुछ लेवल में बम हर मूव पर काउंटडाउन करते हैं। बम को निष्क्रिय करने के लिए उस पर लगे रत्न को साफ़ करें। अगर कोई बम 0 पर पहुंच गया, तो आप तुरंत हार जाएंगे!',
     'guide_order': 'मिश्रित लक्ष्य',
-    'guide_order_desc': 'ऑर्डर लेवल में आपको एक साथ कई रंग के रत्न इकट्ठा करने होते हैं। जीतने के लिए हर रंग का लक्ष्य पूरा करें।',
+    'guide_order_desc':
+        'ऑर्डर लेवल में आपको एक साथ कई रंग के रत्न इकट्ठा करने होते हैं। जीतने के लिए हर रंग का लक्ष्य पूरा करें।',
     'shop_title': 'शॉप',
     'shop_skins': 'जेम स्किन',
     'shop_themes': 'बोर्ड थीम',
@@ -6144,9 +6449,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'कल',
     'wheel_got_booster': 'बूस्टर',
     'tut_title': 'कैसे खेलें',
-    'tut_1': 'एक ही रंग के 3 या ज़्यादा रत्न मिलाने के लिए दो पास वाले रत्न स्वैप करें।',
-    'tut_2': 'लगातार 4 मिलाकर स्ट्राइप्ड रत्न बनाएं जो पूरी लाइन साफ़ कर देता है!',
-    'tut_3': '5 मिलाकर रेनबो रत्न बनाएं — यह एक रंग के सभी रत्न साफ़ कर देता है।',
+    'tut_1':
+        'एक ही रंग के 3 या ज़्यादा रत्न मिलाने के लिए दो पास वाले रत्न स्वैप करें।',
+    'tut_2':
+        'लगातार 4 मिलाकर स्ट्राइप्ड रत्न बनाएं जो पूरी लाइन साफ़ कर देता है!',
+    'tut_3':
+        '5 मिलाकर रेनबो रत्न बनाएं — यह एक रंग के सभी रत्न साफ़ कर देता है।',
     'tut_next': 'आगे',
     'tut_skip': 'छोड़ें',
     'tut_start': 'चलिए शुरू करें',
@@ -6173,18 +6481,23 @@ class AppTranslations extends Translations {
     'npc_name_4': 'एम्बर',
     'npc_name_5': 'निक्स',
     'guide_story_title': 'कहानी',
-    'guide_story_body': 'हर वर्ल्ड में एक नियॉन गार्जियन से मिलें। वे आपका स्वागत करते हैं, बीच में उत्साह बढ़ाते हैं, और जैसे-जैसे आप आगे बढ़ते हैं अगले लोक में भेजते हैं।',
+    'guide_story_body':
+        'हर वर्ल्ड में एक नियॉन गार्जियन से मिलें। वे आपका स्वागत करते हैं, बीच में उत्साह बढ़ाते हैं, और जैसे-जैसे आप आगे बढ़ते हैं अगले लोक में भेजते हैं।',
     'story_w1_intro_title': 'द सायन नेबुला',
-    'story_w1_intro_l1': 'स्वागत है, यात्री। मैं लूमा हूं, सायन नेबुला की रोशनी।',
-    'story_w1_intro_l2': 'यहां के रत्न धुंधले पड़ गए हैं। चमक वापस लाने के लिए इन्हें मिलाएं!',
+    'story_w1_intro_l1':
+        'स्वागत है, यात्री। मैं लूमा हूं, सायन नेबुला की रोशनी।',
+    'story_w1_intro_l2':
+        'यहां के रत्न धुंधले पड़ गए हैं। चमक वापस लाने के लिए इन्हें मिलाएं!',
     'story_w1_mid_title': 'एक चिंगारी लौटी',
     'story_w1_mid_l1': 'नेबुला फिर से चमक रहा है — तुम्हारे पास एक उपहार है।',
     'story_w1_mid_l2': 'पर गहरे लोक अभी बाकी हैं। चलते रहो!',
     'story_w1_outro_title': 'नेबुला बहाल',
-    'story_w1_outro_l1': 'सायन नेबुला पहले से कहीं ज़्यादा चमक रहा है। शुक्रिया!',
+    'story_w1_outro_l1':
+        'सायन नेबुला पहले से कहीं ज़्यादा चमक रहा है। शुक्रिया!',
     'story_w1_outro_l2': 'परे से एक मैजेंटा पल्स बुला रहा है। उसका पीछा करो...',
     'story_w2_intro_title': 'द मैजेंटा पल्स',
-    'story_w2_intro_l1': 'मैं वेरा हूं। वो धड़कन महसूस हो रही है? यही है मैजेंटा पल्स।',
+    'story_w2_intro_l1':
+        'मैं वेरा हूं। वो धड़कन महसूस हो रही है? यही है मैजेंटा पल्स।',
     'story_w2_intro_l2': 'ताल में मिलाओ और यह लोक तुम्हारे साथ नाचेगा।',
     'story_w2_mid_title': 'ताल में',
     'story_w2_mid_l1': 'तुम्हारे कॉम्बो पूरे पल्स में गूंज रहे हैं — शानदार!',
@@ -6217,7 +6530,8 @@ class AppTranslations extends Translations {
     'story_w5_mid_l1': 'यह वॉइड भी तुम्हारी चमक को धुंधला नहीं कर सकता।',
     'story_w5_mid_l2': 'आखिरी पड़ाव — सबसे गहरा अंधेरा आगे है।',
     'story_w5_outro_title': 'एक नियॉन लीजेंड',
-    'story_w5_outro_l1': 'तुमने पूरे वॉइड को रोशन कर दिया! ब्रह्मांड फिर से पूरा है।',
+    'story_w5_outro_l1':
+        'तुमने पूरे वॉइड को रोशन कर दिया! ब्रह्मांड फिर से पूरा है।',
     'story_w5_outro_l2': 'तुम एक सच्चे नियॉन लीजेंड हो। शुक्रिया, यात्री।',
     'story_next': 'आगे',
     'story_skip': 'छोड़ें',
@@ -6228,7 +6542,8 @@ class AppTranslations extends Translations {
     'temple_build': 'बनाएं',
     'temple_built': 'बन गया!',
     'temple_maxed': 'अधिकतम',
-    'temple_hint': 'लेवल से कमाए सिक्कों से बनाने के लिए किसी संरचना पर टैप करें।',
+    'temple_hint':
+        'लेवल से कमाए सिक्कों से बनाने के लिए किसी संरचना पर टैप करें।',
     'coins_short': 'सिक्के',
     'temple_gate': 'नियॉन गेट',
     'temple_gate_desc': 'तुम्हारे मंदिर का चमकता प्रवेश द्वार।',
@@ -6261,7 +6576,8 @@ class AppTranslations extends Translations {
     'season_ends': 'समाप्त होगा',
     'season_points': 'सीज़न पॉइंट्स',
     'season_pts_short': 'pts',
-    'season_hint': 'पॉइंट्स कमाने और इनाम अनलॉक करने के लिए सीज़न में लेवल जीतें।',
+    'season_hint':
+        'पॉइंट्स कमाने और इनाम अनलॉक करने के लिए सीज़न में लेवल जीतें।',
     'season_cyan': 'सायन सर्ज',
     'season_magenta': 'मैजेंटा स्टॉर्म',
     'season_lime': 'लाइम रश',
@@ -6278,7 +6594,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'ऑन बीट!',
     'rhythm_offbeat': 'ऑफ बीट',
     'guide_rhythm_title': 'रिदम मोड',
-    'guide_rhythm_body': 'ग्रूव मीटर बढ़ाने और 2.5× तक स्कोर पाने के लिए ठीक बीट पर स्वैप करें (धड़कते डॉट को देखें)। ऑफ-बीट स्वैप से ग्रूव कम हो जाता है। मूव खत्म होने से पहले लक्ष्य स्कोर तक पहुंचें।',
+    'guide_rhythm_body':
+        'ग्रूव मीटर बढ़ाने और 2.5× तक स्कोर पाने के लिए ठीक बीट पर स्वैप करें (धड़कते डॉट को देखें)। ऑफ-बीट स्वैप से ग्रूव कम हो जाता है। मूव खत्म होने से पहले लक्ष्य स्कोर तक पहुंचें।',
     'versus_title': '2 खिलाड़ी',
     'versus_pick': 'एक मोड चुनें',
     'versus_mode': 'वर्सस',
@@ -6295,7 +6612,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'लक्ष्य',
     'versus_go': 'शुरू!',
     'guide_versus_title': '2 खिलाड़ी (लोकल)',
-    'guide_versus_body': 'दो खिलाड़ी, एक डिवाइस। वर्सस: 60 सेकंड में ज़्यादा स्कोर के लिए दौड़ें — बड़े कॉम्बो प्रतिद्वंद्वी को जंक रो भेजते हैं। को-ऑप: समय खत्म होने से पहले साझा लक्ष्य तक पहुंचने के लिए स्कोर मिलाएं। आमने-सामने खेलने के लिए ऊपर वाला बोर्ड घुमाया जाता है।',
+    'guide_versus_body':
+        'दो खिलाड़ी, एक डिवाइस। वर्सस: 60 सेकंड में ज़्यादा स्कोर के लिए दौड़ें — बड़े कॉम्बो प्रतिद्वंद्वी को जंक रो भेजते हैं। को-ऑप: समय खत्म होने से पहले साझा लक्ष्य तक पहुंचने के लिए स्कोर मिलाएं। आमने-सामने खेलने के लिए ऊपर वाला बोर्ड घुमाया जाता है।',
     'challenge_modes': 'चुनौतियां',
     'meta_section': 'इनाम',
     'daily_ch_title': 'दैनिक चुनौती',
@@ -6354,7 +6672,8 @@ class AppTranslations extends Translations {
     'portal_title': 'पोर्टल',
     'dispenser_title': 'डिस्पेंसर',
     'guide_w11_title': 'नई मैकेनिक्स',
-    'guide_w11_body': 'कलर रश मोड: हर कुछ मूव पर एक "हॉट कलर" बदलता है — बोनस पॉइंट्स के लिए इसे साफ़ करें और लक्ष्य तक दौड़ें। कन्वेयर बेल्ट हर मूव पर रत्नों को एक सेल खिसकाते हैं। पोर्टल जुड़े हुए सेल हैं: एक साफ़ करने पर उसका जोड़ीदार भी साफ़ होता है। डिस्पेंसर हर कुछ मूव पर एक स्पेशल रत्न बनाता है।',
+    'guide_w11_body':
+        'कलर रश मोड: हर कुछ मूव पर एक "हॉट कलर" बदलता है — बोनस पॉइंट्स के लिए इसे साफ़ करें और लक्ष्य तक दौड़ें। कन्वेयर बेल्ट हर मूव पर रत्नों को एक सेल खिसकाते हैं। पोर्टल जुड़े हुए सेल हैं: एक साफ़ करने पर उसका जोड़ीदार भी साफ़ होता है। डिस्पेंसर हर कुछ मूव पर एक स्पेशल रत्न बनाता है।',
     'soda_title': 'सोडा राइज़',
     'soda_short': 'सोडा',
     'soda_hud': 'बोतलें',
@@ -6362,7 +6681,8 @@ class AppTranslations extends Translations {
     'obstacle_licorice': 'लिकोरिस',
     'obstacle_jam': 'जैम',
     'guide_w14_title': 'सोडा और नई बाधाएं',
-    'guide_w14_body': 'सोडा राइज़ मोड: रत्न साफ़ करने से सोडा का स्तर बढ़ता है जो बोतलों को ऊपर तैराता है — जीतने के लिए ऊपर वाली पंक्ति तक पर्याप्त बोतलें लाएं। लिकोरिस एक सेल को लॉक कर देता है और तोड़ने के लिए पास की दो सफाई चाहिए। जैम हर मूव पर पड़ोसी सेल में फैलता है जब तक तुम उसके पास वाला न साफ़ करो।',
+    'guide_w14_body':
+        'सोडा राइज़ मोड: रत्न साफ़ करने से सोडा का स्तर बढ़ता है जो बोतलों को ऊपर तैराता है — जीतने के लिए ऊपर वाली पंक्ति तक पर्याप्त बोतलें लाएं। लिकोरिस एक सेल को लॉक कर देता है और तोड़ने के लिए पास की दो सफाई चाहिए। जैम हर मूव पर पड़ोसी सेल में फैलता है जब तक तुम उसके पास वाला न साफ़ करो।',
     'coll_title': 'एल्बम',
     'coll_points': 'एल्बम पॉइंट्स',
     'coll_hint': 'एल्बम पॉइंट्स कमाने और स्टिकर अनलॉक करने के लिए लेवल जीतें।',
@@ -6384,12 +6704,14 @@ class AppTranslations extends Translations {
     'coll_desc_amber_sun': 'एक गर्म सुनहरा सूरज।',
     'coll_desc_orange_ember': 'एक चमकता नारंगी अंगारा।',
     'coll_desc_violet_dusk': 'एक गहरा वायलेट सांझ का आकाश।',
-    'coll_desc_prism_shard': 'रोशनी को इंद्रधनुषी रंगों में बांटता एक क्रिस्टल शार्ड।',
+    'coll_desc_prism_shard':
+        'रोशनी को इंद्रधनुषी रंगों में बांटता एक क्रिस्टल शार्ड।',
     'coll_desc_nebula_core': 'एक रंगीन तारा बादल का चमकता केंद्र।',
     'coll_desc_aurora_wing': 'चमकते नॉर्दर्न-लाइट्स रंग का एक पंख।',
     'coll_desc_quasar_eye': 'दूर के तारे जैसी एक चमकीली आंख जैसी रोशनी।',
     'coll_desc_pulsar_heart': 'रोशनी का एक हृदय जो बीकन की तरह धड़कता है।',
-    'coll_desc_singularity': 'किसी भी चीज़ से घना प्रकाश का एक बिंदु — सबसे दुर्लभ स्टिकर।',
+    'coll_desc_singularity':
+        'किसी भी चीज़ से घना प्रकाश का एक बिंदु — सबसे दुर्लभ स्टिकर।',
     'coll_close': 'बंद करें',
     'piggy_title': 'पिग्गी बैंक',
     'piggy_smash': 'तोड़ें',
@@ -6448,14 +6770,18 @@ class AppTranslations extends Translations {
     'lb_tab_daily': 'يومي',
     'lb_level': 'المستوى',
     'lb_player': 'أنت',
-    'lb_daily_note': 'أفضل 10 لهذا اليوم — أكمل التحدي اليومي للانضمام إلى اللوحة.',
+    'lb_daily_note':
+        'أفضل 10 لهذا اليوم — أكمل التحدي اليومي للانضمام إلى اللوحة.',
     'reduce_motion': 'تقليل تأثيرات الحركة',
     'tour_t0': 'أهلاً بك!',
-    'tour_m0': 'بدّل لتصطف 3 جواهر أو أكثر من نفس اللون. اضغط ابدأ الآن لبدء حملة الـ200 مستوى.',
+    'tour_m0':
+        'بدّل لتصطف 3 جواهر أو أكثر من نفس اللون. اضغط ابدأ الآن لبدء حملة الـ200 مستوى.',
     'tour_t1': 'التحديات',
-    'tour_m1': 'إلى جانب الحملة: بلا نهاية، الزعيم، الاندفاع، الإيقاع والمزيد من الأوضاع الجانبية.',
+    'tour_m1':
+        'إلى جانب الحملة: بلا نهاية، الزعيم، الاندفاع، الإيقاع والمزيد من الأوضاع الجانبية.',
     'tour_t2': 'المكافآت',
-    'tour_m2': 'المتجر وتذكرة المعارك ولوحة المتصدرين والهدايا اليومية والمزيد بانتظارك هنا.',
+    'tour_m2':
+        'المتجر وتذكرة المعارك ولوحة المتصدرين والهدايا اليومية والمزيد بانتظارك هنا.',
     'tour_t3': 'هيا بنا!',
     'tour_m3': 'الأرواح والعملات في الأعلى. استمتع أيها المسافر!',
     'tour_skip': 'تخطي',
@@ -6534,11 +6860,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'المؤقت',
     'guide_w10_title': 'ما الجديد',
     'guide_lightball': 'كرة الضوء',
-    'guide_lightball_desc': 'طابق 7 جواهر أو أكثر لصنع كرة ضوء — تنفجر في 8 اتجاهات (الصف + العمود + كلا القطرين). أندر وأقوى جوهرة.',
+    'guide_lightball_desc':
+        'طابق 7 جواهر أو أكثر لصنع كرة ضوء — تنفجر في 8 اتجاهات (الصف + العمود + كلا القطرين). أندر وأقوى جوهرة.',
     'guide_bombdown': 'قنبلة العد التنازلي',
-    'guide_bombdown_desc': 'بعض المستويات تحتوي قنابل تعد تنازلياً مع كل حركة. امسح الجوهرة التي عليها القنبلة لتفكيكها. إذا وصلت أي قنبلة إلى 0 تخسر فوراً!',
+    'guide_bombdown_desc':
+        'بعض المستويات تحتوي قنابل تعد تنازلياً مع كل حركة. امسح الجوهرة التي عليها القنبلة لتفكيكها. إذا وصلت أي قنبلة إلى 0 تخسر فوراً!',
     'guide_order': 'أهداف مختلطة',
-    'guide_order_desc': 'مستويات الترتيب تطلب جمع عدة ألوان من الجواهر في آن واحد. أكمل هدف كل لون للفوز.',
+    'guide_order_desc':
+        'مستويات الترتيب تطلب جمع عدة ألوان من الجواهر في آن واحد. أكمل هدف كل لون للفوز.',
     'shop_title': 'المتجر',
     'shop_skins': 'مظاهر الجواهر',
     'shop_themes': 'سمات اللوحة',
@@ -6610,7 +6939,8 @@ class AppTranslations extends Translations {
     'npc_name_4': 'إمبر',
     'npc_name_5': 'نيكس',
     'guide_story_title': 'القصة',
-    'guide_story_body': 'قابل حارس نيون في كل عالم. يرحبون بك، يشجعونك في المنتصف، ويرسلونك إلى العالم التالي كلما تعمقت في الرحلة.',
+    'guide_story_body':
+        'قابل حارس نيون في كل عالم. يرحبون بك، يشجعونك في المنتصف، ويرسلونك إلى العالم التالي كلما تعمقت في الرحلة.',
     'story_w1_intro_title': 'السديم السماوي',
     'story_w1_intro_l1': 'أهلاً أيها المسافر. أنا لوما، ضوء السديم السماوي.',
     'story_w1_intro_l2': 'خفتت الجواهر هنا. طابقها لإعادة توهجها!',
@@ -6715,7 +7045,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'على الإيقاع!',
     'rhythm_offbeat': 'خارج الإيقاع',
     'guide_rhythm_title': 'وضع الإيقاع',
-    'guide_rhythm_body': 'بدّل بالضبط على الإيقاع (راقب النقطة النابضة) لبناء مقياس الحماس وتسجيل نقاط حتى 2.5×. التبديل خارج الإيقاع يُنقص حماسك. صِل إلى النقاط المستهدفة قبل نفاد الحركات.',
+    'guide_rhythm_body':
+        'بدّل بالضبط على الإيقاع (راقب النقطة النابضة) لبناء مقياس الحماس وتسجيل نقاط حتى 2.5×. التبديل خارج الإيقاع يُنقص حماسك. صِل إلى النقاط المستهدفة قبل نفاد الحركات.',
     'versus_title': 'لاعبان',
     'versus_pick': 'اختر وضعاً',
     'versus_mode': 'مواجهة',
@@ -6732,7 +7063,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'الهدف',
     'versus_go': 'انطلق!',
     'guide_versus_title': 'لاعبان (محلي)',
-    'guide_versus_body': 'لاعبان، جهاز واحد. مواجهة: تسابقا لأعلى نقاط خلال 60 ثانية — الكومبوهات الكبيرة ترسل صفوفاً مزعجة للخصم. تعاوني: اجمعا النقاط للوصول إلى الهدف المشترك قبل نفاد الوقت. اللوحة العلوية مقلوبة للعب وجهاً لوجه.',
+    'guide_versus_body':
+        'لاعبان، جهاز واحد. مواجهة: تسابقا لأعلى نقاط خلال 60 ثانية — الكومبوهات الكبيرة ترسل صفوفاً مزعجة للخصم. تعاوني: اجمعا النقاط للوصول إلى الهدف المشترك قبل نفاد الوقت. اللوحة العلوية مقلوبة للعب وجهاً لوجه.',
     'challenge_modes': 'التحديات',
     'meta_section': 'المكافآت',
     'daily_ch_title': 'التحدي اليومي',
@@ -6791,7 +7123,8 @@ class AppTranslations extends Translations {
     'portal_title': 'البوابة',
     'dispenser_title': 'الموزّع',
     'guide_w11_title': 'آليات جديدة',
-    'guide_w11_body': 'وضع اندفاع الألوان: "اللون الساخن" يتغير كل بضع حركات — امسحه لنقاط إضافية وتسابق نحو الهدف. الأحزمة الناقلة تحرك الجواهر خلية واحدة كل حركة. البوابات خلايا مترابطة: مسح واحدة يمسح شريكتها أيضاً. الموزّعات تُنتج جوهرة خاصة كل بضع حركات.',
+    'guide_w11_body':
+        'وضع اندفاع الألوان: "اللون الساخن" يتغير كل بضع حركات — امسحه لنقاط إضافية وتسابق نحو الهدف. الأحزمة الناقلة تحرك الجواهر خلية واحدة كل حركة. البوابات خلايا مترابطة: مسح واحدة يمسح شريكتها أيضاً. الموزّعات تُنتج جوهرة خاصة كل بضع حركات.',
     'soda_title': 'صعود الصودا',
     'soda_short': 'الصودا',
     'soda_hud': 'الزجاجات',
@@ -6799,7 +7132,8 @@ class AppTranslations extends Translations {
     'obstacle_licorice': 'العرقسوس',
     'obstacle_jam': 'المربى',
     'guide_w14_title': 'الصودا وعوائق جديدة',
-    'guide_w14_body': 'وضع صعود الصودا: مسح الجواهر يرفع مستوى الصودا الذي يعوّم الزجاجات للأعلى — أوصل عدداً كافياً من الزجاجات للصف العلوي للفوز. العرقسوس يقفل خلية ويحتاج مسحتين قريبتين لكسره. المربى ينتشر لخلية مجاورة كل حركة ما لم تمسح بجانبه.',
+    'guide_w14_body':
+        'وضع صعود الصودا: مسح الجواهر يرفع مستوى الصودا الذي يعوّم الزجاجات للأعلى — أوصل عدداً كافياً من الزجاجات للصف العلوي للفوز. العرقسوس يقفل خلية ويحتاج مسحتين قريبتين لكسره. المربى ينتشر لخلية مجاورة كل حركة ما لم تمسح بجانبه.',
     'coll_title': 'الألبوم',
     'coll_points': 'نقاط الألبوم',
     'coll_hint': 'اربح المستويات لكسب نقاط الألبوم وفتح الملصقات.',
@@ -6872,9 +7206,11 @@ class AppTranslations extends Translations {
     'rule_rhythm': 'Ritmi yakala, eşleştirmeye devam et',
     'rule_survival': 'Sular yükselmeden mümkün olduğunca hayatta kal',
     'rule_labyrinth': 'Çıkışa giden yolu bul',
-    'rule_color_rush': 'Aynı renkte zincirleme eşleştirmelerle seri bonusu kazan',
+    'rule_color_rush':
+        'Aynı renkte zincirleme eşleştirmelerle seri bonusu kazan',
     'rule_soda': 'Hamleler bitmeden sodayı en üste çıkar',
-    'rule_endless': 'Oynamaya devam et — ne kadar dayanırsan puanın o kadar artar',
+    'rule_endless':
+        'Oynamaya devam et — ne kadar dayanırsan puanın o kadar artar',
     'rule_daily': 'Ödüller için bugünkü meydan okumayı tamamla',
     'rule_puzzle': 'Sınırlı hamlede bulmacayı çöz',
     'rule_zen': 'Rahatla — hamle sınırı yok',
@@ -6885,14 +7221,18 @@ class AppTranslations extends Translations {
     'lb_tab_daily': 'Günlük',
     'lb_level': 'Seviye',
     'lb_player': 'Sen',
-    'lb_daily_note': 'Bugünün ilk 10\'u — tabloya katılmak için Günlük\'ü tamamla.',
+    'lb_daily_note':
+        'Bugünün ilk 10\'u — tabloya katılmak için Günlük\'ü tamamla.',
     'reduce_motion': 'Hareket efektlerini azalt',
     'tour_t0': 'Hoş geldin!',
-    'tour_m0': 'Aynı renkten 3+ mücevheri yan yana getirmek için yer değiştir. 200 seviyelik kampanyaya başlamak için Hemen Oyna\'ya dokun.',
+    'tour_m0':
+        'Aynı renkten 3+ mücevheri yan yana getirmek için yer değiştir. 200 seviyelik kampanyaya başlamak için Hemen Oyna\'ya dokun.',
     'tour_t1': 'Meydan Okumalar',
-    'tour_m1': 'Kampanyanın ötesinde: Sonsuz, Boss, Rush, Ritim ve daha birçok yan mod.',
+    'tour_m1':
+        'Kampanyanın ötesinde: Sonsuz, Boss, Rush, Ritim ve daha birçok yan mod.',
     'tour_t2': 'Ödüller',
-    'tour_m2': 'Mağaza, Battle Pass, Lider Tablosu, günlük hediyeler ve daha fazlası burada seni bekliyor.',
+    'tour_m2':
+        'Mağaza, Battle Pass, Lider Tablosu, günlük hediyeler ve daha fazlası burada seni bekliyor.',
     'tour_t3': 'Hadi Başlayalım!',
     'tour_m3': 'Canlar ve altınlar üstte. İyi eğlenceler, gezgin!',
     'tour_skip': 'Atla',
@@ -6932,9 +7272,11 @@ class AppTranslations extends Translations {
     'pt_blazing_title': 'Alevli',
     'pt_blazing_desc': 'Mücevher patlamasında ×2,0 parçacık patlaması (150 ★)',
     'pt_prestige_title': 'Prestij',
-    'pt_prestige_desc': 'Prestij Mücevher Kaplamasını aç (5 Altın kilometre taşı)',
+    'pt_prestige_desc':
+        'Prestij Mücevher Kaplamasını aç (5 Altın kilometre taşı)',
     'pt_ascendant_title': 'Yükselen',
-    'pt_ascendant_desc': 'Yükselen parçacık efektini aç (3 Platin kilometre taşı)',
+    'pt_ascendant_desc':
+        'Yükselen parçacık efektini aç (3 Platin kilometre taşı)',
     'pt_unlocked': '✓ Açıldı',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -6971,11 +7313,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'Zamanlayıcı',
     'guide_w10_title': 'Yenilikler',
     'guide_lightball': 'Işık Küresi',
-    'guide_lightball_desc': '7+ mücevher eşleştirerek bir Işık Küresi oluştur — 8 yönde patlar (satır + sütun + her iki çapraz). En nadir ve en güçlü mücevher.',
+    'guide_lightball_desc':
+        '7+ mücevher eşleştirerek bir Işık Küresi oluştur — 8 yönde patlar (satır + sütun + her iki çapraz). En nadir ve en güçlü mücevher.',
     'guide_bombdown': 'Geri Sayım Bombası',
-    'guide_bombdown_desc': 'Bazı seviyelerde her hamlede geri sayan bombalar var. Bombanın üzerindeki mücevheri temizleyerek etkisiz hale getir. Bir bomba 0\'a ulaşırsa anında kaybedersin!',
+    'guide_bombdown_desc':
+        'Bazı seviyelerde her hamlede geri sayan bombalar var. Bombanın üzerindeki mücevheri temizleyerek etkisiz hale getir. Bir bomba 0\'a ulaşırsa anında kaybedersin!',
     'guide_order': 'Karma Hedefler',
-    'guide_order_desc': 'Sıralı seviyeler aynı anda birden fazla mücevher rengi toplamanı ister. Kazanmak için her renk hedefini tamamla.',
+    'guide_order_desc':
+        'Sıralı seviyeler aynı anda birden fazla mücevher rengi toplamanı ister. Kazanmak için her renk hedefini tamamla.',
     'shop_title': 'Mağaza',
     'shop_skins': 'Mücevher Kaplamaları',
     'shop_themes': 'Tahta Temaları',
@@ -7018,9 +7363,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'Yarın',
     'wheel_got_booster': 'Güçlendirici',
     'tut_title': 'Nasıl Oynanır',
-    'tut_1': 'Aynı renkten 3 veya daha fazlasını yan yana getirmek için bitişik iki mücevherin yerini değiştir.',
-    'tut_2': 'Bir sırada 4 eşleştirerek tüm satırı temizleyen bir Çizgili mücevher oluştur!',
-    'tut_3': '5 eşleştirerek bir renkteki tüm mücevherleri temizleyen bir Gökkuşağı mücevheri yap.',
+    'tut_1':
+        'Aynı renkten 3 veya daha fazlasını yan yana getirmek için bitişik iki mücevherin yerini değiştir.',
+    'tut_2':
+        'Bir sırada 4 eşleştirerek tüm satırı temizleyen bir Çizgili mücevher oluştur!',
+    'tut_3':
+        '5 eşleştirerek bir renkteki tüm mücevherleri temizleyen bir Gökkuşağı mücevheri yap.',
     'tut_next': 'İleri',
     'tut_skip': 'Atla',
     'tut_start': 'Hadi Başlayalım',
@@ -7047,34 +7395,43 @@ class AppTranslations extends Translations {
     'npc_name_4': 'Ember',
     'npc_name_5': 'Nyx',
     'guide_story_title': 'Hikaye',
-    'guide_story_body': 'Her dünyada bir neon koruyucuyla tanış. Seni karşılar, yarı yolda seni tebrik eder ve daha derinlere ilerledikçe seni bir sonraki diyara gönderir.',
+    'guide_story_body':
+        'Her dünyada bir neon koruyucuyla tanış. Seni karşılar, yarı yolda seni tebrik eder ve daha derinlere ilerledikçe seni bir sonraki diyara gönderir.',
     'story_w1_intro_title': 'Camgöbeği Bulutsusu',
-    'story_w1_intro_l1': 'Hoş geldin, gezgin. Ben Luma, Camgöbeği Bulutsusu\'nun ışığıyım.',
-    'story_w1_intro_l2': 'Buradaki mücevherler soldu. Parlaklıklarını geri getirmek için onları eşleştir!',
+    'story_w1_intro_l1':
+        'Hoş geldin, gezgin. Ben Luma, Camgöbeği Bulutsusu\'nun ışığıyım.',
+    'story_w1_intro_l2':
+        'Buradaki mücevherler soldu. Parlaklıklarını geri getirmek için onları eşleştir!',
     'story_w1_mid_title': 'Bir Kıvılcım Geri Döndü',
     'story_w1_mid_l1': 'Bulutsu yeniden parlıyor — bir yeteneğin var.',
     'story_w1_mid_l2': 'Ama daha derin diyarlar seni bekliyor. Devam et!',
     'story_w1_outro_title': 'Bulutsu Yeniden Doğdu',
-    'story_w1_outro_l1': 'Camgöbeği Bulutsusu hiç olmadığı kadar parlıyor. Teşekkürler!',
-    'story_w1_outro_l2': 'Ötelerden bir macenta nabız çağırıyor. Onu takip et...',
+    'story_w1_outro_l1':
+        'Camgöbeği Bulutsusu hiç olmadığı kadar parlıyor. Teşekkürler!',
+    'story_w1_outro_l2':
+        'Ötelerden bir macenta nabız çağırıyor. Onu takip et...',
     'story_w2_intro_title': 'Macenta Nabız',
-    'story_w2_intro_l1': 'Ben Vera. Şu ritmi hissediyor musun? Bu Macenta Nabız.',
+    'story_w2_intro_l1':
+        'Ben Vera. Şu ritmi hissediyor musun? Bu Macenta Nabız.',
     'story_w2_intro_l2': 'Ritme uygun eşleştir, diyar seninle dans etsin.',
     'story_w2_mid_title': 'Ritim İçinde',
     'story_w2_mid_l1': 'Kombolarının yankısı nabzın her yerinde — muhteşem!',
-    'story_w2_mid_l2': 'Yolculuğun yarısı tamamlandı. Ritim daha da vahşileşiyor.',
+    'story_w2_mid_l2':
+        'Yolculuğun yarısı tamamlandı. Ritim daha da vahşileşiyor.',
     'story_w2_outro_title': 'Sabit Ritim',
     'story_w2_outro_l1': 'Nabız yeniden sabit ve parlak. İnanılmaz!',
     'story_w2_outro_l2': 'İleride yeşil bir devrenin kıvılcımları titreşiyor.',
     'story_w3_intro_title': 'Lime Devresi',
     'story_w3_intro_l1': 'Bip! Ben Cir, Lime Devresi\'nin bekçisiyim.',
-    'story_w3_intro_l2': 'Izgarayı yeniden canlandırmak için mücevherleri bağla.',
+    'story_w3_intro_l2':
+        'Izgarayı yeniden canlandırmak için mücevherleri bağla.',
     'story_w3_mid_title': 'Tam Şarj',
     'story_w3_mid_l1': 'Devreler tam şarjda uğulduyor — harika iş!',
     'story_w3_mid_l2': 'Kablolar buradan sonra daha da karışıyor. Dikkatli ol.',
     'story_w3_outro_title': 'Sistem Onarıldı',
     'story_w3_outro_l1': 'Tüm ızgara yeşil parlıyor. Sistem onarıldı!',
-    'story_w3_outro_l2': 'Karanlıkta yanan kehribar bir kuyrukluyıldız beliriyor...',
+    'story_w3_outro_l2':
+        'Karanlıkta yanan kehribar bir kuyrukluyıldız beliriyor...',
     'story_w4_intro_title': 'Kehribar Kuyrukluyıldız',
     'story_w4_intro_l1': 'Ben Ember, Kehribar Kuyrukluyıldız\'ın süvarisi.',
     'story_w4_intro_l2': 'Kuyrukluyıldız sönmeden mücevherlerde alev al!',
@@ -7102,7 +7459,8 @@ class AppTranslations extends Translations {
     'temple_build': 'İnşa Et',
     'temple_built': 'İnşa Edildi!',
     'temple_maxed': 'Maksimum',
-    'temple_hint': 'Seviyelerden kazanılan altınlarla inşa etmek için bir yapıya dokun.',
+    'temple_hint':
+        'Seviyelerden kazanılan altınlarla inşa etmek için bir yapıya dokun.',
     'coins_short': 'altın',
     'temple_gate': 'Neon Kapısı',
     'temple_gate_desc': 'Tapınağının parıldayan girişi.',
@@ -7152,7 +7510,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'Ritimde!',
     'rhythm_offbeat': 'Ritim Dışı',
     'guide_rhythm_title': 'Ritim Modu',
-    'guide_rhythm_body': 'Groove ölçeğini yükseltmek ve puanını 2,5×\'e kadar artırmak için tam ritimde eşleştir (titreşen noktayı izle). Ritim dışı eşleştirmeler grove\'unu düşürür. Hamleler bitmeden hedef puana ulaş.',
+    'guide_rhythm_body':
+        'Groove ölçeğini yükseltmek ve puanını 2,5×\'e kadar artırmak için tam ritimde eşleştir (titreşen noktayı izle). Ritim dışı eşleştirmeler grove\'unu düşürür. Hamleler bitmeden hedef puana ulaş.',
     'versus_title': '2 Oyunculu',
     'versus_pick': 'Bir mod seç',
     'versus_mode': 'Versus',
@@ -7169,7 +7528,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'Hedef',
     'versus_go': 'Başla!',
     'guide_versus_title': '2 Oyunculu (yerel)',
-    'guide_versus_body': 'İki oyuncu, tek cihaz. Versus: 60 saniyede en yüksek puan için yarış — büyük kombolar rakibine çöp sıra gönderir. İş Birliği: ortak hedefe süre bitmeden ulaşmak için puanları birleştirin. Üst tahta yüz yüze oyun için ters çevrilir.',
+    'guide_versus_body':
+        'İki oyuncu, tek cihaz. Versus: 60 saniyede en yüksek puan için yarış — büyük kombolar rakibine çöp sıra gönderir. İş Birliği: ortak hedefe süre bitmeden ulaşmak için puanları birleştirin. Üst tahta yüz yüze oyun için ters çevrilir.',
     'challenge_modes': 'Meydan Okumalar',
     'meta_section': 'Ödüller',
     'daily_ch_title': 'Günlük Meydan Okuma',
@@ -7228,18 +7588,22 @@ class AppTranslations extends Translations {
     'portal_title': 'Portal',
     'dispenser_title': 'Dağıtıcı',
     'guide_w11_title': 'Yeni Mekanikler',
-    'guide_w11_body': 'Renk Akını modu: her birkaç hamlede bir "sıcak renk" değişir — bonus puan için onu temizle ve hedefe ulaşmak için yarış. Konveyör bantları her hamlede mücevherleri bir hücre kaydırır. Portallar bağlı hücrelerdir: birini temizlemek eşini de temizler. Dağıtıcılar birkaç hamlede bir özel mücevher üretir.',
+    'guide_w11_body':
+        'Renk Akını modu: her birkaç hamlede bir "sıcak renk" değişir — bonus puan için onu temizle ve hedefe ulaşmak için yarış. Konveyör bantları her hamlede mücevherleri bir hücre kaydırır. Portallar bağlı hücrelerdir: birini temizlemek eşini de temizler. Dağıtıcılar birkaç hamlede bir özel mücevher üretir.',
     'soda_title': 'Soda Yükseliyor',
     'soda_short': 'Soda',
     'soda_hud': 'Şişeler',
-    'soda_desc': 'Sodayı yükseltmek ve şişeleri en üste çıkarmak için mücevherleri temizle',
+    'soda_desc':
+        'Sodayı yükseltmek ve şişeleri en üste çıkarmak için mücevherleri temizle',
     'obstacle_licorice': 'Meyan Kökü',
     'obstacle_jam': 'Reçel',
     'guide_w14_title': 'Soda ve Yeni Engeller',
-    'guide_w14_body': 'Soda Yükseliyor modu: mücevherleri temizlemek soda seviyesini yükseltir ve şişeleri yukarı taşır — kazanmak için üst sıraya yeterince şişe getir. Meyan Kökü bir hücreyi kilitler ve kırılması için yakınında iki temizlik gerekir. Reçel, yanında temizlik yapılmadıkça her hamlede bir komşuya yayılır.',
+    'guide_w14_body':
+        'Soda Yükseliyor modu: mücevherleri temizlemek soda seviyesini yükseltir ve şişeleri yukarı taşır — kazanmak için üst sıraya yeterince şişe getir. Meyan Kökü bir hücreyi kilitler ve kırılması için yakınında iki temizlik gerekir. Reçel, yanında temizlik yapılmadıkça her hamlede bir komşuya yayılır.',
     'coll_title': 'Albüm',
     'coll_points': 'albüm pu.',
-    'coll_hint': 'Albüm puanı kazanmak ve çıkartma açmak için seviyeleri kazan.',
+    'coll_hint':
+        'Albüm puanı kazanmak ve çıkartma açmak için seviyeleri kazan.',
     'coll_cyan_spark': 'Camgöbeği Kıvılcımı',
     'coll_magenta_bloom': 'Macenta Çiçeği',
     'coll_lime_leaf': 'Lime Yaprağı',
@@ -7258,12 +7622,15 @@ class AppTranslations extends Translations {
     'coll_desc_amber_sun': 'Sıcacık altın rengi bir güneş.',
     'coll_desc_orange_ember': 'Işıldayan turuncu bir kor.',
     'coll_desc_violet_dusk': 'Derin mor bir alacakaranlık göğü.',
-    'coll_desc_prism_shard': 'Işığı gökkuşağı renklerine bölen bir kristal parçası.',
+    'coll_desc_prism_shard':
+        'Işığı gökkuşağı renklerine bölen bir kristal parçası.',
     'coll_desc_nebula_core': 'Renkli bir yıldız bulutunun ışıldayan çekirdeği.',
     'coll_desc_aurora_wing': 'Titreşen kutup ışığı renginde bir kanat.',
-    'coll_desc_quasar_eye': 'Uzak bir yıldız gibi parlayan göz şeklinde bir ışık.',
+    'coll_desc_quasar_eye':
+        'Uzak bir yıldız gibi parlayan göz şeklinde bir ışık.',
     'coll_desc_pulsar_heart': 'Bir fener gibi nabız atan ışık dolu bir kalp.',
-    'coll_desc_singularity': 'Her şeyden daha yoğun tek bir ışık noktası — en nadir çıkartma.',
+    'coll_desc_singularity':
+        'Her şeyden daha yoğun tek bir ışık noktası — en nadir çıkartma.',
     'coll_close': 'Kapat',
     'piggy_title': 'Kumbara',
     'piggy_smash': 'Kır',
@@ -7311,7 +7678,8 @@ class AppTranslations extends Translations {
     'rule_rhythm': 'Match op de beat voor je groove',
     'rule_survival': 'Overleef zo lang mogelijk voordat de vloed stijgt',
     'rule_labyrinth': 'Vind je weg naar de uitgang',
-    'rule_color_rush': 'Combineer matches van dezelfde kleur voor een streakbonus',
+    'rule_color_rush':
+        'Combineer matches van dezelfde kleur voor een streakbonus',
     'rule_soda': 'Laat de soda stijgen tot de top voordat je zetten op zijn',
     'rule_endless': 'Blijf spelen — je score stijgt hoe langer je volhoudt',
     'rule_daily': 'Voltooi de uitdaging van vandaag voor beloningen',
@@ -7327,11 +7695,14 @@ class AppTranslations extends Translations {
     'lb_daily_note': 'Top 10 van vandaag — voltooi Dagelijks om mee te doen.',
     'reduce_motion': 'Bewegingseffecten verminderen',
     'tour_t0': 'Welkom!',
-    'tour_m0': 'Wissel om 3 of meer edelstenen van dezelfde kleur op een lijn te krijgen. Tik op Nu Spelen om de campagne met 200 levels te starten.',
+    'tour_m0':
+        'Wissel om 3 of meer edelstenen van dezelfde kleur op een lijn te krijgen. Tik op Nu Spelen om de campagne met 200 levels te starten.',
     'tour_t1': 'Uitdagingen',
-    'tour_m1': 'Naast de campagne: Endless, Boss, Rush, Rhythm en nog veel meer side-modes.',
+    'tour_m1':
+        'Naast de campagne: Endless, Boss, Rush, Rhythm en nog veel meer side-modes.',
     'tour_t2': 'Beloningen',
-    'tour_m2': 'Winkel, Battle Pass, Ranglijst, dagelijkse cadeaus en meer wachten hier beneden op je.',
+    'tour_m2':
+        'Winkel, Battle Pass, Ranglijst, dagelijkse cadeaus en meer wachten hier beneden op je.',
     'tour_t3': 'Daar Gaan We!',
     'tour_m3': 'Levens en munten staan bovenaan. Veel plezier, reiziger!',
     'tour_skip': 'Overslaan',
@@ -7373,7 +7744,8 @@ class AppTranslations extends Translations {
     'pt_prestige_title': 'Prestige',
     'pt_prestige_desc': 'Ontgrendel Prestige Edelsteenskin (5 Goud-mijlpalen)',
     'pt_ascendant_title': 'Ascendant',
-    'pt_ascendant_desc': 'Ontgrendel Ascendant-deeltjeseffect (3 Platina-mijlpalen)',
+    'pt_ascendant_desc':
+        'Ontgrendel Ascendant-deeltjeseffect (3 Platina-mijlpalen)',
     'pt_unlocked': '✓ Ontgrendeld',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -7410,11 +7782,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'Timer',
     'guide_w10_title': 'Wat Is Nieuw',
     'guide_lightball': 'Lichtbal',
-    'guide_lightball_desc': 'Match 7 of meer edelstenen om een Lichtbal te maken — die barst uit in 8 richtingen (rij + kolom + beide diagonalen). De zeldzaamste, krachtigste edelsteen.',
+    'guide_lightball_desc':
+        'Match 7 of meer edelstenen om een Lichtbal te maken — die barst uit in 8 richtingen (rij + kolom + beide diagonalen). De zeldzaamste, krachtigste edelsteen.',
     'guide_bombdown': 'Aftel-bom',
-    'guide_bombdown_desc': 'Sommige levels hebben bommen die aftellen bij elke zet. Verwijder de edelsteen op een bom om hem te ontmantelen. Als een bom op 0 komt, verlies je meteen!',
+    'guide_bombdown_desc':
+        'Sommige levels hebben bommen die aftellen bij elke zet. Verwijder de edelsteen op een bom om hem te ontmantelen. Als een bom op 0 komt, verlies je meteen!',
     'guide_order': 'Gemengde Doelen',
-    'guide_order_desc': 'Order-levels vragen je om meerdere edelsteenkleuren tegelijk te verzamelen. Voltooi elk kleurdoel om te winnen.',
+    'guide_order_desc':
+        'Order-levels vragen je om meerdere edelsteenkleuren tegelijk te verzamelen. Voltooi elk kleurdoel om te winnen.',
     'shop_title': 'Winkel',
     'shop_skins': 'Edelsteenskins',
     'shop_themes': 'Bordthema\'s',
@@ -7457,9 +7832,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'Morgen',
     'wheel_got_booster': 'Booster',
     'tut_title': 'Hoe Te Spelen',
-    'tut_1': 'Wissel twee aangrenzende edelstenen om er 3 of meer van dezelfde kleur op een lijn te krijgen.',
-    'tut_2': 'Match 4 op een rij om een Gestreepte edelsteen te maken die een hele lijn wist!',
-    'tut_3': 'Match 5 om een Regenboog-edelsteen te maken — die wist elke edelsteen van één kleur.',
+    'tut_1':
+        'Wissel twee aangrenzende edelstenen om er 3 of meer van dezelfde kleur op een lijn te krijgen.',
+    'tut_2':
+        'Match 4 op een rij om een Gestreepte edelsteen te maken die een hele lijn wist!',
+    'tut_3':
+        'Match 5 om een Regenboog-edelsteen te maken — die wist elke edelsteen van één kleur.',
     'tut_next': 'Volgende',
     'tut_skip': 'Overslaan',
     'tut_start': 'Laten We Gaan',
@@ -7486,10 +7864,13 @@ class AppTranslations extends Translations {
     'npc_name_4': 'Ember',
     'npc_name_5': 'Nyx',
     'guide_story_title': 'Verhaal',
-    'guide_story_body': 'Ontmoet een neonwachter in elke wereld. Ze verwelkomen je, moedigen je halverwege aan en sturen je dieper de reis in naar het volgende rijk.',
+    'guide_story_body':
+        'Ontmoet een neonwachter in elke wereld. Ze verwelkomen je, moedigen je halverwege aan en sturen je dieper de reis in naar het volgende rijk.',
     'story_w1_intro_title': 'De Cyaan Nevel',
-    'story_w1_intro_l1': 'Welkom, reiziger. Ik ben Luma, licht van de Cyaan Nevel.',
-    'story_w1_intro_l2': 'De edelstenen hier zijn gedoofd. Match ze om de gloed terug te brengen!',
+    'story_w1_intro_l1':
+        'Welkom, reiziger. Ik ben Luma, licht van de Cyaan Nevel.',
+    'story_w1_intro_l2':
+        'De edelstenen hier zijn gedoofd. Match ze om de gloed terug te brengen!',
     'story_w1_mid_title': 'Een Vonk Keert Terug',
     'story_w1_mid_l1': 'De nevel schittert weer — je hebt een gave.',
     'story_w1_mid_l2': 'Maar diepere rijken wachten. Ga door!',
@@ -7497,7 +7878,8 @@ class AppTranslations extends Translations {
     'story_w1_outro_l1': 'De Cyaan Nevel schittert als nooit tevoren. Dank je!',
     'story_w1_outro_l2': 'Een magenta puls roept van ver weg. Volg hem...',
     'story_w2_intro_title': 'De Magenta Puls',
-    'story_w2_intro_l1': 'Ik ben Vera. Voel je die beat? Dat is de Magenta Puls.',
+    'story_w2_intro_l1':
+        'Ik ben Vera. Voel je die beat? Dat is de Magenta Puls.',
     'story_w2_intro_l2': 'Match op het ritme en het rijk zal met je meedansen.',
     'story_w2_mid_title': 'In Het Ritme',
     'story_w2_mid_l1': 'Je combo\'s weergalmen door de puls — prachtig!',
@@ -7507,7 +7889,8 @@ class AppTranslations extends Translations {
     'story_w2_outro_l2': 'Vonken van een groen circuit flikkeren voor je.',
     'story_w3_intro_title': 'Het Limoen Circuit',
     'story_w3_intro_l1': 'Piep! Ik ben Cir, hoeder van het Limoen Circuit.',
-    'story_w3_intro_l2': 'Verbind de edelstenen om het net weer tot leven te brengen.',
+    'story_w3_intro_l2':
+        'Verbind de edelstenen om het net weer tot leven te brengen.',
     'story_w3_mid_title': 'Volledig Opgeladen',
     'story_w3_mid_l1': 'Circuits zoemen op volle kracht — goed gedaan!',
     'story_w3_mid_l2': 'De bedrading wordt lastiger vanaf hier. Blijf scherp.',
@@ -7530,7 +7913,8 @@ class AppTranslations extends Translations {
     'story_w5_mid_l1': 'Zelfs de leegte kan je gloed niet doven.',
     'story_w5_mid_l2': 'De laatste etappe — het diepste duister wacht.',
     'story_w5_outro_title': 'Een Neon Legende',
-    'story_w5_outro_l1': 'Je hebt de hele Leegte verlicht! De kosmos is weer heel.',
+    'story_w5_outro_l1':
+        'Je hebt de hele Leegte verlicht! De kosmos is weer heel.',
     'story_w5_outro_l2': 'Je bent een echte Neon Legende. Dank je, reiziger.',
     'story_next': 'Volgende',
     'story_skip': 'Overslaan',
@@ -7541,7 +7925,8 @@ class AppTranslations extends Translations {
     'temple_build': 'Bouwen',
     'temple_built': 'Gebouwd!',
     'temple_maxed': 'Maximaal',
-    'temple_hint': 'Tik op een bouwwerk om het te bouwen met munten verdiend in levels.',
+    'temple_hint':
+        'Tik op een bouwwerk om het te bouwen met munten verdiend in levels.',
     'coins_short': 'munten',
     'temple_gate': 'Neonpoort',
     'temple_gate_desc': 'De gloeiende ingang van je tempel.',
@@ -7574,7 +7959,8 @@ class AppTranslations extends Translations {
     'season_ends': 'Eindigt over',
     'season_points': 'seizoenspunten',
     'season_pts_short': 'pt',
-    'season_hint': 'Win levels tijdens het seizoen om punten te verdienen en beloningen te ontgrendelen.',
+    'season_hint':
+        'Win levels tijdens het seizoen om punten te verdienen en beloningen te ontgrendelen.',
     'season_cyan': 'Cyaan Golf',
     'season_magenta': 'Magenta Storm',
     'season_lime': 'Limoen Rush',
@@ -7591,7 +7977,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'Op de Beat!',
     'rhythm_offbeat': 'Uit de Beat',
     'guide_rhythm_title': 'Rhythm-modus',
-    'guide_rhythm_body': 'Wissel precies op de beat (let op de pulserende stip) om je Groove-meter op te bouwen en tot 2,5× punten te scoren. Wissels uit de beat laten je groove zakken. Bereik de doelscore voordat de zetten op zijn.',
+    'guide_rhythm_body':
+        'Wissel precies op de beat (let op de pulserende stip) om je Groove-meter op te bouwen en tot 2,5× punten te scoren. Wissels uit de beat laten je groove zakken. Bereik de doelscore voordat de zetten op zijn.',
     'versus_title': '2 Spelers',
     'versus_pick': 'Kies een modus',
     'versus_mode': 'Versus',
@@ -7608,7 +7995,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'Doel',
     'versus_go': 'Start!',
     'guide_versus_title': '2 Spelers (lokaal)',
-    'guide_versus_body': 'Twee spelers, één apparaat. Versus: race naar de hoogste score in 60s — grote combo\'s sturen rommelrijen naar je rivaal. Co-Op: combineer scores om samen het gedeelde doel te bereiken voordat de tijd om is. Het bovenste bord is gedraaid voor spel tegenover elkaar.',
+    'guide_versus_body':
+        'Twee spelers, één apparaat. Versus: race naar de hoogste score in 60s — grote combo\'s sturen rommelrijen naar je rivaal. Co-Op: combineer scores om samen het gedeelde doel te bereiken voordat de tijd om is. Het bovenste bord is gedraaid voor spel tegenover elkaar.',
     'challenge_modes': 'Uitdagingen',
     'meta_section': 'Beloningen',
     'daily_ch_title': 'Dagelijkse Uitdaging',
@@ -7630,7 +8018,8 @@ class AppTranslations extends Translations {
     'rec_tier_gold': 'Goud',
     'rec_tier_platinum': 'Platina',
     'hard_variant_on': 'Uitdaging: Aan (minder zetten, +50% munten)',
-    'hard_variant_off': 'Uitdaging: Uit (tik om moeilijkere run te ontgrendelen)',
+    'hard_variant_off':
+        'Uitdaging: Uit (tik om moeilijkere run te ontgrendelen)',
     'puzzle_short': 'Puzzel',
     'puzzle_title': 'Puzzels',
     'puzzle_sub': 'Beperkt bord — geen aanvulling!',
@@ -7667,18 +8056,22 @@ class AppTranslations extends Translations {
     'portal_title': 'Portaal',
     'dispenser_title': 'Dispenser',
     'guide_w11_title': 'Nieuwe Mechanieken',
-    'guide_w11_body': 'Color Rush-modus: een "hete kleur" verandert om de paar zetten — wis hem voor bonuspunten en race naar het doel. Lopende banden verschuiven edelstenen één vakje per zet. Portalen zijn gekoppelde vakjes: het wissen van één wist ook zijn partner. Dispensers spawnen elke paar zetten een speciale edelsteen.',
+    'guide_w11_body':
+        'Color Rush-modus: een "hete kleur" verandert om de paar zetten — wis hem voor bonuspunten en race naar het doel. Lopende banden verschuiven edelstenen één vakje per zet. Portalen zijn gekoppelde vakjes: het wissen van één wist ook zijn partner. Dispensers spawnen elke paar zetten een speciale edelsteen.',
     'soda_title': 'Soda Stijgt',
     'soda_short': 'Soda',
     'soda_hud': 'Flessen',
-    'soda_desc': 'Wis edelstenen om de soda te laten stijgen en de flessen naar boven te laten drijven',
+    'soda_desc':
+        'Wis edelstenen om de soda te laten stijgen en de flessen naar boven te laten drijven',
     'obstacle_licorice': 'Drop',
     'obstacle_jam': 'Jam',
     'guide_w14_title': 'Soda & Nieuwe Obstakels',
-    'guide_w14_body': 'Soda Stijgt-modus: het wissen van edelstenen verhoogt het soda-niveau, waardoor flessen omhoog drijven — breng genoeg flessen naar de bovenste rij om te winnen. Drop vergrendelt een vakje en heeft twee wissen in de buurt nodig om te breken. Jam verspreidt zich elke zet naar een buur, tenzij je ernaast wist.',
+    'guide_w14_body':
+        'Soda Stijgt-modus: het wissen van edelstenen verhoogt het soda-niveau, waardoor flessen omhoog drijven — breng genoeg flessen naar de bovenste rij om te winnen. Drop vergrendelt een vakje en heeft twee wissen in de buurt nodig om te breken. Jam verspreidt zich elke zet naar een buur, tenzij je ernaast wist.',
     'coll_title': 'Album',
     'coll_points': 'albumpunten',
-    'coll_hint': 'Win levels om albumpunten te verdienen en stickers te ontgrendelen.',
+    'coll_hint':
+        'Win levels om albumpunten te verdienen en stickers te ontgrendelen.',
     'coll_cyan_spark': 'Cyaan Vonk',
     'coll_magenta_bloom': 'Magenta Bloesem',
     'coll_lime_leaf': 'Limoenblad',
@@ -7697,12 +8090,16 @@ class AppTranslations extends Translations {
     'coll_desc_amber_sun': 'Een warme gouden zon.',
     'coll_desc_orange_ember': 'Een gloeiende oranje gloed.',
     'coll_desc_violet_dusk': 'Een diepe violette schemerhemel.',
-    'coll_desc_prism_shard': 'Een kristalscherf die licht splitst in regenboogkleuren.',
-    'coll_desc_nebula_core': 'De gloeiende kern van een kleurrijke sterrenwolk.',
-    'coll_desc_aurora_wing': 'Een vleugel in de glinsterende kleuren van het noorderlicht.',
+    'coll_desc_prism_shard':
+        'Een kristalscherf die licht splitst in regenboogkleuren.',
+    'coll_desc_nebula_core':
+        'De gloeiende kern van een kleurrijke sterrenwolk.',
+    'coll_desc_aurora_wing':
+        'Een vleugel in de glinsterende kleuren van het noorderlicht.',
     'coll_desc_quasar_eye': 'Een felle, oogvormige gloed als een verre ster.',
     'coll_desc_pulsar_heart': 'Een hart van licht dat pulseert als een baken.',
-    'coll_desc_singularity': 'Eén lichtpunt dichter dan al het andere — de zeldzaamste sticker.',
+    'coll_desc_singularity':
+        'Eén lichtpunt dichter dan al het andere — de zeldzaamste sticker.',
     'coll_close': 'Sluiten',
     'piggy_title': 'Spaarpot',
     'piggy_smash': 'Kapotslaan',
@@ -7750,7 +8147,8 @@ class AppTranslations extends Translations {
     'rule_rhythm': 'Trafiaj w rytm, by utrzymać groove',
     'rule_survival': 'Przetrwaj jak najdłużej, zanim woda się podniesie',
     'rule_labyrinth': 'Znajdź drogę do wyjścia',
-    'rule_color_rush': 'Łącz dopasowania tego samego koloru dla serii bonusowej',
+    'rule_color_rush':
+        'Łącz dopasowania tego samego koloru dla serii bonusowej',
     'rule_soda': 'Podnieś napój na sam szczyt, zanim skończą się ruchy',
     'rule_endless': 'Graj dalej — wynik rośnie, im dłużej wytrzymasz',
     'rule_daily': 'Ukończ dzisiejsze wyzwanie po nagrody',
@@ -7763,16 +8161,21 @@ class AppTranslations extends Translations {
     'lb_tab_daily': 'Codzienne',
     'lb_level': 'Poziom',
     'lb_player': 'Ty',
-    'lb_daily_note': 'Dzisiejsza czołowa 10 — ukończ Codzienne wyzwanie, by dołączyć do rankingu.',
+    'lb_daily_note':
+        'Dzisiejsza czołowa 10 — ukończ Codzienne wyzwanie, by dołączyć do rankingu.',
     'reduce_motion': 'Ogranicz efekty ruchu',
     'tour_t0': 'Witaj!',
-    'tour_m0': 'Zamieniaj klejnoty, by ułożyć 3 lub więcej tego samego koloru. Dotknij Graj teraz, by rozpocząć kampanię z 200 poziomami.',
+    'tour_m0':
+        'Zamieniaj klejnoty, by ułożyć 3 lub więcej tego samego koloru. Dotknij Graj teraz, by rozpocząć kampanię z 200 poziomami.',
     'tour_t1': 'Wyzwania',
-    'tour_m1': 'Poza kampanią: Bez końca, Boss, Pościg, Rytm i wiele innych trybów specjalnych.',
+    'tour_m1':
+        'Poza kampanią: Bez końca, Boss, Pościg, Rytm i wiele innych trybów specjalnych.',
     'tour_t2': 'Nagrody',
-    'tour_m2': 'Sklep, Przepustka Bojowa, Ranking, codzienne prezenty i więcej czeka na dole.',
+    'tour_m2':
+        'Sklep, Przepustka Bojowa, Ranking, codzienne prezenty i więcej czeka na dole.',
     'tour_t3': 'Zaczynamy!',
-    'tour_m3': 'Życia i monety znajdziesz na górze. Baw się dobrze, podróżniku!',
+    'tour_m3':
+        'Życia i monety znajdziesz na górze. Baw się dobrze, podróżniku!',
     'tour_skip': 'Pomiń',
     'tour_next': 'Dalej',
     'tour_done': 'Zagrajmy',
@@ -7806,13 +8209,17 @@ class AppTranslations extends Translations {
     'ghost_no_data': 'Brak jeszcze przebiegu ducha',
     'pt_title': 'Drzewo Rozwoju',
     'pt_radiant_title': 'Promienny',
-    'pt_radiant_desc': 'Wybuch cząsteczek ×1,5 przy zniszczeniu klejnotu (50 ★)',
+    'pt_radiant_desc':
+        'Wybuch cząsteczek ×1,5 przy zniszczeniu klejnotu (50 ★)',
     'pt_blazing_title': 'Płonący',
-    'pt_blazing_desc': 'Wybuch cząsteczek ×2,0 przy zniszczeniu klejnotu (150 ★)',
+    'pt_blazing_desc':
+        'Wybuch cząsteczek ×2,0 przy zniszczeniu klejnotu (150 ★)',
     'pt_prestige_title': 'Prestiż',
-    'pt_prestige_desc': 'Odblokuj Prestiżową Skórkę Klejnotu (5 kamieni milowych Złota)',
+    'pt_prestige_desc':
+        'Odblokuj Prestiżową Skórkę Klejnotu (5 kamieni milowych Złota)',
     'pt_ascendant_title': 'Wniebowstąpiony',
-    'pt_ascendant_desc': 'Odblokuj efekt cząsteczek Wniebowstąpiony (3 kamienie milowe Platyny)',
+    'pt_ascendant_desc':
+        'Odblokuj efekt cząsteczek Wniebowstąpiony (3 kamienie milowe Platyny)',
     'pt_unlocked': '✓ Odblokowano',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -7849,11 +8256,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'Czas',
     'guide_w10_title': 'Co Nowego',
     'guide_lightball': 'Świetlista Kula',
-    'guide_lightball_desc': 'Dopasuj 7+ klejnotów, by stworzyć Świetlistą Kulę — wybucha w 8 kierunkach (wiersz + kolumna + obie przekątne). Najrzadszy i najpotężniejszy klejnot.',
+    'guide_lightball_desc':
+        'Dopasuj 7+ klejnotów, by stworzyć Świetlistą Kulę — wybucha w 8 kierunkach (wiersz + kolumna + obie przekątne). Najrzadszy i najpotężniejszy klejnot.',
     'guide_bombdown': 'Bomba z Odliczaniem',
-    'guide_bombdown_desc': 'Niektóre poziomy mają bomby odliczające przy każdym ruchu. Usuń klejnot na bombie, by ją rozbroić. Jeśli jakakolwiek bomba dojdzie do 0, przegrywasz natychmiast!',
+    'guide_bombdown_desc':
+        'Niektóre poziomy mają bomby odliczające przy każdym ruchu. Usuń klejnot na bombie, by ją rozbroić. Jeśli jakakolwiek bomba dojdzie do 0, przegrywasz natychmiast!',
     'guide_order': 'Mieszane Cele',
-    'guide_order_desc': 'Poziomy Zamówień wymagają zbierania kilku kolorów klejnotów naraz. Ukończ każdy cel kolorystyczny, by wygrać.',
+    'guide_order_desc':
+        'Poziomy Zamówień wymagają zbierania kilku kolorów klejnotów naraz. Ukończ każdy cel kolorystyczny, by wygrać.',
     'shop_title': 'Sklep',
     'shop_skins': 'Skórki Klejnotów',
     'shop_themes': 'Motywy Planszy',
@@ -7896,9 +8306,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'Jutro',
     'wheel_got_booster': 'Wzmocnienie',
     'tut_title': 'Jak Grać',
-    'tut_1': 'Zamień dwa sąsiednie klejnoty, by ułożyć 3 lub więcej tego samego koloru.',
-    'tut_2': 'Dopasuj 4 w rzędzie, by stworzyć Pasiasty klejnot, który czyści całą linię!',
-    'tut_3': 'Dopasuj 5, by stworzyć Tęczowy klejnot — czyści wszystkie klejnoty jednego koloru.',
+    'tut_1':
+        'Zamień dwa sąsiednie klejnoty, by ułożyć 3 lub więcej tego samego koloru.',
+    'tut_2':
+        'Dopasuj 4 w rzędzie, by stworzyć Pasiasty klejnot, który czyści całą linię!',
+    'tut_3':
+        'Dopasuj 5, by stworzyć Tęczowy klejnot — czyści wszystkie klejnoty jednego koloru.',
     'tut_next': 'Dalej',
     'tut_skip': 'Pomiń',
     'tut_start': 'Zaczynamy',
@@ -7925,10 +8338,13 @@ class AppTranslations extends Translations {
     'npc_name_4': 'Ember',
     'npc_name_5': 'Nyx',
     'guide_story_title': 'Historia',
-    'guide_story_body': 'Poznaj neonowego strażnika w każdym świecie. Witają cię, dopingują w połowie drogi i wysyłają do kolejnej krainy, gdy zagłębiasz się dalej.',
+    'guide_story_body':
+        'Poznaj neonowego strażnika w każdym świecie. Witają cię, dopingują w połowie drogi i wysyłają do kolejnej krainy, gdy zagłębiasz się dalej.',
     'story_w1_intro_title': 'Cyjanowa Mgławica',
-    'story_w1_intro_l1': 'Witaj, podróżniku. Jestem Luma, światło Cyjanowej Mgławicy.',
-    'story_w1_intro_l2': 'Klejnoty tutaj przygasły. Dopasuj je, by przywrócić blask!',
+    'story_w1_intro_l1':
+        'Witaj, podróżniku. Jestem Luma, światło Cyjanowej Mgławicy.',
+    'story_w1_intro_l2':
+        'Klejnoty tutaj przygasły. Dopasuj je, by przywrócić blask!',
     'story_w1_mid_title': 'Powrót Iskry',
     'story_w1_mid_l1': 'Mgławica znów lśni — masz dar.',
     'story_w1_mid_l2': 'Ale głębsze krainy czekają. Nie poddawaj się!',
@@ -7946,7 +8362,8 @@ class AppTranslations extends Translations {
     'story_w2_outro_l2': 'Iskry zielonego obwodu migoczą przed tobą.',
     'story_w3_intro_title': 'Limonkowy Obwód',
     'story_w3_intro_l1': 'Bip! Jestem Cir, strażnik Limonkowego Obwodu.',
-    'story_w3_intro_l2': 'Połącz klejnoty, by zasilić sieć z powrotem do życia.',
+    'story_w3_intro_l2':
+        'Połącz klejnoty, by zasilić sieć z powrotem do życia.',
     'story_w3_mid_title': 'Pełne Naładowanie',
     'story_w3_mid_l1': 'Obwody buczą przy pełnym naładowaniu — dobra robota!',
     'story_w3_mid_l2': 'Okablowanie staje się trudniejsze od teraz. Uważaj.',
@@ -7964,13 +8381,15 @@ class AppTranslations extends Translations {
     'story_w4_outro_l2': 'Pozostaje już tylko cicha Fioletowa Pustka...',
     'story_w5_intro_title': 'Fioletowa Pustka',
     'story_w5_intro_l1': 'Jestem Nyx, strażniczka Fioletowej Pustki.',
-    'story_w5_intro_l2': 'Tutaj światło jest słabe. Bądź iskrą, która ją wypełni.',
+    'story_w5_intro_l2':
+        'Tutaj światło jest słabe. Bądź iskrą, która ją wypełni.',
     'story_w5_mid_title': 'Światło w Mroku',
     'story_w5_mid_l1': 'Nawet pustka nie zdoła przyćmić twojego blasku.',
     'story_w5_mid_l2': 'Ostatni odcinek — czeka najgłębszy mrok.',
     'story_w5_outro_title': 'Neonowa Legenda',
     'story_w5_outro_l1': 'Rozświetliłeś całą Pustkę! Kosmos znów jest cały.',
-    'story_w5_outro_l2': 'Jesteś prawdziwą Neonową Legendą. Dziękuję, podróżniku.',
+    'story_w5_outro_l2':
+        'Jesteś prawdziwą Neonową Legendą. Dziękuję, podróżniku.',
     'story_next': 'Dalej',
     'story_skip': 'Pomiń',
     'story_done': 'Kontynuuj',
@@ -7980,7 +8399,8 @@ class AppTranslations extends Translations {
     'temple_build': 'Buduj',
     'temple_built': 'Zbudowano!',
     'temple_maxed': 'Maksimum',
-    'temple_hint': 'Dotknij budowli, by zbudować ją za monety zdobyte na poziomach.',
+    'temple_hint':
+        'Dotknij budowli, by zbudować ją za monety zdobyte na poziomach.',
     'coins_short': 'monety',
     'temple_gate': 'Neonowa Brama',
     'temple_gate_desc': 'Świecące wejście do twojej świątyni.',
@@ -8013,7 +8433,8 @@ class AppTranslations extends Translations {
     'season_ends': 'Kończy się za',
     'season_points': 'punkty sezonu',
     'season_pts_short': 'pkt',
-    'season_hint': 'Wygrywaj poziomy podczas sezonu, by zdobywać punkty i odblokowywać nagrody.',
+    'season_hint':
+        'Wygrywaj poziomy podczas sezonu, by zdobywać punkty i odblokowywać nagrody.',
     'season_cyan': 'Cyjanowy Zryw',
     'season_magenta': 'Magentowa Burza',
     'season_lime': 'Limonkowy Pościg',
@@ -8030,7 +8451,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'W Rytmie!',
     'rhythm_offbeat': 'Nie w Rytmie',
     'guide_rhythm_title': 'Tryb Rytmu',
-    'guide_rhythm_body': 'Zamieniaj klejnoty dokładnie w rytm (obserwuj pulsującą kropkę), by budować miernik Groove i zdobywać do 2,5× punktów. Zamiany nie w rytm obniżają groove. Osiągnij docelowy wynik, zanim skończą się ruchy.',
+    'guide_rhythm_body':
+        'Zamieniaj klejnoty dokładnie w rytm (obserwuj pulsującą kropkę), by budować miernik Groove i zdobywać do 2,5× punktów. Zamiany nie w rytm obniżają groove. Osiągnij docelowy wynik, zanim skończą się ruchy.',
     'versus_title': '2 Graczy',
     'versus_pick': 'Wybierz tryb',
     'versus_mode': 'Pojedynek',
@@ -8047,7 +8469,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'Cel',
     'versus_go': 'Start!',
     'guide_versus_title': '2 Graczy (lokalnie)',
-    'guide_versus_body': 'Dwóch graczy, jedno urządzenie. Pojedynek: wyścig o wyższy wynik w 60s — duże kombosy wysyłają rywalowi rzędy śmieci. Współpraca: łączcie wyniki, by osiągnąć wspólny cel, zanim skończy się czas. Górna plansza jest obrócona do gry twarzą w twarz.',
+    'guide_versus_body':
+        'Dwóch graczy, jedno urządzenie. Pojedynek: wyścig o wyższy wynik w 60s — duże kombosy wysyłają rywalowi rzędy śmieci. Współpraca: łączcie wyniki, by osiągnąć wspólny cel, zanim skończy się czas. Górna plansza jest obrócona do gry twarzą w twarz.',
     'challenge_modes': 'Wyzwania',
     'meta_section': 'Nagrody',
     'daily_ch_title': 'Codzienne Wyzwanie',
@@ -8069,7 +8492,8 @@ class AppTranslations extends Translations {
     'rec_tier_gold': 'Złoto',
     'rec_tier_platinum': 'Platyna',
     'hard_variant_on': 'Wyzwanie: Wł. (mniej ruchów, +50% monet)',
-    'hard_variant_off': 'Wyzwanie: Wył. (dotknij, by odblokować trudniejszy przebieg)',
+    'hard_variant_off':
+        'Wyzwanie: Wył. (dotknij, by odblokować trudniejszy przebieg)',
     'puzzle_short': 'Łamigłówka',
     'puzzle_title': 'Łamigłówki',
     'puzzle_sub': 'Ograniczona plansza — bez uzupełniania!',
@@ -8106,18 +8530,22 @@ class AppTranslations extends Translations {
     'portal_title': 'Portal',
     'dispenser_title': 'Dozownik',
     'guide_w11_title': 'Nowe Mechaniki',
-    'guide_w11_body': 'Tryb Kolorowy Pościg: \'gorący kolor\' zmienia się co kilka ruchów — wyczyść go dla bonusowych punktów i ścigaj się do celu. Przenośniki przesuwają klejnoty o jedną komórkę na ruch. Portale to połączone komórki: usunięcie jednej czyści też jej partnera. Dozowniki tworzą specjalny klejnot co kilka ruchów.',
+    'guide_w11_body':
+        'Tryb Kolorowy Pościg: \'gorący kolor\' zmienia się co kilka ruchów — wyczyść go dla bonusowych punktów i ścigaj się do celu. Przenośniki przesuwają klejnoty o jedną komórkę na ruch. Portale to połączone komórki: usunięcie jednej czyści też jej partnera. Dozowniki tworzą specjalny klejnot co kilka ruchów.',
     'soda_title': 'Wznoszący Napój',
     'soda_short': 'Napój',
     'soda_hud': 'Butelki',
-    'soda_desc': 'Usuwaj klejnoty, by podnieść poziom napoju i unieść butelki na szczyt',
+    'soda_desc':
+        'Usuwaj klejnoty, by podnieść poziom napoju i unieść butelki na szczyt',
     'obstacle_licorice': 'Lukrecja',
     'obstacle_jam': 'Dżem',
     'guide_w14_title': 'Napój i Nowe Przeszkody',
-    'guide_w14_body': 'Tryb Wznoszący Napój: usuwanie klejnotów podnosi poziom napoju, który unosi butelki w górę — dostarcz wystarczająco butelek do górnego rzędu, by wygrać. Lukrecja blokuje komórkę i wymaga dwóch pobliskich usunięć, by pęknąć. Dżem rozprzestrzenia się na sąsiednią komórkę co ruch, chyba że usuniesz obok niego.',
+    'guide_w14_body':
+        'Tryb Wznoszący Napój: usuwanie klejnotów podnosi poziom napoju, który unosi butelki w górę — dostarcz wystarczająco butelek do górnego rzędu, by wygrać. Lukrecja blokuje komórkę i wymaga dwóch pobliskich usunięć, by pęknąć. Dżem rozprzestrzenia się na sąsiednią komórkę co ruch, chyba że usuniesz obok niego.',
     'coll_title': 'Album',
     'coll_points': 'pkt albumu',
-    'coll_hint': 'Wygrywaj poziomy, by zdobywać punkty albumu i odblokowywać naklejki.',
+    'coll_hint':
+        'Wygrywaj poziomy, by zdobywać punkty albumu i odblokowywać naklejki.',
     'coll_cyan_spark': 'Cyjanowa Iskra',
     'coll_magenta_bloom': 'Magentowy Kwiat',
     'coll_lime_leaf': 'Limonkowy Liść',
@@ -8136,12 +8564,14 @@ class AppTranslations extends Translations {
     'coll_desc_amber_sun': 'Ciepłe złote słońce.',
     'coll_desc_orange_ember': 'Żarzący się pomarańczowy żar.',
     'coll_desc_violet_dusk': 'Głęboko fioletowe niebo o zmierzchu.',
-    'coll_desc_prism_shard': 'Kryształowy odłamek rozszczepiający światło na tęczowe kolory.',
+    'coll_desc_prism_shard':
+        'Kryształowy odłamek rozszczepiający światło na tęczowe kolory.',
     'coll_desc_nebula_core': 'Świecący rdzeń kolorowej mgławicy gwiezdnej.',
     'coll_desc_aurora_wing': 'Skrzydło o migoczącym kolorze zorzy polarnej.',
     'coll_desc_quasar_eye': 'Jasny blask w kształcie oka, jak odległa gwiazda.',
     'coll_desc_pulsar_heart': 'Serce światła pulsujące jak latarnia morska.',
-    'coll_desc_singularity': 'Pojedynczy punkt światła gęstszy niż cokolwiek innego — najrzadsza naklejka.',
+    'coll_desc_singularity':
+        'Pojedynczy punkt światła gęstszy niż cokolwiek innego — najrzadsza naklejka.',
     'coll_close': 'Zamknij',
     'piggy_title': 'Skarbonka',
     'piggy_smash': 'Rozbij',
@@ -8190,27 +8620,34 @@ class AppTranslations extends Translations {
     'rule_rhythm': 'Tumugma sa tugtog para mapanatili ang iyong groove',
     'rule_survival': 'Tumagal hangga\'t kaya bago tumaas ang baha',
     'rule_labyrinth': 'Hanapin ang daan patungo sa labasan',
-    'rule_color_rush': 'I-chain ang tugma sa parehong kulay para sa bonus streak',
+    'rule_color_rush':
+        'I-chain ang tugma sa parehong kulay para sa bonus streak',
     'rule_soda': 'Itaas ang soda hanggang sa itaas bago maubos ang mga galaw',
-    'rule_endless': 'Magpatuloy sa paglalaro — tumataas ang puntos habang mas matagal kang nabubuhay',
+    'rule_endless':
+        'Magpatuloy sa paglalaro — tumataas ang puntos habang mas matagal kang nabubuhay',
     'rule_daily': 'Tapusin ang hamon ngayong araw para sa mga gantimpala',
     'rule_puzzle': 'Lutasin ang palaisipan sa loob ng limitadong galaw',
     'rule_zen': 'Magpahinga — walang limitasyon sa galaw',
     'rule_gravity': 'Umangkop habang nagbabago ang direksyon ng gravity',
-    'rule_rush': 'Kumuha ng puntos nang mabilis hangga\'t kaya bago maubos ang oras',
+    'rule_rush':
+        'Kumuha ng puntos nang mabilis hangga\'t kaya bago maubos ang oras',
     'leaderboard_title': 'Talaan ng mga Nangunguna',
     'lb_tab_campaign': 'Kampanya',
     'lb_tab_daily': 'Pang-Araw-Araw',
     'lb_level': 'Level',
     'lb_player': 'Ikaw',
-    'lb_daily_note': 'Nangungunang 10 ngayong araw — tapusin ang Daily para sumali sa board.',
+    'lb_daily_note':
+        'Nangungunang 10 ngayong araw — tapusin ang Daily para sumali sa board.',
     'reduce_motion': 'Bawasan ang epekto ng motion',
     'tour_t0': 'Maligayang pagdating!',
-    'tour_m0': 'Palitan ang puwesto para maglinya ng 3+ hiyas na parehong kulay. Pindutin ang Maglaro Na para simulan ang 200-level na campaign.',
+    'tour_m0':
+        'Palitan ang puwesto para maglinya ng 3+ hiyas na parehong kulay. Pindutin ang Maglaro Na para simulan ang 200-level na campaign.',
     'tour_t1': 'Mga Hamon',
-    'tour_m1': 'Bukod sa campaign: Endless, Boss, Rush, Rhythm at marami pang side mode.',
+    'tour_m1':
+        'Bukod sa campaign: Endless, Boss, Rush, Rhythm at marami pang side mode.',
     'tour_t2': 'Mga Gantimpala',
-    'tour_m2': 'Naghihintay dito sa ibaba ang Shop, Battle Pass, Leaderboard, pang-araw-araw na regalo at marami pa.',
+    'tour_m2':
+        'Naghihintay dito sa ibaba ang Shop, Battle Pass, Leaderboard, pang-araw-araw na regalo at marami pa.',
     'tour_t3': 'Tara Na!',
     'tour_m3': 'Nasa itaas ang buhay at barya. Mag-enjoy, manlalakbay!',
     'tour_skip': 'Laktawan',
@@ -8252,7 +8689,8 @@ class AppTranslations extends Translations {
     'pt_prestige_title': 'Prestige',
     'pt_prestige_desc': 'I-unlock ang Prestige Gem Skin (5 Gold milestone)',
     'pt_ascendant_title': 'Ascendant',
-    'pt_ascendant_desc': 'I-unlock ang Ascendant particle effect (3 Platinum milestone)',
+    'pt_ascendant_desc':
+        'I-unlock ang Ascendant particle effect (3 Platinum milestone)',
     'pt_unlocked': '✓ Na-unlock',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -8266,7 +8704,8 @@ class AppTranslations extends Translations {
     'cc_claim': 'Kunin',
     'rush_title': 'Rush',
     'rush_short': 'Rush',
-    'rush_desc': '2 min · walang limitasyong galaw · nagdadagdag ng oras ang tugma',
+    'rush_desc':
+        '2 min · walang limitasyong galaw · nagdadagdag ng oras ang tugma',
     'rush_best': 'Pinakamahusay',
     'rush_time_bonus': '+@ns',
     'endless_short': 'Endless',
@@ -8289,11 +8728,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'Timer',
     'guide_w10_title': 'Ano Ang Bago',
     'guide_lightball': 'Bilog na Liwanag',
-    'guide_lightball_desc': 'Tumugma ng 7+ hiyas para gumawa ng Light Ball — sumasabog ito sa 8 direksyon (hilera + hanay + parehong dayagonal). Ang pinakabihira at pinakamalakas na hiyas.',
+    'guide_lightball_desc':
+        'Tumugma ng 7+ hiyas para gumawa ng Light Ball — sumasabog ito sa 8 direksyon (hilera + hanay + parehong dayagonal). Ang pinakabihira at pinakamalakas na hiyas.',
     'guide_bombdown': 'Bombang Countdown',
-    'guide_bombdown_desc': 'May mga level na may bombang bumibilang pababa sa bawat galaw. Linisin ang hiyas sa ibabaw ng bomba para i-defuse ito. Kapag umabot sa 0 ang kahit isang bomba, agad kang matatalo!',
+    'guide_bombdown_desc':
+        'May mga level na may bombang bumibilang pababa sa bawat galaw. Linisin ang hiyas sa ibabaw ng bomba para i-defuse ito. Kapag umabot sa 0 ang kahit isang bomba, agad kang matatalo!',
     'guide_order': 'Halu-halong Layunin',
-    'guide_order_desc': 'Hinihiling ng mga Order level na mangolekta ka ng ilang kulay ng hiyas nang sabay-sabay. Kumpletuhin ang bawat layunin sa kulay para manalo.',
+    'guide_order_desc':
+        'Hinihiling ng mga Order level na mangolekta ka ng ilang kulay ng hiyas nang sabay-sabay. Kumpletuhin ang bawat layunin sa kulay para manalo.',
     'shop_title': 'Tindahan',
     'shop_skins': 'Mga Skin Ng Hiyas',
     'shop_themes': 'Mga Tema Ng Board',
@@ -8336,9 +8778,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'Bukas',
     'wheel_got_booster': 'Booster',
     'tut_title': 'Paano Maglaro',
-    'tut_1': 'Palitan ang puwesto ng dalawang katabing hiyas para maglinya ng 3 o higit pa na parehong kulay.',
-    'tut_2': 'Tumugma ng 4 nang sunod-sunod para gumawa ng Striped na hiyas na naglilinis ng buong linya!',
-    'tut_3': 'Tumugma ng 5 para gumawa ng Rainbow na hiyas — nililinis nito ang lahat ng hiyas ng isang kulay.',
+    'tut_1':
+        'Palitan ang puwesto ng dalawang katabing hiyas para maglinya ng 3 o higit pa na parehong kulay.',
+    'tut_2':
+        'Tumugma ng 4 nang sunod-sunod para gumawa ng Striped na hiyas na naglilinis ng buong linya!',
+    'tut_3':
+        'Tumugma ng 5 para gumawa ng Rainbow na hiyas — nililinis nito ang lahat ng hiyas ng isang kulay.',
     'tut_next': 'Susunod',
     'tut_skip': 'Laktawan',
     'tut_start': 'Tara Na',
@@ -8365,37 +8810,53 @@ class AppTranslations extends Translations {
     'npc_name_4': 'Ember',
     'npc_name_5': 'Nyx',
     'guide_story_title': 'Kwento',
-    'guide_story_body': 'Makilala ang isang neon guardian sa bawat mundo. Binabati ka nila, sinusuportahan ka sa kalagitnaan, at ipinapadala ka sa susunod na daigdig habang lumalalim ang iyong paglalakbay.',
+    'guide_story_body':
+        'Makilala ang isang neon guardian sa bawat mundo. Binabati ka nila, sinusuportahan ka sa kalagitnaan, at ipinapadala ka sa susunod na daigdig habang lumalalim ang iyong paglalakbay.',
     'story_w1_intro_title': 'Ang Cyan Nebula',
-    'story_w1_intro_l1': 'Maligayang pagdating, manlalakbay. Ako si Luma, liwanag ng Cyan Nebula.',
-    'story_w1_intro_l2': 'Kumupas ang mga hiyas dito. Itugma sila para maibalik ang ningning!',
+    'story_w1_intro_l1':
+        'Maligayang pagdating, manlalakbay. Ako si Luma, liwanag ng Cyan Nebula.',
+    'story_w1_intro_l2':
+        'Kumupas ang mga hiyas dito. Itugma sila para maibalik ang ningning!',
     'story_w1_mid_title': 'Bumalik Ang Kislap',
     'story_w1_mid_l1': 'Kumikislap muli ang nebula — may regalo ka.',
-    'story_w1_mid_l2': 'Pero naghihintay pa ang mas malalalim na daigdig. Ituloy mo!',
+    'story_w1_mid_l2':
+        'Pero naghihintay pa ang mas malalalim na daigdig. Ituloy mo!',
     'story_w1_outro_title': 'Naibalik Ang Nebula',
-    'story_w1_outro_l1': 'Nagniningning ang Cyan Nebula nang di pa nangyari dati. Salamat!',
-    'story_w1_outro_l2': 'May tumatawag na magenta pulse mula sa malayo. Sundan mo...',
+    'story_w1_outro_l1':
+        'Nagniningning ang Cyan Nebula nang di pa nangyari dati. Salamat!',
+    'story_w1_outro_l2':
+        'May tumatawag na magenta pulse mula sa malayo. Sundan mo...',
     'story_w2_intro_title': 'Ang Magenta Pulse',
-    'story_w2_intro_l1': 'Ako si Vera. Naramdaman mo ba ang tibok na iyon? Iyon ang Magenta Pulse.',
-    'story_w2_intro_l2': 'Tumugma nang may ritmo at sasayaw ang daigdig kasama mo.',
+    'story_w2_intro_l1':
+        'Ako si Vera. Naramdaman mo ba ang tibok na iyon? Iyon ang Magenta Pulse.',
+    'story_w2_intro_l2':
+        'Tumugma nang may ritmo at sasayaw ang daigdig kasama mo.',
     'story_w2_mid_title': 'Nasa Ritmo',
-    'story_w2_mid_l1': 'Umaalingawngaw ang iyong mga combo sa buong pulse — kahanga-hanga!',
+    'story_w2_mid_l1':
+        'Umaalingawngaw ang iyong mga combo sa buong pulse — kahanga-hanga!',
     'story_w2_mid_l2': 'Kalahati na ng paglalakbay. Lumalakas pa ang ritmo.',
     'story_w2_outro_title': 'Matatag Na Tibok',
-    'story_w2_outro_l1': 'Matatag at maliwanag na muli ang pulse. Kamangha-mangha!',
-    'story_w2_outro_l2': 'May kumikislap na kidlat ng berdeng circuit sa unahan.',
+    'story_w2_outro_l1':
+        'Matatag at maliwanag na muli ang pulse. Kamangha-mangha!',
+    'story_w2_outro_l2':
+        'May kumikislap na kidlat ng berdeng circuit sa unahan.',
     'story_w3_intro_title': 'Ang Lime Circuit',
     'story_w3_intro_l1': 'Beep! Ako si Cir, tagapangalaga ng Lime Circuit.',
     'story_w3_intro_l2': 'Ikonekta ang mga hiyas para buhayin muli ang grid.',
     'story_w3_mid_title': 'Puno Nang Sisingil',
-    'story_w3_mid_l1': 'Umuugong ang mga circuit nang puno ang singil — mahusay!',
-    'story_w3_mid_l2': 'Lalong magiging komplikado ang koneksyon mula rito. Manatiling alerto.',
+    'story_w3_mid_l1':
+        'Umuugong ang mga circuit nang puno ang singil — mahusay!',
+    'story_w3_mid_l2':
+        'Lalong magiging komplikado ang koneksyon mula rito. Manatiling alerto.',
     'story_w3_outro_title': 'Naibalik Ang Sistema',
-    'story_w3_outro_l1': 'Berde nang nagniningning ang buong grid. Naibalik ang sistema!',
-    'story_w3_outro_l2': 'May umaaligid na nagliliyab na amber comet sa kadiliman...',
+    'story_w3_outro_l1':
+        'Berde nang nagniningning ang buong grid. Naibalik ang sistema!',
+    'story_w3_outro_l2':
+        'May umaaligid na nagliliyab na amber comet sa kadiliman...',
     'story_w4_intro_title': 'Ang Amber Comet',
     'story_w4_intro_l1': 'Ako si Ember, sakay ng Amber Comet.',
-    'story_w4_intro_l2': 'Dumaan ka sa apoy ng mga hiyas bago mawala ang kometa!',
+    'story_w4_intro_l2':
+        'Dumaan ka sa apoy ng mga hiyas bago mawala ang kometa!',
     'story_w4_mid_title': 'Maningas Na Naglalagablab',
     'story_w4_mid_l1': 'Lumilipad ka na ngayon — lalong lumiliyab ang kometa!',
     'story_w4_mid_l2': 'Humahaba ang buntot. Huwag mong palampasin ang kislap.',
@@ -8404,13 +8865,18 @@ class AppTranslations extends Translations {
     'story_w4_outro_l2': 'Ang tahimik na Violet Void na lamang ang natitira...',
     'story_w5_intro_title': 'Ang Violet Void',
     'story_w5_intro_l1': 'Ako si Nyx, tagapagbantay ng Violet Void.',
-    'story_w5_intro_l2': 'Mahina ang liwanag dito. Maging ang kislap na pupuno rito.',
+    'story_w5_intro_l2':
+        'Mahina ang liwanag dito. Maging ang kislap na pupuno rito.',
     'story_w5_mid_title': 'Liwanag Sa Dilim',
-    'story_w5_mid_l1': 'Kahit ang void ay hindi kayang paglabuin ang iyong ningning.',
-    'story_w5_mid_l2': 'Ang huling hakbang — naghihintay ang pinakamalalim na dilim.',
+    'story_w5_mid_l1':
+        'Kahit ang void ay hindi kayang paglabuin ang iyong ningning.',
+    'story_w5_mid_l2':
+        'Ang huling hakbang — naghihintay ang pinakamalalim na dilim.',
     'story_w5_outro_title': 'Isang Alamat Ng Neon',
-    'story_w5_outro_l1': 'Naliwanagan mo ang buong Void! Muling buo ang sansinukob.',
-    'story_w5_outro_l2': 'Ikaw ay tunay na Alamat Ng Neon. Salamat, manlalakbay.',
+    'story_w5_outro_l1':
+        'Naliwanagan mo ang buong Void! Muling buo ang sansinukob.',
+    'story_w5_outro_l2':
+        'Ikaw ay tunay na Alamat Ng Neon. Salamat, manlalakbay.',
     'story_next': 'Susunod',
     'story_skip': 'Laktawan',
     'story_done': 'Ituloy',
@@ -8420,12 +8886,14 @@ class AppTranslations extends Translations {
     'temple_build': 'Itayo',
     'temple_built': 'Naitayo Na!',
     'temple_maxed': 'Puno Na',
-    'temple_hint': 'Pindutin ang isang istruktura para itayo ito gamit ang barya mula sa mga level.',
+    'temple_hint':
+        'Pindutin ang isang istruktura para itayo ito gamit ang barya mula sa mga level.',
     'coins_short': 'barya',
     'temple_gate': 'Tarangkahan Neon',
     'temple_gate_desc': 'Ang kumikinang na pasukan ng iyong templo.',
     'temple_pillar': 'Haliging Liwanag',
-    'temple_pillar_desc': 'Mga haligi na naghahatid ng neon na enerhiya paitaas.',
+    'temple_pillar_desc':
+        'Mga haligi na naghahatid ng neon na enerhiya paitaas.',
     'temple_altar': 'Altar ng Bituin',
     'temple_altar_desc': 'Puso ng templo kung saan nagtitipon ang liwanag.',
     'temple_spire': 'Tore ng Ningning',
@@ -8453,7 +8921,8 @@ class AppTranslations extends Translations {
     'season_ends': 'Matatapos sa',
     'season_points': 'puntos ng season',
     'season_pts_short': 'pts',
-    'season_hint': 'Manalo ng mga level sa panahon ng season para kumita ng puntos at ma-unlock ang mga gantimpala.',
+    'season_hint':
+        'Manalo ng mga level sa panahon ng season para kumita ng puntos at ma-unlock ang mga gantimpala.',
     'season_cyan': 'Alon ng Cyan',
     'season_magenta': 'Bagyong Magenta',
     'season_lime': 'Bilis ng Lime',
@@ -8470,7 +8939,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'Tama Sa Tugtog!',
     'rhythm_offbeat': 'Mali Sa Tugtog',
     'guide_rhythm_title': 'Mode ng Ritmo',
-    'guide_rhythm_body': 'Magpalit sa tamang tugtog (bantayan ang kumikislap na tuldok) para palakihin ang iyong Groove meter at kumita hanggang 2.5× na puntos. Ang maling tugtog na palit ay nagpapababa ng iyong groove. Umabot sa target na puntos bago maubos ang mga galaw.',
+    'guide_rhythm_body':
+        'Magpalit sa tamang tugtog (bantayan ang kumikislap na tuldok) para palakihin ang iyong Groove meter at kumita hanggang 2.5× na puntos. Ang maling tugtog na palit ay nagpapababa ng iyong groove. Umabot sa target na puntos bago maubos ang mga galaw.',
     'versus_title': '2 Manlalaro',
     'versus_pick': 'Pumili ng mode',
     'versus_mode': 'Versus',
@@ -8487,7 +8957,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'Layunin',
     'versus_go': 'Simula!',
     'guide_versus_title': '2 Manlalaro (local)',
-    'guide_versus_body': 'Dalawang manlalaro, isang device. Versus: makipagpaligsahan para sa mas mataas na puntos sa loob ng 60s — nagpapadala ng junk row sa katunggali ang malalaking combo. Co-Op: pagsamahin ang puntos para maabot ang pinagsamang layunin bago maubos ang oras. Iniikot ang itaas na board para sa harapang laro.',
+    'guide_versus_body':
+        'Dalawang manlalaro, isang device. Versus: makipagpaligsahan para sa mas mataas na puntos sa loob ng 60s — nagpapadala ng junk row sa katunggali ang malalaking combo. Co-Op: pagsamahin ang puntos para maabot ang pinagsamang layunin bago maubos ang oras. Iniikot ang itaas na board para sa harapang laro.',
     'challenge_modes': 'Mga Hamon',
     'meta_section': 'Mga Gantimpala',
     'daily_ch_title': 'Pang-Araw-Araw Na Hamon',
@@ -8509,7 +8980,8 @@ class AppTranslations extends Translations {
     'rec_tier_gold': 'Ginto',
     'rec_tier_platinum': 'Platinum',
     'hard_variant_on': 'Hamon: Bukas (mas kaunting galaw, +50% barya)',
-    'hard_variant_off': 'Hamon: Sarado (pindutin para i-unlock ang mas mahirap na run)',
+    'hard_variant_off':
+        'Hamon: Sarado (pindutin para i-unlock ang mas mahirap na run)',
     'puzzle_short': 'Puzzle',
     'puzzle_title': 'Mga Puzzle',
     'puzzle_sub': 'Limitadong board — walang refill!',
@@ -8546,18 +9018,22 @@ class AppTranslations extends Translations {
     'portal_title': 'Portal',
     'dispenser_title': 'Dispenser',
     'guide_w11_title': 'Mga Bagong Mekanismo',
-    'guide_w11_body': 'Color Rush mode: nagbabago ang "mainit na kulay" tuwing ilang galaw — linisin ito para sa bonus na puntos habang nagmamadali papunta sa target. Ang conveyor belt ay gumagalaw ng isang cell ang hiyas sa bawat galaw. Ang portal ay magkakonektang cell — ang paglinis sa isa ay naglilinis din sa kapareha nito. Ang dispenser ay lumilikha ng special na hiyas tuwing ilang galaw.',
+    'guide_w11_body':
+        'Color Rush mode: nagbabago ang "mainit na kulay" tuwing ilang galaw — linisin ito para sa bonus na puntos habang nagmamadali papunta sa target. Ang conveyor belt ay gumagalaw ng isang cell ang hiyas sa bawat galaw. Ang portal ay magkakonektang cell — ang paglinis sa isa ay naglilinis din sa kapareha nito. Ang dispenser ay lumilikha ng special na hiyas tuwing ilang galaw.',
     'soda_title': 'Pag-akyat ng Soda',
     'soda_short': 'Soda',
     'soda_hud': 'Bote',
-    'soda_desc': 'Linisin ang mga hiyas para itaas ang soda at palutangin ang mga bote pataas',
+    'soda_desc':
+        'Linisin ang mga hiyas para itaas ang soda at palutangin ang mga bote pataas',
     'obstacle_licorice': 'Licorice',
     'obstacle_jam': 'Barado',
     'guide_w14_title': 'Soda At Mga Bagong Balakid',
-    'guide_w14_body': 'Soda Rise mode: itinataas ng paglilinis ng hiyas ang lebel ng soda na nagpapalutang sa mga bote pataas — dalhin ang sapat na bote sa pinakaitaas na hilera para manalo. Ikinakandado ng Licorice ang isang cell at kailangan ng dalawang malapit na paglilinis para masira. Kumakalat ang Jam sa katabing cell tuwing galaw maliban kung linisin mo ang katabi nito.',
+    'guide_w14_body':
+        'Soda Rise mode: itinataas ng paglilinis ng hiyas ang lebel ng soda na nagpapalutang sa mga bote pataas — dalhin ang sapat na bote sa pinakaitaas na hilera para manalo. Ikinakandado ng Licorice ang isang cell at kailangan ng dalawang malapit na paglilinis para masira. Kumakalat ang Jam sa katabing cell tuwing galaw maliban kung linisin mo ang katabi nito.',
     'coll_title': 'Album',
     'coll_points': 'puntos ng album',
-    'coll_hint': 'Manalo ng mga level para kumita ng puntos ng album at ma-unlock ang mga sticker.',
+    'coll_hint':
+        'Manalo ng mga level para kumita ng puntos ng album at ma-unlock ang mga sticker.',
     'coll_cyan_spark': 'Kislap Cyan',
     'coll_magenta_bloom': 'Bulaklak Magenta',
     'coll_lime_leaf': 'Dahon Lime',
@@ -8571,17 +9047,24 @@ class AppTranslations extends Translations {
     'coll_pulsar_heart': 'Tumitibok na Puso',
     'coll_singularity': 'Hiyas ng Kawalang-hanggan',
     'coll_desc_cyan_spark': 'Isang maningning na cyan na kislap ng liwanag.',
-    'coll_desc_magenta_bloom': 'Isang namumukadkad na magenta na bulaklak ng liwanag.',
+    'coll_desc_magenta_bloom':
+        'Isang namumukadkad na magenta na bulaklak ng liwanag.',
     'coll_desc_lime_leaf': 'Isang kumikinang na lime-green na dahon.',
     'coll_desc_amber_sun': 'Isang mainit na ginintuang araw.',
     'coll_desc_orange_ember': 'Isang kumikinang na orange na baga.',
     'coll_desc_violet_dusk': 'Isang malalim na violet na dapithapon.',
-    'coll_desc_prism_shard': 'Isang crystal shard na naghahati ng liwanag sa mga kulay ng bahaghari.',
-    'coll_desc_nebula_core': 'Ang kumikinang na core ng isang makulay na ulap-bituin.',
-    'coll_desc_aurora_wing': 'Isang pakpak na may kumikinang na kulay ng northern lights.',
-    'coll_desc_quasar_eye': 'Isang maningning na mata na hugis-ningning tulad ng malayong bituin.',
-    'coll_desc_pulsar_heart': 'Isang pusong liwanag na tumitibok tulad ng parola.',
-    'coll_desc_singularity': 'Isang solong tuldok ng liwanag na mas siksik kaysa sa lahat — ang pinakabihirang sticker.',
+    'coll_desc_prism_shard':
+        'Isang crystal shard na naghahati ng liwanag sa mga kulay ng bahaghari.',
+    'coll_desc_nebula_core':
+        'Ang kumikinang na core ng isang makulay na ulap-bituin.',
+    'coll_desc_aurora_wing':
+        'Isang pakpak na may kumikinang na kulay ng northern lights.',
+    'coll_desc_quasar_eye':
+        'Isang maningning na mata na hugis-ningning tulad ng malayong bituin.',
+    'coll_desc_pulsar_heart':
+        'Isang pusong liwanag na tumitibok tulad ng parola.',
+    'coll_desc_singularity':
+        'Isang solong tuldok ng liwanag na mas siksik kaysa sa lahat — ang pinakabihirang sticker.',
     'coll_close': 'Isara',
     'piggy_title': 'Alkansya',
     'piggy_smash': 'Basagin',
@@ -8643,13 +9126,17 @@ class AppTranslations extends Translations {
     'lb_daily_note': '10 besar hari ini — selesaikan Harian untuk masuk papan.',
     'reduce_motion': 'Kurangi efek gerakan',
     'tour_t0': 'Selamat Datang!',
-    'tour_m0': 'Tukar untuk menyusun 3+ permata warna sama. Ketuk Main Sekarang untuk mulai kampanye 200 level.',
+    'tour_m0':
+        'Tukar untuk menyusun 3+ permata warna sama. Ketuk Main Sekarang untuk mulai kampanye 200 level.',
     'tour_t1': 'Tantangan',
-    'tour_m1': 'Selain kampanye: Endless, Boss, Rush, Rhythm, dan banyak mode sampingan lainnya.',
+    'tour_m1':
+        'Selain kampanye: Endless, Boss, Rush, Rhythm, dan banyak mode sampingan lainnya.',
     'tour_t2': 'Hadiah',
-    'tour_m2': 'Toko, Battle Pass, Papan Peringkat, hadiah harian, dan lainnya menunggu di sini.',
+    'tour_m2':
+        'Toko, Battle Pass, Papan Peringkat, hadiah harian, dan lainnya menunggu di sini.',
     'tour_t3': 'Ayo Mulai!',
-    'tour_m3': 'Nyawa dan koin ada di atas. Selamat bersenang-senang, petualang!',
+    'tour_m3':
+        'Nyawa dan koin ada di atas. Selamat bersenang-senang, petualang!',
     'tour_skip': 'Lewati',
     'tour_next': 'Lanjut',
     'tour_done': 'Ayo main',
@@ -8661,7 +9148,8 @@ class AppTranslations extends Translations {
     'quest_bonus_title': 'Bonus Semua Misi',
     'clan_title': 'Klan',
     'clan_goal': 'Target mingguan klan',
-    'clan_goal_hint': 'Kemenangan kampanye dan mode sampingan sama-sama dihitung',
+    'clan_goal_hint':
+        'Kemenangan kampanye dan mode sampingan sama-sama dihitung',
     'clan_league': 'Peringkat klan',
     'boss_atk_block': 'Blokir!',
     'boss_atk_shuffle': 'Acak!',
@@ -8726,11 +9214,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'Timer',
     'guide_w10_title': 'Yang Baru',
     'guide_lightball': 'Bola Cahaya',
-    'guide_lightball_desc': 'Cocokkan 7+ permata untuk membuat Bola Cahaya — meledak ke 8 arah (baris + kolom + kedua diagonal). Permata paling langka dan terkuat.',
+    'guide_lightball_desc':
+        'Cocokkan 7+ permata untuk membuat Bola Cahaya — meledak ke 8 arah (baris + kolom + kedua diagonal). Permata paling langka dan terkuat.',
     'guide_bombdown': 'Bom Hitung Mundur',
-    'guide_bombdown_desc': 'Beberapa level punya bom yang menghitung mundur tiap langkah. Bersihkan permata di atas bom untuk menjinakkannya. Jika ada bom mencapai 0, kamu langsung kalah!',
+    'guide_bombdown_desc':
+        'Beberapa level punya bom yang menghitung mundur tiap langkah. Bersihkan permata di atas bom untuk menjinakkannya. Jika ada bom mencapai 0, kamu langsung kalah!',
     'guide_order': 'Target Campuran',
-    'guide_order_desc': 'Level Order memintamu mengumpulkan beberapa warna permata sekaligus. Selesaikan semua target warna untuk menang.',
+    'guide_order_desc':
+        'Level Order memintamu mengumpulkan beberapa warna permata sekaligus. Selesaikan semua target warna untuk menang.',
     'shop_title': 'Toko',
     'shop_skins': 'Skin Permata',
     'shop_themes': 'Tema Papan',
@@ -8773,9 +9264,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'Besok',
     'wheel_got_booster': 'Booster',
     'tut_title': 'Cara Bermain',
-    'tut_1': 'Tukar dua permata bersebelahan untuk menyusun 3 atau lebih warna sama.',
-    'tut_2': 'Cocokkan 4 sejajar untuk membuat permata Bergaris yang membersihkan satu baris penuh!',
-    'tut_3': 'Cocokkan 5 untuk membuat permata Pelangi — membersihkan semua permata satu warna.',
+    'tut_1':
+        'Tukar dua permata bersebelahan untuk menyusun 3 atau lebih warna sama.',
+    'tut_2':
+        'Cocokkan 4 sejajar untuk membuat permata Bergaris yang membersihkan satu baris penuh!',
+    'tut_3':
+        'Cocokkan 5 untuk membuat permata Pelangi — membersihkan semua permata satu warna.',
     'tut_next': 'Lanjut',
     'tut_skip': 'Lewati',
     'tut_start': 'Ayo Mulai',
@@ -8802,19 +9296,24 @@ class AppTranslations extends Translations {
     'npc_name_4': 'Ember',
     'npc_name_5': 'Nyx',
     'guide_story_title': 'Cerita',
-    'guide_story_body': 'Temui penjaga neon di setiap dunia. Mereka menyambutmu, memberi semangat di tengah jalan, dan mengantarmu ke alam berikutnya saat kamu melangkah lebih dalam.',
+    'guide_story_body':
+        'Temui penjaga neon di setiap dunia. Mereka menyambutmu, memberi semangat di tengah jalan, dan mengantarmu ke alam berikutnya saat kamu melangkah lebih dalam.',
     'story_w1_intro_title': 'Nebula Cyan',
-    'story_w1_intro_l1': 'Selamat datang, petualang. Aku Luma, cahaya Nebula Cyan.',
-    'story_w1_intro_l2': 'Permata di sini telah meredup. Cocokkan mereka untuk mengembalikan cahayanya!',
+    'story_w1_intro_l1':
+        'Selamat datang, petualang. Aku Luma, cahaya Nebula Cyan.',
+    'story_w1_intro_l2':
+        'Permata di sini telah meredup. Cocokkan mereka untuk mengembalikan cahayanya!',
     'story_w1_mid_title': 'Percikan Kembali',
     'story_w1_mid_l1': 'Nebula bersinar lagi — kamu punya karunia.',
     'story_w1_mid_l2': 'Tapi alam yang lebih dalam menanti. Terus maju!',
     'story_w1_outro_title': 'Nebula Pulih',
-    'story_w1_outro_l1': 'Nebula Cyan bersinar lebih terang dari sebelumnya. Terima kasih!',
+    'story_w1_outro_l1':
+        'Nebula Cyan bersinar lebih terang dari sebelumnya. Terima kasih!',
     'story_w1_outro_l2': 'Pulsa magenta memanggil dari kejauhan. Ikuti...',
     'story_w2_intro_title': 'Pulsa Magenta',
     'story_w2_intro_l1': 'Aku Vera. Kau rasakan detak itu? Itu Pulsa Magenta.',
-    'story_w2_intro_l2': 'Cocokkan sesuai irama dan alam ini akan menari bersamamu.',
+    'story_w2_intro_l2':
+        'Cocokkan sesuai irama dan alam ini akan menari bersamamu.',
     'story_w2_mid_title': 'Dalam Irama',
     'story_w2_mid_l1': 'Combo-mu bergema di seluruh pulsa — indah sekali!',
     'story_w2_mid_l2': 'Separuh perjalanan selesai. Iramanya makin liar.',
@@ -8823,7 +9322,8 @@ class AppTranslations extends Translations {
     'story_w2_outro_l2': 'Percikan sirkuit hijau berkelip di depan.',
     'story_w3_intro_title': 'Sirkuit Lime',
     'story_w3_intro_l1': 'Beep! Aku Cir, penjaga Sirkuit Lime.',
-    'story_w3_intro_l2': 'Sambungkan permata untuk menghidupkan kembali jaringan ini.',
+    'story_w3_intro_l2':
+        'Sambungkan permata untuk menghidupkan kembali jaringan ini.',
     'story_w3_mid_title': 'Daya Penuh',
     'story_w3_mid_l1': 'Sirkuit berdengung dengan daya penuh — kerja bagus!',
     'story_w3_mid_l2': 'Kabelnya makin rumit dari sini. Tetap fokus.',
@@ -8835,13 +9335,15 @@ class AppTranslations extends Translations {
     'story_w4_intro_l2': 'Berlarilah lewat permata sebelum kometnya pudar!',
     'story_w4_mid_title': 'Membara Terang',
     'story_w4_mid_l1': 'Kau melesat sekarang — kometnya makin membara!',
-    'story_w4_mid_l2': 'Ekornya makin panjang. Jangan sampai percikannya padam.',
+    'story_w4_mid_l2':
+        'Ekornya makin panjang. Jangan sampai percikannya padam.',
     'story_w4_outro_title': 'Komet Berkobar',
     'story_w4_outro_l1': 'Komet Amber meraung dengan cahaya. Luar biasa!',
     'story_w4_outro_l2': 'Hanya Void Ungu yang sunyi tersisa...',
     'story_w5_intro_title': 'Void Ungu',
     'story_w5_intro_l1': 'Aku Nyx, penjaga Void Ungu.',
-    'story_w5_intro_l2': 'Di sini cahaya sangat redup. Jadilah percikan yang mengisinya.',
+    'story_w5_intro_l2':
+        'Di sini cahaya sangat redup. Jadilah percikan yang mengisinya.',
     'story_w5_mid_title': 'Cahaya dalam Gelap',
     'story_w5_mid_l1': 'Bahkan void ini tak bisa meredupkan cahayamu.',
     'story_w5_mid_l2': 'Etape terakhir — kegelapan terdalam menanti.',
@@ -8890,7 +9392,8 @@ class AppTranslations extends Translations {
     'season_ends': 'Berakhir dalam',
     'season_points': 'poin musim',
     'season_pts_short': 'pts',
-    'season_hint': 'Menangkan level selama musim berlangsung untuk kumpulkan poin dan buka hadiah.',
+    'season_hint':
+        'Menangkan level selama musim berlangsung untuk kumpulkan poin dan buka hadiah.',
     'season_cyan': 'Lonjakan Cyan',
     'season_magenta': 'Badai Magenta',
     'season_lime': 'Gegas Lime',
@@ -8907,7 +9410,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'Tepat Irama!',
     'rhythm_offbeat': 'Meleset Irama',
     'guide_rhythm_title': 'Mode Rhythm',
-    'guide_rhythm_body': 'Tukar tepat pada ketukan (perhatikan titik yang berdenyut) untuk mengisi meteran Groove dan raih skor hingga 2.5× lipat. Tukar di luar ketukan akan menurunkan groove-mu. Capai skor target sebelum langkah habis.',
+    'guide_rhythm_body':
+        'Tukar tepat pada ketukan (perhatikan titik yang berdenyut) untuk mengisi meteran Groove dan raih skor hingga 2.5× lipat. Tukar di luar ketukan akan menurunkan groove-mu. Capai skor target sebelum langkah habis.',
     'versus_title': '2 Pemain',
     'versus_pick': 'Pilih mode',
     'versus_mode': 'Versus',
@@ -8924,7 +9428,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'Target',
     'versus_go': 'Mulai!',
     'guide_versus_title': '2 Pemain (lokal)',
-    'guide_versus_body': 'Dua pemain, satu perangkat. Versus: berlomba meraih skor tertinggi dalam 60 detik — combo besar mengirim baris sampah ke lawan. Co-Op: gabungkan skor untuk mencapai target bersama sebelum waktu habis. Papan atas diputar untuk main berhadapan.',
+    'guide_versus_body':
+        'Dua pemain, satu perangkat. Versus: berlomba meraih skor tertinggi dalam 60 detik — combo besar mengirim baris sampah ke lawan. Co-Op: gabungkan skor untuk mencapai target bersama sebelum waktu habis. Papan atas diputar untuk main berhadapan.',
     'challenge_modes': 'Tantangan',
     'meta_section': 'Hadiah',
     'daily_ch_title': 'Tantangan Harian',
@@ -8946,7 +9451,8 @@ class AppTranslations extends Translations {
     'rec_tier_gold': 'Emas',
     'rec_tier_platinum': 'Platinum',
     'hard_variant_on': 'Tantangan: Aktif (langkah lebih sedikit, +50% koin)',
-    'hard_variant_off': 'Tantangan: Nonaktif (ketuk untuk buka mode lebih sulit)',
+    'hard_variant_off':
+        'Tantangan: Nonaktif (ketuk untuk buka mode lebih sulit)',
     'puzzle_short': 'Puzzle',
     'puzzle_title': 'Puzzle',
     'puzzle_sub': 'Papan terbatas — tanpa isi ulang!',
@@ -8983,15 +9489,18 @@ class AppTranslations extends Translations {
     'portal_title': 'Portal',
     'dispenser_title': 'Dispenser',
     'guide_w11_title': 'Mekanik Baru',
-    'guide_w11_body': 'Mode Color Rush: "warna panas" berganti tiap beberapa langkah — bersihkan untuk poin bonus dan kejar target. Ban berjalan menggeser permata satu sel tiap langkah. Portal adalah sel berpasangan: membersihkan satu juga membersihkan pasangannya. Dispenser memunculkan permata spesial tiap beberapa langkah.',
+    'guide_w11_body':
+        'Mode Color Rush: "warna panas" berganti tiap beberapa langkah — bersihkan untuk poin bonus dan kejar target. Ban berjalan menggeser permata satu sel tiap langkah. Portal adalah sel berpasangan: membersihkan satu juga membersihkan pasangannya. Dispenser memunculkan permata spesial tiap beberapa langkah.',
     'soda_title': 'Soda Naik',
     'soda_short': 'Soda',
     'soda_hud': 'Botol',
-    'soda_desc': 'Bersihkan permata untuk menaikkan soda dan mengapungkan botol ke atas',
+    'soda_desc':
+        'Bersihkan permata untuk menaikkan soda dan mengapungkan botol ke atas',
     'obstacle_licorice': 'Licorice',
     'obstacle_jam': 'Selai',
     'guide_w14_title': 'Soda & Rintangan Baru',
-    'guide_w14_body': 'Mode Soda Naik: membersihkan permata menaikkan level soda yang mengapungkan botol ke atas — bawa cukup botol ke baris teratas untuk menang. Licorice mengunci sel dan butuh dua pembersihan di dekatnya untuk pecah. Selai menyebar ke sel tetangga tiap langkah kecuali kamu bersihkan di sebelahnya.',
+    'guide_w14_body':
+        'Mode Soda Naik: membersihkan permata menaikkan level soda yang mengapungkan botol ke atas — bawa cukup botol ke baris teratas untuk menang. Licorice mengunci sel dan butuh dua pembersihan di dekatnya untuk pecah. Selai menyebar ke sel tetangga tiap langkah kecuali kamu bersihkan di sebelahnya.',
     'coll_title': 'Album',
     'coll_points': 'poin album',
     'coll_hint': 'Menangkan level untuk kumpulkan poin album dan buka stiker.',
@@ -9013,12 +9522,15 @@ class AppTranslations extends Translations {
     'coll_desc_amber_sun': 'Matahari keemasan yang hangat.',
     'coll_desc_orange_ember': 'Bara oranye yang bercahaya.',
     'coll_desc_violet_dusk': 'Langit senja ungu yang pekat.',
-    'coll_desc_prism_shard': 'Pecahan kristal yang memecah cahaya menjadi warna pelangi.',
+    'coll_desc_prism_shard':
+        'Pecahan kristal yang memecah cahaya menjadi warna pelangi.',
     'coll_desc_nebula_core': 'Inti bercahaya dari awan bintang berwarna-warni.',
     'coll_desc_aurora_wing': 'Sayap dengan warna cahaya utara yang berkilau.',
     'coll_desc_quasar_eye': 'Mata bercahaya terang seperti bintang jauh.',
-    'coll_desc_pulsar_heart': 'Jantung cahaya yang berdenyut seperti mercusuar.',
-    'coll_desc_singularity': 'Satu titik cahaya yang lebih padat dari apa pun — stiker paling langka.',
+    'coll_desc_pulsar_heart':
+        'Jantung cahaya yang berdenyut seperti mercusuar.',
+    'coll_desc_singularity':
+        'Satu titik cahaya yang lebih padat dari apa pun — stiker paling langka.',
     'coll_close': 'Tutup',
     'piggy_title': 'Celengan',
     'piggy_smash': 'Pecahkan',
@@ -9078,14 +9590,18 @@ class AppTranslations extends Translations {
     'lb_tab_daily': 'Щоденні',
     'lb_level': 'Рівень',
     'lb_player': 'Ти',
-    'lb_daily_note': 'Топ-10 сьогодні — заверши Щоденний виклик, щоб потрапити в таблицю.',
+    'lb_daily_note':
+        'Топ-10 сьогодні — заверши Щоденний виклик, щоб потрапити в таблицю.',
     'reduce_motion': 'Зменшити ефекти руху',
     'tour_t0': 'Ласкаво просимо!',
-    'tour_m0': 'Міняй місцями самоцвіти, щоб зібрати 3+ одного кольору. Натисни "Грати", щоб почати кампанію зі 200 рівнів.',
+    'tour_m0':
+        'Міняй місцями самоцвіти, щоб зібрати 3+ одного кольору. Натисни "Грати", щоб почати кампанію зі 200 рівнів.',
     'tour_t1': 'Виклики',
-    'tour_m1': 'Окрім кампанії: Нескінченний режим, Бос, Ривок, Ритм та багато інших режимів.',
+    'tour_m1':
+        'Окрім кампанії: Нескінченний режим, Бос, Ривок, Ритм та багато інших режимів.',
     'tour_t2': 'Нагороди',
-    'tour_m2': 'Магазин, Бойовий пропуск, Таблиця лідерів, щоденні подарунки та інше чекають тут.',
+    'tour_m2':
+        'Магазин, Бойовий пропуск, Таблиця лідерів, щоденні подарунки та інше чекають тут.',
     'tour_t3': 'Вперед!',
     'tour_m3': 'Життя та монети зверху. Гарної гри, мандрівнику!',
     'tour_skip': 'Пропустити',
@@ -9164,11 +9680,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'Таймер',
     'guide_w10_title': 'Що нового',
     'guide_lightball': 'Світлова куля',
-    'guide_lightball_desc': 'Збери 7+ самоцвітів, щоб створити Світлову кулю — вона вибухає у 8 напрямках (ряд + колонка + обидві діагоналі). Найрідкісніший і наймогутніший самоцвіт.',
+    'guide_lightball_desc':
+        'Збери 7+ самоцвітів, щоб створити Світлову кулю — вона вибухає у 8 напрямках (ряд + колонка + обидві діагоналі). Найрідкісніший і наймогутніший самоцвіт.',
     'guide_bombdown': 'Бомба зі зворотним відліком',
-    'guide_bombdown_desc': 'На деяких рівнях бомби відраховують час з кожним ходом. Прибери самоцвіт на бомбі, щоб знешкодити її. Якщо будь-яка бомба досягне 0, ти миттєво програєш!',
+    'guide_bombdown_desc':
+        'На деяких рівнях бомби відраховують час з кожним ходом. Прибери самоцвіт на бомбі, щоб знешкодити її. Якщо будь-яка бомба досягне 0, ти миттєво програєш!',
     'guide_order': 'Змішані цілі',
-    'guide_order_desc': 'Рівні порядку вимагають зібрати кілька кольорів самоцвітів одночасно. Виконай усі цілі за кольорами, щоб перемогти.',
+    'guide_order_desc':
+        'Рівні порядку вимагають зібрати кілька кольорів самоцвітів одночасно. Виконай усі цілі за кольорами, щоб перемогти.',
     'shop_title': 'Магазин',
     'shop_skins': 'Скіни самоцвітів',
     'shop_themes': 'Теми поля',
@@ -9211,9 +9730,12 @@ class AppTranslations extends Translations {
     'wheel_done': 'Завтра',
     'wheel_got_booster': 'Бустер',
     'tut_title': 'Як грати',
-    'tut_1': 'Поміняй місцями два сусідні самоцвіти, щоб зібрати 3 чи більше одного кольору.',
-    'tut_2': 'Збери 4 в ряд, щоб створити Смугастий самоцвіт, який очищує весь ряд!',
-    'tut_3': 'Збери 5, щоб створити Райдужний самоцвіт — він очищує всі самоцвіти одного кольору.',
+    'tut_1':
+        'Поміняй місцями два сусідні самоцвіти, щоб зібрати 3 чи більше одного кольору.',
+    'tut_2':
+        'Збери 4 в ряд, щоб створити Смугастий самоцвіт, який очищує весь ряд!',
+    'tut_3':
+        'Збери 5, щоб створити Райдужний самоцвіт — він очищує всі самоцвіти одного кольору.',
     'tut_next': 'Далі',
     'tut_skip': 'Пропустити',
     'tut_start': 'Вперед',
@@ -9240,10 +9762,13 @@ class AppTranslations extends Translations {
     'npc_name_4': 'Ембер',
     'npc_name_5': 'Нікс',
     'guide_story_title': 'Історія',
-    'guide_story_body': 'Зустрічай неонового охоронця в кожному світі. Вони вітають тебе, підбадьорюють на півдорозі й проводжають до наступного світу, коли ти йдеш далі.',
+    'guide_story_body':
+        'Зустрічай неонового охоронця в кожному світі. Вони вітають тебе, підбадьорюють на півдорозі й проводжають до наступного світу, коли ти йдеш далі.',
     'story_w1_intro_title': 'Блакитна Туманність',
-    'story_w1_intro_l1': 'Ласкаво просимо, мандрівнику. Я Люма, світло Блакитної Туманності.',
-    'story_w1_intro_l2': 'Самоцвіти тут потьмяніли. Збери їх, щоб повернути сяйво!',
+    'story_w1_intro_l1':
+        'Ласкаво просимо, мандрівнику. Я Люма, світло Блакитної Туманності.',
+    'story_w1_intro_l2':
+        'Самоцвіти тут потьмяніли. Збери їх, щоб повернути сяйво!',
     'story_w1_mid_title': 'Іскра повертається',
     'story_w1_mid_l1': 'Туманність знову сяє — маєш дар.',
     'story_w1_mid_l2': 'Але глибші світи чекають. Продовжуй!',
@@ -9266,7 +9791,8 @@ class AppTranslations extends Translations {
     'story_w3_mid_l2': 'Проводка стає складнішою далі. Будь уважний.',
     'story_w3_outro_title': 'Систему відновлено',
     'story_w3_outro_l1': 'Уся мережа сяє зеленим. Систему відновлено!',
-    'story_w3_outro_l2': 'Палаюча бурштинова комета проноситься крізь темряву...',
+    'story_w3_outro_l2':
+        'Палаюча бурштинова комета проноситься крізь темряву...',
     'story_w4_intro_title': 'Бурштинова Комета',
     'story_w4_intro_l1': 'Я Ембер, вершниця Бурштинової Комети.',
     'story_w4_intro_l2': 'Прожени крізь самоцвіти, поки комета не згасла!',
@@ -9294,7 +9820,8 @@ class AppTranslations extends Translations {
     'temple_build': 'Будувати',
     'temple_built': 'Побудовано!',
     'temple_maxed': 'Максимум',
-    'temple_hint': 'Натисни на споруду, щоб побудувати її за монети, зароблені на рівнях.',
+    'temple_hint':
+        'Натисни на споруду, щоб побудувати її за монети, зароблені на рівнях.',
     'coins_short': 'монет',
     'temple_gate': 'Неонові Ворота',
     'temple_gate_desc': 'Сяючий вхід до твого храму.',
@@ -9327,7 +9854,8 @@ class AppTranslations extends Translations {
     'season_ends': 'Закінчується через',
     'season_points': 'сезонних очок',
     'season_pts_short': 'очок',
-    'season_hint': 'Вигравай рівні протягом сезону, щоб заробляти очки й розблоковувати нагороди.',
+    'season_hint':
+        'Вигравай рівні протягом сезону, щоб заробляти очки й розблоковувати нагороди.',
     'season_cyan': 'Блакитний Сплеск',
     'season_magenta': 'Пурпурна Буря',
     'season_lime': 'Лаймовий Ривок',
@@ -9344,7 +9872,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'У ритмі!',
     'rhythm_offbeat': 'Не в ритмі',
     'guide_rhythm_title': 'Режим Ритм',
-    'guide_rhythm_body': 'Міняй місцями самоцвіти точно в такт (дивись на пульсуючу точку), щоб наповнювати шкалу Грув і множити очки до 2.5×. Ходи не в такт скидають грув. Досягни цільового рахунку, поки не закінчилися ходи.',
+    'guide_rhythm_body':
+        'Міняй місцями самоцвіти точно в такт (дивись на пульсуючу точку), щоб наповнювати шкалу Грув і множити очки до 2.5×. Ходи не в такт скидають грув. Досягни цільового рахунку, поки не закінчилися ходи.',
     'versus_title': '2 Гравці',
     'versus_pick': 'Обери режим',
     'versus_mode': 'Протистояння',
@@ -9361,7 +9890,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'Ціль',
     'versus_go': 'Старт!',
     'guide_versus_title': '2 Гравці (локально)',
-    'guide_versus_body': 'Два гравці, один пристрій. Протистояння: змагайтесь за вищий рахунок за 60с — великі комбо надсилають сміттєві ряди супернику. Кооператив: об\'єднайте рахунки, щоб досягти спільної цілі, поки не закінчився час. Верхнє поле перевернуте для гри обличчям до обличчя.',
+    'guide_versus_body':
+        'Два гравці, один пристрій. Протистояння: змагайтесь за вищий рахунок за 60с — великі комбо надсилають сміттєві ряди супернику. Кооператив: об\'єднайте рахунки, щоб досягти спільної цілі, поки не закінчився час. Верхнє поле перевернуте для гри обличчям до обличчя.',
     'challenge_modes': 'Виклики',
     'meta_section': 'Нагороди',
     'daily_ch_title': 'Щоденний виклик',
@@ -9383,7 +9913,8 @@ class AppTranslations extends Translations {
     'rec_tier_gold': 'Золото',
     'rec_tier_platinum': 'Платина',
     'hard_variant_on': 'Виклик: увімкнено (менше ходів, +50% монет)',
-    'hard_variant_off': 'Виклик: вимкнено (натисни, щоб розблокувати складніший забіг)',
+    'hard_variant_off':
+        'Виклик: вимкнено (натисни, щоб розблокувати складніший забіг)',
     'puzzle_short': 'Головоломка',
     'puzzle_title': 'Головоломки',
     'puzzle_sub': 'Обмежене поле — без поповнення!',
@@ -9420,18 +9951,22 @@ class AppTranslations extends Translations {
     'portal_title': 'Портал',
     'dispenser_title': 'Диспенсер',
     'guide_w11_title': 'Нові механіки',
-    'guide_w11_body': 'Режим Кольоровий Ривок: "гарячий колір" змінюється кожні кілька ходів — прибери його заради бонусних очок і йди до цілі. Конвеєрні стрічки зсувають самоцвіти на одну клітинку щохід. Портали — пов\'язані клітинки: прибравши одну, прибираєш і пару. Диспенсери створюють спецсамоцвіт кожні кілька ходів.',
+    'guide_w11_body':
+        'Режим Кольоровий Ривок: "гарячий колір" змінюється кожні кілька ходів — прибери його заради бонусних очок і йди до цілі. Конвеєрні стрічки зсувають самоцвіти на одну клітинку щохід. Портали — пов\'язані клітинки: прибравши одну, прибираєш і пару. Диспенсери створюють спецсамоцвіт кожні кілька ходів.',
     'soda_title': 'Підйом Газировки',
     'soda_short': 'Газировка',
     'soda_hud': 'Пляшки',
-    'soda_desc': 'Прибирай самоцвіти, щоб підняти газировку й підняти пляшки до верху',
+    'soda_desc':
+        'Прибирай самоцвіти, щоб підняти газировку й підняти пляшки до верху',
     'obstacle_licorice': 'Локриця',
     'obstacle_jam': 'Джем',
     'guide_w14_title': 'Газировка та нові перешкоди',
-    'guide_w14_body': 'Режим Підйом Газировки: прибирання самоцвітів підіймає рівень газировки, що піднімає пляшки — донеси достатньо пляшок до верхнього ряду, щоб перемогти. Локриця блокує клітинку і потребує двох прибирань поруч, щоб зламатися. Джем поширюється на сусідню клітинку щохід, якщо не прибрати самоцвіт поруч.',
+    'guide_w14_body':
+        'Режим Підйом Газировки: прибирання самоцвітів підіймає рівень газировки, що піднімає пляшки — донеси достатньо пляшок до верхнього ряду, щоб перемогти. Локриця блокує клітинку і потребує двох прибирань поруч, щоб зламатися. Джем поширюється на сусідню клітинку щохід, якщо не прибрати самоцвіт поруч.',
     'coll_title': 'Альбом',
     'coll_points': 'очок альбому',
-    'coll_hint': 'Вигравай рівні, щоб заробляти очки альбому й розблоковувати наліпки.',
+    'coll_hint':
+        'Вигравай рівні, щоб заробляти очки альбому й розблоковувати наліпки.',
     'coll_cyan_spark': 'Блакитна Іскра',
     'coll_magenta_bloom': 'Пурпурна Квітка',
     'coll_lime_leaf': 'Лаймовий Листок',
@@ -9450,12 +9985,14 @@ class AppTranslations extends Translations {
     'coll_desc_amber_sun': 'Тепле золоте сонце.',
     'coll_desc_orange_ember': 'Сяюча помаранчева жарина.',
     'coll_desc_violet_dusk': 'Глибоке фіолетове небо сутінків.',
-    'coll_desc_prism_shard': 'Кришталевий уламок, що розщеплює світло на кольори веселки.',
+    'coll_desc_prism_shard':
+        'Кришталевий уламок, що розщеплює світло на кольори веселки.',
     'coll_desc_nebula_core': 'Сяюче ядро барвистої зоряної хмари.',
     'coll_desc_aurora_wing': 'Крило мерехтливого кольору північного сяйва.',
     'coll_desc_quasar_eye': 'Яскраве око-подібне сяйво, як далека зірка.',
     'coll_desc_pulsar_heart': 'Серце світла, що пульсує, немов маяк.',
-    'coll_desc_singularity': 'Єдина точка світла, щільніша за все інше — найрідкісніша наліпка.',
+    'coll_desc_singularity':
+        'Єдина точка світла, щільніша за все інше — найрідкісніша наліпка.',
     'coll_close': 'Закрити',
     'piggy_title': 'Скарбничка',
     'piggy_smash': 'Розбити',
@@ -9521,11 +10058,14 @@ class AppTranslations extends Translations {
     'lb_daily_note': 'আজকের সেরা ১০ — বোর্ডে যোগ দিতে দৈনিক শেষ করুন।',
     'reduce_motion': 'মোশন এফেক্ট কমান',
     'tour_t0': 'স্বাগতম!',
-    'tour_m0': '৩টি একই রঙের রত্ন সাজাতে অদলবদল করুন। ২০০ লেভেলের ক্যাম্পেইন শুরু করতে খেলুন-এ ট্যাপ করুন।',
+    'tour_m0':
+        '৩টি একই রঙের রত্ন সাজাতে অদলবদল করুন। ২০০ লেভেলের ক্যাম্পেইন শুরু করতে খেলুন-এ ট্যাপ করুন।',
     'tour_t1': 'চ্যালেঞ্জ',
-    'tour_m1': 'ক্যাম্পেইনের বাইরেও আছে: এন্ডলেস, বস, রাশ, রিদম আর আরও অনেক সাইড মোড।',
+    'tour_m1':
+        'ক্যাম্পেইনের বাইরেও আছে: এন্ডলেস, বস, রাশ, রিদম আর আরও অনেক সাইড মোড।',
     'tour_t2': 'পুরস্কার',
-    'tour_m2': 'দোকান, ব্যাটল পাস, লিডারবোর্ড, দৈনিক উপহার আর আরও অনেক কিছু এখানে অপেক্ষা করছে।',
+    'tour_m2':
+        'দোকান, ব্যাটল পাস, লিডারবোর্ড, দৈনিক উপহার আর আরও অনেক কিছু এখানে অপেক্ষা করছে।',
     'tour_t3': 'চলো যাই!',
     'tour_m3': 'জীবন আর কয়েন উপরে আছে। মজা করুন, পথিক!',
     'tour_skip': 'এড়িয়ে যান',
@@ -9567,7 +10107,8 @@ class AppTranslations extends Translations {
     'pt_prestige_title': 'প্রেস্টিজ',
     'pt_prestige_desc': 'প্রেস্টিজ জেম স্কিন আনলক করুন (৫টি গোল্ড মাইলস্টোন)',
     'pt_ascendant_title': 'অ্যাসেন্ড্যান্ট',
-    'pt_ascendant_desc': 'অ্যাসেন্ড্যান্ট পার্টিকল এফেক্ট আনলক করুন (৩টি প্ল্যাটিনাম মাইলস্টোন)',
+    'pt_ascendant_desc':
+        'অ্যাসেন্ড্যান্ট পার্টিকল এফেক্ট আনলক করুন (৩টি প্ল্যাটিনাম মাইলস্টোন)',
     'pt_unlocked': '✓ আনলক হয়েছে',
     'pt_star_cost': '@n / @t ★',
     'pt_gold_cost': '@n / @t 🥇',
@@ -9604,11 +10145,14 @@ class AppTranslations extends Translations {
     'bomb_timer': 'টাইমার',
     'guide_w10_title': 'নতুন কী আছে',
     'guide_lightball': 'লাইট বল',
-    'guide_lightball_desc': '৭+ রত্ন মেলালে একটি লাইট বল তৈরি হয় — এটি ৮ দিকে (সারি + কলাম + দুই কর্ণ) বিস্ফোরিত হয়। সবচেয়ে বিরল ও শক্তিশালী রত্ন।',
+    'guide_lightball_desc':
+        '৭+ রত্ন মেলালে একটি লাইট বল তৈরি হয় — এটি ৮ দিকে (সারি + কলাম + দুই কর্ণ) বিস্ফোরিত হয়। সবচেয়ে বিরল ও শক্তিশালী রত্ন।',
     'guide_bombdown': 'কাউন্টডাউন বোমা',
-    'guide_bombdown_desc': 'কিছু লেভেলে বোমা প্রতি চালে কাউন্টডাউন করে। বোমার উপরের রত্ন সরিয়ে সেটি নিষ্ক্রিয় করুন। কোনো বোমা ০-তে পৌঁছালে তাৎক্ষণিক হেরে যাবেন!',
+    'guide_bombdown_desc':
+        'কিছু লেভেলে বোমা প্রতি চালে কাউন্টডাউন করে। বোমার উপরের রত্ন সরিয়ে সেটি নিষ্ক্রিয় করুন। কোনো বোমা ০-তে পৌঁছালে তাৎক্ষণিক হেরে যাবেন!',
     'guide_order': 'মিশ্র লক্ষ্য',
-    'guide_order_desc': 'অর্ডার লেভেলে একসাথে একাধিক রঙের রত্ন সংগ্রহ করতে হয়। জিততে প্রতিটি রঙের লক্ষ্য পূরণ করুন।',
+    'guide_order_desc':
+        'অর্ডার লেভেলে একসাথে একাধিক রঙের রত্ন সংগ্রহ করতে হয়। জিততে প্রতিটি রঙের লক্ষ্য পূরণ করুন।',
     'shop_title': 'দোকান',
     'shop_skins': 'জেম স্কিন',
     'shop_themes': 'বোর্ড থিম',
@@ -9652,8 +10196,10 @@ class AppTranslations extends Translations {
     'wheel_got_booster': 'বুস্টার',
     'tut_title': 'কীভাবে খেলবেন',
     'tut_1': 'পাশাপাশি দুটি রত্ন অদলবদল করে একই রঙের ৩ বা তার বেশি সাজান।',
-    'tut_2': '৪টি এক লাইনে মেলান একটি ডোরাকাটা রত্ন তৈরি করতে — এটি পুরো একটি লাইন পরিষ্কার করে!',
-    'tut_3': '৫টি মেলান একটি রেইনবো রত্ন তৈরি করতে — এটি এক রঙের সব রত্ন পরিষ্কার করে।',
+    'tut_2':
+        '৪টি এক লাইনে মেলান একটি ডোরাকাটা রত্ন তৈরি করতে — এটি পুরো একটি লাইন পরিষ্কার করে!',
+    'tut_3':
+        '৫টি মেলান একটি রেইনবো রত্ন তৈরি করতে — এটি এক রঙের সব রত্ন পরিষ্কার করে।',
     'tut_next': 'পরবর্তী',
     'tut_skip': 'এড়িয়ে যান',
     'tut_start': 'চলো যাই',
@@ -9680,10 +10226,12 @@ class AppTranslations extends Translations {
     'npc_name_4': 'এম্বার',
     'npc_name_5': 'নিক্স',
     'guide_story_title': 'গল্প',
-    'guide_story_body': 'প্রতিটি ওয়ার্ল্ডে একজন নিয়ন গার্ডিয়ানের সাথে দেখা করুন। তারা আপনাকে স্বাগত জানায়, মাঝপথে উৎসাহ দেয়, আর গভীরে যাওয়ার সাথে সাথে পরবর্তী জগতে পাঠায়।',
+    'guide_story_body':
+        'প্রতিটি ওয়ার্ল্ডে একজন নিয়ন গার্ডিয়ানের সাথে দেখা করুন। তারা আপনাকে স্বাগত জানায়, মাঝপথে উৎসাহ দেয়, আর গভীরে যাওয়ার সাথে সাথে পরবর্তী জগতে পাঠায়।',
     'story_w1_intro_title': 'সায়ান নেবুলা',
     'story_w1_intro_l1': 'স্বাগতম, পথিক। আমি লুমা, সায়ান নেবুলার আলো।',
-    'story_w1_intro_l2': 'এখানকার রত্নগুলো ম্লান হয়ে গেছে। জ্বলুনি ফিরিয়ে আনতে সেগুলো মেলান!',
+    'story_w1_intro_l2':
+        'এখানকার রত্নগুলো ম্লান হয়ে গেছে। জ্বলুনি ফিরিয়ে আনতে সেগুলো মেলান!',
     'story_w1_mid_title': 'ফিরে আসা স্ফুলিঙ্গ',
     'story_w1_mid_l1': 'নেবুলা আবার ঝলমল করছে — আপনার একটি উপহার আছে।',
     'story_w1_mid_l2': 'কিন্তু গভীর জগৎ অপেক্ষা করছে। চালিয়ে যান!',
@@ -9691,7 +10239,8 @@ class AppTranslations extends Translations {
     'story_w1_outro_l1': 'সায়ান নেবুলা আগের চেয়ে বেশি উজ্জ্বল। ধন্যবাদ!',
     'story_w1_outro_l2': 'বাইরে থেকে ম্যাজেন্টা পালস ডাকছে। অনুসরণ করুন...',
     'story_w2_intro_title': 'ম্যাজেন্টা পালস',
-    'story_w2_intro_l1': 'আমি ভেরা। এই স্পন্দন অনুভব করছেন? এটাই ম্যাজেন্টা পালস।',
+    'story_w2_intro_l1':
+        'আমি ভেরা। এই স্পন্দন অনুভব করছেন? এটাই ম্যাজেন্টা পালস।',
     'story_w2_intro_l2': 'ছন্দে মেলান, আর জগৎ আপনার সাথে নাচবে।',
     'story_w2_mid_title': 'ছন্দে',
     'story_w2_mid_l1': 'আপনার কম্বো পালস জুড়ে প্রতিধ্বনিত হচ্ছে — চমৎকার!',
@@ -9719,12 +10268,14 @@ class AppTranslations extends Translations {
     'story_w4_outro_l2': 'শুধু নীরব ভায়োলেট ভয়েড বাকি রইল...',
     'story_w5_intro_title': 'ভায়োলেট ভয়েড',
     'story_w5_intro_l1': 'আমি নিক্স, ভায়োলেট ভয়েডের রক্ষক।',
-    'story_w5_intro_l2': 'এখানে আলো ক্ষীণ। যে স্ফুলিঙ্গ তা পূর্ণ করবে, সেটাই হোন।',
+    'story_w5_intro_l2':
+        'এখানে আলো ক্ষীণ। যে স্ফুলিঙ্গ তা পূর্ণ করবে, সেটাই হোন।',
     'story_w5_mid_title': 'অন্ধকারে আলো',
     'story_w5_mid_l1': 'ভয়েডও আপনার দীপ্তি ম্লান করতে পারে না।',
     'story_w5_mid_l2': 'শেষ ধাপ — সবচেয়ে গভীর অন্ধকার অপেক্ষা করছে।',
     'story_w5_outro_title': 'নিয়ন কিংবদন্তি',
-    'story_w5_outro_l1': 'আপনি পুরো ভয়েড আলোকিত করলেন! মহাবিশ্ব আবার পূর্ণ হলো।',
+    'story_w5_outro_l1':
+        'আপনি পুরো ভয়েড আলোকিত করলেন! মহাবিশ্ব আবার পূর্ণ হলো।',
     'story_w5_outro_l2': 'আপনি সত্যিকারের নিয়ন কিংবদন্তি। ধন্যবাদ, পথিক।',
     'story_next': 'পরবর্তী',
     'story_skip': 'এড়িয়ে যান',
@@ -9735,7 +10286,8 @@ class AppTranslations extends Translations {
     'temple_build': 'নির্মাণ করুন',
     'temple_built': 'নির্মিত হয়েছে!',
     'temple_maxed': 'সর্বোচ্চ',
-    'temple_hint': 'লেভেল থেকে পাওয়া কয়েন দিয়ে নির্মাণ করতে একটি কাঠামোতে ট্যাপ করুন।',
+    'temple_hint':
+        'লেভেল থেকে পাওয়া কয়েন দিয়ে নির্মাণ করতে একটি কাঠামোতে ট্যাপ করুন।',
     'coins_short': 'কয়েন',
     'temple_gate': 'নিয়ন গেট',
     'temple_gate_desc': 'আপনার মন্দিরের জ্বলজ্বলে প্রবেশদ্বার।',
@@ -9785,7 +10337,8 @@ class AppTranslations extends Translations {
     'rhythm_onbeat': 'অন বিট!',
     'rhythm_offbeat': 'অফ বিট',
     'guide_rhythm_title': 'রিদম মোড',
-    'guide_rhythm_body': 'ঠিক বিটে অদলবদল করুন (স্পন্দিত বিন্দু দেখুন) গ্রুভ মিটার বাড়াতে আর ২.৫× পর্যন্ত স্কোর পেতে। অফ-বিট অদলবদলে গ্রুভ কমে যায়। চাল ফুরানোর আগে লক্ষ্য স্কোরে পৌঁছান।',
+    'guide_rhythm_body':
+        'ঠিক বিটে অদলবদল করুন (স্পন্দিত বিন্দু দেখুন) গ্রুভ মিটার বাড়াতে আর ২.৫× পর্যন্ত স্কোর পেতে। অফ-বিট অদলবদলে গ্রুভ কমে যায়। চাল ফুরানোর আগে লক্ষ্য স্কোরে পৌঁছান।',
     'versus_title': '২ প্লেয়ার',
     'versus_pick': 'একটি মোড বাছুন',
     'versus_mode': 'ভার্সাস',
@@ -9802,7 +10355,8 @@ class AppTranslations extends Translations {
     'coop_goal': 'লক্ষ্য',
     'versus_go': 'শুরু!',
     'guide_versus_title': '২ প্লেয়ার (লোকাল)',
-    'guide_versus_body': 'দুই প্লেয়ার, এক ডিভাইস। ভার্সাস: ৬০ সেকেন্ডে সর্বোচ্চ স্কোরের জন্য প্রতিযোগিতা — বড় কম্বো প্রতিপক্ষের কাছে জাঞ্জাল সারি পাঠায়। কো-অপ: সময় শেষ হওয়ার আগে সাধারণ লক্ষ্যে পৌঁছাতে স্কোর একত্রিত করুন। মুখোমুখি খেলার জন্য উপরের বোর্ড ঘোরানো থাকে।',
+    'guide_versus_body':
+        'দুই প্লেয়ার, এক ডিভাইস। ভার্সাস: ৬০ সেকেন্ডে সর্বোচ্চ স্কোরের জন্য প্রতিযোগিতা — বড় কম্বো প্রতিপক্ষের কাছে জাঞ্জাল সারি পাঠায়। কো-অপ: সময় শেষ হওয়ার আগে সাধারণ লক্ষ্যে পৌঁছাতে স্কোর একত্রিত করুন। মুখোমুখি খেলার জন্য উপরের বোর্ড ঘোরানো থাকে।',
     'challenge_modes': 'চ্যালেঞ্জ',
     'meta_section': 'পুরস্কার',
     'daily_ch_title': 'দৈনিক চ্যালেঞ্জ',
@@ -9861,15 +10415,18 @@ class AppTranslations extends Translations {
     'portal_title': 'পোর্টাল',
     'dispenser_title': 'ডিসপেনসার',
     'guide_w11_title': 'নতুন মেকানিক্স',
-    'guide_w11_body': 'কালার রাশ মোড: কয়েক চাল পরপর "হট কালার" বদলায় — বোনাস পয়েন্টের জন্য সেটি পরিষ্কার করুন আর লক্ষ্যের দিকে দৌড়ান। কনভেয়র বেল্ট প্রতি চালে রত্ন এক ঘর সরায়। পোর্টাল যুক্ত ঘর — একটি পরিষ্কার করলে তার জোড়াটিও পরিষ্কার হয়। ডিসপেনসার কয়েক চাল পরপর একটি বিশেষ রত্ন তৈরি করে।',
+    'guide_w11_body':
+        'কালার রাশ মোড: কয়েক চাল পরপর "হট কালার" বদলায় — বোনাস পয়েন্টের জন্য সেটি পরিষ্কার করুন আর লক্ষ্যের দিকে দৌড়ান। কনভেয়র বেল্ট প্রতি চালে রত্ন এক ঘর সরায়। পোর্টাল যুক্ত ঘর — একটি পরিষ্কার করলে তার জোড়াটিও পরিষ্কার হয়। ডিসপেনসার কয়েক চাল পরপর একটি বিশেষ রত্ন তৈরি করে।',
     'soda_title': 'সোডা রাইজ',
     'soda_short': 'সোডা',
     'soda_hud': 'বোতল',
-    'soda_desc': 'রত্ন পরিষ্কার করে সোডা উপরে তুলুন আর বোতলগুলো উপরে ভাসিয়ে দিন',
+    'soda_desc':
+        'রত্ন পরিষ্কার করে সোডা উপরে তুলুন আর বোতলগুলো উপরে ভাসিয়ে দিন',
     'obstacle_licorice': 'লিকোরিস',
     'obstacle_jam': 'জ্যাম',
     'guide_w14_title': 'সোডা ও নতুন বাধা',
-    'guide_w14_body': 'সোডা রাইজ মোড: রত্ন পরিষ্কার করলে সোডার স্তর বাড়ে যা বোতলগুলো উপরে ভাসায় — জিততে যথেষ্ট বোতল উপরের সারিতে আনুন। লিকোরিস একটি ঘর আটকে রাখে আর ভাঙতে কাছাকাছি দুটি পরিষ্কার লাগে। জ্যাম প্রতি চালে পাশের ঘরে ছড়ায়, যদি না আপনি তার পাশে পরিষ্কার করেন।',
+    'guide_w14_body':
+        'সোডা রাইজ মোড: রত্ন পরিষ্কার করলে সোডার স্তর বাড়ে যা বোতলগুলো উপরে ভাসায় — জিততে যথেষ্ট বোতল উপরের সারিতে আনুন। লিকোরিস একটি ঘর আটকে রাখে আর ভাঙতে কাছাকাছি দুটি পরিষ্কার লাগে। জ্যাম প্রতি চালে পাশের ঘরে ছড়ায়, যদি না আপনি তার পাশে পরিষ্কার করেন।',
     'coll_title': 'অ্যালবাম',
     'coll_points': 'অ্যালবাম পয়েন্ট',
     'coll_hint': 'অ্যালবাম পয়েন্ট অর্জন করতে ও স্টিকার আনলক করতে লেভেল জিতুন।',
@@ -9896,7 +10453,8 @@ class AppTranslations extends Translations {
     'coll_desc_aurora_wing': 'ঝলমলে মেরুজ্যোতির রঙের একটি ডানা।',
     'coll_desc_quasar_eye': 'দূরের তারার মতো উজ্জ্বল চোখ-আকৃতির আলো।',
     'coll_desc_pulsar_heart': 'বাতিঘরের মতো স্পন্দিত আলোর হৃদয়।',
-    'coll_desc_singularity': 'অন্য যেকোনো কিছুর চেয়ে ঘনতর আলোর একটি বিন্দু — সবচেয়ে বিরল স্টিকার।',
+    'coll_desc_singularity':
+        'অন্য যেকোনো কিছুর চেয়ে ঘনতর আলোর একটি বিন্দু — সবচেয়ে বিরল স্টিকার।',
     'coll_close': 'বন্ধ করুন',
     'piggy_title': 'পিগি ব্যাংক',
     'piggy_smash': 'ভাঙুন',
@@ -20423,5 +20981,99 @@ class AppTranslations extends Translations {
       'clan_goal_hint': 'Перемоги в кампанії й додаткових режимах враховуються',
     },
     'bn_BD': {'clan_goal_hint': 'ক্যাম্পেইন ও সাইড-মোড উভয়ের জয়ই গণনা হয়'},
+  };
+
+  /// W28.1 — Puzzle hard variant toggle (en+vi ở _extraEn/_extraVi).
+  static const Map<String, Map<String, String>> _w281ByLang = {
+    'es_ES': {
+      'puzzle_hard_on': 'Modo Difícil: Activado (menos movimientos)',
+      'puzzle_hard_off':
+          'Modo Difícil: Desactivado (toca para una ronda más difícil)',
+    },
+    'fr_FR': {
+      'puzzle_hard_on': 'Mode Difficile : Activé (moins de coups)',
+      'puzzle_hard_off':
+          'Mode Difficile : Désactivé (appuie pour une partie plus dure)',
+    },
+    'de_DE': {
+      'puzzle_hard_on': 'Schwerer Modus: An (weniger Züge)',
+      'puzzle_hard_off':
+          'Schwerer Modus: Aus (tippen für einen schwereren Lauf)',
+    },
+    'pt_BR': {
+      'puzzle_hard_on': 'Modo Difícil: Ativado (menos movimentos)',
+      'puzzle_hard_off':
+          'Modo Difícil: Desativado (toque para uma rodada mais difícil)',
+    },
+    'ru_RU': {
+      'puzzle_hard_on': 'Сложный режим: Вкл (меньше ходов)',
+      'puzzle_hard_off':
+          'Сложный режим: Выкл (нажми для более сложного забега)',
+    },
+    'zh_CN': {
+      'puzzle_hard_on': '困难模式：开启（步数更少）',
+      'puzzle_hard_off': '困难模式：关闭（点击尝试更难的挑战）',
+    },
+    'ja_JP': {
+      'puzzle_hard_on': 'ハードモード：オン（ムーブ減少）',
+      'puzzle_hard_off': 'ハードモード：オフ（タップでより難しい挑戦へ）',
+    },
+    'ko_KR': {
+      'puzzle_hard_on': '하드 모드: 켜짐 (이동 감소)',
+      'puzzle_hard_off': '하드 모드: 꺼짐 (탭하여 더 어려운 도전)',
+    },
+    'it_IT': {
+      'puzzle_hard_on': 'Modalità Difficile: Attiva (meno mosse)',
+      'puzzle_hard_off':
+          'Modalità Difficile: Disattiva (tocca per una partita più dura)',
+    },
+    'id_ID': {
+      'puzzle_hard_on': 'Mode Sulit: Aktif (langkah lebih sedikit)',
+      'puzzle_hard_off': 'Mode Sulit: Nonaktif (ketuk untuk babak lebih sulit)',
+    },
+    'th_TH': {
+      'puzzle_hard_on': 'โหมดยาก: เปิด (เดินน้อยลง)',
+      'puzzle_hard_off': 'โหมดยาก: ปิด (แตะเพื่อลองรอบที่ยากขึ้น)',
+    },
+    'hi_IN': {
+      'puzzle_hard_on': 'हार्ड मोड: चालू (कम चालें)',
+      'puzzle_hard_off': 'हार्ड मोड: बंद (कठिन राउंड के लिए टैप करें)',
+    },
+    'ar_SA': {
+      'puzzle_hard_on': 'الوضع الصعب: مفعّل (حركات أقل)',
+      'puzzle_hard_off': 'الوضع الصعب: معطّل (اضغط لتجربة جولة أصعب)',
+    },
+    'tr_TR': {
+      'puzzle_hard_on': 'Zor Mod: Açık (daha az hamle)',
+      'puzzle_hard_off': 'Zor Mod: Kapalı (daha zor bir tur için dokun)',
+    },
+    'nl_NL': {
+      'puzzle_hard_on': 'Moeilijke modus: Aan (minder zetten)',
+      'puzzle_hard_off':
+          'Moeilijke modus: Uit (tik voor een moeilijkere ronde)',
+    },
+    'pl_PL': {
+      'puzzle_hard_on': 'Tryb trudny: Włączony (mniej ruchów)',
+      'puzzle_hard_off':
+          'Tryb trudny: Wyłączony (dotknij, aby zagrać trudniej)',
+    },
+    'fil_PH': {
+      'puzzle_hard_on': 'Mahirap na Mode: Naka-on (mas kaunting galaw)',
+      'puzzle_hard_off':
+          'Mahirap na Mode: Naka-off (tapikin para sa mas mahirap na round)',
+    },
+    'ms_MY': {
+      'puzzle_hard_on': 'Mod Sukar: Hidup (langkah lebih sedikit)',
+      'puzzle_hard_off': 'Mod Sukar: Mati (ketik untuk pusingan lebih sukar)',
+    },
+    'uk_UA': {
+      'puzzle_hard_on': 'Складний режим: Увімк (менше ходів)',
+      'puzzle_hard_off':
+          'Складний режим: Вимк (торкнись для складнішого раунду)',
+    },
+    'bn_BD': {
+      'puzzle_hard_on': 'হার্ড মোড: চালু (কম চাল)',
+      'puzzle_hard_off': 'হার্ড মোড: বন্ধ (কঠিন রাউন্ডের জন্য ট্যাপ করুন)',
+    },
   };
 }

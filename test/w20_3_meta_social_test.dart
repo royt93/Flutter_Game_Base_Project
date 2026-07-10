@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:neon_jewels/core/storage_service.dart';
 import 'package:neon_jewels/data/challenge_cards.dart';
 import 'package:neon_jewels/data/cosmetics.dart';
+import 'package:neon_jewels/data/levels.dart';
 import 'package:neon_jewels/data/progression_tree.dart';
 import 'package:neon_jewels/presentation/controllers/challenge_card_controller.dart';
 import 'package:neon_jewels/presentation/controllers/game_controller.dart';
@@ -208,6 +209,10 @@ void main() {
       Get.reset();
       Get.put(StorageService(await SharedPreferences.getInstance()));
       g = Get.put(GameController());
+      // Cố định ngày ở tuần CHẴN (epoch day 0 → weekIdx 0) — buildWeeklyChallenges
+      // chỉ sinh thẻ playMode ở tuần chẵn, tuần lẻ ra reachRecordTier thay thế.
+      // Không cố định thì test phụ thuộc ngày thật chạy máy, flaky theo tuần.
+      g.clock = () => DateTime(1970, 1, 1);
       ctrl = Get.put(ChallengeCardController(g));
     });
     tearDown(Get.reset);
@@ -372,6 +377,10 @@ void main() {
       expect(g.lastCoinReward, 5); // min clamp = 5, full reward
 
       // score = 50000: base = (50000 ~/ 1000) = 50 → clamp(5, 50) = 50
+      // W28.1: chặn mốc thưởng one-time (kZenMilestones) cộng thêm vào reward,
+      // vì bài test này chỉ verify riêng công thức clamp — mốc thưởng có test
+      // riêng (test/w28_1_zen_milestone_test.dart).
+      g.zenMilestoneTier.value = kZenMilestones.length;
       g.startZen();
       g.score.value = 50000;
       g.endZenSession();

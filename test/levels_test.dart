@@ -3,9 +3,9 @@ import 'package:neon_jewels/data/levels.dart';
 
 void main() {
   group('kLevels — tính hợp lệ', () {
-    test('có đúng kLevelCount level (Wave 20.2: 200)', () {
+    test('có đúng kLevelCount level (W28.1: 208)', () {
       expect(kLevels.length, kLevelCount);
-      expect(kLevels.length, 200);
+      expect(kLevels.length, 208);
     });
 
     test('index liên tục từ 1', () {
@@ -27,8 +27,11 @@ void main() {
       for (final lv in kLevels) {
         switch (lv.objective) {
           case ObjectiveType.score:
-            expect(lv.targetScore, greaterThan(0),
-                reason: 'level ${lv.index} score cần targetScore > 0');
+            expect(
+              lv.targetScore,
+              greaterThan(0),
+              reason: 'level ${lv.index} score cần targetScore > 0',
+            );
             break;
           case ObjectiveType.collect:
             expect(lv.collectTarget, greaterThan(0));
@@ -49,8 +52,11 @@ void main() {
             expect(lv.obstaclePattern, isNot(JellyPattern.none));
             break;
           case ObjectiveType.order:
-            expect(lv.orders, isNotEmpty,
-                reason: 'level ${lv.index} order cần orders không rỗng');
+            expect(
+              lv.orders,
+              isNotEmpty,
+              reason: 'level ${lv.index} order cần orders không rỗng',
+            );
             break;
           case ObjectiveType.endless:
             fail('endless không được gắn vào màn thường (level ${lv.index})');
@@ -82,21 +88,33 @@ void main() {
         switch (lv.objective) {
           case ObjectiveType.score:
             // ≤ ~110đ/lượt (1 match-3 = 30đ → ~3-4 match-3/lượt là trần khả thi)
-            expect(lv.targetScore, lessThanOrEqualTo(lv.moves * 110),
-                reason: 'L${lv.index}: ${lv.targetScore}đ / ${lv.moves} lượt '
-                    '= ${(lv.targetScore / lv.moves).round()}đ/lượt — quá cao');
+            expect(
+              lv.targetScore,
+              lessThanOrEqualTo(lv.moves * 110),
+              reason:
+                  'L${lv.index}: ${lv.targetScore}đ / ${lv.moves} lượt '
+                  '= ${(lv.targetScore / lv.moves).round()}đ/lượt — quá cao',
+            );
             break;
           case ObjectiveType.collect:
             // ≤ 1.5 gem mục tiêu/lượt (chỉ ~1/6 bàn là màu mục tiêu)
-            expect(lv.collectTarget, lessThanOrEqualTo((lv.moves * 1.5).ceil()),
-                reason: 'L${lv.index}: collect ${lv.collectTarget} / '
-                    '${lv.moves} lượt — quá cao');
+            expect(
+              lv.collectTarget,
+              lessThanOrEqualTo((lv.moves * 1.5).ceil()),
+              reason:
+                  'L${lv.index}: collect ${lv.collectTarget} / '
+                  '${lv.moves} lượt — quá cao',
+            );
             break;
           case ObjectiveType.timeAttack:
             // ≤ ~75đ/giây
-            expect(lv.targetScore, lessThanOrEqualTo(lv.timeLimit * 75),
-                reason: 'L${lv.index}: ${lv.targetScore}đ / ${lv.timeLimit}s '
-                    '— quá cao');
+            expect(
+              lv.targetScore,
+              lessThanOrEqualTo(lv.timeLimit * 75),
+              reason:
+                  'L${lv.index}: ${lv.targetScore}đ / ${lv.timeLimit}s '
+                  '— quá cao',
+            );
             break;
           default:
             break;
@@ -112,8 +130,11 @@ void main() {
       for (int i = 0; i < kWorlds.length; i++) {
         expect(kWorlds[i].index, i + 1);
         if (i > 0) {
-          expect(kWorlds[i].startLevel, kWorlds[i - 1].endLevel + 1,
-              reason: 'thế giới ${kWorlds[i].index} không nối tiếp');
+          expect(
+            kWorlds[i].startLevel,
+            kWorlds[i - 1].endLevel + 1,
+            reason: 'thế giới ${kWorlds[i].index} không nối tiếp',
+          );
         }
       }
     });
@@ -121,7 +142,11 @@ void main() {
     test('mỗi màn thuộc đúng 1 thế giới', () {
       for (final lv in kLevels) {
         final owners = kWorlds.where((w) => w.contains(lv.index)).toList();
-        expect(owners.length, 1, reason: 'màn ${lv.index} thuộc ${owners.length} thế giới');
+        expect(
+          owners.length,
+          1,
+          reason: 'màn ${lv.index} thuộc ${owners.length} thế giới',
+        );
       }
     });
 
@@ -131,14 +156,23 @@ void main() {
       int total = 0;
       for (final w in kWorlds) {
         final size = w.endLevel - w.startLevel + 1;
-        expect(size, greaterThanOrEqualTo(10),
-            reason: 'thế giới ${w.index} cần ≥10 màn');
-        expect(size, lessThanOrEqualTo(50),
-            reason: 'thế giới ${w.index} tối đa 50 màn');
+        expect(
+          size,
+          greaterThanOrEqualTo(10),
+          reason: 'thế giới ${w.index} cần ≥10 màn',
+        );
+        expect(
+          size,
+          lessThanOrEqualTo(50),
+          reason: 'thế giới ${w.index} tối đa 50 màn',
+        );
         total += size;
       }
-      expect(total, kLevelCount,
-          reason: 'tổng màn từ kWorlds phải bằng kLevelCount');
+      expect(
+        total,
+        kLevelCount,
+        reason: 'tổng màn từ kWorlds phải bằng kLevelCount',
+      );
     });
   });
 
@@ -166,16 +200,22 @@ void main() {
       expect(patternHas(JellyPattern.center, 3, 3, 8, 8), isTrue); // giữa
     });
 
-    test('checker/all KHÔNG còn cặp ô tự do kề nhau (sẽ kẹt nếu khoá swap)', () {
-      // bằng chứng vì sao chain/stone không được dùng checker/all
-      expect(hasAdjacentFreePair(JellyPattern.checker, 8, 8), isFalse);
-      expect(hasAdjacentFreePair(JellyPattern.all, 8, 8), isFalse);
-      expect(hasAdjacentFreePair(JellyPattern.center, 8, 8), isTrue);
-    });
+    test(
+      'checker/all KHÔNG còn cặp ô tự do kề nhau (sẽ kẹt nếu khoá swap)',
+      () {
+        // bằng chứng vì sao chain/stone không được dùng checker/all
+        expect(hasAdjacentFreePair(JellyPattern.checker, 8, 8), isFalse);
+        expect(hasAdjacentFreePair(JellyPattern.all, 8, 8), isFalse);
+        expect(hasAdjacentFreePair(JellyPattern.center, 8, 8), isTrue);
+      },
+    );
 
     test('mọi màn chain/stone luôn còn nước đi (không bí cứng)', () {
-      final locked = kLevels.where((l) =>
-          l.obstacle == ObstacleType.chain || l.obstacle == ObstacleType.stone);
+      final locked = kLevels.where(
+        (l) =>
+            l.obstacle == ObstacleType.chain ||
+            l.obstacle == ObstacleType.stone,
+      );
       expect(locked, isNotEmpty);
       for (final lv in locked) {
         expect(
@@ -189,13 +229,21 @@ void main() {
     });
 
     test('chain/stone không bao giờ dùng pattern all/checker', () {
-      for (final lv in kLevels.where((l) =>
-          l.obstacle == ObstacleType.chain ||
-          l.obstacle == ObstacleType.stone)) {
-        expect(lv.obstaclePattern, isNot(JellyPattern.all),
-            reason: 'màn ${lv.index} stone/chain dùng all → kẹt');
-        expect(lv.obstaclePattern, isNot(JellyPattern.checker),
-            reason: 'màn ${lv.index} stone/chain dùng checker → kẹt');
+      for (final lv in kLevels.where(
+        (l) =>
+            l.obstacle == ObstacleType.chain ||
+            l.obstacle == ObstacleType.stone,
+      )) {
+        expect(
+          lv.obstaclePattern,
+          isNot(JellyPattern.all),
+          reason: 'màn ${lv.index} stone/chain dùng all → kẹt',
+        );
+        expect(
+          lv.obstaclePattern,
+          isNot(JellyPattern.checker),
+          reason: 'màn ${lv.index} stone/chain dùng checker → kẹt',
+        );
       }
     });
   });

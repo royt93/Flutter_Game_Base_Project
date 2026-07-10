@@ -75,6 +75,7 @@ extension GameControllerProgress on GameController {
       StorageKeys.endlessHigh,
       StorageKeys.survivalHigh,
       StorageKeys.zenHigh,
+      StorageKeys.zenMilestoneTier, // W28.1
       StorageKeys.sideModeDay,
       StorageKeys.sideModeWins,
       StorageKeys.bpXp,

@@ -3,7 +3,7 @@ id: w28-1-enhance-weak-modes
 title: "Enhance mode yếu + mechanic phí"
 wave: 28
 phase: 1
-status: todo
+status: done
 owner: claude
 ---
 
@@ -11,10 +11,9 @@ owner: claude
 
 ## Vì sao (audit)
 
-- **Versus** (`game_controller_modes.dart`): engine tái dùng 100% từ campaign, "KHÔNG
-  đụng `_load`, `checkEnd→null`" → 2 người chơi chỉ so điểm trên 1 bàn, không có
-  mechanic PvP thật (bomb steal, power đánh nhau). Đồng hồ ngoài quyết định thắng
-  thua, game không tự biết kết thúc.
+- ~~**Versus**: audit gốc ghi sai — verify sâu (Wave 28.1) phát hiện Versus đã có
+  PvP junk-gem 2 chiều đầy đủ (2 bàn Flame riêng, combo≥3 gửi rác, mirror seed,
+  timer 60s). Bỏ khỏi phạm vi, xem thêm `w28-8-split-screen-versus.md`.~~
 - **Puzzle** (`lib/data/puzzles.dart`): chỉ 8 cấu đố cứng, hết cấu đố 8 = khoá hoàn
   toàn. Không có hard variant / mutator giống Daily.
 - **Zen**: không leaderboard riêng, không milestone ngoài high-score cá nhân
@@ -41,7 +40,16 @@ owner: claude
 
 ## Việc cần làm khi bắt đầu
 
-- [ ] Đọc kỹ `game_controller_modes.dart`, `neon_jewel_game.dart` phần Versus/Zen/ColorRush/Gravity.
-- [ ] Thiết kế cụ thể từng enhancement (tránh đụng file lõi chung nếu làm song song).
-- [ ] `dart run tool/playtest.dart` re-validate nếu thêm level mới.
-- [ ] Verify máy thật ít nhất 1 flow mỗi mode enhance.
+- [x] Đọc kỹ `game_controller_modes.dart`, `neon_jewel_game.dart` phần Versus/Zen/ColorRush/Gravity.
+- [x] Thiết kế cụ thể từng enhancement (tránh đụng file lõi chung nếu làm song song).
+- [x] `dart run tool/playtest.dart` re-validate nếu thêm level mới.
+- [x] Verify máy thật ít nhất 1 flow mỗi mode enhance.
+
+## Kết quả (Wave 28.1, chi tiết `.claude/plans/fuzzy-mapping-shannon.md`)
+
+- Versus: bỏ khỏi phạm vi (đã có PvP đầy đủ, audit gốc sai).
+- Puzzle: Hard Variant mở ở Puzzle 8 khi 3 sao — verify máy thật OK.
+- Zen: milestone thưởng 1 lần theo mốc điểm (`kZenMilestones`), không tạo tier/leaderboard mới.
+- Gravity/ColorRush: hard variant giờ có hiệu ứng riêng (flip/đổi màu nhanh hơn), không chỉ giảm lượt — verify máy thật OK (Gravity trực tiếp, ColorRush qua code+test).
+- Thêm 8 level mới 201-208 (world 10 nối dài), gắn Conveyor/Portal/Dispenser/Flow — verify máy thật màn 205 chơi được, playtest pass-rate đạt.
+- `flutter analyze` 0 issue, `flutter test --exclude-tags slow` pass, `dart run tool/playtest.dart` 0 level fail (trừ superHard).

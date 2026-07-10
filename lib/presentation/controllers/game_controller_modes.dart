@@ -56,7 +56,18 @@ extension GameControllerModes on GameController {
       unawaited(_store.setInt(StorageKeys.zenHigh, zenHigh.value));
     }
     // Thưởng xu theo điểm (nhỏ — Zen dễ farm, không giới hạn)
-    final reward = discountSideModeReward((score.value ~/ 1000).clamp(5, 50));
+    var reward = discountSideModeReward((score.value ~/ 1000).clamp(5, 50));
+    // W28.1 — mốc điểm one-time: vượt mốc mới → cộng thêm xu 1 lần.
+    final newTier = kZenMilestones.lastIndexWhere(
+      (m) => score.value >= m,
+    ); // -1 nếu chưa đạt mốc nào
+    if (newTier + 1 > zenMilestoneTier.value) {
+      zenMilestoneTier.value = newTier + 1;
+      unawaited(
+        _store.setInt(StorageKeys.zenMilestoneTier, zenMilestoneTier.value),
+      );
+      reward += kZenMilestoneCoins[newTier];
+    }
     addCoins(reward);
     lastCoinReward = reward;
     lastStars = 0;
@@ -82,12 +93,22 @@ extension GameControllerModes on GameController {
     _resetRunState(moves: _gravityCfg!.moves, target: _gravityCfg!.targetScore);
   }
 
+  /// W28.1 — hard variant (Thử Thách) lật bàn dày hơn: 5→3 lượt.
+  int _currentFlipEvery() {
+    final hard =
+        SideModeRecordController.maybe?.hardVariantEnabled(
+          SideModeKind.gravity,
+        ) ??
+        false;
+    return hard ? kGravityFlipEvery - 2 : kGravityFlipEvery;
+  }
+
   /// Engine gọi sau mỗi lượt ở chế độ Trọng lực động: trả true mỗi
   /// [kGravityFlipEvery] lượt → engine lật bàn. Cập nhật hướng hiển thị.
   bool consumeGravityFlip() {
     if (!isGravity.value) return false;
     _gravityMoveCount.value++;
-    if (_gravityMoveCount.value % kGravityFlipEvery == 0) {
+    if (_gravityMoveCount.value % _currentFlipEvery() == 0) {
       gravityDir.value = gravityDir.value == 0 ? 1 : 0;
       return true;
     }
@@ -97,8 +118,10 @@ extension GameControllerModes on GameController {
   /// W26.1 — số lượt còn lại tới lần lật bàn kế (HUD Gravity). 1..kGravityFlipEvery.
   /// Reactive qua RxInt để HUD rebuild đúng lúc counter đổi, không lệ thuộc
   /// vào movesLeft đổi trước (tránh hiện số cũ 1 lượt trong lúc bàn vừa lật).
-  int get gravityMovesUntilFlip =>
-      kGravityFlipEvery - (_gravityMoveCount.value % kGravityFlipEvery);
+  int get gravityMovesUntilFlip {
+    final flipEvery = _currentFlipEvery();
+    return flipEvery - (_gravityMoveCount.value % flipEvery);
+  }
 
   /// Bắt đầu chế độ Nhịp điệu (chế độ riêng). Ghép đúng nhịp → groove + thưởng điểm.
   void startRhythm() {
@@ -179,7 +202,16 @@ extension GameControllerModes on GameController {
       colorRushStreak.value = 0;
     }
     _colorRushHotClearedThisMove = false;
-    if (_colorRushMoveCount % kColorRushChangeEvery == 0) {
+    // W28.1: hard variant (Thử Thách) đổi màu nóng dày hơn: 4→3 lượt.
+    final hard =
+        SideModeRecordController.maybe?.hardVariantEnabled(
+          SideModeKind.colorRush,
+        ) ??
+        false;
+    final changeEvery = hard
+        ? kColorRushChangeEvery - 1
+        : kColorRushChangeEvery;
+    if (_colorRushMoveCount % changeEvery == 0) {
       colorRushHot.value = (colorRushHot.value + 1) % level.colorCount;
       colorRushStreak.value = 0; // màu mới → chuỗi mới
     }
@@ -266,11 +298,15 @@ extension GameControllerModes on GameController {
 
   /// Bắt đầu 1 Cấu đố (W19.2): bàn seed cố định, KHÔNG refill (engine đọc isPuzzle),
   /// mục tiêu điểm trong ngân sách lượt. KHÔNG tốn mạng/đụng campaign (side mode).
-  void startPuzzle(PuzzleDef def) {
+  /// W28.1: [hard] giảm số lượt theo [GameController.kHardVariantMovesMul].
+  void startPuzzle(PuzzleDef def, {bool hard = false}) {
     _puzzleDef = def;
     _puzzleCfg = buildPuzzleLevel(def);
     _enterMode(puzzle: true);
-    _resetRunState(moves: def.maxMoves, target: def.target);
+    final moves = hard
+        ? (def.maxMoves * GameController.kHardVariantMovesMul).ceil()
+        : def.maxMoves;
+    _resetRunState(moves: moves, target: def.target);
   }
 
   /// Đã HOÀN THÀNH (thắng) Thử thách ngày HÔM NAY chưa (đã nhận thưởng).

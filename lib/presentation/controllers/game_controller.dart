@@ -100,6 +100,8 @@ class GameController extends GetxController {
   // --- Zen Mode (W20.4) — không thua, tích điểm tự do ---
   final RxBool isZen = false.obs;
   final RxInt zenHigh = 0.obs;
+  // W28.1 — mốc thưởng one-time cao nhất đã nhận (0..kZenMilestones.length).
+  final RxInt zenMilestoneTier = 0.obs;
   LevelConfig? _zenCfg;
 
   // W21 — Rush Mode (Tốc chiến): 2 phút, vô hạn lượt, match → +giây.
@@ -612,6 +614,10 @@ class GameController extends GetxController {
     endlessHigh.value = _store.getInt(StorageKeys.endlessHigh, def: 0);
     survivalHigh.value = _store.getInt(StorageKeys.survivalHigh, def: 0);
     zenHigh.value = _store.getInt(StorageKeys.zenHigh, def: 0);
+    zenMilestoneTier.value = _store.getInt(
+      StorageKeys.zenMilestoneTier,
+      def: 0,
+    );
     _migrateShardsToCoins(); // Wave 9: shard cũ → xu (×10), chạy 1 lần
     _loadCosmetics(); // Wave 9: skin gem / theme bàn đã sở hữu + đang chọn
     refillLives();

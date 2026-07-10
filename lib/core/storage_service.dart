@@ -56,6 +56,7 @@ class StorageKeys {
   // Wave 6 — Endless mode (high score riêng)
   static const String endlessHigh = 'endless_high';
   static const String zenHigh = 'zen_high'; // W20.4
+  static const String zenMilestoneTier = 'zen_milestone_tier'; // W28.1
 
   // Wave 15 — Survival mode (kỷ lục điểm sống sót)
   static const String survivalHigh = 'survival_high';
