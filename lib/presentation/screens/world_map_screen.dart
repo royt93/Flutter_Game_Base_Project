@@ -17,6 +17,7 @@ import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_dialog.dart';
 import '../widgets/story_overlay.dart';
+import '../widgets/weekly_event_banner.dart';
 import 'game_screen.dart';
 import 'level_select_screen.dart';
 
@@ -110,6 +111,7 @@ class WorldMapScreen extends StatelessWidget {
                       CoinChip(ctrl),
                     ],
                   ),
+                  WeeklyEventBanner(ctrl),
                   Expanded(
                     child: LayoutBuilder(
                       builder: (_, c) => Obx(() {

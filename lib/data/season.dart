@@ -49,3 +49,27 @@ const List<SeasonMilestone> kSeasonMilestones = [
 
 /// Điểm mùa nhận khi thắng 1 màn: nền 10 + 8 mỗi sao.
 int seasonPointsForWin(int stars) => 10 + stars * 8;
+
+/// W28.5 — sự kiện tuần toàn app, hiển thị banner World Map. Dùng chung
+/// [seasonIndex] nên cùng ranh giới tuần với Season League (không cần
+/// epoch-week/anti-cheat riêng — thừa hưởng bảo vệ chống lùi giờ từ
+/// [seasonIndex] vì đầu vào luôn là `todayEpochDay` đã bảo vệ).
+@immutable
+class WeeklyEvent {
+  final String nameKey;
+  final String descKey;
+  final double coinMult;
+  const WeeklyEvent(this.nameKey, this.descKey, this.coinMult);
+}
+
+/// 4 sự kiện xoay vòng — hệ số trong khoảng 1.0-1.5 (không phá cân bằng kinh
+/// tế). Chỉ buff coin thưởng cuối màn, KHÔNG đụng công thức tính điểm/sao.
+const List<WeeklyEvent> kWeeklyEvents = [
+  WeeklyEvent('event_none_name', 'event_none_desc', 1.0),
+  WeeklyEvent('event_coin_name', 'event_coin_desc', 1.3),
+  WeeklyEvent('event_combo_name', 'event_combo_desc', 1.2),
+  WeeklyEvent('event_bigcoin_name', 'event_bigcoin_desc', 1.5),
+];
+
+WeeklyEvent currentWeeklyEvent(int epochDay) =>
+    kWeeklyEvents[seasonIndex(epochDay) % kWeeklyEvents.length];

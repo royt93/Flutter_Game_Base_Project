@@ -107,6 +107,8 @@ void main() {
 
     test('thắng màn thường: lastCoinReward tính ĐỦ bonus (1+sao)×10 ĐỒNG BỘ '
         '(không chờ _saveProgress) — chống race quest earnCoins đếm thiếu', () {
+      c.clock = () =>
+          DateTime(2025, 11, 21); // pin ngày: tuần "Tuần Bình Yên" (×1.0)
       c.startLevel(1);
       c.addScore(1000, 1);
       expect(c.checkEnd(), 'win');
@@ -144,7 +146,9 @@ void main() {
     test('màu khác không tính', () {
       final idx = collectLevel();
       c.startLevel(idx);
-      final wrong = GemColor.values.firstWhere((g) => g != c.level.collectColor);
+      final wrong = GemColor.values.firstWhere(
+        (g) => g != c.level.collectColor,
+      );
       c.registerClear(wrong, false);
       expect(c.collected.value, 0);
     });

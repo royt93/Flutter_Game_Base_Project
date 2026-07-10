@@ -119,6 +119,7 @@ class AppTranslations extends Translations {
           ...?_w252ByLang[e.key],
           ...?_w24bByLang[e.key],
           ...?_w281ByLang[e.key],
+          ...?_w285ByLang[e.key],
         },
     };
   }
@@ -657,6 +658,15 @@ class AppTranslations extends Translations {
     // W28.1 — Puzzle hard variant toggle (Puzzle 8, mở khi đạt 3 sao).
     'puzzle_hard_on': 'Hard Mode: On (fewer moves)',
     'puzzle_hard_off': 'Hard Mode: Off (tap to try a harder run)',
+    // W28.5 — Weekly World Event banner (World Map).
+    'event_none_name': 'Calm Week',
+    'event_none_desc': 'No bonus this week — just play and enjoy.',
+    'event_coin_name': 'Coin Rush Week',
+    'event_coin_desc': '+30% coins from level rewards this week!',
+    'event_combo_name': 'Golden Combo Week',
+    'event_combo_desc': '+20% coins from level rewards this week!',
+    'event_bigcoin_name': 'Jackpot Week',
+    'event_bigcoin_desc': '+50% coins from level rewards this week!',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -1161,6 +1171,14 @@ class AppTranslations extends Translations {
     'tour_play_hint': 'Thắng màn để leo hạng!',
     'puzzle_hard_on': 'Chế Độ Khó: Bật (ít lượt hơn)',
     'puzzle_hard_off': 'Chế Độ Khó: Tắt (bấm để thử ván khó hơn)',
+    'event_none_name': 'Tuần Bình Yên',
+    'event_none_desc': 'Không có buff tuần này — cứ chơi và thư giãn.',
+    'event_coin_name': 'Tuần Nhân Đôi Xu',
+    'event_coin_desc': '+30% xu thưởng màn tuần này!',
+    'event_combo_name': 'Tuần Combo Vàng',
+    'event_combo_desc': '+20% xu thưởng màn tuần này!',
+    'event_bigcoin_name': 'Tuần Đại Thắng',
+    'event_bigcoin_desc': '+50% xu thưởng màn tuần này!',
   };
 
   static const Map<String, String> _extraEs = {
@@ -21074,6 +21092,232 @@ class AppTranslations extends Translations {
     'bn_BD': {
       'puzzle_hard_on': 'হার্ড মোড: চালু (কম চাল)',
       'puzzle_hard_off': 'হার্ড মোড: বন্ধ (কঠিন রাউন্ডের জন্য ট্যাপ করুন)',
+    },
+  };
+
+  /// W28.5 — Weekly World Event banner (en+vi ở _extraEn/_extraVi).
+  static const Map<String, Map<String, String>> _w285ByLang = {
+    'es_ES': {
+      'event_none_name': 'Semana Tranquila',
+      'event_none_desc':
+          'Sin bonificación esta semana — solo juega y disfruta.',
+      'event_coin_name': 'Semana de Monedas',
+      'event_coin_desc':
+          '¡+30% de monedas en las recompensas de nivel esta semana!',
+      'event_combo_name': 'Semana del Combo Dorado',
+      'event_combo_desc':
+          '¡+20% de monedas en las recompensas de nivel esta semana!',
+      'event_bigcoin_name': 'Semana del Premio Gordo',
+      'event_bigcoin_desc':
+          '¡+50% de monedas en las recompensas de nivel esta semana!',
+    },
+    'fr_FR': {
+      'event_none_name': 'Semaine Tranquille',
+      'event_none_desc': 'Pas de bonus cette semaine — profite du jeu.',
+      'event_coin_name': 'Semaine des Pièces',
+      'event_coin_desc':
+          '+30% de pièces sur les récompenses de niveau cette semaine !',
+      'event_combo_name': 'Semaine du Combo Doré',
+      'event_combo_desc':
+          '+20% de pièces sur les récompenses de niveau cette semaine !',
+      'event_bigcoin_name': 'Semaine du Jackpot',
+      'event_bigcoin_desc':
+          '+50% de pièces sur les récompenses de niveau cette semaine !',
+    },
+    'de_DE': {
+      'event_none_name': 'Ruhige Woche',
+      'event_none_desc':
+          'Kein Bonus diese Woche — einfach spielen und genießen.',
+      'event_coin_name': 'Münzwoche',
+      'event_coin_desc': '+30% Münzen bei Level-Belohnungen diese Woche!',
+      'event_combo_name': 'Goldene-Combo-Woche',
+      'event_combo_desc': '+20% Münzen bei Level-Belohnungen diese Woche!',
+      'event_bigcoin_name': 'Jackpot-Woche',
+      'event_bigcoin_desc': '+50% Münzen bei Level-Belohnungen diese Woche!',
+    },
+    'pt_BR': {
+      'event_none_name': 'Semana Tranquila',
+      'event_none_desc': 'Sem bônus esta semana — apenas jogue e aproveite.',
+      'event_coin_name': 'Semana das Moedas',
+      'event_coin_desc': '+30% de moedas nas recompensas de nível esta semana!',
+      'event_combo_name': 'Semana do Combo Dourado',
+      'event_combo_desc':
+          '+20% de moedas nas recompensas de nível esta semana!',
+      'event_bigcoin_name': 'Semana do Prêmio Máximo',
+      'event_bigcoin_desc':
+          '+50% de moedas nas recompensas de nível esta semana!',
+    },
+    'ru_RU': {
+      'event_none_name': 'Спокойная неделя',
+      'event_none_desc':
+          'На этой неделе без бонуса — просто играй и наслаждайся.',
+      'event_coin_name': 'Неделя монет',
+      'event_coin_desc': '+30% монет за прохождение уровней на этой неделе!',
+      'event_combo_name': 'Неделя золотого комбо',
+      'event_combo_desc': '+20% монет за прохождение уровней на этой неделе!',
+      'event_bigcoin_name': 'Неделя джекпота',
+      'event_bigcoin_desc': '+50% монет за прохождение уровней на этой неделе!',
+    },
+    'zh_CN': {
+      'event_none_name': '平静周',
+      'event_none_desc': '本周无加成——尽情游玩即可。',
+      'event_coin_name': '金币周',
+      'event_coin_desc': '本周关卡奖励金币 +30%！',
+      'event_combo_name': '黄金连击周',
+      'event_combo_desc': '本周关卡奖励金币 +20%！',
+      'event_bigcoin_name': '大奖周',
+      'event_bigcoin_desc': '本周关卡奖励金币 +50%！',
+    },
+    'ja_JP': {
+      'event_none_name': '平穏な週',
+      'event_none_desc': '今週はボーナスなし——楽しくプレイしよう。',
+      'event_coin_name': 'コインラッシュ週間',
+      'event_coin_desc': '今週はレベル報酬のコインが+30%！',
+      'event_combo_name': 'ゴールデンコンボ週間',
+      'event_combo_desc': '今週はレベル報酬のコインが+20%！',
+      'event_bigcoin_name': 'ジャックポット週間',
+      'event_bigcoin_desc': '今週はレベル報酬のコインが+50%！',
+    },
+    'ko_KR': {
+      'event_none_name': '평온한 주',
+      'event_none_desc': '이번 주는 보너스 없음 — 그냥 즐겁게 플레이하세요.',
+      'event_coin_name': '코인 러시 주간',
+      'event_coin_desc': '이번 주 레벨 보상 코인 +30%!',
+      'event_combo_name': '골든 콤보 주간',
+      'event_combo_desc': '이번 주 레벨 보상 코인 +20%!',
+      'event_bigcoin_name': '잭팟 주간',
+      'event_bigcoin_desc': '이번 주 레벨 보상 코인 +50%!',
+    },
+    'it_IT': {
+      'event_none_name': 'Settimana Tranquilla',
+      'event_none_desc': 'Nessun bonus questa settimana — gioca e divertiti.',
+      'event_coin_name': 'Settimana delle Monete',
+      'event_coin_desc':
+          '+30% monete dalle ricompense di livello questa settimana!',
+      'event_combo_name': "Settimana del Combo d'Oro",
+      'event_combo_desc':
+          '+20% monete dalle ricompense di livello questa settimana!',
+      'event_bigcoin_name': 'Settimana del Jackpot',
+      'event_bigcoin_desc':
+          '+50% monete dalle ricompense di livello questa settimana!',
+    },
+    'id_ID': {
+      'event_none_name': 'Minggu Tenang',
+      'event_none_desc': 'Tidak ada bonus minggu ini — cukup main dan nikmati.',
+      'event_coin_name': 'Minggu Koin',
+      'event_coin_desc': '+30% koin dari hadiah level minggu ini!',
+      'event_combo_name': 'Minggu Combo Emas',
+      'event_combo_desc': '+20% koin dari hadiah level minggu ini!',
+      'event_bigcoin_name': 'Minggu Jackpot',
+      'event_bigcoin_desc': '+50% koin dari hadiah level minggu ini!',
+    },
+    'th_TH': {
+      'event_none_name': 'สัปดาห์แห่งความสงบ',
+      'event_none_desc': 'สัปดาห์นี้ไม่มีโบนัส — เล่นสนุกๆ ได้เลย',
+      'event_coin_name': 'สัปดาห์เหรียญ',
+      'event_coin_desc': 'รับเหรียญรางวัลด่านเพิ่ม +30% สัปดาห์นี้!',
+      'event_combo_name': 'สัปดาห์คอมโบทอง',
+      'event_combo_desc': 'รับเหรียญรางวัลด่านเพิ่ม +20% สัปดาห์นี้!',
+      'event_bigcoin_name': 'สัปดาห์แจ็คพอต',
+      'event_bigcoin_desc': 'รับเหรียญรางวัลด่านเพิ่ม +50% สัปดาห์นี้!',
+    },
+    'hi_IN': {
+      'event_none_name': 'शांत सप्ताह',
+      'event_none_desc': 'इस सप्ताह कोई बोनस नहीं — बस खेलें और आनंद लें।',
+      'event_coin_name': 'कॉइन रश सप्ताह',
+      'event_coin_desc': 'इस सप्ताह लेवल रिवॉर्ड से +30% सिक्के!',
+      'event_combo_name': 'गोल्डन कॉम्बो सप्ताह',
+      'event_combo_desc': 'इस सप्ताह लेवल रिवॉर्ड से +20% सिक्के!',
+      'event_bigcoin_name': 'जैकपॉट सप्ताह',
+      'event_bigcoin_desc': 'इस सप्ताह लेवल रिवॉर्ड से +50% सिक्के!',
+    },
+    'ar_SA': {
+      'event_none_name': 'أسبوع هادئ',
+      'event_none_desc': 'لا مكافأة هذا الأسبوع — فقط العب واستمتع.',
+      'event_coin_name': 'أسبوع العملات',
+      'event_coin_desc': 'عملات إضافية +30% من مكافآت المستويات هذا الأسبوع!',
+      'event_combo_name': 'أسبوع الكومبو الذهبي',
+      'event_combo_desc': 'عملات إضافية +20% من مكافآت المستويات هذا الأسبوع!',
+      'event_bigcoin_name': 'أسبوع الجائزة الكبرى',
+      'event_bigcoin_desc':
+          'عملات إضافية +50% من مكافآت المستويات هذا الأسبوع!',
+    },
+    'tr_TR': {
+      'event_none_name': 'Sakin Hafta',
+      'event_none_desc': 'Bu hafta bonus yok — sadece oyna ve keyfini çıkar.',
+      'event_coin_name': 'Altın Yağmuru Haftası',
+      'event_coin_desc': 'Bu hafta seviye ödüllerinde +%30 altın!',
+      'event_combo_name': 'Altın Kombo Haftası',
+      'event_combo_desc': 'Bu hafta seviye ödüllerinde +%20 altın!',
+      'event_bigcoin_name': 'Jackpot Haftası',
+      'event_bigcoin_desc': 'Bu hafta seviye ödüllerinde +%50 altın!',
+    },
+    'nl_NL': {
+      'event_none_name': 'Rustige Week',
+      'event_none_desc': 'Geen bonus deze week — speel gewoon en geniet.',
+      'event_coin_name': 'Muntenweek',
+      'event_coin_desc': '+30% munten uit levelbeloningen deze week!',
+      'event_combo_name': 'Gouden Combo Week',
+      'event_combo_desc': '+20% munten uit levelbeloningen deze week!',
+      'event_bigcoin_name': 'Jackpotweek',
+      'event_bigcoin_desc': '+50% munten uit levelbeloningen deze week!',
+    },
+    'pl_PL': {
+      'event_none_name': 'Spokojny Tydzień',
+      'event_none_desc':
+          'Brak bonusu w tym tygodniu — po prostu graj i baw się dobrze.',
+      'event_coin_name': 'Tydzień Monet',
+      'event_coin_desc': '+30% monet z nagród za poziomy w tym tygodniu!',
+      'event_combo_name': 'Tydzień Złotego Combo',
+      'event_combo_desc': '+20% monet z nagród za poziomy w tym tygodniu!',
+      'event_bigcoin_name': 'Tydzień Jackpota',
+      'event_bigcoin_desc': '+50% monet z nagród za poziomy w tym tygodniu!',
+    },
+    'fil_PH': {
+      'event_none_name': 'Tahimik na Linggo',
+      'event_none_desc':
+          'Walang bonus ngayong linggo — maglaro at mag-enjoy lang.',
+      'event_coin_name': 'Linggo ng Barya',
+      'event_coin_desc': '+30% barya mula sa reward ng level ngayong linggo!',
+      'event_combo_name': 'Linggo ng Gintong Combo',
+      'event_combo_desc': '+20% barya mula sa reward ng level ngayong linggo!',
+      'event_bigcoin_name': 'Linggo ng Jackpot',
+      'event_bigcoin_desc':
+          '+50% barya mula sa reward ng level ngayong linggo!',
+    },
+    'ms_MY': {
+      'event_none_name': 'Minggu Tenang',
+      'event_none_desc': 'Tiada bonus minggu ini — main dan nikmati sahaja.',
+      'event_coin_name': 'Minggu Duit Syiling',
+      'event_coin_desc':
+          '+30% duit syiling daripada ganjaran tahap minggu ini!',
+      'event_combo_name': 'Minggu Combo Emas',
+      'event_combo_desc':
+          '+20% duit syiling daripada ganjaran tahap minggu ini!',
+      'event_bigcoin_name': 'Minggu Jackpot',
+      'event_bigcoin_desc':
+          '+50% duit syiling daripada ganjaran tahap minggu ini!',
+    },
+    'uk_UA': {
+      'event_none_name': 'Спокійний тиждень',
+      'event_none_desc': 'Цього тижня без бонусу — просто грай і насолоджуйся.',
+      'event_coin_name': 'Тиждень монет',
+      'event_coin_desc': '+30% монет за нагороди рівнів цього тижня!',
+      'event_combo_name': 'Тиждень золотого комбо',
+      'event_combo_desc': '+20% монет за нагороди рівнів цього тижня!',
+      'event_bigcoin_name': 'Тиждень джекпоту',
+      'event_bigcoin_desc': '+50% монет за нагороди рівнів цього тижня!',
+    },
+    'bn_BD': {
+      'event_none_name': 'শান্ত সপ্তাহ',
+      'event_none_desc':
+          'এই সপ্তাহে কোনো বোনাস নেই — শুধু খেলুন আর উপভোগ করুন।',
+      'event_coin_name': 'কয়েন সপ্তাহ',
+      'event_coin_desc': 'এই সপ্তাহে লেভেল পুরস্কার থেকে +৩০% কয়েন!',
+      'event_combo_name': 'সোনালি কম্বো সপ্তাহ',
+      'event_combo_desc': 'এই সপ্তাহে লেভেল পুরস্কার থেকে +২০% কয়েন!',
+      'event_bigcoin_name': 'জ্যাকপট সপ্তাহ',
+      'event_bigcoin_desc': 'এই সপ্তাহে লেভেল পুরস্কার থেকে +৫০% কয়েন!',
     },
   };
 }

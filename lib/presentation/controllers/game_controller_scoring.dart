@@ -530,8 +530,11 @@ extension GameControllerScoring on GameController {
       // vào xu) → onGameEnd/BattlePass đọc lastCoinReward NGAY sau khi return 'win'
       // thấy giá trị đầy đủ. Trước đây phần (1+sao)×10 cộng trong _saveProgress sau
       // 1 await (chỉ khi có high-score mới) → quest "earnCoins" đếm thiếu.
+      // W28.5: nhân hệ số sự kiện tuần (chỉ buff xu, không đụng điểm/sao).
       lastCoinReward =
-          10 + lastStars * 10 + lastStreakBonus + (1 + lastStars) * 10;
+          ((10 + lastStars * 10 + lastStreakBonus + (1 + lastStars) * 10) *
+                  currentWeeklyEvent(todayEpochDay).coinMult)
+              .round();
       totalWins.value++;
       unawaited(_store.setInt(StorageKeys.winStreak, winStreak.value));
       unawaited(_store.setInt(StorageKeys.totalWins, totalWins.value));
