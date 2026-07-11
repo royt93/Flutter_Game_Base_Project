@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../core/neon_theme.dart';
+
 /// Icon phong cách neon: lõi trắng + glow màu (dùng chung toàn app).
 class NeonIcon extends StatelessWidget {
   final IconData icon;
@@ -27,7 +29,11 @@ class NeonIcon extends StatelessWidget {
 class NeonBackButton extends StatelessWidget {
   final Color color;
   final VoidCallback? onTap;
-  const NeonBackButton({super.key, this.color = const Color(0xFF00F0FF), this.onTap});
+  const NeonBackButton({
+    super.key,
+    this.color = const Color(0xFF00F0FF),
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,12 +45,14 @@ class NeonBackButton extends StatelessWidget {
   }
 }
 
-/// Nút icon neon bấm được (glow + vùng chạm rộng).
+/// Nút icon neon bấm được (glow + vùng chạm rộng). [boxed] = chip tròn viền
+/// neon + glow (dùng cho lối vào chính ở Home); mặc định icon trần (back/appbar).
 class NeonIconButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final double size;
   final VoidCallback? onTap;
+  final bool boxed;
 
   const NeonIconButton(
     this.icon, {
@@ -52,10 +60,31 @@ class NeonIconButton extends StatelessWidget {
     required this.color,
     required this.onTap,
     this.size = 24,
+    this.boxed = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (boxed) {
+      final enabled = onTap != null;
+      final c = enabled ? color : Colors.grey;
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: NeonTheme.panel.withValues(alpha: 0.55),
+            shape: BoxShape.circle,
+            border: Border.all(color: c, width: 2),
+            boxShadow: enabled ? NeonTheme.glow(c, blur: 14) : null,
+          ),
+          child: Center(
+            child: NeonIcon(icon, color: c, size: size),
+          ),
+        ),
+      );
+    }
     return IconButton(
       onPressed: onTap,
       icon: NeonIcon(icon, color: color, size: size),

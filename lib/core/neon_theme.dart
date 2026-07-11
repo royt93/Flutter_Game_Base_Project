@@ -87,7 +87,8 @@ class NeonTheme {
     colors: [bgDark, bgDark2, Color(0xFF1A0A2E)],
   );
 
-  /// Đổ bóng phát sáng quanh widget theo màu neon.
+  /// Đổ bóng phát sáng quanh widget theo màu neon. 3 lớp: lõi sáng gắt +
+  /// vầng giữa + quầng rộng mờ → bloom sâu kiểu neon thật thay vì viền phẳng.
   static List<BoxShadow> glow(
     Color color, {
     double blur = 18,
@@ -95,14 +96,19 @@ class NeonTheme {
   }) {
     return [
       BoxShadow(
-        color: color.withValues(alpha: 0.8),
+        color: color.withValues(alpha: 0.95),
+        blurRadius: blur * 0.5,
+        spreadRadius: spread * 0.4,
+      ),
+      BoxShadow(
+        color: color.withValues(alpha: 0.55),
         blurRadius: blur,
         spreadRadius: spread,
       ),
       BoxShadow(
-        color: color.withValues(alpha: 0.4),
-        blurRadius: blur * 2,
-        spreadRadius: spread,
+        color: color.withValues(alpha: 0.28),
+        blurRadius: blur * 2.4,
+        spreadRadius: spread * 1.6,
       ),
     ];
   }

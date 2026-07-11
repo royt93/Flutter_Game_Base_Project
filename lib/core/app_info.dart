@@ -1,5 +1,5 @@
 /// Thông tin ứng dụng (hiển thị ở Home / About).
-const String kAppName = 'Neon Jewels';
+const String kAppName = 'Pop Star Blast';
 const String kCopyright = '© SAIGON PHANTOM LABS';
 
 /// Version hiển thị — đọc TỰ ĐỘNG từ pubspec lúc khởi chạy (xem `loadAppVersion`

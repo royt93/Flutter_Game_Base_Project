@@ -11,6 +11,7 @@ import 'core/audio_manager.dart';
 import 'core/locale_service.dart';
 import 'core/neon_theme.dart';
 import 'core/storage_service.dart';
+import 'presentation/controllers/game_controller.dart';
 import 'presentation/screens/home_screen.dart';
 
 void main() => app();
@@ -31,12 +32,13 @@ Future<void> app({bool withAudio = true}) async {
   final prefs = await SharedPreferences.getInstance();
   final store = Get.put(StorageService(prefs), permanent: true);
   final locale = Get.put(LocaleService(store), permanent: true);
+  Get.put(GameController(), permanent: true);
 
   if (withAudio) {
     Get.put(AudioManager(), permanent: true);
   }
 
-  runApp(NeonJewelsApp(initialLocale: locale.current.value));
+  runApp(PopStarBlastApp(initialLocale: locale.current.value));
 
   // Sau first frame: tránh I/O contention với Flame init → giảm startup jank.
   if (withAudio) {
@@ -57,16 +59,17 @@ Future<void> loadAppVersion() async {
   }
 }
 
-class NeonJewelsApp extends StatefulWidget {
+class PopStarBlastApp extends StatefulWidget {
   final Locale initialLocale;
 
-  const NeonJewelsApp({super.key, required this.initialLocale});
+  const PopStarBlastApp({super.key, required this.initialLocale});
 
   @override
-  State<NeonJewelsApp> createState() => _NeonJewelsAppState();
+  State<PopStarBlastApp> createState() => _PopStarBlastAppState();
 }
 
-class _NeonJewelsAppState extends State<NeonJewelsApp> with WidgetsBindingObserver {
+class _PopStarBlastAppState extends State<PopStarBlastApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -96,7 +99,7 @@ class _NeonJewelsAppState extends State<NeonJewelsApp> with WidgetsBindingObserv
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Neon Jewels',
+      title: 'Pop Star Blast',
       debugShowCheckedModeBanner: false,
       translations: AppTranslations(),
       locale: widget.initialLocale,
@@ -114,7 +117,10 @@ class _NeonJewelsAppState extends State<NeonJewelsApp> with WidgetsBindingObserv
             useMaterial3: true,
             fontFamily: NeonTheme.fontFamily, // Baloo2 mặc định toàn app
             scaffoldBackgroundColor: NeonTheme.bgDark,
-            colorScheme: const ColorScheme.dark(primary: NeonTheme.cyan, secondary: NeonTheme.magenta),
+            colorScheme: const ColorScheme.dark(
+              primary: NeonTheme.cyan,
+              secondary: NeonTheme.magenta,
+            ),
             // ponytail: Baloo2 thiếu vài glyph Cyrillic hiếm (ví dụ "ї" trong
             // "Українська") → fallback sang font hệ thống Android khi thiếu.
           ).copyWith(

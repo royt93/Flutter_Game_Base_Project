@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import '../../core/app_translations.dart';
-import '../../core/debug_log.dart';
 import '../../core/audio_manager.dart';
 import '../../core/locale_service.dart';
 import '../../core/neon_theme.dart';
@@ -10,257 +10,100 @@ import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_dialog.dart';
 
-/// State UI cho màn cài đặt (GetX, không setState).
-/// Dùng overlay trong-cây thay cho route dialog vì ở chế độ full-screen
-/// route dialog (Get.dialog/showDialog) không render được.
-class SettingsController extends GetxController {
-  final RxBool showResetConfirm = false.obs;
-
-  void askReset() {
-    dlog('RESET card tapped → bật overlay xác nhận');
-    showResetConfirm.value = true;
-  }
-
-  void cancelReset() {
-    dlog('RESET huỷ');
-    showResetConfirm.value = false;
-  }
-
-  Future<void> doReset() async {
-    dlog('RESET confirm → gọi resetProgress');
-    await Get.find<GameController>().resetProgress();
-    showResetConfirm.value = false;
-    dlog(
-      'RESET xong: unlockedLevel='
-      '${Get.find<GameController>().unlockedLevel.value}',
-    );
-  }
-}
-
+/// Cài đặt: ngôn ngữ, âm thanh, reset tiến trình.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  TextStyle _t(
-    double size, {
-    Color color = Colors.white,
-    FontWeight w = FontWeight.w700,
-  }) =>
-      TextStyle(color: color, fontSize: size, fontWeight: w, letterSpacing: 1);
 
   @override
   Widget build(BuildContext context) {
     final locale = Get.find<LocaleService>();
-    final ui = Get.put(SettingsController());
+    final audio = AudioManager.maybe;
     return Scaffold(
       body: NeonBg(
-        child: Stack(
-          children: [
-            SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  NeonAppBar(title: 'settings'.tr, color: NeonTheme.purple),
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(
-                        NeonTheme.s24,
-                        NeonTheme.s16,
-                        NeonTheme.s24,
-                        NeonTheme.s24,
+        child: SafeArea(
+          child: Column(
+            children: [
+              const NeonAppBar(title: 'Settings', color: NeonTheme.purple),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(NeonTheme.s16),
+                  children: [
+                    if (audio != null)
+                      Obx(
+                        () => SwitchListTile(
+                          value: !audio.muted.value,
+                          onChanged: (_) => audio.toggleMute(),
+                          activeThumbColor: NeonTheme.cyan,
+                          title: const Text(
+                            'Sound',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
                       ),
-                      children: [
-                        // --- Âm thanh ---
-                        _card(
-                          color: NeonTheme.cyan,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('sound'.tr, style: _t(16)),
-                              if (AudioManager.maybe != null)
-                                Obx(
-                                  () => Switch(
-                                    value: !AudioManager.maybe!.muted.value,
-                                    activeThumbColor: NeonTheme.cyan,
-                                    onChanged: (_) =>
-                                        AudioManager.maybe!.toggleMute(),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: NeonTheme.s16),
-                        // --- Giảm hiệu ứng động (W22.1 accessibility) ---
-                        _card(
-                          color: NeonTheme.magenta,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Flexible(
-                                child: Text('reduce_motion'.tr, style: _t(16)),
-                              ),
-                              Obx(
-                                () => Switch(
-                                  value: Get.find<GameController>()
-                                      .juiceReduced
-                                      .value,
-                                  activeThumbColor: NeonTheme.magenta,
-                                  onChanged: (_) => Get.find<GameController>()
-                                      .toggleJuiceReduced(),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: NeonTheme.s16),
-                        // --- Ngôn ngữ ---
-                        _card(
-                          color: NeonTheme.lime,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('language'.tr, style: _t(16)),
-                              const SizedBox(height: 12),
-                              ...AppTranslations.supported.map((l) {
-                                final code = AppTranslations.codeOf(l);
-                                return Obx(() {
-                                  final selected = locale.isCurrent(l);
-                                  return GestureDetector(
-                                    onTap: () => locale.change(l),
-                                    child: Container(
-                                      margin: const EdgeInsets.only(bottom: 8),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 12,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: selected
-                                              ? NeonTheme.lime
-                                              : Colors.white24,
-                                          width: 2,
-                                        ),
-                                        boxShadow: selected
-                                            ? NeonTheme.glow(
-                                                NeonTheme.lime,
-                                                blur: 8,
-                                              )
-                                            : null,
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            AppTranslations
-                                                    .languageNames[code] ??
-                                                code,
-                                            style: _t(15, w: FontWeight.w600),
-                                          ),
-                                          if (selected)
-                                            const Icon(
-                                              Icons.check_circle,
-                                              color: NeonTheme.lime,
-                                              size: 22,
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                });
-                              }),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: NeonTheme.s16),
-                        // --- Reset tiến độ (cả thẻ bấm được) ---
-                        _card(
-                          color: NeonTheme.magenta,
-                          onTap: ui.askReset,
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.restart_alt,
-                                color: NeonTheme.magenta,
-                              ),
-                              const SizedBox(width: 12),
-                              Text('reset_progress'.tr, style: _t(16)),
-                            ],
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: NeonTheme.s16),
+                    const Text(
+                      'Language',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            // --- Overlay xác nhận reset (trong cây, không qua route) ---
-            Obx(
-              () => ui.showResetConfirm.value
-                  ? NeonDialog.overlay(
-                      onBarrier: ui.cancelReset,
-                      panel: NeonDialog.panel(
-                        title: 'reset_progress'.tr,
-                        color: NeonTheme.magenta,
-                        icon: Icons.restart_alt_rounded,
-                        message: 'reset_confirm_msg'.tr,
+                    const SizedBox(height: NeonTheme.s8),
+                    Obx(
+                      () => Wrap(
+                        spacing: NeonTheme.s8,
+                        runSpacing: NeonTheme.s8,
+                        children: [
+                          for (final l in AppTranslations.supported)
+                            ChoiceChip(
+                              label: Text(
+                                AppTranslations
+                                        .languageNames[AppTranslations.codeOf(
+                                      l,
+                                    )] ??
+                                    l.languageCode,
+                              ),
+                              selected: locale.isCurrent(l),
+                              onSelected: (_) => locale.change(l),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: NeonTheme.s24),
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: NeonTheme.orange,
+                        side: const BorderSide(color: NeonTheme.orange),
+                      ),
+                      onPressed: () => NeonDialog.show(
+                        context: context,
+                        title: 'Reset Progress?',
+                        color: NeonTheme.orange,
+                        message:
+                            'This clears all levels, stars, coins and boosters. This cannot be undone.',
                         actions: [
                           NeonDialogAction(
-                            label: 'cancel'.tr,
+                            label: 'Cancel',
                             color: NeonTheme.cyan,
-                            onTap: ui.cancelReset,
+                            onTap: () {},
                           ),
                           NeonDialogAction(
-                            label: 'confirm'.tr,
-                            color: NeonTheme.magenta,
-                            onTap: () async {
-                              await ui.doReset();
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'reset_done'.tr,
-                                    style: _t(14, w: FontWeight.w600),
-                                  ),
-                                  backgroundColor: NeonTheme.panel,
-                                  behavior: SnackBarBehavior.floating,
-                                  margin: const EdgeInsets.all(NeonTheme.s16),
-                                ),
-                              );
-                            },
+                            label: 'Reset',
+                            color: NeonTheme.orange,
+                            onTap: () =>
+                                Get.find<GameController>().resetProgress(),
                           ),
                         ],
                       ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ],
+                      child: const Text('Reset Progress'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _card({
-    required Color color,
-    required Widget child,
-    VoidCallback? onTap,
-  }) {
-    final box = Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(NeonTheme.s16),
-      decoration: BoxDecoration(
-        color: NeonTheme.panel.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color, width: 2),
-        boxShadow: NeonTheme.glow(color, blur: 7),
-      ),
-      child: child,
-    );
-    if (onTap == null) return box;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: box,
     );
   }
 }
