@@ -4,23 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**Neon Jewels** — a match-3 mobile game (Flutter + GetX + Flame). Package: `com.galaxyjoy.neon_jewels`. 200 campaign levels across 10 worlds, 12+ side modes, full meta-progression system.
+**Pop Star Blast** — a tap-to-pop puzzle game (Flutter + GetX + Flame). Package: `com.galaxyjoy.pop_star_blast` (Android), `com.galaxyjoy.popStarBlast` (iOS). Font: Baloo2. 200 campaign levels of increasing difficulty; a single campaign mode plus a coin shop and boosters (bomb / shuffle / undo).
+
+> History: forked and fully rewritten from an older match-3 game. None of the old match-3 / side-mode / meta-progression code remains — do not reintroduce it.
 
 ## Commands
 
 ```bash
-# Run the everyday suite (unit + widget). Excludes `slow`-tagged integration
-# tests, which drive the real app on a device (~5-8 min/case). See dart_test.yaml.
+# Everyday suite (unit + widget). Excludes `slow`-tagged integration tests,
+# which drive the real app on a device (~5-8 min/case). See dart_test.yaml.
 flutter test --exclude-tags slow
 
 # Run a single test file
-flutter test test/levels_test.dart
+flutter test test/data/levels_test.dart
 
 # Run a specific test by name
-flutter test test/w20_content_test.dart --plain-name "kLevelCount"
+flutter test test/data/levels_test.dart --plain-name "kLevelCount"
 
-# Run the full slow integration suite on a device (nightly / device-farm)
-flutter test integration_test/app_test.dart -d <device-id>
+# Full slow integration suite on a device (nightly / device-farm)
+flutter test integration_test/lifecycle_test.dart -d <device-id>
 
 # Static analysis (must be 0 issues before committing)
 flutter analyze
@@ -30,76 +32,58 @@ flutter run -d <device-id>
 
 # Build debug APK
 flutter build apk --debug
-
-# Validate difficulty curve for all 200 levels (lower-bound bot, no specials/boosters)
-dart run tool/playtest.dart [runsPerLevel]
-
-# Regenerate launcher icons (after updating asset/icon/ic_launcher.png)
-dart run icons_launcher:create
-
-# Regenerate native splash (after changing flutter_native_splash config in pubspec.yaml)
-dart run flutter_native_splash:create
 ```
 
 ## Architecture
 
-The codebase is split into 4 distinct layers with strict separation:
+The codebase has 4 layers with strict separation:
 
 ### 1. Pure Dart Logic (`lib/logic/`)
-No Flutter, no Flame, no GetX. Fully unit-testable in isolation.
-- **`match_detector.dart`** — detects all matches on a color grid; returns match groups with gem types (normal/striped/rainbow/bomb/diagonal/lightBall).
-- **`settle.dart`** — gravity + refill engine for non-rectangular boards. `settleBoard` for standard gravity, `settleBoardFlow` for Gravity Streams (`FlowDir` per cell). `CellKind` enum: `play / wall / noDrop`.
-- **`board_mechanics.dart`** — conveyor, portal, dispenser mechanics (pure functions).
-- **`gem_data.dart`** — `GemColor` enum, `GemType` enum.
-- **`rhythm_clock.dart`** — accumulates `dt` in game loop for rhythm beat detection (no `DateTime.now`).
+No Flutter, no Flame, no GetX. Fully unit-testable in isolation. The grid is `List<List<int?>>` (color index, or `null` for an empty cell).
+- **`pop_detector.dart`** — `findConnectedGroup(grid, row, col)`: flood-fill (4-directional) of same-color adjacent cells; returns the group (size ≥1, caller enforces the ≥2 threshold to pop). `hasAnyMovableGroup(grid)`: is there any poppable group ≥2 left (used to detect a stuck board).
+- **`pop_collapse.dart`** — `applyGravityAndCollapse(grid)`: gravity within each column (cells fall to the bottom), then fully-empty columns collapse to the left. **No refill** — the board only drains, matching classic PopStar rules. Mutates in place and returns the grid.
 
 ### 2. Data / Config (`lib/data/`)
-Pure Dart constants and data classes.
-- **`levels.dart`** — `kLevels` (200-element list, generated via `List.generate`), `kWorlds` (10 world configs), all weave sets (`kBombLevels`, `kOrderLevels`, `kFlowLevels`, `kLayoutLevels`, etc.). Difficulty formulas: `_scorePerMove`, `_tierMul`, `_collectCapMul`. Layout maps use character strings: `.` = play, `#` = wall, `o` = noDrop, `v/^/</>` = flow direction.
-- **`cosmetics.dart`** — `ActiveCosmetics` static holder (read each frame by Flame without `Get.find`).
+- **`levels.dart`** — `PopLevel` (id, rows, cols, colorCount, targetScore), `kLevels` (200-element list via `List.generate`), `kLevelCount = 200`. `scoreForGroup(n) = 5*n*(n-1)`, `clearBoardBonus = 1000`. Difficulty grows every 20 levels (rows 8..11, cols 6..12, colors 4..7). Because the board is finite with no refill, achievable score scales with cell count, so `targetScore` anchors to `cells * 6 * ramp` (ramp = `1 + world*0.03`), not the level index.
 
 ### 3. Flame Engine (`lib/game/`)
-- **`neon_jewel_game.dart`** — main `FlameGame`. Owns the gem grid (`List<List<GemComponent?>>`) and orchestrates swap → match → explode → settle → cascade. Reads mode flags from `GameController` but does NOT write them. Calls `controller.useMove()`, `controller.addScore()`, `controller.checkEnd()` after each turn.
-- **`gem_component.dart`** — renders each gem (shape, glow, special indicators). Reads `ActiveCosmetics.gemSkin` for per-skin shape/color/glow.
-- **`effects.dart`** — layer renderers: `TideLayer`, `SodaLayer`, `BlockedLayer`, `FlowLayer`, `ConveyorLayer`, `PortalLayer`, `DispenserLayer`, `BombLayer`.
+- **`pop_star_game.dart`** — main `FlameGame`. Owns `colorGrid` (source of truth) and `_blocks` (`BlockComponent` per cell). Flow: tap → `_tryPop` finds the group → score → `_clearAndCollapse` animates a pop burst (scale + particles), then `_collapseAnimated` tweens columns/blocks into place. `_animating` locks input during animation. `backgroundColor()` is transparent so the candy background shows through. Boosters operate directly on the grid: `triggerBomb(r,c)` (3x3), `shuffleBoard()`, `undo()` (single-step snapshot). `_checkEnd()` calls `controller.checkEnd(cleared)` when the board is empty or stuck. Tap comes from a `GestureDetector` in `game_screen.dart` via `handleTap` (not Flame's TapDetector).
+- **`block_component.dart`** — renders one gem (neon candy look) from its `colorIndex`.
 
 ### 4. GetX Presentation (`lib/presentation/`)
 
-#### GameController — split into 8 `part` files
-`game_controller.dart` is the root class; the 7 part files are **extensions on it** (`part of 'game_controller.dart'`). All share private fields and `_store`.
-- `game_controller_modes.dart` — `startLevel`, `startEndless`, `startZen`, `startGhostMode`, `_enterMode` (mutually exclusive mode flags), ghost replay logic.
-- `game_controller_scoring.dart` — `checkEnd`, `addScore`, `registerClear`.
-- `game_controller_economy.dart` — `addCoins`, `spendCoins`, `_effectiveDay` (anti-cheat), `discountSideModeReward`.
-- `game_controller_progress.dart` — `_saveProgress`, `resetProgress` (clears all keys + in-memory state of all permanent controllers).
-- `game_controller_booster.dart`, `game_controller_cosmetics.dart`, `game_controller_lives.dart`.
+#### Controllers (`lib/presentation/controllers/`)
+- **`game_controller.dart`** — single file, **no `part` splitting**. Holds reactive game state (`score`, `coins`, `starsEarned`, `ended`, `cleared`, `currentLevelRx`, `unlockedLevel`) and booster counts (`bombCount`, `shuffleCount`, `undoCount`) as `RxInt`/`Rx`. `startLevel`, `addScore`, `checkEnd` (computes stars vs `targetScore`, unlocks next level, saves best score/star, grants coins). Shop buys (`buyBomb`/`buyShuffle`/`buyUndo`) and uses (`useBomb`/`useShuffle`/`useUndo`) that delegate to `activeGame`. `resetProgress()` clears all disk keys **and** in-memory state.
+- **`game_screen_controller.dart`** — drives `GameScreen`. `GameUi` enum: `playing | quit | win | lose`. `BoosterMode` enum: `none | bomb`. Level end is **asynchronous** (it fires after the pop/fall animation), so it listens reactively via `ever(gameCtrl.ended, ...)` rather than checking right after a tap. Manages wakelock, the Flame game instance, and `again`/`next`/`quit`.
 
-**Key mode pattern**: `isSideMode` getter returns true for all non-campaign modes (Endless, Boss, Gravity, Rhythm, ColorRush, Soda, Survival, Labyrinth, Daily, Puzzle, Zen, Versus). Side modes MUST NOT touch win-streak/level-unlock/lives.
+#### Screens (`lib/presentation/screens/`)
+`home_screen`, `level_select_screen` (200-level grid), `game_screen`, `shop_screen`, `guide_screen`, `settings_screen`. `GameScreen` is a widget driven entirely by `GameScreenController`.
 
-#### GameScreen / GameScreenController
-`GameScreen` is a `StatelessWidget` driven entirely by `GameScreenController` (GetX). UI state is `GameUi` enum: `playing | quit | win | lose`. Win/lose dialogs are **in-tree overlays** (`NeonDialog.overlay`), NOT `Get.dialog` or `showDialog` (those are no-ops under full-screen Flame).
+#### Widgets (`lib/presentation/widgets/`)
+`neon_button`, `neon_dialog`, `neon_app_bar`, `neon_bg`, `coin_chip`, `neon_icon`, `stroke_text` (outlined text), `confetti_overlay`.
 
-#### Permanent Controllers
-All registered in `HomeScreen.build` via `Get.put(..., permanent: true)`. Includes: `GameController`, `AchievementController`, `LuckyWheelController`, `BattlePassController`, `SeasonLeagueController`, `CollectionController`, `PiggyController`, `SideModeRecordController`, `PuzzleController`, `ProgressionTreeController` (W20.3), `ChallengeCardController` (W20.3), `ClanController` (W23, offline), `StoryController`. Every non-`GameController` controller takes the `GameController` in its constructor. When adding a new permanent controller with persisted state, wire its `resetState()` into `resetProgress()` (see Reward Anti-Exploit below).
+#### Registration
+Permanent singletons are registered in `main.dart` via `Get.put(..., permanent: true)`: `StorageService`, `LocaleService`, `GameController`, `AudioManager`. `GameScreenController` is a per-screen controller (`Get.put` in `GameScreen.build`, deleted on quit).
 
 ## Key Conventions
 
 ### Storage
-All SharedPreferences keys live in `StorageKeys` class (`lib/core/storage_service.dart`). Never use string literals directly. `StorageService.to` is the singleton getter.
+All SharedPreferences keys live in `StorageKeys` (`lib/core/storage_service.dart`) — never use string literals. Per-level keys are helpers: `highScore(id)`, `star(id)`. `StorageService.to` is the singleton getter.
 
-### Anti-cheat / Time
-`_effectiveDay` (in `GameControllerEconomy`) returns the **maximum epoch-day ever seen**, preventing reward exploitation by setting the clock back. Daily/weekly features must read `todayEpochDay` (not `DateTime.now().epochDay` directly).
+### Reactive unlock / async end
+`unlockedLevel` is an observable on `GameController` so `LevelSelect` refreshes the moment a level is won. Level end is emitted through `gameCtrl.ended` (an `Rx<bool>`) because it happens after the Flame animation completes — consumers must observe it, not poll after a tap.
+
+### Target achievability
+Because the board never refills, a level is only winnable if `targetScore` is reachable from the finite starting cells. Keep `targetScore` anchored to cell count (`cells * 6 * ramp`) — do not switch to level-index-linear scaling (it made most levels impossible; see `doc/feat.md`).
 
 ### Dialog pattern
-Full-screen Flame app: `Get.dialog` and `showDialog` are no-ops. Always use `NeonDialog.overlay(panel: ...)` rendered as a widget in the Flutter tree above the `GameWidget`.
+Full-screen Flame app: `Get.dialog` and `showDialog` are no-ops (can't push a route over the `GameWidget`). Always render dialogs as in-tree overlays via `NeonDialog.overlay(panel: ...)` above the `GameWidget`.
 
 ### i18n
-Translation keys live in `AppTranslations` (`lib/core/app_translations.dart`). New keys go into `_extraEn` / `_extraVi` maps. For 20 other languages, add a new `_wXXByLang` const map and merge it with `...?_wXXByLang[e.key]` in the `keys` getter. The test `app_translations_test.dart` enforces ≥79% of values differ from English per language.
+Translations live in `AppTranslations` (`lib/core/app_translations.dart`), 22 supported locales (`AppTranslations.supported`). New keys go into the English base map (fallback) and per-language override maps. The test `app_translations_test.dart` enforces every language has the full key set.
 
 ### Debug Logging
 Use `dlog('message')` from `lib/core/debug_log.dart`. No-ops in release builds (tree-shaken). All debug prints are prefixed `roy93~` for easy logcat filtering.
 
-### Playtest Validation
-After changing level formulas or adding new levels, run `dart run tool/playtest.dart`. It simulates a greedy bot (no specials, no boosters = lower bound). Zero levels with pass-rate <25% is the requirement. Super-Hard levels are exempt from the guard.
-
-### Reward Anti-Exploit
-`resetProgress()` must clear **both** disk keys AND in-memory state of all permanent controllers (`resetState()` on each). Failing to do one causes re-claim exploits on app restart.
+### Theme
+`NeonTheme` (`lib/core/neon_theme.dart`) was pivoted to a **bright-casual (Candy-Crush-style)** look: light candy-sky gradient background, tokens `ink`/`inkSoft` (text), `card`/`cardAlt` (panels), and `glow(...)` / `drop(...)` shadow helpers over a candy color palette.

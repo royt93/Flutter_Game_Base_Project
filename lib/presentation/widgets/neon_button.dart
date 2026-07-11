@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/neon_theme.dart';
+import 'stroke_text.dart';
 
 /// Nút bấm phong cách neon: viền sáng + glow + chữ phát sáng.
 class NeonButton extends StatelessWidget {
@@ -21,39 +22,43 @@ class NeonButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
-    final c = enabled ? color : Colors.grey;
+    final c = enabled ? color : const Color(0xFFB9B3CC);
+    // Nút kẹo: thân solid màu accent, viền đáy đậm hơn (bevel), bóng đổ chunky.
+    final darker = Color.lerp(c, Colors.black, 0.22)!;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: width,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 15),
         decoration: BoxDecoration(
-          color: NeonTheme.panel.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: c, width: 2.5),
-          boxShadow: enabled ? NeonTheme.glow(c, blur: 16) : null,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color.lerp(c, Colors.white, 0.18)!, c],
+          ),
+          borderRadius: BorderRadius.circular(22),
+          border: Border(bottom: BorderSide(color: darker, width: 4)),
+          boxShadow: enabled ? NeonTheme.drop(y: 5, blur: 12) : null,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, color: c, size: 22),
+              Icon(icon, color: Colors.white, size: 22),
               const SizedBox(width: 10),
             ],
             Flexible(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(
+                child: StrokeText(
                   label,
-                  maxLines: 1,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.5,
-                    shadows: [Shadow(color: c, blurRadius: 12)],
-                  ),
+                  fontSize: 19,
+                  color: Colors.white,
+                  stroke: darker,
+                  strokeWidth: 3.5,
+                  weight: FontWeight.w800,
+                  letterSpacing: 1.2,
                 ),
               ),
             ),

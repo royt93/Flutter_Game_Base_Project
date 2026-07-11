@@ -116,10 +116,12 @@ class _PopStarBlastAppState extends State<PopStarBlastApp>
           ThemeData(
             useMaterial3: true,
             fontFamily: NeonTheme.fontFamily, // Baloo2 mặc định toàn app
-            scaffoldBackgroundColor: NeonTheme.bgDark,
-            colorScheme: const ColorScheme.dark(
-              primary: NeonTheme.cyan,
+            scaffoldBackgroundColor: NeonTheme.bgMid,
+            colorScheme: const ColorScheme.light(
+              primary: NeonTheme.purple,
               secondary: NeonTheme.magenta,
+              surface: NeonTheme.card,
+              onSurface: NeonTheme.ink,
             ),
             // ponytail: Baloo2 thiếu vài glyph Cyrillic hiếm (ví dụ "ї" trong
             // "Українська") → fallback sang font hệ thống Android khi thiếu.

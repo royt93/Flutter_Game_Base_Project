@@ -36,7 +36,7 @@ class SettingsScreen extends StatelessWidget {
                           activeThumbColor: NeonTheme.cyan,
                           title: const Text(
                             'Sound',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(color: NeonTheme.ink),
                           ),
                         ),
                       ),
@@ -44,7 +44,7 @@ class SettingsScreen extends StatelessWidget {
                     const Text(
                       'Language',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: NeonTheme.ink,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -62,8 +62,22 @@ class SettingsScreen extends StatelessWidget {
                                       l,
                                     )] ??
                                     l.languageCode,
+                                style: TextStyle(
+                                  color: locale.isCurrent(l)
+                                      ? Colors.white
+                                      : NeonTheme.ink,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                               selected: locale.isCurrent(l),
+                              showCheckmark: false,
+                              backgroundColor: NeonTheme.card,
+                              selectedColor: NeonTheme.magenta,
+                              side: BorderSide(
+                                color: locale.isCurrent(l)
+                                    ? NeonTheme.magenta
+                                    : NeonTheme.ink.withValues(alpha: 0.15),
+                              ),
                               onSelected: (_) => locale.change(l),
                             ),
                         ],

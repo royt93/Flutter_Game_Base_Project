@@ -74,10 +74,10 @@ class NeonIconButton extends StatelessWidget {
           width: 60,
           height: 60,
           decoration: BoxDecoration(
-            color: NeonTheme.panel.withValues(alpha: 0.55),
+            color: NeonTheme.card,
             shape: BoxShape.circle,
-            border: Border.all(color: c, width: 2),
-            boxShadow: enabled ? NeonTheme.glow(c, blur: 14) : null,
+            border: Border.all(color: c, width: 3),
+            boxShadow: enabled ? NeonTheme.drop(y: 4, blur: 10) : null,
           ),
           child: Center(
             child: NeonIcon(icon, color: c, size: size),

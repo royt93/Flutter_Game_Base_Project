@@ -11,11 +11,14 @@ import '../core/neon_theme.dart';
 class BlockComponent extends PositionComponent {
   final int colorIndex;
 
+  /// True khi ô đang được preview (thuộc nhóm người chơi giữ) → sáng rực thêm.
+  bool highlighted = false;
+
   BlockComponent({
     required this.colorIndex,
     required Vector2 position,
     required Vector2 size,
-  }) : super(position: position, size: size);
+  }) : super(position: position, size: size, anchor: Anchor.center);
 
   Color get _color =>
       NeonTheme.gemColors[colorIndex % NeonTheme.gemColors.length];
@@ -79,5 +82,22 @@ class BlockComponent extends PositionComponent {
         ..strokeWidth = s * 0.045
         ..color = Color.lerp(c, Colors.white, 0.5)!.withValues(alpha: 0.9),
     );
+
+    // 5. preview highlight: quầng sáng trắng + viền trắng dày khi được chọn
+    if (highlighted) {
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..color = Colors.white.withValues(alpha: 0.5)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, s * 0.22),
+      );
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.07
+          ..color = Colors.white.withValues(alpha: 0.95),
+      );
+    }
   }
 }

@@ -30,33 +30,34 @@ class NeonDialog {
       margin: const EdgeInsets.symmetric(horizontal: 32),
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF1B1B3A), Color(0xFF120F26)],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color, width: 2.5),
-        boxShadow: NeonTheme.glow(color, blur: 28),
+        color: NeonTheme.card,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: color, width: 4),
+        boxShadow: NeonTheme.drop(y: 8, blur: 24),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, color: Colors.white, size: 46, shadows: [
-              Shadow(color: color, blurRadius: 22),
-            ]),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                boxShadow: NeonTheme.drop(y: 3, blur: 8),
+              ),
+              child: Icon(icon, color: Colors.white, size: 40),
+            ),
             const SizedBox(height: 12),
           ],
           Text(
             title,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
+            style: const TextStyle(
+              color: NeonTheme.ink,
               fontSize: 26,
               fontWeight: FontWeight.w900,
-              letterSpacing: 1.5,
-              shadows: [Shadow(color: color, blurRadius: 20)],
+              letterSpacing: 1,
             ),
           ),
           if (message != null) ...[
@@ -65,9 +66,10 @@ class NeonDialog {
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Colors.white70,
+                color: NeonTheme.inkSoft,
                 fontSize: 14,
                 height: 1.4,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -104,14 +106,16 @@ class NeonDialog {
     final nav = Navigator.of(context, rootNavigator: true);
     // bọc mỗi action: đóng route trước rồi chạy onTap gốc ở frame kế.
     final wrapped = actions
-        .map((a) => NeonDialogAction(
-              label: a.label,
-              color: a.color,
-              onTap: () {
-                if (nav.canPop()) nav.pop();
-                WidgetsBinding.instance.addPostFrameCallback((_) => a.onTap());
-              },
-            ))
+        .map(
+          (a) => NeonDialogAction(
+            label: a.label,
+            color: a.color,
+            onTap: () {
+              if (nav.canPop()) nav.pop();
+              WidgetsBinding.instance.addPostFrameCallback((_) => a.onTap());
+            },
+          ),
+        )
         .toList();
     dlog('NeonDialog.show CALL title=$title (showDialog native)');
     return showDialog<T>(

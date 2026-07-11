@@ -6,6 +6,12 @@ import '../../core/neon_theme.dart';
 import '../../core/utils/format.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/game_screen_controller.dart';
+import '../widgets/coin_chip.dart';
+import '../widgets/coin_fly_overlay.dart';
+import '../widgets/confetti_overlay.dart';
+import '../widgets/neon_bg.dart';
+import '../widgets/star_mascot.dart';
+import '../widgets/stroke_text.dart';
 import '../widgets/neon_dialog.dart';
 import '../widgets/neon_icon.dart';
 
@@ -23,32 +29,61 @@ class GameScreen extends StatelessWidget {
         if (!didPop) gsc.confirmQuit();
       },
       child: Scaffold(
-        backgroundColor: NeonTheme.bgDark,
-        body: SafeArea(
-          child: Obx(() {
-            gsc.gameVersion.value; // rebuild GameWidget khi đổi ván
-            return Stack(
-              children: [
-                Column(
-                  children: [
-                    _Hud(gsc: gsc, gameCtrl: gameCtrl),
-                    Expanded(
-                      child: GestureDetector(
-                        onTapUp: (details) => gsc.handleBoardTap(
-                          Vector2(
-                            details.localPosition.dx,
-                            details.localPosition.dy,
+        backgroundColor: NeonTheme.bgMid,
+        body: NeonBg(
+          child: SafeArea(
+            child: Obx(() {
+              gsc.gameVersion.value; // rebuild GameWidget khi đổi ván
+              return Stack(
+                children: [
+                  Column(
+                    children: [
+                      _Hud(gsc: gsc, gameCtrl: gameCtrl),
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(26),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              width: 2,
+                            ),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Listener(
+                            onPointerDown: (e) => gsc.previewBoardTap(
+                              Vector2(e.localPosition.dx, e.localPosition.dy),
+                            ),
+                            onPointerMove: (e) => gsc.previewBoardTap(
+                              Vector2(e.localPosition.dx, e.localPosition.dy),
+                            ),
+                            onPointerUp: (e) => gsc.handleBoardTap(
+                              Vector2(e.localPosition.dx, e.localPosition.dy),
+                            ),
+                            onPointerCancel: (_) => gsc.game.clearPreview(),
+                            child: GameWidget(
+                              game: gsc.game,
+                              backgroundBuilder: (_) => const SizedBox.shrink(),
+                            ),
                           ),
                         ),
-                        child: GameWidget(game: gsc.game),
+                      ),
+                    ],
+                  ),
+                  if (gsc.ui.value == GameUi.win) ...[
+                    const Positioned.fill(child: ConfettiOverlay()),
+                    Positioned.fill(
+                      child: CoinFlyOverlay(
+                        key: ValueKey(gsc.gameVersion.value),
                       ),
                     ),
                   ],
-                ),
-                if (gsc.ui.value != GameUi.playing) _Overlay(gsc: gsc),
-              ],
-            );
-          }),
+                  if (gsc.ui.value != GameUi.playing) _Overlay(gsc: gsc),
+                ],
+              );
+            }),
+          ),
         ),
       ),
     );
@@ -92,32 +127,49 @@ class _Hud extends StatelessWidget {
                 ),
                 const SizedBox(width: NeonTheme.s8),
                 Expanded(
-                  child: Obx(
-                    () => Column(
+                  child: Obx(() {
+                    final score = gameCtrl.score.value;
+                    final target = gameCtrl.currentLevel.targetScore;
+                    final reached = score >= target;
+                    return Column(
                       children: [
-                        Text(
-                          fmtNum(gameCtrl.score.value),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            shadows: [
-                              Shadow(color: NeonTheme.cyan, blurRadius: 14),
-                            ],
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(end: score.toDouble()),
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                          builder: (_, v, _) => StrokeText(
+                            fmtNum(v.round()),
+                            fontSize: 30,
+                            color: NeonTheme.ink,
+                            stroke: Colors.white,
+                            strokeWidth: 4.5,
                           ),
                         ),
+                        const SizedBox(height: 4),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 190),
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween(end: (score / target).clamp(0.0, 1.0)),
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                            builder: (_, v, _) =>
+                                _ProgressBar(value: v, reached: reached),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
                         Text(
-                          'Target ${fmtNum(gameCtrl.currentLevel.targetScore)}',
+                          'Target ${fmtNum(target)}',
                           style: const TextStyle(
-                            color: Colors.white54,
+                            color: NeonTheme.inkSoft,
                             fontSize: 12,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
-                    ),
-                  ),
+                    );
+                  }),
                 ),
-                const SizedBox(width: 40),
+                CoinChip(gameCtrl),
               ],
             ),
             const SizedBox(height: NeonTheme.s8),
@@ -181,22 +233,32 @@ class _BoosterButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: armed
-              ? color.withValues(alpha: 0.3)
-              : NeonTheme.panel.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: enabled ? color : Colors.grey, width: 2),
+          color: armed ? color : NeonTheme.card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: enabled ? color : const Color(0xFFC9C3DA),
+            width: 2.5,
+          ),
+          boxShadow: enabled ? NeonTheme.drop(y: 3, blur: 6) : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: enabled ? color : Colors.grey, size: 20),
+            Icon(
+              icon,
+              color: armed
+                  ? Colors.white
+                  : (enabled ? color : const Color(0xFFC9C3DA)),
+              size: 20,
+            ),
             const SizedBox(width: 4),
             Text(
               '$count',
               style: TextStyle(
-                color: enabled ? Colors.white : Colors.grey,
-                fontWeight: FontWeight.w700,
+                color: armed
+                    ? Colors.white
+                    : (enabled ? NeonTheme.ink : NeonTheme.inkSoft),
+                fontWeight: FontWeight.w800,
               ),
             ),
           ],
@@ -237,49 +299,106 @@ class _Overlay extends StatelessWidget {
       case GameUi.win:
         final gameCtrl = gsc.gameCtrl;
         return NeonDialog.overlay(
-          panel: NeonDialog.panel(
-            title: 'Level Complete!',
-            color: NeonTheme.yellow,
-            icon: Icons.emoji_events_rounded,
-            message:
-                'Score ${fmtNum(gameCtrl.score.value)} · ${gameCtrl.starsEarned.value} stars',
-            actions: [
-              NeonDialogAction(
-                label: 'Retry',
-                color: NeonTheme.cyan,
-                onTap: gsc.again,
-              ),
-              NeonDialogAction(
-                label: 'Next',
-                color: NeonTheme.yellow,
-                onTap: gsc.next,
-              ),
-            ],
+          panel: _MascotDialog(
+            mood: StarMood.happy,
+            panel: NeonDialog.panel(
+              title: 'Level Complete!',
+              color: NeonTheme.yellow,
+              message:
+                  'Score ${fmtNum(gameCtrl.score.value)} · ${gameCtrl.starsEarned.value} stars',
+              actions: [
+                NeonDialogAction(
+                  label: 'Retry',
+                  color: NeonTheme.cyan,
+                  onTap: gsc.again,
+                ),
+                NeonDialogAction(
+                  label: 'Next',
+                  color: NeonTheme.yellow,
+                  onTap: gsc.next,
+                ),
+              ],
+            ),
           ),
         );
       case GameUi.lose:
         return NeonDialog.overlay(
-          panel: NeonDialog.panel(
-            title: 'Board Stuck',
-            color: NeonTheme.orange,
-            icon: Icons.block_rounded,
-            message: 'No more groups to pop. Try again?',
-            actions: [
-              NeonDialogAction(
-                label: 'Menu',
-                color: NeonTheme.cyan,
-                onTap: gsc.quit,
-              ),
-              NeonDialogAction(
-                label: 'Retry',
-                color: NeonTheme.orange,
-                onTap: gsc.again,
-              ),
-            ],
+          panel: _MascotDialog(
+            mood: StarMood.sad,
+            panel: NeonDialog.panel(
+              title: 'Board Stuck',
+              color: NeonTheme.orange,
+              message: 'No more groups to pop. Try again?',
+              actions: [
+                NeonDialogAction(
+                  label: 'Menu',
+                  color: NeonTheme.cyan,
+                  onTap: gsc.quit,
+                ),
+                NeonDialogAction(
+                  label: 'Retry',
+                  color: NeonTheme.orange,
+                  onTap: gsc.again,
+                ),
+              ],
+            ),
           ),
         );
       case GameUi.playing:
         return const SizedBox.shrink();
     }
+  }
+}
+
+/// Thanh tiến trình tới target — đầy dần, đổi màu + glow khi đạt.
+class _ProgressBar extends StatelessWidget {
+  const _ProgressBar({required this.value, required this.reached});
+
+  final double value;
+  final bool reached;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = reached ? NeonTheme.lime : NeonTheme.cyan;
+    return Container(
+      height: 10,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: FractionallySizedBox(
+          widthFactor: value.clamp(0.001, 1.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: c,
+              borderRadius: BorderRadius.circular(6),
+              boxShadow: reached ? NeonTheme.glow(c, blur: 8) : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Mascot ngôi sao peek phía trên dialog thắng/thua.
+class _MascotDialog extends StatelessWidget {
+  const _MascotDialog({required this.mood, required this.panel});
+
+  final StarMood mood;
+  final Widget panel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        StarMascot(size: 104, mood: mood),
+        Transform.translate(offset: const Offset(0, -16), child: panel),
+      ],
+    );
   }
 }

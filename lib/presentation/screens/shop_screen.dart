@@ -107,9 +107,10 @@ class _BoosterRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(NeonTheme.s16),
       decoration: BoxDecoration(
-        color: NeonTheme.panel.withValues(alpha: 0.6),
+        color: NeonTheme.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color, width: 1.5),
+        border: Border.all(color: color, width: 2.5),
+        boxShadow: NeonTheme.drop(),
       ),
       child: Row(
         children: [
@@ -122,7 +123,7 @@ class _BoosterRow extends StatelessWidget {
                 Text(
                   '$label  ×$count',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: NeonTheme.ink,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
@@ -130,7 +131,10 @@ class _BoosterRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   desc,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: const TextStyle(
+                    color: NeonTheme.inkSoft,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -140,6 +144,7 @@ class _BoosterRow extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
+                color: canAfford ? NeonTheme.yellow : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: canAfford ? NeonTheme.yellow : Colors.grey,
@@ -154,7 +159,7 @@ class _BoosterRow extends StatelessWidget {
                   Text(
                     fmtNum(price),
                     style: TextStyle(
-                      color: canAfford ? Colors.white : Colors.grey,
+                      color: canAfford ? Colors.white : NeonTheme.inkSoft,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

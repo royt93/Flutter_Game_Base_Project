@@ -10,7 +10,7 @@ class CoinIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      Icon(Icons.monetization_on_rounded, color: NeonTheme.yellow, size: size);
+      Icon(Icons.monetization_on_rounded, color: NeonTheme.gold, size: size);
 }
 
 /// Chip hiển thị số xu (icon vàng + viền/glow neon), reactive theo
@@ -27,10 +27,10 @@ class CoinChip extends StatelessWidget {
       margin: const EdgeInsets.only(right: NeonTheme.s8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: NeonTheme.panel.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: NeonTheme.yellow, width: 1.5),
-        boxShadow: NeonTheme.glow(NeonTheme.yellow, blur: 6),
+        color: NeonTheme.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: NeonTheme.gold, width: 2),
+        boxShadow: NeonTheme.drop(y: 3, blur: 6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -41,7 +41,7 @@ class CoinChip extends StatelessWidget {
             () => Text(
               fmtNum(controller.coins.value),
               style: const TextStyle(
-                color: Colors.white,
+                color: NeonTheme.ink,
                 fontWeight: FontWeight.w800,
                 fontSize: 14,
               ),

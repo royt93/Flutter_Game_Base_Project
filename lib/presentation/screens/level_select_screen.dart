@@ -84,29 +84,28 @@ class _LevelTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = locked ? Colors.grey : NeonTheme.cyan;
+    final color = locked ? const Color(0xFFBFC7D6) : NeonTheme.cyan;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: NeonTheme.panel.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color, width: 2),
-          boxShadow: locked ? null : NeonTheme.glow(color, blur: 8),
+          color: locked ? const Color(0xFFEDEAF5) : NeonTheme.card,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color, width: 3),
+          boxShadow: locked ? null : NeonTheme.drop(y: 4, blur: 8),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (locked)
-              const Icon(Icons.lock_rounded, color: Colors.grey, size: 20)
+              const Icon(Icons.lock_rounded, color: Color(0xFF9AA0B5), size: 20)
             else
               Text(
                 '$id',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  shadows: [Shadow(color: color, blurRadius: 10)],
+                style: const TextStyle(
+                  color: NeonTheme.ink,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             if (!locked && stars > 0)
@@ -116,8 +115,10 @@ class _LevelTile extends StatelessWidget {
                   3,
                   (s) => Icon(
                     Icons.star_rounded,
-                    size: 12,
-                    color: s < stars ? NeonTheme.yellow : Colors.white24,
+                    size: 13,
+                    color: s < stars
+                        ? NeonTheme.gold
+                        : NeonTheme.ink.withValues(alpha: 0.15),
                   ),
                 ),
               ),

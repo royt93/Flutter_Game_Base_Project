@@ -60,9 +60,10 @@ class GuideScreen extends StatelessWidget {
                     return Container(
                       padding: const EdgeInsets.all(NeonTheme.s16),
                       decoration: BoxDecoration(
-                        color: NeonTheme.panel.withValues(alpha: 0.6),
+                        color: NeonTheme.card,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: color, width: 1.5),
+                        boxShadow: NeonTheme.drop(),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,20 +76,17 @@ class GuideScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   title,
-                                  style: TextStyle(
-                                    color: Colors.white,
+                                  style: const TextStyle(
+                                    color: NeonTheme.ink,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w800,
-                                    shadows: [
-                                      Shadow(color: color, blurRadius: 8),
-                                    ],
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   body,
                                   style: const TextStyle(
-                                    color: Colors.white70,
+                                    color: NeonTheme.inkSoft,
                                     fontSize: 13,
                                     height: 1.4,
                                   ),

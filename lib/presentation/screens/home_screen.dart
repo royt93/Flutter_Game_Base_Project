@@ -8,6 +8,8 @@ import '../widgets/coin_chip.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
 import '../widgets/neon_icon.dart';
+import '../widgets/star_mascot.dart';
+import '../widgets/stroke_text.dart';
 import 'guide_screen.dart';
 import 'level_select_screen.dart';
 import 'settings_screen.dart';
@@ -33,19 +35,22 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const Spacer(flex: 2),
-              Text(
+              const StarMascot(size: 128),
+              const SizedBox(height: NeonTheme.s16),
+              StrokeText(
                 kAppName,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 42,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
-                  shadows: [
-                    Shadow(color: NeonTheme.cyan, blurRadius: 24),
-                    Shadow(color: NeonTheme.magenta, blurRadius: 40),
-                  ],
-                ),
+                fontSize: 46,
+                color: Colors.white,
+                stroke: NeonTheme.magenta,
+                strokeWidth: 6,
+                letterSpacing: 1.5,
+                shadows: [
+                  Shadow(
+                    color: NeonTheme.purple.withValues(alpha: 0.5),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               const Spacer(flex: 3),
               NeonButton(
@@ -88,7 +93,11 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: NeonTheme.s16),
                 child: Text(
                   kCopyright,
-                  style: const TextStyle(color: Colors.white38, fontSize: 11),
+                  style: TextStyle(
+                    color: NeonTheme.ink.withValues(alpha: 0.45),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],

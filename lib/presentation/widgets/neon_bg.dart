@@ -28,13 +28,16 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this, duration: const Duration(seconds: 24))
-      ..repeat();
+      vsync: this,
+      duration: const Duration(seconds: 24),
+    )..repeat();
     _orbs = List.generate(6, (i) {
       return _Orb(
         base: Offset(_rnd.nextDouble(), _rnd.nextDouble()),
-        amp: Offset(0.12 + _rnd.nextDouble() * 0.16,
-            0.12 + _rnd.nextDouble() * 0.16),
+        amp: Offset(
+          0.12 + _rnd.nextDouble() * 0.16,
+          0.12 + _rnd.nextDouble() * 0.16,
+        ),
         phase: _rnd.nextDouble() * math.pi * 2,
         radius: 0.28 + _rnd.nextDouble() * 0.28,
         color: NeonTheme.gemColors[i % NeonTheme.gemColors.length],
@@ -68,7 +71,11 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
               animation: _ctrl,
               builder: (_, _) => CustomPaint(
                 painter: _NeonBgPainter(
-                    _ctrl.value, _orbs, _stars, widget.accent),
+                  _ctrl.value,
+                  _orbs,
+                  _stars,
+                  widget.accent,
+                ),
               ),
             ),
           ),
@@ -123,89 +130,64 @@ class _NeonBgPainter extends CustomPainter {
     final rect = Offset.zero & size;
     final tau = t * math.pi * 2;
 
-    // 1) Nền gradient
+    // 1) Nền gradient candy sáng
     canvas.drawRect(
       rect,
       Paint()
         ..shader = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0A0A1A), Color(0xFF14122E), Color(0xFF1A0A2E)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [NeonTheme.bgTop, NeonTheme.bgMid, NeonTheme.bgBot],
         ).createShader(rect),
     );
 
-    // 2) Tia sweep xoay (conic) tạo cảm giác sống động.
-    //    Có accent → 2 tông màu world; null → cyan/magenta mặc định.
-    final sweepA = accent ?? NeonTheme.cyan;
-    final sweepB = accent != null
-        ? Color.lerp(accent!, Colors.white, 0.35)!
-        : NeonTheme.magenta;
-    canvas.save();
-    canvas.translate(size.width / 2, size.height * 0.4);
-    canvas.rotate(tau);
-    final sweepRect = Rect.fromCircle(
-        center: Offset.zero, radius: size.longestSide);
-    canvas.drawRect(
-      sweepRect,
-      Paint()
-        ..blendMode = BlendMode.plus
-        ..shader = SweepGradient(
-          colors: [
-            sweepA.withValues(alpha: 0.05),
-            Colors.transparent,
-            sweepB.withValues(alpha: 0.05),
-            Colors.transparent,
-            sweepA.withValues(alpha: 0.05),
-          ],
-        ).createShader(sweepRect),
-    );
-    canvas.restore();
-
-    // 3) Nebula trôi. Có accent → pha về tông màu world (giữ chút đa sắc).
+    // 2) Bong bóng kẹo trôi mềm (soft-light để hoà vào nền sáng, không cháy).
     for (final o in orbs) {
       final cx = (o.base.dx + o.amp.dx * math.sin(tau + o.phase)) * size.width;
       final cy = (o.base.dy + o.amp.dy * math.cos(tau + o.phase)) * size.height;
       final r = o.radius * size.width;
-      final oc =
-          accent != null ? Color.lerp(o.color, accent!, 0.6)! : o.color;
+      final oc = accent != null ? Color.lerp(o.color, accent!, 0.5)! : o.color;
+      final soft = Color.lerp(oc, Colors.white, 0.55)!;
       canvas.drawCircle(
         Offset(cx, cy),
         r,
         Paint()
-          ..blendMode = BlendMode.plus
+          ..blendMode = BlendMode.softLight
           ..shader = RadialGradient(
-            colors: [oc.withValues(alpha: 0.18), oc.withValues(alpha: 0)],
+            colors: [soft.withValues(alpha: 0.9), soft.withValues(alpha: 0)],
           ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r)),
       );
     }
 
-    // 4) Sao lấp lánh
+    // 3) Lấp lánh nhẹ (trắng/vàng) rải rác cho vui mắt.
     for (final s in stars) {
       final tw = 0.3 + 0.7 * (0.5 + 0.5 * math.sin(tau * s.freq + s.phase));
       final p = Offset(s.pos.dx * size.width, s.pos.dy * size.height);
       if (s.sparkle) {
         final paint = Paint()
-          ..color = s.color.withValues(alpha: 0.85 * tw)
+          ..color = Colors.white.withValues(alpha: 0.9 * tw)
           ..strokeWidth = 1.4
           ..strokeCap = StrokeCap.round;
         final r = s.size * 2.2 * (0.6 + 0.4 * tw);
         canvas.drawLine(p - Offset(r, 0), p + Offset(r, 0), paint);
         canvas.drawLine(p - Offset(0, r), p + Offset(0, r), paint);
-        canvas.drawCircle(p, 1.3, Paint()..color = Colors.white.withValues(alpha: tw));
       } else {
         canvas.drawCircle(
-            p, s.size, Paint()..color = Colors.white.withValues(alpha: 0.5 * tw));
+          p,
+          s.size,
+          Paint()..color = Colors.white.withValues(alpha: 0.45 * tw),
+        );
       }
     }
 
-    // 5) Vignette
+    // 4) Ánh sáng dịu ở đỉnh (sheen) — tăng cảm giác tươi sáng.
     canvas.drawRect(
       rect,
       Paint()
-        ..shader = RadialGradient(
-          radius: 1.1,
-          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.5)],
-          stops: const [0.6, 1.0],
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.center,
+          colors: [Colors.white.withValues(alpha: 0.25), Colors.transparent],
         ).createShader(rect),
     );
   }

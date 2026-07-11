@@ -1,0 +1,180 @@
+import 'dart:math';
+
+import 'package:flutter/material.dart';
+
+import '../../core/neon_theme.dart';
+
+enum StarMood { idle, happy, sad }
+
+/// Mascot ngôi sao vẽ bằng canvas (không cần asset). Idle nhún nhẹ + chớp mắt;
+/// happy nảy lên; sad rũ xuống. Dùng ở Home + dialog thắng/thua.
+class StarMascot extends StatefulWidget {
+  const StarMascot({super.key, this.size = 120, this.mood = StarMood.idle});
+
+  final double size;
+  final StarMood mood;
+
+  @override
+  State<StarMascot> createState() => _StarMascotState();
+}
+
+class _StarMascotState extends State<StarMascot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2400),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final t = _c.value;
+        // nhún/nảy theo mood
+        final double bob;
+        switch (widget.mood) {
+          case StarMood.happy:
+            bob = -sin(t * pi * 4).abs() * widget.size * 0.10; // nảy nhanh
+          case StarMood.sad:
+            bob = widget.size * 0.06; // rũ xuống
+          case StarMood.idle:
+            bob = sin(t * pi * 2) * widget.size * 0.04; // bồng bềnh
+        }
+        // chớp mắt: nháy nhanh quanh t≈0.5 (idle/happy), sad thì nhắm hờ
+        final double blink;
+        if (widget.mood == StarMood.sad) {
+          blink = 0.45;
+        } else {
+          final b = (t - 0.5).abs();
+          blink = b < 0.03 ? (b / 0.03) : 1.0;
+        }
+        return Transform.translate(
+          offset: Offset(0, bob),
+          child: CustomPaint(
+            size: Size.square(widget.size),
+            painter: _StarPainter(mood: widget.mood, blink: blink),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _StarPainter extends CustomPainter {
+  _StarPainter({required this.mood, required this.blink});
+
+  final StarMood mood;
+  final double blink;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = Offset(size.width / 2, size.height / 2);
+    final rOuter = size.width * 0.48;
+    final rInner = rOuter * 0.5;
+
+    // thân sao 5 cánh
+    final star = Path();
+    for (var i = 0; i < 10; i++) {
+      final r = i.isEven ? rOuter : rInner;
+      final a = -pi / 2 + i * pi / 5;
+      final p = c + Offset(cos(a) * r, sin(a) * r);
+      i == 0 ? star.moveTo(p.dx, p.dy) : star.lineTo(p.dx, p.dy);
+    }
+    star.close();
+
+    // quầng sáng
+    canvas.drawPath(
+      star,
+      Paint()
+        ..color = NeonTheme.gold.withValues(alpha: 0.4)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, size.width * 0.06),
+    );
+    // fill gradient
+    canvas.drawPath(
+      star,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [const Color(0xFFFFE27A), NeonTheme.gold],
+        ).createShader(Rect.fromCircle(center: c, radius: rOuter)),
+    );
+    // viền
+    canvas.drawPath(
+      star,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.03
+        ..strokeJoin = StrokeJoin.round
+        ..color = const Color(0xFFE59A1E),
+    );
+
+    // mặt
+    final eyeDx = rOuter * 0.28;
+    final eyeY = c.dy - rOuter * 0.05;
+    final eyeW = size.width * 0.07;
+    final eyeH = size.width * 0.11 * blink;
+    final eyePaint = Paint()..color = NeonTheme.ink;
+    for (final sx in [-1.0, 1.0]) {
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(c.dx + sx * eyeDx, eyeY),
+          width: eyeW,
+          height: eyeH.clamp(size.width * 0.012, eyeH),
+        ),
+        eyePaint,
+      );
+    }
+    // má hồng
+    final blush = Paint()..color = NeonTheme.pink.withValues(alpha: 0.55);
+    for (final sx in [-1.0, 1.0]) {
+      canvas.drawCircle(
+        Offset(c.dx + sx * rOuter * 0.34, eyeY + rOuter * 0.16),
+        size.width * 0.05,
+        blush,
+      );
+    }
+    // miệng
+    final mouth = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.025
+      ..strokeCap = StrokeCap.round
+      ..color = NeonTheme.ink;
+    final my = c.dy + rOuter * 0.22;
+    final mw = rOuter * 0.34;
+    final path = Path();
+    switch (mood) {
+      case StarMood.happy:
+        path.moveTo(c.dx - mw, my - rOuter * 0.02);
+        path.quadraticBezierTo(
+          c.dx,
+          my + rOuter * 0.26,
+          c.dx + mw,
+          my - rOuter * 0.02,
+        );
+      case StarMood.sad:
+        path.moveTo(c.dx - mw * 0.7, my + rOuter * 0.12);
+        path.quadraticBezierTo(
+          c.dx,
+          my - rOuter * 0.10,
+          c.dx + mw * 0.7,
+          my + rOuter * 0.12,
+        );
+      case StarMood.idle:
+        path.moveTo(c.dx - mw * 0.6, my);
+        path.quadraticBezierTo(c.dx, my + rOuter * 0.14, c.dx + mw * 0.6, my);
+    }
+    canvas.drawPath(path, mouth);
+  }
+
+  @override
+  bool shouldRepaint(covariant _StarPainter old) =>
+      old.blink != blink || old.mood != mood;
+}

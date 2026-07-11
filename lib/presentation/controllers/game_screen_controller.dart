@@ -23,6 +23,7 @@ class GameScreenController extends GetxController {
   final Rx<BoosterMode> armed = BoosterMode.none.obs;
 
   PopStarGame? _game;
+  Worker? _endWorker;
 
   PopStarGame get game => _game!;
 
@@ -30,13 +31,25 @@ class GameScreenController extends GetxController {
   void onInit() {
     super.onInit();
     WakelockPlus.enable();
+    // Kết thúc màn đến BẤT ĐỒNG BỘ (sau animation pop/rơi) → lắng nghe reactive
+    // thay vì kiểm tra ngay sau tap.
+    _endWorker = ever(gameCtrl.ended, _onEndChanged);
     _newGame();
   }
 
   @override
   void onClose() {
+    _endWorker?.dispose();
     WakelockPlus.disable();
     super.onClose();
+  }
+
+  void _onEndChanged(bool ended) {
+    if (!ended || ui.value != GameUi.playing) return;
+    final result = gameCtrl.starsEarned.value > 0 ? GameUi.win : GameUi.lose;
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (ui.value == GameUi.playing) ui.value = result;
+    });
   }
 
   void _newGame() {
@@ -50,8 +63,15 @@ class GameScreenController extends GetxController {
         : BoosterMode.bomb;
   }
 
-  /// Tap lên bàn: nếu đang arm bomb → nổ 3x3 tại ô đó, ngược lại nổ nhóm thường.
+  /// Giữ/kéo trên bàn → preview nhóm cùng màu + điểm dự kiến (không khi arm bomb).
+  void previewBoardTap(Vector2 pos) {
+    if (armed.value == BoosterMode.bomb) return;
+    game.previewGroup(pos);
+  }
+
+  /// Thả tay: nếu arm bomb → nổ 3x3, ngược lại nổ nhóm đang preview.
   void handleBoardTap(Vector2 pos) {
+    game.clearPreview();
     if (armed.value == BoosterMode.bomb) {
       final cell = game.cellAt(pos);
       if (cell != null) {
@@ -62,25 +82,15 @@ class GameScreenController extends GetxController {
     } else {
       game.handleTap(pos);
     }
-    _checkEnded();
+    // Kết thúc màn được xử lý qua _onEndChanged (lắng nghe gameCtrl.ended).
   }
 
   void useShuffle() {
     gameCtrl.useShuffle();
-    _checkEnded();
   }
 
   void useUndo() {
     gameCtrl.useUndo();
-    _checkEnded();
-  }
-
-  void _checkEnded() {
-    if (!gameCtrl.ended.value || ui.value != GameUi.playing) return;
-    final result = gameCtrl.starsEarned.value > 0 ? GameUi.win : GameUi.lose;
-    Future.delayed(const Duration(milliseconds: 350), () {
-      ui.value = result;
-    });
   }
 
   // --- điều khiển overlay ---

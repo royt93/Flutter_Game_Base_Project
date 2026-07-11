@@ -18,6 +18,12 @@ class GameController extends GetxController {
   final shuffleCount = 0.obs;
   final undoCount = 0.obs;
 
+  /// Combo: nổ liên tiếp trong cửa sổ thời gian → hệ số điểm tăng dần.
+  final comboCount = 0.obs;
+  final comboMultiplier = 1.0.obs;
+  static const double comboWindow = 3.0; // giây giữa 2 lần nổ để giữ combo
+  static const double comboMax = 5.0;
+
   /// Set bởi [PopStarGame.onLoad] khi bàn được dựng — dùng để booster gọi
   /// thẳng vào game (bomb/shuffle/undo đều thao tác trực tiếp trên grid).
   PopStarGame? activeGame;
@@ -55,10 +61,29 @@ class GameController extends GetxController {
     starsEarned.value = 0;
     ended.value = false;
     cleared.value = false;
+    resetCombo();
     activeGame = null;
   }
 
   void addScore(int points) => score.value += points;
+
+  /// Ghi nhận 1 lần nổ nhóm: tăng combo, cộng điểm đã nhân hệ số.
+  /// Trả về điểm thực cộng (để UI hiện popup).
+  int registerPop(int baseScore) {
+    comboCount.value++;
+    comboMultiplier.value = (1 + (comboCount.value - 1) * 0.5).clamp(
+      1.0,
+      comboMax,
+    );
+    final gained = (baseScore * comboMultiplier.value).round();
+    score.value += gained;
+    return gained;
+  }
+
+  void resetCombo() {
+    comboCount.value = 0;
+    comboMultiplier.value = 1.0;
+  }
 
   void checkEnd(bool boardCleared) {
     if (ended.value) return;

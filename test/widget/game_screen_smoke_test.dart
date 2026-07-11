@@ -8,6 +8,13 @@ import 'package:pop_star_blast/game/pop_star_game.dart';
 import 'package:pop_star_blast/presentation/screens/game_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Bơm nhiều frame nhỏ để game loop chạy hết effect + TimerComponent animation.
+Future<void> _pumpFrames(WidgetTester tester, {int frames = 30}) async {
+  for (var i = 0; i < frames; i++) {
+    await tester.pump(const Duration(milliseconds: 40));
+  }
+}
+
 void main() {
   testWidgets('dựng level, tap nhóm cùng màu thì điểm tăng', (tester) async {
     SharedPreferences.setMockInitialValues({});
@@ -28,7 +35,7 @@ void main() {
 
     expect(gameCtrl.score.value, 0);
     await tester.tapAt(tester.getCenter(find.byType(GameWidget<PopStarGame>)));
-    await tester.pump(const Duration(milliseconds: 400));
+    await _pumpFrames(tester);
 
     expect(gameCtrl.score.value, greaterThan(0));
 
@@ -55,16 +62,13 @@ void main() {
     );
 
     await tester.tapAt(tester.getCenter(find.byType(GameWidget<PopStarGame>)));
-    await tester.pump(const Duration(milliseconds: 100));
+    await _pumpFrames(tester); // chạy hết animation pop + rơi rồi mới kết thúc
 
     expect(gameCtrl.ended.value, isTrue);
     expect(gameCtrl.cleared.value, isTrue);
     expect(gameCtrl.starsEarned.value, greaterThan(0));
     expect(gameCtrl.coins.value, greaterThan(0));
     expect(gameCtrl.unlockedLevel.value, 2);
-
-    // Xả timer 350ms của overlay thắng trước khi kết thúc test.
-    await tester.pump(const Duration(milliseconds: 400));
     expect(gsc.ui.value, GameUi.win);
 
     Get.reset();
