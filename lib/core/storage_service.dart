@@ -9,6 +9,7 @@ class StorageKeys {
   static const String coins = 'coins';
   static const String localeCode = 'locale_code';
   static const String audioMuted = 'audio_muted';
+  static const String colorblindMode = 'colorblind_mode';
 
   static String highScore(int level) => 'hs_$level';
   static String star(int level) => 'star_$level';

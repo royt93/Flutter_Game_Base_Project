@@ -609,9 +609,8 @@ class _WorldBanner extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(
         horizontal: NeonTheme.s16,
-        vertical: 4,
+        vertical: NeonTheme.s8,
       ),
-      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: world.color,
         borderRadius: BorderRadius.circular(16),

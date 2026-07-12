@@ -30,7 +30,7 @@ class NeonButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: width,
-        padding: const EdgeInsets.symmetric(vertical: 15),
+        padding: const EdgeInsets.symmetric(vertical: NeonTheme.s16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -47,7 +47,7 @@ class NeonButton extends StatelessWidget {
           children: [
             if (icon != null) ...[
               Icon(icon, color: Colors.white, size: 22),
-              const SizedBox(width: 10),
+              const SizedBox(width: NeonTheme.s8),
             ],
             Flexible(
               child: FittedBox(

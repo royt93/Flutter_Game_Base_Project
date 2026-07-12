@@ -142,7 +142,7 @@ class _BoosterRow extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: NeonTheme.s8),
                 Text(
                   desc,
                   style: const TextStyle(
@@ -156,7 +156,10 @@ class _BoosterRow extends StatelessWidget {
           GestureDetector(
             onTap: canAfford ? onBuy : null,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                horizontal: NeonTheme.s16,
+                vertical: NeonTheme.s8,
+              ),
               decoration: BoxDecoration(
                 color: canAfford ? NeonTheme.yellow : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
@@ -169,7 +172,7 @@ class _BoosterRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const CoinIcon(size: 14),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: NeonTheme.s8),
                   Text(
                     fmtNum(price),
                     style: TextStyle(

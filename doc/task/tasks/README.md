@@ -1,8 +1,8 @@
 # Tasks — Pop Star Blast (per-file backlog)
 
 Mỗi file = 1 task junior cầm làm được. DoD/quy ước chung: `../README.md`.
-Tất cả 24 task dưới đây đã được user chốt (2 vòng pick). Ý tưởng thêm chưa chốt:
-`IDEAS.md`.
+Tất cả 24 task F/A/G + 7 task Ideas/Polish (I/T) dưới đây đã được user chốt.
+Ý tưởng còn lại chưa chốt: `IDEAS.md`.
 
 ## Nhóm & mã task
 
@@ -42,6 +42,17 @@ Tất cả 24 task dưới đây đã được user chốt (2 vòng pick). Ý t�
 | [G7](G7-neon-edge-trace.md) | Neon edge-trace nhóm chọn | 5 | Could |
 | [G8](G8-glow-burst-shimmer.md) | Glow burst ring + idle shimmer | 5 | Could |
 
+### Ideas & Polish (I/T)
+| ID | Task | SP | Pri |
+|----|------|----|----|
+| [I11](I11-haptic-feedback.md) | Haptic feedback theo cỡ nhóm nổ | 2 | P1 |
+| [T1](T1-settings-locale-test.md) | Fix settings_screen locale-change test | 3 | P2 |
+| [I5](I5-free-undo.md) | Undo miễn phí 1 lần/màn | 2 | P1 |
+| [I18](I18-colorblind-symbols.md) | Colorblind neon symbols | 5 | P2 |
+| [I4](I4-predictive-hint.md) | Predictive hint (gợi ý nhóm to nhất) | 3 | P2 |
+| [I13](I13-pop-sfx-pitch.md) | SFX pop cao độ theo cỡ nhóm (wire playMelodic) | 2 | P1 |
+| [I2](I2-chain-tiles.md) | Color-lock / chain tiles | 5 | P2 |
+
 ## Thứ tự build đề xuất (tối ưu phụ thuộc + giá trị/công)
 
 **Wave 1 — nền tảng cảm giác (fun/công thấp):** G1 → A1 → A2 → F1.
@@ -59,3 +70,8 @@ Tất cả 24 task dưới đây đã được user chốt (2 vòng pick). Ý t�
 
 Phụ thuộc chính: F1 chặn G1(điểm dự kiến hiển thị)/A1(popup combo)/G6(heat theo combo).
 F5/F6 đụng `pop_star_game` + `levels.dart` → làm tuần tự, tránh song song xung đột.
+
+**Wave 6 — Ideas & Polish (nhẹ trước, nặng sau):** I11 → I13 → I5 → T1 → I4 → I18 → I2.
+> I11/I13/I5 độc lập, nhẹ, làm song song/tuần tự tuỳ ý. I2 (chain tiles) đụng cả
+> `lib/logic/` lẫn `pop_star_game.dart` (gravity/collapse 2 grid song song) — nặng
+> nhất nhóm này, nên plan riêng và làm cuối cùng.

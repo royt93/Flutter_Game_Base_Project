@@ -132,7 +132,7 @@ class _ChestRow extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: NeonTheme.s8),
                 Text(
                   claimed
                       ? 'Claimed'
@@ -150,8 +150,8 @@ class _ChestRow extends StatelessWidget {
               onTap: canClaim ? onClaim : null,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
+                  horizontal: NeonTheme.s16,
+                  vertical: NeonTheme.s8,
                 ),
                 decoration: BoxDecoration(
                   color: canClaim ? NeonTheme.gold : Colors.transparent,

@@ -20,18 +20,36 @@ class BlockComponent extends PositionComponent
   /// True khi ô đang được preview (thuộc nhóm người chơi giữ) → sáng rực thêm.
   bool highlighted = false;
 
+  /// I4: true khi ô thuộc nhóm gợi ý (predictive hint, tự trigger sau vài
+  /// giây rảnh tay) — viền pulse nhạt, tách khỏi [highlighted] để không đụng
+  /// hiệu ứng preview khi giữ/kéo.
+  bool hinted = false;
+  double _hintPhase = 0;
+
   /// F5: khác null nếu ô này là power tile (line-clear hàng/cột) — tap để
   /// kích hoạt thay vì tìm nhóm màu như ô thường.
   PowerTileKind? powerKind;
+
+  /// I2: >0 nghĩa là ô đang bị chain tile khoá (còn bấy nhiêu lần ô cạnh cần
+  /// nổ mới mở) — mutable vì `_syncLockBlocks` cập nhật lại sau mỗi lần bị
+  /// chip qua `chipAdjacentLocks`.
+  int lockCount;
 
   BlockComponent({
     required this.colorIndex,
     required Vector2 position,
     required Vector2 size,
+    this.lockCount = 0,
   }) : super(position: position, size: size, anchor: Anchor.center);
 
   Color get _color =>
       NeonTheme.gemColors[colorIndex % NeonTheme.gemColors.length];
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (hinted) _hintPhase += dt;
+  }
 
   @override
   void render(Canvas canvas) {
@@ -136,6 +154,31 @@ class BlockComponent extends PositionComponent
       );
     }
 
+    // 6b. I4: predictive hint — viền nhạt hơn preview, nhấp nháy chậm để
+    // không lấn át highlight chủ động của người chơi.
+    if (hinted) {
+      final pulse = 0.5 + 0.5 * sin(_hintPhase * 3);
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..color = Colors.white.withValues(alpha: 0.2 + 0.2 * pulse)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, s * 0.2),
+      );
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.05
+          ..color = Colors.white.withValues(alpha: 0.35 + 0.35 * pulse),
+      );
+    }
+
+    // 6c. I18: colorblind mode — symbol cố định theo colorIndex đè lên màu
+    // nền, giúp phân biệt gem không chỉ dựa vào màu (đỏ-lục dễ nhầm).
+    if (game.controller.colorblindMode.value) {
+      _renderColorblindSymbol(canvas, s, colorIndex % 7);
+    }
+
     // 7. F5 power tile: quầng trắng mờ + icon báo loại hiệu ứng sẽ kích hoạt
     // khi tap (2 gạch song song = hàng/cột, quả bom = nổ 5x5, chấm nhiều màu =
     // rainbow xoá cả màu).
@@ -216,6 +259,93 @@ class BlockComponent extends PositionComponent
           }
       }
     }
+
+    // 8. I2: chain tile khoá — phủ lớp tối + icon ổ khoá + chấm trắng đếm
+    // lock còn lại, đè lên gem thật bên dưới (khác obstacle, không return
+    // sớm vì màu vẫn phải hiển thị đúng).
+    if (lockCount > 0) {
+      _renderChainLock(canvas, rrect, s);
+    }
+  }
+
+  /// I18: 7 symbol cố định ánh xạ 1-1 với colorIndex 0..6 — trắng viền đen để
+  /// nổi rõ trên mọi màu nền gem.
+  void _renderColorblindSymbol(Canvas canvas, double s, int shape) {
+    final mid = s / 2;
+    final r = s * 0.18;
+    final fill = Paint()..color = Colors.white.withValues(alpha: 0.9);
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.02
+      ..color = Colors.black.withValues(alpha: 0.6);
+
+    Path path;
+    switch (shape) {
+      case 0: // star
+        path = Path();
+        for (var i = 0; i < 10; i++) {
+          final angle = pi / 5 * i - pi / 2;
+          final radius = i.isEven ? r : r * 0.45;
+          final point = Offset(
+            mid + radius * cos(angle),
+            mid + radius * sin(angle),
+          );
+          i == 0
+              ? path.moveTo(point.dx, point.dy)
+              : path.lineTo(point.dx, point.dy);
+        }
+        path.close();
+      case 1: // circle
+        canvas.drawCircle(Offset(mid, mid), r, fill);
+        canvas.drawCircle(Offset(mid, mid), r, stroke);
+        return;
+      case 2: // triangle
+        path = Path()
+          ..moveTo(mid, mid - r)
+          ..lineTo(mid + r * 0.87, mid + r * 0.5)
+          ..lineTo(mid - r * 0.87, mid + r * 0.5)
+          ..close();
+      case 3: // square
+        path = Path()
+          ..addRect(
+            Rect.fromCircle(center: Offset(mid, mid), radius: r * 0.75),
+          );
+      case 4: // diamond
+        path = Path()
+          ..moveTo(mid, mid - r)
+          ..lineTo(mid + r, mid)
+          ..lineTo(mid, mid + r)
+          ..lineTo(mid - r, mid)
+          ..close();
+      case 5: // hexagon
+        path = Path();
+        for (var i = 0; i < 6; i++) {
+          final angle = pi / 3 * i - pi / 2;
+          final point = Offset(mid + r * cos(angle), mid + r * sin(angle));
+          i == 0
+              ? path.moveTo(point.dx, point.dy)
+              : path.lineTo(point.dx, point.dy);
+        }
+        path.close();
+      default: // cross
+        final t = r * 0.4;
+        path = Path()
+          ..moveTo(mid - t, mid - r)
+          ..lineTo(mid + t, mid - r)
+          ..lineTo(mid + t, mid - t)
+          ..lineTo(mid + r, mid - t)
+          ..lineTo(mid + r, mid + t)
+          ..lineTo(mid + t, mid + t)
+          ..lineTo(mid + t, mid + r)
+          ..lineTo(mid - t, mid + r)
+          ..lineTo(mid - t, mid + t)
+          ..lineTo(mid - r, mid + t)
+          ..lineTo(mid - r, mid - t)
+          ..lineTo(mid - t, mid - t)
+          ..close();
+    }
+    canvas.drawPath(path, fill);
+    canvas.drawPath(path, stroke);
   }
 
   /// F6a: khối băng/thùng xám-xanh mờ + số chấm trắng = độ bền còn lại.
@@ -240,6 +370,48 @@ class BlockComponent extends PositionComponent
     for (var i = 0; i < durability; i++) {
       canvas.drawCircle(
         Offset(startX + spacing * i, mid),
+        dotR,
+        Paint()..color = Colors.white.withValues(alpha: 0.95),
+      );
+    }
+  }
+
+  /// I2: chain tile — lớp tối bán trong suốt + icon ổ khoá + chấm trắng đếm
+  /// lock còn lại (tái dùng ngôn ngữ hình ảnh "chấm đếm" của [_renderObstacle]).
+  void _renderChainLock(Canvas canvas, RRect rrect, double s) {
+    canvas.drawRRect(
+      rrect,
+      Paint()..color = Colors.black.withValues(alpha: 0.45),
+    );
+    final mid = s / 2;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(mid, mid + s * 0.06),
+          width: s * 0.3,
+          height: s * 0.22,
+        ),
+        Radius.circular(s * 0.04),
+      ),
+      Paint()..color = Colors.white.withValues(alpha: 0.9),
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(mid, mid - s * 0.06), radius: s * 0.12),
+      pi,
+      pi,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.05
+        ..strokeCap = StrokeCap.round
+        ..color = Colors.white.withValues(alpha: 0.9),
+    );
+    final dotR = s * 0.055;
+    final spacing = s * 0.16;
+    final startX = mid - spacing * (lockCount - 1) / 2;
+    for (var i = 0; i < lockCount; i++) {
+      canvas.drawCircle(
+        Offset(startX + spacing * i, mid + s * 0.32),
         dotR,
         Paint()..color = Colors.white.withValues(alpha: 0.95),
       );

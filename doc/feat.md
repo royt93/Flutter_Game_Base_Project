@@ -303,9 +303,137 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
   giữ màn hình sáng xuyên suốt toàn app chứ không chỉ lúc chơi. Bỏ hết
   enable/disable rải rác trong `game_screen_controller.dart` vì đã bật
   toàn cục, không còn cần toggle theo vòng đời màn chơi.
+- F6b `LevelObjective` (score/clearColor/clearObstacle) trước đây chỉ tồn tại
+  như cơ chế đã build + test, chưa màn campaign nào thật sự dùng. Gán vào
+  `kLevels` (`lib/data/levels.dart`): rotate chu kỳ 5 màn lặp suốt 200 màn —
+  3 màn score, 1 màn clearColor (màu mục tiêu đổi theo `i % colorCount`),
+  1 màn clearObstacle. `PopStarGame.onLoad()` thêm `_placeObstaclesIfNeeded`:
+  màn clearObstacle rải 3-8 ô obstacle (độ bền 1-3, tăng nhẹ theo world) ngay
+  lúc dựng bàn — trước đó dù có `objective.type == clearObstacle` thì bàn
+  vẫn không hề có obstacle nào (chỉ test tự set thủ công). `_refillBoard`
+  (F8 Zen) không cần sửa vì Zen luôn `objective: score()` mặc định.
+- `I11` haptic feedback: `_tryPop` rung `light/medium/heavy` theo `group.length`
+  (`<4`/`4-7`/`>=8`), `triggerBomb` luôn `heavyImpact`. `I13` wire
+  `AudioManager.playMelodic` (đã xây sẵn ngũ cung + màu-là-giọng, chưa từng
+  được gọi) vào đúng điểm `_tryPop`, `combo: group.length`, `colorIndex` lấy từ
+  màu ô vừa tap trước khi grid bị xoá. `I5` undo miễn phí 1 lần/màn: field
+  `_freeUndoUsedThisLevel` trong `GameController`, reset ở `startLevel`/
+  `startSideMode`, `useUndo()` chỉ trừ `undoCount` từ lần thứ 2 trở đi trong
+  cùng màn. Cả 3 đã có test (`test/widget/free_undo_test.dart` mới), 98/98
+  test xanh, `flutter analyze` 0 lỗi.
+- `T1` fix settings_screen locale test: root cause xác nhận thực nghiệm —
+  `LocaleService.change()` → `Get.updateLocale()` → `performReassemble()` →
+  `scheduleWarmUpFrame()` khiến `SchedulerBinding.schedulerPhase` không idle
+  khi `tester.pump()` kế tiếp gọi `handleBeginFrame`, ném lỗi
+  `schedulerPhase == SchedulerPhase.idle`. Lỗi xảy ra dù đổi locale qua
+  `tester.tap()` hay gọi thẳng `LocaleService.change()` (không qua tap) —
+  đây là giới hạn thật giữa GetX reassemble-based locale switching và
+  `AutomatedTestWidgetsFlutterBinding`, không sửa được từ phía app. Khi rã
+  task lộ ra bug thật: `SettingsScreen` chưa từng dùng `AppTranslations` —
+  toàn bộ `lib/presentation/` trước đó chỉ có đúng 1 chỗ gọi `.tr()`
+  (`level_select_screen.dart` tên world). Đã nối dây `.tr()` vào title,
+  Sound label, Language label, và toàn bộ dialog reset-progress của
+  `SettingsScreen`, tái dùng 100% key có sẵn đã dịch đủ 22 locale
+  (`settings`/`sound`/`language`/`reset_progress`/`cancel`/`confirm`/
+  `reset_confirm_msg`) — không thêm key mới. Test mới
+  (`test/widget/settings_screen_test.dart`) dựng `GetMaterialApp(locale:
+  ..., translations: AppTranslations())` cố định lúc build thay vì đổi
+  runtime, verify bản dịch đúng ở `en_US` và `ja_JP` (script Latin +
+  non-Latin) và không lộ raw key. `flutter analyze` 0 lỗi, full suite xanh.
+- `I4` predictive hint: rảnh tay 6s (không tap, không đang animation, chưa
+  thắng/thua) → tự highlight nhóm ≥2 ô cùng màu lớn nhất còn lại trên bàn.
+  `findLargestGroup` (mới, `lib/logic/pop_detector.dart`) tái dùng
+  `findConnectedGroup` sẵn có — quét toàn bàn, bỏ qua ô đã visited/obstacle,
+  giữ nhóm lớn nhất ≥2. `PopStarGame` thêm `_idleTimer`/`_hint` cộng dồn trong
+  `update(dt)`, `_triggerHint()` gọi 1 lần khi hết ngưỡng (không phải mỗi
+  frame). `BlockComponent` thêm cờ `hinted` tách biệt khỏi `highlighted` (drag
+  preview) để 2 hiệu ứng không đụng nhau — viền pulse trắng nhạt dùng `sin()`
+  theo `_hintPhase` tích luỹ trong `update()`. `clearHint()` là 1 điểm chốt
+  duy nhất: gọi ở đầu `_rebuildBoard` (tránh giữ ref rác khi shuffle/undo/
+  resize dựng lại `_blocks`) và ở đầu `GameScreenController.handleBoardTap`
+  (mọi tap, kể cả tap ngoài bàn/không hợp lệ, đều tắt gợi ý + reset đồng hồ —
+  reset trên mọi tap là tập hợp cha an toàn của "chỉ reset khi tap hợp lệ").
+  Test mới (`test/widget/predictive_hint_test.dart`) dựng bàn xác định qua
+  `startLevel(1)`, override `colorGrid` thủ công rồi gọi `clearHint()` để
+  reset đồng hồ rảnh tay tích luỹ từ lúc dựng bàn (nếu không đồng hồ cũ cộng
+  dồn khiến ngưỡng 6s bị vượt sớm hơn dự kiến), pump qua ngưỡng 6s và assert
+  đúng 3 ô được gợi ý, rồi assert tap bất kỳ tắt gợi ý ngay. `flutter analyze`
+  0 lỗi, full suite 100/100 xanh.
+- `I18` colorblind neon symbols: 7 hình cố định (star/circle/triangle/square/
+  diamond/hexagon/cross) ánh xạ 1-1 với `colorIndex % 7`, vẽ đè lên gem khi
+  bật "Colorblind mode". `StorageKeys.colorblindMode` (key mới,
+  `lib/core/storage_service.dart`). `GameController` thêm `colorblindMode`
+  (`RxBool`), `toggleColorblindMode()`, load trong `_load()` — cố tình KHÔNG
+  đụng tới trong `resetProgress()` vì đây là tuỳ chọn hiển thị/accessibility,
+  không phải tiến trình game. `SettingsScreen` thêm `SwitchListTile` mới
+  (đứng sau Sound, không có guard `if (audio != null)` vì `GameController`
+  luôn có sẵn) — key dịch `colorblind_mode` thêm vào cả 22 locale trong
+  `app_translations.dart`. `BlockComponent._renderColorblindSymbol` vẽ bằng
+  `Path`/`Canvas` thuần (không thêm asset/package) — fill trắng bán trong
+  suốt + viền đen để nổi trên mọi màu nền gem, chỉ là lớp vẽ thêm trong
+  `render()` nên không đụng hitbox/tap. Test mới
+  (`test/widget/colorblind_mode_test.dart`) bật cờ qua
+  `toggleColorblindMode()`, dựng `GameScreen`, pump qua vài frame animation
+  và assert không crash cả lúc bật lẫn tắt lại; `settings_screen_test.dart`
+  có thêm 1 test riêng xác nhận tap switch lật đúng `colorblindMode.value`
+  và persist đúng xuống `SharedPreferences`, cùng 2 test locale cũ
+  (`en_US`/`ja_JP`) được bổ sung assertion tên nhãn dịch đúng
+  ("Colorblind mode"/"色覚異常モード"). `flutter analyze` 0 lỗi, full suite
+  102/102 xanh.
+- `I2` color-lock / chain tiles: ô "bị xích" — có màu thật, hiển thị đúng
+  màu, nhưng KHÔNG match được (`findConnectedGroup`) tới khi đủ K lần ô cạnh
+  nó bị nổ. Khác obstacle (F6a, mã hoá bằng giá trị âm ngay trong
+  `colorGrid`) — chain tile cần cấu trúc dữ liệu **song song**
+  (`lockGrid`, `List<List<int>>`, 0 = không khoá) vì `colorGrid` vẫn phải giữ
+  màu dương thật để hiển thị và để flood-fill dùng lại ngay khi mở khoá.
+  `lib/logic/chain_tile.dart` (mới) — `chipAdjacentLocks` mirror chính xác
+  `chipAdjacentObstacles`: gom set ô khoá liền kề (4 hướng, dedup qua Set)
+  rồi trừ mỗi ô đúng 1 lock, không gộp vào tập clear (mở khoá không xoá ô).
+  `pop_detector.dart` (`findConnectedGroup`/`findLargestGroup`/
+  `hasAnyMovableGroup`) và `pop_collapse.dart` (`applyGravityAndCollapse`)
+  thêm optional `{List<List<int>>? lockGrid}` — mặc định `null` giữ nguyên
+  hành vi cũ cho mọi call site chưa truyền. Loại trừ ô khoá là **nhất quán
+  trên mọi cơ chế xoá**: match thường (`_tryPop`), power tile line/bomb/
+  rainbow (`_activatePowerTile`), booster bomb (`triggerBomb`), booster
+  rainbow (`triggerRainbow`) — tất cả thêm điều kiện `lockGrid[r][c] == 0`
+  cạnh check obstacle sẵn có, rồi gọi `chipAdjacentLocks` + `_syncLockBlocks()`
+  (method mới, mirror `_syncObstacleBlocks`) ngay sau `chipAdjacentObstacles`.
+  `_collapseAnimated()` chỉ cần thêm đúng 1 dòng
+  `lockGrid[r][c] = b?.lockCount ?? 0;` — vì `_blocks` di chuyển object ref
+  nguyên trạng qua gravity/collapse (không tạo lại), field `lockCount` mới
+  trên `BlockComponent` tự trôi theo mà không cần sửa tween; ngược lại
+  `_rebuildBoard()` (đường tái tạo full-board của shuffle/undo/resize/refill)
+  phải truyền `lockCount: lockGrid[r][c]` tường minh khi tạo `BlockComponent`
+  mới. `shuffleBoard()` loại ô khoá khỏi pool xáo màu (giữ nguyên vị trí/độ
+  khoá). `undo()`/`_saveUndo()` snapshot thêm `_undoLockGrid` song song
+  `_undoGrid`. Chain tile **chỉ dành cho campaign** — `_refillBoard()` (Zen)
+  reset `lockGrid` về toàn 0 mỗi lần dựng bàn mới, không tạo lock mới.
+  Không thêm `ObjectiveType` mới — trigger tách biệt khỏi chu kỳ 5-slot
+  objective, chỉ dựa `level.id % 6 == 0` (`_placeChainLocksIfNeeded`, gọi
+  ngay sau `_placeObstaclesIfNeeded` trong `onLoad()`), số ô/lock-value scale
+  theo world cùng công thức style obstacle. `BlockComponent` thêm field
+  `lockCount` + vẽ lớp tối bán trong suốt/icon xích/chấm trắng đếm lock đè
+  lên gem (tái dùng ngôn ngữ hình ảnh "chấm trắng đếm durability" đã có ở
+  phần vẽ obstacle). Test mới `test/logic/chain_tile_test.dart` (4 test) +
+  bổ sung `pop_detector_test.dart` (5 test: khoá chặn match/flood-fill, mở
+  khoá tham gia lại bình thường, `findLargestGroup`/`hasAnyMovableGroup` bỏ
+  qua ô khoá) + bổ sung `pop_collapse_test.dart` (2 test: `lockGrid` rơi/dồn
+  lockstep cùng `colorGrid`). `flutter analyze` 0 lỗi, full suite 113/113
+  xanh.
 
 ## 🟡 In progress / tiếp theo (xem doc/task/tasks/)
 
+- Rã 7 hạng mục (Wave 6 — Ideas & Polish) thành task .md theo chuẩn scrum:
+  `I11` haptic feedback, `T1` fix settings_screen locale test (tham chiếu
+  đúng nợ kỹ thuật đã ghi ở dưới), `I5` undo miễn phí 1 lần/màn, `I18`
+  colorblind neon symbols, `I4` predictive hint, `I13` SFX pop cao độ theo
+  cỡ nhóm, `I2` color-lock/chain tiles (7/7 đã hoàn thành, xem mục trên).
+  Phát hiện khi rã `I13`: hạ tầng
+  nhạc lý `AudioManager.playMelodic`/`playNote` (ngũ cung + màu-là-giọng +
+  hợp âm wombo) đã build đầy đủ nhưng **chưa hề được gọi** ở `pop_star_game.dart`
+  — pop hiện không phát bất kỳ SFX nào, task chỉ cần "nối dây" chứ không xây
+  mới. `IDEAS.md` đã đánh dấu 6 ID (I2/I4/I5/I11/I13/I18) là "đã chốt", trỏ
+  sang file task tương ứng.
 - Mở rộng test coverage thêm (theo `doc/task/tasks/README.md`, wave tiếp
   theo) — các widget/screen còn lại chưa có test trực tiếp.
   - Đã thêm test cho 7 widget trước đây chưa có file test nào:
@@ -325,6 +453,73 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
   sau đó). Muốn test hành vi đổi ngôn ngữ thật sự cần tách logic khỏi
   `Get.updateLocale`/`performReassemble`, hoặc test qua tầng khác (không
   phải widget test dựng UI thật).
+
+## ⚠️ Performance audit (2026-07-12, chưa fix)
+
+User báo game lag nặng lúc chơi thật (device test tới level 6). Audit đọc
+toàn bộ `pop_star_game.dart`, `block_component.dart`, `neon_bg.dart`,
+`neon_aura_layer.dart`, `pulse_glow.dart`, `game_screen.dart`. Root cause xếp
+theo mức độ nghi ngờ:
+
+- **P0 — `BlockComponent.render()` (block_component.dart:71-76):** bloom viền
+  ngoài dùng `MaskFilter.blur` vẽ **mọi ô, mọi frame, vô điều kiện** — Flame
+  không cache/dirty-check render giữa các frame. Board lớn nhất 11x12 = 132
+  ô, mỗi ô ≥1 blur pass (CPU-based, Skia mask blur đắt) chạy 60 lần/giây kể
+  cả lúc bàn đứng yên không ai tap. Nghi phạm số 1.
+- **P0 — `_spawnBurst` (pop_star_game.dart:594-645, 826+):** particle burst
+  (10 particle `ComputedParticle`/ô) gọi **theo từng ô trong nhóm bị xoá**,
+  không theo nhóm. Nổ nhóm lớn/rainbow/bomb (có thể xoá nửa bàn) → hàng trăm
+  particle vẽ line+circle mỗi frame cùng lúc trong 0.5s, spike đúng lúc combo
+  lớn — khớp cảm giác lag "lúc nổ to".
+- **P0 — `NeonAuraLayer` (neon_aura_layer.dart):** dùng `Ticker` riêng gọi
+  `setState()` mỗi frame (60fps vô điều kiện) vẽ fragment shader full-screen
+  ngay trên vùng bàn chơi (`game_screen.dart:53-57`), **không có
+  `RepaintBoundary`** bọc — khác `NeonBg`/`PulseGlow` đều có bọc (thiếu sót,
+  không nhất quán).
+- **P1 — `NeonBg`:** chạy suốt lúc chơi (không riêng menu), vẽ lại 6 orb +
+  60 star mỗi frame với `blendMode.softLight` (blend đắt). Cộng dồn cùng lúc
+  với 2 hệ trên trong 1 khung 16ms trên máy tầm trung/thấp.
+- **P2 — `_syncObstacleBlocks`/`_syncLockBlocks`:** quét toàn bàn 2 vòng lặp
+  riêng biệt sau mỗi lần nổ nhóm — rẻ so với P0, chỉ đáng gộp sau khi P0 xong.
+
+Đã tạo task rõ ràng (xem `TaskList`), chưa code fix nào — cần quyết định
+hướng fix (cache tĩnh vs bỏ blur vs giảm hiệu ứng) trước khi implement.
+
+## ✅ Spacing standard (2026-07-12)
+
+Chuẩn hoá toàn bộ margin/padding/gap về đúng 3 token có sẵn trong
+`NeonTheme`: `s8`/`s16`/`s24` (không thêm token mới). User chọn strict
+3-value (từ chối option mở rộng lưới 4px) — chấp nhận vài chỗ đổi nhẹ kích
+thước visual để dồn về đúng 3 mức.
+
+Quy tắc làm tròn áp dụng cho mọi giá trị lẻ (2/3/4/5/6/10/12/13/14/15/18):
+`<12 → s8`, `12–19 → s16`, `≥20 → s24` (0 giữ nguyên, không nằm trong thang).
+
+Đã sửa `EdgeInsets`/`SizedBox` lẻ ở: `coin_chip.dart`, `neon_button.dart`,
+`neon_dialog.dart`, `star_road_screen.dart`, `shop_screen.dart`,
+`level_select_screen.dart` (`_WorldBanner`), `game_screen.dart` (HUD +
+`_BoosterButton` + win choreography), `guide_screen.dart`. `neon_app_bar.dart`
+đã sẵn chuẩn, không đổi.
+
+2 golden test (`coin_chip_golden_test`, `neon_button_golden_test`) lệch pixel
+do đổi spacing thật — đã regenerate golden bằng `--update-goldens` (kỳ vọng,
+không phải lỗi). `flutter analyze` 0 issues, `flutter test --exclude-tags
+slow` xanh toàn bộ.
+
+Verify trên emulator Android (`emulator-5554`): Home, Level Select
+(`_WorldBanner`), Game screen HUD (nơi sửa nhiều nhất — 12 chỗ) đều render
+đúng, không lệch layout.
+
+Phát hiện thêm 1 bug tràn viền có sẵn từ trước (không do task này gây ra,
+xác nhận qua `git diff`): `_WorldBanner` (`level_select_screen.dart`) có
+`Container(alignment: Alignment.center, ...)` — Flutter tự bọc `Align`,
+`Align` truyền loose constraint xuống `Stack` bên trong, khiến `Stack` co
+lại theo kích thước `StrokeText` (tên world) thay vì full width, làm `Row`
+6 icon trái tim trang trí bị ép vào khung nhỏ và tràn viền
+(`RenderFlex overflowed`). Fix: bỏ `alignment: Alignment.center` thừa khỏi
+`Container` (Stack đã tự căn giữa `StrokeText` rồi) — không cần bọc thêm
+`SizedBox`/`ConstrainedBox` nào. Đã verify lại trên emulator: log sạch,
+không còn overflow.
 
 ## 💭 Ideas (ngoài scope hiện tại)
 

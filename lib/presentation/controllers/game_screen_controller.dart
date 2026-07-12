@@ -98,6 +98,7 @@ class GameScreenController extends GetxController {
 
   /// Thả tay: theo booster đang arm (bomb/rainbow), ngược lại nổ nhóm đang preview.
   void handleBoardTap(Vector2 pos) {
+    game.clearHint(); // I4: bất kỳ tap nào cũng tắt gợi ý + reset timer rảnh tay.
     game.clearPreview();
     if (armed.value == BoosterMode.bomb) {
       final cell = game.cellAt(pos);

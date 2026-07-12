@@ -25,7 +25,10 @@ class CoinChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(right: NeonTheme.s8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: NeonTheme.s16,
+        vertical: NeonTheme.s8,
+      ),
       decoration: BoxDecoration(
         color: NeonTheme.card,
         borderRadius: BorderRadius.circular(16),
@@ -36,7 +39,7 @@ class CoinChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const CoinIcon(),
-          const SizedBox(width: 5),
+          const SizedBox(width: NeonTheme.s8),
           Obx(
             () => Text(
               fmtNum(controller.coins.value),

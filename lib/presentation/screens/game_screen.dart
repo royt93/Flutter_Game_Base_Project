@@ -56,7 +56,12 @@ class GameScreen extends StatelessWidget {
                               ),
                             ),
                             Container(
-                              margin: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+                              margin: const EdgeInsets.fromLTRB(
+                                NeonTheme.s8,
+                                0,
+                                NeonTheme.s8,
+                                NeonTheme.s16,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.25),
                                 borderRadius: BorderRadius.circular(26),
@@ -173,7 +178,7 @@ class _Hud extends StatelessWidget {
                       return Column(
                         children: [
                           scoreText,
-                          const SizedBox(height: 4),
+                          const SizedBox(height: NeonTheme.s8),
                           Text(
                             'Time ${gsc.remainingSeconds.value}s',
                             style: const TextStyle(
@@ -189,7 +194,7 @@ class _Hud extends StatelessWidget {
                       return Column(
                         children: [
                           scoreText,
-                          const SizedBox(height: 4),
+                          const SizedBox(height: NeonTheme.s8),
                           const Text(
                             'Zen — no target',
                             style: TextStyle(
@@ -206,7 +211,7 @@ class _Hud extends StatelessWidget {
                     return Column(
                       children: [
                         scoreText,
-                        const SizedBox(height: 4),
+                        const SizedBox(height: NeonTheme.s8),
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 190),
                           child: TweenAnimationBuilder<double>(
@@ -217,7 +222,7 @@ class _Hud extends StatelessWidget {
                                 _ProgressBar(value: v, reached: reached),
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: NeonTheme.s8),
                         Text(
                           'Target ${fmtNum(target)}',
                           style: const TextStyle(
@@ -230,7 +235,7 @@ class _Hud extends StatelessWidget {
                         // clear-obstacle) hiện thêm dòng tiến độ riêng.
                         if (gameCtrl.currentLevel.objective.type !=
                             ObjectiveType.score) ...[
-                          const SizedBox(height: 3),
+                          const SizedBox(height: NeonTheme.s8),
                           Text(
                             gameCtrl.currentLevel.objective.type ==
                                     ObjectiveType.clearColor
@@ -352,7 +357,10 @@ class _BoosterButton extends StatelessWidget {
     return PressableScale(
       onTap: enabled ? onTap : null,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: NeonTheme.s16,
+          vertical: NeonTheme.s8,
+        ),
         decoration: BoxDecoration(
           color: armed ? color : NeonTheme.card,
           borderRadius: BorderRadius.circular(16),
@@ -372,7 +380,7 @@ class _BoosterButton extends StatelessWidget {
                   : (enabled ? color : const Color(0xFFC9C3DA)),
               size: 20,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: NeonTheme.s8),
             Text(
               '$count',
               style: TextStyle(
@@ -532,7 +540,7 @@ class _WinChoreographyState extends State<_WinChoreography> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   for (var i = 0; i < stars; i++) ...[
-                    if (i > 0) const SizedBox(width: 4),
+                    if (i > 0) const SizedBox(width: NeonTheme.s8),
                     AnimatedScale(
                       scale: i < _starsShown ? 1.0 : 0.0,
                       duration: const Duration(milliseconds: 320),
@@ -546,7 +554,7 @@ class _WinChoreographyState extends State<_WinChoreography> {
                   ],
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: NeonTheme.s8),
               AnimatedOpacity(
                 opacity: _scoreShown ? 1 : 0,
                 duration: const Duration(milliseconds: 250),
@@ -566,7 +574,7 @@ class _WinChoreographyState extends State<_WinChoreography> {
                   ),
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: NeonTheme.s16),
               AnimatedOpacity(
                 opacity: _buttonsShown ? 1 : 0,
                 duration: const Duration(milliseconds: 240),
@@ -581,7 +589,7 @@ class _WinChoreographyState extends State<_WinChoreography> {
                           onTap: widget.gsc.again,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: NeonTheme.s16),
                       Expanded(
                         child: NeonButton(
                           label: 'NEXT',

@@ -18,12 +18,13 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = Get.find<LocaleService>();
     final audio = AudioManager.maybe;
+    final gameCtrl = Get.find<GameController>();
     return Scaffold(
       body: NeonBg(
         child: SafeArea(
           child: Column(
             children: [
-              const NeonAppBar(title: 'Settings', color: NeonTheme.purple),
+              NeonAppBar(title: 'settings'.tr, color: NeonTheme.purple),
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.all(NeonTheme.s16),
@@ -34,16 +35,27 @@ class SettingsScreen extends StatelessWidget {
                           value: !audio.muted.value,
                           onChanged: (_) => audio.toggleMute(),
                           activeThumbColor: NeonTheme.cyan,
-                          title: const Text(
-                            'Sound',
-                            style: TextStyle(color: NeonTheme.ink),
+                          title: Text(
+                            'sound'.tr,
+                            style: const TextStyle(color: NeonTheme.ink),
                           ),
                         ),
                       ),
+                    Obx(
+                      () => SwitchListTile(
+                        value: gameCtrl.colorblindMode.value,
+                        onChanged: (_) => gameCtrl.toggleColorblindMode(),
+                        activeThumbColor: NeonTheme.cyan,
+                        title: Text(
+                          'colorblind_mode'.tr,
+                          style: const TextStyle(color: NeonTheme.ink),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: NeonTheme.s16),
-                    const Text(
-                      'Language',
-                      style: TextStyle(
+                    Text(
+                      'language'.tr,
+                      style: const TextStyle(
                         color: NeonTheme.ink,
                         fontWeight: FontWeight.w700,
                       ),
@@ -91,25 +103,24 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       onPressed: () => NeonDialog.show(
                         context: context,
-                        title: 'Reset Progress?',
+                        title: '${'reset_progress'.tr}?',
                         color: NeonTheme.orange,
-                        message:
-                            'This clears all levels, stars, coins and boosters. This cannot be undone.',
+                        message: 'reset_confirm_msg'.tr,
                         actions: [
                           NeonDialogAction(
-                            label: 'Cancel',
+                            label: 'cancel'.tr,
                             color: NeonTheme.cyan,
                             onTap: () {},
                           ),
                           NeonDialogAction(
-                            label: 'Reset',
+                            label: 'confirm'.tr,
                             color: NeonTheme.orange,
                             onTap: () =>
                                 Get.find<GameController>().resetProgress(),
                           ),
                         ],
                       ),
-                      child: const Text('Reset Progress'),
+                      child: Text('reset_progress'.tr),
                     ),
                   ],
                 ),

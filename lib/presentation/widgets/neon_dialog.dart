@@ -28,8 +28,8 @@ class NeonDialog {
   }) {
     return Container(
       constraints: const BoxConstraints(maxWidth: 360),
-      margin: const EdgeInsets.symmetric(horizontal: 32),
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
+      margin: const EdgeInsets.symmetric(horizontal: NeonTheme.s24),
+      padding: const EdgeInsets.all(NeonTheme.s24),
       decoration: BoxDecoration(
         color: NeonTheme.card,
         borderRadius: BorderRadius.circular(28),
@@ -44,7 +44,7 @@ class NeonDialog {
         children: [
           if (icon != null) ...[
             Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(NeonTheme.s16),
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
@@ -52,7 +52,7 @@ class NeonDialog {
               ),
               child: Icon(icon, color: Colors.white, size: 40),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: NeonTheme.s16),
           ],
           Text(
             title,
@@ -65,7 +65,7 @@ class NeonDialog {
             ),
           ),
           if (message != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: NeonTheme.s16),
             Text(
               message,
               textAlign: TextAlign.center,
@@ -77,13 +77,16 @@ class NeonDialog {
               ),
             ),
           ],
-          if (content != null) ...[const SizedBox(height: 14), content],
-          const SizedBox(height: 24),
+          if (content != null) ...[
+            const SizedBox(height: NeonTheme.s16),
+            content,
+          ],
+          const SizedBox(height: NeonTheme.s24),
           Row(
             children: [
               for (final a in actions) ...[
                 Expanded(child: _DialogButton(action: a)),
-                if (a != actions.last) const SizedBox(width: 12),
+                if (a != actions.last) const SizedBox(width: NeonTheme.s16),
               ],
             ],
           ),
@@ -166,7 +169,10 @@ class _DialogButton extends StatelessWidget {
     return PressableScale(
       onTap: action.onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        padding: const EdgeInsets.symmetric(
+          horizontal: NeonTheme.s16,
+          vertical: NeonTheme.s16,
+        ),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),

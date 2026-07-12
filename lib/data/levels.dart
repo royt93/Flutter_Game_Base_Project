@@ -47,6 +47,9 @@ const int kLevelCount = 200;
 /// index màn. Vì vậy targetScore neo vào `cells * 6` (ngưỡng 1-sao chơi thường)
 /// và chỉ nhích nhẹ theo world; công thức leo-tuyến-tính cũ khiến ~146/200 màn
 /// bất khả thi (đã xác minh bằng greedy-bot sim, xem doc/feat.md).
+///
+/// F6b: objective luân phiên theo chu kỳ 5 màn, lặp lại suốt 200 màn —
+/// 3 màn score, 1 màn clearColor, 1 màn clearObstacle (slot 3 và 4).
 final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
   final id = i + 1;
   final world = i ~/ 20; // 0..9
@@ -56,12 +59,19 @@ final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
   final cells = rows * cols;
   final ramp = 1.0 + world * 0.03;
   final targetScore = (cells * 6 * ramp).round();
+  final slot = i % 5;
+  final objective = switch (slot) {
+    3 => LevelObjective.clearColor(i % colorCount),
+    4 => const LevelObjective.clearObstacle(),
+    _ => const LevelObjective.score(),
+  };
   return PopLevel(
     id: id,
     rows: rows,
     cols: cols,
     colorCount: colorCount,
     targetScore: targetScore,
+    objective: objective,
   );
 });
 

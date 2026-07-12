@@ -35,5 +35,22 @@ void main() {
         );
       }
     });
+
+    // F6b: objective rotate chu kỳ 5 màn (3 score, 1 clearColor, 1
+    // clearObstacle) xuyên suốt cả 200 màn.
+    test('objective luân phiên đúng chu kỳ 5 màn', () {
+      for (var i = 0; i < kLevels.length; i++) {
+        final expected = switch (i % 5) {
+          3 => ObjectiveType.clearColor,
+          4 => ObjectiveType.clearObstacle,
+          _ => ObjectiveType.score,
+        };
+        expect(
+          kLevels[i].objective.type,
+          expected,
+          reason: 'L${kLevels[i].id} (slot ${i % 5}) sai objective',
+        );
+      }
+    });
   });
 }

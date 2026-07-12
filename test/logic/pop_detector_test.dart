@@ -54,6 +54,55 @@ void main() {
       final group = findConnectedGroup(grid, 0, 0);
       expect(group, {Point(0, 0)});
     });
+
+    test('I2: ô đang khoá trả về rỗng, không match được', () {
+      final grid = [
+        [0, 0],
+      ];
+      final lockGrid = [
+        [1, 0],
+      ];
+      expect(findConnectedGroup(grid, 0, 0, lockGrid: lockGrid), isEmpty);
+    });
+
+    test('I2: flood-fill không lan qua ô đang khoá dù cùng màu ô cạnh', () {
+      final grid = [
+        [0, 0, 0],
+      ];
+      final lockGrid = [
+        [0, 1, 0],
+      ];
+      final group = findConnectedGroup(grid, 0, 0, lockGrid: lockGrid);
+      expect(group, {Point(0, 0)});
+    });
+
+    test('I2: ô về lock=0 thì tham gia flood-fill lại bình thường', () {
+      final grid = [
+        [0, 0, 0],
+      ];
+      final lockGrid = [
+        [0, 0, 0],
+      ];
+      final group = findConnectedGroup(grid, 0, 0, lockGrid: lockGrid);
+      expect(group, {Point(0, 0), Point(0, 1), Point(0, 2)});
+    });
+  });
+
+  group('findLargestGroup', () {
+    test('I2: bỏ qua ô đang khoá, chọn nhóm lớn nhất trong ô còn lại', () {
+      final grid = [
+        [0, 0, 0],
+        [1, 1, 2],
+      ];
+      final lockGrid = [
+        [1, 1, 1],
+        [0, 0, 0],
+      ];
+      expect(findLargestGroup(grid, lockGrid: lockGrid), {
+        Point(1, 0),
+        Point(1, 1),
+      });
+    });
   });
 
   group('hasAnyMovableGroup', () {
@@ -91,5 +140,17 @@ void main() {
         expect(hasAnyMovableGroup(grid), isFalse);
       },
     );
+
+    test('I2: false khi nhóm ≥2 duy nhất đang bị khoá', () {
+      final grid = [
+        [0, 0],
+        [1, 2],
+      ];
+      final lockGrid = [
+        [1, 1],
+        [0, 0],
+      ];
+      expect(hasAnyMovableGroup(grid, lockGrid: lockGrid), isFalse);
+    });
   });
 }

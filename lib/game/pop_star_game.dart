@@ -6,9 +6,12 @@ import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flame/text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../core/audio_manager.dart';
 import '../core/neon_theme.dart';
 import '../data/levels.dart';
+import '../logic/chain_tile.dart';
 import '../logic/obstacle.dart';
 import '../logic/pop_detector.dart';
 import '../logic/power_tile.dart';
@@ -113,6 +116,10 @@ class PopStarGame extends FlameGame {
   /// Nguồn sự thật cho logic (màu từng ô). Đồng bộ với [_blocks] sau mỗi bước.
   late List<List<int?>> colorGrid;
 
+  /// I2: số lần khoá còn lại từng ô (0 = không khoá) — song song [colorGrid],
+  /// không tái dùng encoding âm của obstacle vì ô khoá vẫn giữ màu dương thật.
+  late List<List<int>> lockGrid;
+
   /// Component tương ứng từng ô (null nếu trống) — để animate di chuyển.
   late List<List<BlockComponent?>> _blocks;
 
@@ -124,6 +131,7 @@ class PopStarGame extends FlameGame {
   static const int _maxRings = 3;
 
   List<List<int?>>? _undoGrid;
+  List<List<int>>? _undoLockGrid;
   final _rng = Random();
 
   /// Đang diễn hoạt → chặn tap để tránh chồng bước.
@@ -131,6 +139,12 @@ class PopStarGame extends FlameGame {
 
   /// Đếm ngược cửa sổ combo; hết → reset combo ở controller.
   double _comboTimer = 0;
+
+  /// I4: rảnh tay quá [_hintDelay] giây → tự gợi ý nhóm lớn nhất còn lại.
+  /// [_hint] rỗng nghĩa là chưa/không đang hiển thị gợi ý nào.
+  static const double _hintDelay = 6.0;
+  double _idleTimer = 0;
+  Set<Point<int>> _hint = {};
 
   static const double _popDur = 0.16;
   static const double _fallDur = 0.26;
@@ -150,6 +164,9 @@ class PopStarGame extends FlameGame {
       rows,
       (_) => List.generate(cols, (_) => _rng.nextInt(level.colorCount)),
     );
+    lockGrid = List.generate(rows, (_) => List.generate(cols, (_) => 0));
+    _placeObstaclesIfNeeded(level);
+    _placeChainLocksIfNeeded(level);
     controller.activeGame = this;
     _layout();
     _rebuildBoard(animateIntro: true);
@@ -161,6 +178,42 @@ class PopStarGame extends FlameGame {
     );
     _edgeTrace = _EdgeTraceComponent(color: NeonTheme.cyan);
     add(_edgeTrace);
+  }
+
+  /// F6b: màn `clearObstacle` cần vài ô obstacle (giá trị âm = độ bền) rải
+  /// ngẫu nhiên trên bàn ngay lúc dựng — số lượng/độ bền tăng nhẹ theo world.
+  /// No-op với mọi objective khác (score/clearColor).
+  void _placeObstaclesIfNeeded(PopLevel level) {
+    if (level.objective.type != ObjectiveType.clearObstacle) return;
+    final world = (level.id - 1) ~/ 20;
+    final count = (3 + world ~/ 2).clamp(3, 8);
+    final durability = 1 + world ~/ 4;
+    final cells = <int>{};
+    while (cells.length < count && cells.length < rows * cols) {
+      cells.add(_rng.nextInt(rows * cols));
+    }
+    for (final idx in cells) {
+      colorGrid[idx ~/ cols][idx % cols] = -durability;
+    }
+  }
+
+  /// I2: vài ô "bị xích" rải ngẫu nhiên, độc lập với objective (board-gen
+  /// spice, không phải điều kiện thắng) — bật theo `level.id % 6 == 0` (tách
+  /// khỏi chu kỳ 5-slot objective ở trên), số lượng/lock tăng nhẹ theo world
+  /// giống cách [_placeObstaclesIfNeeded] đã làm. Chỉ chọn trong ô màu thật
+  /// nên tự bỏ qua ô đã là obstacle nếu 2 điều kiện trùng level.
+  void _placeChainLocksIfNeeded(PopLevel level) {
+    if (level.id % 6 != 0) return;
+    final world = (level.id - 1) ~/ 20;
+    final count = (2 + world ~/ 3).clamp(2, 6);
+    final lockValue = 1 + world ~/ 5;
+    final candidates = [
+      for (var idx = 0; idx < rows * cols; idx++)
+        if ((colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0) idx,
+    ]..shuffle(_rng);
+    for (final idx in candidates.take(count)) {
+      lockGrid[idx ~/ cols][idx % cols] = lockValue;
+    }
   }
 
   @override
@@ -215,7 +268,7 @@ class PopStarGame extends FlameGame {
     final cell = cellAt(pos);
     final g = cell == null
         ? const <Point<int>>{}
-        : findConnectedGroup(colorGrid, cell.x, cell.y);
+        : findConnectedGroup(colorGrid, cell.x, cell.y, lockGrid: lockGrid);
     if (g.length < 2) {
       clearPreview();
       return;
@@ -315,8 +368,13 @@ class PopStarGame extends FlameGame {
   double _punchCooldownTimer = 0;
 
   void _tryPop(int row, int col) {
-    final group = findConnectedGroup(colorGrid, row, col);
+    final group = findConnectedGroup(colorGrid, row, col, lockGrid: lockGrid);
     if (group.length < 2) return;
+    _hapticForGroupSize(group.length);
+    AudioManager.maybe?.playMelodic(
+      combo: group.length,
+      colorIndex: colorGrid[row][col] ?? -1,
+    );
     _saveUndo();
     final gained = controller.registerPop(scoreForGroup(group.length));
     _comboTimer = GameController.comboWindow;
@@ -333,8 +391,22 @@ class PopStarGame extends FlameGame {
     // F6a: nổ nhóm liền kề obstacle → chip độ bền; vỡ thì gộp vào cùng đợt xoá.
     final broken = chipAdjacentObstacles(colorGrid, cleared);
     _syncObstacleBlocks();
+    // I2: nổ nhóm liền kề chain tile → chip 1 lock, không gộp vào tập xoá.
+    chipAdjacentLocks(lockGrid, cleared);
+    _syncLockBlocks();
     _clearAndCollapse(cleared..addAll(broken));
     if (kind != null) _blocks[row][col]?.powerKind = kind;
+  }
+
+  /// I11: rung xúc giác theo cỡ nhóm vừa nổ.
+  void _hapticForGroupSize(int size) {
+    if (size >= 8) {
+      HapticFeedback.heavyImpact();
+    } else if (size >= 4) {
+      HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.lightImpact();
+    }
   }
 
   /// F6a: đồng bộ lại `colorIndex` các block obstacle còn sống sau khi bị
@@ -349,6 +421,17 @@ class PopStarGame extends FlameGame {
     }
   }
 
+  /// I2: đồng bộ `lockCount` mọi block sau khi `lockGrid` đổi (chip hoặc mở
+  /// khoá) — quét toàn bàn kể cả ô vừa về 0 (khác `_syncObstacleBlocks`, ô
+  /// khoá không mất đi nên không thể chỉ lọc theo giá trị cũ).
+  void _syncLockBlocks() {
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        _blocks[r][c]?.lockCount = lockGrid[r][c];
+      }
+    }
+  }
+
   /// F5: kích hoạt power tile tại (row, col) — xoá cả hàng/cột (line), vùng
   /// 5x5 quanh tâm (bomb), hoặc toàn bộ ô cùng màu trên bàn (rainbow).
   void _activatePowerTile(int row, int col, PowerTileKind kind) {
@@ -359,25 +442,33 @@ class PopStarGame extends FlameGame {
     switch (kind) {
       case PowerTileKind.lineRow:
         for (var c = 0; c < cols; c++) {
-          if ((colorGrid[row][c] ?? -1) >= 0) cells.add(Point(row, c));
+          if ((colorGrid[row][c] ?? -1) >= 0 && lockGrid[row][c] == 0) {
+            cells.add(Point(row, c));
+          }
         }
       case PowerTileKind.lineCol:
         for (var r = 0; r < rows; r++) {
-          if ((colorGrid[r][col] ?? -1) >= 0) cells.add(Point(r, col));
+          if ((colorGrid[r][col] ?? -1) >= 0 && lockGrid[r][col] == 0) {
+            cells.add(Point(r, col));
+          }
         }
       case PowerTileKind.bomb:
         for (var r = row - 2; r <= row + 2; r++) {
           if (r < 0 || r >= rows) continue;
           for (var c = col - 2; c <= col + 2; c++) {
             if (c < 0 || c >= cols) continue;
-            if ((colorGrid[r][c] ?? -1) >= 0) cells.add(Point(r, c));
+            if ((colorGrid[r][c] ?? -1) >= 0 && lockGrid[r][c] == 0) {
+              cells.add(Point(r, c));
+            }
           }
         }
       case PowerTileKind.rainbow:
         final targetColor = colorGrid[row][col];
         for (var r = 0; r < rows; r++) {
           for (var c = 0; c < cols; c++) {
-            if (colorGrid[r][c] == targetColor) cells.add(Point(r, c));
+            if (colorGrid[r][c] == targetColor && lockGrid[r][c] == 0) {
+              cells.add(Point(r, c));
+            }
           }
         }
     }
@@ -391,6 +482,8 @@ class PopStarGame extends FlameGame {
     }
     final broken = chipAdjacentObstacles(colorGrid, cells);
     _syncObstacleBlocks();
+    chipAdjacentLocks(lockGrid, cells);
+    _syncLockBlocks();
     _clearAndCollapse(cells..addAll(broken));
   }
 
@@ -412,6 +505,39 @@ class PopStarGame extends FlameGame {
       _comboTimer -= dt;
       if (_comboTimer <= 0) controller.resetCombo();
     }
+    // I4: chỉ đếm giờ rảnh tay khi không diễn hoạt/kết thúc và chưa đang
+    // hiển thị gợi ý (đứng yên chờ tap để clear, không tự tắt).
+    if (!_animating && !controller.ended.value && _hint.isEmpty) {
+      _idleTimer += dt;
+      if (_idleTimer >= _hintDelay) _triggerHint();
+    }
+  }
+
+  /// I4: nhóm đang được gợi ý (rỗng nếu không có). Test-only introspection.
+  Set<Point<int>> get hintGroup => _hint;
+
+  /// I4: quét toàn bàn (không phải mỗi frame — chỉ khi hết giờ rảnh tay) tìm
+  /// nhóm lớn nhất, tái dùng [findLargestGroup] từ pop_detector.dart.
+  void _triggerHint() {
+    final group = findLargestGroup(colorGrid, lockGrid: lockGrid);
+    if (group.isEmpty) {
+      _idleTimer = 0; // bàn kẹt tạm thời — thử lại sau đợt idle kế tiếp
+      return;
+    }
+    _hint = group;
+    for (final p in group) {
+      _blocks[p.x][p.y]?.hinted = true;
+    }
+  }
+
+  /// I4: tắt gợi ý đang hiển thị (nếu có) + reset timer rảnh tay. Gọi ở mọi
+  /// tap (kể cả tap không hợp lệ) và khi bàn bị dựng lại (shuffle/undo/resize).
+  void clearHint() {
+    for (final p in _hint) {
+      _blocks[p.x][p.y]?.hinted = false;
+    }
+    _hint = {};
+    _idleTimer = 0;
   }
 
   void triggerBomb(int row, int col) {
@@ -425,14 +551,18 @@ class PopStarGame extends FlameGame {
             r < rows &&
             c >= 0 &&
             c < cols &&
-            (colorGrid[r][c] ?? -1) >= 0) {
+            (colorGrid[r][c] ?? -1) >= 0 &&
+            lockGrid[r][c] == 0) {
           cells.add(Point(r, c));
         }
       }
     }
     if (cells.isEmpty) return;
+    HapticFeedback.heavyImpact();
     final broken = chipAdjacentObstacles(colorGrid, cells);
     _syncObstacleBlocks();
+    chipAdjacentLocks(lockGrid, cells);
+    _syncLockBlocks();
     _clearAndCollapse(cells..addAll(broken));
   }
 
@@ -446,12 +576,16 @@ class PopStarGame extends FlameGame {
     final cells = <Point<int>>{};
     for (var r = 0; r < rows; r++) {
       for (var c = 0; c < cols; c++) {
-        if (colorGrid[r][c] == targetColor) cells.add(Point(r, c));
+        if (colorGrid[r][c] == targetColor && lockGrid[r][c] == 0) {
+          cells.add(Point(r, c));
+        }
       }
     }
     if (cells.isEmpty) return;
     final broken = chipAdjacentObstacles(colorGrid, cells);
     _syncObstacleBlocks();
+    chipAdjacentLocks(lockGrid, cells);
+    _syncLockBlocks();
     _clearAndCollapse(cells..addAll(broken));
   }
 
@@ -489,7 +623,10 @@ class PopStarGame extends FlameGame {
       final b = _blocks[p.x][p.y];
       _blocks[p.x][p.y] = null;
       if (b != null) {
-        _spawnBurst(b.position.clone(), NeonTheme.gemColors[b.colorIndex]);
+        _spawnBurst(
+          b.position.clone(),
+          NeonTheme.gemColors[b.colorIndex % NeonTheme.gemColors.length],
+        );
         b.add(
           // A8: co nhẹ "lấy đà" trước khi bung — tổng thời lượng vẫn giữ
           // đúng _popDur (không kéo dài nhịp nổ).
@@ -619,6 +756,7 @@ class PopStarGame extends FlameGame {
       for (var c = 0; c < cols; c++) {
         final b = _blocks[r][c];
         colorGrid[r][c] = b?.colorIndex;
+        lockGrid[r][c] = b?.lockCount ?? 0;
         if (b == null) continue;
         final target = _cellCenter(r, c);
         if ((b.position - target).length2 > 0.01) {
@@ -733,17 +871,21 @@ class PopStarGame extends FlameGame {
     if (_animating) return;
     _saveUndo();
     // F6a: obstacle không phải màu → giữ nguyên vị trí/độ bền, chỉ xáo màu thật.
+    // I2: ô đang khoá cũng giữ nguyên (không xáo màu vào/ra chain tile).
     final values = [
-      for (final row in colorGrid)
-        for (final v in row)
-          if (v != null && v >= 0) v,
+      for (var r = 0; r < rows; r++)
+        for (var c = 0; c < cols; c++)
+          if ((colorGrid[r][c] ?? -1) >= 0 && lockGrid[r][c] == 0)
+            colorGrid[r][c]!,
     ];
     values.shuffle(_rng);
     var i = 0;
     for (var r = 0; r < rows; r++) {
       for (var c = 0; c < cols; c++) {
         final v = colorGrid[r][c];
-        if (v != null && v >= 0) colorGrid[r][c] = values[i++];
+        if (v != null && v >= 0 && lockGrid[r][c] == 0) {
+          colorGrid[r][c] = values[i++];
+        }
       }
     }
     _rebuildBoard();
@@ -753,15 +895,19 @@ class PopStarGame extends FlameGame {
   bool undo() {
     if (_animating) return false;
     final saved = _undoGrid;
+    final savedLocks = _undoLockGrid;
     if (saved == null) return false;
     colorGrid = saved;
+    if (savedLocks != null) lockGrid = savedLocks;
     _undoGrid = null;
+    _undoLockGrid = null;
     _rebuildBoard();
     return true;
   }
 
   void _saveUndo() {
     _undoGrid = colorGrid.map((row) => List<int?>.from(row)).toList();
+    _undoLockGrid = lockGrid.map((row) => List<int>.from(row)).toList();
   }
 
   void _checkEnd() {
@@ -775,7 +921,9 @@ class PopStarGame extends FlameGame {
         .expand((row) => row)
         .any((b) => b?.powerKind != null);
     final stuck =
-        remaining > 0 && !hasAnyMovableGroup(colorGrid) && !hasPowerTile;
+        remaining > 0 &&
+        !hasAnyMovableGroup(colorGrid, lockGrid: lockGrid) &&
+        !hasPowerTile;
     if (refillEnabled && (remaining == 0 || stuck)) {
       _refillBoard();
       return;
@@ -795,13 +943,15 @@ class PopStarGame extends FlameGame {
     }
   }
 
-  /// F8 Zen: bàn mới toàn bộ khi hết/kẹt — xem [refillEnabled].
+  /// F8 Zen: bàn mới toàn bộ khi hết/kẹt — xem [refillEnabled]. I2: chain
+  /// tile chỉ dành cho campaign, bàn Zen mới luôn không khoá ô nào.
   void _refillBoard() {
     final level = controller.currentLevel;
     colorGrid = List.generate(
       rows,
       (_) => List.generate(cols, (_) => _rng.nextInt(level.colorCount)),
     );
+    lockGrid = List.generate(rows, (_) => List.generate(cols, (_) => 0));
     _rebuildBoard();
   }
 
@@ -812,6 +962,7 @@ class PopStarGame extends FlameGame {
   /// trên xuống rồi settle nảy nhẹ, khoá tap tới khi xong; các lần dựng lại
   /// khác (resize/shuffle/undo/refill) giữ nguyên tức thì.
   void _rebuildBoard({bool animateIntro = false}) {
+    clearHint(); // I4: block cũ sắp bị huỷ, tránh giữ ref rác trong _hint.
     children.whereType<BlockComponent>().toList().forEach(remove);
     _blocks = List.generate(
       rows,
@@ -826,6 +977,7 @@ class PopStarGame extends FlameGame {
         final target = _cellCenter(r, c);
         final b = BlockComponent(
           colorIndex: color,
+          lockCount: lockGrid[r][c],
           position: animateIntro
               ? Vector2(target.x, _boardTop - cellSize * (r + 2))
               : target,

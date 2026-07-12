@@ -82,7 +82,7 @@ class GuideScreen extends StatelessWidget {
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: NeonTheme.s8),
                                 Text(
                                   body,
                                   style: const TextStyle(

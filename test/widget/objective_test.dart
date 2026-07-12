@@ -73,4 +73,30 @@ void main() {
       Get.reset();
     },
   );
+
+  testWidgets(
+    'F6b: màn campaign clearObstacle (level 5) dựng bàn có sẵn obstacle',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      Get.put(StorageService(prefs), permanent: true);
+      final gameCtrl = Get.put(GameController(), permanent: true);
+      gameCtrl.startLevel(5); // i=4, slot 4 → clearObstacle theo levels.dart
+
+      await tester.pumpWidget(GetMaterialApp(home: const GameScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+      await _pumpFrames(tester, frames: 20); // chờ hết intro rơi ô
+
+      final gsc = Get.find<GameScreenController>();
+      final grid = gsc.game.colorGrid;
+
+      expect(gameCtrl.currentLevel.objective.type, ObjectiveType.clearObstacle);
+      expect(
+        grid.expand((row) => row).where((v) => v != null && v < 0),
+        isNotEmpty,
+      );
+
+      Get.reset();
+    },
+  );
 }

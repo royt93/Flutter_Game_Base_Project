@@ -46,6 +46,9 @@ class GameController extends GetxController {
   final undoCount = 0.obs;
   final rainbowCount = 0.obs;
 
+  /// I5: undo đầu tiên mỗi màn miễn phí, không trừ `undoCount`.
+  bool _freeUndoUsedThisLevel = false;
+
   /// Combo: nổ liên tiếp trong cửa sổ thời gian → hệ số điểm tăng dần.
   final comboCount = 0.obs;
   final comboMultiplier = 1.0.obs;
@@ -87,13 +90,24 @@ class GameController extends GetxController {
   /// campaign theo id).
   final timeAttackBest = 0.obs;
 
+  /// I18: vẽ thêm symbol theo màu lên mỗi gem — hỗ trợ người mù màu.
+  final colorblindMode = false.obs;
+
   @override
   void onInit() {
     super.onInit();
     _load();
   }
 
+  void toggleColorblindMode() {
+    colorblindMode.value = !colorblindMode.value;
+    StorageService.to.setBool(StorageKeys.colorblindMode, colorblindMode.value);
+  }
+
   void _load() {
+    colorblindMode.value = StorageService.to.getBool(
+      StorageKeys.colorblindMode,
+    );
     coins.value = StorageService.to.getInt(StorageKeys.coins);
     bombCount.value = StorageService.to.getInt(StorageKeys.bombCount, def: 3);
     shuffleCount.value = StorageService.to.getInt(
@@ -177,6 +191,7 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
+    _freeUndoUsedThisLevel = false;
   }
 
   /// F8: bắt đầu 1 ván side-mode (Time-attack/Zen) — không đụng
@@ -192,6 +207,7 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
+    _freeUndoUsedThisLevel = false;
   }
 
   void addScore(int points) => score.value += points;
@@ -310,7 +326,14 @@ class GameController extends GetxController {
   }
 
   void useUndo() {
-    if (undoCount.value <= 0 || activeGame == null) return;
+    if (activeGame == null) return;
+    // I5: lần undo đầu tiên mỗi màn miễn phí, không đụng undoCount.
+    if (!_freeUndoUsedThisLevel) {
+      if (!activeGame!.undo()) return;
+      _freeUndoUsedThisLevel = true;
+      return;
+    }
+    if (undoCount.value <= 0) return;
     if (!activeGame!.undo()) return;
     undoCount.value--;
     StorageService.to.setInt(StorageKeys.undoCount, undoCount.value);
