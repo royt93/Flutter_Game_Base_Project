@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flame/components.dart';
@@ -169,6 +170,11 @@ class PopStarGame extends FlameGame {
     _placeChainLocksIfNeeded(level);
     controller.activeGame = this;
     _layout();
+    // ponytail: không await — toImage() có thể không hoàn tất trong widget
+    // test (thiếu frame callback thật). render() đã có fallback vẽ blur
+    // trực tiếp khi cache chưa sẵn sàng nên khởi kích không đồng bộ là an
+    // toàn; cache tự chuyển sang dùng ngay khi bake xong.
+    unawaited(BlockComponent.ensureBloomCache());
     _rebuildBoard(animateIntro: true);
     // F6b: dời sang sau frame hiện tại — onLoad() chạy giữa lúc GameWidget
     // đang build, set .obs đồng bộ ở đây gây "setState during build" cho
@@ -618,6 +624,11 @@ class PopStarGame extends FlameGame {
         radius,
       );
     }
+    // G9: pop nhóm lớn (20+ ô) x 10 particle/ô = spike hẳn số draw call.
+    // Giảm particle/ô khi nhóm lớn, giữ tổng toàn cụm quanh ~80.
+    final burstCount = cells.length <= 8
+        ? 10
+        : (80 / cells.length).clamp(3, 10).round();
     for (final p in cells) {
       colorGrid[p.x][p.y] = null;
       final b = _blocks[p.x][p.y];
@@ -626,6 +637,7 @@ class PopStarGame extends FlameGame {
         _spawnBurst(
           b.position.clone(),
           NeonTheme.gemColors[b.colorIndex % NeonTheme.gemColors.length],
+          count: burstCount,
         );
         b.add(
           // A8: co nhẹ "lấy đà" trước khi bung — tổng thời lượng vẫn giữ
@@ -823,14 +835,14 @@ class PopStarGame extends FlameGame {
 
   /// Hạt nổ + vệt sáng (G2): tự tính vị trí theo gia tốc để vẽ trail mờ dần
   /// dọc hướng bay (rẻ hơn nhiều so với ghép AcceleratedParticle + sprite).
-  void _spawnBurst(Vector2 at, Color color) {
+  void _spawnBurst(Vector2 at, Color color, {int count = 10}) {
     const lifespan = 0.5;
     final accel = Vector2(0, 220);
     add(
       ParticleSystemComponent(
         position: at,
         particle: Particle.generate(
-          count: 10,
+          count: count,
           generator: (i) {
             final a = _rng.nextDouble() * pi * 2;
             final speed = 60 + _rng.nextDouble() * 90;

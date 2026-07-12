@@ -485,6 +485,43 @@ theo mức độ nghi ngờ:
 Đã tạo task rõ ràng (xem `TaskList`), chưa code fix nào — cần quyết định
 hướng fix (cache tĩnh vs bỏ blur vs giảm hiệu ứng) trước khi implement.
 
+## ✅ Performance fix P0 (2026-07-12)
+
+3 fix P0 từ audit trên, theo plan `deep-foraging-floyd.md`:
+
+- **Bloom bitmap-cache** (`block_component.dart`): thay `MaskFilter.blur` vẽ
+  trực tiếp mỗi frame bằng cache tĩnh — bake 1 lần/màu (7 màu
+  `NeonTheme.gemColors`) vào `ui.Image` qua `PictureRecorder`
+  (`BlockComponent.ensureBloomCache()`, gọi 1 lần trong `onLoad()` trước
+  `_rebuildBoard`), mỗi frame chỉ `canvas.drawImageRect` (blit rẻ). Fallback
+  vẽ blur trực tiếp nếu cache chưa sẵn (không xảy ra trong thực tế vì đã
+  `await` trước khi dựng board). Visual giữ nguyên 100%.
+- **Cap particle burst theo nhóm** (`pop_star_game.dart`, `_spawnBurst`):
+  `burstCount = cells.length <= 8 ? 10 : (80 / cells.length).clamp(3, 10).round()`
+  — nhóm nhỏ (≤8 ô) giữ 10 particle/ô như cũ, nhóm càng lớn càng giảm
+  particle/ô, tổng particle toàn cụm chặn quanh ~80 thay vì tăng tuyến tính
+  không giới hạn.
+- **RepaintBoundary + throttle `NeonAuraLayer`**: bọc `CustomPaint` trong
+  `RepaintBoundary`, hạ tần suất `setState()` thật sự xuống ~30fps (`_time`
+  vẫn cập nhật mỗi tick nên animation không giật).
+
+`flutter analyze` 0 issues, `flutter test --exclude-tags slow` 113/113 xanh
+(thay đổi thuần hiệu năng, không đổi hành vi/API công khai nên không cần
+test mới).
+
+Verify emulator (`emulator-5554`): rebuild + cài lại, playtest level 1 —
+bloom viền neon giữ nguyên y hệt trước, pop nhóm lớn (group 6) burst đẹp và
+không giật, log `logcat` sạch (không exception/FATAL, chỉ log audio codec
+bình thường). Trong lúc verify, môi trường emulator dùng chung bị 1 app
+quảng cáo lạ không liên quan (`com.roy.admobwrapper`) liên tục tự relaunch
+cướp foreground, có lúc còn nuốt input (tap bị điều hướng sang Play Store) —
+gây hiện tượng board tạm thời chỉ hiển thị vài ô rồi đứng hình (log kèm
+`SurfaceSyncGroup: Failed receive transaction ready in 1000ms` đúng lúc đó).
+Đã xác nhận đây là **surface-sync glitch do nhiễu ngoài**, không phải bug
+logic của 3 fix trên: colorGrid/vị trí block vẫn đúng, chỉ cần 1 sự kiện
+buộc repaint (mở dialog) là hiển thị đầy đủ và chính xác trở lại; ván chơi
+tiếp diễn bình thường sau đó không tái diễn hiện tượng.
+
 ## ✅ Spacing standard (2026-07-12)
 
 Chuẩn hoá toàn bộ margin/padding/gap về đúng 3 token có sẵn trong

@@ -45,6 +45,47 @@ class BlockComponent extends PositionComponent
   Color get _color =>
       NeonTheme.gemColors[colorIndex % NeonTheme.gemColors.length];
 
+  // G8: quầng bloom (item 1 render) tốn blur mỗi frame cho MỌI ô bàn chơi dù
+  // đứng yên. Bake sẵn 1 lần/màu thành bitmap tĩnh, mỗi frame chỉ blit
+  // (drawImageRect) — rẻ hơn hẳn tính lại MaskFilter.blur. Kích thước tham
+  // chiếu cố định, không phụ thuộc cellSize thật của level (khỏi build lại
+  // cache khi đổi cỡ ô giữa các màn).
+  static const double _bloomRef = 256.0;
+  static const double _bloomMargin = 128.0;
+  static final Map<int, ui.Image> _bloomCache = {};
+  static Future<void>? _bloomCacheFuture;
+
+  static Future<void> ensureBloomCache() {
+    return _bloomCacheFuture ??= _buildBloomCache();
+  }
+
+  static Future<void> _buildBloomCache() async {
+    final imgSize = (_bloomRef + _bloomMargin * 2).round();
+    for (var i = 0; i < NeonTheme.gemColors.length; i++) {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final inset = _bloomRef * 0.06;
+      final rect = Rect.fromLTWH(
+        _bloomMargin + inset,
+        _bloomMargin + inset,
+        _bloomRef - inset * 2,
+        _bloomRef - inset * 2,
+      );
+      final rrect = RRect.fromRectAndRadius(
+        rect,
+        Radius.circular(_bloomRef * 0.22),
+      );
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..color = NeonTheme.gemColors[i].withValues(alpha: 0.5)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, _bloomRef * 0.16),
+      );
+      final picture = recorder.endRecording();
+      _bloomCache[i] = await picture.toImage(imgSize, imgSize);
+    }
+  }
+
   @override
   void update(double dt) {
     super.update(dt);
@@ -67,13 +108,34 @@ class BlockComponent extends PositionComponent
     }
     final c = _color;
 
-    // 1. quầng bloom ngoài
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..color = c.withValues(alpha: 0.5)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, s * 0.16),
-    );
+    // 1. quầng bloom ngoài — G8: blit bitmap cache sẵn (ensureBloomCache),
+    // fallback vẽ blur trực tiếp nếu cache chưa kịp dựng.
+    final bloomImg = _bloomCache[colorIndex % NeonTheme.gemColors.length];
+    if (bloomImg != null) {
+      final dstSize = s * (bloomImg.width / _bloomRef);
+      canvas.drawImageRect(
+        bloomImg,
+        Rect.fromLTWH(
+          0,
+          0,
+          bloomImg.width.toDouble(),
+          bloomImg.height.toDouble(),
+        ),
+        Rect.fromCenter(
+          center: Offset(s / 2, s / 2),
+          width: dstSize,
+          height: dstSize,
+        ),
+        Paint()..filterQuality = FilterQuality.low,
+      );
+    } else {
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..color = c.withValues(alpha: 0.5)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, s * 0.16),
+      );
+    }
 
     // 2. thân gradient dọc: sáng ở đỉnh → đậm ở đáy
     canvas.drawRRect(

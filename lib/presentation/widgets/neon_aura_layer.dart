@@ -20,6 +20,10 @@ class _NeonAuraLayerState extends State<NeonAuraLayer>
   ui.FragmentShader? _shader;
   late final Ticker _ticker;
   double _time = 0;
+  // G10: shader full-screen mỗi frame khá nặng — hạ tần suất repaint thật
+  // sự xuống ~30fps (bỏ qua mỗi tick lẻ), _time vẫn cập nhật mỗi tick nên
+  // animation không bị giật khi throttle.
+  bool _skipFrame = false;
 
   @override
   void initState() {
@@ -41,7 +45,8 @@ class _NeonAuraLayerState extends State<NeonAuraLayer>
 
   void _onTick(Duration elapsed) {
     _time = elapsed.inMicroseconds / 1e6;
-    if (_shader != null && mounted) setState(() {});
+    _skipFrame = !_skipFrame;
+    if (_skipFrame && _shader != null && mounted) setState(() {});
   }
 
   @override
@@ -55,9 +60,15 @@ class _NeonAuraLayerState extends State<NeonAuraLayer>
     final shader = _shader;
     if (shader == null) return const SizedBox.shrink();
     return IgnorePointer(
-      child: CustomPaint(
-        painter: _AuraPainter(shader: shader, time: _time, color: widget.color),
-        size: Size.infinite,
+      child: RepaintBoundary(
+        child: CustomPaint(
+          painter: _AuraPainter(
+            shader: shader,
+            time: _time,
+            color: widget.color,
+          ),
+          size: Size.infinite,
+        ),
       ),
     );
   }
