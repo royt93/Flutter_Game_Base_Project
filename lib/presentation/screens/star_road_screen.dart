@@ -38,23 +38,29 @@ class _StarRoadScreenState extends State<StarRoadScreen> {
                 child: Obx(
                   () => Stack(
                     children: [
-                      ListView.separated(
+                      ListView(
                         padding: const EdgeInsets.all(NeonTheme.s16),
-                        itemCount: GameController.starRoadMilestones.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(height: NeonTheme.s16),
-                        itemBuilder: (context, i) => _ChestRow(
-                          milestone: GameController.starRoadMilestones[i],
-                          reward: GameController.starRoadRewards[i],
-                          totalStars: gameCtrl.totalStars.value,
-                          claimed: gameCtrl.isChestClaimed(i),
-                          canClaim: gameCtrl.canClaimChest(i),
-                          onClaim: () {
-                            if (gameCtrl.claimChest(i)) {
-                              setState(() => _flying.add(i));
-                            }
-                          },
-                        ),
+                        children: [
+                          for (
+                            var i = 0;
+                            i < GameController.starRoadMilestones.length;
+                            i++
+                          ) ...[
+                            if (i > 0) const SizedBox(height: NeonTheme.s16),
+                            _ChestRow(
+                              milestone: GameController.starRoadMilestones[i],
+                              reward: GameController.starRoadRewards[i],
+                              totalStars: gameCtrl.totalStars.value,
+                              claimed: gameCtrl.isChestClaimed(i),
+                              canClaim: gameCtrl.canClaimChest(i),
+                              onClaim: () {
+                                if (gameCtrl.claimChest(i)) {
+                                  setState(() => _flying.add(i));
+                                }
+                              },
+                            ),
+                          ],
+                        ],
                       ),
                       for (final i in _flying)
                         CoinFlyOverlay(

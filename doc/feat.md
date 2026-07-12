@@ -248,15 +248,38 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
   giá trị được lưu đĩa (`StorageService`/`SharedPreferences`) nên giữ
   nguyên qua mọi session — không cần sửa gì thêm, chỉ xác nhận lại.
 
+## ✅ Đã hoàn thành (bổ sung)
+
+- Smoke widget test cho các screen trước đây chưa có test: `home_screen`,
+  `guide_screen`, `settings_screen`, `shop_screen`, `star_road_screen`. Qua
+  đó phát hiện + fix 1 bug thật trong `star_road_screen.dart` (`Obx` bọc
+  `ListView.separated` có `itemBuilder` đọc Rx trễ ở layout phase → GetX ném
+  "improper use of a GetX/Obx" khi mở màn) — đổi sang `ListView` build eager.
+- Golden test (`test/widget/goldens/`) cho 5 widget tĩnh ổn định: `neon_button`
+  (enabled/disabled/icon), `stroke_text` (default/custom màu), `coin_chip`,
+  `neon_app_bar`, `neon_icon` (plain + boxed button enabled/disabled).
+- Widget test (không golden) cho `neon_dialog.dart`: `NeonDialog.panel` render
+  title/message/action + tap action gọi `onTap`; `NeonDialog.overlay` render
+  panel trên barrier + tap barrier gọi `onBarrier`.
+
 ## 🟡 In progress / tiếp theo (xem doc/task/tasks/)
 
-- Golden test, mở rộng test coverage đầy đủ (theo `doc/task/tasks/README.md`,
-  wave tiếp theo).
+- Mở rộng test coverage thêm (theo `doc/task/tasks/README.md`, wave tiếp
+  theo) — các widget/screen còn lại chưa có test trực tiếp.
+- `settings_screen_test.dart`: chỉ smoke-test render, KHÔNG test hành vi tap
+  đổi ngôn ngữ qua UI — `Get.updateLocale()` gọi
+  `engine.performReassemble()` nội bộ, không tương thích với
+  `AutomatedTestWidgetsFlutterBinding` của `flutter_test` (ném lỗi
+  `schedulerPhase == idle` ngay trong `tester.tap()`, không phải do pump
+  sau đó). Muốn test hành vi đổi ngôn ngữ thật sự cần tách logic khỏi
+  `Get.updateLocale`/`performReassemble`, hoặc test qua tầng khác (không
+  phải widget test dựng UI thật).
 
 ## 💭 Ideas (ngoài scope hiện tại)
 
-- Daily reward / login streak · booster mới (color/rainbow bomb) · leaderboard/social
-  · cosmetic skins cho block · âm thanh pop/win.
-- Khai thác `LevelObjective.clearColor/clearObstacle` thực tế trong `kLevels`
-  (cơ chế F6b đã xong + có test, nhưng chưa màn campaign nào gán objective
-  khác score).
+- Daily reward / login streak · leaderboard/social · cosmetic skins cho block
+  · âm thanh pop/win. (Rainbow/bomb booster đã xong — F3/F5b/F5c.)
+- Gán `LevelObjective.clearColor/clearObstacle` cho các màn cụ thể trong
+  `kLevels` (cơ chế đã xong + có test qua `objective_test.dart`, nhưng chưa
+  màn campaign nào thực sự dùng objective khác score).
+- 10 ý tưởng thêm chưa chốt: xem `doc/task/tasks/IDEAS.md` (I1-I10).

@@ -1,0 +1,33 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:pop_star_blast/core/storage_service.dart';
+import 'package:pop_star_blast/presentation/controllers/game_controller.dart';
+import 'package:pop_star_blast/presentation/screens/shop_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  testWidgets('mua bomb: đủ xu thì trừ xu + cộng số lượng booster', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    Get.put(StorageService(prefs), permanent: true);
+    final gameCtrl = Get.put(GameController(), permanent: true);
+    gameCtrl.coins.value = 1000;
+
+    await tester.pumpWidget(GetMaterialApp(home: const ShopScreen()));
+    // NeonBg có AnimationController.repeat() vô hạn — pumpAndSettle sẽ treo.
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final countBefore = gameCtrl.bombCount.value;
+    expect(find.text('Bomb  ×$countBefore'), findsOneWidget);
+    await tester.tap(find.text(GameController.bombPrice.toString()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(tester.takeException(), isNull);
+    expect(gameCtrl.bombCount.value, countBefore + 1);
+    expect(gameCtrl.coins.value, 1000 - GameController.bombPrice);
+    expect(find.text('Bomb  ×${countBefore + 1}'), findsOneWidget);
+    Get.reset();
+  });
+}
