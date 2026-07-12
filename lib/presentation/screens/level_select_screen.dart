@@ -177,26 +177,33 @@ class _PathPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (centers.length < 2) return;
-    final paint = Paint()
-      ..color = NeonTheme.inkSoft.withValues(alpha: 0.35)
-      ..strokeWidth = 6
+    // Catmull-Rom → cubic Bezier: đường cong đi đúng qua tâm mỗi node,
+    // tangent liên tục toàn tuyến (mượt hơn quadratic-qua-midpoint, vốn chỉ
+    // bo cong quanh node chứ không xuyên qua tâm).
+    final path = Path()..moveTo(centers.first.dx, centers.first.dy);
+    for (var i = 0; i < centers.length - 1; i++) {
+      final p0 = i == 0 ? centers[i] : centers[i - 1];
+      final p1 = centers[i];
+      final p2 = centers[i + 1];
+      final p3 = i + 2 < centers.length ? centers[i + 2] : p2;
+      final cp1 = p1 + (p2 - p0) / 6;
+      final cp2 = p2 - (p3 - p1) / 6;
+      path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, p2.dx, p2.dy);
+    }
+
+    final glowPaint = Paint()
+      ..color = NeonTheme.cyan.withValues(alpha: 0.45)
+      ..strokeWidth = 16
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    final corePaint = Paint()
+      ..color = NeonTheme.cyan.withValues(alpha: 0.9)
+      ..strokeWidth = 5
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-    final path = Path()..moveTo(centers.first.dx, centers.first.dy);
-    for (var i = 1; i < centers.length - 1; i++) {
-      final cur = centers[i];
-      final next = centers[i + 1];
-      final mid = Offset((cur.dx + next.dx) / 2, (cur.dy + next.dy) / 2);
-      path.quadraticBezierTo(cur.dx, cur.dy, mid.dx, mid.dy);
-    }
-    final secondLast = centers[centers.length - 2];
-    path.quadraticBezierTo(
-      secondLast.dx,
-      secondLast.dy,
-      centers.last.dx,
-      centers.last.dy,
-    );
-    canvas.drawPath(path, paint);
+    canvas.drawPath(path, glowPaint);
+    canvas.drawPath(path, corePaint);
   }
 
   @override
