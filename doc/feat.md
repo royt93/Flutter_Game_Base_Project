@@ -261,6 +261,12 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
 - Widget test (không golden) cho `neon_dialog.dart`: `NeonDialog.panel` render
   title/message/action + tap action gọi `onTap`; `NeonDialog.overlay` render
   panel trên barrier + tap barrier gọi `onBarrier`.
+- Fix `level_select_screen.dart`'s `_PathPainter`: đường nối giữa các node
+  level trước đây vẽ bằng `lineTo` thẳng từng đoạn → góc gãy sắc tại mỗi node.
+  Đổi sang `quadraticBezierTo` đi qua midpoint mỗi cặp node, dùng node kế tiếp
+  làm control point → đường cong mượt qua từng node. Xác nhận trên máy thật
+  (S24 Ultra) sau khi build sạch (`flutter clean`) — bản build cache cũ từng
+  khiến lần kiểm tra đầu tiên không thấy fix dù code đã đúng.
 
 ## 🟡 In progress / tiếp theo (xem doc/task/tasks/)
 

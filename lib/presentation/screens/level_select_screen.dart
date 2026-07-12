@@ -183,9 +183,19 @@ class _PathPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
     final path = Path()..moveTo(centers.first.dx, centers.first.dy);
-    for (var i = 1; i < centers.length; i++) {
-      path.lineTo(centers[i].dx, centers[i].dy);
+    for (var i = 1; i < centers.length - 1; i++) {
+      final cur = centers[i];
+      final next = centers[i + 1];
+      final mid = Offset((cur.dx + next.dx) / 2, (cur.dy + next.dy) / 2);
+      path.quadraticBezierTo(cur.dx, cur.dy, mid.dx, mid.dy);
     }
+    final secondLast = centers[centers.length - 2];
+    path.quadraticBezierTo(
+      secondLast.dx,
+      secondLast.dy,
+      centers.last.dx,
+      centers.last.dy,
+    );
     canvas.drawPath(path, paint);
   }
 
