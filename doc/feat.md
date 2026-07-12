@@ -261,12 +261,23 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
 - Widget test (không golden) cho `neon_dialog.dart`: `NeonDialog.panel` render
   title/message/action + tap action gọi `onTap`; `NeonDialog.overlay` render
   panel trên barrier + tap barrier gọi `onBarrier`.
-- Fix `level_select_screen.dart`'s `_PathPainter`: đường nối giữa các node
-  level trước đây vẽ bằng `lineTo` thẳng từng đoạn → góc gãy sắc tại mỗi node.
-  Đổi sang `quadraticBezierTo` đi qua midpoint mỗi cặp node, dùng node kế tiếp
-  làm control point → đường cong mượt qua từng node. Xác nhận trên máy thật
-  (S24 Ultra) sau khi build sạch (`flutter clean`) — bản build cache cũ từng
-  khiến lần kiểm tra đầu tiên không thấy fix dù code đã đúng.
+- Nâng cấp `level_select_screen.dart`'s `_PathPainter` qua 3 vòng lặp theo
+  feedback: (1) `lineTo` thẳng góc gãy → `quadraticBezierTo` qua midpoint;
+  (2) đổi sang Catmull-Rom → cubic Bezier (đi đúng qua tâm node, tangent liên
+  tục) + glow 2 lớp (blur ngoài + core trong, `MaskFilter.blur`); (3) theo yêu
+  cầu "phá cách hơn, kết hợp cả 4 idea" (animated flow / bead trail /
+  gradient theo world / organic wiggle), gộp cả 4 vào 1: mỗi đoạn nối 2 node
+  là 1 `_PathSegment` dựng sẵn hình học 1 lần trong `_layout` (control point
+  Catmull-Rom lệch ngẫu nhiên seed cố định theo index qua `math.Random(i)` →
+  ổn định giữa các lần build, không đổi mỗi frame), tô theo màu
+  `worldForLevel(id).color`, rắc bead trắng cách đều qua `PathMetric`, và 1
+  dải sáng trắng chạy dọc theo `AnimationController` lặp vô hạn (`_flowCtrl`)
+  dùng `PathMetric.extractPath` — chỉ vẽ lại mỗi frame, không tính lại hình
+  học. Xác nhận trên máy thật (S24 Ultra) sau khi build sạch (`flutter
+  clean`) — bản build cache cũ từng khiến lần kiểm tra đầu tiên không thấy
+  fix dù code đã đúng, nên quy trình chuẩn từ nay: `flutter clean` →
+  `flutter build apk --release` → `adb install -r` (hoặc uninstall+install
+  nếu lỗi signature mismatch).
 
 ## 🟡 In progress / tiếp theo (xem doc/task/tasks/)
 
