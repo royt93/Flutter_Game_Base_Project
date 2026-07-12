@@ -1,13 +1,14 @@
 import 'dart:math';
 
 /// Tìm nhóm ô cùng màu liền kề (4 hướng) chứa (row, col), dùng flood-fill.
-/// Trả về rỗng nếu ô đó là null (đã trống). Kích thước 1 vẫn được trả về —
-/// caller tự quyết định ngưỡng ≥2 để nổ.
+/// Trả về rỗng nếu ô đó là null (đã trống) hoặc là obstacle (F6a: mã hoá bằng
+/// giá trị âm — không thuộc nhóm màu nào, không nổ trực tiếp). Kích thước 1
+/// vẫn được trả về — caller tự quyết định ngưỡng ≥2 để nổ.
 Set<Point<int>> findConnectedGroup(List<List<int?>> grid, int row, int col) {
   final rows = grid.length;
   final cols = rows == 0 ? 0 : grid[0].length;
   final color = grid[row][col];
-  if (color == null) return {};
+  if (color == null || color < 0) return {};
 
   final visited = <Point<int>>{};
   final stack = [Point(row, col)];
@@ -34,7 +35,7 @@ bool hasAnyMovableGroup(List<List<int?>> grid) {
   final visited = <Point<int>>{};
   for (var r = 0; r < rows; r++) {
     for (var c = 0; c < cols; c++) {
-      if (grid[r][c] == null) continue;
+      if (grid[r][c] == null || grid[r][c]! < 0) continue;
       final p = Point(r, c);
       if (visited.contains(p)) continue;
       final group = findConnectedGroup(grid, r, c);

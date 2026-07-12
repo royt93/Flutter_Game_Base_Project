@@ -1,3 +1,20 @@
+/// F6b: loại mục tiêu thắng màn ngoài điểm. [score] giữ nguyên luật cũ
+/// (thắng khi bàn hết/kẹt, sao tính theo targetScore) — mặc định mọi màn.
+enum ObjectiveType { score, clearColor, clearObstacle }
+
+/// Mục tiêu 1 màn. `clearColor` cần [color]; `clearObstacle`/`score` không
+/// dùng field này.
+class LevelObjective {
+  final ObjectiveType type;
+  final int? color;
+
+  const LevelObjective.score() : type = ObjectiveType.score, color = null;
+  const LevelObjective.clearColor(this.color) : type = ObjectiveType.clearColor;
+  const LevelObjective.clearObstacle()
+    : type = ObjectiveType.clearObstacle,
+      color = null;
+}
+
 /// Cấu hình 1 màn Pop Star Blast.
 class PopLevel {
   final int id;
@@ -5,6 +22,7 @@ class PopLevel {
   final int cols;
   final int colorCount;
   final int targetScore;
+  final LevelObjective objective;
 
   const PopLevel({
     required this.id,
@@ -12,6 +30,7 @@ class PopLevel {
     required this.cols,
     required this.colorCount,
     required this.targetScore,
+    this.objective = const LevelObjective.score(),
   });
 }
 
@@ -45,3 +64,20 @@ final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
     targetScore: targetScore,
   );
 });
+
+/// Bàn cho F8 side-mode (Time-attack / Zen). id âm — không trùng id campaign
+/// 1..200 nên không đụng storage key theo id (highScore/star).
+const PopLevel kTimeAttackLevel = PopLevel(
+  id: -1,
+  rows: 9,
+  cols: 8,
+  colorCount: 5,
+  targetScore: 0,
+);
+const PopLevel kZenLevel = PopLevel(
+  id: -2,
+  rows: 9,
+  cols: 8,
+  colorCount: 5,
+  targetScore: 0,
+);

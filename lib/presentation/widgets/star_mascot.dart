@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/neon_theme.dart';
 
-enum StarMood { idle, happy, sad }
+enum StarMood { idle, happy, sad, cheer }
 
 /// Mascot ngôi sao vẽ bằng canvas (không cần asset). Idle nhún nhẹ + chớp mắt;
 /// happy nảy lên; sad rũ xuống. Dùng ở Home + dialog thắng/thua.
@@ -37,29 +37,38 @@ class _StarMascotState extends State<StarMascot>
       animation: _c,
       builder: (context, _) {
         final t = _c.value;
-        // nhún/nảy theo mood
+        // nhún/nảy + nghiêng theo mood
         final double bob;
+        double tilt = 0;
         switch (widget.mood) {
           case StarMood.happy:
             bob = -sin(t * pi * 4).abs() * widget.size * 0.10; // nảy nhanh
+          case StarMood.cheer:
+            bob = -sin(t * pi * 6).abs() * widget.size * 0.16; // nhảy dồn dập
+            tilt = sin(t * pi * 6) * 0.16; // xoay lắc phấn khích
           case StarMood.sad:
-            bob = widget.size * 0.06; // rũ xuống
+            bob = widget.size * 0.09; // rũ xuống rõ hơn
+            tilt = -0.08; // cúi đầu
           case StarMood.idle:
             bob = sin(t * pi * 2) * widget.size * 0.04; // bồng bềnh
+            tilt = sin(t * pi * 2 + 1.3) * 0.06; // nghiêng đầu nhẹ
         }
-        // chớp mắt: nháy nhanh quanh t≈0.5 (idle/happy), sad thì nhắm hờ
+        // chớp mắt: nháy nhanh quanh t≈0.5 (idle/happy/cheer), sad thì nhắm gần hết
         final double blink;
         if (widget.mood == StarMood.sad) {
-          blink = 0.45;
+          blink = 0.18;
         } else {
           final b = (t - 0.5).abs();
           blink = b < 0.03 ? (b / 0.03) : 1.0;
         }
         return Transform.translate(
           offset: Offset(0, bob),
-          child: CustomPaint(
-            size: Size.square(widget.size),
-            painter: _StarPainter(mood: widget.mood, blink: blink),
+          child: Transform.rotate(
+            angle: tilt,
+            child: CustomPaint(
+              size: Size.square(widget.size),
+              painter: _StarPainter(mood: widget.mood, blink: blink),
+            ),
           ),
         );
       },
@@ -127,7 +136,7 @@ class _StarPainter extends CustomPainter {
         Rect.fromCenter(
           center: Offset(c.dx + sx * eyeDx, eyeY),
           width: eyeW,
-          height: eyeH.clamp(size.width * 0.012, eyeH),
+          height: eyeH.clamp(size.width * 0.012, size.width * 0.11),
         ),
         eyePaint,
       );
@@ -152,6 +161,7 @@ class _StarPainter extends CustomPainter {
     final path = Path();
     switch (mood) {
       case StarMood.happy:
+      case StarMood.cheer:
         path.moveTo(c.dx - mw, my - rOuter * 0.02);
         path.quadraticBezierTo(
           c.dx,

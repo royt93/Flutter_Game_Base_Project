@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/neon_theme.dart';
+import 'pressable_scale.dart';
 import 'stroke_text.dart';
 
 /// Nút bấm phong cách neon: viền sáng + glow + chữ phát sáng.
@@ -25,7 +26,7 @@ class NeonButton extends StatelessWidget {
     final c = enabled ? color : const Color(0xFFB9B3CC);
     // Nút kẹo: thân solid màu accent, viền đáy đậm hơn (bevel), bóng đổ chunky.
     final darker = Color.lerp(c, Colors.black, 0.22)!;
-    return GestureDetector(
+    return PressableScale(
       onTap: onTap,
       child: Container(
         width: width,

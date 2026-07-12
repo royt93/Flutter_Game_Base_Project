@@ -25,6 +25,7 @@ void main() {
 
     await tester.pumpWidget(GetMaterialApp(home: const GameScreen()));
     await tester.pump(const Duration(milliseconds: 100));
+    await _pumpFrames(tester, frames: 20); // A6: chờ hết intro rơi ô
 
     final gsc = Get.find<GameScreenController>();
     // Ép bàn về toàn 1 màu để chắc chắn có nhóm nổ được, tránh phụ thuộc RNG.
@@ -53,16 +54,31 @@ void main() {
 
     await tester.pumpWidget(GetMaterialApp(home: const GameScreen()));
     await tester.pump(const Duration(milliseconds: 100));
+    await _pumpFrames(tester, frames: 20); // A6: chờ hết intro rơi ô
 
     final gsc = Get.find<GameScreenController>();
-    // Cả bàn cùng màu → 1 tap nổ hết → clearBoardBonus → thắng chắc chắn.
-    gsc.game.colorGrid = List.generate(
-      gsc.game.rows,
-      (_) => List.generate(gsc.game.cols, (_) => 0),
+    final game = gsc.game;
+    // Cả bàn cùng màu → nhóm khổng lồ (>=5) sinh power tile (F5a) tại ô vừa
+    // tap; phần còn lại nổ hết → gravity+collapse dồn ô sống sót về
+    // (rows-1, 0). Tap lại đúng ô đó để kích hoạt, dọn sạch nốt → thắng.
+    game.colorGrid = List.generate(
+      game.rows,
+      (_) => List.generate(game.cols, (_) => 0),
+    );
+    game.onGameResize(game.size);
+    final cellSize = game.cellSize;
+    final boardLeft = (game.size.x - game.cols * cellSize) / 2;
+    final boardTop = (game.size.y - game.rows * cellSize) / 2;
+    Vector2 centerOf(int row, int col) => Vector2(
+      boardLeft + col * cellSize + cellSize / 2,
+      boardTop + row * cellSize + cellSize / 2,
     );
 
-    await tester.tapAt(tester.getCenter(find.byType(GameWidget<PopStarGame>)));
-    await _pumpFrames(tester); // chạy hết animation pop + rơi rồi mới kết thúc
+    game.handleTap(centerOf(0, 0));
+    await _pumpFrames(tester); // chạy hết animation pop + rơi
+
+    game.handleTap(centerOf(game.rows - 1, 0));
+    await _pumpFrames(tester); // kích hoạt power tile, dọn sạch bàn
 
     expect(gameCtrl.ended.value, isTrue);
     expect(gameCtrl.cleared.value, isTrue);

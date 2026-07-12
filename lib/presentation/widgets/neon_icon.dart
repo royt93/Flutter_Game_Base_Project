@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/neon_theme.dart';
+import 'pressable_scale.dart';
 
 /// Icon phong cách neon: lõi trắng + glow màu (dùng chung toàn app).
 class NeonIcon extends StatelessWidget {
@@ -68,7 +69,7 @@ class NeonIconButton extends StatelessWidget {
     if (boxed) {
       final enabled = onTap != null;
       final c = enabled ? color : Colors.grey;
-      return GestureDetector(
+      return PressableScale(
         onTap: onTap,
         child: Container(
           width: 60,

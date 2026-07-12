@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/debug_log.dart';
 import '../../core/neon_theme.dart';
+import 'pressable_scale.dart';
 
 /// Một nút hành động trong dialog. onTap tự chịu trách nhiệm đóng (route/overlay).
 class NeonDialogAction {
@@ -33,7 +34,10 @@ class NeonDialog {
         color: NeonTheme.card,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: color, width: 4),
-        boxShadow: NeonTheme.drop(y: 8, blur: 24),
+        boxShadow: [
+          ...NeonTheme.glow(color, blur: 26, spread: 2),
+          ...NeonTheme.drop(y: 8, blur: 24),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -159,7 +163,7 @@ class _DialogButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return PressableScale(
       onTap: action.onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),

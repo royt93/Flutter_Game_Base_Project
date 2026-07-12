@@ -38,6 +38,22 @@ void main() {
       ];
       expect(findConnectedGroup(grid, 0, 0), {Point(0, 0)});
     });
+
+    test('F6a: ô obstacle (giá trị âm) trả về rỗng, không nổ trực tiếp', () {
+      final grid = [
+        [-2, 0],
+        [0, 0],
+      ];
+      expect(findConnectedGroup(grid, 0, 0), isEmpty);
+    });
+
+    test('F6a: flood-fill không lan qua ô obstacle dù cùng cạnh ô màu', () {
+      final grid = [
+        [0, -1, 0],
+      ];
+      final group = findConnectedGroup(grid, 0, 0);
+      expect(group, {Point(0, 0)});
+    });
   });
 
   group('hasAnyMovableGroup', () {
@@ -64,5 +80,16 @@ void main() {
       ];
       expect(hasAnyMovableGroup(grid), isFalse);
     });
+
+    test(
+      'F6a: 2 obstacle cùng độ bền cạnh nhau không tính là nhóm nổ được',
+      () {
+        final grid = [
+          [-1, -1],
+          [0, 1],
+        ];
+        expect(hasAnyMovableGroup(grid), isFalse);
+      },
+    );
   });
 }

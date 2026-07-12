@@ -70,6 +70,20 @@ class ShopScreen extends StatelessWidget {
                         onBuy: gameCtrl.buyUndo,
                       ),
                     ),
+                    const SizedBox(height: NeonTheme.s16),
+                    Obx(
+                      () => _BoosterRow(
+                        icon: Icons.auto_awesome_rounded,
+                        color: NeonTheme.magenta,
+                        label: 'Rainbow',
+                        desc: 'Clears every block matching the tapped color.',
+                        count: gameCtrl.rainbowCount.value,
+                        price: GameController.rainbowPrice,
+                        canAfford:
+                            gameCtrl.coins.value >= GameController.rainbowPrice,
+                        onBuy: gameCtrl.buyRainbow,
+                      ),
+                    ),
                   ],
                 ),
               ),

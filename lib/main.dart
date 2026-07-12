@@ -101,6 +101,8 @@ class _PopStarBlastAppState extends State<PopStarBlastApp>
     return GetMaterialApp(
       title: 'Pop Star Blast',
       debugShowCheckedModeBanner: false,
+      defaultTransition: Transition.cupertino,
+      transitionDuration: const Duration(milliseconds: 280),
       translations: AppTranslations(),
       locale: widget.initialLocale,
       fallbackLocale: AppTranslations.fallback,

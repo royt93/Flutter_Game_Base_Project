@@ -7,17 +7,57 @@ import '../controllers/game_controller.dart';
 import '../widgets/coin_chip.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
+import '../widgets/neon_dialog.dart';
 import '../widgets/neon_icon.dart';
+import '../widgets/pulse_glow.dart';
 import '../widgets/star_mascot.dart';
 import '../widgets/stroke_text.dart';
+import 'game_screen.dart';
 import 'guide_screen.dart';
 import 'level_select_screen.dart';
 import 'settings_screen.dart';
 import 'shop_screen.dart';
+import 'star_road_screen.dart';
 
 /// Màn hình chính: logo, nút Play, và lối vào Shop/Guide/Settings.
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    final gameCtrl = Get.find<GameController>();
+    if (gameCtrl.canClaimDaily) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _showDailyRewardDialog(context, gameCtrl),
+      );
+    }
+  }
+
+  void _showDailyRewardDialog(BuildContext context, GameController gameCtrl) {
+    final nextStreak =
+        (gameCtrl.dailyStreak.value % GameController.dailyRewards.length) + 1;
+    final preview = GameController.dailyRewards[nextStreak - 1];
+    NeonDialog.show(
+      context: context,
+      title: 'Daily reward — Day $nextStreak',
+      color: NeonTheme.gold,
+      icon: Icons.card_giftcard_rounded,
+      message: 'Nhận $preview xu hôm nay!',
+      actions: [
+        NeonDialogAction(
+          label: 'Nhận',
+          color: NeonTheme.gold,
+          onTap: gameCtrl.claimDaily,
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,16 +93,54 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               const Spacer(flex: 3),
-              NeonButton(
-                label: 'PLAY',
+              PulseGlow(
                 color: NeonTheme.cyan,
-                icon: Icons.play_arrow_rounded,
-                onTap: () => Get.to(() => const LevelSelectScreen()),
+                child: NeonButton(
+                  label: 'PLAY',
+                  color: NeonTheme.cyan,
+                  icon: Icons.play_arrow_rounded,
+                  onTap: () => Get.to(() => const LevelSelectScreen()),
+                ),
               ),
               const SizedBox(height: NeonTheme.s16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  NeonIconButton(
+                    Icons.timer_rounded,
+                    color: NeonTheme.orange,
+                    size: 28,
+                    boxed: true,
+                    onTap: () {
+                      gameCtrl.startSideMode(GameMode.timeAttack);
+                      Get.to(() => const GameScreen());
+                    },
+                  ),
+                  const SizedBox(width: NeonTheme.s24),
+                  NeonIconButton(
+                    Icons.spa_rounded,
+                    color: NeonTheme.cyan,
+                    size: 28,
+                    boxed: true,
+                    onTap: () {
+                      gameCtrl.startSideMode(GameMode.zen);
+                      Get.to(() => const GameScreen());
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: NeonTheme.s16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  NeonIconButton(
+                    Icons.auto_awesome_rounded,
+                    color: NeonTheme.gold,
+                    size: 28,
+                    boxed: true,
+                    onTap: () => Get.to(() => const StarRoadScreen()),
+                  ),
+                  const SizedBox(width: NeonTheme.s24),
                   NeonIconButton(
                     Icons.storefront_rounded,
                     color: NeonTheme.yellow,

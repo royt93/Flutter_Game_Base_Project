@@ -674,6 +674,17 @@ class AppTranslations extends Translations {
     'piggy_full_bonus_hint': 'Piggy full! Smash now for +10% bonus coins.',
     'coll_milestone_desc': 'Milestone @pct% — @n coins',
     'pt_ascendant_bonus_hint': '+1 free move per day',
+    // F4 — tên 10 world trên Level Select path map.
+    'world_path_name_1': 'Candy Meadow',
+    'world_path_name_2': 'Citrus Grove',
+    'world_path_name_3': 'Minty Falls',
+    'world_path_name_4': 'Berry Hills',
+    'world_path_name_5': 'Lemon Desert',
+    'world_path_name_6': 'Grape Valley',
+    'world_path_name_7': 'Ocean Bubble',
+    'world_path_name_8': 'Sunset Peaks',
+    'world_path_name_9': 'Frosty Summit',
+    'world_path_name_10': 'Starlight Galaxy',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -1192,6 +1203,17 @@ class AppTranslations extends Translations {
     'piggy_full_bonus_hint': 'Đầy ống! Đập nhận thêm 10% xu thưởng.',
     'coll_milestone_desc': 'Mốc @pct% — @n xu',
     'pt_ascendant_bonus_hint': '+1 lượt chơi miễn phí mỗi ngày',
+    // F4 — tên 10 world trên Level Select path map.
+    'world_path_name_1': 'Đồng Cỏ Kẹo',
+    'world_path_name_2': 'Vườn Cam Chanh',
+    'world_path_name_3': 'Thác Bạc Hà',
+    'world_path_name_4': 'Đồi Dâu',
+    'world_path_name_5': 'Sa Mạc Chanh',
+    'world_path_name_6': 'Thung Lũng Nho',
+    'world_path_name_7': 'Bong Bóng Đại Dương',
+    'world_path_name_8': 'Đỉnh Hoàng Hôn',
+    'world_path_name_9': 'Đỉnh Băng Giá',
+    'world_path_name_10': 'Thiên Hà Sao',
   };
 
   static const Map<String, String> _extraEs = {

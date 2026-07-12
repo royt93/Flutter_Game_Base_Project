@@ -13,10 +13,23 @@ class StorageKeys {
   static String highScore(int level) => 'hs_$level';
   static String star(int level) => 'star_$level';
 
-  // Booster (mid-game): bomb (nổ 3x3), shuffle (xáo bàn), undo (revert 1 bước)
+  // Booster (mid-game): bomb (nổ 3x3), shuffle (xáo bàn), undo (revert 1 bước),
+  // rainbow (xoá mọi ô cùng màu)
   static const String bombCount = 'bomb_count';
   static const String shuffleCount = 'shuffle_count';
   static const String undoCount = 'undo_count';
+  static const String rainbowCount = 'rainbow_count';
+
+  // F7 Star road: bitmask rương đã claim (bit i = mốc thứ i).
+  static const String claimedChests = 'claimed_chests';
+
+  // F2 Daily reward.
+  static const String lastClaimDay = 'last_claim_day';
+  static const String dailyStreak = 'daily_streak';
+  static const String maxEpochDaySeen = 'max_epoch_day_seen';
+
+  // F8 Time-attack side mode best score (không đụng campaign highScore).
+  static const String timeAttackBest = 'time_attack_best';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flame/game.dart';
 import 'package:get/get.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -9,10 +11,10 @@ import 'game_controller.dart';
 /// Trạng thái UI của màn chơi (thay cho setState).
 enum GameUi { playing, quit, win, lose }
 
-enum BoosterMode { none, bomb }
+enum BoosterMode { none, bomb, rainbow }
 
 /// Controller GetX cho màn chơi: vòng đời (wakelock), instance game, overlay.
-/// 1 mode duy nhất (campaign) — không còn side-mode/ghost/tutorial cũ.
+/// Campaign + 2 side-mode (F8 Time-attack/Zen), phân biệt qua [GameController.mode].
 class GameScreenController extends GetxController {
   final GameController gameCtrl;
 
@@ -21,6 +23,11 @@ class GameScreenController extends GetxController {
   final Rx<GameUi> ui = GameUi.playing.obs;
   final RxInt gameVersion = 0.obs; // tăng để Obx dựng lại GameWidget
   final Rx<BoosterMode> armed = BoosterMode.none.obs;
+
+  /// F8 Time-attack: đếm ngược 60s, hết giờ → kết thúc ván.
+  static const int timeAttackSeconds = 60;
+  final RxInt remainingSeconds = timeAttackSeconds.obs;
+  Timer? _countdown;
 
   PopStarGame? _game;
   Worker? _endWorker;
@@ -35,13 +42,27 @@ class GameScreenController extends GetxController {
     // thay vì kiểm tra ngay sau tap.
     _endWorker = ever(gameCtrl.ended, _onEndChanged);
     _newGame();
+    if (gameCtrl.mode.value == GameMode.timeAttack) _startCountdown();
   }
 
   @override
   void onClose() {
+    _countdown?.cancel();
     _endWorker?.dispose();
     WakelockPlus.disable();
     super.onClose();
+  }
+
+  void _startCountdown() {
+    remainingSeconds.value = timeAttackSeconds;
+    _countdown?.cancel();
+    _countdown = Timer.periodic(const Duration(seconds: 1), (_) {
+      remainingSeconds.value--;
+      if (remainingSeconds.value <= 0) {
+        _countdown?.cancel();
+        gameCtrl.checkEnd(false);
+      }
+    });
   }
 
   void _onEndChanged(bool ended) {
@@ -53,7 +74,10 @@ class GameScreenController extends GetxController {
   }
 
   void _newGame() {
-    _game = PopStarGame(gameCtrl);
+    _game = PopStarGame(
+      gameCtrl,
+      refillEnabled: gameCtrl.mode.value == GameMode.zen,
+    );
     gameVersion.value++;
   }
 
@@ -63,13 +87,19 @@ class GameScreenController extends GetxController {
         : BoosterMode.bomb;
   }
 
-  /// Giữ/kéo trên bàn → preview nhóm cùng màu + điểm dự kiến (không khi arm bomb).
+  void toggleRainbowArm() {
+    armed.value = armed.value == BoosterMode.rainbow
+        ? BoosterMode.none
+        : BoosterMode.rainbow;
+  }
+
+  /// Giữ/kéo trên bàn → preview nhóm cùng màu + điểm dự kiến (không khi arm booster).
   void previewBoardTap(Vector2 pos) {
-    if (armed.value == BoosterMode.bomb) return;
+    if (armed.value != BoosterMode.none) return;
     game.previewGroup(pos);
   }
 
-  /// Thả tay: nếu arm bomb → nổ 3x3, ngược lại nổ nhóm đang preview.
+  /// Thả tay: theo booster đang arm (bomb/rainbow), ngược lại nổ nhóm đang preview.
   void handleBoardTap(Vector2 pos) {
     game.clearPreview();
     if (armed.value == BoosterMode.bomb) {
@@ -79,6 +109,12 @@ class GameScreenController extends GetxController {
         armed.value = BoosterMode.none;
       }
       // tap ngoài bàn: giữ nguyên bomb đang arm, không tiêu phí
+    } else if (armed.value == BoosterMode.rainbow) {
+      final cell = game.cellAt(pos);
+      if (cell != null) {
+        gameCtrl.useRainbow(cell.x, cell.y);
+        armed.value = BoosterMode.none;
+      }
     } else {
       game.handleTap(pos);
     }
@@ -109,10 +145,16 @@ class GameScreenController extends GetxController {
   }
 
   void again() {
-    gameCtrl.startLevel(gameCtrl.currentLevel.id);
+    final mode = gameCtrl.mode.value;
+    if (mode == GameMode.campaign) {
+      gameCtrl.startLevel(gameCtrl.currentLevel.id);
+    } else {
+      gameCtrl.startSideMode(mode);
+    }
     armed.value = BoosterMode.none;
     ui.value = GameUi.playing;
     _newGame();
+    if (mode == GameMode.timeAttack) _startCountdown();
   }
 
   void next() {

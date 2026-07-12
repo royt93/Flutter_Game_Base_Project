@@ -12,7 +12,12 @@ class NeonBg extends StatefulWidget {
   /// Khi có giá trị: tia sweep + nebula nghiêng về tông màu này → mỗi world
   /// một sắc thái riêng (cyan → magenta → lime → ...).
   final Color? accent;
-  const NeonBg({super.key, required this.child, this.accent});
+
+  /// G4: lấy mức "energy" combo hiện tại (0..1) mỗi frame, vd `() => game.heat`.
+  /// Null = nền tĩnh mặc định (màn không có combo, vd Home).
+  final double Function()? energyOf;
+
+  const NeonBg({super.key, required this.child, this.accent, this.energyOf});
 
   @override
   State<NeonBg> createState() => _NeonBgState();
@@ -23,6 +28,7 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
   final _rnd = math.Random(7);
   late final List<_Orb> _orbs;
   late final List<_Star> _stars;
+  double _energy = 0; // G4: mượt hoá combo heat, lerp mỗi frame (~60fps)
 
   @override
   void initState() {
@@ -69,14 +75,19 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
           child: RepaintBoundary(
             child: AnimatedBuilder(
               animation: _ctrl,
-              builder: (_, _) => CustomPaint(
-                painter: _NeonBgPainter(
-                  _ctrl.value,
-                  _orbs,
-                  _stars,
-                  widget.accent,
-                ),
-              ),
+              builder: (_, _) {
+                final target = (widget.energyOf?.call() ?? 0).clamp(0.0, 1.0);
+                _energy += (target - _energy) * 0.08;
+                return CustomPaint(
+                  painter: _NeonBgPainter(
+                    _ctrl.value,
+                    _orbs,
+                    _stars,
+                    widget.accent,
+                    _energy,
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -123,12 +134,15 @@ class _NeonBgPainter extends CustomPainter {
   final List<_Orb> orbs;
   final List<_Star> stars;
   final Color? accent;
-  _NeonBgPainter(this.t, this.orbs, this.stars, this.accent);
+  final double energy; // G4: 0..1, combo heat mượt hoá
+  _NeonBgPainter(this.t, this.orbs, this.stars, this.accent, this.energy);
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
     final tau = t * math.pi * 2;
+    // G4: energy cao → orb trôi nhanh hơn (biên độ nhỏ để tránh chói/khó đọc).
+    final orbTau = tau * (1 + energy * 0.7);
 
     // 1) Nền gradient candy sáng
     canvas.drawRect(
@@ -143,18 +157,24 @@ class _NeonBgPainter extends CustomPainter {
 
     // 2) Bong bóng kẹo trôi mềm (soft-light để hoà vào nền sáng, không cháy).
     for (final o in orbs) {
-      final cx = (o.base.dx + o.amp.dx * math.sin(tau + o.phase)) * size.width;
-      final cy = (o.base.dy + o.amp.dy * math.cos(tau + o.phase)) * size.height;
+      final cx =
+          (o.base.dx + o.amp.dx * math.sin(orbTau + o.phase)) * size.width;
+      final cy =
+          (o.base.dy + o.amp.dy * math.cos(orbTau + o.phase)) * size.height;
       final r = o.radius * size.width;
       final oc = accent != null ? Color.lerp(o.color, accent!, 0.5)! : o.color;
-      final soft = Color.lerp(oc, Colors.white, 0.55)!;
+      final warm = Color.lerp(oc, NeonTheme.orange, energy * 0.5)!;
+      final soft = Color.lerp(warm, Colors.white, 0.55)!;
       canvas.drawCircle(
         Offset(cx, cy),
         r,
         Paint()
           ..blendMode = BlendMode.softLight
           ..shader = RadialGradient(
-            colors: [soft.withValues(alpha: 0.9), soft.withValues(alpha: 0)],
+            colors: [
+              soft.withValues(alpha: 0.9 + 0.1 * energy),
+              soft.withValues(alpha: 0),
+            ],
           ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r)),
       );
     }
@@ -194,5 +214,5 @@ class _NeonBgPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _NeonBgPainter old) =>
-      old.t != t || old.accent != accent;
+      old.t != t || old.accent != accent || old.energy != energy;
 }
