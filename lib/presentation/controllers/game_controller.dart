@@ -67,6 +67,12 @@ class GameController extends GetxController {
   /// lại màn chọn level).
   final unlockedLevel = 1.obs;
 
+  /// Set 1 lần ngay khi 1 màn mới vừa được mở khoá (id màn mới), để
+  /// LevelSelectScreen phát hiện "vừa unlock" và chạy reveal animation dù
+  /// state của nó đã tồn tại từ trước (không bị dispose lúc push GameScreen).
+  /// Consumer tự set về null sau khi xử lý xong.
+  final justUnlocked = Rxn<int>();
+
   /// F7 Star road: tổng sao tốt nhất mọi màn + mốc rương xu.
   static const List<int> starRoadMilestones = [5, 15, 30, 50];
   static const List<int> starRoadRewards = [50, 100, 200, 400];
@@ -245,6 +251,7 @@ class GameController extends GetxController {
     if (next > unlockedLevel.value && next <= kLevelCount) {
       StorageService.to.setInt(StorageKeys.unlockedLevel, next);
       unlockedLevel.value = next;
+      justUnlocked.value = next;
     }
   }
 

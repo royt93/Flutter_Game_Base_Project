@@ -91,48 +91,6 @@ class _BurstRing extends PositionComponent {
   }
 }
 
-/// G8: khi bàn rảnh vài giây (không tap/kéo/diễn hoạt), 1 tia sáng quét chéo
-/// qua bàn đúng 1 lượt rồi tự biến mất (long lanh nhẹ, không lặp liên tục).
-class _ShimmerSweep extends PositionComponent {
-  _ShimmerSweep({required Vector2 boardSize})
-    : super(size: boardSize, priority: 90);
-
-  static const double _dur = 0.9;
-  double _t = 0;
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-    _t += dt;
-    if (_t >= _dur) removeFromParent();
-  }
-
-  @override
-  void render(Canvas canvas) {
-    final p = (_t / _dur).clamp(0.0, 1.0);
-    final w = size.x, h = size.y;
-    final diag = sqrt(w * w + h * h);
-    final band = diag * 0.18;
-    canvas.save();
-    canvas.clipRect(Rect.fromLTWH(0, 0, w, h));
-    canvas.translate(w / 2, h / 2);
-    canvas.rotate(-0.4);
-    canvas.translate(-diag / 2 + diag * p, 0);
-    canvas.drawRect(
-      Rect.fromLTWH(-band / 2, -diag, band, diag * 2),
-      Paint()
-        ..shader = LinearGradient(
-          colors: [
-            Colors.white.withValues(alpha: 0),
-            Colors.white.withValues(alpha: 0.5),
-            Colors.white.withValues(alpha: 0),
-          ],
-        ).createShader(Rect.fromLTWH(-band / 2, 0, band, 1)),
-    );
-    canvas.restore();
-  }
-}
-
 /// Bàn PopStar: tap 1 ô, nổ nhóm cùng màu liền kề (≥2), cột rơi + dồn trái —
 /// có animation (pop nở + hạt, rơi/trượt bằng tween). Không dùng Flame
 /// TapDetector — tap đến từ GestureDetector ở game_screen.dart qua [handleTap].
@@ -164,11 +122,6 @@ class PopStarGame extends FlameGame {
   /// G8: ring đang bung, cap số lượng đồng thời để nhẹ khi nổ combo dồn dập.
   final List<_BurstRing> _rings = [];
   static const int _maxRings = 3;
-
-  /// G8: thời gian bàn "rảnh" (không tap/kéo/diễn hoạt) — quá ngưỡng thì
-  /// quét 1 lượt shimmer rồi reset, chờ rảnh tiếp mới quét lượt sau.
-  double _idleTime = 0;
-  static const double _idleThreshold = 4.0;
 
   List<List<int?>>? _undoGrid;
   final _rng = Random();
@@ -459,16 +412,6 @@ class PopStarGame extends FlameGame {
       _comboTimer -= dt;
       if (_comboTimer <= 0) controller.resetCombo();
     }
-    // G8: chỉ tính "rảnh" khi không diễn hoạt và không đang giữ preview.
-    if (!_animating && _preview.isEmpty) {
-      _idleTime += dt;
-      if (_idleTime >= _idleThreshold) {
-        _idleTime = 0;
-        _spawnShimmer();
-      }
-    } else {
-      _idleTime = 0;
-    }
   }
 
   void triggerBomb(int row, int col) {
@@ -637,14 +580,6 @@ class PopStarGame extends FlameGame {
         maxRadius: cellSize * 0.9,
         maxAlpha: 0.35,
       ),
-    );
-  }
-
-  /// G8: 1 lượt shimmer quét chéo qua toàn bàn khi đang rảnh.
-  void _spawnShimmer() {
-    add(
-      _ShimmerSweep(boardSize: Vector2(cols * cellSize, rows * cellSize))
-        ..position = Vector2(_boardLeft, _boardTop),
     );
   }
 

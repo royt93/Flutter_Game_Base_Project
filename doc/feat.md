@@ -175,6 +175,26 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
   code tham chiếu đã không còn — đặt tên mới `world_path_name_N` để tránh
   đụng key, không dọn dẹp (ngoài scope F4).
 
+- **F4 nâng cấp path — 6 hiệu ứng** (kế hoạch
+  `/Users/loitran/.claude/plans/giggly-sprouting-piglet.md`): (1) progress-aware
+  glow — đoạn path đã unlock tô gold + bead dày + flow-dash sáng chạy, đoạn
+  chưa unlock dim xám tắt flow; (2) mascot ⭐ (`_Mascot`) idle-bounce đứng tại
+  node `unlockedLevel`, dịch chuyển reactive theo `Obx`; (3) parallax — tách
+  `_DecorPainter` ra ngoài `CustomScrollView` (sibling `Positioned.fill`),
+  `canvas.translate` theo `scrollOffset * 0.55` nên sparkle trôi chậm hơn
+  path/tile; (4) unlock reveal — `GameController.justUnlocked` (`Rxn<int>`)
+  set trong `_unlockNext`, `LevelSelectScreen` lắng nghe qua `ever()` (sống
+  xuyên route bị che), khi quay lại màn tự haptic + đoạn path vừa mở sáng bừng
+  1 lần + confetti quanh node mới; (5) world banner — `GameWorld` thêm field
+  `icon` (1 `IconData` Material/world, không asset ảnh), `_WorldBanner` vẽ lớp
+  icon lặp mờ phía sau `StrokeText` làm hoạ tiết nền; (6) sao băng —
+  `_ShootingStar` timer ngẫu nhiên 6-14s bắn 1 streak chéo qua nền viewport,
+  tự ẩn sau khi bay hết. Verify tay đầy đủ trên `R5CX613VZBR`: chơi thật
+  Level 1 tới thắng (score 1325, 3 sao) → `unlockedLevel` lên 2 → quay Level
+  Select bắt được đúng lúc đoạn 1→2 sáng bừng rồi ổn định thành gold "đã qua",
+  mascot đứng đúng node 2, banner world 1 thấy icon pattern, sao băng bắt
+  được giữa lúc bay; không gặp quảng cáo ở bất kỳ screenshot nào (R4).
+
 - **A6 board intro assemble**: `_rebuildBoard({bool animateIntro = false})`
   (trước là hàm không tham số) — khi `animateIntro`, mỗi `BlockComponent`
   spawn ở vị trí trên-màn (`_boardTop - cellSize*(r+2)`) rồi `MoveToEffect`

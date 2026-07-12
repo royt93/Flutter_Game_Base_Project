@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show PathMetric;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:get/get.dart';
 
 import '../../core/neon_theme.dart';
@@ -10,6 +12,7 @@ import '../../data/levels.dart';
 import '../../data/worlds.dart';
 import '../controllers/game_controller.dart';
 import '../widgets/coin_chip.dart';
+import '../widgets/confetti_overlay.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/stroke_text.dart';
@@ -30,7 +33,7 @@ class LevelSelectScreen extends StatefulWidget {
 }
 
 class _LevelSelectScreenState extends State<LevelSelectScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final _scrollController = ScrollController();
   bool _scrolled = false;
   late final _flowCtrl = AnimationController(
@@ -38,11 +41,55 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     duration: const Duration(seconds: 2),
   )..repeat();
 
+  /// Chạy 1 lần khi 1 đoạn path vừa được "mở khoá" — ánh sáng chạy dọc đoạn
+  /// từ đầu tới cuối trong lúc [_revealId] còn khác null.
+  late final _revealCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+  final _gameCtrl = Get.find<GameController>();
+  late final Worker _justUnlockedWorker;
+  int? _pendingReveal;
+  int? _revealId;
+  Timer? _revealClearTimer;
+  bool _showConfetti = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Đăng ký ngay lúc tạo state — màn này không bị dispose khi push
+    // GameScreen lên trên, nên phải lắng nghe cả lúc đang bị che.
+    _justUnlockedWorker = ever<int?>(_gameCtrl.justUnlocked, (id) {
+      if (id != null) _pendingReveal = id;
+    });
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
     _flowCtrl.dispose();
+    _revealCtrl.dispose();
+    _revealClearTimer?.cancel();
+    _justUnlockedWorker.dispose();
     super.dispose();
+  }
+
+  /// Haptic + path sáng chạy 1 lần tới node [id] + confetti burst, gọi ngay
+  /// khi màn hình đang là route hiện tại và vừa phát hiện 1 unlock mới.
+  void _playReveal(int id) {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _revealId = id;
+      _showConfetti = true;
+    });
+    _revealCtrl.forward(from: 0);
+    _revealClearTimer?.cancel();
+    _revealClearTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) setState(() => _revealId = null);
+    });
+    Future.delayed(const Duration(milliseconds: 2700), () {
+      if (mounted) setState(() => _showConfetti = false);
+    });
   }
 
   /// Tâm node id=1..kLevelCount + top của mỗi banner world, theo chiều rộng
@@ -61,7 +108,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     List<_PathSegment> segments,
     List<_DecorDot> decor,
   })
-  _layout(double width) {
+  _layout(double width, int unlocked) {
     final amplitude = (width - _tileSize) / 2 - 4;
     final centerX = width / 2;
     final centers = <Offset>[];
@@ -98,7 +145,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
       centers: centers,
       bannerTops: bannerTops,
       totalHeight: y,
-      segments: _buildSegments(centers),
+      segments: _buildSegments(centers, unlocked),
       decor: _buildDecor(width, y, centers, bannerTops),
     );
   }
@@ -153,7 +200,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
   /// Catmull-Rom lệch ngẫu nhiên nhẹ (seed cố định theo index → ổn định giữa
   /// các lần build) cho cảm giác đường mòn tự nhiên, tô màu theo world của
   /// node đích, kèm sẵn danh sách điểm hạt (bead) cách đều dọc đoạn.
-  List<_PathSegment> _buildSegments(List<Offset> centers) {
+  List<_PathSegment> _buildSegments(List<Offset> centers, int unlocked) {
     final segments = <_PathSegment>[];
     for (var i = 0; i < centers.length - 1; i++) {
       final p0 = i == 0 ? centers[i] : centers[i - 1];
@@ -176,9 +223,12 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
         ..moveTo(p1.dx, p1.dy)
         ..cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, p2.dx, p2.dy);
       final metric = segPath.computeMetrics().first;
+      // Đoạn dẫn tới node (i+2) đã unlock → "lit": sáng gold, bead dày hơn.
+      final lit = (i + 2) <= unlocked;
 
       final dots = <Offset>[];
-      for (var d = 20.0; d < metric.length; d += 20.0) {
+      final step = lit ? 12.0 : 20.0;
+      for (var d = step; d < metric.length; d += step) {
         final tangent = metric.getTangentForOffset(d);
         if (tangent != null) dots.add(tangent.position);
       }
@@ -189,6 +239,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
           metric: metric,
           color: worldForLevel(i + 2).color,
           dots: dots,
+          lit: lit,
         ),
       );
     }
@@ -214,6 +265,13 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
   @override
   Widget build(BuildContext context) {
     final gameCtrl = Get.find<GameController>();
+    // Vừa unlock 1 màn trong lúc màn hình này bị GameScreen che — chỉ chạy
+    // reveal animation khi đã quay lại và đây thực sự là route đang hiện.
+    if (_pendingReveal != null && (ModalRoute.of(context)?.isCurrent ?? true)) {
+      final id = _pendingReveal!;
+      _pendingReveal = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _playReveal(id));
+    }
     return Scaffold(
       body: NeonBg(
         child: SafeArea(
@@ -229,68 +287,108 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                   final unlocked = gameCtrl.unlockedLevel.value;
                   return LayoutBuilder(
                     builder: (context, constraints) {
-                      final layout = _layout(constraints.maxWidth);
+                      final layout = _layout(constraints.maxWidth, unlocked);
                       _autoScrollTo(
                         unlocked,
                         layout.centers,
                         constraints.maxHeight,
                         layout.totalHeight,
                       );
-                      return CustomScrollView(
-                        controller: _scrollController,
-                        slivers: [
-                          SliverToBoxAdapter(
-                            child: SizedBox(
-                              height: layout.totalHeight,
-                              child: Stack(
-                                children: [
-                                  Positioned.fill(
-                                    child: AnimatedBuilder(
-                                      animation: _flowCtrl,
-                                      builder: (context, _) => CustomPaint(
-                                        painter: _DecorPainter(
-                                          layout.decor,
-                                          _flowCtrl.value,
-                                        ),
-                                      ),
+                      return Stack(
+                        children: [
+                          // Lớp decor sparkle: parallax — trôi chậm hơn
+                          // path/tile khi cuộn, tạo cảm giác chiều sâu.
+                          Positioned.fill(
+                            child: ClipRect(
+                              child: IgnorePointer(
+                                child: AnimatedBuilder(
+                                  animation: Listenable.merge([
+                                    _scrollController,
+                                    _flowCtrl,
+                                  ]),
+                                  builder: (context, _) => CustomPaint(
+                                    painter: _DecorPainter(
+                                      layout.decor,
+                                      _flowCtrl.value,
+                                      scrollOffset: _scrollController.hasClients
+                                          ? _scrollController.offset
+                                          : 0.0,
+                                      parallax: 0.55,
                                     ),
                                   ),
-                                  Positioned.fill(
-                                    child: AnimatedBuilder(
-                                      animation: _flowCtrl,
-                                      builder: (context, _) => CustomPaint(
-                                        painter: _PathPainter(
-                                          layout.segments,
-                                          _flowCtrl.value,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  for (var w = 0; w < kWorlds.length; w++)
-                                    Positioned(
-                                      top: layout.bannerTops[w],
-                                      left: 0,
-                                      right: 0,
-                                      height: _bannerHeight,
-                                      child: _WorldBanner(world: kWorlds[w]),
-                                    ),
-                                  for (var i = 0; i < kLevelCount; i++)
-                                    Positioned(
-                                      left:
-                                          layout.centers[i].dx - _tileSize / 2,
-                                      top: layout.centers[i].dy - _tileSize / 2,
-                                      width: _tileSize,
-                                      height: _tileSize,
-                                      child: _buildTile(
-                                        gameCtrl,
-                                        i + 1,
-                                        unlocked,
-                                      ),
-                                    ),
-                                ],
+                                ),
                               ),
                             ),
                           ),
+                          CustomScrollView(
+                            controller: _scrollController,
+                            slivers: [
+                              SliverToBoxAdapter(
+                                child: SizedBox(
+                                  height: layout.totalHeight,
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: AnimatedBuilder(
+                                          animation: Listenable.merge([
+                                            _flowCtrl,
+                                            _revealCtrl,
+                                          ]),
+                                          builder: (context, _) => CustomPaint(
+                                            painter: _PathPainter(
+                                              layout.segments,
+                                              _flowCtrl.value,
+                                              revealId: _revealId,
+                                              revealProgress: _revealCtrl.value,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      for (var w = 0; w < kWorlds.length; w++)
+                                        Positioned(
+                                          top: layout.bannerTops[w],
+                                          left: 0,
+                                          right: 0,
+                                          height: _bannerHeight,
+                                          child: _WorldBanner(
+                                            world: kWorlds[w],
+                                          ),
+                                        ),
+                                      for (var i = 0; i < kLevelCount; i++)
+                                        Positioned(
+                                          left:
+                                              layout.centers[i].dx -
+                                              _tileSize / 2,
+                                          top:
+                                              layout.centers[i].dy -
+                                              _tileSize / 2,
+                                          width: _tileSize,
+                                          height: _tileSize,
+                                          child: _buildTile(
+                                            gameCtrl,
+                                            i + 1,
+                                            unlocked,
+                                          ),
+                                        ),
+                                      Positioned(
+                                        left:
+                                            layout.centers[unlocked - 1].dx -
+                                            14,
+                                        top:
+                                            layout.centers[unlocked - 1].dy -
+                                            _tileSize / 2 -
+                                            34,
+                                        child: const _Mascot(),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Positioned.fill(child: _ShootingStar()),
+                          if (_showConfetti)
+                            const Positioned.fill(child: ConfettiOverlay()),
                         ],
                       );
                     },
@@ -344,10 +442,19 @@ class _DecorDot {
 class _DecorPainter extends CustomPainter {
   final List<_DecorDot> dots;
   final double progress;
-  _DecorPainter(this.dots, this.progress);
+  final double scrollOffset;
+  final double parallax;
+  _DecorPainter(
+    this.dots,
+    this.progress, {
+    this.scrollOffset = 0,
+    this.parallax = 1,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.translate(0, -(scrollOffset * parallax));
     final tau = progress * math.pi * 2;
     for (final d in dots) {
       final tw = 0.5 + 0.5 * math.sin(tau + d.phase);
@@ -368,11 +475,14 @@ class _DecorPainter extends CustomPainter {
         canvas.drawCircle(d.pos, d.size * 0.5, paint);
       }
     }
+    canvas.restore();
   }
 
   @override
   bool shouldRepaint(covariant _DecorPainter old) =>
-      old.progress != progress || old.dots != dots;
+      old.progress != progress ||
+      old.dots != dots ||
+      old.scrollOffset != scrollOffset;
 }
 
 class _PathSegment {
@@ -380,11 +490,13 @@ class _PathSegment {
   final PathMetric metric;
   final Color color;
   final List<Offset> dots;
+  final bool lit;
   _PathSegment({
     required this.path,
     required this.metric,
     required this.color,
     required this.dots,
+    required this.lit,
   });
 }
 
@@ -395,7 +507,14 @@ class _PathSegment {
 class _PathPainter extends CustomPainter {
   final List<_PathSegment> segments;
   final double progress;
-  _PathPainter(this.segments, this.progress);
+  final int? revealId;
+  final double revealProgress;
+  _PathPainter(
+    this.segments,
+    this.progress, {
+    this.revealId,
+    this.revealProgress = 0,
+  });
 
   static const _dashLen = 26.0;
   static const _dashGap = 40.0;
@@ -409,15 +528,19 @@ class _PathPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    for (final seg in segments) {
+    for (var i = 0; i < segments.length; i++) {
+      final seg = segments[i];
+      final baseColor = seg.lit
+          ? Color.lerp(seg.color, NeonTheme.gold, 0.55)!
+          : Color.lerp(seg.color, Colors.grey, 0.6)!;
       final glowPaint = Paint()
-        ..color = seg.color.withValues(alpha: 0.45)
+        ..color = baseColor.withValues(alpha: seg.lit ? 0.45 : 0.15)
         ..strokeWidth = 16
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
       final corePaint = Paint()
-        ..color = seg.color.withValues(alpha: 0.9)
+        ..color = baseColor.withValues(alpha: seg.lit ? 0.9 : 0.35)
         ..strokeWidth = 5
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;
@@ -428,25 +551,53 @@ class _PathPainter extends CustomPainter {
         canvas.drawCircle(
           dot,
           3.5,
-          Paint()..color = Colors.white.withValues(alpha: 0.85),
+          Paint()..color = Colors.white.withValues(alpha: seg.lit ? 0.85 : 0.3),
         );
       }
 
-      var start = (progress * _cycle) % _cycle - _dashLen;
-      while (start < seg.metric.length) {
-        final clampedStart = start.clamp(0.0, seg.metric.length);
-        final end = (start + _dashLen).clamp(0.0, seg.metric.length);
-        if (end > clampedStart) {
-          canvas.drawPath(seg.metric.extractPath(clampedStart, end), flowPaint);
+      if (seg.lit) {
+        var start = (progress * _cycle) % _cycle - _dashLen;
+        while (start < seg.metric.length) {
+          final clampedStart = start.clamp(0.0, seg.metric.length);
+          final end = (start + _dashLen).clamp(0.0, seg.metric.length);
+          if (end > clampedStart) {
+            canvas.drawPath(
+              seg.metric.extractPath(clampedStart, end),
+              flowPaint,
+            );
+          }
+          start += _cycle;
         }
-        start += _cycle;
+      }
+
+      // Unlock reveal: đoạn dẫn tới node vừa mở khoá — ánh sáng chạy dọc
+      // đoạn 1 lần theo revealProgress (0..1).
+      if (revealId != null && i + 2 == revealId && revealProgress > 0) {
+        final end = (revealProgress * seg.metric.length).clamp(
+          0.0,
+          seg.metric.length,
+        );
+        if (end > 0) {
+          canvas.drawPath(
+            seg.metric.extractPath(0, end),
+            Paint()
+              ..color = Colors.white.withValues(alpha: 0.95)
+              ..strokeWidth = 9
+              ..strokeCap = StrokeCap.round
+              ..style = PaintingStyle.stroke
+              ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+          );
+        }
       }
     }
   }
 
   @override
   bool shouldRepaint(covariant _PathPainter oldDelegate) =>
-      oldDelegate.segments != segments || oldDelegate.progress != progress;
+      oldDelegate.segments != segments ||
+      oldDelegate.progress != progress ||
+      oldDelegate.revealId != revealId ||
+      oldDelegate.revealProgress != revealProgress;
 }
 
 class _WorldBanner extends StatelessWidget {
@@ -466,7 +617,30 @@ class _WorldBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: NeonTheme.drop(y: 3, blur: 6),
       ),
-      child: StrokeText(world.nameKey.tr, fontSize: 18),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.16,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(
+                    6,
+                    (i) => Transform.rotate(
+                      angle: (i.isEven ? -1 : 1) * 0.3,
+                      child: Icon(world.icon, size: 34, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            StrokeText(world.nameKey.tr, fontSize: 18),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -562,4 +736,135 @@ class _LevelTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Mascot đứng tại node hiện tại, nhún nhẹ liên tục (idle bounce).
+class _Mascot extends StatefulWidget {
+  const _Mascot();
+
+  @override
+  State<_Mascot> createState() => _MascotState();
+}
+
+class _MascotState extends State<_Mascot> with SingleTickerProviderStateMixin {
+  late final _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (context, child) => Transform.translate(
+          offset: Offset(0, -6 * _ctrl.value),
+          child: child,
+        ),
+        child: const Text('⭐', style: TextStyle(fontSize: 28)),
+      ),
+    );
+  }
+}
+
+/// Sao băng bay ngẫu nhiên qua nền, tạo cảm giác nền có sự sống.
+class _ShootingStar extends StatefulWidget {
+  const _ShootingStar();
+
+  @override
+  State<_ShootingStar> createState() => _ShootingStarState();
+}
+
+class _ShootingStarState extends State<_ShootingStar>
+    with SingleTickerProviderStateMixin {
+  late final _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+  final _rng = math.Random();
+  Timer? _timer;
+  Offset _start = Offset.zero;
+  Offset _end = Offset.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleNext();
+  }
+
+  void _scheduleNext() {
+    final wait = Duration(seconds: 6 + _rng.nextInt(9));
+    _timer = Timer(wait, _fly);
+  }
+
+  void _fly() {
+    if (!mounted) return;
+    final size = MediaQuery.of(context).size;
+    final startX = size.width * (0.15 + _rng.nextDouble() * 0.5);
+    _start = Offset(startX, 0);
+    _end = Offset(startX - size.width * 0.28, size.height * 0.32);
+    _ctrl.forward(from: 0).then((_) {
+      if (mounted) _scheduleNext();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (context, _) => CustomPaint(
+          painter: _CometPainter(_start, _end, _ctrl.value),
+          size: Size.infinite,
+        ),
+      ),
+    );
+  }
+}
+
+class _CometPainter extends CustomPainter {
+  final Offset start;
+  final Offset end;
+  final double progress;
+  _CometPainter(this.start, this.end, this.progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0 || progress >= 1) return;
+    final head = Offset.lerp(start, end, progress)!;
+    final tailProgress = (progress - 0.18).clamp(0.0, 1.0);
+    final tail = Offset.lerp(start, end, tailProgress)!;
+    final fade = 1 - progress;
+
+    final linePaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.85 * fade)
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+    canvas.drawLine(tail, head, linePaint);
+
+    final headPaint = Paint()
+      ..color = Colors.white.withValues(alpha: fade)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawCircle(head, 3, headPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CometPainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      oldDelegate.start != start ||
+      oldDelegate.end != end;
 }
