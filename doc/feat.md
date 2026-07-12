@@ -298,11 +298,25 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
   fix dù code đã đúng, nên quy trình chuẩn từ nay: `flutter clean` →
   `flutter build apk --release` → `adb install -r` (hoặc uninstall+install
   nếu lỗi signature mismatch).
+- Wakelock (`WakelockPlus.enable()`) chuyển từ chỉ bật trong `GameScreen`
+  (onInit/onClose/quit) sang bật 1 lần lúc app khởi động (`main.dart:app()`),
+  giữ màn hình sáng xuyên suốt toàn app chứ không chỉ lúc chơi. Bỏ hết
+  enable/disable rải rác trong `game_screen_controller.dart` vì đã bật
+  toàn cục, không còn cần toggle theo vòng đời màn chơi.
 
 ## 🟡 In progress / tiếp theo (xem doc/task/tasks/)
 
 - Mở rộng test coverage thêm (theo `doc/task/tasks/README.md`, wave tiếp
   theo) — các widget/screen còn lại chưa có test trực tiếp.
+  - Đã thêm test cho 7 widget trước đây chưa có file test nào:
+    `coin_fly_overlay`, `confetti_overlay`, `neon_aura_layer`, `neon_bg`,
+    `pressable_scale`, `pulse_glow`, `star_mascot` (bao mọi mood qua đủ 1
+    chu kỳ blink — regression cho bug `eyeH.clamp` tự tham chiếu đã fix ở A8).
+    Bug phát hiện khi viết test `pressable_scale`: `SizedBox(width, height)`
+    rỗng (không con/màu) không tự `hitTestSelf` → gesture giả lập trong test
+    không tới được `GestureDetector` dù toạ độ đúng tâm; đổi child test
+    sang `ColoredBox` (có nội dung vẽ) là chạy đúng — bug ở cách viết test,
+    không phải ở `PressableScale`.
 - `settings_screen_test.dart`: chỉ smoke-test render, KHÔNG test hành vi tap
   đổi ngôn ngữ qua UI — `Get.updateLocale()` gọi
   `engine.performReassemble()` nội bộ, không tương thích với

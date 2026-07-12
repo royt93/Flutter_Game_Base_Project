@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flame/game.dart';
 import 'package:get/get.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/levels.dart';
 import '../../game/pop_star_game.dart';
@@ -13,7 +12,7 @@ enum GameUi { playing, quit, win, lose }
 
 enum BoosterMode { none, bomb, rainbow }
 
-/// Controller GetX cho màn chơi: vòng đời (wakelock), instance game, overlay.
+/// Controller GetX cho màn chơi: vòng đời, instance game, overlay.
 /// Campaign + 2 side-mode (F8 Time-attack/Zen), phân biệt qua [GameController.mode].
 class GameScreenController extends GetxController {
   final GameController gameCtrl;
@@ -37,7 +36,6 @@ class GameScreenController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    WakelockPlus.enable();
     // Kết thúc màn đến BẤT ĐỒNG BỘ (sau animation pop/rơi) → lắng nghe reactive
     // thay vì kiểm tra ngay sau tap.
     _endWorker = ever(gameCtrl.ended, _onEndChanged);
@@ -49,7 +47,6 @@ class GameScreenController extends GetxController {
   void onClose() {
     _countdown?.cancel();
     _endWorker?.dispose();
-    WakelockPlus.disable();
     super.onClose();
   }
 
@@ -139,7 +136,6 @@ class GameScreenController extends GetxController {
   }
 
   void quit() {
-    WakelockPlus.disable();
     Get.delete<GameScreenController>();
     Get.back();
   }

@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'core/app_info.dart';
 import 'core/app_translations.dart';
@@ -26,6 +27,8 @@ Future<void> app({bool withAudio = true}) async {
   // vùng cử chỉ mép trên (vốn nuốt tap nút X ở HUD).
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // Giữ màn hình sáng suốt vòng đời app, không chỉ lúc chơi.
+  WakelockPlus.enable();
 
   await loadAppVersion();
 
