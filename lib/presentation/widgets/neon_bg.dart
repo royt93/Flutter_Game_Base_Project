@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import '../../core/neon_theme.dart';
 
 /// Background neon ĐỘNG dùng chung cho mọi màn:
@@ -24,7 +25,12 @@ class NeonBg extends StatefulWidget {
 }
 
 class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
+  late final Ticker _ticker;
+  double _t = 0;
+  // P1: vẽ 6 orb (RadialGradient + softLight, đắt) + 60 star mỗi frame —
+  // hạ tần suất repaint thật xuống ~30fps giống NeonAuraLayer (#10), _t/_energy
+  // vẫn cập nhật mỗi tick nên chuyển động không bị giật.
+  bool _skipFrame = false;
   final _rnd = math.Random(7);
   late final List<_Orb> _orbs;
   late final List<_Star> _stars;
@@ -33,10 +39,7 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 24),
-    )..repeat();
+    _ticker = createTicker(_onTick)..start();
     _orbs = List.generate(6, (i) {
       return _Orb(
         base: Offset(_rnd.nextDouble(), _rnd.nextDouble()),
@@ -61,9 +64,17 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
     });
   }
 
+  void _onTick(Duration elapsed) {
+    _t = (elapsed.inMicroseconds / 1e6 / 24) % 1.0;
+    final target = (widget.energyOf?.call() ?? 0).clamp(0.0, 1.0);
+    _energy += (target - _energy) * 0.08;
+    _skipFrame = !_skipFrame;
+    if (_skipFrame && mounted) setState(() {});
+  }
+
   @override
   void dispose() {
-    _ctrl.dispose();
+    _ticker.dispose();
     super.dispose();
   }
 
@@ -73,21 +84,14 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
       children: [
         Positioned.fill(
           child: RepaintBoundary(
-            child: AnimatedBuilder(
-              animation: _ctrl,
-              builder: (_, _) {
-                final target = (widget.energyOf?.call() ?? 0).clamp(0.0, 1.0);
-                _energy += (target - _energy) * 0.08;
-                return CustomPaint(
-                  painter: _NeonBgPainter(
-                    _ctrl.value,
-                    _orbs,
-                    _stars,
-                    widget.accent,
-                    _energy,
-                  ),
-                );
-              },
+            child: CustomPaint(
+              painter: _NeonBgPainter(
+                _t,
+                _orbs,
+                _stars,
+                widget.accent,
+                _energy,
+              ),
             ),
           ),
         ),

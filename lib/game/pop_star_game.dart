@@ -396,10 +396,9 @@ class PopStarGame extends FlameGame {
         : group;
     // F6a: nổ nhóm liền kề obstacle → chip độ bền; vỡ thì gộp vào cùng đợt xoá.
     final broken = chipAdjacentObstacles(colorGrid, cleared);
-    _syncObstacleBlocks();
     // I2: nổ nhóm liền kề chain tile → chip 1 lock, không gộp vào tập xoá.
     chipAdjacentLocks(lockGrid, cleared);
-    _syncLockBlocks();
+    _syncObstacleAndLockBlocks();
     _clearAndCollapse(cleared..addAll(broken));
     if (kind != null) _blocks[row][col]?.powerKind = kind;
   }
@@ -415,24 +414,15 @@ class PopStarGame extends FlameGame {
     }
   }
 
-  /// F6a: đồng bộ lại `colorIndex` các block obstacle còn sống sau khi bị
-  /// chip (giá trị grid đổi nhưng component không tự biết) — quét toàn bàn,
-  /// board nhỏ nên rẻ.
-  void _syncObstacleBlocks() {
+  /// F6a/I2: đồng bộ `colorIndex` (obstacle bị chip) và `lockCount` (chain
+  /// tile bị chip/mở khoá) sau khi `colorGrid`/`lockGrid` đổi — component
+  /// không tự biết giá trị grid đã đổi. Gộp 1 vòng lặp toàn bàn thay vì 2
+  /// vòng riêng (board nhỏ nên rẻ, nhưng không cần quét 2 lần).
+  void _syncObstacleAndLockBlocks() {
     for (var r = 0; r < rows; r++) {
       for (var c = 0; c < cols; c++) {
         final v = colorGrid[r][c];
         if (v != null && v < 0) _blocks[r][c]?.colorIndex = v;
-      }
-    }
-  }
-
-  /// I2: đồng bộ `lockCount` mọi block sau khi `lockGrid` đổi (chip hoặc mở
-  /// khoá) — quét toàn bàn kể cả ô vừa về 0 (khác `_syncObstacleBlocks`, ô
-  /// khoá không mất đi nên không thể chỉ lọc theo giá trị cũ).
-  void _syncLockBlocks() {
-    for (var r = 0; r < rows; r++) {
-      for (var c = 0; c < cols; c++) {
         _blocks[r][c]?.lockCount = lockGrid[r][c];
       }
     }
@@ -487,9 +477,8 @@ class PopStarGame extends FlameGame {
       controller.triggerFlash();
     }
     final broken = chipAdjacentObstacles(colorGrid, cells);
-    _syncObstacleBlocks();
     chipAdjacentLocks(lockGrid, cells);
-    _syncLockBlocks();
+    _syncObstacleAndLockBlocks();
     _clearAndCollapse(cells..addAll(broken));
   }
 
@@ -566,9 +555,8 @@ class PopStarGame extends FlameGame {
     if (cells.isEmpty) return;
     HapticFeedback.heavyImpact();
     final broken = chipAdjacentObstacles(colorGrid, cells);
-    _syncObstacleBlocks();
     chipAdjacentLocks(lockGrid, cells);
-    _syncLockBlocks();
+    _syncObstacleAndLockBlocks();
     _clearAndCollapse(cells..addAll(broken));
   }
 
@@ -589,9 +577,8 @@ class PopStarGame extends FlameGame {
     }
     if (cells.isEmpty) return;
     final broken = chipAdjacentObstacles(colorGrid, cells);
-    _syncObstacleBlocks();
     chipAdjacentLocks(lockGrid, cells);
-    _syncLockBlocks();
+    _syncObstacleAndLockBlocks();
     _clearAndCollapse(cells..addAll(broken));
   }
 

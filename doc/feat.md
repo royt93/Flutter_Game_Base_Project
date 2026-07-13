@@ -421,7 +421,18 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
   lockstep cùng `colorGrid`). `flutter analyze` 0 lỗi, full suite 113/113
   xanh.
 
-## 🟡 In progress / tiếp theo (xem doc/task/tasks/)
+## ✅ Lịch sử: rã Wave 6 (Ideas & Polish) + mở rộng test coverage (xem doc/task/tasks/)
+
+> Tiêu đề gốc "🟡 In progress" gây hiểu lầm — toàn bộ mục dưới đây là lịch sử
+> một wave **đã hoàn thành** (I2/I4/I5/I11/I13/I18 đã code + có test, xem
+> commit liên quan), không phải việc đang chờ. Rà soát lại 2026-07-13 xác
+> nhận I13 (SFX pop theo cỡ nhóm), I5 (undo miễn phí), I4 (predictive hint)
+> đều đã implement đầy đủ, có test riêng (`free_undo_test.dart`,
+> `predictive_hint_test.dart`), không cần sửa code. Wave test coverage mới
+> (cùng ngày): thêm test cho 5 file logic/util thuần trước đây chưa có
+> (`storage_service`, `locale_service`, `app_info`, `utils/format`,
+> `data/worlds`) — `neon_button`/`stroke_text`/`coin_chip` golden test hoá ra
+> đã có sẵn từ trước, không cần viết thêm.
 
 - Rã 7 hạng mục (Wave 6 — Ideas & Polish) thành task .md theo chuẩn scrum:
   `I11` haptic feedback, `T1` fix settings_screen locale test (tham chiếu
@@ -522,6 +533,39 @@ logic của 3 fix trên: colorGrid/vị trí block vẫn đúng, chỉ cần 1 s
 buộc repaint (mở dialog) là hiển thị đầy đủ và chính xác trở lại; ván chơi
 tiếp diễn bình thường sau đó không tái diễn hiện tượng.
 
+## ✅ Performance fix P1 — NeonBg cost during gameplay (2026-07-12)
+
+Task #11 từ audit trên. `NeonBg` (nền chung mọi màn, vẽ 6 orb `RadialGradient`
++ `blendMode.softLight` (blend đắt) và 60 star mỗi frame) dùng
+`AnimationController.repeat()` 24s chạy 60fps vô điều kiện, mỗi tick trigger
+`AnimatedBuilder` rebuild + repaint thật sự. `RepaintBoundary` đã có sẵn từ
+trước (khác #10 lúc đó chưa có) — chi phí chỉ nằm ở tần suất update quá cao.
+
+Fix: mirror đúng pattern throttle đã dùng ở #10 (`NeonAuraLayer`) — thay
+`AnimationController` bằng `Ticker` riêng (`_NeonBgState`), field `_t`/
+`_energy` vẫn cập nhật mỗi tick thực (60fps, animation không giật) nhưng chỉ
+gọi `setState()` mỗi tick thứ 2 (`_skipFrame` toggle) → tần suất repaint thật
+sự giảm còn ~30fps. `_NeonBgPainter`/`_Orb`/`_Star` giữ nguyên hoàn toàn,
+không đổi visual.
+
+`flutter analyze` 0 issues, `flutter test --exclude-tags slow` 113/113 xanh
+(thay đổi thuần hiệu năng, không đổi hành vi/API công khai nên không cần
+test mới).
+
+## ✅ Performance fix P2 — gộp scan obstacle/lock (2026-07-12)
+
+Task #12 từ audit trên. `_syncObstacleBlocks`/`_syncLockBlocks`
+(`pop_star_game.dart`) quét toàn bàn 2 vòng lặp riêng biệt sau mỗi lần nổ
+nhóm/bom — cùng phạm vi `rows x cols`, không phụ thuộc nhau. Gộp thành 1 hàm
+`_syncObstacleAndLockBlocks()` quét 1 lần, đồng bộ cả `colorIndex` (obstacle)
+lẫn `lockCount` (chain tile) trong cùng vòng lặp. Thay toàn bộ 4 điểm gọi
+(`_clearAndCollapse`, `triggerBomb`, `undo`, `shuffleBoard`) từ cặp
+`_syncObstacleBlocks(); ... _syncLockBlocks();` sang 1 lệnh duy nhất.
+
+`flutter analyze` 0 issues, `flutter test --exclude-tags slow` 113/113 xanh
+(thay đổi thuần hiệu năng, không đổi hành vi/API công khai nên không cần
+test mới).
+
 ## ✅ Spacing standard (2026-07-12)
 
 Chuẩn hoá toàn bộ margin/padding/gap về đúng 3 token có sẵn trong
@@ -557,6 +601,44 @@ lại theo kích thước `StrokeText` (tên world) thay vì full width, làm `R
 `Container` (Stack đã tự căn giữa `StrokeText` rồi) — không cần bọc thêm
 `SizedBox`/`ConstrainedBox` nào. Đã verify lại trên emulator: log sạch,
 không còn overflow.
+
+## ✅ Audit đêm (2026-07-12, sau P0/P1/P2)
+
+Sau khi #8-#12 xong, chạy audit + smoke-test tự động qua đêm (7 vòng, mỗi
+vòng 1 vùng code: `lib/logic/`, `lib/game/`, `lib/presentation/controllers/`,
+`lib/presentation/screens/`, `lib/presentation/widgets/`, `lib/core/`, +
+smoke-test runtime trên `emulator-5554`).
+
+**Kết quả: 0 bug thật.** 5 nghi vấn agent báo cáo, cả 5 đều bị bác bỏ sau khi
+tự trace tay:
+- Chia 0 (`pop_star_game.dart`) — mọi call site đã guard `cells.isEmpty`,
+  Dart `/` không throw.
+- postFrameCallback đăng ký trùng (`level_select_screen.dart`) — flag set
+  `null` đồng bộ trước khi đăng ký, đơn luồng nên không thể trùng.
+- `return` thay `continue` (`coin_fly_overlay.dart`) — `delay` tăng đơn điệu
+  theo index nên 2 cách cho kết quả vẽ giống hệt nhau.
+- Race condition fire-and-forget `setInt` (`game_controller.dart`) — pattern
+  nhất quán 16+ chỗ toàn file, không phải lỗi cục bộ, chấp nhận được cho
+  casual game.
+- Resource leak `AudioManager` sau dispose — là `GetxService` permanent, không
+  bao giờ bị dispose thủ công trong vòng đời app.
+
+Nợ kỹ thuật T1 (locale runtime trong widget test, từng ghi trong backlog) đã
+xác nhận **đã đóng từ trước** — `test/widget/settings_screen_test.dart` dùng
+workaround dựng `GetMaterialApp` với `locale` cố định ngay từ đầu (giống
+`main.dart`) thay vì `Get.updateLocale()` runtime, tránh hẳn vấn đề
+`performReassemble()` không tương thích test binding.
+
+Smoke-test runtime (emulator-5554): gameplay cơ bản (pop/gravity/collapse),
+booster bomb (chip 3x3 đúng vùng tap), thắng level 1 (440/288 điểm, 2 sao) →
+win dialog sạch → level 2 unlock đúng trên `level_select_screen.dart` (code
+mới nhất, chưa từng chạy runtime trước đó) — path/badge sao/màu render đúng,
+không NaN, không lệch layout. Không bắt được frame confetti đang nổ (chụp
+trễ), chỉ xác nhận trạng thái tĩnh sau animation sạch — không phải bằng
+chứng có bug, chỉ là giới hạn của lần test.
+
+`flutter analyze` 0 issues, `flutter test --exclude-tags slow` 113/113 xanh,
+không FATAL/Exception trong logcat suốt toàn bộ đêm, không gặp quảng cáo lạ.
 
 ## 💭 Ideas (ngoài scope hiện tại)
 
