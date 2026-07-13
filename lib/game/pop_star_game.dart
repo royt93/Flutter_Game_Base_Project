@@ -7,13 +7,16 @@ import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flame/text.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../core/audio_manager.dart';
+import '../core/debug_log.dart';
+import '../core/haptics.dart';
 import '../core/neon_theme.dart';
 import '../data/levels.dart';
 import '../logic/chain_tile.dart';
+import '../logic/gift_tile.dart';
 import '../logic/obstacle.dart';
+import '../logic/pop_collapse.dart';
 import '../logic/pop_detector.dart';
 import '../logic/power_tile.dart';
 import '../presentation/controllers/game_controller.dart';
@@ -99,14 +102,30 @@ class _BurstRing extends PositionComponent {
 /// có animation (pop nở + hạt, rơi/trượt bằng tween). Không dùng Flame
 /// TapDetector — tap đến từ GestureDetector ở game_screen.dart qua [handleTap].
 class PopStarGame extends FlameGame {
-  PopStarGame(this.controller, {this.refillEnabled = false});
+  PopStarGame(
+    this.controller, {
+    this.refillEnabled = false,
+    this.startWithFtueHint = false,
+    this.presetGrid,
+  });
 
   final GameController controller;
+
+  /// F13: bàn cố định (Daily Challenge) thay vì random — set qua
+  /// [GameController.dailyChallengeGrid]. Null nghĩa là sinh random như bình
+  /// thường.
+  final List<List<int>>? presetGrid;
 
   /// F8 Zen: ngoại lệ luật "không refill" — bàn hết/kẹt thì dựng lại bàn mới
   /// thay vì kết thúc ván. Chỉ bật cho Zen, campaign/Time-attack giữ nguyên
   /// luật gốc.
   final bool refillEnabled;
+
+  /// X1: FTUE — level 1 lần đầu ép hiện gợi ý ngay khi board sẵn sàng, không
+  /// chờ đủ [_hintDelay] giây rảnh tay như I4 bình thường. Đọc trong
+  /// [onLoad] (không thể trigger ngay sau constructor vì [colorGrid] chỉ
+  /// init xong trong onLoad()).
+  final bool startWithFtueHint;
 
   late int rows;
   late int cols;
@@ -135,6 +154,10 @@ class PopStarGame extends FlameGame {
   List<List<int>>? _undoLockGrid;
   final _rng = Random();
 
+  /// F10: > 0 nghĩa freeze đang hiệu lực — obstacle không giảm bền, mỗi lần
+  /// đáng lẽ chip (xem [_chipObstaclesOrFrozen]) trừ 1 thay vì chip thật.
+  int freezeTurnsLeft = 0;
+
   /// Đang diễn hoạt → chặn tap để tránh chồng bước.
   bool _animating = false;
 
@@ -143,7 +166,8 @@ class PopStarGame extends FlameGame {
 
   /// I4: rảnh tay quá [_hintDelay] giây → tự gợi ý nhóm lớn nhất còn lại.
   /// [_hint] rỗng nghĩa là chưa/không đang hiển thị gợi ý nào.
-  static const double _hintDelay = 6.0;
+  /// F14: perk `move_hint` active thì rút ngắn còn 1/3 (gợi ý sớm hơn).
+  double get _hintDelay => controller.hasPerk('move_hint') ? 2.0 : 6.0;
   double _idleTimer = 0;
   Set<Point<int>> _hint = {};
 
@@ -161,13 +185,16 @@ class PopStarGame extends FlameGame {
     final level = controller.currentLevel;
     rows = level.rows;
     cols = level.cols;
-    colorGrid = List.generate(
-      rows,
-      (_) => List.generate(cols, (_) => _rng.nextInt(level.colorCount)),
-    );
+    colorGrid = presetGrid != null
+        ? presetGrid!.map((row) => List<int?>.of(row)).toList()
+        : List.generate(
+            rows,
+            (_) => List.generate(cols, (_) => _rng.nextInt(level.colorCount)),
+          );
     lockGrid = List.generate(rows, (_) => List.generate(cols, (_) => 0));
     _placeObstaclesIfNeeded(level);
     _placeChainLocksIfNeeded(level);
+    _placeGiftsIfNeeded(level);
     controller.activeGame = this;
     _layout();
     // ponytail: không await — toImage() có thể không hoàn tất trong widget
@@ -184,15 +211,28 @@ class PopStarGame extends FlameGame {
     );
     _edgeTrace = _EdgeTraceComponent(color: NeonTheme.cyan);
     add(_edgeTrace);
+    if (startWithFtueHint) _triggerHint();
+    dlog(
+      'onLoad done: rows=$rows cols=$cols size=$size cellSize=$cellSize '
+      'boardLeft=$_boardLeft boardTop=$_boardTop nonNullCells='
+      '${colorGrid.expand((r) => r).where((v) => v != null).length}',
+    );
   }
 
   /// F6b: màn `clearObstacle` cần vài ô obstacle (giá trị âm = độ bền) rải
   /// ngẫu nhiên trên bàn ngay lúc dựng — số lượng/độ bền tăng nhẹ theo world.
-  /// No-op với mọi objective khác (score/clearColor).
+  /// F9: `obstacleInMoves` dùng chung cơ chế, số lượng lấy đúng
+  /// [LevelObjective.target] để khớp mục tiêu. No-op với objective khác.
   void _placeObstaclesIfNeeded(PopLevel level) {
-    if (level.objective.type != ObjectiveType.clearObstacle) return;
+    final type = level.objective.type;
+    if (type != ObjectiveType.clearObstacle &&
+        type != ObjectiveType.obstacleInMoves) {
+      return;
+    }
     final world = (level.id - 1) ~/ 20;
-    final count = (3 + world ~/ 2).clamp(3, 8);
+    final count = type == ObjectiveType.obstacleInMoves
+        ? level.objective.target!
+        : (3 + world ~/ 2).clamp(3, 8);
     final durability = 1 + world ~/ 4;
     final cells = <int>{};
     while (cells.length < count && cells.length < rows * cols) {
@@ -222,12 +262,34 @@ class PopStarGame extends FlameGame {
     }
   }
 
+  /// I1: chỉ spawn khi objective là `openGift` — số ô quà = đúng target cần
+  /// mở. Né ô đã là obstacle/chain-lock, giống cách [_placeChainLocksIfNeeded]
+  /// né obstacle.
+  void _placeGiftsIfNeeded(PopLevel level) {
+    if (level.objective.type != ObjectiveType.openGift) return;
+    final count = level.objective.target!;
+    final candidates = [
+      for (var idx = 0; idx < rows * cols; idx++)
+        if ((colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0 &&
+            lockGrid[idx ~/ cols][idx % cols] == 0)
+          idx,
+    ]..shuffle(_rng);
+    for (final idx in candidates.take(count)) {
+      colorGrid[idx ~/ cols][idx % cols] = giftTileValue;
+    }
+  }
+
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
+    dlog('onGameResize: size=$size isLoaded=$isLoaded');
     if (isLoaded) {
       _layout();
       _rebuildBoard();
+      dlog(
+        'onGameResize rebuild done: cellSize=$cellSize blocks='
+        '${children.whereType<BlockComponent>().length}',
+      );
     }
   }
 
@@ -308,7 +370,7 @@ class PopStarGame extends FlameGame {
           color: Colors.white,
           fontSize: cellSize * 0.4,
           fontWeight: FontWeight.w900,
-          shadows: const [
+          shadows: [
             Shadow(color: NeonTheme.ink, blurRadius: 4, offset: Offset(0, 1)),
           ],
         ),
@@ -395,7 +457,7 @@ class PopStarGame extends FlameGame {
         ? (Set<Point<int>>.from(group)..remove(Point(row, col)))
         : group;
     // F6a: nổ nhóm liền kề obstacle → chip độ bền; vỡ thì gộp vào cùng đợt xoá.
-    final broken = chipAdjacentObstacles(colorGrid, cleared);
+    final broken = _chipObstaclesOrFrozen(cleared);
     // I2: nổ nhóm liền kề chain tile → chip 1 lock, không gộp vào tập xoá.
     chipAdjacentLocks(lockGrid, cleared);
     _syncObstacleAndLockBlocks();
@@ -403,14 +465,25 @@ class PopStarGame extends FlameGame {
     if (kind != null) _blocks[row][col]?.powerKind = kind;
   }
 
+  /// F10: freeze đang hiệu lực → bỏ qua chip (trừ 1 lượt), ngược lại chip
+  /// bình thường qua [chipAdjacentObstacles]. Dùng thay thế tại mọi nơi từng
+  /// gọi thẳng [chipAdjacentObstacles] để obstacle "miễn nhiễm" đúng N lượt.
+  Set<Point<int>> _chipObstaclesOrFrozen(Set<Point<int>> cells) {
+    if (freezeTurnsLeft > 0) {
+      freezeTurnsLeft--;
+      return {};
+    }
+    return chipAdjacentObstacles(colorGrid, cells);
+  }
+
   /// I11: rung xúc giác theo cỡ nhóm vừa nổ.
   void _hapticForGroupSize(int size) {
     if (size >= 8) {
-      HapticFeedback.heavyImpact();
+      fireHaptic(HapticLevel.heavy);
     } else if (size >= 4) {
-      HapticFeedback.mediumImpact();
+      fireHaptic(HapticLevel.medium);
     } else {
-      HapticFeedback.lightImpact();
+      fireHaptic(HapticLevel.light);
     }
   }
 
@@ -476,7 +549,7 @@ class PopStarGame extends FlameGame {
         controller.comboMultiplier.value >= _bigComboThreshold) {
       controller.triggerFlash();
     }
-    final broken = chipAdjacentObstacles(colorGrid, cells);
+    final broken = _chipObstaclesOrFrozen(cells);
     chipAdjacentLocks(lockGrid, cells);
     _syncObstacleAndLockBlocks();
     _clearAndCollapse(cells..addAll(broken));
@@ -553,8 +626,8 @@ class PopStarGame extends FlameGame {
       }
     }
     if (cells.isEmpty) return;
-    HapticFeedback.heavyImpact();
-    final broken = chipAdjacentObstacles(colorGrid, cells);
+    fireHaptic(HapticLevel.heavy);
+    final broken = _chipObstaclesOrFrozen(cells);
     chipAdjacentLocks(lockGrid, cells);
     _syncObstacleAndLockBlocks();
     _clearAndCollapse(cells..addAll(broken));
@@ -576,10 +649,25 @@ class PopStarGame extends FlameGame {
       }
     }
     if (cells.isEmpty) return;
-    final broken = chipAdjacentObstacles(colorGrid, cells);
+    final broken = _chipObstaclesOrFrozen(cells);
     chipAdjacentLocks(lockGrid, cells);
     _syncObstacleAndLockBlocks();
     _clearAndCollapse(cells..addAll(broken));
+  }
+
+  /// F10: đổi màu 2 ô bất kỳ (không cần liền kề), không tự nổ. Bỏ qua obstacle/
+  /// chain tile (không có "màu" thật để đổi).
+  void triggerSwap(int row1, int col1, int row2, int col2) {
+    if (_animating) return;
+    if ((colorGrid[row1][col1] ?? -1) < 0 || lockGrid[row1][col1] != 0) return;
+    if ((colorGrid[row2][col2] ?? -1) < 0 || lockGrid[row2][col2] != 0) return;
+    _saveUndo();
+    final tmp = colorGrid[row1][col1];
+    colorGrid[row1][col1] = colorGrid[row2][col2];
+    colorGrid[row2][col2] = tmp;
+    _blocks[row1][col1]?.colorIndex = colorGrid[row1][col1]!;
+    _blocks[row2][col2]?.colorIndex = colorGrid[row2][col2]!;
+    _checkEnd();
   }
 
   /// Xoá [cells]: animate pop từng ô + hạt, rồi rơi/dồn bằng tween, cuối cùng
@@ -720,35 +808,16 @@ class PopStarGame extends FlameGame {
   }
 
   void _collapseAnimated() {
-    // gravity trong cột: dồn block xuống đáy (giữ thứ tự trên→dưới).
-    for (var c = 0; c < cols; c++) {
-      final vals = <BlockComponent?>[];
-      for (var r = 0; r < rows; r++) {
-        if (_blocks[r][c] != null) vals.add(_blocks[r][c]);
-      }
-      final pad = rows - vals.length;
-      for (var r = 0; r < rows; r++) {
-        _blocks[r][c] = r < pad ? null : vals[r - pad];
-      }
-    }
-    // dồn cột không rỗng sang trái.
-    final nonEmpty = <int>[];
-    for (var c = 0; c < cols; c++) {
-      if (List.generate(rows, (r) => _blocks[r][c]).any((b) => b != null)) {
-        nonEmpty.add(c);
-      }
-    }
-    if (nonEmpty.length != cols) {
-      final newBlocks = List.generate(
-        rows,
-        (_) => List<BlockComponent?>.filled(cols, null),
-      );
-      for (var k = 0; k < nonEmpty.length; k++) {
-        for (var r = 0; r < rows; r++) {
-          newBlocks[r][k] = _blocks[r][nonEmpty[k]];
-        }
-      }
-      _blocks = newBlocks;
+    // I3: gravity theo hướng màn — down chạy thẳng, hướng khác quy về không
+    // gian "down" (transpose/lật trục), nén rồi quy ngược lại (xem
+    // transformForDirection/compactNonNullDown trong pop_collapse.dart).
+    final direction = controller.currentLevel.gravityDirection;
+    if (direction == GravityDirection.down) {
+      compactNonNullDown(_blocks);
+    } else {
+      final work = transformForDirection(_blocks, direction);
+      compactNonNullDown(work);
+      _blocks = transformForDirection(work, direction, inverse: true);
     }
     // tween mọi block về vị trí mới + đồng bộ colorGrid.
     for (var r = 0; r < rows; r++) {
@@ -798,7 +867,7 @@ class PopStarGame extends FlameGame {
           color: color,
           fontSize: cellSize * (combo ? 0.42 : 0.34),
           fontWeight: FontWeight.w900,
-          shadows: const [
+          shadows: [
             Shadow(color: NeonTheme.ink, blurRadius: 3, offset: Offset(0, 1)),
           ],
         ),
@@ -910,6 +979,12 @@ class PopStarGame extends FlameGame {
   }
 
   void _checkEnd() {
+    // I1: gift rơi tới hàng đáy sau gravity → tự mở + cộng thưởng ngay.
+    for (final c in openGiftsAtBottomRow(colorGrid)) {
+      _blocks[rows - 1][c]?.removeFromParent();
+      _blocks[rows - 1][c] = null;
+      controller.grantGiftReward(pickGiftReward(_rng));
+    }
     final remaining = colorGrid
         .expand((row) => row)
         .where((v) => v != null)
@@ -923,6 +998,16 @@ class PopStarGame extends FlameGame {
         remaining > 0 &&
         !hasAnyMovableGroup(colorGrid, lockGrid: lockGrid) &&
         !hasPowerTile;
+    // F12: Endless — dọn sạch (remaining == 0) thì sang bàn kế khó hơn, giữ
+    // nguyên điểm; chỉ thật sự kết thúc ván khi bàn kẹt hẳn (stuck).
+    if (controller.mode.value == GameMode.endless) {
+      if (remaining == 0) {
+        _nextEndlessBoard();
+      } else if (stuck) {
+        controller.checkEnd(false);
+      }
+      return;
+    }
     if (refillEnabled && (remaining == 0 || stuck)) {
       _refillBoard();
       return;
@@ -940,6 +1025,23 @@ class PopStarGame extends FlameGame {
     } else if (stuck) {
       controller.checkEnd(false);
     }
+  }
+
+  /// F12: bàn Endless kế tiếp — khó hơn bàn vừa dọn xong (rows/cols/colors
+  /// tăng theo [GameController.advanceEndlessBoard]), nên phải dựng lại
+  /// [_layout] chứ không chỉ regenerate màu như [_refillBoard] (bàn Zen giữ
+  /// nguyên kích thước).
+  void _nextEndlessBoard() {
+    final level = controller.advanceEndlessBoard();
+    rows = level.rows;
+    cols = level.cols;
+    colorGrid = List.generate(
+      rows,
+      (_) => List.generate(cols, (_) => _rng.nextInt(level.colorCount)),
+    );
+    lockGrid = List.generate(rows, (_) => List.generate(cols, (_) => 0));
+    _layout();
+    _rebuildBoard();
   }
 
   /// F8 Zen: bàn mới toàn bộ khi hết/kẹt — xem [refillEnabled]. I2: chain
@@ -968,6 +1070,8 @@ class PopStarGame extends FlameGame {
       (_) => List<BlockComponent?>.filled(cols, null),
     );
     if (animateIntro) _animating = true;
+    final direction = controller.currentLevel.gravityDirection;
+    final material = materialForLevel(controller.currentLevel.id);
     var maxDelay = 0.0;
     for (var r = 0; r < rows; r++) {
       for (var c = 0; c < cols; c++) {
@@ -978,25 +1082,41 @@ class PopStarGame extends FlameGame {
           colorIndex: color,
           lockCount: lockGrid[r][c],
           position: animateIntro
-              ? Vector2(target.x, _boardTop - cellSize * (r + 2))
+              ? _introStart(r, c, target, direction)
               : target,
           size: Vector2.all(cellSize),
+          material: material,
         );
         _blocks[r][c] = b;
         add(b);
         if (animateIntro) {
           final delay = (r + c) * _introStagger;
           if (delay > maxDelay) maxDelay = delay;
-          b.add(
+          void addFallEffect() => b.add(
             MoveToEffect(
               target,
               EffectController(
                 duration: _introFallDur,
-                startDelay: delay,
                 curve: Curves.easeOutBack,
               ),
             ),
           );
+          // I3: startDelay của EffectController dùng DelayedEffectController,
+          // cần Effect nhận đủ 2 update-tick mới bắt đầu apply — trên máy yếu
+          // (Tecno) tick thứ 2 có thể không tới, block kẹt vĩnh viễn ở vị trí
+          // spawn. Dùng TimerComponent (đã verify chạy ổn định) để tự delay
+          // thay vì phó mặc cho Flame.
+          if (delay <= 0) {
+            addFallEffect();
+          } else {
+            add(
+              TimerComponent(
+                period: delay,
+                removeOnFinish: true,
+                onTick: addFallEffect,
+              ),
+            );
+          }
         }
       }
     }
@@ -1008,6 +1128,28 @@ class PopStarGame extends FlameGame {
           onTick: () => _animating = false,
         ),
       );
+    }
+  }
+
+  /// I3: điểm xuất phát của block khi vào màn — luôn từ phía ngoài bức tường
+  /// đối diện hướng gravity, so le theo khoảng cách tới vị trí đích (giống
+  /// stagger gốc của [GravityDirection.down] dựa trên [r]).
+  Vector2 _introStart(int r, int c, Vector2 target, GravityDirection dir) {
+    switch (dir) {
+      case GravityDirection.down:
+        return Vector2(target.x, _boardTop - cellSize * (r + 2));
+      case GravityDirection.up:
+        return Vector2(
+          target.x,
+          _boardTop + rows * cellSize + cellSize * (rows - 1 - r + 2),
+        );
+      case GravityDirection.left:
+        return Vector2(
+          _boardLeft + cols * cellSize + cellSize * (cols - 1 - c + 2),
+          target.y,
+        );
+      case GravityDirection.right:
+        return Vector2(_boardLeft - cellSize * (c + 2), target.y);
     }
   }
 }

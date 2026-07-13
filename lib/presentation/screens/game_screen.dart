@@ -7,6 +7,8 @@ import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
 import '../../core/utils/format.dart';
 import '../../data/levels.dart';
+import '../../data/worlds.dart';
+import '../../game/pop_star_game.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/game_screen_controller.dart';
 import '../widgets/coin_chip.dart';
@@ -38,6 +40,9 @@ class GameScreen extends StatelessWidget {
         backgroundColor: NeonTheme.bgMid,
         body: NeonBg(
           energyOf: () => gsc.game.heat,
+          accent: worldForLevel(gameCtrl.currentLevel.id).color,
+          // I16: world cuối (khó nhất) có thêm dải aurora phủ nền.
+          aurora: worldForLevel(gameCtrl.currentLevel.id) == kWorlds.last,
           child: SafeArea(
             child: Obx(() {
               gsc.gameVersion.value; // rebuild GameWidget khi đổi ván
@@ -55,49 +60,54 @@ class GameScreen extends StatelessWidget {
                                 color: NeonTheme.cyan.withValues(alpha: 0.35),
                               ),
                             ),
-                            Container(
-                              margin: const EdgeInsets.fromLTRB(
-                                NeonTheme.s8,
-                                0,
-                                NeonTheme.s8,
-                                NeonTheme.s16,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                borderRadius: BorderRadius.circular(26),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.5),
-                                  width: 2,
+                            RepaintBoundary(
+                              key: gsc.boardKey,
+                              child: Container(
+                                margin: const EdgeInsets.fromLTRB(
+                                  NeonTheme.s8,
+                                  0,
+                                  NeonTheme.s8,
+                                  NeonTheme.s16,
                                 ),
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: Listener(
-                                onPointerDown: (e) => gsc.previewBoardTap(
-                                  Vector2(
-                                    e.localPosition.dx,
-                                    e.localPosition.dy,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.25),
+                                  borderRadius: BorderRadius.circular(26),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.5),
+                                    width: 2,
                                   ),
                                 ),
-                                onPointerMove: (e) => gsc.previewBoardTap(
-                                  Vector2(
-                                    e.localPosition.dx,
-                                    e.localPosition.dy,
+                                clipBehavior: Clip.antiAlias,
+                                child: Listener(
+                                  onPointerDown: (e) => gsc.previewBoardTap(
+                                    Vector2(
+                                      e.localPosition.dx,
+                                      e.localPosition.dy,
+                                    ),
                                   ),
-                                ),
-                                onPointerUp: (e) => gsc.handleBoardTap(
-                                  Vector2(
-                                    e.localPosition.dx,
-                                    e.localPosition.dy,
+                                  onPointerMove: (e) => gsc.previewBoardTap(
+                                    Vector2(
+                                      e.localPosition.dx,
+                                      e.localPosition.dy,
+                                    ),
                                   ),
-                                ),
-                                onPointerCancel: (_) => gsc.game.clearPreview(),
-                                child: GameWidget(
-                                  game: gsc.game,
-                                  backgroundBuilder: (_) =>
-                                      const SizedBox.shrink(),
+                                  onPointerUp: (e) => gsc.handleBoardTap(
+                                    Vector2(
+                                      e.localPosition.dx,
+                                      e.localPosition.dy,
+                                    ),
+                                  ),
+                                  onPointerCancel: (_) =>
+                                      gsc.game.clearPreview(),
+                                  child: GameWidget(
+                                    game: gsc.game,
+                                    backgroundBuilder: (_) =>
+                                        const SizedBox.shrink(),
+                                  ),
                                 ),
                               ),
                             ),
+                            _FtueOverlay(gsc: gsc),
                           ],
                         ),
                       ),
@@ -121,6 +131,24 @@ class GameScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// F6b/F9: dòng tiến độ mục tiêu hiện dưới HUD điểm — `null` cho `score`.
+String? _objectiveLine(GameController gameCtrl) {
+  final objective = gameCtrl.currentLevel.objective;
+  final left = gameCtrl.objectiveRemaining.value;
+  return switch (objective.type) {
+    ObjectiveType.score => null,
+    ObjectiveType.clearColor => 'Clear color: $left left',
+    ObjectiveType.clearObstacle => 'Break ice: $left left',
+    ObjectiveType.collect => 'Collect: $left left',
+    ObjectiveType.obstacleInMoves =>
+      'Break ice: $left left '
+          '(≤${objective.moveLimit} moves for bonus star)',
+    ObjectiveType.moveLimitBonus =>
+      'Finish in ≤${objective.moveLimit} moves for bonus star',
+    ObjectiveType.openGift => 'Open gifts: $left left',
+  };
 }
 
 class _Hud extends StatelessWidget {
@@ -181,7 +209,7 @@ class _Hud extends StatelessWidget {
                           const SizedBox(height: NeonTheme.s8),
                           Text(
                             'Time ${gsc.remainingSeconds.value}s',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: NeonTheme.inkSoft,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -195,8 +223,40 @@ class _Hud extends StatelessWidget {
                         children: [
                           scoreText,
                           const SizedBox(height: NeonTheme.s8),
-                          const Text(
+                          Text(
                             'Zen — no target',
+                            style: TextStyle(
+                              color: NeonTheme.inkSoft,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    if (gameCtrl.mode.value == GameMode.endless) {
+                      return Column(
+                        children: [
+                          scoreText,
+                          const SizedBox(height: NeonTheme.s8),
+                          Text(
+                            'Best ${gameCtrl.endlessBest.value}',
+                            style: TextStyle(
+                              color: NeonTheme.inkSoft,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    if (gameCtrl.mode.value == GameMode.dailyChallenge) {
+                      return Column(
+                        children: [
+                          scoreText,
+                          const SizedBox(height: NeonTheme.s8),
+                          Text(
+                            'Daily Challenge',
                             style: TextStyle(
                               color: NeonTheme.inkSoft,
                               fontSize: 12,
@@ -225,23 +285,20 @@ class _Hud extends StatelessWidget {
                         const SizedBox(height: NeonTheme.s8),
                         Text(
                           'Target ${fmtNum(target)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: NeonTheme.inkSoft,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        // F6b: màn có mục tiêu ngoài điểm (clear-color/
-                        // clear-obstacle) hiện thêm dòng tiến độ riêng.
-                        if (gameCtrl.currentLevel.objective.type !=
-                            ObjectiveType.score) ...[
+                        // F6b/F9: màn có mục tiêu ngoài điểm hiện thêm dòng
+                        // tiến độ riêng (moveLimitBonus không có "còn lại" —
+                        // chỉ hiện giới hạn lượt cho bonus sao).
+                        if (_objectiveLine(gameCtrl) case final line?) ...[
                           const SizedBox(height: NeonTheme.s8),
                           Text(
-                            gameCtrl.currentLevel.objective.type ==
-                                    ObjectiveType.clearColor
-                                ? 'Clear color: ${gameCtrl.objectiveRemaining.value} left'
-                                : 'Break ice: ${gameCtrl.objectiveRemaining.value} left',
-                            style: const TextStyle(
+                            line,
+                            style: TextStyle(
                               color: NeonTheme.inkSoft,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -267,42 +324,67 @@ class _Hud extends StatelessWidget {
               ],
             ),
             const SizedBox(height: NeonTheme.s8),
-            Obx(
-              () => Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _BoosterButton(
-                    icon: Icons.dangerous_rounded,
-                    color: NeonTheme.orange,
-                    count: gameCtrl.bombCount.value,
-                    armed: gsc.armed.value == BoosterMode.bomb,
-                    onTap: gsc.toggleBombArm,
-                  ),
-                  const SizedBox(width: NeonTheme.s16),
-                  _BoosterButton(
-                    icon: Icons.shuffle_rounded,
-                    color: NeonTheme.lime,
-                    count: gameCtrl.shuffleCount.value,
-                    armed: false,
-                    onTap: gsc.useShuffle,
-                  ),
-                  const SizedBox(width: NeonTheme.s16),
-                  _BoosterButton(
-                    icon: Icons.undo_rounded,
-                    color: NeonTheme.purple,
-                    count: gameCtrl.undoCount.value,
-                    armed: false,
-                    onTap: gsc.useUndo,
-                  ),
-                  const SizedBox(width: NeonTheme.s16),
-                  _BoosterButton(
-                    icon: Icons.auto_awesome_rounded,
-                    color: NeonTheme.magenta,
-                    count: gameCtrl.rainbowCount.value,
-                    armed: gsc.armed.value == BoosterMode.rainbow,
-                    onTap: gsc.toggleRainbowArm,
-                  ),
-                ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Obx(
+                () => Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _BoosterButton(
+                      icon: Icons.dangerous_rounded,
+                      color: NeonTheme.orange,
+                      count: gameCtrl.bombCount.value,
+                      armed: gsc.armed.value == BoosterMode.bomb,
+                      onTap: gsc.toggleBombArm,
+                      label: 'Bom nổ 3x3',
+                    ),
+                    const SizedBox(width: NeonTheme.s16),
+                    _BoosterButton(
+                      icon: Icons.shuffle_rounded,
+                      color: NeonTheme.lime,
+                      count: gameCtrl.shuffleCount.value,
+                      armed: false,
+                      onTap: gsc.useShuffle,
+                      label: 'Xáo bàn',
+                    ),
+                    const SizedBox(width: NeonTheme.s16),
+                    _BoosterButton(
+                      icon: Icons.undo_rounded,
+                      color: NeonTheme.purple,
+                      count: gameCtrl.undoCount.value,
+                      armed: false,
+                      onTap: gsc.useUndo,
+                      label: 'Hoàn tác',
+                    ),
+                    const SizedBox(width: NeonTheme.s16),
+                    _BoosterButton(
+                      icon: Icons.auto_awesome_rounded,
+                      color: NeonTheme.magenta,
+                      count: gameCtrl.rainbowCount.value,
+                      armed: gsc.armed.value == BoosterMode.rainbow,
+                      onTap: gsc.toggleRainbowArm,
+                      label: 'Cầu vồng xoá cùng màu',
+                    ),
+                    const SizedBox(width: NeonTheme.s16),
+                    _BoosterButton(
+                      icon: Icons.swap_horiz_rounded,
+                      color: NeonTheme.lime,
+                      count: gameCtrl.swapCount.value,
+                      armed: gsc.armed.value == BoosterMode.swap,
+                      onTap: gsc.toggleSwapArm,
+                      label: 'Đổi màu 2 ô',
+                    ),
+                    const SizedBox(width: NeonTheme.s16),
+                    _BoosterButton(
+                      icon: Icons.ac_unit_rounded,
+                      color: NeonTheme.cyan,
+                      count: gameCtrl.freezeCount.value,
+                      armed: false,
+                      onTap: gsc.useFreeze,
+                      label: 'Đóng băng obstacle',
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -336,12 +418,106 @@ class _FlashOverlay extends StatelessWidget {
   }
 }
 
+/// X1: banner "chạm để nổ" trỏ vào nhóm đang được [PopStarGame.triggerFtueHint]
+/// tô sáng — chỉ hiện lần mở app đầu tiên trên level 1, không chặn tap.
+/// ponytail: banner từng đóng cứng ở Alignment(0,-0.2), không liên quan gì
+/// tới vị trí group thật đang được `_hint` trỏ tới — trên board nhiều hàng,
+/// group có thể nằm ở nửa dưới trong khi banner luôn hiện ở nửa trên (đè lên
+/// ô không liên quan). Đặt banner ở nửa bàn KHÔNG chứa group để không đè lên
+/// group và không lạc quá xa nó.
+double _ftueAlignY(PopStarGame game) {
+  final hint = game.hintGroup;
+  if (hint.isEmpty || game.rows <= 1) return -0.2;
+  final avgRow = hint.map((p) => p.x).reduce((a, b) => a + b) / hint.length;
+  final rowFrac = avgRow / (game.rows - 1); // 0 = hàng đầu .. 1 = hàng cuối
+  return rowFrac < 0.5 ? 0.55 : -0.55;
+}
+
+class _FtueOverlay extends StatelessWidget {
+  const _FtueOverlay({required this.gsc});
+  final GameScreenController gsc;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (!gsc.showFtue.value) return const SizedBox.shrink();
+      return IgnorePointer(
+        child: Align(
+          alignment: Alignment(0, _ftueAlignY(gsc.game)),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: NeonTheme.s16,
+              vertical: NeonTheme.s8,
+            ),
+            decoration: BoxDecoration(
+              color: NeonTheme.card,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: NeonTheme.drop(y: 3, blur: 8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _BouncingHand(),
+                const SizedBox(width: NeonTheme.s8),
+                Text(
+                  'ftue_tap_hint'.tr,
+                  style: TextStyle(
+                    color: NeonTheme.ink,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+}
+
+class _BouncingHand extends StatefulWidget {
+  const _BouncingHand();
+
+  @override
+  State<_BouncingHand> createState() => _BouncingHandState();
+}
+
+class _BouncingHandState extends State<_BouncingHand>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 650),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, child) =>
+          Transform.translate(offset: Offset(0, 4 * _c.value), child: child),
+      child: const Icon(
+        Icons.touch_app_rounded,
+        color: NeonTheme.cyan,
+        size: 20,
+      ),
+    );
+  }
+}
+
 class _BoosterButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final int count;
   final bool armed;
   final VoidCallback onTap;
+  final String label;
 
   const _BoosterButton({
     required this.icon,
@@ -349,48 +525,54 @@ class _BoosterButton extends StatelessWidget {
     required this.count,
     required this.armed,
     required this.onTap,
+    required this.label,
   });
 
   @override
   Widget build(BuildContext context) {
     final enabled = count > 0;
-    return PressableScale(
-      onTap: enabled ? onTap : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: NeonTheme.s16,
-          vertical: NeonTheme.s8,
-        ),
-        decoration: BoxDecoration(
-          color: armed ? color : NeonTheme.card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: enabled ? color : const Color(0xFFC9C3DA),
-            width: 2.5,
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: '$label, $count còn lại${armed ? ", đang chọn" : ""}',
+      child: PressableScale(
+        onTap: enabled ? onTap : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: NeonTheme.s16,
+            vertical: NeonTheme.s8,
           ),
-          boxShadow: enabled ? NeonTheme.drop(y: 3, blur: 6) : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: armed
-                  ? Colors.white
-                  : (enabled ? color : const Color(0xFFC9C3DA)),
-              size: 20,
+          decoration: BoxDecoration(
+            color: armed ? color : NeonTheme.card,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: enabled ? color : const Color(0xFFC9C3DA),
+              width: 2.5,
             ),
-            const SizedBox(width: NeonTheme.s8),
-            Text(
-              '$count',
-              style: TextStyle(
+            boxShadow: enabled ? NeonTheme.drop(y: 3, blur: 6) : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
                 color: armed
                     ? Colors.white
-                    : (enabled ? NeonTheme.ink : NeonTheme.inkSoft),
-                fontWeight: FontWeight.w800,
+                    : (enabled ? color : const Color(0xFFC9C3DA)),
+                size: 20,
               ),
-            ),
-          ],
+              const SizedBox(width: NeonTheme.s8),
+              Text(
+                '$count',
+                style: TextStyle(
+                  color: armed
+                      ? Colors.white
+                      : (enabled ? NeonTheme.ink : NeonTheme.inkSoft),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -430,6 +612,8 @@ class _Overlay extends StatelessWidget {
       case GameUi.lose:
         final gameCtrl = gsc.gameCtrl;
         final isTimeAttack = gameCtrl.mode.value == GameMode.timeAttack;
+        final isEndless = gameCtrl.mode.value == GameMode.endless;
+        final isDailyChallenge = gameCtrl.mode.value == GameMode.dailyChallenge;
         return NeonDialog.overlay(
           panel: _MascotDialog(
             mood: isTimeAttack ? StarMood.cheer : StarMood.sad,
@@ -438,6 +622,10 @@ class _Overlay extends StatelessWidget {
               color: NeonTheme.orange,
               message: isTimeAttack
                   ? 'Score ${gameCtrl.score.value} — Best ${gameCtrl.timeAttackBest.value}'
+                  : isEndless
+                  ? 'Score ${gameCtrl.score.value} — Best ${gameCtrl.endlessBest.value}'
+                  : isDailyChallenge
+                  ? 'Score ${gameCtrl.score.value} — Recorded ${gameCtrl.dailyChallengeScoreToday}'
                   : 'No more groups to pop. Try again?',
               actions: [
                 NeonDialogAction(
@@ -530,7 +718,10 @@ class _WinChoreographyState extends State<_WinChoreography> {
       child: _MascotDialog(
         mood: StarMood.cheer,
         panel: NeonDialog.panel(
-          title: 'Level Complete!',
+          // F11: boss level thắng → nhãn riêng biệt với level thường.
+          title: gameCtrl.currentLevel.isBoss
+              ? 'Boss Cleared!'
+              : 'Level Complete!',
           color: NeonTheme.yellow,
           actions: const [],
           content: Column(
@@ -558,20 +749,34 @@ class _WinChoreographyState extends State<_WinChoreography> {
               AnimatedOpacity(
                 opacity: _scoreShown ? 1 : 0,
                 duration: const Duration(milliseconds: 250),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(
-                    end: _scoreShown ? gameCtrl.score.value.toDouble() : 0,
-                  ),
-                  duration: const Duration(milliseconds: 500),
-                  curve: Curves.easeOut,
-                  builder: (_, v, _) => Text(
-                    'Score ${fmtNum(v.round())}',
-                    style: const TextStyle(
-                      color: NeonTheme.inkSoft,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(
+                        end: _scoreShown ? gameCtrl.score.value.toDouble() : 0,
+                      ),
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeOut,
+                      builder: (_, v, _) => Text(
+                        'Score ${fmtNum(v.round())}',
+                        style: TextStyle(
+                          color: NeonTheme.inkSoft,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: NeonTheme.s8),
+                    // F15: chia sẻ ảnh bàn chơi + level/điểm/ngày.
+                    NeonIconButton(
+                      Icons.share_rounded,
+                      color: NeonTheme.cyan,
+                      size: 20,
+                      onTap: widget.gsc.shareBoard,
+                      semanticLabel: 'share_board'.tr,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: NeonTheme.s16),

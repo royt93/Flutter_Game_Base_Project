@@ -39,5 +39,26 @@ void main() {
       expect(StorageKeys.highScore(1), isNot(StorageKeys.highScore(2)));
       expect(StorageKeys.star(1), isNot(StorageKeys.highScore(1)));
     });
+
+    test('getDouble trả về def khi chưa có key', () {
+      expect(store.getDouble('missing'), 1.0);
+      expect(store.getDouble('missing', def: 0.5), 0.5);
+    });
+
+    test('setDouble rồi đọc lại đúng giá trị (X2 bgm/sfx volume)', () async {
+      await store.setDouble(StorageKeys.bgmVolume, 0.4);
+      await store.setDouble(StorageKeys.sfxVolume, 0.7);
+      expect(store.getDouble(StorageKeys.bgmVolume), 0.4);
+      expect(store.getDouble(StorageKeys.sfxVolume), 0.7);
+    });
+
+    test(
+      'X2 haptics: setBool persist qua StorageKeys.hapticsEnabled',
+      () async {
+        expect(store.getBool(StorageKeys.hapticsEnabled, def: true), true);
+        await store.setBool(StorageKeys.hapticsEnabled, false);
+        expect(store.getBool(StorageKeys.hapticsEnabled, def: true), false);
+      },
+    );
   });
 }

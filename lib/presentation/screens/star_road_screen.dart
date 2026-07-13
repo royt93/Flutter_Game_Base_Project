@@ -126,7 +126,7 @@ class _ChestRow extends StatelessWidget {
               children: [
                 Text(
                   '$milestone stars',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: NeonTheme.ink,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -137,7 +137,7 @@ class _ChestRow extends StatelessWidget {
                   claimed
                       ? 'Claimed'
                       : '$totalStars / $milestone · reward ${fmtNum(reward)} coins',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: NeonTheme.inkSoft,
                     fontSize: 12,
                   ),

@@ -30,7 +30,10 @@ class LocaleService extends GetxService {
   Future<void> change(Locale locale) async {
     current.value = locale;
     Get.updateLocale(locale);
-    await _store.setString(StorageKeys.localeCode, AppTranslations.codeOf(locale));
+    await _store.setString(
+      StorageKeys.localeCode,
+      AppTranslations.codeOf(locale),
+    );
   }
 
   bool isCurrent(Locale l) =>

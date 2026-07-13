@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:pop_star_blast/core/storage_service.dart';
 import 'package:pop_star_blast/data/levels.dart';
+import 'package:pop_star_blast/logic/gift_tile.dart';
 import 'package:pop_star_blast/presentation/controllers/game_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,7 +39,10 @@ void main() {
       ctrl.checkEnd(false);
       expect(ctrl.starsEarned.value, greaterThanOrEqualTo(1));
       expect(ctrl.unlockedLevel.value, 2);
-      expect(ctrl.coins.value, ctrl.starsEarned.value * 20);
+      expect(
+        ctrl.coins.value,
+        ctrl.starsEarned.value * 20 * ctrl.weekendCoinMultiplier,
+      );
     });
 
     test('ngưỡng sao 1/2/3 theo bội số target', () {
@@ -119,9 +123,11 @@ void main() {
     test('lần đầu: nhận được, streak=1, cộng đúng xu D1', () {
       expect(ctrl.canClaimDaily, isTrue);
       final reward = ctrl.claimDaily();
-      expect(reward, GameController.dailyRewards[0]);
+      final expected =
+          GameController.dailyRewards[0] * ctrl.weekendCoinMultiplier;
+      expect(reward, expected);
       expect(ctrl.dailyStreak.value, 1);
-      expect(ctrl.coins.value, GameController.dailyRewards[0]);
+      expect(ctrl.coins.value, expected);
     });
 
     test('đã nhận hôm nay → không cho nhận lại', () {
@@ -141,7 +147,10 @@ void main() {
 
       final reward = ctrl.claimDaily();
       expect(ctrl.dailyStreak.value, 4);
-      expect(reward, GameController.dailyRewards[3]);
+      expect(
+        reward,
+        GameController.dailyRewards[3] * ctrl.weekendCoinMultiplier,
+      );
     });
 
     test('cách >1 ngày → reset streak về 1', () {
@@ -151,7 +160,10 @@ void main() {
 
       final reward = ctrl.claimDaily();
       expect(ctrl.dailyStreak.value, 1);
-      expect(reward, GameController.dailyRewards[0]);
+      expect(
+        reward,
+        GameController.dailyRewards[0] * ctrl.weekendCoinMultiplier,
+      );
     });
 
     test('chống lùi giờ: đồng hồ chỉnh lùi vẫn không cho nhận thêm', () {
@@ -166,6 +178,175 @@ void main() {
       expect(reward, isNull);
       expect(ctrl.dailyStreak.value, 2);
       expect(ctrl.coins.value, 0);
+    });
+  });
+
+  group('I7 Vòng quay hằng ngày', () {
+    test('todaySpinReward seed theo ngày: gọi nhiều lần cùng ngày ra cùng '
+        'kết quả, không đổi state', () {
+      final r1 = ctrl.todaySpinReward;
+      final r2 = ctrl.todaySpinReward;
+      expect(r1.type, r2.type);
+      expect(r1.amount, r2.amount);
+      expect(ctrl.canClaimSpin, isTrue);
+    });
+
+    test('claimSpin cộng đúng thưởng + đánh dấu đã quay, quay lại trong '
+        'ngày trả về null', () {
+      expect(ctrl.canClaimSpin, isTrue);
+      final reward = ctrl.todaySpinReward;
+      final coinsBefore = ctrl.coins.value;
+      final bombBefore = ctrl.bombCount.value;
+      final shuffleBefore = ctrl.shuffleCount.value;
+      final undoBefore = ctrl.undoCount.value;
+
+      final claimed = ctrl.claimSpin();
+      expect(claimed?.type, reward.type);
+      expect(claimed?.amount, reward.amount);
+
+      switch (reward.type) {
+        case 'coins':
+          expect(
+            ctrl.coins.value,
+            coinsBefore + reward.amount * ctrl.weekendCoinMultiplier,
+          );
+        case 'bomb':
+          expect(ctrl.bombCount.value, bombBefore + reward.amount);
+        case 'shuffle':
+          expect(ctrl.shuffleCount.value, shuffleBefore + reward.amount);
+        case 'undo':
+          expect(ctrl.undoCount.value, undoBefore + reward.amount);
+      }
+
+      expect(ctrl.canClaimSpin, isFalse);
+      expect(ctrl.claimSpin(), isNull);
+    });
+
+    test('lastSpinDay khác hôm nay (giả lập qua ngày mới) → canClaimSpin '
+        'lại true', () {
+      ctrl.claimSpin();
+      expect(ctrl.canClaimSpin, isFalse);
+
+      final yesterday =
+          DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000 - 1;
+      StorageService.to.setInt(StorageKeys.lastSpinDay, yesterday);
+      expect(ctrl.canClaimSpin, isTrue);
+    });
+  });
+
+  group('I10 Comeback bonus', () {
+    test('lần đầu mở app (chưa có lastOpenDay) → không tặng quà, nhưng vẫn '
+        'lưu mốc hôm nay', () {
+      expect(ctrl.checkComebackBonus(), isNull);
+      final today = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000;
+      expect(StorageService.to.getInt(StorageKeys.lastOpenDay, def: -1), today);
+    });
+
+    test('vắng đúng 3 ngày → tặng coin + 1 bomb + 1 shuffle, reset mốc', () {
+      final today = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000;
+      StorageService.to.setInt(StorageKeys.lastOpenDay, today - 3);
+      final coinsBefore = ctrl.coins.value;
+      final bombBefore = ctrl.bombCount.value;
+      final shuffleBefore = ctrl.shuffleCount.value;
+
+      final reward = ctrl.checkComebackBonus();
+
+      expect(
+        reward,
+        GameController.comebackBonusCoins * ctrl.weekendCoinMultiplier,
+      );
+      expect(ctrl.coins.value, coinsBefore + reward!);
+      expect(ctrl.bombCount.value, bombBefore + 1);
+      expect(ctrl.shuffleCount.value, shuffleBefore + 1);
+      expect(StorageService.to.getInt(StorageKeys.lastOpenDay, def: -1), today);
+      // Mở lại ngay sau đó trong cùng ngày → không tặng nữa.
+      expect(ctrl.checkComebackBonus(), isNull);
+    });
+
+    test('vắng dưới 3 ngày → không tặng quà', () {
+      final today = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000;
+      StorageService.to.setInt(StorageKeys.lastOpenDay, today - 2);
+      expect(ctrl.checkComebackBonus(), isNull);
+    });
+  });
+
+  group('F13 Daily Challenge', () {
+    test('startDailyChallenge sinh bàn từ seed hôm nay, gọi lại cùng ngày ra '
+        'cùng bàn', () {
+      ctrl.startDailyChallenge();
+      final grid1 = ctrl.dailyChallengeGrid;
+      ctrl.startDailyChallenge();
+      final grid2 = ctrl.dailyChallengeGrid;
+      expect(ctrl.mode.value, GameMode.dailyChallenge);
+      expect(ctrl.currentLevel.id, kDailyChallengeLevel.id);
+      expect(grid1, equals(grid2));
+    });
+
+    test('ghi điểm lần đầu trong ngày, chơi lại trong ngày không đè điểm', () {
+      ctrl.startDailyChallenge();
+      ctrl.score.value = 500;
+      expect(ctrl.canRecordDailyChallengeScore, isTrue);
+      ctrl.checkEnd(false);
+      expect(ctrl.dailyChallengeScoreToday, 500);
+      expect(ctrl.canRecordDailyChallengeScore, isFalse);
+
+      ctrl.startDailyChallenge();
+      ctrl.score.value = 900;
+      ctrl.checkEnd(false);
+      expect(ctrl.dailyChallengeScoreToday, 500);
+    });
+
+    test('lastDailyChallengeDay khác hôm nay (giả lập qua ngày mới) → ghi '
+        'điểm lại được', () {
+      ctrl.startDailyChallenge();
+      ctrl.score.value = 300;
+      ctrl.checkEnd(false);
+      expect(ctrl.canRecordDailyChallengeScore, isFalse);
+
+      final yesterday =
+          DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000 - 1;
+      StorageService.to.setInt(StorageKeys.lastDailyChallengeDay, yesterday);
+      expect(ctrl.canRecordDailyChallengeScore, isTrue);
+    });
+  });
+
+  group('I6 Battle-pass season', () {
+    test('thắng campaign cộng điểm mùa = sao * 10', () {
+      ctrl.startLevel(1);
+      ctrl.addScore(target);
+      ctrl.checkEnd(false);
+      expect(ctrl.seasonPoints.value, ctrl.starsEarned.value * 10);
+    });
+
+    test('claimSeason chỉ nhận được khi đủ điểm, và chỉ 1 lần', () {
+      ctrl.seasonPoints.value = GameController.seasonMilestones[0];
+      expect(ctrl.canClaimSeason(0), isTrue);
+      expect(ctrl.claimSeason(0), isTrue);
+      expect(ctrl.isSeasonClaimed(0), isTrue);
+      expect(ctrl.canClaimSeason(0), isFalse);
+      expect(ctrl.claimSeason(0), isFalse);
+    });
+
+    test('claim mốc coins cộng đúng số coin thưởng', () {
+      ctrl.seasonPoints.value = GameController.seasonMilestones[0];
+      final before = ctrl.coins.value;
+      ctrl.claimSeason(0);
+      expect(
+        ctrl.coins.value,
+        before +
+            GameController.seasonRewards[0].amount * ctrl.weekendCoinMultiplier,
+      );
+    });
+
+    test('qua mùa mới → reset điểm mùa + mốc đã nhận', () {
+      ctrl.seasonPoints.value = GameController.seasonMilestones[0];
+      ctrl.claimSeason(0);
+      StorageService.to.setInt(StorageKeys.lastSeasonIndex, -999);
+      ctrl.startLevel(1);
+      ctrl.addScore(target);
+      ctrl.checkEnd(false);
+      expect(ctrl.seasonPoints.value, ctrl.starsEarned.value * 10);
+      expect(ctrl.isSeasonClaimed(0), isFalse);
     });
   });
 
@@ -297,6 +478,185 @@ void main() {
       ]);
       expect(ctrl.objectiveRemaining.value, 0);
       expect(ctrl.objectiveMet, isTrue);
+    });
+  });
+
+  group('F9 objective mới', () {
+    void setObjective(LevelObjective objective) {
+      ctrl.currentLevelRx.value = PopLevel(
+        id: ctrl.currentLevel.id,
+        rows: ctrl.currentLevel.rows,
+        cols: ctrl.currentLevel.cols,
+        colorCount: ctrl.currentLevel.colorCount,
+        targetScore: ctrl.currentLevel.targetScore,
+        objective: objective,
+      );
+    }
+
+    test(
+      'collect: remaining giảm theo số đã thu (initial - current), met khi đủ target',
+      () {
+        ctrl.startLevel(1);
+        setObjective(const LevelObjective.collect(2, 3));
+
+        // Lần gọi đầu chụp initial = 4 ô màu 2 trên bàn → remaining = target (3).
+        ctrl.updateObjectiveProgress([
+          [2, 2, 1],
+          [2, 2, null],
+        ]);
+        expect(ctrl.objectiveRemaining.value, 3);
+        expect(ctrl.objectiveMet, isFalse);
+
+        // Đã thu 2 ô (còn 2 trên bàn) → remaining = 3 - 2 = 1.
+        ctrl.updateObjectiveProgress([
+          [2, 2, 1],
+          [null, null, null],
+        ]);
+        expect(ctrl.objectiveRemaining.value, 1);
+        expect(ctrl.objectiveMet, isFalse);
+
+        // Thu đủ 3 (dù vẫn còn 1 ô màu 2 trên bàn) → met.
+        ctrl.updateObjectiveProgress([
+          [2, null, 1],
+          [null, null, null],
+        ]);
+        expect(ctrl.objectiveRemaining.value, 0);
+        expect(ctrl.objectiveMet, isTrue);
+      },
+    );
+
+    test('moveLimitBonus: remaining luôn 0, không bao giờ objectiveMet', () {
+      ctrl.startLevel(1);
+      setObjective(const LevelObjective.moveLimitBonus(10));
+      ctrl.updateObjectiveProgress([
+        [1, 1],
+        [1, 1],
+      ]);
+      expect(ctrl.objectiveRemaining.value, 0);
+      expect(ctrl.objectiveMet, isFalse);
+    });
+
+    test('obstacleInMoves: đếm ô âm như clearObstacle, met khi = 0', () {
+      ctrl.startLevel(1);
+      setObjective(const LevelObjective.obstacleInMoves(2, 10));
+      ctrl.updateObjectiveProgress([
+        [-2, 0],
+        [-1, 1],
+      ]);
+      expect(ctrl.objectiveRemaining.value, 2);
+      expect(ctrl.objectiveMet, isFalse);
+
+      ctrl.updateObjectiveProgress([
+        [0, 0],
+        [null, 1],
+      ]);
+      expect(ctrl.objectiveRemaining.value, 0);
+      expect(ctrl.objectiveMet, isTrue);
+    });
+
+    test('openGift: đếm số ô quà còn lại, met khi mở hết', () {
+      ctrl.startLevel(1);
+      setObjective(const LevelObjective.openGift(2));
+      ctrl.updateObjectiveProgress([
+        [giftTileValue, 0],
+        [giftTileValue, 1],
+      ]);
+      expect(ctrl.objectiveRemaining.value, 2);
+      expect(ctrl.objectiveMet, isFalse);
+
+      ctrl.updateObjectiveProgress([
+        [null, 0],
+        [giftTileValue, 1],
+      ]);
+      expect(ctrl.objectiveRemaining.value, 1);
+      expect(ctrl.objectiveMet, isFalse);
+
+      ctrl.updateObjectiveProgress([
+        [null, 0],
+        [null, 1],
+      ]);
+      expect(ctrl.objectiveRemaining.value, 0);
+      expect(ctrl.objectiveMet, isTrue);
+    });
+
+    test('movesUsed tăng mỗi lần registerPop, reset khi startLevel', () {
+      ctrl.startLevel(1);
+      expect(ctrl.movesUsed.value, 0);
+      ctrl.registerPop(10);
+      ctrl.registerPop(10);
+      expect(ctrl.movesUsed.value, 2);
+      ctrl.startLevel(1);
+      expect(ctrl.movesUsed.value, 0);
+    });
+
+    test('bonus sao: xong trong giới hạn lượt → +1 sao (tối đa 3)', () {
+      ctrl.startLevel(1);
+      setObjective(LevelObjective.moveLimitBonus(10));
+      ctrl.addScore(target); // đúng target → 1 sao base
+      ctrl.movesUsed.value = 5;
+      ctrl.checkEnd(false);
+      expect(ctrl.starsEarned.value, 2);
+    });
+
+    test('bonus sao: vượt giới hạn lượt → không cộng', () {
+      ctrl.startLevel(1);
+      setObjective(LevelObjective.moveLimitBonus(10));
+      ctrl.addScore(target);
+      ctrl.movesUsed.value = 11;
+      ctrl.checkEnd(false);
+      expect(ctrl.starsEarned.value, 1);
+    });
+
+    test('bonus sao: 0 sao (thua) không được cộng bonus', () {
+      ctrl.startLevel(1);
+      setObjective(LevelObjective.moveLimitBonus(10));
+      ctrl.addScore(target - 1);
+      ctrl.movesUsed.value = 1;
+      ctrl.checkEnd(false);
+      expect(ctrl.starsEarned.value, 0);
+    });
+
+    test('bonus sao: đã 3 sao base thì vẫn giữ 3 (không vượt trần)', () {
+      ctrl.startLevel(1);
+      setObjective(LevelObjective.moveLimitBonus(10));
+      ctrl.addScore((target * 1.7).ceil());
+      ctrl.movesUsed.value = 1;
+      ctrl.checkEnd(false);
+      expect(ctrl.starsEarned.value, 3);
+    });
+  });
+
+  group('X5 shouldRequestReview — điều kiện thuần', () {
+    test('3 sao + chưa hiện lần nào → true', () {
+      expect(
+        GameController.shouldRequestReview(stars: 3, alreadyShown: false),
+        isTrue,
+      );
+    });
+
+    test('3 sao nhưng đã hiện rồi → false (không hiện lại lần 2)', () {
+      expect(
+        GameController.shouldRequestReview(stars: 3, alreadyShown: true),
+        isFalse,
+      );
+    });
+
+    test('1 hoặc 2 sao (chưa mốc tích cực nhất) → false', () {
+      expect(
+        GameController.shouldRequestReview(stars: 1, alreadyShown: false),
+        isFalse,
+      );
+      expect(
+        GameController.shouldRequestReview(stars: 2, alreadyShown: false),
+        isFalse,
+      );
+    });
+
+    test('0 sao (thua) → false, không hiện sau khi thua', () {
+      expect(
+        GameController.shouldRequestReview(stars: 0, alreadyShown: false),
+        isFalse,
+      );
     });
   });
 }

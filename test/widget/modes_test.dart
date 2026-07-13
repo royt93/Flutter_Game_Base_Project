@@ -77,4 +77,55 @@ void main() {
 
     Get.reset();
   });
+
+  testWidgets('F12 Endless: bàn dọn sạch thì sang bàn kế, không kết thúc ván', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    Get.put(StorageService(prefs), permanent: true);
+    final gameCtrl = Get.put(GameController(), permanent: true);
+    gameCtrl.startEndless();
+
+    await tester.pumpWidget(GetMaterialApp(home: const GameScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final gsc = Get.find<GameScreenController>();
+    // Cả bàn cùng màu → 1 tap nổ hết → lẽ ra "kết thúc ván" nếu không sang bàn.
+    gsc.game.colorGrid = List.generate(
+      gsc.game.rows,
+      (_) => List.generate(gsc.game.cols, (_) => 0),
+    );
+
+    await tester.tapAt(tester.getCenter(find.byType(GameWidget<PopStarGame>)));
+    await _pumpFrames(tester);
+
+    expect(gameCtrl.ended.value, isFalse);
+    expect(gsc.ui.value, GameUi.playing);
+    // Bàn được dựng lại mới, không còn rỗng hoàn toàn.
+    expect(gsc.game.colorGrid.any((row) => row.any((c) => c != null)), isTrue);
+
+    Get.reset();
+  });
+
+  test(
+    'F12 Endless: kẹt thì kết thúc ván + lưu best (không đụng campaign)',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      Get.put(StorageService(prefs), permanent: true);
+      final gameCtrl = Get.put(GameController(), permanent: true);
+      gameCtrl.startEndless();
+      gameCtrl.score.value = 777;
+
+      gameCtrl.checkEnd(false);
+
+      expect(gameCtrl.ended.value, isTrue);
+      expect(gameCtrl.endlessBest.value, 777);
+      expect(gameCtrl.unlockedLevel.value, 1);
+      expect(gameCtrl.coins.value, 0);
+
+      Get.reset();
+    },
+  );
 }

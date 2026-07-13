@@ -1,18 +1,62 @@
+import '../logic/pop_collapse.dart' show GravityDirection;
+
 /// F6b: loại mục tiêu thắng màn ngoài điểm. [score] giữ nguyên luật cũ
 /// (thắng khi bàn hết/kẹt, sao tính theo targetScore) — mặc định mọi màn.
-enum ObjectiveType { score, clearColor, clearObstacle }
+/// F9: [collect] thu đúng [LevelObjective.target] ô màu (không cần dọn hết
+/// trên bàn như [clearColor]); [moveLimitBonus] không phải điều kiện thắng,
+/// chỉ +1 sao bonus nếu xong màn trong ≤[LevelObjective.moveLimit] lượt;
+/// [obstacleInMoves] giống [clearObstacle] (phá đúng [LevelObjective.target]
+/// ô obstacle) + cùng bonus sao theo lượt. I1: [openGift] mở đúng
+/// [LevelObjective.target] ô quà (gift rơi tới đáy tự mở, xem
+/// `logic/gift_tile.dart`).
+enum ObjectiveType {
+  score,
+  clearColor,
+  clearObstacle,
+  collect,
+  moveLimitBonus,
+  obstacleInMoves,
+  openGift,
+}
 
-/// Mục tiêu 1 màn. `clearColor` cần [color]; `clearObstacle`/`score` không
-/// dùng field này.
+/// Mục tiêu 1 màn. `clearColor`/`collect` cần [color]; `collect`/
+/// `obstacleInMoves`/`openGift` cần [target]; `moveLimitBonus`/
+/// `obstacleInMoves` cần [moveLimit]. `clearObstacle`/`score` không dùng
+/// field nào.
 class LevelObjective {
   final ObjectiveType type;
   final int? color;
+  final int? target;
+  final int? moveLimit;
 
-  const LevelObjective.score() : type = ObjectiveType.score, color = null;
-  const LevelObjective.clearColor(this.color) : type = ObjectiveType.clearColor;
+  const LevelObjective.score()
+    : type = ObjectiveType.score,
+      color = null,
+      target = null,
+      moveLimit = null;
+  const LevelObjective.clearColor(this.color)
+    : type = ObjectiveType.clearColor,
+      target = null,
+      moveLimit = null;
   const LevelObjective.clearObstacle()
     : type = ObjectiveType.clearObstacle,
+      color = null,
+      target = null,
+      moveLimit = null;
+  const LevelObjective.collect(this.color, this.target)
+    : type = ObjectiveType.collect,
+      moveLimit = null;
+  const LevelObjective.moveLimitBonus(this.moveLimit)
+    : type = ObjectiveType.moveLimitBonus,
+      color = null,
+      target = null;
+  const LevelObjective.obstacleInMoves(this.target, this.moveLimit)
+    : type = ObjectiveType.obstacleInMoves,
       color = null;
+  const LevelObjective.openGift(this.target)
+    : type = ObjectiveType.openGift,
+      color = null,
+      moveLimit = null;
 }
 
 /// Cấu hình 1 màn Pop Star Blast.
@@ -24,6 +68,13 @@ class PopLevel {
   final int targetScore;
   final LevelObjective objective;
 
+  /// F11: level cuối mỗi world (id % 20 == 0) — target nhân
+  /// [bossTargetMultiplier], icon/banner riêng trên path map.
+  final bool isBoss;
+
+  /// I3: hướng gravity của màn — mặc định [GravityDirection.down] (luật gốc).
+  final GravityDirection gravityDirection;
+
   const PopLevel({
     required this.id,
     required this.rows,
@@ -31,8 +82,13 @@ class PopLevel {
     required this.colorCount,
     required this.targetScore,
     this.objective = const LevelObjective.score(),
+    this.isBoss = false,
+    this.gravityDirection = GravityDirection.down,
   });
 }
+
+/// F11: hệ số nhân targetScore của boss level so với target thường cùng world.
+const double bossTargetMultiplier = 1.5;
 
 /// Điểm khi nổ 1 nhóm [n] ô: công thức chuẩn PopStar — càng nhóm to càng lời.
 int scoreForGroup(int n) => 5 * n * (n - 1);
@@ -48,8 +104,9 @@ const int kLevelCount = 200;
 /// và chỉ nhích nhẹ theo world; công thức leo-tuyến-tính cũ khiến ~146/200 màn
 /// bất khả thi (đã xác minh bằng greedy-bot sim, xem doc/feat.md).
 ///
-/// F6b: objective luân phiên theo chu kỳ 5 màn, lặp lại suốt 200 màn —
-/// 3 màn score, 1 màn clearColor, 1 màn clearObstacle (slot 3 và 4).
+/// F9: objective luân phiên theo chu kỳ 8 màn, lặp lại suốt 200 màn — 3 màn
+/// score, rồi lần lượt clearColor/clearObstacle/collect/moveLimitBonus/
+/// obstacleInMoves (slot 3..7).
 final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
   final id = i + 1;
   final world = i ~/ 20; // 0..9
@@ -58,11 +115,23 @@ final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
   final colorCount = 4 + (world ~/ 3).clamp(0, 3); // 4..7
   final cells = rows * cols;
   final ramp = 1.0 + world * 0.03;
-  final targetScore = (cells * 6 * ramp).round();
-  final slot = i % 5;
+  final isBoss = id % 20 == 0;
+  final baseTarget = (cells * 6 * ramp).round();
+  final targetScore = isBoss
+      ? (baseTarget * bossTargetMultiplier).round()
+      : baseTarget;
+  final moveLimit = (cells ~/ 3).clamp(6, 30);
+  final obstacleCount = (3 + world ~/ 2).clamp(3, 8);
+  final slot = i % 8;
   final objective = switch (slot) {
     3 => LevelObjective.clearColor(i % colorCount),
     4 => const LevelObjective.clearObstacle(),
+    5 => LevelObjective.collect(
+      i % colorCount,
+      ((cells / colorCount) / 2).clamp(2, 12).round(),
+    ),
+    6 => LevelObjective.moveLimitBonus(moveLimit),
+    7 => LevelObjective.obstacleInMoves(obstacleCount, moveLimit),
     _ => const LevelObjective.score(),
   };
   return PopLevel(
@@ -72,6 +141,7 @@ final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
     colorCount: colorCount,
     targetScore: targetScore,
     objective: objective,
+    isBoss: isBoss,
   );
 });
 
@@ -86,6 +156,35 @@ const PopLevel kTimeAttackLevel = PopLevel(
 );
 const PopLevel kZenLevel = PopLevel(
   id: -2,
+  rows: 9,
+  cols: 8,
+  colorCount: 5,
+  targetScore: 0,
+);
+
+/// F12 Endless: bàn thứ [boardIndex] (0-based, tăng mỗi khi dọn sạch bàn
+/// trước). Ramp liên tục (không chia world như campaign) — rows/cols/colors
+/// nới rộng dần rồi kẹp trần để bàn không phình vô hạn. id âm giống các
+/// side-mode khác, không đụng storage theo id.
+PopLevel endlessLevelForIndex(int boardIndex) {
+  final rows = (7 + boardIndex ~/ 4).clamp(7, 14);
+  final cols = (6 + boardIndex ~/ 3).clamp(6, 14);
+  final colorCount = (4 + boardIndex ~/ 6).clamp(4, 8);
+  return PopLevel(
+    id: -3,
+    rows: rows,
+    cols: cols,
+    colorCount: colorCount,
+    targetScore: 0,
+  );
+}
+
+/// F13: bàn cho Daily Challenge — rows/cols/colorCount phải khớp
+/// `dailyChallengeRows/Cols/ColorCount` (lib/logic/daily_challenge.dart) vì
+/// bàn thật được sinh riêng từ seed theo ngày, PopLevel này chỉ định kích
+/// thước hiển thị.
+const PopLevel kDailyChallengeLevel = PopLevel(
+  id: -4,
   rows: 9,
   cols: 8,
   colorCount: 5,

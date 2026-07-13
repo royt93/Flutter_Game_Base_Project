@@ -57,7 +57,7 @@ class NeonDialog {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: NeonTheme.ink,
               fontSize: 26,
               fontWeight: FontWeight.w900,
@@ -69,7 +69,7 @@ class NeonDialog {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: NeonTheme.inkSoft,
                 fontSize: 14,
                 height: 1.4,

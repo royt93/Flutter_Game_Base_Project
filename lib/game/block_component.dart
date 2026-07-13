@@ -5,12 +5,177 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 import '../core/neon_theme.dart';
+import '../data/worlds.dart';
+import '../logic/gift_tile.dart';
 import '../logic/power_tile.dart';
 import 'pop_star_game.dart';
 
+/// I17: chất liệu render gem theo world — jelly (world đầu, mềm bóng),
+/// crystal (world giữa, góc cạnh phản chiếu), metal (world cuối, ánh kim).
+/// Chỉ đổi cách vẽ (paint), không đụng `colorGrid`/logic pop/hitbox.
+enum TileMaterial { jelly, crystal, metal }
+
+/// Chia đều 10 world (index trong [kWorlds]) thành 3 dải material — không
+/// hardcode lại "20 màn/world" (đã có trong `worlds.dart`), chỉ dựa vào index
+/// world thật để không lệch khi số world thay đổi.
+TileMaterial materialForLevel(int id) {
+  final index = kWorlds.indexOf(worldForLevel(id));
+  if (index < 4) return TileMaterial.jelly;
+  if (index < 7) return TileMaterial.crystal;
+  return TileMaterial.metal;
+}
+
+double _radiusFactor(TileMaterial m) => switch (m) {
+  TileMaterial.jelly => 0.22,
+  TileMaterial.crystal => 0.10,
+  TileMaterial.metal => 0.16,
+};
+
+/// I17: thân gradient + gloss + viền gem theo [material] — tách khỏi
+/// [BlockComponent.render] để golden test vẽ trực tiếp qua `CustomPainter`,
+/// không cần dựng cả Flame game (bước này không đụng `game.heat`/colorblind).
+/// Giữ đúng 3 lệnh vẽ (drawRRect thân, drawRRect/Path gloss, drawRRect viền)
+/// ở mọi variant — không thêm draw call so với bản gốc.
+void paintTileBody(
+  Canvas canvas,
+  RRect rrect,
+  Rect rect,
+  double s,
+  Color c,
+  TileMaterial material,
+) {
+  switch (material) {
+    case TileMaterial.jelly:
+      // thân: gradient dọc mềm, sáng đỉnh → đậm đáy.
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(rect.left, rect.top),
+            Offset(rect.left, rect.bottom),
+            [
+              Color.lerp(c, Colors.white, 0.38)!,
+              c,
+              Color.lerp(c, Colors.black, 0.30)!,
+            ],
+            const [0.0, 0.55, 1.0],
+          ),
+      );
+      // gloss: khối bo tròn sáng ở nửa trên (bóng nhựa jelly).
+      final gloss = RRect.fromRectAndCorners(
+        Rect.fromLTWH(
+          rect.left + s * 0.12,
+          rect.top + s * 0.08,
+          rect.width - s * 0.24,
+          rect.height * 0.30,
+        ),
+        topLeft: Radius.circular(s * _radiusFactor(material)),
+        topRight: Radius.circular(s * _radiusFactor(material)),
+        bottomLeft: Radius.circular(s * 0.12),
+        bottomRight: Radius.circular(s * 0.12),
+      );
+      canvas.drawRRect(
+        gloss,
+        Paint()..color = Colors.white.withValues(alpha: 0.22),
+      );
+      // viền: mềm, hoà vào màu thân.
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.045
+          ..color = Color.lerp(c, Colors.white, 0.5)!.withValues(alpha: 0.9),
+      );
+    case TileMaterial.crystal:
+      // thân: gradient chéo góc, stop cứng hơn = mặt cắt pha lê.
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(rect.left, rect.top),
+            Offset(rect.right, rect.bottom),
+            [
+              Color.lerp(c, Colors.white, 0.6)!,
+              c,
+              Color.lerp(c, Colors.black, 0.4)!,
+            ],
+            const [0.0, 0.45, 1.0],
+          ),
+      );
+      // gloss: 1 vệt chéo mỏng phản chiếu (facet), không phải khối bo tròn.
+      canvas.save();
+      canvas.translate(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      canvas.rotate(-pi / 4);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset.zero,
+            width: s * 0.08,
+            height: s * 0.9,
+          ),
+          Radius.circular(s * 0.04),
+        ),
+        Paint()..color = Colors.white.withValues(alpha: 0.55),
+      );
+      canvas.restore();
+      // viền: mảnh, sáng gần trắng — cạnh sắc phản chiếu.
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.035
+          ..color = Color.lerp(c, Colors.white, 0.75)!.withValues(alpha: 0.95),
+      );
+    case TileMaterial.metal:
+      // thân: gradient ngang nhiều dải sáng/tối = ánh kim chải (brushed).
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(rect.left, rect.top),
+            Offset(rect.right, rect.top),
+            [
+              Color.lerp(c, Colors.black, 0.35)!,
+              Color.lerp(c, Colors.white, 0.55)!,
+              Color.lerp(c, Colors.black, 0.25)!,
+              Color.lerp(c, Colors.white, 0.35)!,
+              Color.lerp(c, Colors.black, 0.3)!,
+            ],
+            const [0.0, 0.25, 0.5, 0.75, 1.0],
+          ),
+      );
+      // gloss: dải sáng ngang mỏng giữa thân (phản chiếu kim loại).
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            rect.left,
+            rect.top + rect.height * 0.42,
+            rect.width,
+            rect.height * 0.1,
+          ),
+          Radius.circular(s * 0.02),
+        ),
+        Paint()..color = Colors.white.withValues(alpha: 0.4),
+      );
+      // viền: dày, ngả xám — cảm giác khung kim loại.
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.06
+          ..color = Color.lerp(
+            c,
+            const Color(0xFFD9D9D9),
+            0.6,
+          )!.withValues(alpha: 0.85),
+      );
+  }
+}
+
 /// 1 ô màu trên bàn PopStar — viên "neon jewel": quầng bloom ngoài + thân
-/// gradient (sáng đỉnh, đậm đáy) + gloss đỉnh + viền sáng. Không có variant
-/// striped/rainbow/bomb (chỉ match-3 cần).
+/// gradient (sáng đỉnh, đậm đáy) + gloss đỉnh + viền sáng. I17: thân/gloss/
+/// viền đổi chất liệu theo [material]. Không có variant striped/rainbow/bomb
+/// (chỉ match-3 cần).
 class BlockComponent extends PositionComponent
     with HasGameReference<PopStarGame> {
   /// F6a: âm = obstacle còn (-colorIndex) độ bền, không phải màu — cần mutable
@@ -35,11 +200,15 @@ class BlockComponent extends PositionComponent
   /// chip qua `chipAdjacentLocks`.
   int lockCount;
 
+  /// I17: chất liệu render — mặc định [TileMaterial.jelly] (world đầu).
+  final TileMaterial material;
+
   BlockComponent({
     required this.colorIndex,
     required Vector2 position,
     required Vector2 size,
     this.lockCount = 0,
+    this.material = TileMaterial.jelly,
   }) : super(position: position, size: size, anchor: Anchor.center);
 
   Color get _color =>
@@ -97,10 +266,17 @@ class BlockComponent extends PositionComponent
     final s = size.x;
     final inset = s * 0.06;
     final rect = Rect.fromLTWH(inset, inset, s - inset * 2, s - inset * 2);
-    final radius = Radius.circular(s * 0.22);
+    final radius = Radius.circular(s * _radiusFactor(material));
     final rrect = RRect.fromRectAndRadius(rect, radius);
 
-    // 0. F6a: obstacle (ice/crate) không phải màu — render riêng rồi thoát,
+    // 0a. I1: gift tile — kiểm tra trước obstacle vì cũng mã hoá bằng giá
+    // trị âm (xem `logic/gift_tile.dart`), không thì bị hiểu nhầm thành
+    // obstacle cực bền (-giftTileValue chấm tròn).
+    if (colorIndex == giftTileValue) {
+      _renderGift(canvas, rrect, s);
+      return;
+    }
+    // 0b. F6a: obstacle (ice/crate) không phải màu — render riêng rồi thoát,
     // bỏ qua toàn bộ phần thân gem/preview/power-tile bên dưới.
     if (colorIndex < 0) {
       _renderObstacle(canvas, rrect, s, -colorIndex);
@@ -137,48 +313,8 @@ class BlockComponent extends PositionComponent
       );
     }
 
-    // 2. thân gradient dọc: sáng ở đỉnh → đậm ở đáy
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..shader = ui.Gradient.linear(
-          Offset(rect.left, rect.top),
-          Offset(rect.left, rect.bottom),
-          [
-            Color.lerp(c, Colors.white, 0.38)!,
-            c,
-            Color.lerp(c, Colors.black, 0.30)!,
-          ],
-          const [0.0, 0.55, 1.0],
-        ),
-    );
-
-    // 3. gloss sáng ở nửa trên
-    final gloss = RRect.fromRectAndCorners(
-      Rect.fromLTWH(
-        rect.left + s * 0.12,
-        rect.top + s * 0.08,
-        rect.width - s * 0.24,
-        rect.height * 0.30,
-      ),
-      topLeft: radius,
-      topRight: radius,
-      bottomLeft: Radius.circular(s * 0.12),
-      bottomRight: Radius.circular(s * 0.12),
-    );
-    canvas.drawRRect(
-      gloss,
-      Paint()..color = Colors.white.withValues(alpha: 0.22),
-    );
-
-    // 4. viền sáng
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = s * 0.045
-        ..color = Color.lerp(c, Colors.white, 0.5)!.withValues(alpha: 0.9),
-    );
+    // 2-4. thân gradient + gloss + viền — style theo material (I17).
+    paintTileBody(canvas, rrect, rect, s, c, material);
 
     // 5. G6 combo heat: bàn càng "nóng" (combo cao) → rim ngả cam/trắng mạnh
     // hơn, nhưng chỉ cộng thêm lên viền — không thay màu thân nên vẫn phân
@@ -408,6 +544,34 @@ class BlockComponent extends PositionComponent
     }
     canvas.drawPath(path, fill);
     canvas.drawPath(path, stroke);
+  }
+
+  /// I1: hộp quà vàng-hồng + dải ruy băng chữ thập, khác hẳn obstacle/gem.
+  void _renderGift(Canvas canvas, RRect rrect, double s) {
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = NeonTheme.gold.withValues(alpha: 0.5)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, s * 0.16),
+    );
+    canvas.drawRRect(rrect, Paint()..color = NeonTheme.gold);
+    final ribbon = s * 0.16;
+    final mid = s / 2;
+    canvas.drawRect(
+      Rect.fromLTWH(mid - ribbon / 2, 0, ribbon, s),
+      Paint()..color = Colors.white.withValues(alpha: 0.9),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(0, mid - ribbon / 2, s, ribbon),
+      Paint()..color = Colors.white.withValues(alpha: 0.9),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.045
+        ..color = Colors.white.withValues(alpha: 0.9),
+    );
   }
 
   /// F6a: khối băng/thùng xám-xanh mờ + số chấm trắng = độ bền còn lại.

@@ -10,7 +10,7 @@ class StrokeText extends StatelessWidget {
     super.key,
     required this.fontSize,
     this.color = Colors.white,
-    this.stroke = NeonTheme.ink,
+    this.stroke,
     this.strokeWidth = 3.5,
     this.weight = FontWeight.w900,
     this.letterSpacing = 0.5,
@@ -20,7 +20,7 @@ class StrokeText extends StatelessWidget {
   final String text;
   final double fontSize;
   final Color color;
-  final Color stroke;
+  final Color? stroke;
   final double strokeWidth;
   final FontWeight weight;
   final double letterSpacing;
@@ -42,7 +42,7 @@ class StrokeText extends StatelessWidget {
               ..style = PaintingStyle.stroke
               ..strokeWidth = strokeWidth
               ..strokeJoin = StrokeJoin.round
-              ..color = stroke,
+              ..color = stroke ?? NeonTheme.ink,
           ),
         ),
         Text(

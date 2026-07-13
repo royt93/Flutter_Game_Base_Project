@@ -95,4 +95,120 @@ void main() {
       ]);
     });
   });
+
+  group('I3: gravityDirection', () {
+    test('up: ô rơi lên đỉnh cột, giữ thứ tự tương đối', () {
+      final List<List<int?>> grid = [
+        [null],
+        [0],
+        [1],
+      ];
+      applyGravityAndCollapse(grid, direction: GravityDirection.up);
+      expect(grid, [
+        [0],
+        [1],
+        [null],
+      ]);
+    });
+
+    test('up: cột rỗng hoàn toàn dồn sang phải sau khi rơi', () {
+      final List<List<int?>> grid = [
+        [null, null],
+        [null, 0],
+      ];
+      applyGravityAndCollapse(grid, direction: GravityDirection.up);
+      expect(grid, [
+        [0, null],
+        [null, null],
+      ]);
+    });
+
+    test('right: ô rơi sang phải trong hàng, giữ thứ tự tương đối', () {
+      final List<List<int?>> grid = [
+        [0, null, 1],
+      ];
+      applyGravityAndCollapse(grid, direction: GravityDirection.right);
+      expect(grid, [
+        [null, 0, 1],
+      ]);
+    });
+
+    test('right: hàng rỗng hoàn toàn dồn xuống dưới sau khi rơi', () {
+      final List<List<int?>> grid = [
+        [null, null],
+        [0, null],
+      ];
+      applyGravityAndCollapse(grid, direction: GravityDirection.right);
+      expect(grid, [
+        [null, 0],
+        [null, null],
+      ]);
+    });
+
+    test('left: ô rơi sang trái trong hàng, giữ thứ tự tương đối', () {
+      final List<List<int?>> grid = [
+        [null, 0, 1],
+      ];
+      applyGravityAndCollapse(grid, direction: GravityDirection.left);
+      expect(grid, [
+        [0, 1, null],
+      ]);
+    });
+
+    test('left: hàng rỗng hoàn toàn dồn xuống dưới sau khi rơi', () {
+      final List<List<int?>> grid = [
+        [null, null],
+        [null, 0],
+      ];
+      applyGravityAndCollapse(grid, direction: GravityDirection.left);
+      expect(grid, [
+        [0, null],
+        [null, null],
+      ]);
+    });
+
+    test('up: lockGrid vẫn rơi lockstep theo cột cùng colorGrid', () {
+      final List<List<int?>> grid = [
+        [null],
+        [0],
+      ];
+      final lockGrid = [
+        [0],
+        [3],
+      ];
+      applyGravityAndCollapse(
+        grid,
+        lockGrid: lockGrid,
+        direction: GravityDirection.up,
+      );
+      expect(grid, [
+        [0],
+        [null],
+      ]);
+      expect(lockGrid, [
+        [3],
+        [0],
+      ]);
+    });
+
+    test('right cho kết quả đúng như down chạy trên grid đã transpose', () {
+      final List<List<int?>> original = [
+        [0, null, null],
+        [null, 1, null],
+      ];
+
+      final transposed = [
+        for (var c = 0; c < original[0].length; c++)
+          [for (var r = 0; r < original.length; r++) original[r][c]],
+      ];
+      applyGravityAndCollapse(transposed);
+      final expected = [
+        for (var r = 0; r < original.length; r++)
+          [for (var c = 0; c < original[0].length; c++) transposed[c][r]],
+      ];
+
+      applyGravityAndCollapse(original, direction: GravityDirection.right);
+      expect(original, expected);
+    });
+  });
 }

@@ -1,8 +1,12 @@
 import 'dart:math';
 
+import 'gift_tile.dart';
+
 /// F6a: obstacle (ice/crate) mã hoá bằng giá trị âm ngay trong colorGrid —
 /// -d nghĩa là còn d độ bền. Không phải màu nên `pop_detector` đã loại nó
 /// khỏi mọi flood-fill (không thuộc nhóm màu, không nổ trực tiếp).
+/// I1: [giftTileValue] cũng âm nhưng không phải obstacle — loại trừ tường
+/// minh, không thì bị chip nhầm thành obstacle rất bền.
 
 /// Nhóm vừa nổ tại [poppedCells] chip 1 độ bền mọi obstacle liền kề (4 hướng).
 /// Hết độ bền → vỡ thành ô trống (null). Mutates [grid] in place. Trả về vị
@@ -23,7 +27,7 @@ Set<Point<int>> chipAdjacentObstacles(
     ]) {
       if (n.x < 0 || n.x >= rows || n.y < 0 || n.y >= cols) continue;
       final v = grid[n.x][n.y];
-      if (v != null && v < 0) hit.add(n);
+      if (v != null && v < 0 && v != giftTileValue) hit.add(n);
     }
   }
   final broken = <Point<int>>{};

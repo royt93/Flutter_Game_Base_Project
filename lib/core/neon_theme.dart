@@ -3,8 +3,15 @@ import 'package:flutter/material.dart';
 /// Bảng màu & style dùng chung. Đợt revamp bright-casual (Candy-Crush): nền sáng
 /// ấm, palette kẹo, thẻ trắng, chữ mực đậm. Giữ tên hằng cũ (cyan/magenta/…) để
 /// khỏi rename hàng loạt callsite — giá trị đã tinh chỉnh sang tông "kẹo".
+///
+/// I15: bộ token nền/thẻ/mực (bg*/card*/ink*) là getter đổi theo [dark] — bật
+/// lên dùng lại đúng bảng màu neon-dark gốc trước pivot. Callsite cũ gọi
+/// `NeonTheme.ink`/`NeonTheme.card`/… không cần sửa gì, tự đổi theo flag.
 class NeonTheme {
   NeonTheme._();
+
+  /// true = bảng màu neon-dark gốc, false (mặc định) = bright-casual hiện tại.
+  static bool dark = false;
 
   /// Font toàn app — Baloo2 (đủ glyph tiếng Việt + bo tròn vui mắt).
   static const String fontFamily = 'Baloo2';
@@ -14,23 +21,36 @@ class NeonTheme {
   static const double s16 = 16;
   static const double s24 = 24;
 
-  // --- Nền sáng candy sky (gradient dọc) ---
-  static const Color bgTop = Color(0xFF7ED8FF); // xanh trời
-  static const Color bgMid = Color(0xFFB6A9FF); // tím lilac
-  static const Color bgBot = Color(0xFFFFC2E0); // hồng kẹo
+  // --- Nền candy sky sáng / nền neon tối (gradient dọc) ---
+  static const Color _bgTopLight = Color(0xFF7ED8FF); // xanh trời
+  static const Color _bgMidLight = Color(0xFFB6A9FF); // tím lilac
+  static const Color _bgBotLight = Color(0xFFFFC2E0); // hồng kẹo
+  static const Color _bgTopDark = Color(0xFF2A2350);
+  static const Color _bgMidDark = Color(0xFF1C1740);
+  static const Color _bgBotDark = Color(0xFF1A0A2E); // nền tối gốc trước pivot
 
-  // --- Thẻ / panel sáng ---
-  static const Color card = Color(0xFFFFFFFF);
-  static const Color cardAlt = Color(0xFFF2ECFF);
-  static const Color panel = Color(0xFFFFFFFF); // alias tương thích callsite cũ
+  static Color get bgTop => dark ? _bgTopDark : _bgTopLight;
+  static Color get bgMid => dark ? _bgMidDark : _bgMidLight;
+  static Color get bgBot => dark ? _bgBotDark : _bgBotLight;
 
-  // --- Mực chữ trên nền/thẻ sáng ---
-  static const Color ink = Color(0xFF3A2E6B); // tím đậm, đọc rõ
-  static const Color inkSoft = Color(0xFF8579B0); // phụ/mô tả
+  // --- Thẻ / panel sáng / tối ---
+  static const Color _cardLight = Color(0xFFFFFFFF);
+  static const Color _cardAltLight = Color(0xFFF2ECFF);
+  static const Color _cardDark = Color(0xFF1B1B3A); // panel gốc trước pivot
+  static const Color _cardAltDark = Color(0xFF14142E);
 
-  // Giữ 2 hằng nền tối cũ cho callsite chưa chuyển (game canvas dùng board panel).
-  static const Color bgDark = Color(0xFF2A2350);
-  static const Color bgDark2 = Color(0xFF1C1740);
+  static Color get card => dark ? _cardDark : _cardLight;
+  static Color get cardAlt => dark ? _cardAltDark : _cardAltLight;
+  static Color get panel => card; // alias tương thích callsite cũ
+
+  // --- Mực chữ trên nền/thẻ ---
+  static const Color _inkLight = Color(0xFF3A2E6B); // tím đậm, đọc rõ
+  static const Color _inkSoftLight = Color(0xFF8579B0); // phụ/mô tả
+  static const Color _inkDark = Color(0xFFEDEBFF); // trắng ngà trên nền tối
+  static const Color _inkSoftDark = Color(0xFFA7A0D9);
+
+  static Color get ink => dark ? _inkDark : _inkLight;
+  static Color get inkSoft => dark ? _inkSoftDark : _inkSoftLight;
 
   // --- 6 màu block kiểu kẹo (saturated, thân thiện, dễ phân biệt) ---
   static const Color cyan = Color(0xFF35C4F0); // xanh dương kẹo
@@ -58,7 +78,7 @@ class NeonTheme {
   ];
 
   /// Gradient nền sáng candy dùng cho mọi screen (qua NeonBg).
-  static const LinearGradient bgGradient = LinearGradient(
+  static LinearGradient get bgGradient => LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [bgTop, bgMid, bgBot],

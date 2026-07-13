@@ -43,7 +43,7 @@ class CoinChip extends StatelessWidget {
           Obx(
             () => Text(
               fmtNum(controller.coins.value),
-              style: const TextStyle(
+              style: TextStyle(
                 color: NeonTheme.ink,
                 fontWeight: FontWeight.w800,
                 fontSize: 14,

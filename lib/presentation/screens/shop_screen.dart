@@ -84,6 +84,36 @@ class ShopScreen extends StatelessWidget {
                         onBuy: gameCtrl.buyRainbow,
                       ),
                     ),
+                    const SizedBox(height: NeonTheme.s16),
+                    Obx(
+                      () => _BoosterRow(
+                        icon: Icons.swap_horiz_rounded,
+                        color: NeonTheme.lime,
+                        label: 'Swap',
+                        desc: 'Swaps the colors of 2 tapped blocks.',
+                        count: gameCtrl.swapCount.value,
+                        price: GameController.swapPrice,
+                        canAfford:
+                            gameCtrl.coins.value >= GameController.swapPrice,
+                        onBuy: gameCtrl.buySwap,
+                      ),
+                    ),
+                    const SizedBox(height: NeonTheme.s16),
+                    Obx(
+                      () => _BoosterRow(
+                        icon: Icons.ac_unit_rounded,
+                        color: NeonTheme.cyan,
+                        label: 'Freeze',
+                        desc:
+                            'Obstacles stop losing durability for '
+                            '${GameController.freezeTurns} moves.',
+                        count: gameCtrl.freezeCount.value,
+                        price: GameController.freezePrice,
+                        canAfford:
+                            gameCtrl.coins.value >= GameController.freezePrice,
+                        onBuy: gameCtrl.buyFreeze,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -136,7 +166,7 @@ class _BoosterRow extends StatelessWidget {
               children: [
                 Text(
                   '$label  ×$count',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: NeonTheme.ink,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -145,7 +175,7 @@ class _BoosterRow extends StatelessWidget {
                 const SizedBox(height: NeonTheme.s8),
                 Text(
                   desc,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: NeonTheme.inkSoft,
                     fontSize: 12,
                   ),

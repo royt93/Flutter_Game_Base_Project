@@ -2,10 +2,12 @@ import 'package:flame/game.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:pop_star_blast/core/storage_service.dart';
+import 'package:pop_star_blast/data/worlds.dart';
 import 'package:pop_star_blast/presentation/controllers/game_controller.dart';
 import 'package:pop_star_blast/presentation/controllers/game_screen_controller.dart';
 import 'package:pop_star_blast/game/pop_star_game.dart';
 import 'package:pop_star_blast/presentation/screens/game_screen.dart';
+import 'package:pop_star_blast/presentation/widgets/neon_bg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Bơm nhiều frame nhỏ để game loop chạy hết effect + TimerComponent animation.
@@ -86,6 +88,24 @@ void main() {
     expect(gameCtrl.coins.value, greaterThan(0));
     expect(gameCtrl.unlockedLevel.value, 2);
     expect(gsc.ui.value, GameUi.win);
+
+    Get.reset();
+  });
+
+  testWidgets('I14: NeonBg nhận đúng accent theo world của level đang chơi', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    Get.put(StorageService(prefs), permanent: true);
+    final gameCtrl = Get.put(GameController(), permanent: true);
+    gameCtrl.startLevel(25); // world 2 (id 21..40) — khác world 1 mặc định
+
+    await tester.pumpWidget(GetMaterialApp(home: const GameScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final bg = tester.widget<NeonBg>(find.byType(NeonBg));
+    expect(bg.accent, worldForLevel(25).color);
 
     Get.reset();
   });

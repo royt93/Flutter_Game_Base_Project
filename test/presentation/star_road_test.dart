@@ -34,7 +34,10 @@ void main() {
     expect(ctrl.totalStars.value, 5);
     expect(ctrl.canClaimChest(0), isTrue);
     expect(ctrl.claimChest(0), isTrue);
-    expect(ctrl.coins.value, GameController.starRoadRewards[0]);
+    expect(
+      ctrl.coins.value,
+      GameController.starRoadRewards[0] * ctrl.weekendCoinMultiplier,
+    );
     expect(ctrl.isChestClaimed(0), isTrue);
     expect(ctrl.canClaimChest(1), isFalse); // mốc 15 sao chưa tới
   });

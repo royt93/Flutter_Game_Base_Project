@@ -1,10 +1,20 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pop_star_blast/logic/gift_tile.dart';
 import 'package:pop_star_blast/logic/obstacle.dart';
 
 void main() {
   group('chipAdjacentObstacles', () {
+    test('I1: gift tile liền kề không bị chip nhầm thành obstacle', () {
+      final grid = [
+        [0, giftTileValue],
+      ];
+      final broken = chipAdjacentObstacles(grid, {const Point(0, 0)});
+      expect(broken, isEmpty);
+      expect(grid[0][1], giftTileValue);
+    });
+
     test('chip 1 độ bền obstacle liền kề ô vừa nổ', () {
       final grid = [
         [0, -2],

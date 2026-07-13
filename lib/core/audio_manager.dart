@@ -14,6 +14,12 @@ class AudioManager extends GetxService {
   static const int noteCount = 24;
 
   final RxBool muted = false.obs;
+
+  /// X2: mức âm lượng riêng nhạc nền/hiệu ứng (0.0..1.0), nhân vào hằng số
+  /// volume gốc ở mỗi điểm phát.
+  final RxDouble bgmVolume = 1.0.obs;
+  final RxDouble sfxVolume = 1.0.obs;
+
   bool _bgmPlaying = false;
   int _currentTrack = 0; // W26.1 — track đang phát, để đổi nhạc theo mode
   bool _ready = false;
@@ -29,6 +35,8 @@ class AudioManager extends GetxService {
       def: false,
     );
     muted.value = savedMuted;
+    bgmVolume.value = StorageService.to.getDouble(StorageKeys.bgmVolume);
+    sfxVolume.value = StorageService.to.getDouble(StorageKeys.sfxVolume);
 
     FlameAudio.audioCache.prefix = 'asset/audio/';
     try {
@@ -57,9 +65,33 @@ class AudioManager extends GetxService {
     if (_bgmPlaying) {
       _ignoreAudio(FlameAudio.bgm.stop()); // đổi track: dừng track cũ
     }
-    _ignoreAudio(FlameAudio.bgm.play(_bgmTracks[t], volume: 0.35));
+    _ignoreAudio(
+      FlameAudio.bgm.play(_bgmTracks[t], volume: 0.35 * bgmVolume.value),
+    );
     _bgmPlaying = true;
     _currentTrack = t;
+  }
+
+  /// X2: đổi mức âm lượng nhạc nền, áp dụng ngay cả khi đang phát (không cần
+  /// restart track).
+  void setBgmVolume(double value) {
+    bgmVolume.value = value.clamp(0.0, 1.0);
+    unawaited(
+      StorageService.to.setDouble(StorageKeys.bgmVolume, bgmVolume.value),
+    );
+    if (_bgmPlaying && !muted.value) {
+      _ignoreAudio(
+        FlameAudio.bgm.audioPlayer.setVolume(0.35 * bgmVolume.value),
+      );
+    }
+  }
+
+  /// X2: đổi mức âm lượng hiệu ứng — áp dụng cho lần phát SFX kế tiếp.
+  void setSfxVolume(double value) {
+    sfxVolume.value = value.clamp(0.0, 1.0);
+    unawaited(
+      StorageService.to.setDouble(StorageKeys.sfxVolume, sfxVolume.value),
+    );
   }
 
   void stopBgm() {
@@ -100,7 +132,9 @@ class AudioManager extends GetxService {
   void playNote(int step) {
     if (muted.value || !_ready) return;
     final idx = step.clamp(1, noteCount);
-    _ignoreAudio(FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.6));
+    _ignoreAudio(
+      FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.6 * sfxVolume.value),
+    );
   }
 
   // --------------------------------------------------------------------------
@@ -152,7 +186,9 @@ class AudioManager extends GetxService {
       colorIndex: colorIndex,
       keyIndex: keyIndex,
     );
-    _ignoreAudio(FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.6));
+    _ignoreAudio(
+      FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.6 * sfxVolume.value),
+    );
     // Wombo (combo lớn) → arpeggio quãng 3 + 5 ngũ cung tạo hợp âm giải toả.
     if (combo >= 6) {
       _arpAfter(
@@ -185,7 +221,12 @@ class AudioManager extends GetxService {
       final baseDeg = colorIndex >= 0 ? colorIndex % pentatonic.length : 0;
       final semitone = root + pentaSemitone(baseDeg + (combo - 1) + addDegree);
       final idx = semitone.clamp(0, noteCount - 1) + 1;
-      _ignoreAudio(FlameAudio.play('notes/n${_pad(idx)}.mp3', volume: 0.5));
+      _ignoreAudio(
+        FlameAudio.play(
+          'notes/n${_pad(idx)}.mp3',
+          volume: 0.5 * sfxVolume.value,
+        ),
+      );
     });
   }
 
@@ -193,7 +234,10 @@ class AudioManager extends GetxService {
   void playSpecial() {
     if (muted.value || !_ready) return;
     _ignoreAudio(
-      FlameAudio.play('notes/n${_pad(noteCount)}.mp3', volume: 0.85),
+      FlameAudio.play(
+        'notes/n${_pad(noteCount)}.mp3',
+        volume: 0.85 * sfxVolume.value,
+      ),
     );
   }
 

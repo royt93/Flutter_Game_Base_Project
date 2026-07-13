@@ -9,6 +9,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'core/app_info.dart';
 import 'core/app_translations.dart';
 import 'core/audio_manager.dart';
+import 'core/debug_log.dart';
 import 'core/locale_service.dart';
 import 'core/neon_theme.dart';
 import 'core/storage_service.dart';
@@ -32,8 +33,8 @@ Future<void> app({bool withAudio = true}) async {
 
   await loadAppVersion();
 
-  final prefs = await SharedPreferences.getInstance();
-  final store = Get.put(StorageService(prefs), permanent: true);
+  final store = Get.put(StorageService(await _loadPrefs()), permanent: true);
+  NeonTheme.dark = store.getBool(StorageKeys.themeDark);
   final locale = Get.put(LocaleService(store), permanent: true);
   Get.put(GameController(), permanent: true);
 
@@ -48,6 +49,18 @@ Future<void> app({bool withAudio = true}) async {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AudioManager.maybe?.init().then((_) => AudioManager.maybe?.startBgm());
     });
+  }
+}
+
+/// Khởi tạo SharedPreferences; thiết bị hiếm với storage lỗi không được làm
+/// app crash trắng màn hình — trả null để [StorageService] tự dùng fallback
+/// in-memory.
+Future<SharedPreferences?> _loadPrefs() async {
+  try {
+    return await SharedPreferences.getInstance();
+  } catch (e) {
+    dlog('roy93~ SharedPreferences init failed, dùng in-memory fallback: $e');
+    return null;
   }
 }
 
@@ -122,11 +135,32 @@ class _PopStarBlastAppState extends State<PopStarBlastApp>
             useMaterial3: true,
             fontFamily: NeonTheme.fontFamily, // Baloo2 mặc định toàn app
             scaffoldBackgroundColor: NeonTheme.bgMid,
-            colorScheme: const ColorScheme.light(
+            colorScheme: ColorScheme.light(
               primary: NeonTheme.purple,
               secondary: NeonTheme.magenta,
               surface: NeonTheme.card,
               onSurface: NeonTheme.ink,
+            ),
+            // ponytail: SwitchListTile chỉ set màu active per-instance, state
+            // OFF rơi về Switch mặc định (đen/trắng) — lệch theme candy-neon.
+            // Set track/thumb OFF ở đây 1 lần cho mọi Switch trong app. Dùng
+            // `ink` (đậm) thay vì `inkSoft` alpha thấp — bản cũ gần như vô
+            // hình trên nền pastel sáng (candy bg).
+            switchTheme: SwitchThemeData(
+              trackColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.selected)
+                    ? null
+                    : NeonTheme.ink.withValues(alpha: 0.28),
+              ),
+              trackOutlineColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.selected)
+                    ? null
+                    : NeonTheme.ink.withValues(alpha: 0.45),
+              ),
+              thumbColor: WidgetStateProperty.resolveWith(
+                (states) =>
+                    states.contains(WidgetState.selected) ? null : Colors.white,
+              ),
             ),
             // ponytail: Baloo2 thiếu vài glyph Cyrillic hiếm (ví dụ "ї" trong
             // "Українська") → fallback sang font hệ thống Android khi thiếu.

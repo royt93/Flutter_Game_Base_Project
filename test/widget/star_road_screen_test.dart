@@ -29,7 +29,8 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(
       gameCtrl.coins.value,
-      coinsBefore + GameController.starRoadRewards[0],
+      coinsBefore +
+          GameController.starRoadRewards[0] * gameCtrl.weekendCoinMultiplier,
     );
     expect(gameCtrl.isChestClaimed(0), isTrue);
     Get.reset();

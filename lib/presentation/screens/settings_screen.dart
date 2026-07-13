@@ -5,14 +5,27 @@ import '../../core/app_translations.dart';
 import '../../core/audio_manager.dart';
 import '../../core/locale_service.dart';
 import '../../core/neon_theme.dart';
+import '../../core/share_helper.dart';
+import '../../core/storage_service.dart';
 import '../controllers/game_controller.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_dialog.dart';
 
 /// Cài đặt: ngôn ngữ, âm thanh, reset tiến trình.
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late bool _hapticsEnabled = StorageService.to.getBool(
+    StorageKeys.hapticsEnabled,
+    def: true,
+  );
+  late bool _darkTheme = NeonTheme.dark;
 
   @override
   Widget build(BuildContext context) {
@@ -34,28 +47,102 @@ class SettingsScreen extends StatelessWidget {
                         () => SwitchListTile(
                           value: !audio.muted.value,
                           onChanged: (_) => audio.toggleMute(),
-                          activeThumbColor: NeonTheme.cyan,
+                          activeThumbColor: Colors.white,
+                          activeTrackColor: NeonTheme.cyan,
                           title: Text(
                             'sound'.tr,
-                            style: const TextStyle(color: NeonTheme.ink),
+                            style: TextStyle(color: NeonTheme.ink),
                           ),
                         ),
                       ),
+                    if (audio != null)
+                      Obx(
+                        () => ListTile(
+                          title: Text(
+                            'bgm_volume'.tr,
+                            style: TextStyle(color: NeonTheme.ink),
+                          ),
+                          subtitle: Slider(
+                            value: audio.bgmVolume.value,
+                            activeColor: NeonTheme.cyan,
+                            onChanged: audio.setBgmVolume,
+                          ),
+                        ),
+                      ),
+                    if (audio != null)
+                      Obx(
+                        () => ListTile(
+                          title: Text(
+                            'sfx_volume'.tr,
+                            style: TextStyle(color: NeonTheme.ink),
+                          ),
+                          subtitle: Slider(
+                            value: audio.sfxVolume.value,
+                            activeColor: NeonTheme.cyan,
+                            onChanged: audio.setSfxVolume,
+                          ),
+                        ),
+                      ),
+                    SwitchListTile(
+                      value: _hapticsEnabled,
+                      onChanged: (v) {
+                        setState(() => _hapticsEnabled = v);
+                        StorageService.to.setBool(
+                          StorageKeys.hapticsEnabled,
+                          v,
+                        );
+                      },
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: NeonTheme.cyan,
+                      title: Text(
+                        'haptics'.tr,
+                        style: TextStyle(color: NeonTheme.ink),
+                      ),
+                    ),
                     Obx(
                       () => SwitchListTile(
                         value: gameCtrl.colorblindMode.value,
                         onChanged: (_) => gameCtrl.toggleColorblindMode(),
-                        activeThumbColor: NeonTheme.cyan,
+                        activeThumbColor: Colors.white,
+                        activeTrackColor: NeonTheme.cyan,
                         title: Text(
                           'colorblind_mode'.tr,
-                          style: const TextStyle(color: NeonTheme.ink),
+                          style: TextStyle(color: NeonTheme.ink),
                         ),
+                      ),
+                    ),
+                    SwitchListTile(
+                      value: _darkTheme,
+                      onChanged: (v) {
+                        setState(() => _darkTheme = v);
+                        NeonTheme.dark = v;
+                        StorageService.to.setBool(StorageKeys.themeDark, v);
+                        Get.forceAppUpdate();
+                      },
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: NeonTheme.cyan,
+                      title: Text(
+                        'dark_theme'.tr,
+                        style: TextStyle(color: NeonTheme.ink),
+                      ),
+                    ),
+                    ListTile(
+                      leading: Icon(Icons.share_rounded, color: NeonTheme.cyan),
+                      title: Text(
+                        'invite_friend'.tr,
+                        style: TextStyle(color: NeonTheme.ink),
+                      ),
+                      onTap: () => shareText(
+                        // X6: text-only, tái dùng shareText đã dựng ở F15.
+                        // Placeholder link store — thay khi có link thật.
+                        'Chơi Pop Star Blast cùng mình! '
+                        'https://play.google.com/store/apps/details?id=com.galaxyjoy.pop_star_blast',
                       ),
                     ),
                     const SizedBox(height: NeonTheme.s16),
                     Text(
                       'language'.tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: NeonTheme.ink,
                         fontWeight: FontWeight.w700,
                       ),

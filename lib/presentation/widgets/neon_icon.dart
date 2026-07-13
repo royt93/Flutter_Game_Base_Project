@@ -42,6 +42,7 @@ class NeonBackButton extends StatelessWidget {
       Icons.arrow_back_rounded,
       color: color,
       onTap: onTap ?? Get.back,
+      semanticLabel: 'Quay lại',
     );
   }
 }
@@ -54,6 +55,7 @@ class NeonIconButton extends StatelessWidget {
   final double size;
   final VoidCallback? onTap;
   final bool boxed;
+  final String? semanticLabel;
 
   const NeonIconButton(
     this.icon, {
@@ -62,6 +64,7 @@ class NeonIconButton extends StatelessWidget {
     required this.onTap,
     this.size = 24,
     this.boxed = false,
+    this.semanticLabel,
   });
 
   @override
@@ -69,19 +72,31 @@ class NeonIconButton extends StatelessWidget {
     if (boxed) {
       final enabled = onTap != null;
       final c = enabled ? color : Colors.grey;
-      return PressableScale(
-        onTap: onTap,
-        child: Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: NeonTheme.card,
-            shape: BoxShape.circle,
-            border: Border.all(color: c, width: 3),
-            boxShadow: enabled ? NeonTheme.drop(y: 4, blur: 10) : null,
-          ),
-          child: Center(
-            child: NeonIcon(icon, color: c, size: size),
+      return Semantics(
+        button: true,
+        enabled: enabled,
+        label: semanticLabel,
+        child: PressableScale(
+          onTap: onTap,
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: NeonTheme.card,
+              shape: BoxShape.circle,
+              // ponytail: bỏ viền solid cứng (thô), thay bằng halo phát sáng
+              // mềm mại đúng chất neon — glow() toả 3 lớp mờ dần ra ngoài
+              // thay vì 1 đường viền đứt khúc rõ nét.
+              boxShadow: enabled
+                  ? [
+                      ...NeonTheme.glow(c, blur: 16, spread: 1),
+                      ...NeonTheme.drop(y: 4, blur: 8),
+                    ]
+                  : NeonTheme.drop(y: 4, blur: 8),
+            ),
+            child: Center(
+              child: NeonIcon(icon, color: c, size: size),
+            ),
           ),
         ),
       );
@@ -90,6 +105,7 @@ class NeonIconButton extends StatelessWidget {
       onPressed: onTap,
       icon: NeonIcon(icon, color: color, size: size),
       splashRadius: 24,
+      tooltip: semanticLabel,
     );
   }
 }

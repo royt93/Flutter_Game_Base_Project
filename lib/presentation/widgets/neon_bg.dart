@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import '../../core/neon_theme.dart';
+import 'aurora_bg_layer.dart';
 
 /// Background neon ĐỘNG dùng chung cho mọi màn:
 /// gradient nền + nebula trôi + sao lấp lánh + tia sweep xoay + vignette.
@@ -18,7 +19,16 @@ class NeonBg extends StatefulWidget {
   /// Null = nền tĩnh mặc định (màn không có combo, vd Home).
   final double Function()? energyOf;
 
-  const NeonBg({super.key, required this.child, this.accent, this.energyOf});
+  /// I16: phủ thêm dải aurora chuyển sắc lên trên nền — chỉ world cuối.
+  final bool aurora;
+
+  const NeonBg({
+    super.key,
+    required this.child,
+    this.accent,
+    this.energyOf,
+    this.aurora = false,
+  });
 
   @override
   State<NeonBg> createState() => _NeonBgState();
@@ -95,6 +105,12 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
             ),
           ),
         ),
+        if (widget.aurora)
+          Positioned.fill(
+            child: AuroraBgLayer(
+              color: (widget.accent ?? NeonTheme.indigo).withValues(alpha: 0.5),
+            ),
+          ),
         widget.child,
       ],
     );
@@ -151,12 +167,7 @@ class _NeonBgPainter extends CustomPainter {
     // 1) Nền gradient candy sáng
     canvas.drawRect(
       rect,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [NeonTheme.bgTop, NeonTheme.bgMid, NeonTheme.bgBot],
-        ).createShader(rect),
+      Paint()..shader = NeonTheme.bgGradient.createShader(rect),
     );
 
     // 2) Bong bóng kẹo trôi mềm (soft-light để hoà vào nền sáng, không cháy).

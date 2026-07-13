@@ -31,8 +31,9 @@ Duration durationToLocalMidnight(DateTime now, int daysLeft) {
 /// thì fallback nhóm thủ công bằng dấu '.' (kiểu Việt) để KHÔNG bao giờ ném lỗi.
 String fmtNum(int n) {
   try {
-    return NumberFormat.decimalPattern(Get.locale?.languageCode ?? 'en')
-        .format(n);
+    return NumberFormat.decimalPattern(
+      Get.locale?.languageCode ?? 'en',
+    ).format(n);
   } catch (_) {
     final neg = n < 0;
     final digits = n.abs().toString();

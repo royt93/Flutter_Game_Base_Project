@@ -24,7 +24,7 @@ void main() {
     // Guard: greedy-bot (lower bound, không booster) đạt ~10 điểm/ô ở đầu game,
     // nên target 1-sao phải nằm trong [4, 9] điểm/ô.
     test('targetScore neo vào diện tích bàn (chống mis-scaling)', () {
-      for (final lv in kLevels) {
+      for (final lv in kLevels.where((l) => !l.isBoss)) {
         final perCell = lv.targetScore / (lv.rows * lv.cols);
         expect(
           perCell,
@@ -36,21 +36,102 @@ void main() {
       }
     });
 
-    // F6b: objective rotate chu kỳ 5 màn (3 score, 1 clearColor, 1
-    // clearObstacle) xuyên suốt cả 200 màn.
-    test('objective luân phiên đúng chu kỳ 5 màn', () {
+    // F11: boss level target nhân bossTargetMultiplier → khoảng khả thi nới
+    // rộng theo đúng hệ số, không random tay.
+    test('boss targetScore vẫn trong khoảng khả thi mở rộng', () {
+      for (final lv in kLevels.where((l) => l.isBoss)) {
+        final perCell = lv.targetScore / (lv.rows * lv.cols);
+        expect(
+          perCell,
+          inInclusiveRange(4, 9 * bossTargetMultiplier),
+          reason: 'L${lv.id}: target ${lv.targetScore} ngoài khoảng khả thi',
+        );
+      }
+    });
+
+    // F11: level cuối mỗi world (20, 40, ..., 200) là boss.
+    test('isBoss đúng level id % 20 == 0', () {
+      for (final lv in kLevels) {
+        expect(
+          lv.isBoss,
+          lv.id % 20 == 0,
+          reason: 'L${lv.id}: isBoss=${lv.isBoss} sai',
+        );
+      }
+    });
+
+    // F11: target boss = target thường cùng world × bossTargetMultiplier,
+    // luôn cao hơn hẳn level thường liền trước.
+    test('boss target = target thường × bossTargetMultiplier, cao hơn màn '
+        'liền trước', () {
+      for (final lv in kLevels.where((l) => l.isBoss)) {
+        final world = (lv.id - 1) ~/ 20;
+        final ramp = 1.0 + world * 0.03;
+        final baseTarget = (lv.rows * lv.cols * 6 * ramp).round();
+        expect(
+          lv.targetScore,
+          (baseTarget * bossTargetMultiplier).round(),
+          reason: 'L${lv.id}: target boss sai công thức',
+        );
+        final prev = kLevels[lv.id - 2];
+        expect(
+          lv.targetScore,
+          greaterThan(prev.targetScore),
+          reason: 'L${lv.id}: boss target không cao hơn L${prev.id}',
+        );
+      }
+    });
+
+    // F9: objective rotate chu kỳ 8 màn (3 score, rồi clearColor/
+    // clearObstacle/collect/moveLimitBonus/obstacleInMoves) xuyên suốt 200 màn.
+    test('objective luân phiên đúng chu kỳ 8 màn', () {
       for (var i = 0; i < kLevels.length; i++) {
-        final expected = switch (i % 5) {
+        final expected = switch (i % 8) {
           3 => ObjectiveType.clearColor,
           4 => ObjectiveType.clearObstacle,
+          5 => ObjectiveType.collect,
+          6 => ObjectiveType.moveLimitBonus,
+          7 => ObjectiveType.obstacleInMoves,
           _ => ObjectiveType.score,
         };
         expect(
           kLevels[i].objective.type,
           expected,
-          reason: 'L${kLevels[i].id} (slot ${i % 5}) sai objective',
+          reason: 'L${kLevels[i].id} (slot ${i % 8}) sai objective',
         );
       }
+    });
+  });
+
+  // F12: generator Endless — board hợp lệ, khó dần theo boardIndex, kẹp trần.
+  group('endlessLevelForIndex', () {
+    test('board luôn hợp lệ (rows/cols/colorCount tối thiểu)', () {
+      for (var i = 0; i < 200; i++) {
+        final lv = endlessLevelForIndex(i);
+        expect(lv.rows, greaterThanOrEqualTo(7));
+        expect(lv.cols, greaterThanOrEqualTo(6));
+        expect(lv.colorCount, greaterThanOrEqualTo(4));
+        expect(lv.id, -3);
+        expect(lv.targetScore, 0);
+      }
+    });
+
+    test('không giảm khi boardIndex tăng (khó dần hoặc giữ nguyên)', () {
+      var prev = endlessLevelForIndex(0);
+      for (var i = 1; i < 100; i++) {
+        final lv = endlessLevelForIndex(i);
+        expect(lv.rows, greaterThanOrEqualTo(prev.rows));
+        expect(lv.cols, greaterThanOrEqualTo(prev.cols));
+        expect(lv.colorCount, greaterThanOrEqualTo(prev.colorCount));
+        prev = lv;
+      }
+    });
+
+    test('kẹp trần rows/cols/colorCount ở board xa', () {
+      final lv = endlessLevelForIndex(1000);
+      expect(lv.rows, 14);
+      expect(lv.cols, 14);
+      expect(lv.colorCount, 8);
     });
   });
 }

@@ -81,13 +81,11 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
   tính lại mỗi lần nhóm đổi (`_updateEdgeTrace`, không phải mỗi frame); vẽ
   từng đoạn với alpha sweep chạy theo thời gian thay vì nối path (đơn giản,
   vẫn 60fps kể cả nhóm lớn); tắt khi thả (`clearPreview`).
-- **G8 burst ring + idle shimmer**: `_BurstRing` — mỗi nhóm nổ bung 1 vòng
+- **G8 burst ring** (Wave 4): `_BurstRing` — mỗi nhóm nổ bung 1 vòng
   tròn viền tại tâm nhóm (bán kính theo bounding box) rồi mờ dần 0.32s, cap
   tối đa 3 ring đồng thời (`_maxRings`, huỷ ring cũ nhất nếu vượt) để nhẹ khi
-  combo dồn dập. `_ShimmerSweep` — bàn rảnh ≥4s (không tap/kéo/diễn hoạt, theo
-  dõi qua `_idleTime` trong `update`) thì quét 1 tia sáng chéo qua bàn 1 lượt
-  rồi tự dọn, reset đợi rảnh tiếp mới quét lượt sau (không lặp liên tục).
-  Hoàn tất toàn bộ Wave 4 (G5, G3, G6, G4, G7, G8).
+  combo dồn dập. (Đoạn "idle shimmer" ghi ở đây trước đó là aspirational —
+  code chưa từng tồn tại; phần thật sự đã build xem mục Wave 7 — G8 bên dưới.)
 
 - **F5a power tile — line-clear**: nhóm nổ ≥5 ô (`powerTileKindForGroupSize`,
   50/50 hàng/cột) → ô vừa tap giữ lại thành power tile (`BlockComponent.powerKind`,
@@ -465,7 +463,7 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
   `Get.updateLocale`/`performReassemble`, hoặc test qua tầng khác (không
   phải widget test dựng UI thật).
 
-## ⚠️ Performance audit (2026-07-12, chưa fix)
+## ✅ Performance audit (2026-07-12, đã fix — xem P0/P1/P2 bên dưới)
 
 User báo game lag nặng lúc chơi thật (device test tới level 6). Audit đọc
 toàn bộ `pop_star_game.dart`, `block_component.dart`, `neon_bg.dart`,
@@ -673,6 +671,796 @@ thiếu.
 Đã cập nhật `README.md` (rows F9-F15, nhóm I mới, nhóm X mới, Wave 7-10 build
 order) và `IDEAS.md` (đánh dấu I1/I3/I6-I10/I14-I17 "✅ đã chốt"). Chưa code gì
 — toàn bộ turn này chỉ là audit + backlog, chưa implement.
+
+## ✅ Wave 7 — X4, X1 (2026-07-13, chạy tự động overnight)
+
+- **X4 Boot resilience**: `main.dart` bọc try/catch quanh
+  `SharedPreferences.getInstance()`, `StorageService` nhận `_prefs` nullable +
+  fallback in-memory map (`_fallback`) cho mọi getter/setter — lỗi storage
+  lúc boot (thiết bị hiếm, storage hỏng) không còn crash trắng màn hình, chỉ
+  mất persist qua session đó.
+- **X1 Onboarding/FTUE**: level 1 campaign, lần đầu cài app (cờ
+  `StorageKeys.hasSeenFtue` chưa set) → ép hiện gợi ý nhóm lớn nhất ngay khi
+  board sẵn sàng (tái dùng nguyên hệ thống hint I4 — `_triggerHint`/`_hint`/
+  `hinted` trên `BlockComponent`, chỉ thêm cờ constructor
+  `PopStarGame.startWithFtueHint` để trigger trong `onLoad()` thay vì chờ
+  `_hintDelay` rảnh tay) + banner "Tap this group!" (`ftue_tap_hint` key,
+  không dùng `NeonDialog.overlay` vì không blocking) tự tắt ở tap đầu tiên
+  (đúng hay sai nhóm đều tắt — đồng bộ với việc `clearHint()` đã xoá highlight
+  ở mọi tap, tránh banner "kẹt" trỏ vào bàn không còn highlight).
+  - Bug tự phát hiện + tự sửa trong lúc verify: gọi trigger hint ngay sau
+    constructor (đồng bộ) bị `LateInitializationError` vì `colorGrid` chỉ
+    init xong trong `onLoad()` (async, Flame engine gọi sau khi mount) — sửa
+    bằng cách dời qua cờ constructor, trigger ở cuối `onLoad()`.
+  - Key mới `ftue_tap_hint` chỉ thêm vào `_extraEn`/`_extraVi` trong
+    `app_translations.dart` (không đụng 20 locale còn lại) — merge order của
+    `keys` getter spread `_extraEn` vô điều kiện vào MỌI locale nên tự động
+    thoả test parity 22-locale, các locale khác hiện fallback tiếng Anh.
+  - **Đã chốt scope hẹp lại**: AC gốc còn yêu cầu "audit AppTranslations dọn
+    key onboarding cũ không dùng" — **cố ý bỏ qua**. `app_translations.dart`
+    (21500+ dòng) chứa rất nhiều key chết từ game match-3 cũ (tour/wheel/
+    clan/pregame/world_map/tut_*...) rải khắp hàng chục map "Wave N" theo
+    từng ngôn ngữ; không có audit list cụ thể nào trong file này hay nơi
+    khác để bám theo, và dọn dẹp thủ công 22 locale × hàng chục wave map có
+    rủi ro phá test parity cao, không tương xứng với 1 task 5 SP chạy tự
+    động không giám sát qua đêm. Để dành làm task dọn dẹp riêng nếu cần.
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: 132/132
+    xanh.
+
+## ✅ Wave 7 — X2 (2026-07-13, chạy tự động overnight)
+
+- **X2 Settings âm lượng riêng + haptics toggle**:
+  - `StorageKeys` thêm `bgmVolume`/`sfxVolume`/`hapticsEnabled`;
+    `StorageService` thêm `getDouble`/`setDouble` (theo đúng pattern
+    `getInt`/`setInt` có sẵn).
+  - `AudioManager` thêm `RxDouble bgmVolume`/`sfxVolume` (mặc định 1.0, load
+    từ storage trong `init()`), `setBgmVolume`/`setSfxVolume` (clamp 0..1,
+    persist). Mọi hằng số volume cứng trước đây (`0.35` bgm, `0.6`/`0.5`/
+    `0.85` các SFX) nhân thêm với Rx tương ứng tại từng điểm phát.
+    `setBgmVolume` áp dụng ngay cả khi nhạc đang phát qua
+    `FlameAudio.bgm.audioPlayer.setVolume(...)` (xác nhận API qua đọc
+    source `flame_audio` — `Bgm.audioPlayer` là field public) thay vì phải
+    restart track.
+  - `SettingsScreen` chuyển từ `StatelessWidget` sang `StatefulWidget` (chỉ
+    để giữ state toggle haptics cục bộ, không cần thêm controller mới) —
+    thêm 2 `Slider` (bgm/sfx, guard `if (audio != null)` giống switch âm
+    thanh có sẵn, để tương thích test hiện có không đăng ký `AudioManager`)
+    + 1 `SwitchListTile` haptics độc lập (đọc/ghi thẳng qua
+    `StorageService.to`, không phụ thuộc audio).
+  - **Haptics abstraction mới**: `lib/core/haptics.dart` —
+    `fireHaptic(HapticLevel level)` là điểm chốt duy nhất, check
+    `StorageKeys.hapticsEnabled` (mặc định bật) trước khi gọi
+    `HapticFeedback.*`. Thay toàn bộ 4 điểm gọi `HapticFeedback.*` trực
+    tiếp trong `pop_star_game.dart` (`_hapticForGroupSize` 3 nhánh + 1 điểm
+    rung khi chip obstacle/lock) và `level_select_screen.dart`
+    (`_playReveal`) sang gọi qua `fireHaptic` — từ nay mọi điểm rung mới
+    trong app phải đi qua hàm này để tôn trọng cờ Settings.
+  - Test mới: mở rộng `test/core/storage_service_test.dart` (3 case:
+    `getDouble` def, `setDouble` bgm/sfx persist, `hapticsEnabled`
+    persist) — dùng thẳng `StorageService` thay vì `AudioManager` (nhẹ hơn,
+    không cần mock `flame_audio`/asset loading).
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`:
+    135/135 xanh.
+
+## ✅ Wave 7 — X5 (2026-07-13, chạy tự động overnight)
+
+- **X5 Review prompt đúng lúc**: thêm package `in_app_review` (pub add,
+  kéo theo transitive `url_launcher*`).
+  - `StorageKeys.hasShownReviewPrompt` — cờ đã hiện review prompt chưa
+    (chỉ hiện đúng 1 lần trong đời cài đặt).
+  - `GameController.shouldRequestReview({stars, alreadyShown})` — hàm điều
+    kiện thuần, test được: trigger đúng khi vừa đạt 3 sao và chưa hiện lần
+    nào. Tách riêng khỏi phần gọi native để unit test không cần mock
+    platform channel.
+  - `_maybeRequestReview()` gọi trong nhánh dương của `checkEnd` (sau
+    `_grantCoins()`), set cờ trước khi gọi native (tránh hiện lại nếu race).
+  - `_requestReviewSafely()` bọc `InAppReview.instance.isAvailable()` +
+    `requestReview()` trong try/catch (giống pattern `_ignoreAudio` của
+    `AudioManager`) — môi trường test/không có plugin gốc không crash.
+  - Test mới: 4 case trong `game_controller_test.dart`
+    (`shouldRequestReview`): 3 sao + chưa hiện → true; 3 sao + đã hiện →
+    false; 1-2 sao → false; 0 sao (thua) → false.
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`:
+    139/139 xanh.
+
+## ✅ Wave 7 — X3 (2026-07-13, chạy tự động overnight)
+
+- **X3 Accessibility semantics cơ bản**: thêm `Semantics(button:, enabled:,
+  label:)` cho các nút tương tác chính, không đổi hành vi/giao diện.
+  - `NeonButton`: `semanticLabel` optional, mặc định dùng `label` hiển thị.
+  - `_BoosterButton` (game_screen): label mô tả hành động + số lượng còn lại
+    + trạng thái "đang chọn" khi armed (bomb/rainbow).
+  - `NeonIconButton`: `semanticLabel` optional — biến variant `boxed` (dùng
+    `Semantics` wrap) và variant thường (dùng `tooltip` — Flutter tự đưa vào
+    semantics tree). `NeonBackButton` label "Quay lại".
+  - Gắn label tiếng Việt cho 6 nút icon ở `home_screen.dart` (Đấu thời gian,
+    Thư giãn, Con đường sao, Cửa hàng, Hướng dẫn, Cài đặt).
+  - `GameWidget` không bọc `ExcludeSemantics` — không chặn semantics tree
+    phía trên nó (đã rà soát, không cần sửa).
+  - Không làm semantics chi tiết từng ô board (200 level — chi phí không
+    tương xứng, theo ghi chú kỹ thuật của task).
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`:
+    139/139 xanh (golden test không đổi vì Semantics không ảnh hưởng
+    render).
+
+## ✅ Wave 7 — F9 (2026-07-13, chạy tự động overnight)
+
+- **F9 Objective mới**: mở rộng `ObjectiveType` (`lib/data/levels.dart`) từ 3
+  lên 6 case, thêm 2 field mới cho `LevelObjective` (`target`, `moveLimit`).
+  Chu kỳ luân phiên objective (`kLevels`) tăng từ 5 lên 8 màn: 3 màn `score`,
+  rồi `clearColor`/`clearObstacle`/`collect`/`moveLimitBonus`/
+  `obstacleInMoves` (slot 3..7).
+  - `collect(color, target)`: thu đúng N ô màu chỉ định (khác `clearColor` —
+    không cần dọn hết trên bàn). Cơ chế: `GameController` chụp số ô màu đó
+    trên bàn ở lần `updateObjectiveProgress` đầu tiên (`_collectInitial`,
+    trước pop nào), sau đó `remaining = target - (initial - current)`.
+  - `moveLimitBonus(moveLimit)`: không phải điều kiện thắng (như `score`,
+    `objectiveMet` luôn false) — chỉ +1 sao bonus (trần 3) nếu
+    `movesUsed <= moveLimit` khi màn kết thúc bình thường, và chỉ áp dụng
+    khi đã đạt ≥1 sao từ điểm.
+  - `obstacleInMoves(target, moveLimit)`: dùng chung cơ chế đếm ô âm với
+    `clearObstacle` (`_placeObstaclesIfNeeded` mở rộng để trigger cho cả 2
+    loại, số lượng obstacle lấy đúng `target` khi là `obstacleInMoves`) +
+    cùng bonus sao theo `moveLimit` như `moveLimitBonus`.
+  - `GameController`: field mới `movesUsed` (RxInt, tăng trong `registerPop`,
+    reset ở `startLevel`/`startSideMode`), `_collectInitial` (reset cùng
+    lúc). `_computeStars` cộng bonus sao qua `_underMoveLimitBonus()`.
+  - An toàn: theo kiến trúc sẵn có, `objectiveMet` chỉ gate đường thắng
+    sớm — nếu never true, màn vẫn kết thúc tự nhiên (hết/kẹt bàn) và sao vẫn
+    tính thuần theo `score` vs `targetScore`. Nghĩa là target/moveLimit của 3
+    loại mới dù là số ước lượng cũng không có rủi ro làm màn bất khả thi
+    (tránh lặp lại sự cố targetScore tuyến tính cũ — xem đầu file).
+  - HUD (`game_screen.dart`): dòng tiến độ mở rộng thành hàm `_objectiveLine`
+    xử lý switch đủ 5 loại non-score (thay ternary cũ chỉ có 2 loại).
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`:
+    147/147 xanh (139 cũ + 8 test mới: collect, moveLimitBonus,
+    obstacleInMoves, movesUsed increment/reset, 4 case bonus sao).
+
+## ✅ Wave 7 — F10 (2026-07-13, chạy tự động overnight)
+
+- **F10 Booster Swap + Freeze**: 2 booster mới, theo đúng pattern
+  bomb/shuffle/undo/rainbow đã có (`RxInt` count + `StorageKeys` +
+  `static const XPrice` + `_buy` helper + `useX`/`buyX` + xoá key trong
+  `resetProgress`).
+  - **Swap**: arm (`toggleSwapArm`, thêm case `swap` vào `BoosterMode`) → tap
+    ô 1 → tap ô 2 → đổi màu 2 ô (không tự nổ). `GameScreenController` giữ
+    `Point<int>? _swapFirst` để theo dõi ô đã chọn; tap ngoài bàn không tiêu
+    lượt, tap lại đúng ô đầu = bỏ chọn (tránh phí lượt vì tự swap với chính
+    nó). `PopStarGame.triggerSwap` chặn nếu 1 trong 2 ô là obstacle/lock,
+    cập nhật `colorGrid` + `_blocks[...].colorIndex` trực tiếp (rẻ hơn
+    `shuffleBoard()`'s full rebuild).
+    - Không thêm highlight ô đầu đã chọn (không có trong AC, không có user
+      overnight để feedback UX) — ponytail: đơn giản hoá, thêm khi cần rõ
+      trạng thái đang chọn ô nào.
+  - **Freeze**: dùng ngay (không cần tap ô, giống `useShuffle`/`useUndo`) →
+    N=5 lượt kế tiếp, obstacle không giảm bền dù có pop/booster kề bên, hết
+    N lượt tự động giảm bền lại bình thường.
+    - Quyết định kiến trúc: **không đụng** `lib/logic/obstacle.dart`
+      (`chipAdjacentObstacles`) để giữ layer thuần Dart sạch theo CLAUDE.md —
+      thay vào đó thêm guard `_chipObstaclesOrFrozen()` ở layer Flame
+      (`PopStarGame`), chặn cả 4 điểm gọi (`_tryPop`, `_activatePowerTile`,
+      `triggerBomb`, `triggerRainbow`) khi `freezeTurnsLeft > 0`, trừ 1 lượt
+      thay vì chip thật.
+    - "1 lượt" = mỗi lần 1 trong 4 hành động trên thực thi (dù có obstacle kề
+      hay không) — diễn giải hợp lý cho AC không quy định chi tiết.
+  - Shop: 2 dòng `_BoosterRow` mới (label tiếng Anh, theo convention sẵn có
+    của file này). HUD (`game_screen.dart`): 2 nút mới (label tiếng Việt,
+    theo convention sẵn có của file này — khác convention shop nhưng đều là
+    quy ước cũ mỗi file, giữ nguyên không đổi).
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`:
+    151/151 xanh (147 cũ + 4 test mới: swap đổi đúng 2 ô/không tự nổ/trừ
+    lượt, toggleSwapArm bật tắt đúng mode, swap 2-tap qua `handleBoardTap`
+    end-to-end, freeze chặn giảm bền lượt hiệu lực rồi tự hết đúng lúc).
+
+## ✅ Wave 7 — F11 (2026-07-13, chạy tự động overnight)
+
+- **F11 Boss level mỗi world**: level cuối mỗi world (`id % 20 == 0`, tức
+  20/40/.../200) đánh dấu `isBoss`. Khó hơn qua `targetScore ×
+  bossTargetMultiplier` (hằng số mới = 1.5, `lib/data/levels.dart`) — đủ để
+  tăng độ khó vì `GameController._computeStars()` gate sao theo `targetScore`
+  cho MỌI loại objective (kể cả clearColor/collect/...), không cần kết hợp
+  thêm objective thứ 2 (lựa chọn AC còn lại, phức tạp hơn, không chọn vì
+  không cần).
+  - Path map (`level_select_screen.dart`): border vàng gold dày hơn (4 thay
+    3) + crown icon (`Icons.emoji_events_rounded`) hiện cả khi màn còn khoá
+    (màu xám) — cho thấy trước node boss sắp tới trên đường path.
+  - Win dialog (`game_screen.dart`, `_WinChoreographyState`): tái dùng toàn
+    bộ `_WinChoreography`/`_MascotDialog` sẵn có (A5), chỉ đổi title thành
+    "Boss Cleared!" khi `currentLevel.isBoss`.
+  - Test cũ `targetScore neo vào diện tích bàn` loại boss ra khỏi phạm vi
+    check (perCell boss có thể lên ~11.4 ở world 9, vượt khoảng `[4,9]` cũ)
+    + 3 test mới: boss perCell nằm trong khoảng nới rộng `[4, 9×1.5]`,
+    `isBoss` đúng công thức `id % 20 == 0`, target boss đúng công thức và
+    luôn cao hơn màn liền trước.
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`:
+    154/154 xanh (151 cũ + 3 test mới).
+
+## ✅ Wave 7 — G8 (2026-07-13, chạy tự động overnight)
+
+- **G8 idle shimmer** (phần burst ring đã xong Wave 4, xem đoạn ghi chú sửa
+  lại phía trên — bản ghi "idle shimmer" cũ ở đó là aspirational, code chưa
+  từng có). `_ShimmerSweep` (`pop_star_game.dart`) — bàn rảnh tay
+  `_shimmerDelay = 4.0`s (ngắn hơn `_hintDelay = 6.0`s của gợi ý I4, để làm
+  dấu hiệu "còn sống" xuất hiện trước/song song hint chứ không gate theo
+  `_hint.isEmpty`) thì quét 1 dải sáng ngang qua bàn 1 lượt (~1.1s) rồi tự gỡ,
+  lặp lại thưa mỗi khi rảnh đủ ngưỡng tiếp. Vẽ bằng `BlendMode.plus` (cộng
+  sáng) qua gradient trắng mờ dần 2 đầu — chỉ làm sáng lên chứ không phủ màu
+  ô, thoả AC "không che tile" mà không cần dò alpha theo từng màu nền.
+  Component không nhận input (kiến trúc tap đi qua `GestureDetector` ngoài
+  Flame) nên không bao giờ chặn tap. `clearHint()` (đã dùng chung cho I4) mở
+  rộng thêm: mọi tap đều reset `_shimmerTimer` **và** gỡ ngay lượt shimmer
+  đang chạy dở (nếu có) — khớp đúng nghĩa đen AC "dừng ngay khi có tap", không
+  chỉ chờ tự hết 1.1s.
+  - Getter test-only mới: `shimmerActive` (đang có lượt shimmer hay không).
+  - Test mới `test/widget/idle_shimmer_test.dart`: rảnh <4s chưa bật, đủ 4s
+    bật, tap tắt ngay, rảnh lại từ 0 sau tap chưa bật lại.
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`:
+    155/155 xanh (154 cũ + 1 test mới).
+
+## ✅ Wave 7 — F12 (2026-07-13, chạy tự động overnight)
+
+(Đính chính mục cũ ở trên: F8 side-mode timeAttack/zen **đã có** từ Wave 7
+trước — `GameMode` enum, entry point ở `home_screen.dart`, xem Wave 7 F9/F10.
+Kết luận "F8 chưa code" trước đó là sai do grep bị cắt ngắn.)
+
+- **F12 Endless mode**: `GameMode.endless` tái dùng khung side-mode có sẵn.
+  `endlessLevelForIndex(int boardIndex)` (`lib/data/levels.dart`) — generator
+  sinh board liên tục tăng khó theo `boardIndex` (rows 7→14, cols 6→14,
+  colorCount 4→8, kẹp trần ở board xa), sentinel `id: -3`, `targetScore: 0`
+  (không có target, chỉ tính điểm tích luỹ).
+  `GameController`: `endlessBest` (`RxInt`, `StorageKeys.endlessBest`),
+  `_endlessBoardIndex` (private), `startEndless()` (reset về board 0),
+  `advanceEndlessBoard()`, lưu best qua nhánh `checkEnd()` khi
+  `mode == GameMode.endless`.
+  `PopStarGame._checkEnd()`: bàn sạch → `_nextEndlessBoard()` (sinh board mới,
+  gọi lại `_layout()` vì kích thước bàn đổi theo board — khác `_refillBoard()`
+  của Zen); bàn kẹt → `controller.checkEnd(false)` kết thúc ván bình thường.
+  UI: nút vào Endless ở `home_screen.dart` (icon `all_inclusive`, màu
+  `NeonTheme.purple`), HUD trong ván hiện `Best <endlessBest>` (giống pattern
+  Zen), overlay thua hiện `Score X — Best Y`. Fix kèm: `again()` restart
+  Endless phải gọi `startEndless()` riêng (không qua `startSideMode`, vì
+  ternary của hàm đó mặc định về `kZenLevel` cho mọi mode khác timeAttack —
+  sẽ làm restart Endless nhầm sang bàn Zen cố định).
+  - Test mới: `endlessLevelForIndex` (`levels_test.dart`) — board hợp lệ,
+    không giảm khó theo boardIndex, kẹp trần đúng. `modes_test.dart` — bàn
+    sạch thì sang board kế (không kết thúc ván), bàn kẹt thì kết thúc + lưu
+    best (không đụng campaign).
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: toàn bộ
+    xanh (160 test, gồm 5 test F12 mới).
+
+## ✅ Wave 7 — I7 (2026-07-13, chạy tự động overnight)
+
+- **I7 Vòng quay hằng ngày**: `StorageKeys.lastSpinDay` (`storage_service.dart`).
+  `GameController`: `SpinReward` (type/amount), `spinRewards` (7 ô cố định:
+  coins 50/100/200/500, bomb 1, shuffle 1, undo 1), `spinWeights`
+  (`[30,20,8,15,15,15,2]`), `canClaimSpin` (so `lastSpinDay` với hôm nay kiểu
+  epoch-day, cùng cách `durationToLocalMidnight` dùng cho daily reward),
+  `todaySpinReward` (getter thuần, seed `Random(epochDay hôm nay)` — gọi bao
+  nhiêu lần cùng ngày cũng ra cùng kết quả, không đổi state), `claimSpin()`
+  (lưu `lastSpinDay`, cộng thưởng qua `_grant()`, trả `null` nếu đã quay).
+  UI mới `spin_wheel_dialog.dart`: `showSpinWheelDialog` — nếu hết lượt hiện
+  dialog báo mai quay lại; còn lượt thì lấy trước `todaySpinReward` rồi dựng
+  `_SpinReel` (`TweenAnimationBuilder`) chỉ animate xoay tới **đúng index đã
+  chốt sẵn** (không tự vẽ random riêng ở lớp UI, thoả AC). Nút vào ở
+  `home_screen.dart` (icon `casino`, màu `NeonTheme.purple`, cạnh Con đường
+  sao).
+  Fix kèm: `resetProgress()` thiếu xoá `StorageKeys.endlessBest` và
+  `StorageKeys.lastSpinDay` (best Endless cũ + trạng thái đã quay hôm nay còn
+  sót lại sau khi reset) — bổ sung cả 2.
+  - Test mới `game_controller_test.dart` nhóm "I7 Vòng quay hằng ngày": seed
+    theo ngày ổn định, claim cộng đúng thưởng + không cho quay 2 lần/ngày,
+    giả lập qua ngày mới (ghi thẳng `lastSpinDay` = hôm qua) thì quay lại được.
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: toàn bộ
+    xanh (163 test, gồm 3 test I7 mới).
+
+## ✅ Wave 8 — I8 (2026-07-13, chạy tự động overnight)
+
+- **I8 Weekend event x2 coin**: hàm thuần `isWeekendEvent(DateTime now)`
+  (`lib/core/utils/weekend_event.dart`) — true nếu thứ 7/CN theo
+  `DateTime.weekday`. `GameController.weekendCoinMultiplier` getter
+  (`isWeekendEvent(DateTime.now()) ? 2 : 1`) áp vào cả 4 điểm cộng xu hiện có:
+  `_grantCoins` (thắng level), `claimChest`, `claimDaily`, và nhánh `'coins'`
+  của `claimSpin` — không tạo hệ thống event riêng, chỉ nhân hệ số tại chỗ.
+  Banner "Cuối tuần x2 coin!" trên `home_screen.dart`, hiện có điều kiện
+  `isWeekendEvent(DateTime.now())`.
+  - Vì multiplier đọc giờ thật, mọi test assert xu literal cũ (checkEnd,
+    daily reward 3 case, star road chest, claimSpin coins-case, star road
+    screen widget test) phải nhân thêm `ctrl.weekendCoinMultiplier` mới không
+    bị flaky theo ngày chạy CI thật.
+  - Test mới `test/core/utils/weekend_event_test.dart`: thứ 7/CN → true,
+    thứ 2 → false (dùng `DateTime` dựng sẵn, không phụ thuộc `DateTime.now()`).
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: toàn bộ
+    xanh (166 test, gồm 3 test `isWeekendEvent` mới).
+
+## ✅ Wave 8 — I10 (2026-07-13, chạy tự động overnight)
+
+- **I10 Comeback bonus**: hàm thuần `needsComebackBonus({lastOpenEpochDay,
+  todayEpochDay})` (`lib/core/utils/comeback_bonus.dart`) — true nếu đã có
+  lần mở trước (`lastOpenEpochDay >= 0`) và khoảng cách ≥3 ngày. Tái dùng
+  hạ tầng epoch-day sẵn có (`_todayEpochDay()`, key `StorageKeys.lastOpenDay`
+  mới) — không tạo hệ thống ngày-tháng riêng.
+  - `GameController.checkComebackBonus()`: gọi 1 lần mỗi khi mở Home. Đọc
+    mốc cũ, ghi đè `lastOpenDay` = hôm nay ngay (thoả luôn 2 tiêu chí "lưu mỗi
+    lần mở" + "reset mốc sau khi tặng" bằng 1 thao tác), rồi nếu đủ điều kiện
+    mới cộng `comebackBonusCoins` (300, nhân `weekendCoinMultiplier`) + 1 bomb
+    + 1 shuffle. Trả về số xu đã tặng hoặc `null`.
+  - `home_screen.dart initState`: gọi `checkComebackBonus()` trước tiên; nếu
+    có quà thì hiện dialog "Chào mừng trở lại!" (ưu tiên trước), chỉ xét daily
+    reward dialog khi comeback không kích hoạt — daily reward vẫn claim được
+    bình thường ở các lần mở sau.
+  - Thêm `StorageKeys.lastOpenDay` vào `resetProgress()` để xoá sạch khi reset.
+  - Test mới: `test/core/utils/comeback_bonus_test.dart` (hàm thuần, các mốc
+    ngày khác nhau) + group "I10 Comeback bonus" trong
+    `test/presentation/game_controller_test.dart` (lần đầu mở/vắng đúng
+    3 ngày/vắng dưới 3 ngày).
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: toàn bộ
+    xanh (174 test).
+
+## ✅ Wave 8 — F13 (2026-07-13, chạy tự động overnight)
+
+- **F13 Daily Challenge**: 1 bàn cố định mỗi ngày, seed = epoch-day (không
+  `Random()` mặc định) — mọi người chơi cùng ngày gặp cùng bàn.
+  - `lib/logic/daily_challenge.dart` (thuần Dart): consts
+    `dailyChallengeRows/Cols/ColorCount` (9×8, 5 màu) +
+    `generateDailyChallengeGrid(seed)` dùng `Random(seed)`.
+  - `PopLevel kDailyChallengeLevel` (`lib/data/levels.dart`, id -4) — kích
+    thước hiển thị khớp consts trên; bàn thật do `generateDailyChallengeGrid`
+    sinh riêng.
+  - `PopStarGame` nhận thêm `presetGrid` (constructor) — nếu có thì dùng làm
+    `colorGrid` ban đầu thay vì random (chỉ áp dụng ở `onLoad`, không đụng
+    refill của endless/zen).
+  - `GameController.startDailyChallenge()`: set `mode = dailyChallenge`,
+    sinh `dailyChallengeGrid = generateDailyChallengeGrid(_todayEpochDay())`,
+    reset state như `startSideMode`. `game_screen_controller._newGame()`
+    truyền `presetGrid` khi mode là dailyChallenge; nút "Again" gọi lại
+    `startDailyChallenge()` (không phải `startSideMode`) để tái sinh đúng
+    bàn hôm nay.
+  - Ghi điểm 1 lần/ngày: `canRecordDailyChallengeScore` (so
+    `StorageKeys.lastDailyChallengeDay` với hôm nay, giống `canClaimDaily`),
+    `_saveDailyChallengeScore()` gọi từ `checkEnd()` nhánh non-campaign —
+    chơi lại trong ngày không đè điểm cũ. `dailyChallengeScoreToday` đọc
+    điểm đã ghi để hiển thị. Chưa có leaderboard (I9) nên điểm lưu riêng
+    (`StorageKeys.dailyChallengeScore`) — sẽ nối vào I9 khi làm task đó.
+  - UI: icon "Daily Challenge" ở home (hàng side-mode, cạnh Endless), HUD
+    trong game hiện nhãn "Daily Challenge", dialog kết thúc hiện
+    `Score X — Recorded Y`.
+  - `resetProgress()` xoá `lastDailyChallengeDay` + `dailyChallengeScore`.
+  - Test mới: `test/logic/daily_challenge_test.dart` (cùng seed → cùng bàn,
+    seed khác → bàn khác, đúng kích thước) + group "F13 Daily Challenge"
+    trong `game_controller_test.dart` (seed ổn định, ghi điểm 1 lần/ngày,
+    qua ngày mới ghi lại được).
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: toàn bộ
+    xanh (180 test).
+
+## ✅ Wave 8 — I9 (2026-07-13, chạy tự động overnight)
+
+- **I9 Leaderboard bạn bè (offline giả lập)**: hoàn toàn offline, KHÔNG gọi
+  network/backend nào (đúng scope AC).
+  - `lib/logic/leaderboard.dart` (thuần Dart): `LeaderboardEntry(name, stars,
+    {isPlayer})`; `buildLeaderboard(bots, playerStars)` chèn người chơi vào
+    danh sách bot rồi sort giảm dần theo sao (bằng sao → bot đứng trước,
+    tie-break ổn định); `playerRank(entries)` trả hạng 1-indexed.
+  - `lib/data/leaderboard_bots.dart`: `kLeaderboardBots` — 10 bot tĩnh, mốc
+    sao tăng dần 40→580 (trải đều tới ~600 = 200 màn × 3 sao tối đa).
+  - Dùng `GameController.totalStars` có sẵn (F7 Star Road) làm điểm người
+    chơi — không cần tính lại.
+  - `lib/presentation/screens/leaderboard_screen.dart`: `ListView` các
+    `_RankRow` (hạng, tên/"You", số sao); hàng người chơi viền vàng nổi bật.
+    Icon "Leaderboard" mới ở home (hàng utility, cạnh Settings).
+  - Phát hiện: `app_translations.dart` đã có sẵn key `leaderboard_title`/
+    `lb_player`... (Wave 21.6, chưa từng dùng) nhưng thiết kế khác (tab
+    Campaign/Daily top-10) — không khớp thiết kế bot-list này nên bỏ qua,
+    UI mới hardcode string tiếng Anh (giống phần lớn màn hình khác:
+    `star_road_screen.dart`, home) thay vì `.tr`.
+  - Test mới: `test/logic/leaderboard_test.dart` (chèn đúng vị trí giữa 2
+    bot, hạng 1 khi cao nhất, hạng cuối khi thấp nhất, tie-break bot đứng
+    trước khi bằng điểm).
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: toàn bộ
+    xanh (184 test).
+
+## ✅ Wave 8 — I6 (2026-07-13, chạy tự động overnight)
+
+- **I6 Battle-pass mùa (free-track only, KHÔNG premium/IAP)**: mùa 28 ngày
+  (`seasonLengthDays`), điểm mùa cộng khi thắng level campaign — công thức rõ
+  ràng `stars * 10` (không random), mốc thưởng coin/booster.
+  - `GameController`: `seasonMilestones = [50,150,300,500,800]`,
+    `seasonRewards` tái dùng class `SpinReward` có sẵn (I7 spin) thay vì tạo
+    kiểu thưởng mới — mix coin/bomb/shuffle.
+  - `currentSeasonIndex` = ngày epoch hiện tại / 28. `_checkSeasonRollover()`
+    so với `StorageKeys.lastSeasonIndex` đã lưu — lệch thì reset điểm mùa +
+    mốc đã nhận về 0 (thưởng đã phát KHÔNG bị thu lại, coin/booster đã vào
+    kho từ trước). Gọi rollover check trong `_load()` (mở app) và ngay trước
+    khi cộng điểm trong `checkEnd()` (đề phòng qua mùa giữa lúc chơi).
+  - `isSeasonClaimed`/`canClaimSeason`/`claimSeason` — bitmask, y hệt pattern
+    rương F7 Star Road (`claimedChestMask`), claim 1 lần/mốc.
+  - Cộng điểm mùa nằm trong nhánh `starsEarned.value > 0` của `checkEnd()`
+    (cùng chỗ unlock/coin/review — chỉ thắng mới tính, không tính khi thua).
+  - `lib/presentation/screens/season_screen.dart`: sao chép cấu trúc
+    `star_road_screen.dart` (list mốc, claim button, coin-fly overlay) —
+    label thưởng người-đọc-được qua `_rewardLabel(SpinReward)`. Icon "Season
+    Pass" mới ở home (cạnh Leaderboard).
+  - 3 storage key mới: `seasonPoints`, `claimedSeasonMask`,
+    `lastSeasonIndex` — đã thêm vào `resetProgress()`.
+  - Test mới trong `game_controller_test.dart` (group "I6 Battle-pass
+    season"): cộng điểm đúng công thức, claim đủ điểm + không claim 2 lần,
+    coin thưởng đúng số, rollover mùa mới reset điểm + mốc.
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: toàn bộ
+    xanh (188 test, +4 so với trước).
+
+## ✅ Wave 9 — I1 (2026-07-13, chạy tự động overnight)
+
+- **I1 Gift/present tiles**: ô quà mã hoá bằng 1 sentinel âm cố định
+  `giftTileValue = -1000` trong `colorGrid` (`lib/logic/gift_tile.dart`, pure
+  Dart, không Flutter/Flame/GetX) — tách biệt hẳn khỏi obstacle (âm = độ bền,
+  phạm vi nhỏ -1..-vài) nên phải loại trừ tường minh ở 2 chỗ vốn coi mọi giá
+  trị âm là obstacle: `chipAdjacentObstacles` (`obstacle.dart`) và
+  `render()` (`block_component.dart`, check gift TRƯỚC check obstacle chung).
+  `pop_detector.dart` đã loại mọi `v < 0` khỏi flood-fill nên gift tự động
+  không thuộc nhóm màu, không cần sửa.
+  - `openGiftsAtBottomRow(grid)`: gift rơi tới hàng đáy (sau gravity) tự mở
+    thành `null`, trả về cột vừa mở. Gọi ở đầu `_checkEnd()`
+    (`pop_star_game.dart`) — đây là điểm gravity thực sự "chốt" xong
+    (game KHÔNG gọi `applyGravityAndCollapse` lúc chơi thường, mà
+    `_collapseAnimated` tự làm gravity trên `_blocks` rồi đồng bộ vào
+    `colorGrid`; `_checkEnd()` chạy sau khi animation rơi xong).
+  - `pickGiftReward(rng)`: bảng trọng số cố định (coin 50/100/150, bomb 1,
+    shuffle 1, undo 1) — không cần seed đặc biệt như spin/leaderboard.
+    `GameController.grantGiftReward(reward)` phát thưởng, tái dùng pattern
+    `_grant()` đã có (giống claimSpin/claimChest/claimSeason).
+  - `_placeGiftsIfNeeded(level)` (`pop_star_game.dart`): chỉ chạy khi
+    `objective.type == openGift`, rải đúng `target` ô quà lên ô trống chưa
+    phải obstacle/chain-lock — gọi trong `onLoad()` cạnh
+    `_placeObstaclesIfNeeded`/`_placeChainLocksIfNeeded`.
+  - `ObjectiveType.openGift` + `LevelObjective.openGift(target)` mới trong
+    `levels.dart`; `updateObjectiveProgress` đếm số ô gift còn lại trên bàn
+    (giống pattern `clearObstacle`); UI text mới trong `game_screen.dart`.
+  - **Quyết định phạm vi có chủ đích**: KHÔNG gắn `openGift` vào chu kỳ luân
+    phiên 8-slot objective của 200 level campaign (`kLevels`) — spec I1 chỉ
+    yêu cầu "level định nghĩa được objective mở K ô quà" (năng lực tồn tại,
+    test được), không yêu cầu campaign hiện tại dùng nó. Tránh phá vỡ test
+    khoá cứng chu kỳ 8 (`levels_test.dart`) và tránh rippling qua toàn bộ
+    200 level ngoài yêu cầu AC.
+  - Test mới: `test/logic/gift_tile_test.dart` (mở gift ở đáy, giữ nguyên
+    nếu chưa tới đáy, reward luôn nằm trong bảng trọng số),
+    `test/logic/obstacle_test.dart` (regression: gift liền kề không bị chip
+    nhầm thành obstacle), `game_controller_test.dart` (đếm đúng objective
+    openGift, met khi mở hết).
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: toàn bộ
+    xanh (193 test, +5 so với trước).
+
+## ✅ Wave 10 — I3 (2026-07-13, chạy tự động overnight)
+
+- **I3 Gravity variants**: `PopLevel.gravityDirection` (`GravityDirection`:
+  `down`/`up`/`left`/`right`, mặc định `down`) — chưa gán cho level nào trong
+  `kLevels` (giống quyết định phạm vi của I1: năng lực tồn tại + test được,
+  campaign hiện tại chưa dùng, tránh rippling ngoài yêu cầu AC).
+  - `lib/logic/pop_collapse.dart`: đúng 1 thuật toán lõi `_collapseDown`
+    (không đổi) — `up`/`left`/`right` quy về không gian "down" bằng
+    `transformForDirection` (transpose đổi trục hàng/cột cho `left`/`right`,
+    lật hàng cho `up`), chạy `_collapseDown`, rồi quy ngược
+    (`inverse: true`). Không viết 4 bộ logic riêng theo đúng AC.
+  - **Phát hiện lại kiến trúc từ I1/I2**: gameplay thật không gọi
+    `applyGravityAndCollapse` — `PopStarGame._collapseAnimated()` tự làm
+    gravity trên `_blocks` (BlockComponent) rồi đồng bộ vào `colorGrid`/
+    `lockGrid`. Vì vậy phải tổng quát hoá **cả 2 chỗ**: hàm thuần (test được)
+    và `_collapseAnimated` (gameplay thật). Để tránh 2 bộ thuật toán, tách
+    `transformForDirection<T>`/`compactNonNullDown<T>` generic trong
+    `pop_collapse.dart`, dùng chung cho `List<List<int?>>` (colorGrid) lẫn
+    `List<List<BlockComponent?>>` (`_blocks`) — `_collapseAnimated` giờ chỉ
+    gọi `compactNonNullDown`/`transformForDirection` thay vì loop riêng.
+  - Animation rơi đúng hướng "miễn phí": `_collapseAnimated` chỉ cần tính
+    đúng vị trí (r, c) đích sau nén — `MoveToEffect` đã tween theo
+    `_cellCenter(r, c)` sẵn có, không cần vector hướng riêng.
+  - `_rebuildBoard`'s intro-fall (block rơi vào từ ngoài bàn lúc load màn)
+    cũng chỉnh theo `gravityDirection` qua `_introStart()` — vào từ tường đối
+    diện hướng gravity thay vì luôn từ trên xuống.
+  - **Quyết định phạm vi có chủ đích**: không đụng `_checkEnd()`'s hook mở
+    gift (hardcode `rows - 1` = đáy) — `openGift` (I1) chưa gán cho level nào
+    nên không có tổ hợp gravity khác `down` + `openGift` xảy ra trong thực tế.
+  - Test mới: `test/logic/pop_collapse_test.dart` nhóm `I3: gravityDirection`
+    — rơi đúng hướng + dồn phần rỗng đúng trục phụ cho cả 3 hướng, lockGrid
+    vẫn lockstep, và 1 test đối chiếu trực tiếp AC ("`right` cho kết quả
+    đúng như `down` chạy trên grid đã transpose thủ công").
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: toàn bộ
+    xanh (201 test, +8 so với trước).
+
+## ✅ Wave 11 — I14 (2026-07-13, chạy tự động overnight)
+
+- **I14 Theme per world**: nền game (`NeonBg`) đổi tông màu theo world của
+  level đang chơi thay vì luôn 1 tông cố định.
+  - Phát hiện `NeonBg` đã có sẵn param `accent` (lerp tông màu vào orb nền
+    trong `_NeonBgPainter`) từ trước nhưng chưa nơi nào truyền vào — và
+    `GameWorld` (`worlds.dart`) đã có sẵn field `color` mỗi world dùng cho
+    banner path map. Ghép 2 cái có sẵn lại là đủ AC, **không thêm field
+    palette mới** cho `GameWorld` (tránh trùng lặp — field `color` đã đúng
+    vai trò palette-per-world mà task yêu cầu).
+  - Đổi duy nhất: `game_screen.dart` truyền
+    `accent: worldForLevel(gameCtrl.currentLevel.id).color` vào `NeonBg(...)`.
+  - Side-mode (Time-attack/Zen/Endless/Daily — id âm) rơi vào fallback của
+    `worldForLevel` (world cuối) vì không match range world nào — chấp nhận,
+    không phải case task nhắm tới.
+  - Test mới: `game_screen_smoke_test.dart` — dựng `GameScreen` ở level world
+    2 (id 25), tìm widget `NeonBg`, assert `accent == worldForLevel(25).color`.
+  - Không viết widget test/code mới cho contrast gem — AC yêu cầu "kiểm bằng
+    mắt", không phải test tự động; `accent` chỉ lerp 50% vào orb nền (biên độ
+    có sẵn từ trước lúc build `NeonBg`), không đụng màu gem.
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: 202 test,
+    +1 so với trước.
+
+## ✅ Wave 12 — I17 (2026-07-13, chạy tự động overnight)
+
+- **I17 Tile material variants**: gem đổi chất liệu render theo world thay vì
+  luôn 1 kiểu "jelly" bóng mềm.
+  - `TileMaterial` enum (`jelly`/`crystal`/`metal`) trong `block_component.dart`.
+    `materialForLevel(id)` chia đều index world (trong `kWorlds`, không hardcode
+    lại "20 màn/world") thành 3 dải: world 1-4 = jelly, 5-7 = crystal, 8-10 =
+    metal.
+  - Tách phần vẽ thân+gloss+viền (trước đây hardcode riêng cho jelly) ra hàm
+    riêng `paintTileBody(canvas, rrect, rect, s, color, material)` **không phụ
+    thuộc `HasGameReference`** — để golden test gọi thẳng qua `CustomPainter`,
+    không cần dựng `FlameGame`/`GameWidget` (dự án chưa có `flame_test`, chưa
+    test nào mount `BlockComponent` trần).
+  - Mỗi variant vẫn đúng 3 draw call (thân/gloss/viền) như bản gốc — chỉ đổi
+    tham số Paint/gradient/hình học, không thêm draw call → giữ đúng AC
+    "không tăng chi phí render đáng kể".
+  - `jelly`: gradient dọc trắng-màu-đen, gloss bo tròn góc trên, bo góc 0.22
+    (giữ nguyên bản gốc). `crystal`: gradient chéo tương phản mạnh hơn, gloss
+    là 1 vệt chéo mỏng (xoay 45°), viền mỏng gần trắng, bo góc 0.10 (sắc cạnh).
+    `metal`: gradient ngang 5 dải sáng/tối (ánh kim), gloss là 1 vệt sáng ngang
+    giữa, viền dày ánh xám bạc, bo góc 0.16.
+  - `pop_star_game.dart` (`_rebuildBoard`) truyền
+    `material: materialForLevel(controller.currentLevel.id)` khi tạo mỗi
+    `BlockComponent`.
+  - Golden test mới: `test/widget/goldens/block_component_material_golden_test.dart`
+    — gọi `paintTileBody` trực tiếp cho cả 3 material với cùng 1 màu input,
+    3 file `.png` riêng, xác nhận bằng mắt 3 hình khác nhau rõ dù cùng màu.
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: 205 test
+    (+3 golden so với Wave 11).
+
+## ✅ Wave 13 — I15 (2026-07-13, chạy tự động overnight)
+
+- **I15 Day/Night theme toggle**: switch trong Settings đổi tức thì giữa
+  bright-casual hiện tại (mặc định) và neon-dark gốc trước pivot — không tách
+  bản riêng, không route/rebuild app.
+  - `NeonTheme`: thêm `static bool dark` + đổi các token
+    `bgTop/bgMid/bgBot/card/cardAlt/panel/ink/inkSoft` từ `static const` sang
+    `static Color get` rẽ nhánh theo `dark`. Mọi callsite cũ (`NeonTheme.ink`,
+    `.card`, …) không cần sửa gì — tự đổi theo flag, đúng AC "không sửa từng
+    nơi gọi màu cứng".
+  - Bảng màu dark KHÔNG bịa mới: lấy lại đúng giá trị neon gốc trước pivot
+    (`git show <commit trước pivot>:lib/core/neon_theme.dart`) —
+    `panel=0xFF1B1B3A` → `card` dark, `bgDark2=0xFF14142E` → `cardAlt` dark,
+    gradient 3-stop gốc → `bgTop/bgMid/bgBot` dark. Còn 2 hằng dark cũ
+    (`bgDark`/`bgDark2` trong file, xác nhận không nơi nào dùng qua grep)
+    được tái dùng làm `bgTop`/`bgMid` dark thay vì xoá bỏ phí. Chỉ 2 giá trị
+    thật sự mới: `ink`/`inkSoft` dark (bản gốc không có token chữ vì UI khi
+    đó không có text thân dài).
+  - `bgGradient` đổi từ `static const LinearGradient` sang getter dựng từ 3
+    token trên.
+  - `StorageKeys.themeDark` ('theme_dark') lưu lựa chọn qua
+    `StorageService.getBool/setBool` có sẵn (không cần helper riêng).
+  - `main.dart`: đọc `NeonTheme.dark = store.getBool(StorageKeys.themeDark)`
+    ngay sau khi `StorageService` sẵn sàng, trước `runApp`.
+  - `settings_screen.dart`: `SwitchListTile` mới (theo đúng pattern
+    `_hapticsEnabled` đã có) — đổi `NeonTheme.dark`, lưu storage, gọi
+    `Get.forceAppUpdate()` để rebuild toàn cây ngay lập tức (không cần bọc
+    từng widget bằng `Obx`/`GetBuilder` — theme là state toàn cục, GetX
+    idiomatic cho trường hợp này). Key i18n `dark_theme` thêm đủ 22 locale.
+  - Side-effect: đổi `static const` → `static Color get` phá vỡ mọi
+    `const` Flutter widget tham chiếu các token này (Dart yêu cầu giá trị
+    const-context phải compile-time constant) — sửa ~17 chỗ (bỏ `const` thừa
+    ở các file screen/widget). 2 chỗ đặc biệt: `neon_bg.dart` gộp gradient
+    trùng lặp thành gọi thẳng `NeonTheme.bgGradient` (tái dùng thay vì lặp
+    code); `stroke_text.dart` đổi tham số `stroke` sang `Color?` (bỏ default
+    const, áp fallback `?? NeonTheme.ink` tại điểm dùng) vì default parameter
+    value phải const.
+  - Golden test: **lệch khỏi gợi ý AC** "button, app bar" — cả hai không
+    tham chiếu token bg/card/ink trực tiếp (màu `NeonButton` đến từ accent
+    truyền vào, `NeonAppBar` không có nền theo token). Dùng `NeonDialog.panel`
+    (card+ink) và `NeonBg` (bgTop/Mid/Bot) thay thế —
+    `test/widget/goldens/theme_dark_toggle_golden_test.dart`, 4 ảnh
+    (dialog×2, bg×2), xác nhận bằng mắt 2 theme khác biệt rõ.
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: 209 test
+    (+4 golden so với Wave 12).
+
+## ✅ Wave 14 — I16 (2026-07-13, chạy tự động overnight)
+
+- **I16 Aurora background shader (world cuối)**: nền world 10 (id 181-200,
+  khó nhất) có dải aurora chuyển sắc phủ lên trên `NeonBg` gốc, chỉ world
+  này, các world khác không đổi.
+  - Shader mới `shaders/aurora_bg.frag` — 3 dải sóng ngang lệch pha, hue-shift
+    dần theo thời gian trên nền màu accent world, alpha premultiplied giống
+    `neon_glow.frag`. Đăng ký trong `pubspec.yaml` cùng mục `shaders:` có sẵn.
+  - `AuroraBgLayer` (`lib/presentation/widgets/aurora_bg_layer.dart`) —
+    sao chép nguyên cấu trúc `NeonAuraLayer` (Ticker throttle ~30fps,
+    `FragmentProgram.fromAsset` try/catch, `dlog` khi lỗi) thay vì viết hạ
+    tầng mới, đúng yêu cầu "tái dùng hạ tầng shader đã chứng minh hoạt động".
+  - **Lệch khỏi AC**: AC ghi "Fallback non-shader (gradient animation
+    AnimationController) khi thiết bị không hỗ trợ — theo đúng pattern
+    neon_aura_layer.dart đã làm" — nhưng đọc lại `neon_aura_layer.dart` thì
+    fallback thật của nó là **ẩn hẳn** (`SizedBox.shrink`) khi shader lỗi,
+    không có gradient animation nào cả. Làm đúng theo pattern THẬT (ẩn hẳn)
+    thay vì theo mô tả sai trong AC — nhất quán với cách I15 cũng phát hiện
+    1 chỗ AC mô tả không khớp code hiện tại.
+  - `NeonBg` thêm param `aurora` (mặc định false) — khi bật, overlay
+    `AuroraBgLayer` lên trên gradient nền hiện có (không thay thế), màu lấy
+    từ `accent` world (fallback `NeonTheme.indigo`).
+  - `game_screen.dart`: bật `aurora: worldForLevel(id) == kWorlds.last`.
+  - Test: `test/widget/aurora_bg_layer_test.dart` (mirror
+    `neon_aura_layer_test.dart` — không crash dù shader load được hay
+    không, cả standalone lẫn qua `NeonBg(aurora: true)`). Golden-test hình
+    ảnh không khả thi (shader không chạy được trong môi trường test không
+    GPU) — verify bằng build cài thiết bị thật.
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: 211 test
+    (+2 so với Wave 13).
+
+## ✅ Wave 15 — F15 (2026-07-13, chạy tự động overnight)
+
+- **F15 Photo mode / chia sẻ bàn chơi**: nút chia sẻ trên màn thắng, chụp ảnh
+  bàn chơi + text level/điểm/ngày, mở share sheet hệ thống.
+  - Thêm 1 package share duy nhất: `share_plus: ^12.0.2` — trước đó project
+    chưa có package share nào (`shared_preferences` chỉ trùng chữ "share").
+  - `lib/core/share_helper.dart` (mới) — 1 pipeline share dùng chung cho cả
+    F15 và X6, không tạo hàm/plugin riêng ở 2 nơi:
+    - `shareText(text)` — text-only, dùng cho X6 mời bạn bè.
+    - `captureBoardPng(GlobalKey, {pixelRatio})` — chụp `RepaintBoundary`
+      thành PNG bytes, tách riêng khỏi việc gọi share để test được (không
+      chạm platform channel của `share_plus`).
+    - `shareBoardImage({boundaryKey, text})` — gọi `captureBoardPng` rồi mở
+      share sheet kèm ảnh + text, dùng cho F15.
+  - `GameScreenController.boardKey` (GlobalKey) + `shareBoard()` — bọc
+    `Container` bàn chơi trong `game_screen.dart` bằng `RepaintBoundary(key:
+    gsc.boardKey)`, text chia sẻ gồm level id, điểm, ngày (ISO date).
+  - Nút share (`NeonIconButton(Icons.share_rounded)`) đặt cạnh dòng điểm
+    trong màn thắng (`_WinChoreographyState`). Key i18n mới `share_board`
+    thêm cho cả 22 locale.
+  - Test: `test/core/share_helper_test.dart` — `captureBoardPng` trả PNG hợp
+    lệ (kiểm magic bytes) khi context đã build, null khi chưa. Phải bọc gọi
+    trong `tester.runAsync(...)` vì `RenderRepaintBoundary.toImage()` cần
+    rasterize thật, không chạy được trong `FakeAsync` zone mặc định của
+    `flutter test`. Việc mở share sheet thật (platform channel) không test
+    được trong môi trường này — verify bằng build cài thiết bị thật.
+  - X6 (mời bạn bè) sẽ gọi lại `shareText` ở trên, không tạo pipeline mới.
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: 213 test
+    (+2 so với Wave 14).
+
+## ✅ Wave 16 — X6 (2026-07-13, chạy tự động overnight)
+
+- **X6 Mời bạn bè (share invite)**: `ListTile` trong Settings, gọi lại
+  `shareText` đã dựng ở F15 (không tạo pipeline share riêng, đúng note kỹ
+  thuật trong task file) với text kèm placeholder link Google Play (chưa có
+  link thật, cần thay khi phát hành).
+  - Key i18n mới `invite_friend` thêm cho cả 22 locale.
+  - Phát hiện + fix: thêm `ListTile` đẩy nút "Reset progress" ra ngoài
+    viewport mặc định của widget test (`ListView` — khác `Column` — chỉ
+    build/layout con nằm trong viewport, con ngoài viewport không tồn tại
+    trong tree nên `find.text` không thấy). Fix ở
+    `test/widget/settings_screen_test.dart`: `tester.dragUntilVisible(...)`
+    trước khi assert nút reset, cho cả biến thể `en_US` và `ja_JP`.
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: 213 test
+    xanh hết (không đổi tổng số so với Wave 15 — chỉ sửa test có sẵn, không
+    thêm test mới; feature tự nó không cần test riêng vì tái dùng `shareText`
+    đã có test ở F15).
+
+## ✅ Wave 17 — F14 (2026-07-13, chạy tự động overnight)
+
+- **F14 Relic/Perk system**: perk vĩnh viễn mở khoá khi hoàn thành 1 world —
+  KHÔNG mua bằng coin/tiền thật (đúng AC), tối đa 2 active cùng lúc, chọn ở
+  màn hình riêng (`PerksScreen`), không đổi giữa chừng ván.
+  - `lib/data/perks.dart` (mới): `Perk`, `kPerks` (3 perk: `extra_undo`
+    unlock sau world 1, `move_hint` sau world 2, `coin_bonus` sau world 3),
+    `worldsCompleted(unlockedLevel)` và `unlockedPerks(unlockedLevel)` — 2
+    hàm thuần suy từ `unlockedLevel` + `kWorlds` có sẵn (F4), không thêm state
+    mới.
+  - `GameController`: `activePerkIds` (RxList, persist qua
+    `StorageKeys.activePerks` — string nối dấu phẩy, tái dùng
+    `getString`/`setString` có sẵn, không thêm storage primitive), `hasPerk`,
+    `togglePerk` + static `togglePerkSelection` (thuần, test được, giới hạn
+    tối đa 2 active). Reset qua `resetProgress()`.
+  - Hiệu ứng 3 perk — đều tái dùng cơ chế có sẵn, không phát minh hệ thống mới:
+    - `extra_undo`: mở rộng I5 (1 lượt undo miễn phí/màn, trước là bool) thành
+      counter `_freeUndoLeft` = 2 nếu có perk, 1 nếu không.
+    - `coin_bonus`: +10% trong `_grantCoins()`.
+    - `move_hint`: rút `_hintDelay` (I4 auto-hint) từ 6.0s xuống 2.0s trong
+      `pop_star_game.dart` khi `controller.hasPerk('move_hint')`.
+  - `PerksScreen` (mới, theo mẫu `LeaderboardScreen`): liệt kê `kPerks`, khoá
+    icon khi chưa unlock, tap để toggle active. Entry point mới trên
+    `HomeScreen` (icon `auto_fix_high`, màu cyan).
+  - Key i18n mới cho cả 22 locale: `perks_title`, `perk_extra_undo(_desc)`,
+    `perk_move_hint(_desc)`, `perk_coin_bonus(_desc)`, `perk_locked`.
+  - Test mới `test/data/perks_test.dart`: `worldsCompleted`/`unlockedPerks`
+    mở khoá đúng theo world, `togglePerkSelection` giới hạn 2 active + bỏ
+    được perk đang active dù đã đủ 2.
+  - `flutter analyze`: 0 issues. `flutter test --exclude-tags slow`: 220 test
+    xanh hết (213 + 7 mới).
+
+## ✅ Smoke test audit trên Tecno thật (2026-07-13)
+
+User báo gặp lỗi UI nhiều dù trước đó tưởng backlog đã xong — audit trực
+tiếp trên máy Tecno (`118743744X002560`) qua screenshot từng màn hình.
+
+- **Bug #1** home icon grid lệch — đã fix (session trước).
+- **Bug #2** HUD booster row overflow — đã fix (session trước).
+- **Bug #3** intro-animation freeze `pop_star_game.dart` — đã fix (session
+  trước).
+- **Bug #4** Settings switch state OFF rơi về style Material mặc định
+  (đen/trắng, lệch theme candy-neon) — 4 `SwitchListTile` (Sound, Haptics,
+  Colorblind, Dark theme) chỉ set `activeThumbColor` cho state ON, không
+  set gì cho OFF. Fix 1 lần ở gốc: thêm `switchTheme: SwitchThemeData(...)`
+  vào `ThemeData` trong `main.dart` (không sửa `settings_screen.dart`) —
+  set `trackColor`/`trackOutlineColor`/`thumbColor` cho state chưa-selected,
+  trả `null` cho state selected để không đụng override cyan sẵn có. Verify
+  bằng screenshot ON/OFF trên Tecno, cả 4 switch đồng nhất theme.
+- **Bug #5 (nghi ngờ, đã bác bỏ)**: đo lần đầu tưởng Time Attack countdown
+  chạy nhanh gấp ~5 lần thật (25s→0s trong ~5s), do so sánh 2 screenshot
+  chụp ở 2 lệnh Bash tách rời — độ trễ suy luận giữa các lệnh bị tính nhầm
+  là thời gian trong game. Đo lại đúng cách: bracket 2 lần chụp + `sleep`
+  trong CÙNG 1 lệnh Bash (không có khoảng hở suy luận) → countdown giảm
+  16 tick trong 15.03s thật, đúng tỉ lệ 1:1 (lệch 1s do pha khởi động). Kết
+  luận: `_startCountdown()` trong `game_screen_controller.dart` chạy đúng,
+  không sửa gì.
+- Quét thêm toàn bộ: Shop, Settings (đủ 22 locale), Guide, Leaderboard,
+  Season Pass, Perks, Star Road, Spin Wheel dialog, Zen/Endless/Daily
+  Challenge — tất cả clean, không phát hiện lỗi mới.
+- **Bug #6** banner FTUE "Tap this group!" (`_FtueOverlay` trong
+  `game_screen.dart`) đóng cứng ở `Alignment(0, -0.2)`, không liên quan gì
+  tới vị trí group thật mà `_hint` đang trỏ tới (`findLargestGroup` — group
+  lớn nhất còn lại trên bàn). User phát hiện qua trải nghiệm thật, verify lại
+  bằng cách flip `flutter.has_seen_ftue` về `false` qua `adb run-as sed`,
+  chụp `ftue1.png` trên Tecno, decode màu lưới + chạy flood-fill tay đúng
+  logic `findConnectedGroup` → group vàng lớn nhất (5 ô) nằm hàng 5-7/8 (gần
+  đáy), trong khi banner đè hàng 1 (gần đỉnh) — cách nhau 4-6 hàng, xác nhận
+  bằng zoom ảnh thấy viền trắng-nhạt pulse đúng 5 ô đó sáng hơn hẳn ô vàng
+  khác cùng màu. Fix root cause 1 chỗ: thêm `_ftueAlignY(PopStarGame game)`
+  tính alignment theo hàng trung bình của `hintGroup` — banner đặt ở nửa bàn
+  KHÔNG chứa group (tránh đè lên chính group nó trỏ tới), đồng thời dời
+  `_FtueOverlay` từ Stack ngoài (dính cả Hud) vào Stack trong (chỉ vùng
+  board) để alignment tính đúng theo board, không lẫn chiều cao Hud.
+  `flutter analyze` 0 issues; `flutter test --exclude-tags slow` chỉ còn 1
+  fail cũ ở `home_screen_test.dart` (RenderFlex overflow, có sẵn từ trước,
+  không liên quan file này). Verify lại on-device trên Samsung SM-A507FN
+  (Tecno lúc đó mất kết nối, user chọn Samsung): fresh install → Level 1 →
+  zoom ảnh xác nhận group hint thật nằm hàng 4-5/8 (nửa dưới), banner render
+  ở nửa trên (ranh giới hàng 3-4) — không còn đè lên nhau.
+- **Bug #7** `G8 idle shimmer` (`_ShimmerSweep` trong `pop_star_game.dart`,
+  build ở Wave 7 G8) — user đã yêu cầu xoá từ trước, sót lại chưa xoá. Đã gỡ
+  toàn bộ: class `_ShimmerSweep`, field `_shimmerTimer`/`_shimmer`,
+  `_triggerShimmer()`, getter test-only `shimmerActive`, nhánh update() kích
+  hoạt, và reset trong `clearHint()`; xoá luôn `test/widget/idle_shimmer_test.dart`.
+  `flutter analyze` 0 issues; `flutter test --exclude-tags slow` vẫn chỉ 1
+  fail cũ như trên (không liên quan).
+- **Bug #8** revamp menu Home — user chê "màu trùng lắp" + "stroke border thô
+  kệch". Đếm tay xác nhận 12 icon (`home_screen.dart`) chỉ dùng 6/12 màu
+  `NeonTheme` sẵn có, lặp nặng (`purple` x3, `cyan` x2, `magenta` x2). Fix 2
+  chỗ: (1) `home_screen.dart` — gán lại đủ 12 icon dùng đúng 12 màu
+  `NeonTheme` (cyan/magenta/lime/yellow/orange/purple/blue/pink/teal/red/
+  indigo/gold), không màu nào lặp; (2) `neon_icon.dart` — bỏ
+  `border: Border.all(color: c, width: 3)` cứng ở biến thể `boxed`, thay bằng
+  `boxShadow: [...NeonTheme.glow(c, blur: 16, spread: 1), ...NeonTheme.drop(y: 4, blur: 8)]`
+  (3 lớp halo mờ dần + drop shadow) để ra đúng chất neon glow thay vì viền
+  cứng. `flutter analyze` 0 issues; regenerate + soi bằng mắt 2 golden
+  `neon_icon_button_boxed.png`/`_disabled.png` (halo mềm đúng ý, bản disabled
+  chỉ còn drop shadow xám); `flutter test --exclude-tags slow` vẫn chỉ 1 fail
+  cũ ở `home_screen_test.dart` (không liên quan, không phải regression mới).
+- **Bug #9** (nối tiếp Bug #4, fix trước đó chưa đủ) user vẫn chê switch
+  Settings "sai màu, không tương phản, không nhìn rõ". Build + cài debug APK
+  lên Samsung SM-A507FN, zoom screenshot xác nhận 2 lỗi tương phản riêng biệt
+  mà Bug #4 chưa xử lý: (1) **state ON** (Sound, Haptics) — track cyan nhạt +
+  thumb cyan đậm, cùng tông màu nên thumb gần như chìm vào track; (2) **state
+  OFF** (Colorblind mode, Dark theme) — track dùng `NeonTheme.inkSoft` (màu
+  dành cho text phụ, không phải màu viền UI) ở alpha 0.35, quá mờ trên nền
+  pastel sáng `NeonBg`. Fix 2 chỗ: (1) `main.dart` `switchTheme` — đổi
+  `trackColor`/`trackOutlineColor` state OFF từ `inkSoft.withValues(alpha:
+  0.35)` sang `NeonTheme.ink.withValues(alpha: 0.28/0.45)` (đậm hơn, tương
+  phản rõ trên mọi stop gradient nền); (2) `settings_screen.dart` — 4
+  `SwitchListTile` (Sound, Haptics, Colorblind mode, Dark theme) đổi
+  `activeThumbColor: NeonTheme.cyan` (đơn) thành cặp
+  `activeThumbColor: Colors.white` + `activeTrackColor: NeonTheme.cyan` (kiểu
+  "viên thuốc màu + chấm trắng" chuẩn neon, tách bạch thumb/track). `flutter
+  analyze` 0 issues; verify lại on-device Samsung SM-A507FN — cả 4 switch ON
+  giờ track cyan/thumb trắng rõ, cả 2 switch OFF track xám-tím đậm dễ thấy;
+  `flutter test --exclude-tags slow` vẫn chỉ 1 fail cũ ở `home_screen_test.dart`
+  (không liên quan, không phải regression mới).
 
 ## 💭 Ideas (ngoài scope hiện tại)
 

@@ -76,7 +76,7 @@ class GuideScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: NeonTheme.ink,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w800,
@@ -85,7 +85,7 @@ class GuideScreen extends StatelessWidget {
                                 const SizedBox(height: NeonTheme.s8),
                                 Text(
                                   body,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: NeonTheme.inkSoft,
                                     fontSize: 13,
                                     height: 1.4,

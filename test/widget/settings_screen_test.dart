@@ -48,9 +48,16 @@ void main() {
     // các text luôn render.
     expect(find.text('Colorblind mode'), findsOneWidget);
     expect(find.text('Language'), findsOneWidget);
-    expect(find.text('Reset progress'), findsOneWidget);
     expect(find.text('English'), findsOneWidget);
     expect(find.text('Tiếng Việt'), findsOneWidget);
+    // Nút reset nằm cuối ListView, ngoài viewport mặc định của test —
+    // scroll tới trước khi assert (ListView chỉ build widget trong viewport).
+    await tester.dragUntilVisible(
+      find.text('Reset progress'),
+      find.byType(ListView),
+      const Offset(0, -300),
+    );
+    expect(find.text('Reset progress'), findsOneWidget);
     // Raw key không được lộ ra khi đã có bản dịch.
     expect(find.text('settings'), findsNothing);
     expect(find.text('reset_progress'), findsNothing);
@@ -66,10 +73,15 @@ void main() {
     expect(find.text('設定'), findsNWidgets(2));
     expect(find.text('色覚異常モード'), findsOneWidget);
     expect(find.text('言語'), findsOneWidget);
-    expect(find.text('進行状況をリセット'), findsOneWidget);
     // Tên ngôn ngữ trên chip luôn hiển thị theo tên bản ngữ, không đổi theo locale.
     expect(find.text('English'), findsOneWidget);
     expect(find.text('Tiếng Việt'), findsOneWidget);
+    await tester.dragUntilVisible(
+      find.text('進行状況をリセット'),
+      find.byType(ListView),
+      const Offset(0, -300),
+    );
+    expect(find.text('進行状況をリセット'), findsOneWidget);
     expect(find.text('settings'), findsNothing);
     expect(find.text('reset_progress'), findsNothing);
     Get.reset();
