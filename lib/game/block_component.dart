@@ -319,6 +319,10 @@ class BlockComponent extends PositionComponent
     // 5. G6 combo heat: bàn càng "nóng" (combo cao) → rim ngả cam/trắng mạnh
     // hơn, nhưng chỉ cộng thêm lên viền — không thay màu thân nên vẫn phân
     // biệt được màu gốc.
+    // ponytail: heat>0 đúng suốt combo streak (không hiếm) → MaskFilter.blur
+    // sống trên MỌI ô mỗi frame là nguồn lag chính lúc chơi (rows*cols blur/
+    // frame, trong khi bloom G8 đã bake cache). Bỏ blur, giữ solid stroke —
+    // vẫn thấy "nóng" qua màu/độ dày, mất glow mềm.
     final heat = game.heat;
     if (heat > 0) {
       canvas.drawRRect(
@@ -330,8 +334,7 @@ class BlockComponent extends PositionComponent
             NeonTheme.orange,
             Colors.white,
             heat * 0.5,
-          )!.withValues(alpha: 0.25 + 0.55 * heat)
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, s * 0.1 * heat),
+          )!.withValues(alpha: 0.35 + 0.55 * heat),
       );
     }
 

@@ -12,6 +12,7 @@ dưới giữ nguyên để tra cứu mô tả gốc.
 - **I3 Gravity variants** ✅ đã chốt — [I3-gravity-variants.md](I3-gravity-variants.md).
 - **I4 Predictive hint** ✅ đã chốt — [I4-predictive-hint.md](I4-predictive-hint.md).
 - **I5 Undo miễn phí 1 lần/màn** ✅ đã chốt — [I5-free-undo.md](I5-free-undo.md).
+- **I21 Đa dạng số màu gem theo level** ✅ đã chốt — [I21-per-level-color-variety.md](I21-per-level-color-variety.md).
 
 ## Meta / retention
 - **I6 Battle-pass mùa** ✅ đã chốt (free-track only) — [I6-battle-pass.md](I6-battle-pass.md).

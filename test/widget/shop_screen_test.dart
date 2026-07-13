@@ -22,7 +22,10 @@ void main() {
     final countBefore = gameCtrl.bombCount.value;
     expect(find.text('Bomb  ×$countBefore'), findsOneWidget);
     await tester.tap(find.text(GameController.bombPrice.toString()));
-    await tester.pump(const Duration(milliseconds: 100));
+    // A9: label số lượng giờ đếm dần 250ms — pump rỗng để rebuild+forward()
+    // chạy trước, rồi pump đủ 250ms để animation hoàn tất.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(tester.takeException(), isNull);
     expect(gameCtrl.bombCount.value, countBefore + 1);

@@ -144,18 +144,33 @@ class NeonDialog {
     );
   }
 
-  /// Overlay barrier full-screen bọc panel — render TRONG cây widget (trên Flame).
+  /// Barrier + panel bọc trong Stack — render TRONG cây widget (trên Flame).
+  /// Không tự bọc `Positioned.fill`: nơi gọi (vd `_Overlay` trong
+  /// `game_screen.dart`) chịu trách nhiệm định vị full-screen, để có thể lồng
+  /// trong `AnimatedSwitcher` (Positioned chỉ hợp lệ khi cha trực tiếp là
+  /// Stack, còn AnimatedSwitcher bọc mỗi child qua FadeTransition).
+  /// A9: panel scale+fade vào thay vì snap hiện tức thì (TweenAnimationBuilder
+  /// tự chạy 1 lần lúc mount vì tween bắt đầu từ giá trị mặc định 0).
   static Widget overlay({required Widget panel, VoidCallback? onBarrier}) {
-    return Positioned.fill(
-      child: Stack(
-        children: [
-          GestureDetector(
-            onTap: onBarrier,
-            child: Container(color: Colors.black.withValues(alpha: 0.6)),
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: onBarrier,
+          child: Container(color: Colors.black.withValues(alpha: 0.6)),
+        ),
+        Center(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutBack,
+            builder: (_, t, child) => Opacity(
+              opacity: t.clamp(0, 1),
+              child: Transform.scale(scale: 0.85 + 0.15 * t, child: child),
+            ),
+            child: panel,
           ),
-          Center(child: panel),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

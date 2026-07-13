@@ -37,6 +37,7 @@ quyền, floor/UX) dưới đây đã được user chốt. Ý tưởng còn l�
 | [A6](A6-board-intro-assemble.md) | Board intro assemble | 3 | Could |
 | [A7](A7-slowmo-camera-punch.md) | Slow-mo + camera zoom-punch | 5 | Could |
 | [A8](A8-ripple-anticipation.md) | Ripple chạm + anticipation squash | 3 | Could |
+| [A9](A9-instant-snap-polish.md) | Xóa "snap" tức thì ở booster + dialog | 3 | Must |
 
 ### Neon/Glow (G)
 | ID | Task | SP | Pri |

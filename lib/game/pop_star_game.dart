@@ -446,7 +446,15 @@ class PopStarGame extends FlameGame {
     _saveUndo();
     final gained = controller.registerPop(scoreForGroup(group.length));
     _comboTimer = GameController.comboWindow;
-    _spawnScorePopup(row, col, gained, controller.comboMultiplier.value);
+    final gemColor = NeonTheme
+        .gemColors[(colorGrid[row][col] ?? 0) % NeonTheme.gemColors.length];
+    _spawnScorePopup(
+      row,
+      col,
+      gained,
+      controller.comboMultiplier.value,
+      gemColor,
+    );
     if (group.length >= _bigGroupThreshold ||
         controller.comboMultiplier.value >= _bigComboThreshold) {
       controller.triggerFlash();
@@ -544,7 +552,15 @@ class PopStarGame extends FlameGame {
     if (cells.isEmpty) return;
     final gained = controller.registerPop(scoreForGroup(cells.length));
     _comboTimer = GameController.comboWindow;
-    _spawnScorePopup(row, col, gained, controller.comboMultiplier.value);
+    final gemColor = NeonTheme
+        .gemColors[(colorGrid[row][col] ?? 0) % NeonTheme.gemColors.length];
+    _spawnScorePopup(
+      row,
+      col,
+      gained,
+      controller.comboMultiplier.value,
+      gemColor,
+    );
     if (cells.length >= _bigGroupThreshold ||
         controller.comboMultiplier.value >= _bigComboThreshold) {
       controller.triggerFlash();
@@ -665,9 +681,28 @@ class PopStarGame extends FlameGame {
     final tmp = colorGrid[row1][col1];
     colorGrid[row1][col1] = colorGrid[row2][col2];
     colorGrid[row2][col2] = tmp;
-    _blocks[row1][col1]?.colorIndex = colorGrid[row1][col1]!;
-    _blocks[row2][col2]?.colorIndex = colorGrid[row2][col2]!;
+    _swapFlip(_blocks[row1][col1], colorGrid[row1][col1]!);
+    _swapFlip(_blocks[row2][col2], colorGrid[row2][col2]!);
     _checkEnd();
+  }
+
+  /// A9: lật ô theo trục dọc rồi đổi màu ở giữa chừng (ScaleEffect.to hỗ trợ
+  /// onComplete riêng dù nằm trong SequenceEffect) thay vì đổi màu tức thì.
+  void _swapFlip(BlockComponent? b, int newColor) {
+    if (b == null) return;
+    b.add(
+      SequenceEffect([
+        ScaleEffect.to(
+          Vector2(1, 0),
+          EffectController(duration: 0.09, curve: Curves.easeIn),
+          onComplete: () => b.colorIndex = newColor,
+        ),
+        ScaleEffect.to(
+          Vector2.all(1),
+          EffectController(duration: 0.09, curve: Curves.easeOut),
+        ),
+      ]),
+    );
   }
 
   /// Xoá [cells]: animate pop từng ô + hạt, rồi rơi/dồn bằng tween, cuối cùng
@@ -850,43 +885,116 @@ class PopStarGame extends FlameGame {
   }
 
   /// Popup "+điểm" (kèm "xN" nếu combo) bay lên rồi biến mất tại ô vừa tap.
-  void _spawnScorePopup(int row, int col, int gained, double mult) {
+  /// [gemColor]: màu nhóm gem vừa nổ — nhuộm popup theo màu đó thay vì
+  /// trắng/cam cố định, khớp aesthetic neon-glow chung của game.
+  void _spawnScorePopup(
+    int row,
+    int col,
+    int gained,
+    double mult,
+    Color gemColor,
+  ) {
     final combo = mult > 1.0;
     final multTxt = mult == mult.roundToDouble()
         ? mult.toStringAsFixed(0)
         : mult.toStringAsFixed(1);
     final txt = combo ? '+$gained  x$multTxt' : '+$gained';
-    final color = combo ? NeonTheme.orange : Colors.white;
-    final comp = TextComponent(
+    // combo cao → chữ to hơn + rung nhẹ, "phô" hơn (giống cảm giác punch ở
+    // _maybeTriggerPunch nhưng dành riêng cho popup, không đụng toàn bàn).
+    final punch = ((mult - 1) / (GameController.comboMax - 1)).clamp(0.0, 1.0);
+    final fontSize = cellSize * (combo ? 0.42 : 0.34) * (1 + punch * 0.3);
+    final pos = _cellCenter(row, col);
+    final style = TextStyle(
+      fontSize: fontSize,
+      fontWeight: FontWeight.w900,
+      letterSpacing: 0.5,
+    );
+
+    // quầng glow màu gem phía sau chữ — chỉ 1 popup/lần (không phải
+    // full-board như heat rim), nên blur ở đây không đụng lại vấn đề hiệu
+    // suất vừa fix.
+    final glow = CircleComponent(
+      radius: fontSize * 0.85,
+      anchor: Anchor.center,
+      priority: 0,
+      paint: Paint()
+        ..color = gemColor.withValues(alpha: 0.4)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14),
+    );
+    final strokeText = TextComponent(
       text: txt,
       anchor: Anchor.center,
-      position: _cellCenter(row, col),
-      priority: 100,
+      priority: 1,
       textRenderer: TextPaint(
-        style: TextStyle(
-          color: color,
-          fontSize: cellSize * (combo ? 0.42 : 0.34),
-          fontWeight: FontWeight.w900,
-          shadows: [
-            Shadow(color: NeonTheme.ink, blurRadius: 3, offset: Offset(0, 1)),
-          ],
+        style: style.copyWith(
+          foreground: Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = fontSize * 0.09
+            ..strokeJoin = StrokeJoin.round
+            ..color = NeonTheme.ink,
         ),
       ),
     );
-    comp.add(
+    final fillText = TextComponent(
+      text: txt,
+      anchor: Anchor.center,
+      priority: 2,
+      textRenderer: TextPaint(style: style.copyWith(color: gemColor)),
+    );
+    final root = PositionComponent(
+      position: pos,
+      anchor: Anchor.center,
+      priority: 100,
+      scale: Vector2.zero(),
+    )..addAll([glow, strokeText, fillText]);
+    root.add(
       MoveByEffect(
         Vector2(0, -cellSize * 1.3),
         EffectController(duration: 0.6, curve: Curves.easeOut),
       ),
     );
-    comp.add(
-      ScaleEffect.by(
-        Vector2.all(1.25),
-        EffectController(duration: 0.14, alternate: true),
+    root.add(
+      ScaleEffect.to(
+        Vector2.all(1 + punch * 0.15),
+        EffectController(duration: 0.25, curve: Curves.easeOutBack),
       ),
     );
-    comp.add(RemoveEffect(delay: 0.6));
-    add(comp);
+    root.add(RemoveEffect(delay: 0.6));
+    add(root);
+    _spawnScoreSparkles(pos, gemColor);
+  }
+
+  /// Vài hạt lấp lánh bay theo hướng popup điểm (tái dùng kỹ thuật
+  /// ComputedParticle không-blur đã tối ưu ở [_spawnBurst], chỉ đổi hướng
+  /// bay hẹp lên trên thay vì nổ toả tròn).
+  void _spawnScoreSparkles(Vector2 at, Color color) {
+    const lifespan = 0.5;
+    add(
+      ParticleSystemComponent(
+        position: at,
+        particle: Particle.generate(
+          count: 4,
+          generator: (i) {
+            final a = -pi / 2 + (_rng.nextDouble() - 0.5) * 0.9;
+            final speed = 50 + _rng.nextDouble() * 60;
+            final vel = Vector2(cos(a), sin(a)) * speed;
+            return ComputedParticle(
+              lifespan: lifespan,
+              renderer: (canvas, particle) {
+                final t = particle.progress * lifespan;
+                final pos = vel * t;
+                final alpha = (1 - particle.progress).clamp(0.0, 1.0);
+                canvas.drawCircle(
+                  Offset(pos.x, pos.y),
+                  cellSize * 0.035,
+                  Paint()..color = color.withValues(alpha: alpha * 0.85),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
   }
 
   /// Hạt nổ + vệt sáng (G2): tự tính vị trí theo gia tốc để vẽ trail mờ dần
@@ -956,7 +1064,9 @@ class PopStarGame extends FlameGame {
         }
       }
     }
-    _rebuildBoard();
+    // A9: rebuild với animateIntro thay vì snap cứng — tái dùng đúng hiệu
+    // ứng rơi-vào-vị-trí đã có sẵn cho lúc vào level, cho cảm giác "xáo lại".
+    _rebuildBoard(animateIntro: true);
     _checkEnd();
   }
 
@@ -969,7 +1079,8 @@ class PopStarGame extends FlameGame {
     if (savedLocks != null) lockGrid = savedLocks;
     _undoGrid = null;
     _undoLockGrid = null;
-    _rebuildBoard();
+    // A9: tái dùng animateIntro cho hoàn tác, tránh bàn snap tức thì.
+    _rebuildBoard(animateIntro: true);
     return true;
   }
 

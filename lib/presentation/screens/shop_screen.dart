@@ -7,6 +7,7 @@ import '../controllers/game_controller.dart';
 import '../widgets/coin_chip.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
+import '../widgets/pressable_scale.dart';
 
 /// Cửa hàng booster: bomb / shuffle / undo, mua bằng xu.
 class ShopScreen extends StatelessWidget {
@@ -164,26 +165,28 @@ class _BoosterRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '$label  ×$count',
-                  style: TextStyle(
-                    color: NeonTheme.ink,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                TweenAnimationBuilder<double>(
+                  tween: Tween(end: count.toDouble()),
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOut,
+                  builder: (_, v, _) => Text(
+                    '$label  ×${v.round()}',
+                    style: TextStyle(
+                      color: NeonTheme.ink,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
                 const SizedBox(height: NeonTheme.s8),
                 Text(
                   desc,
-                  style: TextStyle(
-                    color: NeonTheme.inkSoft,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: NeonTheme.inkSoft, fontSize: 12),
                 ),
               ],
             ),
           ),
-          GestureDetector(
+          PressableScale(
             onTap: canAfford ? onBuy : null,
             child: Container(
               padding: const EdgeInsets.symmetric(

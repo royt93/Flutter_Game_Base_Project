@@ -95,6 +95,7 @@ class GameController extends GetxController {
   /// I5: undo đầu tiên mỗi màn miễn phí, không trừ `undoCount`. F14: perk
   /// `extra_undo` active thì cộng thêm 1 (2 lượt undo miễn phí).
   int _freeUndoLeft = 0;
+  bool get hasFreeUndo => _freeUndoLeft > 0;
 
   /// Combo: nổ liên tiếp trong cửa sổ thời gian → hệ số điểm tăng dần.
   final comboCount = 0.obs;

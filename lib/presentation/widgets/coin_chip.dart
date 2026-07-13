@@ -41,12 +41,17 @@ class CoinChip extends StatelessWidget {
           const CoinIcon(),
           const SizedBox(width: NeonTheme.s8),
           Obx(
-            () => Text(
-              fmtNum(controller.coins.value),
-              style: TextStyle(
-                color: NeonTheme.ink,
-                fontWeight: FontWeight.w800,
-                fontSize: 14,
+            () => TweenAnimationBuilder<double>(
+              tween: Tween(end: controller.coins.value.toDouble()),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              builder: (_, v, _) => Text(
+                fmtNum(v.round()),
+                style: TextStyle(
+                  color: NeonTheme.ink,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),

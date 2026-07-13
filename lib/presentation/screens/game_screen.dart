@@ -355,6 +355,8 @@ class _Hud extends StatelessWidget {
                       armed: false,
                       onTap: gsc.useUndo,
                       label: 'Hoàn tác',
+                      forceEnabled:
+                          gameCtrl.undoCount.value > 0 || gameCtrl.hasFreeUndo,
                     ),
                     const SizedBox(width: NeonTheme.s16),
                     _BoosterButton(
@@ -518,6 +520,7 @@ class _BoosterButton extends StatelessWidget {
   final bool armed;
   final VoidCallback onTap;
   final String label;
+  final bool? forceEnabled;
 
   const _BoosterButton({
     required this.icon,
@@ -526,11 +529,12 @@ class _BoosterButton extends StatelessWidget {
     required this.armed,
     required this.onTap,
     required this.label,
+    this.forceEnabled,
   });
 
   @override
   Widget build(BuildContext context) {
-    final enabled = count > 0;
+    final enabled = forceEnabled ?? count > 0;
     return Semantics(
       button: true,
       enabled: enabled,
@@ -562,13 +566,18 @@ class _BoosterButton extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: NeonTheme.s8),
-              Text(
-                '$count',
-                style: TextStyle(
-                  color: armed
-                      ? Colors.white
-                      : (enabled ? NeonTheme.ink : NeonTheme.inkSoft),
-                  fontWeight: FontWeight.w800,
+              TweenAnimationBuilder<double>(
+                tween: Tween(end: count.toDouble()),
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOut,
+                builder: (_, v, _) => Text(
+                  '${v.round()}',
+                  style: TextStyle(
+                    color: armed
+                        ? Colors.white
+                        : (enabled ? NeonTheme.ink : NeonTheme.inkSoft),
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],
@@ -585,7 +594,20 @@ class _Overlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    switch (gsc.ui.value) {
+    // A9: cross-fade giữa các overlay (kể cả về "playing") thay vì snap.
+    return Positioned.fill(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 160),
+        child: KeyedSubtree(
+          key: ValueKey(gsc.ui.value),
+          child: _buildFor(gsc.ui.value),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFor(GameUi ui) {
+    switch (ui) {
       case GameUi.quit:
         return NeonDialog.overlay(
           onBarrier: gsc.closeOverlay,

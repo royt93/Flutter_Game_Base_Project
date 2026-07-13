@@ -1461,6 +1461,69 @@ tiếp trên máy Tecno (`118743744X002560`) qua screenshot từng màn hình.
   giờ track cyan/thumb trắng rõ, cả 2 switch OFF track xám-tím đậm dễ thấy;
   `flutter test --exclude-tags slow` vẫn chỉ 1 fail cũ ở `home_screen_test.dart`
   (không liên quan, không phải regression mới).
+- **Bug #10** user báo "animation gem lag lúc chơi" + "animation score xấu".
+  Audit `block_component.dart`/`pop_star_game.dart`, loại các nghi phạm phụ
+  (`_EdgeTraceComponent`, `_BurstRing` tự dọn/cooldown; `_spawnBurst` particle
+  không dùng blur từ trước; `_maybeTriggerPunch` cooldown 1s) — root cause
+  thật: rim "combo heat" (G6) trong `BlockComponent.render()` vẽ
+  `MaskFilter.blur` trên **mọi ô, mọi frame** hễ `heat > 0` (tức
+  `comboMultiplier > 1`, xảy ra thường xuyên khi chơi, không hiếm), trong khi
+  bloom G8 cùng file đã bake cache đúng cách — rim heat là chỗ duy nhất lệch
+  khỏi pattern đó, nhân với cỡ bàn (tới ~130 ô late-game) mỗi frame. User
+  chọn fix đơn giản: bỏ blur, giữ solid stroke (đổi màu/độ dày vẫn thấy
+  "nóng", mất glow mềm). Song song, rewrite `_spawnScorePopup` theo 3 hướng
+  user chọn (glow + màu theo gem vừa nổ, sparkle trail, combo càng cao chữ
+  càng to/nảy) — tái dùng kỹ thuật `StrokeText` (2 lớp stroke/fill) và
+  particle không-blur của `_spawnBurst` thay vì bịa cơ chế mới; thêm
+  `_spawnScoreSparkles`, đổi cả 2 call site truyền thêm `gemColor` (đọc từ
+  `colorGrid` trước khi `_clearAndCollapse` null hoá). `flutter analyze` 0
+  issues; `flutter test --exclude-tags slow` vẫn chỉ 1 fail cũ ở
+  `home_screen_test.dart` (RenderFlex overflow 5px, không liên quan, không
+  phải regression mới). Chưa verify visual on-device.
+- **A9 xóa "snap" tức thì** — user chọn "fix toàn bộ 9 điểm ngay 1 lần" sau
+  audit toàn bộ animation gap (khởi phát từ báo cáo undo/"lùi lại 1 step"
+  không có animation). 9 điểm: undo/shuffle re-deal, swap flip preview, coin
+  countup (`CoinChip`), booster count countup (HUD trong game + label trong
+  `ShopScreen`), nút mua ở shop có `PressableScale`, dialog vào bằng
+  scale+fade (`NeonDialog.overlay` dùng `TweenAnimationBuilder`) thay vì snap,
+  dialog ra/chuyển đổi qua `AnimatedSwitcher` (160ms) thay vì snap. 2 điểm cân
+  nhắc rồi bỏ, ghi rõ lý do trong `A9-instant-snap-polish.md`: settings locale
+  (đã animate sẵn qua `ChoiceChip`) và freeze booster indicator (gộp vào
+  booster-count countup, không dựng UI riêng cho 1 field `int` thường). Trong
+  lúc sửa dính 1 bug crash: `Positioned.fill` (cũ nằm trong
+  `NeonDialog.overlay`) không hợp lệ khi lồng trong `AnimatedSwitcher` (con
+  animated bọc qua `FadeTransition`, không phải `Stack` trực tiếp) — fix bằng
+  cách chuyển `Positioned.fill` ra ngoài, bọc quanh `AnimatedSwitcher` ở
+  `_Overlay.build()` (`game_screen.dart`), còn `NeonDialog.overlay` trả về
+  `Stack` trần. `flutter analyze` 0 issues.
+
+  Nhân dịp full suite chạy, phát hiện + dọn xong 2 việc tồn đọng không liên
+  quan A9 nhưng chặn suite xanh hoàn toàn: (1) `home_screen_test.dart`
+  RenderFlex overflow 5px — bug đã ghi nhận từ Bug #6 (documented "có sẵn từ
+  trước") nhưng chưa ai truy gốc; root cause thật: viewport test mặc định
+  800x600 (ngang) không đại diện điện thoại thật (luôn cao hơn rộng),
+  `HomeScreen` xếp nhiều hàng nút bị ép hụt chiều cao giả tạo — verify bằng
+  `git stash` chạy lại trên HEAD sạch (vẫn fail y hệt, xác nhận không phải do
+  A9) rồi bisect bằng test cô lập (tắt daily-dialog qua storage mock, dựng
+  panel/dialog riêng ngoài `HomeScreen`) để loại trừ dần tới đúng thủ phạm.
+  Fix: set `tester.view.physicalSize`/`devicePixelRatio` theo tỉ lệ dọc thật
+  (1080x2400 @3x) trong chính test, không đụng `home_screen.dart` (layout ổn
+  trên máy thật). (2) `test/widget/idle_shimmer_test.dart` — file mồ côi,
+  chưa từng track git, sót lại từ Bug #7 (G8 idle shimmer đã bị xoá hẳn khỏi
+  `pop_star_game.dart` theo yêu cầu user, kể cả getter test-only
+  `shimmerActive`, nhưng file test tương ứng khi đó xoá xong lại tái xuất
+  hiện chưa rõ do đâu) — xoá lại, cùng 1 báo cáo build thừa
+  `android/build/reports/problems/problems-report.html` lỡ bị `git add`.
+  Kết quả: `flutter test --exclude-tags slow` **xanh hoàn toàn lần đầu tiên**
+  (trước giờ luôn có đúng 1 fail "cũ" được coi là biết trước, không chặn).
+  Chưa verify on-device 9 animation của A9.
+
+## 📋 Picked, chưa code
+
+- **I21 đa dạng màu gem theo level** — `colorCount` hiện chỉ đổi mỗi 60 level
+  (`4 + (world~/3).clamp(0,3)`, 200 level chỉ 4 giá trị 4/5/6/7). User yêu
+  cầu đa dạng hơn ở granularity level. Task doc:
+  `doc/task/tasks/I21-per-level-color-variety.md` — chưa code.
 
 ## 💭 Ideas (ngoài scope hiện tại)
 
