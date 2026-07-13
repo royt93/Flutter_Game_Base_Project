@@ -640,11 +640,46 @@ chứng có bug, chỉ là giới hạn của lần test.
 `flutter analyze` 0 issues, `flutter test --exclude-tags slow` 113/113 xanh,
 không FATAL/Exception trong logcat suốt toàn bộ đêm, không gặp quảng cáo lạ.
 
+## ✅ Audit toàn diện + rã 24 task mới (2026-07-13)
+
+Yêu cầu: audit lại source, đề xuất feature mới/enhance, rã scrum vào
+`doc/task/tasks/`. Qua 4 vòng `AskUserQuestion`, user chốt scope rất lớn —
+loại trừ dứt khoát mọi monetize/ads/IAP/analytics infra (Option D).
+
+**Audit findings quan trọng** — trước khi viết task mới, re-verify trực tiếp
+qua `grep`/`git log` (không tin lại báo cáo audit cũ chưa kiểm chứng):
+tất cả F1-F8/A1-A8/G1-G7 đã **implement xong hoàn toàn** trong source (rainbow
+bomb, power tile, obstacle/objective, level path map, mascot/win choreography,
+slow-mo/ripple, mọi hiệu ứng glow) — không có "partial" nào như một bản audit
+trước đó từng nghĩ. Duy nhất `G8` thiếu nửa: burst ring đã xong, chỉ còn phần
+idle shimmer — đã cập nhật `G8-glow-burst-shimmer.md` thu hẹp đúng phần còn
+thiếu.
+
+**Scope đã chốt (24 task file mới trong `doc/task/tasks/`)**:
+- 4 cụm gameplay mới: `I1` gift tile, `I3` gravity variants, `F9` objective
+  mới (collect/move-bonus/obstacle-in-moves), `F10` booster Swap+Freeze,
+  `F11` boss level cuối world, `I14`/`I17` theme + material per world.
+- Mode mới: `F12` Endless, `F13` Daily Challenge (seed theo ngày).
+- Retention/meta (free-track only, không IAP): `I6` battle-pass, `I7` spin
+  wheel, `I8` weekend x2 coin, `I9` leaderboard bạn bè (offline giả lập,
+  không backend), `I10` comeback bonus.
+- Ý tưởng độc quyền: `I15` day/night toggle, `I16` aurora shader, `F14`
+  relic/perk system (không pay-to-win, unlock qua world hoàn thành), `F15`
+  photo mode/share.
+- Floor/UX baseline (`X1`-`X6`): onboarding FTUE, settings âm lượng
+  riêng+haptics, accessibility semantics, boot resilience try/catch, review
+  prompt, share invite.
+
+Đã cập nhật `README.md` (rows F9-F15, nhóm I mới, nhóm X mới, Wave 7-10 build
+order) và `IDEAS.md` (đánh dấu I1/I3/I6-I10/I14-I17 "✅ đã chốt"). Chưa code gì
+— toàn bộ turn này chỉ là audit + backlog, chưa implement.
+
 ## 💭 Ideas (ngoài scope hiện tại)
 
-- Daily reward / login streak · leaderboard/social · cosmetic skins cho block
-  · âm thanh pop/win. (Rainbow/bomb booster đã xong — F3/F5b/F5c.)
 - Gán `LevelObjective.clearColor/clearObstacle` cho các màn cụ thể trong
   `kLevels` (cơ chế đã xong + có test qua `objective_test.dart`, nhưng chưa
   màn campaign nào thực sự dùng objective khác score).
-- 10 ý tưởng thêm chưa chốt: xem `doc/task/tasks/IDEAS.md` (I1-I10).
+- Monetize (`I19`/`I20` trong `IDEAS.md`) — user đã loại dứt khoát khỏi mọi
+  wave (Option D), giữ nguyên "chưa chốt" cho tới khi có yêu cầu khác.
+- `I12` dynamic music layers — còn "chưa chốt" trong `IDEAS.md`, chưa có task
+  file.
