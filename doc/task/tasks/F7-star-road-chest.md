@@ -10,11 +10,11 @@ Tổng sao thu được (qua các màn) đổ vào 1 "đường sao"; đạt m�
 Cho sao một "đích đến" thứ 2 (ngoài mở khoá màn) → lý do cày 3-sao, dopamine mốc.
 
 ## Acceptance criteria
-- [ ] Tổng sao = tổng `star(id)` tốt nhất mọi màn (đọc storage), reactive.
-- [ ] Màn hình/әbanner Star Road hiện các mốc + rương (locked/claimable/claimed).
-- [ ] Đủ sao mốc → cho mở rương 1 lần (không re-claim sau restart).
-- [ ] Mở rương: animation + cộng thưởng (dùng coin fly nếu là xu).
-- [ ] Wire `resetState` vào `resetProgress`. Unit test claim/không-re-claim.
+- [x] Tổng sao = tổng `star(id)` tốt nhất mọi màn (đọc storage), reactive.
+- [x] Màn hình/әbanner Star Road hiện các mốc + rương (locked/claimable/claimed).
+- [x] Đủ sao mốc → cho mở rương 1 lần (không re-claim sau restart).
+- [x] Mở rương: animation + cộng thưởng (dùng coin fly nếu là xu).
+- [x] Wire `resetState` vào `resetProgress`. Unit test claim/không-re-claim.
 
 ## Subtasks (gợi ý file)
 1. `lib/core/storage_service.dart`: key `claimedChests` (bitmask/list).
@@ -28,3 +28,10 @@ Anti re-claim: lưu mốc đã nhận, không phụ thuộc tổng sao hiện t�
 sao đổi). Bảng mốc + thưởng cấu hình 1 chỗ.
 
 DoD chung: `../README.md`.
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `game_controller.dart` (`totalStars`, `starRoadMilestones`, `claimedChestMask`,
+`claimChest`, `resetProgress` xoá `claimedChests`+stars rồi `_load()`), `star_road_screen.dart`
+(locked/claimable/claimed + `CoinFlyOverlay`), test `test/presentation/star_road_test.dart`
+(4 test, đã chạy pass). Không tách `StarRoadController` riêng — gộp vào `GameController`,
+tương đương chức năng.

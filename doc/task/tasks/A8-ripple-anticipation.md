@@ -11,9 +11,14 @@
 Phản hồi chạm cao cấp; anticipation làm pop "nặng tay" hơn (nguyên tắc animation 12).
 
 ## Acceptance criteria
-- [ ] Mỗi tap → ripple ngắn tại vị trí chạm (kể cả tap không tạo nhóm).
-- [ ] Nhóm hợp lệ: co nhẹ trước rồi mới scale-up→biến mất (chuỗi rõ, tổng vẫn ~pop hiện tại).
-- [ ] Không tăng đáng kể độ trễ cảm nhận; 60fps.
+- [x] Mỗi tap → ripple ngắn tại vị trí chạm (kể cả tap không tạo nhóm).
+- [x] Nhóm hợp lệ: co nhẹ trước rồi mới scale-up→biến mất (chuỗi rõ, tổng vẫn ~pop hiện tại).
+- [ ] Không tăng đáng kể độ trễ cảm nhận; 60fps. (chưa chạy tay trên device, chỉ verify code + test tự động)
+
+## Rà soát checkbox (2026-07-13)
+- `handleTap` (`lib/game/pop_star_game.dart`): gọi `_spawnRipple(pos)` ngay sau khi xác định `cell`, TRƯỚC khi kiểm tra pop/power-tile → chạy cho mọi tap hợp lệ kể cả không tạo nhóm.
+- `_clearAndCollapse`: mỗi block nổ chạy `SequenceEffect([ScaleEffect.to(0.85, duration: _squashDur=0.04), ScaleEffect.to(1.3, 0.07), ScaleEffect.to(0, duration: _popDur-_squashDur-0.07)])` — co nhẹ 40ms rồi mới bung, tổng thời lượng vẫn giữ `_popDur` (0.16s) như cũ.
+- `_spawnRipple`: `_BurstRing` alpha thấp (0.35) tự dọn nhanh (~0.32s), tách khỏi cap `_maxRings` nên không ảnh hưởng hiệu năng khi tap dồn dập.
 
 ## Subtasks (gợi ý file)
 1. Ripple: overlay/painter tại `game_screen` nhận vị trí chạm từ `onTapUp`, vẽ vòng

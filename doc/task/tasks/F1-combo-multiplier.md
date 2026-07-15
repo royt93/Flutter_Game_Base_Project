@@ -11,11 +11,24 @@ Cơ chế pop hiện chỉ cộng điểm phẳng → thiếu skill ceiling. Com
 chơi chuỗi nhanh, tạo "flow" và chiều sâu — nền cho G1/A1/A5/G6.
 
 ## Acceptance criteria
-- [ ] Nổ nhóm khi combo đang mở → điểm = `scoreForGroup(n) * multiplier`.
-- [ ] `multiplier` tăng mỗi lần nổ trong cửa sổ (vd +0.5, cap x5), hiển thị được.
-- [ ] Combo reset về x1 khi quá `comboWindow` (vd 2.5s) không nổ, hoặc khi màn end.
-- [ ] Không ảnh hưởng tính sao gãy: target/achievability vẫn qua (chạy lại sim).
-- [ ] Unit test cho logic multiplier (tăng/cap/reset).
+- [x] Nổ nhóm khi combo đang mở → điểm = `scoreForGroup(n) * multiplier`.
+- [x] `multiplier` tăng mỗi lần nổ trong cửa sổ (vd +0.5, cap x5), hiển thị được.
+- [x] Combo reset về x1 khi quá `comboWindow` (vd 2.5s) không nổ, hoặc khi màn end.
+- [x] Không ảnh hưởng tính sao gãy: target/achievability vẫn qua. — không có
+      tool sim riêng trong repo (đã audit lại, xác nhận không tồn tại), nhưng
+      không cần: `comboMultiplier` khởi tạo `1.0.obs` (`game_controller.dart:102`),
+      cap tại `comboMax = 5.0`, không bao giờ < 1.0 → `registerPop` luôn trả
+      điểm ≥ `scoreForGroup(n)` phẳng. Combo chỉ có thể làm target DỄ đạt hơn,
+      không bao giờ khó hơn → achievability (đạt được target, theo định nghĩa
+      ở `CLAUDE.md`) không thể bị phá bởi combo. Rủi ro thật (nếu có) là
+      "quá dễ 3 sao", thuộc phạm trù cân bằng độ khó — không phải tiêu chí
+      "vẫn qua" ở dòng này (2026-07-14).
+- [x] Unit test cho logic multiplier (tăng/cap/reset) — group "F1 Combo multiplier" trong `test/presentation/game_controller_test.dart`: assert `registerPop` tăng `comboMultiplier` dần và cap tại `comboMax`, điểm cộng đúng hệ số, `resetCombo` đưa `comboCount`/`comboMultiplier` về 0/1.0 (2026-07-14).
+
+## Rà soát checkbox (2026-07-13)
+- `lib/presentation/controllers/game_controller.dart`: `comboMultiplier` (Rx, cap `comboMax=5.0`), `comboCount`, `comboWindow=3.0`, `registerPop(baseScore)` nhân hệ số đúng công thức `scoreForGroup(n) * multiplier`; `resetCombo()` set lại `comboCount=0`/`comboMultiplier=1.0`.
+- `lib/game/pop_star_game.dart`: `_tryPop`/`_activatePowerTile` gọi `controller.registerPop(...)`, dùng `_comboTimer` (dt cộng dồn trong `update()`, không `DateTime.now`) để reset khi hết cửa sổ — khớp yêu cầu deterministic.
+- Grep `test/` cho `comboMultiplier`/`resetCombo`/`combo_test.dart`: không có kết quả — thiếu unit test riêng cho tăng/cap/reset của multiplier (2 mục trên để ngỏ).
 
 ## Subtasks (gợi ý file)
 1. `lib/presentation/controllers/game_controller.dart`: thêm `comboMultiplier` (RxDouble),

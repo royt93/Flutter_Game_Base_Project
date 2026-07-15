@@ -13,11 +13,16 @@ Chiều sâu chiến thuật đỉnh (Toon Blast/Blast game). Người chơi "g�
 power tile → replay 3-sao, giữ chân mạnh nhất trong nhóm feature.
 
 ## Acceptance criteria
-- [ ] Nổ nhóm đạt ngưỡng → 1 ô trong vùng biến thành power tile (giữ trên bàn).
-- [ ] Tap power tile → kích hoạt hiệu ứng tương ứng (dùng anim pop + hạt).
-- [ ] Kích 2 power tile cạnh nhau → hiệu ứng cộng hưởng (stretch goal).
-- [ ] Power tile rơi/collapse như ô thường; hiển thị khác biệt rõ (icon + glow).
-- [ ] Unit test: ngưỡng sinh đúng loại; kích hoạt xoá đúng vùng.
+- [x] Nổ nhóm đạt ngưỡng → 1 ô trong vùng biến thành power tile (giữ trên bàn).
+- [x] Tap power tile → kích hoạt hiệu ứng tương ứng (dùng anim pop + hạt).
+- [ ] Kích 2 power tile cạnh nhau → hiệu ứng cộng hưởng (stretch goal). ⏸️
+      **Deferred (2026-07-14)** — tự doc đã đánh dấu stretch goal + "chẻ nhỏ
+      trước khi làm (5a/5b/5c/5d)"; 5a/5b/5c (line/bomb/rainbow) đã xong,
+      5d (cộng hưởng) chưa có behavior spec rõ (2 loại nào cạnh nhau → hiệu
+      ứng gì cụ thể?) — cần quyết định thiết kế trước khi code, không tự
+      suy đoán. Để ngỏ theo YAGNI, làm khi có yêu cầu + spec cụ thể.
+- [x] Power tile rơi/collapse như ô thường; hiển thị khác biệt rõ (icon + glow).
+- [x] Unit test: ngưỡng sinh đúng loại; kích hoạt xoá đúng vùng.
 
 ## Subtasks (gợi ý file)
 1. `lib/logic/`: model tile mở rộng — ô mang `kind` (normal/line/bomb/rainbow).
@@ -33,3 +38,10 @@ Task nặng — CHẺ trước khi làm: (5a) line-clear only, (5b) bomb, (5c) r
 combo cộng hưởng. Đụng core `pop_star_game` → không song song với F6.
 
 DoD chung: `../README.md`.
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `lib/logic/power_tile.dart` (ngưỡng→kind), `pop_star_game.dart`
+(`_tryPop`/`handleTap`/`_activatePowerTile`/`_clearAndCollapse`), `block_component.dart`
+(icon+glow render), test `test/logic/power_tile_test.dart` +
+`test/widget/power_tile_test.dart`/`power_tile_bomb_test.dart`/`power_tile_rainbow_test.dart`.
+Mục "cộng hưởng 2 power tile cạnh nhau" (stretch goal) không thấy trong code — để ngỏ.

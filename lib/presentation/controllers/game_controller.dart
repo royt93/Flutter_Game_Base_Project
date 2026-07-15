@@ -518,9 +518,14 @@ class GameController extends GetxController {
       StorageService.to.getInt(StorageKeys.lastDailyChallengeDay, def: -1);
 
   /// F13: điểm Daily Challenge đã ghi nhận lần gần nhất (mọi ngày, không chỉ
-  /// hôm nay) — dùng hiển thị kết quả.
+  /// hôm nay) — dùng hiển thị kết quả ngay sau khi vừa chơi xong.
   int get dailyChallengeScoreToday =>
       StorageService.to.getInt(StorageKeys.dailyChallengeScore);
+
+  /// I9: điểm Daily Challenge của riêng hôm nay — 0 nếu chưa chơi hôm nay,
+  /// để leaderboard không hiển thị nhầm điểm của ngày trước như thể hôm nay.
+  int get dailyChallengeScoreForLeaderboard =>
+      canRecordDailyChallengeScore ? 0 : dailyChallengeScoreToday;
 
   void _saveDailyChallengeScore() {
     if (!canRecordDailyChallengeScore) return;
@@ -709,14 +714,14 @@ class GameController extends GetxController {
 
   void useBomb(int row, int col) {
     if (bombCount.value <= 0 || activeGame == null) return;
-    activeGame!.triggerBomb(row, col);
+    if (!activeGame!.triggerBomb(row, col)) return;
     bombCount.value--;
     StorageService.to.setInt(StorageKeys.bombCount, bombCount.value);
   }
 
   void useShuffle() {
     if (shuffleCount.value <= 0 || activeGame == null) return;
-    activeGame!.shuffleBoard();
+    if (!activeGame!.shuffleBoard()) return;
     shuffleCount.value--;
     StorageService.to.setInt(StorageKeys.shuffleCount, shuffleCount.value);
   }
@@ -738,7 +743,7 @@ class GameController extends GetxController {
 
   void useRainbow(int row, int col) {
     if (rainbowCount.value <= 0 || activeGame == null) return;
-    activeGame!.triggerRainbow(row, col);
+    if (!activeGame!.triggerRainbow(row, col)) return;
     rainbowCount.value--;
     StorageService.to.setInt(StorageKeys.rainbowCount, rainbowCount.value);
   }
@@ -746,7 +751,7 @@ class GameController extends GetxController {
   /// F10: đổi màu 2 ô bất kỳ (không cần liền kề), không tự nổ.
   void useSwap(int row1, int col1, int row2, int col2) {
     if (swapCount.value <= 0 || activeGame == null) return;
-    activeGame!.triggerSwap(row1, col1, row2, col2);
+    if (!activeGame!.triggerSwap(row1, col1, row2, col2)) return;
     swapCount.value--;
     StorageService.to.setInt(StorageKeys.swapCount, swapCount.value);
   }

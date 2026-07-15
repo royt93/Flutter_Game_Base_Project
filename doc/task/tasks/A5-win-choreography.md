@@ -14,10 +14,15 @@ Khoảnh khắc thắng được dàn cảnh theo nhịp thay vì hiện tất c
 Thắng là đỉnh cảm xúc — dàn cảnh tốt tăng thoả mãn & retention rõ rệt.
 
 ## Acceptance criteria
-- [ ] Các bước diễn TUẦN TỰ có delay hợp lý (~1.5–2.5s tổng), có thể tap để skip.
-- [ ] Sao bay vào theo số sao thật (1/2/3); rương/điểm/xu đúng thứ tự.
-- [ ] Không kẹt nếu người chơi tap sớm (skip → hiện trạng thái cuối).
-- [ ] Tái dùng ConfettiOverlay/CoinFlyOverlay/StarMascot sẵn có.
+- [x] Các bước diễn TUẦN TỰ có delay hợp lý (~1.5–2.5s tổng), có thể tap để skip.
+- [x] Sao bay vào theo số sao thật (1/2/3); rương/điểm/xu đúng thứ tự.
+- [x] Không kẹt nếu người chơi tap sớm (skip → hiện trạng thái cuối).
+- [x] Tái dùng ConfettiOverlay/CoinFlyOverlay/StarMascot sẵn có.
+
+## Rà soát checkbox (2026-07-13)
+- `_WinChoreographyState` (`lib/presentation/screens/game_screen.dart`): `Timer` tuần tự cho từng sao (`350 + i*260`ms, đúng `starsEarned.value`), rồi điểm (`+150`), rồi nút (`+650`) — tổng ~1.1–1.8s tuỳ số sao, khớp khoảng ~1.5–2.5s.
+- `_skip()`: cancel toàn bộ timer, set `_starsShown/_scoreShown/_buttonsShown` về trạng thái cuối ngay — không kẹt. `GestureDetector` bọc toàn overlay để tap bất kỳ đâu đều skip. Nút Retry/Next dùng `IgnorePointer(ignoring: !_buttonsShown)` nên không bấm nhầm khi chưa hiện.
+- Grep `ConfettiOverlay`/`CoinFlyOverlay`/`StarMascot` trong `game_screen.dart`: cả 3 đều được tái dùng (confetti + coin fly là overlay có sẵn, mascot dùng `StarMood.cheer` trong `_MascotDialog`).
 
 ## Subtasks (gợi ý file)
 1. `lib/presentation/screens/game_screen.dart` `_Overlay`/`_MascotDialog`: dựng

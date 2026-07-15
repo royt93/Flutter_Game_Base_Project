@@ -1518,12 +1518,62 @@ tiếp trên máy Tecno (`118743744X002560`) qua screenshot từng màn hình.
   (trước giờ luôn có đúng 1 fail "cũ" được coi là biết trước, không chặn).
   Chưa verify on-device 9 animation của A9.
 
-## 📋 Picked, chưa code
+## ✅ I21 — đa dạng màu gem theo level (2026-07-13)
 
-- **I21 đa dạng màu gem theo level** — `colorCount` hiện chỉ đổi mỗi 60 level
-  (`4 + (world~/3).clamp(0,3)`, 200 level chỉ 4 giá trị 4/5/6/7). User yêu
-  cầu đa dạng hơn ở granularity level. Task doc:
-  `doc/task/tasks/I21-per-level-color-variety.md` — chưa code.
+`colorCount` trước chỉ đổi mỗi 60 level (`4 + (world~/3).clamp(0,3)`, 200
+level chỉ 4 giá trị 4/5/6/7). Sửa `lib/data/levels.dart`: thêm dao động
+`+ (i % 3) - 1` quanh baseline, clamp 4..7 — level liền kề trong cùng world
+giờ có thể khác colorCount, trần/sàn khó không đổi. Test mới
+`test/data/levels_test.dart` xác nhận mỗi world (20 level) có ≥2 giá trị
+colorCount khác nhau. `flutter analyze` 0 issues; test suite xanh.
+Task doc: `doc/task/tasks/I21-per-level-color-variety.md`.
+
+## 🔍 Audit round 2 (2026-07-13) — re-scan toàn bộ source
+
+Sau khi backlog 24 task audit đợt 1 + A9 + I21 xong hết, chạy tiếp 4 Explore
+agent song song quét lại (logic/game engine; presentation/UX; data/levels-
+worlds; i18n/settings/accessibility). Khác đợt 1: lần này **verify từng
+finding bằng tay trước khi tin** (đọc source thật, không nhận claim của
+subagent làm sự thật).
+
+Kết quả logic-agent: **cả 5 finding đều false positive** sau khi đọc code
+trực tiếp —
+- `pop_collapse.dart` "sai index khi dồn cột": `nonEmptyCols[c] >= c` luôn
+  đúng (list tăng dần) nên đọc từ cột chưa bị ghi đè — thuật toán compaction
+  in-place chuẩn, không lỗi.
+- `shuffleBoard()` "không gọi `_checkEnd()`": grep xác nhận có gọi (dòng
+  1070).
+- `undo()` "không gọi `_checkEnd()`": đúng là không gọi, nhưng đúng ý đồ —
+  state được `_saveUndo()` lưu luôn là state ngay trước 1 move hợp lệ (đã
+  ngầm định không kẹt/không thắng, nếu không game đã kết thúc trước đó rồi),
+  nên không cần check lại.
+- Freeze-turns "underflow": có guard `> 0` trước decrement, không có.
+- Hint "gồm cả power tile": đúng ý đồ — power tile vẫn là ô màu bình thường
+  trong `colorGrid`, gộp vào nhóm là hợp lệ.
+
+UX-agent: `game_screen.dart:139` `_objectiveLine` đọc `.value` "ngoài `Obx`"
+— sai, hàm được gọi bên trong callback `Obx(() {...})` mở ở dòng 191, GetX
+track dependency bình thường dù qua helper function. Row 4-nút ở
+`home_screen.dart` cũng check tay — tổng chiều rộng ~264px, không có nguy cơ
+tràn màn hình thật.
+
+**2 finding sống sót verify** (đã rã task):
+- **X7** — 6 chuỗi hardcode tiếng Việt/Anh bỏ qua `.tr` (`home_screen.dart`
+  dialog comeback + daily reward, `leaderboard_screen.dart` title + "You") —
+  vi phạm parity 22-locale. Task: `doc/task/tasks/X7-i18n-hardcoded-strings.md`.
+- **X8** — `worldForLevel()` fallback `kWorlds.last` khi id âm (side-mode
+  Zen/TimeAttack/Endless/Daily) → 4 mode này ăn nhầm theme world 10 + hiệu
+  ứng aurora (I16) vốn chỉ dành world khó nhất. Task:
+  `doc/task/tasks/X8-side-mode-world-theme-fallback.md`.
+
+**Đã code X7 + X8 (2026-07-13)**: X7 thêm 6 key mới (`home_comeback_title`,
+`home_comeback_msg`, `home_daily_title`, `home_daily_msg`,
+`home_weekend_banner`, `leaderboard_you`) đủ 22 locale, wire `.tr`/`.trParams`
+tại `home_screen.dart` + `leaderboard_screen.dart` (tái dùng key `daily_claim`
+có sẵn cho nút hành động, `leaderboard_title` có sẵn cho AppBar). X8 guard
+`currentLevel.id > 0` trước khi gọi `worldForLevel` ở `game_screen.dart`,
+side-mode nhận `accent: null`/`aurora: false`. `flutter analyze` 0 issues,
+`flutter test --exclude-tags slow` xanh (220+ test).
 
 ## 💭 Ideas (ngoài scope hiện tại)
 
@@ -1534,3 +1584,190 @@ tiếp trên máy Tecno (`118743744X002560`) qua screenshot từng màn hình.
   wave (Option D), giữ nguyên "chưa chốt" cho tới khi có yêu cầu khác.
 - `I12` dynamic music layers — còn "chưa chốt" trong `IDEAS.md`, chưa có task
   file.
+
+## ✅ Fix bug booster tốn lượt khi no-op (2026-07-13)
+
+Phát hiện khi rà soát/tick checkbox 55 file task doc (bookkeeping cleanup):
+`useBomb`/`useShuffle`/`useRainbow`/`useSwap` (`game_controller.dart`) trừ
+số lượng booster **vô điều kiện** ngay sau khi gọi `triggerBomb`/
+`shuffleBoard`/`triggerRainbow`/`triggerSwap`, nhưng 4 hàm này
+(`pop_star_game.dart`) có thể no-op im lặng (đang animate, target là
+obstacle/lock, hoặc không có gì đổi) — người chơi tap trúng ô không hợp lệ
+vẫn mất 1 lượt dù không có hiệu ứng gì xảy ra. `undo()` đã có pattern đúng
+từ trước (trả `bool`, caller check trước khi trừ) — áp cùng pattern cho 4
+hàm còn lại: đổi signature `void` → `bool` (trả `false` ở mọi nhánh
+early-return, `true` ở cuối), 4 call site trong `game_controller.dart` đổi
+sang `if (!activeGame!....) return;` trước khi trừ count. `flutter analyze`
+0 issues, `flutter test --exclude-tags slow` xanh (220+ test, không test
+nào cần sửa vì 2 call site test hiện có không dùng giá trị trả về).
+
+## ✅ Đóng 5 gap checkbox từ audit tasks/*.md (2026-07-14)
+
+Rà lại 7 gap "chưa xác nhận được trong code" do audit trước flag, đóng 5/7
+(2 còn lại chưa làm: F5 resonance power-tile — stretch goal, F13 daily
+challenge chưa nối leaderboard I9):
+
+- **F1** — chưa có unit test riêng cho `comboMultiplier`/`resetCombo`. Thêm
+  group `F1 Combo multiplier` trong `game_controller_test.dart`: assert
+  `registerPop` tăng multiplier dần + cap tại `comboMax`, điểm cộng đúng hệ
+  số, `resetCombo` đưa combo/multiplier về 0/1.0.
+- **X4** — chưa có test giả lập boot-storage lỗi. Thêm
+  `test/widget/boot_resilience_test.dart`: construct `StorageService(null)`
+  (nhánh catch thật của `_loadPrefs()` trong `main.dart`), pump
+  `HomeScreen`, assert không crash + UI render đúng.
+- **G8** — thiếu idle shimmer sweep (chỉ có burst ring). Thêm
+  `_ShimmerSweep` component + `_shimmerTimer`/`_shimmerDelay` (4.0s, riêng
+  với `_hintDelay` của I4 nhưng cùng reset qua `clearHint()`) trong
+  `pop_star_game.dart`: quét dải gradient alpha thấp ngang bàn khi rảnh tay,
+  không hit-test, dừng ngay khi tap hoặc `_animating`.
+- **A1** — thiếu screen/board shake khi nổ nhóm lớn. Thêm
+  `_maybeTriggerShake` (`pop_star_game.dart`): nhóm ≥5 ô → mọi block còn lại
+  nhận `SequenceEffect` 3 nhịp `MoveByEffect` qua-lại-về (biên độ
+  `cellSize*0.12`). Camera thật không dùng được (board add trực tiếp vào
+  game, không qua `camera.world`) nên rung bằng offset vị trí block.
+- **A7** — "reduce-motion" Settings toggle chưa wire thật (chỉ có string
+  dịch, không có công tắc). Thêm `StorageKeys.reduceMotion` +
+  `SwitchListTile` trong `settings_screen.dart`; `pop_star_game.dart` đọc
+  qua getter `_reduceMotion` gate cả 3 hiệu ứng "thêm" bằng 1 cờ chung:
+  `_maybeTriggerPunch`/slow-mo (A7 gốc), `_maybeTriggerShake` (A1 mới thêm
+  cùng đợt), `_spawnShimmer` (G8 mới thêm cùng đợt).
+
+`flutter analyze` 0 issues, `flutter test --exclude-tags slow` xanh (224
+test). Đã tick checkbox tương ứng trong 5 file `doc/task/tasks/*.md`.
+
+## ✅ F13 — nối daily challenge score vào leaderboard I9 (2026-07-14)
+
+Gap thứ 6/7: `dailyChallengeScore` chưa có đường nối vào leaderboard giả lập.
+Thêm tab toggle (chip icon Sao/Bolt) trong `leaderboard_screen.dart` —
+`LeaderboardScreen` đổi `StatelessWidget` → `StatefulWidget` giữ state tab.
+Không sửa `logic/leaderboard.dart` (đã đủ generic: `LeaderboardEntry`
+name+int, `buildLeaderboard` không quan tâm đơn vị điểm) — chỉ thêm bot list
+riêng `kDailyChallengeLeaderboardBots`
+(`lib/data/daily_challenge_leaderboard_bots.dart`, thang điểm khớp board
+9x8 daily thay vì tổng sao campaign) và chèn `gameCtrl.dailyChallengeScoreToday`
+thay cho `totalStars` khi tab Daily đang chọn. `flutter analyze` 0 issues,
+`flutter test --exclude-tags slow` xanh (224 test).
+
+Còn lại 1/7 gap chưa làm: **F5** resonance khi 2 power tile liền kề — stretch
+goal trong task doc gốc, để ngỏ theo YAGNI trừ khi user yêu cầu.
+
+## ✅ Rà soát mở rộng 21 checkbox trống trong `doc/task/tasks/*.md` (2026-07-14)
+
+Sau khi đóng xong 6/7 gap trên, quét lại toàn bộ `doc/task/tasks/*.md`
+(`grep -rn "^- \[ \]"`) tìm được 21 checkbox trống ngoài phạm vi 7 item ban
+đầu. Xử lý từng nhóm theo đúng bản chất, không code đại trà:
+
+- **F3** — audit note cũ nói `useRainbow` trừ lượt vô điều kiện khi tap ô
+  trống, nhưng đọc lại code hiện tại thấy đã đúng pattern void→bool giống
+  bomb/shuffle/undo/swap (`triggerRainbow` trả `false` khi obstacle/animating,
+  `useRainbow` check trước khi trừ `rainbowCount`) — doc stale, không phải
+  bug thật. Thêm test no-op còn thiếu vào `test/widget/rainbow_bomb_test.dart`
+  ("tap ô obstacle → không tiêu lượt") để chốt, sau đó tick.
+- **F1** — checkbox "achievability vẫn qua" không có sim tool nào trong repo
+  để chạy, nhưng suy luận toán học đủ: `comboMultiplier` khởi tạo 1.0, cap
+  5.0, không bao giờ <1.0 → combo chỉ có thể làm target DỄ đạt hơn, không
+  bao giờ khó hơn. Tick kèm lý luận, không cần công cụ giả.
+- **I11, I13, I4, I5, I2, I18, T1** — 7 checkbox "chưa chạy tay `flutter
+  analyze`/test trong phiên rà soát này" (bookkeeping thuần, code các item
+  này đã xong từ trước). Chạy `flutter analyze` (0 issues) +
+  `flutter test --exclude-tags slow` (225/225 xanh) một lần, tick cả 7 kèm
+  bằng chứng ngày 2026-07-14.
+
+**Còn lại 12 checkbox trống** — tất cả đều thuộc 1 trong 2 loại, không phải
+gap code:
+- 11 item cần test tay trên device/simulator thật (60fps: A1, A3, A6, A8,
+  G5; contrast/TalkBack/VoiceOver: I14, X3; export ảnh/share sheet: F15, X6;
+  golden/manual so khung hình: I16; verify side-mode theme: X8) — theo rule
+  R3, cần hỏi device target trước khi build/run, chưa thực hiện trong phiên
+  này.
+- 1 item: **F5** resonance (đã note ⏸️ deferred ở trên).
+
+## ✅ Test tay device (2026-07-14, Android emulator-5554)
+
+- **X3 semanticLabel fix trên nút quit gameplay** (`game_screen.dart`, nút
+  đóng) — verify bằng `uiautomator dump` thật: `content-desc="Thoát màn
+  chơi"`, `clickable=true`, `enabled=true`, không còn `NAF=true`. Fix có tác
+  dụng thật, không chỉ đọc code.
+- Quét thêm cùng lớp lỗi (thiếu content-desc) trên: gameplay, dialog "Quit
+  Level?", Home, Level Select (partial) — sạch, không phát hiện thêm nút
+  thiếu label. Board full-screen tap-catcher đứng sau dialog là ngoại lệ đã
+  biết trong task doc (không phải nút, không cần label).
+- Level Select: `uiautomator dump` fail liên tục ("could not get idle
+  state") — do animation nền chạy liên tục (path-flow shimmer, particle)
+  không bao giờ để UI settle. Giới hạn công cụ, không phải bug — chưa verify
+  được accessibility label trên màn này bằng phương pháp này.
+- **Phát hiện phụ (không phải bug)**: Settings hiển thị tiếng Anh cho 3 label
+  "Music volume"/"Sound effects volume"/"Haptics" dù đang chọn locale Hindi,
+  trong khi mọi text khác đúng tiếng Hindi. Root cause: `bgm_volume`/
+  `sfx_volume`/`haptics` chỉ có bản dịch trực tiếp ở `_en`/`_vi`, còn lại 20
+  locale (gồm `hi_IN`) resolve qua `_extraEn` — layer "mặc định + fallback
+  cho ngôn ngữ chưa dịch" đã có comment sẵn trong code, áp dụng cho MỌI
+  locale không có override riêng. `app_translations_test.dart` chỉ guard
+  key-set đầy đủ (không thiếu key), không guard value khác English — nên
+  test xanh dù thiếu bản dịch thật. Đây là content-completeness gap có chủ
+  đích của kiến trúc fallback, không phải defect — không tự dịch 20 ngôn ngữ
+  khi chưa có xác nhận chất lượng dịch.
+
+## ✅ Fix 2 bug i18n thật phát hiện khi sweep tiếp (2026-07-14)
+
+Đi tiếp từ sweep accessibility ở trên sang Shop rồi Home, phát hiện 2 bug
+**code thật** (khác gap nội dung Settings ở trên) — cả hai bypass hoàn toàn
+hệ thống `.tr`, không phải thiếu bản dịch mà là chưa từng gọi `.tr`:
+
+- **Shop screen** (`shop_screen.dart`) — toàn bộ text hiển thị (title + 6
+  label booster + 6 desc booster) hardcode tiếng Anh trực tiếp trong code,
+  không đổi theo locale dù người dùng chọn ngôn ngữ nào.
+- **Home screen** (`home_screen.dart`) — cả 12 `semanticLabel` của icon-only
+  action button (Time Attack/Zen/Endless/Daily Challenge/Star Road/Lucky
+  Wheel/Shop/Guide/Settings/Leaderboard/Season Pass/Perks) hardcode cứng,
+  trộn lẫn tiếng Việt/Anh, không đổi theo locale — vì icon không có text
+  hiển thị nên `semanticLabel` là đại diện text/accessible DUY NHẤT; user
+  dùng TalkBack/VoiceOver với ngôn ngữ khác sẽ luôn nghe sai ngôn ngữ.
+
+Fix: thêm 18 key mới (13 Shop + 7 Home mới, phần còn lại tái dùng key đã có
+sẵn — `shop_title`/`guide`/`settings`/`leaderboard_title`/`perks_title` đã
+tồn tại đủ 22 locale từ trước nhưng chưa từng được gọi ở 2 file này; `shuffle`
+tái dùng key legacy có sẵn đủ 22 locale, giá trị vẫn đúng ngữ cảnh) vào
+`_extraEn`/`_extraVi` (đúng convention X2 đã dùng trước đó — chỉ thêm
+en+vi, 20 locale còn lại tự fallback qua `_extraEn`, không tự dịch ẩu).
+Wire `.tr`/`.trParams` vào cả 2 file, không đổi logic khác.
+
+Test hiện có `shop_screen_test.dart` fail sau khi đổi (assert `find.text('Bomb')`
+literal) vì `GetMaterialApp` trong test không có `translations:` nên `.tr`
+trả về raw key — sửa theo đúng pattern `settings_screen_test.dart` đã dùng
+(`translations: AppTranslations()`, `locale: Locale('en','US')` cố định).
+`flutter analyze` 0 lỗi, `flutter test --exclude-tags slow` xanh toàn bộ.
+
+**Phát hiện phụ, chưa fix (cùng lớp bug, khác scope)** — để lại cho lần sau
+vì vượt phạm vi 2 bug ban đầu: `guide_screen.dart` (title hardcode "How to
+Play" dù key `guide` đã dịch đủ 22 locale), `star_road_screen.dart`
+("Star Road" hardcode), `season_screen.dart` ("Season Pass" hardcode),
+`spin_wheel_dialog.dart` (2 chuỗi hardcode tiếng Việt-only, không có bản
+Anh). Đã tạo sẵn key `star_road_title`/`season_pass_title` ở wave này nên
+lần sau chỉ cần wire, không cần thêm key.
+
+Verify tay trên `emulator-5554` (locale máy = Hindi, ca khó nhất vì không
+phải en/vi): rebuild + cài lại + mở Shop qua tap icon thật — title hiện
+"दुकान" đúng Hindi, `shuffle` (key legacy đã dịch đủ 22 locale) hiện đúng
+"फेंटें", 5 label/desc booster mới fallback đúng tiếng Anh như thiết kế
+convention X (chưa có bản Hindi, không phải bug), `trParams` của Freeze
+render đúng "Obstacles stop losing durability for 5 moves." Không raw key
+lộ ra màn hình, không quảng cáo (R4 pass). Fix xác nhận hoạt động đúng trên
+thiết bị thật.
+
+## ✅ X8 — verify tay đủ 4 side-mode trên emulator (2026-07-14)
+
+Checkbox cuối cùng còn trống của X8 (`doc/task/tasks/X8-side-mode-world-theme-fallback.md`)
+đã đóng: mở lần lượt Zen, TimeAttack, Endless, Daily Challenge trên
+`emulator-5554` — cả 4 mode đều hiện nền candy-sky trung tính, không còn
+dải aurora/accent world 10 leak vào (đúng như code fix đã verify trước đó,
+giờ xác nhận thêm bằng mắt trên device thật). Không quảng cáo (R4 pass).
+X8 coi như đóng hoàn toàn — cả 4 acceptance criteria đều tick.
+
+## ✅ X6 — verify tay share-invite trên emulator (2026-07-14)
+
+Mở Settings → tap "मित्र को आमंत्रित करें" (Mời bạn, locale Hindi) trên
+`emulator-5554` — share sheet hệ thống Android mở đúng, nội dung text hiện
+"Chơi Pop Star Blast cùng mình! https://play.google.com/store/apps/details?id=com.galaxyjoy.pop_star_blast"
+(store link placeholder + tagline đúng). Không quảng cáo (R4 pass). X6 đóng
+hoàn toàn — checkbox cuối cùng trong `doc/task/tasks/X6-share-invite.md` đã tick.

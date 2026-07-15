@@ -25,6 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     StorageKeys.hapticsEnabled,
     def: true,
   );
+  late bool _reduceMotion = StorageService.to.getBool(StorageKeys.reduceMotion);
   late bool _darkTheme = NeonTheme.dark;
 
   @override
@@ -96,6 +97,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       activeTrackColor: NeonTheme.cyan,
                       title: Text(
                         'haptics'.tr,
+                        style: TextStyle(color: NeonTheme.ink),
+                      ),
+                    ),
+                    SwitchListTile(
+                      value: _reduceMotion,
+                      onChanged: (v) {
+                        setState(() => _reduceMotion = v);
+                        StorageService.to.setBool(StorageKeys.reduceMotion, v);
+                      },
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: NeonTheme.cyan,
+                      title: Text(
+                        'reduce_motion'.tr,
                         style: TextStyle(color: NeonTheme.ink),
                       ),
                     ),

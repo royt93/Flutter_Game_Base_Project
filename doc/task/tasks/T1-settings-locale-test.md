@@ -9,10 +9,16 @@ Sửa/viết lại test đổi locale trong `settings_screen` đang là nợ k�
 `AppTranslations` bắt buộc mọi ngôn ngữ có đủ key (`app_translations_test.dart` đã guard phần data), nhưng thiếu guard ở tầng widget: đổi locale trong `settings_screen` có re-render đúng UI hay không chưa được test tự động xác nhận, dễ regress âm thầm khi thêm locale mới hoặc đổi cách bind `Obx`/`GetX` cho text.
 
 ## Acceptance criteria
-- [ ] Test dựng `SettingsScreen` trong `GetMaterialApp`, đổi locale qua service (`LocaleService`), verify text hiển thị đổi theo bản dịch mới (không còn raw key dạng `settings.title`)
-- [ ] Test cover ít nhất 2 locale khác nhau (ví dụ `en` và 1 locale không phải Latin, vd `ja` hoặc `vi`) để bắt lỗi thiếu key
-- [ ] Test nằm trong suite không gắn tag `slow`, chạy được qua `flutter test --exclude-tags slow`
-- [ ] `flutter analyze` 0 lỗi
+- [x] Test dựng `SettingsScreen` trong `GetMaterialApp`, đổi locale qua service (`LocaleService`), verify text hiển thị đổi theo bản dịch mới (không còn raw key dạng `settings.title`)
+- [x] Test cover ít nhất 2 locale khác nhau (ví dụ `en` và 1 locale không phải Latin, vd `ja` hoặc `vi`) để bắt lỗi thiếu key
+- [x] Test nằm trong suite không gắn tag `slow`, chạy được qua `flutter test --exclude-tags slow`
+- [x] `flutter analyze` 0 lỗi — chạy trong phiên 2026-07-14: "No issues found!" + `flutter test --exclude-tags slow` 225/225 xanh.
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `test/widget/settings_screen_test.dart` dựng `SettingsScreen`
+qua `_pumpSettings(tester, Locale)`, có 2 test case `en_US` và `ja_JP` (non-Latin)
+assert text bản dịch đúng, không lộ raw key. File không có tag `slow` nên chạy
+trong `flutter test --exclude-tags slow`.
 
 ## Subtasks (gợi ý file)
 - `test/widget/settings_screen_test.dart` (tạo mới nếu chưa có, hoặc bổ sung file test hiện tại) — pump `SettingsScreen`, gọi đổi locale, `tester.pump()`, assert text.

@@ -11,12 +11,20 @@ Bổ sung cho daily reward (F2, cố định) — spin thêm yếu tố "may m�
 deterministic/không cần server.
 
 ## Acceptance criteria
-- [ ] 1 lần/ngày, check giống `claimDaily` (tái dùng `durationToLocalMidnight`).
-- [ ] Bảng phần thưởng trọng số cố định; seed = ngày hiện tại (`Random(seed)`,
+- [x] 1 lần/ngày, check giống `claimDaily` (tái dùng `durationToLocalMidnight`).
+- [x] Bảng phần thưởng trọng số cố định; seed = ngày hiện tại (`Random(seed)`,
       không `Random()` mặc định — tránh đổi kết quả khi refresh).
-- [ ] UI vòng quay: animation quay + dừng đúng ô đã chọn trước (không tự vẽ
+- [x] UI vòng quay: animation quay + dừng đúng ô đã chọn trước (không tự vẽ
       random riêng ở lớp UI).
-- [ ] Unit test: cùng ngày → cùng seed → cùng kết quả; qua ngày mới reset được quay.
+- [x] Unit test: cùng ngày → cùng seed → cùng kết quả; qua ngày mới reset được quay.
+
+## Rà soát checkbox (2026-07-13)
+- `lib/presentation/controllers/game_controller.dart`: `canClaimSpin` (so
+  `_todayEpochDay()` với `StorageKeys.lastSpinDay`), `todaySpinReward` dùng
+  `Random(_todayEpochDay())` có seed + bảng `spinWeights`/`spinRewards`, `claimSpin()`.
+- `lib/presentation/widgets/spin_wheel_dialog.dart` chỉ animate tới ô đã chốt từ
+  `todaySpinReward`, không tự random riêng ở UI.
+- `test/presentation/game_controller_test.dart` có test seed cố định theo ngày.
 
 ## Subtasks (gợi ý file)
 1. `lib/presentation/controllers/game_controller.dart`: `spinAvailable`,

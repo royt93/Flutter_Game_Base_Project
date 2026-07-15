@@ -40,9 +40,15 @@ class GameScreen extends StatelessWidget {
         backgroundColor: NeonTheme.bgMid,
         body: NeonBg(
           energyOf: () => gsc.game.heat,
-          accent: worldForLevel(gameCtrl.currentLevel.id).color,
-          // I16: world cuối (khó nhất) có thêm dải aurora phủ nền.
-          aurora: worldForLevel(gameCtrl.currentLevel.id) == kWorlds.last,
+          // X8: side-mode (Zen/TimeAttack/Endless/Daily) dùng id âm —
+          // worldForLevel không match world nào nên bỏ qua, tránh ăn nhầm
+          // theme world cuối (I16 aurora chỉ dành world khó nhất thật sự).
+          accent: gameCtrl.currentLevel.id > 0
+              ? worldForLevel(gameCtrl.currentLevel.id).color
+              : null,
+          aurora:
+              gameCtrl.currentLevel.id > 0 &&
+              worldForLevel(gameCtrl.currentLevel.id) == kWorlds.last,
           child: SafeArea(
             child: Obx(() {
               gsc.gameVersion.value; // rebuild GameWidget khi đổi ván
@@ -185,6 +191,7 @@ class _Hud extends StatelessWidget {
                   Icons.close_rounded,
                   color: NeonTheme.cyan,
                   onTap: gsc.confirmQuit,
+                  semanticLabel: 'quit_button_label'.tr,
                 ),
                 const SizedBox(width: NeonTheme.s8),
                 Expanded(

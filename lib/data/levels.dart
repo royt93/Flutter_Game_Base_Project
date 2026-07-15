@@ -112,7 +112,10 @@ final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
   final world = i ~/ 20; // 0..9
   final rows = 8 + (world ~/ 2).clamp(0, 3); // 8..11
   final cols = 6 + world.clamp(0, 6); // 6..12
-  final colorCount = 4 + (world ~/ 3).clamp(0, 3); // 4..7
+  // I21: dao động +-1 quanh baseline theo world để level liền kề không dùng
+  // chung 1 colorCount suốt 20 màn (trần/sàn khó 4..7 giữ nguyên).
+  final colorBase = 4 + (world ~/ 3).clamp(0, 3); // 4..7
+  final colorCount = (colorBase + (i % 3) - 1).clamp(4, 7);
   final cells = rows * cols;
   final ramp = 1.0 + world * 0.03;
   final isBoss = id % 20 == 0;

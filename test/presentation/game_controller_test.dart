@@ -296,6 +296,17 @@ void main() {
       expect(ctrl.dailyChallengeScoreToday, 500);
     });
 
+    test('dailyChallengeScoreForLeaderboard = 0 khi chưa chơi hôm nay, không '
+        'lộ điểm ngày cũ', () {
+      expect(ctrl.canRecordDailyChallengeScore, isTrue);
+      expect(ctrl.dailyChallengeScoreForLeaderboard, 0);
+
+      ctrl.startDailyChallenge();
+      ctrl.score.value = 500;
+      ctrl.checkEnd(false);
+      expect(ctrl.dailyChallengeScoreForLeaderboard, 500);
+    });
+
     test('lastDailyChallengeDay khác hôm nay (giả lập qua ngày mới) → ghi '
         'điểm lại được', () {
       ctrl.startDailyChallenge();
@@ -623,6 +634,43 @@ void main() {
       ctrl.movesUsed.value = 1;
       ctrl.checkEnd(false);
       expect(ctrl.starsEarned.value, 3);
+    });
+  });
+
+  group('F1 Combo multiplier', () {
+    test('registerPop tăng multiplier dần theo chuỗi, cap tại comboMax', () {
+      ctrl.startLevel(1);
+      ctrl.registerPop(10); // combo 1 → x1.0
+      expect(ctrl.comboMultiplier.value, 1.0);
+      ctrl.registerPop(10); // combo 2 → x1.5
+      expect(ctrl.comboMultiplier.value, 1.5);
+      ctrl.registerPop(10); // combo 3 → x2.0
+      expect(ctrl.comboMultiplier.value, 2.0);
+
+      for (var i = 0; i < 10; i++) {
+        ctrl.registerPop(10);
+      }
+      expect(ctrl.comboMultiplier.value, GameController.comboMax);
+    });
+
+    test('registerPop cộng điểm đã nhân hệ số combo hiện tại', () {
+      ctrl.startLevel(1);
+      final gained1 = ctrl.registerPop(10);
+      expect(gained1, 10); // combo 1 → x1.0
+      final gained2 = ctrl.registerPop(10);
+      expect(gained2, 15); // combo 2 → x1.5
+      expect(ctrl.score.value, 25);
+    });
+
+    test('resetCombo đưa combo/multiplier về trạng thái ban đầu', () {
+      ctrl.startLevel(1);
+      ctrl.registerPop(10);
+      ctrl.registerPop(10);
+      expect(ctrl.comboMultiplier.value, greaterThan(1.0));
+
+      ctrl.resetCombo();
+      expect(ctrl.comboCount.value, 0);
+      expect(ctrl.comboMultiplier.value, 1.0);
     });
   });
 

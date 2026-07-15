@@ -25,16 +25,19 @@ dạng. Ramp hiện tại đúng hướng (khó dần theo world) nhưng bước
 (60 level/bước) khiến trải nghiệm đơn điệu ở quy mô nhỏ hơn (level-to-level).
 
 ## Acceptance criteria
-- [ ] colorCount đổi ở granularity level, không chỉ world (level liền kề có
+- [x] colorCount đổi ở granularity level, không chỉ world (level liền kề có
       thể khác colorCount).
-- [ ] Không phá vỡ trần/sàn khó hiện có (vẫn trong khoảng 4..7 toàn campaign,
+- [x] Không phá vỡ trần/sàn khó hiện có (vẫn trong khoảng 4..7 toàn campaign,
       xu hướng tăng dần theo world giữ nguyên).
-- [ ] `targetScore`/objective (`clearColor`, `collect` dùng `i % colorCount`,
+- [x] `targetScore`/objective (`clearColor`, `collect` dùng `i % colorCount`,
       `cells / colorCount`) vẫn tính đúng với colorCount mới (đã là biến cục
       bộ trong `List.generate`, không cần sửa các dòng này).
-- [ ] `test/data/levels_test.dart` cập nhật/thêm assertion phản ánh phân bố
+- [x] `test/data/levels_test.dart` cập nhật/thêm assertion phản ánh phân bố
       colorCount mới (không còn kỳ vọng "hằng số suốt 60 level").
-- [ ] `flutter analyze` 0 issues; `flutter test --exclude-tags slow` xanh.
+- [x] `flutter analyze` 0 issues; `flutter test --exclude-tags slow` xanh.
+
+Đã code đúng công thức đề xuất trong Mục tiêu (`colorBase + (i % 3) - 1`,
+clamp 4..7). Test mới xác nhận mỗi world có ≥2 giá trị colorCount khác nhau.
 
 ## Subtasks
 1. `lib/data/levels.dart` — sửa dòng tính `colorCount` trong `kLevels`

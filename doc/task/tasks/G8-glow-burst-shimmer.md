@@ -15,10 +15,24 @@ Bàn "chết" khi người chơi ngập ngừng lâu — I4 (predictive hint) đ
 gợi ý nước đi, shimmer chỉ thêm lớp thị giác "còn sống" trước/song song hint.
 
 ## Acceptance criteria
-- [ ] Rảnh > X giây (dùng lại cơ chế đếm rảnh của I4, ngưỡng riêng) → shimmer
-      quét ngang bàn 1 lượt, lặp thưa; dừng ngay khi có tap.
-- [ ] Không chạy khi `_animating` true (đang diễn hoạt pop/collapse/intro).
-- [ ] 60fps; không che tile, không chặn tap.
+- [x] Rảnh > X giây (dùng lại cơ chế đếm rảnh của I4, ngưỡng riêng) → shimmer
+      quét ngang bàn 1 lượt, lặp thưa; dừng ngay khi có tap. — `_shimmerTimer`
+      (ngưỡng `_shimmerDelay = 4.0s`, riêng với `_hintDelay` của I4) reset
+      trong `clearHint()` (gọi ở mọi tap, kể cả tap sai) → dừng ngay khi tap.
+- [x] Không chạy khi `_animating` true (đang diễn hoạt pop/collapse/intro). —
+      cùng guard `!_animating && !controller.ended.value` như nhánh I4.
+- [x] 60fps; không che tile, không chặn tap. — `_ShimmerSweep` chỉ vẽ dải
+      gradient alpha thấp (0 → 0.22 → 0), không tham gia hit test (input qua
+      GestureDetector ở `game_screen.dart`, không qua component Flame nào).
+
+## Rà soát checkbox (2026-07-13)
+Grep `shimmer`/`sweep`/`MoveEffect` gradient trong `lib/` — không tìm thấy
+component nào khớp mô tả "idle shimmer sweep". `_idleTimer`/`_hintDelay`
+(`pop_star_game.dart:170-171,595-596`) chỉ đang phục vụ I4 (predictive hint),
+chưa có nhánh kích shimmer riêng. Phần ring (`_BurstRing`) vẫn đúng như audit
+2026-07 — không đụng tới. Phần shimmer trong file này là gap thật, không
+phải bookkeeping — để nguyên chưa tick, không tự viết code (ngoài phạm vi
+việc rà soát checkbox).
 
 ## Subtasks (gợi ý file)
 1. `lib/game/pop_star_game.dart`: tái dùng `_idleTimer` (đã có cho I4 hint) hoặc

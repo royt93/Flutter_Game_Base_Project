@@ -12,10 +12,15 @@ Mascot ngôi sao phản ứng theo sự kiện, không chỉ idle/happy/sad tĩn
 Nhân cách hoá vui, tạo gắn kết cảm xúc — điểm nhấn casual.
 
 ## Acceptance criteria
-- [ ] Thêm state/animation: `cheer` (combo), `sad` mạnh hơn khi thua, idle biến tấu.
-- [ ] Ở Game: mascot nhỏ góc màn react khi combo (tùy chọn) hoặc chỉ ở dialog.
-- [ ] Không tốn perf (1 AnimationController, vẽ canvas).
-- [ ] Không chặn tương tác.
+- [x] Thêm state/animation: `cheer` (combo), `sad` mạnh hơn khi thua, idle biến tấu.
+- [x] Ở Game: mascot nhỏ góc màn react khi combo (tùy chọn) hoặc chỉ ở dialog.
+- [x] Không tốn perf (1 AnimationController, vẽ canvas).
+- [x] Không chặn tương tác.
+
+## Rà soát checkbox (2026-07-13)
+- `lib/presentation/widgets/star_mascot.dart`: `enum StarMood { idle, happy, sad, cheer }`; `cheer` = nhảy dồn dập + xoay lắc, `sad` = rũ xuống rõ + cúi đầu, `idle` = bồng bềnh + nghiêng đầu + chớp mắt — 1 `AnimationController _c` duy nhất, vẽ bằng `CustomPaint`/`_StarPainter` (không asset).
+- `lib/presentation/screens/game_screen.dart` dòng ~320: mascot 40px ở HUD Game, bọc `IgnorePointer`, `Obx` đổi mood theo `gameCtrl.comboMultiplier.value > 1.4` → `StarMood.cheer`.
+- Dialog thắng dùng `StarMood.cheer` (win choreography), dialog thua dùng `StarMood.sad` — khớp yêu cầu mood hợp lý.
 
 ## Subtasks (gợi ý file)
 1. `lib/presentation/widgets/star_mascot.dart`: thêm mood `cheer`; đa dạng idle

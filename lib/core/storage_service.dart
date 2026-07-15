@@ -48,6 +48,9 @@ class StorageKeys {
   static const String sfxVolume = 'sfx_volume';
   static const String hapticsEnabled = 'haptics_enabled';
 
+  // A7: tắt slow-mo/zoom-punch/shake/shimmer cho người nhạy chuyển động.
+  static const String reduceMotion = 'reduce_motion';
+
   // X5: đã hiện review prompt chưa (chỉ hiện đúng 1 lần trong đời cài đặt).
   static const String hasShownReviewPrompt = 'has_shown_review_prompt';
 

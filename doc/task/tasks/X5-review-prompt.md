@@ -11,12 +11,20 @@ Gap floor phổ biến ở casual game — chưa có review prompt, và trigger 
 lúc (sau thắng, không phải sau thua) tăng tỉ lệ review tích cực.
 
 ## Acceptance criteria
-- [ ] Cờ `hasShownReviewPrompt` (`StorageKeys` mới) — chỉ hiện đúng 1 lần.
-- [ ] Trigger tại mốc tích cực cụ thể (không hiện ngay sau thua/thoát giữa
+- [x] Cờ `hasShownReviewPrompt` (`StorageKeys` mới) — chỉ hiện đúng 1 lần.
+- [x] Trigger tại mốc tích cực cụ thể (không hiện ngay sau thua/thoát giữa
       chừng).
-- [ ] Dùng plugin review gốc hệ điều hành (kiểm tra `pubspec.yaml` đã có
+- [x] Dùng plugin review gốc hệ điều hành (kiểm tra `pubspec.yaml` đã có
       package review chưa trước khi thêm mới).
-- [ ] Unit test: hàm điều kiện trigger đúng, không hiện lại lần 2.
+- [x] Unit test: hàm điều kiện trigger đúng, không hiện lại lần 2.
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `StorageKeys.hasShownReviewPrompt`; hàm thuần
+`GameController.shouldRequestReview({stars, alreadyShown})` (`stars == 3 &&
+!alreadyShown`) tách riêng để test được, gọi từ `_maybeRequestReview()` chỉ
+khi vừa đạt mốc 3 sao; dùng `in_app_review: ^2.0.12` (`pubspec.yaml:48`) qua
+`InAppReview.instance.requestReview()`, không tự viết dialog riêng; unit test
+`shouldRequestReview` có trong `test/presentation/game_controller_test.dart`.
 
 ## Subtasks (gợi ý file)
 1. `lib/core/storage_service.dart`: key `hasShownReviewPrompt`.

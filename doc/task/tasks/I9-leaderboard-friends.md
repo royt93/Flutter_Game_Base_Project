@@ -11,12 +11,18 @@ User muốn leaderboard bạn bè nhưng không có backend — bản offline gi
 tạo cảm giác cạnh tranh mà không tăng infra (đã loại ở Option D).
 
 ## Acceptance criteria
-- [ ] Danh sách bot ảo cố định (tên + điểm mốc tăng dần theo world) trong data.
-- [ ] Màn hình leaderboard hiện vị trí người chơi (theo tổng sao/điểm cao nhất)
+- [x] Danh sách bot ảo cố định (tên + điểm mốc tăng dần theo world) trong data.
+- [x] Màn hình leaderboard hiện vị trí người chơi (theo tổng sao/điểm cao nhất)
       chen giữa bot ảo.
-- [ ] KHÔNG gọi network/backend nào — giữ đúng scope offline.
-- [ ] Unit test: tính đúng vị trí xếp hạng khi chèn điểm người chơi vào danh
+- [x] KHÔNG gọi network/backend nào — giữ đúng scope offline.
+- [x] Unit test: tính đúng vị trí xếp hạng khi chèn điểm người chơi vào danh
       sách bot.
+
+## Rà soát checkbox (2026-07-13)
+- `lib/data/leaderboard_bots.dart` (danh sách bot tĩnh), `lib/logic/leaderboard.dart`
+  (`buildLeaderboard`/`playerRank` thuần), `lib/presentation/screens/leaderboard_screen.dart`.
+- Grep `http|dio|socket|Socket` trong cả 3 file: không có match — xác nhận offline thuần.
+- `test/logic/leaderboard_test.dart` test chèn đúng vị trí + tie-break.
 
 ## Subtasks (gợi ý file)
 1. `lib/data/` — danh sách bot tĩnh.

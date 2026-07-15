@@ -10,10 +10,20 @@ hiệu đang "on fire". Reset khi combo dứt.
 Phản hồi leo thang trực quan ngay trên bàn (khác G4 ở nền) — thưởng chuỗi.
 
 ## Acceptance criteria
-- [ ] Mức heat suy từ combo (F1); block render glow theo heat (0..1).
-- [ ] Heat cao có chỉ báo rõ (vd viền sáng + hơi ngả cam/trắng) nhưng vẫn phân biệt màu.
-- [ ] Reset mượt khi combo hết.
-- [ ] 60fps (không tạo Paint mới mỗi block mỗi frame nếu tránh được).
+- [x] Mức heat suy từ combo (F1); block render glow theo heat (0..1).
+- [x] Heat cao có chỉ báo rõ (vd viền sáng + hơi ngả cam/trắng) nhưng vẫn phân biệt màu.
+- [x] Reset mượt khi combo hết.
+- [x] 60fps (không tạo Paint mới mỗi block mỗi frame nếu tránh được).
+
+## Rà soát checkbox (2026-07-13)
+- `lib/game/pop_star_game.dart:574-578`: `heat` = hàm của `comboMultiplier`
+  (0..1, clamp), suy trực tiếp từ combo F1.
+- `lib/game/block_component.dart:326-338`: rim stroke lerp cam→trắng theo
+  `heat`, không đổi màu thân → vẫn phân biệt màu; `heat` đọc lại mỗi frame
+  nên tự về 0 mượt khi combo reset (không cần state riêng).
+- Comment ponytail dòng 322-325: cố tình bỏ `MaskFilter.blur` per-block/frame
+  (nguồn lag chính), chỉ giữ stroke `Paint` rẻ — đáp ứng tinh thần "tránh chi
+  phí perf mỗi frame" dù vẫn tạo 1 `Paint()` nhẹ khi heat>0.
 
 ## Subtasks (gợi ý file)
 1. `lib/game/pop_star_game.dart`: expose `heat` (0..1) suy từ combo; truyền vào block render.

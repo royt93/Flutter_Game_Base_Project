@@ -11,11 +11,11 @@ Hai mode phụ vào từ Home:
 Đa dạng lối chơi, tăng thời lượng; Zen phục vụ người chơi casual muốn "chill".
 
 ## Acceptance criteria
-- [ ] Home có lối vào 2 mode (ngoài PLAY campaign).
-- [ ] Time-attack: đồng hồ đếm ngược 60s; hết giờ → dialog best score; KHÔNG đụng
+- [x] Home có lối vào 2 mode (ngoài PLAY campaign).
+- [x] Time-attack: đồng hồ đếm ngược 60s; hết giờ → dialog best score; KHÔNG đụng
   win-streak/unlock/coin campaign (side mode nguyên tắc: không chạm meta campaign).
-- [ ] Zen: không thua/không target; có nút thoát; (tùy chọn) refill nhẹ để chơi lâu.
-- [ ] Lưu best score Time-attack (storage). Widget test smoke mỗi mode.
+- [x] Zen: không thua/không target; có nút thoát; (tùy chọn) refill nhẹ để chơi lâu.
+- [x] Lưu best score Time-attack (storage). Widget test smoke mỗi mode.
 
 ## Subtasks (gợi ý file)
 1. `lib/presentation/controllers/game_controller.dart`: cờ mode (`GameMode` enum:
@@ -32,3 +32,9 @@ Giữ nguyên tắc side-mode: tuyệt đối không đụng `unlockedLevel`/coi
 Zen refill là ngoại lệ luật no-refill — cô lập bằng cờ, đừng đổi campaign.
 
 DoD chung: `../README.md`.
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `home_screen.dart` (nút timeAttack/zen), `game_screen_controller.dart`
+(countdown 60s), `game_controller.dart` (`checkEnd` rẽ nhánh `mode.value != GameMode.campaign`
+bỏ qua unlock/coin/bestScore campaign, `_saveTimeAttackBest`), `pop_star_game.dart`
+(`refillEnabled` cho Zen), test `test/widget/modes_test.dart` (2 test, time-attack + zen).

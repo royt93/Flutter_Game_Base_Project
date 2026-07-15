@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:pop_star_blast/core/app_translations.dart';
 import 'package:pop_star_blast/core/storage_service.dart';
 import 'package:pop_star_blast/presentation/controllers/game_controller.dart';
 import 'package:pop_star_blast/presentation/screens/shop_screen.dart';
@@ -15,7 +17,13 @@ void main() {
     final gameCtrl = Get.put(GameController(), permanent: true);
     gameCtrl.coins.value = 1000;
 
-    await tester.pumpWidget(GetMaterialApp(home: const ShopScreen()));
+    await tester.pumpWidget(
+      GetMaterialApp(
+        translations: AppTranslations(),
+        locale: const Locale('en', 'US'),
+        home: const ShopScreen(),
+      ),
+    );
     // NeonBg có AnimationController.repeat() vô hạn — pumpAndSettle sẽ treo.
     await tester.pump(const Duration(milliseconds: 100));
 

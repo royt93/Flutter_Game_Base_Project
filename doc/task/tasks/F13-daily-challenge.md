@@ -12,13 +12,18 @@ Cầu nối tự nhiên giữa mode mới và leaderboard — seed-theo-ngày gi
 deterministic, dễ test, không cần backend.
 
 ## Acceptance criteria
-- [ ] Hàm sinh board từ seed = ngày hiện tại (`Random(seed)` có seed, không
+- [x] Hàm sinh board từ seed = ngày hiện tại (`Random(seed)` có seed, không
       `Random()` mặc định).
-- [ ] 1 lượt tính điểm/ngày (check giống `claimDaily`); chơi lại trong ngày
+- [x] 1 lượt tính điểm/ngày (check giống `claimDaily`); chơi lại trong ngày
       không ghi điểm mới.
-- [ ] Kết quả ngày lưu vào danh sách rank giả lập (I9) nếu đã có, không thì chỉ
-      lưu điểm ngày riêng.
-- [ ] Unit test: cùng ngày → cùng seed → cùng board (2 lần sinh giống hệt).
+- [x] Kết quả ngày lưu vào danh sách rank giả lập (I9) nếu đã có, không thì chỉ
+      lưu điểm ngày riêng. — thêm tab toggle trong `leaderboard_screen.dart`
+      (chip Sao/Daily), tái dùng nguyên `buildLeaderboard`/`LeaderboardEntry`
+      (generic name+int, không sửa `leaderboard.dart`) với bot list riêng
+      `kDailyChallengeLeaderboardBots` (`lib/data/daily_challenge_leaderboard_bots.dart`,
+      thang điểm khớp board 9x8 daily) chèn `gameCtrl.dailyChallengeScoreToday`
+      (2026-07-14).
+- [x] Unit test: cùng ngày → cùng seed → cùng board (2 lần sinh giống hệt).
 
 ## Subtasks (gợi ý file)
 1. `lib/logic/` hoặc `lib/data/`: hàm sinh board seed = ngày.
@@ -31,3 +36,10 @@ deterministic, dễ test, không cần backend.
 toán phức tạp.
 
 DoD chung: `../README.md`.
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `lib/logic/daily_challenge.dart` (`generateDailyChallengeGrid(seed)` dùng
+`Random(seed)`), `game_controller.dart` (`_todayEpochDay`, `canRecordDailyChallengeScore`,
+`_saveDailyChallengeScore`), test `test/logic/daily_challenge_test.dart`. Mục nối I9
+leaderboard: grep `buildLeaderboard`/`kLeaderboardBots`/`dailyChallengeScore` không thấy
+liên kết nào — `leaderboard_screen.dart` xếp theo `totalStars`, không theo điểm daily.

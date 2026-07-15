@@ -9,12 +9,20 @@ Phát âm thanh (nốt nhạc ngũ cung, cao độ tăng theo combo/màu) mỗi 
 `AudioManager.playMelodic`/`playNote`/`noteIndexFor` (`lib/core/audio_manager.dart` dòng 99-190) đã xây dựng đầy đủ hệ ngũ cung + màu-là-giọng + hợp âm wombo, có test thuần (`noteIndexFor` không phụ thuộc Flutter) — nhưng **grep toàn `lib/game/pop_star_game.dart` không có bất kỳ lệnh gọi `AudioManager` nào**. Hạ tầng nhạc lý đã xong, chỉ chưa wire vào gameplay thật — đây là việc "nối dây", không phải xây mới.
 
 ## Acceptance criteria
-- [ ] Mỗi lần pop hợp lệ (`_tryPop` tìm được nhóm `>=2`) gọi `AudioManager.to.playMelodic(combo: ..., colorIndex: ..., keyIndex: ...)`
-- [ ] `combo` tăng theo chuỗi pop liên tiếp trong 1 lượt cascade (nếu game đã track combo/chain ở đâu đó thì tái dùng, không tạo counter trùng); nếu chưa có, dùng `group.length` làm proxy hợp lý cho "cỡ nhóm" thay vì combo-chain
-- [ ] `colorIndex` truyền đúng màu vừa pop (0-based theo `colorGrid` value)
-- [ ] `keyIndex` có thể cố định 1 hoặc map theo world (tuỳ quyết định khi implement — không bắt buộc phức tạp hoá nếu 1 giá trị cố định đã đủ hay)
-- [ ] Không phát âm khi tap trượt (không nhóm hợp lệ)
-- [ ] `flutter analyze` 0 lỗi
+- [x] Mỗi lần pop hợp lệ (`_tryPop` tìm được nhóm `>=2`) gọi `AudioManager.to.playMelodic(combo: ..., colorIndex: ..., keyIndex: ...)`
+- [x] `combo` tăng theo chuỗi pop liên tiếp trong 1 lượt cascade (nếu game đã track combo/chain ở đâu đó thì tái dùng, không tạo counter trùng); nếu chưa có, dùng `group.length` làm proxy hợp lý cho "cỡ nhóm" thay vì combo-chain
+- [x] `colorIndex` truyền đúng màu vừa pop (0-based theo `colorGrid` value)
+- [x] `keyIndex` có thể cố định 1 hoặc map theo world (tuỳ quyết định khi implement — không bắt buộc phức tạp hoá nếu 1 giá trị cố định đã đủ hay)
+- [x] Không phát âm khi tap trượt (không nhóm hợp lệ)
+- [x] `flutter analyze` 0 lỗi — chạy trong phiên 2026-07-14: "No issues found!".
+
+## Rà soát checkbox (2026-07-13)
+- `lib/game/pop_star_game.dart` `_tryPop`: `AudioManager.maybe?.playMelodic(combo:
+  group.length, colorIndex: colorGrid[row][col] ?? -1)` gọi ngay sau guard
+  `if (group.length < 2) return;` (dòng ~441-445) — không phát khi tap trượt,
+  dùng `group.length` làm proxy combo/cỡ nhóm đúng như acceptance criteria cho phép.
+- `keyIndex` dùng giá trị mặc định của `playMelodic` (không truyền — chấp nhận
+  theo criteria "có thể cố định 1").
 
 ## Subtasks (gợi ý file)
 - `lib/game/pop_star_game.dart` — import `AudioManager`, gọi `Get.find<AudioManager>().playMelodic(...)` (hoặc alias sẵn có nếu `AudioManager` expose singleton getter kiểu `.to`) ngay tại điểm tính `group.length`/màu trong `_tryPop`, trước `_clearAndCollapse`.

@@ -10,11 +10,17 @@ phần thưởng theo mốc (D1..D7 rồi lặp). Bỏ lỡ 1 ngày → reset st
 Lever retention kinh điển cho casual. Kéo người chơi quay lại đều.
 
 ## Acceptance criteria
-- [ ] Lần mở đầu tiên trong ngày (theo `todayEpochDay`) → dialog nhận thưởng.
-- [ ] Streak +1 nếu hôm nay = hôm nhận cuối +1 ngày; reset về 1 nếu cách >1 ngày.
-- [ ] Đã nhận hôm nay → không cho nhận lại (kể cả restart app).
-- [ ] **Anti-cheat time:** dùng max-epoch-day-đã-thấy; chỉnh lùi đồng hồ KHÔNG cho nhận thêm.
-- [ ] Unit test: nhận/không-nhận theo ngày, tăng/reset streak, chống lùi giờ.
+- [x] Lần mở đầu tiên trong ngày (theo `todayEpochDay`) → dialog nhận thưởng.
+- [x] Streak +1 nếu hôm nay = hôm nhận cuối +1 ngày; reset về 1 nếu cách >1 ngày.
+- [x] Đã nhận hôm nay → không cho nhận lại (kể cả restart app).
+- [x] **Anti-cheat time:** dùng max-epoch-day-đã-thấy; chỉnh lùi đồng hồ KHÔNG cho nhận thêm.
+- [x] Unit test: nhận/không-nhận theo ngày, tăng/reset streak, chống lùi giờ.
+
+## Rà soát checkbox (2026-07-13)
+- `lib/presentation/controllers/game_controller.dart`: `canClaimDaily` (so `_todayEpochDay()` với `lastClaimDay`), `claimDaily()` cộng streak (+1 nếu liên tiếp, về 1 nếu gián đoạn) + `dailyRewards` bảng thưởng; `_todayEpochDay()` dùng `maxEpochDaySeen` (chống lùi giờ).
+- `lib/presentation/screens/home_screen.dart`: `initState` gọi `_showDailyRewardDialog` khi `gameCtrl.canClaimDaily`.
+- `test/presentation/game_controller_test.dart`: có test claim ngày đầu (streak=1), không cho claim lại trong ngày, streak+1 khi liên tiếp, reset về 1 khi cách >1 ngày, và test chỉnh đồng hồ về tương lai rồi lùi lại không cho claim thêm (dòng ~124-179).
+- `resetProgress()` xoá cả 3 key `lastClaimDay`/`dailyStreak`/`maxEpochDaySeen`.
 
 ## Subtasks (gợi ý file)
 1. `lib/core/storage_service.dart`: thêm keys `lastClaimDay`, `streak`, `maxEpochDaySeen`.

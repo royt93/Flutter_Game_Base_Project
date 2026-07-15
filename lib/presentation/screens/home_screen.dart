@@ -52,12 +52,16 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showComebackDialog(BuildContext context, int reward) {
     NeonDialog.show(
       context: context,
-      title: 'Chào mừng trở lại!',
+      title: 'home_comeback_title'.tr,
       color: NeonTheme.purple,
       icon: Icons.favorite_rounded,
-      message: 'Quà comeback: +$reward xu, +1 bomb, +1 shuffle!',
+      message: 'home_comeback_msg'.trParams({'coin': '$reward'}),
       actions: [
-        NeonDialogAction(label: 'Nhận', color: NeonTheme.purple, onTap: () {}),
+        NeonDialogAction(
+          label: 'daily_claim'.tr,
+          color: NeonTheme.purple,
+          onTap: () {},
+        ),
       ],
     );
   }
@@ -68,13 +72,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final preview = GameController.dailyRewards[nextStreak - 1];
     NeonDialog.show(
       context: context,
-      title: 'Daily reward — Day $nextStreak',
+      title: 'home_daily_title'.trParams({'day': '$nextStreak'}),
       color: NeonTheme.gold,
       icon: Icons.card_giftcard_rounded,
-      message: 'Nhận $preview xu hôm nay!',
+      message: 'home_daily_msg'.trParams({'coin': '$preview'}),
       actions: [
         NeonDialogAction(
-          label: 'Nhận',
+          label: 'daily_claim'.tr,
           color: NeonTheme.gold,
           onTap: gameCtrl.claimDaily,
         ),
@@ -108,9 +112,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: NeonTheme.gold.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    'Cuối tuần x2 coin!',
-                    style: TextStyle(
+                  child: Text(
+                    'home_weekend_banner'.tr,
+                    style: const TextStyle(
                       color: NeonTheme.gold,
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
@@ -154,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: NeonTheme.orange,
                     size: 28,
                     boxed: true,
-                    semanticLabel: 'Chế độ Đấu thời gian',
+                    semanticLabel: 'mode_time_attack_label'.tr,
                     onTap: () {
                       gameCtrl.startSideMode(GameMode.timeAttack);
                       Get.to(() => const GameScreen());
@@ -166,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: NeonTheme.teal,
                     size: 28,
                     boxed: true,
-                    semanticLabel: 'Chế độ Thư giãn',
+                    semanticLabel: 'mode_zen_label'.tr,
                     onTap: () {
                       gameCtrl.startSideMode(GameMode.zen);
                       Get.to(() => const GameScreen());
@@ -178,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: NeonTheme.indigo,
                     size: 28,
                     boxed: true,
-                    semanticLabel: 'Chế độ Vô tận',
+                    semanticLabel: 'mode_endless_label'.tr,
                     onTap: () {
                       gameCtrl.startEndless();
                       Get.to(() => const GameScreen());
@@ -190,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: NeonTheme.red,
                     size: 28,
                     boxed: true,
-                    semanticLabel: 'Daily Challenge',
+                    semanticLabel: 'daily_challenge_label'.tr,
                     onTap: () {
                       gameCtrl.startDailyChallenge();
                       Get.to(() => const GameScreen());
@@ -207,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: NeonTheme.gold,
                     size: 28,
                     boxed: true,
-                    semanticLabel: 'Con đường sao',
+                    semanticLabel: 'star_road_title'.tr,
                     onTap: () => Get.to(() => const StarRoadScreen()),
                   ),
                   const SizedBox(width: NeonTheme.s24),
@@ -216,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: NeonTheme.purple,
                     size: 28,
                     boxed: true,
-                    semanticLabel: 'Vòng quay may mắn',
+                    semanticLabel: 'spin_wheel_label'.tr,
                     onTap: () => showSpinWheelDialog(context, gameCtrl),
                   ),
                   const SizedBox(width: NeonTheme.s24),
@@ -225,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: NeonTheme.yellow,
                     size: 28,
                     boxed: true,
-                    semanticLabel: 'Cửa hàng',
+                    semanticLabel: 'shop_title'.tr,
                     onTap: () => Get.to(() => const ShopScreen()),
                   ),
                   const SizedBox(width: NeonTheme.s24),
@@ -234,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: NeonTheme.lime,
                     size: 28,
                     boxed: true,
-                    semanticLabel: 'Hướng dẫn',
+                    semanticLabel: 'guide'.tr,
                     onTap: () => Get.to(() => const GuideScreen()),
                   ),
                 ],
@@ -248,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: NeonTheme.blue,
                     size: 28,
                     boxed: true,
-                    semanticLabel: 'Cài đặt',
+                    semanticLabel: 'settings'.tr,
                     onTap: () => Get.to(() => const SettingsScreen()),
                   ),
                   const SizedBox(width: NeonTheme.s24),
@@ -257,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: NeonTheme.cyan,
                     size: 28,
                     boxed: true,
-                    semanticLabel: 'Leaderboard',
+                    semanticLabel: 'leaderboard_title'.tr,
                     onTap: () => Get.to(() => const LeaderboardScreen()),
                   ),
                   const SizedBox(width: NeonTheme.s24),
@@ -266,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: NeonTheme.magenta,
                     size: 28,
                     boxed: true,
-                    semanticLabel: 'Season Pass',
+                    semanticLabel: 'season_pass_title'.tr,
                     onTap: () => Get.to(() => const SeasonScreen()),
                   ),
                   const SizedBox(width: NeonTheme.s24),
@@ -275,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: NeonTheme.pink,
                     size: 28,
                     boxed: true,
-                    semanticLabel: 'Perks',
+                    semanticLabel: 'perks_title'.tr,
                     onTap: () => Get.to(() => const PerksScreen()),
                   ),
                 ],

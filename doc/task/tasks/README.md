@@ -82,6 +82,8 @@ quyền, floor/UX) dưới đây đã được user chốt. Ý tưởng còn l�
 | [X4](X4-boot-resilience.md) | Boot resilience (try/catch khởi động) | 2 | Must |
 | [X5](X5-review-prompt.md) | Review prompt đúng lúc | 2 | Should |
 | [X6](X6-share-invite.md) | Mời bạn bè (share invite) | 3 | Should |
+| [X7](X7-i18n-hardcoded-strings.md) | Fix chuỗi hardcode bỏ qua `.tr` | 2 | Should |
+| [X8](X8-side-mode-world-theme-fallback.md) | Side-mode ăn nhầm theme world cuối | 1 | Should |
 
 ## Thứ tự build đề xuất (tối ưu phụ thuộc + giá trị/công)
 

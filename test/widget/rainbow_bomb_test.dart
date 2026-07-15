@@ -50,6 +50,35 @@ void main() {
     Get.reset();
   });
 
+  testWidgets('F3: tap ô obstacle (không màu thật) → không tiêu lượt', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    Get.put(StorageService(prefs), permanent: true);
+    final gameCtrl = Get.put(GameController(), permanent: true);
+    gameCtrl.startLevel(1);
+
+    await tester.pumpWidget(GetMaterialApp(home: const GameScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+    await _pumpFrames(tester, frames: 20);
+
+    final gsc = Get.find<GameScreenController>();
+    gsc.game.colorGrid = List.generate(
+      gsc.game.rows,
+      (r) => List.generate(gsc.game.cols, (c) => -1), // toàn obstacle
+    );
+    gsc.game.onGameResize(gsc.game.size);
+
+    gameCtrl.rainbowCount.value = 1;
+    gameCtrl.useRainbow(0, 0); // ô obstacle → triggerRainbow no-op
+    await _pumpFrames(tester);
+
+    expect(gameCtrl.rainbowCount.value, 1); // không trừ lượt
+
+    Get.reset();
+  });
+
   testWidgets('toggleRainbowArm bật/tắt đúng BoosterMode', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();

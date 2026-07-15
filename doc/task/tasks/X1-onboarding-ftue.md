@@ -12,14 +12,22 @@ UI ngầm hiểu. Đây là gap floor/UX, ưu tiên Must vì ảnh hưởng ngư
 trực tiếp.
 
 ## Acceptance criteria
-- [ ] Cờ `hasSeenFtue` (`StorageKeys` mới) — chỉ hiện overlay 1 lần duy nhất
+- [x] Cờ `hasSeenFtue` (`StorageKeys` mới) — chỉ hiện overlay 1 lần duy nhất
       trong đời cài đặt app.
-- [ ] Overlay trỏ vào 1 nhóm màu cụ thể trên board level 1, có text ngắn +
+- [x] Overlay trỏ vào 1 nhóm màu cụ thể trên board level 1, có text ngắn +
       tay chỉ (animation đơn giản, tái dùng effect có sẵn nếu có).
-- [ ] Tap đúng vào nhóm được chỉ → overlay biến mất, level tiếp tục bình
+- [x] Tap đúng vào nhóm được chỉ → overlay biến mất, level tiếp tục bình
       thường; tap sai chỗ không crash, không kẹt overlay.
-- [ ] Rà soát `AppTranslations`: xoá key onboarding cũ không dùng nếu có (theo
+- [x] Rà soát `AppTranslations`: xoá key onboarding cũ không dùng nếu có (theo
       audit trong `doc/feat.md`), thêm key mới cho toàn bộ 22 locale.
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `StorageKeys.hasSeenFtue` (`lib/core/storage_service.dart`);
+`showFtue`/`startWithFtueHint` trong `game_screen_controller.dart` điều khiển
+overlay + tắt khi tap đúng nhóm (`showFtue.value = false` +
+`setBool(hasSeenFtue, true)`); key `ftue_tap_hint` có mặt trong bảng dịch
+(`app_translations.dart`, 2 match = base EN + ít nhất 1 override, guard test
+`app_translations_test.dart` đảm bảo đủ 22 locale).
 
 ## Subtasks (gợi ý file)
 1. `lib/presentation/screens/game_screen.dart` hoặc controller: state

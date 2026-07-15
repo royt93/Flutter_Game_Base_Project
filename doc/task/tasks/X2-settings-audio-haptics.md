@@ -11,12 +11,22 @@ Gap floor cơ bản — game thiếu tuỳ chỉnh âm thanh chi tiết, chuẩn
 thiểu của thể loại casual puzzle.
 
 ## Acceptance criteria
-- [ ] `AudioManager` thêm 2 mức volume riêng (bgm/sfx), lưu `StorageKeys` mới.
-- [ ] Settings screen: 2 slider riêng (thay hoặc bổ sung switch tổng hiện có)
+- [x] `AudioManager` thêm 2 mức volume riêng (bgm/sfx), lưu `StorageKeys` mới.
+- [x] Settings screen: 2 slider riêng (thay hoặc bổ sung switch tổng hiện có)
       + 1 switch haptics.
-- [ ] Haptic toggle: khi tắt, mọi chỗ gọi `HapticFeedback.*` trong code phải
+- [x] Haptic toggle: khi tắt, mọi chỗ gọi `HapticFeedback.*` trong code phải
       check cờ trước khi gọi (rà soát toàn bộ điểm gọi hiện có).
-- [ ] Unit test: lưu/đọc đúng giá trị volume + cờ haptics qua `StorageService`.
+- [x] Unit test: lưu/đọc đúng giá trị volume + cờ haptics qua `StorageService`.
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `AudioManager.bgmVolume`/`sfxVolume` (RxDouble, `lib/core/audio_manager.dart`)
+dùng ở mọi điểm phát (`FlameAudio.bgm.play(... volume: 0.35 * bgmVolume.value)`,
+sfx nhân `sfxVolume.value`); `StorageKeys.bgmVolume/sfxVolume/hapticsEnabled`;
+2 `Slider` + 1 haptics switch trong `settings_screen.dart`; helper trung tâm
+`lib/core/haptics.dart` check `StorageKeys.hapticsEnabled` trước khi gọi
+`HapticFeedback` — không còn lời gọi `HapticFeedback.*` rải rác ngoài file này;
+unit test `test/core/storage_service_test.dart` cover cả volume và haptics
+(dòng 48-60).
 
 ## Subtasks (gợi ý file)
 1. `lib/core/audio_manager.dart` (hoặc tên tương đương): thêm volume riêng

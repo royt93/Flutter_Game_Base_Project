@@ -11,10 +11,20 @@ Shader đã có sẵn trong repo (từ game cũ) nhưng chưa dùng — tận d�
 cấp mượt, rẻ GPU hơn nhiều layer blur.
 
 ## Acceptance criteria
-- [ ] Load shader qua `FragmentProgram.fromAsset('shaders/neon_glow.frag')`.
-- [ ] Vẽ 1 lớp aura động (thời gian + màu) sau bàn hoặc dưới HUD; hoà nền sáng casual.
-- [ ] Fallback an toàn nếu load lỗi (không crash — bỏ qua aura).
-- [ ] Kiểm perf trên device thật (không tụt <60fps).
+- [x] Load shader qua `FragmentProgram.fromAsset('shaders/neon_glow.frag')`.
+- [x] Vẽ 1 lớp aura động (thời gian + màu) sau bàn hoặc dưới HUD; hoà nền sáng casual.
+- [x] Fallback an toàn nếu load lỗi (không crash — bỏ qua aura).
+- [ ] Kiểm perf trên device thật (không tụt <60fps). (chưa chạy tay trên
+      device, chỉ verify code + test tự động)
+
+## Rà soát checkbox (2026-07-13)
+- `lib/presentation/widgets/neon_aura_layer.dart:37-39`:
+  `ui.FragmentProgram.fromAsset('shaders/neon_glow.frag')`; asset tồn tại ở
+  `shaders/neon_glow.frag`, khai báo ở `pubspec.yaml:88-89`.
+- `_AuraPainter` (`neon_aura_layer.dart:46-93`) set uniform `time`/`color` mỗi
+  frame; đặt trước board ở `lib/presentation/screens/game_screen.dart:63-68`.
+- `try/catch` quanh load shader, fail → `dlog` + `_shader == null` →
+  `build()` trả `SizedBox.shrink()` (không crash, không aura).
 
 ## Subtasks (gợi ý file)
 1. Kiểm nội dung `shaders/neon_glow.frag` (uniform: time, resolution, color?) — đọc trước.

@@ -11,11 +11,20 @@ User chọn retention/meta nhưng loại bỏ monetize hoàn toàn — battle-pa
 là track free duy nhất, giữ giá trị "mùa/mốc" mà không đụng IAP.
 
 ## Acceptance criteria
-- [ ] Season model: `startDate`, danh sách mốc (điểm mùa → coin/booster).
-- [ ] Điểm mùa cộng khi thắng level, công thức rõ ràng (không random).
-- [ ] Màn hình season progress (tái dùng UI dạng star road F7).
-- [ ] Hết mùa → reset điểm mùa, giữ thưởng đã nhận; mùa mới tự bắt đầu theo ngày.
-- [ ] Unit test: cộng điểm mùa đúng, claim mốc đúng 1 lần, reset đúng khi qua mùa.
+- [x] Season model: `startDate`, danh sách mốc (điểm mùa → coin/booster).
+- [x] Điểm mùa cộng khi thắng level, công thức rõ ràng (không random).
+- [x] Màn hình season progress (tái dùng UI dạng star road F7).
+- [x] Hết mùa → reset điểm mùa, giữ thưởng đã nhận; mùa mới tự bắt đầu theo ngày.
+- [x] Unit test: cộng điểm mùa đúng, claim mốc đúng 1 lần, reset đúng khi qua mùa.
+
+## Rà soát checkbox (2026-07-13)
+- `lib/presentation/controllers/game_controller.dart`: `seasonMilestones`,
+  `seasonPoints`/`claimedSeasonMask` (Rx + persist qua `StorageKeys.seasonPoints`/
+  `claimedSeasonMask`), `currentSeasonIndex` theo `_todayEpochDay() ~/ seasonLengthDays`,
+  `_checkSeasonRollover()` reset điểm+mốc khi qua mùa (giữ reward đã phát),
+  `_addSeasonPoints` gọi từ `checkEnd`, `claimSeason` chặn re-claim qua `claimedSeasonMask`.
+- `lib/presentation/screens/season_screen.dart` hiển thị progress dạng star-road.
+- `test/presentation/game_controller_test.dart` có test cộng điểm/claim/reset mùa.
 
 ## Subtasks (gợi ý file)
 1. `lib/data/` (season config: mốc + startDate).

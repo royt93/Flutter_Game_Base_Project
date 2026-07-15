@@ -10,9 +10,17 @@ chậm) để "sống" hơn, không tĩnh.
 Điểm nhấn neon tinh tế trên nền candy; hút mắt vào CTA chính (PLAY).
 
 ## Acceptance criteria
-- [ ] PLAY (Home) có glow nhịp thở nhẹ, chậm (~1.5–2s/chu kỳ), không nhấp nháy gắt.
-- [ ] Áp chọn lọc (CTA chính), KHÔNG mọi nút (tránh rối).
-- [ ] Tắt sạch khi rời màn; không tốn perf (1 controller/nút).
+- [x] PLAY (Home) có glow nhịp thở nhẹ, chậm (~1.5–2s/chu kỳ), không nhấp nháy gắt.
+- [x] Áp chọn lọc (CTA chính), KHÔNG mọi nút (tránh rối).
+- [x] Tắt sạch khi rời màn; không tốn perf (1 controller/nút).
+
+## Rà soát checkbox (2026-07-13)
+- `lib/presentation/widgets/pulse_glow.dart`: `PulseGlow` — `AnimationController`
+  1800ms `repeat(reverse: true)`, animate `boxShadow` (blur/spread) qua
+  `NeonTheme.glow`, `dispose()` huỷ controller, bọc `RepaintBoundary`.
+- Chỉ dùng 1 chỗ: `lib/presentation/screens/home_screen.dart:143` bọc nút
+  PLAY — grep `PulseGlow(` trong `lib/` chỉ ra 2 file (định nghĩa + chỗ dùng
+  duy nhất), đúng tinh thần "chọn lọc".
 
 ## Subtasks (gợi ý file)
 1. Tạo wrapper `PulseGlow` (AnimatedBuilder + `NeonTheme.glow` biến thiên blur/alpha).

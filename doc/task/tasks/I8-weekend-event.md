@@ -10,12 +10,21 @@ level, chest, spin nếu I7 đã có).
 Retention nhẹ, không cần nội dung mới — chỉ nhân hệ số theo điều kiện thời gian.
 
 ## Acceptance criteria
-- [ ] Hàm thuần `isWeekendEvent(now)` xác định đang trong sự kiện.
-- [ ] Mọi điểm cộng coin hiện có (checkEnd, claimDaily, chest, spin) nhân đôi
+- [x] Hàm thuần `isWeekendEvent(now)` xác định đang trong sự kiện.
+- [x] Mọi điểm cộng coin hiện có (checkEnd, claimDaily, chest, spin) nhân đôi
       khi `isWeekendEvent` true.
-- [ ] Banner nhỏ trên Home báo "Cuối tuần x2 coin" khi đang hiệu lực.
-- [ ] Unit test: `isWeekendEvent` đúng cho thứ 7/CN, sai ngày thường; hàm cộng
+- [x] Banner nhỏ trên Home báo "Cuối tuần x2 coin" khi đang hiệu lực.
+- [x] Unit test: `isWeekendEvent` đúng cho thứ 7/CN, sai ngày thường; hàm cộng
       coin nhân đúng hệ số.
+
+## Rà soát checkbox (2026-07-13)
+- `lib/core/utils/weekend_event.dart`: hàm thuần `isWeekendEvent`; test riêng
+  `test/core/utils/weekend_event_test.dart`.
+- `lib/presentation/controllers/game_controller.dart`: `weekendCoinMultiplier`
+  getter, nhân vào coin ở claim daily/spin/comeback/checkEnd (nhiều điểm cộng
+  coin, grep `weekendCoinMultiplier` ra 8 chỗ dùng).
+- `lib/presentation/screens/home_screen.dart` dòng ~104 hiện banner khi
+  `isWeekendEvent(DateTime.now())` true.
 
 ## Subtasks (gợi ý file)
 1. `lib/core/utils/format.dart` hoặc file mới `weekend_event.dart` (hàm thuần).

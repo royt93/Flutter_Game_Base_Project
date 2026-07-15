@@ -11,14 +11,25 @@ Gap floor — hiện không có nhãn accessibility nào, ảnh hưởng ngườ
 TalkBack/VoiceOver.
 
 ## Acceptance criteria
-- [ ] `neon_button.dart`: `semanticLabel` truyền qua constructor, mặc định
+- [x] `neon_button.dart`: `semanticLabel` truyền qua constructor, mặc định
       dùng text hiển thị nếu không truyền riêng.
-- [ ] Nút booster (bomb/shuffle/undo) trong game screen: label mô tả rõ hành
+- [x] Nút booster (bomb/shuffle/undo) trong game screen: label mô tả rõ hành
       động + số lượng còn lại.
-- [ ] Board Flame (`GameWidget`): không bắt buộc semantics từng ô (chi phí
+- [x] Board Flame (`GameWidget`): không bắt buộc semantics từng ô (chi phí
       cao), nhưng đảm bảo `GameWidget` không chặn semantics tree phía trên nó.
 - [ ] Manual check: bật TalkBack/VoiceOver, xác nhận đọc được tên các nút
-      chính (home, level, shop, settings, booster).
+      chính (home, level, shop, settings, booster). (chưa chạy tay trên
+      device, chỉ verify code + test tự động)
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `NeonButton` nhận `semanticLabel` qua constructor, mặc định
+fallback về `label` hiển thị (`neon_button.dart:13,22,31,34`); nút booster ở
+`game_screen.dart:544` bọc `Semantics` với label mô tả hành động + số lượng;
+`home_screen.dart`/`shop_screen.dart` có nhiều `semanticLabel` trên các nút
+chính (Time Attack, Zen, Daily Challenge, Spin, Perks, v.v.). `GameWidget`
+không có wrapper `ExcludeSemantics`/`BlockSemantics` nào bọc quanh nó nên
+không chặn semantics tree phía trên. Manual TalkBack/VoiceOver check giữ
+nguyên chưa tick — cần device thật.
 
 ## Subtasks (gợi ý file)
 1. `lib/presentation/widgets/neon_button.dart`: thêm `semanticLabel`.

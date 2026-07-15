@@ -11,10 +11,18 @@ Viral rẻ tiền, tái dùng share sheet đã dựng ở F15 — không cần c
 mới.
 
 ## Acceptance criteria
-- [ ] Nút mời bạn dùng chung hàm share hệ thống đã có ở F15 (text-only, không
+- [x] Nút mời bạn dùng chung hàm share hệ thống đã có ở F15 (text-only, không
       cần ảnh).
-- [ ] Text mời có placeholder link store, dễ thay khi có link thật.
-- [ ] Manual test: share sheet mở đúng, nội dung text đúng.
+- [x] Text mời có placeholder link store, dễ thay khi có link thật.
+- [x] Manual test: share sheet mở đúng, nội dung text đúng. (đã chạy tay trên
+      emulator Android 2026-07-14 — share sheet hệ thống mở đúng, text
+      "Chơi Pop Star Blast cùng mình! https://play.google.com/store/apps/details?id=com.galaxyjoy.pop_star_blast")
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `settings_screen.dart` import `share_helper.dart`, nút mời bạn
+gọi thẳng `shareText(...)` (hàm text-only đã dựng ở F15, `lib/core/share_helper.dart:11`)
+— không tạo pipeline share riêng. Text mời kèm placeholder link store trong
+chuỗi truyền vào `shareText`.
 
 ## Subtasks (gợi ý file)
 1. Tái dùng hàm share ở F15 (tham số text-only, không kèm ảnh).

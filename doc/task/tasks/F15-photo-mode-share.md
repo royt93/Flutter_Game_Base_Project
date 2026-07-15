@@ -11,12 +11,22 @@ qua share sheet hệ thống.
 + share plugin đã/sẽ có trong pubspec.
 
 ## Acceptance criteria
-- [ ] Nút "Chia sẻ" ở màn thắng (và/hoặc trong game) chụp `RepaintBoundary` của
+- [x] Nút "Chia sẻ" ở màn thắng (và/hoặc trong game) chụp `RepaintBoundary` của
       board + overlay text (level, điểm, ngày).
-- [ ] Gọi share sheet hệ thống (kiểm tra `pubspec.yaml` đã có package share
+- [x] Gọi share sheet hệ thống (kiểm tra `pubspec.yaml` đã có package share
       chưa trước khi thêm mới — ưu tiên tái dùng).
-- [ ] Không chặn UI khi đang chụp/export (loading state ngắn nếu cần).
-- [ ] Manual test: ảnh xuất ra đúng nội dung, không bị cắt/méo tỉ lệ.
+- [x] Không chặn UI khi đang chụp/export (loading state ngắn nếu cần).
+- [ ] Manual test: ảnh xuất ra đúng nội dung, không bị cắt/méo tỉ lệ. (chưa
+      chạy tay trên device, chỉ verify code + test tự động)
+
+## Rà soát checkbox (2026-07-13)
+- `lib/core/share_helper.dart`: `captureBoardPng` (RepaintBoundary → PNG) +
+  `shareBoardImage` (SharePlus.instance.share với file + text level/điểm/ngày).
+- Nút share ở màn thắng: `lib/presentation/screens/game_screen.dart:800-806`
+  gọi `widget.gsc.shareBoard` (`game_screen_controller.dart:50-55`).
+- `pubspec.yaml:49` đã có `share_plus: ^12.0.2` (tái dùng, không thêm package
+  mới). Test: `test/core/share_helper_test.dart`. Capture là async, không
+  chặn UI thread.
 
 ## Subtasks (gợi ý file)
 1. `lib/game/pop_star_game.dart` hoặc `game_screen.dart`: bọc board bằng

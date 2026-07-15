@@ -12,11 +12,11 @@ nổ cạnh (chỉ hữu ích ở level có obstacle, F6).
 nước đi, freeze là phòng thủ — không trùng cơ chế đã có.
 
 ## Acceptance criteria
-- [ ] Shop bán Swap + Freeze; HUD thêm 2 nút booster.
-- [ ] Swap: arm → tap ô 1 → tap ô 2 → đổi màu 2 ô, không tự nổ, trừ 1 lượt dùng.
-- [ ] Freeze: arm → dùng ngay (không cần tap ô) → N lượt kế obstacle không giảm
+- [x] Shop bán Swap + Freeze; HUD thêm 2 nút booster.
+- [x] Swap: arm → tap ô 1 → tap ô 2 → đổi màu 2 ô, không tự nổ, trừ 1 lượt dùng.
+- [x] Freeze: arm → dùng ngay (không cần tap ô) → N lượt kế obstacle không giảm
       bền; tự hết hiệu lực sau N lượt.
-- [ ] Unit test: swap đổi đúng 2 ô; freeze chặn giảm bền đúng N lượt rồi tự hết.
+- [x] Unit test: swap đổi đúng 2 ô; freeze chặn giảm bền đúng N lượt rồi tự hết.
 
 ## Subtasks (gợi ý file)
 1. `lib/presentation/controllers/game_controller.dart`: `swapCount`/`freezeCount`
@@ -30,3 +30,10 @@ nước đi, freeze là phòng thủ — không trùng cơ chế đã có.
 Tái dùng khung arm/consume của F3 (rainbow), không viết lại state machine booster.
 
 DoD chung: `../README.md`.
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `game_controller.dart` (`buySwap`/`buyFreeze`/`useSwap`/`useFreeze`),
+`game_screen_controller.dart` (`toggleSwapArm`, swap 2-tap flow, `useFreeze` dùng ngay),
+`pop_star_game.dart` (`triggerSwap` không tự nổ, `freezeTurnsLeft` chặn `chipAdjacentObstacles`),
+`shop_screen.dart`/`game_screen.dart` HUD, test `test/widget/swap_freeze_test.dart`
+(4 test, đã chạy pass).

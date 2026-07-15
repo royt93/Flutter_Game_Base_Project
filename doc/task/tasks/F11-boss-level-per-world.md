@@ -12,12 +12,12 @@ World hiện chỉ đổi tông màu, không có cột mốc cảm giác "ải k
 tạo nhịp căng-chùng tự nhiên, tái dùng toàn bộ engine sẵn có.
 
 ## Acceptance criteria
-- [ ] Path map (F4) hiện icon boss riêng cho node cuối mỗi world.
-- [ ] Boss level: target/objective khó hơn ramp thường theo công thức xác định
+- [x] Path map (F4) hiện icon boss riêng cho node cuối mỗi world.
+- [x] Boss level: target/objective khó hơn ramp thường theo công thức xác định
       (không random tay, ví dụ hệ số nhân cố định lên `targetScore` ramp).
-- [ ] Thắng boss → hiệu ứng ăn mừng khác biệt (tái dùng `_WinChoreography` A5 +
+- [x] Thắng boss → hiệu ứng ăn mừng khác biệt (tái dùng `_WinChoreography` A5 +
       thêm nhãn "Boss cleared").
-- [ ] Test: đúng level nào là boss (`id % 20 == 0`), target boss cao hơn level
+- [x] Test: đúng level nào là boss (`id % 20 == 0`), target boss cao hơn level
       thường liền trước.
 
 ## Subtasks (gợi ý file)
@@ -30,3 +30,9 @@ KHÔNG tạo cơ chế "trận đấu" mới — boss chỉ là level thường 
 cao hơn + skin khác, tái dùng toàn bộ engine hiện có.
 
 DoD chung: `../README.md`.
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `lib/data/levels.dart` (`isBoss = id % 20 == 0`, `bossTargetMultiplier = 1.5`),
+`level_select_screen.dart` (`_LevelTile` icon boss + viền gold), `game_screen.dart`
+(`_WinChoreography` title "Boss Cleared!" khi `isBoss`), test `test/data/levels_test.dart`
+(isBoss đúng level, target boss > level thường liền trước).

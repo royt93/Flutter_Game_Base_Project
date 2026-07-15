@@ -19,6 +19,7 @@ import '../logic/obstacle.dart';
 import '../logic/pop_collapse.dart';
 import '../logic/pop_detector.dart';
 import '../logic/power_tile.dart';
+import '../core/storage_service.dart';
 import '../presentation/controllers/game_controller.dart';
 import 'block_component.dart';
 
@@ -98,6 +99,46 @@ class _BurstRing extends PositionComponent {
   }
 }
 
+/// G8: dải sáng quét ngang bàn khi rảnh tay quá lâu, báo bàn "còn sống" — tự
+/// gỡ sau 1 lượt quét. Không chặn tap (input đến qua GestureDetector ở
+/// game_screen.dart, không qua hit test của component Flame nào).
+class _ShimmerSweep extends PositionComponent {
+  _ShimmerSweep({required Vector2 boardSize})
+    : super(size: boardSize, anchor: Anchor.topLeft, priority: 90);
+
+  static const double _dur = 1.1;
+  double _t = 0;
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _t += dt;
+    if (_t >= _dur) removeFromParent();
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final p = (_t / _dur).clamp(0.0, 1.0);
+    final bandWidth = size.x * 0.28;
+    final x = -bandWidth + p * (size.x + bandWidth * 2);
+    final band = Rect.fromLTWH(x, 0, bandWidth, size.y);
+    canvas.save();
+    canvas.clipRect(Rect.fromLTWH(0, 0, size.x, size.y));
+    canvas.drawRect(
+      band,
+      Paint()
+        ..shader = LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0),
+            Colors.white.withValues(alpha: 0.22),
+            Colors.white.withValues(alpha: 0),
+          ],
+        ).createShader(band),
+    );
+    canvas.restore();
+  }
+}
+
 /// Bàn PopStar: tap 1 ô, nổ nhóm cùng màu liền kề (≥2), cột rơi + dồn trái —
 /// có animation (pop nở + hạt, rơi/trượt bằng tween). Không dùng Flame
 /// TapDetector — tap đến từ GestureDetector ở game_screen.dart qua [handleTap].
@@ -170,6 +211,12 @@ class PopStarGame extends FlameGame {
   double get _hintDelay => controller.hasPerk('move_hint') ? 2.0 : 6.0;
   double _idleTimer = 0;
   Set<Point<int>> _hint = {};
+
+  /// G8: rảnh tay quá [_shimmerDelay] giây → quét 1 lượt shimmer, lặp thưa
+  /// (dùng chung mốc rảnh tay với I4 qua [clearHint], ngưỡng riêng ngắn hơn
+  /// để hiện trước/song song hint).
+  static const double _shimmerDelay = 4.0;
+  double _shimmerTimer = 0;
 
   static const double _popDur = 0.16;
   static const double _fallDur = 0.26;
@@ -435,6 +482,15 @@ class PopStarGame extends FlameGame {
   double _slowMoTimer = 0;
   double _punchCooldownTimer = 0;
 
+  /// A1: nhóm ≥[_shakeGroupThreshold] ô → bàn rung nhẹ (biên độ cap
+  /// cellSize*0.12, tắt sau 3 nhịp ~0.12s) — nhẹ hơn/thường xuyên hơn punch A7.
+  static const int _shakeGroupThreshold = 5;
+
+  /// A7: tắt slow-mo/zoom-punch/shake/shimmer qua Settings cho người nhạy
+  /// chuyển động. Không gate squash/settle (easeOutBack) hay pop cơ bản —
+  /// chỉ các hiệu ứng "thêm" ngoài phản hồi tap cốt lõi.
+  bool get _reduceMotion => StorageService.to.getBool(StorageKeys.reduceMotion);
+
   void _tryPop(int row, int col) {
     final group = findConnectedGroup(colorGrid, row, col, lockGrid: lockGrid);
     if (group.length < 2) return;
@@ -595,6 +651,24 @@ class PopStarGame extends FlameGame {
       _idleTimer += dt;
       if (_idleTimer >= _hintDelay) _triggerHint();
     }
+    // G8: shimmer chạy song song hint (không gate theo _hint.isEmpty) — chỉ
+    // cần không đang diễn hoạt/kết thúc, lặp thưa mỗi _shimmerDelay giây rảnh.
+    if (!_animating && !controller.ended.value) {
+      _shimmerTimer += dt;
+      if (_shimmerTimer >= _shimmerDelay) {
+        _shimmerTimer = 0;
+        _spawnShimmer();
+      }
+    }
+  }
+
+  /// G8: spawn 1 lượt shimmer quét ngang bàn (tự gỡ sau khi quét xong).
+  void _spawnShimmer() {
+    if (_reduceMotion) return;
+    add(
+      _ShimmerSweep(boardSize: Vector2(cols * cellSize, rows * cellSize))
+        ..position = Vector2(_boardLeft, _boardTop),
+    );
   }
 
   /// I4: nhóm đang được gợi ý (rỗng nếu không có). Test-only introspection.
@@ -622,10 +696,13 @@ class PopStarGame extends FlameGame {
     }
     _hint = {};
     _idleTimer = 0;
+    _shimmerTimer = 0;
   }
 
-  void triggerBomb(int row, int col) {
-    if (_animating) return;
+  /// Trả về false nếu không có gì bị nổ (đang animate, hoặc 3x3 quanh
+  /// (row,col) toàn obstacle/lock) — caller dùng để tránh trừ nhầm lượt booster.
+  bool triggerBomb(int row, int col) {
+    if (_animating) return false;
     _saveUndo();
     final cells = <Point<int>>{};
     for (var r = row - 1; r <= row + 1; r++) {
@@ -641,20 +718,23 @@ class PopStarGame extends FlameGame {
         }
       }
     }
-    if (cells.isEmpty) return;
+    if (cells.isEmpty) return false;
     fireHaptic(HapticLevel.heavy);
     final broken = _chipObstaclesOrFrozen(cells);
     chipAdjacentLocks(lockGrid, cells);
     _syncObstacleAndLockBlocks();
     _clearAndCollapse(cells..addAll(broken));
+    return true;
   }
 
-  /// F3: xoá mọi ô cùng màu với ô (row, col) trên toàn bàn.
-  void triggerRainbow(int row, int col) {
-    if (_animating) return;
+  /// F3: xoá mọi ô cùng màu với ô (row, col) trên toàn bàn. Trả về false nếu
+  /// không có gì bị nổ (đang animate, ô target là obstacle, hoặc mọi ô cùng
+  /// màu đều đang bị khoá) — caller dùng để tránh trừ nhầm lượt booster.
+  bool triggerRainbow(int row, int col) {
+    if (_animating) return false;
     final targetColor = colorGrid[row][col];
     // F6a: obstacle không có "màu" thật → không cho kích hoạt rainbow trên nó.
-    if (targetColor == null || targetColor < 0) return;
+    if (targetColor == null || targetColor < 0) return false;
     _saveUndo();
     final cells = <Point<int>>{};
     for (var r = 0; r < rows; r++) {
@@ -664,19 +744,26 @@ class PopStarGame extends FlameGame {
         }
       }
     }
-    if (cells.isEmpty) return;
+    if (cells.isEmpty) return false;
     final broken = _chipObstaclesOrFrozen(cells);
     chipAdjacentLocks(lockGrid, cells);
     _syncObstacleAndLockBlocks();
     _clearAndCollapse(cells..addAll(broken));
+    return true;
   }
 
   /// F10: đổi màu 2 ô bất kỳ (không cần liền kề), không tự nổ. Bỏ qua obstacle/
-  /// chain tile (không có "màu" thật để đổi).
-  void triggerSwap(int row1, int col1, int row2, int col2) {
-    if (_animating) return;
-    if ((colorGrid[row1][col1] ?? -1) < 0 || lockGrid[row1][col1] != 0) return;
-    if ((colorGrid[row2][col2] ?? -1) < 0 || lockGrid[row2][col2] != 0) return;
+  /// chain tile (không có "màu" thật để đổi). Trả về false nếu không đổi được
+  /// (đang animate, hoặc 1 trong 2 ô là obstacle/lock) — caller dùng để tránh
+  /// trừ nhầm lượt booster.
+  bool triggerSwap(int row1, int col1, int row2, int col2) {
+    if (_animating) return false;
+    if ((colorGrid[row1][col1] ?? -1) < 0 || lockGrid[row1][col1] != 0) {
+      return false;
+    }
+    if ((colorGrid[row2][col2] ?? -1) < 0 || lockGrid[row2][col2] != 0) {
+      return false;
+    }
     _saveUndo();
     final tmp = colorGrid[row1][col1];
     colorGrid[row1][col1] = colorGrid[row2][col2];
@@ -684,6 +771,7 @@ class PopStarGame extends FlameGame {
     _swapFlip(_blocks[row1][col1], colorGrid[row1][col1]!);
     _swapFlip(_blocks[row2][col2], colorGrid[row2][col2]!);
     _checkEnd();
+    return true;
   }
 
   /// A9: lật ô theo trục dọc rồi đổi màu ở giữa chừng (ScaleEffect.to hỗ trợ
@@ -710,6 +798,7 @@ class PopStarGame extends FlameGame {
   void _clearAndCollapse(Set<Point<int>> cells) {
     _animating = true;
     _maybeTriggerPunch(cells);
+    _maybeTriggerShake(cells);
     if (cells.isNotEmpty) {
       final first = cells.first;
       final ringColor = NeonTheme
@@ -783,7 +872,7 @@ class PopStarGame extends FlameGame {
   /// (`camera.viewfinder.zoom`) không dùng được vì board add trực tiếp vào
   /// game, không qua `camera.world`, nên zoom camera sẽ không lộ hình.
   void _maybeTriggerPunch(Set<Point<int>> cells) {
-    if (_punchCooldownTimer > 0) return;
+    if (_reduceMotion || _punchCooldownTimer > 0) return;
     final bigGroup = cells.length >= _punchGroupThreshold;
     final bigCombo = controller.comboMultiplier.value >= _punchComboThreshold;
     if (!bigGroup && !bigCombo) return;
@@ -810,6 +899,32 @@ class PopStarGame extends FlameGame {
                 curve: Curves.easeOut,
               ),
             ),
+          ]),
+        );
+      }
+    }
+  }
+
+  /// A1: nhóm ≥[_shakeGroupThreshold] ô → bàn rung nhẹ. Camera thật không
+  /// dùng được (xem ghi chú [_maybeTriggerPunch]) nên rung bằng cách offset
+  /// vị trí từng block 1 nhịp qua-lại-về (tổng dịch chuyển = 0, không cần
+  /// lưu/khôi phục vị trí gốc). Không đụng ô vừa bị xoá (đã có scale pop riêng).
+  void _maybeTriggerShake(Set<Point<int>> cells) {
+    if (_reduceMotion || cells.length < _shakeGroupThreshold) return;
+    final amp = cellSize * 0.12;
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        if (cells.contains(Point(r, c))) continue;
+        final b = _blocks[r][c];
+        if (b == null) continue;
+        b.add(
+          SequenceEffect([
+            MoveByEffect(Vector2(amp, 0), EffectController(duration: 0.04)),
+            MoveByEffect(
+              Vector2(-amp * 2, 0),
+              EffectController(duration: 0.04),
+            ),
+            MoveByEffect(Vector2(amp, 0), EffectController(duration: 0.04)),
           ]),
         );
       }
@@ -1043,8 +1158,10 @@ class PopStarGame extends FlameGame {
     );
   }
 
-  void shuffleBoard() {
-    if (_animating) return;
+  /// Trả về false nếu đang animate (không xáo được) — caller dùng để tránh
+  /// trừ nhầm lượt booster.
+  bool shuffleBoard() {
+    if (_animating) return false;
     _saveUndo();
     // F6a: obstacle không phải màu → giữ nguyên vị trí/độ bền, chỉ xáo màu thật.
     // I2: ô đang khoá cũng giữ nguyên (không xáo màu vào/ra chain tile).
@@ -1068,6 +1185,7 @@ class PopStarGame extends FlameGame {
     // ứng rơi-vào-vị-trí đã có sẵn cho lúc vào level, cho cảm giác "xáo lại".
     _rebuildBoard(animateIntro: true);
     _checkEnd();
+    return true;
   }
 
   bool undo() {

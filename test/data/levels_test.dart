@@ -82,6 +82,23 @@ void main() {
       }
     });
 
+    // I21: colorCount đa dạng theo level, không chỉ theo world (mỗi world
+    // 20 màn phải có ít nhất 2 giá trị colorCount khác nhau).
+    test('colorCount đa dạng trong cùng world, vẫn kẹp trần/sàn 4..7', () {
+      for (var world = 0; world < 10; world++) {
+        final levelsInWorld = kLevels.sublist(world * 20, world * 20 + 20);
+        final distinct = levelsInWorld.map((l) => l.colorCount).toSet();
+        expect(
+          distinct.length,
+          greaterThanOrEqualTo(2),
+          reason: 'World $world: colorCount không đa dạng ($distinct)',
+        );
+        for (final lv in levelsInWorld) {
+          expect(lv.colorCount, inInclusiveRange(4, 7));
+        }
+      }
+    });
+
     // F9: objective rotate chu kỳ 8 màn (3 score, rồi clearColor/
     // clearObstacle/collect/moveLimitBonus/obstacleInMoves) xuyên suốt 200 màn.
     test('objective luân phiên đúng chu kỳ 8 màn', () {

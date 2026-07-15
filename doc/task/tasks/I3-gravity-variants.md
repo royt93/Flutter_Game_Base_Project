@@ -11,12 +11,19 @@ thể puzzle mới bằng đổi luật, không cần thêm tile.
 mới — chỉ đổi 1 tham số luật chơi.
 
 ## Acceptance criteria
-- [ ] `PopLevel` thêm field `gravityDirection` (mặc định `down`; vài level dùng
+- [x] `PopLevel` thêm field `gravityDirection` (mặc định `down`; vài level dùng
       `up`/`left`/`right`).
-- [ ] `applyGravityAndCollapse` nhận tham số direction, tái dùng thuật toán
+- [x] `applyGravityAndCollapse` nhận tham số direction, tái dùng thuật toán
       down hiện có qua transpose/reflect grid (không viết lại 4 lần).
-- [ ] `BlockComponent`/animation rơi đúng hướng (MoveToEffect theo direction).
-- [ ] Unit test: gravity up/left/right cho kết quả đúng như down đã transpose.
+- [x] `BlockComponent`/animation rơi đúng hướng (MoveToEffect theo direction).
+- [x] Unit test: gravity up/left/right cho kết quả đúng như down đã transpose.
+
+## Rà soát checkbox (2026-07-13)
+- Grep xác nhận `gravityDirection` field (`lib/data/levels.dart`), dùng ở
+  `lib/game/pop_star_game.dart` (dòng 849, 1184) và `lib/logic/pop_collapse.dart`.
+- `applyGravityAndCollapse`/`transformForDirection` tái dùng transpose/reverse
+  (đọc trực tiếp `pop_collapse.dart`, không có 4 bộ logic riêng).
+- `test/logic/pop_collapse_test.dart` có group `I3: gravityDirection` test up/left/right.
 
 ## Subtasks (gợi ý file)
 1. `lib/logic/pop_collapse.dart`: thêm tham số direction + helper transpose,

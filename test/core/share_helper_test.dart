@@ -31,4 +31,25 @@ void main() {
     final png = await captureBoardPng(key);
     expect(png, isNull);
   });
+
+  testWidgets('captureBoardPng với overlayText vẫn trả về PNG hợp lệ', (
+    tester,
+  ) async {
+    final key = GlobalKey();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RepaintBoundary(
+          key: key,
+          child: Container(color: Colors.red, width: 50, height: 50),
+        ),
+      ),
+    );
+
+    final png = await tester.runAsync(
+      () => captureBoardPng(key, overlayText: 'Level 1 — Score 760'),
+    );
+
+    expect(png, isNotNull);
+    expect(png!.sublist(0, 8), [137, 80, 78, 71, 13, 10, 26, 10]);
+  });
 }

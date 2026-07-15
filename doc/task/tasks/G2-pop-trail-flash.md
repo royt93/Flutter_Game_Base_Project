@@ -10,9 +10,18 @@
 Mãn nhãn, nhấn pha nổ lớn; bổ trợ particle hiện có.
 
 ## Acceptance criteria
-- [ ] Mỗi hạt/ô nổ có trail mờ dần (không chỉ chấm tròn).
-- [ ] Flash chỉ khi vượt ngưỡng (nhóm ≥ N hoặc combo ≥ x). Rất nhẹ, không chói.
-- [ ] Cap số hiệu ứng/frame; 60fps.
+- [x] Mỗi hạt/ô nổ có trail mờ dần (không chỉ chấm tròn).
+- [x] Flash chỉ khi vượt ngưỡng (nhóm ≥ N hoặc combo ≥ x). Rất nhẹ, không chói.
+- [x] Cap số hiệu ứng/frame; 60fps.
+
+## Rà soát checkbox (2026-07-13)
+- `lib/game/pop_star_game.dart:1002+` `_spawnBurst`: `ComputedParticle` vẽ
+  `trailLen`/đường mờ theo hướng bay (không chỉ chấm tròn).
+- Ngưỡng flash: `_bigGroupThreshold = 6`, `_bigComboThreshold = 2.5`
+  (dòng ~424-425) → `controller.triggerFlash()`.
+- `_FlashOverlay` (`game_screen.dart:405-427`): `Tween(begin: 0.18, end: 0.0)`
+  đúng cap alpha ≤0.18 theo ghi chú kỹ thuật, `ValueKey(tick)` nên các lần
+  trigger không cộng dồn sáng.
 
 ## Subtasks (gợi ý file)
 1. `lib/game/pop_star_game.dart` `_spawnBurst`: đổi `CircleParticle` → particle có

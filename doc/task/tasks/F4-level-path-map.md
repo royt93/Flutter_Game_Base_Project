@@ -10,11 +10,11 @@
 Cảm giác tiến trình là chuẩn casual (Candy Crush/Toon Blast). Grid phẳng đơn điệu.
 
 ## Acceptance criteria
-- [ ] 200 node xếp theo đường uốn, scroll dọc mượt; node mở khoá/hoàn thành/khoá rõ.
-- [ ] Node hiện sao đã đạt; node hiện tại nổi bật (pulse).
-- [ ] Chia 10 world, mỗi world có banner tên + tông màu nền riêng.
-- [ ] Auto-scroll tới màn cao nhất mở khoá khi vào.
-- [ ] Widget test: render + tap node mở khoá vào game; node khoá không vào.
+- [x] 200 node xếp theo đường uốn, scroll dọc mượt; node mở khoá/hoàn thành/khoá rõ.
+- [x] Node hiện sao đã đạt; node hiện tại nổi bật (pulse).
+- [x] Chia 10 world, mỗi world có banner tên + tông màu nền riêng.
+- [x] Auto-scroll tới màn cao nhất mở khoá khi vào.
+- [x] Widget test: render + tap node mở khoá vào game; node khoá không vào.
 
 ## Subtasks (gợi ý file)
 1. `lib/data/levels.dart` hoặc `worlds.dart`: định nghĩa 10 world (tên, màu, range).
@@ -29,3 +29,8 @@ Nặng nhất nhóm Features. Có thể chia 2 bước: (a) re-skin grid theo wo
 banner (nhanh); (b) path uốn thật (sau). Giữ tái dùng `_LevelTile` để đỡ vỡ test.
 
 DoD chung: `../README.md`.
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `level_select_screen.dart` (sine-path layout, `_LevelTile` lock/star/pulse,
+`_WorldBanner`, `_autoScrollTo`), `lib/data/worlds.dart` (10 `GameWorld`), test
+`test/widget/level_path_map_test.dart` (tap unlocked → GameScreen; tap locked → stays).

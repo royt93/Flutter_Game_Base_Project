@@ -22,7 +22,7 @@ class ShopScreen extends StatelessWidget {
           child: Column(
             children: [
               NeonAppBar(
-                title: 'Shop',
+                title: 'shop_title'.tr,
                 color: NeonTheme.yellow,
                 actions: [CoinChip(gameCtrl)],
               ),
@@ -34,8 +34,8 @@ class ShopScreen extends StatelessWidget {
                       () => _BoosterRow(
                         icon: Icons.dangerous_rounded,
                         color: NeonTheme.orange,
-                        label: 'Bomb',
-                        desc: 'Clears a 3x3 area on the board.',
+                        label: 'booster_bomb_label'.tr,
+                        desc: 'booster_bomb_desc'.tr,
                         count: gameCtrl.bombCount.value,
                         price: GameController.bombPrice,
                         canAfford:
@@ -48,8 +48,8 @@ class ShopScreen extends StatelessWidget {
                       () => _BoosterRow(
                         icon: Icons.shuffle_rounded,
                         color: NeonTheme.cyan,
-                        label: 'Shuffle',
-                        desc: 'Randomly reshuffles all remaining blocks.',
+                        label: 'shuffle'.tr,
+                        desc: 'booster_shuffle_desc'.tr,
                         count: gameCtrl.shuffleCount.value,
                         price: GameController.shufflePrice,
                         canAfford:
@@ -62,8 +62,8 @@ class ShopScreen extends StatelessWidget {
                       () => _BoosterRow(
                         icon: Icons.undo_rounded,
                         color: NeonTheme.purple,
-                        label: 'Undo',
-                        desc: 'Reverts your last move.',
+                        label: 'booster_undo_label'.tr,
+                        desc: 'booster_undo_desc'.tr,
                         count: gameCtrl.undoCount.value,
                         price: GameController.undoPrice,
                         canAfford:
@@ -76,8 +76,8 @@ class ShopScreen extends StatelessWidget {
                       () => _BoosterRow(
                         icon: Icons.auto_awesome_rounded,
                         color: NeonTheme.magenta,
-                        label: 'Rainbow',
-                        desc: 'Clears every block matching the tapped color.',
+                        label: 'booster_rainbow_label'.tr,
+                        desc: 'booster_rainbow_desc'.tr,
                         count: gameCtrl.rainbowCount.value,
                         price: GameController.rainbowPrice,
                         canAfford:
@@ -90,8 +90,8 @@ class ShopScreen extends StatelessWidget {
                       () => _BoosterRow(
                         icon: Icons.swap_horiz_rounded,
                         color: NeonTheme.lime,
-                        label: 'Swap',
-                        desc: 'Swaps the colors of 2 tapped blocks.',
+                        label: 'booster_swap_label'.tr,
+                        desc: 'booster_swap_desc'.tr,
                         count: gameCtrl.swapCount.value,
                         price: GameController.swapPrice,
                         canAfford:
@@ -104,10 +104,10 @@ class ShopScreen extends StatelessWidget {
                       () => _BoosterRow(
                         icon: Icons.ac_unit_rounded,
                         color: NeonTheme.cyan,
-                        label: 'Freeze',
-                        desc:
-                            'Obstacles stop losing durability for '
-                            '${GameController.freezeTurns} moves.',
+                        label: 'booster_freeze_label'.tr,
+                        desc: 'booster_freeze_desc'.trParams({
+                          'n': '${GameController.freezeTurns}',
+                        }),
                         count: gameCtrl.freezeCount.value,
                         price: GameController.freezePrice,
                         canAfford:

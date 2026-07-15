@@ -11,13 +11,13 @@ tối đa 2 perk active cùng lúc, chọn qua màn hình riêng trước khi v�
 chỉ mở khoá qua tiến độ chơi, giữ đúng loại trừ Option D.
 
 ## Acceptance criteria
-- [ ] Danh sách perk cố định (vd: +1 undo mỗi màn, hiện trước 1 nước đi gợi ý,
+- [x] Danh sách perk cố định (vd: +1 undo mỗi màn, hiện trước 1 nước đi gợi ý,
       +10% coin màn đó...) — hiệu ứng nhẹ, không đổi target/luật thắng.
-- [ ] Mở khoá 1 perk khi hoàn thành 1 world (dùng lại mốc world đã có ở F4).
-- [ ] Tối đa 2 perk active cùng lúc, chọn/đổi ở màn hình riêng trước khi vào
+- [x] Mở khoá 1 perk khi hoàn thành 1 world (dùng lại mốc world đã có ở F4).
+- [x] Tối đa 2 perk active cùng lúc, chọn/đổi ở màn hình riêng trước khi vào
       level (không đổi giữa chừng ván).
-- [ ] Perk KHÔNG mua được bằng coin hay tiền thật — chỉ mở khoá qua tiến độ.
-- [ ] Unit test: mở khoá đúng theo world hoàn thành; giới hạn 2 active đúng.
+- [x] Perk KHÔNG mua được bằng coin hay tiền thật — chỉ mở khoá qua tiến độ.
+- [x] Unit test: mở khoá đúng theo world hoàn thành; giới hạn 2 active đúng.
 
 ## Subtasks (gợi ý file)
 1. `lib/data/` — danh sách perk cố định + world mốc mở khoá.
@@ -32,3 +32,9 @@ hiệu ứng vào từng chỗ chơi thực tế. Danh sách hiệu ứng giữ 
 thắng-thua cốt lõi (chỉ tiện ích/hệ số nhẹ).
 
 DoD chung: `../README.md`.
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `lib/data/perks.dart` (`PerkEffect` enum, `kPerks` 3 perk cố định,
+`worldsCompleted`/`unlockedPerks` dùng `kWorlds` từ F4, không có đường mua bằng coin),
+`game_controller.dart` (`togglePerkSelection` giới hạn 2, hiệu ứng ở `_freeUndoLeft`/
+coin bonus), `perks_screen.dart` (màn chọn riêng), test `test/data/perks_test.dart`.

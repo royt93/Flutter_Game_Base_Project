@@ -12,11 +12,11 @@ Thêm ô chướng ngại + mục tiêu màn ngoài "đạt điểm":
 tuổi thọ nội dung mà không cần thêm mode.
 
 ## Acceptance criteria
-- [ ] Ô obstacle không thuộc nhóm màu (không nổ khi tap trực tiếp).
-- [ ] Nổ nhóm liền kề obstacle → giảm 1 "độ bền"; hết bền → vỡ (thành trống, rơi).
-- [ ] Level định nghĩa được objective (điểm / clear-color / clear-obstacle) + đếm tiến độ.
-- [ ] HUD hiện objective + tiến độ; thắng khi đạt objective (không chỉ điểm).
-- [ ] Unit test: obstacle vỡ đúng khi nổ cạnh; điều kiện thắng theo objective.
+- [x] Ô obstacle không thuộc nhóm màu (không nổ khi tap trực tiếp).
+- [x] Nổ nhóm liền kề obstacle → giảm 1 "độ bền"; hết bền → vỡ (thành trống, rơi).
+- [x] Level định nghĩa được objective (điểm / clear-color / clear-obstacle) + đếm tiến độ.
+- [x] HUD hiện objective + tiến độ; thắng khi đạt objective (không chỉ điểm).
+- [x] Unit test: obstacle vỡ đúng khi nổ cạnh; điều kiện thắng theo objective.
 
 ## Subtasks (gợi ý file)
 1. `lib/logic/`: mở rộng cell model (obstacle kind + độ bền). Hàm "giảm bền ô cạnh nhóm nổ".
@@ -30,3 +30,9 @@ CHẺ: (6a) obstacle ice/crate + vỡ; (6b) objective clear-color; (6c) objectiv
 + HUD. Đụng cùng vùng core với F5 → làm tuần tự.
 
 DoD chung: `../README.md`.
+
+## Rà soát checkbox (2026-07-13)
+Grep xác nhận: `lib/logic/pop_detector.dart` (obstacle = giá trị âm, loại khỏi flood-fill),
+`lib/logic/obstacle.dart` (`chipAdjacentObstacles`), `lib/data/levels.dart` (`ObjectiveType`,
+`LevelObjective`), `game_controller.dart`/`game_screen.dart` (HUD + `objectiveMet`), test
+`test/logic/obstacle_test.dart` + `test/widget/objective_test.dart`.

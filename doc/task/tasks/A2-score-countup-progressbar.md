@@ -11,10 +11,15 @@
 Feedback tiến trình rõ ràng, chuẩn casual; người chơi thấy "sắp thắng".
 
 ## Acceptance criteria
-- [ ] Điểm count-up mượt (~0.3s) mỗi lần cộng; không giật khi cộng liên tiếp.
-- [ ] Progress bar phản ánh `score/target` (clamp ≤1), animate fill.
-- [ ] Khi ≥target: bar đổi trạng thái "đạt" (màu + glow nhẹ) để báo có thể thắng.
-- [ ] Không lỗi khi score nhảy lớn (bomb/rainbow).
+- [x] Điểm count-up mượt (~0.3s) mỗi lần cộng; không giật khi cộng liên tiếp.
+- [x] Progress bar phản ánh `score/target` (clamp ≤1), animate fill.
+- [x] Khi ≥target: bar đổi trạng thái "đạt" (màu + glow nhẹ) để báo có thể thắng.
+- [x] Không lỗi khi score nhảy lớn (bomb/rainbow).
+
+## Rà soát checkbox (2026-07-13)
+- Grep `TweenAnimationBuilder` trong `_Hud` (`lib/presentation/screens/game_screen.dart`): điểm và progress bar đều dùng `TweenAnimationBuilder<double>` duration 300ms, curve easeOut.
+- `_ProgressBar` (cùng file): `widthFactor: value.clamp(0.001, 1.0)`, `reached ? NeonTheme.lime : NeonTheme.cyan` + `boxShadow: reached ? NeonTheme.glow(...) : null` — khớp trạng thái "đạt".
+- Giá trị đọc trực tiếp từ `gameCtrl.score.value` (Rx) nên nhảy điểm lớn (bomb/rainbow) chỉ đổi tween-end, không lỗi.
 
 ## Subtasks (gợi ý file)
 1. `lib/presentation/screens/game_screen.dart` `_Hud`: thay `StrokeText` điểm bằng

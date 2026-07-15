@@ -11,12 +11,21 @@ Retention rẻ tiền, tái dùng hạ tầng ngày-tháng đã có
 (`durationToLocalMidnight`/`claimDaily`), không cần hệ thống mới.
 
 ## Acceptance criteria
-- [ ] Lưu `lastOpenDate` mỗi lần mở app (`main.dart` hoặc `home_screen.initState`).
-- [ ] Khoảng cách ≥3 ngày kể từ `lastOpenDate` → hiện dialog tặng quà 1 lần, sau
+- [x] Lưu `lastOpenDate` mỗi lần mở app (`main.dart` hoặc `home_screen.initState`).
+- [x] Khoảng cách ≥3 ngày kể từ `lastOpenDate` → hiện dialog tặng quà 1 lần, sau
       đó reset mốc.
-- [ ] Không chồng với daily reward cùng lúc (ưu tiên hiện dialog comeback
+- [x] Không chồng với daily reward cùng lúc (ưu tiên hiện dialog comeback
       trước; daily reward vẫn claim được sau như thường).
-- [ ] Unit test: hàm tính "cần comeback bonus" đúng với các mốc ngày khác nhau.
+- [x] Unit test: hàm tính "cần comeback bonus" đúng với các mốc ngày khác nhau.
+
+## Rà soát checkbox (2026-07-13)
+- Storage key thực tế là `StorageKeys.lastOpenDay` (`lib/core/storage_service.dart`
+  dòng 38, cùng nội dung "lưu lần mở app gần nhất" mà task mô tả là `lastOpenDate`).
+- `lib/presentation/controllers/game_controller.dart`: `checkComebackBonus()` đọc/ghi
+  `lastOpenDay`, dùng hàm thuần `needsComebackBonus` (`lib/core/utils/comeback_bonus.dart`).
+- Gọi từ `lib/presentation/screens/home_screen.dart` dòng ~40, hiện dialog riêng
+  (không chặn daily reward claim sau đó).
+- `test/core/utils/comeback_bonus_test.dart` test nhiều mốc ngày khác nhau.
 
 ## Subtasks (gợi ý file)
 1. `lib/core/storage_service.dart`: key `lastOpenDate`.
