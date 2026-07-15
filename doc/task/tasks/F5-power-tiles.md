@@ -15,12 +15,13 @@ power tile → replay 3-sao, giữ chân mạnh nhất trong nhóm feature.
 ## Acceptance criteria
 - [x] Nổ nhóm đạt ngưỡng → 1 ô trong vùng biến thành power tile (giữ trên bàn).
 - [x] Tap power tile → kích hoạt hiệu ứng tương ứng (dùng anim pop + hạt).
-- [ ] Kích 2 power tile cạnh nhau → hiệu ứng cộng hưởng (stretch goal). ⏸️
-      **Deferred (2026-07-14)** — tự doc đã đánh dấu stretch goal + "chẻ nhỏ
-      trước khi làm (5a/5b/5c/5d)"; 5a/5b/5c (line/bomb/rainbow) đã xong,
-      5d (cộng hưởng) chưa có behavior spec rõ (2 loại nào cạnh nhau → hiệu
-      ứng gì cụ thể?) — cần quyết định thiết kế trước khi code, không tự
-      suy đoán. Để ngỏ theo YAGNI, làm khi có yêu cầu + spec cụ thể.
+- [x] Kích 2 power tile cạnh nhau → hiệu ứng cộng hưởng (stretch goal). ✅
+      **Done (2026-07-15)** — spec đã chốt: vùng nổ của power tile được kích
+      hoạt (`_blastCellsFor`) nếu vướng phải 1 power tile khác còn trên bàn →
+      gộp luôn vùng nổ của tile đó vào cùng 1 đợt xoá (không đệ quy
+      `_activatePowerTile`, tránh double `_saveUndo()`/`_clearAndCollapse()`),
+      điểm thưởng gấp đôi (`scoreForGroup(cells.length) * 2`), kèm
+      `triggerFlash()`. Test: `test/widget/power_tile_resonance_test.dart`.
 - [x] Power tile rơi/collapse như ô thường; hiển thị khác biệt rõ (icon + glow).
 - [x] Unit test: ngưỡng sinh đúng loại; kích hoạt xoá đúng vùng.
 
@@ -44,4 +45,5 @@ Grep xác nhận: `lib/logic/power_tile.dart` (ngưỡng→kind), `pop_star_game
 (`_tryPop`/`handleTap`/`_activatePowerTile`/`_clearAndCollapse`), `block_component.dart`
 (icon+glow render), test `test/logic/power_tile_test.dart` +
 `test/widget/power_tile_test.dart`/`power_tile_bomb_test.dart`/`power_tile_rainbow_test.dart`.
-Mục "cộng hưởng 2 power tile cạnh nhau" (stretch goal) không thấy trong code — để ngỏ.
+Mục "cộng hưởng 2 power tile cạnh nhau" (stretch goal) đã implement — xem
+mục Acceptance criteria ngày 2026-07-15.

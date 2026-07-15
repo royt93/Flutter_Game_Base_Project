@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:get/get.dart';
 import 'package:in_app_review/in_app_review.dart';
 
+import '../../core/audio_manager.dart';
 import '../../core/storage_service.dart';
 import '../../core/utils/comeback_bonus.dart';
 import '../../core/utils/weekend_event.dart';
@@ -565,12 +566,14 @@ class GameController extends GetxController {
     );
     final gained = (baseScore * comboMultiplier.value).round();
     score.value += gained;
+    AudioManager.maybe?.applyComboLayer(comboCount.value); // I12
     return gained;
   }
 
   void resetCombo() {
     comboCount.value = 0;
     comboMultiplier.value = 1.0;
+    AudioManager.maybe?.applyComboLayer(0); // I12
   }
 
   void checkEnd(bool boardCleared) {

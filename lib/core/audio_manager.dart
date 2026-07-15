@@ -230,6 +230,23 @@ class AudioManager extends GetxService {
     });
   }
 
+  // --------------------------------------------------------------------------
+  // I12: nhạc nền "thêm lớp" theo combo — combo càng cao, đổi sang track bkg
+  // cường độ hơn (tái dùng 3 track có sẵn qua startBgm, không cần audio stem
+  // riêng cho từng lớp). Combo rớt → trả về track nền.
+  // --------------------------------------------------------------------------
+
+  /// THUẦN (test được): bậc track nền (0..2) ứng với [comboCount] hiện tại.
+  static int bgmTierFor(int comboCount) {
+    if (comboCount >= 6) return 2;
+    if (comboCount >= 3) return 1;
+    return 0;
+  }
+
+  /// Áp bậc lớp nhạc theo combo — [startBgm] tự no-op nếu đã đúng track.
+  void applyComboLayer(int comboCount) =>
+      startBgm(track: bgmTierFor(comboCount));
+
   /// Âm cho gem special (nốt cao nhất, to hơn).
   void playSpecial() {
     if (muted.value || !_ready) return;

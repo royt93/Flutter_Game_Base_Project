@@ -565,10 +565,11 @@ class PopStarGame extends FlameGame {
     }
   }
 
-  /// F5: kích hoạt power tile tại (row, col) — xoá cả hàng/cột (line), vùng
-  /// 5x5 quanh tâm (bomb), hoặc toàn bộ ô cùng màu trên bàn (rainbow).
-  void _activatePowerTile(int row, int col, PowerTileKind kind) {
-    _saveUndo();
+  /// F5: vùng ô bị xoá khi kích hoạt power tile [kind] tại (row, col) — cả
+  /// hàng/cột (line), vùng 5x5 quanh tâm (bomb), hoặc toàn bộ ô cùng màu trên
+  /// bàn (rainbow). Hàm thuần (không side-effect) để [_activatePowerTile] tái
+  /// dùng khi tính vùng nổ cộng hưởng (F5d) của 1 power tile khác.
+  Set<Point<int>> _blastCellsFor(int row, int col, PowerTileKind kind) {
     final cells = <Point<int>>{};
     // F6a: obstacle không thuộc nhóm màu → power tile cũng không quét trúng nó
     // (chỉ mòn dần qua chipAdjacentObstacles như match thường).
@@ -605,8 +606,26 @@ class PopStarGame extends FlameGame {
           }
         }
     }
+    return cells;
+  }
+
+  /// F5: kích hoạt power tile tại (row, col).
+  void _activatePowerTile(int row, int col, PowerTileKind kind) {
+    _saveUndo();
+    final cells = _blastCellsFor(row, col, kind);
     if (cells.isEmpty) return;
-    final gained = controller.registerPop(scoreForGroup(cells.length));
+    // F5d (stretch goal): vùng nổ vướng phải power tile khác → kích hoạt kèm
+    // vùng nổ của tile đó luôn (gộp 1 đợt xoá), thưởng gấp đôi điểm.
+    final resonant = cells
+        .where((p) => !(p.x == row && p.y == col))
+        .where((p) => _blocks[p.x][p.y]?.powerKind != null)
+        .toList();
+    for (final p in resonant) {
+      cells.addAll(_blastCellsFor(p.x, p.y, _blocks[p.x][p.y]!.powerKind!));
+    }
+    final gained = controller.registerPop(
+      scoreForGroup(cells.length) * (resonant.isEmpty ? 1 : 2),
+    );
     _comboTimer = GameController.comboWindow;
     final gemColor = NeonTheme
         .gemColors[(colorGrid[row][col] ?? 0) % NeonTheme.gemColors.length];
@@ -617,7 +636,8 @@ class PopStarGame extends FlameGame {
       controller.comboMultiplier.value,
       gemColor,
     );
-    if (cells.length >= _bigGroupThreshold ||
+    if (resonant.isNotEmpty ||
+        cells.length >= _bigGroupThreshold ||
         controller.comboMultiplier.value >= _bigComboThreshold) {
       controller.triggerFlash();
     }
