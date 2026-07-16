@@ -1936,3 +1936,29 @@ ghép đúng thứ tự các wave map hiện có.
 
 `flutter analyze` 0 lỗi; `flutter test --exclude-tags slow` (238 test)
 xanh toàn bộ.
+
+## ✅ Perfect Clear replay mode (I23) (2026-07-16)
+
+Chơi lại 1 level campaign đã qua (≥1 sao) với mục tiêu vượt best score hiện
+tại của chính level đó — thắng thưởng thêm coin bonus 1 lần. Không thêm
+`GameMode` mới, không thêm StorageKey mới — tái dùng nguyên luồng
+`GameMode.campaign`. Spec: `docs/superpowers/specs/2026-07-16-perfect-clear-
+design.md`, task file: `doc/task/tasks/I23-perfect-clear-replay.md`.
+
+`GameController` thêm `perfectClearTarget` (`Rxn<int>`), `perfectClearSuccess`
+(`RxBool`), `perfectClearBonusCoins = 50`. `startPerfectClear(id)` chụp
+`StorageKeys.highScore(id)` làm target **trước** khi gọi `startLevel()`
+(tránh bị `_saveBestScore()` ghi đè ngay trong lượt đang xét). `checkEnd()`
+so `score` với target sau khi tính sao, cộng bonus (`× weekendCoinMultiplier`)
+nếu vượt — không đụng nhánh star/highscore/unlock hiện có.
+
+Entry point: long-press trên tile level đã unlock và có ≥1 sao trong
+`LevelSelectScreen` (tap ngắn vẫn chơi bình thường), mở dialog xác nhận qua
+`NeonDialog.show()`. Win dialog (`game_screen.dart`) hiện badge 🏆 khi thành
+công, dùng chung choreography opacity với score.
+
+i18n đủ 22 locale (`_extraEn`/`_extraVi` + wave map `_w36ByLang` cho 20 ngôn
+ngữ còn lại). Test mới trong `game_controller_test.dart` (nhóm "Task #5 —
+Perfect Clear replay").
+
+`flutter analyze` 0 lỗi; `flutter test --exclude-tags slow` xanh toàn bộ.

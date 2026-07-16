@@ -79,6 +79,67 @@ void main() {
     });
   });
 
+  group('Task #5 — Perfect Clear replay', () {
+    test('startPerfectClear chụp best score hiện tại làm target', () {
+      ctrl.startLevel(1);
+      ctrl.addScore(target);
+      ctrl.checkEnd(false);
+      final best = StorageService.to.getInt(StorageKeys.highScore(1));
+
+      ctrl.startPerfectClear(1);
+      expect(ctrl.perfectClearTarget.value, best);
+      expect(ctrl.perfectClearSuccess.value, isFalse);
+    });
+
+    test('vượt target → thành công, thưởng bonus coin', () {
+      ctrl.startLevel(1);
+      ctrl.addScore(target);
+      ctrl.checkEnd(false);
+      final best = StorageService.to.getInt(StorageKeys.highScore(1));
+      final coinsBefore = ctrl.coins.value;
+
+      ctrl.startPerfectClear(1);
+      ctrl.addScore(best + 1);
+      ctrl.checkEnd(false);
+
+      expect(ctrl.perfectClearSuccess.value, isTrue);
+      expect(
+        ctrl.coins.value,
+        coinsBefore +
+            ctrl.starsEarned.value * 20 * ctrl.weekendCoinMultiplier +
+            GameController.perfectClearBonusCoins * ctrl.weekendCoinMultiplier,
+      );
+    });
+
+    test('không vượt target → không thành công, không thưởng bonus', () {
+      ctrl.startLevel(1);
+      ctrl.addScore(target);
+      ctrl.checkEnd(false);
+      final best = StorageService.to.getInt(StorageKeys.highScore(1));
+
+      ctrl.startPerfectClear(1);
+      ctrl.addScore(best);
+      ctrl.checkEnd(false);
+
+      expect(ctrl.perfectClearSuccess.value, isFalse);
+    });
+
+    test(
+      'startLevel thường (không phải Perfect Clear) reset target về null',
+      () {
+        ctrl.startLevel(1);
+        ctrl.addScore(target);
+        ctrl.checkEnd(false);
+        ctrl.startPerfectClear(1);
+        expect(ctrl.perfectClearTarget.value, isNotNull);
+
+        ctrl.startLevel(1);
+        expect(ctrl.perfectClearTarget.value, isNull);
+        expect(ctrl.perfectClearSuccess.value, isFalse);
+      },
+    );
+  });
+
   group('mua booster', () {
     test('không đủ xu → false, không đổi số dư/số lượng', () {
       ctrl.startLevel(1);

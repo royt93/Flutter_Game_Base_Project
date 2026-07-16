@@ -21,6 +21,7 @@ dưới giữ nguyên để tra cứu mô tả gốc.
 - **I9 Leaderboard bạn bè / clan co-op** ✅ đã chốt (offline giả lập) — [I9-leaderboard-friends.md](I9-leaderboard-friends.md).
 - **I10 Comeback bonus** ✅ đã chốt — [I10-comeback-bonus.md](I10-comeback-bonus.md).
 - **I22 Achievements system** ✅ đã chốt — [I22-achievements-system.md](I22-achievements-system.md).
+- **I23 Perfect Clear replay mode** ✅ đã chốt — [I23-perfect-clear-replay.md](I23-perfect-clear-replay.md).
 
 ## Cảm giác / A-V
 - **I11 Haptic feedback** ✅ đã chốt — [I11-haptic-feedback.md](I11-haptic-feedback.md).

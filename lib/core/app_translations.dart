@@ -137,6 +137,7 @@ class AppTranslations extends Translations {
           ...?_w33ByLang[e.key],
           ...?_w34ByLang[e.key],
           ...?_w35ByLang[e.key],
+          ...?_w36ByLang[e.key],
         },
     };
   }
@@ -830,6 +831,12 @@ class AppTranslations extends Translations {
     'ach_booster_100_desc': 'Use 100 boosters',
     'ach_booster_250_title': 'Booster Legend',
     'ach_booster_250_desc': 'Use 250 boosters',
+    // Task #5 — Perfect Clear replay challenge.
+    'perfect_clear_title': 'Perfect Clear',
+    'perfect_clear_msg':
+        'Beat your best score ({score}) to win +{coin} bonus coins!',
+    'perfect_clear_start': 'Start',
+    'perfect_clear_success_label': '🏆 Perfect Clear! +{coin} coins',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -1480,6 +1487,12 @@ class AppTranslations extends Translations {
     'ach_booster_100_desc': 'Dùng 100 booster',
     'ach_booster_250_title': 'Huyền thoại booster',
     'ach_booster_250_desc': 'Dùng 250 booster',
+    // Task #5 — thử thách chơi lại Perfect Clear.
+    'perfect_clear_title': 'Perfect Clear',
+    'perfect_clear_msg':
+        'Vượt qua điểm cao nhất hiện tại ({score}) để nhận +{coin} xu thưởng!',
+    'perfect_clear_start': 'Bắt đầu',
+    'perfect_clear_success_label': '🏆 Perfect Clear! +{coin} xu',
   };
 
   static const Map<String, String> _extraEs = {
@@ -24506,6 +24519,149 @@ class AppTranslations extends Translations {
       'ach_booster_100_desc': '১০০টি বুস্টার ব্যবহার করেছেন',
       'ach_booster_250_title': 'অস্ত্রাগার',
       'ach_booster_250_desc': '২৫০টি বুস্টার ব্যবহার করেছেন',
+    },
+  };
+
+  /// Task #5 — Perfect Clear (en+vi ở _extraEn/_extraVi, 20 ngôn ngữ còn lại
+  /// ở đây).
+  static const Map<String, Map<String, String>> _w36ByLang = {
+    'es_ES': {
+      'perfect_clear_title': 'Superación Perfecta',
+      'perfect_clear_msg':
+          '¡Supera tu mejor puntuación ({score}) para ganar +{coin} monedas extra!',
+      'perfect_clear_start': 'Empezar',
+      'perfect_clear_success_label': '🏆 ¡Superación Perfecta! +{coin} monedas',
+    },
+    'fr_FR': {
+      'perfect_clear_title': 'Clear Parfait',
+      'perfect_clear_msg':
+          'Battez votre meilleur score ({score}) pour gagner +{coin} pièces bonus !',
+      'perfect_clear_start': 'Commencer',
+      'perfect_clear_success_label': '🏆 Clear Parfait ! +{coin} pièces',
+    },
+    'de_DE': {
+      'perfect_clear_title': 'Perfekte Räumung',
+      'perfect_clear_msg':
+          'Schlage deinen Highscore ({score}) und erhalte +{coin} Bonus-Münzen!',
+      'perfect_clear_start': 'Starten',
+      'perfect_clear_success_label': '🏆 Perfekte Räumung! +{coin} Münzen',
+    },
+    'pt_BR': {
+      'perfect_clear_title': 'Limpeza Perfeita',
+      'perfect_clear_msg':
+          'Supere sua melhor pontuação ({score}) e ganhe +{coin} moedas bônus!',
+      'perfect_clear_start': 'Começar',
+      'perfect_clear_success_label': '🏆 Limpeza Perfeita! +{coin} moedas',
+    },
+    'ru_RU': {
+      'perfect_clear_title': 'Идеальная зачистка',
+      'perfect_clear_msg':
+          'Побейте свой лучший результат ({score}) и получите +{coin} бонусных монет!',
+      'perfect_clear_start': 'Начать',
+      'perfect_clear_success_label': '🏆 Идеальная зачистка! +{coin} монет',
+    },
+    'zh_CN': {
+      'perfect_clear_title': '完美通关',
+      'perfect_clear_msg': '超越你的最高分（{score}）即可赢得 +{coin} 枚奖励金币！',
+      'perfect_clear_start': '开始',
+      'perfect_clear_success_label': '🏆 完美通关！+{coin} 金币',
+    },
+    'ja_JP': {
+      'perfect_clear_title': 'パーフェクトクリア',
+      'perfect_clear_msg': '自己ベスト（{score}）を超えて +{coin} 枚のボーナスコインを獲得しよう！',
+      'perfect_clear_start': 'スタート',
+      'perfect_clear_success_label': '🏆 パーフェクトクリア！+{coin} コイン',
+    },
+    'ko_KR': {
+      'perfect_clear_title': '퍼펙트 클리어',
+      'perfect_clear_msg': '최고 점수({score})를 넘으면 +{coin} 보너스 코인 획득!',
+      'perfect_clear_start': '시작',
+      'perfect_clear_success_label': '🏆 퍼펙트 클리어! +{coin} 코인',
+    },
+    'it_IT': {
+      'perfect_clear_title': 'Sgombero Perfetto',
+      'perfect_clear_msg':
+          'Batti il tuo record ({score}) per vincere +{coin} monete bonus!',
+      'perfect_clear_start': 'Inizia',
+      'perfect_clear_success_label': '🏆 Sgombero Perfetto! +{coin} monete',
+    },
+    'id_ID': {
+      'perfect_clear_title': 'Perfect Clear',
+      'perfect_clear_msg':
+          'Kalahkan skor terbaikmu ({score}) untuk memenangkan +{coin} koin bonus!',
+      'perfect_clear_start': 'Mulai',
+      'perfect_clear_success_label': '🏆 Perfect Clear! +{coin} koin',
+    },
+    'th_TH': {
+      'perfect_clear_title': 'เคลียร์สมบูรณ์แบบ',
+      'perfect_clear_msg':
+          'ทำคะแนนให้เหนือสถิติเดิม ({score}) เพื่อรับเหรียญโบนัส +{coin}!',
+      'perfect_clear_start': 'เริ่ม',
+      'perfect_clear_success_label': '🏆 เคลียร์สมบูรณ์แบบ! +{coin} เหรียญ',
+    },
+    'hi_IN': {
+      'perfect_clear_title': 'परफेक्ट क्लियर',
+      'perfect_clear_msg':
+          'अपना सर्वश्रेष्ठ स्कोर ({score}) हराएं और +{coin} बोनस सिक्के जीतें!',
+      'perfect_clear_start': 'शुरू करें',
+      'perfect_clear_success_label': '🏆 परफेक्ट क्लियर! +{coin} सिक्के',
+    },
+    'ar_SA': {
+      'perfect_clear_title': 'التطهير الكامل',
+      'perfect_clear_msg':
+          'تخطَّ أفضل نتيجة لك ({score}) لتفوز بـ +{coin} عملة إضافية!',
+      'perfect_clear_start': 'ابدأ',
+      'perfect_clear_success_label': '🏆 التطهير الكامل! +{coin} عملة',
+    },
+    'tr_TR': {
+      'perfect_clear_title': 'Mükemmel Temizlik',
+      'perfect_clear_msg':
+          'En iyi skorunu ({score}) geç ve +{coin} bonus jeton kazan!',
+      'perfect_clear_start': 'Başla',
+      'perfect_clear_success_label': '🏆 Mükemmel Temizlik! +{coin} jeton',
+    },
+    'nl_NL': {
+      'perfect_clear_title': 'Perfecte Clear',
+      'perfect_clear_msg':
+          'Versla je hoogste score ({score}) en win +{coin} bonusmunten!',
+      'perfect_clear_start': 'Start',
+      'perfect_clear_success_label': '🏆 Perfecte Clear! +{coin} munten',
+    },
+    'pl_PL': {
+      'perfect_clear_title': 'Perfekcyjne Wyczyszczenie',
+      'perfect_clear_msg':
+          'Pobij swój najlepszy wynik ({score}), aby zdobyć +{coin} monet bonusowych!',
+      'perfect_clear_start': 'Start',
+      'perfect_clear_success_label':
+          '🏆 Perfekcyjne Wyczyszczenie! +{coin} monet',
+    },
+    'fil_PH': {
+      'perfect_clear_title': 'Perfect Clear',
+      'perfect_clear_msg':
+          'Talunin ang pinakamataas mong score ({score}) para makakuha ng +{coin} bonus coins!',
+      'perfect_clear_start': 'Simulan',
+      'perfect_clear_success_label': '🏆 Perfect Clear! +{coin} coins',
+    },
+    'ms_MY': {
+      'perfect_clear_title': 'Perfect Clear',
+      'perfect_clear_msg':
+          'Kalahkan skor terbaik anda ({score}) untuk memenangi +{coin} syiling bonus!',
+      'perfect_clear_start': 'Mula',
+      'perfect_clear_success_label': '🏆 Perfect Clear! +{coin} syiling',
+    },
+    'uk_UA': {
+      'perfect_clear_title': 'Ідеальна зачистка',
+      'perfect_clear_msg':
+          'Побийте свій найкращий результат ({score}) і отримайте +{coin} бонусних монет!',
+      'perfect_clear_start': 'Почати',
+      'perfect_clear_success_label': '🏆 Ідеальна зачистка! +{coin} монет',
+    },
+    'bn_BD': {
+      'perfect_clear_title': 'পারফেক্ট ক্লিয়ার',
+      'perfect_clear_msg':
+          'আপনার সেরা স্কোর ({score}) ছাড়িয়ে +{coin} বোনাস কয়েন জিতুন!',
+      'perfect_clear_start': 'শুরু করুন',
+      'perfect_clear_success_label': '🏆 পারফেক্ট ক্লিয়ার! +{coin} কয়েন',
     },
   };
 }

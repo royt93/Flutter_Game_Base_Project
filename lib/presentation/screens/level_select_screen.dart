@@ -15,6 +15,7 @@ import '../widgets/coin_chip.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
+import '../widgets/neon_dialog.dart';
 import '../widgets/stroke_text.dart';
 import 'game_screen.dart';
 
@@ -417,8 +418,43 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
               gameCtrl.startLevel(id);
               Get.to(() => const GameScreen());
             },
+      onLongPress: (!locked && stars > 0)
+          ? () => _showPerfectClearDialog(gameCtrl, id)
+          : null,
     );
     return current ? _Pulse(child: tile) : tile;
+  }
+
+  /// Task #5: thử thách chơi lại — vượt best score hiện tại để nhận bonus
+  /// coin, mở qua long-press trên level đã qua (giữ tap ngắn = chơi bình
+  /// thường như trước, không phá hành vi cũ).
+  void _showPerfectClearDialog(GameController gameCtrl, int id) {
+    final best = StorageService.to.getInt(StorageKeys.highScore(id));
+    NeonDialog.show(
+      context: context,
+      title: 'perfect_clear_title'.tr,
+      color: NeonTheme.gold,
+      icon: Icons.emoji_events_rounded,
+      message: 'perfect_clear_msg'.trParams({
+        'score': '$best',
+        'coin': '${GameController.perfectClearBonusCoins}',
+      }),
+      actions: [
+        NeonDialogAction(
+          label: 'cancel'.tr,
+          color: NeonTheme.cyan,
+          onTap: () {},
+        ),
+        NeonDialogAction(
+          label: 'perfect_clear_start'.tr,
+          color: NeonTheme.gold,
+          onTap: () {
+            gameCtrl.startPerfectClear(id);
+            Get.to(() => const GameScreen());
+          },
+        ),
+      ],
+    );
   }
 }
 
@@ -683,6 +719,7 @@ class _LevelTile extends StatelessWidget {
   final int stars;
   final bool isBoss;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const _LevelTile({
     required this.id,
@@ -690,6 +727,7 @@ class _LevelTile extends StatelessWidget {
     required this.stars,
     required this.isBoss,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -700,6 +738,7 @@ class _LevelTile extends StatelessWidget {
     return GestureDetector(
       key: Key('level_tile_$id'),
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
           color: locked ? const Color(0xFFEDEAF5) : NeonTheme.card,

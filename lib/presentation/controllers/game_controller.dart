@@ -175,6 +175,17 @@ class GameController extends GetxController {
   /// Set 1 lần khi vừa đạt mốc thành tựu mới, UI lắng nghe rồi tự clear.
   final justUnlockedAchievement = Rxn<Achievement>();
 
+  /// Task #5: điểm cần vượt khi đang trong 1 lần Perfect Clear challenge
+  /// (chụp trước khi chơi, vì [_saveBestScore] sẽ ghi đè `highScore` ngay khi
+  /// thắng) — null khi không phải Perfect Clear.
+  final perfectClearTarget = Rxn<int>();
+
+  /// Set 1 lần khi vừa hoàn thành 1 lần Perfect Clear thành công, UI (dialog
+  /// thắng) đọc rồi tự hiện badge.
+  final perfectClearSuccess = false.obs;
+
+  static const int perfectClearBonusCoins = 50;
+
   /// Public: [AchievementsScreen] dùng để hiển thị tiến độ mốc chưa mở khoá.
   int metricValue(AchievementMetric m) => switch (m) {
     AchievementMetric.totalGemsPopped => totalGemsPopped.value,
@@ -520,6 +531,17 @@ class GameController extends GetxController {
     _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
     movesUsed.value = 0;
     _collectInitial = null;
+    perfectClearTarget.value = null;
+    perfectClearSuccess.value = false;
+  }
+
+  /// Task #5: replay level đã qua ít nhất 1 sao, mục tiêu vượt best score
+  /// hiện tại — thành công thưởng thêm [perfectClearBonusCoins], ngoài ra
+  /// dùng nguyên luồng campaign (star/highscore vẫn cập nhật bình thường).
+  void startPerfectClear(int levelId) {
+    final target = StorageService.to.getInt(StorageKeys.highScore(levelId));
+    startLevel(levelId);
+    perfectClearTarget.value = target;
   }
 
   /// F8: bắt đầu 1 ván side-mode (Time-attack/Zen) — không đụng
@@ -670,6 +692,12 @@ class GameController extends GetxController {
     }
     starsEarned.value = _computeStars();
     ended.value = true;
+    if (perfectClearTarget.value != null &&
+        score.value > perfectClearTarget.value!) {
+      perfectClearSuccess.value = true;
+      coins.value += perfectClearBonusCoins * weekendCoinMultiplier;
+      StorageService.to.setInt(StorageKeys.coins, coins.value);
+    }
     if (starsEarned.value > 0) {
       _unlockNext();
       _saveBestScore();

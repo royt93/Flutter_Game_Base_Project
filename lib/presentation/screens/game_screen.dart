@@ -860,6 +860,25 @@ class _WinChoreographyState extends State<_WinChoreography> {
                   ],
                 ),
               ),
+              // Task #5: badge Perfect Clear — chỉ hiện khi thắng thử thách
+              // vượt best score, dùng chung choreography opacity với score.
+              if (gameCtrl.perfectClearSuccess.value) ...[
+                const SizedBox(height: NeonTheme.s8),
+                AnimatedOpacity(
+                  opacity: _scoreShown ? 1 : 0,
+                  duration: const Duration(milliseconds: 250),
+                  child: Text(
+                    'perfect_clear_success_label'.trParams({
+                      'coin': '${GameController.perfectClearBonusCoins}',
+                    }),
+                    style: const TextStyle(
+                      color: NeonTheme.gold,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: NeonTheme.s16),
               AnimatedOpacity(
                 opacity: _buttonsShown ? 1 : 0,
