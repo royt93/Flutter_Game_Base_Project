@@ -21,8 +21,16 @@ class AchievementsScreen extends StatelessWidget {
             children: [
               NeonAppBar(title: 'achievements_title'.tr, color: NeonTheme.gold),
               Expanded(
-                child: Obx(
-                  () => ListView.separated(
+                child: Obx(() {
+                  // ListView.itemBuilder chạy lazy trong layout, ngoài phạm vi
+                  // đồng bộ mà Obx theo dõi read — phải đọc trực tiếp các Rx
+                  // ở đây để Obx đăng ký được observable (nếu không GetX throw
+                  // "improper use of Obx" vì tưởng builder không đọc gì).
+                  gameCtrl.unlockedAchievementIds.length;
+                  for (final m in AchievementMetric.values) {
+                    gameCtrl.metricValue(m);
+                  }
+                  return ListView.separated(
                     padding: const EdgeInsets.all(NeonTheme.s16),
                     itemCount: kAchievements.length,
                     separatorBuilder: (_, _) =>
@@ -39,8 +47,8 @@ class AchievementsScreen extends StatelessWidget {
                         progress: progress,
                       );
                     },
-                  ),
-                ),
+                  );
+                }),
               ),
             ],
           ),
