@@ -104,9 +104,11 @@ const int kLevelCount = 200;
 /// và chỉ nhích nhẹ theo world; công thức leo-tuyến-tính cũ khiến ~146/200 màn
 /// bất khả thi (đã xác minh bằng greedy-bot sim, xem doc/feat.md).
 ///
-/// F9: objective luân phiên theo chu kỳ 8 màn, lặp lại suốt 200 màn — 3 màn
-/// score, rồi lần lượt clearColor/clearObstacle/collect/moveLimitBonus/
-/// obstacleInMoves (slot 3..7).
+/// F9/X6 (task #6 2026-07-16): objective luân phiên theo chu kỳ 9 màn, lặp
+/// lại suốt 200 màn — 3 màn score, rồi lần lượt clearColor/clearObstacle/
+/// collect/moveLimitBonus/obstacleInMoves/openGift (slot 3..8). Thêm
+/// `openGift` (I1, trước đó có cơ chế đầy đủ ở `pop_star_game.dart` nhưng
+/// chưa từng được gán cho màn campaign nào).
 final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
   final id = i + 1;
   final world = i ~/ 20; // 0..9
@@ -125,7 +127,7 @@ final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
       : baseTarget;
   final moveLimit = (cells ~/ 3).clamp(6, 30);
   final obstacleCount = (3 + world ~/ 2).clamp(3, 8);
-  final slot = i % 8;
+  final slot = i % 9;
   final objective = switch (slot) {
     3 => LevelObjective.clearColor(i % colorCount),
     4 => const LevelObjective.clearObstacle(),
@@ -135,6 +137,9 @@ final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
     ),
     6 => LevelObjective.moveLimitBonus(moveLimit),
     7 => LevelObjective.obstacleInMoves(obstacleCount, moveLimit),
+    8 => LevelObjective.openGift(
+      ((cells / colorCount) / 3).clamp(2, 8).round(),
+    ),
     _ => const LevelObjective.score(),
   };
   return PopLevel(

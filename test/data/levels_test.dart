@@ -99,22 +99,38 @@ void main() {
       }
     });
 
-    // F9: objective rotate chu kỳ 8 màn (3 score, rồi clearColor/
-    // clearObstacle/collect/moveLimitBonus/obstacleInMoves) xuyên suốt 200 màn.
-    test('objective luân phiên đúng chu kỳ 8 màn', () {
+    // F9/task#6: objective rotate chu kỳ 9 màn (3 score, rồi clearColor/
+    // clearObstacle/collect/moveLimitBonus/obstacleInMoves/openGift) xuyên
+    // suốt 200 màn.
+    test('objective luân phiên đúng chu kỳ 9 màn', () {
       for (var i = 0; i < kLevels.length; i++) {
-        final expected = switch (i % 8) {
+        final expected = switch (i % 9) {
           3 => ObjectiveType.clearColor,
           4 => ObjectiveType.clearObstacle,
           5 => ObjectiveType.collect,
           6 => ObjectiveType.moveLimitBonus,
           7 => ObjectiveType.obstacleInMoves,
+          8 => ObjectiveType.openGift,
           _ => ObjectiveType.score,
         };
         expect(
           kLevels[i].objective.type,
           expected,
-          reason: 'L${kLevels[i].id} (slot ${i % 8}) sai objective',
+          reason: 'L${kLevels[i].id} (slot ${i % 9}) sai objective',
+        );
+      }
+    });
+
+    // task#6: openGift target phải >=2 và không vượt số ô trống trên bàn.
+    test('openGift: target hợp lý, không vượt số ô của bàn', () {
+      for (final lv in kLevels.where(
+        (l) => l.objective.type == ObjectiveType.openGift,
+      )) {
+        final target = lv.objective.target!;
+        expect(
+          target,
+          inInclusiveRange(2, lv.rows * lv.cols),
+          reason: 'L${lv.id}: openGift target $target vô lý',
         );
       }
     });

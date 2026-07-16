@@ -1962,3 +1962,21 @@ ngữ còn lại). Test mới trong `game_controller_test.dart` (nhóm "Task #5 
 Perfect Clear replay").
 
 `flutter analyze` 0 lỗi; `flutter test --exclude-tags slow` xanh toàn bộ.
+
+## ✅ Mở rộng chu kỳ objective campaign — thêm openGift (task #6) (2026-07-16)
+
+Rà lại `lib/data/levels.dart` (F9) phát hiện: `openGift` (I1) đã có cơ chế
+đầy đủ ở `pop_star_game.dart` (`_placeGiftsIfNeeded`, tính
+`objectiveRemaining`) nhưng **chưa từng được gán cho màn campaign nào** —
+chu kỳ objective cũ (`i % 8`) chỉ dùng 6/7 loại `ObjectiveType`. Mở rộng chu
+kỳ từ 8 → 9 màn, thêm slot 8 = `openGift` (target ≈ `(cells/colorCount)/3`,
+kẹp `[2, 8]`). Tỉ lệ vẫn 3/9 màn dùng `score` thuần, 6/9 màn dùng 1 trong 6
+loại objective khác — không đổi công thức `targetScore` (`cells * 6 * ramp`,
+đúng invariant CLAUDE.md) vì objective type không ảnh hưởng cách tính điểm/
+sao, chỉ thêm 1 điều kiện thắng phụ.
+
+Cập nhật `test/data/levels_test.dart`: đổi chu kỳ kỳ vọng `i % 8` → `i % 9`
+(thêm case `8 => ObjectiveType.openGift`), thêm test riêng kiểm target
+`openGift` hợp lý (trong `[2, rows*cols]`).
+
+`flutter analyze` 0 lỗi; `flutter test --exclude-tags slow` xanh toàn bộ.
