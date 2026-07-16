@@ -1771,3 +1771,168 @@ Mở Settings → tap "मित्र को आमंत्रित करे
 "Chơi Pop Star Blast cùng mình! https://play.google.com/store/apps/details?id=com.galaxyjoy.pop_star_blast"
 (store link placeholder + tagline đúng). Không quảng cáo (R4 pass). X6 đóng
 hoàn toàn — checkbox cuối cùng trong `doc/task/tasks/X6-share-invite.md` đã tick.
+
+## ✅ F5d — power tile resonance (stretch goal) + I12 — dynamic music layers (2026-07-15)
+
+**F5d (stretch goal của F5, trước đây để ngỏ vì chưa có spec):** khi kích
+hoạt 1 power tile mà vùng nổ (`_blastCellsFor`, hàm thuần mới tách ra từ
+`_activatePowerTile`) vướng phải 1 power tile khác còn trên bàn → gộp luôn
+vùng nổ của tile đó vào cùng 1 đợt xoá (không đệ quy `_activatePowerTile`,
+tránh double `_saveUndo()`/`_clearAndCollapse()`), điểm thưởng gấp đôi
+(`scoreForGroup(cells.length) * 2`) + `triggerFlash()`. Test
+`test/widget/power_tile_resonance_test.dart` dựng bàn 2 nhóm tách biệt (bomb
+tại 1 nhóm, rainbow tại nhóm kia) và 1 ô màu cô lập ngoài bán kính bomb —
+assert board-wide (không neo vị trí cố định) vì gravity/collapse có thể dịch
+chuyển power tile sau mỗi lần tap; chứng minh ô cô lập chỉ bị xoá nhờ chuỗi
+cộng hưởng lan tới rainbow. Đã đóng checkbox trong
+`doc/task/tasks/F5-power-tiles.md`.
+
+**I12 (idea chưa chốt trong `IDEAS.md`, nay đã implement):** nhạc nền "thêm
+lớp" khi combo cao — vì asset chỉ có 3 track nhạc trọn vẹn (không có audio
+stem/layer riêng), mô phỏng "thêm lớp" bằng cách đổi track theo bậc combo,
+tái dùng nguyên cơ chế `startBgm({int track})` đã có sẵn (vốn chỉ dùng lúc
+khởi động, tự no-op nếu trùng track). Hàm thuần `AudioManager.bgmTierFor(
+comboCount)` (0/1/2 theo ngưỡng <3/3-5/≥6) + `applyComboLayer` gọi từ
+`GameController.registerPop`/`resetCombo`. Test thuần
+`test/core/audio_manager_test.dart`. Đã tạo
+`doc/task/tasks/I12-dynamic-music-layers.md`, cập nhật `IDEAS.md` sang
+"✅ đã chốt".
+
+`flutter analyze` 0 lỗi; toàn bộ `flutter test --exclude-tags slow` (231
+test) xanh sau cả 2 thay đổi. Không quảng cáo (R4 pass, không liên quan
+screenshot test lần này).
+
+## ✅ Fix bug i18n `guide_screen.dart` — bug đã ghi nhận từ 2026-07-14 (2026-07-15)
+
+Đóng nốt phần "phát hiện phụ, chưa fix" ghi ở mục Fix 2 bug i18n phía trên:
+`guide_screen.dart` hardcode toàn bộ title "How to Play" + 5 rule (title +
+body) tiếng Anh, không qua `.tr`.
+
+- App-bar title: tái dùng key `guide` có sẵn (đã dịch đủ 22 locale từ trước,
+  giá trị tiếng Anh thật là "How To Play" hoa chữ T — không phải "How to
+  Play" như tên bug gốc ghi) — **không** tạo key mới trùng lặp (từng tạo
+  nhầm `guide_screen_title` rồi tự phát hiện trùng qua note cũ ở mục trên,
+  đã xoá lại).
+- 5 rule card (tap/bigger/gravity/clear/nomoves) — thêm 10 key mới
+  (`guide_rule_<tên>_title`/`_body`) theo đúng convention wave: en+vi vào
+  `_extraEn`/`_extraVi`, 20 locale còn lại vào `_w32ByLang` mới, merge vào
+  `keys` getter ngay sau `_w31ByLang`.
+
+`guide_screen_test.dart` sửa theo pattern `settings_screen_test.dart`
+(`GetMaterialApp(translations: AppTranslations(), locale: Locale('en','US'))`)
+vì bản cũ dùng `MaterialApp` trần nên `.tr` trả raw key; assert đổi sang
+"How To Play" đúng giá trị thật của key `guide`.
+
+`flutter analyze` 0 lỗi; `flutter test --exclude-tags slow` (231 test) xanh
+toàn bộ. Chưa verify tay trên device (chỉ chạy trên máy dev) — làm khi có
+dịp build lại.
+
+**Fix nốt luôn cùng lượt (user chọn fix ngay thay vì để sau)**:
+`game_screen.dart:266` hardcode "Daily Challenge" tiếng Anh, không qua
+`.tr`. Tái dùng key `daily_challenge_label` có sẵn (đã dịch đủ 22 locale từ
+trước, dùng ở nơi khác) — không tạo key mới. `flutter analyze` 0 lỗi,
+`flutter test --exclude-tags slow` (231 test) xanh toàn bộ sau cả 2 fix.
+
+## ✅ Sweep tiếp `game_screen.dart` — 4 bug i18n hardcode phát hiện khi verify tay A3/X3 (2026-07-15)
+
+Verify tay quit-dialog transition (A3) và Semantics label cho TalkBack (X3)
+lộ ra 4 chỗ hardcode còn sót trong `game_screen.dart`, tất cả đều thẳng
+tiếng Anh/Việt không qua `.tr` bất kể locale máy:
+
+- **Quit dialog**: title/message hardcode tiếng Anh dù key `quit_title`/
+  `quit_msg` đã có sẵn (dịch đủ 22 locale) nhưng chưa từng được gọi ở đây —
+  tái dùng luôn, thêm 1 key mới `quit_action` ("Quit"/"Thoát").
+- **Lose dialog** (`Time's Up!`/board-stuck): toàn bộ title + message hardcode
+  tiếng Anh (kể cả nhánh Time-attack/Endless/Daily-challenge/mặc định) —
+  thêm 6 key mới (`time_up_title`, `board_stuck_title`, `score_best_label`,
+  `score_recorded_label`, `no_moves_retry_msg`, `menu`), tái dùng `retry` có
+  sẵn cho nút.
+- **6 nút booster** (bomb/shuffle/undo/rainbow/swap/freeze): label hardcode
+  tiếng Việt trực tiếp trong `game_screen.dart` dù `shop_screen.dart` đã có
+  sẵn đúng 6 key dịch đủ 22 locale cho đúng 6 tên booster này
+  (`booster_bomb_label`, `shuffle`, `booster_undo_label`,
+  `booster_rainbow_label`, `booster_swap_label`, `booster_freeze_label`) —
+  tái dùng nguyên, không tạo key trùng.
+- **Semantics label** (`_BoosterButton`, dùng cho TalkBack) hardcode tiếng
+  Việt "X, còn Y" bất kể locale — máy để tiếng Anh vẫn đọc tiếng Việt qua
+  TalkBack. Thêm 2 key `booster_count_label`/`booster_count_armed_label`.
+- **Win dialog**: title (boss-cleared/level-complete) + dòng điểm hardcode
+  tiếng Anh; nút RETRY/NEXT viết hoa cứng — thêm 3 key
+  (`boss_cleared_title`, `level_complete_title`, `score_value_label`) + 1 key
+  mới `next_action`, tái dùng `retry` với `.toUpperCase()` ở call site thay
+  vì tạo key riêng cho biến thể viết hoa (giữ style chữ hoa của nút nhưng
+  không nhân đôi bản dịch).
+
+Tất cả key mới thêm đủ 22 locale theo đúng wave-merge convention hiện có
+(`_w34ByLang`, wave thứ 23 tính từ `_w28ByLang`).
+
+**Regression tự gây ra rồi tự fix cùng lượt**: sau khi đổi
+`"Time's Up!"` hardcode → `'time_up_title'.tr`, 3 test trong
+`modes_test.dart` (Time-attack/Zen/Endless) fail dây chuyền — gốc chỉ 1 chỗ:
+`GetMaterialApp(home: const GameScreen())` trong test này chưa cấu hình
+`translations`/`locale` (khác `shop_screen_test.dart`/`settings_screen_test.dart`
+đã làm đúng từ trước — xem case tương tự ở `guide_screen_test.dart` mục trên),
+nên `.tr` trả raw key thay vì "Time's Up!" → assert `find.text("Time's Up!")`
+fail → test dừng giữa chừng, không chạy tới `Get.reset()` cuối bài → state
+GetX permanent singleton còn dây dưa sang 2 test chạy sau trong cùng file,
+khiến chúng cũng fail dù logic Zen/Endless refill không hề bị đụng tới (xác
+nhận bằng `git stash` chạy lại trên code gốc — cả 4 test xanh). Fix: thêm
+`translations: AppTranslations()` + `locale: const Locale('en', 'US')` vào
+cả 3 `GetMaterialApp` trong file.
+
+`flutter analyze` 0 lỗi; `flutter test --exclude-tags slow` (231 test) xanh
+toàn bộ. Đã verify tay các chỗ sửa trên Pixel 7 Pro thật (quit dialog,
+booster label, tap-to-pop) qua screenshot trong phiên test #58.
+
+## ✅ Gỡ bỏ idle shimmer sweep (G8) theo phản hồi verify tay (2026-07-15)
+
+Trong lúc test tay trên Pixel 7 Pro (#58), user hỏi về "1 shimmer bay từ trái
+sang phải" trên màn chơi và nói không cần hiệu ứng này. Xác định đó là idle
+shimmer của G8 (`_ShimmerSweep`, `pop_star_game.dart`) — dải sáng quét ngang
+bàn mỗi khi rảnh tay >4s, tách biệt với phần ring nổ (`_BurstRing`, vẫn giữ
+nguyên vì không bị phàn nàn).
+
+Game đã có sẵn toggle "Giảm hiệu ứng động" (Settings, `StorageKeys.reduceMotion`)
+gate được shimmer, nhưng gộp chung với slow-mo/camera-shake — không tắt
+riêng được. Hỏi lại user qua `AskUserQuestion` giữa 3 phương án (xoá hẳn code
+/ chỉ đổi mặc định off / dùng toggle có sẵn) — chọn **xoá hẳn khỏi code**.
+
+Đã xoá trong `lib/game/pop_star_game.dart`: class `_ShimmerSweep`, field
+`_shimmerTimer`/`_shimmerDelay`, nhánh gọi trong `update()`, hàm
+`_spawnShimmer()`, và dòng reset `_shimmerTimer` trong `clearHint()`. Sửa lại
+2 comment nhắc "slow-mo/zoom-punch/shake/shimmer" (ở `pop_star_game.dart` và
+`storage_service.dart`) bỏ chữ "shimmer" cho khớp thực tế. Cập nhật
+`doc/task/tasks/G8-glow-burst-shimmer.md`: tiêu đề + ghi chú phần idle
+shimmer đã gỡ, un-check 3 acceptance criteria cũ (đánh dấu gạch ngang, không
+xoá để giữ lịch sử).
+
+`flutter analyze` 0 lỗi; `flutter test --exclude-tags slow` (231 test) xanh
+toàn bộ (không test nào đụng tới shimmer).
+
+## ✅ Hệ thống Achievements (I22) (2026-07-16)
+
+Thêm 25 thành tựu vanity (không ảnh hưởng gameplay, không thêm currency
+mới) theo 5 metric tích lũy đời: `totalGemsPopped`, `maxComboEver`,
+`levelsThreeStarred`, `boardsFullyCleared`, `totalBoostersUsed`. Mỗi thành
+tựu unlock đúng 1 lần, thưởng coin 1 lần. Spec đầy đủ:
+`docs/superpowers/specs/2026-07-16-achievements-design.md`, task file:
+`doc/task/tasks/I22-achievements-system.md`.
+
+Data model `lib/data/achievements.dart` (`Achievement`, `kAchievements`,
+`newlyUnlockedAchievementIds`). `GameController` cộng dồn 5 counter mới tại
+`registerPop`/`checkEnd`/các `use*` booster, persist qua `StorageKeys`
+tương ứng, xoá sạch trong `resetProgress()`. Cơ chế unlock theo đúng pattern
+Rx async có sẵn (`unlockedAchievementIds` Set + `justUnlockedAchievement`
+`Rxn<Achievement>`), `GameScreenController` lắng nghe qua `ever()` để hiện
+dialog ăn mừng (`NeonDialog.overlay`, không dùng `Get.dialog`).
+`AchievementsScreen` mới liệt kê tiến độ; entry point: icon riêng trên
+`HomeScreen` + card cuối `ListView` trong `GuideScreen`.
+
+i18n đủ 22 locale (English/Vietnamese trong `_extraEn`/`_extraVi`, 20 ngôn
+ngữ còn lại trong wave map `_w35ByLang`). Trong lúc implement phát hiện và
+khôi phục được một đợt nội dung i18n (guide rule) đã bị mất do thao tác
+`git checkout --` quá rộng ở phiên trước — lấy lại từ dangling blob git,
+ghép đúng thứ tự các wave map hiện có.
+
+`flutter analyze` 0 lỗi; `flutter test --exclude-tags slow` (238 test)
+xanh toàn bộ.

@@ -48,7 +48,7 @@ class StorageKeys {
   static const String sfxVolume = 'sfx_volume';
   static const String hapticsEnabled = 'haptics_enabled';
 
-  // A7: tắt slow-mo/zoom-punch/shake/shimmer cho người nhạy chuyển động.
+  // A7: tắt slow-mo/zoom-punch/shake cho người nhạy chuyển động.
   static const String reduceMotion = 'reduce_motion';
 
   // X5: đã hiện review prompt chưa (chỉ hiện đúng 1 lần trong đời cài đặt).
@@ -71,6 +71,15 @@ class StorageKeys {
 
   // F14 Relic/Perk: id perk active, nối bằng dấu phẩy (tối đa 2).
   static const String activePerks = 'active_perks';
+
+  // I22 Achievements: counter tích lũy đời (không reset giữa các ván) + id đã
+  // unlock (CSV, giống activePerks).
+  static const String totalGemsPopped = 'total_gems_popped';
+  static const String maxComboEver = 'max_combo_ever';
+  static const String levelsThreeStarred = 'levels_three_starred';
+  static const String boardsFullyCleared = 'boards_fully_cleared';
+  static const String totalBoostersUsed = 'total_boosters_used';
+  static const String unlockedAchievements = 'unlocked_achievements';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

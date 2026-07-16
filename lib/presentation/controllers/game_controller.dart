@@ -8,6 +8,7 @@ import '../../core/audio_manager.dart';
 import '../../core/storage_service.dart';
 import '../../core/utils/comeback_bonus.dart';
 import '../../core/utils/weekend_event.dart';
+import '../../data/achievements.dart';
 import '../../data/levels.dart';
 import '../../data/perks.dart';
 import '../../game/pop_star_game.dart';
@@ -163,6 +164,48 @@ class GameController extends GetxController {
     );
   }
 
+  // I22 Achievements: counter tích lũy đời (không reset giữa các ván).
+  final totalGemsPopped = 0.obs;
+  final maxComboEver = 0.obs;
+  final levelsThreeStarred = 0.obs;
+  final boardsFullyCleared = 0.obs;
+  final totalBoostersUsed = 0.obs;
+  final unlockedAchievementIds = <String>{}.obs;
+
+  /// Set 1 lần khi vừa đạt mốc thành tựu mới, UI lắng nghe rồi tự clear.
+  final justUnlockedAchievement = Rxn<Achievement>();
+
+  /// Public: [AchievementsScreen] dùng để hiển thị tiến độ mốc chưa mở khoá.
+  int metricValue(AchievementMetric m) => switch (m) {
+    AchievementMetric.totalGemsPopped => totalGemsPopped.value,
+    AchievementMetric.maxComboEver => maxComboEver.value,
+    AchievementMetric.levelsThreeStarred => levelsThreeStarred.value,
+    AchievementMetric.boardsFullyCleared => boardsFullyCleared.value,
+    AchievementMetric.totalBoostersUsed => totalBoostersUsed.value,
+  };
+
+  void _checkAchievements() {
+    final metricValues = {
+      for (final m in AchievementMetric.values) m: metricValue(m),
+    };
+    final newlyUnlocked = newlyUnlockedAchievementIds(
+      metricValues,
+      unlockedAchievementIds,
+    );
+    if (newlyUnlocked.isEmpty) return;
+    for (final id in newlyUnlocked) {
+      final a = kAchievements.firstWhere((e) => e.id == id);
+      unlockedAchievementIds.add(id);
+      coins.value += a.coinReward * weekendCoinMultiplier;
+      justUnlockedAchievement.value = a;
+    }
+    StorageService.to.setString(
+      StorageKeys.unlockedAchievements,
+      unlockedAchievementIds.join(','),
+    );
+    StorageService.to.setInt(StorageKeys.coins, coins.value);
+  }
+
   /// I8: cuối tuần nhân đôi mọi coin thưởng (thắng level, chest, daily, spin).
   int get weekendCoinMultiplier => isWeekendEvent(DateTime.now()) ? 2 : 1;
 
@@ -258,6 +301,25 @@ class GameController extends GetxController {
             .split(',')
             .where((s) => s.isNotEmpty)
             .toList();
+    totalGemsPopped.value = StorageService.to.getInt(
+      StorageKeys.totalGemsPopped,
+    );
+    maxComboEver.value = StorageService.to.getInt(StorageKeys.maxComboEver);
+    levelsThreeStarred.value = StorageService.to.getInt(
+      StorageKeys.levelsThreeStarred,
+    );
+    boardsFullyCleared.value = StorageService.to.getInt(
+      StorageKeys.boardsFullyCleared,
+    );
+    totalBoostersUsed.value = StorageService.to.getInt(
+      StorageKeys.totalBoostersUsed,
+    );
+    unlockedAchievementIds.assignAll(
+      (StorageService.to.getString(StorageKeys.unlockedAchievements) ?? '')
+          .split(',')
+          .where((s) => s.isNotEmpty)
+          .toSet(),
+    );
     _recomputeTotalStars();
     _checkSeasonRollover();
   }
@@ -557,7 +619,7 @@ class GameController extends GetxController {
 
   /// Ghi nhận 1 lần nổ nhóm: tăng combo, cộng điểm đã nhân hệ số.
   /// Trả về điểm thực cộng (để UI hiện popup).
-  int registerPop(int baseScore) {
+  int registerPop(int baseScore, {int groupSize = 1}) {
     movesUsed.value++;
     comboCount.value++;
     comboMultiplier.value = (1 + (comboCount.value - 1) * 0.5).clamp(
@@ -567,6 +629,17 @@ class GameController extends GetxController {
     final gained = (baseScore * comboMultiplier.value).round();
     score.value += gained;
     AudioManager.maybe?.applyComboLayer(comboCount.value); // I12
+    // I22 Achievements.
+    totalGemsPopped.value += groupSize;
+    StorageService.to.setInt(
+      StorageKeys.totalGemsPopped,
+      totalGemsPopped.value,
+    );
+    if (comboCount.value > maxComboEver.value) {
+      maxComboEver.value = comboCount.value;
+      StorageService.to.setInt(StorageKeys.maxComboEver, maxComboEver.value);
+    }
+    _checkAchievements();
     return gained;
   }
 
@@ -579,6 +652,15 @@ class GameController extends GetxController {
   void checkEnd(bool boardCleared) {
     if (ended.value) return;
     cleared.value = boardCleared;
+    if (boardCleared) {
+      // I22 Achievements: counter tích lũy đời, áp dụng mọi mode.
+      boardsFullyCleared.value++;
+      StorageService.to.setInt(
+        StorageKeys.boardsFullyCleared,
+        boardsFullyCleared.value,
+      );
+      _checkAchievements();
+    }
     if (mode.value != GameMode.campaign) {
       if (mode.value == GameMode.timeAttack) _saveTimeAttackBest();
       if (mode.value == GameMode.endless) _saveEndlessBest();
@@ -680,6 +762,16 @@ class GameController extends GetxController {
       StorageService.to.setInt(StorageKeys.star(id), starsEarned.value);
       _recomputeTotalStars();
     }
+    // I22 Achievements: chỉ tính lần đầu màn đạt 3 sao, tránh cộng lặp khi
+    // replay level đã 3-sao.
+    if (starsEarned.value == 3 && bestStar < 3) {
+      levelsThreeStarred.value++;
+      StorageService.to.setInt(
+        StorageKeys.levelsThreeStarred,
+        levelsThreeStarred.value,
+      );
+    }
+    _checkAchievements();
   }
 
   void _grantCoins() {
@@ -715,11 +807,22 @@ class GameController extends GetxController {
   bool buySwap() => _buy(swapPrice, swapCount, StorageKeys.swapCount);
   bool buyFreeze() => _buy(freezePrice, freezeCount, StorageKeys.freezeCount);
 
+  // I22 Achievements: gọi ở cuối mỗi nhánh dùng booster thành công.
+  void _recordBoosterUsed() {
+    totalBoostersUsed.value++;
+    StorageService.to.setInt(
+      StorageKeys.totalBoostersUsed,
+      totalBoostersUsed.value,
+    );
+    _checkAchievements();
+  }
+
   void useBomb(int row, int col) {
     if (bombCount.value <= 0 || activeGame == null) return;
     if (!activeGame!.triggerBomb(row, col)) return;
     bombCount.value--;
     StorageService.to.setInt(StorageKeys.bombCount, bombCount.value);
+    _recordBoosterUsed();
   }
 
   void useShuffle() {
@@ -727,6 +830,7 @@ class GameController extends GetxController {
     if (!activeGame!.shuffleBoard()) return;
     shuffleCount.value--;
     StorageService.to.setInt(StorageKeys.shuffleCount, shuffleCount.value);
+    _recordBoosterUsed();
   }
 
   void useUndo() {
@@ -736,12 +840,14 @@ class GameController extends GetxController {
     if (_freeUndoLeft > 0) {
       if (!activeGame!.undo()) return;
       _freeUndoLeft--;
+      _recordBoosterUsed();
       return;
     }
     if (undoCount.value <= 0) return;
     if (!activeGame!.undo()) return;
     undoCount.value--;
     StorageService.to.setInt(StorageKeys.undoCount, undoCount.value);
+    _recordBoosterUsed();
   }
 
   void useRainbow(int row, int col) {
@@ -749,6 +855,7 @@ class GameController extends GetxController {
     if (!activeGame!.triggerRainbow(row, col)) return;
     rainbowCount.value--;
     StorageService.to.setInt(StorageKeys.rainbowCount, rainbowCount.value);
+    _recordBoosterUsed();
   }
 
   /// F10: đổi màu 2 ô bất kỳ (không cần liền kề), không tự nổ.
@@ -757,6 +864,7 @@ class GameController extends GetxController {
     if (!activeGame!.triggerSwap(row1, col1, row2, col2)) return;
     swapCount.value--;
     StorageService.to.setInt(StorageKeys.swapCount, swapCount.value);
+    _recordBoosterUsed();
   }
 
   /// F10: dùng ngay — N lượt tiếp theo obstacle không giảm bền dù nổ cạnh.
@@ -766,6 +874,7 @@ class GameController extends GetxController {
     activeGame!.freezeTurnsLeft = freezeTurns;
     freezeCount.value--;
     StorageService.to.setInt(StorageKeys.freezeCount, freezeCount.value);
+    _recordBoosterUsed();
   }
 
   Future<void> resetProgress() async {
@@ -792,6 +901,12 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.claimedSeasonMask);
     await store.remove(StorageKeys.lastSeasonIndex);
     await store.remove(StorageKeys.activePerks);
+    await store.remove(StorageKeys.totalGemsPopped);
+    await store.remove(StorageKeys.maxComboEver);
+    await store.remove(StorageKeys.levelsThreeStarred);
+    await store.remove(StorageKeys.boardsFullyCleared);
+    await store.remove(StorageKeys.totalBoostersUsed);
+    await store.remove(StorageKeys.unlockedAchievements);
     for (var id = 1; id <= kLevelCount; id++) {
       await store.remove(StorageKeys.highScore(id));
       await store.remove(StorageKeys.star(id));

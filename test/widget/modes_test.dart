@@ -1,6 +1,8 @@
 import 'package:flame/game.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:pop_star_blast/core/app_translations.dart';
 import 'package:pop_star_blast/core/storage_service.dart';
 import 'package:pop_star_blast/game/pop_star_game.dart';
 import 'package:pop_star_blast/presentation/controllers/game_controller.dart';
@@ -25,7 +27,13 @@ void main() {
       final gameCtrl = Get.put(GameController(), permanent: true);
       gameCtrl.startSideMode(GameMode.timeAttack);
 
-      await tester.pumpWidget(GetMaterialApp(home: const GameScreen()));
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const GameScreen(),
+        ),
+      );
       await tester.pump(const Duration(milliseconds: 100));
 
       final gsc = Get.find<GameScreenController>();
@@ -57,7 +65,13 @@ void main() {
     final gameCtrl = Get.put(GameController(), permanent: true);
     gameCtrl.startSideMode(GameMode.zen);
 
-    await tester.pumpWidget(GetMaterialApp(home: const GameScreen()));
+    await tester.pumpWidget(
+      GetMaterialApp(
+        translations: AppTranslations(),
+        locale: const Locale('en', 'US'),
+        home: const GameScreen(),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 100));
 
     final gsc = Get.find<GameScreenController>();
@@ -87,7 +101,13 @@ void main() {
     final gameCtrl = Get.put(GameController(), permanent: true);
     gameCtrl.startEndless();
 
-    await tester.pumpWidget(GetMaterialApp(home: const GameScreen()));
+    await tester.pumpWidget(
+      GetMaterialApp(
+        translations: AppTranslations(),
+        locale: const Locale('en', 'US'),
+        home: const GameScreen(),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 100));
 
     final gsc = Get.find<GameScreenController>();

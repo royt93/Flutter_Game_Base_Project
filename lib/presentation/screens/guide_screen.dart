@@ -1,43 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../core/neon_theme.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
+import 'achievements_screen.dart';
 
 /// Giải thích luật chơi Pop Star: chạm nhóm ô cùng màu liền kề để nổ.
 class GuideScreen extends StatelessWidget {
   const GuideScreen({super.key});
 
-  static const _rules = [
+  static List<(IconData, Color, String, String)> get _rules => [
     (
       Icons.touch_app_rounded,
       NeonTheme.cyan,
-      'Tap a group',
-      'Tap any group of 2 or more connected blocks of the same color to pop them.',
+      'guide_rule_tap_title'.tr,
+      'guide_rule_tap_body'.tr,
     ),
     (
       Icons.trending_up_rounded,
       NeonTheme.magenta,
-      'Bigger is better',
-      'Popping a bigger group scores more points: score = 5 × n × (n − 1).',
+      'guide_rule_bigger_title'.tr,
+      'guide_rule_bigger_body'.tr,
     ),
     (
       Icons.arrow_downward_rounded,
       NeonTheme.lime,
-      'Gravity & collapse',
-      'Blocks above a pop fall down to fill the gap, then empty columns shift left.',
+      'guide_rule_gravity_title'.tr,
+      'guide_rule_gravity_body'.tr,
     ),
     (
       Icons.emoji_events_rounded,
       NeonTheme.yellow,
-      'Clear the board',
-      'Clear every block on the board for a big bonus at the end of the level.',
+      'guide_rule_clear_title'.tr,
+      'guide_rule_clear_body'.tr,
     ),
     (
       Icons.block_rounded,
       NeonTheme.orange,
-      'No moves left',
-      'The level ends once no group of 2+ remains — reach the target score to earn stars.',
+      'guide_rule_nomoves_title'.tr,
+      'guide_rule_nomoves_body'.tr,
     ),
   ];
 
@@ -48,14 +50,55 @@ class GuideScreen extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              const NeonAppBar(title: 'How to Play', color: NeonTheme.lime),
+              NeonAppBar(title: 'guide'.tr, color: NeonTheme.lime),
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.all(NeonTheme.s16),
-                  itemCount: _rules.length,
+                  itemCount: _rules.length + 1,
                   separatorBuilder: (_, _) =>
                       const SizedBox(height: NeonTheme.s16),
                   itemBuilder: (context, i) {
+                    if (i == _rules.length) {
+                      return GestureDetector(
+                        onTap: () => Get.to(() => const AchievementsScreen()),
+                        child: Container(
+                          padding: const EdgeInsets.all(NeonTheme.s16),
+                          decoration: BoxDecoration(
+                            color: NeonTheme.card,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: NeonTheme.gold,
+                              width: 1.5,
+                            ),
+                            boxShadow: NeonTheme.drop(),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.emoji_events_rounded,
+                                color: NeonTheme.gold,
+                                size: 28,
+                              ),
+                              const SizedBox(width: NeonTheme.s16),
+                              Expanded(
+                                child: Text(
+                                  'achievements_title'.tr,
+                                  style: TextStyle(
+                                    color: NeonTheme.ink,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: NeonTheme.inkSoft,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
                     final (icon, color, title, body) = _rules[i];
                     return Container(
                       padding: const EdgeInsets.all(NeonTheme.s16),

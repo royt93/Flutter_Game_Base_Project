@@ -99,46 +99,6 @@ class _BurstRing extends PositionComponent {
   }
 }
 
-/// G8: dải sáng quét ngang bàn khi rảnh tay quá lâu, báo bàn "còn sống" — tự
-/// gỡ sau 1 lượt quét. Không chặn tap (input đến qua GestureDetector ở
-/// game_screen.dart, không qua hit test của component Flame nào).
-class _ShimmerSweep extends PositionComponent {
-  _ShimmerSweep({required Vector2 boardSize})
-    : super(size: boardSize, anchor: Anchor.topLeft, priority: 90);
-
-  static const double _dur = 1.1;
-  double _t = 0;
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-    _t += dt;
-    if (_t >= _dur) removeFromParent();
-  }
-
-  @override
-  void render(Canvas canvas) {
-    final p = (_t / _dur).clamp(0.0, 1.0);
-    final bandWidth = size.x * 0.28;
-    final x = -bandWidth + p * (size.x + bandWidth * 2);
-    final band = Rect.fromLTWH(x, 0, bandWidth, size.y);
-    canvas.save();
-    canvas.clipRect(Rect.fromLTWH(0, 0, size.x, size.y));
-    canvas.drawRect(
-      band,
-      Paint()
-        ..shader = LinearGradient(
-          colors: [
-            Colors.white.withValues(alpha: 0),
-            Colors.white.withValues(alpha: 0.22),
-            Colors.white.withValues(alpha: 0),
-          ],
-        ).createShader(band),
-    );
-    canvas.restore();
-  }
-}
-
 /// Bàn PopStar: tap 1 ô, nổ nhóm cùng màu liền kề (≥2), cột rơi + dồn trái —
 /// có animation (pop nở + hạt, rơi/trượt bằng tween). Không dùng Flame
 /// TapDetector — tap đến từ GestureDetector ở game_screen.dart qua [handleTap].
@@ -211,12 +171,6 @@ class PopStarGame extends FlameGame {
   double get _hintDelay => controller.hasPerk('move_hint') ? 2.0 : 6.0;
   double _idleTimer = 0;
   Set<Point<int>> _hint = {};
-
-  /// G8: rảnh tay quá [_shimmerDelay] giây → quét 1 lượt shimmer, lặp thưa
-  /// (dùng chung mốc rảnh tay với I4 qua [clearHint], ngưỡng riêng ngắn hơn
-  /// để hiện trước/song song hint).
-  static const double _shimmerDelay = 4.0;
-  double _shimmerTimer = 0;
 
   static const double _popDur = 0.16;
   static const double _fallDur = 0.26;
@@ -486,9 +440,9 @@ class PopStarGame extends FlameGame {
   /// cellSize*0.12, tắt sau 3 nhịp ~0.12s) — nhẹ hơn/thường xuyên hơn punch A7.
   static const int _shakeGroupThreshold = 5;
 
-  /// A7: tắt slow-mo/zoom-punch/shake/shimmer qua Settings cho người nhạy
-  /// chuyển động. Không gate squash/settle (easeOutBack) hay pop cơ bản —
-  /// chỉ các hiệu ứng "thêm" ngoài phản hồi tap cốt lõi.
+  /// A7: tắt slow-mo/zoom-punch/shake qua Settings cho người nhạy chuyển
+  /// động. Không gate squash/settle (easeOutBack) hay pop cơ bản — chỉ các
+  /// hiệu ứng "thêm" ngoài phản hồi tap cốt lõi.
   bool get _reduceMotion => StorageService.to.getBool(StorageKeys.reduceMotion);
 
   void _tryPop(int row, int col) {
@@ -500,7 +454,10 @@ class PopStarGame extends FlameGame {
       colorIndex: colorGrid[row][col] ?? -1,
     );
     _saveUndo();
-    final gained = controller.registerPop(scoreForGroup(group.length));
+    final gained = controller.registerPop(
+      scoreForGroup(group.length),
+      groupSize: group.length,
+    );
     _comboTimer = GameController.comboWindow;
     final gemColor = NeonTheme
         .gemColors[(colorGrid[row][col] ?? 0) % NeonTheme.gemColors.length];
@@ -625,6 +582,7 @@ class PopStarGame extends FlameGame {
     }
     final gained = controller.registerPop(
       scoreForGroup(cells.length) * (resonant.isEmpty ? 1 : 2),
+      groupSize: cells.length,
     );
     _comboTimer = GameController.comboWindow;
     final gemColor = NeonTheme
@@ -671,24 +629,6 @@ class PopStarGame extends FlameGame {
       _idleTimer += dt;
       if (_idleTimer >= _hintDelay) _triggerHint();
     }
-    // G8: shimmer chạy song song hint (không gate theo _hint.isEmpty) — chỉ
-    // cần không đang diễn hoạt/kết thúc, lặp thưa mỗi _shimmerDelay giây rảnh.
-    if (!_animating && !controller.ended.value) {
-      _shimmerTimer += dt;
-      if (_shimmerTimer >= _shimmerDelay) {
-        _shimmerTimer = 0;
-        _spawnShimmer();
-      }
-    }
-  }
-
-  /// G8: spawn 1 lượt shimmer quét ngang bàn (tự gỡ sau khi quét xong).
-  void _spawnShimmer() {
-    if (_reduceMotion) return;
-    add(
-      _ShimmerSweep(boardSize: Vector2(cols * cellSize, rows * cellSize))
-        ..position = Vector2(_boardLeft, _boardTop),
-    );
   }
 
   /// I4: nhóm đang được gợi ý (rỗng nếu không có). Test-only introspection.
@@ -716,7 +656,6 @@ class PopStarGame extends FlameGame {
     }
     _hint = {};
     _idleTimer = 0;
-    _shimmerTimer = 0;
   }
 
   /// Trả về false nếu không có gì bị nổ (đang animate, hoặc 3x3 quanh

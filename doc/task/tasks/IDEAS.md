@@ -20,10 +20,11 @@ dưới giữ nguyên để tra cứu mô tả gốc.
 - **I8 Weekend event** ✅ đã chốt — [I8-weekend-event.md](I8-weekend-event.md).
 - **I9 Leaderboard bạn bè / clan co-op** ✅ đã chốt (offline giả lập) — [I9-leaderboard-friends.md](I9-leaderboard-friends.md).
 - **I10 Comeback bonus** ✅ đã chốt — [I10-comeback-bonus.md](I10-comeback-bonus.md).
+- **I22 Achievements system** ✅ đã chốt — [I22-achievements-system.md](I22-achievements-system.md).
 
 ## Cảm giác / A-V
 - **I11 Haptic feedback** ✅ đã chốt — [I11-haptic-feedback.md](I11-haptic-feedback.md).
-- **I12 Dynamic music layers** — nhạc thêm lớp khi combo cao. *(chưa chốt)*
+- **I12 Dynamic music layers** ✅ đã chốt — [I12-dynamic-music-layers.md](I12-dynamic-music-layers.md).
 - **I13 SFX pop cao độ theo cỡ nhóm** ✅ đã chốt — [I13-pop-sfx-pitch.md](I13-pop-sfx-pitch.md).
 - **I14 Theme per world** ✅ đã chốt — [I14-theme-per-world.md](I14-theme-per-world.md).
 

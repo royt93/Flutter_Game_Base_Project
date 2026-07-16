@@ -278,7 +278,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
           child: Column(
             children: [
               NeonAppBar(
-                title: 'Select Level',
+                title: 'select_level'.tr,
                 color: NeonTheme.cyan,
                 actions: [CoinChip(gameCtrl)],
               ),

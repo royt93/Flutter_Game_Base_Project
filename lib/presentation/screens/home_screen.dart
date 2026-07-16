@@ -14,6 +14,7 @@ import '../widgets/pulse_glow.dart';
 import '../widgets/spin_wheel_dialog.dart';
 import '../widgets/star_mascot.dart';
 import '../widgets/stroke_text.dart';
+import 'achievements_screen.dart';
 import 'game_screen.dart';
 import 'guide_screen.dart';
 import 'leaderboard_screen.dart';
@@ -123,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               const Spacer(flex: 2),
               const StarMascot(size: 128),
-              const SizedBox(height: NeonTheme.s16),
+              const SizedBox(height: NeonTheme.s8),
               StrokeText(
                 kAppName,
                 fontSize: 46,
@@ -281,6 +282,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     boxed: true,
                     semanticLabel: 'perks_title'.tr,
                     onTap: () => Get.to(() => const PerksScreen()),
+                  ),
+                ],
+              ),
+              const SizedBox(height: NeonTheme.s8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  NeonIconButton(
+                    Icons.emoji_events_rounded,
+                    color: NeonTheme.gold,
+                    size: 28,
+                    boxed: true,
+                    semanticLabel: 'achievements_title'.tr,
+                    onTap: () => Get.to(() => const AchievementsScreen()),
                   ),
                 ],
               ),

@@ -128,6 +128,9 @@ class GameScreen extends StatelessWidget {
                     ),
                   ],
                   Positioned.fill(child: _FlashOverlay(gameCtrl: gameCtrl)),
+                  Positioned.fill(
+                    child: _AchievementUnlockOverlay(gameCtrl: gameCtrl),
+                  ),
                   if (gsc.ui.value != GameUi.playing) _Overlay(gsc: gsc),
                 ],
               );
@@ -263,7 +266,7 @@ class _Hud extends StatelessWidget {
                           scoreText,
                           const SizedBox(height: NeonTheme.s8),
                           Text(
-                            'Daily Challenge',
+                            'daily_challenge_label'.tr,
                             style: TextStyle(
                               color: NeonTheme.inkSoft,
                               fontSize: 12,
@@ -291,7 +294,9 @@ class _Hud extends StatelessWidget {
                         ),
                         const SizedBox(height: NeonTheme.s8),
                         Text(
-                          'Target ${fmtNum(target)}',
+                          'game_target_label'.trParams({
+                            'target': fmtNum(target),
+                          }),
                           style: TextStyle(
                             color: NeonTheme.inkSoft,
                             fontSize: 12,
@@ -343,7 +348,7 @@ class _Hud extends StatelessWidget {
                       count: gameCtrl.bombCount.value,
                       armed: gsc.armed.value == BoosterMode.bomb,
                       onTap: gsc.toggleBombArm,
-                      label: 'Bom nổ 3x3',
+                      label: 'booster_bomb_label'.tr,
                     ),
                     const SizedBox(width: NeonTheme.s16),
                     _BoosterButton(
@@ -352,7 +357,7 @@ class _Hud extends StatelessWidget {
                       count: gameCtrl.shuffleCount.value,
                       armed: false,
                       onTap: gsc.useShuffle,
-                      label: 'Xáo bàn',
+                      label: 'shuffle'.tr,
                     ),
                     const SizedBox(width: NeonTheme.s16),
                     _BoosterButton(
@@ -361,7 +366,7 @@ class _Hud extends StatelessWidget {
                       count: gameCtrl.undoCount.value,
                       armed: false,
                       onTap: gsc.useUndo,
-                      label: 'Hoàn tác',
+                      label: 'booster_undo_label'.tr,
                       forceEnabled:
                           gameCtrl.undoCount.value > 0 || gameCtrl.hasFreeUndo,
                     ),
@@ -372,7 +377,7 @@ class _Hud extends StatelessWidget {
                       count: gameCtrl.rainbowCount.value,
                       armed: gsc.armed.value == BoosterMode.rainbow,
                       onTap: gsc.toggleRainbowArm,
-                      label: 'Cầu vồng xoá cùng màu',
+                      label: 'booster_rainbow_label'.tr,
                     ),
                     const SizedBox(width: NeonTheme.s16),
                     _BoosterButton(
@@ -381,7 +386,7 @@ class _Hud extends StatelessWidget {
                       count: gameCtrl.swapCount.value,
                       armed: gsc.armed.value == BoosterMode.swap,
                       onTap: gsc.toggleSwapArm,
-                      label: 'Đổi màu 2 ô',
+                      label: 'booster_swap_label'.tr,
                     ),
                     const SizedBox(width: NeonTheme.s16),
                     _BoosterButton(
@@ -390,7 +395,7 @@ class _Hud extends StatelessWidget {
                       count: gameCtrl.freezeCount.value,
                       armed: false,
                       onTap: gsc.useFreeze,
-                      label: 'Đóng băng obstacle',
+                      label: 'booster_freeze_label'.tr,
                     ),
                   ],
                 ),
@@ -424,6 +429,37 @@ class _FlashOverlay extends StatelessWidget {
         );
       }),
     );
+  }
+}
+
+/// I22: dialog ăn mừng khi vừa mở khoá thành tựu — tự dọn [GameController.
+/// justUnlockedAchievement] sau khi hiện để không lặp lại.
+class _AchievementUnlockOverlay extends StatelessWidget {
+  const _AchievementUnlockOverlay({required this.gameCtrl});
+  final GameController gameCtrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final a = gameCtrl.justUnlockedAchievement.value;
+      if (a == null) return const SizedBox.shrink();
+      return NeonDialog.overlay(
+        onBarrier: () => gameCtrl.justUnlockedAchievement.value = null,
+        panel: NeonDialog.panel(
+          title: 'achievement_unlocked_title'.tr,
+          color: NeonTheme.gold,
+          icon: Icons.emoji_events_rounded,
+          message: '${a.titleKey.tr}\n${a.descKey.tr}\n+${a.coinReward} 🪙',
+          actions: [
+            NeonDialogAction(
+              label: 'ok'.tr,
+              color: NeonTheme.gold,
+              onTap: () => gameCtrl.justUnlockedAchievement.value = null,
+            ),
+          ],
+        ),
+      );
+    });
   }
 }
 
@@ -545,7 +581,12 @@ class _BoosterButton extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: enabled,
-      label: '$label, $count còn lại${armed ? ", đang chọn" : ""}',
+      label: armed
+          ? 'booster_count_armed_label'.trParams({
+              'label': label,
+              'count': '$count',
+            })
+          : 'booster_count_label'.trParams({'label': label, 'count': '$count'}),
       child: PressableScale(
         onTap: enabled ? onTap : null,
         child: Container(
@@ -619,17 +660,17 @@ class _Overlay extends StatelessWidget {
         return NeonDialog.overlay(
           onBarrier: gsc.closeOverlay,
           panel: NeonDialog.panel(
-            title: 'Quit Level?',
+            title: 'quit_title'.tr,
             color: NeonTheme.cyan,
-            message: 'Your progress in this level will be lost.',
+            message: 'quit_msg'.tr,
             actions: [
               NeonDialogAction(
-                label: 'Cancel',
+                label: 'cancel'.tr,
                 color: NeonTheme.cyan,
                 onTap: gsc.closeOverlay,
               ),
               NeonDialogAction(
-                label: 'Quit',
+                label: 'quit_action'.tr,
                 color: NeonTheme.orange,
                 onTap: gsc.quit,
               ),
@@ -647,23 +688,32 @@ class _Overlay extends StatelessWidget {
           panel: _MascotDialog(
             mood: isTimeAttack ? StarMood.cheer : StarMood.sad,
             panel: NeonDialog.panel(
-              title: isTimeAttack ? "Time's Up!" : 'Board Stuck',
+              title: isTimeAttack ? 'time_up_title'.tr : 'board_stuck_title'.tr,
               color: NeonTheme.orange,
               message: isTimeAttack
-                  ? 'Score ${gameCtrl.score.value} — Best ${gameCtrl.timeAttackBest.value}'
+                  ? 'score_best_label'.trParams({
+                      'score': '${gameCtrl.score.value}',
+                      'best': '${gameCtrl.timeAttackBest.value}',
+                    })
                   : isEndless
-                  ? 'Score ${gameCtrl.score.value} — Best ${gameCtrl.endlessBest.value}'
+                  ? 'score_best_label'.trParams({
+                      'score': '${gameCtrl.score.value}',
+                      'best': '${gameCtrl.endlessBest.value}',
+                    })
                   : isDailyChallenge
-                  ? 'Score ${gameCtrl.score.value} — Recorded ${gameCtrl.dailyChallengeScoreToday}'
-                  : 'No more groups to pop. Try again?',
+                  ? 'score_recorded_label'.trParams({
+                      'score': '${gameCtrl.score.value}',
+                      'recorded': '${gameCtrl.dailyChallengeScoreToday}',
+                    })
+                  : 'no_moves_retry_msg'.tr,
               actions: [
                 NeonDialogAction(
-                  label: 'Menu',
+                  label: 'menu'.tr,
                   color: NeonTheme.cyan,
                   onTap: gsc.quit,
                 ),
                 NeonDialogAction(
-                  label: 'Retry',
+                  label: 'retry'.tr,
                   color: NeonTheme.orange,
                   onTap: gsc.again,
                 ),
@@ -749,8 +799,8 @@ class _WinChoreographyState extends State<_WinChoreography> {
         panel: NeonDialog.panel(
           // F11: boss level thắng → nhãn riêng biệt với level thường.
           title: gameCtrl.currentLevel.isBoss
-              ? 'Boss Cleared!'
-              : 'Level Complete!',
+              ? 'boss_cleared_title'.tr
+              : 'level_complete_title'.tr,
           color: NeonTheme.yellow,
           actions: const [],
           content: Column(
@@ -788,7 +838,9 @@ class _WinChoreographyState extends State<_WinChoreography> {
                       duration: const Duration(milliseconds: 500),
                       curve: Curves.easeOut,
                       builder: (_, v, _) => Text(
-                        'Score ${fmtNum(v.round())}',
+                        'score_value_label'.trParams({
+                          'score': fmtNum(v.round()),
+                        }),
                         style: TextStyle(
                           color: NeonTheme.inkSoft,
                           fontSize: 15,
@@ -818,7 +870,7 @@ class _WinChoreographyState extends State<_WinChoreography> {
                     children: [
                       Expanded(
                         child: NeonButton(
-                          label: 'RETRY',
+                          label: 'retry'.tr.toUpperCase(),
                           color: NeonTheme.cyan,
                           onTap: widget.gsc.again,
                         ),
@@ -826,7 +878,7 @@ class _WinChoreographyState extends State<_WinChoreography> {
                       const SizedBox(width: NeonTheme.s16),
                       Expanded(
                         child: NeonButton(
-                          label: 'NEXT',
+                          label: 'next_action'.tr.toUpperCase(),
                           color: NeonTheme.yellow,
                           onTap: widget.gsc.next,
                         ),
