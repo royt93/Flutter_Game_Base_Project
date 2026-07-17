@@ -175,6 +175,79 @@ void main() {
       expect(ctrl.shuffleCount.value, 1);
       expect(ctrl.undoCount.value, 1);
     });
+
+    test('xoá sạch counter + mốc thành tựu I22', () async {
+      ctrl.startLevel(1);
+      ctrl.registerPop(10, groupSize: 500); // đạt mốc gems_500
+      expect(ctrl.unlockedAchievementIds, contains('gems_500'));
+
+      await ctrl.resetProgress();
+      expect(ctrl.totalGemsPopped.value, 0);
+      expect(ctrl.maxComboEver.value, 0);
+      expect(ctrl.levelsThreeStarred.value, 0);
+      expect(ctrl.boardsFullyCleared.value, 0);
+      expect(ctrl.totalBoostersUsed.value, 0);
+      expect(ctrl.unlockedAchievementIds, isEmpty);
+    });
+  });
+
+  group('I22 Achievements — tích hợp GameController', () {
+    test(
+      'registerPop cộng groupSize vào totalGemsPopped, mở khoá mốc gems_500',
+      () {
+        ctrl.startLevel(1);
+        ctrl.registerPop(10, groupSize: 500);
+        expect(ctrl.totalGemsPopped.value, 500);
+        expect(ctrl.unlockedAchievementIds, contains('gems_500'));
+        expect(ctrl.coins.value, 50 * ctrl.weekendCoinMultiplier);
+      },
+    );
+
+    test(
+      '3 lần registerPop liên tiếp (không resetCombo) đẩy combo lên 3, mở khoá mốc combo_3',
+      () {
+        ctrl.startLevel(1);
+        ctrl.registerPop(10);
+        ctrl.registerPop(10);
+        ctrl.registerPop(10);
+        expect(ctrl.maxComboEver.value, 3);
+        expect(ctrl.unlockedAchievementIds, contains('combo_3'));
+        expect(ctrl.coins.value, 50 * ctrl.weekendCoinMultiplier);
+      },
+    );
+
+    test(
+      'vượt mốc đã mở khoá thêm lần nữa không cộng thêm xu / không unlock lại',
+      () {
+        ctrl.startLevel(1);
+        ctrl.registerPop(10, groupSize: 500); // mở khoá gems_500, +50 xu
+        final coinsAfter = ctrl.coins.value;
+        ctrl.registerPop(10, groupSize: 1); // vẫn > threshold nhưng đã unlock
+        expect(ctrl.totalGemsPopped.value, 501);
+        expect(ctrl.coins.value, coinsAfter);
+        expect(ctrl.unlockedAchievementIds.length, 1);
+      },
+    );
+
+    test('checkEnd(true) tăng boardsFullyCleared và mở khoá mốc clear_5', () {
+      for (var i = 0; i < 5; i++) {
+        ctrl.startLevel(1);
+        ctrl.checkEnd(true);
+      }
+      expect(ctrl.boardsFullyCleared.value, 5);
+      expect(ctrl.unlockedAchievementIds, contains('clear_5'));
+    });
+
+    test(
+      'checkEnd gọi lại lần 2 (đã ended) không cộng dồn boardsFullyCleared',
+      () {
+        ctrl.startLevel(1);
+        ctrl.checkEnd(true);
+        expect(ctrl.boardsFullyCleared.value, 1);
+        ctrl.checkEnd(true); // ended.value đã true → early-return
+        expect(ctrl.boardsFullyCleared.value, 1);
+      },
+    );
   });
 
   group('F2 Daily reward', () {

@@ -2183,3 +2183,30 @@ Test thuần `test/core/utils/friend_code_test.dart`: round-trip encode↔decode
 tên chứa `|` bị lọc, tên rỗng/base64 sai/số âm (mã giả mạo) → `null` (không
 throw). `flutter analyze` 0 issues; `flutter test --exclude-tags slow` xanh
 toàn bộ. Task file: `doc/task/tasks/I26-friend-compare.md`.
+
+## ✅ Implemented: Sweep test coverage cho các feature gần đây (task #19, 2026-07-17)
+
+Rà soát (qua agent audit + kiểm tra chéo tay) test coverage của các feature
+mới thêm gần đây: I22 Achievements, F10 swap/freeze, I8 weekend×coin, và
+`AchievementsScreen`. Kết luận: **weekend×coin đã được test đầy đủ** ở mọi
+điểm cộng xu quan trọng (checkEnd, Perfect Clear, Daily reward, Vòng quay,
+Comeback bonus, Season, Star Road — mỗi test đều nhân `ctrl.weekendCoinMultiplier`
+thay vì hard-code hệ số, nên đúng bất kể ngày chạy test là gì) — không cần
+thêm gì. 4 gap thật sự được vá:
+
+- `test/presentation/game_controller_test.dart` — nhóm mới `I22 Achievements
+  — tích hợp GameController`: `registerPop` cộng đúng `totalGemsPopped`/mở
+  khoá mốc `gems_500`, 3 lần pop liên tiếp đẩy combo lên mốc `combo_3`, vượt
+  mốc đã mở khoá không cộng xu/không unlock lại, `checkEnd(true)` tăng đúng
+  `boardsFullyCleared`/mở khoá `clear_5`, gọi `checkEnd` lần 2 (đã `ended`)
+  không cộng dồn. Thêm 1 test vào nhóm `resetProgress` xác nhận xoá sạch cả
+  5 counter + `unlockedAchievementIds`.
+- `test/widget/swap_freeze_test.dart` — case biên `useSwap` no-op khi
+  `swapCount == 0` (grid/điểm/số lượng không đổi).
+- `test/widget/achievements_screen_test.dart` (mới) — render đủ 25 thành
+  tựu, mặc định khoá hết; mở khoá 1 mốc → đúng icon cúp + text
+  `achievements_done`. Dùng viewport cao (khớp quy ước
+  `home_screen_test.dart`) vì `ListView` chỉ build item trong viewport.
+
+`flutter analyze` 0 issues; `flutter test --exclude-tags slow` xanh toàn bộ
+(bao gồm các test mới trên).

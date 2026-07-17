@@ -48,6 +48,36 @@ void main() {
     Get.reset();
   });
 
+  testWidgets('F10: useSwap không làm gì khi swapCount = 0', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    Get.put(StorageService(prefs), permanent: true);
+    final gameCtrl = Get.put(GameController(), permanent: true);
+    gameCtrl.startLevel(1);
+
+    await tester.pumpWidget(GetMaterialApp(home: const GameScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+    await _pumpFrames(tester, frames: 20);
+
+    final gsc = Get.find<GameScreenController>();
+    gsc.game.colorGrid = List.generate(
+      gsc.game.rows,
+      (r) => List.generate(gsc.game.cols, (c) => (r + c) % 2),
+    );
+    gsc.game.onGameResize(gsc.game.size);
+    final before = gsc.game.colorGrid.map((row) => [...row]).toList();
+
+    gameCtrl.swapCount.value = 0;
+    gameCtrl.useSwap(0, 0, 0, 1);
+    await _pumpFrames(tester);
+
+    expect(gsc.game.colorGrid, before); // không đổi gì
+    expect(gameCtrl.score.value, 0);
+    expect(gameCtrl.swapCount.value, 0);
+
+    Get.reset();
+  });
+
   testWidgets('toggleSwapArm bật/tắt đúng BoosterMode', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
