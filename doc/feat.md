@@ -2120,3 +2120,21 @@ Test: `test/data/levels_test.dart` — test 9-slot cũ đổi tên `'... (màn
 thường)'` + bỏ qua `isBoss`; thêm test mới `'boss variant luân phiên đúng
 theo world % 4'`. `flutter analyze` 0 issues; `flutter test --exclude-tags
 slow` 246/246 xanh (từ 245). Task file: `doc/task/tasks/I25-boss-variant.md`.
+
+## ❌ Skipped: "Booster/mechanic thứ 4" (task #16) — đã có sẵn 6 booster (2026-07-17)
+
+Task #16 trong kế hoạch overnight yêu cầu thêm booster thứ 4. Audit lại
+codebase (grep + đọc `lib/presentation/controllers/game_controller.dart`,
+`lib/game/pop_star_game.dart`, `lib/presentation/screens/shop_screen.dart`,
+`game_screen.dart`) cho thấy game đã có **6 booster** hoàn chỉnh, đã commit
+từ trước (không phải trong session này): bomb, shuffle, undo (bộ gốc) +
+rainbow, swap, freeze (F10, xem commit `5f0e7ee`/`25cc32e`/`26e0ef0` trong
+git log) — mỗi booster đủ storage key, buy/use trong `GameController`,
+`trigger*` trong `PopStarGame`, entry point ở `ShopScreen` + HUD
+`GameScreen`, i18n, và test (`game_controller_test.dart`,
+`rainbow_bomb_test.dart`, `free_undo_test.dart`).
+
+Vì mục tiêu ban đầu ("đa dạng hoá booster ngoài bộ 3 gốc") đã đạt vượt mức
+(6/4), không thêm booster thứ 7 tuỳ tiện — tránh feature creep không ai yêu
+cầu cụ thể. Nếu muốn booster mới thật sự, cần spec riêng nêu rõ cơ chế khác
+biệt (không trùng bomb/rainbow/swap/freeze) trước khi implement.
