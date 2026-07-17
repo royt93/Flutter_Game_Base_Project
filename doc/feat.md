@@ -2026,3 +2026,22 @@ dialog Modes lộ lại đè lên Home sau khi thoát level bắt đầu từ đ
 trong dialog Modes không `Navigator.pop(context)` trước khi `Get.to()`. Ghi
 lại ở `doc/task/tasks/X9-home-screen-redesign.md` để fix riêng, không sửa
 trong task này.
+
+## ✅ Fix bug dialog Modes lộ lại sau khi thoát level (2026-07-17)
+
+Root cause: `NeonDialog.show` chỉ tự `Navigator.pop(context)` trước khi
+chạy `onTap` cho các nút trong `actions:` (`NeonDialogAction`, ví dụ nút
+"Huỷ"); widget tuỳ ý đặt trong `content:` (3 `NeonIconButton` Time
+Attack/Zen/Endless của dialog Modes) không đi qua cơ chế bọc pop này. Ba nút
+đó gọi `Get.to(() => const GameScreen())` trực tiếp mà không đóng dialog
+trước, nên stack thành `[Home, DialogRoute, GameScreenRoute]` — thoát
+GameScreen chỉ pop 1 route, lộ lại DialogRoute còn nằm dưới đè lên Home.
+
+Fix: thêm `Navigator.pop(context);` đầu mỗi `onTap` của 3 nút trong
+`_showModesDialog` (`home_screen.dart`), trước `startSideMode`/`startEndless`
++ `Get.to()`.
+
+`flutter analyze` 0 lỗi; `flutter test --exclude-tags slow` xanh toàn bộ (243
+test). Playtest lại trên Samsung SM_S928B (`R5CX613VZBR`): Modes → Time
+Attack → GameScreen (đồng hồ đếm) → Thoát Màn → Home sạch, không còn dialog
+Modes lộ lại — không gặp quảng cáo che UI.

@@ -106,6 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
             boxed: true,
             semanticLabel: 'mode_time_attack_label'.tr,
             onTap: () {
+              Navigator.pop(context);
               gameCtrl.startSideMode(GameMode.timeAttack);
               Get.to(() => const GameScreen());
             },
@@ -118,6 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
             boxed: true,
             semanticLabel: 'mode_zen_label'.tr,
             onTap: () {
+              Navigator.pop(context);
               gameCtrl.startSideMode(GameMode.zen);
               Get.to(() => const GameScreen());
             },
@@ -130,6 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
             boxed: true,
             semanticLabel: 'mode_endless_label'.tr,
             onTap: () {
+              Navigator.pop(context);
               gameCtrl.startEndless();
               Get.to(() => const GameScreen());
             },

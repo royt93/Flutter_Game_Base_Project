@@ -54,16 +54,21 @@ overlay như `GameScreen` (không dùng Flame `GameWidget`) nên dùng được
   (`Get.to(() => const GameScreen())` không dismiss dialog trước) theo đúng
   yêu cầu tái sử dụng nguyên vẹn — xem bug phát hiện dưới đây.
 
-## Bug phát hiện trong lúc playtest (chưa fix, ngoài phạm vi task này)
+## Bug phát hiện trong lúc playtest — ĐÃ FIX (2026-07-17)
 Sau khi vào level từ dialog Modes (vd Time Attack) rồi thoát màn, dialog
 Modes cũ bị lộ lại đè lên Home thay vì Home sạch. Root cause: `NeonDialog.show`
 dùng `Navigator.of(context, rootNavigator: true)` + `showDialog` native —
-chia sẻ đúng root navigator với `Get.to()` của GetX. Các nút trong dialog
-Modes gọi `Get.to(() => const GameScreen())` mà không `Navigator.pop(context)`
-dialog trước, nên stack thành `[Home, DialogRoute, GameScreenRoute]`; thoát
-GameScreen chỉ pop 1 route, lộ lại DialogRoute còn nằm dưới. Đây là bug tồn tại
-từ code cũ (được yêu cầu copy y hệt), không phải regression của redesign này
-— cần task riêng để fix (thêm `Navigator.pop(context)` trước mỗi `Get.to()`
-trong `_showModesDialog`).
+chia sẻ đúng root navigator với `Get.to()` của GetX. Các nút trong `content`
+của dialog Modes (Time Attack/Zen/Endless) nằm ngoài cơ chế tự `pop` của
+`actions` (`NeonDialog.show` chỉ tự bọc pop-trước-rồi-chạy-onTap cho các
+`NeonDialogAction` trong `actions:`, không áp dụng cho widget tuỳ ý trong
+`content:`), nên gọi `Get.to(() => const GameScreen())` mà không
+`Navigator.pop(context)` dialog trước — stack thành
+`[Home, DialogRoute, GameScreenRoute]`; thoát GameScreen chỉ pop 1 route, lộ
+lại DialogRoute còn nằm dưới. Fix: thêm `Navigator.pop(context);` đầu mỗi
+`onTap` của 3 nút trong `_showModesDialog` (`home_screen.dart`), trước khi
+gọi `startSideMode`/`startEndless` + `Get.to`. Đã playtest lại trên device
+thật (Samsung SM_S928B): Modes → Time Attack → GameScreen → Thoát Màn → Home
+sạch, không còn dialog lộ lại.
 
 DoD chung: `../README.md`.
