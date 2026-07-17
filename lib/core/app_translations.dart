@@ -138,6 +138,10 @@ class AppTranslations extends Translations {
           ...?_w34ByLang[e.key],
           ...?_w35ByLang[e.key],
           ...?_w36ByLang[e.key],
+          // Home Screen redesign — modes_title/season_pass_banner_ready/
+          // daily_challenge_banner_reminder/menu_button_label (en+vi ở
+          // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w37ByLang).
+          ...?_w37ByLang[e.key],
         },
     };
   }
@@ -837,6 +841,11 @@ class AppTranslations extends Translations {
         'Beat your best score (@score) to win +@coin bonus coins!',
     'perfect_clear_start': 'Start',
     'perfect_clear_success_label': '🏆 Perfect Clear! +@coin coins',
+    // Home Screen redesign — banner ưu tiên đơn + Modes dialog + Drawer.
+    'modes_title': 'Choose Mode',
+    'season_pass_banner_ready': 'Season Pass reward ready — tap to claim!',
+    'daily_challenge_banner_reminder': 'Daily Challenge waiting — tap to play!',
+    'menu_button_label': 'Menu',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -1493,6 +1502,12 @@ class AppTranslations extends Translations {
         'Vượt qua điểm cao nhất hiện tại (@score) để nhận +@coin xu thưởng!',
     'perfect_clear_start': 'Bắt đầu',
     'perfect_clear_success_label': '🏆 Perfect Clear! +@coin xu',
+    // Home Screen redesign — banner ưu tiên đơn + Modes dialog + Drawer.
+    'modes_title': 'Chọn chế độ',
+    'season_pass_banner_ready': 'Season Pass có thưởng, bấm để nhận!',
+    'daily_challenge_banner_reminder':
+        'Chưa chơi Daily Challenge hôm nay — bấm ngay!',
+    'menu_button_label': 'Menu',
   };
 
   static const Map<String, String> _extraEs = {
@@ -24662,6 +24677,163 @@ class AppTranslations extends Translations {
           'আপনার সেরা স্কোর (@score) ছাড়িয়ে +@coin বোনাস কয়েন জিতুন!',
       'perfect_clear_start': 'শুরু করুন',
       'perfect_clear_success_label': '🏆 পারফেক্ট ক্লিয়ার! +@coin কয়েন',
+    },
+  };
+
+  /// Wave 37 — Home Screen redesign: modes_title/season_pass_banner_ready/
+  /// daily_challenge_banner_reminder/menu_button_label (20 ngôn ngữ; en+vi ở
+  /// _extraEn/_extraVi).
+  static const Map<String, Map<String, String>> _w37ByLang = {
+    'es_ES': {
+      'modes_title': 'Elegir modo',
+      'season_pass_banner_ready':
+          '¡Recompensa del Pase de Temporada lista, toca para reclamar!',
+      'daily_challenge_banner_reminder':
+          'Desafío Diario pendiente — ¡toca para jugar!',
+      'menu_button_label': 'Menú',
+    },
+    'fr_FR': {
+      'modes_title': 'Choisir un mode',
+      'season_pass_banner_ready':
+          'Récompense du Passe Saison prête, appuyez pour la récupérer !',
+      'daily_challenge_banner_reminder':
+          'Défi Quotidien en attente — appuyez pour jouer !',
+      'menu_button_label': 'Menu',
+    },
+    'de_DE': {
+      'modes_title': 'Modus wählen',
+      'season_pass_banner_ready':
+          'Season-Pass-Belohnung bereit — zum Abholen tippen!',
+      'daily_challenge_banner_reminder':
+          'Tägliche Herausforderung wartet — zum Spielen tippen!',
+      'menu_button_label': 'Menü',
+    },
+    'pt_BR': {
+      'modes_title': 'Escolher modo',
+      'season_pass_banner_ready':
+          'Recompensa do Passe de Temporada pronta — toque para resgatar!',
+      'daily_challenge_banner_reminder':
+          'Desafio Diário esperando — toque para jogar!',
+      'menu_button_label': 'Menu',
+    },
+    'ru_RU': {
+      'modes_title': 'Выбрать режим',
+      'season_pass_banner_ready':
+          'Награда Сезонного пропуска готова — нажмите, чтобы получить!',
+      'daily_challenge_banner_reminder':
+          'Ежедневный вызов ждёт — нажмите, чтобы сыграть!',
+      'menu_button_label': 'Меню',
+    },
+    'zh_CN': {
+      'modes_title': '选择模式',
+      'season_pass_banner_ready': '赛季通行证奖励已就绪——点击领取！',
+      'daily_challenge_banner_reminder': '每日挑战待完成——点击开始！',
+      'menu_button_label': '菜单',
+    },
+    'ja_JP': {
+      'modes_title': 'モードを選択',
+      'season_pass_banner_ready': 'シーズンパスの報酬を受け取れます — タップして受け取る！',
+      'daily_challenge_banner_reminder': 'デイリーチャレンジ未プレイ — タップしてプレイ！',
+      'menu_button_label': 'メニュー',
+    },
+    'ko_KR': {
+      'modes_title': '모드 선택',
+      'season_pass_banner_ready': '시즌 패스 보상 준비 완료 — 탭하여 수령하세요!',
+      'daily_challenge_banner_reminder': '데일리 챌린지 대기 중 — 탭하여 플레이!',
+      'menu_button_label': '메뉴',
+    },
+    'it_IT': {
+      'modes_title': 'Scegli modalità',
+      'season_pass_banner_ready':
+          'Ricompensa del Season Pass pronta — tocca per riscattarla!',
+      'daily_challenge_banner_reminder':
+          'Sfida Giornaliera in attesa — tocca per giocare!',
+      'menu_button_label': 'Menu',
+    },
+    'id_ID': {
+      'modes_title': 'Pilih Mode',
+      'season_pass_banner_ready':
+          'Hadiah Season Pass siap — ketuk untuk klaim!',
+      'daily_challenge_banner_reminder':
+          'Tantangan Harian menunggu — ketuk untuk main!',
+      'menu_button_label': 'Menu',
+    },
+    'th_TH': {
+      'modes_title': 'เลือกโหมด',
+      'season_pass_banner_ready': 'รางวัล Season Pass พร้อมแล้ว แตะเพื่อรับ!',
+      'daily_challenge_banner_reminder':
+          'ยังไม่ได้เล่น Daily Challenge วันนี้ — แตะเพื่อเล่น!',
+      'menu_button_label': 'เมนู',
+    },
+    'hi_IN': {
+      'modes_title': 'मोड चुनें',
+      'season_pass_banner_ready':
+          'सीज़न पास इनाम तैयार है — पाने के लिए टैप करें!',
+      'daily_challenge_banner_reminder':
+          'डेली चैलेंज बाकी है — खेलने के लिए टैप करें!',
+      'menu_button_label': 'मेनू',
+    },
+    'ar_SA': {
+      'modes_title': 'اختر الوضع',
+      'season_pass_banner_ready': 'مكافأة تذكرة الموسم جاهزة — اضغط للمطالبة!',
+      'daily_challenge_banner_reminder': 'التحدي اليومي بانتظارك — اضغط للعب!',
+      'menu_button_label': 'القائمة',
+    },
+    'tr_TR': {
+      'modes_title': 'Mod Seç',
+      'season_pass_banner_ready':
+          'Sezon Paketi ödülü hazır — almak için dokun!',
+      'daily_challenge_banner_reminder':
+          'Günlük Meydan Okuma bekliyor — oynamak için dokun!',
+      'menu_button_label': 'Menü',
+    },
+    'nl_NL': {
+      'modes_title': 'Kies modus',
+      'season_pass_banner_ready':
+          'Season Pass-beloning klaar — tik om te claimen!',
+      'daily_challenge_banner_reminder':
+          'Dagelijkse Uitdaging wacht — tik om te spelen!',
+      'menu_button_label': 'Menu',
+    },
+    'pl_PL': {
+      'modes_title': 'Wybierz tryb',
+      'season_pass_banner_ready':
+          'Nagroda z Przepustki Sezonowej gotowa — dotknij, aby odebrać!',
+      'daily_challenge_banner_reminder':
+          'Czeka Codzienne Wyzwanie — dotknij, aby zagrać!',
+      'menu_button_label': 'Menu',
+    },
+    'fil_PH': {
+      'modes_title': 'Pumili ng Mode',
+      'season_pass_banner_ready':
+          'Handa na ang gantimpala ng Season Pass — pindutin para i-claim!',
+      'daily_challenge_banner_reminder':
+          'Naghihintay ang Daily Challenge — pindutin para maglaro!',
+      'menu_button_label': 'Menu',
+    },
+    'ms_MY': {
+      'modes_title': 'Pilih Mod',
+      'season_pass_banner_ready':
+          'Ganjaran Pas Musim sedia — ketik untuk tuntut!',
+      'daily_challenge_banner_reminder':
+          'Cabaran Harian menunggu — ketik untuk main!',
+      'menu_button_label': 'Menu',
+    },
+    'uk_UA': {
+      'modes_title': 'Вибрати режим',
+      'season_pass_banner_ready':
+          'Нагорода Сезонного абонемента готова — торкніться, щоб отримати!',
+      'daily_challenge_banner_reminder':
+          'Щоденний виклик чекає — торкніться, щоб зіграти!',
+      'menu_button_label': 'Меню',
+    },
+    'bn_BD': {
+      'modes_title': 'মোড বেছে নিন',
+      'season_pass_banner_ready':
+          'সিজন পাস পুরস্কার প্রস্তুত — নিতে ট্যাপ করুন!',
+      'daily_challenge_banner_reminder':
+          'ডেইলি চ্যালেঞ্জ বাকি আছে — খেলতে ট্যাপ করুন!',
+      'menu_button_label': 'মেনু',
     },
   };
 }

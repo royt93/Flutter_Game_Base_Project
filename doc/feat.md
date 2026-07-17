@@ -1980,3 +1980,49 @@ Cập nhật `test/data/levels_test.dart`: đổi chu kỳ kỳ vọng `i % 8` �
 `openGift` hợp lý (trong `[2, rows*cols]`).
 
 `flutter analyze` 0 lỗi; `flutter test --exclude-tags slow` xanh toàn bộ.
+
+## ✅ Redesign Home Screen — Drawer + banner ưu tiên đơn (X9) (2026-07-17)
+
+Home Screen cũ xếp 13 `NeonIconButton` giống nhau thành 4 hàng, không label,
+không phân nhóm — user chê "quá xấu, thiết kế quá tệ". Qua 2 vòng
+`AskUserQuestion`, chốt hướng **Drawer + banner ưu tiên đơn**:
+
+- Header đổi từ `Align(topRight: CoinChip)` sang `Row(spaceBetween)`:
+  hamburger (`Icons.menu_rounded`, mở `Scaffold.endDrawer` qua
+  `GlobalKey<ScaffoldState>`) bên trái, `CoinChip` bên phải.
+- Banner ưu tiên đơn (bọc `Obx`, không carousel) thay block weekend-event
+  tĩnh cũ, đúng 1 thứ tự: weekend event (giữ key cũ `home_weekend_banner`) >
+  Season Pass có milestone sẵn nhận (`season_pass_banner_ready`, tap →
+  `SeasonScreen`) > chưa chơi Daily Challenge hôm nay
+  (`daily_challenge_banner_reminder`, tap → `startSideMode(dailyChallenge)`
+  + `Get.to(GameScreen)`) > ẩn hẳn (`SizedBox.shrink()`).
+- Quick-access row rút từ 4 hàng 13 icon xuống đúng 1 hàng 3 icon: Shop
+  (giữ nguyên), Daily Challenge (giữ nguyên), Modes mới (`Icons
+  .sports_esports_rounded`, indigo) → mở dialog chọn Time Attack/Zen/
+  Endless (copy y hệt code cũ, kể cả cách gọi `Get.to()` không dismiss
+  dialog trước — xem bug ghi ở dưới).
+- 8 mục còn lại dồn vào `endDrawer` mới (`_buildDrawer`), 2 nhóm "Khám phá"
+  (Star Road, Spin Wheel, Guide) / "Tài khoản" (Settings, Leaderboard,
+  Season Pass, Perks, Achievements), mỗi `ListTile` đóng drawer trước khi
+  `Get.to()`, giữ nguyên icon/màu/đích nav của bản cũ.
+
+3 key i18n mới (`modes_title`, `season_pass_banner_ready`,
+`daily_challenge_banner_reminder`) đủ 22 locale. Không thêm `StorageKeys`
+mới — banner tái dùng state Rx đã có sẵn (`seasonPoints`,
+`claimedSeasonMask`, `canRecordDailyChallengeScore`, `isWeekendEvent`).
+
+`flutter analyze` 0 lỗi; `flutter test --exclude-tags slow` xanh toàn bộ.
+Playtest tay trên Samsung SM_S928B (`R5CX613VZBR`): hamburger mở Drawer,
+cả 8 mục đều điều hướng đúng màn (dùng `adb shell uiautomator dump` để lấy
+toạ độ thật khi tap theo ước lượng từ screenshot sai — coi chừng lệch scale
+hiển thị/thiết bị), Shop icon, dialog Modes (Time Attack vào GameScreen có
+đồng hồ đếm), banner Daily Challenge tap đúng vào GameScreen chế độ Daily
+Challenge — không gặp quảng cáo che UI bước nào.
+
+Phát hiện 1 bug tồn tại từ code cũ (không phải regression của redesign):
+dialog Modes lộ lại đè lên Home sau khi thoát level bắt đầu từ đó, vì
+`NeonDialog.show` (`Navigator.of(context, rootNavigator: true)` +
+`showDialog` native) chia sẻ root navigator với `Get.to()` của GetX, và nút
+trong dialog Modes không `Navigator.pop(context)` trước khi `Get.to()`. Ghi
+lại ở `doc/task/tasks/X9-home-screen-redesign.md` để fix riêng, không sửa
+trong task này.
