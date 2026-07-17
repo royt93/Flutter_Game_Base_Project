@@ -2210,3 +2210,41 @@ thêm gì. 4 gap thật sự được vá:
 
 `flutter analyze` 0 issues; `flutter test --exclude-tags slow` xanh toàn bộ
 (bao gồm các test mới trên).
+
+## ✅ Implemented: Smoke test tổng trên device thật + fix 2 bug i18n (task #20, X10, 2026-07-17)
+
+Playtest tay toàn bộ app trên Pixel 7 Pro (drawer, Modes dialog, Shop,
+Daily Challenge, Star Road, Vòng quay, Guide, Settings, Leaderboard,
+Friend Compare, Season Pass, Perks, Achievements, Level Select, gameplay,
+quit dialog) sau loạt task #13-#19. **Không gặp quảng cáo nào** trong suốt
+quá trình (R4). Phát hiện 2 màn hardcode tiếng Anh giống lỗi X7 nhưng
+X7 chưa quét tới:
+
+- `star_road_screen.dart` — "Star Road"/"stars"/"Claimed"/"CLAIM" hardcode
+  → đổi dùng key có sẵn `star_road_title`, hiện mốc dạng icon sao + số,
+  progress dạng số thuần (`$totalStars/$milestone`, giống
+  `achievements_screen.dart`), `ach_claimed`, `daily_claim.tr.toUpperCase()`.
+- `season_screen.dart` — "Season Pass"/"points"/"Claimed"/"CLAIM" hardcode
+  → đổi dùng key có sẵn `season_pass_title`, `season_points`, reward hiện
+  icon (coin/bomb/shuffle/undo) + số thay chữ tiếng Anh, tái dùng
+  `ach_claimed`/`daily_claim` như trên.
+
+Cả 2 fix đều **không thêm key dịch mới** — thuần tái dùng key đã có ở 22
+locale + mirror pattern icon+số của Achievements/Star Road. Cập nhật
+`test/widget/star_road_screen_test.dart` (`'CLAIM'` → `'DAILY_CLAIM'`, vì
+test không setup `AppTranslations` nên `.tr` trả về key thô). Không có
+test tự động nào cho `season_screen.dart` nên không cần sửa test.
+
+Ghi nhận riêng (không sửa trong scope này): `spin_wheel_dialog.dart` toàn
+bộ hardcode tiếng Việt thẳng (không qua `.tr`) — lỗi cũ, không phải do
+task gần đây gây ra, không hiện sai vì đang test ở locale VI. Để lại cho
+lần rà soát i18n tiếp theo.
+
+`flutter analyze` 0 issues; `flutter test --exclude-tags slow` xanh toàn
+bộ (261 test). Build + cài lại APK, xác nhận cả 2 màn hiện đúng tiếng
+Việt qua screenshot trên device thật. Task file: `X10-smoke-test-star-road-season-i18n.md`.
+
+Overnight session (task #13-#20) hoàn tất: World 11 (I24), Boss variant
+(I25), Achievements (I22), Perfect Clear replay (I23), objective openGift
+(#6), Friend Compare (I26), test coverage sweep (#19), và smoke test tổng
+này (#20) — tất cả đã commit local, chưa push.
