@@ -31,7 +31,7 @@ class _SeasonScreenState extends State<SeasonScreen> {
           child: Column(
             children: [
               NeonAppBar(
-                title: 'Season Pass',
+                title: 'season_pass_title'.tr,
                 color: NeonTheme.magenta,
                 actions: [CoinChip(gameCtrl)],
               ),
@@ -80,18 +80,15 @@ class _SeasonScreenState extends State<SeasonScreen> {
   }
 }
 
-String _rewardLabel(SpinReward reward) {
-  switch (reward.type) {
-    case 'bomb':
-      return '${reward.amount}x bomb';
-    case 'shuffle':
-      return '${reward.amount}x shuffle';
-    case 'undo':
-      return '${reward.amount}x undo';
-    default:
-      return '${fmtNum(reward.amount)} coins';
-  }
-}
+IconData _rewardIcon(String type) => switch (type) {
+  'bomb' => Icons.dangerous_rounded,
+  'shuffle' => Icons.shuffle_rounded,
+  'undo' => Icons.undo_rounded,
+  _ => Icons.monetization_on_rounded,
+};
+
+String _rewardAmountLabel(SpinReward reward) =>
+    reward.type == 'coins' ? '+${fmtNum(reward.amount)}' : 'x${reward.amount}';
 
 class _SeasonRow extends StatelessWidget {
   final int milestone;
@@ -139,7 +136,7 @@ class _SeasonRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$milestone points',
+                  '$milestone ${'season_points'.tr}',
                   style: TextStyle(
                     color: NeonTheme.ink,
                     fontSize: 16,
@@ -148,17 +145,27 @@ class _SeasonRow extends StatelessWidget {
                 ),
                 const SizedBox(height: NeonTheme.s8),
                 Text(
-                  claimed
-                      ? 'Claimed'
-                      : '$seasonPoints / $milestone · reward ${_rewardLabel(reward)}',
-                  style: TextStyle(
-                    color: NeonTheme.inkSoft,
-                    fontSize: 12,
-                  ),
+                  claimed ? 'ach_claimed'.tr : '$seasonPoints/$milestone',
+                  style: TextStyle(color: NeonTheme.inkSoft, fontSize: 12),
                 ),
               ],
             ),
           ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(_rewardIcon(reward.type), color: NeonTheme.gold, size: 16),
+              Text(
+                _rewardAmountLabel(reward),
+                style: const TextStyle(
+                  color: NeonTheme.gold,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          if (!claimed) const SizedBox(width: NeonTheme.s8),
           if (!claimed)
             PressableScale(
               onTap: canClaim ? onClaim : null,
@@ -176,7 +183,7 @@ class _SeasonRow extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'CLAIM',
+                  'daily_claim'.tr.toUpperCase(),
                   style: TextStyle(
                     color: canClaim ? Colors.white : NeonTheme.inkSoft,
                     fontWeight: FontWeight.w700,
