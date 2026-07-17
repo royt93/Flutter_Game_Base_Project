@@ -8,6 +8,8 @@ class StorageKeys {
   static const String unlockedLevel = 'unlockedLevel';
   static const String coins = 'coins';
   static const String localeCode = 'locale_code';
+  // I26 (task #18): tên hiển thị dùng để tạo mã "so tài" bạn bè.
+  static const String playerName = 'player_name';
   static const String audioMuted = 'audio_muted';
   static const String colorblindMode = 'colorblind_mode';
   // I15 Day/Night theme toggle.

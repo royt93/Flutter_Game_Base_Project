@@ -2161,3 +2161,25 @@ tầng (theo ngày/tuần/mùa). Không tạo thêm hệ thống event trùng l�
 cần 1 sự kiện mới thật sự khác biệt (vd. sự kiện chỉ chạy 1 lần, gắn ngày lễ
 cụ thể), cần spec riêng nêu rõ nó khác 5 hệ thống trên ở điểm gì trước khi
 implement.
+
+## ✅ Implemented: Friend Code Compare — so tài bạn bè local-only (I26, 2026-07-17)
+
+Task #18 yêu cầu 1 social/friend feature, nhưng project chủ trương
+"không backend" nên không thể có danh sách bạn bè/leaderboard thật qua
+mạng. Giải pháp: mã hoá tên + tổng sao + xu hiện tại thành 1 mã text
+base64url (`encodeFriendCode`/`decodeFriendCode`,
+`lib/core/utils/friend_code.dart`, thuần Dart không phụ thuộc Flutter),
+chia sẻ qua đúng pipeline `shareText()` có sẵn (`share_helper.dart`, không
+tạo hàm share thứ hai). Bạn bè dán mã nhận được vào `FriendCompareScreen`
+(entry point: drawer Home Screen, icon `people_alt_rounded` màu teal, giữa
+Leaderboard/Season Pass) để xem hơn/kém/hoà theo số sao chênh lệch.
+
+`GameController` thêm `playerName` (Rx, persist qua `StorageKeys.playerName`
+— **không** bị xoá trong `resetProgress()` vì không phải progress game) và
+`myFriendCode()` đóng gói state hiện tại. i18n đủ 12 key × 22 locale
+(`_extraEn`/`_extraVi` + `_w38ByLang` cho 20 ngôn ngữ còn lại).
+
+Test thuần `test/core/utils/friend_code_test.dart`: round-trip encode↔decode,
+tên chứa `|` bị lọc, tên rỗng/base64 sai/số âm (mã giả mạo) → `null` (không
+throw). `flutter analyze` 0 issues; `flutter test --exclude-tags slow` xanh
+toàn bộ. Task file: `doc/task/tasks/I26-friend-compare.md`.

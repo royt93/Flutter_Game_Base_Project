@@ -15,6 +15,7 @@ import '../widgets/spin_wheel_dialog.dart';
 import '../widgets/star_mascot.dart';
 import '../widgets/stroke_text.dart';
 import 'achievements_screen.dart';
+import 'friend_compare_screen.dart';
 import 'game_screen.dart';
 import 'guide_screen.dart';
 import 'leaderboard_screen.dart';
@@ -280,6 +281,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: NeonTheme.cyan,
               label: 'leaderboard_title'.tr,
               onTap: () => Get.to(() => const LeaderboardScreen()),
+            ),
+            _drawerTile(
+              icon: Icons.people_alt_rounded,
+              color: NeonTheme.teal,
+              label: 'friend_compare_title'.tr,
+              onTap: () => Get.to(() => const FriendCompareScreen()),
             ),
             _drawerTile(
               icon: Icons.military_tech_rounded,

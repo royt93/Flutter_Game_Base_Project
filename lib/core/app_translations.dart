@@ -142,6 +142,14 @@ class AppTranslations extends Translations {
           // daily_challenge_banner_reminder/menu_button_label (en+vi ở
           // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w37ByLang).
           ...?_w37ByLang[e.key],
+          // I26 (task #18) — Friend Compare: friend_compare_title/
+          // friend_your_name_label/friend_your_name_hint/
+          // friend_share_code_button/friend_share_message/
+          // friend_paste_code_label/friend_paste_code_hint/
+          // friend_compare_button/friend_invalid_code/friend_result_ahead/
+          // friend_result_behind/friend_result_tie (en+vi ở
+          // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w38ByLang).
+          ...?_w38ByLang[e.key],
         },
     };
   }
@@ -848,6 +856,20 @@ class AppTranslations extends Translations {
     'season_pass_banner_ready': 'Season Pass reward ready — tap to claim!',
     'daily_challenge_banner_reminder': 'Daily Challenge waiting — tap to play!',
     'menu_button_label': 'Menu',
+    // I26 (task #18) — Friend Code Compare (local-only, no backend).
+    'friend_compare_title': 'Friend Compare',
+    'friend_your_name_label': 'Your name',
+    'friend_your_name_hint': 'Enter your name',
+    'friend_share_code_button': 'Share my code',
+    'friend_share_message':
+        "I'm @name with @stars stars in Pop Star Blast! Beat my code: @code",
+    'friend_paste_code_label': "Paste a friend's code",
+    'friend_paste_code_hint': 'Paste code here',
+    'friend_compare_button': 'Compare',
+    'friend_invalid_code': 'Invalid code — ask your friend to resend it',
+    'friend_result_ahead': "You're ahead of @name by @n stars!",
+    'friend_result_behind': '@name is ahead of you by @n stars!',
+    'friend_result_tie': 'You and @name are tied!',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -1512,6 +1534,21 @@ class AppTranslations extends Translations {
     'daily_challenge_banner_reminder':
         'Chưa chơi Daily Challenge hôm nay — bấm ngay!',
     'menu_button_label': 'Menu',
+    // I26 (task #18) — So Tài Bạn Bè (local-only, không backend).
+    'friend_compare_title': 'So Tài Bạn Bè',
+    'friend_your_name_label': 'Tên của bạn',
+    'friend_your_name_hint': 'Nhập tên của bạn',
+    'friend_share_code_button': 'Chia sẻ mã của tôi',
+    'friend_share_message':
+        'Mình là @name, đã có @stars sao trong Pop Star Blast! Vượt mã của '
+        'mình: @code',
+    'friend_paste_code_label': 'Dán mã của bạn bè',
+    'friend_paste_code_hint': 'Dán mã vào đây',
+    'friend_compare_button': 'So sánh',
+    'friend_invalid_code': 'Mã không hợp lệ — nhờ bạn gửi lại mã',
+    'friend_result_ahead': 'Bạn hơn @name @n sao!',
+    'friend_result_behind': '@name hơn bạn @n sao!',
+    'friend_result_tie': 'Bạn và @name ngang tài ngang sức!',
   };
 
   static const Map<String, String> _extraEs = {
@@ -24838,6 +24875,339 @@ class AppTranslations extends Translations {
       'daily_challenge_banner_reminder':
           'ডেইলি চ্যালেঞ্জ বাকি আছে — খেলতে ট্যাপ করুন!',
       'menu_button_label': 'মেনু',
+    },
+  };
+
+  /// I26 (task #18) — Friend Compare, 20 ngôn ngữ còn lại (en+vi ở
+  /// _extraEn/_extraVi).
+  static const Map<String, Map<String, String>> _w38ByLang = {
+    'es_ES': {
+      'friend_compare_title': 'Comparar amigos',
+      'friend_your_name_label': 'Tu nombre',
+      'friend_your_name_hint': 'Introduce tu nombre',
+      'friend_share_code_button': 'Compartir mi código',
+      'friend_share_message':
+          '¡Soy @name con @stars estrellas en Pop Star Blast! Supera mi '
+          'código: @code',
+      'friend_paste_code_label': 'Pega el código de un amigo',
+      'friend_paste_code_hint': 'Pega el código aquí',
+      'friend_compare_button': 'Comparar',
+      'friend_invalid_code':
+          'Código no válido — pide a tu amigo que lo reenvíe',
+      'friend_result_ahead': '¡Vas por delante de @name por @n estrellas!',
+      'friend_result_behind': '¡@name va por delante de ti por @n estrellas!',
+      'friend_result_tie': '¡Tú y @name estáis empatados!',
+    },
+    'fr_FR': {
+      'friend_compare_title': 'Comparer avec un ami',
+      'friend_your_name_label': 'Votre nom',
+      'friend_your_name_hint': 'Entrez votre nom',
+      'friend_share_code_button': 'Partager mon code',
+      'friend_share_message':
+          "Je suis @name avec @stars étoiles dans Pop Star Blast ! Battez "
+          'mon code : @code',
+      'friend_paste_code_label': "Collez le code d'un ami",
+      'friend_paste_code_hint': 'Collez le code ici',
+      'friend_compare_button': 'Comparer',
+      'friend_invalid_code':
+          'Code invalide — demandez à votre ami de le renvoyer',
+      'friend_result_ahead': 'Vous devancez @name de @n étoiles !',
+      'friend_result_behind': '@name vous devance de @n étoiles !',
+      'friend_result_tie': 'Vous et @name êtes à égalité !',
+    },
+    'de_DE': {
+      'friend_compare_title': 'Freunde vergleichen',
+      'friend_your_name_label': 'Dein Name',
+      'friend_your_name_hint': 'Gib deinen Namen ein',
+      'friend_share_code_button': 'Meinen Code teilen',
+      'friend_share_message':
+          'Ich bin @name mit @stars Sternen in Pop Star Blast! Schlag '
+          'meinen Code: @code',
+      'friend_paste_code_label': 'Code eines Freundes einfügen',
+      'friend_paste_code_hint': 'Code hier einfügen',
+      'friend_compare_button': 'Vergleichen',
+      'friend_invalid_code':
+          'Ungültiger Code — bitte deinen Freund, ihn erneut zu senden',
+      'friend_result_ahead': 'Du liegst @n Sterne vor @name!',
+      'friend_result_behind': '@name liegt @n Sterne vor dir!',
+      'friend_result_tie': 'Du und @name liegt gleichauf!',
+    },
+    'pt_BR': {
+      'friend_compare_title': 'Comparar com amigos',
+      'friend_your_name_label': 'Seu nome',
+      'friend_your_name_hint': 'Digite seu nome',
+      'friend_share_code_button': 'Compartilhar meu código',
+      'friend_share_message':
+          'Sou @name com @stars estrelas no Pop Star Blast! Supere meu '
+          'código: @code',
+      'friend_paste_code_label': 'Cole o código de um amigo',
+      'friend_paste_code_hint': 'Cole o código aqui',
+      'friend_compare_button': 'Comparar',
+      'friend_invalid_code': 'Código inválido — peça para seu amigo reenviar',
+      'friend_result_ahead': 'Você está na frente de @name por @n estrelas!',
+      'friend_result_behind': '@name está na frente de você por @n estrelas!',
+      'friend_result_tie': 'Você e @name estão empatados!',
+    },
+    'ru_RU': {
+      'friend_compare_title': 'Сравнение с друзьями',
+      'friend_your_name_label': 'Ваше имя',
+      'friend_your_name_hint': 'Введите ваше имя',
+      'friend_share_code_button': 'Поделиться моим кодом',
+      'friend_share_message':
+          'Я @name, у меня @stars звёзд в Pop Star Blast! Побей мой код: '
+          '@code',
+      'friend_paste_code_label': 'Вставьте код друга',
+      'friend_paste_code_hint': 'Вставьте код здесь',
+      'friend_compare_button': 'Сравнить',
+      'friend_invalid_code':
+          'Неверный код — попросите друга отправить его снова',
+      'friend_result_ahead': 'Вы опережаете @name на @n звёзд!',
+      'friend_result_behind': '@name опережает вас на @n звёзд!',
+      'friend_result_tie': 'Вы и @name идёте на равных!',
+    },
+    'zh_CN': {
+      'friend_compare_title': '好友比拼',
+      'friend_your_name_label': '你的名字',
+      'friend_your_name_hint': '输入你的名字',
+      'friend_share_code_button': '分享我的代码',
+      'friend_share_message':
+          '我是@name，在Pop Star Blast中获得了@stars颗星！来超越我的代码：@code',
+      'friend_paste_code_label': '粘贴好友的代码',
+      'friend_paste_code_hint': '在此粘贴代码',
+      'friend_compare_button': '比拼',
+      'friend_invalid_code': '代码无效——请好友重新发送',
+      'friend_result_ahead': '你领先@name @n颗星！',
+      'friend_result_behind': '@name领先你@n颗星！',
+      'friend_result_tie': '你和@name打成平手！',
+    },
+    'ja_JP': {
+      'friend_compare_title': 'フレンド比較',
+      'friend_your_name_label': 'あなたの名前',
+      'friend_your_name_hint': '名前を入力してください',
+      'friend_share_code_button': '自分のコードを共有',
+      'friend_share_message':
+          '@nameです、Pop Star Blastで@stars個の星を獲得しました！私のコードを超えてみて：@code',
+      'friend_paste_code_label': 'フレンドのコードを貼り付け',
+      'friend_paste_code_hint': 'ここにコードを貼り付け',
+      'friend_compare_button': '比較する',
+      'friend_invalid_code': 'コードが無効です — フレンドに再送してもらってください',
+      'friend_result_ahead': 'あなたは@nameより@n個の星、上回っています！',
+      'friend_result_behind': '@nameはあなたより@n個の星、上回っています！',
+      'friend_result_tie': 'あなたと@nameは同点です！',
+    },
+    'ko_KR': {
+      'friend_compare_title': '친구 비교',
+      'friend_your_name_label': '이름',
+      'friend_your_name_hint': '이름을 입력하세요',
+      'friend_share_code_button': '내 코드 공유하기',
+      'friend_share_message':
+          '저는 @name이고 Pop Star Blast에서 별 @stars개를 모았어요! 제 코드를 '
+          '이겨보세요: @code',
+      'friend_paste_code_label': '친구의 코드 붙여넣기',
+      'friend_paste_code_hint': '여기에 코드를 붙여넣으세요',
+      'friend_compare_button': '비교하기',
+      'friend_invalid_code': '잘못된 코드입니다 — 친구에게 다시 보내달라고 하세요',
+      'friend_result_ahead': '@name보다 별 @n개 앞서 있어요!',
+      'friend_result_behind': '@name이 별 @n개 앞서 있어요!',
+      'friend_result_tie': '@name과 동점이에요!',
+    },
+    'it_IT': {
+      'friend_compare_title': 'Confronto amici',
+      'friend_your_name_label': 'Il tuo nome',
+      'friend_your_name_hint': 'Inserisci il tuo nome',
+      'friend_share_code_button': 'Condividi il mio codice',
+      'friend_share_message':
+          'Sono @name con @stars stelle in Pop Star Blast! Batti il mio '
+          'codice: @code',
+      'friend_paste_code_label': 'Incolla il codice di un amico',
+      'friend_paste_code_hint': 'Incolla il codice qui',
+      'friend_compare_button': 'Confronta',
+      'friend_invalid_code':
+          'Codice non valido — chiedi al tuo amico di rinviarlo',
+      'friend_result_ahead': 'Sei avanti a @name di @n stelle!',
+      'friend_result_behind': '@name è avanti a te di @n stelle!',
+      'friend_result_tie': 'Tu e @name siete pari!',
+    },
+    'id_ID': {
+      'friend_compare_title': 'Bandingkan dengan Teman',
+      'friend_your_name_label': 'Namamu',
+      'friend_your_name_hint': 'Masukkan namamu',
+      'friend_share_code_button': 'Bagikan kodeku',
+      'friend_share_message':
+          'Aku @name dengan @stars bintang di Pop Star Blast! Kalahkan '
+          'kodeku: @code',
+      'friend_paste_code_label': 'Tempel kode teman',
+      'friend_paste_code_hint': 'Tempel kode di sini',
+      'friend_compare_button': 'Bandingkan',
+      'friend_invalid_code': 'Kode tidak valid — minta temanmu mengirim ulang',
+      'friend_result_ahead': 'Kamu unggul dari @name sebanyak @n bintang!',
+      'friend_result_behind': '@name unggul darimu sebanyak @n bintang!',
+      'friend_result_tie': 'Kamu dan @name seri!',
+    },
+    'th_TH': {
+      'friend_compare_title': 'เปรียบเทียบกับเพื่อน',
+      'friend_your_name_label': 'ชื่อของคุณ',
+      'friend_your_name_hint': 'กรอกชื่อของคุณ',
+      'friend_share_code_button': 'แชร์โค้ดของฉัน',
+      'friend_share_message':
+          'ฉันคือ @name มี @stars ดาวใน Pop Star Blast! มาเอาชนะโค้ดของฉัน: '
+          '@code',
+      'friend_paste_code_label': 'วางโค้ดของเพื่อน',
+      'friend_paste_code_hint': 'วางโค้ดที่นี่',
+      'friend_compare_button': 'เปรียบเทียบ',
+      'friend_invalid_code': 'โค้ดไม่ถูกต้อง — ให้เพื่อนส่งโค้ดใหม่',
+      'friend_result_ahead': 'คุณนำหน้า @name อยู่ @n ดาว!',
+      'friend_result_behind': '@name นำหน้าคุณอยู่ @n ดาว!',
+      'friend_result_tie': 'คุณและ @name เสมอกัน!',
+    },
+    'hi_IN': {
+      'friend_compare_title': 'फ्रेंड कंपेयर',
+      'friend_your_name_label': 'आपका नाम',
+      'friend_your_name_hint': 'अपना नाम दर्ज करें',
+      'friend_share_code_button': 'मेरा कोड शेयर करें',
+      'friend_share_message':
+          'मैं @name हूँ और Pop Star Blast में मेरे पास @stars स्टार हैं! '
+          'मेरा कोड हराओ: @code',
+      'friend_paste_code_label': 'दोस्त का कोड पेस्ट करें',
+      'friend_paste_code_hint': 'यहाँ कोड पेस्ट करें',
+      'friend_compare_button': 'तुलना करें',
+      'friend_invalid_code':
+          'अमान्य कोड — अपने दोस्त से इसे फिर से भेजने को कहें',
+      'friend_result_ahead': 'आप @name से @n स्टार आगे हैं!',
+      'friend_result_behind': '@name आपसे @n स्टार आगे है!',
+      'friend_result_tie': 'आप और @name बराबर हैं!',
+    },
+    'ar_SA': {
+      'friend_compare_title': 'مقارنة الأصدقاء',
+      'friend_your_name_label': 'اسمك',
+      'friend_your_name_hint': 'أدخل اسمك',
+      'friend_share_code_button': 'مشاركة رمزي',
+      'friend_share_message':
+          'أنا @name ولدي @stars نجوم في Pop Star Blast! تغلّب على رمزي: '
+          '@code',
+      'friend_paste_code_label': 'لصق رمز صديق',
+      'friend_paste_code_hint': 'الصق الرمز هنا',
+      'friend_compare_button': 'مقارنة',
+      'friend_invalid_code': 'رمز غير صالح — اطلب من صديقك إعادة إرساله',
+      'friend_result_ahead': 'أنت متقدم على @name بـ @n نجوم!',
+      'friend_result_behind': '@name متقدم عليك بـ @n نجوم!',
+      'friend_result_tie': 'أنت و @name متعادلان!',
+    },
+    'tr_TR': {
+      'friend_compare_title': 'Arkadaş Karşılaştırma',
+      'friend_your_name_label': 'Adın',
+      'friend_your_name_hint': 'Adını gir',
+      'friend_share_code_button': 'Kodumu paylaş',
+      'friend_share_message':
+          "Ben @name, Pop Star Blast'te @stars yıldızım var! Kodumu geç: "
+          '@code',
+      'friend_paste_code_label': 'Bir arkadaşın kodunu yapıştır',
+      'friend_paste_code_hint': 'Kodu buraya yapıştır',
+      'friend_compare_button': 'Karşılaştır',
+      'friend_invalid_code':
+          'Geçersiz kod — arkadaşından yeniden göndermesini iste',
+      'friend_result_ahead': "@name'den @n yıldız öndesin!",
+      'friend_result_behind': '@name senden @n yıldız önde!',
+      'friend_result_tie': 'Sen ve @name berabersiniz!',
+    },
+    'nl_NL': {
+      'friend_compare_title': 'Vriendenvergelijking',
+      'friend_your_name_label': 'Jouw naam',
+      'friend_your_name_hint': 'Voer je naam in',
+      'friend_share_code_button': 'Deel mijn code',
+      'friend_share_message':
+          'Ik ben @name met @stars sterren in Pop Star Blast! Versla mijn '
+          'code: @code',
+      'friend_paste_code_label': 'Plak de code van een vriend',
+      'friend_paste_code_hint': 'Plak de code hier',
+      'friend_compare_button': 'Vergelijk',
+      'friend_invalid_code':
+          'Ongeldige code — vraag je vriend om deze opnieuw te sturen',
+      'friend_result_ahead': 'Je staat @n sterren voor op @name!',
+      'friend_result_behind': '@name staat @n sterren voor op jou!',
+      'friend_result_tie': 'Jij en @name staan gelijk!',
+    },
+    'pl_PL': {
+      'friend_compare_title': 'Porównanie z przyjacielem',
+      'friend_your_name_label': 'Twoje imię',
+      'friend_your_name_hint': 'Wpisz swoje imię',
+      'friend_share_code_button': 'Udostępnij mój kod',
+      'friend_share_message':
+          'Jestem @name i mam @stars gwiazdek w Pop Star Blast! Pobij mój '
+          'kod: @code',
+      'friend_paste_code_label': 'Wklej kod przyjaciela',
+      'friend_paste_code_hint': 'Wklej kod tutaj',
+      'friend_compare_button': 'Porównaj',
+      'friend_invalid_code':
+          'Nieprawidłowy kod — poproś przyjaciela o ponowne wysłanie',
+      'friend_result_ahead': 'Wyprzedzasz @name o @n gwiazdek!',
+      'friend_result_behind': '@name wyprzedza cię o @n gwiazdek!',
+      'friend_result_tie': 'Ty i @name jesteście w remisie!',
+    },
+    'fil_PH': {
+      'friend_compare_title': 'Paghambing sa Kaibigan',
+      'friend_your_name_label': 'Ang pangalan mo',
+      'friend_your_name_hint': 'Ilagay ang pangalan mo',
+      'friend_share_code_button': 'Ibahagi ang code ko',
+      'friend_share_message':
+          "Ako si @name na may @stars bituin sa Pop Star Blast! Talunin "
+          'ang code ko: @code',
+      'friend_paste_code_label': 'I-paste ang code ng kaibigan',
+      'friend_paste_code_hint': 'I-paste ang code dito',
+      'friend_compare_button': 'Ihambing',
+      'friend_invalid_code':
+          'Hindi valid ang code — hilingin sa kaibigan mong ipadala ulit',
+      'friend_result_ahead': "Nauna ka kay @name ng @n bituin!",
+      'friend_result_behind': "Nauna sa'yo si @name ng @n bituin!",
+      'friend_result_tie': 'Pareho kayo ni @name!',
+    },
+    'ms_MY': {
+      'friend_compare_title': 'Bandingkan dengan Rakan',
+      'friend_your_name_label': 'Nama anda',
+      'friend_your_name_hint': 'Masukkan nama anda',
+      'friend_share_code_button': 'Kongsi kod saya',
+      'friend_share_message':
+          'Saya @name dengan @stars bintang dalam Pop Star Blast! Kalahkan '
+          'kod saya: @code',
+      'friend_paste_code_label': 'Tampal kod rakan',
+      'friend_paste_code_hint': 'Tampal kod di sini',
+      'friend_compare_button': 'Bandingkan',
+      'friend_invalid_code': 'Kod tidak sah — minta rakan anda hantar semula',
+      'friend_result_ahead': 'Anda mendahului @name sebanyak @n bintang!',
+      'friend_result_behind': '@name mendahului anda sebanyak @n bintang!',
+      'friend_result_tie': 'Anda dan @name seri!',
+    },
+    'uk_UA': {
+      'friend_compare_title': 'Порівняння з друзями',
+      'friend_your_name_label': "Ваше ім'я",
+      'friend_your_name_hint': "Введіть своє ім'я",
+      'friend_share_code_button': 'Поділитися моїм кодом',
+      'friend_share_message':
+          'Я @name, у мене @stars зірок у Pop Star Blast! Перевершіть мій '
+          'код: @code',
+      'friend_paste_code_label': 'Вставте код друга',
+      'friend_paste_code_hint': 'Вставте код тут',
+      'friend_compare_button': 'Порівняти',
+      'friend_invalid_code': 'Недійсний код — попросіть друга надіслати ще раз',
+      'friend_result_ahead': 'Ви попереду @name на @n зірок!',
+      'friend_result_behind': '@name попереду вас на @n зірок!',
+      'friend_result_tie': 'Ви та @name на рівних!',
+    },
+    'bn_BD': {
+      'friend_compare_title': 'ফ্রেন্ড কম্পেয়ার',
+      'friend_your_name_label': 'আপনার নাম',
+      'friend_your_name_hint': 'আপনার নাম লিখুন',
+      'friend_share_code_button': 'আমার কোড শেয়ার করুন',
+      'friend_share_message':
+          'আমি @name, Pop Star Blast-এ আমার @stars তারা আছে! আমার কোড '
+          'হারান: @code',
+      'friend_paste_code_label': 'বন্ধুর কোড পেস্ট করুন',
+      'friend_paste_code_hint': 'এখানে কোড পেস্ট করুন',
+      'friend_compare_button': 'তুলনা করুন',
+      'friend_invalid_code': 'অবৈধ কোড — বন্ধুকে আবার পাঠাতে বলুন',
+      'friend_result_ahead': 'আপনি @name থেকে @n তারা এগিয়ে আছেন!',
+      'friend_result_behind': '@name আপনার থেকে @n তারা এগিয়ে আছে!',
+      'friend_result_tie': 'আপনি এবং @name সমান!',
     },
   };
 }

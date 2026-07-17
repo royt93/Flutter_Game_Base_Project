@@ -7,6 +7,7 @@ import 'package:in_app_review/in_app_review.dart';
 import '../../core/audio_manager.dart';
 import '../../core/storage_service.dart';
 import '../../core/utils/comeback_bonus.dart';
+import '../../core/utils/friend_code.dart';
 import '../../core/utils/weekend_event.dart';
 import '../../data/achievements.dart';
 import '../../data/levels.dart';
@@ -226,6 +227,22 @@ class GameController extends GetxController {
   final totalStars = 0.obs;
   final claimedChestMask = 0.obs;
 
+  /// I26 (task #18): tên hiển thị dùng để tạo/hiển thị mã "so tài" bạn bè —
+  /// không phải progress nên KHÔNG bị xoá trong [resetProgress].
+  final playerName = ''.obs;
+
+  Future<void> setPlayerName(String name) async {
+    playerName.value = name.trim();
+    await StorageService.to.setString(StorageKeys.playerName, playerName.value);
+  }
+
+  /// Mã "so tài" của chính mình, đóng gói name+totalStars+coins hiện tại.
+  String myFriendCode() => encodeFriendCode(
+    name: playerName.value,
+    totalStars: totalStars.value,
+    coins: coins.value,
+  );
+
   /// F2 Daily reward: chuỗi ngày liên tiếp mở app + nhận thưởng (D1..D7 lặp).
   static const List<int> dailyRewards = [50, 80, 120, 160, 200, 260, 400];
   final dailyStreak = 0.obs;
@@ -331,6 +348,8 @@ class GameController extends GetxController {
           .where((s) => s.isNotEmpty)
           .toSet(),
     );
+    playerName.value =
+        StorageService.to.getString(StorageKeys.playerName) ?? '';
     _recomputeTotalStars();
     _checkSeasonRollover();
   }
