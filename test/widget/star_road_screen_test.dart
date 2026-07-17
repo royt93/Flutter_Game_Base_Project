@@ -19,10 +19,10 @@ void main() {
     // NeonBg có AnimationController.repeat() vô hạn — pumpAndSettle sẽ treo.
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('CLAIM'), findsWidgets);
+    expect(find.text('DAILY_CLAIM'), findsWidgets);
     final coinsBefore = gameCtrl.coins.value;
 
-    await tester.tap(find.text('CLAIM').first);
+    await tester.tap(find.text('DAILY_CLAIM').first);
     await tester.pump();
     await tester.pump(const Duration(seconds: 2)); // chờ CoinFlyOverlay xong
 

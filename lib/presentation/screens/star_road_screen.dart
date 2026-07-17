@@ -30,7 +30,7 @@ class _StarRoadScreenState extends State<StarRoadScreen> {
           child: Column(
             children: [
               NeonAppBar(
-                title: 'Star Road',
+                title: 'star_road_title'.tr,
                 color: NeonTheme.gold,
                 actions: [CoinChip(gameCtrl)],
               ),
@@ -124,27 +124,51 @@ class _ChestRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '$milestone stars',
-                  style: TextStyle(
-                    color: NeonTheme.ink,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.star_rounded,
+                      color: NeonTheme.gold,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$milestone',
+                      style: TextStyle(
+                        color: NeonTheme.ink,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: NeonTheme.s8),
                 Text(
-                  claimed
-                      ? 'Claimed'
-                      : '$totalStars / $milestone · reward ${fmtNum(reward)} coins',
-                  style: TextStyle(
-                    color: NeonTheme.inkSoft,
-                    fontSize: 12,
-                  ),
+                  claimed ? 'ach_claimed'.tr : '$totalStars/$milestone',
+                  style: TextStyle(color: NeonTheme.inkSoft, fontSize: 12),
                 ),
               ],
             ),
           ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.monetization_on_rounded,
+                color: NeonTheme.gold,
+                size: 16,
+              ),
+              Text(
+                '+${fmtNum(reward)}',
+                style: const TextStyle(
+                  color: NeonTheme.gold,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          if (!claimed) const SizedBox(width: NeonTheme.s8),
           if (!claimed)
             PressableScale(
               onTap: canClaim ? onClaim : null,
@@ -162,7 +186,7 @@ class _ChestRow extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'CLAIM',
+                  'daily_claim'.tr.toUpperCase(),
                   style: TextStyle(
                     color: canClaim ? Colors.white : NeonTheme.inkSoft,
                     fontWeight: FontWeight.w700,
