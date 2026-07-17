@@ -2138,3 +2138,26 @@ Vì mục tiêu ban đầu ("đa dạng hoá booster ngoài bộ 3 gốc") đã 
 (6/4), không thêm booster thứ 7 tuỳ tiện — tránh feature creep không ai yêu
 cầu cụ thể. Nếu muốn booster mới thật sự, cần spec riêng nêu rõ cơ chế khác
 biệt (không trùng bomb/rainbow/swap/freeze) trước khi implement.
+
+## ❌ Skipped: "Seasonal/limited-time event" (task #17) — đã có 5 hệ thống tương tự (2026-07-17)
+
+Task #17 yêu cầu thêm 1 seasonal/limited-time event. Audit git log +
+`doc/feat.md` cho thấy category này đã được phủ kín từ trước session này:
+
+- **I8 Weekend event x2 coin** (`weekend_event.dart`, `isWeekendEvent`) —
+  nhân đôi mọi nguồn thu xu vào thứ 7/CN.
+- **I10 Comeback bonus** (`comeback_bonus.dart`) — thưởng khi quay lại sau
+  ≥N ngày vắng.
+- **Season Pass** (`season_screen.dart`, `seasonPoints`,
+  `claimedSeasonMask`, milestone claim) — progression theo mùa, có banner
+  nhắc trên Home (X9 redesign, xem mục Drawer + banner trên).
+- **Weekly World Event** (commit `e433e5d`, Wave 28.5) — banner + mechanic
+  sự kiện theo tuần.
+- **Tournament** (commit `050fae1`, Wave 14.1) — có countdown timezone
+  riêng.
+
+5 hệ thống trên đã bao trọn nhu cầu "sự kiện có giới hạn thời gian" ở nhiều
+tầng (theo ngày/tuần/mùa). Không tạo thêm hệ thống event trùng lặp — nếu
+cần 1 sự kiện mới thật sự khác biệt (vd. sự kiện chỉ chạy 1 lần, gắn ngày lễ
+cụ thể), cần spec riêng nêu rõ nó khác 5 hệ thống trên ở điểm gì trước khi
+implement.
