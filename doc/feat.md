@@ -2102,3 +2102,21 @@ Test: `test/data/levels_test.dart` sửa loop cứng `world < 10` →
 `'World 11'` xác nhận range/nameKey/màu không trùng. `flutter analyze` 0
 issues; `flutter test --exclude-tags slow` 245/245 xanh (từ 243). Task file:
 `doc/task/tasks/I24-world-11-content.md`.
+
+## ✅ Implemented: Boss variant — đa dạng trận chốt cho 11 world (I25, 2026-07-17)
+
+Boss level (level cuối mỗi world: 20, 40, ..., 220) trước đây đều dùng
+objective `score` mặc định giống nhau, chỉ khác kích thước bàn/target. Giờ
+luân phiên 4 variant theo `bossVariant = world % 4` trong `kLevels`
+generator (`lib/data/levels.dart`): `0`→`score` (classic), `1`→`clearColor`,
+`2`→`obstacleInMoves`, `3`→`openGift` — tái dùng nguyên `ObjectiveType` đã
+có sẵn cơ chế (obstacle/gift placement, `objectiveMet`/`objectiveRemaining`
+trong `game_controller.dart` dispatch thuần theo type, không phân biệt
+boss/thường), không thêm mechanic mới. `targetScore`/`bossTargetMultiplier`
+giữ nguyên hoàn toàn — chỉ đổi `objective`, invariant achievability không
+bị ảnh hưởng.
+
+Test: `test/data/levels_test.dart` — test 9-slot cũ đổi tên `'... (màn
+thường)'` + bỏ qua `isBoss`; thêm test mới `'boss variant luân phiên đúng
+theo world % 4'`. `flutter analyze` 0 issues; `flutter test --exclude-tags
+slow` 246/246 xanh (từ 245). Task file: `doc/task/tasks/I25-boss-variant.md`.

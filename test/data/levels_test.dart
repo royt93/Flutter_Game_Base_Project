@@ -101,9 +101,11 @@ void main() {
 
     // F9/task#6: objective rotate chu kỳ 9 màn (3 score, rồi clearColor/
     // clearObstacle/collect/moveLimitBonus/obstacleInMoves/openGift) xuyên
-    // suốt 200 màn.
-    test('objective luân phiên đúng chu kỳ 9 màn', () {
+    // suốt các màn thường. I25: màn boss có luân phiên riêng (xem group
+    // 'boss variant' dưới), nên bỏ qua isBoss ở đây.
+    test('objective luân phiên đúng chu kỳ 9 màn (màn thường)', () {
       for (var i = 0; i < kLevels.length; i++) {
+        if (kLevels[i].isBoss) continue;
         final expected = switch (i % 9) {
           3 => ObjectiveType.clearColor,
           4 => ObjectiveType.clearObstacle,
@@ -117,6 +119,27 @@ void main() {
           kLevels[i].objective.type,
           expected,
           reason: 'L${kLevels[i].id} (slot ${i % 9}) sai objective',
+        );
+      }
+    });
+
+    // I25 (task #15): boss level (id % 20 == 0) luân phiên 4 variant theo
+    // world (world % 4) — không theo chu kỳ 9-slot của màn thường.
+    test('boss variant luân phiên đúng theo world % 4', () {
+      for (final lv in kLevels.where((l) => l.isBoss)) {
+        final world = (lv.id - 1) ~/ 20;
+        final expected = switch (world % 4) {
+          1 => ObjectiveType.clearColor,
+          2 => ObjectiveType.obstacleInMoves,
+          3 => ObjectiveType.openGift,
+          _ => ObjectiveType.score,
+        };
+        expect(
+          lv.objective.type,
+          expected,
+          reason:
+              'L${lv.id} (world $world, variant ${world % 4}) sai boss '
+              'objective',
         );
       }
     });

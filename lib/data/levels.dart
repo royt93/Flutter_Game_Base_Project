@@ -133,20 +133,34 @@ final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
   final moveLimit = (cells ~/ 3).clamp(6, 30);
   final obstacleCount = (3 + world ~/ 2).clamp(3, 8);
   final slot = i % 9;
-  final objective = switch (slot) {
-    3 => LevelObjective.clearColor(i % colorCount),
-    4 => const LevelObjective.clearObstacle(),
-    5 => LevelObjective.collect(
-      i % colorCount,
-      ((cells / colorCount) / 2).clamp(2, 12).round(),
-    ),
-    6 => LevelObjective.moveLimitBonus(moveLimit),
-    7 => LevelObjective.obstacleInMoves(obstacleCount, moveLimit),
-    8 => LevelObjective.openGift(
-      ((cells / colorCount) / 3).clamp(2, 8).round(),
-    ),
-    _ => const LevelObjective.score(),
-  };
+  // I25 (task #15): boss (level cuối mỗi world) không theo chu kỳ 9-slot
+  // chung — luân phiên riêng 4 "boss variant" theo world để mỗi world có
+  // trận chốt khác nhau, tái dùng nguyên ObjectiveType đã có (không thêm
+  // mechanic mới). targetScore/bossTargetMultiplier giữ nguyên, không đổi.
+  final bossVariant = world % 4;
+  final objective = isBoss
+      ? switch (bossVariant) {
+          1 => LevelObjective.clearColor(i % colorCount),
+          2 => LevelObjective.obstacleInMoves(obstacleCount, moveLimit),
+          3 => LevelObjective.openGift(
+            ((cells / colorCount) / 3).clamp(2, 8).round(),
+          ),
+          _ => const LevelObjective.score(),
+        }
+      : switch (slot) {
+          3 => LevelObjective.clearColor(i % colorCount),
+          4 => const LevelObjective.clearObstacle(),
+          5 => LevelObjective.collect(
+            i % colorCount,
+            ((cells / colorCount) / 2).clamp(2, 12).round(),
+          ),
+          6 => LevelObjective.moveLimitBonus(moveLimit),
+          7 => LevelObjective.obstacleInMoves(obstacleCount, moveLimit),
+          8 => LevelObjective.openGift(
+            ((cells / colorCount) / 3).clamp(2, 8).round(),
+          ),
+          _ => const LevelObjective.score(),
+        };
   return PopLevel(
     id: id,
     rows: rows,
