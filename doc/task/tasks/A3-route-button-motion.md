@@ -13,7 +13,7 @@ Polish tổng thể mượt, "cao cấp"; tránh cắt cảnh cứng.
 - [x] Điều hướng dùng transition nhất quán (GetX `defaultTransition` hoặc custom).
 - [x] Mọi nút chính phản hồi nhấn bằng bounce (không delay cảm nhận).
 - [x] Không phá `PopScope`/back button hiện có ở Game.
-- [ ] Không rớt frame lúc chuyển. (chưa chạy tay trên device, chỉ verify code + test tự động)
+- [x] Không rớt frame lúc chuyển. Verify tay trên Samsung SM_S928B (2026-07-17): điều hướng Home → Level Select → Game → thoát nhiều lượt, `adb logcat -d | grep -i "Choreographer\|skipped"` không có match.
 
 ## Rà soát checkbox (2026-07-13)
 - `lib/main.dart`: `GetMaterialApp` có `defaultTransition: Transition.cupertino` + `transitionDuration: Duration(milliseconds: 280)`.

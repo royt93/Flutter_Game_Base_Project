@@ -16,8 +16,13 @@ qua share sheet hệ thống.
 - [x] Gọi share sheet hệ thống (kiểm tra `pubspec.yaml` đã có package share
       chưa trước khi thêm mới — ưu tiên tái dùng).
 - [x] Không chặn UI khi đang chụp/export (loading state ngắn nếu cần).
-- [ ] Manual test: ảnh xuất ra đúng nội dung, không bị cắt/méo tỉ lệ. (chưa
-      chạy tay trên device, chỉ verify code + test tự động)
+- [x] Manual test: ảnh xuất ra đúng nội dung, không bị cắt/méo tỉ lệ. Verify
+      tay trên Samsung SM_S928B (2026-07-17): chơi hết Level 1 tới màn thắng,
+      bấm nút share → share sheet native mở với thumbnail ảnh + caption
+      "Pop Star Blast — Level 1 — Score 565 — 2026-07-17"; pull file cache
+      thật (`run-as ... cat .../cache/share_plus/pop_star_blast.png`) → PNG
+      720x1170 đúng nội dung bàn chơi + overlay điểm/level/ngày, không bị
+      cắt/méo tỉ lệ.
 
 ## Rà soát checkbox (2026-07-13)
 - `lib/core/share_helper.dart`: `captureBoardPng` (RepaintBoundary → PNG) +

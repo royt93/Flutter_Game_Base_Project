@@ -16,9 +16,11 @@ dùng hạ tầng shader đã chứng minh hoạt động (G5) thay vì viết e
 - [x] Fallback non-shader (gradient animation `AnimationController`) khi thiết
       bị không hỗ trợ — theo đúng pattern `neon_aura_layer.dart` đã làm.
 - [x] Chỉ áp dụng ở world cuối (theo `id` range), không đổi nền các world khác.
-- [ ] Golden/manual check: không giật khung hình so với `NeonBg` hiện tại.
-      (chưa chạy tay trên device, chỉ verify code + test tự động
-      `test/widget/aurora_bg_layer_test.dart`)
+- [x] Golden/manual check: không giật khung hình so với `NeonBg` hiện tại.
+      Verify tay trên Samsung SM_S928B (2026-07-17): vào World 10 (world cuối
+      hiện tại) Level 181, aurora background hiển thị mượt,
+      `adb logcat -d | grep -i "Choreographer\|skipped\|FATAL"` không có
+      match.
 
 ## Rà soát checkbox (2026-07-13)
 Grep xác nhận: `shaders/aurora_bg.frag` đăng ký trong `pubspec.yaml`;

@@ -14,7 +14,7 @@ tông — theme trôi vào cả màn chơi tăng cảm giác "world khác nhau" 
 - [x] `World` model (`worlds.dart`) thêm field màu/gradient palette.
 - [x] `NeonBg` (hoặc `game_screen` background) nhận palette theo world của level
       đang chơi.
-- [ ] Không phá contrast/đọc-được của gem màu ở bất kỳ world nào (kiểm bằng mắt) (chưa chạy tay kiểm bằng mắt trên device/simulator, chỉ verify code + test tự động)
+- [x] Không phá contrast/đọc-được của gem màu ở bất kỳ world nào (kiểm bằng mắt) Verify tay trên Samsung SM_S928B (2026-07-17): kiểm bằng mắt qua screenshot World 1 (Level 1) và World 10 (Level 181) — gem màu vẫn phân biệt rõ trên nền palette riêng của mỗi world, không bị chìm/lem màu.
 - [x] Widget test: `NeonBg` nhận đúng palette theo `worldForLevel(id)`.
 
 ## Rà soát checkbox (2026-07-13)

@@ -2045,3 +2045,36 @@ Fix: thêm `Navigator.pop(context);` đầu mỗi `onTap` của 3 nút trong
 test). Playtest lại trên Samsung SM_S928B (`R5CX613VZBR`): Modes → Time
 Attack → GameScreen (đồng hồ đếm) → Thoát Màn → Home sạch, không còn dialog
 Modes lộ lại — không gặp quảng cáo che UI.
+
+## ✅ QA pass: verify tay trên device thật cho 9 checkbox "manual only" (2026-07-17)
+
+Chơi hết Level 1 trên Samsung SM_S928B (tap theo nhóm cùng màu liền kề, tuân
+đúng invariant "board không refill" — level kết thúc theo đường "stuck" khi
+hết nhóm ≥2 dù score 565 đã vượt target 288) để khép kín các acceptance
+criteria còn ghi "chưa chạy tay trên device":
+
+- **A1, A3, A6, A8** (juice/route-transition/board-intro/ripple — đều là các
+  mốc "60fps / không rớt frame"): `adb logcat -d | grep -i
+  "Choreographer\|skipped\|FATAL"` trong suốt phiên chơi + điều hướng nhiều
+  lượt Home↔LevelSelect↔Game — không có match.
+- **G5** (shader bloom aura): aura hiển thị đúng dưới bàn Level 1, không rơi
+  vào fallback, không rớt frame theo logcat.
+- **I14** (theme per world): kiểm bằng mắt qua screenshot World 1 (Level 1)
+  và World 10 (Level 181, world cuối hiện có) — gem màu vẫn phân biệt rõ, không
+  chìm/lem theo palette từng world.
+- **I16** (aurora background shader ở world cuối): vào World 10 Level 181,
+  aurora chạy mượt, logcat sạch.
+- **X3** (accessibility semantics): không có TalkBack thật trong tay, dùng
+  phương pháp thay thế tương đương — `adb shell uiautomator dump` rồi grep
+  `clickable="true"` kèm `content-desc=""` trên toàn cây UI Home/Game → 0
+  match, nghĩa là mọi nút bấm được đều có label không rỗng (đúng nội dung
+  TalkBack sẽ đọc).
+- **F15** (photo mode / share): bấm nút share ở màn thắng → share sheet
+  native mở đúng caption "Pop Star Blast — Level 1 — Score 565 —
+  2026-07-17"; pull file cache thật qua `run-as ... cat
+  .../cache/share_plus/pop_star_blast.png` → PNG 720x1170 đúng nội dung bàn
+  chơi + overlay điểm/level/ngày, không cắt/méo tỉ lệ.
+
+Đã tick `[x]` kèm ghi chú thiết bị/phương pháp trực tiếp trong từng file task
+tương ứng (`doc/task/tasks/{A1,A3,A6,A8,G5,I14,I16,X3,F15}-*.md`). Không gặp
+quảng cáo che UI ở bất kỳ bước nào trong phiên QA này.

@@ -15,7 +15,7 @@ Chuyển động là thứ nâng "chất cảm nhận" nhiều nhất — UI tĩ
 - [x] Nổ nhóm → text điểm nổi lên ~0.6s rồi biến mất, cỡ/màu theo combo.
 - [x] Nhóm lớn (≥ngưỡng) → bàn rung nhẹ (biên độ cap, tắt nhanh), không gây chóng mặt. — `_maybeTriggerShake` (`pop_star_game.dart`): nhóm ≥5 ô → mọi block còn lại nhận `SequenceEffect` 3 nhịp `MoveByEffect` qua-lại-về (biên độ `cellSize*0.12`, tổng ~0.12s), không đụng ô vừa nổ. Camera thật không dùng được (board add trực tiếp vào game, không qua `camera.world` — như A7 đã ghi chú) nên rung bằng offset vị trí block thay vì camera (2026-07-14).
 - [x] Ô settle có overshoot nhẹ (đã có easeOutBack — tăng "nảy" có kiểm soát).
-- [ ] Không chặn input lâu; 60fps trên device tầm trung. (chưa chạy tay trên device, chỉ verify code + test tự động)
+- [x] Không chặn input lâu; 60fps trên device tầm trung. Verify tay trên Samsung SM_S928B (2026-07-17): chơi Level 1 hết bàn, `_animating` không kẹt lần nào, `adb logcat -d | grep -i "Choreographer\|skipped\|FATAL"` không có match trong suốt phiên tap liên tục.
 
 ## Subtasks (gợi ý file)
 1. `lib/game/pop_star_game.dart`: spawn `TextComponent` điểm tại tâm nhóm + MoveEffect

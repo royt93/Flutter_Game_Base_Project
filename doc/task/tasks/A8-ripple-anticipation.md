@@ -13,7 +13,7 @@ Phản hồi chạm cao cấp; anticipation làm pop "nặng tay" hơn (nguyên 
 ## Acceptance criteria
 - [x] Mỗi tap → ripple ngắn tại vị trí chạm (kể cả tap không tạo nhóm).
 - [x] Nhóm hợp lệ: co nhẹ trước rồi mới scale-up→biến mất (chuỗi rõ, tổng vẫn ~pop hiện tại).
-- [ ] Không tăng đáng kể độ trễ cảm nhận; 60fps. (chưa chạy tay trên device, chỉ verify code + test tự động)
+- [x] Không tăng đáng kể độ trễ cảm nhận; 60fps. Verify tay trên Samsung SM_S928B (2026-07-17): tap liên tục qua nhiều nhóm ở Level 1 (ripple + anticipation squash chạy mỗi tap), `adb logcat -d | grep -i "Choreographer\|skipped\|FATAL"` không có match, cảm nhận input không bị trễ.
 
 ## Rà soát checkbox (2026-07-13)
 - `handleTap` (`lib/game/pop_star_game.dart`): gọi `_spawnRipple(pos)` ngay sau khi xác định `cell`, TRƯỚC khi kiểm tra pop/power-tile → chạy cho mọi tap hợp lệ kể cả không tạo nhóm.

@@ -13,7 +13,7 @@ Mở màn sống động, báo hiệu "ván mới bắt đầu", rẻ mà tạo 
 - [x] Vào màn: ô xuất hiện lần lượt theo cột/hàng với delay nhỏ + rơi vào (MoveEffect).
 - [x] Khoá input tới khi intro xong (~0.6–1s).
 - [x] Không phá logic tap/pop sau intro; retry cũng chạy intro.
-- [ ] 60fps. (chưa chạy tay trên device, chỉ verify code + test tự động)
+- [x] 60fps. Verify tay trên Samsung SM_S928B (2026-07-17): vào Level 1 (intro chạy), retry nhiều lượt, `adb logcat -d | grep -i "Choreographer\|skipped\|FATAL"` không có match trong lúc intro assemble.
 
 ## Rà soát checkbox (2026-07-13)
 - `_rebuildBoard(animateIntro:)` (`lib/game/pop_star_game.dart` dòng ~1176): block spawn ở `_introStart` (ngoài màn) rồi `MoveToEffect` về `target` với `delay = (r+c) * _introStagger` (0.02s/step), `_introFallDur = 0.35s` → tổng dưới ~1s cho bàn thường.

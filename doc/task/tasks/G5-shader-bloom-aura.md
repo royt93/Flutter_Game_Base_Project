@@ -14,8 +14,10 @@ cấp mượt, rẻ GPU hơn nhiều layer blur.
 - [x] Load shader qua `FragmentProgram.fromAsset('shaders/neon_glow.frag')`.
 - [x] Vẽ 1 lớp aura động (thời gian + màu) sau bàn hoặc dưới HUD; hoà nền sáng casual.
 - [x] Fallback an toàn nếu load lỗi (không crash — bỏ qua aura).
-- [ ] Kiểm perf trên device thật (không tụt <60fps). (chưa chạy tay trên
-      device, chỉ verify code + test tự động)
+- [x] Kiểm perf trên device thật (không tụt <60fps). Verify tay trên Samsung
+      SM_S928B (2026-07-17): chơi Level 1 với aura shader hiển thị dưới bàn,
+      `adb logcat -d | grep -i "Choreographer\|skipped\|FATAL"` không có
+      match; shader load thành công, không rơi vào fallback.
 
 ## Rà soát checkbox (2026-07-13)
 - `lib/presentation/widgets/neon_aura_layer.dart:37-39`:

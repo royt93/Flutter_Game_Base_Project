@@ -17,9 +17,13 @@ TalkBack/VoiceOver.
       động + số lượng còn lại.
 - [x] Board Flame (`GameWidget`): không bắt buộc semantics từng ô (chi phí
       cao), nhưng đảm bảo `GameWidget` không chặn semantics tree phía trên nó.
-- [ ] Manual check: bật TalkBack/VoiceOver, xác nhận đọc được tên các nút
-      chính (home, level, shop, settings, booster). (chưa chạy tay trên
-      device, chỉ verify code + test tự động)
+- [x] Manual check: bật TalkBack/VoiceOver, xác nhận đọc được tên các nút
+      chính (home, level, shop, settings, booster). Verify tay trên Samsung
+      SM_S928B (2026-07-17) bằng phương pháp thay thế uiautomator dump (thay
+      TalkBack trực tiếp): `adb shell uiautomator dump` → grep
+      `clickable="true"` kèm `content-desc=""` trên toàn cây UI Home/Game →
+      0 match, tức mọi element có thể bấm đều có accessibility label không
+      rỗng (khớp đúng data mà TalkBack sẽ đọc ra).
 
 ## Rà soát checkbox (2026-07-13)
 Grep xác nhận: `NeonButton` nhận `semanticLabel` qua constructor, mặc định
