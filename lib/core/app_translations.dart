@@ -720,6 +720,8 @@ class AppTranslations extends Translations {
     'world_path_name_8': 'Sunset Peaks',
     'world_path_name_9': 'Frosty Summit',
     'world_path_name_10': 'Starlight Galaxy',
+    // I24 — World 11 (level 201-220).
+    'world_path_name_11': 'Diamond Nebula',
     // X4 — Shop: nhãn/mô tả booster
     'booster_bomb_label': 'Bomb',
     'booster_bomb_desc': 'Clears a 3x3 area on the board.',
@@ -1388,6 +1390,8 @@ class AppTranslations extends Translations {
     'world_path_name_8': 'Đỉnh Hoàng Hôn',
     'world_path_name_9': 'Đỉnh Băng Giá',
     'world_path_name_10': 'Thiên Hà Sao',
+    // I24 — World 11 (level 201-220).
+    'world_path_name_11': 'Tinh Vân Kim Cương',
     // X4 — Shop: nhãn/mô tả booster
     'booster_bomb_label': 'Bom',
     'booster_bomb_desc': 'Phá nổ khu vực 3x3 trên bàn cờ.',

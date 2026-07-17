@@ -2078,3 +2078,27 @@ criteria còn ghi "chưa chạy tay trên device":
 Đã tick `[x]` kèm ghi chú thiết bị/phương pháp trực tiếp trong từng file task
 tương ứng (`doc/task/tasks/{A1,A3,A6,A8,G5,I14,I16,X3,F15}-*.md`). Không gặp
 quảng cáo che UI ở bất kỳ bước nào trong phiên QA này.
+
+## ✅ Implemented: World 11 — mở rộng campaign lên 220 level (I24, 2026-07-17)
+
+Thêm World 11 (level 201-220) bằng cách tăng `kLevelCount` 200 → 220 trong
+`lib/data/levels.dart`. Không cần đổi công thức ramp/clamp: `rows`/`cols`/
+`colorBase` trong `kLevels` generator đều là hàm `.clamp` theo
+`world = i ~/ 20`, đã bão hoà ở trần từ World 10 (rows 11, cols 12, colorBase
+7) — World 11 tự động dùng đúng trần đó, chỉ `ramp` (1 + world*0.03) nhích
+thêm một chút, giữ `perCell` trong khoảng an toàn `[4, 9]` theo invariant
+achievability đã ghi ở trên.
+
+Thêm entry World 11 vào `kWorlds` (`lib/data/worlds.dart`): màu
+`NeonTheme.lime` (chưa dùng cho world nào trước), icon
+`Icons.diamond_rounded`, `nameKey: 'world_path_name_11'`. Key i18n mới thêm
+vào `_extraEn`/`_extraVi` trong `app_translations.dart` — English làm
+fallback cho 20 ngôn ngữ chưa dịch riêng tên world (đúng pattern đã có sẵn
+cho `world_path_name_1..10`, không phải lỗi thiếu key: `_extraEn` merge
+unconditionally cho mọi locale, `_extraVi` override riêng cho `vi_VN`).
+
+Test: `test/data/levels_test.dart` sửa loop cứng `world < 10` →
+`world < kLevelCount ~/ 20`; `test/data/worlds_test.dart` thêm group
+`'World 11'` xác nhận range/nameKey/màu không trùng. `flutter analyze` 0
+issues; `flutter test --exclude-tags slow` 245/245 xanh (từ 243). Task file:
+`doc/task/tasks/I24-world-11-content.md`.

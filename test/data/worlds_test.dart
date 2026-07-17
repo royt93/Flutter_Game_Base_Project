@@ -33,4 +33,24 @@ void main() {
       expect(worldForLevel(999999), same(kWorlds.last));
     });
   });
+
+  // I24 (task #14): World 11 (level 201-220) — world mới nhất, phải khớp
+  // đúng range đã khai báo trong kWorlds và có màu/icon riêng (không trùng
+  // 10 world trước).
+  group('World 11', () {
+    test('startId 201, endId 220, nameKey world_path_name_11', () {
+      final w11 = kWorlds.last;
+      expect(w11.startId, 201);
+      expect(w11.endId, 220);
+      expect(w11.nameKey, 'world_path_name_11');
+    });
+
+    test('màu không trùng bất kỳ world nào trong 10 world trước', () {
+      final earlierColors = kWorlds
+          .sublist(0, kWorlds.length - 1)
+          .map((w) => w.color)
+          .toSet();
+      expect(earlierColors.contains(kWorlds.last.color), isFalse);
+    });
+  });
 }

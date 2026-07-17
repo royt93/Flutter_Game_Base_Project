@@ -96,22 +96,27 @@ int scoreForGroup(int n) => 5 * n * (n - 1);
 /// Thưởng khi dọn sạch toàn bộ bàn.
 const int clearBoardBonus = 1000;
 
-const int kLevelCount = 200;
+const int kLevelCount = 220;
 
-/// 200 màn tăng dần độ khó: cols và colorCount nới rộng theo world (mỗi 20
+/// 220 màn tăng dần độ khó: cols và colorCount nới rộng theo world (mỗi 20
 /// màn). Bàn hữu hạn, KHÔNG refill → điểm đạt được scale theo số ô, không theo
 /// index màn. Vì vậy targetScore neo vào `cells * 6` (ngưỡng 1-sao chơi thường)
 /// và chỉ nhích nhẹ theo world; công thức leo-tuyến-tính cũ khiến ~146/200 màn
 /// bất khả thi (đã xác minh bằng greedy-bot sim, xem doc/feat.md).
 ///
 /// F9/X6 (task #6 2026-07-16): objective luân phiên theo chu kỳ 9 màn, lặp
-/// lại suốt 200 màn — 3 màn score, rồi lần lượt clearColor/clearObstacle/
+/// lại suốt các màn — 3 màn score, rồi lần lượt clearColor/clearObstacle/
 /// collect/moveLimitBonus/obstacleInMoves/openGift (slot 3..8). Thêm
 /// `openGift` (I1, trước đó có cơ chế đầy đủ ở `pop_star_game.dart` nhưng
 /// chưa từng được gán cho màn campaign nào).
+///
+/// I24 (task #14): World 11 (level 201-220, world index 10) mở rộng bằng
+/// cách tăng [kLevelCount] — rows/cols/colorBase đều dùng `.clamp` trên biểu
+/// thức theo `world` nên đã bão hoà ở trần (11/12/7) từ World 10, World 11
+/// tự động dùng đúng trần đó với `ramp` nhích thêm (không cần đổi công thức).
 final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
   final id = i + 1;
-  final world = i ~/ 20; // 0..9
+  final world = i ~/ 20; // 0..10
   final rows = 8 + (world ~/ 2).clamp(0, 3); // 8..11
   final cols = 6 + world.clamp(0, 6); // 6..12
   // I21: dao động +-1 quanh baseline theo world để level liền kề không dùng

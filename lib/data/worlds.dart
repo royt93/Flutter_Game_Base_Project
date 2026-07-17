@@ -93,6 +93,13 @@ const List<GameWorld> kWorlds = [
     endId: 200,
     icon: Icons.stars_rounded,
   ),
+  GameWorld(
+    nameKey: 'world_path_name_11',
+    color: NeonTheme.lime,
+    startId: 201,
+    endId: 220,
+    icon: Icons.diamond_rounded,
+  ),
 ];
 
 GameWorld worldForLevel(int id) =>
