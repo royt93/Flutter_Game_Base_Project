@@ -2325,3 +2325,59 @@ bộ 261 test. Verify tay trên emulator: Drawer title + dialog button label
 thắng thật (board tự stuck ở 3 ô lẻ, phải dùng bomb dọn sạch mới trigger
 được dialog thắng); chơi ~30+ lượt pop + 3 lần bomb liên tục không crash/
 tiếng bị cắt. Chi tiết: `X13-contrast-animation-perf-leak-fixes.md`.
+
+## ✅ Home Screen Carousel Redesign — thay banner ưu tiên đơn bằng carousel động (X14, 2026-07-18)
+
+Banner ưu tiên đơn của X9 chỉ hiện được **1** thứ đáng chú ý tại một thời
+điểm (weekend event > Season Pass > Daily Challenge), các tín hiệu khác bị
+che khuất hoàn toàn. Thay bằng **carousel `PageView`** hiện đồng thời mọi
+thẻ đang "đáng chú ý", theo spec đã duyệt trước
+(`docs/superpowers/specs/2026-07-18-home-screen-carousel-design.md`),
+supersede thiết kế banner đơn của X9:
+
+- **`buildHomeCards(GameController)`** (`lib/presentation/widgets/
+  home_carousel.dart`) — hàm thuần, test được độc lập, sinh danh sách
+  `HomeCardData` theo thứ tự cố định: greeting (luôn có) → Star Road →
+  Season Pass → achievement → perk. Mỗi loại chỉ xuất hiện khi "đáng chú
+  ý": Star Road (có rương khả nhận hoặc còn ≤3 sao tới mốc), Season Pass
+  (có mốc khả nhận hoặc còn ≤20 điểm tới mốc), achievement (vừa unlock
+  hoặc đạt ≥80% ngưỡng chưa unlock kế tiếp), perk (có perk đã mở khoá
+  chưa active, hoặc world kế tiếp mở perk chỉ còn cách đúng 1 world).
+- **`HomeCarousel`** widget — `PageView.builder` (viewportFraction 0.92)
+  + dot-indicator, card viền màu theo `accentColor` từng loại, badge góc
+  trên tuỳ chọn (vd. "🎉 Weekend x2 coins!").
+- **`HomeScreenController`** (`lib/presentation/controllers/
+  home_screen_controller.dart`) — `WidgetsBindingObserver`, tự
+  `refreshCards()` khi app resume, giữ `currentIndex` hợp lệ khi số thẻ
+  đổi.
+- **`AmbientParticles`** (`lib/presentation/widgets/ambient_particles.dart`)
+  — 7 hạt trôi nhẹ phía sau mascot, tôn trọng "Giảm chuyển động" (trả
+  `SizedBox.shrink()` trước khi tạo `AnimationController` nếu bật cờ).
+- **`StarMascot`** thêm `onTap` optional — tap chạy 1 trong 2 animation
+  phản ứng ngẫu nhiên (scale-bounce/tilt-wiggle, 500ms), độc lập với idle
+  loop, cũng tôn trọng reduce-motion (tap vẫn gọi callback nhưng không
+  chạy animation).
+- 12 key i18n mới (`home_greeting_morning/afternoon/evening`,
+  `home_daily_streak`, `home_weekend_badge`, `home_star_road_claim`,
+  `home_star_road_progress`, `home_season_claim`, `home_season_progress`,
+  `home_achievement_unlocked`, `home_achievement_progress`,
+  `home_perk_activate_reminder`, `home_perk_progress`) đủ 22 locale.
+  Không thêm `StorageKeys` mới — carousel tái dùng toàn bộ state Rx đã có
+  sẵn trên `GameController`.
+
+**Regression tự phát hiện + tự sửa trong cùng phiên**: thêm `_tapC`
+(`AnimationController` thứ 2) vào `StarMascot` trong khi class vẫn dùng
+`SingleTickerProviderStateMixin` → crash "can only be used as a
+TickerProvider once" lan ra **31 test fail** ở nhiều file không liên quan
+(mọi test render `StarMascot`). Fix root-cause 1 dòng: đổi sang
+`TickerProviderStateMixin`.
+
+`flutter analyze` 0 issues; `flutter test --exclude-tags slow` xanh toàn
+bộ 272 test (thêm mới `test/presentation/home_carousel_test.dart`, 11
+test cho `buildHomeCards`). Verify tay trên emulator (`emulator-5554`,
+Android 17 API 37 — thiết bị duy nhất kết nối): carousel hiện đúng
+greeting card + badge weekend (test đúng ngày Jul 18 2026 = thứ Bảy) +
+2 dot-indicator; vuốt carousel chuyển sang thẻ Perks ("1 more world to
+unlock a new perk", viền hồng); tap mascot không crash; tap thẻ Perks
+điều hướng đúng sang `PerksScreen`. Không gặp quảng cáo che UI ở bước
+nào. Chi tiết: `X14-home-carousel-unified.md`.
