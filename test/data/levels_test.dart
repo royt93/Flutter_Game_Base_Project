@@ -190,4 +190,85 @@ void main() {
       expect(lv.colorCount, 8);
     });
   });
+
+  // I27 Prestige/New Game+.
+  group('prestigeTierMultiplier / prestigeTargetScore', () {
+    test('tier 0 → hệ số 1.0, targetScore giữ nguyên gốc', () {
+      expect(prestigeTierMultiplier(0), 1.0);
+      final lv = kLevels[0];
+      expect(prestigeTargetScore(lv, 0), lv.targetScore);
+    });
+
+    test('tier âm (dữ liệu hỏng/không hợp lệ) vẫn trả target gốc, không âm '
+        'điểm', () {
+      expect(prestigeTargetScore(kLevels[0], -1), kLevels[0].targetScore);
+    });
+
+    test('hệ số tăng tuyến tính 0.25/tier', () {
+      expect(prestigeTierMultiplier(1), 1.25);
+      expect(prestigeTierMultiplier(2), 1.5);
+      expect(prestigeTierMultiplier(4), 2.0);
+    });
+
+    test('targetScore tier N = round(gốc * hệ số), tăng dần theo tier', () {
+      final lv = kLevels[219]; // level cuối, target lớn nên round() rõ ràng
+      final t0 = prestigeTargetScore(lv, 0);
+      final t1 = prestigeTargetScore(lv, 1);
+      final t2 = prestigeTargetScore(lv, 2);
+      expect(t1, (lv.targetScore * 1.25).round());
+      expect(t2, (lv.targetScore * 1.5).round());
+      expect(t1, greaterThan(t0));
+      expect(t2, greaterThan(t1));
+    });
+
+    test('mọi tier 0..10 đều cho targetScore hợp lệ (>0) trên mọi màn', () {
+      for (final lv in kLevels) {
+        for (var tier = 0; tier <= 10; tier++) {
+          expect(prestigeTargetScore(lv, tier), greaterThan(0));
+        }
+      }
+    });
+  });
+
+  // I29: boss tile milestone — field độc lập với isBoss/bossTargetMultiplier
+  // (chỉ tình cờ trùng mốc "cuối mỗi world"), phải luôn có spec hợp lệ nằm
+  // gọn trong board của đúng level đó.
+  group('bossTileSpec (I29)', () {
+    test('đúng các level milestone (id % 20 == 0) mới có bossTileSpec', () {
+      for (final lv in kLevels) {
+        if (lv.id % 20 == 0) {
+          expect(lv.bossTileSpec, isNotNull, reason: 'L${lv.id}');
+        } else {
+          expect(lv.bossTileSpec, isNull, reason: 'L${lv.id}');
+        }
+      }
+    });
+
+    test('mọi bossTileSpec nằm gọn trong board của đúng level đó', () {
+      for (final lv in kLevels) {
+        final spec = lv.bossTileSpec;
+        if (spec == null) continue;
+        expect(
+          spec.fitsBoard(lv.rows, lv.cols),
+          isTrue,
+          reason:
+              'L${lv.id}: spec(row=${spec.row},col=${spec.col},'
+              'h=${spec.height},w=${spec.width}) tràn board '
+              '${lv.rows}x${lv.cols}',
+        );
+        expect(spec.startHp, greaterThan(0), reason: 'L${lv.id}');
+      }
+    });
+
+    test('HP khởi đầu tăng dần (hoặc bằng) theo world, không giảm', () {
+      final milestones = kLevels.where((l) => l.bossTileSpec != null).toList();
+      for (var i = 1; i < milestones.length; i++) {
+        expect(
+          milestones[i].bossTileSpec!.startHp,
+          greaterThanOrEqualTo(milestones[i - 1].bossTileSpec!.startHp),
+          reason: 'L${milestones[i].id}',
+        );
+      }
+    });
+  });
 }

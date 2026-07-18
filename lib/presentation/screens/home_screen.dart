@@ -13,16 +13,19 @@ import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
 import '../widgets/neon_dialog.dart';
 import '../widgets/neon_icon.dart';
+import '../widgets/prestige_action.dart';
 import '../widgets/pulse_glow.dart';
 import '../widgets/spin_wheel_dialog.dart';
 import '../widgets/star_mascot.dart';
 import '../widgets/stroke_text.dart';
 import 'achievements_screen.dart';
 import 'friend_compare_screen.dart';
+import 'ghost_replay_screen.dart';
 import 'game_screen.dart';
 import 'guide_screen.dart';
 import 'leaderboard_screen.dart';
 import 'level_select_screen.dart';
+import 'mascot_wardrobe_screen.dart';
 import 'perks_screen.dart';
 import 'season_screen.dart';
 import 'settings_screen.dart';
@@ -232,6 +235,12 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => Get.to(() => const FriendCompareScreen()),
             ),
             _drawerTile(
+              icon: Icons.movie_creation_rounded,
+              color: NeonTheme.magenta,
+              label: 'ghost_replay_title'.tr,
+              onTap: () => Get.to(() => const GhostReplayScreen()),
+            ),
+            _drawerTile(
               icon: Icons.military_tech_rounded,
               color: NeonTheme.magenta,
               label: 'season_pass_title'.tr,
@@ -248,6 +257,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: NeonTheme.gold,
               label: 'achievements_title'.tr,
               onTap: () => Get.to(() => const AchievementsScreen()),
+            ),
+            _drawerTile(
+              icon: Icons.checkroom_rounded,
+              color: NeonTheme.magenta,
+              label: 'wardrobe_title'.tr,
+              onTap: () => Get.to(() => const MascotWardrobeScreen()),
             ),
           ],
         ),
@@ -279,7 +294,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
                       semanticLabel: 'menu_button_label'.tr,
                     ),
-                    CoinChip(gameCtrl),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        PrestigeAction(
+                          gameCtrl: gameCtrl,
+                          onTap: () => showPrestigeDialog(context, gameCtrl),
+                        ),
+                        CoinChip(gameCtrl),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -301,9 +325,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 220,
                     child: AmbientParticles(),
                   ),
-                  StarMascot(
-                    size: 128,
-                    onTap: () => fireHaptic(HapticLevel.light),
+                  Obx(
+                    () => StarMascot(
+                      size: 128,
+                      onTap: () => fireHaptic(HapticLevel.light),
+                      palette: gameCtrl.activeMascotSkin.palette,
+                    ),
                   ),
                 ],
               ),

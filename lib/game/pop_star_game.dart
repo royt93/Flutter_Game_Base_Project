@@ -13,6 +13,7 @@ import '../core/debug_log.dart';
 import '../core/haptics.dart';
 import '../core/neon_theme.dart';
 import '../data/levels.dart';
+import '../logic/boss_tile.dart';
 import '../logic/chain_tile.dart';
 import '../logic/gift_tile.dart';
 import '../logic/obstacle.dart';
@@ -108,9 +109,44 @@ class PopStarGame extends FlameGame {
     this.refillEnabled = false,
     this.startWithFtueHint = false,
     this.presetGrid,
-  });
+    int? seed,
+    this.recordingEnabled = false,
+    this.isReplay = false,
+  }) : seed = seed ?? Random().nextInt(1 << 31);
 
   final GameController controller;
+
+  /// I28: đang chạy ở `GhostReplayScreen` (auto-playback mã chia sẻ) — chặn
+  /// mọi call site persist thưởng/tiến trình thật (coin/sao/highScore/unlock)
+  /// qua [controller], vì [controller] ở màn replay là 1 instance dùng 1 lần
+  /// (không phải singleton) nhưng các method của nó vẫn ghi thẳng vào
+  /// `StorageService.to` singleton — nếu không chặn, replay của bất kỳ ai
+  /// cũng có thể "cày" điểm/coin/mở khoá level thật cho người xem.
+  final bool isReplay;
+
+  /// I28: [isReplay] tự phát hiện ván đã kết thúc (dọn sạch hoặc kẹt) — thay
+  /// cho `controller.checkEnd` bị chặn ở trên. `GhostReplayScreen` đọc field
+  /// này để biết khi nào dừng auto-playback + hiện thông báo hoàn tất.
+  bool replayEnded = false;
+
+  /// I28: seed dùng cho [_rng] — cố định để bàn/ngẫu nhiên tái tạo được y hệt
+  /// qua `PopStarGame(seed: seed)`. Không truyền → tự sinh ngẫu nhiên (không
+  /// đổi UX chơi thường), nhưng seed đã dùng luôn được giữ lại qua field này
+  /// để chia sẻ replay sau khi ván kết thúc.
+  final int seed;
+
+  /// I28: bật ghi lại thứ tự tap để tạo mã chia sẻ ghost-replay. Mặc định tắt
+  /// để không tốn bộ nhớ mỗi ván chơi bình thường.
+  final bool recordingEnabled;
+
+  /// I28: thứ tự (row, col) đã tap qua [handleTap] — chỉ ghi khi
+  /// [recordingEnabled] và [recordingValid]. Danh sách rỗng nếu chưa tap.
+  final List<(int, int)> recordedTaps = [];
+
+  /// I28: false nếu ván đã dùng hành động không tái tạo được từ tap thuần
+  /// (bomb/rainbow/swap/shuffle/undo/freeze) — replay lúc này sẽ không khớp
+  /// nếu chỉ replay lại [recordedTaps], nên không cho chia sẻ.
+  bool recordingValid = true;
 
   /// F13: bàn cố định (Daily Challenge) thay vì random — set qua
   /// [GameController.dailyChallengeGrid]. Null nghĩa là sinh random như bình
@@ -153,11 +189,24 @@ class PopStarGame extends FlameGame {
 
   List<List<int?>>? _undoGrid;
   List<List<int>>? _undoLockGrid;
-  final _rng = Random();
+
+  /// I29: HP hiện tại từng boss tile trên bàn (id → HP), ngoài [colorGrid] —
+  /// xem `lib/logic/boss_tile.dart`. Rỗng nếu màn không có boss tile.
+  final Map<int, int> bossHp = {};
+  Map<int, int>? _undoBossHp;
+  late final Random _rng = Random(seed);
 
   /// F10: > 0 nghĩa freeze đang hiệu lực — obstacle không giảm bền, mỗi lần
   /// đáng lẽ chip (xem [_chipObstaclesOrFrozen]) trừ 1 thay vì chip thật.
   int freezeTurnsLeft = 0;
+
+  /// I28: wrapper cho [freezeTurnsLeft] — dùng bởi `GameController.useFreeze`
+  /// thay vì gán field trực tiếp, để cũng invalidate [recordingValid] (freeze
+  /// không tái tạo được nếu chỉ replay lại [recordedTaps]).
+  void applyFreeze(int turns) {
+    recordingValid = false;
+    freezeTurnsLeft = turns;
+  }
 
   /// Đang diễn hoạt → chặn tap để tránh chồng bước.
   bool _animating = false;
@@ -193,6 +242,9 @@ class PopStarGame extends FlameGame {
             (_) => List.generate(cols, (_) => _rng.nextInt(level.colorCount)),
           );
     lockGrid = List.generate(rows, (_) => List.generate(cols, (_) => 0));
+    // I29: đặt boss tile TRƯỚC obstacle/chain-lock/gift — 3 hàm sau lọc ứng
+    // viên bằng `>= 0` nên tự loại trừ cell boss (mã âm), tránh bị ghi đè.
+    _placeBossTileIfNeeded(level);
     _placeObstaclesIfNeeded(level);
     _placeChainLocksIfNeeded(level);
     _placeGiftsIfNeeded(level);
@@ -218,6 +270,14 @@ class PopStarGame extends FlameGame {
       'boardLeft=$_boardLeft boardTop=$_boardTop nonNullCells='
       '${colorGrid.expand((r) => r).where((v) => v != null).length}',
     );
+  }
+
+  /// I29: đặt 1 boss tile (nếu [PopLevel.bossTileSpec] khớp) — mỗi màn chỉ có
+  /// tối đa 1 khối nên dùng thẳng [bossTileIdBase] làm id, không cần tăng dần.
+  void _placeBossTileIfNeeded(PopLevel level) {
+    final spec = level.bossTileSpec;
+    if (spec == null) return;
+    bossHp[bossTileIdBase] = placeBossTile(colorGrid, spec, bossTileIdBase);
   }
 
   /// F6b: màn `clearObstacle` cần vài ô obstacle (giá trị âm = độ bền) rải
@@ -305,6 +365,14 @@ class PopStarGame extends FlameGame {
     _boardTop + r * cellSize + cellSize / 2,
   );
 
+  /// I28: bản public của [_cellCenter] để `GhostReplayScreen` tính toạ độ tap
+  /// từ (row, col) đã ghi trong [recordedTaps], phục vụ auto-playback.
+  Vector2 cellCenterFor(int row, int col) => _cellCenter(row, col);
+
+  /// I28: cho `GhostReplayScreen` biết khi nào an toàn để tap lượt kế tiếp
+  /// (tránh tap trong lúc animation đang chạy, sẽ bị [handleTap] bỏ qua).
+  bool get isAnimating => _animating;
+
   /// Ô (row, col) tại [pos] trong không gian game, hoặc null nếu ngoài bàn.
   Point<int>? cellAt(Vector2 pos) {
     final col = ((pos.x - _boardLeft) / cellSize).floor();
@@ -318,6 +386,9 @@ class PopStarGame extends FlameGame {
     if (_animating) return;
     final cell = cellAt(pos);
     if (cell == null) return;
+    if (recordingEnabled && recordingValid) {
+      recordedTaps.add((cell.x, cell.y));
+    }
     _spawnRipple(pos);
     final power = _blocks[cell.x][cell.y]?.powerKind;
     if (power != null) {
@@ -454,10 +525,14 @@ class PopStarGame extends FlameGame {
       colorIndex: colorGrid[row][col] ?? -1,
     );
     _saveUndo();
-    final gained = controller.registerPop(
-      scoreForGroup(group.length),
-      groupSize: group.length,
-    );
+    // I28: replay chỉ để xem lại — không cộng điểm/combo thật qua controller
+    // (xem [isReplay]); dùng điểm thô không nhân combo cho popup hiển thị.
+    final gained = isReplay
+        ? scoreForGroup(group.length)
+        : controller.registerPop(
+            scoreForGroup(group.length),
+            groupSize: group.length,
+          );
     _comboTimer = GameController.comboWindow;
     final gemColor = NeonTheme
         .gemColors[(colorGrid[row][col] ?? 0) % NeonTheme.gemColors.length];
@@ -479,10 +554,16 @@ class PopStarGame extends FlameGame {
         : group;
     // F6a: nổ nhóm liền kề obstacle → chip độ bền; vỡ thì gộp vào cùng đợt xoá.
     final broken = _chipObstaclesOrFrozen(cleared);
+    // I29: nổ nhóm liền kề boss tile → chip 1 HP; vỡ thì gộp vào cùng đợt xoá.
+    final bossBroken = _chipAdjacentBossTiles(cleared);
     // I2: nổ nhóm liền kề chain tile → chip 1 lock, không gộp vào tập xoá.
     chipAdjacentLocks(lockGrid, cleared);
     _syncObstacleAndLockBlocks();
-    _clearAndCollapse(cleared..addAll(broken));
+    _clearAndCollapse(
+      cleared
+        ..addAll(broken)
+        ..addAll(bossBroken),
+    );
     if (kind != null) _blocks[row][col]?.powerKind = kind;
   }
 
@@ -495,6 +576,36 @@ class PopStarGame extends FlameGame {
       return {};
     }
     return chipAdjacentObstacles(colorGrid, cells);
+  }
+
+  /// I29: nổ nhóm liền kề boss tile → chip 1 HP; HP về 0 thì trả về cell vừa
+  /// vỡ để gộp vào tập xoá, giống pattern [_chipObstaclesOrFrozen]. Id nào
+  /// giảm HP nhưng CHƯA vỡ được đánh dấu ring nhỏ riêng (VFX "nứt", khác ring
+  /// nổ chung của tập vỡ hẳn mà [_clearAndCollapse] đã tự lo).
+  Set<Point<int>> _chipAdjacentBossTiles(Set<Point<int>> cells) {
+    final before = Map<int, int>.from(bossHp);
+    final broken = chipAdjacentBossTiles(colorGrid, cells, bossHp);
+    _spawnBossChipRingsForDecrement(before);
+    return broken;
+  }
+
+  /// So HP trước/sau 1 lần chip/decay — id còn sống nhưng HP giảm (chưa vỡ,
+  /// đã bị [_decrementAndBreak] xoá khỏi [bossHp] nếu vỡ) thì phát 1 ring nhỏ
+  /// tại từng cell của nó, tái dùng [_spawnRing] như acceptance criteria I29
+  /// yêu cầu (không cần loại `_BurstRing`/component mới).
+  void _spawnBossChipRingsForDecrement(Map<int, int> before) {
+    for (final entry in before.entries) {
+      final after = bossHp[entry.key];
+      if (after != null && after < entry.value) {
+        for (var r = 0; r < rows; r++) {
+          for (var c = 0; c < cols; c++) {
+            if (colorGrid[r][c] == entry.key) {
+              _spawnRing(_cellCenter(r, c), NeonTheme.red, cellSize * 0.55);
+            }
+          }
+        }
+      }
+    }
   }
 
   /// I11: rung xúc giác theo cỡ nhóm vừa nổ.
@@ -517,6 +628,9 @@ class PopStarGame extends FlameGame {
       for (var c = 0; c < cols; c++) {
         final v = colorGrid[r][c];
         if (v != null && v < 0) _blocks[r][c]?.colorIndex = v;
+        // I29: HP không mã hoá trong colorGrid (chỉ mã ID) nên cần đồng bộ
+        // riêng từ [bossHp] để BlockComponent hiển thị số HP còn lại.
+        if (isBossTileId(v)) _blocks[r][c]?.bossHp = bossHp[v];
         _blocks[r][c]?.lockCount = lockGrid[r][c];
       }
     }
@@ -580,10 +694,13 @@ class PopStarGame extends FlameGame {
     for (final p in resonant) {
       cells.addAll(_blastCellsFor(p.x, p.y, _blocks[p.x][p.y]!.powerKind!));
     }
-    final gained = controller.registerPop(
-      scoreForGroup(cells.length) * (resonant.isEmpty ? 1 : 2),
-      groupSize: cells.length,
-    );
+    // I28: xem lại phần chú thích ở [_tryPop] — không cộng điểm/combo thật khi replay.
+    final gained = isReplay
+        ? scoreForGroup(cells.length) * (resonant.isEmpty ? 1 : 2)
+        : controller.registerPop(
+            scoreForGroup(cells.length) * (resonant.isEmpty ? 1 : 2),
+            groupSize: cells.length,
+          );
     _comboTimer = GameController.comboWindow;
     final gemColor = NeonTheme
         .gemColors[(colorGrid[row][col] ?? 0) % NeonTheme.gemColors.length];
@@ -600,9 +717,14 @@ class PopStarGame extends FlameGame {
       controller.triggerFlash();
     }
     final broken = _chipObstaclesOrFrozen(cells);
+    final bossBroken = _chipAdjacentBossTiles(cells);
     chipAdjacentLocks(lockGrid, cells);
     _syncObstacleAndLockBlocks();
-    _clearAndCollapse(cells..addAll(broken));
+    _clearAndCollapse(
+      cells
+        ..addAll(broken)
+        ..addAll(bossBroken),
+    );
   }
 
   /// G6: combo càng cao → bàn "nóng" dần (0..1), block đọc trực tiếp qua [game]
@@ -678,11 +800,17 @@ class PopStarGame extends FlameGame {
       }
     }
     if (cells.isEmpty) return false;
+    recordingValid = false;
     fireHaptic(HapticLevel.heavy);
     final broken = _chipObstaclesOrFrozen(cells);
+    final bossBroken = _chipAdjacentBossTiles(cells);
     chipAdjacentLocks(lockGrid, cells);
     _syncObstacleAndLockBlocks();
-    _clearAndCollapse(cells..addAll(broken));
+    _clearAndCollapse(
+      cells
+        ..addAll(broken)
+        ..addAll(bossBroken),
+    );
     return true;
   }
 
@@ -704,10 +832,16 @@ class PopStarGame extends FlameGame {
       }
     }
     if (cells.isEmpty) return false;
+    recordingValid = false;
     final broken = _chipObstaclesOrFrozen(cells);
+    final bossBroken = _chipAdjacentBossTiles(cells);
     chipAdjacentLocks(lockGrid, cells);
     _syncObstacleAndLockBlocks();
-    _clearAndCollapse(cells..addAll(broken));
+    _clearAndCollapse(
+      cells
+        ..addAll(broken)
+        ..addAll(bossBroken),
+    );
     return true;
   }
 
@@ -724,6 +858,7 @@ class PopStarGame extends FlameGame {
       return false;
     }
     _saveUndo();
+    recordingValid = false;
     final tmp = colorGrid[row1][col1];
     colorGrid[row1][col1] = colorGrid[row2][col2];
     colorGrid[row2][col2] = tmp;
@@ -760,8 +895,12 @@ class PopStarGame extends FlameGame {
     _maybeTriggerShake(cells);
     if (cells.isNotEmpty) {
       final first = cells.first;
-      final ringColor = NeonTheme
-          .gemColors[colorGrid[first.x][first.y]! % NeonTheme.gemColors.length];
+      // I29: cell của tập [cells] có thể ĐÃ null khi gọi tới (vd boss tile vỡ
+      // do decay-on-stuck tự null hoá TRƯỚC khi gọi hàm này) — fallback về 0
+      // thay vì non-null assertion để không crash.
+      final ringColor =
+          NeonTheme.gemColors[(colorGrid[first.x][first.y] ?? 0) %
+              NeonTheme.gemColors.length];
       var minR = rows, maxR = -1, minC = cols, maxC = -1;
       var cx = 0.0, cy = 0.0;
       for (final p in cells) {
@@ -1121,6 +1260,7 @@ class PopStarGame extends FlameGame {
   /// trừ nhầm lượt booster.
   bool shuffleBoard() {
     if (_animating) return false;
+    recordingValid = false;
     _saveUndo();
     // F6a: obstacle không phải màu → giữ nguyên vị trí/độ bền, chỉ xáo màu thật.
     // I2: ô đang khoá cũng giữ nguyên (không xáo màu vào/ra chain tile).
@@ -1152,10 +1292,20 @@ class PopStarGame extends FlameGame {
     final saved = _undoGrid;
     final savedLocks = _undoLockGrid;
     if (saved == null) return false;
+    recordingValid = false;
     colorGrid = saved;
     if (savedLocks != null) lockGrid = savedLocks;
+    // I29: khôi phục HP boss tile đúng thời điểm snapshot — `bossHp` là
+    // `final Map` nên restore bằng clear+addAll thay vì gán lại.
+    final savedBossHp = _undoBossHp;
+    if (savedBossHp != null) {
+      bossHp
+        ..clear()
+        ..addAll(savedBossHp);
+    }
     _undoGrid = null;
     _undoLockGrid = null;
+    _undoBossHp = null;
     // A9: tái dùng animateIntro cho hoàn tác, tránh bàn snap tức thì.
     _rebuildBoard(animateIntro: true);
     return true;
@@ -1164,6 +1314,7 @@ class PopStarGame extends FlameGame {
   void _saveUndo() {
     _undoGrid = colorGrid.map((row) => List<int?>.from(row)).toList();
     _undoLockGrid = lockGrid.map((row) => List<int>.from(row)).toList();
+    _undoBossHp = Map<int, int>.from(bossHp);
   }
 
   void _checkEnd() {
@@ -1171,7 +1322,12 @@ class PopStarGame extends FlameGame {
     for (final c in openGiftsAtBottomRow(colorGrid)) {
       _blocks[rows - 1][c]?.removeFromParent();
       _blocks[rows - 1][c] = null;
-      controller.grantGiftReward(pickGiftReward(_rng));
+      // I28: LUÔN bốc rng ở cả 2 mode để giữ đúng thứ tự tiêu thụ _rng cho
+      // các lượt bốc kế tiếp (power tile, shuffle...) — chỉ phát thưởng thật
+      // khi không phải replay (xem [isReplay]). Tách bốc số khỏi phát thưởng
+      // để tránh lệch RNG giữa record/replay (bug đã audit, xem doc/feat.md).
+      final reward = pickGiftReward(_rng);
+      if (!isReplay) controller.grantGiftReward(reward);
     }
     final remaining = colorGrid
         .expand((row) => row)
@@ -1186,6 +1342,32 @@ class PopStarGame extends FlameGame {
         remaining > 0 &&
         !hasAnyMovableGroup(colorGrid, lockGrid: lockGrid) &&
         !hasPowerTile;
+    // I29: bàn kẹt nhưng còn boss tile chưa vỡ (không còn gem thường liền kề
+    // để nổ nứt boss) → tự giảm 1 HP mọi boss tile thay vì kết thúc màn ngay,
+    // tránh softlock. PHẢI gọi `_clearAndCollapse`/`return` VÔ ĐIỀU KIỆN mỗi
+    // khi còn boss tile — kể cả lúc `bossDecayBroken` rỗng (decay chưa làm vỡ
+    // tile nào) — vì `_clearAndCollapse` (dù cells rỗng) vẫn lên lịch
+    // `TimerComponent` gọi lại `_checkEnd()` sau animation; nếu gate theo
+    // `isNotEmpty` như code cũ thì màn kết thúc "kẹt" ngay lần decay đầu tiên
+    // (mọi boss tile thật đều startHp >= 6, không bao giờ vỡ ở lần trừ đầu),
+    // vô hiệu hoá hoàn toàn cơ chế chống softlock. Vòng lặp bị chặn tự nhiên
+    // bởi tổng HP boss (tối đa 16 lần, chỉ 1 boss tile/màn — không có nguy cơ
+    // vô hạn).
+    if (stuck && bossHp.isNotEmpty) {
+      final before = Map<int, int>.from(bossHp);
+      final bossDecayBroken = decayBossTilesOnStuck(colorGrid, bossHp);
+      _spawnBossChipRingsForDecrement(before);
+      _syncObstacleAndLockBlocks();
+      _clearAndCollapse(bossDecayBroken);
+      return;
+    }
+    // I28: replay chỉ dựng lại bàn để xem — campaign-only (không endless/
+    // refill/objective riêng) nên chỉ cần biết bàn đã dọn sạch/kẹt hẳn chưa,
+    // không gọi bất kỳ method persist thật nào của [controller].
+    if (isReplay) {
+      if (remaining == 0 || stuck) replayEnded = true;
+      return;
+    }
     // F12: Endless — dọn sạch (remaining == 0) thì sang bàn kế khó hơn, giữ
     // nguyên điểm; chỉ thật sự kết thúc ván khi bàn kẹt hẳn (stuck).
     if (controller.mode.value == GameMode.endless) {
@@ -1269,6 +1451,10 @@ class PopStarGame extends FlameGame {
         final b = BlockComponent(
           colorIndex: color,
           lockCount: lockGrid[r][c],
+          // I29: gán HP boss tile ngay lúc dựng block, không chờ
+          // `_syncObstacleAndLockBlocks` (chỉ chạy sau chip-hook) — tránh
+          // hiển thị sai (thiếu số HP) ngay sau khi vào màn/undo/replay.
+          bossHp: isBossTileId(color) ? bossHp[color] : null,
           position: animateIntro
               ? _introStart(r, c, target, direction)
               : target,

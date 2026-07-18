@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:pop_star_blast/core/storage_service.dart';
 import 'package:pop_star_blast/data/levels.dart';
+import 'package:pop_star_blast/data/mascot_skins.dart';
 import 'package:pop_star_blast/logic/gift_tile.dart';
 import 'package:pop_star_blast/presentation/controllers/game_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -805,6 +806,267 @@ void main() {
       ctrl.resetCombo();
       expect(ctrl.comboCount.value, 0);
       expect(ctrl.comboMultiplier.value, 1.0);
+    });
+  });
+
+  group('I27 Prestige/New Game+', () {
+    void winLevel(int id) {
+      ctrl.startLevel(id);
+      ctrl.addScore(
+        prestigeTargetScore(kLevels[id - 1], ctrl.prestigeTier.value),
+      );
+      ctrl.checkEnd(false);
+    }
+
+    test('ban đầu: tier 0, chưa đủ điều kiện prestige', () {
+      expect(ctrl.prestigeTier.value, 0);
+      expect(ctrl.canPrestige, isFalse);
+      expect(ctrl.allLevelsCompletedOnce.value, isFalse);
+    });
+
+    test('thắng level giữa chừng (không phải level cuối) không mở khoá '
+        'prestige', () {
+      winLevel(1);
+      expect(ctrl.canPrestige, isFalse);
+      expect(ctrl.allLevelsCompletedOnce.value, isFalse);
+    });
+
+    test('thua level cuối (0 sao) không mở khoá prestige', () {
+      ctrl.startLevel(kLevelCount);
+      ctrl.addScore(0);
+      ctrl.checkEnd(false);
+      expect(ctrl.starsEarned.value, 0);
+      expect(ctrl.canPrestige, isFalse);
+    });
+
+    test('thắng đúng level cuối (kLevelCount) ≥1 sao → mở khoá prestige', () {
+      winLevel(kLevelCount);
+      expect(ctrl.starsEarned.value, greaterThanOrEqualTo(1));
+      expect(ctrl.canPrestige, isTrue);
+      expect(ctrl.allLevelsCompletedOnce.value, isTrue);
+      expect(StorageService.to.getBool(StorageKeys.allLevelsCompleted), isTrue);
+    });
+
+    test('gọi prestige() khi chưa đủ điều kiện → no-op hoàn toàn', () {
+      final coinsBefore = ctrl.coins.value;
+      ctrl.prestige();
+      expect(ctrl.prestigeTier.value, 0);
+      expect(ctrl.coins.value, coinsBefore);
+      expect(ctrl.unlockedLevel.value, 1);
+    });
+
+    test('prestige() khi đủ điều kiện: tăng tier, reset unlockedLevel về 1, '
+        'reset allLevelsCompletedOnce, cộng đúng coin thưởng', () {
+      winLevel(kLevelCount); // mở khoá điều kiện
+      final coinsBefore = ctrl.coins.value;
+
+      ctrl.prestige();
+
+      expect(ctrl.prestigeTier.value, 1);
+      expect(ctrl.unlockedLevel.value, 1);
+      expect(ctrl.allLevelsCompletedOnce.value, isFalse);
+      expect(ctrl.canPrestige, isFalse);
+      expect(
+        ctrl.coins.value,
+        coinsBefore + GameController.prestigeRewardCoins,
+      );
+      expect(StorageService.to.getInt(StorageKeys.prestigeTier), 1);
+      expect(
+        StorageService.to.getBool(StorageKeys.allLevelsCompleted),
+        isFalse,
+      );
+    });
+
+    test('gọi prestige() 2 lần liên tiếp (race/double-tap) → lần 2 no-op vì '
+        'canPrestige đã về false sau lần 1', () {
+      winLevel(kLevelCount);
+      ctrl.prestige();
+      final tierAfterFirst = ctrl.prestigeTier.value;
+      final coinsAfterFirst = ctrl.coins.value;
+
+      ctrl.prestige(); // chưa thắng lại level cuối ở tier mới
+
+      expect(ctrl.prestigeTier.value, tierAfterFirst);
+      expect(ctrl.coins.value, coinsAfterFirst);
+    });
+
+    test('sau prestige, target level cuối nặng hơn tier trước — điểm cũ đủ '
+        'thắng tier 0 có thể không đủ ở tier 1', () {
+      final tier0Target = prestigeTargetScore(kLevels[kLevelCount - 1], 0);
+      winLevel(kLevelCount);
+      ctrl.prestige();
+      expect(ctrl.prestigeTier.value, 1);
+
+      final tier1Target = prestigeTargetScore(kLevels[kLevelCount - 1], 1);
+      expect(tier1Target, greaterThan(tier0Target));
+
+      ctrl.startLevel(kLevelCount);
+      ctrl.addScore(tier0Target); // đủ target tier 0 nhưng chưa đủ tier 1
+      ctrl.checkEnd(false);
+      expect(ctrl.starsEarned.value, 0);
+      expect(ctrl.canPrestige, isFalse);
+    });
+
+    test('tier tích luỹ tuần tự: thắng lại level cuối ở tier 1 → mở khoá '
+        'prestige lần 2, tăng lên tier 2', () {
+      winLevel(kLevelCount);
+      ctrl.prestige();
+      expect(ctrl.prestigeTier.value, 1);
+
+      winLevel(kLevelCount); // thắng lại ở tier 1 với target đã nặng hơn
+      expect(ctrl.canPrestige, isTrue);
+
+      ctrl.prestige();
+      expect(ctrl.prestigeTier.value, 2);
+      expect(ctrl.unlockedLevel.value, 1);
+    });
+
+    test('resetProgress() đưa prestigeTier/allLevelsCompletedOnce về mặc '
+        'định', () async {
+      winLevel(kLevelCount);
+      ctrl.prestige();
+      expect(ctrl.prestigeTier.value, 1);
+
+      await ctrl.resetProgress();
+
+      expect(ctrl.prestigeTier.value, 0);
+      expect(ctrl.allLevelsCompletedOnce.value, isFalse);
+      expect(ctrl.canPrestige, isFalse);
+      expect(StorageService.to.getInt(StorageKeys.prestigeTier), 0);
+      expect(
+        StorageService.to.getBool(StorageKeys.allLevelsCompleted),
+        isFalse,
+      );
+    });
+
+    test('prestige không đụng high-score/star đã lưu trước đó (không phạt '
+        'lịch sử chơi)', () {
+      winLevel(1);
+      final bestBefore = StorageService.to.getInt(StorageKeys.highScore(1));
+      final starBefore = StorageService.to.getInt(StorageKeys.star(1));
+      expect(bestBefore, greaterThan(0));
+
+      winLevel(kLevelCount);
+      ctrl.prestige();
+
+      expect(StorageService.to.getInt(StorageKeys.highScore(1)), bestBefore);
+      expect(StorageService.to.getInt(StorageKeys.star(1)), starBefore);
+    });
+  });
+
+  group('I30 Mascot Wardrobe', () {
+    test('ban đầu: skin classic active, chỉ classic được mở khoá', () {
+      expect(ctrl.activeMascotSkinId.value, 'classic');
+      expect(ctrl.unlockedMascotSkinIds, {'classic'});
+      expect(ctrl.activeMascotSkin.id, 'classic');
+    });
+
+    test('buySkin() đủ xu → trừ đúng giá, mở khoá skin, trả về true', () {
+      ctrl.coins.value = 300;
+      final ok = ctrl.buySkin(kMascotSkins.firstWhere((s) => s.id == 'ruby'));
+      expect(ok, isTrue);
+      expect(ctrl.coins.value, 0);
+      expect(ctrl.unlockedMascotSkinIds, contains('ruby'));
+      expect(
+        StorageService.to.getString(StorageKeys.unlockedMascotSkins),
+        contains('ruby'),
+      );
+    });
+
+    test('buySkin() thiếu xu → không trừ, không mở khoá, trả về false', () {
+      ctrl.coins.value = 100;
+      final ruby = kMascotSkins.firstWhere((s) => s.id == 'ruby');
+      final ok = ctrl.buySkin(ruby);
+      expect(ok, isFalse);
+      expect(ctrl.coins.value, 100);
+      expect(ctrl.unlockedMascotSkinIds, isNot(contains('ruby')));
+    });
+
+    test('buySkin() skin đã mở khoá (double-buy/race) → no-op, không trừ '
+        'xu lần 2', () {
+      ctrl.coins.value = 1000;
+      final ruby = kMascotSkins.firstWhere((s) => s.id == 'ruby');
+      expect(ctrl.buySkin(ruby), isTrue);
+      final coinsAfterFirstBuy = ctrl.coins.value;
+      expect(ctrl.buySkin(ruby), isFalse);
+      expect(ctrl.coins.value, coinsAfterFirstBuy);
+    });
+
+    test('buySkin() skin mở khoá bằng thành tựu (coinPrice null) → luôn '
+        'trả về false dù đủ xu', () {
+      ctrl.coins.value = 999999;
+      final aurora = kMascotSkins.firstWhere((s) => s.id == 'aurora');
+      final ok = ctrl.buySkin(aurora);
+      expect(ok, isFalse);
+      expect(ctrl.coins.value, 999999);
+      expect(ctrl.unlockedMascotSkinIds, isNot(contains('aurora')));
+    });
+
+    test('selectMascotSkin() skin đã mở khoá → thành công, đổi active', () {
+      ctrl.coins.value = 300;
+      ctrl.buySkin(kMascotSkins.firstWhere((s) => s.id == 'ruby'));
+      final ok = ctrl.selectMascotSkin('ruby');
+      expect(ok, isTrue);
+      expect(ctrl.activeMascotSkinId.value, 'ruby');
+      expect(ctrl.activeMascotSkin.id, 'ruby');
+    });
+
+    test('selectMascotSkin() skin chưa mở khoá → false, active không đổi', () {
+      final ok = ctrl.selectMascotSkin('sapphire');
+      expect(ok, isFalse);
+      expect(ctrl.activeMascotSkinId.value, 'classic');
+    });
+
+    test('selectMascotSkin() id giả mạo/không tồn tại → false, không crash, '
+        'activeMascotSkin fallback về skin đầu tiên', () {
+      final ok = ctrl.selectMascotSkin('id_khong_ton_tai_gia_mao');
+      expect(ok, isFalse);
+      expect(ctrl.activeMascotSkinId.value, 'classic');
+      expect(ctrl.activeMascotSkin.id, 'classic');
+    });
+
+    test('đạt combo 25 (mốc combo_25) → tự động mở khoá skin aurora, '
+        'không trừ xu mua skin', () {
+      ctrl.startLevel(1);
+      for (var i = 0; i < 25; i++) {
+        ctrl.registerPop(10);
+      }
+      expect(ctrl.maxComboEver.value, 25);
+      expect(ctrl.unlockedAchievementIds, contains('combo_25'));
+      expect(ctrl.unlockedMascotSkinIds, contains('aurora'));
+      expect(
+        StorageService.to.getString(StorageKeys.unlockedMascotSkins),
+        contains('aurora'),
+      );
+    });
+
+    test('dọn xong 400 bàn (mốc clear_400) → tự động mở khoá skin '
+        'obsidian', () {
+      for (var i = 0; i < 400; i++) {
+        ctrl.startLevel(1);
+        ctrl.checkEnd(true);
+      }
+      expect(ctrl.boardsFullyCleared.value, 400);
+      expect(ctrl.unlockedAchievementIds, contains('clear_400'));
+      expect(ctrl.unlockedMascotSkinIds, contains('obsidian'));
+    });
+
+    test('resetProgress() đưa mascot wardrobe về mặc định: chỉ classic, '
+        'active = classic', () async {
+      ctrl.coins.value = 300;
+      ctrl.buySkin(kMascotSkins.firstWhere((s) => s.id == 'ruby'));
+      ctrl.selectMascotSkin('ruby');
+      expect(ctrl.activeMascotSkinId.value, 'ruby');
+
+      await ctrl.resetProgress();
+
+      expect(ctrl.activeMascotSkinId.value, 'classic');
+      expect(ctrl.unlockedMascotSkinIds, {'classic'});
+      expect(StorageService.to.getString(StorageKeys.activeMascotSkin), isNull);
+      expect(
+        StorageService.to.getString(StorageKeys.unlockedMascotSkins),
+        isNull,
+      );
     });
   });
 

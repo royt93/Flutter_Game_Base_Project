@@ -53,6 +53,9 @@ class StorageKeys {
   // A7: tắt slow-mo/zoom-punch/shake cho người nhạy chuyển động.
   static const String reduceMotion = 'reduce_motion';
 
+  // I28: bật ghi lại lượt tap để tạo mã ghost-replay chia sẻ (mặc định tắt).
+  static const String recordReplay = 'record_replay';
+
   // X5: đã hiện review prompt chưa (chỉ hiện đúng 1 lần trong đời cài đặt).
   static const String hasShownReviewPrompt = 'has_shown_review_prompt';
 
@@ -82,6 +85,18 @@ class StorageKeys {
   static const String boardsFullyCleared = 'boards_fully_cleared';
   static const String totalBoostersUsed = 'total_boosters_used';
   static const String unlockedAchievements = 'unlocked_achievements';
+
+  // I27 Prestige/New Game+: tier hiện tại (0 = chưa prestige); đã hoàn
+  // thành level cuối (220) ít nhất 1 lần ở tier hiện tại chưa (điều kiện mở
+  // khoá nút Prestige — `unlockedLevel` tự chặn ở kLevelCount nên không
+  // dùng được làm tín hiệu "đã xong hết").
+  static const String prestigeTier = 'prestige_tier';
+  static const String allLevelsCompleted = 'all_levels_completed';
+
+  // I30 Mascot Wardrobe: id skin đang active + set id skin đã mở khoá (CSV,
+  // giống unlockedAchievements) — mặc định chỉ có skin free.
+  static const String activeMascotSkin = 'active_mascot_skin';
+  static const String unlockedMascotSkins = 'unlocked_mascot_skins';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

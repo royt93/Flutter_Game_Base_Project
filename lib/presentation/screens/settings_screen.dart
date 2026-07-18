@@ -27,6 +27,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   );
   late bool _reduceMotion = StorageService.to.getBool(StorageKeys.reduceMotion);
   late bool _darkTheme = NeonTheme.dark;
+  late bool _recordReplay = StorageService.to.getBool(StorageKeys.recordReplay);
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +111,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       activeTrackColor: NeonTheme.cyan,
                       title: Text(
                         'reduce_motion'.tr,
+                        style: TextStyle(color: NeonTheme.ink),
+                      ),
+                    ),
+                    SwitchListTile(
+                      value: _recordReplay,
+                      onChanged: (v) {
+                        setState(() => _recordReplay = v);
+                        StorageService.to.setBool(StorageKeys.recordReplay, v);
+                      },
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: NeonTheme.cyan,
+                      title: Text(
+                        'record_replay'.tr,
                         style: TextStyle(color: NeonTheme.ink),
                       ),
                     ),

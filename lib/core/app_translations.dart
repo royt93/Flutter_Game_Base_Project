@@ -155,6 +155,17 @@ class AppTranslations extends Translations {
           // home_season_*/home_achievement_*/home_perk_* (en+vi ở
           // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w39ByLang).
           ...?_w39ByLang[e.key],
+          // I27 — Prestige/New Game+: prestige_title/prestige_msg/
+          // prestige_confirm/prestige_ready (en+vi ở _extraEn/_extraVi, 20
+          // ngôn ngữ còn lại ở _w40ByLang).
+          ...?_w40ByLang[e.key],
+          // I28 — Ghost Replay Share: record_replay/share_replay/
+          // ghost_replay_* (en+vi ở _extraEn/_extraVi, 20 ngôn ngữ còn lại
+          // ở _w41ByLang).
+          ...?_w41ByLang[e.key],
+          // I30 — Mascot Wardrobe: skin_*_name/wardrobe_* (en+vi ở
+          // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w42ByLang).
+          ...?_w42ByLang[e.key],
         },
     };
   }
@@ -775,6 +786,9 @@ class AppTranslations extends Translations {
     'guide_rule_clear_body':
         'Clear every block on the board for a big bonus at the end of the '
         'level.',
+    'guide_rule_boss_title': 'Boss Tile',
+    'guide_rule_boss_body':
+        'Some milestone levels have a tough Boss Tile blocking several cells. Pop groups next to it to lower its HP -- clear the HP to break it apart.',
     'guide_rule_nomoves_title': 'No moves left',
     'guide_rule_nomoves_body':
         'The level ends once no group of 2+ remains — reach the target '
@@ -856,6 +870,22 @@ class AppTranslations extends Translations {
         'Beat your best score (@score) to win +@coin bonus coins!',
     'perfect_clear_start': 'Start',
     'perfect_clear_success_label': '🏆 Perfect Clear! +@coin coins',
+    // I27 — Prestige/New Game+.
+    'prestige_title': 'Prestige',
+    'prestige_msg':
+        'Restart from level 1 at Tier @tier — all 220 levels get a harder '
+        'target score, and you keep your high scores. Get +@coin bonus coins!',
+    'prestige_confirm': 'Prestige',
+    'prestige_ready': 'Prestige Tier @tier',
+    // I28 — Async Ghost Replay Share.
+    'record_replay': 'Record Replay',
+    'share_replay': 'Share Replay',
+    'ghost_replay_title': 'Ghost Replay',
+    'ghost_replay_paste_label': 'Paste a friend\'s replay code',
+    'ghost_replay_paste_hint': 'Paste replay code here',
+    'ghost_replay_watch_button': 'Watch Replay',
+    'ghost_replay_invalid_code': 'Invalid replay code',
+    'ghost_replay_finished': 'Replay finished',
     // Home Screen redesign — banner ưu tiên đơn + Modes dialog + Drawer.
     'modes_title': 'Choose Mode',
     'season_pass_banner_ready': 'Season Pass reward ready — tap to claim!',
@@ -889,6 +919,17 @@ class AppTranslations extends Translations {
     'home_achievement_progress': 'Almost there: @name',
     'home_perk_activate_reminder': 'You have a perk to activate',
     'home_perk_progress': '@n more world to unlock a new perk',
+    // I30 — Mascot Wardrobe.
+    'skin_classic_name': 'Classic',
+    'skin_ruby_name': 'Ruby',
+    'skin_emerald_name': 'Emerald',
+    'skin_sapphire_name': 'Sapphire',
+    'skin_aurora_name': 'Aurora',
+    'skin_obsidian_name': 'Obsidian',
+    'wardrobe_title': 'Mascot Wardrobe',
+    'wardrobe_select_button': 'Select',
+    'wardrobe_selected_label': 'Selected',
+    'wardrobe_unlock_via': 'Unlock via: @achievement',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -1468,6 +1509,9 @@ class AppTranslations extends Translations {
     'guide_rule_clear_title': 'Dọn sạch bàn chơi',
     'guide_rule_clear_body':
         'Dọn sạch mọi khối trên bàn để nhận thưởng lớn khi kết thúc màn.',
+    'guide_rule_boss_title': 'Khối Boss',
+    'guide_rule_boss_body':
+        'Một số màn mốc có khối Boss chiếm nhiều ô, rất bền. Nổ nhóm gem liền kề để làm giảm HP của nó -- hết HP thì khối vỡ tan.',
     'guide_rule_nomoves_title': 'Hết nước đi',
     'guide_rule_nomoves_body':
         'Màn kết thúc khi không còn nhóm ≥2 khối nào — đạt điểm mục tiêu '
@@ -1547,6 +1591,22 @@ class AppTranslations extends Translations {
         'Vượt qua điểm cao nhất hiện tại (@score) để nhận +@coin xu thưởng!',
     'perfect_clear_start': 'Bắt đầu',
     'perfect_clear_success_label': '🏆 Perfect Clear! +@coin xu',
+    // I27 — Prestige/New Game+.
+    'prestige_title': 'Prestige',
+    'prestige_msg':
+        'Chơi lại từ level 1 ở Tier @tier — cả 220 level tăng độ khó '
+        'mục tiêu, điểm cao cũ vẫn giữ nguyên. Nhận ngay +@coin xu thưởng!',
+    'prestige_confirm': 'Prestige',
+    'prestige_ready': 'Prestige Tier @tier',
+    // I28 — Async Ghost Replay Share.
+    'record_replay': 'Ghi lại Replay',
+    'share_replay': 'Chia sẻ Replay',
+    'ghost_replay_title': 'Xem Replay',
+    'ghost_replay_paste_label': 'Dán mã replay của bạn bè',
+    'ghost_replay_paste_hint': 'Dán mã replay vào đây',
+    'ghost_replay_watch_button': 'Xem Replay',
+    'ghost_replay_invalid_code': 'Mã replay không hợp lệ',
+    'ghost_replay_finished': 'Replay đã kết thúc',
     // Home Screen redesign — banner ưu tiên đơn + Modes dialog + Drawer.
     'modes_title': 'Chọn chế độ',
     'season_pass_banner_ready': 'Season Pass có thưởng, bấm để nhận!',
@@ -1582,6 +1642,17 @@ class AppTranslations extends Translations {
     'home_achievement_progress': 'Sắp đạt được: @name',
     'home_perk_activate_reminder': 'Bạn có perk chưa kích hoạt',
     'home_perk_progress': 'Còn @n world nữa mở khoá perk mới',
+    // I30 — Mascot Wardrobe.
+    'skin_classic_name': 'Cổ điển',
+    'skin_ruby_name': 'Hồng ngọc',
+    'skin_emerald_name': 'Lục bảo',
+    'skin_sapphire_name': 'Lam ngọc',
+    'skin_aurora_name': 'Cực quang',
+    'skin_obsidian_name': 'Hắc diện',
+    'wardrobe_title': 'Tủ đồ Mascot',
+    'wardrobe_select_button': 'Chọn',
+    'wardrobe_selected_label': 'Đang dùng',
+    'wardrobe_unlock_via': 'Mở khoá qua: @achievement',
   };
 
   static const Map<String, String> _extraEs = {
@@ -22762,6 +22833,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'Despeja todos los bloques del tablero para obtener un gran '
           'bono al final del nivel.',
+      'guide_rule_boss_title': 'Ficha Jefe',
+      'guide_rule_boss_body':
+          'Algunos niveles clave tienen una Ficha Jefe resistente que ocupa varias celdas. Explota grupos junto a ella para reducir su HP -- al llegar a cero, se rompe.',
       'guide_rule_nomoves_title': 'Sin movimientos',
       'guide_rule_nomoves_body':
           'El nivel termina cuando no queda ningún grupo de 2+; alcanza '
@@ -22784,6 +22858,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'Videz tous les blocs du plateau pour un gros bonus à la fin '
           'du niveau.',
+      'guide_rule_boss_title': 'Tuile Boss',
+      'guide_rule_boss_body':
+          "Certains niveaux clés ont une Tuile Boss résistante occupant plusieurs cases. Faites éclater des groupes à côté d'elle pour réduire ses PV -- à zéro, elle se brise.",
       'guide_rule_nomoves_title': 'Plus aucun coup possible',
       'guide_rule_nomoves_body':
           "Le niveau se termine quand il ne reste aucun groupe de 2+ ; "
@@ -22806,6 +22883,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'Räume alle Blöcke vom Feld für einen großen Bonus am Ende '
           'des Levels.',
+      'guide_rule_boss_title': 'Boss-Kachel',
+      'guide_rule_boss_body':
+          'Manche Meilenstein-Level haben eine widerstandsfähige Boss-Kachel über mehrere Felder. Lösche Gruppen daneben, um ihre HP zu senken -- bei 0 zerbricht sie.',
       'guide_rule_nomoves_title': 'Keine Züge mehr',
       'guide_rule_nomoves_body':
           'Das Level endet, wenn keine Gruppe von 2+ mehr übrig ist — '
@@ -22828,6 +22908,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'Limpe todos os blocos do tabuleiro para um grande bônus no '
           'final do nível.',
+      'guide_rule_boss_title': 'Bloco Chefe',
+      'guide_rule_boss_body':
+          'Alguns níveis marcantes têm um Bloco Chefe resistente que ocupa várias células. Estoure grupos ao lado dele para reduzir seu HP -- ao zerar, ele se quebra.',
       'guide_rule_nomoves_title': 'Sem jogadas',
       'guide_rule_nomoves_body':
           'O nível termina quando não resta nenhum grupo de 2+ — '
@@ -22850,6 +22933,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'Очистите все блоки на поле, чтобы получить большой бонус в '
           'конце уровня.',
+      'guide_rule_boss_title': 'Плитка босса',
+      'guide_rule_boss_body':
+          'На некоторых ключевых уровнях есть прочная плитка босса, занимающая несколько клеток. Взрывайте группы рядом с ней, чтобы снижать её HP -- при нуле она разрушится.',
       'guide_rule_nomoves_title': 'Нет ходов',
       'guide_rule_nomoves_body':
           'Уровень заканчивается, когда не остаётся групп из 2+ — '
@@ -22864,6 +22950,9 @@ class AppTranslations extends Translations {
       'guide_rule_gravity_body': '上方方块下落填补空缺，随后空列向左移动。',
       'guide_rule_clear_title': '清空棋盘',
       'guide_rule_clear_body': '清空棋盘上所有方块，可在关卡结束时获得大额奖励。',
+      'guide_rule_boss_title': '首领方块',
+      'guide_rule_boss_body':
+          '部分里程碑关卡有占据多个格子的首领方块。消除其相邻的同色组合可减少其生命值——生命值归零后它会碎裂消失。',
       'guide_rule_nomoves_title': '无路可走',
       'guide_rule_nomoves_body': '当棋盘上不再有2个以上的同色组合时关卡结束——达到目标分数即可获得星星。',
     },
@@ -22876,6 +22965,9 @@ class AppTranslations extends Translations {
       'guide_rule_gravity_body': '上のブロックが落ちて隙間を埋め、その後空の列は左に詰められます。',
       'guide_rule_clear_title': 'ボードをクリア',
       'guide_rule_clear_body': 'ボード上のすべてのブロックを消すと、レベル終了時に大きなボーナスがもらえます。',
+      'guide_rule_boss_title': 'ボスタイル',
+      'guide_rule_boss_body':
+          '一部の節目のレベルには、複数マスを占める頑丈なボスタイルがあります。隣接するグループを消してHPを減らし、0になると崩れ去ります。',
       'guide_rule_nomoves_title': '手詰まり',
       'guide_rule_nomoves_body':
           '2個以上のグループがなくなるとレベルが終了します——目標スコアに到達して星を獲得しましょう。',
@@ -22890,6 +22982,9 @@ class AppTranslations extends Translations {
       'guide_rule_gravity_body': '위쪽 블록이 떨어져 빈 칸을 채우고, 빈 열은 왼쪽으로 이동합니다.',
       'guide_rule_clear_title': '보드 비우기',
       'guide_rule_clear_body': '보드의 모든 블록을 지우면 레벨이 끝날 때 큰 보너스를 받습니다.',
+      'guide_rule_boss_title': '보스 타일',
+      'guide_rule_boss_body':
+          '일부 마일스톤 레벨에는 여러 칸을 차지하는 튼튼한 보스 타일이 있습니다. 인접한 그룹을 터뜨려 HP를 줄이세요 -- HP가 0이 되면 부서집니다.',
       'guide_rule_nomoves_title': '더 이상 움직일 수 없음',
       'guide_rule_nomoves_body':
           '2개 이상의 그룹이 남지 않으면 레벨이 끝납니다 — 목표 점수에 도달해 별을 획득하세요.',
@@ -22911,6 +23006,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'Svuota tutti i blocchi dal tabellone per un grande bonus '
           'alla fine del livello.',
+      'guide_rule_boss_title': 'Tessera Boss',
+      'guide_rule_boss_body':
+          'Alcuni livelli chiave hanno una Tessera Boss resistente che occupa più celle. Fai scoppiare gruppi accanto ad essa per ridurne gli HP -- a zero si rompe.',
       'guide_rule_nomoves_title': 'Nessuna mossa disponibile',
       'guide_rule_nomoves_body':
           'Il livello termina quando non rimane alcun gruppo di 2+ — '
@@ -22933,6 +23031,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'Bersihkan semua blok di papan untuk bonus besar di akhir '
           'level.',
+      'guide_rule_boss_title': 'Ubin Bos',
+      'guide_rule_boss_body':
+          'Beberapa level penting punya Ubin Bos tangguh yang menempati banyak sel. Ledakkan grup di sebelahnya untuk mengurangi HP-nya -- jika HP habis, ubin ini akan pecah.',
       'guide_rule_nomoves_title': 'Tidak ada langkah tersisa',
       'guide_rule_nomoves_body':
           'Level berakhir saat tidak ada lagi grup 2+ — capai skor '
@@ -22951,6 +23052,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_title': 'เคลียร์กระดาน',
       'guide_rule_clear_body':
           'เคลียร์บล็อกทั้งหมดบนกระดานเพื่อรับโบนัสก้อนใหญ่เมื่อจบด่าน',
+      'guide_rule_boss_title': 'ไทล์บอส',
+      'guide_rule_boss_body':
+          'บางด่านสำคัญมีไทล์บอสที่แข็งแกร่งครองหลายช่อง ระเบิดกลุ่มที่อยู่ติดกันเพื่อลด HP ของมัน -- เมื่อ HP หมดมันจะแตกสลาย',
       'guide_rule_nomoves_title': 'ไม่มีตาเดินเหลือ',
       'guide_rule_nomoves_body':
           'ด่านจะจบลงเมื่อไม่มีกลุ่มตั้งแต่ 2 ชิ้นขึ้นไปเหลืออยู่ — '
@@ -22971,6 +23075,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_title': 'बोर्ड साफ करें',
       'guide_rule_clear_body':
           'लेवल के अंत में बड़े बोनस के लिए बोर्ड के सभी ब्लॉक साफ करें।',
+      'guide_rule_boss_title': 'बॉस टाइल',
+      'guide_rule_boss_body':
+          'कुछ मील के पत्थर वाले लेवल में एक मजबूत बॉस टाइल होती है जो कई सेल घेरती है। उसके बगल के समूहों को फोड़कर उसका HP घटाएं -- HP खत्म होने पर वह टूट जाती है।',
       'guide_rule_nomoves_title': 'कोई चाल बाकी नहीं',
       'guide_rule_nomoves_body':
           'जब 2+ का कोई समूह नहीं बचता तो लेवल समाप्त हो जाता है — तारे '
@@ -22992,6 +23099,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'نظّف جميع الكتل من اللوحة للحصول على مكافأة كبيرة في نهاية '
           'المستوى.',
+      'guide_rule_boss_title': 'بلاطة الزعيم',
+      'guide_rule_boss_body':
+          'تحتوي بعض المستويات الرئيسية على بلاطة زعيم قوية تشغل عدة خلايا. فجّر المجموعات المجاورة لها لتقليل نقاط صحتها -- وعند نفادها تتحطم.',
       'guide_rule_nomoves_title': 'لا حركات متبقية',
       'guide_rule_nomoves_body':
           'ينتهي المستوى عند عدم وجود أي مجموعة من كتلتين أو أكثر — '
@@ -23014,6 +23124,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'Bölüm sonunda büyük bir bonus için tahtadaki tüm blokları '
           'temizle.',
+      'guide_rule_boss_title': 'Boss Karo',
+      'guide_rule_boss_body':
+          "Bazı kilometre taşı seviyelerinde birden fazla hücreyi kaplayan dayanıklı bir Boss Karo bulunur. Yanındaki grupları patlatarak HP'sini azaltın -- HP sıfırlanınca parçalanır.",
       'guide_rule_nomoves_title': 'Hamle kalmadı',
       'guide_rule_nomoves_body':
           '2+ grup kalmadığında bölüm sona erer — yıldız kazanmak için '
@@ -23036,6 +23149,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'Maak alle blokken op het bord leeg voor een grote bonus aan '
           'het einde van het level.',
+      'guide_rule_boss_title': 'Baas-tegel',
+      'guide_rule_boss_body':
+          'Sommige mijlpaalniveaus hebben een taaie baas-tegel die meerdere vakjes beslaat. Laat groepjes ernaast knappen om de HP te verlagen -- bij 0 HP valt hij uiteen.',
       'guide_rule_nomoves_title': 'Geen zetten meer',
       'guide_rule_nomoves_body':
           'Het level eindigt zodra er geen groep van 2+ meer over is — '
@@ -23058,6 +23174,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'Wyczyść wszystkie bloki na planszy, aby zdobyć duży bonus na '
           'koniec poziomu.',
+      'guide_rule_boss_title': 'Kafelek Bossa',
+      'guide_rule_boss_body':
+          'Niektóre kluczowe poziomy mają wytrzymały kafelek bossa zajmujący wiele pól. Niszcz grupy obok niego, by zmniejszyć jego HP -- przy zerze się rozpada.',
       'guide_rule_nomoves_title': 'Brak ruchów',
       'guide_rule_nomoves_body':
           'Poziom kończy się, gdy nie ma już grupy 2+ — osiągnij '
@@ -23080,6 +23199,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'Linisin lahat ng block sa board para sa malaking bonus sa '
           'pagtatapos ng level.',
+      'guide_rule_boss_title': 'Boss Tile',
+      'guide_rule_boss_body':
+          'May ilang mahalagang level na may matibay na Boss Tile na sumasakop sa maraming cell. Sumabog ng mga grupo sa tabi nito para bawasan ang HP nito -- kapag naubos, mababasag ito.',
       'guide_rule_nomoves_title': 'Walang natitirang galaw',
       'guide_rule_nomoves_body':
           'Matatapos ang level kapag walang natitirang grupong 2+ — '
@@ -23102,6 +23224,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'Bersihkan semua blok pada papan untuk bonus besar pada akhir '
           'tahap.',
+      'guide_rule_boss_title': 'Jubin Bos',
+      'guide_rule_boss_body':
+          'Sesetengah tahap penting mempunyai Jubin Bos yang tahan lasak dan menduduki banyak sel. Letupkan kumpulan bersebelahan untuk mengurangkan HP-nya -- apabila HP habis, ia akan pecah.',
       'guide_rule_nomoves_title': 'Tiada langkah lagi',
       'guide_rule_nomoves_body':
           'Tahap tamat apabila tiada lagi kumpulan 2+ — capai markah '
@@ -23124,6 +23249,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_body':
           'Очистіть усі блоки на полі, щоб отримати великий бонус '
           'наприкінці рівня.',
+      'guide_rule_boss_title': 'Плитка боса',
+      'guide_rule_boss_body':
+          'На деяких ключових рівнях є міцна плитка боса, що займає кілька клітинок. Вибухайте групи поруч із нею, щоб знизити її HP -- коли HP закінчиться, вона розколеться.',
       'guide_rule_nomoves_title': 'Немає ходів',
       'guide_rule_nomoves_body':
           'Рівень завершується, коли не залишається жодної групи з 2+ '
@@ -23144,6 +23272,9 @@ class AppTranslations extends Translations {
       'guide_rule_clear_title': 'বোর্ড পরিষ্কার করুন',
       'guide_rule_clear_body':
           'লেভেল শেষে বড় বোনাসের জন্য বোর্ডের সব ব্লক পরিষ্কার করুন।',
+      'guide_rule_boss_title': 'বস টাইল',
+      'guide_rule_boss_body':
+          'কিছু মাইলফলক লেভেলে একটি শক্তিশালী বস টাইল থাকে যা একাধিক সেল দখল করে। এর পাশের গ্রুপ ফাটিয়ে এর HP কমান -- HP শেষ হলে এটি ভেঙে যাবে।',
       'guide_rule_nomoves_title': 'কোনো চাল বাকি নেই',
       'guide_rule_nomoves_body':
           'যখন ২+ এর কোনো দল অবশিষ্ট থাকে না তখন লেভেল শেষ হয় — তারকা '
@@ -25546,6 +25677,637 @@ class AppTranslations extends Translations {
       'home_achievement_progress': 'প্রায় হয়ে গেছে: @name',
       'home_perk_activate_reminder': 'আপনার একটি পার্ক সক্রিয় করার বাকি আছে',
       'home_perk_progress': 'নতুন পার্ক আনলক করতে আরও @n ওয়ার্ল্ড লাগবে',
+    },
+  };
+
+  /// I27 — Prestige/New Game+: prestige_title/prestige_msg/prestige_confirm/
+  /// prestige_ready (en+vi ở _extraEn/_extraVi).
+  static const Map<String, Map<String, String>> _w40ByLang = {
+    'es_ES': {
+      'prestige_title': 'Prestigio',
+      'prestige_msg':
+          'Reinicia desde el nivel 1 en el Nivel de Prestigio @tier: los 220 '
+          'niveles tendrán una puntuación objetivo más alta, pero conservas '
+          'tus puntuaciones máximas. ¡Recibe +@coin monedas de bonificación!',
+      'prestige_confirm': 'Prestigio',
+      'prestige_ready': 'Prestigio Nivel @tier',
+    },
+    'fr_FR': {
+      'prestige_title': 'Prestige',
+      'prestige_msg':
+          'Recommencez depuis le niveau 1 au Palier @tier : les 220 niveaux '
+          'auront un score cible plus élevé, mais vous gardez vos meilleurs '
+          'scores. Recevez +@coin pièces bonus !',
+      'prestige_confirm': 'Prestige',
+      'prestige_ready': 'Prestige Palier @tier',
+    },
+    'de_DE': {
+      'prestige_title': 'Prestige',
+      'prestige_msg':
+          'Starte ab Level 1 auf Stufe @tier neu — alle 220 Level erhalten '
+          'ein höheres Zielscore, deine Bestwerte bleiben erhalten. Erhalte '
+          '+@coin Bonusmünzen!',
+      'prestige_confirm': 'Prestige',
+      'prestige_ready': 'Prestige Stufe @tier',
+    },
+    'pt_BR': {
+      'prestige_title': 'Prestígio',
+      'prestige_msg':
+          'Reinicie do nível 1 no Nível de Prestígio @tier — todos os 220 '
+          'níveis terão uma pontuação alvo mais difícil, mas suas pontuações '
+          'máximas são mantidas. Ganhe +@coin moedas de bônus!',
+      'prestige_confirm': 'Prestígio',
+      'prestige_ready': 'Prestígio Nível @tier',
+    },
+    'ru_RU': {
+      'prestige_title': 'Престиж',
+      'prestige_msg':
+          'Начните заново с уровня 1 на Уровне Престижа @tier — во всех 220 '
+          'уровнях цель по очкам станет сложнее, но рекорды сохранятся. '
+          'Получите +@coin бонусных монет!',
+      'prestige_confirm': 'Престиж',
+      'prestige_ready': 'Престиж, уровень @tier',
+    },
+    'zh_CN': {
+      'prestige_title': '转生',
+      'prestige_msg':
+          '从第1关重新开始，进入转生等级 @tier —— 全部220关的目标分数都会提高，但你的最高分会保留。'
+          '立即获得 +@coin 枚奖励金币！',
+      'prestige_confirm': '转生',
+      'prestige_ready': '转生等级 @tier',
+    },
+    'ja_JP': {
+      'prestige_title': 'プレステージ',
+      'prestige_msg':
+          'レベル1からプレステージ階層@tierで再スタート——220レベル全ての目標スコアが上がりますが、'
+          'ハイスコアはそのまま残ります。+@coin枚のボーナスコインを獲得！',
+      'prestige_confirm': 'プレステージ',
+      'prestige_ready': 'プレステージ階層 @tier',
+    },
+    'ko_KR': {
+      'prestige_title': '프레스티지',
+      'prestige_msg':
+          '레벨 1부터 프레스티지 티어 @tier로 다시 시작합니다 — 220개 레벨 전체 목표 점수가 더 '
+          '어려워지지만 최고 점수는 유지됩니다. 보너스 코인 +@coin개 획득!',
+      'prestige_confirm': '프레스티지',
+      'prestige_ready': '프레스티지 티어 @tier',
+    },
+    'it_IT': {
+      'prestige_title': 'Prestigio',
+      'prestige_msg':
+          'Ricomincia dal livello 1 al Livello Prestigio @tier: tutti i 220 '
+          'livelli avranno un punteggio obiettivo più difficile, ma i tuoi '
+          'record restano. Ricevi +@coin monete bonus!',
+      'prestige_confirm': 'Prestigio',
+      'prestige_ready': 'Prestigio Livello @tier',
+    },
+    'id_ID': {
+      'prestige_title': 'Prestise',
+      'prestige_msg':
+          'Mulai ulang dari level 1 di Tingkat Prestise @tier — semua 220 '
+          'level akan memiliki skor target yang lebih sulit, tapi skor '
+          'tertinggimu tetap tersimpan. Dapatkan +@coin koin bonus!',
+      'prestige_confirm': 'Prestise',
+      'prestige_ready': 'Prestise Tingkat @tier',
+    },
+    'th_TH': {
+      'prestige_title': 'เพรสทีจ',
+      'prestige_msg':
+          'เริ่มใหม่จากด่าน 1 ที่ระดับเพรสทีจ @tier — ทั้ง 220 ด่านจะมีคะแนน'
+          'เป้าหมายยากขึ้น แต่คะแนนสูงสุดเดิมของคุณยังคงอยู่ รับเหรียญโบนัส '
+          '+@coin ทันที!',
+      'prestige_confirm': 'เพรสทีจ',
+      'prestige_ready': 'เพรสทีจ ระดับ @tier',
+    },
+    'hi_IN': {
+      'prestige_title': 'प्रेस्टीज',
+      'prestige_msg':
+          'लेवल 1 से प्रेस्टीज टियर @tier पर फिर से शुरू करें — सभी 220 लेवल '
+          'का लक्ष्य स्कोर कठिन हो जाएगा, लेकिन आपके हाई स्कोर सुरक्षित '
+          'रहेंगे। +@coin बोनस सिक्के पाएं!',
+      'prestige_confirm': 'प्रेस्टीज',
+      'prestige_ready': 'प्रेस्टीज टियर @tier',
+    },
+    'ar_SA': {
+      'prestige_title': 'الترقية الفخرية',
+      'prestige_msg':
+          'ابدأ من جديد من المستوى 1 عند مستوى الفخر @tier — ستحصل جميع '
+          'المستويات الـ220 على هدف نقاط أصعب، لكنك تحتفظ بأعلى نتائجك. احصل '
+          'على +@coin عملة إضافية!',
+      'prestige_confirm': 'الترقية الفخرية',
+      'prestige_ready': 'الفخر مستوى @tier',
+    },
+    'tr_TR': {
+      'prestige_title': 'Prestij',
+      'prestige_msg':
+          '1. seviyeden Prestij Kademesi @tier ile yeniden başla — 220 '
+          'seviyenin tamamında hedef skor zorlaşır, ancak en yüksek '
+          'skorların saklı kalır. +@coin bonus jeton kazan!',
+      'prestige_confirm': 'Prestij',
+      'prestige_ready': 'Prestij Kademe @tier',
+    },
+    'nl_NL': {
+      'prestige_title': 'Prestige',
+      'prestige_msg':
+          'Begin opnieuw vanaf level 1 op Prestige-tier @tier — alle 220 '
+          'levels krijgen een moeilijker doelscore, maar je hoogste scores '
+          'blijven behouden. Ontvang +@coin bonusmunten!',
+      'prestige_confirm': 'Prestige',
+      'prestige_ready': 'Prestige Tier @tier',
+    },
+    'pl_PL': {
+      'prestige_title': 'Prestiż',
+      'prestige_msg':
+          'Zacznij od nowa od poziomu 1 na poziomie prestiżu @tier — '
+          'wszystkie 220 poziomów będzie miało trudniejszy wynik docelowy, '
+          'ale Twoje rekordy pozostaną. Zdobądź +@coin monet bonusowych!',
+      'prestige_confirm': 'Prestiż',
+      'prestige_ready': 'Prestiż Poziom @tier',
+    },
+    'fil_PH': {
+      'prestige_title': 'Prestige',
+      'prestige_msg':
+          'Magsimula ulit mula sa level 1 sa Prestige Tier @tier — magiging '
+          'mas mahirap ang target score ng lahat ng 220 level, pero '
+          'mananatili ang iyong high scores. Kumuha ng +@coin bonus coins!',
+      'prestige_confirm': 'Prestige',
+      'prestige_ready': 'Prestige Tier @tier',
+    },
+    'ms_MY': {
+      'prestige_title': 'Prestij',
+      'prestige_msg':
+          'Mula semula dari tahap 1 pada Prestij Tier @tier — kesemua 220 '
+          'tahap akan mempunyai skor sasaran yang lebih sukar, tetapi skor '
+          'tertinggi anda kekal. Dapatkan +@coin syiling bonus!',
+      'prestige_confirm': 'Prestij',
+      'prestige_ready': 'Prestij Tier @tier',
+    },
+    'uk_UA': {
+      'prestige_title': 'Престиж',
+      'prestige_msg':
+          'Почніть заново з рівня 1 на рівні престижу @tier — усі 220 рівнів '
+          'отримають складнішу цільову кількість очок, але ваші рекорди '
+          'збережуться. Отримайте +@coin бонусних монет!',
+      'prestige_confirm': 'Престиж',
+      'prestige_ready': 'Престиж, рівень @tier',
+    },
+    'bn_BD': {
+      'prestige_title': 'প্রেস্টিজ',
+      'prestige_msg':
+          'লেভেল ১ থেকে প্রেস্টিজ টিয়ার @tier-এ আবার শুরু করুন — সবগুলো ২২০ '
+          'লেভেলের লক্ষ্য স্কোর কঠিন হয়ে যাবে, তবে আপনার হাই স্কোর অক্ষত '
+          'থাকবে। +@coin বোনাস কয়েন পান!',
+      'prestige_confirm': 'প্রেস্টিজ',
+      'prestige_ready': 'প্রেস্টিজ টিয়ার @tier',
+    },
+  };
+
+  // I28 — Async Ghost Replay Share (en+vi ở _extraEn/_extraVi ở trên).
+  static const Map<String, Map<String, String>> _w41ByLang = {
+    'es_ES': {
+      'record_replay': 'Grabar repetición',
+      'share_replay': 'Compartir repetición',
+      'ghost_replay_title': 'Repetición fantasma',
+      'ghost_replay_paste_label': 'Pega el código de repetición de un amigo',
+      'ghost_replay_paste_hint': 'Pega aquí el código de repetición',
+      'ghost_replay_watch_button': 'Ver repetición',
+      'ghost_replay_invalid_code': 'Código de repetición no válido',
+      'ghost_replay_finished': 'Repetición finalizada',
+    },
+    'fr_FR': {
+      'record_replay': 'Enregistrer la relecture',
+      'share_replay': 'Partager la relecture',
+      'ghost_replay_title': 'Relecture fantôme',
+      'ghost_replay_paste_label': "Collez le code de relecture d'un ami",
+      'ghost_replay_paste_hint': 'Collez le code de relecture ici',
+      'ghost_replay_watch_button': 'Regarder la relecture',
+      'ghost_replay_invalid_code': 'Code de relecture invalide',
+      'ghost_replay_finished': 'Relecture terminée',
+    },
+    'de_DE': {
+      'record_replay': 'Wiederholung aufzeichnen',
+      'share_replay': 'Wiederholung teilen',
+      'ghost_replay_title': 'Geister-Wiederholung',
+      'ghost_replay_paste_label': 'Wiederholungscode eines Freundes einfügen',
+      'ghost_replay_paste_hint': 'Wiederholungscode hier einfügen',
+      'ghost_replay_watch_button': 'Wiederholung ansehen',
+      'ghost_replay_invalid_code': 'Ungültiger Wiederholungscode',
+      'ghost_replay_finished': 'Wiederholung beendet',
+    },
+    'pt_BR': {
+      'record_replay': 'Gravar replay',
+      'share_replay': 'Compartilhar replay',
+      'ghost_replay_title': 'Replay fantasma',
+      'ghost_replay_paste_label': 'Cole o código de replay de um amigo',
+      'ghost_replay_paste_hint': 'Cole o código de replay aqui',
+      'ghost_replay_watch_button': 'Assistir replay',
+      'ghost_replay_invalid_code': 'Código de replay inválido',
+      'ghost_replay_finished': 'Replay finalizado',
+    },
+    'ru_RU': {
+      'record_replay': 'Записать повтор',
+      'share_replay': 'Поделиться повтором',
+      'ghost_replay_title': 'Повтор-призрак',
+      'ghost_replay_paste_label': 'Вставьте код повтора друга',
+      'ghost_replay_paste_hint': 'Вставьте код повтора сюда',
+      'ghost_replay_watch_button': 'Смотреть повтор',
+      'ghost_replay_invalid_code': 'Неверный код повтора',
+      'ghost_replay_finished': 'Повтор завершён',
+    },
+    'zh_CN': {
+      'record_replay': '录制回放',
+      'share_replay': '分享回放',
+      'ghost_replay_title': '幽灵回放',
+      'ghost_replay_paste_label': '粘贴好友的回放码',
+      'ghost_replay_paste_hint': '在此粘贴回放码',
+      'ghost_replay_watch_button': '观看回放',
+      'ghost_replay_invalid_code': '回放码无效',
+      'ghost_replay_finished': '回放已结束',
+    },
+    'ja_JP': {
+      'record_replay': 'リプレイを録画',
+      'share_replay': 'リプレイを共有',
+      'ghost_replay_title': 'ゴーストリプレイ',
+      'ghost_replay_paste_label': '友達のリプレイコードを貼り付け',
+      'ghost_replay_paste_hint': 'ここにリプレイコードを貼り付け',
+      'ghost_replay_watch_button': 'リプレイを見る',
+      'ghost_replay_invalid_code': '無効なリプレイコードです',
+      'ghost_replay_finished': 'リプレイ終了',
+    },
+    'ko_KR': {
+      'record_replay': '리플레이 녹화',
+      'share_replay': '리플레이 공유',
+      'ghost_replay_title': '고스트 리플레이',
+      'ghost_replay_paste_label': '친구의 리플레이 코드를 붙여넣으세요',
+      'ghost_replay_paste_hint': '여기에 리플레이 코드를 붙여넣으세요',
+      'ghost_replay_watch_button': '리플레이 보기',
+      'ghost_replay_invalid_code': '유효하지 않은 리플레이 코드',
+      'ghost_replay_finished': '리플레이 종료',
+    },
+    'it_IT': {
+      'record_replay': 'Registra replay',
+      'share_replay': 'Condividi replay',
+      'ghost_replay_title': 'Replay fantasma',
+      'ghost_replay_paste_label': 'Incolla il codice replay di un amico',
+      'ghost_replay_paste_hint': 'Incolla qui il codice replay',
+      'ghost_replay_watch_button': 'Guarda il replay',
+      'ghost_replay_invalid_code': 'Codice replay non valido',
+      'ghost_replay_finished': 'Replay terminato',
+    },
+    'id_ID': {
+      'record_replay': 'Rekam Replay',
+      'share_replay': 'Bagikan Replay',
+      'ghost_replay_title': 'Replay Hantu',
+      'ghost_replay_paste_label': 'Tempel kode replay teman',
+      'ghost_replay_paste_hint': 'Tempel kode replay di sini',
+      'ghost_replay_watch_button': 'Tonton Replay',
+      'ghost_replay_invalid_code': 'Kode replay tidak valid',
+      'ghost_replay_finished': 'Replay selesai',
+    },
+    'th_TH': {
+      'record_replay': 'บันทึกรีเพลย์',
+      'share_replay': 'แชร์รีเพลย์',
+      'ghost_replay_title': 'รีเพลย์เงา',
+      'ghost_replay_paste_label': 'วางโค้ดรีเพลย์ของเพื่อน',
+      'ghost_replay_paste_hint': 'วางโค้ดรีเพลย์ที่นี่',
+      'ghost_replay_watch_button': 'ดูรีเพลย์',
+      'ghost_replay_invalid_code': 'โค้ดรีเพลย์ไม่ถูกต้อง',
+      'ghost_replay_finished': 'รีเพลย์จบแล้ว',
+    },
+    'hi_IN': {
+      'record_replay': 'रीप्ले रिकॉर्ड करें',
+      'share_replay': 'रीप्ले शेयर करें',
+      'ghost_replay_title': 'घोस्ट रीप्ले',
+      'ghost_replay_paste_label': 'दोस्त का रीप्ले कोड पेस्ट करें',
+      'ghost_replay_paste_hint': 'यहाँ रीप्ले कोड पेस्ट करें',
+      'ghost_replay_watch_button': 'रीप्ले देखें',
+      'ghost_replay_invalid_code': 'अमान्य रीप्ले कोड',
+      'ghost_replay_finished': 'रीप्ले समाप्त हुआ',
+    },
+    'ar_SA': {
+      'record_replay': 'تسجيل الإعادة',
+      'share_replay': 'مشاركة الإعادة',
+      'ghost_replay_title': 'إعادة الشبح',
+      'ghost_replay_paste_label': 'الصق رمز إعادة صديقك',
+      'ghost_replay_paste_hint': 'الصق رمز الإعادة هنا',
+      'ghost_replay_watch_button': 'مشاهدة الإعادة',
+      'ghost_replay_invalid_code': 'رمز إعادة غير صالح',
+      'ghost_replay_finished': 'انتهت الإعادة',
+    },
+    'tr_TR': {
+      'record_replay': 'Tekrarı Kaydet',
+      'share_replay': 'Tekrarı Paylaş',
+      'ghost_replay_title': 'Hayalet Tekrar',
+      'ghost_replay_paste_label': 'Bir arkadaşının tekrar kodunu yapıştır',
+      'ghost_replay_paste_hint': 'Tekrar kodunu buraya yapıştır',
+      'ghost_replay_watch_button': 'Tekrarı İzle',
+      'ghost_replay_invalid_code': 'Geçersiz tekrar kodu',
+      'ghost_replay_finished': 'Tekrar bitti',
+    },
+    'nl_NL': {
+      'record_replay': 'Replay opnemen',
+      'share_replay': 'Replay delen',
+      'ghost_replay_title': 'Spookreplay',
+      'ghost_replay_paste_label': 'Plak de replaycode van een vriend',
+      'ghost_replay_paste_hint': 'Plak hier de replaycode',
+      'ghost_replay_watch_button': 'Replay bekijken',
+      'ghost_replay_invalid_code': 'Ongeldige replaycode',
+      'ghost_replay_finished': 'Replay voltooid',
+    },
+    'pl_PL': {
+      'record_replay': 'Nagraj powtórkę',
+      'share_replay': 'Udostępnij powtórkę',
+      'ghost_replay_title': 'Powtórka-widmo',
+      'ghost_replay_paste_label': 'Wklej kod powtórki znajomego',
+      'ghost_replay_paste_hint': 'Wklej tutaj kod powtórki',
+      'ghost_replay_watch_button': 'Obejrzyj powtórkę',
+      'ghost_replay_invalid_code': 'Nieprawidłowy kod powtórki',
+      'ghost_replay_finished': 'Powtórka zakończona',
+    },
+    'fil_PH': {
+      'record_replay': 'I-record ang Replay',
+      'share_replay': 'Ibahagi ang Replay',
+      'ghost_replay_title': 'Ghost Replay',
+      'ghost_replay_paste_label': 'I-paste ang replay code ng kaibigan',
+      'ghost_replay_paste_hint': 'I-paste dito ang replay code',
+      'ghost_replay_watch_button': 'Panoorin ang Replay',
+      'ghost_replay_invalid_code': 'Hindi wastong replay code',
+      'ghost_replay_finished': 'Tapos na ang replay',
+    },
+    'ms_MY': {
+      'record_replay': 'Rakam Main Semula',
+      'share_replay': 'Kongsi Main Semula',
+      'ghost_replay_title': 'Main Semula Hantu',
+      'ghost_replay_paste_label': 'Tampal kod main semula rakan',
+      'ghost_replay_paste_hint': 'Tampal kod main semula di sini',
+      'ghost_replay_watch_button': 'Tonton Main Semula',
+      'ghost_replay_invalid_code': 'Kod main semula tidak sah',
+      'ghost_replay_finished': 'Main semula selesai',
+    },
+    'uk_UA': {
+      'record_replay': 'Записати повтор',
+      'share_replay': 'Поділитися повтором',
+      'ghost_replay_title': 'Повтор-привид',
+      'ghost_replay_paste_label': 'Вставте код повтору друга',
+      'ghost_replay_paste_hint': 'Вставте код повтору тут',
+      'ghost_replay_watch_button': 'Дивитися повтор',
+      'ghost_replay_invalid_code': 'Недійсний код повтору',
+      'ghost_replay_finished': 'Повтор завершено',
+    },
+    'bn_BD': {
+      'record_replay': 'রিপ্লে রেকর্ড করুন',
+      'share_replay': 'রিপ্লে শেয়ার করুন',
+      'ghost_replay_title': 'ঘোস্ট রিপ্লে',
+      'ghost_replay_paste_label': 'বন্ধুর রিপ্লে কোড পেস্ট করুন',
+      'ghost_replay_paste_hint': 'এখানে রিপ্লে কোড পেস্ট করুন',
+      'ghost_replay_watch_button': 'রিপ্লে দেখুন',
+      'ghost_replay_invalid_code': 'অবৈধ রিপ্লে কোড',
+      'ghost_replay_finished': 'রিপ্লে শেষ হয়েছে',
+    },
+  };
+
+  // I30 — Mascot Wardrobe: skin_*_name/wardrobe_* (en+vi ở _extraEn/_extraVi,
+  // 20 ngôn ngữ còn lại ở _w42ByLang).
+  static const Map<String, Map<String, String>> _w42ByLang = {
+    'es_ES': {
+      'skin_classic_name': 'Clásico',
+      'skin_ruby_name': 'Rubí',
+      'skin_emerald_name': 'Esmeralda',
+      'skin_sapphire_name': 'Zafiro',
+      'skin_aurora_name': 'Aurora',
+      'skin_obsidian_name': 'Obsidiana',
+      'wardrobe_title': 'Vestuario de la Mascota',
+      'wardrobe_select_button': 'Seleccionar',
+      'wardrobe_selected_label': 'Seleccionado',
+      'wardrobe_unlock_via': 'Desbloquear con: @achievement',
+    },
+    'fr_FR': {
+      'skin_classic_name': 'Classique',
+      'skin_ruby_name': 'Rubis',
+      'skin_emerald_name': 'Émeraude',
+      'skin_sapphire_name': 'Saphir',
+      'skin_aurora_name': 'Aurore',
+      'skin_obsidian_name': 'Obsidienne',
+      'wardrobe_title': 'Garde-robe de la mascotte',
+      'wardrobe_select_button': 'Sélectionner',
+      'wardrobe_selected_label': 'Sélectionné',
+      'wardrobe_unlock_via': 'Débloquer via : @achievement',
+    },
+    'de_DE': {
+      'skin_classic_name': 'Klassisch',
+      'skin_ruby_name': 'Rubin',
+      'skin_emerald_name': 'Smaragd',
+      'skin_sapphire_name': 'Saphir',
+      'skin_aurora_name': 'Aurora',
+      'skin_obsidian_name': 'Obsidian',
+      'wardrobe_title': 'Maskottchen-Garderobe',
+      'wardrobe_select_button': 'Auswählen',
+      'wardrobe_selected_label': 'Ausgewählt',
+      'wardrobe_unlock_via': 'Freischalten über: @achievement',
+    },
+    'pt_BR': {
+      'skin_classic_name': 'Clássico',
+      'skin_ruby_name': 'Rubi',
+      'skin_emerald_name': 'Esmeralda',
+      'skin_sapphire_name': 'Safira',
+      'skin_aurora_name': 'Aurora',
+      'skin_obsidian_name': 'Obsidiana',
+      'wardrobe_title': 'Guarda-roupa do Mascote',
+      'wardrobe_select_button': 'Selecionar',
+      'wardrobe_selected_label': 'Selecionado',
+      'wardrobe_unlock_via': 'Desbloquear via: @achievement',
+    },
+    'ru_RU': {
+      'skin_classic_name': 'Классический',
+      'skin_ruby_name': 'Рубин',
+      'skin_emerald_name': 'Изумруд',
+      'skin_sapphire_name': 'Сапфир',
+      'skin_aurora_name': 'Аврора',
+      'skin_obsidian_name': 'Обсидиан',
+      'wardrobe_title': 'Гардероб талисмана',
+      'wardrobe_select_button': 'Выбрать',
+      'wardrobe_selected_label': 'Выбрано',
+      'wardrobe_unlock_via': 'Разблокировать через: @achievement',
+    },
+    'zh_CN': {
+      'skin_classic_name': '经典',
+      'skin_ruby_name': '红宝石',
+      'skin_emerald_name': '祖母绿',
+      'skin_sapphire_name': '蓝宝石',
+      'skin_aurora_name': '极光',
+      'skin_obsidian_name': '黑曜石',
+      'wardrobe_title': '吉祥物衣柜',
+      'wardrobe_select_button': '选择',
+      'wardrobe_selected_label': '已选择',
+      'wardrobe_unlock_via': '解锁方式：@achievement',
+    },
+    'ja_JP': {
+      'skin_classic_name': 'クラシック',
+      'skin_ruby_name': 'ルビー',
+      'skin_emerald_name': 'エメラルド',
+      'skin_sapphire_name': 'サファイア',
+      'skin_aurora_name': 'オーロラ',
+      'skin_obsidian_name': '黒曜石',
+      'wardrobe_title': 'マスコットワードローブ',
+      'wardrobe_select_button': '選択',
+      'wardrobe_selected_label': '選択中',
+      'wardrobe_unlock_via': '解除条件: @achievement',
+    },
+    'ko_KR': {
+      'skin_classic_name': '클래식',
+      'skin_ruby_name': '루비',
+      'skin_emerald_name': '에메랄드',
+      'skin_sapphire_name': '사파이어',
+      'skin_aurora_name': '오로라',
+      'skin_obsidian_name': '흑요석',
+      'wardrobe_title': '마스코트 옷장',
+      'wardrobe_select_button': '선택',
+      'wardrobe_selected_label': '선택됨',
+      'wardrobe_unlock_via': '잠금 해제: @achievement',
+    },
+    'it_IT': {
+      'skin_classic_name': 'Classico',
+      'skin_ruby_name': 'Rubino',
+      'skin_emerald_name': 'Smeraldo',
+      'skin_sapphire_name': 'Zaffiro',
+      'skin_aurora_name': 'Aurora',
+      'skin_obsidian_name': 'Ossidiana',
+      'wardrobe_title': 'Guardaroba della Mascotte',
+      'wardrobe_select_button': 'Seleziona',
+      'wardrobe_selected_label': 'Selezionato',
+      'wardrobe_unlock_via': 'Sblocca tramite: @achievement',
+    },
+    'id_ID': {
+      'skin_classic_name': 'Klasik',
+      'skin_ruby_name': 'Ruby',
+      'skin_emerald_name': 'Zamrud',
+      'skin_sapphire_name': 'Safir',
+      'skin_aurora_name': 'Aurora',
+      'skin_obsidian_name': 'Obsidian',
+      'wardrobe_title': 'Lemari Maskot',
+      'wardrobe_select_button': 'Pilih',
+      'wardrobe_selected_label': 'Dipilih',
+      'wardrobe_unlock_via': 'Buka lewat: @achievement',
+    },
+    'th_TH': {
+      'skin_classic_name': 'คลาสสิก',
+      'skin_ruby_name': 'ทับทิม',
+      'skin_emerald_name': 'มรกต',
+      'skin_sapphire_name': 'ไพลิน',
+      'skin_aurora_name': 'ออโรร่า',
+      'skin_obsidian_name': 'ออบซิเดียน',
+      'wardrobe_title': 'ตู้เสื้อผ้ามาสคอต',
+      'wardrobe_select_button': 'เลือก',
+      'wardrobe_selected_label': 'เลือกแล้ว',
+      'wardrobe_unlock_via': 'ปลดล็อกผ่าน: @achievement',
+    },
+    'hi_IN': {
+      'skin_classic_name': 'क्लासिक',
+      'skin_ruby_name': 'माणिक',
+      'skin_emerald_name': 'पन्ना',
+      'skin_sapphire_name': 'नीलम',
+      'skin_aurora_name': 'अरोरा',
+      'skin_obsidian_name': 'ओब्सीडियन',
+      'wardrobe_title': 'मैस्कॉट अलमारी',
+      'wardrobe_select_button': 'चुनें',
+      'wardrobe_selected_label': 'चयनित',
+      'wardrobe_unlock_via': 'अनलॉक करें: @achievement',
+    },
+    'ar_SA': {
+      'skin_classic_name': 'كلاسيكي',
+      'skin_ruby_name': 'ياقوت',
+      'skin_emerald_name': 'زمرد',
+      'skin_sapphire_name': 'ياقوت أزرق',
+      'skin_aurora_name': 'أورورا',
+      'skin_obsidian_name': 'سبج',
+      'wardrobe_title': 'خزانة الشعار',
+      'wardrobe_select_button': 'اختيار',
+      'wardrobe_selected_label': 'مُختار',
+      'wardrobe_unlock_via': 'افتح عبر: @achievement',
+    },
+    'tr_TR': {
+      'skin_classic_name': 'Klasik',
+      'skin_ruby_name': 'Yakut',
+      'skin_emerald_name': 'Zümrüt',
+      'skin_sapphire_name': 'Safir',
+      'skin_aurora_name': 'Aurora',
+      'skin_obsidian_name': 'Obsidyen',
+      'wardrobe_title': 'Maskot Gardırobu',
+      'wardrobe_select_button': 'Seç',
+      'wardrobe_selected_label': 'Seçildi',
+      'wardrobe_unlock_via': 'Kilidini aç: @achievement',
+    },
+    'nl_NL': {
+      'skin_classic_name': 'Klassiek',
+      'skin_ruby_name': 'Robijn',
+      'skin_emerald_name': 'Smaragd',
+      'skin_sapphire_name': 'Saffier',
+      'skin_aurora_name': 'Aurora',
+      'skin_obsidian_name': 'Obsidiaan',
+      'wardrobe_title': 'Mascotte-garderobe',
+      'wardrobe_select_button': 'Selecteren',
+      'wardrobe_selected_label': 'Geselecteerd',
+      'wardrobe_unlock_via': 'Ontgrendel via: @achievement',
+    },
+    'pl_PL': {
+      'skin_classic_name': 'Klasyczny',
+      'skin_ruby_name': 'Rubin',
+      'skin_emerald_name': 'Szmaragd',
+      'skin_sapphire_name': 'Szafir',
+      'skin_aurora_name': 'Aurora',
+      'skin_obsidian_name': 'Obsydian',
+      'wardrobe_title': 'Garderoba maskotki',
+      'wardrobe_select_button': 'Wybierz',
+      'wardrobe_selected_label': 'Wybrano',
+      'wardrobe_unlock_via': 'Odblokuj przez: @achievement',
+    },
+    'fil_PH': {
+      'skin_classic_name': 'Klasiko',
+      'skin_ruby_name': 'Ruby',
+      'skin_emerald_name': 'Emerald',
+      'skin_sapphire_name': 'Sapphire',
+      'skin_aurora_name': 'Aurora',
+      'skin_obsidian_name': 'Obsidian',
+      'wardrobe_title': 'Wardrobe ng Mascot',
+      'wardrobe_select_button': 'Piliin',
+      'wardrobe_selected_label': 'Napili',
+      'wardrobe_unlock_via': 'I-unlock sa pamamagitan ng: @achievement',
+    },
+    'ms_MY': {
+      'skin_classic_name': 'Klasik',
+      'skin_ruby_name': 'Ruby',
+      'skin_emerald_name': 'Zamrud',
+      'skin_sapphire_name': 'Nilam',
+      'skin_aurora_name': 'Aurora',
+      'skin_obsidian_name': 'Obsidian',
+      'wardrobe_title': 'Almari Maskot',
+      'wardrobe_select_button': 'Pilih',
+      'wardrobe_selected_label': 'Dipilih',
+      'wardrobe_unlock_via': 'Buka kunci melalui: @achievement',
+    },
+    'uk_UA': {
+      'skin_classic_name': 'Класичний',
+      'skin_ruby_name': 'Рубін',
+      'skin_emerald_name': 'Смарагд',
+      'skin_sapphire_name': 'Сапфір',
+      'skin_aurora_name': 'Аврора',
+      'skin_obsidian_name': 'Обсидіан',
+      'wardrobe_title': 'Гардероб талісмана',
+      'wardrobe_select_button': 'Вибрати',
+      'wardrobe_selected_label': 'Вибрано',
+      'wardrobe_unlock_via': 'Розблокувати через: @achievement',
+    },
+    'bn_BD': {
+      'skin_classic_name': 'ক্লাসিক',
+      'skin_ruby_name': 'রুবি',
+      'skin_emerald_name': 'পান্না',
+      'skin_sapphire_name': 'নীলা',
+      'skin_aurora_name': 'অরোরা',
+      'skin_obsidian_name': 'অবসিডিয়ান',
+      'wardrobe_title': 'মাসকট ওয়ারড্রোব',
+      'wardrobe_select_button': 'নির্বাচন করুন',
+      'wardrobe_selected_label': 'নির্বাচিত',
+      'wardrobe_unlock_via': 'আনলক করুন: @achievement',
     },
   };
 }

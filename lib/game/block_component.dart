@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../core/neon_theme.dart';
 import '../data/worlds.dart';
+import '../logic/boss_tile.dart' show isBossTileId;
 import '../logic/gift_tile.dart';
 import '../logic/power_tile.dart';
 import 'pop_star_game.dart';
@@ -200,6 +201,11 @@ class BlockComponent extends PositionComponent
   /// chip qua `chipAdjacentLocks`.
   int lockCount;
 
+  /// I29: khác null nếu ô này thuộc 1 boss tile (giá trị = HP còn lại) —
+  /// đồng bộ riêng từ `PopStarGame.bossHp` vì HP không mã hoá trong
+  /// [colorIndex] (chỉ mã ID, xem `logic/boss_tile.dart`).
+  int? bossHp;
+
   /// I17: chất liệu render — mặc định [TileMaterial.jelly] (world đầu).
   final TileMaterial material;
 
@@ -208,6 +214,7 @@ class BlockComponent extends PositionComponent
     required Vector2 position,
     required Vector2 size,
     this.lockCount = 0,
+    this.bossHp,
     this.material = TileMaterial.jelly,
   }) : super(position: position, size: size, anchor: Anchor.center);
 
@@ -276,7 +283,15 @@ class BlockComponent extends PositionComponent
       _renderGift(canvas, rrect, s);
       return;
     }
-    // 0b. F6a: obstacle (ice/crate) không phải màu — render riêng rồi thoát,
+    // 0b. I29: boss tile — cũng mã hoá bằng giá trị âm (dải riêng
+    // `<= bossTileIdBase`, xem `logic/boss_tile.dart`) nên PHẢI kiểm tra
+    // trước nhánh obstacle bên dưới, không thì bị hiểu nhầm thành obstacle
+    // cực bền.
+    if (isBossTileId(colorIndex)) {
+      _renderBoss(canvas, rrect, s, bossHp ?? 0);
+      return;
+    }
+    // 0c. F6a: obstacle (ice/crate) không phải màu — render riêng rồi thoát,
     // bỏ qua toàn bộ phần thân gem/preview/power-tile bên dưới.
     if (colorIndex < 0) {
       _renderObstacle(canvas, rrect, s, -colorIndex);
@@ -603,6 +618,56 @@ class BlockComponent extends PositionComponent
         Paint()..color = Colors.white.withValues(alpha: 0.95),
       );
     }
+  }
+
+  /// I29: khối boss tile — đỏ-tím "nguy hiểm" khác hẳn obstacle băng/thùng,
+  /// hiển thị [hp] bằng số thay vì chấm (HP có thể tới 16, chấm sẽ rối như
+  /// obstacle chỉ vài đơn vị).
+  void _renderBoss(Canvas canvas, RRect rrect, double s, int hp) {
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = NeonTheme.red.withValues(alpha: 0.6)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, s * 0.16),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset(rrect.left, rrect.top),
+          Offset(rrect.right, rrect.bottom),
+          [const Color(0xFF3A0A1E), NeonTheme.red, const Color(0xFF6B1030)],
+          const [0.0, 0.5, 1.0],
+        ),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.055
+        ..color = Colors.white.withValues(alpha: 0.85),
+    );
+    final painter = TextPainter(
+      text: TextSpan(
+        text: '$hp',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: s * 0.32,
+          fontWeight: FontWeight.w900,
+          shadows: [
+            Shadow(
+              color: Colors.black.withValues(alpha: 0.6),
+              blurRadius: s * 0.05,
+            ),
+          ],
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    painter.paint(
+      canvas,
+      Offset(s / 2 - painter.width / 2, s / 2 - painter.height / 2),
+    );
   }
 
   /// I2: chain tile — lớp tối bán trong suốt + icon ổ khoá + chấm trắng đếm

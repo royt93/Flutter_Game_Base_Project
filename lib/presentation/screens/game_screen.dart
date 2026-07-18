@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
 import '../../core/utils/format.dart';
 import '../../data/levels.dart';
+import '../../data/mascot_skins.dart';
 import '../../data/worlds.dart';
 import '../../game/pop_star_game.dart';
 import '../controllers/game_controller.dart';
@@ -330,6 +331,7 @@ class _Hud extends StatelessWidget {
                       mood: gameCtrl.comboMultiplier.value > 1.4
                           ? StarMood.cheer
                           : StarMood.idle,
+                      palette: gameCtrl.activeMascotSkin.palette,
                     ),
                   ),
                 ),
@@ -687,6 +689,7 @@ class _Overlay extends StatelessWidget {
         return NeonDialog.overlay(
           panel: _MascotDialog(
             mood: isTimeAttack ? StarMood.cheer : StarMood.sad,
+            palette: gameCtrl.activeMascotSkin.palette,
             panel: NeonDialog.panel(
               title: isTimeAttack ? 'time_up_title'.tr : 'board_stuck_title'.tr,
               color: NeonTheme.orange,
@@ -796,6 +799,7 @@ class _WinChoreographyState extends State<_WinChoreography> {
       onTap: _skip,
       child: _MascotDialog(
         mood: StarMood.cheer,
+        palette: gameCtrl.activeMascotSkin.palette,
         panel: NeonDialog.panel(
           // F11: boss level thắng → nhãn riêng biệt với level thường.
           title: gameCtrl.currentLevel.isBoss
@@ -857,6 +861,17 @@ class _WinChoreographyState extends State<_WinChoreography> {
                       onTap: widget.gsc.shareBoard,
                       semanticLabel: 'share_board'.tr,
                     ),
+                    // I28: chỉ hiện khi có replay hợp lệ để chia sẻ.
+                    if (widget.gsc.canShareReplay) ...[
+                      const SizedBox(width: NeonTheme.s8),
+                      NeonIconButton(
+                        Icons.movie_creation_rounded,
+                        color: NeonTheme.magenta,
+                        size: 20,
+                        onTap: widget.gsc.shareReplay,
+                        semanticLabel: 'share_replay'.tr,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -950,17 +965,22 @@ class _ProgressBar extends StatelessWidget {
 
 /// Mascot ngôi sao peek phía trên dialog thắng/thua.
 class _MascotDialog extends StatelessWidget {
-  const _MascotDialog({required this.mood, required this.panel});
+  const _MascotDialog({
+    required this.mood,
+    required this.panel,
+    required this.palette,
+  });
 
   final StarMood mood;
   final Widget panel;
+  final MascotPalette palette;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        StarMascot(size: 104, mood: mood),
+        StarMascot(size: 104, mood: mood, palette: palette),
         Transform.translate(offset: const Offset(0, -16), child: panel),
       ],
     );

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/neon_theme.dart';
 import '../../core/storage_service.dart';
+import '../../data/mascot_skins.dart';
 
 enum StarMood { idle, happy, sad, cheer }
 
@@ -13,17 +14,23 @@ enum StarMood { idle, happy, sad, cheer }
 /// X14: [onTap] (optional) — tap vào mascot chạy 1 animation phản ứng ngẫu
 /// nhiên (scale-bounce/tilt-wiggle), độc lập với idle loop, tôn trọng
 /// reduce-motion (bật thì tap không chạy animation, chỉ gọi callback).
+///
+/// I30: [palette] (optional, mặc định skin "classic") — chỉ đổi màu quầng
+/// sáng/gradient thân/viền theo skin đang active, giữ nguyên hình dạng sao +
+/// toàn bộ animation mood.
 class StarMascot extends StatefulWidget {
   const StarMascot({
     super.key,
     this.size = 120,
     this.mood = StarMood.idle,
     this.onTap,
+    this.palette = classicMascotPalette,
   });
 
   final double size;
   final StarMood mood;
   final VoidCallback? onTap;
+  final MascotPalette palette;
 
   @override
   State<StarMascot> createState() => _StarMascotState();
@@ -117,7 +124,11 @@ class _StarMascotState extends State<StarMascot> with TickerProviderStateMixin {
                 scale: scale,
                 child: CustomPaint(
                   size: Size.square(widget.size),
-                  painter: _StarPainter(mood: widget.mood, blink: blink),
+                  painter: _StarPainter(
+                    mood: widget.mood,
+                    blink: blink,
+                    palette: widget.palette,
+                  ),
                 ),
               ),
             ),
@@ -129,10 +140,15 @@ class _StarMascotState extends State<StarMascot> with TickerProviderStateMixin {
 }
 
 class _StarPainter extends CustomPainter {
-  _StarPainter({required this.mood, required this.blink});
+  _StarPainter({
+    required this.mood,
+    required this.blink,
+    required this.palette,
+  });
 
   final StarMood mood;
   final double blink;
+  final MascotPalette palette;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -154,7 +170,7 @@ class _StarPainter extends CustomPainter {
     canvas.drawPath(
       star,
       Paint()
-        ..color = NeonTheme.gold.withValues(alpha: 0.4)
+        ..color = palette.glow.withValues(alpha: 0.4)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, size.width * 0.06),
     );
     // fill gradient
@@ -164,7 +180,7 @@ class _StarPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [const Color(0xFFFFE27A), NeonTheme.gold],
+          colors: [palette.gradientStart, palette.gradientEnd],
         ).createShader(Rect.fromCircle(center: c, radius: rOuter)),
     );
     // viền
@@ -174,7 +190,7 @@ class _StarPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = size.width * 0.03
         ..strokeJoin = StrokeJoin.round
-        ..color = const Color(0xFFE59A1E),
+        ..color = palette.outline,
     );
 
     // mặt
@@ -238,5 +254,5 @@ class _StarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _StarPainter old) =>
-      old.blink != blink || old.mood != mood;
+      old.blink != blink || old.mood != mood || old.palette != palette;
 }

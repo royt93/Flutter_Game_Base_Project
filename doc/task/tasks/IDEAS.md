@@ -3,8 +3,9 @@
 Ý tưởng ngoài 48 task đã chốt (24 gốc + 24 đợt audit 2026-07). Nói ID để tôi
 rã thành task md.
 **Đã chốt và rã task** (xem `README.md`): I2, I4, I5, I11, I13, I18 (đợt đầu);
-I1, I3, I6, I7, I8, I9, I10, I14, I15, I16, I17 (đợt audit 2026-07). Danh sách
-dưới giữ nguyên để tra cứu mô tả gốc.
+I1, I3, I6, I7, I8, I9, I10, I14, I15, I16, I17 (đợt audit 2026-07); I27,
+I28, I29, I30 (đợt brainstorm 2026-07-18). Danh sách dưới giữ nguyên để tra
+cứu mô tả gốc.
 
 ## Gameplay depth
 - **I1 Gift/present tiles** ✅ đã chốt — [I1-gift-present-tiles.md](I1-gift-present-tiles.md).
@@ -42,3 +43,13 @@ dưới giữ nguyên để tra cứu mô tả gốc.
 ## Monetize (nếu cần — vẫn ngoài scope, user đã loại)
 - **I19 Coin doubler / starter pack** (IAP). *(chưa chốt, ngoài scope)*
 - **I20 Rewarded continue** — xem quảng cáo để +5 nước khi thua (nếu bật ad lại). *(chưa chốt, ngoài scope)*
+
+## Đợt brainstorm 2026-07-18 (retention + gameplay depth + social/competitive + độc quyền)
+- **I27 Prestige / New Game+** — tái dùng 220 level có sẵn, hệ số khó tăng
+  theo tier ✅ đã chốt — [I27-prestige-new-game-plus.md](I27-prestige-new-game-plus.md).
+- **I28 Async Ghost Replay Share** — ghi + chia sẻ replay 1 ván (full RNG
+  determinism) ✅ đã chốt — [I28-async-ghost-replay-share.md](I28-async-ghost-replay-share.md).
+- **I29 Star Boss Milestone Levels** — boss tile chiếm nhiều cell thật trên
+  grid ✅ đã chốt — [I29-star-boss-milestone-tiles.md](I29-star-boss-milestone-tiles.md).
+- **I30 Mascot Wardrobe** — skin cho StarMascot, mở khoá qua achievement/mua
+  bằng xu sẵn có ✅ đã chốt — [I30-mascot-wardrobe.md](I30-mascot-wardrobe.md).

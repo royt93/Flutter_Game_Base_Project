@@ -16,6 +16,7 @@ import '../widgets/confetti_overlay.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_dialog.dart';
+import '../widgets/prestige_action.dart';
 import '../widgets/stroke_text.dart';
 import 'game_screen.dart';
 
@@ -294,7 +295,13 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
               NeonAppBar(
                 title: 'select_level'.tr,
                 color: NeonTheme.cyan,
-                actions: [CoinChip(gameCtrl)],
+                actions: [
+                  PrestigeAction(
+                    gameCtrl: gameCtrl,
+                    onTap: () => showPrestigeDialog(context, gameCtrl),
+                  ),
+                  CoinChip(gameCtrl),
+                ],
               ),
               Expanded(
                 child: Obx(() {

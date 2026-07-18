@@ -9,6 +9,7 @@ import '../../core/share_helper.dart';
 import '../../core/storage_service.dart';
 import '../../data/levels.dart';
 import '../../game/pop_star_game.dart';
+import '../../logic/replay.dart';
 import 'game_controller.dart';
 
 /// Trạng thái UI của màn chơi (thay cho setState).
@@ -53,6 +54,32 @@ class GameScreenController extends GetxController {
         'Pop Star Blast — Level ${gameCtrl.currentLevel.id} — '
         'Score ${gameCtrl.score.value} — $date';
     await shareBoardImage(boundaryKey: boardKey, text: text);
+  }
+
+  /// I28: mã hoá lượt chơi hiện tại (nếu đã bật ghi + chưa dùng hành động
+  /// không tái tạo được) thành mã text rồi mở share sheet, để bạn bè dán mã
+  /// vào `GhostReplayScreen` xem lại y hệt ván chơi.
+  Future<void> shareReplay() async {
+    final g = _game;
+    if (g == null || !g.recordingEnabled || !g.recordingValid) return;
+    final code = encodeReplay(
+      ReplayData(
+        levelId: gameCtrl.currentLevel.id,
+        seed: g.seed,
+        taps: g.recordedTaps,
+      ),
+    );
+    await shareText('Pop Star Blast — Ghost Replay: $code');
+  }
+
+  /// I28: có thể chia sẻ replay ván hiện tại không — dùng để ẩn/hiện nút chia
+  /// sẻ replay ở overlay thắng màn.
+  bool get canShareReplay {
+    final g = _game;
+    return g != null &&
+        g.recordingEnabled &&
+        g.recordingValid &&
+        g.recordedTaps.isNotEmpty;
   }
 
   @override
@@ -107,6 +134,12 @@ class GameScreenController extends GetxController {
       presetGrid: gameCtrl.mode.value == GameMode.dailyChallenge
           ? gameCtrl.dailyChallengeGrid
           : null,
+      // I28: chỉ ghi replay ở campaign — zen/endless không có bàn cố định,
+      // dailyChallenge dùng presetGrid riêng mà replay (chỉ seed+levelId)
+      // không tái tạo được.
+      recordingEnabled:
+          gameCtrl.mode.value == GameMode.campaign &&
+          StorageService.to.getBool(StorageKeys.recordReplay),
     );
     gameVersion.value++;
     showFtue.value = ftue;

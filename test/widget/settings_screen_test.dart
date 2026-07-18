@@ -104,4 +104,27 @@ void main() {
     expect(tester.takeException(), isNull);
     Get.reset();
   });
+
+  // I28: toggle "Record Replay" phải lưu cờ recordReplay xuống
+  // SharedPreferences (đọc lại bởi PopStarGame.recordingEnabled khi vào ván
+  // mới — xem replay_recording_test.dart) để bật/tắt ghi lại tap.
+  testWidgets(
+    'toggle record replay: lưu persist qua StorageKeys.recordReplay',
+    (tester) async {
+      await _pumpSettings(tester, const Locale('en', 'US'));
+      expect(StorageService.to.getBool(StorageKeys.recordReplay), isFalse);
+
+      await tester.tap(find.text('Record Replay'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(StorageService.to.getBool(StorageKeys.recordReplay), isTrue);
+      expect(tester.takeException(), isNull);
+
+      // Tap lại phải tắt được (không phải write-only 1 chiều).
+      await tester.tap(find.text('Record Replay'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(StorageService.to.getBool(StorageKeys.recordReplay), isFalse);
+
+      Get.reset();
+    },
+  );
 }

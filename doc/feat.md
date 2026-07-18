@@ -2410,3 +2410,338 @@ Shop, Daily Challenge, Modes dialog) không phát hiện thêm lỗi UI nào —
 các nghi vấn khác (mô tả "Đóng Băng" ở Shop gần sát pill giá, Daily
 Challenge không có progress bar) đều xác nhận là thiết kế có chủ đích qua
 code, không phải bug.
+
+## ✅ Implemented: Prestige / New Game+ (I27, 2026-07-18)
+
+Sau khi thắng đủ ≥1 sao ở level cuối cùng (220), người chơi có thể
+"prestige": chơi lại từ level 1 với `targetScore` mọi level nhân hệ số
+`1 + tier*0.25`, đổi lấy thưởng coin và một tier hiển thị công khai.
+
+- **`lib/data/levels.dart`** — `prestigeTierMultiplier(tier)` (tier ≤0
+  trả về 1.0, không bao giờ âm điểm) và `prestigeTargetScore(level,
+  tier)` (tier ≤0 trả target gốc, ngược lại `round(target *
+  multiplier)`), dùng thay `level.targetScore` ở mọi nơi tính sao khi có
+  prestige đang active.
+- **`GameController`** — `prestigeTier` (`RxInt`, persist
+  `StorageKeys.prestigeTier`), `allLevelsCompletedOnce` (`RxBool`,
+  persist `StorageKeys.allLevelsCompleted`, set khi `checkEnd()` phát
+  hiện thắng ≥1 sao đúng level `kLevelCount`), `canPrestige` (getter =
+  `allLevelsCompletedOnce.value`), `prestige()` (no-op nếu
+  `!canPrestige`; nếu đủ điều kiện: tăng tier, reset `unlockedLevel` về
+  1, reset `allLevelsCompletedOnce`, cộng thưởng coin) — không đụng
+  high-score/star đã lưu của bất kỳ level nào (giữ nguyên lịch sử chơi
+  trước prestige). `resetProgress()` dọn sạch cả 2 key + observable liên
+  quan.
+- **`LevelSelectScreen`** — `_PrestigeAction` ở app bar: ẩn hoàn toàn nếu
+  tier 0 và chưa đủ điều kiện; hiện icon call-to-action tappable khi đủ
+  điều kiện (mở `_showPrestigeDialog`, xác nhận qua `NeonDialog`); hiện
+  nhãn tĩnh `P{tier}` (không tap được, `onTap: null`) khi đã prestige ≥1
+  lần nhưng chưa đủ điều kiện lần kế — chống double-tap mở nhầm dialog.
+- i18n: các key `prestige_*` bổ sung đủ 22 locale qua wave map trong
+  `AppTranslations`.
+
+**Test coverage**: `test/data/levels_test.dart` — multiplier/targetScore
+cho tier âm (không hợp lệ), tier 0, tăng tuyến tính 0.25/tier, và mọi
+tier 0..10 trên toàn bộ 220 level (luôn > 0). `test/presentation/
+game_controller_test.dart` — happy path prestige, thắng level giữa
+chừng không mở khoá prestige, thua ở level cuối không mở khoá, no-op khi
+gọi `prestige()` lúc chưa đủ điều kiện, double-tap `prestige()` liên
+tiếp không tăng tier 2 lần trong 1 lượt, target nặng hơn rõ rệt sau khi
+prestige, tích luỹ nhiều tier liên tiếp, `resetProgress()` dọn sạch state
+prestige, không đụng high-score/star cũ của các level đã chơi trước đó.
+`test/widget/prestige_action_test.dart` — badge ẩn khi chưa đủ điều
+kiện, hiện + tappable khi đủ điều kiện, Cancel không đổi tier, Prestige
+tăng tier và ẩn lại badge dạng tappable (chuyển sang nhãn tĩnh `P1`),
+badge tĩnh không mở dialog khi tap lại (chặn double-tap).
+
+**2 bug tự phát hiện khi viết widget test, đã fix ngay:**
+1. `find.byIcon(Icons.auto_awesome_rounded)` bị ambiguous (tìm thấy 7
+   widget thay vì 1) — icon này trùng ngẫu nhiên với hoạ tiết banner
+   World 4 (`kWorlds`, levels 61-80, `lib/data/worlds.dart`), render 6
+   bản sao qua `_WorldBanner` khi màn hình cuộn/dựng tới gần world đó
+   (xảy ra khi test thắng level 220). Fix: gắn `Key('prestige_badge')`
+   riêng cho `GestureDetector` của badge, test định vị qua
+   `find.byKey(...)` thay vì `IconData` dùng chung.
+2. `find.text('Prestige')`/`find.text('Cancel')` không tìm thấy dù dialog
+   đã mở (`NeonDialog.show` được gọi đúng) — do `GetMaterialApp` trong
+   test không khai báo `translations:`/`locale:`, khiến mọi `.tr` trả về
+   nguyên key chưa dịch. Fix: bọc widget test qua helper `_wrap()` với
+   `translations: AppTranslations()` + `locale: Locale('en', 'US')`,
+   đúng convention đã dùng ở các widget test khác (`shop_screen_test
+   .dart`, `guide_screen_test.dart`, ...).
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
+→ 293/293 test xanh toàn bộ.
+
+## ✅ Implemented: Async Ghost Replay Share (I28, 2026-07-18)
+
+Ghi lại 1 ván chơi (level id, seed RNG, chuỗi tap theo thứ tự), mã hoá
+thành text code chia sẻ được (giống pattern friend code); người nhận dán
+code vào `GhostReplayScreen` để tự động xem lại y hệt ván chơi đó (chỉ
+xem, không tương tác, không cộng thưởng thật).
+
+- **`PopStarGame`** — `_rng` đổi từ `Random()` không seed sang
+  `Random(seed)`; `seed` truyền qua constructor (mặc định
+  `Random().nextInt(1 << 31)` cho ván chơi thường, không đổi trải
+  nghiệm hiện tại) nhưng luôn lưu lại để phục vụ replay. Toàn bộ điểm
+  RNG ảnh hưởng board (colorGrid khởi tạo, obstacle/chain-lock/gift
+  placement, power tile kind, `pickGiftReward`, shuffle) đã audit đi
+  qua đúng 1 instance `_rng` — không còn `Random()` rải rác nào ảnh
+  hưởng kết quả board trong ván được ghi.
+- **`recordingEnabled`/`recordedTaps`/`recordingValid`** — chỉ ghi tap
+  `(row, col)` khi cờ `StorageKeys.recordReplay` (Settings) bật, tránh
+  tốn bộ nhớ mặc định; mọi hành động booster (bomb/rainbow/swap/
+  shuffle/freeze/undo) lật `recordingValid` về `false` ngay (chống chia
+  sẻ ván có "trợ giúp" không tái hiện được từ taps thuần).
+- **`lib/logic/replay.dart`** — `ReplayData`, `encodeReplay`/
+  `decodeReplay` base64url theo đúng pattern `friend_code.dart`; decode
+  trả `null` (không throw) khi code hỏng/giả mạo/thiếu cột/toạ độ âm/
+  levelId ngoài phạm vi.
+- **`GhostReplayScreen`** — dán code → dựng `PopStarGame` mới đúng seed
+  (`isReplay: true`, chặn mọi thưởng/tiến trình thật ghi vào
+  `StorageService` singleton), `Timer.periodic` (450ms) tự phát từng
+  tap theo thứ tự, khoá tương tác (không `GestureDetector` nào tới tay
+  người xem), tự dừng + báo "đã xem xong" khi hết taps hoặc bàn kết
+  thúc (`replayEnded`).
+- **`GameScreenController`** — `shareReplay()`/`canShareReplay` (gate:
+  có ghi + `recordingValid` + đã có tap); `SettingsScreen` thêm toggle
+  "Record Replay"; `GameScreen` overlay thắng thêm nút chia sẻ replay
+  (`Icons.movie_creation_rounded`), chỉ hiện khi `canShareReplay`.
+- i18n: các key `ghost_replay_*`/`record_replay` bổ sung đủ 22 locale.
+
+**Test coverage**: `test/logic/replay_test.dart` — round-trip encode/
+decode, mọi dạng code hỏng/giả mạo (không base64, thiếu cột, levelId
+≤0, seed không phải số, thiếu dấu phẩy, toạ độ âm, chuỗi rỗng) → `null`
+không throw, encode ổn định cùng input. `test/widget/
+replay_recording_test.dart` — tap thường được ghi, cờ tắt thì không
+ghi, mọi booster (bomb/rainbow/swap/shuffle/freeze/undo) lật
+`recordingValid` về `false`, `canShareReplay` đúng logic gate.
+`test/widget/ghost_replay_screen_test.dart` — mã hợp lệ tự phát lại
+KHÔNG cộng thưởng thật dù có pop, mã không phải base64 báo lỗi không
+crash, levelId ngoài `[1, kLevelCount]` (giả mạo tay) báo lỗi, taps
+rỗng tự kết thúc ngay, dispose giữa chừng playback huỷ `Timer` không
+leak. `test/widget/settings_screen_test.dart` — toggle Record Replay
+lưu/xoá persist đúng 2 chiều. `test/widget/
+game_screen_share_replay_test.dart` — nút share_replay ẩn khi
+`recordReplay` tắt, hiện khi bật + có tap ghi được, không ảnh hưởng nút
+share ảnh bàn (F15) sẵn có. `test/widget/replay_determinism_test.dart`
+— cùng seed chạy 2 lần qua `PopStarGame` → colorGrid + score cuối
+giống hệt nhau tuyệt đối; seed khác nhau → board khác nhau (xác nhận
+seed thực sự chi phối kết quả).
+
+**2 bug tự phát hiện khi viết test, đã fix ngay:**
+1. Race condition: ép lưới xác định lên board sau khi bơm quá 450ms
+   (`_tapInterval`) kể từ lúc bấm nút — `Timer.periodic` đã tự tap 1-2
+   lượt vào board ngẫu nhiên gốc trước khi lưới ép kịp áp dụng. Fix:
+   giảm số frame bơm trước khi ép lưới xuống dưới ngưỡng 450ms.
+2. Nhịp `Timer` đầu tiên luôn bị bỏ qua nếu hiệu ứng intro rơi ô
+   (~590ms cho bàn 8x6) còn chạy (`isAnimating` chặn finish-check) —
+   test taps-rỗng cần bơm đủ nhiều frame nhỏ (không phải 1-2 pump lớn)
+   để qua hết 2 nhịp Timer mới thấy trạng thái "đã xem xong".
+3. `flutter analyze` báo field `_data` write-only không dùng tới (sót
+   lại từ refactor trước) — xoá field + 2 điểm gán không đọc.
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
+→ 322/322 test xanh toàn bộ.
+
+**Bug audit phát hiện sau khi implement xong, đã fix ngay (2026-07-18):**
+`_checkEnd()` từng gate CẢ việc bốc `_rng` lẫn phát thưởng gift cùng 1
+điều kiện `if (!isReplay)` — khi replay (`isReplay: true`), gift KHÔNG
+tiêu thụ draw nào của `_rng`, trong khi lúc ghi (`isReplay: false`) nó
+có tiêu thụ 1 draw (`pickGiftReward`). Mọi lượt bốc `_rng` kế tiếp
+(power tile kind, shuffle...) vì vậy lệch pha giữa 2 mode → board cuối
+của replay khác board thật đã ghi, phá vỡ đúng lời hứa cốt lõi của
+tính năng (ghost replay chỉ lưu `(levelId, seed, taps)`, không lưu
+board, nên phụ thuộc tuyệt đối vào RNG tái lập y hệt). Fix: tách bốc số
+khỏi phát thưởng — luôn gọi `pickGiftReward(_rng)` ở cả 2 mode để giữ
+đúng thứ tự tiêu thụ `_rng`, chỉ gate `controller.grantGiftReward(...)`
+(side-effect thật) sau `!isReplay`. Test mới trong
+`replay_determinism_test.dart` dựng 1 `PopLevel`/`presetGrid` tay để
+tạo đúng chuỗi: nổ cặp → gift rơi đáy tự mở (bốc `_rng`) → nổ nhóm 6 ô
+→ sinh power tile (bốc `_rng` chọn lineRow/lineCol) → tap kích hoạt
+power tile — so board cuối giữa 1 lần chạy `isReplay:false` và 1 lần
+`isReplay:true` cùng seed, phải giống hệt nhau. Đã xác nhận test này
+fail đúng như kỳ vọng khi tạm revert fix (trước khi fix, lệch tại
+`[0][6]`: `null` so với `3`), rồi áp lại fix và test xanh — không phải
+tautology.
+
+## ✅ Implemented: Star Boss Milestone Tiles (I29, 2026-07-18)
+
+Màn mốc (mỗi 20 level) sinh 1 khối "boss tile" nhiều ô liền kề, có
+thanh máu (HP) riêng — nổ nhóm màu thường chạm cạnh khối mới trừ 1 HP/
+lần bất kể chạm bao nhiêu cạnh cùng lúc; hết HP toàn khối vỡ thành ô
+trống. Bàn kẹt hoàn toàn (chỉ còn boss tile, không nhóm màu nào để nổ)
+sẽ tự "decay" (giảm 1 HP mỗi lượt kiểm tra) thay vì kết thúc màn ngay,
+tránh softlock không thể thắng.
+
+- Mã hoá: `bossTileIdBase = -2000`, id khối `<= bossTileIdBase` (âm,
+  cùng dải quy ước với obstacle/gift tile) — `isBossTileId(v)` phân biệt
+  với 2 loại âm khác. `lib/logic/boss_tile.dart`: `BossTileSpec`,
+  `placeBossTile`, `chipAdjacentBossTiles` (dedupe id trước khi trừ HP,
+  đảm bảo 1 lần chip = đúng 1 HP dù chạm bao nhiêu cạnh), `bool
+  decayBossTilesOnStuck` (bàn kẹt → trừ đều mọi boss tile hiện có).
+- `PopStarGame`: field `bossHp` (`Map<int,int>`, mutable, cũng snapshot
+  vào `_undoBossHp` cho `undo()`); `_placeBossTileIfNeeded()` gọi ở
+  `onLoad`; `_tryPop`/`_activatePowerTile` gọi `_chipAdjacentBossTiles`
+  sau khi chip obstacle thường. `_checkEnd()`: nếu bàn kẹt và
+  `bossHp.isNotEmpty` → decay + `_clearAndCollapse` rồi return (không
+  rơi xuống nhánh thắng/thua), lặp lại tự nhiên qua chuỗi
+  `TimerComponent` cho tới khi HP về 0 hoặc bàn hết kẹt.
+- `PopLevel.bossTileSpec` (levels.dart) — gắn spec cho các level mốc
+  (mỗi 20 level).
+- i18n: thêm rule "Boss Tile" vào `GuideScreen` (rule thứ 6), 22 locale.
+
+**Bug production tự phát hiện khi viết test, đã fix ngay**: `lib/logic/
+obstacle.dart`'s `chipAdjacentObstacles` chạy TRƯỚC boss-chip trong
+`_tryPop`, và match mọi giá trị âm trừ `giftTileValue` là "obstacle" rồi
+mutate `grid[p]! + 1` — vô tình làm lệch id boss tile (vd `-2000` →
+`-1999`), khiến check `isBossTileId` ngay sau đó nhận nhầm không phải
+boss và HP không bao giờ được trừ đúng chỗ. Fix: thêm loại trừ tường
+minh `!isBossTileId(v)`, cùng pattern với exclusion `giftTileValue` sẵn
+có.
+
+**Test coverage**: `test/widget/boss_tile_widget_test.dart` — chip 1 HP
+khi nổ nhóm liền kề (chưa vỡ khi HP > 0), HP về 0 → toàn khối vỡ + xoá
+khỏi `bossHp`, nhóm chạm khối ở ≥2 cạnh khác nhau vẫn chỉ trừ đúng 1 HP/
+lần (chống double-count), bàn kẹt hoàn toàn → decay dần KHÔNG kết thúc
+màn ngay tới khi HP về 0 rồi màn mới thật sự kết thúc (regression chống
+softlock — bug cũ), `undo()` khôi phục đúng `bossHp` về snapshot trước
+lần chip gần nhất, edge case không có boss tile trên bàn (pop bình
+thường không lỗi), edge case id lạ/giả mạo trong `bossHp` không khớp
+cell nào trên bàn (không ảnh hưởng pop thường, entry lạ giữ nguyên).
+`test/widget/guide_screen_test.dart` — cập nhật đủ 6 rule (rule Boss
+Tile nằm ngoài viewport ban đầu của `ListView`, phải cuộn bằng
+`dragUntilVisible` trước khi assert).
+
+**1 bug test tự phát hiện, đã fix ngay** (không phải bug production):
+test decay-on-stuck ban đầu bơm 30 frame liền cho mỗi mốc kiểm tra —
+đủ để 2 chu kỳ pop+fall (~11 frame/chu kỳ) chạy nối tiếp trong cùng 1
+lần bơm, "cuốn" luôn qua mốc trung gian cần assert ("đã vỡ nhưng
+`ended` vẫn false"), khiến test tưởng nhầm production bug. Fix: chia
+lại số frame bơm theo đúng ranh giới từng chu kỳ (16 frame rồi 20
+frame) để bắt đúng trạng thái trung gian.
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
+→ 351/351 test xanh toàn bộ.
+
+## ✅ Implemented: Mascot Wardrobe (I30, 2026-07-18)
+
+Tủ đồ cho mascot (`StarMascot`) — 6 skin đổi màu (palette), mở khoá
+bằng xu hoặc bằng thành tựu mốc cao, chọn skin active hiển thị xuyên
+suốt header game, dialog thắng/thua, home screen.
+
+- `lib/data/mascot_skins.dart`: `MascotPalette` (glow/gradientStart/
+  gradientEnd/outline), `MascotSkin` (id/nameKey/palette/coinPrice/
+  unlockAchievementId — `assert` đúng 1 trong 2 non-null, trừ skin free
+  `classic` cả 2 đều null). `kMascotSkins`: `classic` (free), `ruby`
+  (300 xu), `emerald` (600 xu), `sapphire` (1000 xu), `aurora` (mở khoá
+  qua thành tựu `combo_25`), `obsidian` (mở khoá qua thành tựu
+  `clear_400`).
+- `GameController`: `activeMascotSkinId`/`unlockedMascotSkinIds` (Rx,
+  persist qua `StorageKeys.activeMascotSkin`/`unlockedMascotSkins`).
+  `buySkin(skin)` — chặn skin mở khoá bằng thành tựu (`coinPrice ==
+  null`), skin đã mở khoá (chống double-buy/race), thiếu xu; chỉ trừ
+  xu + persist khi thành công. `selectMascotSkin(id)` — chặn id chưa mở
+  khoá (bao gồm id giả mạo/không tồn tại); `activeMascotSkin` getter có
+  fallback `orElse: () => kMascotSkins.first` chống crash nếu active id
+  lưu trữ bị hỏng. `_checkAchievements()` tự thêm skin tương ứng vào
+  `unlockedMascotSkinIds` khi đạt `combo_25`/`clear_400`, không tính là
+  mua nên không trừ xu ngoài coin thưởng của chính thành tựu đó.
+  `resetProgress()` xoá 2 storage key, `_load()` sau đó tự đưa
+  `unlockedMascotSkinIds` về `{classic}` và `activeMascotSkinId` về
+  `classic` (skin free luôn được force-add trong `_load()`).
+- `StarMascot`/`_StarPainter`: nhận thêm `palette`, vẽ theo màu skin
+  đang active thay vì màu cứng cố định trước đây.
+- `MascotWardrobeScreen`: grid 2 cột hiển thị mọi skin — trạng thái
+  active (viền gold + nhãn "Đang dùng"), đã mở khoá (nút "Chọn"), có
+  giá xu (nút mua, disable nếu thiếu xu), mở khoá bằng thành tựu (icon
+  khoá + tên thành tựu cần đạt). Vào từ drawer `HomeScreen`.
+- i18n: 10 key mới (`skin_*_name` × 6, `wardrobe_*` × 4) — en/vi trực
+  tiếp trong `_extraEn`/`_extraVi`, 20 ngôn ngữ còn lại trong wave map
+  `_w42ByLang`.
+
+**Bug tự phát hiện khi viết code, đã fix ngay**: `mascot_wardrobe_
+screen.dart` dùng `const Icon(Icons.lock_rounded, color:
+NeonTheme.inkSoft, ...)` — `NeonTheme.inkSoft` là getter phụ thuộc
+dark-mode (`static Color get inkSoft => ...`), không phải hằng số biên
+dịch, khiến `flutter analyze` báo `invalid_constant`. Fix: bỏ `const`
+khỏi `Icon(...)` đó.
+
+**Test coverage**: `test/presentation/game_controller_test.dart` nhóm
+`I30 Mascot Wardrobe` — trạng thái ban đầu (chỉ `classic` mở khoá và
+active); `buySkin()` đủ xu (trừ đúng giá + mở khoá + persist), thiếu xu
+(no-op), skin đã mở khoá (chống double-buy/race), skin mở khoá bằng
+thành tựu (`coinPrice == null` → luôn `false` dù đủ xu); `selectMascot
+Skin()` skin đã mở khoá (thành công, đổi active), skin chưa mở khoá
+(false, active không đổi), id giả mạo/không tồn tại (false, không
+crash, fallback về skin đầu tiên); đạt mốc `combo_25` (25 lần
+`registerPop` liên tiếp không reset combo) → tự mở khoá `aurora` không
+trừ xu mua; đạt mốc `clear_400` (400 vòng `startLevel`+`checkEnd(true)`)
+→ tự mở khoá `obsidian`; `resetProgress()` đưa wardrobe về mặc định
+(`classic` active + chỉ `classic` mở khoá, cả storage lẫn in-memory).
+
+Bổ sung sau audit (2026-07-18): acceptance criteria yêu cầu riêng 1
+widget test "mascot vẽ đúng palette khi đổi skin active" — ban đầu
+thiếu, chỉ có unit test trên `GameController`. Đã thêm
+`test/widget/mascot_wardrobe_test.dart` (6 test): mascot dùng palette
+`classic` mặc định; đổi active skin (mua bằng xu) → `StarMascot` vẽ lại
+đúng palette mới (mirror đúng pattern `Obx(() => StarMascot(palette:
+gameCtrl.activeMascotSkin.palette))` đang dùng thật ở `home_screen.dart`/
+`game_screen.dart`); mở khoá qua thành tựu `combo_25` rồi chọn active →
+đúng palette `aurora`; `MascotWardrobeScreen` render đủ lưới 6 skin,
+mỗi thẻ đúng palette của skin đó; flow mua đủ xu → "Chọn" → active hiện
+nhãn "Đang dùng"; thiếu xu → nút mua disable, tap không mở khoá được.
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags
+slow` → toàn bộ xanh (11 test `game_controller_test.dart` + 6 test
+`mascot_wardrobe_test.dart` mới của nhóm I30, tổng 368 test toàn
+project).
+
+## ✅ Fix gap audit: badge Prestige thiếu ở HomeScreen (X15, 2026-07-18)
+
+2 vòng audit độc lập I27-I30 (chấm điểm 10/10) đều xác nhận cùng 1 gap:
+spec I27 yêu cầu entry-point/badge Prestige ở cả `HomeScreen` lẫn
+`LevelSelectScreen`, nhưng badge (`_PrestigeAction`) chỉ được implement
+private trong `level_select_screen.dart` — `HomeScreen` không có gì cả.
+
+Fix theo hướng DRY thay vì copy-paste: extract `_PrestigeAction` +
+`_showPrestigeDialog` từ `level_select_screen.dart` thành widget dùng
+chung mới `lib/presentation/widgets/prestige_action.dart` (public
+`PrestigeAction` widget + `showPrestigeDialog(context, gameCtrl)` free
+function). `level_select_screen.dart` refactor để import/dùng bản chung
+(xoá class/method private cũ). `home_screen.dart` thêm `PrestigeAction`
+vào Row app-bar trên cùng, cạnh `CoinChip`.
+
+Không cần test file mới — `prestige_action_test.dart` sẵn có (test qua
+`LevelSelectScreen`) đã cover đủ logic ẩn/hiện/tap dùng chung cho cả 2
+màn hình.
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags
+slow` → toàn bộ xanh, không regression từ refactor. Xem
+`doc/task/tasks/X15-home-prestige-badge-gap.md`.
+
+## ✅ Fix các gợi ý nhỏ từ audit I28/I29/I30 (2026-07-18)
+
+Vòng audit thứ 3 (I27=9, I28=9, I29=9, I30=9/10) nêu vài gợi ý nhỏ,
+không phải bug — đã xử lý:
+
+- **I28**: thêm test determinism mới trong `replay_determinism_test.dart`
+  ghi (isReplay=false) rồi phát lại (isReplay=true) cùng seed trên board
+  random THẬT (không preset grid) — khép gap trước đó chỉ có regression
+  test cho scenario gift/power dàn sẵn. Chỉ so `colorGrid` cuối, không so
+  `score` (replay cố tình không cộng điểm qua controller — xem
+  `PopStarGame._tryPop`, đúng thiết kế "chỉ xem"). Tick đủ 9 checkbox
+  acceptance criteria còn để trống trong
+  `doc/task/tasks/I28-async-ghost-replay-share.md` dù đã implement đầy đủ.
+- **I29**: rà lại thấy gợi ý "thiếu integration test fitsBoard qua toàn bộ
+  kLevels" đã có sẵn (`bossTileSpec (I29)` group trong
+  `test/data/levels_test.dart`) — không cần sửa gì thêm.
+- **I30**: gộp `_classicPalette` (từng định nghĩa trùng ở
+  `star_mascot.dart` và `mascot_skins.dart`) thành 1 const công khai duy
+  nhất `classicMascotPalette` trong `mascot_skins.dart`. Thêm validate
+  skin id đã lưu (`unlockedMascotSkinIds`/`activeMascotSkinId`) so với
+  `kMascotSkins` hiện tại trong `GameController` — id giả mạo/của skin đã
+  gỡ khỏi danh sách không còn tích luỹ hoặc được coi là active.
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags
+slow` → toàn bộ xanh, không regression.

@@ -11,6 +11,7 @@ import '../../core/utils/friend_code.dart';
 import '../../core/utils/weekend_event.dart';
 import '../../data/achievements.dart';
 import '../../data/levels.dart';
+import '../../data/mascot_skins.dart';
 import '../../data/perks.dart';
 import '../../game/pop_star_game.dart';
 import '../../logic/daily_challenge.dart';
@@ -125,6 +126,39 @@ class GameController extends GetxController {
   /// lại màn chọn level).
   final unlockedLevel = 1.obs;
 
+  /// I27 Prestige/New Game+: tier hiện tại (0 = chưa prestige). Tái dùng
+  /// đúng 220 level có sẵn, chỉ nhân độ khó lên theo tier
+  /// ([prestigeTargetScore]).
+  final prestigeTier = 0.obs;
+
+  /// Đã thắng level cuối (`kLevelCount`, ≥1 sao) ở tier hiện tại chưa —
+  /// KHÔNG dùng `unlockedLevel > kLevelCount` làm điều kiện vì [_unlockNext]
+  /// tự chặn ở đúng `kLevelCount`, giá trị đó không bao giờ vượt qua được.
+  final allLevelsCompletedOnce = false.obs;
+
+  /// Đã hoàn thành hết 220 level ở tier hiện tại → đủ điều kiện Prestige.
+  bool get canPrestige => allLevelsCompletedOnce.value;
+
+  static const int prestigeRewardCoins = 1000;
+
+  /// Reset [unlockedLevel] về 1, tăng [prestigeTier] — không đụng
+  /// high-score/star cũ (không phạt lịch sử chơi), thưởng coin cố định.
+  /// Reset [allLevelsCompletedOnce] để tier mới lại cần thắng level cuối lần
+  /// nữa (target đã nặng hơn theo [prestigeTargetScore]).
+  /// Không làm gì nếu chưa đủ điều kiện [canPrestige] (tránh gọi nhầm/race
+  /// khi UI chưa kịp ẩn nút).
+  void prestige() {
+    if (!canPrestige) return;
+    prestigeTier.value++;
+    unlockedLevel.value = 1;
+    allLevelsCompletedOnce.value = false;
+    coins.value += prestigeRewardCoins;
+    StorageService.to.setInt(StorageKeys.prestigeTier, prestigeTier.value);
+    StorageService.to.setInt(StorageKeys.unlockedLevel, unlockedLevel.value);
+    StorageService.to.setBool(StorageKeys.allLevelsCompleted, false);
+    StorageService.to.setInt(StorageKeys.coins, coins.value);
+  }
+
   /// Set 1 lần ngay khi 1 màn mới vừa được mở khoá (id màn mới), để
   /// LevelSelectScreen phát hiện "vừa unlock" và chạy reveal animation dù
   /// state của nó đã tồn tại từ trước (không bị dispose lúc push GameScreen).
@@ -176,6 +210,43 @@ class GameController extends GetxController {
   /// Set 1 lần khi vừa đạt mốc thành tựu mới, UI lắng nghe rồi tự clear.
   final justUnlockedAchievement = Rxn<Achievement>();
 
+  // I30 Mascot Wardrobe: id skin đang active + set id skin đã mở khoá. Skin
+  // free ("classic") luôn có mặt trong [unlockedMascotSkinIds] mặc định.
+  final activeMascotSkinId = kMascotSkins.first.id.obs;
+  final unlockedMascotSkinIds = <String>{kMascotSkins.first.id}.obs;
+
+  /// Skin đang active — phòng thủ id giả mạo/hỏng trong storage bằng cách
+  /// fallback về skin đầu tiên (free) nếu không khớp id nào trong danh sách.
+  MascotSkin get activeMascotSkin => kMascotSkins.firstWhere(
+    (s) => s.id == activeMascotSkinId.value,
+    orElse: () => kMascotSkins.first,
+  );
+
+  /// Mua skin bằng xu. False nếu skin không bán bằng xu (gated achievement),
+  /// đã mở khoá rồi (tránh double-charge khi bấm liên tục/race), hoặc không
+  /// đủ xu.
+  bool buySkin(MascotSkin skin) {
+    if (skin.coinPrice == null) return false;
+    if (unlockedMascotSkinIds.contains(skin.id)) return false;
+    if (coins.value < skin.coinPrice!) return false;
+    coins.value -= skin.coinPrice!;
+    unlockedMascotSkinIds.add(skin.id);
+    StorageService.to.setInt(StorageKeys.coins, coins.value);
+    StorageService.to.setString(
+      StorageKeys.unlockedMascotSkins,
+      unlockedMascotSkinIds.join(','),
+    );
+    return true;
+  }
+
+  /// Chọn skin làm active — chỉ thành công nếu đã mở khoá.
+  bool selectMascotSkin(String id) {
+    if (!unlockedMascotSkinIds.contains(id)) return false;
+    activeMascotSkinId.value = id;
+    StorageService.to.setString(StorageKeys.activeMascotSkin, id);
+    return true;
+  }
+
   /// Task #5: điểm cần vượt khi đang trong 1 lần Perfect Clear challenge
   /// (chụp trước khi chơi, vì [_saveBestScore] sẽ ghi đè `highScore` ngay khi
   /// thắng) — null khi không phải Perfect Clear.
@@ -205,17 +276,31 @@ class GameController extends GetxController {
       unlockedAchievementIds,
     );
     if (newlyUnlocked.isEmpty) return;
+    var mascotSkinsChanged = false;
     for (final id in newlyUnlocked) {
       final a = kAchievements.firstWhere((e) => e.id == id);
       unlockedAchievementIds.add(id);
       coins.value += a.coinReward * weekendCoinMultiplier;
       justUnlockedAchievement.value = a;
+      // I30: thành tựu mốc cao tự mở khoá skin gắn với nó (không tốn xu).
+      for (final skin in kMascotSkins) {
+        if (skin.unlockAchievementId == id &&
+            unlockedMascotSkinIds.add(skin.id)) {
+          mascotSkinsChanged = true;
+        }
+      }
     }
     StorageService.to.setString(
       StorageKeys.unlockedAchievements,
       unlockedAchievementIds.join(','),
     );
     StorageService.to.setInt(StorageKeys.coins, coins.value);
+    if (mascotSkinsChanged) {
+      StorageService.to.setString(
+        StorageKeys.unlockedMascotSkins,
+        unlockedMascotSkinIds.join(','),
+      );
+    }
   }
 
   /// I8: cuối tuần nhân đôi mọi coin thưởng (thắng level, chest, daily, spin).
@@ -314,6 +399,10 @@ class GameController extends GetxController {
       StorageKeys.unlockedLevel,
       def: 1,
     );
+    prestigeTier.value = StorageService.to.getInt(StorageKeys.prestigeTier);
+    allLevelsCompletedOnce.value = StorageService.to.getBool(
+      StorageKeys.allLevelsCompleted,
+    );
     claimedChestMask.value = StorageService.to.getInt(
       StorageKeys.claimedChests,
     );
@@ -350,6 +439,22 @@ class GameController extends GetxController {
     );
     playerName.value =
         StorageService.to.getString(StorageKeys.playerName) ?? '';
+    // I30 (audit fix): lọc theo id skin còn tồn tại trong kMascotSkins — id
+    // giả mạo/của skin đã gỡ khỏi danh sách không tích luỹ mãi trong storage.
+    final validSkinIds = kMascotSkins.map((s) => s.id).toSet();
+    final storedSkins =
+        (StorageService.to.getString(StorageKeys.unlockedMascotSkins) ?? '')
+            .split(',')
+            .where(validSkinIds.contains)
+            .toSet();
+    storedSkins.add(kMascotSkins.first.id); // skin free luôn mở khoá.
+    unlockedMascotSkinIds.assignAll(storedSkins);
+    final storedActiveId = StorageService.to.getString(
+      StorageKeys.activeMascotSkin,
+    );
+    activeMascotSkinId.value = validSkinIds.contains(storedActiveId)
+        ? storedActiveId!
+        : kMascotSkins.first.id;
     _recomputeTotalStars();
     _checkSeasonRollover();
   }
@@ -724,6 +829,13 @@ class GameController extends GetxController {
       _maybeRequestReview();
       _checkSeasonRollover();
       _addSeasonPoints(starsEarned.value * 10);
+      // I27 Prestige: thắng đúng level cuối (kLevelCount) ≥1 sao → đủ điều
+      // kiện Prestige. Không dùng unlockedLevel (đã bị _unlockNext chặn ở
+      // kLevelCount) — phải bắt đúng lúc thắng level cuối.
+      if (currentLevel.id == kLevelCount && !allLevelsCompletedOnce.value) {
+        allLevelsCompletedOnce.value = true;
+        StorageService.to.setBool(StorageKeys.allLevelsCompleted, true);
+      }
     }
   }
 
@@ -764,7 +876,7 @@ class GameController extends GetxController {
   }
 
   int _computeStars() {
-    final target = currentLevel.targetScore;
+    final target = prestigeTargetScore(currentLevel, prestigeTier.value);
     int stars;
     if (score.value < target) {
       stars = 0;
@@ -918,7 +1030,7 @@ class GameController extends GetxController {
   static const int freezeTurns = 5;
   void useFreeze() {
     if (freezeCount.value <= 0 || activeGame == null) return;
-    activeGame!.freezeTurnsLeft = freezeTurns;
+    activeGame!.applyFreeze(freezeTurns);
     freezeCount.value--;
     StorageService.to.setInt(StorageKeys.freezeCount, freezeCount.value);
     _recordBoosterUsed();
@@ -954,6 +1066,10 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.boardsFullyCleared);
     await store.remove(StorageKeys.totalBoostersUsed);
     await store.remove(StorageKeys.unlockedAchievements);
+    await store.remove(StorageKeys.prestigeTier);
+    await store.remove(StorageKeys.allLevelsCompleted);
+    await store.remove(StorageKeys.activeMascotSkin);
+    await store.remove(StorageKeys.unlockedMascotSkins);
     for (var id = 1; id <= kLevelCount; id++) {
       await store.remove(StorageKeys.highScore(id));
       await store.remove(StorageKeys.star(id));
@@ -965,6 +1081,8 @@ class GameController extends GetxController {
     cleared.value = false;
     currentLevelRx.value = null;
     activeGame = null;
+    prestigeTier.value = 0;
+    allLevelsCompletedOnce.value = false;
     _load();
   }
 }

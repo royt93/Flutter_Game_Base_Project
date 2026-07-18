@@ -41,6 +41,13 @@ class GuideScreen extends StatelessWidget {
       'guide_rule_nomoves_title'.tr,
       'guide_rule_nomoves_body'.tr,
     ),
+    // I29: giới thiệu boss tile ở màn mốc.
+    (
+      Icons.shield_rounded,
+      NeonTheme.red,
+      'guide_rule_boss_title'.tr,
+      'guide_rule_boss_body'.tr,
+    ),
   ];
 
   @override

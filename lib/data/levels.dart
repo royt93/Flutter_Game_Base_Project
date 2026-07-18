@@ -1,3 +1,4 @@
+import '../logic/boss_tile.dart' show BossTileSpec;
 import '../logic/pop_collapse.dart' show GravityDirection;
 
 /// F6b: loại mục tiêu thắng màn ngoài điểm. [score] giữ nguyên luật cũ
@@ -75,6 +76,13 @@ class PopLevel {
   /// I3: hướng gravity của màn — mặc định [GravityDirection.down] (luật gốc).
   final GravityDirection gravityDirection;
 
+  /// I29: cấu hình đặt 1 "boss tile" thật trên grid (khối nhiều cell có HP,
+  /// xem `lib/logic/boss_tile.dart`) tại các level milestone. `null` = màn
+  /// không có boss tile. KHÁI NIỆM HOÀN TOÀN KHÁC [isBoss]/
+  /// [bossTargetMultiplier] phía trên (chỉ nhân targetScore, không phải tile
+  /// trên bàn) — 2 field này được tính độc lập, không đọc field còn lại.
+  final BossTileSpec? bossTileSpec;
+
   const PopLevel({
     required this.id,
     required this.rows,
@@ -84,6 +92,7 @@ class PopLevel {
     this.objective = const LevelObjective.score(),
     this.isBoss = false,
     this.gravityDirection = GravityDirection.down,
+    this.bossTileSpec,
   });
 }
 
@@ -92,6 +101,17 @@ const double bossTargetMultiplier = 1.5;
 
 /// Điểm khi nổ 1 nhóm [n] ô: công thức chuẩn PopStar — càng nhóm to càng lời.
 int scoreForGroup(int n) => 5 * n * (n - 1);
+
+/// I27: hệ số nhân targetScore mỗi tier Prestige (New Game+). Tier 0 (chưa
+/// prestige) trả đúng [PopLevel.targetScore] gốc, không đổi hành vi cũ.
+double prestigeTierMultiplier(int tier) => 1.0 + tier * 0.25;
+
+/// I27: targetScore hiệu dụng của [level] tại [tier] Prestige — tái dùng
+/// đúng 220 level có sẵn, không sinh level mới, chỉ nhân độ khó lên theo tier.
+int prestigeTargetScore(PopLevel level, int tier) {
+  if (tier <= 0) return level.targetScore;
+  return (level.targetScore * prestigeTierMultiplier(tier)).round();
+}
 
 /// Thưởng khi dọn sạch toàn bộ bàn.
 const int clearBoardBonus = 1000;
@@ -137,6 +157,23 @@ final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
   // chung — luân phiên riêng 4 "boss variant" theo world để mỗi world có
   // trận chốt khác nhau, tái dùng nguyên ObjectiveType đã có (không thêm
   // mechanic mới). targetScore/bossTargetMultiplier giữ nguyên, không đổi.
+  // I29: milestone đặt boss tile — tính ĐỘC LẬP với `isBoss` ở trên dù tình
+  // cờ trùng mốc "cuối mỗi world" (đây là điểm milestone tự nhiên duy nhất
+  // hiện có trong cấu trúc màn); không đọc `isBoss` để suy ra field này,
+  // tránh 2 khái niệm dính vào nhau như ghi chú acceptance criteria yêu cầu.
+  // Khối cố định 2x2 đặt ở mép trên, canh giữa theo cols — cols nhỏ nhất là
+  // 6 nên luôn đủ chỗ cho khối rộng 2. HP tăng nhẹ theo world cho càng về
+  // sau càng dai.
+  final bossTileMilestone = id % 20 == 0;
+  final bossTileSpec = bossTileMilestone
+      ? BossTileSpec(
+          row: 0,
+          col: (cols - 2) ~/ 2,
+          height: 2,
+          width: 2,
+          startHp: (6 + world).clamp(6, 16),
+        )
+      : null;
   final bossVariant = world % 4;
   final objective = isBoss
       ? switch (bossVariant) {
@@ -169,6 +206,7 @@ final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
     targetScore: targetScore,
     objective: objective,
     isBoss: isBoss,
+    bossTileSpec: bossTileSpec,
   );
 });
 
