@@ -2381,3 +2381,32 @@ greeting card + badge weekend (test đúng ngày Jul 18 2026 = thứ Bảy) +
 unlock a new perk", viền hồng); tap mascot không crash; tap thẻ Perks
 điều hướng đúng sang `PerksScreen`. Không gặp quảng cáo che UI ở bước
 nào. Chi tiết: `X14-home-carousel-unified.md`.
+
+**Bug tìm thấy + sửa khi audit lại toàn bộ screen sau khi user nghi ngờ**:
+CTA/badge của card bị "kẹt" (stale) sau khi claim — vì `ctaLabelBuilder`/
+`onTap` của mỗi `HomeCardData` chỉ được chốt 1 lần lúc `buildHomeCards()`
+sinh danh sách, không tự re-evaluate khi state đổi (vd. claim daily
+reward xong, card Daily vẫn hiện CTA "Nhận thưởng" cũ cho tới khi có hành
+động khác kích hoạt rebuild). Fix root-cause tại 1 điểm chốt: thêm
+`onCardTapped` callback trên `HomeCarousel`/`_HomeCard` (gọi ngay sau
+`data.onTap()`) và gọi `HomeScreenController.refreshCards()` cả sau khi
+tap card lẫn sau khi claim daily reward — đảm bảo danh sách card luôn
+được rebuild ngay sau bất kỳ hành động claim nào.
+
+**Bug thứ 2 tìm thấy sau khi user báo trực tiếp**: badge weekend
+"🎉 Cuối tuần x2 xu!" bị cắt mất phần trên trên thiết bị thật. Lần audit
+đầu tôi kết luận nhầm là "thiết kế có chủ đích" vì chỉ đọc thấy
+`Stack(clipBehavior: Clip.none)` bọc badge — bỏ sót rằng `Stack` đó nằm
+trong `PageView` bọc bởi `SizedBox(height: 92)`; `Viewport` của
+`PageView` vẫn clip theo đúng bounds của chính nó bất kể `clipBehavior`
+của `Stack` con, nên phần badge nhô lên trên (`Positioned(top: -8, ...)`)
+bị cắt. Fix: tăng `SizedBox` lên `92 + NeonTheme.s8` và thêm padding-top
+`NeonTheme.s8` cho mỗi item trong `PageView.builder`, dịch cả card xuống
+đúng 8px để phần nhô của badge nằm gọn trong vùng viewport. Đã verify lại
+trên thiết bị thật (V2352A) — badge hiển thị đầy đủ, không còn bị cắt.
+
+Audit lại toàn bộ các screen còn lại (Level Select, Game, Quit dialog,
+Shop, Daily Challenge, Modes dialog) không phát hiện thêm lỗi UI nào —
+các nghi vấn khác (mô tả "Đóng Băng" ở Shop gần sát pill giá, Daily
+Challenge không có progress bar) đều xác nhận là thiết kế có chủ đích qua
+code, không phải bug.

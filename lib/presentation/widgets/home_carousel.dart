@@ -216,11 +216,18 @@ class HomeCarousel extends StatelessWidget {
     required this.cards,
     required this.currentIndex,
     required this.onPageChanged,
+    required this.onCardTapped,
   });
 
   final List<HomeCardData> cards;
   final int currentIndex;
   final ValueChanged<int> onPageChanged;
+
+  /// Gọi ngay sau khi 1 card được tap (sau `data.onTap()`) — dùng để refresh
+  /// lại danh sách card, vì `ctaLabelBuilder`/`onTap` của mỗi card được chốt
+  /// 1 lần lúc build danh sách (không tự re-evaluate), nên sau 1 hành động
+  /// claim (daily/chest/season) phải rebuild lại để CTA không bị "kẹt".
+  final VoidCallback onCardTapped;
 
   @override
   Widget build(BuildContext context) {
@@ -228,14 +235,23 @@ class HomeCarousel extends StatelessWidget {
     return Column(
       children: [
         SizedBox(
-          height: 92,
+          // +NeonTheme.s8 so the badge's `Positioned(top: -8, ...)` in
+          // _HomeCard has room to render — PageView's Viewport clips to its
+          // own bounds regardless of the inner Stack's Clip.none, so without
+          // this the badge's top edge gets cut off.
+          height: 92 + NeonTheme.s8,
           child: PageView.builder(
             itemCount: cards.length,
             onPageChanged: onPageChanged,
             controller: PageController(viewportFraction: 0.92),
             itemBuilder: (context, i) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: NeonTheme.s8),
-              child: _HomeCard(data: cards[i]),
+              padding: const EdgeInsets.fromLTRB(
+                NeonTheme.s8,
+                NeonTheme.s8,
+                NeonTheme.s8,
+                0,
+              ),
+              child: _HomeCard(data: cards[i], onTapped: onCardTapped),
             ),
           ),
         ),
@@ -266,16 +282,20 @@ class HomeCarousel extends StatelessWidget {
 }
 
 class _HomeCard extends StatelessWidget {
-  const _HomeCard({required this.data});
+  const _HomeCard({required this.data, required this.onTapped});
 
   final HomeCardData data;
+  final VoidCallback onTapped;
 
   @override
   Widget build(BuildContext context) {
     final badge = data.badgeTextBuilder?.call(context);
     final cta = data.ctaLabelBuilder?.call(context);
     return GestureDetector(
-      onTap: data.onTap,
+      onTap: () {
+        data.onTap();
+        onTapped();
+      },
       child: Stack(
         clipBehavior: Clip.none,
         children: [

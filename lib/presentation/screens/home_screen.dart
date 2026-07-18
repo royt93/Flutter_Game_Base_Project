@@ -89,7 +89,10 @@ class _HomeScreenState extends State<HomeScreen> {
         NeonDialogAction(
           label: 'daily_claim'.tr,
           color: NeonTheme.gold,
-          onTap: gameCtrl.claimDaily,
+          onTap: () {
+            gameCtrl.claimDaily();
+            Get.find<HomeScreenController>().refreshCards(gameCtrl);
+          },
         ),
       ],
     );
@@ -286,6 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   cards: homeCtrl.cards,
                   currentIndex: homeCtrl.currentIndex.value,
                   onPageChanged: (i) => homeCtrl.currentIndex.value = i,
+                  onCardTapped: () => homeCtrl.refreshCards(gameCtrl),
                 );
               }),
               const Spacer(flex: 2),
