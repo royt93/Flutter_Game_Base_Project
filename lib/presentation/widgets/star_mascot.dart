@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../core/neon_theme.dart';
+import '../../core/storage_service.dart';
 
 enum StarMood { idle, happy, sad, cheer }
 
@@ -23,7 +24,16 @@ class _StarMascotState extends State<StarMascot>
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2400),
-  )..repeat();
+  );
+
+  bool get _reduceMotion =>
+      StorageService.maybe?.getBool(StorageKeys.reduceMotion) ?? false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_reduceMotion) _c.repeat();
+  }
 
   @override
   void dispose() {

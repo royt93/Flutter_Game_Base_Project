@@ -259,6 +259,19 @@ class AudioManager extends GetxService {
   }
 
   void _ignoreAudio(Future<dynamic> op) {
-    unawaited(op.catchError((_) {}));
+    unawaited(
+      op
+          .then((value) {
+            if (value is AudioPlayer) {
+              unawaited(
+                value.onPlayerComplete.first
+                    .timeout(const Duration(seconds: 5), onTimeout: () {})
+                    .whenComplete(value.dispose)
+                    .catchError((_) {}),
+              );
+            }
+          })
+          .catchError((_) {}),
+    );
   }
 }

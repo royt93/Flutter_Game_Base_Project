@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/neon_theme.dart';
+import '../../core/storage_service.dart';
 
 /// G3: viền glow nhịp thở chậm quanh CTA chính (vd. PLAY). Chỉ animate
 /// boxShadow (rẻ) — dùng cho 1-2 nút nổi bật, không áp đại trà.
@@ -24,13 +25,17 @@ class _PulseGlowState extends State<PulseGlow>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c;
 
+  bool get _reduceMotion =>
+      StorageService.maybe?.getBool(StorageKeys.reduceMotion) ?? false;
+
   @override
   void initState() {
     super.initState();
     _c = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
-    )..repeat(reverse: true);
+    );
+    if (!_reduceMotion) _c.repeat(reverse: true);
   }
 
   @override

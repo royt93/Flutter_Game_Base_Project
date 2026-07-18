@@ -40,7 +40,10 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
   late final _flowCtrl = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 2),
-  )..repeat();
+  );
+
+  bool get _reduceMotion =>
+      StorageService.maybe?.getBool(StorageKeys.reduceMotion) ?? false;
 
   /// P: `_flowCtrl` chạy vòng lặp liên tục (~60fps) và nuôi 2 CustomPainter
   /// (path glow + decor sparkle) phải vẽ lại hàng trăm-nghìn segment/dot của
@@ -67,6 +70,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
   @override
   void initState() {
     super.initState();
+    if (!_reduceMotion) _flowCtrl.repeat();
     // Đăng ký ngay lúc tạo state — màn này không bị dispose khi push
     // GameScreen lên trên, nên phải lắng nghe cả lúc đang bị che.
     _justUnlockedWorker = ever<int?>(_gameCtrl.justUnlocked, (id) {

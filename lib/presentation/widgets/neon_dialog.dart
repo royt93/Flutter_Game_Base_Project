@@ -200,7 +200,7 @@ class _DialogButton extends StatelessWidget {
             action.label,
             maxLines: 1,
             style: TextStyle(
-              color: Colors.white,
+              color: NeonTheme.ink,
               fontWeight: FontWeight.w700,
               letterSpacing: 1,
               shadows: [Shadow(color: action.color, blurRadius: 8)],

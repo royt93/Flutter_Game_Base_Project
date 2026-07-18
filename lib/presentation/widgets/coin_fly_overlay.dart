@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../core/neon_theme.dart';
+import '../../core/storage_service.dart';
 
 /// Xu bay từ giữa màn lên góc phải-trên (nơi coin chip ở HUD) khi thắng. Chơi
 /// 1 lần rồi tự gỡ. Không nhận tương tác.
@@ -25,6 +26,9 @@ class _CoinFlyOverlayState extends State<CoinFlyOverlay>
 
   late final List<_Coin> _coins;
 
+  bool get _reduceMotion =>
+      StorageService.maybe?.getBool(StorageKeys.reduceMotion) ?? false;
+
   @override
   void initState() {
     super.initState();
@@ -39,7 +43,13 @@ class _CoinFlyOverlayState extends State<CoinFlyOverlay>
         size: 13 + rng.nextDouble() * 9,
       );
     });
-    _c.forward().whenComplete(() => widget.onDone?.call());
+    if (_reduceMotion) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => widget.onDone?.call(),
+      );
+    } else {
+      _c.forward().whenComplete(() => widget.onDone?.call());
+    }
   }
 
   @override
@@ -50,6 +60,7 @@ class _CoinFlyOverlayState extends State<CoinFlyOverlay>
 
   @override
   Widget build(BuildContext context) {
+    if (_reduceMotion) return const SizedBox.shrink();
     return IgnorePointer(
       child: RepaintBoundary(
         child: CustomPaint(

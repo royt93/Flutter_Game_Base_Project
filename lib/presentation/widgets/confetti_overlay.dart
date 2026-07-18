@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../core/neon_theme.dart';
+import '../../core/storage_service.dart';
 
 /// Mưa confetti kẹo chơi 1 lần — phủ full màn phía sau dialog thắng. Không nhận
 /// tương tác (IgnorePointer). Tự dừng khi animation xong.
@@ -20,13 +21,17 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2600),
-  )..forward();
+  );
+
+  bool get _reduceMotion =>
+      StorageService.maybe?.getBool(StorageKeys.reduceMotion) ?? false;
 
   late final List<_Bit> _bits;
 
   @override
   void initState() {
     super.initState();
+    if (!_reduceMotion) _c.forward();
     final rng = Random();
     _bits = List.generate(widget.count, (i) {
       return _Bit(
@@ -50,6 +55,7 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
 
   @override
   Widget build(BuildContext context) {
+    if (_reduceMotion) return const SizedBox.shrink();
     return IgnorePointer(
       child: RepaintBoundary(
         child: CustomPaint(

@@ -2286,3 +2286,42 @@ cuối tuần, không phải test-artifact. Chi tiết:
 `flutter analyze` 0 issues; `flutter test --exclude-tags slow` xanh toàn
 bộ (261 test, bao gồm cả `home_screen_test.dart` và
 `boot_resilience_test.dart`).
+
+## ✅ Fix 4 nhóm bug: color contrast, animation reduce-motion, performance, memory leak (X13, 2026-07-18)
+
+User phản ánh trực tiếp "bug color tương phản, text đọc không được, user
+chửi" và "bug hiệu suất, bug animation, bug memory leak, animation xấu xí".
+Audit xác nhận bằng code thật 4 nhóm cụ thể:
+
+- **Nhóm A — color contrast**: `home_screen.dart` Drawer title và
+  `neon_dialog.dart` `_DialogButton` label đều còn `color: Colors.white`
+  từ thời dark-theme cũ → vô hình trên nền trắng candy hiện tại. Đổi cả
+  2 sang `color: NeonTheme.ink`.
+- **Nhóm B — animation reduce-motion**: 5 widget (`confetti_overlay`,
+  `star_mascot`, `pulse_glow`, `coin_fly_overlay`, `level_select_screen`
+  `_flowCtrl`) chưa từng tôn trọng cờ "Giảm chuyển động" dù
+  `pop_star_game.dart` đã gate đúng ở 2 chỗ khác. Thêm getter
+  `_reduceMotion` cho cả 5: animation lặp vô hạn thì không `.repeat()`
+  khi bật cờ, animation 1 lần thì bỏ qua `.forward()` và trả
+  `SizedBox.shrink()` ngay.
+- **Nhóm C — performance**: việc thực chất chính là `_flowCtrl` dừng hẳn
+  khi reduce-motion bật (trùng Nhóm B) — audit sâu không tìm thêm
+  hot-path CPU nào khác ngoài X11 đã xử lý.
+- **Nhóm D — memory leak**: `audio_manager.dart` `_ignoreAudio` (điểm
+  chốt duy nhất mọi lệnh phát âm thanh đi qua, gồm cả `playMelodic`/
+  `_arpAfter` chạy trên mọi tap pop) tạo `AudioPlayer` mới qua
+  `FlameAudio.play()` nhưng chưa từng `.dispose()` → sửa 1 điểm chốt:
+  lắng nghe `onPlayerComplete.first` (timeout 5s an toàn) rồi dispose.
+
+**Regression tự phát hiện + tự sửa trong cùng phiên**: thêm `_reduceMotion`
+vào 5 widget trên làm 7 test fail do `StorageService.to` ném lỗi khi chưa
+đăng ký GetX trong test cô lập. Fix root-cause: thêm `StorageService.maybe`
+(getter an toàn, cùng pattern `AudioManager.maybe` có sẵn), đổi cả 5 getter
+sang dùng `.maybe`.
+
+`flutter analyze` 0 issues; `flutter test --exclude-tags slow` xanh toàn
+bộ 261 test. Verify tay trên emulator: Drawer title + dialog button label
+đọc rõ trên nền trắng; bật Reduce Motion → confetti không chạy trên màn
+thắng thật (board tự stuck ở 3 ô lẻ, phải dùng bomb dọn sạch mới trigger
+được dialog thắng); chơi ~30+ lượt pop + 3 lần bomb liên tục không crash/
+tiếng bị cắt. Chi tiết: `X13-contrast-animation-perf-leak-fixes.md`.

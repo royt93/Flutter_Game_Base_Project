@@ -98,6 +98,11 @@ class StorageService extends GetxService {
 
   static StorageService get to => Get.find<StorageService>();
 
+  /// An toàn khi gọi từ widget test độc lập chưa đăng ký service (vd các
+  /// widget hiệu ứng nhỏ như confetti/mascot/pulse-glow test riêng lẻ).
+  static StorageService? get maybe =>
+      Get.isRegistered<StorageService>() ? Get.find<StorageService>() : null;
+
   int getInt(String key, {int def = 0}) =>
       _prefs?.getInt(key) ?? (_fallback[key] as int?) ?? def;
   Future<void> setInt(String key, int value) async {

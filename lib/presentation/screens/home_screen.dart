@@ -248,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: StrokeText(
                 kAppName,
                 fontSize: 22,
-                color: Colors.white,
+                color: NeonTheme.ink,
                 stroke: NeonTheme.magenta,
                 strokeWidth: 3,
               ),
