@@ -4,8 +4,9 @@
 rã thành task md.
 **Đã chốt và rã task** (xem `README.md`): I2, I4, I5, I11, I13, I18 (đợt đầu);
 I1, I3, I6, I7, I8, I9, I10, I14, I15, I16, I17 (đợt audit 2026-07); I27,
-I28, I29, I30 (đợt brainstorm 2026-07-18). Danh sách dưới giữ nguyên để tra
-cứu mô tả gốc.
+I28, I29, I30 (đợt brainstorm 2026-07-18); I31, I32, I33, I34, I35, I36, I37,
+I38, I39, I40, I41, I42, I43 (đợt brainstorm 2026-07-18, round 2). Danh sách
+dưới giữ nguyên để tra cứu mô tả gốc.
 
 ## Gameplay depth
 - **I1 Gift/present tiles** ✅ đã chốt — [I1-gift-present-tiles.md](I1-gift-present-tiles.md).
@@ -53,3 +54,31 @@ cứu mô tả gốc.
   grid ✅ đã chốt — [I29-star-boss-milestone-tiles.md](I29-star-boss-milestone-tiles.md).
 - **I30 Mascot Wardrobe** — skin cho StarMascot, mở khoá qua achievement/mua
   bằng xu sẵn có ✅ đã chốt — [I30-mascot-wardrobe.md](I30-mascot-wardrobe.md).
+
+## Đợt brainstorm 2026-07-18 (round 2 — gameplay depth + retention + social + A-V + big features)
+- **I31 Auto-solve Ghost Hint** — gợi ý nhóm pop tốt nhất dựa trên
+  `findConnectedGroup` ✅ đã chốt — [I31-auto-solve-ghost-hint.md](I31-auto-solve-ghost-hint.md).
+- **I32 Craft Booster** — ghép 3 booster thường thành 1 booster hiếm hơn
+  ✅ đã chốt — [I32-craft-booster.md](I32-craft-booster.md).
+- **I33 Daily Modifier Gauntlet** — chuỗi bàn daily với modifier ngẫu nhiên
+  (gravity variant, số màu) ✅ đã chốt — [I33-daily-modifier-gauntlet.md](I33-daily-modifier-gauntlet.md).
+- **I34 Trophy Room** — màn tổng hợp achievement + mascot skin + prestige
+  badge ✅ đã chốt — [I34-trophy-room.md](I34-trophy-room.md).
+- **I35 Lifetime Stats Dashboard** — tổng hợp số liệu trọn đời (tổng pop,
+  tổng coin, level cao nhất...) ✅ đã chốt — [I35-lifetime-stats-dashboard.md](I35-lifetime-stats-dashboard.md).
+- **I36 Achievement Titles** — chọn danh hiệu từ achievement đã mở làm nhãn
+  hiển thị ✅ đã chốt — [I36-achievement-titles.md](I36-achievement-titles.md).
+- **I37 Async Challenge Code** — mã thách đấu độc lập (không dùng lại
+  `ReplayData`) để so điểm với bạn bè ✅ đã chốt — [I37-async-challenge-code.md](I37-async-challenge-code.md).
+- **I38 Weekly Featured Level** — mỗi tuần chọn lại 1 level campaign đã
+  unlock để leaderboard riêng ✅ đã chốt — [I38-weekly-featured-level.md](I38-weekly-featured-level.md).
+- **I39 Combo Milestone FX** — hiệu ứng ăn mừng tại các mốc combo cố định
+  ✅ đã chốt — [I39-combo-milestone-fx.md](I39-combo-milestone-fx.md).
+- **I40 Ambient Weather theo World** — lớp particle thời tiết riêng theo
+  world (tuyết, tia lửa, bong bóng) ✅ đã chốt — [I40-ambient-weather-per-world.md](I40-ambient-weather-per-world.md).
+- **I41 Mascot Combo Reactions** — mở rộng `StarMood.happy` theo mốc combo
+  ✅ đã chốt — [I41-mascot-combo-reactions.md](I41-mascot-combo-reactions.md).
+- **I42 Puzzle Lab** — level editor + mã chia sẻ bàn tự chế (dùng
+  `presetGrid`) ✅ đã chốt — [I42-puzzle-lab.md](I42-puzzle-lab.md).
+- **I43 Boss Rush** — chuỗi bàn boss liên tiếp, không booster, ghi nhận chuỗi
+  dài nhất ✅ đã chốt — [I43-boss-rush.md](I43-boss-rush.md).
