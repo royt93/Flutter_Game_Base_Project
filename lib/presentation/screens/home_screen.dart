@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/app_info.dart';
+import '../../core/haptics.dart';
 import '../../core/neon_theme.dart';
-import '../../core/utils/weekend_event.dart';
 import '../controllers/game_controller.dart';
+import '../controllers/home_screen_controller.dart';
+import '../widgets/ambient_particles.dart';
 import '../widgets/coin_chip.dart';
+import '../widgets/home_carousel.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
 import '../widgets/neon_dialog.dart';
@@ -42,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     final gameCtrl = Get.find<GameController>();
+    Get.put(HomeScreenController()).refreshCards(gameCtrl);
     final comebackReward = gameCtrl.checkComebackBonus();
     if (comebackReward != null) {
       WidgetsBinding.instance.addPostFrameCallback(
@@ -147,73 +151,6 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: () {},
         ),
       ],
-    );
-  }
-
-  Widget _buildPriorityBanner(GameController gameCtrl) {
-    return Obx(() {
-      gameCtrl
-          .seasonPoints
-          .value; // luôn đọc Rx trước mọi nhánh return sớm, tránh lỗi "improper use of GetX" khi nhánh weekend/daily return mà chưa chạm Rx nào
-      if (isWeekendEvent(DateTime.now())) {
-        return _bannerContainer(
-          color: NeonTheme.gold,
-          text: 'home_weekend_banner'.tr,
-          onTap: null,
-        );
-      }
-      final seasonReady = List.generate(
-        GameController.seasonMilestones.length,
-        (i) => i,
-      ).any(gameCtrl.canClaimSeason);
-      if (seasonReady) {
-        return _bannerContainer(
-          color: NeonTheme.magenta,
-          text: 'season_pass_banner_ready'.tr,
-          onTap: () => Get.to(() => const SeasonScreen()),
-        );
-      }
-      if (gameCtrl.canRecordDailyChallengeScore) {
-        return _bannerContainer(
-          color: NeonTheme.red,
-          text: 'daily_challenge_banner_reminder'.tr,
-          onTap: () {
-            gameCtrl.startDailyChallenge();
-            Get.to(() => const GameScreen());
-          },
-        );
-      }
-      return const SizedBox.shrink();
-    });
-  }
-
-  Widget _bannerContainer({
-    required Color color,
-    required String text,
-    required VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: NeonTheme.s16),
-        padding: const EdgeInsets.symmetric(
-          horizontal: NeonTheme.s16,
-          vertical: NeonTheme.s8,
-        ),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.w800,
-            fontSize: 14,
-          ),
-        ),
-      ),
     );
   }
 
@@ -343,9 +280,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              _buildPriorityBanner(gameCtrl),
+              Obx(() {
+                final homeCtrl = Get.find<HomeScreenController>();
+                return HomeCarousel(
+                  cards: homeCtrl.cards,
+                  currentIndex: homeCtrl.currentIndex.value,
+                  onPageChanged: (i) => homeCtrl.currentIndex.value = i,
+                );
+              }),
               const Spacer(flex: 2),
-              const StarMascot(size: 128),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  const SizedBox(
+                    width: 220,
+                    height: 220,
+                    child: AmbientParticles(),
+                  ),
+                  StarMascot(
+                    size: 128,
+                    onTap: () => fireHaptic(HapticLevel.light),
+                  ),
+                ],
+              ),
               const SizedBox(height: NeonTheme.s8),
               StrokeText(
                 kAppName,
