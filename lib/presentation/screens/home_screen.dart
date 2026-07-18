@@ -152,6 +152,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildPriorityBanner(GameController gameCtrl) {
     return Obx(() {
+      gameCtrl
+          .seasonPoints
+          .value; // luôn đọc Rx trước mọi nhánh return sớm, tránh lỗi "improper use of GetX" khi nhánh weekend/daily return mà chưa chạm Rx nào
       if (isWeekendEvent(DateTime.now())) {
         return _bannerContainer(
           color: NeonTheme.gold,

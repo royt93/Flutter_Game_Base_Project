@@ -2248,3 +2248,41 @@ Overnight session (task #13-#20) hoàn tất: World 11 (I24), Boss variant
 (I25), Achievements (I22), Perfect Clear replay (I23), objective openGift
 (#6), Friend Compare (I26), test coverage sweep (#19), và smoke test tổng
 này (#20) — tất cả đã commit local, chưa push.
+
+## ✅ Audit hiệu suất theo phản ánh user "game lag" + fix 1 bug thật phát hiện khi test (X11, X12, 2026-07-18)
+
+User phản ánh hiệu suất tệ/lag → audit lại toàn bộ task cũ (mọi task F/A/G/
+I/X đều đã có trạng thái rõ ràng, chỉ còn F5 resonance là ⏸️ deferred có
+chủ đích, không có task nào bị bỏ dở) + quét trực tiếp code tìm nguồn lag.
+
+**Tìm thấy 3 điểm, sửa 1 (X11), quan sát 2:**
+- **HIGH — đã sửa**: `level_select_screen.dart` — 2 `AnimatedBuilder`
+  (decor sparkle, path glow) listen thẳng `_flowCtrl` (loop 2s, ~60fps
+  liên tục), vẽ lại toàn bộ canvas (~1000+ dot + 219 đoạn path) mỗi frame
+  dù đang đứng yên. Thêm `_throttledFlow` (làm tròn xuống mốc 1/60s) tận
+  dụng `shouldRepaint` sẵn có → giảm ~nửa số lần redraw, không đổi cảm
+  giác mượt. Chi tiết: `X11-level-select-animation-throttle.md`.
+- **MEDIUM — chỉ quan sát**: `pop_star_game.dart` không cap tổng số
+  `ParticleSystemComponent` sống cùng lúc qua nhiều tap liên tiếp rất
+  nhanh (game không có auto-cascade nên xác suất thấp) — để lại, không
+  fix phòng hờ.
+- **MEDIUM — chỉ quan sát**: `block_component.dart` `highlighted`/`hinted`
+  vẫn dùng `MaskFilter.blur` mỗi frame nhưng chỉ ảnh hưởng vài ô — tác
+  động không đáng kể.
+
+**Bug thật phát hiện ngoài ý muốn khi chạy smoke test bắt buộc**: chạy
+`flutter test --exclude-tags slow` lặp lại cho ra kết quả tưởng như flaky
+(2 test fail, nhưng file fail đổi khác nhau giữa các lần chạy). Điều tra
+sâu → không phải flaky, mà 1 bug GetX thật, tất định vào cuối tuần:
+`home_screen.dart` `_buildPriorityBanner`'s `Obx` có nhánh `isWeekendEvent`
+return sớm không đọc Rx nào → GetX ném lỗi "improper use of Obx" → kéo
+theo `RenderFlex overflow`. Mọi test render `HomeScreen` cùng crash trong
+khung cuối tuần; test khác (`swap_freeze_test.dart`) chỉ "lây" do GetX
+global state hỏng, tự nó vẫn đúng. Fix: đọc `seasonPoints.value` vô điều
+kiện trước mọi nhánh return. Đây là bug sẽ xảy ra thật trên máy user vào
+cuối tuần, không phải test-artifact. Chi tiết:
+`X12-home-banner-getx-obx-bug.md`.
+
+`flutter analyze` 0 issues; `flutter test --exclude-tags slow` xanh toàn
+bộ (261 test, bao gồm cả `home_screen_test.dart` và
+`boot_resilience_test.dart`).
