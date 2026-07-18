@@ -42,6 +42,15 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     duration: const Duration(seconds: 2),
   )..repeat();
 
+  /// P: `_flowCtrl` chạy vòng lặp liên tục (~60fps) và nuôi 2 CustomPainter
+  /// (path glow + decor sparkle) phải vẽ lại hàng trăm-nghìn segment/dot của
+  /// cả 220 level mỗi lần — kể cả khi màn hình đứng yên. Lượng tử hoá giá trị
+  /// truyền vào painter xuống 60 nấc/chu kỳ (~30fps thật) giống pattern đã
+  /// dùng ở `NeonBg`/`NeonAuraLayer`: AnimatedBuilder vẫn rebuild mỗi frame
+  /// (rẻ) nhưng `shouldRepaint` chỉ true khi nấc đổi → vẽ lại đúng phân nửa
+  /// tần suất, chuyển động vẫn mượt vì bước lượng tử đủ nhỏ.
+  double get _throttledFlow => (_flowCtrl.value * 60).floorToDouble() / 60;
+
   /// Chạy 1 lần khi 1 đoạn path vừa được "mở khoá" — ánh sáng chạy dọc đoạn
   /// từ đầu tới cuối trong lúc [_revealId] còn khác null.
   late final _revealCtrl = AnimationController(
@@ -310,7 +319,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                                   builder: (context, _) => CustomPaint(
                                     painter: _DecorPainter(
                                       layout.decor,
-                                      _flowCtrl.value,
+                                      _throttledFlow,
                                       scrollOffset: _scrollController.hasClients
                                           ? _scrollController.offset
                                           : 0.0,
@@ -338,7 +347,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                                           builder: (context, _) => CustomPaint(
                                             painter: _PathPainter(
                                               layout.segments,
-                                              _flowCtrl.value,
+                                              _throttledFlow,
                                               revealId: _revealId,
                                               revealProgress: _revealCtrl.value,
                                             ),
