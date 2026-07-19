@@ -2991,3 +2991,46 @@ badge hiện đúng "P2".
 
 Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
 427 test toàn bộ xanh, không regression.
+
+## ✅ Implemented: Boss Rush — chuỗi màn boss liên tiếp, không booster (I43, 2026-07-19)
+
+Chế độ chơi riêng tách biệt khỏi campaign 220 level và khỏi `I27` Prestige:
+chơi liên tiếp các bàn có boss tile (`I29`) rút ngẫu nhiên (deterministic
+theo `stage`) từ world đã unlock, độ khó (target score) tăng dần theo stage
+(trần `bossRushStageScaleCap = 2.5`), không dùng được booster, thua/kẹt là
+dừng chuỗi và ghi nhận "chuỗi dài nhất" (`StorageKeys.bossRushBestStreak`)
+riêng biệt.
+
+- **`lib/data/boss_rush.dart`** (mới) — pure logic: `bossRushLevelForStage`
+  dựng `PopLevel` động (id âm `-100 - stage`) từ 1 level nguồn thật trong
+  world đã unlock, boss tile 2x2 canh giữa mép trên; `targetScore` áp cả
+  `bossTargetMultiplier` (convention I29) lẫn ramp theo stage.
+- **`GameMode.bossRush`** + `GameController.startBossRush`/`setBossRushLevel`
+  — theo đúng khuôn reset của các `startXxx()` khác; `checkEnd()` fallthrough
+  tự nhiên, không cần sửa.
+- **`BossRushController`** (mới, per-screen) — sở hữu `stage`/
+  `bossRushBestStreak`; nghe `GameController.ended` qua `ever()` để chấm dứt
+  chuỗi (thua/kẹt), cộng coin (`stage * 50`) và cập nhật best streak nếu cao
+  hơn. `PopStarGame._checkEnd()` thêm nhánh `bossRush` (mirror `endless`) gọi
+  `_nextBossRushBoard()` khi dọn sạch bàn — mutate `PopStarGame` tại chỗ,
+  không tạo lại instance giữa các stage.
+- **`BossRushScreen`** (mới) — lobby (best streak, banner no-booster, nút bắt
+  đầu, tóm tắt lượt chơi trước) + play view (`GameWidget` trực tiếp, HUD
+  stage/score). Entry point: nút thứ 4 trong modes dialog (`home_screen.dart`,
+  icon lửa màu đỏ).
+- i18n: 9 key mới (`mode_boss_rush_label`/`boss_rush_title`/
+  `boss_rush_best_streak_label`/`boss_rush_stage_label`/
+  `boss_rush_no_booster_notice`/`boss_rush_start_button`/
+  `boss_rush_run_over_title`/`boss_rush_stages_cleared_label`/
+  `boss_rush_coin_reward_label`) × 22 locale (wave 45).
+
+Test mới: `test/data/boss_rush_test.dart` (boss tile luôn fit bàn, giá trị
+rows/cols/colorCount hợp lệ, deterministic, chỉ chọn world ≤ unlocked,
+target score tăng theo stage nhưng bị chặn trần), `test/presentation/
+boss_rush_controller_test.dart` (best streak chỉ tăng khi vượt kỷ lục cũ,
+coin reward đúng công thức, dùng booster giữa lượt không làm sai lệch state),
+`test/widget/boss_rush_screen_test.dart` (lobby render đủ best streak/banner/
+nút bắt đầu, bắt đầu lượt chuyển sang Stage 1).
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
+441 test toàn bộ xanh, không regression.

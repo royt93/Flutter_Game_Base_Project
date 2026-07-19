@@ -21,8 +21,19 @@ import '../../logic/puzzle_code.dart';
 /// F8: campaign (200 màn có target/sao/mở khoá) vs side-mode biệt lập
 /// (không đụng unlockedLevel/coin-campaign/star). F12: endless thêm vào nhóm
 /// side-mode, không target/thắng-thua, chỉ ghi high-score riêng. I42:
-/// puzzleLab chơi bàn tự vẽ, không thưởng coin/sao/unlock/best-score.
-enum GameMode { campaign, timeAttack, zen, endless, dailyChallenge, puzzleLab }
+/// puzzleLab chơi bàn tự vẽ, không thưởng coin/sao/unlock/best-score. I43:
+/// bossRush cũng thuộc nhóm side-mode (chỉ khác coin thưởng theo chuỗi, xem
+/// `BossRushController`), không booster/hint (chặn ở tầng UI, xem
+/// `boss_rush_screen.dart`).
+enum GameMode {
+  campaign,
+  timeAttack,
+  zen,
+  endless,
+  dailyChallenge,
+  puzzleLab,
+  bossRush,
+}
 
 /// I7: 1 ô phần thưởng trên vòng quay hằng ngày.
 class SpinReward {
@@ -772,6 +783,30 @@ class GameController extends GetxController {
     hintCount.value = hintsPerRun;
     movesUsed.value = 0;
     _collectInitial = null;
+  }
+
+  /// I43: bắt đầu 1 lượt Boss Rush với bàn đầu tiên đã sinh sẵn (từ
+  /// `BossRushController.startRun`) — mirror khuôn reset chung của các
+  /// side-mode khác.
+  void startBossRush(PopLevel level) {
+    mode.value = GameMode.bossRush;
+    currentLevelRx.value = level;
+    score.value = 0;
+    starsEarned.value = 0;
+    ended.value = false;
+    cleared.value = false;
+    resetCombo();
+    activeGame = null;
+    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
+    movesUsed.value = 0;
+    _collectInitial = null;
+  }
+
+  /// I43: gọi từ [PopStarGame] khi thắng 1 bàn Boss Rush — chỉ đổi level
+  /// hiện tại, KHÔNG reset score/combo (chuỗi giữ nguyên điểm/đà tích lũy).
+  void setBossRushLevel(PopLevel level) {
+    currentLevelRx.value = level;
   }
 
   /// F13: đã ghi điểm Daily Challenge hôm nay chưa — chơi lại trong ngày

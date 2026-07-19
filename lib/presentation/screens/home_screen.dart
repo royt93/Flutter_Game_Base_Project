@@ -19,6 +19,7 @@ import '../widgets/spin_wheel_dialog.dart';
 import '../widgets/star_mascot.dart';
 import '../widgets/stroke_text.dart';
 import 'achievements_screen.dart';
+import 'boss_rush_screen.dart';
 import 'friend_compare_screen.dart';
 import 'ghost_replay_screen.dart';
 import 'game_screen.dart';
@@ -108,8 +109,10 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'modes_title'.tr,
       color: NeonTheme.indigo,
       icon: Icons.sports_esports_rounded,
-      content: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      content: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: NeonTheme.s16,
+        runSpacing: NeonTheme.s16,
         children: [
           NeonIconButton(
             Icons.timer_rounded,
@@ -123,7 +126,6 @@ class _HomeScreenState extends State<HomeScreen> {
               Get.to(() => const GameScreen());
             },
           ),
-          const SizedBox(width: NeonTheme.s24),
           NeonIconButton(
             Icons.spa_rounded,
             color: NeonTheme.teal,
@@ -136,7 +138,6 @@ class _HomeScreenState extends State<HomeScreen> {
               Get.to(() => const GameScreen());
             },
           ),
-          const SizedBox(width: NeonTheme.s24),
           NeonIconButton(
             Icons.all_inclusive_rounded,
             color: NeonTheme.indigo,
@@ -147,6 +148,17 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pop(context);
               gameCtrl.startEndless();
               Get.to(() => const GameScreen());
+            },
+          ),
+          NeonIconButton(
+            Icons.local_fire_department_rounded,
+            color: NeonTheme.red,
+            size: 28,
+            boxed: true,
+            semanticLabel: 'mode_boss_rush_label'.tr,
+            onTap: () {
+              Navigator.pop(context);
+              Get.to(() => const BossRushScreen());
             },
           ),
         ],

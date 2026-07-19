@@ -103,6 +103,10 @@ class StorageKeys {
   // I42 Puzzle Lab: mã bàn tự vẽ đã lưu (JSON list, tối đa 5 phần tử — cắt ở
   // tầng caller).
   static const String savedPuzzles = 'saved_puzzles';
+
+  // I43 Boss Rush: số stage (bàn boss) đã dọn sạch liên tiếp cao nhất từng
+  // đạt được (chuỗi đứt khi thua/kẹt).
+  static const String bossRushBestStreak = 'boss_rush_best_streak';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

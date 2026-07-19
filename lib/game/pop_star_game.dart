@@ -7,6 +7,7 @@ import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flame/text.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../core/audio_manager.dart';
 import '../core/debug_log.dart';
@@ -22,6 +23,7 @@ import '../logic/pop_collapse.dart';
 import '../logic/pop_detector.dart';
 import '../logic/power_tile.dart';
 import '../core/storage_service.dart';
+import '../presentation/controllers/boss_rush_controller.dart';
 import '../presentation/controllers/game_controller.dart';
 import 'block_component.dart';
 
@@ -1421,6 +1423,18 @@ class PopStarGame extends FlameGame {
       }
       return;
     }
+    // I43: Boss Rush — dọn sạch thì sang bàn boss kế (stage tăng, chuỗi giữ
+    // nguyên điểm/streak); kẹt hẳn mới dừng chuỗi thật (checkEnd(false) tự
+    // fallthrough đúng ở [GameController.checkEnd], [BossRushController]
+    // lắng nghe `ended` để chốt best-streak/coin).
+    if (controller.mode.value == GameMode.bossRush) {
+      if (remaining == 0) {
+        _nextBossRushBoard();
+      } else if (stuck) {
+        controller.checkEnd(false);
+      }
+      return;
+    }
     if (refillEnabled && (remaining == 0 || stuck)) {
       _refillBoard();
       return;
@@ -1453,6 +1467,24 @@ class PopStarGame extends FlameGame {
       (_) => List.generate(cols, (_) => _rng.nextInt(level.colorCount)),
     );
     lockGrid = List.generate(rows, (_) => List.generate(cols, (_) => 0));
+    _layout();
+    _rebuildBoard();
+  }
+
+  /// I43: bàn Boss Rush kế tiếp — mirror [_nextEndlessBoard] nhưng mọi bàn
+  /// đều có boss tile nên phải clear [bossHp] cũ rồi đặt lại boss tile mới
+  /// (khác Endless — không có boss tile).
+  void _nextBossRushBoard() {
+    final level = Get.find<BossRushController>().advanceStage();
+    rows = level.rows;
+    cols = level.cols;
+    colorGrid = List.generate(
+      rows,
+      (_) => List.generate(cols, (_) => _rng.nextInt(level.colorCount)),
+    );
+    lockGrid = List.generate(rows, (_) => List.generate(cols, (_) => 0));
+    bossHp.clear();
+    _placeBossTileIfNeeded(level);
     _layout();
     _rebuildBoard();
   }
