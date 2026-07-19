@@ -101,6 +101,12 @@ class GameController extends GetxController {
   int _freeUndoLeft = 0;
   bool get hasFreeUndo => _freeUndoLeft > 0;
 
+  /// I31: gợi ý nhóm pop tốt nhất, miễn phí theo màn/ván — KHÔNG lưu đĩa,
+  /// KHÔNG tính vào `totalBoostersUsed`/achievement (khác các booster mua
+  /// bằng xu ở trên).
+  static const int hintsPerRun = 3;
+  final hintCount = hintsPerRun.obs;
+
   /// Combo: nổ liên tiếp trong cửa sổ thời gian → hệ số điểm tăng dần.
   final comboCount = 0.obs;
   final comboMultiplier = 1.0.obs;
@@ -653,6 +659,7 @@ class GameController extends GetxController {
     resetCombo();
     activeGame = null;
     _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
     movesUsed.value = 0;
     _collectInitial = null;
     perfectClearTarget.value = null;
@@ -682,6 +689,7 @@ class GameController extends GetxController {
     resetCombo();
     activeGame = null;
     _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -698,6 +706,7 @@ class GameController extends GetxController {
     resetCombo();
     activeGame = null;
     _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -716,6 +725,7 @@ class GameController extends GetxController {
     resetCombo();
     activeGame = null;
     _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -1034,6 +1044,14 @@ class GameController extends GetxController {
     freezeCount.value--;
     StorageService.to.setInt(StorageKeys.freezeCount, freezeCount.value);
     _recordBoosterUsed();
+  }
+
+  /// I31: hiện ngay nhóm pop tốt nhất trong ~1.5s, bỏ qua idle timer của I4.
+  /// Miễn phí theo ván, KHÔNG lưu đĩa, KHÔNG tính vào `totalBoostersUsed`.
+  void useHint() {
+    if (hintCount.value <= 0 || activeGame == null) return;
+    if (!activeGame!.showHint()) return;
+    hintCount.value--;
   }
 
   Future<void> resetProgress() async {

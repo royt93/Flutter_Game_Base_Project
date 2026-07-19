@@ -227,6 +227,10 @@ class GameScreenController extends GetxController {
     gameCtrl.useFreeze();
   }
 
+  void useHint() {
+    gameCtrl.useHint();
+  }
+
   // --- điều khiển overlay ---
   void confirmQuit() {
     if (ui.value == GameUi.playing) ui.value = GameUi.quit;

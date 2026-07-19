@@ -221,6 +221,11 @@ class PopStarGame extends FlameGame {
   double _idleTimer = 0;
   Set<Point<int>> _hint = {};
 
+  /// I31: đếm ngược tự tắt gợi ý bấm-thủ-công (nút Hint) — khác gợi ý
+  /// idle-trigger ở trên vốn đứng yên tới khi tap. 0 = không có countdown.
+  static const double _manualHintDur = 1.5;
+  double _manualHintTimer = 0;
+
   static const double _popDur = 0.16;
   static const double _fallDur = 0.26;
   static const double _squashDur = 0.04;
@@ -751,6 +756,12 @@ class PopStarGame extends FlameGame {
       _idleTimer += dt;
       if (_idleTimer >= _hintDelay) _triggerHint();
     }
+    // I31: gợi ý thủ công tự tắt sau [_manualHintDur]s, khác gợi ý idle ở
+    // trên vốn đứng yên tới khi tap.
+    if (_manualHintTimer > 0) {
+      _manualHintTimer -= dt;
+      if (_manualHintTimer <= 0) clearHint();
+    }
   }
 
   /// I4: nhóm đang được gợi ý (rỗng nếu không có). Test-only introspection.
@@ -778,6 +789,27 @@ class PopStarGame extends FlameGame {
     }
     _hint = {};
     _idleTimer = 0;
+    _manualHintTimer = 0;
+  }
+
+  /// I31: gợi ý bấm-thủ-công (nút Hint trong booster bar) — hiện ngay nhóm
+  /// lớn nhất, bỏ qua [_hintDelay] rảnh tay, tự tắt sau [_manualHintDur]s
+  /// thay vì đợi tap kế tiếp. Trả false nếu đang animate, gợi ý đã đang hiện
+  /// sẵn (từ idle-trigger I4 hoặc từ lần bấm trước), hoặc bàn không còn nhóm
+  /// ≥2 — caller (`GameController.useHint`) dựa vào đó để không trừ nhầm lượt
+  /// hint khi không có gì mới để gợi ý (tránh double-spend: bấm nút trong lúc
+  /// gợi ý idle đang hiện sẽ vừa tốn lượt vừa rút ngắn thời gian hiện xuống
+  /// còn 1.5s một cách vô ích).
+  bool showHint() {
+    if (_animating || _hint.isNotEmpty) return false;
+    final group = findLargestGroup(colorGrid, lockGrid: lockGrid);
+    if (group.isEmpty) return false;
+    _hint = group;
+    for (final p in group) {
+      _blocks[p.x][p.y]?.hinted = true;
+    }
+    _manualHintTimer = _manualHintDur;
+    return true;
   }
 
   /// Trả về false nếu không có gì bị nổ (đang animate, hoặc 3x3 quanh

@@ -757,6 +757,7 @@ class AppTranslations extends Translations {
     'booster_swap_label': 'Swap',
     'booster_swap_desc': 'Swaps the colors of 2 tapped blocks.',
     'booster_freeze_label': 'Freeze',
+    'booster_hint_label': 'Hint',
     'booster_freeze_desc': 'Obstacles stop losing durability for @n moves.',
     // X5 — Home: semanticLabel cho icon chế độ chơi + màn phụ
     'mode_time_attack_label': 'Time Attack Mode',
@@ -1485,6 +1486,7 @@ class AppTranslations extends Translations {
     'booster_swap_label': 'Hoán Đổi',
     'booster_swap_desc': 'Hoán đổi màu của 2 khối vừa chạm.',
     'booster_freeze_label': 'Đóng Băng',
+    'booster_hint_label': 'Gợi Ý',
     'booster_freeze_desc': 'Chướng ngại vật ngừng giảm độ bền trong @n lượt.',
     // X5 — Home: semanticLabel cho icon chế độ chơi + màn phụ
     'mode_time_attack_label': 'Chế độ Đấu thời gian',
@@ -22373,6 +22375,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'Intercambiar',
       'booster_swap_desc': 'Intercambia los colores de 2 bloques tocados.',
       'booster_freeze_label': 'Congelar',
+      'booster_hint_label': 'Pista',
       'booster_freeze_desc':
           'Los obstáculos dejan de perder durabilidad durante @n turnos.',
       'mode_time_attack_label': 'Modo Contrarreloj',
@@ -22394,6 +22397,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'Échanger',
       'booster_swap_desc': 'Échange les couleurs de 2 blocs touchés.',
       'booster_freeze_label': 'Geler',
+      'booster_hint_label': 'Indice',
       'booster_freeze_desc':
           'Les obstacles cessent de perdre de la durabilité pendant @n coups.',
       'mode_time_attack_label': 'Mode Contre-la-montre',
@@ -22415,6 +22419,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'Tauschen',
       'booster_swap_desc': 'Tauscht die Farben von 2 berührten Blöcken.',
       'booster_freeze_label': 'Einfrieren',
+      'booster_hint_label': 'Hinweis',
       'booster_freeze_desc':
           'Hindernisse verlieren für @n Züge keine Haltbarkeit.',
       'mode_time_attack_label': 'Zeitrennen-Modus',
@@ -22437,6 +22442,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'Trocar',
       'booster_swap_desc': 'Troca as cores de 2 blocos tocados.',
       'booster_freeze_label': 'Congelar',
+      'booster_hint_label': 'Dica',
       'booster_freeze_desc':
           'Obstáculos param de perder durabilidade por @n jogadas.',
       'mode_time_attack_label': 'Modo Contrarrelógio',
@@ -22458,6 +22464,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'Обмен',
       'booster_swap_desc': 'Меняет местами цвета 2 выбранных блоков.',
       'booster_freeze_label': 'Заморозка',
+      'booster_hint_label': 'Подсказка',
       'booster_freeze_desc':
           'Препятствия не теряют прочность в течение @n ходов.',
       'mode_time_attack_label': 'Режим на время',
@@ -22479,6 +22486,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': '交换',
       'booster_swap_desc': '交换2个点击方块的颜色。',
       'booster_freeze_label': '冰冻',
+      'booster_hint_label': '提示',
       'booster_freeze_desc': '障碍物在@n回合内不再损耗耐久度。',
       'mode_time_attack_label': '计时挑战模式',
       'mode_zen_label': '禅模式',
@@ -22499,6 +22507,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'スワップ',
       'booster_swap_desc': 'タップした2つのブロックの色を入れ替えます。',
       'booster_freeze_label': 'フリーズ',
+      'booster_hint_label': 'ヒント',
       'booster_freeze_desc': '障害物は@n手の間、耐久度が減りません。',
       'mode_time_attack_label': 'タイムアタックモード',
       'mode_zen_label': '禅モード',
@@ -22519,6 +22528,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': '교환',
       'booster_swap_desc': '탭한 2개 블록의 색상을 교환합니다.',
       'booster_freeze_label': '얼리기',
+      'booster_hint_label': '힌트',
       'booster_freeze_desc': '장애물이 @n턴 동안 내구도를 잃지 않습니다.',
       'mode_time_attack_label': '타임어택 모드',
       'mode_zen_label': '젠 모드',
@@ -22539,6 +22549,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'Scambia',
       'booster_swap_desc': 'Scambia i colori di 2 blocchi toccati.',
       'booster_freeze_label': 'Congela',
+      'booster_hint_label': 'Suggerimento',
       'booster_freeze_desc':
           'Gli ostacoli non perdono durabilità per @n mosse.',
       'mode_time_attack_label': 'Modalità Contro il tempo',
@@ -22561,6 +22572,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'Tukar',
       'booster_swap_desc': 'Menukar warna 2 blok yang disentuh.',
       'booster_freeze_label': 'Bekukan',
+      'booster_hint_label': 'Petunjuk',
       'booster_freeze_desc':
           'Rintangan berhenti kehilangan daya tahan selama @n langkah.',
       'mode_time_attack_label': 'Mode Serangan Waktu',
@@ -22582,6 +22594,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'สลับ',
       'booster_swap_desc': 'สลับสีของ 2 บล็อกที่แตะ',
       'booster_freeze_label': 'แช่แข็ง',
+      'booster_hint_label': 'คำใบ้',
       'booster_freeze_desc': 'สิ่งกีดขวางหยุดเสียความทนทานเป็นเวลา @n ตา',
       'mode_time_attack_label': 'โหมดจับเวลา',
       'mode_zen_label': 'โหมดเซน',
@@ -22604,6 +22617,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'अदला-बदली',
       'booster_swap_desc': '2 टैप किए गए ब्लॉक के रंग बदलता है।',
       'booster_freeze_label': 'फ़्रीज़',
+      'booster_hint_label': 'संकेत',
       'booster_freeze_desc': 'बाधाएं @n चालों तक टिकाऊपन खोना बंद कर देती हैं।',
       'mode_time_attack_label': 'टाइम अटैक मोड',
       'mode_zen_label': 'ज़ेन मोड',
@@ -22624,6 +22638,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'تبديل',
       'booster_swap_desc': 'يبدل ألوان كتلتين تم لمسهما.',
       'booster_freeze_label': 'تجميد',
+      'booster_hint_label': 'تلميح',
       'booster_freeze_desc': 'تتوقف العوائق عن فقدان متانتها لمدة @n حركة.',
       'mode_time_attack_label': 'وضع سباق الوقت',
       'mode_zen_label': 'وضع زن',
@@ -22644,6 +22659,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'Değiştir',
       'booster_swap_desc': 'Dokunulan 2 bloğun renklerini değiştirir.',
       'booster_freeze_label': 'Dondur',
+      'booster_hint_label': 'İpucu',
       'booster_freeze_desc':
           'Engeller @n hamle boyunca dayanıklılık kaybetmeyi durdurur.',
       'mode_time_attack_label': 'Zaman Yarışı Modu',
@@ -22667,6 +22683,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'Wisselen',
       'booster_swap_desc': 'Wisselt de kleuren van 2 aangetikte blokken.',
       'booster_freeze_label': 'Bevriezen',
+      'booster_hint_label': 'Hint',
       'booster_freeze_desc':
           'Obstakels verliezen @n beurten lang geen duurzaamheid.',
       'mode_time_attack_label': 'Tijdrace-modus',
@@ -22688,6 +22705,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'Zamień',
       'booster_swap_desc': 'Zamienia kolory 2 dotkniętych bloków.',
       'booster_freeze_label': 'Zamroź',
+      'booster_hint_label': 'Podpowiedź',
       'booster_freeze_desc':
           'Przeszkody przestają tracić wytrzymałość przez @n ruchów.',
       'mode_time_attack_label': 'Tryb na czas',
@@ -22711,6 +22729,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'Palitan',
       'booster_swap_desc': 'Pinapalitan ang kulay ng 2 blocks na tinapik.',
       'booster_freeze_label': 'I-freeze',
+      'booster_hint_label': 'Pahiwatig',
       'booster_freeze_desc':
           'Hindi mawawala ang durability ng mga obstacle sa loob ng @n galaw.',
       'mode_time_attack_label': 'Time Attack Mode',
@@ -22733,6 +22752,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'Tukar',
       'booster_swap_desc': 'Menukar warna 2 blok yang disentuh.',
       'booster_freeze_label': 'Bekukan',
+      'booster_hint_label': 'Petunjuk',
       'booster_freeze_desc':
           'Halangan berhenti kehilangan ketahanan selama @n gerakan.',
       'mode_time_attack_label': 'Mod Serangan Masa',
@@ -22754,6 +22774,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'Обмін',
       'booster_swap_desc': 'Міняє місцями кольори 2 обраних блоків.',
       'booster_freeze_label': 'Заморозка',
+      'booster_hint_label': 'Підказка',
       'booster_freeze_desc':
           'Перешкоди не втрачають міцність протягом @n ходів.',
       'mode_time_attack_label': 'Режим на час',
@@ -22776,6 +22797,7 @@ class AppTranslations extends Translations {
       'booster_swap_label': 'অদলবদল',
       'booster_swap_desc': 'ট্যাপ করা 2টি ব্লকের রঙ অদলবদল করে।',
       'booster_freeze_label': 'জমাট',
+      'booster_hint_label': 'ইঙ্গিত',
       'booster_freeze_desc':
           'বাধাগুলো @n চাল পর্যন্ত স্থায়িত্ব হারানো বন্ধ করে।',
       'mode_time_attack_label': 'টাইম অ্যাটাক মোড',

@@ -2745,3 +2745,45 @@ không phải bug — đã xử lý:
 
 Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags
 slow` → toàn bộ xanh, không regression.
+
+## ✅ Implemented: Auto-solve Ghost Hint (I31, 2026-07-19)
+
+Nút Hint thủ công trong booster bar (7 nút): bấm hiện ngay nhóm pop lớn nhất
+trên bàn, KHÔNG cần chờ idle timer 6s của gợi ý tự động (I4). Miễn phí theo
+ván (3 lượt/màn, `GameController.hintsPerRun`, `hintCount` reset ở cả 4 entry
+point start*), không lưu đĩa, không tính vào `totalBoostersUsed`/achievement
+(khác các booster mua bằng xu).
+
+- **Reuse, không duplicate**: tái dùng nguyên `findLargestGroup` (đã có từ
+  I4 Predictive Hint) — hàm này đã xử lý đúng mọi acceptance criteria của
+  I31 (loại obstacle/gift/boss qua quy ước `< 0`, bàn trống → rỗng, chọn đúng
+  nhóm lớn nhất khi có nhiều nhóm). Chỉ bổ sung test coverage cho các case
+  đó trong `pop_detector_test.dart`, không viết hàm mới.
+- **`PopStarGame.showHint()`** — trigger thủ công, bỏ qua `_hintDelay`; có
+  countdown tự tắt riêng (`_manualHintTimer`, 1.5s) khác với gợi ý idle vốn
+  đứng yên tới khi tap. Trả `false` nếu đang animate, gợi ý đã đang hiện
+  sẵn, hoặc bàn không còn nhóm ≥2 (caller dựa vào đó để không trừ nhầm lượt).
+- **`GameController.useHint()`** → `PopStarGame.showHint()` → UI button
+  (`_BoosterButton` màu `NeonTheme.yellow`, icon `lightbulb_rounded`) →
+  i18n `booster_hint_label` cho đủ 22 locale.
+
+Test mới: `test/widget/manual_hint_test.dart` (hiện ngay không đợi idle, trừ
+đúng lượt khi thành công/không trừ khi thất bại, tự tắt sau ~1.5s, reset
+`hintCount` khi start màn mới) + 4 case mới trong
+`pop_detector_test.dart` cho `findLargestGroup`.
+
+**Fix double-spend (audit 2026-07-19)**: `showHint()` trước đây không kiểm
+tra gợi ý đã đang hiện sẵn (từ idle-trigger I4 hoặc lần bấm thủ công trước)
+→ bấm nút Hint lúc đó vừa trừ nhầm 1 lượt vừa rút ngắn thời gian hiện xuống
+còn 1.5s một cách vô ích, đi ngược mục tiêu giới hạn số lần dùng. Fix:
+`showHint()` trả `false` ngay nếu `_hint.isNotEmpty`, giữ nguyên gợi ý đang
+có mà không tốn lượt. Test regression mới trong `manual_hint_test.dart`.
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags
+slow` → 378 test toàn bộ xanh, không regression.
+
+Đã chứng minh thêm bằng integration test thật trên thiết bị (Pixel 7 Pro,
+`integration_test/lifecycle_test.dart`, 2 test case): bấm nút Hint 2 lần liên
+tiếp khi gợi ý đang hiện chỉ trừ đúng 1 lượt (`hintCount` không giảm thêm ở
+lần bấm thứ 2). `flutter test integration_test/lifecycle_test.dart -d
+2B051FDH3006MU` → 2/2 xanh trên app đã build/cài thật, không mock.

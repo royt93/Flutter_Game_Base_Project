@@ -103,6 +103,39 @@ void main() {
         Point(1, 1),
       });
     });
+
+    test('I31: chọn nhóm lớn nhất khi có nhiều nhóm kích cỡ khác nhau', () {
+      final grid = [
+        [0, 0, 1],
+        [2, 2, 1],
+        [2, 3, 1],
+      ];
+      expect(findLargestGroup(grid), {Point(0, 2), Point(1, 2), Point(2, 2)});
+    });
+
+    test('I31: chỉ toàn obstacle/gift/boss tile (âm) → rỗng', () {
+      final grid = [
+        [-1, -1000],
+        [-2000, -2001],
+      ];
+      expect(findLargestGroup(grid), isEmpty);
+    });
+
+    test('I31: bàn trống toàn null → rỗng', () {
+      final grid = [
+        [null, null],
+        [null, null],
+      ];
+      expect(findLargestGroup(grid), isEmpty);
+    });
+
+    test('I31: đúng 1 nhóm ≥2 duy nhất, phần còn lại là ô đơn lẻ', () {
+      final grid = [
+        [0, 1],
+        [0, 2],
+      ];
+      expect(findLargestGroup(grid), {Point(0, 0), Point(1, 0)});
+    });
   });
 
   group('hasAnyMovableGroup', () {
