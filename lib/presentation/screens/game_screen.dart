@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/neon_theme.dart';
+import '../../core/storage_service.dart';
 import '../../core/utils/format.dart';
 import '../../data/levels.dart';
 import '../../data/mascot_skins.dart';
@@ -50,6 +51,9 @@ class GameScreen extends StatelessWidget {
           aurora:
               gameCtrl.currentLevel.id > 0 &&
               worldForLevel(gameCtrl.currentLevel.id) == kWorlds.last,
+          weather: gameCtrl.currentLevel.id > 0
+              ? worldForLevel(gameCtrl.currentLevel.id).weather
+              : WeatherKind.none,
           child: SafeArea(
             child: Obx(() {
               gsc.gameVersion.value; // rebuild GameWidget khi đổi ván
@@ -129,6 +133,9 @@ class GameScreen extends StatelessWidget {
                     ),
                   ],
                   Positioned.fill(child: _FlashOverlay(gameCtrl: gameCtrl)),
+                  Positioned.fill(
+                    child: _ComboMilestoneOverlay(gameCtrl: gameCtrl),
+                  ),
                   Positioned.fill(
                     child: _AchievementUnlockOverlay(gameCtrl: gameCtrl),
                   ),
@@ -328,9 +335,7 @@ class _Hud extends StatelessWidget {
                   child: Obx(
                     () => StarMascot(
                       size: 40,
-                      mood: gameCtrl.comboMultiplier.value > 1.4
-                          ? StarMood.cheer
-                          : StarMood.idle,
+                      mood: moodForCombo(gameCtrl.comboCount.value),
                       palette: gameCtrl.activeMascotSkin.palette,
                     ),
                   ),
@@ -437,6 +442,54 @@ class _FlashOverlay extends StatelessWidget {
           curve: Curves.easeOut,
           builder: (_, v, _) =>
               Container(color: Colors.white.withValues(alpha: v)),
+        );
+      }),
+    );
+  }
+}
+
+/// I39: text "COMBO x{N}!" bay lên khi chạm mốc combo cố định. Nghe
+/// [GameController.comboMilestoneTick]; animation tắt khi bật "giảm chuyển
+/// động" nhưng haptic tương ứng ở [PopStarGame] vẫn chạy độc lập.
+class _ComboMilestoneOverlay extends StatelessWidget {
+  const _ComboMilestoneOverlay({required this.gameCtrl});
+  final GameController gameCtrl;
+
+  bool get _reduceMotion => StorageService.to.getBool(StorageKeys.reduceMotion);
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Obx(() {
+        final tick = gameCtrl.comboMilestoneTick.value;
+        if (tick == 0 || _reduceMotion) return const SizedBox.shrink();
+        final milestone = gameCtrl.comboMilestoneValue;
+        return Align(
+          alignment: const Alignment(0, -0.3),
+          child: TweenAnimationBuilder<double>(
+            key: ValueKey(tick),
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeOut,
+            builder: (_, t, child) {
+              final rise = -40.0 * t;
+              final fade = t < 0.7 ? 1.0 : 1.0 - (t - 0.7) / 0.3;
+              return Opacity(
+                opacity: fade.clamp(0.0, 1.0),
+                child: Transform.translate(
+                  offset: Offset(0, rise),
+                  child: child,
+                ),
+              );
+            },
+            child: StrokeText(
+              'combo_milestone_label'.trParams({'count': '$milestone'}),
+              fontSize: 34,
+              color: NeonTheme.ink,
+              stroke: Colors.white,
+              strokeWidth: 4,
+            ),
+          ),
         );
       }),
     );
@@ -695,14 +748,25 @@ class _Overlay extends StatelessWidget {
         final isTimeAttack = gameCtrl.mode.value == GameMode.timeAttack;
         final isEndless = gameCtrl.mode.value == GameMode.endless;
         final isDailyChallenge = gameCtrl.mode.value == GameMode.dailyChallenge;
+        final isPuzzleLab = gameCtrl.mode.value == GameMode.puzzleLab;
         return NeonDialog.overlay(
           panel: _MascotDialog(
-            mood: isTimeAttack ? StarMood.cheer : StarMood.sad,
+            mood: isPuzzleLab
+                ? StarMood.cheer
+                : (isTimeAttack ? StarMood.cheer : StarMood.sad),
             palette: gameCtrl.activeMascotSkin.palette,
             panel: NeonDialog.panel(
-              title: isTimeAttack ? 'time_up_title'.tr : 'board_stuck_title'.tr,
+              title: isPuzzleLab
+                  ? 'puzzle_lab_result_title'.tr
+                  : (isTimeAttack
+                        ? 'time_up_title'.tr
+                        : 'board_stuck_title'.tr),
               color: NeonTheme.orange,
-              message: isTimeAttack
+              message: isPuzzleLab
+                  ? 'puzzle_lab_score_label'.trParams({
+                      'score': '${gameCtrl.score.value}',
+                    })
+                  : isTimeAttack
                   ? 'score_best_label'.trParams({
                       'score': '${gameCtrl.score.value}',
                       'best': '${gameCtrl.timeAttackBest.value}',

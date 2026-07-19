@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -97,6 +99,10 @@ class StorageKeys {
   // giống unlockedAchievements) — mặc định chỉ có skin free.
   static const String activeMascotSkin = 'active_mascot_skin';
   static const String unlockedMascotSkins = 'unlocked_mascot_skins';
+
+  // I42 Puzzle Lab: mã bàn tự vẽ đã lưu (JSON list, tối đa 5 phần tử — cắt ở
+  // tầng caller).
+  static const String savedPuzzles = 'saved_puzzles';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).
@@ -157,6 +163,21 @@ class StorageService extends GetxService {
     }
     _fallback[key] = value;
   }
+
+  /// I42: đọc JSON list (khác pattern CSV-join của các key khác trong file
+  /// này) — dùng cho danh sách mã puzzle tự vẽ đã lưu.
+  List<String> getStringList(String key) {
+    final raw = getString(key);
+    if (raw == null) return [];
+    try {
+      return (jsonDecode(raw) as List).cast<String>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> setStringList(String key, List<String> value) =>
+      setString(key, jsonEncode(value));
 
   Future<void> remove(String key) async {
     if (_prefs != null) {

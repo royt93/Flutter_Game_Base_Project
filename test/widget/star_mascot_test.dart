@@ -19,4 +19,23 @@ void main() {
       }
     });
   }
+
+  group('moodForCombo (I41)', () {
+    test('0-1 -> idle', () {
+      expect(moodForCombo(0), StarMood.idle);
+      expect(moodForCombo(1), StarMood.idle);
+    });
+
+    test('2-4 -> happy', () {
+      expect(moodForCombo(2), StarMood.happy);
+      expect(moodForCombo(3), StarMood.happy);
+      expect(moodForCombo(4), StarMood.happy);
+    });
+
+    test('>=5 -> cheer', () {
+      expect(moodForCombo(5), StarMood.cheer);
+      expect(moodForCombo(6), StarMood.cheer);
+      expect(moodForCombo(999), StarMood.cheer);
+    });
+  });
 }

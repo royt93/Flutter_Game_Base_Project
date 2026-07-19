@@ -809,6 +809,30 @@ void main() {
     });
   });
 
+  group('I39 Combo Milestone FX', () {
+    test('triggerComboMilestone tăng tick và lưu đúng giá trị mốc', () {
+      ctrl.startLevel(1);
+      expect(ctrl.comboMilestoneTick.value, 0);
+
+      ctrl.triggerComboMilestone(5);
+      expect(ctrl.comboMilestoneTick.value, 1);
+      expect(ctrl.comboMilestoneValue, 5);
+
+      ctrl.triggerComboMilestone(10);
+      expect(ctrl.comboMilestoneTick.value, 2);
+      expect(ctrl.comboMilestoneValue, 10);
+    });
+
+    test('resetCombo không tự trigger FX (chỉ pop_star_game.dart mới gọi '
+        'triggerComboMilestone khi combo chạm mốc)', () {
+      ctrl.startLevel(1);
+      ctrl.registerPop(10);
+      ctrl.registerPop(10);
+      ctrl.resetCombo();
+      expect(ctrl.comboMilestoneTick.value, 0);
+    });
+  });
+
   group('I27 Prestige/New Game+', () {
     void winLevel(int id) {
       ctrl.startLevel(id);

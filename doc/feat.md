@@ -2787,3 +2787,172 @@ slow` → 378 test toàn bộ xanh, không regression.
 tiếp khi gợi ý đang hiện chỉ trừ đúng 1 lượt (`hintCount` không giảm thêm ở
 lần bấm thứ 2). `flutter test integration_test/lifecycle_test.dart -d
 2B051FDH3006MU` → 2/2 xanh trên app đã build/cài thật, không mock.
+
+## ✅ Implemented: Combo Milestone FX (I39, 2026-07-19)
+
+Text "COMBO x{N}!" bay lên + rung mạnh khi combo chạm mốc cố định
+(`kComboMilestones = [5, 10, 15, 20]`), tách biệt animation khỏi haptic đúng
+theo convention 2-flag riêng của project (giảm chuyển động chỉ tắt hiệu ứng
+UI, không ảnh hưởng haptic).
+
+- **`lib/data/combo_milestones.dart`** (mới) — `kComboMilestones` +
+  `isComboMilestone(count)`.
+- **`GameController`** — thêm `comboMilestoneTick`/`comboMilestoneValue`/
+  `triggerComboMilestone()`, mirror đúng pattern `flashTick`/`triggerFlash()`
+  đã có (tick để UI nghe 1 lần, value thường để mang payload).
+- **`pop_star_game.dart`** — kiểm tra `isComboMilestone(controller.comboCount
+  .value)` ngay sau cả 2 điểm gọi `triggerFlash()` hiện có; khi đúng mốc gọi
+  `triggerComboMilestone(...)` + `fireHaptic(HapticLevel.heavy)`. Không thêm
+  guard `isReplay` riêng vì `comboCount` vốn không tăng trong replay
+  (`registerPop` bị bỏ qua khi `isReplay == true`), giống hệt cách flash-
+  trigger đang unguarded.
+- **`game_screen.dart`** — `_ComboMilestoneOverlay` mirror `_FlashOverlay`,
+  nghe `comboMilestoneTick`, tự tắt animation khi `_reduceMotion` (haptic vẫn
+  chạy độc lập vì trigger nằm ở `pop_star_game.dart`, không phụ thuộc flag
+  này).
+- i18n: `combo_milestone_label` (`'COMBO x@count!'`) thêm đủ 22 locale.
+
+Test mới: `test/data/combo_milestones_test.dart` (đúng/sai theo mốc),
+`test/widget/combo_milestone_fx_test.dart` (drive `GameScreen` thật, dồn combo
+qua 6 lần tap liên tiếp bằng kỹ thuật tap lặp cùng toạ độ cột 0 — cột rỗng
+luôn dồn trái nên không cần tính lại toạ độ mỗi lần pop; xác nhận mốc 5
+trigger đúng 1 lần và reduce-motion tắt overlay text nhưng tick milestone vẫn
+tăng độc lập), 2 test mới trong `game_controller_test.dart` (trigger tăng
+tick/lưu đúng value qua nhiều lần gọi; `resetCombo()` không tự trigger FX).
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
+384 test toàn bộ xanh, không regression.
+
+## ✅ Implemented: Ambient Weather theo World Theme (I40, 2026-07-19)
+
+Lớp particle thời tiết nhẹ phía sau board, khác nhau theo `GameWorld` — world
+băng có tuyết rơi xuống, world lửa có tia lửa bay lên, world nước có bong
+bóng nổi lên. World cuối (aurora, I16) giữ nguyên, không chồng thêm weather để
+tránh rối mắt.
+
+- **`lib/data/worlds.dart`** — thêm enum `WeatherKind { none, snow, spark,
+  bubble }` + field `weather` (default `WeatherKind.none`) vào `GameWorld`
+  (default để không phải sửa lại toàn bộ 11 khai báo const cũ). Gán
+  `spark` cho world 2/8 (lửa), `bubble` cho world 3/9 (nước), `snow` cho
+  world 7 (băng); world 1/4/5/6/10/11 giữ `none`.
+- **`lib/presentation/widgets/ambient_weather_layer.dart`** (mới) —
+  `AmbientWeatherLayer` mirror đúng pattern `AuroraBgLayer` (I16):
+  `IgnorePointer` → `RepaintBoundary` → `CustomPaint(size: Size.infinite)`,
+  trả `SizedBox.shrink()` ngay khi `weather == none`. Particle
+  (vị trí/pha/tốc độ/độ lệch ngang/kích thước) sinh 1 lần trong `initState`
+  qua `Random()` giống `confetti_overlay.dart`'s `_Bit`; 1
+  `AnimationController` lặp liên tục (`.repeat()`) làm `t` chạy 0..1, mỗi
+  particle tự tính lại vị trí theo `t` (tuyết đi xuống, spark/bubble đi lên),
+  mờ dần ở 2 đầu hành trình để không xuất hiện/biến mất đột ngột.
+- Tôn trọng `reduce_motion` đúng convention đã dùng ở `star_mascot`/
+  `pulse_glow`: `bool get _reduceMotion => StorageService.maybe?.getBool(...)
+  ?? false;`, chỉ gọi `_c.repeat()` trong `initState` nếu `!_reduceMotion`.
+- **`neon_bg.dart`** — thêm param `weather` (default `WeatherKind.none`),
+  chèn `AmbientWeatherLayer` vào `Stack` cùng cách `aurora` đang làm (sau lớp
+  nền cơ bản, trước `widget.child`).
+- **`game_screen.dart`** — truyền `weather:` vào `NeonBg` tính từ
+  `worldForLevel(gameCtrl.currentLevel.id).weather`, cùng guard
+  `gameCtrl.currentLevel.id > 0` như `aurora` (side-mode levels ID âm không
+  có weather).
+- i18n: không cần (không có text).
+
+Test mới: `test/widget/ambient_weather_layer_test.dart` — build không lỗi với
+từng `WeatherKind`; `none` → không có `CustomPaint` con nào (`SizedBox.shrink`);
+reduce-motion tắt → `.repeat()` chạy vô hạn nên `pumpAndSettle` phải throw
+(kỹ thuật xác nhận animation lặp vô hạn không cần đụng vào private State);
+reduce-motion bật → không gọi `.repeat()` nên `pumpAndSettle` hoàn tất bình
+thường.
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
+391 test toàn bộ xanh, không regression.
+
+## ✅ Implemented: Mascot Reaction theo Combo Streak (I41, 2026-07-19)
+
+`StarMascot` trong game screen trước chỉ nhị phân `cheer`/`idle` theo
+`comboMultiplier > 1.4`, bỏ phí mood `happy` đã tồn tại sẵn animation riêng
+trong `StarMood` enum. Đổi sang ánh xạ chi tiết theo `comboCount` (số nguyên
+trực tiếp, chính xác hơn hệ số nhân).
+
+- **`star_mascot.dart`** — thêm hàm thuần `moodForCombo(int comboCount)`:
+  `0-1 → idle`, `2-4 → happy`, `≥5 → cheer`.
+- **`game_screen.dart`** — đổi điểm mood-trong-lúc-chơi (mascot nhỏ ở
+  top bar) sang `moodForCombo(gameCtrl.comboCount.value)`. Không đụng 2 chỗ
+  dùng mood khác (màn kết quả `isTimeAttack ? cheer : sad`, và 1 trường hợp
+  `cheer` cố định khác).
+- Không cần sửa gì thêm cho `reduce_motion` — cơ chế tắt animation lặp vô
+  hạn khi bật flag đã áp dụng chung cho mọi mood từ trước (`commit 28ccb94`).
+- i18n: không cần (không có text mới).
+
+Test mới: 3 test cho `moodForCombo` (biên 0/1, 2/3/4, 5/6/999) trong
+`star_mascot_test.dart`; `test/widget/mascot_combo_reaction_test.dart` —
+drive `GameScreen` thật, dồn combo bằng kỹ thuật tap lặp cột 0 (mirror
+`combo_milestone_fx_test.dart`), xác nhận mascot đổi đúng mood tại từng mốc
+biên 2/4/5.
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
+395 test toàn bộ xanh, không regression.
+
+## ✅ Implemented: Puzzle Lab — level editor + chia sẻ mã bàn (I42, 2026-07-19)
+
+Chế độ chơi mới cho phép người dùng tự vẽ 1 bàn PopStar (rows/cols/colorCount/
+obstacle/gift tuỳ ý), lưu tối đa 5 bàn trên máy, và chia sẻ/nhập bàn qua 1 mã
+text base64url (cùng kỹ thuật `encodeReplay` ở I28). 4 quyết định thiết kế đã
+chốt với user trước khi code:
+
+1. `boardsFullyCleared` vẫn đếm cho Puzzle Lab (chỉ bypass coin/sao/unlock/
+   best-score) — mascot achievement liên quan vẫn tính đúng.
+2. Dialog kết quả giữ cả 2 nút "Chơi lại" + "Menu" (không rút gọn còn 1 nút).
+3. Ô trống khi vẽ → lấp thành màu 0 qua `fillEmptyCells` ngay trước khi vào
+   `PopStarGame`, không đổi kiểu `presetGrid` (`List<List<int>>`).
+4. Entry point đặt trong Settings (không phải nút riêng trên Home Screen).
+
+Một sai lệch so với task doc gốc đã phát hiện: task doc ghi "màu 0..11"
+nhưng toàn game (`lib/data/levels.dart`) chỉ dùng tối đa 7 màu — dùng đúng
+`kPuzzleMaxColorCount = 7` theo thực tế game, không theo task doc.
+
+- **`lib/logic/puzzle_code.dart`** (mới, pure Dart) — `isValidPuzzleCellValue`,
+  `hasAnyGem`, `fillEmptyCells`, `cyclePuzzleCellValue`, `encodePuzzleGrid`/
+  `decodePuzzleGrid` (mirror base64url của `replay.dart`). Boss tile không hỗ
+  trợ trong bàn tự vẽ; obstacle âm khác gift/boss vẫn hợp lệ.
+- **`game_controller.dart`** — thêm `GameMode.puzzleLab`, field
+  `puzzleLabGrid`, hàm `startPuzzleLevel(grid)` (mirror `startSideMode`,
+  `id: -5`, `targetScore = rows*cols*6` không ramp theo world). `checkEnd()`
+  thêm guard: sau khi cộng `boardsFullyCleared`/achievement, nếu
+  `mode == puzzleLab` thì set `ended = true` và return ngay — không thưởng
+  coin/sao/unlock/best-score.
+- **`game_screen_controller.dart`** — `_newGame()` mở rộng `presetGrid` thành
+  `switch` (thêm nhánh `puzzleLab → gameCtrl.puzzleLabGrid`); `again()` thêm
+  nhánh riêng gọi `startPuzzleLevel` (không rơi vào `startSideMode`).
+- **`game_screen.dart`** — `_Overlay` case `GameUi.lose` thêm nhánh
+  `isPuzzleLab` ưu tiên đầu tiên: title/message dùng
+  `puzzle_lab_result_title`/`puzzle_lab_score_label`, mood `cheer`, tái dùng
+  đúng layout 2 nút Retry/Menu có sẵn.
+- **`storage_service.dart`** — thêm `StorageKeys.savedPuzzles` +
+  `getStringList`/`setStringList` (JSON list, khác pattern CSV-join của các
+  key khác trong file).
+- **`puzzle_lab_screen.dart`** (mới) — editor: chọn rows(8-11)/cols(6-12)/
+  colorCount(4-7), `GridView` tap-to-cycle từng ô, Lưu (chặn bàn rỗng, giữ tối
+  đa 5 bàn cũ nhất bị xoá trước), Chia sẻ mã (`shareText`), nhập mã + "Chơi
+  bàn tuỳ chỉnh" (`decodePuzzleGrid` lỗi/rỗng → `puzzle_lab_invalid_code`,
+  không crash), danh sách bàn đã lưu (chơi lại/xoá). Dùng thẳng singleton
+  `Get.find<GameController>()` (khác `GhostReplayScreen` — Puzzle Lab cần
+  chơi thật, không phải auto-playback).
+- **Entry point** — 1 `ListTile` mới trong `settings_screen.dart` (cạnh
+  "invite_friend"), điều hướng `Get.to(() => const PuzzleLabScreen())`.
+- i18n: 15 key mới (`puzzle_lab_*`) × 22 locale.
+
+Test mới: `test/logic/puzzle_code_test.dart` (round-trip nhiều kích thước,
+ô null/obstacle/gift xen kẽ, decode chuỗi rác/sai định dạng/sai kích thước/
+màu ngoài phạm vi/boss tile → `null`, `hasAnyGem`/`fillEmptyCells`/
+`cyclePuzzleCellValue` đầy đủ case biên); `test/widget/puzzle_lab_screen_test.dart`
+(đổi rows/cols/colorCount rebuild grid, cycle cell, lưu/giới hạn 5 bàn, chia
+sẻ mã bàn rỗng bị chặn, nhập mã hợp lệ/rác/rỗng-sau-decode).
+
+Verify on-device (Android, rule R3): vẽ bàn → lưu → chia sẻ mã → nhập lại
+đúng mã → chơi đúng bàn đã vẽ; kích hoạt tile Cầu Vồng dọn sạch bàn → dialog
+"Hoàn thành Puzzle" hiện đúng điểm (+1000 clearBoardBonus), đúng 2 nút "Menu"/
+"Thử Lại", không cộng coin/sao/unlock level campaign; nhập mã rác → hiện lỗi
+"Mã bàn không hợp lệ hoặc rỗng" rõ ràng, không crash, không điều hướng.
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
+toàn bộ xanh, không regression.

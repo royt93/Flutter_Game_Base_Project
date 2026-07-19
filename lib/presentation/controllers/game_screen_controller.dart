@@ -131,9 +131,11 @@ class GameScreenController extends GetxController {
       gameCtrl,
       refillEnabled: gameCtrl.mode.value == GameMode.zen,
       startWithFtueHint: ftue,
-      presetGrid: gameCtrl.mode.value == GameMode.dailyChallenge
-          ? gameCtrl.dailyChallengeGrid
-          : null,
+      presetGrid: switch (gameCtrl.mode.value) {
+        GameMode.dailyChallenge => gameCtrl.dailyChallengeGrid,
+        GameMode.puzzleLab => gameCtrl.puzzleLabGrid,
+        _ => null,
+      },
       // I28: chỉ ghi replay ở campaign — zen/endless không có bàn cố định,
       // dailyChallenge dùng presetGrid riêng mà replay (chỉ seed+levelId)
       // không tái tạo được.
@@ -257,6 +259,9 @@ class GameScreenController extends GetxController {
       // F13: cùng ngày → sinh lại đúng bàn cũ (seed = ngày), không đè điểm
       // đã ghi nếu đã ghi lần đầu (xem `canRecordDailyChallengeScore`).
       gameCtrl.startDailyChallenge();
+    } else if (mode == GameMode.puzzleLab) {
+      // I42: KHÔNG rơi vào startSideMode — phải giữ đúng puzzleLabGrid đã vẽ.
+      gameCtrl.startPuzzleLevel(gameCtrl.puzzleLabGrid!);
     } else {
       gameCtrl.startSideMode(mode);
     }

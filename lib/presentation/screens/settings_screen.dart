@@ -11,6 +11,14 @@ import '../controllers/game_controller.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_dialog.dart';
+import 'puzzle_lab_screen.dart';
+
+// ponytail: Switch M3 (useMaterial3: true) có track cố định 52x32dp nhưng
+// vẫn giữ 1 vùng vô hình rộng hơn ở cạnh phải track (không đổi theo
+// shrinkWrap) khiến margin phải > trái dù contentPadding 2 bên bằng nhau.
+// Bù trừ cứng theo dp (không phụ thuộc device density) — nếu Flutter SDK
+// đổi kích thước Switch M3 sau này, chỉnh lại giá trị này.
+const double _switchTrailingCompensation = 11;
 
 /// Cài đặt: ngôn ngữ, âm thanh, reset tiến trình.
 class SettingsScreen extends StatefulWidget {
@@ -51,6 +59,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onChanged: (_) => audio.toggleMute(),
                           activeThumbColor: Colors.white,
                           activeTrackColor: NeonTheme.cyan,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          contentPadding: const EdgeInsets.only(
+                            left: NeonTheme.s16,
+                            right: NeonTheme.s16 - _switchTrailingCompensation,
+                          ),
                           title: Text(
                             'sound'.tr,
                             style: TextStyle(color: NeonTheme.ink),
@@ -96,6 +110,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                       activeThumbColor: Colors.white,
                       activeTrackColor: NeonTheme.cyan,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      contentPadding: const EdgeInsets.only(
+                        left: NeonTheme.s16,
+                        right: NeonTheme.s16 - _switchTrailingCompensation,
+                      ),
                       title: Text(
                         'haptics'.tr,
                         style: TextStyle(color: NeonTheme.ink),
@@ -109,6 +128,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                       activeThumbColor: Colors.white,
                       activeTrackColor: NeonTheme.cyan,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      contentPadding: const EdgeInsets.only(
+                        left: NeonTheme.s16,
+                        right: NeonTheme.s16 - _switchTrailingCompensation,
+                      ),
                       title: Text(
                         'reduce_motion'.tr,
                         style: TextStyle(color: NeonTheme.ink),
@@ -122,6 +146,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                       activeThumbColor: Colors.white,
                       activeTrackColor: NeonTheme.cyan,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      contentPadding: const EdgeInsets.only(
+                        left: NeonTheme.s16,
+                        right: NeonTheme.s16 - _switchTrailingCompensation,
+                      ),
                       title: Text(
                         'record_replay'.tr,
                         style: TextStyle(color: NeonTheme.ink),
@@ -133,6 +162,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onChanged: (_) => gameCtrl.toggleColorblindMode(),
                         activeThumbColor: Colors.white,
                         activeTrackColor: NeonTheme.cyan,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        contentPadding: const EdgeInsets.only(
+                          left: NeonTheme.s16,
+                          right: NeonTheme.s16 - _switchTrailingCompensation,
+                        ),
                         title: Text(
                           'colorblind_mode'.tr,
                           style: TextStyle(color: NeonTheme.ink),
@@ -149,6 +183,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                       activeThumbColor: Colors.white,
                       activeTrackColor: NeonTheme.cyan,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      contentPadding: const EdgeInsets.only(
+                        left: NeonTheme.s16,
+                        right: NeonTheme.s16 - _switchTrailingCompensation,
+                      ),
                       title: Text(
                         'dark_theme'.tr,
                         style: TextStyle(color: NeonTheme.ink),
@@ -166,6 +205,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         'Chơi Pop Star Blast cùng mình! '
                         'https://play.google.com/store/apps/details?id=com.galaxyjoy.pop_star_blast',
                       ),
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.dashboard_customize_rounded,
+                        color: NeonTheme.lime,
+                      ),
+                      title: Text(
+                        'puzzle_lab_title'.tr,
+                        style: TextStyle(color: NeonTheme.ink),
+                      ),
+                      onTap: () => Get.to(() => const PuzzleLabScreen()),
                     ),
                     const SizedBox(height: NeonTheme.s16),
                     Text(

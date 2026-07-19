@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../core/neon_theme.dart';
 
+/// I40: kiểu particle thời tiết nền theo world. `none` = không có lớp
+/// weather (mặc định, và luôn dùng cho world cuối để không chồng aurora I16).
+enum WeatherKind { none, snow, spark, bubble }
+
 /// F4: 1 world = 20 màn campaign liên tiếp, có tông màu + tên riêng cho
 /// banner trên [LevelSelectScreen].
 class GameWorld {
@@ -10,6 +14,7 @@ class GameWorld {
   final int startId; // inclusive
   final int endId; // inclusive
   final IconData icon; // hoạ tiết nền banner, không dùng asset ảnh
+  final WeatherKind weather; // I40: particle nền, none = không có
 
   const GameWorld({
     required this.nameKey,
@@ -17,6 +22,7 @@ class GameWorld {
     required this.startId,
     required this.endId,
     required this.icon,
+    this.weather = WeatherKind.none,
   });
 
   bool contains(int levelId) => levelId >= startId && levelId <= endId;
@@ -36,6 +42,7 @@ const List<GameWorld> kWorlds = [
     startId: 21,
     endId: 40,
     icon: Icons.local_fire_department_rounded,
+    weather: WeatherKind.spark,
   ),
   GameWorld(
     nameKey: 'world_path_name_3',
@@ -43,6 +50,7 @@ const List<GameWorld> kWorlds = [
     startId: 41,
     endId: 60,
     icon: Icons.water_drop_rounded,
+    weather: WeatherKind.bubble,
   ),
   GameWorld(
     nameKey: 'world_path_name_4',
@@ -71,6 +79,7 @@ const List<GameWorld> kWorlds = [
     startId: 121,
     endId: 140,
     icon: Icons.ac_unit_rounded,
+    weather: WeatherKind.snow,
   ),
   GameWorld(
     nameKey: 'world_path_name_8',
@@ -78,6 +87,7 @@ const List<GameWorld> kWorlds = [
     startId: 141,
     endId: 160,
     icon: Icons.whatshot_rounded,
+    weather: WeatherKind.spark,
   ),
   GameWorld(
     nameKey: 'world_path_name_9',
@@ -85,6 +95,7 @@ const List<GameWorld> kWorlds = [
     startId: 161,
     endId: 180,
     icon: Icons.waves_rounded,
+    weather: WeatherKind.bubble,
   ),
   GameWorld(
     nameKey: 'world_path_name_10',

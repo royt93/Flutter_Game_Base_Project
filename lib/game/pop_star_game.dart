@@ -12,6 +12,7 @@ import '../core/audio_manager.dart';
 import '../core/debug_log.dart';
 import '../core/haptics.dart';
 import '../core/neon_theme.dart';
+import '../data/combo_milestones.dart';
 import '../data/levels.dart';
 import '../logic/boss_tile.dart';
 import '../logic/chain_tile.dart';
@@ -552,6 +553,11 @@ class PopStarGame extends FlameGame {
         controller.comboMultiplier.value >= _bigComboThreshold) {
       controller.triggerFlash();
     }
+    // I39: mốc combo cố định → text "COMBO x{N}!" + rung mạnh hơn.
+    if (isComboMilestone(controller.comboCount.value)) {
+      controller.triggerComboMilestone(controller.comboCount.value);
+      fireHaptic(HapticLevel.heavy);
+    }
     // F5a: nhóm đủ lớn → ô vừa tap hoá power tile (giữ lại), phần còn lại nổ.
     final kind = powerTileKindForGroupSize(group.length, _rng);
     final cleared = kind != null
@@ -720,6 +726,11 @@ class PopStarGame extends FlameGame {
         cells.length >= _bigGroupThreshold ||
         controller.comboMultiplier.value >= _bigComboThreshold) {
       controller.triggerFlash();
+    }
+    // I39: mốc combo cố định → text "COMBO x{N}!" + rung mạnh hơn.
+    if (isComboMilestone(controller.comboCount.value)) {
+      controller.triggerComboMilestone(controller.comboCount.value);
+      fireHaptic(HapticLevel.heavy);
     }
     final broken = _chipObstaclesOrFrozen(cells);
     final bossBroken = _chipAdjacentBossTiles(cells);

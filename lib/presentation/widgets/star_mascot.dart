@@ -8,6 +8,15 @@ import '../../data/mascot_skins.dart';
 
 enum StarMood { idle, happy, sad, cheer }
 
+/// I41: ánh xạ combo hiện tại (`comboCount`, số nguyên) sang mood mascot lúc
+/// đang chơi — chi tiết hơn nhị phân cheer/idle cũ để tận dụng animation
+/// `happy` vốn đã có sẵn nhưng chưa dùng ở game screen.
+StarMood moodForCombo(int comboCount) {
+  if (comboCount >= 5) return StarMood.cheer;
+  if (comboCount >= 2) return StarMood.happy;
+  return StarMood.idle;
+}
+
 /// Mascot ngôi sao vẽ bằng canvas (không cần asset). Idle nhún nhẹ + chớp mắt;
 /// happy nảy lên; sad rũ xuống. Dùng ở Home + dialog thắng/thua.
 ///

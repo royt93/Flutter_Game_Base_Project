@@ -16,11 +16,13 @@ import '../../data/perks.dart';
 import '../../game/pop_star_game.dart';
 import '../../logic/daily_challenge.dart';
 import '../../logic/gift_tile.dart';
+import '../../logic/puzzle_code.dart';
 
 /// F8: campaign (200 màn có target/sao/mở khoá) vs side-mode biệt lập
 /// (không đụng unlockedLevel/coin-campaign/star). F12: endless thêm vào nhóm
-/// side-mode, không target/thắng-thua, chỉ ghi high-score riêng.
-enum GameMode { campaign, timeAttack, zen, endless, dailyChallenge }
+/// side-mode, không target/thắng-thua, chỉ ghi high-score riêng. I42:
+/// puzzleLab chơi bàn tự vẽ, không thưởng coin/sao/unlock/best-score.
+enum GameMode { campaign, timeAttack, zen, endless, dailyChallenge, puzzleLab }
 
 /// I7: 1 ô phần thưởng trên vòng quay hằng ngày.
 class SpinReward {
@@ -117,6 +119,16 @@ class GameController extends GetxController {
   final flashTick = 0.obs;
   void triggerFlash() => flashTick.value++;
 
+  /// I39: tăng khi combo chạm mốc cố định ([kComboMilestones]) → UI hiện
+  /// text "COMBO x{N}!" bay lên. [comboMilestoneValue] là mốc vừa chạm, đọc
+  /// bởi UI ngay sau khi tick đổi (không phải Rx vì chỉ cần đọc 1 lần/tick).
+  final comboMilestoneTick = 0.obs;
+  int comboMilestoneValue = 0;
+  void triggerComboMilestone(int milestone) {
+    comboMilestoneValue = milestone;
+    comboMilestoneTick.value++;
+  }
+
   /// Set bởi [PopStarGame.onLoad] khi bàn được dựng — dùng để booster gọi
   /// thẳng vào game (bomb/shuffle/undo đều thao tác trực tiếp trên grid).
   PopStarGame? activeGame;
@@ -124,6 +136,11 @@ class GameController extends GetxController {
   /// F13: bàn Daily Challenge hôm nay, sinh 1 lần trong [startDailyChallenge]
   /// — [PopStarGame] dùng làm bàn cố định thay vì random.
   List<List<int>>? dailyChallengeGrid;
+
+  /// I42 Puzzle Lab: bàn tự vẽ đang chơi, sinh từ editor hoặc mã nhập/lưu —
+  /// [PopStarGame] dùng làm bàn cố định thay vì random, giống
+  /// [dailyChallengeGrid].
+  List<List<int>>? puzzleLabGrid;
 
   PopLevel get currentLevel => currentLevelRx.value!;
 
@@ -730,6 +747,33 @@ class GameController extends GetxController {
     _collectInitial = null;
   }
 
+  /// I42 Puzzle Lab: bắt đầu ván với bàn tự vẽ/nhập mã — mirror
+  /// [startSideMode] (không cần reset perfectClearTarget/perfectClearSuccess
+  /// vì Puzzle Lab không có Perfect Clear).
+  void startPuzzleLevel(List<List<int>> grid) {
+    mode.value = GameMode.puzzleLab;
+    puzzleLabGrid = grid;
+    final rows = grid.length;
+    final cols = rows == 0 ? 0 : grid[0].length;
+    currentLevelRx.value = PopLevel(
+      id: -5,
+      rows: rows,
+      cols: cols,
+      colorCount: kPuzzleMaxColorCount,
+      targetScore: rows * cols * 6,
+    );
+    score.value = 0;
+    starsEarned.value = 0;
+    ended.value = false;
+    cleared.value = false;
+    resetCombo();
+    activeGame = null;
+    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
+    movesUsed.value = 0;
+    _collectInitial = null;
+  }
+
   /// F13: đã ghi điểm Daily Challenge hôm nay chưa — chơi lại trong ngày
   /// không đè điểm cũ (giống `canClaimDaily`).
   bool get canRecordDailyChallengeScore =>
@@ -816,6 +860,10 @@ class GameController extends GetxController {
         boardsFullyCleared.value,
       );
       _checkAchievements();
+    }
+    if (mode.value == GameMode.puzzleLab) {
+      ended.value = true;
+      return; // không thưởng coin/sao/unlock/best-score
     }
     if (mode.value != GameMode.campaign) {
       if (mode.value == GameMode.timeAttack) _saveTimeAttackBest();
