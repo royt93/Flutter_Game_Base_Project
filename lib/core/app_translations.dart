@@ -169,6 +169,9 @@ class AppTranslations extends Translations {
           // I42 — Puzzle Lab: puzzle_lab_* (en+vi ở _extraEn/_extraVi, 20
           // ngôn ngữ còn lại ở _w43ByLang).
           ...?_w43ByLang[e.key],
+          // I34 — Trophy Room: trophy_room_* (en+vi ở _extraEn/_extraVi, 20
+          // ngôn ngữ còn lại ở _w44ByLang).
+          ...?_w44ByLang[e.key],
         },
     };
   }
@@ -951,6 +954,10 @@ class AppTranslations extends Translations {
     'puzzle_lab_result_title': 'Puzzle Complete',
     'puzzle_lab_score_label': 'Score @score',
     'puzzle_lab_empty_board_msg': 'Add at least one colored gem before playing',
+    'trophy_room_title': 'Trophy Room',
+    'trophy_room_prestige_section': 'Prestige',
+    'trophy_room_achievements_section': 'Achievements',
+    'trophy_room_mascots_section': 'Costumes',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -1692,6 +1699,10 @@ class AppTranslations extends Translations {
     'puzzle_lab_result_title': 'Hoàn thành Puzzle',
     'puzzle_lab_score_label': 'Điểm @score',
     'puzzle_lab_empty_board_msg': 'Thêm ít nhất 1 viên màu trước khi chơi',
+    'trophy_room_title': 'Phòng Vinh Danh',
+    'trophy_room_prestige_section': 'Thăng Hạng',
+    'trophy_room_achievements_section': 'Thành Tựu',
+    'trophy_room_mascots_section': 'Trang Phục',
   };
 
   static const Map<String, String> _extraEs = {
@@ -26760,6 +26771,131 @@ class AppTranslations extends Translations {
       'puzzle_lab_result_title': 'পাজল সম্পন্ন',
       'puzzle_lab_score_label': 'স্কোর @score',
       'puzzle_lab_empty_board_msg': 'খেলার আগে অন্তত একটি রঙিন জেম যোগ করুন',
+    },
+  };
+
+  /// I34 — Trophy Room: trophy_room_* cho 20 ngôn ngữ còn lại (en+vi ở
+  /// _extraEn/_extraVi).
+  static const Map<String, Map<String, String>> _w44ByLang = {
+    'es_ES': {
+      'trophy_room_title': 'Sala de Trofeos',
+      'trophy_room_prestige_section': 'Prestigio',
+      'trophy_room_achievements_section': 'Logros',
+      'trophy_room_mascots_section': 'Trajes',
+    },
+    'fr_FR': {
+      'trophy_room_title': 'Salle des Trophées',
+      'trophy_room_prestige_section': 'Prestige',
+      'trophy_room_achievements_section': 'Succès',
+      'trophy_room_mascots_section': 'Costumes',
+    },
+    'de_DE': {
+      'trophy_room_title': 'Trophäenraum',
+      'trophy_room_prestige_section': 'Prestige',
+      'trophy_room_achievements_section': 'Erfolge',
+      'trophy_room_mascots_section': 'Kostüme',
+    },
+    'pt_BR': {
+      'trophy_room_title': 'Sala de Troféus',
+      'trophy_room_prestige_section': 'Prestígio',
+      'trophy_room_achievements_section': 'Conquistas',
+      'trophy_room_mascots_section': 'Fantasias',
+    },
+    'ru_RU': {
+      'trophy_room_title': 'Зал трофеев',
+      'trophy_room_prestige_section': 'Престиж',
+      'trophy_room_achievements_section': 'Достижения',
+      'trophy_room_mascots_section': 'Костюмы',
+    },
+    'zh_CN': {
+      'trophy_room_title': '荣誉室',
+      'trophy_room_prestige_section': '声望',
+      'trophy_room_achievements_section': '成就',
+      'trophy_room_mascots_section': '装扮',
+    },
+    'ja_JP': {
+      'trophy_room_title': 'トロフィールーム',
+      'trophy_room_prestige_section': 'プレステージ',
+      'trophy_room_achievements_section': '実績',
+      'trophy_room_mascots_section': '衣装',
+    },
+    'ko_KR': {
+      'trophy_room_title': '트로피 룸',
+      'trophy_room_prestige_section': '프레스티지',
+      'trophy_room_achievements_section': '업적',
+      'trophy_room_mascots_section': '의상',
+    },
+    'it_IT': {
+      'trophy_room_title': 'Sala dei Trofei',
+      'trophy_room_prestige_section': 'Prestigio',
+      'trophy_room_achievements_section': 'Obiettivi',
+      'trophy_room_mascots_section': 'Costumi',
+    },
+    'id_ID': {
+      'trophy_room_title': 'Ruang Trofi',
+      'trophy_room_prestige_section': 'Prestise',
+      'trophy_room_achievements_section': 'Pencapaian',
+      'trophy_room_mascots_section': 'Kostum',
+    },
+    'th_TH': {
+      'trophy_room_title': 'ห้องถ้วยรางวัล',
+      'trophy_room_prestige_section': 'เกียรติยศ',
+      'trophy_room_achievements_section': 'ความสำเร็จ',
+      'trophy_room_mascots_section': 'ชุดแต่งกาย',
+    },
+    'hi_IN': {
+      'trophy_room_title': 'ट्रॉफी रूम',
+      'trophy_room_prestige_section': 'प्रेस्टीज',
+      'trophy_room_achievements_section': 'उपलब्धियाँ',
+      'trophy_room_mascots_section': 'पोशाकें',
+    },
+    'ar_SA': {
+      'trophy_room_title': 'غرفة الجوائز',
+      'trophy_room_prestige_section': 'المكانة',
+      'trophy_room_achievements_section': 'الإنجازات',
+      'trophy_room_mascots_section': 'الأزياء',
+    },
+    'tr_TR': {
+      'trophy_room_title': 'Ödül Odası',
+      'trophy_room_prestige_section': 'Prestij',
+      'trophy_room_achievements_section': 'Başarımlar',
+      'trophy_room_mascots_section': 'Kostümler',
+    },
+    'nl_NL': {
+      'trophy_room_title': 'Trofeeënkamer',
+      'trophy_room_prestige_section': 'Prestige',
+      'trophy_room_achievements_section': 'Prestaties',
+      'trophy_room_mascots_section': 'Kostuums',
+    },
+    'pl_PL': {
+      'trophy_room_title': 'Sala Trofeów',
+      'trophy_room_prestige_section': 'Prestiż',
+      'trophy_room_achievements_section': 'Osiągnięcia',
+      'trophy_room_mascots_section': 'Stroje',
+    },
+    'fil_PH': {
+      'trophy_room_title': 'Silid ng Trophy',
+      'trophy_room_prestige_section': 'Prestihiyo',
+      'trophy_room_achievements_section': 'Mga Tagumpay',
+      'trophy_room_mascots_section': 'Mga Kasuotan',
+    },
+    'ms_MY': {
+      'trophy_room_title': 'Bilik Trofi',
+      'trophy_room_prestige_section': 'Prestij',
+      'trophy_room_achievements_section': 'Pencapaian',
+      'trophy_room_mascots_section': 'Kostum',
+    },
+    'uk_UA': {
+      'trophy_room_title': 'Зал трофеїв',
+      'trophy_room_prestige_section': 'Престиж',
+      'trophy_room_achievements_section': 'Досягнення',
+      'trophy_room_mascots_section': 'Костюми',
+    },
+    'bn_BD': {
+      'trophy_room_title': 'ট্রফি রুম',
+      'trophy_room_prestige_section': 'প্রেস্টিজ',
+      'trophy_room_achievements_section': 'অর্জন',
+      'trophy_room_mascots_section': 'পোশাক',
     },
   };
 }

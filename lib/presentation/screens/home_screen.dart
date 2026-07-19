@@ -31,6 +31,7 @@ import 'season_screen.dart';
 import 'settings_screen.dart';
 import 'shop_screen.dart';
 import 'star_road_screen.dart';
+import 'trophy_room_screen.dart';
 
 /// Màn hình chính: logo, nút Play, banner ưu tiên đơn, 3 lối vào nhanh
 /// (Shop/Daily Challenge/Modes), phần còn lại nằm trong endDrawer.
@@ -263,6 +264,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: NeonTheme.magenta,
               label: 'wardrobe_title'.tr,
               onTap: () => Get.to(() => const MascotWardrobeScreen()),
+            ),
+            _drawerTile(
+              icon: Icons.military_tech_rounded,
+              color: NeonTheme.gold,
+              label: 'trophy_room_title'.tr,
+              onTap: () => Get.to(() => const TrophyRoomScreen()),
             ),
           ],
         ),

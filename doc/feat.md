@@ -2956,3 +2956,38 @@ Verify on-device (Android, rule R3): vẽ bàn → lưu → chia sẻ mã → nh
 
 Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
 toàn bộ xanh, không regression.
+
+## ✅ Implemented: Trophy Room — màn tổng hợp prestige + achievements + mascot skin (I34, 2026-07-19)
+
+Màn hình mới thuần trình bày (read-only), gộp 3 hệ thống retention đã
+implement độc lập (`I22` Achievements, `I27` Prestige, `I30` Mascot
+Wardrobe) vào 1 nơi "khoe" duy nhất. Không thêm field/storage mới — chỉ đọc
+lại `GameController.prestigeTier`, `unlockedAchievementIds`,
+`unlockedMascotSkinIds` đã có sẵn, rủi ro thấp vì không đụng logic gameplay.
+
+- **`lib/presentation/screens/trophy_room_screen.dart`** (mới) — 3 section:
+  Prestige (tái dùng nguyên `PrestigeAction` widget, không viết lại badge),
+  Achievements (`GridView` 4 cột trên `kAchievements`, mỗi ô bọc `Obx`),
+  Mascot skins (`GridView` 3 cột trên `kMascotSkins`, tái dùng cách preview
+  `StarMascot` của `MascotWardrobeScreen` nhưng rút gọn, không có action
+  mua/chọn).
+- Khác biệt có chủ đích so với `AchievementsScreen`: achievement khoá ở
+  Trophy Room **không hiện `titleKey`/`descKey`** (chỉ icon khoá) — đúng yêu
+  cầu "không lộ nội dung chưa mở khoá" của task doc, trong khi
+  `AchievementsScreen` gốc luôn hiện tên+progress bất kể trạng thái khoá.
+- **Entry point** — 1 `_drawerTile` mới trong `home_screen.dart` (ngay sau
+  tile Wardrobe), icon `Icons.military_tech_rounded`, điều hướng
+  `Get.to(() => const TrophyRoomScreen())`.
+- i18n: 4 key mới (`trophy_room_title`/`trophy_room_prestige_section`/
+  `trophy_room_achievements_section`/`trophy_room_mascots_section`) × 22
+  locale (wave 44).
+
+Test mới: `test/widget/trophy_room_screen_test.dart` — render đủ 3 section
+header; chưa mở khoá gì → toàn bộ achievement khoá (không lộ tên), skin free
+mặc định vẫn unlocked; mở khoá 1 achievement → chỉ đúng title của nó xuất
+hiện, các achievement khác không lộ nội dung; mở khoá 1 mascot skin → tên
+skin hiện; `prestigeTier=0` chưa đủ điều kiện → badge ẩn; `prestigeTier=2` →
+badge hiện đúng "P2".
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
+427 test toàn bộ xanh, không regression.
