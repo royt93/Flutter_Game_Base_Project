@@ -9,6 +9,8 @@ import '../controllers/game_controller.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
+import '../widgets/neon_dialog.dart';
+import '../widgets/neon_icon.dart';
 import '../widgets/stroke_text.dart';
 
 /// I43: giữ 1 [PopStarGame] duy nhất xuyên suốt cả chuỗi Boss Rush — khác
@@ -28,6 +30,7 @@ class _BossRushScreenState extends State<BossRushScreen> {
   final GameController _gameCtrl = Get.find<GameController>();
   late final BossRushController _brCtrl = Get.put(BossRushController());
   PopStarGame? _game;
+  bool _confirmingQuit = false;
 
   @override
   void dispose() {
@@ -38,6 +41,11 @@ class _BossRushScreenState extends State<BossRushScreen> {
   void _startRun() {
     _brCtrl.startRun();
     setState(() => _game = PopStarGame(_gameCtrl));
+  }
+
+  void _quitRun() {
+    setState(() => _confirmingQuit = false);
+    _gameCtrl.checkEnd(false);
   }
 
   Vector2 _posOf(PointerEvent e) =>
@@ -52,7 +60,32 @@ class _BossRushScreenState extends State<BossRushScreen> {
         canPop: !playing,
         child: Scaffold(
           body: NeonBg(
-            child: SafeArea(child: playing ? _buildPlay() : _buildLobby()),
+            child: Stack(
+              children: [
+                SafeArea(child: playing ? _buildPlay() : _buildLobby()),
+                if (playing && _confirmingQuit)
+                  NeonDialog.overlay(
+                    onBarrier: () => setState(() => _confirmingQuit = false),
+                    panel: NeonDialog.panel(
+                      title: 'quit_title'.tr,
+                      color: NeonTheme.red,
+                      message: 'quit_msg'.tr,
+                      actions: [
+                        NeonDialogAction(
+                          label: 'cancel'.tr,
+                          color: NeonTheme.cyan,
+                          onTap: () => setState(() => _confirmingQuit = false),
+                        ),
+                        NeonDialogAction(
+                          label: 'quit_action'.tr,
+                          color: NeonTheme.orange,
+                          onTap: _quitRun,
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       );
@@ -144,24 +177,37 @@ class _BossRushScreenState extends State<BossRushScreen> {
             vertical: NeonTheme.s8,
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Obx(
-                () => StrokeText(
-                  '${'boss_rush_stage_label'.tr} ${_brCtrl.stage.value}',
-                  fontSize: 18,
-                  color: NeonTheme.ink,
-                  stroke: NeonTheme.red,
-                ),
+              NeonIconButton(
+                Icons.close_rounded,
+                color: NeonTheme.cyan,
+                onTap: () => setState(() => _confirmingQuit = true),
+                semanticLabel: 'quit_button_label'.tr,
               ),
-              Obx(
-                () => Text(
-                  '${_gameCtrl.score.value}',
-                  style: TextStyle(
-                    color: NeonTheme.ink,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
+              const SizedBox(width: NeonTheme.s8),
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Obx(
+                      () => StrokeText(
+                        '${'boss_rush_stage_label'.tr} ${_brCtrl.stage.value}',
+                        fontSize: 18,
+                        color: NeonTheme.ink,
+                        stroke: NeonTheme.red,
+                      ),
+                    ),
+                    Obx(
+                      () => Text(
+                        '${_gameCtrl.score.value}',
+                        style: TextStyle(
+                          color: NeonTheme.ink,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

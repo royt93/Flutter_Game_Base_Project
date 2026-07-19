@@ -1070,6 +1070,7 @@ class GameController extends GetxController {
   }
 
   void useBomb(int row, int col) {
+    if (mode.value == GameMode.bossRush) return;
     if (bombCount.value <= 0 || activeGame == null) return;
     if (!activeGame!.triggerBomb(row, col)) return;
     bombCount.value--;
@@ -1078,6 +1079,7 @@ class GameController extends GetxController {
   }
 
   void useShuffle() {
+    if (mode.value == GameMode.bossRush) return;
     if (shuffleCount.value <= 0 || activeGame == null) return;
     if (!activeGame!.shuffleBoard()) return;
     shuffleCount.value--;
@@ -1086,6 +1088,7 @@ class GameController extends GetxController {
   }
 
   void useUndo() {
+    if (mode.value == GameMode.bossRush) return;
     if (activeGame == null) return;
     // I5: lần undo đầu tiên mỗi màn miễn phí (F14: +1 nữa nếu có perk
     // extra_undo), không đụng undoCount.

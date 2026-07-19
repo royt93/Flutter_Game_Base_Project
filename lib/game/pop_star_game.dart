@@ -558,7 +558,7 @@ class PopStarGame extends FlameGame {
     // I39: mốc combo cố định → text "COMBO x{N}!" + rung mạnh hơn.
     if (isComboMilestone(controller.comboCount.value)) {
       controller.triggerComboMilestone(controller.comboCount.value);
-      fireHaptic(HapticLevel.heavy);
+      fireHaptic(hapticForComboMilestone(controller.comboCount.value));
     }
     // F5a: nhóm đủ lớn → ô vừa tap hoá power tile (giữ lại), phần còn lại nổ.
     final kind = powerTileKindForGroupSize(group.length, _rng);
@@ -732,7 +732,7 @@ class PopStarGame extends FlameGame {
     // I39: mốc combo cố định → text "COMBO x{N}!" + rung mạnh hơn.
     if (isComboMilestone(controller.comboCount.value)) {
       controller.triggerComboMilestone(controller.comboCount.value);
-      fireHaptic(HapticLevel.heavy);
+      fireHaptic(hapticForComboMilestone(controller.comboCount.value));
     }
     final broken = _chipObstaclesOrFrozen(cells);
     final bossBroken = _chipAdjacentBossTiles(cells);
