@@ -3034,3 +3034,42 @@ nút bắt đầu, bắt đầu lượt chuyển sang Stage 1).
 
 Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
 441 test toàn bộ xanh, không regression.
+
+## ✅ Fix gap audit I31-I43 + dọn tech-debt (2026-07-19)
+
+Đợt audit 8 agent song song rà lại toàn bộ tính năng I31-I43 (đã shipped
+gần đây) cộng rà tech-debt chung. 3 bug xác nhận và đã fix:
+
+- **I39 Combo Milestone FX** — spec yêu cầu mốc combo cao hơn rung mạnh hơn
+  (mốc 5 = light, mốc 10 = medium, mốc 15+ = heavy) nhưng cả 2 điểm gọi
+  (`pop_star_game.dart`, đường tap và đường power-tile) đều hardcode
+  `HapticLevel.heavy`. Thêm `hapticForComboMilestone()` trong
+  `lib/data/combo_milestones.dart`, dùng tại cả 2 điểm gọi.
+- **I43 Boss Rush — booster integrity** — `useBomb`/`useShuffle`/`useUndo`
+  (`game_controller.dart`) chỉ bị chặn ở tầng UI (nút ẩn), không chặn ở tầng
+  controller — có thể lách bằng cách khác để dùng booster giữa chuỗi Boss
+  Rush trái quy tắc "no booster from shared kit". Thêm guard
+  `if (mode.value == GameMode.bossRush) return;` đầu mỗi method.
+- **I43 Boss Rush — thiếu lối thoát giữa chuỗi** — `BossRushScreen`
+  (`_buildPlay()`) không có nút thoát/quit nào trong lúc chơi;
+  `PopScope(canPop: !playing)` chặn cả gesture back mà không phản hồi gì.
+  Thêm nút quit (icon, tái dùng convention `game_screen.dart`) mở
+  `NeonDialog.overlay` xác nhận (tái dùng key i18n `quit_title`/`quit_msg`/
+  `cancel`/`quit_action` sẵn có); xác nhận → gọi `checkEnd(false)` để kết
+  thúc chuỗi sạch, `BossRushController._onEnded` tự chấm điểm/coin theo số
+  stage đã qua như luồng thua/kẹt bình thường.
+
+**Tech-debt**: gỡ 3 dependency không còn dùng trong `lib/` (`google_fonts`,
+`flutter_animate`, `cupertino_icons`) khỏi `pubspec.yaml` — xác nhận bằng
+`grep` trước khi gỡ, `flutter pub get` xác nhận sạch.
+
+**Audit xác nhận ổn, không cần fix**: I31 Auto-solve Ghost Hint, I34 Trophy
+Room, I40 Ambient Weather, I41 Mascot Reaction, I42 Puzzle Lab.
+
+**Phát hiện ngoài phạm vi audit** (spec đã viết nhưng chưa implement, chưa
+quyết định hướng xử lý — xem `doc/task/tasks/`): I32 Craft Booster, I33
+Daily Modifier Gauntlet, I35 Lifetime Stats Dashboard, I36 Achievement
+Titles, I37 Async Challenge Code, I38 Weekly Featured Level.
+
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
+441 test toàn bộ xanh, không regression.

@@ -82,3 +82,28 @@ dưới giữ nguyên để tra cứu mô tả gốc.
   `presetGrid`) ✅ đã chốt — [I42-puzzle-lab.md](I42-puzzle-lab.md).
 - **I43 Boss Rush** — chuỗi bàn boss liên tiếp, không booster, ghi nhận chuỗi
   dài nhất ✅ đã chốt — [I43-boss-rush.md](I43-boss-rush.md).
+
+## Đợt brainstorm 2026-07-19 (round 3 — gameplay depth + retention + cosmetic)
+
+- **I44 Time Freeze Tile** — ô đặc biệt riêng Time Attack, tap trực tiếp
+  +10s vào đồng hồ đếm ngược ✅ đã chốt — [I44-time-freeze-tile.md](I44-time-freeze-tile.md).
+- **I45 Countdown Lock Tile** — ô đếm ngược theo số lượt đi (không theo
+  kề-pop), về 0 chuyển thành obstacle ✅ đã chốt — [I45-countdown-lock-tile.md](I45-countdown-lock-tile.md).
+- **I46 Wildcard Tile** — ô khớp mọi màu khi ghép nhóm, thay đổi luật
+  flood-fill của `pop_detector` ✅ đã chốt — [I46-wildcard-tile.md](I46-wildcard-tile.md).
+- **I47 Mirror Mode** — side-mode bàn sinh đối xứng gương trái/phải, chơi
+  vô hạn ghi best score ✅ đã chốt — [I47-mirror-mode.md](I47-mirror-mode.md).
+- **I48 Login Streak Calendar** — điểm danh liên tục 7 ngày, thưởng xu tại
+  ngày 3/5/7 ✅ đã chốt — [I48-login-streak-calendar.md](I48-login-streak-calendar.md).
+- **I49 Lucky Color of the Day** — màu may mắn ngẫu nhiên theo ngày, nhân
+  điểm ×1.2 khi pop trúng màu đó (campaign) ✅ đã chốt — [I49-lucky-color-of-the-day.md](I49-lucky-color-of-the-day.md).
+- **I50 Weekly Goal Card** — mục tiêu cá nhân cộng dồn theo tuần (tổng gem
+  pop mọi mode), thưởng xu khi đạt ✅ đã chốt — [I50-weekly-goal-card.md](I50-weekly-goal-card.md).
+- **I51 Board Frame Cosmetics** — khung viền bàn chơi, mở khoá qua
+  Prestige tier/Achievement ✅ đã chốt — [I51-board-frame-cosmetics.md](I51-board-frame-cosmetics.md).
+- **I52 Pop Burst Style Picker** — đổi kiểu hiệu ứng nổ khi pop, mở khoá
+  theo `totalGemsPopped` ✅ đã chốt — [I52-pop-burst-style-picker.md](I52-pop-burst-style-picker.md).
+- **I53 Home Screen Theme Pack** — nền home screen tự đổi màu theo world
+  cao nhất đã unlock ✅ đã chốt — [I53-home-screen-theme-pack.md](I53-home-screen-theme-pack.md).
+- **I54 Combo Text Style** — đổi kiểu chữ hiệu ứng combo-milestone, mở
+  khoá theo `maxComboEver` ✅ đã chốt — [I54-combo-text-style.md](I54-combo-text-style.md).
