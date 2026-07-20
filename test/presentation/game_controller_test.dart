@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:pop_star_blast/core/storage_service.dart';
+import 'package:pop_star_blast/data/burst_styles.dart';
 import 'package:pop_star_blast/data/levels.dart';
 import 'package:pop_star_blast/data/mascot_skins.dart';
 import 'package:pop_star_blast/logic/gift_tile.dart';
@@ -1209,6 +1210,92 @@ void main() {
         StorageService.to.getInt(StorageKeys.lastLoginEpochDay, def: -1),
         todayEpochDay(),
       );
+    });
+  });
+
+  group('I52 Pop Burst Style Picker — validation/anti-cheat', () {
+    GameController relaunch() {
+      Get.delete<GameController>(force: true);
+      return Get.put(GameController(), permanent: true);
+    }
+
+    test('mặc định spark khi chưa pop gem nào', () {
+      expect(ctrl.activeBurstStyleKind.value, BurstStyleKind.spark);
+    });
+
+    test(
+      'setActiveBurstStyle chặn style chưa đủ totalGemsPopped để mở khoá',
+      () {
+        ctrl.totalGemsPopped.value = 100; // < 500 (confetti threshold)
+        ctrl.setActiveBurstStyle(BurstStyleKind.confetti);
+
+        expect(ctrl.activeBurstStyleKind.value, BurstStyleKind.spark);
+        expect(
+          StorageService.to.getString(StorageKeys.activeBurstStyle),
+          isNull,
+        );
+      },
+    );
+
+    test('setActiveBurstStyle cho đổi style đã đủ totalGemsPopped', () {
+      ctrl.totalGemsPopped.value = 500; // đủ ngưỡng confetti
+      ctrl.setActiveBurstStyle(BurstStyleKind.confetti);
+
+      expect(ctrl.activeBurstStyleKind.value, BurstStyleKind.confetti);
+      expect(
+        StorageService.to.getString(StorageKeys.activeBurstStyle),
+        'confetti',
+      );
+    });
+
+    test('setActiveBurstStyle style spark (threshold 0) luôn cho phép', () {
+      ctrl.setActiveBurstStyle(BurstStyleKind.spark);
+      expect(ctrl.activeBurstStyleKind.value, BurstStyleKind.spark);
+    });
+
+    test('_load() khôi phục đúng style đã mở khoá từ storage', () {
+      StorageService.to.setInt(StorageKeys.totalGemsPopped, 2000);
+      StorageService.to.setString(StorageKeys.activeBurstStyle, 'ripple');
+
+      final next = relaunch();
+      expect(next.activeBurstStyleKind.value, BurstStyleKind.ripple);
+    });
+
+    test('_load() fallback về spark khi string trong storage không hợp lệ', () {
+      StorageService.to.setInt(StorageKeys.totalGemsPopped, 10000);
+      StorageService.to.setString(StorageKeys.activeBurstStyle, 'not_a_style');
+
+      final next = relaunch();
+      expect(next.activeBurstStyleKind.value, BurstStyleKind.spark);
+    });
+
+    test(
+      '_load() fallback về spark khi storage bị sửa tay trỏ style chưa đủ ngưỡng',
+      () {
+        StorageService.to.setInt(StorageKeys.totalGemsPopped, 100);
+        StorageService.to.setString(
+          StorageKeys.activeBurstStyle,
+          'starburst', // threshold 5000, totalGemsPopped chỉ 100
+        );
+
+        final next = relaunch();
+        expect(next.activeBurstStyleKind.value, BurstStyleKind.spark);
+      },
+    );
+
+    test('resetProgress() xoá activeBurstStyle khỏi storage', () async {
+      ctrl.totalGemsPopped.value = 500;
+      ctrl.setActiveBurstStyle(BurstStyleKind.confetti);
+      expect(
+        StorageService.to.getString(StorageKeys.activeBurstStyle),
+        'confetti',
+      );
+
+      await ctrl.resetProgress();
+      expect(StorageService.to.getString(StorageKeys.activeBurstStyle), isNull);
+
+      final next = relaunch();
+      expect(next.activeBurstStyleKind.value, BurstStyleKind.spark);
     });
   });
 

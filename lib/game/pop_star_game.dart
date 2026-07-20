@@ -169,7 +169,10 @@ class PopStarGame extends FlameGame {
   final bool startWithFtueHint;
 
   /// I52: kiểu hiệu ứng nổ đang chọn — đọc 1 lần trong [onLoad] từ
-  /// `StorageKeys.activeBurstStyle` (fallback `spark` nếu chưa có/hỏng).
+  /// `controller.activeBurstStyleKind` (đã được [GameController._load]
+  /// re-validate ngưỡng unlock, KHÔNG tự parse `StorageKeys.activeBurstStyle`
+  /// trực tiếp — tránh lệch dữ liệu nếu storage bị sửa tay để trỏ style chưa
+  /// mở khoá, xem tương tự cách [GameController.setActiveBurstStyle] chặn).
   late final BurstStyleKind _activeBurstKind;
 
   late int rows;
@@ -245,11 +248,7 @@ class PopStarGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
-    _activeBurstKind = BurstStyleKind.values.firstWhere(
-      (k) =>
-          k.name == StorageService.to.getString(StorageKeys.activeBurstStyle),
-      orElse: () => BurstStyleKind.spark,
-    );
+    _activeBurstKind = controller.activeBurstStyleKind.value;
     final level = controller.currentLevel;
     rows = level.rows;
     cols = level.cols;
