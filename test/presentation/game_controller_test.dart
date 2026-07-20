@@ -1094,6 +1094,124 @@ void main() {
     });
   });
 
+  group('I48 Login Streak Calendar', () {
+    int todayEpochDay() =>
+        DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000;
+
+    GameController relaunch() {
+      Get.delete<GameController>(force: true);
+      return Get.put(GameController(), permanent: true);
+    }
+
+    test('lần đầu mở app (chưa từng điểm danh) → streak=1, mask=0', () {
+      expect(ctrl.loginStreakCount.value, 1);
+      expect(ctrl.loginStreakClaimedMask.value, 0);
+      expect(ctrl.dayInCycle(ctrl.loginStreakCount.value), 1);
+    });
+
+    test('mở app lại trong cùng ngày → giữ nguyên streak/mask', () {
+      final streakBefore = ctrl.loginStreakCount.value;
+      final again = relaunch();
+      expect(again.loginStreakCount.value, streakBefore);
+      expect(again.loginStreakClaimedMask.value, 0);
+    });
+
+    test('qua đúng 1 ngày → streak +1, giữ mask nếu chưa qua cycle mới', () {
+      StorageService.to.setInt(
+        StorageKeys.lastLoginEpochDay,
+        todayEpochDay() - 1,
+      );
+      StorageService.to.setInt(StorageKeys.loginStreakCount, 2);
+      StorageService.to.setInt(StorageKeys.loginStreakClaimedMask, 0);
+
+      final next = relaunch();
+      expect(next.loginStreakCount.value, 3);
+      expect(next.loginStreakClaimedMask.value, 0);
+    });
+
+    test('bỏ ≥2 ngày → reset streak về 1, xoá mask thưởng đã nhận', () {
+      StorageService.to.setInt(
+        StorageKeys.lastLoginEpochDay,
+        todayEpochDay() - 5,
+      );
+      StorageService.to.setInt(StorageKeys.loginStreakCount, 6);
+      StorageService.to.setInt(
+        StorageKeys.loginStreakClaimedMask,
+        (1 << 3) | (1 << 5),
+      );
+
+      final next = relaunch();
+      expect(next.loginStreakCount.value, 1);
+      expect(next.loginStreakClaimedMask.value, 0);
+    });
+
+    test('streak liên tục chạm ngày 8 (qua cycle mới) → reset mask, '
+        'dayInCycle về 1', () {
+      StorageService.to.setInt(
+        StorageKeys.lastLoginEpochDay,
+        todayEpochDay() - 1,
+      );
+      StorageService.to.setInt(StorageKeys.loginStreakCount, 7);
+      StorageService.to.setInt(
+        StorageKeys.loginStreakClaimedMask,
+        (1 << 3) | (1 << 5) | (1 << 7),
+      );
+
+      final next = relaunch();
+      expect(next.loginStreakCount.value, 8);
+      expect(next.dayInCycle(next.loginStreakCount.value), 1);
+      expect(next.loginStreakClaimedMask.value, 0);
+    });
+
+    test('claim đúng ngày 3/5/7 cộng đúng xu, ngày khác không có thưởng', () {
+      ctrl.loginStreakCount.value = 2;
+      expect(ctrl.claimLoginStreakReward(), isFalse);
+      expect(ctrl.coins.value, 0);
+
+      ctrl.loginStreakCount.value = 3;
+      expect(ctrl.claimLoginStreakReward(), isTrue);
+      expect(
+        ctrl.coins.value,
+        GameController.loginStreakRewards[3]! * ctrl.weekendCoinMultiplier,
+      );
+    });
+
+    test('claim 2 lần cùng ngày → lần 2 false, không cộng thêm xu', () {
+      ctrl.loginStreakCount.value = 5;
+      expect(ctrl.claimLoginStreakReward(), isTrue);
+      final coinsAfterFirst = ctrl.coins.value;
+      expect(ctrl.claimLoginStreakReward(), isFalse);
+      expect(ctrl.coins.value, coinsAfterFirst);
+    });
+
+    test('claim ngày 7 cộng đúng số xu mốc lớn nhất', () {
+      ctrl.loginStreakCount.value = 7;
+      expect(ctrl.claimLoginStreakReward(), isTrue);
+      expect(
+        ctrl.coins.value,
+        GameController.loginStreakRewards[7]! * ctrl.weekendCoinMultiplier,
+      );
+    });
+
+    test('resetProgress() đưa streak/mask về mặc định', () async {
+      StorageService.to.setInt(
+        StorageKeys.lastLoginEpochDay,
+        todayEpochDay() - 1,
+      );
+      StorageService.to.setInt(StorageKeys.loginStreakCount, 4);
+      final ctrl2 = relaunch();
+      expect(ctrl2.loginStreakCount.value, 5);
+
+      await ctrl2.resetProgress();
+      expect(ctrl2.loginStreakCount.value, 1);
+      expect(ctrl2.loginStreakClaimedMask.value, 0);
+      expect(
+        StorageService.to.getInt(StorageKeys.lastLoginEpochDay, def: -1),
+        todayEpochDay(),
+      );
+    });
+  });
+
   group('X5 shouldRequestReview — điều kiện thuần', () {
     test('3 sao + chưa hiện lần nào → true', () {
       expect(

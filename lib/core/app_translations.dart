@@ -175,6 +175,24 @@ class AppTranslations extends Translations {
           // I43 — Boss Rush: boss_rush_*/mode_boss_rush_label (en+vi ở
           // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w45ByLang).
           ...?_w45ByLang[e.key],
+          // I49 — Lucky Color of the Day: lucky_color_label (en+vi ở
+          // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w46ByLang).
+          ...?_w46ByLang[e.key],
+          // I52 — Pop Burst Style Picker: burst_style_spark/confetti/ripple/
+          // starburst/drawer_burst_style_label (en+vi ở _extraEn/_extraVi, 20
+          // ngôn ngữ còn lại ở _w47ByLang).
+          ...?_w47ByLang[e.key],
+          // I48 — Login Streak Calendar: drawer_login_streak_label/
+          // login_streak_title/login_streak_claim_button/
+          // login_streak_claimed_label/login_streak_day_label (en+vi ở
+          // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w48ByLang).
+          ...?_w48ByLang[e.key],
+          // I35 — Lifetime Stats Dashboard: drawer_stats_label/
+          // stats_screen_title/stats_total_gems_popped/stats_max_combo/
+          // stats_levels_three_starred/stats_boards_cleared/
+          // stats_boosters_used (en+vi ở _extraEn/_extraVi, 20 ngôn ngữ còn
+          // lại ở _w49ByLang).
+          ...?_w49ByLang[e.key],
         },
     };
   }
@@ -970,6 +988,32 @@ class AppTranslations extends Translations {
     'boss_rush_run_over_title': 'Run over',
     'boss_rush_stages_cleared_label': 'Stages cleared',
     'boss_rush_coin_reward_label': 'Coins earned',
+    // I49 — Lucky Color of the Day: badge campaign (en+vi ở _extraEn/
+    // _extraVi, 20 ngôn ngữ còn lại ở _w46ByLang).
+    'lucky_color_label': 'Lucky color!',
+    // I52 — Pop Burst Style Picker: tên style + entry point drawer (en+vi ở
+    // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w47ByLang).
+    'burst_style_spark': 'Spark',
+    'burst_style_confetti': 'Confetti',
+    'burst_style_ripple': 'Ripple',
+    'burst_style_starburst': 'Starburst',
+    'drawer_burst_style_label': 'Burst Style',
+    // I48 — Login Streak Calendar: entry point drawer + dialog 7 ngày (en+vi
+    // ở _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w48ByLang).
+    'drawer_login_streak_label': 'Login Streak',
+    'login_streak_title': 'Login Streak',
+    'login_streak_claim_button': 'Claim',
+    'login_streak_claimed_label': 'Claimed',
+    'login_streak_day_label': 'Day',
+    // I35 — Lifetime Stats Dashboard: drawer entry + 5 metric (en+vi ở
+    // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w49ByLang).
+    'drawer_stats_label': 'Stats',
+    'stats_screen_title': 'Lifetime Stats',
+    'stats_total_gems_popped': 'Gems popped',
+    'stats_max_combo': 'Best combo',
+    'stats_levels_three_starred': '3-star levels',
+    'stats_boards_cleared': 'Boards cleared',
+    'stats_boosters_used': 'Boosters used',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -1725,6 +1769,24 @@ class AppTranslations extends Translations {
     'boss_rush_run_over_title': 'Kết thúc lượt chơi',
     'boss_rush_stages_cleared_label': 'Số màn đã qua',
     'boss_rush_coin_reward_label': 'Xu nhận được',
+    'lucky_color_label': 'Màu may mắn!',
+    'burst_style_spark': 'Tia lửa',
+    'burst_style_confetti': 'Giấy hoa',
+    'burst_style_ripple': 'Gợn sóng',
+    'burst_style_starburst': 'Nổ sao',
+    'drawer_burst_style_label': 'Hiệu ứng nổ',
+    'drawer_login_streak_label': 'Điểm danh',
+    'login_streak_title': 'Điểm danh nhận thưởng',
+    'login_streak_claim_button': 'Nhận',
+    'login_streak_claimed_label': 'Đã nhận',
+    'login_streak_day_label': 'Ngày',
+    'drawer_stats_label': 'Thống kê',
+    'stats_screen_title': 'Thống kê trọn đời',
+    'stats_total_gems_popped': 'Số gem đã nổ',
+    'stats_max_combo': 'Combo cao nhất',
+    'stats_levels_three_starred': 'Màn đạt 3 sao',
+    'stats_boards_cleared': 'Bàn dọn sạch',
+    'stats_boosters_used': 'Booster đã dùng',
   };
 
   static const Map<String, String> _extraEs = {
@@ -27150,6 +27212,505 @@ class AppTranslations extends Translations {
       'boss_rush_run_over_title': 'রান শেষ',
       'boss_rush_stages_cleared_label': 'সম্পন্ন পর্যায়',
       'boss_rush_coin_reward_label': 'অর্জিত কয়েন',
+    },
+  };
+
+  /// I49 — Lucky Color of the Day: `lucky_color_label` cho 20 ngôn ngữ (en/vi
+  /// đã có trong [_extraEn]/[_extraVi]).
+  static const Map<String, Map<String, String>> _w46ByLang = {
+    'es_ES': {'lucky_color_label': '¡Color de la suerte!'},
+    'fr_FR': {'lucky_color_label': 'Couleur chanceuse !'},
+    'de_DE': {'lucky_color_label': 'Glücksfarbe!'},
+    'pt_BR': {'lucky_color_label': 'Cor da sorte!'},
+    'ru_RU': {'lucky_color_label': 'Счастливый цвет!'},
+    'zh_CN': {'lucky_color_label': '幸运颜色！'},
+    'ja_JP': {'lucky_color_label': 'ラッキーカラー！'},
+    'ko_KR': {'lucky_color_label': '행운의 색!'},
+    'it_IT': {'lucky_color_label': 'Colore fortunato!'},
+    'id_ID': {'lucky_color_label': 'Warna keberuntungan!'},
+    'th_TH': {'lucky_color_label': 'สีนำโชค!'},
+    'hi_IN': {'lucky_color_label': 'भाग्यशाली रंग!'},
+    'ar_SA': {'lucky_color_label': 'اللون المحظوظ!'},
+    'tr_TR': {'lucky_color_label': 'Şanslı renk!'},
+    'nl_NL': {'lucky_color_label': 'Gelukskleur!'},
+    'pl_PL': {'lucky_color_label': 'Szczęśliwy kolor!'},
+    'fil_PH': {'lucky_color_label': 'Suwerteng kulay!'},
+    'ms_MY': {'lucky_color_label': 'Warna bertuah!'},
+    'uk_UA': {'lucky_color_label': 'Щасливий колір!'},
+    'bn_BD': {'lucky_color_label': 'ভাগ্যবান রঙ!'},
+  };
+
+  /// I52 — Pop Burst Style Picker: `burst_style_spark/confetti/ripple/
+  /// starburst`/`drawer_burst_style_label` cho 20 ngôn ngữ (en/vi đã có
+  /// trong [_extraEn]/[_extraVi]).
+  static const Map<String, Map<String, String>> _w47ByLang = {
+    'es_ES': {
+      'burst_style_spark': 'Chispa',
+      'burst_style_confetti': 'Confeti',
+      'burst_style_ripple': 'Onda',
+      'burst_style_starburst': 'Estallido estelar',
+      'drawer_burst_style_label': 'Estilo de explosión',
+    },
+    'fr_FR': {
+      'burst_style_spark': 'Étincelle',
+      'burst_style_confetti': 'Confettis',
+      'burst_style_ripple': 'Onde',
+      'burst_style_starburst': 'Éclat stellaire',
+      'drawer_burst_style_label': "Style d'explosion",
+    },
+    'de_DE': {
+      'burst_style_spark': 'Funke',
+      'burst_style_confetti': 'Konfetti',
+      'burst_style_ripple': 'Welle',
+      'burst_style_starburst': 'Sternexplosion',
+      'drawer_burst_style_label': 'Explosionsstil',
+    },
+    'pt_BR': {
+      'burst_style_spark': 'Faísca',
+      'burst_style_confetti': 'Confete',
+      'burst_style_ripple': 'Onda',
+      'burst_style_starburst': 'Explosão estelar',
+      'drawer_burst_style_label': 'Estilo de explosão',
+    },
+    'ru_RU': {
+      'burst_style_spark': 'Искра',
+      'burst_style_confetti': 'Конфетти',
+      'burst_style_ripple': 'Рябь',
+      'burst_style_starburst': 'Звёздный взрыв',
+      'drawer_burst_style_label': 'Стиль взрыва',
+    },
+    'zh_CN': {
+      'burst_style_spark': '火花',
+      'burst_style_confetti': '彩纸',
+      'burst_style_ripple': '波纹',
+      'burst_style_starburst': '星爆',
+      'drawer_burst_style_label': '爆裂效果',
+    },
+    'ja_JP': {
+      'burst_style_spark': 'スパーク',
+      'burst_style_confetti': '紙吹雪',
+      'burst_style_ripple': '波紋',
+      'burst_style_starburst': 'スターバースト',
+      'drawer_burst_style_label': '爆発スタイル',
+    },
+    'ko_KR': {
+      'burst_style_spark': '스파크',
+      'burst_style_confetti': '색종이',
+      'burst_style_ripple': '파동',
+      'burst_style_starburst': '스타버스트',
+      'drawer_burst_style_label': '폭발 스타일',
+    },
+    'it_IT': {
+      'burst_style_spark': 'Scintilla',
+      'burst_style_confetti': 'Coriandoli',
+      'burst_style_ripple': 'Onda',
+      'burst_style_starburst': 'Esplosione stellare',
+      'drawer_burst_style_label': 'Stile di esplosione',
+    },
+    'id_ID': {
+      'burst_style_spark': 'Kilat',
+      'burst_style_confetti': 'Konfeti',
+      'burst_style_ripple': 'Riak',
+      'burst_style_starburst': 'Ledakan bintang',
+      'drawer_burst_style_label': 'Gaya Ledakan',
+    },
+    'th_TH': {
+      'burst_style_spark': 'ประกายไฟ',
+      'burst_style_confetti': 'กระดาษสี',
+      'burst_style_ripple': 'คลื่นน้ำ',
+      'burst_style_starburst': 'ระเบิดดาว',
+      'drawer_burst_style_label': 'สไตล์การระเบิด',
+    },
+    'hi_IN': {
+      'burst_style_spark': 'स्पार्क',
+      'burst_style_confetti': 'कंफेटी',
+      'burst_style_ripple': 'लहर',
+      'burst_style_starburst': 'स्टारबर्स्ट',
+      'drawer_burst_style_label': 'बर्स्ट स्टाइल',
+    },
+    'ar_SA': {
+      'burst_style_spark': 'شرارة',
+      'burst_style_confetti': 'قصف ورقي',
+      'burst_style_ripple': 'تموج',
+      'burst_style_starburst': 'انفجار نجمي',
+      'drawer_burst_style_label': 'أسلوب الانفجار',
+    },
+    'tr_TR': {
+      'burst_style_spark': 'Kıvılcım',
+      'burst_style_confetti': 'Konfeti',
+      'burst_style_ripple': 'Dalga',
+      'burst_style_starburst': 'Yıldız patlaması',
+      'drawer_burst_style_label': 'Patlama Stili',
+    },
+    'nl_NL': {
+      'burst_style_spark': 'Vonk',
+      'burst_style_confetti': 'Confetti',
+      'burst_style_ripple': 'Rimpel',
+      'burst_style_starburst': 'Sterexplosie',
+      'drawer_burst_style_label': 'Explosiestijl',
+    },
+    'pl_PL': {
+      'burst_style_spark': 'Iskra',
+      'burst_style_confetti': 'Konfetti',
+      'burst_style_ripple': 'Zmarszczka',
+      'burst_style_starburst': 'Wybuch gwiazdy',
+      'drawer_burst_style_label': 'Styl wybuchu',
+    },
+    'fil_PH': {
+      'burst_style_spark': 'Kislap',
+      'burst_style_confetti': 'Confetti',
+      'burst_style_ripple': 'Alon',
+      'burst_style_starburst': 'Pagsabog ng Bituin',
+      'drawer_burst_style_label': 'Estilo ng Pagsabog',
+    },
+    'ms_MY': {
+      'burst_style_spark': 'Bara',
+      'burst_style_confetti': 'Konfeti',
+      'burst_style_ripple': 'Riak',
+      'burst_style_starburst': 'Letupan Bintang',
+      'drawer_burst_style_label': 'Gaya Letupan',
+    },
+    'uk_UA': {
+      'burst_style_spark': 'Іскра',
+      'burst_style_confetti': 'Конфеті',
+      'burst_style_ripple': 'Хвиля',
+      'burst_style_starburst': 'Зоряний вибух',
+      'drawer_burst_style_label': 'Стиль вибуху',
+    },
+    'bn_BD': {
+      'burst_style_spark': 'স্পার্ক',
+      'burst_style_confetti': 'কনফেটি',
+      'burst_style_ripple': 'তরঙ্গ',
+      'burst_style_starburst': 'স্টারবার্স্ট',
+      'drawer_burst_style_label': 'বার্স্ট স্টাইল',
+    },
+  };
+
+  /// I48 — Login Streak Calendar: 20 ngôn ngữ còn lại (en+vi ở
+  /// _extraEn/_extraVi).
+  static const Map<String, Map<String, String>> _w48ByLang = {
+    'es_ES': {
+      'drawer_login_streak_label': 'Racha de inicio',
+      'login_streak_title': 'Racha de inicio de sesión',
+      'login_streak_claim_button': 'Reclamar',
+      'login_streak_claimed_label': 'Reclamado',
+      'login_streak_day_label': 'Día',
+    },
+    'fr_FR': {
+      'drawer_login_streak_label': 'Série de connexion',
+      'login_streak_title': 'Série de connexion',
+      'login_streak_claim_button': 'Réclamer',
+      'login_streak_claimed_label': 'Réclamé',
+      'login_streak_day_label': 'Jour',
+    },
+    'de_DE': {
+      'drawer_login_streak_label': 'Login-Serie',
+      'login_streak_title': 'Login-Serie',
+      'login_streak_claim_button': 'Abholen',
+      'login_streak_claimed_label': 'Abgeholt',
+      'login_streak_day_label': 'Tag',
+    },
+    'pt_BR': {
+      'drawer_login_streak_label': 'Sequência de login',
+      'login_streak_title': 'Sequência de login',
+      'login_streak_claim_button': 'Resgatar',
+      'login_streak_claimed_label': 'Resgatado',
+      'login_streak_day_label': 'Dia',
+    },
+    'ru_RU': {
+      'drawer_login_streak_label': 'Серия входов',
+      'login_streak_title': 'Серия входов',
+      'login_streak_claim_button': 'Забрать',
+      'login_streak_claimed_label': 'Получено',
+      'login_streak_day_label': 'День',
+    },
+    'zh_CN': {
+      'drawer_login_streak_label': '登录连胜',
+      'login_streak_title': '登录签到',
+      'login_streak_claim_button': '领取',
+      'login_streak_claimed_label': '已领取',
+      'login_streak_day_label': '第',
+    },
+    'ja_JP': {
+      'drawer_login_streak_label': 'ログインストリーク',
+      'login_streak_title': 'ログインボーナス',
+      'login_streak_claim_button': '受け取る',
+      'login_streak_claimed_label': '受取済み',
+      'login_streak_day_label': '日',
+    },
+    'ko_KR': {
+      'drawer_login_streak_label': '로그인 연속 출석',
+      'login_streak_title': '로그인 출석부',
+      'login_streak_claim_button': '받기',
+      'login_streak_claimed_label': '받음',
+      'login_streak_day_label': '일',
+    },
+    'it_IT': {
+      'drawer_login_streak_label': 'Streak di accesso',
+      'login_streak_title': 'Streak di accesso',
+      'login_streak_claim_button': 'Riscatta',
+      'login_streak_claimed_label': 'Riscattato',
+      'login_streak_day_label': 'Giorno',
+    },
+    'id_ID': {
+      'drawer_login_streak_label': 'Absensi Login',
+      'login_streak_title': 'Absensi Login',
+      'login_streak_claim_button': 'Klaim',
+      'login_streak_claimed_label': 'Diklaim',
+      'login_streak_day_label': 'Hari',
+    },
+    'th_TH': {
+      'drawer_login_streak_label': 'เช็คอินรายวัน',
+      'login_streak_title': 'เช็คอินรายวัน',
+      'login_streak_claim_button': 'รับรางวัล',
+      'login_streak_claimed_label': 'รับแล้ว',
+      'login_streak_day_label': 'วันที่',
+    },
+    'hi_IN': {
+      'drawer_login_streak_label': 'लॉगिन स्ट्रीक',
+      'login_streak_title': 'लॉगिन स्ट्रीक',
+      'login_streak_claim_button': 'प्राप्त करें',
+      'login_streak_claimed_label': 'प्राप्त हुआ',
+      'login_streak_day_label': 'दिन',
+    },
+    'ar_SA': {
+      'drawer_login_streak_label': 'سلسلة تسجيل الدخول',
+      'login_streak_title': 'سلسلة تسجيل الدخول',
+      'login_streak_claim_button': 'استلام',
+      'login_streak_claimed_label': 'تم الاستلام',
+      'login_streak_day_label': 'اليوم',
+    },
+    'tr_TR': {
+      'drawer_login_streak_label': 'Giriş Serisi',
+      'login_streak_title': 'Giriş Serisi',
+      'login_streak_claim_button': 'Al',
+      'login_streak_claimed_label': 'Alındı',
+      'login_streak_day_label': 'Gün',
+    },
+    'nl_NL': {
+      'drawer_login_streak_label': 'Inlogreeks',
+      'login_streak_title': 'Inlogreeks',
+      'login_streak_claim_button': 'Claimen',
+      'login_streak_claimed_label': 'Geclaimd',
+      'login_streak_day_label': 'Dag',
+    },
+    'pl_PL': {
+      'drawer_login_streak_label': 'Seria logowań',
+      'login_streak_title': 'Seria logowań',
+      'login_streak_claim_button': 'Odbierz',
+      'login_streak_claimed_label': 'Odebrano',
+      'login_streak_day_label': 'Dzień',
+    },
+    'fil_PH': {
+      'drawer_login_streak_label': 'Login Streak',
+      'login_streak_title': 'Login Streak',
+      'login_streak_claim_button': 'Kunin',
+      'login_streak_claimed_label': 'Nakuha na',
+      'login_streak_day_label': 'Araw',
+    },
+    'ms_MY': {
+      'drawer_login_streak_label': 'Rentetan Log Masuk',
+      'login_streak_title': 'Rentetan Log Masuk',
+      'login_streak_claim_button': 'Tuntut',
+      'login_streak_claimed_label': 'Dituntut',
+      'login_streak_day_label': 'Hari',
+    },
+    'uk_UA': {
+      'drawer_login_streak_label': 'Серія входів',
+      'login_streak_title': 'Серія входів',
+      'login_streak_claim_button': 'Забрати',
+      'login_streak_claimed_label': 'Отримано',
+      'login_streak_day_label': 'День',
+    },
+    'bn_BD': {
+      'drawer_login_streak_label': 'লগইন স্ট্রিক',
+      'login_streak_title': 'লগইন স্ট্রিক',
+      'login_streak_claim_button': 'সংগ্রহ করুন',
+      'login_streak_claimed_label': 'সংগৃহীত',
+      'login_streak_day_label': 'দিন',
+    },
+  };
+
+  static const Map<String, Map<String, String>> _w49ByLang = {
+    'es_ES': {
+      'drawer_stats_label': 'Estadísticas',
+      'stats_screen_title': 'Estadísticas de por vida',
+      'stats_total_gems_popped': 'Gemas reventadas',
+      'stats_max_combo': 'Mejor combo',
+      'stats_levels_three_starred': 'Niveles con 3 estrellas',
+      'stats_boards_cleared': 'Tableros despejados',
+      'stats_boosters_used': 'Impulsos usados',
+    },
+    'fr_FR': {
+      'drawer_stats_label': 'Statistiques',
+      'stats_screen_title': 'Statistiques à vie',
+      'stats_total_gems_popped': 'Gemmes éclatées',
+      'stats_max_combo': 'Meilleur combo',
+      'stats_levels_three_starred': 'Niveaux 3 étoiles',
+      'stats_boards_cleared': 'Plateaux nettoyés',
+      'stats_boosters_used': 'Boosters utilisés',
+    },
+    'de_DE': {
+      'drawer_stats_label': 'Statistiken',
+      'stats_screen_title': 'Lebenszeit-Statistiken',
+      'stats_total_gems_popped': 'Zerplatzte Steine',
+      'stats_max_combo': 'Bester Combo',
+      'stats_levels_three_starred': '3-Sterne-Level',
+      'stats_boards_cleared': 'Geleerte Felder',
+      'stats_boosters_used': 'Verwendete Booster',
+    },
+    'pt_BR': {
+      'drawer_stats_label': 'Estatísticas',
+      'stats_screen_title': 'Estatísticas totais',
+      'stats_total_gems_popped': 'Gemas estouradas',
+      'stats_max_combo': 'Melhor combo',
+      'stats_levels_three_starred': 'Níveis com 3 estrelas',
+      'stats_boards_cleared': 'Tabuleiros limpos',
+      'stats_boosters_used': 'Impulsos usados',
+    },
+    'ru_RU': {
+      'drawer_stats_label': 'Статистика',
+      'stats_screen_title': 'Статистика за всё время',
+      'stats_total_gems_popped': 'Лопнуто камней',
+      'stats_max_combo': 'Лучшее комбо',
+      'stats_levels_three_starred': 'Уровни на 3 звезды',
+      'stats_boards_cleared': 'Очищено полей',
+      'stats_boosters_used': 'Использовано бустеров',
+    },
+    'zh_CN': {
+      'drawer_stats_label': '统计',
+      'stats_screen_title': '生涯统计',
+      'stats_total_gems_popped': '消除宝石数',
+      'stats_max_combo': '最高连击',
+      'stats_levels_three_starred': '三星关卡数',
+      'stats_boards_cleared': '清空棋盘数',
+      'stats_boosters_used': '使用道具数',
+    },
+    'ja_JP': {
+      'drawer_stats_label': '統計',
+      'stats_screen_title': '生涯統計',
+      'stats_total_gems_popped': '消したジェム数',
+      'stats_max_combo': '最高コンボ',
+      'stats_levels_three_starred': '3つ星クリア数',
+      'stats_boards_cleared': '全消しクリア数',
+      'stats_boosters_used': '使用ブースター数',
+    },
+    'ko_KR': {
+      'drawer_stats_label': '통계',
+      'stats_screen_title': '통산 통계',
+      'stats_total_gems_popped': '터뜨린 보석 수',
+      'stats_max_combo': '최고 콤보',
+      'stats_levels_three_starred': '3성 레벨 수',
+      'stats_boards_cleared': '보드 클리어 수',
+      'stats_boosters_used': '사용한 부스터 수',
+    },
+    'it_IT': {
+      'drawer_stats_label': 'Statistiche',
+      'stats_screen_title': 'Statistiche totali',
+      'stats_total_gems_popped': 'Gemme scoppiate',
+      'stats_max_combo': 'Miglior combo',
+      'stats_levels_three_starred': 'Livelli a 3 stelle',
+      'stats_boards_cleared': 'Tabelloni svuotati',
+      'stats_boosters_used': 'Booster usati',
+    },
+    'id_ID': {
+      'drawer_stats_label': 'Statistik',
+      'stats_screen_title': 'Statistik Seumur Hidup',
+      'stats_total_gems_popped': 'Permata dipecahkan',
+      'stats_max_combo': 'Combo terbaik',
+      'stats_levels_three_starred': 'Level bintang 3',
+      'stats_boards_cleared': 'Papan dibersihkan',
+      'stats_boosters_used': 'Booster terpakai',
+    },
+    'th_TH': {
+      'drawer_stats_label': 'สถิติ',
+      'stats_screen_title': 'สถิติทั้งหมด',
+      'stats_total_gems_popped': 'เพชรที่แตก',
+      'stats_max_combo': 'คอมโบสูงสุด',
+      'stats_levels_three_starred': 'เลเวล 3 ดาว',
+      'stats_boards_cleared': 'กระดานที่เคลียร์',
+      'stats_boosters_used': 'บูสเตอร์ที่ใช้',
+    },
+    'hi_IN': {
+      'drawer_stats_label': 'आँकड़े',
+      'stats_screen_title': 'जीवनकाल आँकड़े',
+      'stats_total_gems_popped': 'फोड़े गए रत्न',
+      'stats_max_combo': 'सर्वश्रेष्ठ कॉम्बो',
+      'stats_levels_three_starred': '3-स्टार लेवल',
+      'stats_boards_cleared': 'साफ किए गए बोर्ड',
+      'stats_boosters_used': 'उपयोग किए गए बूस्टर',
+    },
+    'ar_SA': {
+      'drawer_stats_label': 'الإحصائيات',
+      'stats_screen_title': 'إحصائيات العمر',
+      'stats_total_gems_popped': 'الجواهر المفجرة',
+      'stats_max_combo': 'أفضل كومبو',
+      'stats_levels_three_starred': 'مستويات 3 نجوم',
+      'stats_boards_cleared': 'اللوحات التي تم تصفيتها',
+      'stats_boosters_used': 'المعززات المستخدمة',
+    },
+    'tr_TR': {
+      'drawer_stats_label': 'İstatistikler',
+      'stats_screen_title': 'Ömür Boyu İstatistikler',
+      'stats_total_gems_popped': 'Patlatılan taşlar',
+      'stats_max_combo': 'En iyi kombo',
+      'stats_levels_three_starred': '3 yıldızlı seviyeler',
+      'stats_boards_cleared': 'Temizlenen tahtalar',
+      'stats_boosters_used': 'Kullanılan güçlendiriciler',
+    },
+    'nl_NL': {
+      'drawer_stats_label': 'Statistieken',
+      'stats_screen_title': 'Levenslange statistieken',
+      'stats_total_gems_popped': 'Gesprongen edelstenen',
+      'stats_max_combo': 'Beste combo',
+      'stats_levels_three_starred': '3-sterrenlevels',
+      'stats_boards_cleared': 'Geleegde borden',
+      'stats_boosters_used': 'Gebruikte boosters',
+    },
+    'pl_PL': {
+      'drawer_stats_label': 'Statystyki',
+      'stats_screen_title': 'Statystyki życia',
+      'stats_total_gems_popped': 'Zniszczone klejnoty',
+      'stats_max_combo': 'Najlepsze combo',
+      'stats_levels_three_starred': 'Poziomy z 3 gwiazdkami',
+      'stats_boards_cleared': 'Wyczyszczone plansze',
+      'stats_boosters_used': 'Użyte wzmocnienia',
+    },
+    'fil_PH': {
+      'drawer_stats_label': 'Estadistika',
+      'stats_screen_title': 'Estadistika sa Buhay',
+      'stats_total_gems_popped': 'Naputok na hiyas',
+      'stats_max_combo': 'Pinakamahusay na combo',
+      'stats_levels_three_starred': '3-star na level',
+      'stats_boards_cleared': 'Nalinis na board',
+      'stats_boosters_used': 'Gamit na booster',
+    },
+    'ms_MY': {
+      'drawer_stats_label': 'Statistik',
+      'stats_screen_title': 'Statistik Sepanjang Hayat',
+      'stats_total_gems_popped': 'Gem dipecahkan',
+      'stats_max_combo': 'Combo terbaik',
+      'stats_levels_three_starred': 'Tahap 3 bintang',
+      'stats_boards_cleared': 'Papan dibersihkan',
+      'stats_boosters_used': 'Booster digunakan',
+    },
+    'uk_UA': {
+      'drawer_stats_label': 'Статистика',
+      'stats_screen_title': 'Статистика за весь час',
+      'stats_total_gems_popped': 'Лопнуто каменів',
+      'stats_max_combo': 'Найкраще комбо',
+      'stats_levels_three_starred': 'Рівні на 3 зірки',
+      'stats_boards_cleared': 'Очищено полів',
+      'stats_boosters_used': 'Використано бустерів',
+    },
+    'bn_BD': {
+      'drawer_stats_label': 'পরিসংখ্যান',
+      'stats_screen_title': 'জীবনকালের পরিসংখ্যান',
+      'stats_total_gems_popped': 'ফাটানো রত্ন',
+      'stats_max_combo': 'সেরা কম্বো',
+      'stats_levels_three_starred': '৩-স্টার লেভেল',
+      'stats_boards_cleared': 'পরিষ্কার করা বোর্ড',
+      'stats_boosters_used': 'ব্যবহৃত বুস্টার',
     },
   };
 }

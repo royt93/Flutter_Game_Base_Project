@@ -13,6 +13,7 @@ import '../core/audio_manager.dart';
 import '../core/debug_log.dart';
 import '../core/haptics.dart';
 import '../core/neon_theme.dart';
+import '../data/burst_styles.dart';
 import '../data/combo_milestones.dart';
 import '../data/levels.dart';
 import '../logic/boss_tile.dart';
@@ -167,6 +168,10 @@ class PopStarGame extends FlameGame {
   /// init xong trong onLoad()).
   final bool startWithFtueHint;
 
+  /// I52: kiểu hiệu ứng nổ đang chọn — đọc 1 lần trong [onLoad] từ
+  /// `StorageKeys.activeBurstStyle` (fallback `spark` nếu chưa có/hỏng).
+  late final BurstStyleKind _activeBurstKind;
+
   late int rows;
   late int cols;
   late double cellSize;
@@ -240,6 +245,11 @@ class PopStarGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
+    _activeBurstKind = BurstStyleKind.values.firstWhere(
+      (k) =>
+          k.name == StorageService.to.getString(StorageKeys.activeBurstStyle),
+      orElse: () => BurstStyleKind.spark,
+    );
     final level = controller.currentLevel;
     rows = level.rows;
     cols = level.cols;
@@ -535,12 +545,16 @@ class PopStarGame extends FlameGame {
     _saveUndo();
     // I28: replay chỉ để xem lại — không cộng điểm/combo thật qua controller
     // (xem [isReplay]); dùng điểm thô không nhân combo cho popup hiển thị.
+    // I49: campaign pop trúng đúng lucky color của ngày → nhân thêm ×1.2.
+    final popColor = colorGrid[row][col] ?? -1;
+    final baseScore = scoreForGroup(group.length);
+    final isLucky =
+        controller.mode.value == GameMode.campaign &&
+        popColor == controller.luckyColorIndex.value;
+    final adjustedScore = isLucky ? (baseScore * 1.2).round() : baseScore;
     final gained = isReplay
-        ? scoreForGroup(group.length)
-        : controller.registerPop(
-            scoreForGroup(group.length),
-            groupSize: group.length,
-          );
+        ? adjustedScore
+        : controller.registerPop(adjustedScore, groupSize: group.length);
     _comboTimer = GameController.comboWindow;
     final gemColor = NeonTheme
         .gemColors[(colorGrid[row][col] ?? 0) % NeonTheme.gemColors.length];
@@ -1255,9 +1269,24 @@ class PopStarGame extends FlameGame {
     );
   }
 
+  /// I52: dispatcher — chọn hàm vẽ hiệu ứng nổ theo [_activeBurstKind].
+  /// Ripple tái dùng thẳng [_spawnRing] đã có, không viết particle mới.
+  void _spawnBurst(Vector2 at, Color color, {int count = 10}) {
+    switch (_activeBurstKind) {
+      case BurstStyleKind.spark:
+        _spawnSparkBurst(at, color, count: count);
+      case BurstStyleKind.confetti:
+        _spawnConfettiBurst(at, count: count);
+      case BurstStyleKind.ripple:
+        _spawnRing(at, color, cellSize * 0.9);
+      case BurstStyleKind.starburst:
+        _spawnStarburstBurst(at, color, count: count);
+    }
+  }
+
   /// Hạt nổ + vệt sáng (G2): tự tính vị trí theo gia tốc để vẽ trail mờ dần
   /// dọc hướng bay (rẻ hơn nhiều so với ghép AcceleratedParticle + sprite).
-  void _spawnBurst(Vector2 at, Color color, {int count = 10}) {
+  void _spawnSparkBurst(Vector2 at, Color color, {int count = 10}) {
     const lifespan = 0.5;
     final accel = Vector2(0, 220);
     add(
@@ -1299,6 +1328,109 @@ class PopStarGame extends FlameGame {
         ),
       ),
     );
+  }
+
+  /// I52: giống [_spawnSparkBurst] (cùng ballistic model — không đổi thời
+  /// lượng animation tổng thể) nhưng vẽ hình vuông nhỏ xoay random, màu
+  /// cycle qua [NeonTheme.gemColors] thay vì 1 màu cố định.
+  void _spawnConfettiBurst(Vector2 at, {int count = 10}) {
+    const lifespan = 0.5;
+    final accel = Vector2(0, 220);
+    add(
+      ParticleSystemComponent(
+        position: at,
+        particle: Particle.generate(
+          count: count,
+          generator: (i) {
+            final a = _rng.nextDouble() * pi * 2;
+            final speed = 60 + _rng.nextDouble() * 90;
+            final vel = Vector2(cos(a), sin(a)) * speed;
+            final spin = (_rng.nextDouble() - 0.5) * 12;
+            final color = NeonTheme.gemColors[i % NeonTheme.gemColors.length];
+            final size = cellSize * 0.16;
+            return ComputedParticle(
+              lifespan: lifespan,
+              renderer: (canvas, particle) {
+                final t = particle.progress * lifespan;
+                final pos = vel * t + accel * (0.5 * t * t);
+                final alpha = (1 - particle.progress).clamp(0.0, 1.0);
+                canvas.save();
+                canvas.translate(pos.x, pos.y);
+                canvas.rotate(spin * t);
+                canvas.drawRect(
+                  Rect.fromCenter(
+                    center: Offset.zero,
+                    width: size,
+                    height: size,
+                  ),
+                  Paint()..color = color.withValues(alpha: alpha * 0.9),
+                );
+                canvas.restore();
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// I52: giống [_spawnSparkBurst] (cùng ballistic model) nhưng vẽ 1 sao
+  /// 5 cánh xoay thay vì vệt tròn.
+  void _spawnStarburstBurst(Vector2 at, Color color, {int count = 10}) {
+    const lifespan = 0.5;
+    final accel = Vector2(0, 220);
+    add(
+      ParticleSystemComponent(
+        position: at,
+        particle: Particle.generate(
+          count: count,
+          generator: (i) {
+            final a = _rng.nextDouble() * pi * 2;
+            final speed = 60 + _rng.nextDouble() * 90;
+            final vel = Vector2(cos(a), sin(a)) * speed;
+            final spin = (_rng.nextDouble() - 0.5) * 10;
+            final size = cellSize * 0.16;
+            return ComputedParticle(
+              lifespan: lifespan,
+              renderer: (canvas, particle) {
+                final t = particle.progress * lifespan;
+                final pos = vel * t + accel * (0.5 * t * t);
+                final alpha = (1 - particle.progress).clamp(0.0, 1.0);
+                canvas.save();
+                canvas.translate(pos.x, pos.y);
+                canvas.rotate(spin * t);
+                canvas.drawPath(
+                  _starPath(size),
+                  Paint()..color = color.withValues(alpha: alpha * 0.9),
+                );
+                canvas.restore();
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// I52: `Path` sao 5 cánh tâm gốc toạ độ, bán kính ngoài [size].
+  static Path _starPath(double size) {
+    final path = Path();
+    const spikes = 5;
+    final outerR = size / 2;
+    final innerR = outerR * 0.45;
+    for (var i = 0; i < spikes * 2; i++) {
+      final r = i.isEven ? outerR : innerR;
+      final a = i * pi / spikes - pi / 2;
+      final x = cos(a) * r;
+      final y = sin(a) * r;
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    return path;
   }
 
   /// Trả về false nếu đang animate (không xáo được) — caller dùng để tránh

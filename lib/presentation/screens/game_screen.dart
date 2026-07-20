@@ -311,6 +311,13 @@ class _Hud extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                        // I49: badge màu may mắn của ngày — chỉ hiện ở
+                        // campaign (nơi ×1.2 điểm áp dụng), không hiện ở
+                        // puzzleLab/bossRush dù chúng dùng chung layout này.
+                        if (gameCtrl.mode.value == GameMode.campaign) ...[
+                          const SizedBox(height: NeonTheme.s8),
+                          _LuckyColorBadge(gameCtrl: gameCtrl),
+                        ],
                         // F6b/F9: màn có mục tiêu ngoài điểm hiện thêm dòng
                         // tiến độ riêng (moveLimitBonus không có "còn lại" —
                         // chỉ hiện giới hạn lượt cho bonus sao).
@@ -615,6 +622,52 @@ class _BouncingHandState extends State<_BouncingHand>
         Icons.touch_app_rounded,
         color: NeonTheme.cyan,
         size: 20,
+      ),
+    );
+  }
+}
+
+/// I49: chip nhỏ báo màu may mắn của ngày (pop trúng màu này ×1.2 điểm).
+class _LuckyColorBadge extends StatelessWidget {
+  const _LuckyColorBadge({required this.gameCtrl});
+  final GameController gameCtrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = NeonTheme
+        .gemColors[gameCtrl.luckyColorIndex.value % NeonTheme.gemColors.length];
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: NeonTheme.s8,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: NeonTheme.card,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color, width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: NeonTheme.glow(color, blur: 4),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'lucky_color_label'.tr,
+            style: TextStyle(
+              color: NeonTheme.inkSoft,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -10,12 +10,15 @@ import '../../core/utils/comeback_bonus.dart';
 import '../../core/utils/friend_code.dart';
 import '../../core/utils/weekend_event.dart';
 import '../../data/achievements.dart';
+import '../../data/burst_styles.dart';
 import '../../data/levels.dart';
+import '../../data/lucky_color.dart';
 import '../../data/mascot_skins.dart';
 import '../../data/perks.dart';
 import '../../game/pop_star_game.dart';
 import '../../logic/daily_challenge.dart';
 import '../../logic/gift_tile.dart';
+import '../../logic/login_streak.dart';
 import '../../logic/puzzle_code.dart';
 
 /// F8: campaign (200 màn có target/sao/mở khoá) vs side-mode biệt lập
@@ -51,6 +54,10 @@ class GameController extends GetxController {
   final starsEarned = 0.obs;
   final ended = false.obs;
   final cleared = false.obs;
+
+  /// I49: index màu "may mắn" của ngày hôm nay, tính lại mỗi lần startLevel
+  /// (deterministic theo ngày qua [luckyColorIndexForDay], không cần persist).
+  final luckyColorIndex = 0.obs;
 
   /// F6b: tiến độ mục tiêu ngoài điểm (số ô/obstacle còn lại cần dọn). Luôn 0
   /// khi `currentLevel.objective` là `score` (không dùng tới).
@@ -281,6 +288,20 @@ class GameController extends GetxController {
     return true;
   }
 
+  // I52 Pop Burst Style Picker: kiểu hiệu ứng nổ đang chọn — mở khoá theo
+  // [totalGemsPopped], không persist riêng "đã mở khoá" (suy trực tiếp từ
+  // counter đời để tránh lệch dữ liệu).
+  final activeBurstStyleKind = BurstStyleKind.spark.obs;
+
+  /// Đổi style hiệu ứng nổ — chặn chọn style chưa đủ [totalGemsPopped] để mở
+  /// khoá (phòng race/giả mạo qua storage trực tiếp).
+  void setActiveBurstStyle(BurstStyleKind kind) {
+    final style = kBurstStyles.firstWhere((s) => s.kind == kind);
+    if (!isBurstStyleUnlocked(style, totalGemsPopped.value)) return;
+    activeBurstStyleKind.value = kind;
+    StorageService.to.setString(StorageKeys.activeBurstStyle, kind.name);
+  }
+
   /// Task #5: điểm cần vượt khi đang trong 1 lần Perfect Clear challenge
   /// (chụp trước khi chơi, vì [_saveBestScore] sẽ ghi đè `highScore` ngay khi
   /// thắng) — null khi không phải Perfect Clear.
@@ -404,10 +425,19 @@ class GameController extends GetxController {
   final seasonPoints = 0.obs;
   final claimedSeasonMask = 0.obs;
 
+  /// I48 Login Streak Calendar: streak điểm danh liên tục (theo ngày thật,
+  /// chống gian lận qua [_todayEpochDay]), ngày cuối đã điểm danh, và bitmask
+  /// các ngày (1-7) đã nhận thưởng trong cycle 7 ngày hiện tại.
+  static const Map<int, int> loginStreakRewards = {3: 20, 5: 40, 7: 100};
+  final loginStreakCount = 0.obs;
+  final lastLoginEpochDay = 0.obs;
+  final loginStreakClaimedMask = 0.obs;
+
   @override
   void onInit() {
     super.onInit();
     _load();
+    _checkLoginStreak();
   }
 
   void toggleColorblindMode() {
@@ -489,6 +519,23 @@ class GameController extends GetxController {
     activeMascotSkinId.value = validSkinIds.contains(storedActiveId)
         ? storedActiveId!
         : kMascotSkins.first.id;
+    // I52: validate lại theo BurstStyleKind hợp lệ + ngưỡng mở khoá hiện tại
+    // (phòng storage bị sửa tay trỏ style chưa đủ điều kiện).
+    final storedBurstKind = BurstStyleKind.values
+        .where(
+          (k) =>
+              k.name ==
+              StorageService.to.getString(StorageKeys.activeBurstStyle),
+        )
+        .firstOrNull;
+    final storedBurstStyle = storedBurstKind == null
+        ? null
+        : kBurstStyles.firstWhere((s) => s.kind == storedBurstKind);
+    activeBurstStyleKind.value =
+        storedBurstStyle != null &&
+            isBurstStyleUnlocked(storedBurstStyle, totalGemsPopped.value)
+        ? storedBurstStyle.kind
+        : BurstStyleKind.spark;
     _recomputeTotalStars();
     _checkSeasonRollover();
   }
@@ -562,6 +609,61 @@ class GameController extends GetxController {
     claimedChestMask.value |= 1 << index;
     StorageService.to.setInt(StorageKeys.claimedChests, claimedChestMask.value);
     coins.value += starRoadRewards[index] * weekendCoinMultiplier;
+    StorageService.to.setInt(StorageKeys.coins, coins.value);
+    return true;
+  }
+
+  /// I48 Login Streak Calendar: gọi trong [onInit] sau [_load] — so ngày điểm
+  /// danh cuối với hôm nay để tăng/giữ/reset streak; qua cycle 7 ngày mới thì
+  /// xoá bitmask thưởng đã nhận (không thu lại thưởng cũ, chỉ mở lại slot mới).
+  void _checkLoginStreak() {
+    final today = _todayEpochDay();
+    final prevDay = StorageService.to.getInt(
+      StorageKeys.lastLoginEpochDay,
+      def: -1,
+    );
+    final prevStreak = StorageService.to.getInt(StorageKeys.loginStreakCount);
+    if (prevDay == today) {
+      loginStreakCount.value = prevStreak;
+      lastLoginEpochDay.value = prevDay;
+      loginStreakClaimedMask.value = StorageService.to.getInt(
+        StorageKeys.loginStreakClaimedMask,
+      );
+      return;
+    }
+    final newStreak = nextLoginStreak(
+      previousEpochDay: prevDay,
+      todayEpochDay: today,
+      previousStreak: prevStreak,
+    );
+    var claimedMask = StorageService.to.getInt(
+      StorageKeys.loginStreakClaimedMask,
+    );
+    final crossedCycle = (newStreak - 1) % 7 == 0 && newStreak > 1;
+    if (newStreak == 1 || crossedCycle) claimedMask = 0;
+    loginStreakCount.value = newStreak;
+    lastLoginEpochDay.value = today;
+    loginStreakClaimedMask.value = claimedMask;
+    StorageService.to.setInt(StorageKeys.loginStreakCount, newStreak);
+    StorageService.to.setInt(StorageKeys.lastLoginEpochDay, today);
+    StorageService.to.setInt(StorageKeys.loginStreakClaimedMask, claimedMask);
+  }
+
+  /// Ngày trong cycle 7 ngày hiện tại (1..7) ứng với [loginStreakCount].
+  int dayInCycle(int streak) => (streak - 1) % 7 + 1;
+
+  /// Nhận thưởng ngày [dayInCycle] hiện tại nếu có mốc thưởng và chưa nhận.
+  bool claimLoginStreakReward() {
+    final day = dayInCycle(loginStreakCount.value);
+    final reward = loginStreakRewards[day];
+    if (reward == null) return false;
+    if ((loginStreakClaimedMask.value >> day) & 1 == 1) return false;
+    loginStreakClaimedMask.value |= 1 << day;
+    coins.value += reward * weekendCoinMultiplier;
+    StorageService.to.setInt(
+      StorageKeys.loginStreakClaimedMask,
+      loginStreakClaimedMask.value,
+    );
     StorageService.to.setInt(StorageKeys.coins, coins.value);
     return true;
   }
@@ -680,6 +782,10 @@ class GameController extends GetxController {
   void startLevel(int levelId) {
     mode.value = GameMode.campaign;
     currentLevelRx.value = kLevels[levelId - 1];
+    luckyColorIndex.value = luckyColorIndexForDay(
+      _todayEpochDay(),
+      currentLevel.colorCount,
+    );
     score.value = 0;
     starsEarned.value = 0;
     ended.value = false;
@@ -1174,6 +1280,10 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.allLevelsCompleted);
     await store.remove(StorageKeys.activeMascotSkin);
     await store.remove(StorageKeys.unlockedMascotSkins);
+    await store.remove(StorageKeys.activeBurstStyle);
+    await store.remove(StorageKeys.loginStreakCount);
+    await store.remove(StorageKeys.lastLoginEpochDay);
+    await store.remove(StorageKeys.loginStreakClaimedMask);
     for (var id = 1; id <= kLevelCount; id++) {
       await store.remove(StorageKeys.highScore(id));
       await store.remove(StorageKeys.star(id));
@@ -1187,6 +1297,10 @@ class GameController extends GetxController {
     activeGame = null;
     prestigeTier.value = 0;
     allLevelsCompletedOnce.value = false;
+    loginStreakCount.value = 0;
+    lastLoginEpochDay.value = 0;
+    loginStreakClaimedMask.value = 0;
     _load();
+    _checkLoginStreak();
   }
 }

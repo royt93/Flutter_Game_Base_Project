@@ -107,6 +107,16 @@ class StorageKeys {
   // I43 Boss Rush: số stage (bàn boss) đã dọn sạch liên tiếp cao nhất từng
   // đạt được (chuỗi đứt khi thua/kẹt).
   static const String bossRushBestStreak = 'boss_rush_best_streak';
+
+  // I52 Pop Burst Style Picker: id style hiệu ứng nổ đang chọn (mặc định
+  // 'spark').
+  static const String activeBurstStyle = 'active_burst_style';
+
+  // I48 Login Streak Calendar: streak hiện tại, epoch-day lần điểm danh
+  // cuối, bitmask ngày đã claim thưởng trong cycle 7 ngày hiện tại.
+  static const String loginStreakCount = 'login_streak_count';
+  static const String lastLoginEpochDay = 'last_login_epoch_day';
+  static const String loginStreakClaimedMask = 'login_streak_claimed_mask';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

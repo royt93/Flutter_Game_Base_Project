@@ -271,4 +271,13 @@ void main() {
       }
     });
   });
+
+  group('I49 lucky color ×1.2 rounding', () {
+    test('(scoreForGroup(n) * 1.2).round() khớp giá trị tính tay', () {
+      expect((scoreForGroup(2) * 1.2).round(), 12); // 5*2*1=10 -> 12
+      expect((scoreForGroup(3) * 1.2).round(), 36); // 5*3*2=30 -> 36
+      expect((scoreForGroup(5) * 1.2).round(), 120); // 5*5*4=100 -> 120
+      expect((scoreForGroup(8) * 1.2).round(), 336); // 5*8*7=280 -> 336
+    });
+  });
 }

@@ -3073,3 +3073,34 @@ Titles, I37 Async Challenge Code, I38 Weekly Featured Level.
 
 Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
 441 test toàn bộ xanh, không regression.
+
+## ✅ Implemented: Round 3 backlog Wave 1 — 5 task (I49, I52, I48, I35, I53, 2026-07-20)
+
+Từ backlog round 3 (`doc/task/tasks/IDEAS.md`), user chọn "Wave 1 — Tier 1":
+5 task nhỏ độc lập, rủi ro thấp.
+
+- **I49 Lucky Color of the Day** — mỗi ngày có 1 màu may mắn (deterministic
+  theo epoch-day, `lucky_color.dart`); pop trúng màu đó trong campaign nhân
+  điểm ×1.2. Badge HUD hiện màu + label `lucky_color_label`.
+- **I52 Pop Burst Style Picker** — 4 kiểu hiệu ứng nổ (spark/confetti/ripple/
+  starburst, `burst_styles.dart`), mở khoá dần theo `totalGemsPopped` (0/500/
+  2000/5000). Dialog chọn style ở drawer Home, style đang chọn lưu
+  `StorageKeys.activeBurstStyle`, validate lại unlock threshold mỗi lần load
+  (chặn sửa storage trực tiếp để dùng style chưa mở).
+- **I48 Login Streak Calendar** — điểm danh 7 ngày liên tiếp (`login_streak.dart`
+  pure logic: gap ngày = 0 giữ nguyên, =1 +1, ≥2 reset về 1), thưởng coin ngày
+  3/5/7 (bitmask `loginStreakClaimedMask` chống claim 2 lần, mirror pattern
+  `claimedSeasonMask`). Dialog calendar ở drawer Home.
+- **I35 Lifetime Stats Dashboard** — màn hình đọc thuần 5 số liệu trọn đời
+  (gems popped, best combo, 3-star levels, boards cleared, boosters used) —
+  không sửa state, không `StorageKeys` mới. Bỏ `lifetimeCoinsEarned` (stretch
+  goal, spec cho phép) để tránh refactor 10 call site coin trong
+  `game_controller.dart`.
+- **I53 Home Screen Theme Pack** — nền Home tự đổi màu/thời tiết theo world
+  cao nhất đã unlock (`worldForLevel(gameCtrl.unlockedLevel.value)`), cross-fade
+  mượt 800ms qua `TweenAnimationBuilder<Color?>` bọc ngoài `NeonBg` (xác nhận
+  `NeonBg` không tự animate khi đổi `accent` — chỉ snap tức thì).
+
+i18n: 18 key mới (`_w46ByLang`–`_w49ByLang`, tuỳ task) × 22 locale, enforce qua
+`app_translations_test.dart`. Verify: `flutter analyze` → 0 issues. `flutter
+test --exclude-tags slow` → 468 test toàn bộ xanh, không regression.
