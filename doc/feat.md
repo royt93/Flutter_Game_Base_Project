@@ -3123,3 +3123,16 @@ sang milestone text của combo thay vì hiệu ứng nổ.
 i18n: 5 key mới (`_w50ByLang`) × 22 locale. Verify: `flutter analyze` → 0
 issues. `flutter test --exclude-tags slow` → 479 test toàn bộ xanh, không
 regression.
+
+**Remediation full parity với I52** (audit sau khi implement phát hiện 4 gap
+so với I52): thêm test anti-tamper cho `GameController` (fallback về `neon`
+khi storage bị sửa tay trỏ style chưa đủ ngưỡng hoặc string không hợp lệ,
+`resetProgress()` xoá đúng key), test widget cho
+`combo_text_style_picker_dialog.dart` (hiện đủ 4 style, style khoá hiện
+ngưỡng, tap style mở/khoá đúng hành vi), test render riêng từng style trong
+`_ComboMilestoneOverlay` (`combo_milestone_fx_test.dart` — neon/boldPop/retro
+render qua `StrokeText` đúng font/màu, fire qua `ShaderMask` không dùng
+`StrokeText`), và sửa comment sai trong `combo_text_styles.dart` (ngưỡng thật
+dùng 3/5 tier `kAchievements`, không phải 4/5 như ghi nhầm trước đó). Verify:
+`flutter analyze` → 0 issues. `flutter test --exclude-tags slow` → 494 test
+toàn bộ xanh.
