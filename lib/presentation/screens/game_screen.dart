@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
 import '../../core/storage_service.dart';
 import '../../core/utils/format.dart';
+import '../../data/combo_text_styles.dart';
 import '../../data/levels.dart';
 import '../../data/mascot_skins.dart';
 import '../../data/worlds.dart';
@@ -471,6 +472,7 @@ class _ComboMilestoneOverlay extends StatelessWidget {
         final tick = gameCtrl.comboMilestoneTick.value;
         if (tick == 0 || _reduceMotion) return const SizedBox.shrink();
         final milestone = gameCtrl.comboMilestoneValue;
+        final styleKind = gameCtrl.activeComboTextStyleKind.value;
         return Align(
           alignment: const Alignment(0, -0.3),
           child: TweenAnimationBuilder<double>(
@@ -479,26 +481,105 @@ class _ComboMilestoneOverlay extends StatelessWidget {
             duration: const Duration(milliseconds: 700),
             curve: Curves.easeOut,
             builder: (_, t, child) {
-              final rise = -40.0 * t;
+              final rise = -_comboTextRise(styleKind) * t;
               final fade = t < 0.7 ? 1.0 : 1.0 - (t - 0.7) / 0.3;
+              final scale = styleKind == ComboTextStyleKind.boldPop
+                  ? 0.7 + 0.3 * Curves.elasticOut.transform(t)
+                  : 1.0;
               return Opacity(
                 opacity: fade.clamp(0.0, 1.0),
                 child: Transform.translate(
                   offset: Offset(0, rise),
-                  child: child,
+                  child: Transform.scale(scale: scale, child: child),
                 ),
               );
             },
-            child: StrokeText(
+            child: _comboMilestoneText(
+              styleKind,
               'combo_milestone_label'.trParams({'count': '$milestone'}),
-              fontSize: 34,
-              color: NeonTheme.ink,
-              stroke: Colors.white,
-              strokeWidth: 4,
             ),
           ),
         );
       }),
+    );
+  }
+}
+
+/// I54: khoảng nảy lên khác nhau theo style — Bold Pop nảy mạnh hơn Neon.
+double _comboTextRise(ComboTextStyleKind kind) => switch (kind) {
+  ComboTextStyleKind.boldPop => 56.0,
+  ComboTextStyleKind.neon ||
+  ComboTextStyleKind.retro ||
+  ComboTextStyleKind.fire => 40.0,
+};
+
+/// I54: text combo-milestone theo style đang chọn — chỉ đổi hiển thị, không
+/// đụng ngưỡng/haptic (`lib/data/combo_milestones.dart`).
+Widget _comboMilestoneText(ComboTextStyleKind kind, String label) {
+  switch (kind) {
+    case ComboTextStyleKind.neon:
+      return StrokeText(
+        label,
+        fontSize: 34,
+        color: NeonTheme.ink,
+        stroke: Colors.white,
+        strokeWidth: 4,
+      );
+    case ComboTextStyleKind.boldPop:
+      return StrokeText(
+        label,
+        fontSize: 46,
+        color: NeonTheme.gold,
+        stroke: NeonTheme.magenta,
+        strokeWidth: 6,
+      );
+    case ComboTextStyleKind.retro:
+      return StrokeText(
+        label,
+        fontSize: 30,
+        color: NeonTheme.lime,
+        stroke: NeonTheme.indigo,
+        strokeWidth: 3,
+        letterSpacing: 3,
+      );
+    case ComboTextStyleKind.fire:
+      return _FireComboText(label);
+  }
+}
+
+/// I54: style "Fire" — chữ tô gradient lửa (vàng→cam→đỏ) trên viền nâu sẫm.
+class _FireComboText extends StatelessWidget {
+  const _FireComboText(this.text);
+  final String text;
+
+  static const _style = TextStyle(fontSize: 34, fontWeight: FontWeight.w900);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Text(
+          text,
+          textAlign: TextAlign.center,
+          style: _style.copyWith(
+            foreground: Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 4
+              ..strokeJoin = StrokeJoin.round
+              ..color = const Color(0xFF7A1E00),
+          ),
+        ),
+        ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [Color(0xFFFFF176), Color(0xFFFF9800), Color(0xFFE53935)],
+          ).createShader(bounds),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: _style.copyWith(color: Colors.white),
+          ),
+        ),
+      ],
     );
   }
 }

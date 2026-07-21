@@ -1,10 +1,15 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:pop_star_blast/core/app_translations.dart';
+import 'package:pop_star_blast/core/neon_theme.dart';
 import 'package:pop_star_blast/core/storage_service.dart';
+import 'package:pop_star_blast/data/combo_text_styles.dart';
 import 'package:pop_star_blast/game/pop_star_game.dart';
 import 'package:pop_star_blast/presentation/controllers/game_controller.dart';
 import 'package:pop_star_blast/presentation/controllers/game_screen_controller.dart';
 import 'package:pop_star_blast/presentation/screens/game_screen.dart';
+import 'package:pop_star_blast/presentation/widgets/stroke_text.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> _pumpFrames(WidgetTester tester, {int frames = 30}) async {
@@ -40,7 +45,13 @@ Future<GameController> _setUpGame(
   final gameCtrl = Get.put(GameController(), permanent: true);
   gameCtrl.startLevel(21); // world 2: rows 9, cols 8 (đủ cột cho 6 lần tap)
 
-  await tester.pumpWidget(GetMaterialApp(home: const GameScreen()));
+  await tester.pumpWidget(
+    GetMaterialApp(
+      translations: AppTranslations(),
+      locale: const Locale('en', 'US'),
+      home: const GameScreen(),
+    ),
+  );
   await tester.pump(const Duration(milliseconds: 100));
   await _pumpFrames(tester, frames: 20); // chờ hết intro rơi ô
 
@@ -89,4 +100,67 @@ void main() {
       Get.reset();
     },
   );
+
+  // I54: mỗi combo text style phải render đúng widget/thông số riêng —
+  // đổi style KHÔNG đụng tới trigger logic (tick/milestone đã test ở trên).
+  testWidgets('style mặc định neon render StrokeText fontSize 34, màu ink', (
+    tester,
+  ) async {
+    final gameCtrl = await _setUpGame(tester);
+    expect(gameCtrl.activeComboTextStyleKind.value, ComboTextStyleKind.neon);
+
+    final strokeText = tester.widget<StrokeText>(_comboStrokeTextFinder);
+    expect(strokeText.fontSize, 34);
+    expect(strokeText.color, NeonTheme.ink);
+
+    Get.reset();
+  });
+
+  testWidgets('style boldPop render StrokeText fontSize 46, màu gold', (
+    tester,
+  ) async {
+    final gameCtrl = await _setUpGame(tester);
+    gameCtrl.activeComboTextStyleKind.value = ComboTextStyleKind.boldPop;
+    await tester.pump();
+
+    final strokeText = tester.widget<StrokeText>(_comboStrokeTextFinder);
+    expect(strokeText.fontSize, 46);
+    expect(strokeText.color, NeonTheme.gold);
+
+    Get.reset();
+  });
+
+  testWidgets('style retro render StrokeText fontSize 30, letterSpacing 3', (
+    tester,
+  ) async {
+    final gameCtrl = await _setUpGame(tester);
+    gameCtrl.activeComboTextStyleKind.value = ComboTextStyleKind.retro;
+    await tester.pump();
+
+    final strokeText = tester.widget<StrokeText>(_comboStrokeTextFinder);
+    expect(strokeText.fontSize, 30);
+    expect(strokeText.color, NeonTheme.lime);
+    expect(strokeText.letterSpacing, 3);
+
+    Get.reset();
+  });
+
+  testWidgets(
+    'style fire không dùng StrokeText, render gradient qua ShaderMask',
+    (tester) async {
+      final gameCtrl = await _setUpGame(tester);
+      gameCtrl.activeComboTextStyleKind.value = ComboTextStyleKind.fire;
+      await tester.pump();
+
+      expect(_comboStrokeTextFinder, findsNothing);
+      expect(find.byType(ShaderMask), findsOneWidget);
+
+      Get.reset();
+    },
+  );
 }
+
+// I54: StrokeText của HUD điểm/mục tiêu cũng dùng StrokeText nên
+// `find.byType(StrokeText)` không đủ — lọc đúng widget hiện label combo.
+Finder get _comboStrokeTextFinder =>
+    find.byWidgetPredicate((w) => w is StrokeText && w.text.contains('COMBO'));

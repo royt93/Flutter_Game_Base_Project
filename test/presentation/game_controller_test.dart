@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:pop_star_blast/core/storage_service.dart';
 import 'package:pop_star_blast/data/burst_styles.dart';
+import 'package:pop_star_blast/data/combo_text_styles.dart';
 import 'package:pop_star_blast/data/levels.dart';
 import 'package:pop_star_blast/data/mascot_skins.dart';
 import 'package:pop_star_blast/logic/gift_tile.dart';
@@ -1296,6 +1297,98 @@ void main() {
 
       final next = relaunch();
       expect(next.activeBurstStyleKind.value, BurstStyleKind.spark);
+    });
+  });
+
+  group('I54 Combo Text Style — validation/anti-cheat', () {
+    GameController relaunch() {
+      Get.delete<GameController>(force: true);
+      return Get.put(GameController(), permanent: true);
+    }
+
+    test('mặc định neon khi chưa đạt combo nào', () {
+      expect(ctrl.activeComboTextStyleKind.value, ComboTextStyleKind.neon);
+    });
+
+    test(
+      'setActiveComboTextStyle chặn style chưa đủ maxComboEver để mở khoá',
+      () {
+        ctrl.maxComboEver.value = 5; // < 6 (boldPop threshold)
+        ctrl.setActiveComboTextStyle(ComboTextStyleKind.boldPop);
+
+        expect(ctrl.activeComboTextStyleKind.value, ComboTextStyleKind.neon);
+        expect(
+          StorageService.to.getString(StorageKeys.activeComboTextStyle),
+          isNull,
+        );
+      },
+    );
+
+    test('setActiveComboTextStyle cho đổi style đã đủ maxComboEver', () {
+      ctrl.maxComboEver.value = 6; // đủ ngưỡng boldPop
+      ctrl.setActiveComboTextStyle(ComboTextStyleKind.boldPop);
+
+      expect(ctrl.activeComboTextStyleKind.value, ComboTextStyleKind.boldPop);
+      expect(
+        StorageService.to.getString(StorageKeys.activeComboTextStyle),
+        'boldPop',
+      );
+    });
+
+    test('setActiveComboTextStyle style neon (threshold 0) luôn cho phép', () {
+      ctrl.setActiveComboTextStyle(ComboTextStyleKind.neon);
+      expect(ctrl.activeComboTextStyleKind.value, ComboTextStyleKind.neon);
+    });
+
+    test('_load() khôi phục đúng style đã mở khoá từ storage', () {
+      StorageService.to.setInt(StorageKeys.maxComboEver, 15);
+      StorageService.to.setString(StorageKeys.activeComboTextStyle, 'retro');
+
+      final next = relaunch();
+      expect(next.activeComboTextStyleKind.value, ComboTextStyleKind.retro);
+    });
+
+    test('_load() fallback về neon khi string trong storage không hợp lệ', () {
+      StorageService.to.setInt(StorageKeys.maxComboEver, 25);
+      StorageService.to.setString(
+        StorageKeys.activeComboTextStyle,
+        'not_a_style',
+      );
+
+      final next = relaunch();
+      expect(next.activeComboTextStyleKind.value, ComboTextStyleKind.neon);
+    });
+
+    test(
+      '_load() fallback về neon khi storage bị sửa tay trỏ style chưa đủ ngưỡng',
+      () {
+        StorageService.to.setInt(StorageKeys.maxComboEver, 5);
+        StorageService.to.setString(
+          StorageKeys.activeComboTextStyle,
+          'fire', // threshold 25, maxComboEver chỉ 5
+        );
+
+        final next = relaunch();
+        expect(next.activeComboTextStyleKind.value, ComboTextStyleKind.neon);
+      },
+    );
+
+    test('resetProgress() xoá activeComboTextStyle khỏi storage', () async {
+      ctrl.maxComboEver.value = 6;
+      ctrl.setActiveComboTextStyle(ComboTextStyleKind.boldPop);
+      expect(
+        StorageService.to.getString(StorageKeys.activeComboTextStyle),
+        'boldPop',
+      );
+
+      await ctrl.resetProgress();
+      expect(
+        StorageService.to.getString(StorageKeys.activeComboTextStyle),
+        isNull,
+      );
+
+      final next = relaunch();
+      expect(next.activeComboTextStyleKind.value, ComboTextStyleKind.neon);
     });
   });
 

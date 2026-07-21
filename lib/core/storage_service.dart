@@ -117,6 +117,10 @@ class StorageKeys {
   static const String loginStreakCount = 'login_streak_count';
   static const String lastLoginEpochDay = 'last_login_epoch_day';
   static const String loginStreakClaimedMask = 'login_streak_claimed_mask';
+
+  // I54 Combo Text Style: id style chữ combo-milestone đang chọn (mặc định
+  // 'neon').
+  static const String activeComboTextStyle = 'active_combo_text_style';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

@@ -11,6 +11,7 @@ import '../../core/utils/friend_code.dart';
 import '../../core/utils/weekend_event.dart';
 import '../../data/achievements.dart';
 import '../../data/burst_styles.dart';
+import '../../data/combo_text_styles.dart';
 import '../../data/levels.dart';
 import '../../data/lucky_color.dart';
 import '../../data/mascot_skins.dart';
@@ -302,6 +303,20 @@ class GameController extends GetxController {
     StorageService.to.setString(StorageKeys.activeBurstStyle, kind.name);
   }
 
+  // I54 Combo Text Style: kiểu chữ combo-milestone đang chọn — mở khoá theo
+  // [maxComboEver], không persist riêng "đã mở khoá" (suy trực tiếp từ
+  // metric đời để tránh lệch dữ liệu).
+  final activeComboTextStyleKind = ComboTextStyleKind.neon.obs;
+
+  /// Đổi style chữ combo — chặn chọn style chưa đủ [maxComboEver] để mở khoá
+  /// (phòng race/giả mạo qua storage trực tiếp).
+  void setActiveComboTextStyle(ComboTextStyleKind kind) {
+    final style = kComboTextStyles.firstWhere((s) => s.kind == kind);
+    if (!isComboTextStyleUnlocked(style, maxComboEver.value)) return;
+    activeComboTextStyleKind.value = kind;
+    StorageService.to.setString(StorageKeys.activeComboTextStyle, kind.name);
+  }
+
   /// Task #5: điểm cần vượt khi đang trong 1 lần Perfect Clear challenge
   /// (chụp trước khi chơi, vì [_saveBestScore] sẽ ghi đè `highScore` ngay khi
   /// thắng) — null khi không phải Perfect Clear.
@@ -536,6 +551,23 @@ class GameController extends GetxController {
             isBurstStyleUnlocked(storedBurstStyle, totalGemsPopped.value)
         ? storedBurstStyle.kind
         : BurstStyleKind.spark;
+    // I54: validate lại theo ComboTextStyleKind hợp lệ + ngưỡng mở khoá hiện
+    // tại (phòng storage bị sửa tay trỏ style chưa đủ điều kiện).
+    final storedComboTextKind = ComboTextStyleKind.values
+        .where(
+          (k) =>
+              k.name ==
+              StorageService.to.getString(StorageKeys.activeComboTextStyle),
+        )
+        .firstOrNull;
+    final storedComboTextStyle = storedComboTextKind == null
+        ? null
+        : kComboTextStyles.firstWhere((s) => s.kind == storedComboTextKind);
+    activeComboTextStyleKind.value =
+        storedComboTextStyle != null &&
+            isComboTextStyleUnlocked(storedComboTextStyle, maxComboEver.value)
+        ? storedComboTextStyle.kind
+        : ComboTextStyleKind.neon;
     _recomputeTotalStars();
     _checkSeasonRollover();
   }
@@ -1284,6 +1316,7 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.loginStreakCount);
     await store.remove(StorageKeys.lastLoginEpochDay);
     await store.remove(StorageKeys.loginStreakClaimedMask);
+    await store.remove(StorageKeys.activeComboTextStyle);
     for (var id = 1; id <= kLevelCount; id++) {
       await store.remove(StorageKeys.highScore(id));
       await store.remove(StorageKeys.star(id));

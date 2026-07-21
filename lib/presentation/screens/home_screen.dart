@@ -10,6 +10,7 @@ import '../controllers/home_screen_controller.dart';
 import '../widgets/ambient_particles.dart';
 import '../widgets/burst_style_picker_dialog.dart';
 import '../widgets/coin_chip.dart';
+import '../widgets/combo_text_style_picker_dialog.dart';
 import '../widgets/home_carousel.dart';
 import '../widgets/login_streak_dialog.dart';
 import '../widgets/neon_bg.dart';
@@ -292,6 +293,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: NeonTheme.indigo,
               label: 'drawer_burst_style_label'.tr,
               onTap: () => showBurstStylePickerDialog(context, gameCtrl),
+            ),
+            _drawerTile(
+              icon: Icons.text_fields_rounded,
+              color: NeonTheme.yellow,
+              label: 'drawer_combo_text_style_label'.tr,
+              onTap: () => showComboTextStylePickerDialog(context, gameCtrl),
             ),
             _drawerTile(
               icon: Icons.event_available_rounded,

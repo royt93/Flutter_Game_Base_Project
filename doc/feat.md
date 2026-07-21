@@ -3104,3 +3104,22 @@ Từ backlog round 3 (`doc/task/tasks/IDEAS.md`), user chọn "Wave 1 — Tier 1
 i18n: 18 key mới (`_w46ByLang`–`_w49ByLang`, tuỳ task) × 22 locale, enforce qua
 `app_translations_test.dart`. Verify: `flutter analyze` → 0 issues. `flutter
 test --exclude-tags slow` → 468 test toàn bộ xanh, không regression.
+
+## ✅ Implemented: I54 Combo Text Style (2026-07-20)
+
+Task riêng, tiếp theo Wave 1, mirror đúng pattern I52 Pop Burst Style Picker
+sang milestone text của combo thay vì hiệu ứng nổ.
+
+- **I54 Combo Text Style** — 4 kiểu chữ cho mốc combo (`neon`/`boldPop`/
+  `retro`/`fire`, `lib/data/combo_text_styles.dart`), mở khoá theo
+  `maxComboEver` tái dùng đúng ngưỡng tier của `kAchievements` (0/6/15/25).
+  `_ComboMilestoneOverlay` (`game_screen.dart`) render theo style đang chọn,
+  không đụng `kComboMilestones`/`hapticForComboMilestone`. Chọn style qua
+  dialog picker (`combo_text_style_picker_dialog.dart`, style khoá hiện mờ +
+  ngưỡng) mở từ drawer Home. `GameController.activeComboTextStyleKind` chặn
+  chọn style chưa mở khoá + re-validate khi load (`StorageKeys.
+  activeComboTextStyle`) — chống sửa tay storage để mở khoá giả.
+
+i18n: 5 key mới (`_w50ByLang`) × 22 locale. Verify: `flutter analyze` → 0
+issues. `flutter test --exclude-tags slow` → 479 test toàn bộ xanh, không
+regression.

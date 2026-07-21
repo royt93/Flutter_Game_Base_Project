@@ -193,6 +193,10 @@ class AppTranslations extends Translations {
           // stats_boosters_used (en+vi ở _extraEn/_extraVi, 20 ngôn ngữ còn
           // lại ở _w49ByLang).
           ...?_w49ByLang[e.key],
+          // I54 — Combo Text Style Picker: combo_text_style_neon/bold_pop/
+          // retro/fire, drawer_combo_text_style_label (en+vi ở _extraEn/
+          // _extraVi, 20 ngôn ngữ còn lại ở _w50ByLang).
+          ...?_w50ByLang[e.key],
         },
     };
   }
@@ -998,6 +1002,13 @@ class AppTranslations extends Translations {
     'burst_style_ripple': 'Ripple',
     'burst_style_starburst': 'Starburst',
     'drawer_burst_style_label': 'Burst Style',
+    // I54 — Combo Text Style Picker: tên style + entry point drawer (en+vi ở
+    // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w50ByLang).
+    'combo_text_style_neon': 'Neon',
+    'combo_text_style_bold_pop': 'Bold Pop',
+    'combo_text_style_retro': 'Retro',
+    'combo_text_style_fire': 'Fire',
+    'drawer_combo_text_style_label': 'Combo Text Style',
     // I48 — Login Streak Calendar: entry point drawer + dialog 7 ngày (en+vi
     // ở _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w48ByLang).
     'drawer_login_streak_label': 'Login Streak',
@@ -1775,6 +1786,11 @@ class AppTranslations extends Translations {
     'burst_style_ripple': 'Gợn sóng',
     'burst_style_starburst': 'Nổ sao',
     'drawer_burst_style_label': 'Hiệu ứng nổ',
+    'combo_text_style_neon': 'Neon',
+    'combo_text_style_bold_pop': 'Đậm Nổi',
+    'combo_text_style_retro': 'Cổ Điển',
+    'combo_text_style_fire': 'Lửa',
+    'drawer_combo_text_style_label': 'Kiểu Chữ Combo',
     'drawer_login_streak_label': 'Điểm danh',
     'login_streak_title': 'Điểm danh nhận thưởng',
     'login_streak_claim_button': 'Nhận',
@@ -27711,6 +27727,152 @@ class AppTranslations extends Translations {
       'stats_levels_three_starred': '৩-স্টার লেভেল',
       'stats_boards_cleared': 'পরিষ্কার করা বোর্ড',
       'stats_boosters_used': 'ব্যবহৃত বুস্টার',
+    },
+  };
+
+  /// I54 — Combo Text Style Picker: `combo_text_style_neon/bold_pop/retro/
+  /// fire`/`drawer_combo_text_style_label` cho 20 ngôn ngữ (en/vi đã có
+  /// trong [_extraEn]/[_extraVi]).
+  static const Map<String, Map<String, String>> _w50ByLang = {
+    'es_ES': {
+      'combo_text_style_neon': 'Neón',
+      'combo_text_style_bold_pop': 'Pop Audaz',
+      'combo_text_style_retro': 'Retro',
+      'combo_text_style_fire': 'Fuego',
+      'drawer_combo_text_style_label': 'Estilo de Texto Combo',
+    },
+    'fr_FR': {
+      'combo_text_style_neon': 'Néon',
+      'combo_text_style_bold_pop': 'Pop Audacieux',
+      'combo_text_style_retro': 'Rétro',
+      'combo_text_style_fire': 'Feu',
+      'drawer_combo_text_style_label': 'Style de Texte Combo',
+    },
+    'de_DE': {
+      'combo_text_style_neon': 'Neon',
+      'combo_text_style_bold_pop': 'Kräftig',
+      'combo_text_style_retro': 'Retro',
+      'combo_text_style_fire': 'Feuer',
+      'drawer_combo_text_style_label': 'Combo-Textstil',
+    },
+    'pt_BR': {
+      'combo_text_style_neon': 'Neon',
+      'combo_text_style_bold_pop': 'Pop Arrojado',
+      'combo_text_style_retro': 'Retrô',
+      'combo_text_style_fire': 'Fogo',
+      'drawer_combo_text_style_label': 'Estilo de Texto Combo',
+    },
+    'ru_RU': {
+      'combo_text_style_neon': 'Неон',
+      'combo_text_style_bold_pop': 'Смелый',
+      'combo_text_style_retro': 'Ретро',
+      'combo_text_style_fire': 'Огонь',
+      'drawer_combo_text_style_label': 'Стиль текста комбо',
+    },
+    'zh_CN': {
+      'combo_text_style_neon': '霓虹',
+      'combo_text_style_bold_pop': '醒目',
+      'combo_text_style_retro': '复古',
+      'combo_text_style_fire': '火焰',
+      'drawer_combo_text_style_label': '连击文字样式',
+    },
+    'ja_JP': {
+      'combo_text_style_neon': 'ネオン',
+      'combo_text_style_bold_pop': 'ボールドポップ',
+      'combo_text_style_retro': 'レトロ',
+      'combo_text_style_fire': 'ファイア',
+      'drawer_combo_text_style_label': 'コンボテキストスタイル',
+    },
+    'ko_KR': {
+      'combo_text_style_neon': '네온',
+      'combo_text_style_bold_pop': '볼드 팝',
+      'combo_text_style_retro': '레트로',
+      'combo_text_style_fire': '파이어',
+      'drawer_combo_text_style_label': '콤보 텍스트 스타일',
+    },
+    'it_IT': {
+      'combo_text_style_neon': 'Neon',
+      'combo_text_style_bold_pop': 'Pop Audace',
+      'combo_text_style_retro': 'Retro',
+      'combo_text_style_fire': 'Fuoco',
+      'drawer_combo_text_style_label': 'Stile Testo Combo',
+    },
+    'id_ID': {
+      'combo_text_style_neon': 'Neon',
+      'combo_text_style_bold_pop': 'Pop Tebal',
+      'combo_text_style_retro': 'Retro',
+      'combo_text_style_fire': 'Api',
+      'drawer_combo_text_style_label': 'Gaya Teks Combo',
+    },
+    'th_TH': {
+      'combo_text_style_neon': 'นีออน',
+      'combo_text_style_bold_pop': 'ป๊อปตัวหนา',
+      'combo_text_style_retro': 'เรโทร',
+      'combo_text_style_fire': 'ไฟ',
+      'drawer_combo_text_style_label': 'สไตล์ข้อความคอมโบ',
+    },
+    'hi_IN': {
+      'combo_text_style_neon': 'नियॉन',
+      'combo_text_style_bold_pop': 'बोल्ड पॉप',
+      'combo_text_style_retro': 'रेट्रो',
+      'combo_text_style_fire': 'आग',
+      'drawer_combo_text_style_label': 'कॉम्बो टेक्स्ट स्टाइल',
+    },
+    'ar_SA': {
+      'combo_text_style_neon': 'نيون',
+      'combo_text_style_bold_pop': 'بولد بوب',
+      'combo_text_style_retro': 'ريترو',
+      'combo_text_style_fire': 'نار',
+      'drawer_combo_text_style_label': 'نمط نص الكومبو',
+    },
+    'tr_TR': {
+      'combo_text_style_neon': 'Neon',
+      'combo_text_style_bold_pop': 'Kalın Pop',
+      'combo_text_style_retro': 'Retro',
+      'combo_text_style_fire': 'Ateş',
+      'drawer_combo_text_style_label': 'Kombo Metin Stili',
+    },
+    'nl_NL': {
+      'combo_text_style_neon': 'Neon',
+      'combo_text_style_bold_pop': 'Vetgedrukt',
+      'combo_text_style_retro': 'Retro',
+      'combo_text_style_fire': 'Vuur',
+      'drawer_combo_text_style_label': 'Combo-tekststijl',
+    },
+    'pl_PL': {
+      'combo_text_style_neon': 'Neon',
+      'combo_text_style_bold_pop': 'Odważny Pop',
+      'combo_text_style_retro': 'Retro',
+      'combo_text_style_fire': 'Ogień',
+      'drawer_combo_text_style_label': 'Styl tekstu combo',
+    },
+    'fil_PH': {
+      'combo_text_style_neon': 'Neon',
+      'combo_text_style_bold_pop': 'Bold Pop',
+      'combo_text_style_retro': 'Retro',
+      'combo_text_style_fire': 'Apoy',
+      'drawer_combo_text_style_label': 'Estilo ng Tekstong Combo',
+    },
+    'ms_MY': {
+      'combo_text_style_neon': 'Neon',
+      'combo_text_style_bold_pop': 'Pop Tebal',
+      'combo_text_style_retro': 'Retro',
+      'combo_text_style_fire': 'Api',
+      'drawer_combo_text_style_label': 'Gaya Teks Gabungan',
+    },
+    'uk_UA': {
+      'combo_text_style_neon': 'Неон',
+      'combo_text_style_bold_pop': 'Смілива Поп',
+      'combo_text_style_retro': 'Ретро',
+      'combo_text_style_fire': 'Вогонь',
+      'drawer_combo_text_style_label': 'Стиль тексту комбо',
+    },
+    'bn_BD': {
+      'combo_text_style_neon': 'নিয়ন',
+      'combo_text_style_bold_pop': 'বোল্ড পপ',
+      'combo_text_style_retro': 'রেট্রো',
+      'combo_text_style_fire': 'আগুন',
+      'drawer_combo_text_style_label': 'কম্বো টেক্সট স্টাইল',
     },
   };
 }
