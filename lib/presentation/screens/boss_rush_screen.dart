@@ -63,27 +63,30 @@ class _BossRushScreenState extends State<BossRushScreen> {
             child: Stack(
               children: [
                 SafeArea(child: playing ? _buildPlay() : _buildLobby()),
-                if (playing && _confirmingQuit)
-                  NeonDialog.overlay(
-                    onBarrier: () => setState(() => _confirmingQuit = false),
-                    panel: NeonDialog.panel(
-                      title: 'quit_title'.tr,
-                      color: NeonTheme.red,
-                      message: 'quit_msg'.tr,
-                      actions: [
-                        NeonDialogAction(
-                          label: 'cancel'.tr,
-                          color: NeonTheme.cyan,
-                          onTap: () => setState(() => _confirmingQuit = false),
-                        ),
-                        NeonDialogAction(
-                          label: 'quit_action'.tr,
-                          color: NeonTheme.orange,
-                          onTap: _quitRun,
-                        ),
-                      ],
-                    ),
-                  ),
+                NeonDialog.overlaySlot(
+                  onBarrier: () => setState(() => _confirmingQuit = false),
+                  panelKey: playing && _confirmingQuit,
+                  panel: (playing && _confirmingQuit)
+                      ? NeonDialog.panel(
+                          title: 'quit_title'.tr,
+                          color: NeonTheme.red,
+                          message: 'quit_msg'.tr,
+                          actions: [
+                            NeonDialogAction(
+                              label: 'cancel'.tr,
+                              color: NeonTheme.cyan,
+                              onTap: () =>
+                                  setState(() => _confirmingQuit = false),
+                            ),
+                            NeonDialogAction(
+                              label: 'quit_action'.tr,
+                              color: NeonTheme.orange,
+                              onTap: _quitRun,
+                            ),
+                          ],
+                        )
+                      : null,
+                ),
               ],
             ),
           ),

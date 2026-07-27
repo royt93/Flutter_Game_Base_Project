@@ -11,39 +11,28 @@ Future<void> showBurstStylePickerDialog(
   BuildContext context,
   GameController gameCtrl,
 ) {
-  return showDialog(
+  return NeonDialog.show(
     context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.black.withValues(alpha: 0.6),
-    builder: (dialogCtx) => StatefulBuilder(
-      builder: (dialogCtx, setState) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.zero,
-        child: NeonDialog.panel(
-          title: 'drawer_burst_style_label'.tr,
-          color: NeonTheme.indigo,
-          icon: Icons.auto_awesome_motion_rounded,
-          content: Column(
-            children: [
-              for (final style in kBurstStyles)
-                _BurstStyleRow(
-                  style: style,
-                  gameCtrl: gameCtrl,
-                  onSelected: () =>
-                      Navigator.of(dialogCtx, rootNavigator: true).pop(),
-                ),
-            ],
+    title: 'drawer_burst_style_label'.tr,
+    color: NeonTheme.indigo,
+    icon: Icons.auto_awesome_motion_rounded,
+    content: Column(
+      children: [
+        for (final style in kBurstStyles)
+          _BurstStyleRow(
+            style: style,
+            gameCtrl: gameCtrl,
+            onSelected: () => Navigator.of(context, rootNavigator: true).pop(),
           ),
-          actions: [
-            NeonDialogAction(
-              label: 'coll_close'.tr,
-              color: NeonTheme.indigo,
-              onTap: () => Navigator.of(dialogCtx, rootNavigator: true).pop(),
-            ),
-          ],
-        ),
-      ),
+      ],
     ),
+    actions: [
+      NeonDialogAction(
+        label: 'coll_close'.tr,
+        color: NeonTheme.indigo,
+        onTap: () {},
+      ),
+    ],
   );
 }
 

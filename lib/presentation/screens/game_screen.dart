@@ -145,7 +145,7 @@ class GameScreen extends StatelessWidget {
                   Positioned.fill(
                     child: _AchievementUnlockOverlay(gameCtrl: gameCtrl),
                   ),
-                  if (gsc.ui.value != GameUi.playing) _Overlay(gsc: gsc),
+                  _Overlay(gsc: gsc),
                 ],
               );
             }),
@@ -615,22 +615,25 @@ class _AchievementUnlockOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final a = gameCtrl.justUnlockedAchievement.value;
-      if (a == null) return const SizedBox.shrink();
-      return NeonDialog.overlay(
+      return NeonDialog.overlaySlot(
         onBarrier: () => gameCtrl.justUnlockedAchievement.value = null,
-        panel: NeonDialog.panel(
-          title: 'achievement_unlocked_title'.tr,
-          color: NeonTheme.gold,
-          icon: Icons.emoji_events_rounded,
-          message: '${a.titleKey.tr}\n${a.descKey.tr}\n+${a.coinReward} 🪙',
-          actions: [
-            NeonDialogAction(
-              label: 'ok'.tr,
-              color: NeonTheme.gold,
-              onTap: () => gameCtrl.justUnlockedAchievement.value = null,
-            ),
-          ],
-        ),
+        panelKey: a?.id,
+        panel: a == null
+            ? null
+            : NeonDialog.panel(
+                title: 'achievement_unlocked_title'.tr,
+                color: NeonTheme.gold,
+                icon: Icons.emoji_events_rounded,
+                message:
+                    '${a.titleKey.tr}\n${a.descKey.tr}\n+${a.coinReward} 🪙',
+                actions: [
+                  NeonDialogAction(
+                    label: 'ok'.tr,
+                    color: NeonTheme.gold,
+                    onTap: () => gameCtrl.justUnlockedAchievement.value = null,
+                  ),
+                ],
+              ),
       );
     });
   }
@@ -861,105 +864,96 @@ class _Overlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // A9: cross-fade giữa các overlay (kể cả về "playing") thay vì snap.
+    final ui = gsc.ui.value;
     return Positioned.fill(
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 160),
-        child: KeyedSubtree(
-          key: ValueKey(gsc.ui.value),
-          child: _buildFor(gsc.ui.value),
-        ),
+      child: NeonDialog.overlaySlot(
+        panel: _buildFor(ui),
+        panelKey: ui,
+        onBarrier: ui == GameUi.quit ? gsc.closeOverlay : null,
       ),
     );
   }
 
-  Widget _buildFor(GameUi ui) {
+  Widget? _buildFor(GameUi ui) {
     switch (ui) {
       case GameUi.quit:
-        return NeonDialog.overlay(
-          onBarrier: gsc.closeOverlay,
-          panel: NeonDialog.panel(
-            title: 'quit_title'.tr,
-            color: NeonTheme.cyan,
-            message: 'quit_msg'.tr,
-            actions: [
-              NeonDialogAction(
-                label: 'cancel'.tr,
-                color: NeonTheme.cyan,
-                onTap: gsc.closeOverlay,
-              ),
-              NeonDialogAction(
-                label: 'quit_action'.tr,
-                color: NeonTheme.orange,
-                onTap: gsc.quit,
-              ),
-            ],
-          ),
+        return NeonDialog.panel(
+          title: 'quit_title'.tr,
+          color: NeonTheme.cyan,
+          message: 'quit_msg'.tr,
+          actions: [
+            NeonDialogAction(
+              label: 'cancel'.tr,
+              color: NeonTheme.cyan,
+              onTap: gsc.closeOverlay,
+            ),
+            NeonDialogAction(
+              label: 'quit_action'.tr,
+              color: NeonTheme.orange,
+              onTap: gsc.quit,
+            ),
+          ],
         );
       case GameUi.win:
-        return NeonDialog.overlay(panel: _WinChoreography(gsc: gsc));
+        return _WinChoreography(gsc: gsc);
       case GameUi.lose:
         final gameCtrl = gsc.gameCtrl;
         final isTimeAttack = gameCtrl.mode.value == GameMode.timeAttack;
         final isEndless = gameCtrl.mode.value == GameMode.endless;
         final isDailyChallenge = gameCtrl.mode.value == GameMode.dailyChallenge;
         final isPuzzleLab = gameCtrl.mode.value == GameMode.puzzleLab;
-        return NeonDialog.overlay(
-          panel: _MascotDialog(
-            mood: isPuzzleLab
-                ? StarMood.cheer
-                : (isTimeAttack ? StarMood.cheer : StarMood.sad),
-            palette: gameCtrl.activeMascotSkin.palette,
-            panel: NeonDialog.panel(
-              title: isPuzzleLab
-                  ? 'puzzle_lab_result_title'.tr
-                  : (isTimeAttack
-                        ? 'time_up_title'.tr
-                        : 'board_stuck_title'.tr),
-              color: NeonTheme.orange,
-              message: isPuzzleLab
-                  ? 'puzzle_lab_score_label'.trParams({
-                      'score': '${gameCtrl.score.value}',
-                    })
-                  : isTimeAttack
-                  ? 'score_best_label'.trParams({
-                      'score': '${gameCtrl.score.value}',
-                      'best': '${gameCtrl.timeAttackBest.value}',
-                    })
-                  : isEndless
-                  ? 'score_best_label'.trParams({
-                      'score': '${gameCtrl.score.value}',
-                      'best': '${gameCtrl.endlessBest.value}',
-                    })
-                  : isDailyChallenge
-                  ? 'score_recorded_label'.trParams({
-                      'score': '${gameCtrl.score.value}',
-                      'recorded': '${gameCtrl.dailyChallengeScoreToday}',
-                    })
-                  : 'no_moves_retry_msg'.tr,
-              // I37 Async Challenge Code: hiện kết quả so điểm thách đấu dù
-              // màn kết thúc thắng/thua bình thường — chỉ campaign mới có
-              // activeChallenge (startChallenge luôn gọi startLevel).
-              content: gameCtrl.activeChallenge.value != null
-                  ? _challengeResultBanner(gameCtrl)
-                  : null,
-              actions: [
-                NeonDialogAction(
-                  label: 'menu'.tr,
-                  color: NeonTheme.cyan,
-                  onTap: gsc.quit,
-                ),
-                NeonDialogAction(
-                  label: 'retry'.tr,
-                  color: NeonTheme.orange,
-                  onTap: gsc.again,
-                ),
-              ],
-            ),
+        return _MascotDialog(
+          mood: isPuzzleLab
+              ? StarMood.cheer
+              : (isTimeAttack ? StarMood.cheer : StarMood.sad),
+          palette: gameCtrl.activeMascotSkin.palette,
+          panel: NeonDialog.panel(
+            title: isPuzzleLab
+                ? 'puzzle_lab_result_title'.tr
+                : (isTimeAttack ? 'time_up_title'.tr : 'board_stuck_title'.tr),
+            color: NeonTheme.orange,
+            message: isPuzzleLab
+                ? 'puzzle_lab_score_label'.trParams({
+                    'score': '${gameCtrl.score.value}',
+                  })
+                : isTimeAttack
+                ? 'score_best_label'.trParams({
+                    'score': '${gameCtrl.score.value}',
+                    'best': '${gameCtrl.timeAttackBest.value}',
+                  })
+                : isEndless
+                ? 'score_best_label'.trParams({
+                    'score': '${gameCtrl.score.value}',
+                    'best': '${gameCtrl.endlessBest.value}',
+                  })
+                : isDailyChallenge
+                ? 'score_recorded_label'.trParams({
+                    'score': '${gameCtrl.score.value}',
+                    'recorded': '${gameCtrl.dailyChallengeScoreToday}',
+                  })
+                : 'no_moves_retry_msg'.tr,
+            // I37 Async Challenge Code: hiện kết quả so điểm thách đấu dù
+            // màn kết thúc thắng/thua bình thường — chỉ campaign mới có
+            // activeChallenge (startChallenge luôn gọi startLevel).
+            content: gameCtrl.activeChallenge.value != null
+                ? _challengeResultBanner(gameCtrl)
+                : null,
+            actions: [
+              NeonDialogAction(
+                label: 'menu'.tr,
+                color: NeonTheme.cyan,
+                onTap: gsc.quit,
+              ),
+              NeonDialogAction(
+                label: 'retry'.tr,
+                color: NeonTheme.orange,
+                onTap: gsc.again,
+              ),
+            ],
           ),
         );
       case GameUi.playing:
-        return const SizedBox.shrink();
+        return null;
     }
   }
 }

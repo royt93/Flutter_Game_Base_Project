@@ -34,41 +34,71 @@ void showSpinWheelDialog(BuildContext context, GameController gameCtrl) {
   }
 
   final target = gameCtrl.todaySpinReward;
-  var done = false;
 
-  showDialog(
+  NeonDialog.show(
     context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.black.withValues(alpha: 0.6),
-    builder: (dialogCtx) => StatefulBuilder(
-      builder: (dialogCtx, setState) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: EdgeInsets.zero,
-          child: NeonDialog.panel(
-            title: 'Vòng quay may mắn',
-            color: NeonTheme.purple,
-            content: _SpinReel(
-              target: target,
-              onDone: () => setState(() => done = true),
-            ),
-            message: done ? 'Nhận được ${_spinRewardLabel(target)}!' : null,
-            actions: [
-              NeonDialogAction(
-                label: done ? 'Nhận' : 'Đang quay...',
-                color: NeonTheme.purple,
-                onTap: () {
-                  if (!done) return;
-                  gameCtrl.claimSpin();
-                  Navigator.of(dialogCtx, rootNavigator: true).pop();
-                },
-              ),
-            ],
-          ),
-        );
+    title: 'Vòng quay may mắn',
+    color: NeonTheme.purple,
+    content: _SpinWheelBody(
+      target: target,
+      onClaim: () {
+        gameCtrl.claimSpin();
+        Navigator.of(context, rootNavigator: true).pop();
       },
     ),
+    actions: const [],
   );
+}
+
+class _SpinWheelBody extends StatefulWidget {
+  const _SpinWheelBody({required this.target, required this.onClaim});
+
+  final SpinReward target;
+  final VoidCallback onClaim;
+
+  @override
+  State<_SpinWheelBody> createState() => _SpinWheelBodyState();
+}
+
+class _SpinWheelBodyState extends State<_SpinWheelBody> {
+  bool _done = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _SpinReel(
+          target: widget.target,
+          onDone: () => setState(() => _done = true),
+        ),
+        if (_done) ...[
+          const SizedBox(height: NeonTheme.s16),
+          Text(
+            'Nhận được ${_spinRewardLabel(widget.target)}!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: NeonTheme.inkSoft,
+              fontSize: 14,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+        const SizedBox(height: NeonTheme.s24),
+        NeonDialogButton(
+          action: NeonDialogAction(
+            label: _done ? 'Nhận' : 'Đang quay...',
+            color: NeonTheme.purple,
+            onTap: () {
+              if (!_done) return;
+              widget.onClaim();
+            },
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _SpinReel extends StatelessWidget {

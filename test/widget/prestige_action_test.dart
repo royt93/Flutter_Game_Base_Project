@@ -66,10 +66,10 @@ void main() {
 
     await tester.tap(find.byKey(const Key('prestige_badge')));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
 
     await tester.tap(find.text('Cancel'));
-    await tester.pump();
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
 
     expect(ctrl.prestigeTier.value, 0);
     expect(ctrl.canPrestige, isTrue);
@@ -83,9 +83,10 @@ void main() {
 
     await tester.tap(find.byKey(const Key('prestige_badge')));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
 
     await tester.tap(find.text('Prestige').last);
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
     await tester.pump();
 
     expect(ctrl.prestigeTier.value, 1);
@@ -102,8 +103,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     await tester.tap(find.byKey(const Key('prestige_badge')));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
     await tester.tap(find.text('Prestige').last);
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
     await tester.pump();
 
     // Sau prestige, tap vào badge "P1" không mở dialog (onTap: null khi

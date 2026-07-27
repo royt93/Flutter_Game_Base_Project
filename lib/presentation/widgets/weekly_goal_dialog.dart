@@ -12,70 +12,62 @@ Future<void> showWeeklyGoalDialog(
   BuildContext context,
   GameController gameCtrl,
 ) {
-  return showDialog(
+  return NeonDialog.show(
     context: context,
-    barrierDismissible: true,
-    barrierColor: Colors.black.withValues(alpha: 0.6),
-    builder: (dialogCtx) => Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.zero,
-      child: Obx(() {
-        final progress = gameCtrl.weeklyGoalProgress.value;
-        final claimed = gameCtrl.weeklyGoalClaimed;
-        final canClaim = progress >= weeklyGoalTarget && !claimed;
-        return NeonDialog.panel(
-          title: 'weekly_goal_title'.tr,
-          color: NeonTheme.teal,
-          icon: Icons.flag_rounded,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'weekly_goal_desc'.tr,
-                style: TextStyle(color: NeonTheme.inkSoft, fontSize: 13),
-              ),
-              const SizedBox(height: NeonTheme.s16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: (progress / weeklyGoalTarget).clamp(0, 1).toDouble(),
-                  minHeight: 10,
-                  backgroundColor: NeonTheme.cardAlt,
-                  valueColor: AlwaysStoppedAnimation(NeonTheme.teal),
-                ),
-              ),
-              const SizedBox(height: NeonTheme.s8),
-              Text(
-                '${progress.clamp(0, weeklyGoalTarget)}/$weeklyGoalTarget',
-                style: TextStyle(
-                  color: NeonTheme.ink,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              if (claimed) ...[
-                const SizedBox(height: NeonTheme.s8),
-                Text(
-                  'weekly_goal_claimed_label'.tr,
-                  style: TextStyle(
-                    color: NeonTheme.teal,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ],
+    title: 'weekly_goal_title'.tr,
+    color: NeonTheme.teal,
+    icon: Icons.flag_rounded,
+    dismissible: true,
+    content: Obx(() {
+      final progress = gameCtrl.weeklyGoalProgress.value;
+      final claimed = gameCtrl.weeklyGoalClaimed;
+      final canClaim = progress >= weeklyGoalTarget && !claimed;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'weekly_goal_desc'.tr,
+            style: TextStyle(color: NeonTheme.inkSoft, fontSize: 13),
           ),
-          actions: [
-            NeonDialogAction(
+          const SizedBox(height: NeonTheme.s16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: (progress / weeklyGoalTarget).clamp(0, 1).toDouble(),
+              minHeight: 10,
+              backgroundColor: NeonTheme.cardAlt,
+              valueColor: AlwaysStoppedAnimation(NeonTheme.teal),
+            ),
+          ),
+          const SizedBox(height: NeonTheme.s8),
+          Text(
+            '${progress.clamp(0, weeklyGoalTarget)}/$weeklyGoalTarget',
+            style: TextStyle(color: NeonTheme.ink, fontWeight: FontWeight.w800),
+          ),
+          if (claimed) ...[
+            const SizedBox(height: NeonTheme.s8),
+            Text(
+              'weekly_goal_claimed_label'.tr,
+              style: TextStyle(
+                color: NeonTheme.teal,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+          const SizedBox(height: NeonTheme.s24),
+          NeonDialogButton(
+            action: NeonDialogAction(
               label: canClaim ? 'weekly_goal_claim_button'.tr : 'coll_close'.tr,
               color: NeonTheme.teal,
               onTap: canClaim
                   ? () => gameCtrl.claimWeeklyGoalReward()
-                  : () => Navigator.of(dialogCtx, rootNavigator: true).pop(),
+                  : () => Navigator.of(context, rootNavigator: true).pop(),
             ),
-          ],
-        );
-      }),
-    ),
+          ),
+        ],
+      );
+    }),
+    actions: const [],
   );
 }

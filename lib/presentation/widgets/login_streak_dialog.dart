@@ -11,24 +11,21 @@ Future<void> showLoginStreakDialog(
   BuildContext context,
   GameController gameCtrl,
 ) {
-  return showDialog(
+  return NeonDialog.show(
     context: context,
-    barrierDismissible: true,
-    barrierColor: Colors.black.withValues(alpha: 0.6),
-    builder: (dialogCtx) => Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.zero,
-      child: Obx(() {
-        final today = gameCtrl.dayInCycle(gameCtrl.loginStreakCount.value);
-        final reward = GameController.loginStreakRewards[today];
-        final claimed =
-            (gameCtrl.loginStreakClaimedMask.value >> today) & 1 == 1;
-        final canClaim = reward != null && !claimed;
-        return NeonDialog.panel(
-          title: 'login_streak_title'.tr,
-          color: NeonTheme.red,
-          icon: Icons.event_available_rounded,
-          content: Wrap(
+    title: 'login_streak_title'.tr,
+    color: NeonTheme.red,
+    icon: Icons.event_available_rounded,
+    dismissible: true,
+    content: Obx(() {
+      final today = gameCtrl.dayInCycle(gameCtrl.loginStreakCount.value);
+      final reward = GameController.loginStreakRewards[today];
+      final claimed = (gameCtrl.loginStreakClaimedMask.value >> today) & 1 == 1;
+      final canClaim = reward != null && !claimed;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Wrap(
             spacing: NeonTheme.s8,
             runSpacing: NeonTheme.s8,
             alignment: WrapAlignment.center,
@@ -44,20 +41,22 @@ Future<void> showLoginStreakDialog(
                 ),
             ],
           ),
-          actions: [
-            NeonDialogAction(
+          const SizedBox(height: NeonTheme.s24),
+          NeonDialogButton(
+            action: NeonDialogAction(
               label: canClaim
                   ? 'login_streak_claim_button'.tr
                   : 'coll_close'.tr,
               color: NeonTheme.red,
               onTap: canClaim
                   ? () => gameCtrl.claimLoginStreakReward()
-                  : () => Navigator.of(dialogCtx, rootNavigator: true).pop(),
+                  : () => Navigator.of(context, rootNavigator: true).pop(),
             ),
-          ],
-        );
-      }),
-    ),
+          ),
+        ],
+      );
+    }),
+    actions: const [],
   );
 }
 

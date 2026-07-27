@@ -3752,3 +3752,135 @@ slow` → toàn bộ xanh, không regression.
   pixel/shape cụ thể nhưng đủ bắt lỗi runtime). Audit xác nhận PASS toàn bộ 4
   acceptance criteria của spec `I18-colorblind-symbols.md`, không phát hiện
   thiếu sót.
+
+## ✅ Implemented: Gộp toàn bộ dialog về 1 helper duy nhất + animation in/out (2026-07-27)
+
+- **Bối cảnh**: audit toàn bộ codebase phát hiện `NeonDialog.show()` dùng
+  `showDialog` gốc (animation mặc định, không khớp brand), `NeonDialog.overlay()`
+  chỉ animate **vào** — 3 nơi (`game_screen.dart` × 2, `boss_rush_screen.dart`)
+  mất animation **ra** vì widget bị gỡ khỏi tree bằng `if` trước khi kịp
+  animate; và 6 dialog tự viết tay copy-paste boilerplate `showDialog` thay vì
+  dùng lại `NeonDialog.show()` sẵn có.
+- **`lib/presentation/widgets/neon_dialog.dart`**: `.show()` đổi
+  `showDialog` → `showGeneralDialog` với `transitionDuration:
+  Duration(milliseconds: 220)` + `transitionBuilder` riêng
+  (`FadeTransition` lồng `ScaleTransition`, `curve: easeOutBack`,
+  `reverseCurve: easeIn` để tránh overshoot bouncy lúc đóng) — animation ra
+  "free" vì `showGeneralDialog` tự chạy `animation` ngược khi pop route.
+  Thêm `NeonDialog.overlaySlot({panel, onBarrier})`: slot luôn mount, barrier
+  fade độc lập (`AnimatedOpacity`) + panel qua `AnimatedSwitcher`
+  (`FadeTransition`+`ScaleTransition`) — animate được cả 2 chiều dù `panel`
+  chuyển `null` ↔ có giá trị. Đổi `_DialogButton` private → `NeonDialogButton`
+  public để các dialog reactive (login streak, weekly goal) dùng lại đúng
+  style nút.
+- **`lib/presentation/screens/game_screen.dart`**: `_Overlay` luôn mount, dùng
+  `NeonDialog.overlaySlot` thay `AnimatedSwitcher` tự viết tay; `_AchievementUnlockOverlay`
+  cũng chuyển qua `overlaySlot` — cả 2 nay animate mượt cả lúc hiện lẫn ẩn.
+- **`lib/presentation/screens/boss_rush_screen.dart`**: dialog xác nhận quit
+  giữa trận đổi từ `if (...) NeonDialog.overlay(...)` (bare, không animate ra)
+  sang `NeonDialog.overlaySlot(panel: ... ? NeonDialog.panel(...) : null)`.
+- **Migrate 6 dialog tay sang `.show()`**: `combo_text_style_picker_dialog.dart`,
+  `burst_style_picker_dialog.dart`, `board_frame_picker_dialog.dart` (xoá
+  `StatefulBuilder` chết — không nơi nào gọi `setState`), `login_streak_dialog.dart`,
+  `weekly_goal_dialog.dart` (nội dung reactive + nút Nhận/Đóng gom vào 1 `Obx`
+  làm `content:`, giữ đúng hành vi cũ: claim không pop, Đóng mới pop),
+  `spin_wheel_dialog.dart` (tách phần quay tween ra `_SpinWheelBody`
+  `StatefulWidget` riêng làm `content:`).
+- Test: `test/widget/neon_dialog_test.dart` bổ sung case cho `overlaySlot`
+  (panel null → không tìm thấy text; đổi sang có panel → tìm thấy đúng text
+  sau `pump()`). Toàn bộ test dialog hiện có (`combo_text_style_picker_dialog_test.dart`
+  dùng `pumpAndSettle`...) không cần sửa vì API/hành vi bên ngoài không đổi.
+  `flutter analyze` 0 issues, `flutter test --exclude-tags slow` xanh toàn bộ.
+- **Gotcha khi test animation route-based** (`showGeneralDialog`): frame đầu
+  tiên sau khi `AnimationController` mới start luôn báo `elapsed = 0` (Ticker
+  ghi `_startTime` ngay tại tick đó) — cần 1 `pump()` trơn trước khi
+  `pump(duration)` mới thấy animation tiến triển; nếu action bên trong dialog
+  chạy qua `addPostFrameCallback` (như `prestige()`) thì cần thêm 1 `pump()`
+  nữa để `Obx` kịp rebuild sau khi state đổi.
+- 📋 **Deferred (ngoài phạm vi)**: layout dialog "Chọn chế độ" ở `home_screen.dart`
+  (đơn điệu/mất cân đối do bố cục 3+3+1 lệch) — user đồng ý đây là việc riêng,
+  không thuộc phạm vi gộp dialog này.
+- **Verify tay trên device thật** (Samsung S24 Ultra, `R5CX613VZBR`): đã test
+  trực tiếp 2 cơ chế cốt lõi — (1) `.show()` (route-based): mở/đóng dialog
+  "Chọn chế độ" ở home, animation scale+fade rõ ràng cả 2 chiều, không snap;
+  (2) `overlaySlot` (in-tree): dialog "Thoát Màn?" giữa trận (`game_screen.dart`)
+  hiện đúng style, bấm "Huỷ" đóng có animation, board gameplay phục hồi đúng
+  trạng thái bên dưới, không còn dấu vết dialog/barrier. Các luồng còn lại
+  (Win/Lose/achievement-unlock trong `game_screen.dart`, quit-confirm ở
+  `boss_rush_screen.dart`, claim-rồi-đóng ở login-streak/weekly-goal) dùng
+  lại **chính xác cùng 2 cơ chế** (`overlaySlot` hoặc `.show()`) với cùng
+  `_kDialogDuration`/`_kDialogCurve` — không có code path riêng nào khác biệt
+  đủ để cần test lại từng cái; rủi ro hồi quy coi như đã được cover bởi 2 test
+  trên. Không đi sâu giả lập thắng/thua/mở khoá achievement qua ADB vì tốn
+  effort cao (cần thao tác nhiều bước, khó xác nhận chính xác qua screenshot)
+  trong khi lợi ích biên thấp so với việc test lại đúng cơ chế đã xác nhận.
+
+## ✅ Implemented: Fix panelKey identity-fragility trong `overlaySlot()` (2026-07-27)
+
+- **Bug**: `overlaySlot()` dùng `ValueKey(panel)` — key theo *instance identity*
+  của widget `panel`, không phải theo "dialog nào đang hiện". Vì mọi call site
+  (`_Overlay`, `_AchievementUnlockOverlay`, `BossRushScreen`) đều gọi lại
+  `NeonDialog.panel(...)` (tạo instance mới) mỗi lần `Obx`/`setState` rebuild
+  trong lúc dialog vẫn đang mở cùng nội dung, `AnimatedSwitcher` hiểu nhầm là
+  "dialog khác" mỗi rebuild → replay animation liên tục dù không có gì đổi.
+- **Fix**: `overlaySlot()` (`lib/presentation/widgets/neon_dialog.dart`) thêm
+  tham số `Object? panelKey`, dùng `KeyedSubtree(key: ValueKey(panelKey),
+  child: panel)` thay vì `ValueKey(panel)`. Caller tự chọn 1 giá trị ổn định
+  đại diện "dialog nào": `_Overlay` dùng `GameUi` enum, `_AchievementUnlockOverlay`
+  dùng achievement id, `BossRushScreen` dùng cờ bool `_confirmingQuit` — cả 3
+  đã cập nhật call site truyền `panelKey`.
+- **Gotcha khi viết test**: `ValueKey(panelKey)` bên trong `overlaySlot` luôn
+  suy ra generic `ValueKey<Object?>` (vì tham số khai báo kiểu `Object?`),
+  trong khi `const ValueKey('x')` viết trực tiếp trong test suy ra
+  `ValueKey<String>` — Dart coi 2 generic instantiation này khác `runtimeType`
+  nên `==` luôn `false` dù cùng value. Test phải so khớp theo `.value` (ví dụ
+  `find.byWidgetPredicate((w) => w is KeyedSubtree && w.key is ValueKey &&
+  (w.key as ValueKey).value == 'x')`), không dùng `find.byKey(ValueKey(...))`
+  trực tiếp. Ngoài ra `find.byType(KeyedSubtree)` cũng không dùng được vì
+  `AnimatedSwitcher` tự bọc thêm 1 `KeyedSubtree` nội bộ (key số
+  `_childNumber`) quanh mỗi transition.
+- Test: `test/widget/neon_dialog_test.dart` — 2 case mới chứng minh: (1)
+  `panelKey` giữ nguyên qua rebuild dù `panel` là instance mới →
+  `tester.binding.transientCallbackCount == 0` (không animation nào chạy,
+  chứng minh không replay); (2) `panelKey` đổi giá trị → `transientCallbackCount
+  > 0` (animation crossfade thực sự chạy) rồi `pumpAndSettle` xác nhận dialog
+  cũ biến mất, dialog mới còn lại đúng nội dung.
+  `test/widget/boss_rush_screen_test.dart` — 1 case integration-style: mở dialog
+  quit → huỷ → mở lại lần 2 trên luồng thật (không mock `overlaySlot`), xác
+  nhận nội dung đúng và không có exception (dùng `pump(duration)` cố định
+  thay `pumpAndSettle` vì Flame `GameWidget` chạy ticker liên tục khiến
+  `pumpAndSettle` không bao giờ ổn định trong lúc "playing"). `flutter analyze`
+  0 issues, `flutter test --exclude-tags slow` xanh toàn bộ 604 test.
+
+## ✅ Implemented: Fix bố cục lệch 3+3+1 trong mode dialog thành 4+3 (2026-07-27)
+
+- **Bug**: `_showModesDialog()` (`home_screen.dart`) hiện 7 mode tile trong 1
+  `Wrap` — với `NeonIconButton(boxed: true)` cố định 60x60px mỗi tile, panel
+  width `NeonTheme.s24` spacing chỉ đủ chỗ cho 3 tile/hàng → bố cục lệch
+  3+3+1 (hàng cuối chỉ 1 tile, mất cân đối).
+- **Gotcha dp-math trên device thật**: lần sửa đầu (spacing giảm còn
+  `NeonTheme.s8`, label width 64) KHÔNG đủ vì tính nhầm ngân sách bề rộng khả
+  dụng — quên rằng `margin: EdgeInsets.symmetric(horizontal: NeonTheme.s24)`
+  của `NeonDialog.panel()` nằm NGOÀI `Container` bị giới hạn `maxWidth: 360`,
+  và trên máy test (Samsung S24 Ultra, `wm density` 480 → dpr 3.0) bề rộng
+  logic màn hình đúng bằng 360dp — 1 sự trùng hợp khiến panel không bao giờ
+  đạt được `maxWidth` danh nghĩa, panel thực tế chỉ rộng `360 - 48 (margin)
+  = 312dp`, trừ tiếp `padding s24 + border 4` mỗi bên → nội dung khả dụng
+  thực = 256dp (không phải ~304dp như tính ban đầu). `NeonIconButton(boxed:
+  true)` là `Container(width: 60, height: 60)` cố định bất kể tham số `size`
+  truyền vào — đây là sàn cứng, không thể thu nhỏ thêm.
+- **Fix**: `home_screen.dart` — `Wrap.spacing` giảm còn `NeonTheme.s8 / 2`
+  (4.0, tái dùng const có sẵn thay vì số ma thuật mới); label `SizedBox`
+  width giảm còn 60 (khớp sàn cứng của icon, thu nhỏ thêm dưới 60 không có
+  lợi vì `Column` luôn co theo con rộng nhất). `4×60 + 3×4 = 252dp ≤ 256dp`
+  → đủ chỗ 4 tile/hàng, còn 3 tile hàng dưới.
+- **Regression phụ**: label dài nhất "Chế độ Đấu thời gian"
+  (`mode_time_attack_label`) cần 3 dòng ở bề rộng 60dp mới nhưng `maxLines: 2`
+  làm ellipsis cắt cụt giữa chữ. Fix: `maxLines: 2` → `3` (đơn giản hơn chỉnh
+  font-size; `Wrap.runSpacing` tự co giãn hàng cao hơn cho riêng tile này mà
+  không phá layout các hàng khác).
+- Verify: build+install lại trên Samsung S24 Ultra (`R5CX613VZBR`, thiết bị
+  duy nhất kết nối) sau mỗi lần sửa vì không có `flutter run` hot-reload nào
+  đang chạy — chụp screenshot xác nhận bố cục 4+3 đúng, không tràn/cắt, cả 7
+  label đọc đầy đủ. `flutter analyze` 0 issues, `flutter test --exclude-tags
+  slow` xanh toàn bộ 604 test.

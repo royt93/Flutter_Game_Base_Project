@@ -15,6 +15,9 @@ class NeonDialogAction {
   });
 }
 
+const _kDialogDuration = Duration(milliseconds: 220);
+const _kDialogCurve = Curves.easeOutBack;
+
 class NeonDialog {
   /// Panel hình ảnh thuần (không route) — dùng được cho cả overlay trong game
   /// (render TRÊN GameWidget của Flame) lẫn route dialog.
@@ -85,7 +88,7 @@ class NeonDialog {
           Row(
             children: [
               for (final a in actions) ...[
-                Expanded(child: _DialogButton(action: a)),
+                Expanded(child: NeonDialogButton(action: a)),
                 if (a != actions.last) const SizedBox(width: NeonTheme.s16),
               ],
             ],
@@ -124,12 +127,14 @@ class NeonDialog {
           ),
         )
         .toList();
-    dlog('NeonDialog.show CALL title=$title (showDialog native)');
-    return showDialog<T>(
+    dlog('NeonDialog.show CALL title=$title (showGeneralDialog native)');
+    return showGeneralDialog<T>(
       context: context,
       barrierDismissible: dismissible,
       barrierColor: Colors.black.withValues(alpha: 0.6),
-      builder: (_) => Dialog(
+      barrierLabel: title,
+      transitionDuration: _kDialogDuration,
+      pageBuilder: (_, _, _) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: EdgeInsets.zero,
         child: panel(
@@ -141,6 +146,18 @@ class NeonDialog {
           icon: icon,
         ),
       ),
+      transitionBuilder: (context, animation, secondary, child) =>
+          FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: CurvedAnimation(
+                parent: animation,
+                curve: _kDialogCurve,
+                reverseCurve: Curves.easeIn,
+              ),
+              child: child,
+            ),
+          ),
     );
   }
 
@@ -173,11 +190,61 @@ class NeonDialog {
       ],
     );
   }
+
+  /// Slot overlay LUÔN mount (không bọc `if` bên ngoài) — cho phép animate cả
+  /// vào lẫn ra. [panel] null nghĩa là ẩn (barrier fade ra, panel biến mất
+  /// qua [AnimatedSwitcher]); barrier tách riêng khỏi [AnimatedSwitcher] của
+  /// panel để tránh double-dim khi cross-fade giữa 2 dialog liên tiếp.
+  ///
+  /// [panelKey] xác định danh tính logic của [panel] (ví dụ enum trạng thái,
+  /// id, hoặc điều kiện bool) — dùng để [AnimatedSwitcher] biết khi nào là
+  /// "dialog khác" (cần replay animation) so với "vẫn dialog cũ, chỉ rebuild"
+  /// (không replay). Không truyền thì mọi panel non-null coi là cùng 1 trạng
+  /// thái (an toàn nhưng không phân biệt được đổi từ dialog A sang dialog B).
+  static Widget overlaySlot({
+    required Widget? panel,
+    VoidCallback? onBarrier,
+    Object? panelKey,
+  }) {
+    return Stack(
+      children: [
+        AnimatedOpacity(
+          duration: _kDialogDuration,
+          opacity: panel == null ? 0 : 1,
+          child: IgnorePointer(
+            ignoring: panel == null,
+            child: GestureDetector(
+              onTap: onBarrier,
+              child: Container(color: Colors.black.withValues(alpha: 0.6)),
+            ),
+          ),
+        ),
+        Center(
+          child: AnimatedSwitcher(
+            duration: _kDialogDuration,
+            switchInCurve: _kDialogCurve,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(scale: animation, child: child),
+            ),
+            child: panel == null
+                ? const SizedBox.shrink(key: ValueKey('empty'))
+                : KeyedSubtree(key: ValueKey(panelKey), child: panel),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _DialogButton extends StatelessWidget {
+/// Nút hành động dùng chung trong [NeonDialog.panel] — public để các dialog
+/// tự viết (login streak, weekly goal...) nhúng lại 1 nút reactive đơn lẻ vào
+/// `content:` khi cần label/onTap đổi theo state mà không thể dùng `actions:`
+/// tĩnh của [NeonDialog.show].
+class NeonDialogButton extends StatelessWidget {
   final NeonDialogAction action;
-  const _DialogButton({required this.action});
+  const NeonDialogButton({super.key, required this.action});
 
   @override
   Widget build(BuildContext context) {

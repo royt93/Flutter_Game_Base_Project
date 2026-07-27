@@ -118,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
       icon: Icons.sports_esports_rounded,
       content: Wrap(
         alignment: WrapAlignment.center,
-        spacing: NeonTheme.s16,
+        spacing: NeonTheme.s8 / 2,
         runSpacing: NeonTheme.s16,
         children: [
           _modeTile(
@@ -224,11 +224,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 4),
         SizedBox(
-          width: 72,
+          width: 60,
           child: Text(
             label,
             textAlign: TextAlign.center,
-            maxLines: 2,
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: NeonTheme.inkSoft,
