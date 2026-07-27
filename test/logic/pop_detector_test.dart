@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pop_star_blast/logic/pop_detector.dart';
+import 'package:pop_star_blast/logic/wildcard_tile.dart';
 
 void main() {
   group('findConnectedGroup', () {
@@ -85,6 +86,57 @@ void main() {
       ];
       final group = findConnectedGroup(grid, 0, 0, lockGrid: lockGrid);
       expect(group, {Point(0, 0), Point(0, 1), Point(0, 2)});
+    });
+
+    test('I46: wildcard liền kề bị nổ chung nhóm màu khi tap vào màu', () {
+      final grid = [
+        [0, wildcardTileValue, 0],
+      ];
+      final group = findConnectedGroup(grid, 0, 0);
+      expect(group, {Point(0, 0), Point(0, 1), Point(0, 2)});
+    });
+
+    test(
+      'I46: tap trực tiếp vào wildcard mượn màu ô liền kề, gộp đúng nhóm',
+      () {
+        final grid = [
+          [0, wildcardTileValue, 0],
+        ];
+        final group = findConnectedGroup(grid, 0, 1);
+        expect(group, {Point(0, 0), Point(0, 1), Point(0, 2)});
+      },
+    );
+
+    test(
+      'I46: tap vào wildcard cô lập (không có màu liền kề) trả về size 1',
+      () {
+        final grid = [
+          [-1, wildcardTileValue, -1],
+        ];
+        final group = findConnectedGroup(grid, 0, 1);
+        expect(group, {Point(0, 1)});
+      },
+    );
+
+    test('I46: wildcard không làm cầu nối 2 nhóm màu khác nhau thành 1', () {
+      final grid = [
+        [0, 0, wildcardTileValue, 1, 1],
+      ];
+      final groupFromLeft = findConnectedGroup(grid, 0, 0);
+      expect(groupFromLeft, {Point(0, 0), Point(0, 1), Point(0, 2)});
+      expect(groupFromLeft.contains(Point(0, 3)), isFalse);
+
+      final groupFromRight = findConnectedGroup(grid, 0, 4);
+      expect(groupFromRight, {Point(0, 2), Point(0, 3), Point(0, 4)});
+      expect(groupFromRight.contains(Point(0, 0)), isFalse);
+    });
+
+    test('I46: 2 wildcard liền kề nhau, không màu nào — tap giữ size 1', () {
+      final grid = [
+        [wildcardTileValue, wildcardTileValue],
+      ];
+      final group = findConnectedGroup(grid, 0, 0);
+      expect(group, {Point(0, 0)});
     });
   });
 

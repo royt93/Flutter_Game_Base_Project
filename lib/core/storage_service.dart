@@ -67,6 +67,9 @@ class StorageKeys {
   // F12 Endless mode: điểm cao nhất (biệt lập campaign/time-attack).
   static const String endlessBest = 'endless_best';
 
+  // I47 Mirror Mode: điểm cao nhất (biệt lập các mode khác).
+  static const String mirrorModeBest = 'mirror_mode_best';
+
   // F13 Daily Challenge: ngày + điểm đã ghi nhận lần gần nhất (1 lượt/ngày).
   static const String lastDailyChallengeDay = 'last_daily_challenge_day';
   static const String dailyChallengeScore = 'daily_challenge_score';
@@ -87,6 +90,10 @@ class StorageKeys {
   static const String boardsFullyCleared = 'boards_fully_cleared';
   static const String totalBoostersUsed = 'total_boosters_used';
   static const String unlockedAchievements = 'unlocked_achievements';
+
+  // I36 Achievement Titles: id achievement đang chọn làm danh hiệu hiển thị
+  // cạnh tên (rỗng = không có danh hiệu).
+  static const String activeAchievementTitleId = 'active_achievement_title_id';
 
   // I27 Prestige/New Game+: tier hiện tại (0 = chưa prestige); đã hoàn
   // thành level cuối (220) ít nhất 1 lần ở tier hiện tại chưa (điều kiện mở
@@ -121,6 +128,29 @@ class StorageKeys {
   // I54 Combo Text Style: id style chữ combo-milestone đang chọn (mặc định
   // 'neon').
   static const String activeComboTextStyle = 'active_combo_text_style';
+
+  // I50 Weekly Goal Card: tiến độ cộng dồn tuần hiện tại, chỉ số tuần
+  // (`epochDay ~/ 7`) của lần cập nhật cuối, và chỉ số tuần đã nhận thưởng
+  // (chống nhận 2 lần cùng tuần).
+  static const String weeklyGoalProgress = 'weekly_goal_progress';
+  static const String weeklyGoalWeek = 'weekly_goal_week';
+  static const String weeklyGoalClaimedWeek = 'weekly_goal_claimed_week';
+
+  // I33 Daily Modifier Gauntlet: ngày + điểm đã ghi nhận lần gần nhất (1
+  // lượt/ngày, giống lastDailyChallengeDay/dailyChallengeScore).
+  static const String lastGauntletDay = 'last_gauntlet_day';
+  static const String gauntletScore = 'gauntlet_score';
+
+  // I38 Weekly Featured Level: tuần (epochDay ~/ 7) của best score đang lưu +
+  // best score đó — không dùng highScore(levelId) vì mục đích khác campaign
+  // thường (không giới hạn số lần chơi, reset mỗi tuần vì level tuần đổi).
+  static const String lastFeaturedWeekSeen = 'last_featured_week_seen';
+  static const String featuredLevelScore = 'featured_level_score';
+
+  // I51 Board Frame Cosmetics: id khung viền board đang chọn (mặc định
+  // 'classic') — không persist "đã mở khoá" vì suy trực tiếp từ prestigeTier
+  // (I27) + unlockedAchievements (I22) đã có sẵn.
+  static const String activeBoardFrame = 'active_board_frame';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

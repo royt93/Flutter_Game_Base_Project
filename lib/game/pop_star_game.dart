@@ -16,16 +16,21 @@ import '../core/neon_theme.dart';
 import '../data/burst_styles.dart';
 import '../data/combo_milestones.dart';
 import '../data/levels.dart';
+import '../data/mirror_board.dart';
 import '../logic/boss_tile.dart';
 import '../logic/chain_tile.dart';
+import '../logic/countdown_lock_tile.dart';
 import '../logic/gift_tile.dart';
 import '../logic/obstacle.dart';
 import '../logic/pop_collapse.dart';
 import '../logic/pop_detector.dart';
 import '../logic/power_tile.dart';
+import '../logic/time_freeze_tile.dart';
+import '../logic/wildcard_tile.dart';
 import '../core/storage_service.dart';
 import '../presentation/controllers/boss_rush_controller.dart';
 import '../presentation/controllers/game_controller.dart';
+import '../presentation/controllers/game_screen_controller.dart';
 import 'block_component.dart';
 
 /// G7: viền neon chạy quanh biên nhóm đang preview (G1). Biên = cạnh ngoài
@@ -205,6 +210,12 @@ class PopStarGame extends FlameGame {
   /// xem `lib/logic/boss_tile.dart`. Rỗng nếu màn không có boss tile.
   final Map<int, int> bossHp = {};
   Map<int, int>? _undoBossHp;
+
+  /// I45: số lượt tap còn lại từng Countdown Lock trên bàn (id → còn bấy
+  /// nhiêu lượt) — mirror cấu trúc [bossHp] nhưng giảm theo lượt tap, không
+  /// theo pop-kề-cạnh. Rỗng nếu màn không có Countdown Lock.
+  final Map<int, int> countdownRemaining = {};
+  Map<int, int>? _undoCountdownRemaining;
   late final Random _rng = Random(seed);
 
   /// F10: > 0 nghĩa freeze đang hiệu lực — obstacle không giảm bền, mỗi lần
@@ -265,6 +276,8 @@ class PopStarGame extends FlameGame {
     _placeObstaclesIfNeeded(level);
     _placeChainLocksIfNeeded(level);
     _placeGiftsIfNeeded(level);
+    _placeCountdownLockTileIfNeeded(level);
+    _placeWildcardTileIfNeeded(level);
     controller.activeGame = this;
     _layout();
     // ponytail: không await — toImage() có thể không hoàn tất trong widget
@@ -355,6 +368,49 @@ class PopStarGame extends FlameGame {
     for (final idx in candidates.take(count)) {
       colorGrid[idx ~/ cols][idx % cols] = giftTileValue;
     }
+  }
+
+  /// I45: ~18% cơ hội 1 ô Countdown Lock ở world ≥4 (level > 60), campaign
+  /// only — side-mode dùng `level.id` âm/đặc biệt nên tự loại, giống
+  /// [_placeObstaclesIfNeeded] không cần check `controller.mode`. Né ô đã là
+  /// obstacle/chain-lock/gift/boss, giống [_placeGiftsIfNeeded].
+  static const double _countdownLockChance = 0.18;
+
+  void _placeCountdownLockTileIfNeeded(PopLevel level) {
+    if (level.id <= 60) return;
+    if (_rng.nextDouble() >= _countdownLockChance) return;
+    final candidates = [
+      for (var idx = 0; idx < rows * cols; idx++)
+        if ((colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0 &&
+            lockGrid[idx ~/ cols][idx % cols] == 0)
+          idx,
+    ]..shuffle(_rng);
+    if (candidates.isEmpty) return;
+    final idx = candidates.first;
+    colorGrid[idx ~/ cols][idx % cols] = countdownLockIdBase;
+    countdownRemaining[countdownLockIdBase] = countdownLockStartValue;
+  }
+
+  /// I46: ~15% cơ hội 1 ô Wildcard, campaign only (mọi world) — side-mode
+  /// dùng `level.id` <= 0 nên tự loại, giống [_placeCountdownLockTileIfNeeded].
+  /// Né ô đã là obstacle/chain-lock/gift/boss/countdown-lock, giống
+  /// [_placeGiftsIfNeeded] (mọi giá trị đặc biệt đều âm nên check `>= 0` đủ
+  /// loại hết). Không cần state map riêng — wildcard chỉ là 1 giá trị mã hoá
+  /// cố định trong `colorGrid`, không có số đếm/HP đi kèm.
+  static const double _wildcardTileChance = 0.15;
+
+  void _placeWildcardTileIfNeeded(PopLevel level) {
+    if (level.id <= 0) return;
+    if (_rng.nextDouble() >= _wildcardTileChance) return;
+    final candidates = [
+      for (var idx = 0; idx < rows * cols; idx++)
+        if ((colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0 &&
+            lockGrid[idx ~/ cols][idx % cols] == 0)
+          idx,
+    ]..shuffle(_rng);
+    if (candidates.isEmpty) return;
+    final idx = candidates.first;
+    colorGrid[idx ~/ cols][idx % cols] = wildcardTileValue;
   }
 
   @override
@@ -535,7 +591,28 @@ class PopStarGame extends FlameGame {
 
   void _tryPop(int row, int col) {
     final group = findConnectedGroup(colorGrid, row, col, lockGrid: lockGrid);
-    if (group.length < 2) return;
+    if (group.length < 2) {
+      // I44: ô Time Freeze tap lẻ loi (không cần gộp nhóm ≥2) vẫn kích hoạt
+      // +10s rồi biến mất, tái dùng nguyên hiệu ứng nổ/rơi của 1 ô thường.
+      if (_blocks[row][col]?.timeFreezeTagged == true) {
+        _blocks[row][col]!.timeFreezeTagged = false;
+        _triggerTimeFreeze();
+        _clearAndCollapse({Point(row, col)});
+      }
+      return;
+    }
+    // I44: ô Time Freeze pop chung trong 1 nhóm màu ≥2 vẫn kích hoạt +10s
+    // (tối đa 1 ô được tag/bàn nên chỉ có thể trúng đúng 1 ô trong group).
+    for (final p in group) {
+      if (_blocks[p.x][p.y]?.timeFreezeTagged == true) {
+        _blocks[p.x][p.y]!.timeFreezeTagged = false;
+        _triggerTimeFreeze();
+      }
+    }
+    // I45: mỗi lượt tap hợp lệ (nhóm ≥2, bất kể có đụng Countdown Lock hay
+    // không) giảm 1 mọi Countdown Lock trên bàn — khác cơ chế chip-theo-kề
+    // của obstacle/boss/chain lock.
+    _tickCountdownLockTiles();
     _hapticForGroupSize(group.length);
     AudioManager.maybe?.playMelodic(
       combo: group.length,
@@ -554,7 +631,8 @@ class PopStarGame extends FlameGame {
     final gained = isReplay
         ? adjustedScore
         : controller.registerPop(adjustedScore, groupSize: group.length);
-    _comboTimer = GameController.comboWindow;
+    _comboTimer =
+        controller.gauntletComboWindowOverride ?? GameController.comboWindow;
     final gemColor = NeonTheme
         .gemColors[(colorGrid[row][col] ?? 0) % NeonTheme.gemColors.length];
     _spawnScorePopup(
@@ -634,16 +712,23 @@ class PopStarGame extends FlameGame {
     }
   }
 
-  /// I11: rung xúc giác theo cỡ nhóm vừa nổ.
-  void _hapticForGroupSize(int size) {
-    if (size >= 8) {
-      fireHaptic(HapticLevel.heavy);
-    } else if (size >= 4) {
-      fireHaptic(HapticLevel.medium);
-    } else {
-      fireHaptic(HapticLevel.light);
+  /// I45: giảm 1 mọi Countdown Lock trên bàn; hết giờ (0) thì chuyển ô đó
+  /// thành obstacle thường (durability 1) — chỉ 1 cell/id vì mỗi màn tối đa
+  /// 1 instance (xem [_placeCountdownLockTileIfNeeded]).
+  void _tickCountdownLockTiles() {
+    if (countdownRemaining.isEmpty) return;
+    final expiredId = tickCountdownLockTiles(countdownRemaining);
+    if (expiredId == null) return;
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        if (colorGrid[r][c] == expiredId) colorGrid[r][c] = -1;
+      }
     }
   }
+
+  /// I11: rung xúc giác theo cỡ nhóm vừa nổ.
+  void _hapticForGroupSize(int size) =>
+      fireHaptic(hapticLevelForGroupSize(size));
 
   /// F6a/I2: đồng bộ `colorIndex` (obstacle bị chip) và `lockCount` (chain
   /// tile bị chip/mở khoá) sau khi `colorGrid`/`lockGrid` đổi — component
@@ -657,6 +742,11 @@ class PopStarGame extends FlameGame {
         // I29: HP không mã hoá trong colorGrid (chỉ mã ID) nên cần đồng bộ
         // riêng từ [bossHp] để BlockComponent hiển thị số HP còn lại.
         if (isBossTileId(v)) _blocks[r][c]?.bossHp = bossHp[v];
+        // I45: đếm ngược không mã hoá trong colorGrid (chỉ mã ID) nên cần
+        // đồng bộ riêng từ [countdownRemaining], giống pattern bossHp ở trên.
+        _blocks[r][c]?.countdownDisplay = isCountdownLockId(v)
+            ? countdownRemaining[v]
+            : null;
         _blocks[r][c]?.lockCount = lockGrid[r][c];
       }
     }
@@ -727,7 +817,8 @@ class PopStarGame extends FlameGame {
             scoreForGroup(cells.length) * (resonant.isEmpty ? 1 : 2),
             groupSize: cells.length,
           );
-    _comboTimer = GameController.comboWindow;
+    _comboTimer =
+        controller.gauntletComboWindowOverride ?? GameController.comboWindow;
     final gemColor = NeonTheme
         .gemColors[(colorGrid[row][col] ?? 0) % NeonTheme.gemColors.length];
     _spawnScorePopup(
@@ -1149,10 +1240,47 @@ class PopStarGame extends FlameGame {
         removeOnFinish: true,
         onTick: () {
           _animating = false;
+          _maybeTagTimeFreezeTile();
           _checkEnd();
         },
       ),
     );
+  }
+
+  /// I44: sau mỗi lần collapse hoàn tất, có xác suất nhỏ gắn tag Time Freeze
+  /// lên 1 ô màu hợp lệ — chỉ ở Time Attack, tối đa 1 ô/bàn, né ô đang có
+  /// hiệu ứng đặc biệt khác (obstacle/gift/boss/lockGrid/powerKind).
+  void _maybeTagTimeFreezeTile() {
+    if (controller.mode.value != GameMode.timeAttack) return;
+    final alreadyTagged = _blocks.any(
+      (row) => row.any((b) => b?.timeFreezeTagged == true),
+    );
+    final candidates = <int>[
+      for (var idx = 0; idx < rows * cols; idx++)
+        if ((colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0 &&
+            lockGrid[idx ~/ cols][idx % cols] == 0 &&
+            _blocks[idx ~/ cols][idx % cols]?.powerKind == null)
+          idx,
+    ];
+    if (candidates.isEmpty) return;
+    if (!shouldTagTimeFreezeTile(
+      isTimeAttack: true,
+      alreadyTagged: alreadyTagged,
+      rng: _rng,
+    )) {
+      return;
+    }
+    final idx = candidates[_rng.nextInt(candidates.length)];
+    _blocks[idx ~/ cols][idx % cols]?.timeFreezeTagged = true;
+  }
+
+  /// I44: side-effect độc lập với score/combo — cộng +10s vào đồng hồ Time
+  /// Attack. `PopStarGame` không giữ tham chiếu `GameScreenController` nên
+  /// cần `Get.find` (tương tự cách I43 gọi `Get.find<BossRushController>()`);
+  /// an toàn vì chỉ được gọi khi ô đã tag, và ô chỉ được tag ở Time Attack —
+  /// mode duy nhất luôn đăng ký `GameScreenController` trước khi vào game.
+  void _triggerTimeFreeze() {
+    Get.find<GameScreenController>().remainingSeconds.value += 10;
   }
 
   /// Popup "+điểm" (kèm "xN" nếu combo) bay lên rồi biến mất tại ô vừa tap.
@@ -1479,9 +1607,18 @@ class PopStarGame extends FlameGame {
         ..clear()
         ..addAll(savedBossHp);
     }
+    // I45: khôi phục Countdown Lock đúng thời điểm snapshot, mirror pattern
+    // bossHp ở trên.
+    final savedCountdown = _undoCountdownRemaining;
+    if (savedCountdown != null) {
+      countdownRemaining
+        ..clear()
+        ..addAll(savedCountdown);
+    }
     _undoGrid = null;
     _undoLockGrid = null;
     _undoBossHp = null;
+    _undoCountdownRemaining = null;
     // A9: tái dùng animateIntro cho hoàn tác, tránh bàn snap tức thì.
     _rebuildBoard(animateIntro: true);
     return true;
@@ -1491,6 +1628,7 @@ class PopStarGame extends FlameGame {
     _undoGrid = colorGrid.map((row) => List<int?>.from(row)).toList();
     _undoLockGrid = lockGrid.map((row) => List<int>.from(row)).toList();
     _undoBossHp = Map<int, int>.from(bossHp);
+    _undoCountdownRemaining = Map<int, int>.from(countdownRemaining);
   }
 
   void _checkEnd() {
@@ -1554,6 +1692,17 @@ class PopStarGame extends FlameGame {
       }
       return;
     }
+    // I47 Mirror Mode: dọn sạch → bàn mới đối xứng gương, giữ nguyên điểm
+    // (mirror [GameMode.endless], bàn không ramp độ khó vì [kMirrorModeLevel]
+    // cố định); kẹt hẳn mới dừng ván thật.
+    if (controller.mode.value == GameMode.mirrorMode) {
+      if (remaining == 0) {
+        _nextMirrorBoard();
+      } else if (stuck) {
+        controller.checkEnd(false);
+      }
+      return;
+    }
     // I43: Boss Rush — dọn sạch thì sang bàn boss kế (stage tăng, chuỗi giữ
     // nguyên điểm/streak); kẹt hẳn mới dừng chuỗi thật (checkEnd(false) tự
     // fallthrough đúng ở [GameController.checkEnd], [BossRushController]
@@ -1599,6 +1748,21 @@ class PopStarGame extends FlameGame {
     );
     lockGrid = List.generate(rows, (_) => List.generate(cols, (_) => 0));
     _layout();
+    _rebuildBoard();
+  }
+
+  /// I47 Mirror Mode: bàn kế tiếp — kích thước cố định ([kMirrorModeLevel])
+  /// nên không cần [_layout] lại như [_nextEndlessBoard], chỉ regenerate màu
+  /// đối xứng gương như [_refillBoard].
+  void _nextMirrorBoard() {
+    final level = controller.currentLevel;
+    colorGrid = generateMirrorBoard(
+      level.rows,
+      level.cols,
+      level.colorCount,
+      _rng,
+    ).map((row) => List<int?>.of(row)).toList();
+    lockGrid = List.generate(rows, (_) => List.generate(cols, (_) => 0));
     _rebuildBoard();
   }
 
@@ -1661,6 +1825,11 @@ class PopStarGame extends FlameGame {
           // `_syncObstacleAndLockBlocks` (chỉ chạy sau chip-hook) — tránh
           // hiển thị sai (thiếu số HP) ngay sau khi vào màn/undo/replay.
           bossHp: isBossTileId(color) ? bossHp[color] : null,
+          // I45: gán số đếm ngược ngay lúc dựng block, cùng lý do với bossHp
+          // ở trên — tránh thiếu số ngay sau khi vào màn/undo/replay.
+          countdownDisplay: isCountdownLockId(color)
+              ? countdownRemaining[color]
+              : null,
           position: animateIntro
               ? _introStart(r, c, target, direction)
               : target,

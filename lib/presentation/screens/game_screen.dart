@@ -81,12 +81,17 @@ class GameScreen extends StatelessWidget {
                                   NeonTheme.s8,
                                   NeonTheme.s16,
                                 ),
+                                // I51: khung viền board cosmetic, thuần
+                                // trang trí — không ảnh hưởng gameplay.
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.25),
                                   borderRadius: BorderRadius.circular(26),
                                   border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.5),
-                                    width: 2,
+                                    color: gameCtrl.activeBoardFrame.color,
+                                    width: 3,
+                                  ),
+                                  boxShadow: NeonTheme.glow(
+                                    gameCtrl.activeBoardFrame.color,
                                   ),
                                 ),
                                 clipBehavior: Clip.antiAlias,
@@ -260,6 +265,22 @@ class _Hud extends StatelessWidget {
                           const SizedBox(height: NeonTheme.s8),
                           Text(
                             'Best ${gameCtrl.endlessBest.value}',
+                            style: TextStyle(
+                              color: NeonTheme.inkSoft,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    if (gameCtrl.mode.value == GameMode.mirrorMode) {
+                      return Column(
+                        children: [
+                          scoreText,
+                          const SizedBox(height: NeonTheme.s8),
+                          Text(
+                            'Best ${gameCtrl.mirrorModeBest.value}',
                             style: TextStyle(
                               color: NeonTheme.inkSoft,
                               fontSize: 12,
@@ -916,6 +937,12 @@ class _Overlay extends StatelessWidget {
                       'recorded': '${gameCtrl.dailyChallengeScoreToday}',
                     })
                   : 'no_moves_retry_msg'.tr,
+              // I37 Async Challenge Code: hiện kết quả so điểm thách đấu dù
+              // màn kết thúc thắng/thua bình thường — chỉ campaign mới có
+              // activeChallenge (startChallenge luôn gọi startLevel).
+              content: gameCtrl.activeChallenge.value != null
+                  ? _challengeResultBanner(gameCtrl)
+                  : null,
               actions: [
                 NeonDialogAction(
                   label: 'menu'.tr,
@@ -935,6 +962,57 @@ class _Overlay extends StatelessWidget {
         return const SizedBox.shrink();
     }
   }
+}
+
+/// I32 Craft Booster: icon/màu/nhãn hiển thị theo loại booster quy đổi được
+/// — mirror đúng icon/màu của [_BoosterButton] tương ứng trong HUD.
+IconData _craftBoosterIcon(String type) => switch (type) {
+  'bomb' => Icons.dangerous_rounded,
+  'shuffle' => Icons.shuffle_rounded,
+  _ => Icons.undo_rounded,
+};
+
+Color _craftBoosterColor(String type) => switch (type) {
+  'bomb' => NeonTheme.orange,
+  'shuffle' => NeonTheme.lime,
+  _ => NeonTheme.purple,
+};
+
+String _craftBoosterLabel(String type) => switch (type) {
+  'bomb' => 'booster_bomb_label'.tr,
+  'shuffle' => 'shuffle'.tr,
+  _ => 'booster_undo_label'.tr,
+};
+
+/// I37 Async Challenge Code: banner so điểm với [GameController.activeChallenge]
+/// — dùng chung ở cả overlay thắng và thua vì kết quả thách đấu độc lập với
+/// sao/coin bình thường (xem [GameController.checkEnd]).
+Widget _challengeResultBanner(GameController gameCtrl) {
+  final challenge = gameCtrl.activeChallenge.value!;
+  final won = gameCtrl.challengeWon.value ?? false;
+  return Container(
+    padding: const EdgeInsets.symmetric(
+      horizontal: NeonTheme.s16,
+      vertical: NeonTheme.s8,
+    ),
+    decoration: BoxDecoration(
+      color: (won ? NeonTheme.lime : NeonTheme.orange).withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: Text(
+      (won ? 'challenge_result_win_label' : 'challenge_result_lose_label')
+          .trParams({
+            'sender': challenge.senderName,
+            'score': '${challenge.score}',
+          }),
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        color: won ? NeonTheme.lime : NeonTheme.orange,
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+  );
 }
 
 /// Chuỗi hiệu ứng thắng (A5): sao hiện lần lượt 1→2→3, rồi điểm đếm dần, rồi
@@ -1079,9 +1157,28 @@ class _WinChoreographyState extends State<_WinChoreography> {
                         semanticLabel: 'share_replay'.tr,
                       ),
                     ],
+                    // I37: thách đấu bạn bè bằng đúng điểm vừa đạt.
+                    const SizedBox(width: NeonTheme.s8),
+                    NeonIconButton(
+                      Icons.emoji_events_rounded,
+                      color: NeonTheme.gold,
+                      size: 20,
+                      onTap: widget.gsc.shareChallenge,
+                      semanticLabel: 'share_challenge'.tr,
+                    ),
                   ],
                 ),
               ),
+              // I37 Async Challenge Code: hiện kết quả so điểm thách đấu dù
+              // thắng/thua — độc lập với sao/coin bình thường.
+              if (gameCtrl.activeChallenge.value != null) ...[
+                const SizedBox(height: NeonTheme.s8),
+                AnimatedOpacity(
+                  opacity: _scoreShown ? 1 : 0,
+                  duration: const Duration(milliseconds: 250),
+                  child: _challengeResultBanner(gameCtrl),
+                ),
+              ],
               // Task #5: badge Perfect Clear — chỉ hiện khi thắng thử thách
               // vượt best score, dùng chung choreography opacity với score.
               if (gameCtrl.perfectClearSuccess.value) ...[
@@ -1098,6 +1195,43 @@ class _WinChoreographyState extends State<_WinChoreography> {
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                     ),
+                  ),
+                ),
+              ],
+              // I32 Craft Booster: bàn còn sót gem đủ ngưỡng craft point khi
+              // thắng (không full-clear) → hiện "+1 <booster>"; ẩn hoàn toàn
+              // nếu không có craft reward.
+              if (gameCtrl.craftRewardType.value != null) ...[
+                const SizedBox(height: NeonTheme.s8),
+                AnimatedOpacity(
+                  opacity: _scoreShown ? 1 : 0,
+                  duration: const Duration(milliseconds: 250),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _craftBoosterIcon(gameCtrl.craftRewardType.value!),
+                        color: _craftBoosterColor(
+                          gameCtrl.craftRewardType.value!,
+                        ),
+                        size: 18,
+                      ),
+                      const SizedBox(width: NeonTheme.s8),
+                      Text(
+                        'craft_booster_reward_label'.trParams({
+                          'booster': _craftBoosterLabel(
+                            gameCtrl.craftRewardType.value!,
+                          ),
+                        }),
+                        style: TextStyle(
+                          color: _craftBoosterColor(
+                            gameCtrl.craftRewardType.value!,
+                          ),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

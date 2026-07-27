@@ -7,11 +7,13 @@ import 'package:get/get.dart';
 import '../../core/neon_theme.dart';
 import '../../data/levels.dart';
 import '../../game/pop_star_game.dart';
+import '../../logic/challenge_code.dart';
 import '../../logic/replay.dart';
 import '../controllers/game_controller.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
+import 'game_screen.dart';
 
 /// I28: dán mã ghost-replay của bạn bè để tự động xem lại y hệt ván chơi
 /// (bàn/nhóm nổ) qua [PopStarGame] chạy `isReplay: true` — chỉ xem, không
@@ -37,6 +39,10 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
   PopStarGame? _game;
   Timer? _timer;
 
+  /// I37: mã dán vào bắt đầu bằng [challengeCodePrefix] — hiện UI mời chơi
+  /// thay vì auto-play replay như mã ghost-replay bình thường.
+  ChallengeCode? _challenge;
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -60,7 +66,22 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
   );
 
   void _load() {
-    final decoded = decodeReplay(_codeCtrl.text);
+    final text = _codeCtrl.text.trim();
+    // I37: mã thách đấu dùng prefix rõ để phân biệt — không auto-play, chỉ
+    // hiện tên người gửi + điểm cần vượt, người chơi tự bấm "Chơi ngay".
+    if (text.startsWith(challengeCodePrefix)) {
+      final decoded = decodeChallengeCode(text);
+      _timer?.cancel();
+      setState(() {
+        _invalid = decoded == null;
+        _finished = false;
+        _level = null;
+        _game = null;
+        _challenge = decoded;
+      });
+      return;
+    }
+    final decoded = decodeReplay(text);
     if (decoded == null ||
         decoded.levelId < 1 ||
         decoded.levelId > kLevelCount) {
@@ -70,6 +91,7 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
         _finished = false;
         _level = null;
         _game = null;
+        _challenge = null;
       });
       return;
     }
@@ -83,8 +105,16 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
       _playIndex = 0;
       _level = level;
       _game = PopStarGame(replayCtrl, seed: decoded.seed, isReplay: true);
+      _challenge = null;
     });
     _startPlayback(decoded);
+  }
+
+  void _playChallenge() {
+    final challenge = _challenge;
+    if (challenge == null) return;
+    Get.find<GameController>().startChallenge(challenge);
+    Get.to(() => const GameScreen());
   }
 
   void _startPlayback(ReplayData data) {
@@ -169,6 +199,34 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                      if (_challenge != null) ...[
+                        Text(
+                          'challenge_invite_title'.trParams({
+                            'sender': _challenge!.senderName,
+                          }),
+                          style: TextStyle(
+                            color: NeonTheme.ink,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: NeonTheme.s8),
+                        Text(
+                          'challenge_score_to_beat_label'.trParams({
+                            'score': '${_challenge!.score}',
+                          }),
+                          style: TextStyle(color: NeonTheme.inkSoft),
+                        ),
+                        const SizedBox(height: NeonTheme.s16),
+                        Center(
+                          child: NeonButton(
+                            label: 'challenge_play_button'.tr,
+                            color: NeonTheme.gold,
+                            icon: Icons.emoji_events_rounded,
+                            onTap: _playChallenge,
+                          ),
+                        ),
+                      ],
                       if (game != null && level != null) ...[
                         const SizedBox(height: NeonTheme.s16),
                         AspectRatio(

@@ -10,13 +10,19 @@ import '../../core/utils/comeback_bonus.dart';
 import '../../core/utils/friend_code.dart';
 import '../../core/utils/weekend_event.dart';
 import '../../data/achievements.dart';
+import '../../data/board_frames.dart';
 import '../../data/burst_styles.dart';
 import '../../data/combo_text_styles.dart';
+import '../../data/gauntlet_modifiers.dart';
 import '../../data/levels.dart';
 import '../../data/lucky_color.dart';
 import '../../data/mascot_skins.dart';
 import '../../data/perks.dart';
+import '../../data/weekly_featured.dart';
+import '../../data/weekly_goal.dart';
 import '../../game/pop_star_game.dart';
+import '../../logic/challenge_code.dart';
+import '../../logic/craft_points.dart';
 import '../../logic/daily_challenge.dart';
 import '../../logic/gift_tile.dart';
 import '../../logic/login_streak.dart';
@@ -37,6 +43,9 @@ enum GameMode {
   dailyChallenge,
   puzzleLab,
   bossRush,
+  mirrorMode,
+  gauntlet,
+  weeklyFeatured,
 }
 
 /// I7: 1 ô phần thưởng trên vòng quay hằng ngày.
@@ -161,6 +170,18 @@ class GameController extends GetxController {
   /// [dailyChallengeGrid].
   List<List<int>>? puzzleLabGrid;
 
+  /// I33 Daily Modifier Gauntlet: bàn hôm nay + modifier đang áp dụng, sinh 1
+  /// lần trong [startGauntlet] — giống [dailyChallengeGrid].
+  List<List<int>>? gauntletGrid;
+  GauntletModifier? activeGauntletModifier;
+
+  /// I33: combo timer rút ngắn khi đang chơi Gauntlet với modifier
+  /// `shortCombo` — `null` ngoài mode Gauntlet để tránh giá trị cũ còn sót
+  /// lại sau khi đổi sang mode khác (xem [PopStarGame]).
+  double? get gauntletComboWindowOverride => mode.value == GameMode.gauntlet
+      ? activeGauntletModifier?.comboWindowOverride
+      : null;
+
   PopLevel get currentLevel => currentLevelRx.value!;
 
   /// Màn cao nhất đã mở khoá. Observable để LevelSelect refresh ngay khi thắng
@@ -252,6 +273,35 @@ class GameController extends GetxController {
   /// Set 1 lần khi vừa đạt mốc thành tựu mới, UI lắng nghe rồi tự clear.
   final justUnlockedAchievement = Rxn<Achievement>();
 
+  /// I36: id achievement đang chọn làm danh hiệu hiển thị cạnh [playerName]
+  /// (rỗng = không có danh hiệu).
+  final activeAchievementTitleId = ''.obs;
+
+  Achievement? get activeTitleAchievement {
+    if (activeAchievementTitleId.value.isEmpty) return null;
+    try {
+      return kAchievements.firstWhere(
+        (a) => a.id == activeAchievementTitleId.value,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> setActiveTitle(String achievementId) async {
+    if (!unlockedAchievementIds.contains(achievementId)) return;
+    activeAchievementTitleId.value = achievementId;
+    await StorageService.to.setString(
+      StorageKeys.activeAchievementTitleId,
+      achievementId,
+    );
+  }
+
+  Future<void> clearActiveTitle() async {
+    activeAchievementTitleId.value = '';
+    await StorageService.to.setString(StorageKeys.activeAchievementTitleId, '');
+  }
+
   // I30 Mascot Wardrobe: id skin đang active + set id skin đã mở khoá. Skin
   // free ("classic") luôn có mặt trong [unlockedMascotSkinIds] mặc định.
   final activeMascotSkinId = kMascotSkins.first.id.obs;
@@ -317,6 +367,33 @@ class GameController extends GetxController {
     StorageService.to.setString(StorageKeys.activeComboTextStyle, kind.name);
   }
 
+  // I51 Board Frame Cosmetics: id khung viền board đang chọn — mở khoá theo
+  // [prestigeTier]/[unlockedAchievementIds], không persist riêng "đã mở khoá"
+  // (suy trực tiếp từ state đời đã có để tránh lệch dữ liệu).
+  final activeBoardFrameId = kBoardFrames.first.id.obs;
+
+  /// Khung đang active — phòng thủ id giả mạo/hỏng trong storage bằng cách
+  /// fallback về khung đầu tiên (`classic`, luôn mở khoá) nếu không khớp id.
+  BoardFrame get activeBoardFrame => kBoardFrames.firstWhere(
+    (f) => f.id == activeBoardFrameId.value,
+    orElse: () => kBoardFrames.first,
+  );
+
+  /// Đổi khung viền board — chặn chọn khung chưa mở khoá (phòng race/giả mạo
+  /// qua storage trực tiếp). Thuần cosmetic, không ảnh hưởng điểm/xu/booster.
+  void setActiveBoardFrame(String id) {
+    final frame = kBoardFrames.firstWhere((f) => f.id == id);
+    if (!isBoardFrameUnlocked(
+      frame,
+      prestigeTier.value,
+      unlockedAchievementIds,
+    )) {
+      return;
+    }
+    activeBoardFrameId.value = id;
+    StorageService.to.setString(StorageKeys.activeBoardFrame, id);
+  }
+
   /// Task #5: điểm cần vượt khi đang trong 1 lần Perfect Clear challenge
   /// (chụp trước khi chơi, vì [_saveBestScore] sẽ ghi đè `highScore` ngay khi
   /// thắng) — null khi không phải Perfect Clear.
@@ -327,6 +404,29 @@ class GameController extends GetxController {
   final perfectClearSuccess = false.obs;
 
   static const int perfectClearBonusCoins = 50;
+
+  /// I32 Craft Booster: 'bomb'/'shuffle'/'undo' vừa quy đổi từ cell còn sót
+  /// lại cuối màn thắng (không full-clear) — null nếu không đủ ngưỡng craft
+  /// point. UI (dialog thắng) đọc rồi tự hiện dòng "+1 booster".
+  final craftRewardType = Rxn<String>();
+
+  static const int craftPointThreshold = 3;
+
+  /// I37 Async Challenge Code: mã thách đấu đang chơi (null nếu vào level
+  /// bình thường, không qua "Chơi ngay" ở màn nhập mã) — so điểm ở
+  /// [checkEnd], không ảnh hưởng coin/sao/unlock bình thường.
+  final activeChallenge = Rxn<ChallengeCode>();
+
+  /// Kết quả so điểm với [activeChallenge] khi màn kết thúc — null nếu
+  /// không có thách đấu đang chơi.
+  final challengeWon = Rxn<bool>();
+
+  /// Bắt đầu 1 level qua mã thách đấu — dùng nguyên [startLevel] (board
+  /// random bình thường, không preset/replay) rồi gắn thêm mục tiêu so điểm.
+  void startChallenge(ChallengeCode code) {
+    startLevel(code.levelId);
+    activeChallenge.value = code;
+  }
 
   /// Public: [AchievementsScreen] dùng để hiển thị tiến độ mốc chưa mở khoá.
   int metricValue(AchievementMetric m) => switch (m) {
@@ -423,6 +523,10 @@ class GameController extends GetxController {
   final endlessBest = 0.obs;
   int _endlessBoardIndex = 0;
 
+  /// I47 Mirror Mode: điểm cao nhất từng đạt (bàn đối xứng gương cố định,
+  /// không ramp độ khó — biệt lập, mirror [endlessBest]).
+  final mirrorModeBest = 0.obs;
+
   /// I18: vẽ thêm symbol theo màu lên mỗi gem — hỗ trợ người mù màu.
   final colorblindMode = false.obs;
 
@@ -447,6 +551,12 @@ class GameController extends GetxController {
   final loginStreakCount = 0.obs;
   final lastLoginEpochDay = 0.obs;
   final loginStreakClaimedMask = 0.obs;
+
+  /// I50 Weekly Goal Card: tiến độ pop gem cộng dồn xuyên suốt mọi mode
+  /// (campaign + side-mode) trong tuần hiện tại (`_todayEpochDay() ~/ 7`),
+  /// reset mỗi khi sang tuần mới. Thưởng 1 lần/tuần khi đạt [weeklyGoalTarget].
+  static const int weeklyGoalRewardCoins = 100;
+  final weeklyGoalProgress = 0.obs;
 
   @override
   void onInit() {
@@ -488,6 +598,7 @@ class GameController extends GetxController {
     dailyStreak.value = StorageService.to.getInt(StorageKeys.dailyStreak);
     timeAttackBest.value = StorageService.to.getInt(StorageKeys.timeAttackBest);
     endlessBest.value = StorageService.to.getInt(StorageKeys.endlessBest);
+    mirrorModeBest.value = StorageService.to.getInt(StorageKeys.mirrorModeBest);
     seasonPoints.value = StorageService.to.getInt(StorageKeys.seasonPoints);
     claimedSeasonMask.value = StorageService.to.getInt(
       StorageKeys.claimedSeasonMask,
@@ -516,6 +627,13 @@ class GameController extends GetxController {
           .where((s) => s.isNotEmpty)
           .toSet(),
     );
+    // I36: chỉ nhận lại danh hiệu đã lưu nếu id đó vẫn nằm trong achievement
+    // đã unlock — phòng dữ liệu cũ/giả mạo trỏ tới id chưa (hoặc không còn)
+    // được unlock.
+    final storedTitleId =
+        StorageService.to.getString(StorageKeys.activeAchievementTitleId) ?? '';
+    activeAchievementTitleId.value =
+        unlockedAchievementIds.contains(storedTitleId) ? storedTitleId : '';
     playerName.value =
         StorageService.to.getString(StorageKeys.playerName) ?? '';
     // I30 (audit fix): lọc theo id skin còn tồn tại trong kMascotSkins — id
@@ -568,8 +686,29 @@ class GameController extends GetxController {
             isComboTextStyleUnlocked(storedComboTextStyle, maxComboEver.value)
         ? storedComboTextStyle.kind
         : ComboTextStyleKind.neon;
+    // I51: validate lại theo id khung hợp lệ + điều kiện mở khoá hiện tại
+    // (phòng storage bị sửa tay trỏ khung chưa đủ điều kiện).
+    final storedFrame = kBoardFrames
+        .where(
+          (f) =>
+              f.id == StorageService.to.getString(StorageKeys.activeBoardFrame),
+        )
+        .firstOrNull;
+    activeBoardFrameId.value =
+        storedFrame != null &&
+            isBoardFrameUnlocked(
+              storedFrame,
+              prestigeTier.value,
+              unlockedAchievementIds,
+            )
+        ? storedFrame.id
+        : kBoardFrames.first.id;
+    weeklyGoalProgress.value = StorageService.to.getInt(
+      StorageKeys.weeklyGoalProgress,
+    );
     _recomputeTotalStars();
     _checkSeasonRollover();
+    _checkWeeklyGoalRollover();
   }
 
   /// Chỉ số mùa hiện tại (28 ngày/mùa), tăng tự động theo ngày thật.
@@ -586,6 +725,60 @@ class GameController extends GetxController {
     StorageService.to.setInt(StorageKeys.seasonPoints, 0);
     StorageService.to.setInt(StorageKeys.claimedSeasonMask, 0);
     StorageService.to.setInt(StorageKeys.lastSeasonIndex, current);
+  }
+
+  /// I50: tuần hiện tại (7 ngày/tuần), tăng tự động theo ngày thật.
+  int get currentWeekIndex => weekIndexForEpochDay(_todayEpochDay());
+
+  /// Qua tuần mới → reset tiến độ mục tiêu tuần về 0 (không cộng dồn qua
+  /// tuần, khác thưởng đã nhận vẫn giữ nguyên vì coin đã cộng vào kho rồi).
+  void _checkWeeklyGoalRollover() {
+    final last = StorageService.to.getInt(StorageKeys.weeklyGoalWeek, def: -1);
+    final current = currentWeekIndex;
+    if (current == last) return;
+    weeklyGoalProgress.value = weeklyGoalProgressForWeek(
+      previousWeek: last,
+      currentWeek: current,
+      previousProgress: weeklyGoalProgress.value,
+    );
+    StorageService.to.setInt(
+      StorageKeys.weeklyGoalProgress,
+      weeklyGoalProgress.value,
+    );
+    StorageService.to.setInt(StorageKeys.weeklyGoalWeek, current);
+  }
+
+  /// I50: cộng tiến độ mục tiêu tuần — gọi ở MỌI mode (campaign + side-mode,
+  /// khác I49 Lucky Color chỉ áp dụng campaign), kẹp không vượt target.
+  void addWeeklyGoalProgress(int amount) {
+    if (amount <= 0) return;
+    weeklyGoalProgress.value = min(
+      weeklyGoalProgress.value + amount,
+      weeklyGoalTarget,
+    );
+    StorageService.to.setInt(
+      StorageKeys.weeklyGoalProgress,
+      weeklyGoalProgress.value,
+    );
+  }
+
+  /// Đã nhận thưởng mục tiêu tuần hiện tại chưa (chặn nhận 2 lần cùng tuần).
+  bool get weeklyGoalClaimed =>
+      StorageService.to.getInt(StorageKeys.weeklyGoalClaimedWeek, def: -1) ==
+      currentWeekIndex;
+
+  /// Nhận thưởng coin mục tiêu tuần khi đạt đủ [weeklyGoalTarget] và chưa
+  /// nhận trong tuần hiện tại.
+  bool claimWeeklyGoalReward() {
+    if (weeklyGoalProgress.value < weeklyGoalTarget) return false;
+    if (weeklyGoalClaimed) return false;
+    coins.value += weeklyGoalRewardCoins * weekendCoinMultiplier;
+    StorageService.to.setInt(
+      StorageKeys.weeklyGoalClaimedWeek,
+      currentWeekIndex,
+    );
+    StorageService.to.setInt(StorageKeys.coins, coins.value);
+    return true;
   }
 
   void _addSeasonPoints(int amount) {
@@ -712,6 +905,11 @@ class GameController extends GetxController {
     return today;
   }
 
+  /// I33: modifier Gauntlet hôm nay — dùng để hiện icon+tên trước khi vào
+  /// chơi (xem `home_screen.dart`), không cần bắt đầu ván mới để biết.
+  GauntletModifier get todaysGauntletModifier =>
+      modifierForDay(_todayEpochDay());
+
   bool get canClaimDaily =>
       _todayEpochDay() !=
       StorageService.to.getInt(StorageKeys.lastClaimDay, def: -1);
@@ -830,6 +1028,9 @@ class GameController extends GetxController {
     _collectInitial = null;
     perfectClearTarget.value = null;
     perfectClearSuccess.value = false;
+    craftRewardType.value = null;
+    activeChallenge.value = null;
+    challengeWon.value = null;
   }
 
   /// Task #5: replay level đã qua ít nhất 1 sao, mục tiêu vượt best score
@@ -877,6 +1078,24 @@ class GameController extends GetxController {
     _collectInitial = null;
   }
 
+  /// I47 Mirror Mode: bắt đầu ván mới, bàn đầu tiên đối xứng gương (bàn sinh
+  /// thật ở `game_screen_controller.dart` qua `presetGrid`, mirror cách
+  /// [startDailyChallenge]/[startPuzzleLevel] bơm bàn có sẵn).
+  void startMirrorMode() {
+    mode.value = GameMode.mirrorMode;
+    currentLevelRx.value = kMirrorModeLevel;
+    score.value = 0;
+    starsEarned.value = 0;
+    ended.value = false;
+    cleared.value = false;
+    resetCombo();
+    activeGame = null;
+    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
+    movesUsed.value = 0;
+    _collectInitial = null;
+  }
+
   /// F13: bắt đầu ván Daily Challenge — bàn sinh từ seed = ngày hiện tại
   /// (`Random(seed)` có seed, không `Random()` mặc định) nên mọi người chơi
   /// cùng ngày gặp cùng bàn.
@@ -884,6 +1103,60 @@ class GameController extends GetxController {
     mode.value = GameMode.dailyChallenge;
     currentLevelRx.value = kDailyChallengeLevel;
     dailyChallengeGrid = generateDailyChallengeGrid(_todayEpochDay());
+    score.value = 0;
+    starsEarned.value = 0;
+    ended.value = false;
+    cleared.value = false;
+    resetCombo();
+    activeGame = null;
+    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
+    movesUsed.value = 0;
+    _collectInitial = null;
+  }
+
+  /// I33: bắt đầu ván Gauntlet — modifier hôm nay chọn theo epoch-day
+  /// ([modifierForDay], không `Random()`), bàn sinh từ cùng seed như Daily
+  /// Challenge (tái dùng [generateDailyChallengeGrid]) nhưng colorCount có
+  /// thể đổi theo modifier `fourColors`.
+  void startGauntlet() {
+    mode.value = GameMode.gauntlet;
+    final modifier = modifierForDay(_todayEpochDay());
+    activeGauntletModifier = modifier;
+    currentLevelRx.value = gauntletLevelFor(modifier);
+    gauntletGrid = generateDailyChallengeGrid(
+      _todayEpochDay(),
+      colorCount: modifier.colorCountOverride ?? dailyChallengeColorCount,
+    );
+    score.value = 0;
+    starsEarned.value = 0;
+    ended.value = false;
+    cleared.value = false;
+    resetCombo();
+    activeGame = null;
+    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
+    movesUsed.value = 0;
+    _collectInitial = null;
+  }
+
+  /// I38: id level campaign được chọn làm "Level tuần này" — deterministic
+  /// theo [currentWeekIndex] ([featuredLevelIdForWeek]). Nếu level đó chưa
+  /// mở khoá (`unlockedLevel` chưa tới), tự thay bằng 1 level chắc chắn đã
+  /// mở khoá thay vì chặn chơi bằng dialog — vẫn giữ tinh thần "mọi người
+  /// cùng tuần thấy cùng thử thách" cho đa số người chơi đã tiến đủ xa.
+  int get featuredLevelId {
+    final picked = featuredLevelIdForWeek(currentWeekIndex);
+    if (picked <= unlockedLevel.value) return picked;
+    return currentWeekIndex % unlockedLevel.value + 1;
+  }
+
+  /// I38: bắt đầu ván Weekly Featured Level — chơi lại [featuredLevelId]
+  /// không giới hạn số lần, không đụng star/highScore/unlock của level đó
+  /// (chỉ đọc [kLevels], không gọi các hàm cập nhật progress campaign).
+  void startWeeklyFeatured() {
+    mode.value = GameMode.weeklyFeatured;
+    currentLevelRx.value = kLevels[featuredLevelId - 1];
     score.value = 0;
     starsEarned.value = 0;
     ended.value = false;
@@ -972,6 +1245,47 @@ class GameController extends GetxController {
     StorageService.to.setInt(StorageKeys.dailyChallengeScore, score.value);
   }
 
+  /// I33: đã ghi điểm Gauntlet hôm nay chưa — mirror
+  /// [canRecordDailyChallengeScore] (1 lượt tính điểm/ngày).
+  bool get canRecordGauntletScore =>
+      _todayEpochDay() !=
+      StorageService.to.getInt(StorageKeys.lastGauntletDay, def: -1);
+
+  /// I33: điểm Gauntlet đã ghi nhận lần gần nhất (mọi ngày).
+  int get gauntletScoreToday =>
+      StorageService.to.getInt(StorageKeys.gauntletScore);
+
+  /// I33: điểm Gauntlet của riêng hôm nay — 0 nếu chưa chơi hôm nay, mirror
+  /// [dailyChallengeScoreForLeaderboard].
+  int get gauntletScoreForLeaderboard =>
+      canRecordGauntletScore ? 0 : gauntletScoreToday;
+
+  void _saveGauntletScore() {
+    if (!canRecordGauntletScore) return;
+    StorageService.to.setInt(StorageKeys.lastGauntletDay, _todayEpochDay());
+    StorageService.to.setInt(StorageKeys.gauntletScore, score.value);
+  }
+
+  /// I38: best score TUẦN NÀY của Weekly Featured Level — tự về 0 khi tuần
+  /// đổi (khác Daily Challenge/Gauntlet: đây là "best trong tuần" chỉ tăng
+  /// không giảm giống `highScore(levelId)`, không phải "điểm lần chơi gần
+  /// nhất", nên không cần thêm getter `...ForLeaderboard` riêng như 2 mode
+  /// kia — giá trị này tự đúng cho cả hiển thị kết quả lẫn leaderboard).
+  int get featuredLevelScore =>
+      StorageService.to.getInt(StorageKeys.lastFeaturedWeekSeen, def: -1) ==
+          currentWeekIndex
+      ? StorageService.to.getInt(StorageKeys.featuredLevelScore)
+      : 0;
+
+  void _saveFeaturedLevelScore() {
+    if (score.value <= featuredLevelScore) return;
+    StorageService.to.setInt(
+      StorageKeys.lastFeaturedWeekSeen,
+      currentWeekIndex,
+    );
+    StorageService.to.setInt(StorageKeys.featuredLevelScore, score.value);
+  }
+
   /// F12: bàn hiện tại vừa dọn sạch — chuyển sang bàn kế khó hơn, giữ nguyên
   /// điểm tích luỹ. Gọi từ [PopStarGame] khi `remaining == 0` ở mode endless.
   PopLevel advanceEndlessBoard() {
@@ -985,6 +1299,13 @@ class GameController extends GetxController {
     if (score.value > endlessBest.value) {
       endlessBest.value = score.value;
       StorageService.to.setInt(StorageKeys.endlessBest, score.value);
+    }
+  }
+
+  void _saveMirrorModeBest() {
+    if (score.value > mirrorModeBest.value) {
+      mirrorModeBest.value = score.value;
+      StorageService.to.setInt(StorageKeys.mirrorModeBest, score.value);
     }
   }
 
@@ -1008,6 +1329,9 @@ class GameController extends GetxController {
       StorageKeys.totalGemsPopped,
       totalGemsPopped.value,
     );
+    addWeeklyGoalProgress(
+      groupSize,
+    ); // I50: mọi mode, không phân biệt campaign.
     if (comboCount.value > maxComboEver.value) {
       maxComboEver.value = comboCount.value;
       StorageService.to.setInt(StorageKeys.maxComboEver, maxComboEver.value);
@@ -1041,12 +1365,18 @@ class GameController extends GetxController {
     if (mode.value != GameMode.campaign) {
       if (mode.value == GameMode.timeAttack) _saveTimeAttackBest();
       if (mode.value == GameMode.endless) _saveEndlessBest();
+      if (mode.value == GameMode.mirrorMode) _saveMirrorModeBest();
       if (mode.value == GameMode.dailyChallenge) _saveDailyChallengeScore();
+      if (mode.value == GameMode.gauntlet) _saveGauntletScore();
+      if (mode.value == GameMode.weeklyFeatured) _saveFeaturedLevelScore();
       ended.value = true;
       return;
     }
     starsEarned.value = _computeStars();
     ended.value = true;
+    if (activeChallenge.value != null) {
+      challengeWon.value = score.value > activeChallenge.value!.score;
+    }
     if (perfectClearTarget.value != null &&
         score.value > perfectClearTarget.value!) {
       perfectClearSuccess.value = true;
@@ -1067,7 +1397,29 @@ class GameController extends GetxController {
         allLevelsCompletedOnce.value = true;
         StorageService.to.setBool(StorageKeys.allLevelsCompleted, true);
       }
+      // I32 Craft Booster: bàn còn sót gem (không full-clear — full-clear đã
+      // có clearBoardBonus riêng, không cộng trùng) đủ ngưỡng craft point →
+      // đổi thành 1 booster ngẫu nhiên thay vì mất trắng.
+      final grid = activeGame?.colorGrid;
+      if (!boardCleared &&
+          grid != null &&
+          craftPointsForRemainingCells(grid) >= craftPointThreshold) {
+        craftRewardType.value = _grantRandomBooster();
+      }
     }
+  }
+
+  String _grantRandomBooster() {
+    final type = ['bomb', 'shuffle', 'undo'][Random().nextInt(3)];
+    switch (type) {
+      case 'bomb':
+        _grant(bombCount, StorageKeys.bombCount, 1);
+      case 'shuffle':
+        _grant(shuffleCount, StorageKeys.shuffleCount, 1);
+      case 'undo':
+        _grant(undoCount, StorageKeys.undoCount, 1);
+    }
+    return type;
   }
 
   /// X5: điều kiện thuần (test được) — hiện review prompt đúng 1 lần trong
@@ -1227,6 +1579,11 @@ class GameController extends GetxController {
 
   void useUndo() {
     if (mode.value == GameMode.bossRush) return;
+    // I33: modifier "no_undo" khoá hẳn undo cho ván Gauntlet hôm nay.
+    if (mode.value == GameMode.gauntlet &&
+        activeGauntletModifier?.disableUndo == true) {
+      return;
+    }
     if (activeGame == null) return;
     // I5: lần undo đầu tiên mỗi màn miễn phí (F14: +1 nữa nếu có perk
     // extra_undo), không đụng undoCount.
@@ -1294,6 +1651,7 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.maxEpochDaySeen);
     await store.remove(StorageKeys.timeAttackBest);
     await store.remove(StorageKeys.endlessBest);
+    await store.remove(StorageKeys.mirrorModeBest);
     await store.remove(StorageKeys.lastDailyChallengeDay);
     await store.remove(StorageKeys.dailyChallengeScore);
     await store.remove(StorageKeys.lastSpinDay);
@@ -1308,6 +1666,7 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.boardsFullyCleared);
     await store.remove(StorageKeys.totalBoostersUsed);
     await store.remove(StorageKeys.unlockedAchievements);
+    await store.remove(StorageKeys.activeAchievementTitleId);
     await store.remove(StorageKeys.prestigeTier);
     await store.remove(StorageKeys.allLevelsCompleted);
     await store.remove(StorageKeys.activeMascotSkin);
@@ -1317,6 +1676,14 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.lastLoginEpochDay);
     await store.remove(StorageKeys.loginStreakClaimedMask);
     await store.remove(StorageKeys.activeComboTextStyle);
+    await store.remove(StorageKeys.weeklyGoalProgress);
+    await store.remove(StorageKeys.weeklyGoalWeek);
+    await store.remove(StorageKeys.weeklyGoalClaimedWeek);
+    await store.remove(StorageKeys.lastGauntletDay);
+    await store.remove(StorageKeys.gauntletScore);
+    await store.remove(StorageKeys.lastFeaturedWeekSeen);
+    await store.remove(StorageKeys.featuredLevelScore);
+    await store.remove(StorageKeys.activeBoardFrame);
     for (var id = 1; id <= kLevelCount; id++) {
       await store.remove(StorageKeys.highScore(id));
       await store.remove(StorageKeys.star(id));
@@ -1333,6 +1700,7 @@ class GameController extends GetxController {
     loginStreakCount.value = 0;
     lastLoginEpochDay.value = 0;
     loginStreakClaimedMask.value = 0;
+    weeklyGoalProgress.value = 0;
     _load();
     _checkLoginStreak();
   }

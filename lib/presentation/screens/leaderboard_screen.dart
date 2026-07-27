@@ -3,14 +3,19 @@ import 'package:get/get.dart';
 
 import '../../core/neon_theme.dart';
 import '../../data/daily_challenge_leaderboard_bots.dart';
+import '../../data/gauntlet_leaderboard_bots.dart';
 import '../../data/leaderboard_bots.dart';
+import '../../data/weekly_featured_leaderboard_bots.dart';
 import '../../logic/leaderboard.dart';
 import '../controllers/game_controller.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 
+enum _LeaderboardTab { campaign, dailyChallenge, gauntlet, weeklyFeatured }
+
 /// I9: bảng xếp hạng offline giả lập — chỉ so với [kLeaderboardBots] /
-/// [kDailyChallengeLeaderboardBots] tĩnh, không có backend/network/bạn bè thật.
+/// [kDailyChallengeLeaderboardBots] / [kGauntletLeaderboardBots] tĩnh, không
+/// có backend/network/bạn bè thật.
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
 
@@ -19,7 +24,7 @@ class LeaderboardScreen extends StatefulWidget {
 }
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
-  bool _showDaily = false;
+  _LeaderboardTab _tab = _LeaderboardTab.campaign;
 
   @override
   Widget build(BuildContext context) {
@@ -40,16 +45,38 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     Expanded(
                       child: _TabChip(
                         icon: Icons.star_rounded,
-                        selected: !_showDaily,
-                        onTap: () => setState(() => _showDaily = false),
+                        selected: _tab == _LeaderboardTab.campaign,
+                        onTap: () =>
+                            setState(() => _tab = _LeaderboardTab.campaign),
                       ),
                     ),
                     const SizedBox(width: NeonTheme.s8),
                     Expanded(
                       child: _TabChip(
                         icon: Icons.bolt_rounded,
-                        selected: _showDaily,
-                        onTap: () => setState(() => _showDaily = true),
+                        selected: _tab == _LeaderboardTab.dailyChallenge,
+                        onTap: () => setState(
+                          () => _tab = _LeaderboardTab.dailyChallenge,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: NeonTheme.s8),
+                    Expanded(
+                      child: _TabChip(
+                        icon: Icons.whatshot_rounded,
+                        selected: _tab == _LeaderboardTab.gauntlet,
+                        onTap: () =>
+                            setState(() => _tab = _LeaderboardTab.gauntlet),
+                      ),
+                    ),
+                    const SizedBox(width: NeonTheme.s8),
+                    Expanded(
+                      child: _TabChip(
+                        icon: Icons.event_rounded,
+                        selected: _tab == _LeaderboardTab.weeklyFeatured,
+                        onTap: () => setState(
+                          () => _tab = _LeaderboardTab.weeklyFeatured,
+                        ),
                       ),
                     ),
                   ],
@@ -57,15 +84,31 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               ),
               Expanded(
                 child: Obx(() {
-                  final entries = _showDaily
-                      ? buildLeaderboard(
-                          kDailyChallengeLeaderboardBots,
-                          gameCtrl.dailyChallengeScoreForLeaderboard,
-                        )
-                      : buildLeaderboard(
-                          kLeaderboardBots,
-                          gameCtrl.totalStars.value,
-                        );
+                  final icon = switch (_tab) {
+                    _LeaderboardTab.campaign => Icons.star_rounded,
+                    _LeaderboardTab.dailyChallenge => Icons.bolt_rounded,
+                    _LeaderboardTab.gauntlet => Icons.whatshot_rounded,
+                    _LeaderboardTab.weeklyFeatured => Icons.event_rounded,
+                  };
+                  final entries = switch (_tab) {
+                    _LeaderboardTab.campaign => buildLeaderboard(
+                      kLeaderboardBots,
+                      gameCtrl.totalStars.value,
+                    ),
+                    _LeaderboardTab.dailyChallenge => buildLeaderboard(
+                      kDailyChallengeLeaderboardBots,
+                      gameCtrl.dailyChallengeScoreForLeaderboard,
+                    ),
+                    _LeaderboardTab.gauntlet => buildLeaderboard(
+                      kGauntletLeaderboardBots,
+                      gameCtrl.gauntletScoreForLeaderboard,
+                    ),
+                    _LeaderboardTab.weeklyFeatured => buildLeaderboard(
+                      kWeeklyFeaturedLeaderboardBots,
+                      gameCtrl.featuredLevelScore,
+                    ),
+                  };
+                  final playerTitle = gameCtrl.activeTitleAchievement;
                   return ListView.builder(
                     padding: const EdgeInsets.all(NeonTheme.s16),
                     itemCount: entries.length,
@@ -74,9 +117,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       child: _RankRow(
                         rank: i + 1,
                         entry: entries[i],
-                        icon: _showDaily
-                            ? Icons.bolt_rounded
-                            : Icons.star_rounded,
+                        icon: icon,
+                        playerTitleKey: entries[i].isPlayer
+                            ? playerTitle?.titleKey
+                            : null,
                       ),
                     ),
                   );
@@ -123,8 +167,14 @@ class _RankRow extends StatelessWidget {
   final int rank;
   final LeaderboardEntry entry;
   final IconData icon;
+  final String? playerTitleKey;
 
-  const _RankRow({required this.rank, required this.entry, required this.icon});
+  const _RankRow({
+    required this.rank,
+    required this.entry,
+    required this.icon,
+    this.playerTitleKey,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -155,7 +205,11 @@ class _RankRow extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              entry.isPlayer ? 'leaderboard_you'.tr : entry.name,
+              entry.isPlayer
+                  ? playerTitleKey == null
+                        ? 'leaderboard_you'.tr
+                        : '${'leaderboard_you'.tr} · ${playerTitleKey!.tr}'
+                  : entry.name,
               style: TextStyle(
                 color: NeonTheme.ink,
                 fontWeight: entry.isPlayer ? FontWeight.w800 : FontWeight.w600,

@@ -8,13 +8,15 @@ const int dailyChallengeColorCount = 5;
 
 /// Sinh bàn Daily Challenge từ [seed] (dùng epoch-day làm seed, `Random(seed)`
 /// có seed — không phải `Random()` mặc định) — cùng seed luôn ra cùng bàn.
-List<List<int>> generateDailyChallengeGrid(int seed) {
+/// [colorCount] tùy chọn (mặc định [dailyChallengeColorCount]) — I33 Gauntlet
+/// tái dùng hàm này với modifier "chỉ 4 màu".
+List<List<int>> generateDailyChallengeGrid(
+  int seed, {
+  int colorCount = dailyChallengeColorCount,
+}) {
   final rng = Random(seed);
   return List.generate(
     dailyChallengeRows,
-    (_) => List.generate(
-      dailyChallengeCols,
-      (_) => rng.nextInt(dailyChallengeColorCount),
-    ),
+    (_) => List.generate(dailyChallengeCols, (_) => rng.nextInt(colorCount)),
   );
 }

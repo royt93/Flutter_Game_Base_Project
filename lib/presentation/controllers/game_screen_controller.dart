@@ -8,7 +8,9 @@ import 'package:get/get.dart';
 import '../../core/share_helper.dart';
 import '../../core/storage_service.dart';
 import '../../data/levels.dart';
+import '../../data/mirror_board.dart';
 import '../../game/pop_star_game.dart';
+import '../../logic/challenge_code.dart';
 import '../../logic/replay.dart';
 import 'game_controller.dart';
 
@@ -82,6 +84,20 @@ class GameScreenController extends GetxController {
         g.recordedTaps.isNotEmpty;
   }
 
+  /// I37: mã hoá điểm vừa đạt ở level hiện tại thành mã "thách đấu" rồi mở
+  /// share sheet, để bạn bè dán mã vào `GhostReplayScreen` chơi lại đúng level
+  /// đó và so điểm — không kèm replay đầy đủ như [shareReplay].
+  Future<void> shareChallenge() async {
+    final code = encodeChallengeCode(
+      ChallengeCode(
+        levelId: gameCtrl.currentLevel.id,
+        score: gameCtrl.score.value,
+        senderName: gameCtrl.playerName.value,
+      ),
+    );
+    await shareText('Pop Star Blast — Challenge: $code');
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -133,7 +149,16 @@ class GameScreenController extends GetxController {
       startWithFtueHint: ftue,
       presetGrid: switch (gameCtrl.mode.value) {
         GameMode.dailyChallenge => gameCtrl.dailyChallengeGrid,
+        GameMode.gauntlet => gameCtrl.gauntletGrid,
         GameMode.puzzleLab => gameCtrl.puzzleLabGrid,
+        // I47 Mirror Mode: bàn đầu đối xứng gương, seed ngẫu nhiên (khác
+        // dailyChallenge — không cần seed cố định cho mode này).
+        GameMode.mirrorMode => generateMirrorBoard(
+          gameCtrl.currentLevel.rows,
+          gameCtrl.currentLevel.cols,
+          gameCtrl.currentLevel.colorCount,
+          Random(),
+        ),
         _ => null,
       },
       // I28: chỉ ghi replay ở campaign — zen/endless không có bàn cố định,
@@ -262,6 +287,10 @@ class GameScreenController extends GetxController {
     } else if (mode == GameMode.puzzleLab) {
       // I42: KHÔNG rơi vào startSideMode — phải giữ đúng puzzleLabGrid đã vẽ.
       gameCtrl.startPuzzleLevel(gameCtrl.puzzleLabGrid!);
+    } else if (mode == GameMode.gauntlet) {
+      // I33: cùng ngày → cùng modifier + cùng bàn (seed = ngày), không đè
+      // điểm đã ghi nếu đã ghi lần đầu (xem `canRecordGauntletScore`).
+      gameCtrl.startGauntlet();
     } else {
       gameCtrl.startSideMode(mode);
     }

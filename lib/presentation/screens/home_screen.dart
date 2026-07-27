@@ -8,11 +8,13 @@ import '../../data/worlds.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_screen_controller.dart';
 import '../widgets/ambient_particles.dart';
+import '../widgets/board_frame_picker_dialog.dart';
 import '../widgets/burst_style_picker_dialog.dart';
 import '../widgets/coin_chip.dart';
 import '../widgets/combo_text_style_picker_dialog.dart';
 import '../widgets/home_carousel.dart';
 import '../widgets/login_streak_dialog.dart';
+import '../widgets/weekly_goal_dialog.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
 import '../widgets/neon_dialog.dart';
@@ -119,51 +121,75 @@ class _HomeScreenState extends State<HomeScreen> {
         spacing: NeonTheme.s16,
         runSpacing: NeonTheme.s16,
         children: [
-          NeonIconButton(
-            Icons.timer_rounded,
+          _modeTile(
+            icon: Icons.timer_rounded,
             color: NeonTheme.orange,
-            size: 28,
-            boxed: true,
-            semanticLabel: 'mode_time_attack_label'.tr,
+            label: 'mode_time_attack_label'.tr,
             onTap: () {
               Navigator.pop(context);
               gameCtrl.startSideMode(GameMode.timeAttack);
               Get.to(() => const GameScreen());
             },
           ),
-          NeonIconButton(
-            Icons.spa_rounded,
+          _modeTile(
+            icon: Icons.spa_rounded,
             color: NeonTheme.teal,
-            size: 28,
-            boxed: true,
-            semanticLabel: 'mode_zen_label'.tr,
+            label: 'mode_zen_label'.tr,
             onTap: () {
               Navigator.pop(context);
               gameCtrl.startSideMode(GameMode.zen);
               Get.to(() => const GameScreen());
             },
           ),
-          NeonIconButton(
-            Icons.all_inclusive_rounded,
+          _modeTile(
+            icon: Icons.all_inclusive_rounded,
             color: NeonTheme.indigo,
-            size: 28,
-            boxed: true,
-            semanticLabel: 'mode_endless_label'.tr,
+            label: 'mode_endless_label'.tr,
             onTap: () {
               Navigator.pop(context);
               gameCtrl.startEndless();
               Get.to(() => const GameScreen());
             },
           ),
-          NeonIconButton(
-            Icons.local_fire_department_rounded,
+          _modeTile(
+            icon: Icons.local_fire_department_rounded,
             color: NeonTheme.red,
-            size: 28,
-            boxed: true,
-            semanticLabel: 'mode_boss_rush_label'.tr,
+            label: 'mode_boss_rush_label'.tr,
             onTap: () {
               Navigator.pop(context);
               Get.to(() => const BossRushScreen());
+            },
+          ),
+          _modeTile(
+            icon: Icons.flip_rounded,
+            color: NeonTheme.cyan,
+            label: 'mode_mirror_label'.tr,
+            onTap: () {
+              Navigator.pop(context);
+              gameCtrl.startMirrorMode();
+              Get.to(() => const GameScreen());
+            },
+          ),
+          _modeTile(
+            icon: gameCtrl.todaysGauntletModifier.icon,
+            color: NeonTheme.gold,
+            label: gameCtrl.todaysGauntletModifier.nameKey.tr,
+            semanticLabel: 'mode_gauntlet_label'.tr,
+            onTap: () {
+              Navigator.pop(context);
+              gameCtrl.startGauntlet();
+              Get.to(() => const GameScreen());
+            },
+          ),
+          _modeTile(
+            icon: Icons.event_rounded,
+            color: NeonTheme.magenta,
+            label: worldForLevel(gameCtrl.featuredLevelId).nameKey.tr,
+            semanticLabel: 'mode_weekly_featured_label'.tr,
+            onTap: () {
+              Navigator.pop(context);
+              gameCtrl.startWeeklyFeatured();
+              Get.to(() => const GameScreen());
             },
           ),
         ],
@@ -173,6 +199,43 @@ class _HomeScreenState extends State<HomeScreen> {
           label: 'cancel'.tr,
           color: NeonTheme.indigo,
           onTap: () {},
+        ),
+      ],
+    );
+  }
+
+  Widget _modeTile({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required VoidCallback onTap,
+    String? semanticLabel,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        NeonIconButton(
+          icon,
+          color: color,
+          size: 28,
+          boxed: true,
+          semanticLabel: semanticLabel ?? label,
+          onTap: onTap,
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          width: 72,
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: NeonTheme.inkSoft,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ],
     );
@@ -312,6 +375,18 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'drawer_stats_label'.tr,
               onTap: () => Get.to(() => const StatsScreen()),
             ),
+            _drawerTile(
+              icon: Icons.flag_rounded,
+              color: NeonTheme.teal,
+              label: 'drawer_weekly_goal_label'.tr,
+              onTap: () => showWeeklyGoalDialog(context, gameCtrl),
+            ),
+            _drawerTile(
+              icon: Icons.crop_free_rounded,
+              color: NeonTheme.indigo,
+              label: 'drawer_board_frame_label'.tr,
+              onTap: () => showBoardFramePickerDialog(context, gameCtrl),
+            ),
           ],
         ),
       ),
@@ -410,6 +485,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+                Obx(() {
+                  final name = gameCtrl.playerName.value;
+                  if (name.isEmpty) return const SizedBox.shrink();
+                  final title = gameCtrl.activeTitleAchievement;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      title == null ? name : '$name · ${title.titleKey.tr}',
+                      style: TextStyle(
+                        color: NeonTheme.inkSoft,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  );
+                }),
                 const Spacer(flex: 3),
                 PulseGlow(
                   color: NeonTheme.cyan,

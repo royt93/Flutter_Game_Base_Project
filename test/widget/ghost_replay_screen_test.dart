@@ -5,7 +5,10 @@ import 'package:get/get.dart';
 import 'package:pop_star_blast/core/storage_service.dart';
 import 'package:pop_star_blast/data/levels.dart';
 import 'package:pop_star_blast/game/pop_star_game.dart';
+import 'package:pop_star_blast/logic/challenge_code.dart';
 import 'package:pop_star_blast/logic/replay.dart';
+import 'package:pop_star_blast/presentation/controllers/game_controller.dart';
+import 'package:pop_star_blast/presentation/screens/game_screen.dart';
 import 'package:pop_star_blast/presentation/screens/ghost_replay_screen.dart';
 import 'package:pop_star_blast/presentation/widgets/neon_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -189,6 +192,82 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       // flutter_test tự fail nếu còn Timer đang chờ lúc kết thúc test —
       // không cần assert thủ công.
+
+      Get.reset();
+    },
+  );
+
+  testWidgets('I37: mã thách đấu hợp lệ → hiện tên người gửi + điểm cần vượt, '
+      'KHÔNG tự phát lại', (tester) async {
+    await _setupStorage();
+    final code = encodeChallengeCode(
+      const ChallengeCode(levelId: 3, score: 250, senderName: 'Roy'),
+    );
+
+    await tester.pumpWidget(GetMaterialApp(home: const GhostReplayScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.enterText(find.byType(TextField), code);
+    await tester.tap(find.byType(NeonButton).first);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      find.text('challenge_invite_title'.trParams({'sender': 'Roy'})),
+      findsOneWidget,
+    );
+    expect(
+      find.text('challenge_score_to_beat_label'.trParams({'score': '250'})),
+      findsOneWidget,
+    );
+    // NeonButton vẽ text 2 lớp (viền + fill) → 2 widget Text cùng nội dung.
+    expect(find.text('challenge_play_button'.tr), findsWidgets);
+    expect(find.byType(GameWidget<PopStarGame>), findsNothing);
+
+    Get.reset();
+  });
+
+  testWidgets(
+    'I37: mã thách đấu hỏng (prefix đúng nhưng base64 sai) → báo lỗi giống '
+    'mã ghost-replay',
+    (tester) async {
+      await _setupStorage();
+
+      await tester.pumpWidget(GetMaterialApp(home: const GhostReplayScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.enterText(find.byType(TextField), '$challengeCodePrefix!!!');
+      await tester.tap(find.byType(NeonButton).first);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('ghost_replay_invalid_code'.tr), findsOneWidget);
+      expect(find.text('challenge_play_button'.tr), findsNothing);
+
+      Get.reset();
+    },
+  );
+
+  testWidgets(
+    'I37: tap "Chơi ngay" → gọi startChallenge trên GameController + chuyển '
+    'sang GameScreen',
+    (tester) async {
+      await _setupStorage();
+      final gameCtrl = Get.put(GameController(), permanent: true);
+      final code = encodeChallengeCode(
+        const ChallengeCode(levelId: 5, score: 100, senderName: 'Roy'),
+      );
+
+      await tester.pumpWidget(GetMaterialApp(home: const GhostReplayScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.enterText(find.byType(TextField), code);
+      await tester.tap(find.byType(NeonButton).first);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.tap(find.text('challenge_play_button'.tr).first);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 300)); // hết transition
+
+      expect(gameCtrl.activeChallenge.value?.levelId, 5);
+      expect(gameCtrl.activeChallenge.value?.score, 100);
+      expect(gameCtrl.currentLevel.id, 5);
+      expect(find.byType(GameScreen), findsOneWidget);
 
       Get.reset();
     },

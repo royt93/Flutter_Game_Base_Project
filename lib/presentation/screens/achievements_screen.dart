@@ -27,6 +27,7 @@ class AchievementsScreen extends StatelessWidget {
                   // ở đây để Obx đăng ký được observable (nếu không GetX throw
                   // "improper use of Obx" vì tưởng builder không đọc gì).
                   gameCtrl.unlockedAchievementIds.length;
+                  gameCtrl.activeAchievementTitleId.value;
                   for (final m in AchievementMetric.values) {
                     gameCtrl.metricValue(m);
                   }
@@ -41,10 +42,18 @@ class AchievementsScreen extends StatelessWidget {
                         a.id,
                       );
                       final progress = gameCtrl.metricValue(a.metric);
+                      final isActiveTitle =
+                          gameCtrl.activeAchievementTitleId.value == a.id;
                       return _AchievementRow(
                         achievement: a,
                         unlocked: unlocked,
                         progress: progress,
+                        isActiveTitle: isActiveTitle,
+                        onToggleTitle: !unlocked
+                            ? null
+                            : () => isActiveTitle
+                                  ? gameCtrl.clearActiveTitle()
+                                  : gameCtrl.setActiveTitle(a.id),
                       );
                     },
                   );
@@ -62,11 +71,15 @@ class _AchievementRow extends StatelessWidget {
   final Achievement achievement;
   final bool unlocked;
   final int progress;
+  final bool isActiveTitle;
+  final VoidCallback? onToggleTitle;
 
   const _AchievementRow({
     required this.achievement,
     required this.unlocked,
     required this.progress,
+    required this.isActiveTitle,
+    required this.onToggleTitle,
   });
 
   @override
@@ -136,6 +149,36 @@ class _AchievementRow extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+                  if (onToggleTitle != null) ...[
+                    const SizedBox(height: NeonTheme.s8),
+                    GestureDetector(
+                      onTap: onToggleTitle,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: NeonTheme.s8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isActiveTitle
+                              ? NeonTheme.gold
+                              : NeonTheme.cardAlt,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          isActiveTitle
+                              ? 'achievement_title_clear_button'.tr
+                              : 'achievement_title_set_button'.tr,
+                          style: TextStyle(
+                            color: isActiveTitle
+                                ? NeonTheme.ink
+                                : NeonTheme.inkSoft,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

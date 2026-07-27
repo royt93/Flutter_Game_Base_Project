@@ -7,8 +7,10 @@ import 'package:flutter/material.dart';
 import '../core/neon_theme.dart';
 import '../data/worlds.dart';
 import '../logic/boss_tile.dart' show isBossTileId;
+import '../logic/countdown_lock_tile.dart' show isCountdownLockId;
 import '../logic/gift_tile.dart';
 import '../logic/power_tile.dart';
+import '../logic/wildcard_tile.dart';
 import 'pop_star_game.dart';
 
 /// I17: chất liệu render gem theo world — jelly (world đầu, mềm bóng),
@@ -201,10 +203,20 @@ class BlockComponent extends PositionComponent
   /// chip qua `chipAdjacentLocks`.
   int lockCount;
 
+  /// I44: true nếu ô này đã được gắn tag Time Freeze (chỉ Time Attack, tối
+  /// đa 1 ô/bàn) — giữ nguyên [colorIndex] bình thường, không mã hoá âm như
+  /// obstacle/gift/boss; tap (solo hay theo nhóm) cộng +10s rồi ô biến mất.
+  bool timeFreezeTagged = false;
+
   /// I29: khác null nếu ô này thuộc 1 boss tile (giá trị = HP còn lại) —
   /// đồng bộ riêng từ `PopStarGame.bossHp` vì HP không mã hoá trong
   /// [colorIndex] (chỉ mã ID, xem `logic/boss_tile.dart`).
   int? bossHp;
+
+  /// I45: khác null nếu ô này là Countdown Lock (giá trị = số lượt tap còn
+  /// lại) — đồng bộ riêng từ `PopStarGame.countdownRemaining`, cùng lý do
+  /// với [bossHp] (xem `logic/countdown_lock_tile.dart`).
+  int? countdownDisplay;
 
   /// I17: chất liệu render — mặc định [TileMaterial.jelly] (world đầu).
   final TileMaterial material;
@@ -215,6 +227,7 @@ class BlockComponent extends PositionComponent
     required Vector2 size,
     this.lockCount = 0,
     this.bossHp,
+    this.countdownDisplay,
     this.material = TileMaterial.jelly,
   }) : super(position: position, size: size, anchor: Anchor.center);
 
@@ -291,7 +304,21 @@ class BlockComponent extends PositionComponent
       _renderBoss(canvas, rrect, s, bossHp ?? 0);
       return;
     }
-    // 0c. F6a: obstacle (ice/crate) không phải màu — render riêng rồi thoát,
+    // 0c. I45: Countdown Lock — cũng mã hoá âm (dải riêng, xem
+    // `logic/countdown_lock_tile.dart`) nên PHẢI kiểm tra trước nhánh
+    // obstacle chung bên dưới, không thì bị hiểu nhầm thành obstacle thường.
+    if (isCountdownLockId(colorIndex)) {
+      _renderCountdownLock(canvas, rrect, s, countdownDisplay ?? 0);
+      return;
+    }
+    // 0d. I46: Wildcard — cũng mã hoá âm (`wildcardTileValue`, xem
+    // `logic/wildcard_tile.dart`) nên PHẢI kiểm tra trước nhánh obstacle
+    // chung bên dưới, không thì bị hiểu nhầm thành obstacle thường.
+    if (isWildcardTileValue(colorIndex)) {
+      _renderWildcard(canvas, rrect, s);
+      return;
+    }
+    // 0e. F6a: obstacle (ice/crate) không phải màu — render riêng rồi thoát,
     // bỏ qua toàn bộ phần thân gem/preview/power-tile bên dưới.
     if (colorIndex < 0) {
       _renderObstacle(canvas, rrect, s, -colorIndex);
@@ -476,6 +503,35 @@ class BlockComponent extends PositionComponent
       }
     }
 
+    // 7b. I44: Time Freeze tile (chỉ Time Attack) — quầng cyan mờ + icon
+    // đồng hồ, báo tap trực tiếp (kể cả lẻ loi, không cần gộp nhóm ≥2) để
+    // +10s rồi ô biến mất, khác quầng trắng của power tile ở trên.
+    if (timeFreezeTagged) {
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..color = Colors.cyanAccent.withValues(alpha: 0.4)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, s * 0.3),
+      );
+      final clockPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.06
+        ..strokeCap = StrokeCap.round
+        ..color = Colors.white.withValues(alpha: 0.95);
+      final mid = s / 2;
+      canvas.drawCircle(Offset(mid, mid), s * 0.28, clockPaint);
+      canvas.drawLine(
+        Offset(mid, mid),
+        Offset(mid, mid - s * 0.18),
+        clockPaint,
+      );
+      canvas.drawLine(
+        Offset(mid, mid),
+        Offset(mid + s * 0.14, mid),
+        clockPaint,
+      );
+    }
+
     // 8. I2: chain tile khoá — phủ lớp tối + icon ổ khoá + chấm trắng đếm
     // lock còn lại, đè lên gem thật bên dưới (khác obstacle, không return
     // sớm vì màu vẫn phải hiển thị đúng).
@@ -564,6 +620,56 @@ class BlockComponent extends PositionComponent
     canvas.drawPath(path, stroke);
   }
 
+  /// I46: Wildcard — nền gradient cầu vồng (toàn bộ [NeonTheme.gemColors], gợi
+  /// "khớp mọi màu") + viền trắng + sao trắng 5 cánh ở giữa (tái dùng thuật
+  /// toán vẽ sao của [_renderColorblindSymbol] case 0, phóng to), khác hẳn
+  /// mọi tile đặc biệt còn lại (đơn sắc/đơn giá trị).
+  void _renderWildcard(Canvas canvas, RRect rrect, double s) {
+    final colors = NeonTheme.gemColors;
+    final gradient = Paint()
+      ..shader = ui.Gradient.linear(
+        rrect.outerRect.topLeft,
+        rrect.outerRect.bottomRight,
+        colors,
+        [for (var i = 0; i < colors.length; i++) i / (colors.length - 1)],
+      );
+    canvas.drawRRect(rrect, gradient);
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.05
+        ..color = Colors.white.withValues(alpha: 0.9),
+    );
+
+    final mid = s / 2;
+    final r = s * 0.28;
+    final path = Path();
+    for (var i = 0; i < 10; i++) {
+      final angle = pi / 5 * i - pi / 2;
+      final radius = i.isEven ? r : r * 0.45;
+      final point = Offset(
+        mid + radius * cos(angle),
+        mid + radius * sin(angle),
+      );
+      i == 0
+          ? path.moveTo(point.dx, point.dy)
+          : path.lineTo(point.dx, point.dy);
+    }
+    path.close();
+    canvas.drawPath(
+      path,
+      Paint()..color = Colors.white.withValues(alpha: 0.95),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.02
+        ..color = Colors.black.withValues(alpha: 0.5),
+    );
+  }
+
   /// I1: hộp quà vàng-hồng + dải ruy băng chữ thập, khác hẳn obstacle/gem.
   void _renderGift(Canvas canvas, RRect rrect, double s) {
     canvas.drawRRect(
@@ -623,6 +729,56 @@ class BlockComponent extends PositionComponent
   /// I29: khối boss tile — đỏ-tím "nguy hiểm" khác hẳn obstacle băng/thùng,
   /// hiển thị [hp] bằng số thay vì chấm (HP có thể tới 16, chấm sẽ rối như
   /// obstacle chỉ vài đơn vị).
+  /// I45: render Countdown Lock — cùng cấu trúc [_renderBoss] (nền mờ + viền
+  /// + số) nhưng dùng [NeonTheme.orange] để phân biệt "khẩn cấp" (đếm ngược)
+  /// với "nguy hiểm" (boss, màu đỏ).
+  void _renderCountdownLock(Canvas canvas, RRect rrect, double s, int count) {
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = NeonTheme.orange.withValues(alpha: 0.6)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, s * 0.16),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset(rrect.left, rrect.top),
+          Offset(rrect.right, rrect.bottom),
+          [const Color(0xFF3A2408), NeonTheme.orange, const Color(0xFF6B4310)],
+          const [0.0, 0.5, 1.0],
+        ),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.055
+        ..color = Colors.white.withValues(alpha: 0.85),
+    );
+    final painter = TextPainter(
+      text: TextSpan(
+        text: '$count',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: s * 0.32,
+          fontWeight: FontWeight.w900,
+          shadows: [
+            Shadow(
+              color: Colors.black.withValues(alpha: 0.6),
+              blurRadius: s * 0.05,
+            ),
+          ],
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    painter.paint(
+      canvas,
+      Offset(s / 2 - painter.width / 2, s / 2 - painter.height / 2),
+    );
+  }
+
   void _renderBoss(Canvas canvas, RRect rrect, double s, int hp) {
     canvas.drawRRect(
       rrect,

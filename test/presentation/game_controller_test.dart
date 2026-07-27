@@ -3,8 +3,13 @@ import 'package:get/get.dart';
 import 'package:pop_star_blast/core/storage_service.dart';
 import 'package:pop_star_blast/data/burst_styles.dart';
 import 'package:pop_star_blast/data/combo_text_styles.dart';
+import 'package:pop_star_blast/data/gauntlet_modifiers.dart';
 import 'package:pop_star_blast/data/levels.dart';
 import 'package:pop_star_blast/data/mascot_skins.dart';
+import 'package:pop_star_blast/data/weekly_featured.dart';
+import 'package:pop_star_blast/data/weekly_goal.dart';
+import 'package:pop_star_blast/game/pop_star_game.dart';
+import 'package:pop_star_blast/logic/challenge_code.dart';
 import 'package:pop_star_blast/logic/gift_tile.dart';
 import 'package:pop_star_blast/presentation/controllers/game_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -79,6 +84,133 @@ void main() {
       ctrl.addScore(target);
       ctrl.checkEnd(true);
       expect(ctrl.cleared.value, isTrue);
+    });
+  });
+
+  group('I32 Craft Booster', () {
+    test('thắng, chưa full-clear, đủ ngưỡng craft point → +1 booster', () {
+      ctrl.startLevel(1);
+      ctrl.addScore(target);
+      ctrl.activeGame = PopStarGame(ctrl)
+        ..colorGrid = List.generate(4, (_) => List.generate(4, (_) => 0));
+      final before =
+          ctrl.bombCount.value + ctrl.shuffleCount.value + ctrl.undoCount.value;
+      ctrl.checkEnd(false);
+      expect(ctrl.craftRewardType.value, isNotNull);
+      expect(
+        ctrl.bombCount.value + ctrl.shuffleCount.value + ctrl.undoCount.value,
+        before + 1,
+      );
+    });
+
+    test(
+      'thắng, chưa full-clear, chưa đủ ngưỡng craft point → không thưởng',
+      () {
+        ctrl.startLevel(1);
+        ctrl.addScore(target);
+        ctrl.activeGame = PopStarGame(ctrl)
+          ..colorGrid = List.generate(2, (_) => List.generate(2, (_) => 0));
+        final before =
+            ctrl.bombCount.value +
+            ctrl.shuffleCount.value +
+            ctrl.undoCount.value;
+        ctrl.checkEnd(false);
+        expect(ctrl.craftRewardType.value, isNull);
+        expect(
+          ctrl.bombCount.value + ctrl.shuffleCount.value + ctrl.undoCount.value,
+          before,
+        );
+      },
+    );
+
+    test('full-clear (boardCleared=true) → không cộng trùng craft booster', () {
+      ctrl.startLevel(1);
+      ctrl.addScore(target);
+      ctrl.activeGame = PopStarGame(ctrl)
+        ..colorGrid = List.generate(4, (_) => List.generate(4, (_) => 0));
+      final before =
+          ctrl.bombCount.value + ctrl.shuffleCount.value + ctrl.undoCount.value;
+      ctrl.checkEnd(true);
+      expect(ctrl.craftRewardType.value, isNull);
+      expect(
+        ctrl.bombCount.value + ctrl.shuffleCount.value + ctrl.undoCount.value,
+        before,
+      );
+    });
+
+    test('thua (dưới target) → không thưởng craft booster', () {
+      ctrl.startLevel(1);
+      ctrl.addScore(target - 1);
+      ctrl.activeGame = PopStarGame(ctrl)
+        ..colorGrid = List.generate(4, (_) => List.generate(4, (_) => 0));
+      ctrl.checkEnd(false);
+      expect(ctrl.craftRewardType.value, isNull);
+    });
+
+    test('startLevel reset craftRewardType về null', () {
+      ctrl.startLevel(1);
+      ctrl.addScore(target);
+      ctrl.activeGame = PopStarGame(ctrl)
+        ..colorGrid = List.generate(4, (_) => List.generate(4, (_) => 0));
+      ctrl.checkEnd(false);
+      expect(ctrl.craftRewardType.value, isNotNull);
+
+      ctrl.startLevel(1);
+      expect(ctrl.craftRewardType.value, isNull);
+    });
+  });
+
+  group('I37 Async Challenge Code', () {
+    const challenge = ChallengeCode(levelId: 1, score: 500, senderName: 'Roy');
+
+    test('checkEnd: điểm cao hơn mã thách đấu → challengeWon = true', () {
+      ctrl.startChallenge(challenge);
+      ctrl.addScore(challenge.score + 1);
+      ctrl.activeGame = PopStarGame(ctrl)
+        ..colorGrid = List.generate(4, (_) => List.generate(4, (_) => 0));
+      ctrl.checkEnd(false);
+      expect(ctrl.challengeWon.value, isTrue);
+    });
+
+    test('checkEnd: điểm thấp hơn mã thách đấu → challengeWon = false', () {
+      ctrl.startChallenge(challenge);
+      ctrl.addScore(challenge.score - 1);
+      ctrl.activeGame = PopStarGame(ctrl)
+        ..colorGrid = List.generate(4, (_) => List.generate(4, (_) => 0));
+      ctrl.checkEnd(false);
+      expect(ctrl.challengeWon.value, isFalse);
+    });
+
+    test('checkEnd: điểm bằng đúng mã thách đấu (hoà) → tính là thua', () {
+      ctrl.startChallenge(challenge);
+      ctrl.addScore(challenge.score);
+      ctrl.activeGame = PopStarGame(ctrl)
+        ..colorGrid = List.generate(4, (_) => List.generate(4, (_) => 0));
+      ctrl.checkEnd(false);
+      expect(ctrl.challengeWon.value, isFalse);
+    });
+
+    test('checkEnd: không có thách đấu → challengeWon vẫn null', () {
+      ctrl.startLevel(1);
+      ctrl.addScore(target);
+      ctrl.activeGame = PopStarGame(ctrl)
+        ..colorGrid = List.generate(4, (_) => List.generate(4, (_) => 0));
+      ctrl.checkEnd(false);
+      expect(ctrl.challengeWon.value, isNull);
+    });
+
+    test('startLevel reset activeChallenge và challengeWon về null', () {
+      ctrl.startChallenge(challenge);
+      ctrl.addScore(challenge.score + 1);
+      ctrl.activeGame = PopStarGame(ctrl)
+        ..colorGrid = List.generate(4, (_) => List.generate(4, (_) => 0));
+      ctrl.checkEnd(false);
+      expect(ctrl.activeChallenge.value, isNotNull);
+      expect(ctrl.challengeWon.value, isNotNull);
+
+      ctrl.startLevel(1);
+      expect(ctrl.activeChallenge.value, isNull);
+      expect(ctrl.challengeWon.value, isNull);
     });
   });
 
@@ -191,6 +323,52 @@ void main() {
       expect(ctrl.boardsFullyCleared.value, 0);
       expect(ctrl.totalBoostersUsed.value, 0);
       expect(ctrl.unlockedAchievementIds, isEmpty);
+    });
+
+    test(
+      'xoá activeAchievementTitleId về rỗng (tránh danh hiệu "ma")',
+      () async {
+        ctrl.startLevel(1);
+        ctrl.registerPop(10, groupSize: 500); // mở khoá gems_500
+        await ctrl.setActiveTitle('gems_500');
+        expect(ctrl.activeAchievementTitleId.value, 'gems_500');
+
+        await ctrl.resetProgress();
+        expect(ctrl.activeAchievementTitleId.value, isEmpty);
+      },
+    );
+  });
+
+  group('I36 Achievement Titles', () {
+    test('setActiveTitle với id chưa unlock → không đổi giá trị', () async {
+      await ctrl.setActiveTitle('gems_500');
+      expect(ctrl.activeAchievementTitleId.value, isEmpty);
+      expect(ctrl.activeTitleAchievement, isNull);
+    });
+
+    test('setActiveTitle với id đã unlock → set đúng + persist', () async {
+      ctrl.startLevel(1);
+      ctrl.registerPop(10, groupSize: 500); // mở khoá gems_500
+      await ctrl.setActiveTitle('gems_500');
+      expect(ctrl.activeAchievementTitleId.value, 'gems_500');
+      expect(ctrl.activeTitleAchievement?.id, 'gems_500');
+      expect(
+        StorageService.to.getString(StorageKeys.activeAchievementTitleId),
+        'gems_500',
+      );
+    });
+
+    test('clearActiveTitle xoá về rỗng + persist', () async {
+      ctrl.startLevel(1);
+      ctrl.registerPop(10, groupSize: 500);
+      await ctrl.setActiveTitle('gems_500');
+      await ctrl.clearActiveTitle();
+      expect(ctrl.activeAchievementTitleId.value, isEmpty);
+      expect(ctrl.activeTitleAchievement, isNull);
+      expect(
+        StorageService.to.getString(StorageKeys.activeAchievementTitleId),
+        isEmpty,
+      );
     });
   });
 
@@ -455,6 +633,200 @@ void main() {
           DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000 - 1;
       StorageService.to.setInt(StorageKeys.lastDailyChallengeDay, yesterday);
       expect(ctrl.canRecordDailyChallengeScore, isTrue);
+    });
+  });
+
+  group('I33 Daily Modifier Gauntlet', () {
+    test('startGauntlet sinh bàn từ seed hôm nay, gọi lại cùng ngày ra '
+        'cùng bàn và cùng modifier', () {
+      ctrl.startGauntlet();
+      final grid1 = ctrl.gauntletGrid;
+      final modifier1 = ctrl.activeGauntletModifier;
+      ctrl.startGauntlet();
+      final grid2 = ctrl.gauntletGrid;
+      expect(ctrl.mode.value, GameMode.gauntlet);
+      expect(ctrl.currentLevel.id, gauntletLevelFor(modifier1!).id);
+      expect(grid1, equals(grid2));
+      expect(ctrl.activeGauntletModifier?.id, modifier1.id);
+    });
+
+    test('modifier hôm nay khớp modifierForDay(epochDay hiện tại)', () {
+      final today = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000;
+      ctrl.startGauntlet();
+      expect(ctrl.activeGauntletModifier?.id, modifierForDay(today).id);
+    });
+
+    test('ghi điểm lần đầu trong ngày, chơi lại trong ngày không đè điểm', () {
+      ctrl.startGauntlet();
+      ctrl.score.value = 500;
+      expect(ctrl.canRecordGauntletScore, isTrue);
+      ctrl.checkEnd(false);
+      expect(ctrl.gauntletScoreToday, 500);
+      expect(ctrl.canRecordGauntletScore, isFalse);
+
+      ctrl.startGauntlet();
+      ctrl.score.value = 900;
+      ctrl.checkEnd(false);
+      expect(ctrl.gauntletScoreToday, 500);
+    });
+
+    test('gauntletScoreForLeaderboard = 0 khi chưa chơi hôm nay, không lộ '
+        'điểm ngày cũ', () {
+      expect(ctrl.canRecordGauntletScore, isTrue);
+      expect(ctrl.gauntletScoreForLeaderboard, 0);
+
+      ctrl.startGauntlet();
+      ctrl.score.value = 500;
+      ctrl.checkEnd(false);
+      expect(ctrl.gauntletScoreForLeaderboard, 500);
+    });
+
+    test('lastGauntletDay khác hôm nay (giả lập qua ngày mới) → ghi điểm '
+        'lại được', () {
+      ctrl.startGauntlet();
+      ctrl.score.value = 300;
+      ctrl.checkEnd(false);
+      expect(ctrl.canRecordGauntletScore, isFalse);
+
+      final yesterday =
+          DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000 - 1;
+      StorageService.to.setInt(StorageKeys.lastGauntletDay, yesterday);
+      expect(ctrl.canRecordGauntletScore, isTrue);
+    });
+
+    test('gauntletComboWindowOverride chỉ khác null khi mode là gauntlet và '
+        'modifier có comboWindowOverride', () {
+      ctrl.startLevel(1);
+      expect(ctrl.gauntletComboWindowOverride, isNull);
+
+      ctrl.activeGauntletModifier = kGauntletModifiers.firstWhere(
+        (m) => m.id == 'short_combo',
+      );
+      ctrl.startGauntlet();
+      ctrl.activeGauntletModifier = kGauntletModifiers.firstWhere(
+        (m) => m.id == 'short_combo',
+      );
+      expect(ctrl.gauntletComboWindowOverride, 1.5);
+
+      ctrl.activeGauntletModifier = kGauntletModifiers.firstWhere(
+        (m) => m.id == 'no_undo',
+      );
+      expect(ctrl.gauntletComboWindowOverride, isNull);
+    });
+
+    test('modifier no_undo chặn useUndo(), modifier khác thì không', () {
+      ctrl.startGauntlet();
+      ctrl.activeGame = PopStarGame(ctrl)
+        ..colorGrid = List.generate(4, (_) => List.generate(4, (_) => 0));
+      final gridBefore = ctrl.activeGame!.colorGrid
+          .map((row) => List<int?>.from(row))
+          .toList();
+
+      ctrl.activeGauntletModifier = kGauntletModifiers.firstWhere(
+        (m) => m.id == 'no_undo',
+      );
+      ctrl.useUndo();
+      expect(ctrl.activeGame!.colorGrid, equals(gridBefore));
+
+      ctrl.activeGauntletModifier = kGauntletModifiers.firstWhere(
+        (m) => m.id == 'four_colors',
+      );
+      expect(() => ctrl.useUndo(), returnsNormally);
+    });
+  });
+
+  group('I38 Weekly Featured Level', () {
+    test('featuredLevelId chưa mở khoá → fallback về level chắc chắn đã mở '
+        '(unlockedLevel = 1 → luôn ra level 1)', () {
+      expect(ctrl.unlockedLevel.value, 1);
+      expect(ctrl.featuredLevelId, 1);
+    });
+
+    test(
+      'featuredLevelId đã mở khoá đủ xa → dùng thẳng featuredLevelIdForWeek, '
+      'không qua fallback',
+      () {
+        ctrl.unlockedLevel.value = kLevelCount;
+        expect(
+          ctrl.featuredLevelId,
+          featuredLevelIdForWeek(ctrl.currentWeekIndex),
+        );
+      },
+    );
+
+    test(
+      'featuredLevelId deterministic — gọi lại nhiều lần ra cùng kết quả',
+      () {
+        ctrl.unlockedLevel.value = kLevelCount;
+        final id1 = ctrl.featuredLevelId;
+        final id2 = ctrl.featuredLevelId;
+        expect(id1, id2);
+      },
+    );
+
+    test('startWeeklyFeatured() set mode weeklyFeatured, chơi lại đúng '
+        'featuredLevelId, reset toàn bộ state ván mới', () {
+      ctrl.startLevel(1);
+      ctrl.addScore(500);
+      ctrl.movesUsed.value = 3;
+      ctrl.hintCount.value = 0;
+
+      ctrl.startWeeklyFeatured();
+
+      expect(ctrl.mode.value, GameMode.weeklyFeatured);
+      expect(ctrl.currentLevel.id, ctrl.featuredLevelId);
+      expect(ctrl.score.value, 0);
+      expect(ctrl.starsEarned.value, 0);
+      expect(ctrl.ended.value, isFalse);
+      expect(ctrl.cleared.value, isFalse);
+      expect(ctrl.movesUsed.value, 0);
+      expect(ctrl.hintCount.value, GameController.hintsPerRun);
+    });
+
+    test('featuredLevelScore chỉ tăng khi điểm mới cao hơn, không giảm trong '
+        'cùng tuần', () {
+      expect(ctrl.featuredLevelScore, 0);
+
+      ctrl.startWeeklyFeatured();
+      ctrl.score.value = 800;
+      ctrl.checkEnd(false);
+      expect(ctrl.featuredLevelScore, 800);
+
+      ctrl.startWeeklyFeatured();
+      ctrl.score.value = 300;
+      ctrl.checkEnd(false);
+      expect(ctrl.featuredLevelScore, 800);
+
+      ctrl.startWeeklyFeatured();
+      ctrl.score.value = 1200;
+      ctrl.checkEnd(false);
+      expect(ctrl.featuredLevelScore, 1200);
+    });
+
+    test(
+      'featuredLevelScore tự về 0 khi tuần đổi (khác currentWeekIndex đã lưu)',
+      () {
+        ctrl.startWeeklyFeatured();
+        ctrl.score.value = 700;
+        ctrl.checkEnd(false);
+        expect(ctrl.featuredLevelScore, 700);
+
+        StorageService.to.setInt(
+          StorageKeys.lastFeaturedWeekSeen,
+          ctrl.currentWeekIndex - 1,
+        );
+        expect(ctrl.featuredLevelScore, 0);
+      },
+    );
+
+    test('resetProgress() xoá sạch state Weekly Featured Level', () async {
+      ctrl.startWeeklyFeatured();
+      ctrl.score.value = 400;
+      ctrl.checkEnd(false);
+      expect(ctrl.featuredLevelScore, 400);
+
+      await ctrl.resetProgress();
+      expect(ctrl.featuredLevelScore, 0);
     });
   });
 
@@ -1214,6 +1586,77 @@ void main() {
     });
   });
 
+  group('I50 Weekly Goal Card', () {
+    GameController relaunch() {
+      Get.delete<GameController>(force: true);
+      return Get.put(GameController(), permanent: true);
+    }
+
+    test('mới cài app → tiến độ 0, chưa nhận thưởng', () {
+      expect(ctrl.weeklyGoalProgress.value, 0);
+      expect(ctrl.weeklyGoalClaimed, isFalse);
+    });
+
+    test('registerPop cộng dồn tiến độ theo groupSize, mọi mode', () {
+      ctrl.registerPop(10, groupSize: 4);
+      expect(ctrl.weeklyGoalProgress.value, 4);
+      ctrl.registerPop(20, groupSize: 3);
+      expect(ctrl.weeklyGoalProgress.value, 7);
+    });
+
+    test('tiến độ không vượt quá target dù cộng dư', () {
+      ctrl.addWeeklyGoalProgress(weeklyGoalTarget + 50);
+      expect(ctrl.weeklyGoalProgress.value, weeklyGoalTarget);
+    });
+
+    test('claim khi chưa đủ tiến độ → false, không cộng xu', () {
+      ctrl.addWeeklyGoalProgress(weeklyGoalTarget - 1);
+      expect(ctrl.claimWeeklyGoalReward(), isFalse);
+      expect(ctrl.coins.value, 0);
+    });
+
+    test('đủ tiến độ → claim thành công đúng 1 lần, lần 2 trong cùng tuần '
+        'trả về false và không cộng thêm xu', () {
+      ctrl.addWeeklyGoalProgress(weeklyGoalTarget);
+      expect(ctrl.claimWeeklyGoalReward(), isTrue);
+      final coinsAfterFirst = ctrl.coins.value;
+      expect(coinsAfterFirst, greaterThan(0));
+      expect(ctrl.weeklyGoalClaimed, isTrue);
+
+      expect(ctrl.claimWeeklyGoalReward(), isFalse);
+      expect(ctrl.coins.value, coinsAfterFirst);
+    });
+
+    test('sang tuần mới → tiến độ reset về 0, cho claim lại', () {
+      final lastWeek = ctrl.currentWeekIndex - 1;
+      StorageService.to.setInt(StorageKeys.weeklyGoalWeek, lastWeek);
+      StorageService.to.setInt(
+        StorageKeys.weeklyGoalProgress,
+        weeklyGoalTarget,
+      );
+      StorageService.to.setInt(StorageKeys.weeklyGoalClaimedWeek, lastWeek);
+
+      final next = relaunch();
+      expect(next.weeklyGoalProgress.value, 0);
+      expect(next.weeklyGoalClaimed, isFalse);
+
+      next.addWeeklyGoalProgress(weeklyGoalTarget);
+      expect(next.claimWeeklyGoalReward(), isTrue);
+    });
+
+    test(
+      'resetProgress() đưa tiến độ/trạng thái nhận thưởng về mặc định',
+      () async {
+        ctrl.addWeeklyGoalProgress(weeklyGoalTarget);
+        ctrl.claimWeeklyGoalReward();
+
+        await ctrl.resetProgress();
+        expect(ctrl.weeklyGoalProgress.value, 0);
+        expect(ctrl.weeklyGoalClaimed, isFalse);
+      },
+    );
+  });
+
   group('I52 Pop Burst Style Picker — validation/anti-cheat', () {
     GameController relaunch() {
       Get.delete<GameController>(force: true);
@@ -1389,6 +1832,105 @@ void main() {
 
       final next = relaunch();
       expect(next.activeComboTextStyleKind.value, ComboTextStyleKind.neon);
+    });
+  });
+
+  group('I51 Board Frame Cosmetics — validation/anti-cheat', () {
+    GameController relaunch() {
+      Get.delete<GameController>(force: true);
+      return Get.put(GameController(), permanent: true);
+    }
+
+    test('mặc định classic khi chưa prestige/achievement gì', () {
+      expect(ctrl.activeBoardFrameId.value, 'classic');
+    });
+
+    test('setActiveBoardFrame chặn khung chưa đủ prestigeTier để mở khoá', () {
+      ctrl.prestigeTier.value = 0; // neon_cyan cần tier 1
+      ctrl.setActiveBoardFrame('neon_cyan');
+
+      expect(ctrl.activeBoardFrameId.value, 'classic');
+      expect(StorageService.to.getString(StorageKeys.activeBoardFrame), isNull);
+    });
+
+    test('setActiveBoardFrame cho đổi khung đã đủ prestigeTier', () {
+      ctrl.prestigeTier.value = 1;
+      ctrl.setActiveBoardFrame('neon_cyan');
+
+      expect(ctrl.activeBoardFrameId.value, 'neon_cyan');
+      expect(
+        StorageService.to.getString(StorageKeys.activeBoardFrame),
+        'neon_cyan',
+      );
+    });
+
+    test('setActiveBoardFrame chặn khung đạt achievement khi chưa unlock', () {
+      ctrl.setActiveBoardFrame('diamond');
+
+      expect(ctrl.activeBoardFrameId.value, 'classic');
+      expect(StorageService.to.getString(StorageKeys.activeBoardFrame), isNull);
+    });
+
+    test(
+      'setActiveBoardFrame cho đổi khung diamond khi đã unlock clear_400',
+      () {
+        ctrl.unlockedAchievementIds.add('clear_400');
+        ctrl.setActiveBoardFrame('diamond');
+
+        expect(ctrl.activeBoardFrameId.value, 'diamond');
+        expect(
+          StorageService.to.getString(StorageKeys.activeBoardFrame),
+          'diamond',
+        );
+      },
+    );
+
+    test('setActiveBoardFrame khung classic (always) luôn cho phép', () {
+      ctrl.setActiveBoardFrame('classic');
+      expect(ctrl.activeBoardFrameId.value, 'classic');
+    });
+
+    test('_load() khôi phục đúng khung đã mở khoá từ storage', () {
+      StorageService.to.setInt(StorageKeys.prestigeTier, 3);
+      StorageService.to.setString(StorageKeys.activeBoardFrame, 'aurora_gold');
+
+      final next = relaunch();
+      expect(next.activeBoardFrameId.value, 'aurora_gold');
+    });
+
+    test('_load() fallback về classic khi id trong storage không hợp lệ', () {
+      StorageService.to.setInt(StorageKeys.prestigeTier, 3);
+      StorageService.to.setString(StorageKeys.activeBoardFrame, 'not_a_frame');
+
+      final next = relaunch();
+      expect(next.activeBoardFrameId.value, 'classic');
+    });
+
+    test('_load() fallback về classic khi storage bị sửa tay trỏ khung chưa đủ '
+        'điều kiện', () {
+      StorageService.to.setInt(StorageKeys.prestigeTier, 0);
+      StorageService.to.setString(
+        StorageKeys.activeBoardFrame,
+        'aurora_gold', // cần tier 3, hiện tier 0
+      );
+
+      final next = relaunch();
+      expect(next.activeBoardFrameId.value, 'classic');
+    });
+
+    test('resetProgress() xoá activeBoardFrame khỏi storage', () async {
+      ctrl.prestigeTier.value = 1;
+      ctrl.setActiveBoardFrame('neon_cyan');
+      expect(
+        StorageService.to.getString(StorageKeys.activeBoardFrame),
+        'neon_cyan',
+      );
+
+      await ctrl.resetProgress();
+      expect(StorageService.to.getString(StorageKeys.activeBoardFrame), isNull);
+
+      final next = relaunch();
+      expect(next.activeBoardFrameId.value, 'classic');
     });
   });
 

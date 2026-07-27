@@ -1,5 +1,6 @@
 import '../logic/boss_tile.dart' show BossTileSpec;
 import '../logic/pop_collapse.dart' show GravityDirection;
+import 'gauntlet_modifiers.dart' show GauntletModifier;
 
 /// F6b: loại mục tiêu thắng màn ngoài điểm. [score] giữ nguyên luật cũ
 /// (thắng khi bàn hết/kẹt, sao tính theo targetScore) — mặc định mọi màn.
@@ -254,4 +255,27 @@ const PopLevel kDailyChallengeLevel = PopLevel(
   cols: 8,
   colorCount: 5,
   targetScore: 0,
+);
+
+/// I47 Mirror Mode: bàn cố định (không ramp độ khó, giống Zen) nhưng sinh
+/// đối xứng gương theo trục dọc (`generateMirrorBoard`). id -6 vì -5 đã dùng
+/// cho Puzzle Lab (`startPuzzleLevel`).
+const PopLevel kMirrorModeLevel = PopLevel(
+  id: -6,
+  rows: 9,
+  cols: 8,
+  colorCount: 5,
+  targetScore: 0,
+);
+
+/// I33 Daily Modifier Gauntlet: bàn cùng kích thước Daily Challenge (id -7,
+/// kế tiếp -6 của Mirror Mode) nhưng colorCount/gravityDirection đổi theo
+/// [modifier] hôm nay (`fourColors`/`reverseGravity`).
+PopLevel gauntletLevelFor(GauntletModifier modifier) => PopLevel(
+  id: -7,
+  rows: 9,
+  cols: 8,
+  colorCount: modifier.colorCountOverride ?? 5,
+  targetScore: 0,
+  gravityDirection: modifier.gravityOverride ?? GravityDirection.down,
 );

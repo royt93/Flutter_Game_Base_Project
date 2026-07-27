@@ -3136,3 +3136,619 @@ render qua `StrokeText` đúng font/màu, fire qua `ShaderMask` không dùng
 dùng 3/5 tier `kAchievements`, không phải 4/5 như ghi nhầm trước đó). Verify:
 `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` → 494 test
 toàn bộ xanh.
+
+## ✅ Implemented: I50 Weekly Goal Card (2026-07-21)
+
+- **I50 Weekly Goal Card** — mục tiêu cá nhân theo tuần: pop 300 gem cộng dồn
+  xuyên suốt mọi mode (campaign + side-mode), tuần chia theo `epochDay ~/ 7`
+  (`lib/data/weekly_goal.dart`, không cần khớp lịch dương, mirror đúng
+  convention `currentSeasonIndex`). Hook duy nhất tại
+  `GameController.registerPop` (điểm cộng `totalGemsPopped` sẵn có, dùng
+  chung cho mọi mode/pop site, không cần đụng `pop_star_game.dart`) nên tự
+  động loại trừ ghost-replay (branch `isReplay` không gọi `registerPop`).
+  Tiến độ clamp không vượt target, persist ngay mỗi lần cộng
+  (`StorageKeys.weeklyGoalProgress`). Rollover-on-read
+  (`_checkWeeklyGoalRollover`, gọi trong `_load()` ngay sau
+  `_checkSeasonRollover`) reset tiến độ về 0 khi sang tuần mới
+  (`StorageKeys.weeklyGoalWeek` lưu tuần lần cập nhật cuối). Nhận thưởng 1
+  lần/tuần bằng so sánh int đơn giản
+  (`StorageKeys.weeklyGoalClaimedWeek == currentWeekIndex`, không cần bitmask
+  vì chỉ có 1 mốc thưởng/tuần) — thưởng có áp `weekendCoinMultiplier` như mọi
+  reward khác trong codebase. Dialog (`weekly_goal_dialog.dart`, template
+  `login_streak_dialog.dart`) hiện thanh tiến độ + nút "Nhận" (disable khi
+  chưa đủ hoặc đã nhận), mở từ drawer Home.
+
+i18n: 5 key mới (`weekly_goal_title/desc/claim_button/claimed_label`,
+`drawer_weekly_goal_label`) × 22 locale (`_w51ByLang`). Test:
+`test/logic/weekly_goal_test.dart` (pure function chia tuần + reset-on-new-
+week), nhóm `I50 Weekly Goal Card` trong `game_controller_test.dart` (cộng
+tiến độ theo `groupSize`, clamp target, chặn claim khi chưa đủ, chặn claim 2
+lần cùng tuần, reset đúng khi sang tuần mới, `resetProgress()`). Verify:
+`flutter analyze` → 0 issues. `flutter test --exclude-tags slow` → toàn bộ
+xanh, không regression.
+
+## ✅ Implemented: I44 Time Freeze Tile (2026-07-21)
+
+- **I44 Time Freeze Tile** — trong `GameMode.timeAttack`, sau mỗi lần
+  `_collapseAnimated` hoàn tất có ~10% xác suất gắn tag lên 1 ô màu hợp lệ
+  (`shouldTagTimeFreezeTile`, `lib/logic/time_freeze_tile.dart` — pure, seed
+  `Random` cố định, nhận `isTimeAttack`/`alreadyTagged` qua tham số để không
+  phụ thuộc `GameMode`/GetX trong `lib/logic/`). Đúng pattern power tile (F5):
+  **không** mã hoá âm trong `colorGrid`, chỉ thêm field
+  `bool timeFreezeTagged` trên `BlockComponent` (`_maybeTagTimeFreezeTile`,
+  `pop_star_game.dart`, né ô đang obstacle/gift/boss/lockGrid/powerKind, tối
+  đa 1 ô/bàn). Render: quầng cyan mờ + icon đồng hồ, phân biệt với quầng
+  trắng power tile. Tap trực tiếp (`_tryPop`, cả trường hợp lẻ loi
+  `group.length < 2` và khi ô nằm trong 1 nhóm màu ≥2 pop chung) kích hoạt
+  `Get.find<GameScreenController>().remainingSeconds.value += 10` (side-effect
+  độc lập, không cộng điểm/không tính combo), ô biến mất khỏi bàn qua
+  `_clearAndCollapse` như ô thường. `Get.find<GameScreenController>()` an
+  toàn không cần `Get.isRegistered` guard vì `GameMode.timeAttack` chỉ đi qua
+  `game_screen.dart` — màn duy nhất đăng ký `GameScreenController` trước khi
+  tạo `PopStarGame` (Boss Rush/Ghost Replay không bao giờ set mode này).
+
+Test: `test/logic/time_freeze_tile_test.dart` (gate time-attack-only, tối đa
+1 ô/bàn, tần suất mặc định ~10% nằm trong khoảng hợp lý qua 5000 lần thử).
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
+510 test toàn bộ xanh, không regression.
+
+## ✅ Implemented: I45 Countdown Lock Tile (2026-07-21)
+
+- **I45 Countdown Lock Tile** — campaign world 4+ (`level.id > 60`), ~18% cơ
+  hội xuất hiện 1 ô Countdown Lock/bàn (`_placeCountdownLockTileIfNeeded`,
+  `pop_star_game.dart`, né ô đã là obstacle/chain-lock/gift/boss). Mã hoá âm
+  trong `colorGrid` giống obstacle/gift/boss nhưng ở dải riêng
+  (`countdownLockIdBase = -1500`, nằm giữa gift `-1000` và boss `<= -2000`,
+  xem `isCountdownLockId`, `lib/logic/countdown_lock_tile.dart`). Khác cơ chế
+  "chip theo pop-kề-cạnh" của obstacle/boss/chain-lock: mỗi lượt tap hợp lệ
+  (nhóm ≥2, bất kể có đụng ô Countdown Lock hay không) giảm 1 mọi Countdown
+  Lock trên bàn (`_tickCountdownLockTiles` gọi trong `_tryPop`, dùng pure
+  function `tickCountdownLockTiles(countdownRemaining)`). Số đếm ngược lưu
+  song song trong `PopStarGame.countdownRemaining` (`Map<int,int>`, mirror
+  cấu trúc `bossHp`, có undo-snapshot riêng `_undoCountdownRemaining`) vì
+  không mã hoá được trong `colorGrid` (chỉ mã ID). Về 0 → ô tự chuyển thành
+  obstacle thường (durability 1, `colorGrid[r][c] = -1`), gỡ khỏi
+  `countdownRemaining`. `chipAdjacentObstacles` (`lib/logic/obstacle.dart`)
+  loại trừ `isCountdownLockId` để không bị chip nhầm thành obstacle;
+  `pop_detector.dart` đã tự loại qua guard chung `color < 0`, không cần sửa.
+  Render: `BlockComponent.countdownDisplay` (đồng bộ qua
+  `_syncObstacleAndLockBlocks`/khởi tạo trong `_rebuildBoard`) +
+  `_renderCountdownLock` — cùng cấu trúc `_renderBoss` (nền mờ, viền, số) nhưng
+  màu `NeonTheme.orange` để phân biệt "khẩn cấp" với "nguy hiểm" (boss, đỏ).
+  Không cần `StorageKeys` mới — state chỉ tồn tại trong 1 match.
+
+Test: `test/logic/countdown_lock_tile_test.dart` (nhận diện id đúng dải,
+giảm đúng 1/lượt, về 0 trả đúng id hết giờ và xoá khỏi map, nhiều id độc lập,
+không đụng state khác truyền ngoài map). Verify: `flutter analyze` → 0
+issues. `flutter test --exclude-tags slow` → 518 test toàn bộ xanh, không
+regression.
+
+## ✅ Implemented: I46 Wildcard Tile (2026-07-21)
+
+- **I46 Wildcard Tile** — campaign only, mọi world (`level.id > 0`), ~15% cơ
+  hội xuất hiện 1 ô Wildcard/bàn (`_placeWildcardTileIfNeeded`,
+  `pop_star_game.dart`, né ô đã là obstacle/chain-lock/gift/boss/countdown-lock).
+  Mã hoá âm trong `colorGrid` giống obstacle/gift/boss/countdown-lock nhưng ở
+  dải riêng (`wildcardTileValue = -500`, nằm giữa obstacle nhỏ `-1..-9` và
+  gift `-1000`, xem `isWildcardTileValue`, `lib/logic/wildcard_tile.dart`).
+  Khác mọi tile đặc biệt âm khác: Wildcard khớp với MỌI màu khi flood-fill
+  (`findConnectedGroup`, `pop_detector.dart`) — nhưng "màu mục tiêu" của cả
+  nhóm chỉ xác định 1 lần ngay tại ô bắt đầu (ô tap hoặc màu mượn từ ô liền kề
+  đầu tiên nếu tap trực tiếp vào wildcard), nên wildcard không bao giờ làm cầu
+  nối 2 nhóm màu khác nhau thành 1. Tap trực tiếp vào wildcard cô lập (không
+  ô màu liền kề) trả về nhóm size 1 — không nổ (đúng ngưỡng ≥2 chung). Nổ
+  chung nhóm màu bình thường, không cộng điểm thưởng riêng. `chipAdjacentObstacles`
+  (`lib/logic/obstacle.dart`) loại trừ `isWildcardTileValue` — phòng vệ, vì
+  wildcard luôn bị nổ chung nhóm trước khi hàm này chạy. Render:
+  `BlockComponent._renderWildcard` — nền gradient cầu vồng (toàn bộ
+  `NeonTheme.gemColors`, kèm `colorStops` cách đều — `ui.Gradient.linear` bắt
+  buộc `colors.length == 2` nếu bỏ `colorStops`) + viền trắng + sao trắng 5
+  cánh giữa (tái dùng thuật toán vẽ sao của `_renderColorblindSymbol` case 0).
+  Không cần `StorageKeys` mới — wildcard chỉ là 1 giá trị mã hoá cố định
+  trong `colorGrid`, không có state/HP đi kèm.
+
+Test: `test/logic/pop_detector_test.dart` (5 case mới — wildcard liền kề gộp
+đúng nhóm màu khi tap vào màu, tap trực tiếp vào wildcard mượn màu đúng, tap
+wildcard cô lập trả size 1, wildcard không làm cầu nối 2 nhóm màu khác nhau,
+2 wildcard liền kề nhau không màu nào giữ size 1). Verify: `flutter analyze`
+→ 0 issues. `flutter test --exclude-tags slow` → 523 test toàn bộ xanh,
+không regression (phát hiện + fix 1 bug runtime trong lúc verify: gradient
+nền wildcard truyền thẳng 6 màu `gemColors` vào `ui.Gradient.linear` không
+kèm `colorStops` → ném `ArgumentError` bất cứ khi nào 1 ô wildcard được
+render, làm crash ngẫu nhiên ~15% các test dựng bàn campaign khác — không
+liên quan tới đúng/sai logic wildcard, đã fix bằng cách truyền `colorStops`
+cách đều tương ứng số màu).
+
+## ✅ Implemented: I47 Mirror Mode (2026-07-21)
+
+- **I47 Mirror Mode** — side-mode mới: bàn cố định 9x8x5 màu (giống Zen,
+  không ramp độ khó — `kMirrorModeLevel`, `lib/data/levels.dart`, `id: -6`)
+  nhưng luôn sinh **đối xứng gương theo trục dọc**: cột `c` và cột
+  `cols-1-c` luôn cùng màu ở mọi hàng (`generateMirrorBoard`,
+  `lib/data/mirror_board.dart` — hàm pure, chỉ random nửa trái rồi mirror
+  sang nửa phải, cột giữa tự đối xứng nếu `cols` lẻ). Đối xứng chỉ áp dụng
+  LÚC SINH BÀN — không phải bất biến giữ xuyên suốt ván (bàn mất đối xứng
+  dần sau khi pop, đúng như PopStar gốc không refill).
+- **Namespacing id**: phát hiện `id: -5` đã dùng cho Puzzle Lab
+  (`startPuzzleLevel`, hoàn thành ở 1 phiên trước đó) — Mirror Mode dùng
+  `id: -6` (grep lại toàn bộ `lib/data/`, `lib/logic/`, `lib/presentation/`
+  trước khi chọn số để tránh đụng lại lần nữa).
+- **Luồng chơi**: `startMirrorMode()` (`GameController`) reset state đúng
+  thứ tự chuẩn các side-mode khác (`startEndless`/`startDailyChallenge`).
+  Bàn đầu sinh ở `game_screen_controller.dart` (`presetGrid`, seed ngẫu
+  nhiên — khác Daily Challenge không cần seed cố định theo ngày). Dọn sạch
+  bàn → `_nextMirrorBoard()` (`pop_star_game.dart`, mirror cách
+  `_refillBoard()` — KHÔNG gọi `_layout()` vì bàn cố định kích thước, khác
+  `_nextEndlessBoard()` phải `_layout()` lại vì rows/cols đổi theo world) sinh
+  bàn mới đối xứng, dùng `_rng` (seeded field có sẵn) để giữ replay-safe,
+  không phải `Random()` mới. Kẹt hẳn (`hasAnyMovableGroup` false) mới kết
+  thúc ván qua `controller.checkEnd(false)`.
+- **Điểm cao nhất riêng**: `mirrorModeBest` (`RxInt`, `GameController`) +
+  `StorageKeys.mirrorModeBest` — biệt lập mọi mode khác, lưu qua
+  `_saveMirrorModeBest()` (gọi trong `checkEnd`), xoá qua `resetProgress()`.
+- **UI**: nút mode mới trong dialog "Chế độ chơi" (`home_screen.dart`,
+  icon `flip_rounded`, màu cyan) → `startMirrorMode()` rồi vào `GameScreen`.
+  HUD hiện `Best <score>` dưới điểm hiện tại (mirror đúng style Endless —
+  text raw không i18n, theo đúng convention các side-mode khác). Duy nhất 1
+  key i18n mới: `mode_mirror_label` (dùng làm `semanticLabel` nút mode) —
+  thêm `_extraEn`/`_extraVi` + wave `_w52ByLang` cho 20 ngôn ngữ còn lại.
+
+Test: `test/data/mirror_board_test.dart` (mới — đối xứng đúng với cols
+chẵn/lẻ, tôn trọng bounds rows/cols/colorCount, deterministic theo seed).
+Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
+toàn bộ xanh (bao gồm `app_translations_test.dart` với key mới × 22 ngôn
+ngữ), không regression.
+
+## ✅ Implemented: I32 Craft Booster (2026-07-21)
+
+- **I32 Craft Booster** — campaign only, thắng màn nhưng KHÔNG full-clear
+  (bàn còn sót gem, đủ ngưỡng) → đổi số gem còn sót thành 1 booster ngẫu
+  nhiên thay vì mất trắng, tránh double-reward với `clearBoardBonus` (chỉ
+  cấp riêng ở nhánh `remaining == 0`, xem `lib/data/levels.dart`).
+- **Pure logic**: `lib/logic/craft_points.dart` (mới) —
+  `craftPointsForRemainingCells(grid)` đếm cell màu thường còn lại
+  (`v != null && v >= 0` — mọi tile đặc biệt obstacle/gift/boss/countdown-
+  lock/wildcard đều mã hoá âm nên tự loại trừ, không cần import riêng từng
+  module) rồi chia nguyên cho `cellsPerCraftPoint = 4`.
+- **`GameController.checkEnd`**: trong nhánh thắng (`starsEarned.value > 0`),
+  nếu `!boardCleared` và `craftPointsForRemainingCells(activeGame!.colorGrid)
+  >= craftPointThreshold` (3) → `_grantRandomBooster()` chọn ngẫu nhiên 1
+  trong `bomb`/`shuffle`/`undo` (`Random().nextInt(3)`, không cần seed vì
+  ngoài path replay-sensitive), cấp qua `_grant` có sẵn (tái dùng nguyên,
+  không viết lại), gán `craftRewardType.value` (field `Rxn<String>` mới) cho
+  UI đọc. Reset về `null` mỗi `startLevel`. Không cần guard `isReplay` riêng
+  — `controller.checkEnd` đã không được gọi khi `isReplay == true` (chặn từ
+  `pop_star_game.dart._checkEnd`).
+- **UI**: `game_screen.dart` — dòng "+1 <booster>" trong dialog thắng
+  (`craft_booster_reward_label`.trParams), icon/màu mirror đúng
+  `_BoosterButton` HUD tương ứng (bomb=`dangerous_rounded`/orange,
+  shuffle=`shuffle_rounded`/lime, undo=`undo_rounded`/purple), ẩn hoàn toàn
+  nếu `craftRewardType.value == null`.
+- **i18n**: `craft_booster_reward_label` ("+1 @booster") — `_extraEn`/
+  `_extraVi` + wave `_w53ByLang` cho 20 ngôn ngữ còn lại (giữ nguyên
+  "+1 @booster" mọi ngôn ngữ — pattern số+placeholder không cần dịch riêng).
+
+Test: `test/logic/craft_points_test.dart` (mới — bàn trống → 0, N cell
+thường → floor đúng, cell boss tile loại trừ khỏi số đếm).
+`test/presentation/game_controller_test.dart` (nhóm "I32 Craft Booster" mới
+— thắng chưa full-clear đủ ngưỡng → +1 booster đúng loại; chưa đủ ngưỡng →
+không thưởng; full-clear → không cộng trùng; thua → không thưởng; reset khi
+`startLevel`). Verify: `flutter analyze` → 0 issues. `flutter test
+--exclude-tags slow` → toàn bộ xanh, không regression.
+
+## ✅ Implemented: I37 Async Challenge Code (2026-07-22)
+
+- **I37 Async Challenge Code** — bất kỳ level campaign nào cũng có thể mã
+  hoá thành mã text "thách đấu" gồm levelId + điểm vừa đạt + tên người gửi,
+  chia sẻ cho bạn bè; bạn bè dán mã vào màn nhập-mã sẵn có (`GhostReplayScreen`)
+  để chơi lại đúng level đó (board random bình thường, KHÔNG kèm replay đầy
+  đủ) rồi so điểm cao/thấp — khác hẳn I28 Ghost Replay (chỉ xem lại y hệt
+  1 ván, không chơi được).
+- **Pure logic**: `lib/logic/challenge_code.dart` (mới) — `ChallengeCode`
+  (`levelId`, `score`, `senderName`), `encodeChallengeCode`/
+  `decodeChallengeCode` mã hoá base64url `levelId|score|senderName` với
+  prefix rõ (không mã hoá) `challengeCodePrefix = 'CH:'` để 1 ô nhập mã
+  chung phân biệt được với mã ghost-replay của I28 (`text.startsWith(...)`
+  trước khi thử `decodeReplay`) — `senderName` là field cuối, giữ nguyên
+  mọi ký tự `|` gốc, không cần escape. Decode trả `null` nếu thiếu prefix,
+  base64/định dạng sai, thiếu cột, số âm, hoặc `levelId` ngoài `1..kLevelCount`.
+- **`GameController`**: `activeChallenge` (`Rxn<ChallengeCode>`) + `challengeWon`
+  (`Rxn<bool>`, `null` nếu không có thách đấu đang chơi). `startChallenge(code)`
+  gọi nguyên `startLevel(code.levelId)` (board random bình thường) rồi gán
+  `activeChallenge.value = code`. Trong `checkEnd` (nhánh campaign, sau khi
+  `starsEarned`/`ended` đã set), nếu `activeChallenge.value != null` →
+  `challengeWon.value = score.value > activeChallenge.value!.score` (so
+  sánh **strict lớn hơn** — hoà tính là thua). Cả hai field reset về `null`
+  mỗi `startLevel` — độc lập hoàn toàn với sao/coin/unlock bình thường, không
+  ảnh hưởng path campaign non-challenge.
+- **Chia sẻ**: `GameScreenController.shareChallenge()` mã hoá điểm/level
+  hiện tại + `playerName` thành mã, mở share sheet (`shareText`, tái dùng
+  `share_helper.dart` có sẵn).
+- **UI thắng/thua** (`game_screen.dart`): nút icon "thách đấu bạn bè"
+  (`Icons.emoji_events_rounded`, `NeonTheme.gold`) trong `_WinChoreography`
+  cạnh nút share replay. `_challengeResultBanner` (helper dùng chung) hiện
+  `challenge_result_win_label`/`challenge_result_lose_label` (màu
+  lime/orange) — gắn vào **cả 2** dialog thắng và thua vì `GameUi.win` vs
+  `GameUi.lose` chỉ phụ thuộc `starsEarned > 0` bình thường, độc lập với kết
+  quả thách đấu; dialog thua dùng `NeonDialog.panel(... content: ...)` sẵn
+  có để chèn banner.
+- **`GhostReplayScreen`** mở rộng: field `_challenge` (`ChallengeCode?`),
+  `_load()` rẽ nhánh theo `challengeCodePrefix` trước khi thử replay — mã
+  thách đấu hiện tên người gửi + điểm cần vượt + nút "Chơi ngay"
+  (`_playChallenge` → `Get.find<GameController>().startChallenge(challenge)`
+  rồi `Get.to(() => const GameScreen())`), KHÔNG auto-play như ghost-replay.
+- **i18n**: `share_challenge`, `challenge_invite_title`,
+  `challenge_score_to_beat_label`, `challenge_play_button`,
+  `challenge_result_win_label`, `challenge_result_lose_label` —
+  `_extraEn`/`_extraVi` + wave `_w54ByLang` cho 20 ngôn ngữ còn lại.
+
+Test: `test/logic/challenge_code_test.dart` (mới — encode/decode round-trip,
+`senderName` giữ ký tự `|`, reject thiếu prefix/base64 sai/thiếu cột/số
+âm/levelId ngoài phạm vi). `test/presentation/game_controller_test.dart`
+(nhóm "I37 Async Challenge Code" mới — điểm cao hơn → thắng; thấp hơn →
+thua; bằng nhau (hoà) → tính thua; không có thách đấu → `challengeWon` giữ
+`null`; reset cả `activeChallenge`/`challengeWon` khi `startLevel`).
+`test/widget/ghost_replay_screen_test.dart` (3 test mới — mã hợp lệ hiện
+đúng tên/điểm/nút, không auto-play; mã hỏng báo lỗi giống ghost-replay; tap
+"Chơi ngay" gọi đúng `startChallenge` + chuyển sang `GameScreen`). Verify:
+`flutter analyze` → 0 issues. `flutter test --exclude-tags slow` → toàn bộ
+xanh, không regression.
+
+## ✅ Implemented: I36 Achievement Titles (2026-07-22)
+
+- **I36 Achievement Titles** — cho phép chọn 1 achievement đã unlock làm
+  "danh hiệu" hiển thị cạnh tên người chơi (Home Screen + hàng của mình
+  trong bảng xếp hạng offline, I9), thuần vanity, không ảnh hưởng
+  gameplay/điểm số.
+- **`GameController`**: `activeAchievementTitleId` (`RxString`, rỗng = không
+  có danh hiệu) + `StorageKeys.activeAchievementTitleId`. `setActiveTitle(id)`
+  chỉ nhận id nằm trong `unlockedAchievementIds` (bỏ qua nếu chưa unlock) —
+  set + persist ngay. `clearActiveTitle()` về rỗng + persist. Getter
+  `activeTitleAchievement` tra `kAchievements` qua `try/firstWhere` (không
+  thêm dependency `collection`, tái dùng đúng pattern lookup đã có ở
+  `_checkAchievements()`). `_load()` chỉ khôi phục lại id đã lưu nếu id đó
+  còn nằm trong `unlockedAchievementIds` hiện tại — phòng danh hiệu "ma" trỏ
+  tới achievement chưa (hoặc không còn) được unlock. `resetProgress()` xoá
+  key khỏi storage + tự về rỗng qua `_load()` cuối hàm.
+- **UI**: `AchievementsScreen` — mỗi hàng đã unlock có nút pill
+  "Đặt làm danh hiệu"/"Bỏ danh hiệu" (gold khi đang active), `Obx` bọc
+  ngoài đọc thêm `activeAchievementTitleId.value` để tránh lỗi lazy-builder
+  quen thuộc của `ListView.itemBuilder`. `HomeScreen` hiện `playerName` +
+  `· <danh hiệu>` (ẩn hoàn toàn nếu `playerName` rỗng). `LeaderboardScreen`
+  nối danh hiệu vào hàng của người chơi tại chỗ render (`_RankRow` nhận
+  thêm `playerTitleKey` optional) — không đổi cấu trúc `LeaderboardEntry`.
+- **i18n**: `achievement_title_set_button`, `achievement_title_clear_button`
+  — `_extraEn`/`_extraVi` + wave `_w55ByLang` cho 20 ngôn ngữ còn lại.
+
+Test: `test/presentation/game_controller_test.dart` — nhóm mới
+"I36 Achievement Titles" (set với id chưa unlock → không đổi; set với id đã
+unlock → đúng giá trị + persist storage; `clearActiveTitle` → về rỗng +
+persist) và 1 test bổ sung trong nhóm `resetProgress` hiện có (reset xoá
+`activeAchievementTitleId` về rỗng, tránh danh hiệu "ma"). Verify:
+`flutter analyze` → 0 issues. `flutter test --exclude-tags slow` → toàn bộ
+554 test xanh, không regression.
+
+## ✅ Implemented: I33 Daily Modifier Gauntlet (2026-07-22)
+
+- **I33 Daily Modifier Gauntlet** — side-mode mới "Gauntlet": mỗi ngày áp
+  đúng 1 "luật chơi" cố định lên bàn `dailyChallengeRows x dailyChallengeCols`
+  (tái dùng seed/kích cỡ bàn của F13 Daily Challenge), chọn theo
+  `epochDay % kGauntletModifiers.length` (không `Random()` — mọi thiết bị
+  cùng ngày luôn gặp đúng 1 modifier). 4 modifier: `no_undo` (khoá hoàn tác),
+  `short_combo` (combo window 1.5s), `four_colors` (bàn chỉ 4 màu), 
+  `reverse_gravity` (trọng lực ngược, tái dùng `GravityDirection` của I3).
+  Có leaderboard offline riêng (bot cố định), ghi điểm 1 lần/ngày.
+- **`lib/data/gauntlet_modifiers.dart`** (mới): `GauntletModifier` (id, icon,
+  nameKey, descKey, `disableUndo`, `comboWindowOverride`, `gravityOverride`,
+  `colorCountOverride`), `kGauntletModifiers` (4 phần tử const),
+  `modifierForDay(epochDay)` thuần, deterministic.
+- **`lib/data/levels.dart`**: `gauntletLevelFor(modifier)` sinh `PopLevel`
+  id `-7` (tiếp nối dãy id âm side-mode: -1 Time Attack … -6 Mirror Mode).
+  `generateDailyChallengeGrid` mở rộng tham số optional `colorCount` (mặc
+  định `dailyChallengeColorCount`) để Gauntlet truyền
+  `modifier.colorCountOverride` khi cần.
+- **`GameController`**: `gauntletGrid`/`activeGauntletModifier` (field),
+  `startGauntlet()` (mirror `startDailyChallenge`, chọn modifier + sinh bàn
+  theo `_todayEpochDay()`), `gauntletComboWindowOverride` getter (chỉ khác
+  `null` khi `mode.value == GameMode.gauntlet`, tránh giá trị cũ sót lại ở
+  mode khác), `canRecordGauntletScore`/`gauntletScoreToday`/
+  `gauntletScoreForLeaderboard`/`_saveGauntletScore()` (mirror đúng pattern
+  Daily Challenge — 1 lượt ghi điểm/ngày). `useUndo()` thêm gate: mode
+  Gauntlet + `activeGauntletModifier?.disableUndo == true` → no-op.
+- **`PopStarGame`**: combo timer đọc `controller.gauntletComboWindowOverride`
+  trước khi fallback về giá trị mặc định.
+- **UI**: `home_screen.dart` — icon Gauntlet trong dialog chọn mode, hiện
+  tên modifier hôm nay qua `todaysGauntletModifier` (preview trước khi vào
+  ván). `leaderboard_screen.dart` — thêm tab thứ 3 (`_LeaderboardTab.gauntlet`)
+  cạnh Campaign/Daily Challenge, dùng `kGauntletLeaderboardBots` +
+  `gauntletScoreForLeaderboard`. `game_screen_controller.dart` — `presetGrid`
+  + `again()` route đúng cho mode Gauntlet.
+- **i18n**: `mode_gauntlet_label`, `gauntlet_modifier_*_name/desc` (4 modifier
+  × name+desc) — `_extraEn`/`_extraVi` + wave `_w56ByLang` cho 20 ngôn ngữ
+  còn lại.
+
+Test: `test/data/gauntlet_modifiers_test.dart` (mới) — `modifierForDay`
+deterministic, tuần hoàn đúng theo `%`, đủ 4 modifier với id/nameKey/descKey
+duy nhất khác rỗng. `test/presentation/game_controller_test.dart` — nhóm mới
+"I33 Daily Modifier Gauntlet" (grid+modifier deterministic theo ngày, ghi
+điểm 1 lần/ngày không đè, `gauntletScoreForLeaderboard` = 0 khi chưa chơi
+hôm nay, ghi điểm lại được sau khi qua ngày mới, `gauntletComboWindowOverride`
+chỉ có giá trị đúng mode+modifier, `useUndo()` bị chặn khi modifier
+`no_undo`). Verify: `flutter analyze` → 0 issues. `flutter test --exclude-tags
+slow` → toàn bộ xanh, không regression.
+
+## ✅ Implemented: I38 Weekly Featured Level (2026-07-22)
+
+- **I38 Weekly Featured Level** side-mode mới "Featured": chơi lại đúng 1
+  level campaign đã có sẵn (không phải bàn mới), chọn deterministic theo
+  `currentWeekIndex = weekIndexForEpochDay(_todayEpochDay())` (tái dùng hạ
+  tầng tuần của I50 Weekly Goal) — mọi thiết bị cùng tuần luôn thấy cùng 1
+  level. Chơi lại **không đụng** tiến trình 3-sao/mở khoá thật của level đó,
+  chỉ để cạnh tranh điểm số cao trên leaderboard riêng, chơi lại không giới
+  hạn số lần trong tuần.
+- **`lib/data/weekly_featured.dart`** (mới): `featuredLevelIdForWeek(epochWeek)`
+  thuần, deterministic — `epochWeek % kLevelCount + 1`.
+- **`lib/data/weekly_featured_leaderboard_bots.dart`** (mới):
+  `kWeeklyFeaturedLeaderboardBots` — 10 bot ảo cố định, điểm cao hơn hẳn bàn
+  daily-challenge nhỏ (level campaign thật cân bằng cho điểm lớn hơn).
+- **`lib/core/storage_service.dart`**: 2 key mới —
+  `StorageKeys.lastFeaturedWeekSeen`, `StorageKeys.featuredLevelScore`.
+- **`lib/presentation/controllers/game_controller.dart`**: `featuredLevelId`
+  getter (map `currentWeekIndex` → id qua `featuredLevelIdForWeek`),
+  `startWeeklyFeatured()` (set `currentLevelRx` sang level tuần này, không
+  đụng `unlockedLevel`/best score/star thật của level), `featuredLevelScore`
+  getter (trả 0 nếu `lastFeaturedWeekSeen` khác `currentWeekIndex` — tự reset
+  mỗi tuần mới, dùng chung cho cả hiển thị lẫn leaderboard), private
+  `_saveFeaturedLevelScore()` (chỉ ghi khi điểm mới cao hơn, cập nhật cả
+  `lastFeaturedWeekSeen`). `resetProgress()` xoá cả 2 key mới.
+- **`lib/presentation/screens/home_screen.dart`**: thêm entry point side-mode
+  "Featured" trong modes dialog, hiện tên world của level tuần này
+  (`worldForLevel(gameCtrl.featuredLevelId).nameKey`).
+- **`lib/presentation/screens/leaderboard_screen.dart`**: thêm tab thứ 4
+  (`_LeaderboardTab.weeklyFeatured`), dùng `kWeeklyFeaturedLeaderboardBots` +
+  `gameCtrl.featuredLevelScore`.
+- **`lib/core/app_translations.dart`**: key `mode_weekly_featured_label`
+  ("Featured"/"Nổi bật") + wave `_w57ByLang` cho 20 locale còn lại.
+- **`test/data/weekly_featured_test.dart`** (mới): `featuredLevelIdForWeek`
+  deterministic, luôn trong khoảng `1..kLevelCount`, tuần hoàn đều theo `%
+  kLevelCount`, các tuần khác nhau ra level khác nhau.
+- **`test/presentation/game_controller_test.dart`**: group test mới —
+  `featuredLevelId`/`startWeeklyFeatured` đúng level theo tuần,
+  `featuredLevelScore` chỉ ghi khi điểm cao hơn, tự reset về 0 khi qua tuần
+  mới (đổi `lastFeaturedWeekSeen`), `resetProgress()` xoá sạch state Weekly
+  Featured Level.
+- Test: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
+  576 tests, toàn bộ xanh, không regression.
+
+## ✅ Implemented: I51 Board Frame Cosmetics (2026-07-22)
+
+- **I51 Board Frame Cosmetics** — 4 khung viền board (`classic`, `neon_cyan`,
+  `aurora_gold`, `diamond`) đổi màu/độ dày border cho `PopStarGame`, mở khoá
+  theo 2 nguồn state có sẵn: `prestigeTier` (mốc tier) hoặc
+  `unlockedAchievementIds` (achievement cụ thể), không thêm counter mới —
+  tương tự pattern I52/I54, chỉ 1 `Rx` id đang chọn, luôn recompute unlock
+  live từ state hiện tại thay vì lưu set "đã mở khoá" riêng.
+- **`lib/data/board_frames.dart`** (mới): `BoardFrame` (id, nameKey, color,
+  unlockKind, requiredPrestigeTier, requiredAchievementId),
+  `BoardFrameUnlockKind` (`always`/`prestigeTier`/`achievement`),
+  `kBoardFrames` (4 phần tử), `isBoardFrameUnlocked(frame, prestigeTier,
+  unlockedAchievementIds)` thuần.
+- **`lib/core/storage_service.dart`**: key mới `StorageKeys.activeBoardFrame`.
+- **`lib/presentation/controllers/game_controller.dart`**:
+  `activeBoardFrameId` (`Rx<String>`, mặc định `'classic'`), `activeBoardFrame`
+  getter, `setActiveBoardFrame(id)` (chặn chọn khung chưa đủ điều kiện mở
+  khoá), `_load()` validate lại id đọc từ storage qua `isBoardFrameUnlocked`
+  (anti-cheat — fallback `classic` nếu id không hợp lệ hoặc điều kiện không
+  còn đúng), `resetProgress()` xoá key `activeBoardFrame`.
+- **`lib/presentation/widgets/board_frame_picker_dialog.dart`** (mới):
+  `showBoardFramePickerDialog` — list 4 khung, khung khoá hiện mờ + text điều
+  kiện mở khoá (`board_frame_unlock_prestige` hoặc `wardrobe_unlock_via`),
+  khung mở tap để chọn.
+- **`lib/presentation/screens/home_screen.dart`**: entry point drawer mới,
+  icon `Icons.crop_free_rounded`, mở `showBoardFramePickerDialog`.
+- **`lib/presentation/screens/game_screen.dart`**: board render với border
+  màu theo `gameCtrl.activeBoardFrame.color`.
+- **`lib/core/app_translations.dart`**: 6 key mới
+  (`drawer_board_frame_label`, `board_frame_classic`, `board_frame_neon_cyan`,
+  `board_frame_aurora_gold`, `board_frame_diamond`,
+  `board_frame_unlock_prestige`) vào `_extraEn`/`_extraVi` + wave `_w58ByLang`
+  cho 20 locale còn lại.
+- **`test/data/board_frames_test.dart`** (mới): `isBoardFrameUnlocked` đúng
+  cho cả 3 kind (`always` luôn true, `prestigeTier` đúng ngưỡng, `achievement`
+  đúng id), 4 frame id không trùng nhau.
+- **`test/presentation/game_controller_test.dart`**: group test mới —
+  `setActiveBoardFrame` chặn khung chưa đủ prestigeTier/achievement, cho đổi
+  khung khi đã đủ điều kiện, `_load()` khôi phục đúng khung từ storage hoặc
+  fallback `classic` khi id không hợp lệ / điều kiện không còn đúng (giả lập
+  sửa storage tay), `resetProgress()` xoá key và reset về `classic`.
+- Test: `flutter analyze` → 0 issues. `flutter test --exclude-tags slow` →
+  toàn bộ xanh, không regression.
+
+## ✅ Implemented: I2 Color-lock / Chain Tiles (2026-07-13)
+
+*(Ghi chú tài liệu bổ sung — tính năng đã có code từ trước, chỉ chưa được ghi vào tracker này; audit thật lại toàn bộ code trong phiên 2026-07-22.)*
+
+- **I2 Color-lock / chain tiles**: loại ô "bị xích" — vẫn mang màu bình thường
+  và tham gia hiển thị bàn cờ, nhưng KHÔNG match được cho tới khi đủ K lần một
+  ô cạnh (4-hướng) nổ. Khác hẳn obstacle (F6a, encode âm, loại vĩnh viễn khỏi
+  flood-fill) — chain tile dùng 1 cấu trúc dữ liệu song song riêng
+  (`lockGrid`) để không đụng encoding âm sẵn có, và tự "mở khoá" khi đếm về 0.
+  `lockValue` khởi tạo theo world (`1 + world ~/ 5`) qua
+  `_placeChainLocksIfNeeded`.
+- **`lib/logic/chain_tile.dart`**: `chipAdjacentLocks` — dùng `Set<Point<int>>`
+  dedup trước khi trừ, đảm bảo 1 ô khoá kề nhiều ô nổ cùng lúc chỉ mất đúng 1
+  lock (không trừ trùng theo số cạnh kề).
+- **`lib/logic/pop_detector.dart`**: `findConnectedGroup`/`hasAnyMovableGroup`
+  nhận `lockGrid` optional, loại ô có `lockGrid[r][c] > 0` khỏi flood-fill
+  ngay tại điểm bắt đầu lẫn khi lan (`continue`); đọc lại giá trị mỗi lần gọi
+  nên ô vừa về `lock == 0` tham gia flood-fill lại ngay lượt kế tiếp, không có
+  độ trễ 1 lượt.
+- **`lib/logic/pop_collapse.dart`**: `applyGravityAndCollapse` nhận `lockGrid`
+  optional, đồng bộ transform (rơi cột, dồn cột trái, và cả 4 hướng gravity)
+  lên cả `grid` và `lockGrid` cùng lúc — ô khoá rơi/dồn đúng như ô thường.
+  **`lib/game/pop_star_game.dart`**: field `late List<List<int>> lockGrid`
+  song song `colorGrid`; gọi `chipAdjacentLocks` sau mỗi lần tap-pop và các
+  đường nổ khác (power tile...).
+  **`lib/game/block_component.dart`**: vẽ `_renderChainLock` **sau** khi thân
+  gem đã vẽ theo màu gốc (không return sớm như obstacle) nên màu luôn hiển
+  thị đúng, chỉ đè thêm số lock lên trên.
+- Test: `test/logic/chain_tile_test.dart` (dedup lock khi nhiều ô nổ cùng lúc
+  kề 1 ô khoá) + các case lock trong `test/logic/pop_detector_test.dart`
+  (loại ô khoá khỏi flood-fill, ô về lock=0 tham gia lại bình thường) — audit
+  xác nhận cả 6 acceptance criteria của spec `I2-chain-tiles.md` đều khớp
+  code thật, không phát hiện phần thiếu.
+
+## ✅ Implemented: I4 Predictive Hint (2026-07-13)
+
+*(Ghi chú tài liệu bổ sung — tính năng đã có code từ trước, chỉ chưa được ghi vào tracker này; audit thật lại toàn bộ code trong phiên 2026-07-22.)*
+
+- **I4 Predictive hint**: sau 6s không tap (2s nếu có perk `move_hint`), tự
+  động highlight (pulse glow nhẹ) nhóm gem lớn nhất còn lại trên bàn, giúp
+  người chơi bí nước đi không bị kẹt/chán — không tự chơi hộ (khác
+  auto-solver), không chặn input trong lúc highlight.
+- **`lib/game/pop_star_game.dart`**: `_idleTimer` cộng dồn theo `dt` thật
+  trong `update()` (không dùng `TimerComponent` riêng nhưng cùng bản chất
+  đếm real-time), gate bằng `!_animating && !controller.ended.value &&
+  _hint.isEmpty`; hết `_hintDelay` gọi `_triggerHint()` →
+  `findLargestGroup(colorGrid, lockGrid: lockGrid)`. `clearHint()` reset
+  `_idleTimer = 0`, được gọi từ mọi tap qua
+  `GameScreenController.handleBoardTap` trước khi forward sang
+  `game.handleTap` — tap không hề bị chặn bởi hint đang hiện.
+- **`lib/logic/pop_detector.dart`**: `findLargestGroup` — chỉ là vòng lặp
+  toàn bàn gọi lại `findConnectedGroup` cho từng ô chưa duyệt, giữ nhóm
+  `length >= 2` lớn nhất; đúng tinh thần "tái dùng, không thêm thuật toán
+  mới" của spec.
+- **`lib/game/block_component.dart`**: field `hinted` + `_hintPhase` vẽ viền
+  pulse (`sin` theo phase, alpha nhạt) đè lên các ô thuộc nhóm gợi ý.
+- **`lib/data/perks.dart`**: perk `move_hint` rút ngắn delay hint xuống 2s.
+- Test: `test/widget/predictive_hint_test.dart` — dựng bàn xác định, pump
+  chưa đủ 6s (assert `hintGroup` rỗng), pump qua ngưỡng (assert đúng nhóm lớn
+  nhất kỳ vọng), rồi tap để assert `hintGroup` tắt ngay. Audit xác nhận khớp
+  4/5 tiêu chí spec `I4-predictive-hint.md` hoàn toàn; 1 điểm cần lưu ý:
+  🟡 **highlight không tự tắt sau "vài giây" cố định như câu chữ spec** — nó
+  giữ nguyên vô thời hạn cho tới khi có tap tiếp theo (không phải bug chặn
+  gameplay, nhưng khác với cách đọc literal "trong vài giây" của acceptance
+  criteria #3; cần theo dõi nếu muốn khớp chữ nghĩa spec 100%).
+
+## ✅ Implemented: I5 Undo Miễn Phí 1 Lần/Màn (2026-07-13)
+
+*(Ghi chú tài liệu bổ sung — tính năng đã có code từ trước, chỉ chưa được ghi vào tracker này; audit thật lại toàn bộ code trong phiên 2026-07-22.)*
+
+- **I5 Undo miễn phí 1 lần/màn**: mỗi màn cho phép 1 lần `useUndo()` không
+  trừ `undoCount` (booster đã mua) — giảm friction cho người chơi mới mà
+  không phá kinh tế booster (từ lần 2 trở đi vẫn trừ như cũ). Có perk
+  `extra_undo` (F14) cho 2 lần miễn phí thay vì 1. Không persist qua
+  `SharedPreferences` — chỉ là state trong-phiên-chơi, reset mỗi khi bắt đầu
+  màn (giống snapshot single-step của `undo()` hiện có).
+- **`lib/presentation/controllers/game_controller.dart`**: field
+  `_freeUndoLeft`, reset ở **tất cả** các hàm bắt đầu màn (`startLevel`,
+  `startSideMode`, `startEndless`, `startDailyChallenge`, `startMirrorMode`,
+  `startWeeklyFeatured`, `startPuzzleLevel`...) thành
+  `hasPerk('extra_undo') ? 2 : 1`. `useUndo()`: nhánh free tiêu thụ trước
+  (`if (_freeUndoLeft > 0) { ...; _freeUndoLeft--; return; }`) rồi mới rơi
+  xuống nhánh trừ `undoCount` bình thường (chặn nếu `undoCount.value <= 0`).
+  Getter `hasFreeUndo` (`_freeUndoLeft > 0`) phục vụ UI.
+- **`lib/presentation/screens/game_screen.dart`**: nút undo dùng
+  `forceEnabled: gameCtrl.undoCount.value > 0 || gameCtrl.hasFreeUndo` — vẫn
+  bật khi còn free-undo dù `undoCount == 0`.
+- Test: `test/widget/free_undo_test.dart` — verify lần undo đầu tiên với
+  `undoCount = 0` vẫn undo được và không trừ `undoCount`; lần 2 cùng màn với
+  `undoCount = 0` thì bị chặn (đúng behavior cũ). Audit xác nhận PASS toàn bộ
+  4 acceptance criteria của spec `I5-free-undo.md`, không phát hiện thiếu sót
+  (kể cả thứ tự tiêu thụ free-undo trước khi trừ booster).
+
+## ✅ Implemented: I11 Haptic Feedback Theo Cỡ Nhóm Nổ (2026-07-13)
+
+*(Ghi chú tài liệu bổ sung — tính năng đã có code từ trước, chỉ chưa được ghi vào tracker này; audit thật lại toàn bộ code trong phiên 2026-07-22.)*
+
+- **I11 Haptic feedback**: rung nhẹ/vừa/mạnh khi pop nhóm gem tuỳ số ô trong
+  nhóm, tăng phản hồi xúc giác cho hit lớn — dùng thẳng
+  `HapticFeedback` (`package:flutter/services.dart`, đã có sẵn trong repo cho
+  unlock reveal ở `level_select_screen.dart`), không thêm dependency mới.
+- **`lib/core/haptics.dart`**: enum `HapticLevel {light, medium, heavy}` +
+  `fireHaptic(...)` tôn trọng cờ `StorageKeys.hapticsEnabled`.
+- **`lib/core/haptics.dart`**: `hapticLevelForGroupSize(size)` (thuần, mới
+  tách 2026-07-22 để test được trực tiếp, không cần mock platform channel) map
+  `size >= 8` → heavy, `size >= 4` → medium, còn lại (`< 4`) → light.
+- **`lib/game/pop_star_game.dart`**: `_hapticForGroupSize(size)` nay chỉ
+  delegate `fireHaptic(hapticLevelForGroupSize(size))`, gọi tại `_tryPop`
+  **sau** guard `if (group.length < 2) return;` nên tap trượt không rung.
+  `triggerBomb` gọi `fireHaptic(HapticLevel.heavy)` cố định ngay sau guard
+  "vùng 3x3 không rỗng", không phụ thuộc số ô ăn được đúng theo spec.
+  **`lib/data/combo_milestones.dart`**: hệ haptic khác (theo mốc combo, dùng
+  chung `HapticLevel`/`fireHaptic`) — không thuộc acceptance criteria I11
+  (theo cỡ nhóm) nhưng liên quan hạ tầng.
+  **`lib/presentation/screens/level_select_screen.dart`**,
+  **`lib/presentation/screens/home_screen.dart`**: dùng `HapticFeedback` cho
+  unlock reveal / tap — context nền tảng đã có sẵn trước I11.
+- Test: audit xác nhận PASS toàn bộ 5 acceptance criteria của spec
+  `I11-haptic-feedback.md` qua đọc code trực tiếp (ranh giới `<4`/`4-7`/`>=8`
+  đúng, không lệch 1; thứ tự gọi đúng sau guard tap trượt). **`test/core/haptics_test.dart`**
+  (mới) test trực tiếp `hapticLevelForGroupSize` ở cả 3 ngưỡng
+  (2/3 → light, 4/7 → medium, 8/20 → heavy) — đóng gap test đã nêu trước đó.
+
+## ✅ Implemented: I13 SFX Pop Cao Độ Theo Cỡ Nhóm (2026-07-13)
+
+*(Ghi chú tài liệu bổ sung — tính năng đã có code từ trước, chỉ chưa được ghi vào tracker này; audit thật lại toàn bộ code trong phiên 2026-07-22.)*
+
+- **I13 SFX pop cao độ theo cỡ nhóm**: wire hạ tầng nhạc lý ngũ cung có sẵn
+  (`AudioManager.playMelodic`/`playNote`/`noteIndexFor`, màu-là-giọng,
+  combo-là-bậc) vào gameplay thật — trước đó hạ tầng đã xây xong nhưng
+  `pop_star_game.dart` chưa gọi tới, khiến pop không phát bất kỳ SFX nào.
+- **`lib/game/pop_star_game.dart`**: `_tryPop` gọi
+  `AudioManager.maybe?.playMelodic(combo: group.length, colorIndex:
+  colorGrid[row][col] ?? -1)` ngay sau guard `if (group.length < 2) return;`
+  — không phát khi tap trượt. `colorIndex` lấy đúng ô gốc của group vừa tìm
+  (0-based, `-1` khi null).
+- **`lib/core/audio_manager.dart`**: `playMelodic`/`playNote`/`noteIndexFor`
+  (dòng ~99-190) — hệ ngũ cung + màu-là-giọng + hợp âm wombo khi combo lớn.
+- Test: `test/core/audio_manager_test.dart` (mở rộng 2026-07-22) nay có group
+  test riêng cho `AudioManager.noteIndexFor` — combo leo bậc ngũ cung không
+  tụt, `colorIndex` quyết định bậc gốc, `keyIndex` dịch nốt gốc, cả hai quay
+  vòng đúng theo modulo, kết quả luôn clamp trong `1..noteCount`. Vẫn
+  **chưa có test verify lời gọi `playMelodic` trong `_tryPop`** (integration
+  giữa pop group và audio call site) — chỉ test hàm thuần `noteIndexFor`.
+- 🟡 **Partial — 2 điểm chưa khớp hoàn toàn acceptance criteria**:
+  1. Tham số tên `combo` nhưng thực chất truyền `group.length` (kích thước
+     nhóm vừa pop), không phải chuỗi combo/cascade liên tiếp thật — spec cho
+     phép dùng `group.length` làm proxy nên chấp nhận được, nhưng cần lưu ý
+     đây không phải combo-chain thật của `GameController`.
+  2. `keyIndex` **không được truyền** ở lời gọi trong `_tryPop`, luôn dùng
+     default cố định của `playMelodic` — chưa map theo world/stage như 1
+     trong 2 phương án mà spec đề xuất (dù phương án còn lại "cố định 1 giá
+     trị" cũng được spec chấp nhận). `_activatePowerTile` (một đường pop
+     khác qua power tile) cũng **không gọi** `playMelodic` — nằm ngoài phạm
+     vi literal của acceptance criteria (chỉ nói `_tryPop`) nhưng là 1 pop
+     path thiếu SFX melodic nếu xét toàn diện.
+
+## ✅ Implemented: I18 Colorblind Neon Symbols (2026-07-13)
+
+*(Ghi chú tài liệu bổ sung — tính năng đã có code từ trước, chỉ chưa được ghi vào tracker này; audit thật lại toàn bộ code trong phiên 2026-07-22.)*
+
+- **I18 Colorblind neon symbols**: vẽ thêm icon/symbol riêng theo
+  `colorIndex` lên mỗi gem (star/circle/triangle/square/diamond/hexagon/
+  cross), bật/tắt qua Settings, giúp người mù màu (đặc biệt đỏ-lục) phân
+  biệt gem không chỉ dựa vào màu — board tối đa 7 màu (`colorCount` 4..7
+  theo world).
+- **`lib/core/storage_service.dart`**: `StorageKeys.colorblindMode =
+  'colorblind_mode'`.
+- **`lib/presentation/controllers/game_controller.dart`**:
+  `colorblindMode` (`Rx<bool>`), `toggleColorblindMode()` (set + persist
+  qua `StorageService.to.setBool`), `_load()` đọc lại lúc khởi động —
+  round-trip đúng.
+- **`lib/game/block_component.dart`**: `_renderColorblindSymbol` vẽ đúng 7
+  `Path`/shape khác nhau (`colorIndex % 7`: star 10 cánh, circle, triangle,
+  square, diamond, hexagon, cross/plus cho case còn lại), fill trắng alpha
+  0.9 + viền đen alpha 0.6 để nổi trên mọi nền màu; chỉ chạy trong `render()`
+  khi `game.controller.colorblindMode.value == true`, không đụng `size`/
+  `position`/`anchor` của component nên không ảnh hưởng hitbox/tap (tap logic
+  nằm ở `PopStarGame.handleTap`, hoàn toàn tách biệt).
+- **`lib/presentation/screens/settings_screen.dart`**: `SwitchListTile` theo
+  đúng pattern `audioMuted` đang có, bọc `Obx`.
+- **`lib/core/app_translations.dart`**: key `colorblind_mode` đủ cho toàn bộ
+  22 locale trong `AppTranslations.supported`.
+- Test: `test/widget/colorblind_mode_test.dart` — bật/tắt mode, render
+  `GameScreen` qua vài frame, assert không crash (smoke test, không assert
+  pixel/shape cụ thể nhưng đủ bắt lỗi runtime). Audit xác nhận PASS toàn bộ 4
+  acceptance criteria của spec `I18-colorblind-symbols.md`, không phát hiện
+  thiếu sót.

@@ -197,6 +197,37 @@ class AppTranslations extends Translations {
           // retro/fire, drawer_combo_text_style_label (en+vi ở _extraEn/
           // _extraVi, 20 ngôn ngữ còn lại ở _w50ByLang).
           ...?_w50ByLang[e.key],
+          // I50 — Weekly Goal Card: weekly_goal_title/desc/claim_button/
+          // claimed_label, drawer_weekly_goal_label (en+vi ở _extraEn/
+          // _extraVi, 20 ngôn ngữ còn lại ở _w51ByLang).
+          ...?_w51ByLang[e.key],
+          // I47 — Mirror Mode: mode_mirror_label (en+vi ở _extraEn/_extraVi,
+          // 20 ngôn ngữ còn lại ở _w52ByLang).
+          ...?_w52ByLang[e.key],
+          // I32 — Craft Booster: craft_booster_reward_label (en+vi ở
+          // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w53ByLang).
+          ...?_w53ByLang[e.key],
+          // I37 — Async Challenge Code: share_challenge/challenge_invite_title/
+          // challenge_score_to_beat_label/challenge_play_button/
+          // challenge_result_win_label/challenge_result_lose_label (en+vi ở
+          // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w54ByLang).
+          ...?_w54ByLang[e.key],
+          // I36 — Achievement Titles: achievement_title_set_button/
+          // achievement_title_clear_button (en+vi ở _extraEn/_extraVi, 20
+          // ngôn ngữ còn lại ở _w55ByLang).
+          ...?_w55ByLang[e.key],
+          // I33 Daily Modifier Gauntlet: mode_gauntlet_label/
+          // gauntlet_modifier_*_name/gauntlet_modifier_*_desc (en+vi ở
+          // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w56ByLang).
+          ...?_w56ByLang[e.key],
+          // I38 Weekly Featured Level: mode_weekly_featured_label (en+vi ở
+          // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w57ByLang).
+          ...?_w57ByLang[e.key],
+          // I51 Board Frame Cosmetics: board_frame_classic/neon_cyan/
+          // aurora_gold/diamond, board_frame_unlock_prestige,
+          // drawer_board_frame_label (en+vi ở _extraEn/_extraVi, 20 ngôn ngữ
+          // còn lại ở _w58ByLang).
+          ...?_w58ByLang[e.key],
         },
     };
   }
@@ -919,6 +950,36 @@ class AppTranslations extends Translations {
     'ghost_replay_watch_button': 'Watch Replay',
     'ghost_replay_invalid_code': 'Invalid replay code',
     'ghost_replay_finished': 'Replay finished',
+    // I37 — Async Challenge Code.
+    'share_challenge': 'Challenge a Friend',
+    'challenge_invite_title': '@sender\'s Challenge',
+    'challenge_score_to_beat_label': 'Score to beat: @score',
+    'challenge_play_button': 'Play Now',
+    'challenge_result_win_label': 'You beat @sender\'s challenge! (@score pts)',
+    'challenge_result_lose_label':
+        'Couldn\'t beat @sender\'s @score pts. Try again!',
+    // I36 — Achievement Titles.
+    'achievement_title_set_button': 'Set as Title',
+    'achievement_title_clear_button': 'Remove Title',
+    // I33 Daily Modifier Gauntlet.
+    'mode_gauntlet_label': 'Gauntlet',
+    'gauntlet_modifier_no_undo_name': 'No Undo',
+    'gauntlet_modifier_no_undo_desc': 'Undo is disabled for today\'s board.',
+    'gauntlet_modifier_short_combo_name': 'Quick Combo',
+    'gauntlet_modifier_short_combo_desc': 'Combo window is much shorter today.',
+    'gauntlet_modifier_four_colors_name': 'Four Colors',
+    'gauntlet_modifier_four_colors_desc': 'Today\'s board only uses 4 colors.',
+    'gauntlet_modifier_reverse_gravity_name': 'Reverse Gravity',
+    'gauntlet_modifier_reverse_gravity_desc': 'Gems fall upward today.',
+    // I38 Weekly Featured Level.
+    'mode_weekly_featured_label': 'Featured',
+    // I51 Board Frame Cosmetics.
+    'drawer_board_frame_label': 'Board Frame',
+    'board_frame_classic': 'Classic',
+    'board_frame_neon_cyan': 'Neon Cyan',
+    'board_frame_aurora_gold': 'Aurora Gold',
+    'board_frame_diamond': 'Diamond',
+    'board_frame_unlock_prestige': 'Unlock at Prestige @tier',
     // Home Screen redesign — banner ưu tiên đơn + Modes dialog + Drawer.
     'modes_title': 'Choose Mode',
     'season_pass_banner_ready': 'Season Pass reward ready — tap to claim!',
@@ -984,6 +1045,8 @@ class AppTranslations extends Translations {
     'trophy_room_achievements_section': 'Achievements',
     'trophy_room_mascots_section': 'Costumes',
     'mode_boss_rush_label': 'Boss Rush',
+    'mode_mirror_label': 'Mirror',
+    'craft_booster_reward_label': '+1 @booster',
     'boss_rush_title': 'Boss Rush',
     'boss_rush_best_streak_label': 'Best streak',
     'boss_rush_stage_label': 'Stage',
@@ -1025,6 +1088,13 @@ class AppTranslations extends Translations {
     'stats_levels_three_starred': '3-star levels',
     'stats_boards_cleared': 'Boards cleared',
     'stats_boosters_used': 'Boosters used',
+    // I50 — Weekly Goal Card: thanh tiến độ pop gem theo tuần + nhận thưởng
+    // (en+vi ở _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w51ByLang).
+    'weekly_goal_title': 'Weekly Goal',
+    'weekly_goal_desc': 'Pop 300 gems this week to earn a coin reward.',
+    'weekly_goal_claim_button': 'Claim',
+    'weekly_goal_claimed_label': 'Claimed',
+    'drawer_weekly_goal_label': 'Weekly Goal',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -1704,6 +1774,38 @@ class AppTranslations extends Translations {
     'ghost_replay_watch_button': 'Xem Replay',
     'ghost_replay_invalid_code': 'Mã replay không hợp lệ',
     'ghost_replay_finished': 'Replay đã kết thúc',
+    // I37 — Async Challenge Code.
+    'share_challenge': 'Thách đấu bạn bè',
+    'challenge_invite_title': 'Thách đấu từ @sender',
+    'challenge_score_to_beat_label': 'Điểm cần vượt: @score',
+    'challenge_play_button': 'Chơi ngay',
+    'challenge_result_win_label':
+        'Bạn đã vượt thách đấu của @sender! (@score điểm)',
+    'challenge_result_lose_label':
+        'Chưa vượt được @score điểm của @sender. Thử lại nhé!',
+    // I36 — Achievement Titles.
+    'achievement_title_set_button': 'Đặt làm danh hiệu',
+    'achievement_title_clear_button': 'Bỏ danh hiệu',
+    // I33 Daily Modifier Gauntlet.
+    'mode_gauntlet_label': 'Gauntlet',
+    'gauntlet_modifier_no_undo_name': 'Không hoàn tác',
+    'gauntlet_modifier_no_undo_desc': 'Bàn hôm nay không dùng được hoàn tác.',
+    'gauntlet_modifier_short_combo_name': 'Combo gấp',
+    'gauntlet_modifier_short_combo_desc':
+        'Thời gian giữ combo hôm nay ngắn hơn nhiều.',
+    'gauntlet_modifier_four_colors_name': 'Bốn màu',
+    'gauntlet_modifier_four_colors_desc': 'Bàn hôm nay chỉ có 4 màu.',
+    'gauntlet_modifier_reverse_gravity_name': 'Trọng lực ngược',
+    'gauntlet_modifier_reverse_gravity_desc': 'Đá quý rơi lên trên hôm nay.',
+    // I38 Weekly Featured Level.
+    'mode_weekly_featured_label': 'Nổi bật',
+    // I51 Board Frame Cosmetics.
+    'drawer_board_frame_label': 'Khung viền',
+    'board_frame_classic': 'Cổ điển',
+    'board_frame_neon_cyan': 'Neon Cyan',
+    'board_frame_aurora_gold': 'Cực quang vàng',
+    'board_frame_diamond': 'Kim cương',
+    'board_frame_unlock_prestige': 'Mở khoá ở Prestige @tier',
     // Home Screen redesign — banner ưu tiên đơn + Modes dialog + Drawer.
     'modes_title': 'Chọn chế độ',
     'season_pass_banner_ready': 'Season Pass có thưởng, bấm để nhận!',
@@ -1771,6 +1873,8 @@ class AppTranslations extends Translations {
     'trophy_room_achievements_section': 'Thành Tựu',
     'trophy_room_mascots_section': 'Trang Phục',
     'mode_boss_rush_label': 'Đại Chiến Boss',
+    'mode_mirror_label': 'Chế Độ Gương',
+    'craft_booster_reward_label': '+1 @booster',
     'boss_rush_title': 'Đại Chiến Boss',
     'boss_rush_best_streak_label': 'Chuỗi dài nhất',
     'boss_rush_stage_label': 'Màn',
@@ -1803,6 +1907,11 @@ class AppTranslations extends Translations {
     'stats_levels_three_starred': 'Màn đạt 3 sao',
     'stats_boards_cleared': 'Bàn dọn sạch',
     'stats_boosters_used': 'Booster đã dùng',
+    'weekly_goal_title': 'Mục tiêu tuần',
+    'weekly_goal_desc': 'Nổ 300 viên đá trong tuần này để nhận thưởng xu.',
+    'weekly_goal_claim_button': 'Nhận',
+    'weekly_goal_claimed_label': 'Đã nhận',
+    'drawer_weekly_goal_label': 'Mục tiêu tuần',
   };
 
   static const Map<String, String> _extraEs = {
@@ -27873,6 +27982,958 @@ class AppTranslations extends Translations {
       'combo_text_style_retro': 'রেট্রো',
       'combo_text_style_fire': 'আগুন',
       'drawer_combo_text_style_label': 'কম্বো টেক্সট স্টাইল',
+    },
+  };
+
+  /// Bản dịch key Wave 5 theo từng ngôn ngữ (en dùng [_extraEn] làm gốc).
+  /// I50 — Weekly Goal Card: weekly_goal_title/desc/claim_button/
+  /// claimed_label, drawer_weekly_goal_label.
+  static const Map<String, Map<String, String>> _w51ByLang = {
+    'es_ES': {
+      'weekly_goal_title': 'Meta Semanal',
+      'weekly_goal_desc':
+          'Revienta 300 gemas esta semana para ganar una recompensa de monedas.',
+      'weekly_goal_claim_button': 'Reclamar',
+      'weekly_goal_claimed_label': 'Reclamado',
+      'drawer_weekly_goal_label': 'Meta Semanal',
+    },
+    'fr_FR': {
+      'weekly_goal_title': 'Objectif Hebdomadaire',
+      'weekly_goal_desc':
+          'Éclatez 300 gemmes cette semaine pour gagner une récompense en pièces.',
+      'weekly_goal_claim_button': 'Réclamer',
+      'weekly_goal_claimed_label': 'Réclamé',
+      'drawer_weekly_goal_label': 'Objectif Hebdomadaire',
+    },
+    'de_DE': {
+      'weekly_goal_title': 'Wochenziel',
+      'weekly_goal_desc':
+          'Platze diese Woche 300 Edelsteine, um eine Münzbelohnung zu erhalten.',
+      'weekly_goal_claim_button': 'Einlösen',
+      'weekly_goal_claimed_label': 'Eingelöst',
+      'drawer_weekly_goal_label': 'Wochenziel',
+    },
+    'pt_BR': {
+      'weekly_goal_title': 'Meta Semanal',
+      'weekly_goal_desc':
+          'Estoure 300 gemas esta semana para ganhar uma recompensa em moedas.',
+      'weekly_goal_claim_button': 'Resgatar',
+      'weekly_goal_claimed_label': 'Resgatado',
+      'drawer_weekly_goal_label': 'Meta Semanal',
+    },
+    'ru_RU': {
+      'weekly_goal_title': 'Недельная цель',
+      'weekly_goal_desc':
+          'Лопните 300 кристаллов на этой неделе, чтобы получить награду монетами.',
+      'weekly_goal_claim_button': 'Получить',
+      'weekly_goal_claimed_label': 'Получено',
+      'drawer_weekly_goal_label': 'Недельная цель',
+    },
+    'zh_CN': {
+      'weekly_goal_title': '每周目标',
+      'weekly_goal_desc': '本周消除300颗宝石即可获得金币奖励。',
+      'weekly_goal_claim_button': '领取',
+      'weekly_goal_claimed_label': '已领取',
+      'drawer_weekly_goal_label': '每周目标',
+    },
+    'ja_JP': {
+      'weekly_goal_title': '週間目標',
+      'weekly_goal_desc': '今週300個の宝石を消してコインを獲得しよう。',
+      'weekly_goal_claim_button': '受け取る',
+      'weekly_goal_claimed_label': '受取済み',
+      'drawer_weekly_goal_label': '週間目標',
+    },
+    'ko_KR': {
+      'weekly_goal_title': '주간 목표',
+      'weekly_goal_desc': '이번 주 보석 300개를 터뜨리고 코인 보상을 받으세요.',
+      'weekly_goal_claim_button': '받기',
+      'weekly_goal_claimed_label': '받음',
+      'drawer_weekly_goal_label': '주간 목표',
+    },
+    'it_IT': {
+      'weekly_goal_title': 'Obiettivo Settimanale',
+      'weekly_goal_desc':
+          'Scoppia 300 gemme questa settimana per ottenere una ricompensa in monete.',
+      'weekly_goal_claim_button': 'Riscatta',
+      'weekly_goal_claimed_label': 'Riscattato',
+      'drawer_weekly_goal_label': 'Obiettivo Settimanale',
+    },
+    'id_ID': {
+      'weekly_goal_title': 'Target Mingguan',
+      'weekly_goal_desc':
+          'Pecahkan 300 permata minggu ini untuk mendapatkan hadiah koin.',
+      'weekly_goal_claim_button': 'Klaim',
+      'weekly_goal_claimed_label': 'Diklaim',
+      'drawer_weekly_goal_label': 'Target Mingguan',
+    },
+    'th_TH': {
+      'weekly_goal_title': 'เป้าหมายรายสัปดาห์',
+      'weekly_goal_desc':
+          'ทำลายอัญมณี 300 ชิ้นในสัปดาห์นี้เพื่อรับรางวัลเหรียญ',
+      'weekly_goal_claim_button': 'รับรางวัล',
+      'weekly_goal_claimed_label': 'รับแล้ว',
+      'drawer_weekly_goal_label': 'เป้าหมายรายสัปดาห์',
+    },
+    'hi_IN': {
+      'weekly_goal_title': 'साप्ताहिक लक्ष्य',
+      'weekly_goal_desc': 'सिक्का इनाम पाने के लिए इस सप्ताह 300 रत्न फोड़ें।',
+      'weekly_goal_claim_button': 'प्राप्त करें',
+      'weekly_goal_claimed_label': 'प्राप्त किया',
+      'drawer_weekly_goal_label': 'साप्ताहिक लक्ष्य',
+    },
+    'ar_SA': {
+      'weekly_goal_title': 'الهدف الأسبوعي',
+      'weekly_goal_desc': 'فجّر 300 جوهرة هذا الأسبوع لتحصل على مكافأة عملات.',
+      'weekly_goal_claim_button': 'استلام',
+      'weekly_goal_claimed_label': 'تم الاستلام',
+      'drawer_weekly_goal_label': 'الهدف الأسبوعي',
+    },
+    'tr_TR': {
+      'weekly_goal_title': 'Haftalık Hedef',
+      'weekly_goal_desc': 'Bu hafta 300 mücevher patlatarak jeton ödülü kazan.',
+      'weekly_goal_claim_button': 'Al',
+      'weekly_goal_claimed_label': 'Alındı',
+      'drawer_weekly_goal_label': 'Haftalık Hedef',
+    },
+    'nl_NL': {
+      'weekly_goal_title': 'Weekdoel',
+      'weekly_goal_desc':
+          'Knal deze week 300 edelstenen voor een muntenbeloning.',
+      'weekly_goal_claim_button': 'Claimen',
+      'weekly_goal_claimed_label': 'Geclaimd',
+      'drawer_weekly_goal_label': 'Weekdoel',
+    },
+    'pl_PL': {
+      'weekly_goal_title': 'Cel Tygodniowy',
+      'weekly_goal_desc':
+          'Zniszcz 300 klejnotów w tym tygodniu, aby zdobyć nagrodę w monetach.',
+      'weekly_goal_claim_button': 'Odbierz',
+      'weekly_goal_claimed_label': 'Odebrano',
+      'drawer_weekly_goal_label': 'Cel Tygodniowy',
+    },
+    'fil_PH': {
+      'weekly_goal_title': 'Lingguhang Layunin',
+      'weekly_goal_desc':
+          'Sabugin ang 300 hiyas ngayong linggo para makakuha ng gantimpalang barya.',
+      'weekly_goal_claim_button': 'Kunin',
+      'weekly_goal_claimed_label': 'Nakuha Na',
+      'drawer_weekly_goal_label': 'Lingguhang Layunin',
+    },
+    'ms_MY': {
+      'weekly_goal_title': 'Sasaran Mingguan',
+      'weekly_goal_desc':
+          'Pecahkan 300 gem minggu ini untuk mendapat hadiah syiling.',
+      'weekly_goal_claim_button': 'Tuntut',
+      'weekly_goal_claimed_label': 'Dituntut',
+      'drawer_weekly_goal_label': 'Sasaran Mingguan',
+    },
+    'uk_UA': {
+      'weekly_goal_title': 'Тижнева ціль',
+      'weekly_goal_desc':
+          'Лопни 300 кристалів цього тижня, щоб отримати нагороду монетами.',
+      'weekly_goal_claim_button': 'Отримати',
+      'weekly_goal_claimed_label': 'Отримано',
+      'drawer_weekly_goal_label': 'Тижнева ціль',
+    },
+    'bn_BD': {
+      'weekly_goal_title': 'সাপ্তাহিক লক্ষ্য',
+      'weekly_goal_desc': 'মুদ্রা পুরস্কার পেতে এই সপ্তাহে ৩০০টি রত্ন ফাটান।',
+      'weekly_goal_claim_button': 'সংগ্রহ করুন',
+      'weekly_goal_claimed_label': 'সংগৃহীত',
+      'drawer_weekly_goal_label': 'সাপ্তাহিক লক্ষ্য',
+    },
+  };
+
+  /// I47 — Mirror Mode: `mode_mirror_label` cho 20 ngôn ngữ còn lại (en/vi đã
+  /// có trong [_extraEn]/[_extraVi]).
+  static const Map<String, Map<String, String>> _w52ByLang = {
+    'es_ES': {'mode_mirror_label': 'Espejo'},
+    'fr_FR': {'mode_mirror_label': 'Miroir'},
+    'de_DE': {'mode_mirror_label': 'Spiegel'},
+    'pt_BR': {'mode_mirror_label': 'Espelho'},
+    'ru_RU': {'mode_mirror_label': 'Зеркало'},
+    'zh_CN': {'mode_mirror_label': '镜像'},
+    'ja_JP': {'mode_mirror_label': 'ミラー'},
+    'ko_KR': {'mode_mirror_label': '미러'},
+    'it_IT': {'mode_mirror_label': 'Specchio'},
+    'id_ID': {'mode_mirror_label': 'Cermin'},
+    'th_TH': {'mode_mirror_label': 'กระจก'},
+    'hi_IN': {'mode_mirror_label': 'मिरर'},
+    'ar_SA': {'mode_mirror_label': 'مرآة'},
+    'tr_TR': {'mode_mirror_label': 'Ayna'},
+    'nl_NL': {'mode_mirror_label': 'Spiegel'},
+    'pl_PL': {'mode_mirror_label': 'Lustro'},
+    'fil_PH': {'mode_mirror_label': 'Salamin'},
+    'ms_MY': {'mode_mirror_label': 'Cermin'},
+    'uk_UA': {'mode_mirror_label': 'Дзеркало'},
+    'bn_BD': {'mode_mirror_label': 'মিরর'},
+  };
+
+  /// I32 — Craft Booster: `craft_booster_reward_label` cho 20 ngôn ngữ còn lại
+  /// (en/vi đã có trong [_extraEn]/[_extraVi]).
+  static const Map<String, Map<String, String>> _w53ByLang = {
+    'es_ES': {'craft_booster_reward_label': '+1 @booster'},
+    'fr_FR': {'craft_booster_reward_label': '+1 @booster'},
+    'de_DE': {'craft_booster_reward_label': '+1 @booster'},
+    'pt_BR': {'craft_booster_reward_label': '+1 @booster'},
+    'ru_RU': {'craft_booster_reward_label': '+1 @booster'},
+    'zh_CN': {'craft_booster_reward_label': '+1 @booster'},
+    'ja_JP': {'craft_booster_reward_label': '+1 @booster'},
+    'ko_KR': {'craft_booster_reward_label': '+1 @booster'},
+    'it_IT': {'craft_booster_reward_label': '+1 @booster'},
+    'id_ID': {'craft_booster_reward_label': '+1 @booster'},
+    'th_TH': {'craft_booster_reward_label': '+1 @booster'},
+    'hi_IN': {'craft_booster_reward_label': '+1 @booster'},
+    'ar_SA': {'craft_booster_reward_label': '+1 @booster'},
+    'tr_TR': {'craft_booster_reward_label': '+1 @booster'},
+    'nl_NL': {'craft_booster_reward_label': '+1 @booster'},
+    'pl_PL': {'craft_booster_reward_label': '+1 @booster'},
+    'fil_PH': {'craft_booster_reward_label': '+1 @booster'},
+    'ms_MY': {'craft_booster_reward_label': '+1 @booster'},
+    'uk_UA': {'craft_booster_reward_label': '+1 @booster'},
+    'bn_BD': {'craft_booster_reward_label': '+1 @booster'},
+  };
+
+  /// I37 — Async Challenge Code: share_challenge/challenge_invite_title/
+  /// challenge_score_to_beat_label/challenge_play_button/
+  /// challenge_result_win_label/challenge_result_lose_label.
+  static const Map<String, Map<String, String>> _w54ByLang = {
+    'es_ES': {
+      'share_challenge': 'Retar a un Amigo',
+      'challenge_invite_title': 'Desafío de @sender',
+      'challenge_score_to_beat_label': 'Puntuación a superar: @score',
+      'challenge_play_button': 'Jugar Ahora',
+      'challenge_result_win_label':
+          '¡Superaste el desafío de @sender! (@score pts)',
+      'challenge_result_lose_label':
+          'No superaste los @score pts de @sender. ¡Inténtalo de nuevo!',
+    },
+    'fr_FR': {
+      'share_challenge': 'Défier un Ami',
+      'challenge_invite_title': 'Défi de @sender',
+      'challenge_score_to_beat_label': 'Score à battre : @score',
+      'challenge_play_button': 'Jouer Maintenant',
+      'challenge_result_win_label':
+          'Vous avez battu le défi de @sender ! (@score pts)',
+      'challenge_result_lose_label':
+          "Vous n'avez pas battu les @score pts de @sender. Réessayez !",
+    },
+    'de_DE': {
+      'share_challenge': 'Freund herausfordern',
+      'challenge_invite_title': 'Herausforderung von @sender',
+      'challenge_score_to_beat_label': 'Zu schlagende Punktzahl: @score',
+      'challenge_play_button': 'Jetzt spielen',
+      'challenge_result_win_label':
+          'Du hast die Herausforderung von @sender geschlagen! (@score Punkte)',
+      'challenge_result_lose_label':
+          'Nicht mehr Punkte als @sender (@score). Versuch es noch mal!',
+    },
+    'pt_BR': {
+      'share_challenge': 'Desafiar um Amigo',
+      'challenge_invite_title': 'Desafio de @sender',
+      'challenge_score_to_beat_label': 'Pontuação a superar: @score',
+      'challenge_play_button': 'Jogar Agora',
+      'challenge_result_win_label':
+          'Você superou o desafio de @sender! (@score pts)',
+      'challenge_result_lose_label':
+          'Não superou os @score pts de @sender. Tente de novo!',
+    },
+    'ru_RU': {
+      'share_challenge': 'Вызвать друга',
+      'challenge_invite_title': 'Вызов от @sender',
+      'challenge_score_to_beat_label': 'Счёт для победы: @score',
+      'challenge_play_button': 'Играть',
+      'challenge_result_win_label':
+          'Вы победили в вызове @sender! (@score очков)',
+      'challenge_result_lose_label':
+          'Не удалось побить @score очков @sender. Попробуйте снова!',
+    },
+    'zh_CN': {
+      'share_challenge': '挑战好友',
+      'challenge_invite_title': '@sender 的挑战',
+      'challenge_score_to_beat_label': '需超越的分数：@score',
+      'challenge_play_button': '立即挑战',
+      'challenge_result_win_label': '你超越了 @sender 的挑战！（@score 分）',
+      'challenge_result_lose_label': '未能超越 @sender 的 @score 分，再试一次！',
+    },
+    'ja_JP': {
+      'share_challenge': '友達に挑戦',
+      'challenge_invite_title': '@sender からの挑戦',
+      'challenge_score_to_beat_label': '目標スコア: @score',
+      'challenge_play_button': '今すぐプレイ',
+      'challenge_result_win_label': '@sender の挑戦を突破しました！（@score点）',
+      'challenge_result_lose_label': '@sender の @score点を超えられませんでした。もう一度！',
+    },
+    'ko_KR': {
+      'share_challenge': '친구에게 도전하기',
+      'challenge_invite_title': '@sender 님의 도전',
+      'challenge_score_to_beat_label': '넘어야 할 점수: @score',
+      'challenge_play_button': '지금 플레이',
+      'challenge_result_win_label': '@sender 님의 도전을 이겼습니다! (@score 점)',
+      'challenge_result_lose_label': '@sender 님의 @score 점을 넘지 못했습니다. 다시 시도하세요!',
+    },
+    'it_IT': {
+      'share_challenge': 'Sfida un Amico',
+      'challenge_invite_title': 'Sfida di @sender',
+      'challenge_score_to_beat_label': 'Punteggio da battere: @score',
+      'challenge_play_button': 'Gioca Ora',
+      'challenge_result_win_label':
+          'Hai battuto la sfida di @sender! (@score punti)',
+      'challenge_result_lose_label':
+          'Non hai battuto i @score punti di @sender. Riprova!',
+    },
+    'id_ID': {
+      'share_challenge': 'Tantang Teman',
+      'challenge_invite_title': 'Tantangan dari @sender',
+      'challenge_score_to_beat_label': 'Skor yang harus dikalahkan: @score',
+      'challenge_play_button': 'Main Sekarang',
+      'challenge_result_win_label':
+          'Kamu mengalahkan tantangan @sender! (@score poin)',
+      'challenge_result_lose_label':
+          'Belum mengalahkan @score poin @sender. Coba lagi!',
+    },
+    'th_TH': {
+      'share_challenge': 'ท้าเพื่อน',
+      'challenge_invite_title': 'คำท้าจาก @sender',
+      'challenge_score_to_beat_label': 'คะแนนที่ต้องเอาชนะ: @score',
+      'challenge_play_button': 'เล่นเลย',
+      'challenge_result_win_label':
+          'คุณเอาชนะคำท้าของ @sender แล้ว! (@score คะแนน)',
+      'challenge_result_lose_label':
+          'ยังเอาชนะ @score คะแนนของ @sender ไม่ได้ ลองอีกครั้ง!',
+    },
+    'hi_IN': {
+      'share_challenge': 'मित्र को चैलेंज करें',
+      'challenge_invite_title': '@sender की चैलेंज',
+      'challenge_score_to_beat_label': 'हराने के लिए स्कोर: @score',
+      'challenge_play_button': 'अभी खेलें',
+      'challenge_result_win_label':
+          'आपने @sender की चैलेंज जीत ली! (@score अंक)',
+      'challenge_result_lose_label':
+          '@sender के @score अंक नहीं हरा सके। फिर कोशिश करें!',
+    },
+    'ar_SA': {
+      'share_challenge': 'تحدي صديق',
+      'challenge_invite_title': 'تحدي من @sender',
+      'challenge_score_to_beat_label': 'النقاط المطلوب التغلب عليها: @score',
+      'challenge_play_button': 'العب الآن',
+      'challenge_result_win_label': 'لقد تغلبت على تحدي @sender! (@score نقطة)',
+      'challenge_result_lose_label':
+          'لم تتغلب على @score نقطة لـ @sender. حاول مجددًا!',
+    },
+    'tr_TR': {
+      'share_challenge': 'Arkadaşına Meydan Oku',
+      'challenge_invite_title': "@sender'ın Meydan Okuması",
+      'challenge_score_to_beat_label': 'Geçilmesi gereken skor: @score',
+      'challenge_play_button': 'Şimdi Oyna',
+      'challenge_result_win_label':
+          "@sender'ın meydan okumasını geçtin! (@score puan)",
+      'challenge_result_lose_label':
+          "@sender'ın @score puanını geçemedin. Tekrar dene!",
+    },
+    'nl_NL': {
+      'share_challenge': 'Daag een Vriend Uit',
+      'challenge_invite_title': 'Uitdaging van @sender',
+      'challenge_score_to_beat_label': 'Te verslaan score: @score',
+      'challenge_play_button': 'Speel Nu',
+      'challenge_result_win_label':
+          'Je hebt de uitdaging van @sender verslagen! (@score pts)',
+      'challenge_result_lose_label':
+          'Kon de @score pts van @sender niet verslaan. Probeer opnieuw!',
+    },
+    'pl_PL': {
+      'share_challenge': 'Wyzwij Przyjaciela',
+      'challenge_invite_title': 'Wyzwanie od @sender',
+      'challenge_score_to_beat_label': 'Wynik do pobicia: @score',
+      'challenge_play_button': 'Zagraj Teraz',
+      'challenge_result_win_label': 'Pokonałeś wyzwanie @sender! (@score pkt)',
+      'challenge_result_lose_label':
+          'Nie pokonano @score pkt @sender. Spróbuj ponownie!',
+    },
+    'fil_PH': {
+      'share_challenge': 'Hamunin ang Kaibigan',
+      'challenge_invite_title': 'Hamon mula sa @sender',
+      'challenge_score_to_beat_label': 'Puntos na dapat talunin: @score',
+      'challenge_play_button': 'Maglaro Na',
+      'challenge_result_win_label':
+          'Natalo mo ang hamon ni @sender! (@score puntos)',
+      'challenge_result_lose_label':
+          'Hindi natalo ang @score puntos ni @sender. Subukan ulit!',
+    },
+    'ms_MY': {
+      'share_challenge': 'Cabar Kawan',
+      'challenge_invite_title': 'Cabaran daripada @sender',
+      'challenge_score_to_beat_label': 'Skor untuk dikalahkan: @score',
+      'challenge_play_button': 'Main Sekarang',
+      'challenge_result_win_label':
+          'Anda mengalahkan cabaran @sender! (@score mata)',
+      'challenge_result_lose_label':
+          'Belum mengalahkan @score mata @sender. Cuba lagi!',
+    },
+    'uk_UA': {
+      'share_challenge': 'Викликати друга',
+      'challenge_invite_title': 'Виклик від @sender',
+      'challenge_score_to_beat_label': 'Рахунок для перемоги: @score',
+      'challenge_play_button': 'Грати зараз',
+      'challenge_result_win_label':
+          'Ви подолали виклик @sender! (@score очків)',
+      'challenge_result_lose_label':
+          'Не вдалося побити @score очків @sender. Спробуйте ще раз!',
+    },
+    'bn_BD': {
+      'share_challenge': 'বন্ধুকে চ্যালেঞ্জ করুন',
+      'challenge_invite_title': '@sender-এর চ্যালেঞ্জ',
+      'challenge_score_to_beat_label': 'হারাতে হবে স্কোর: @score',
+      'challenge_play_button': 'এখনই খেলুন',
+      'challenge_result_win_label':
+          'আপনি @sender-এর চ্যালেঞ্জ জয় করেছেন! (@score পয়েন্ট)',
+      'challenge_result_lose_label':
+          '@sender-এর @score পয়েন্ট হারাতে পারেননি। আবার চেষ্টা করুন!',
+    },
+  };
+
+  /// I36 — Achievement Titles: achievement_title_set_button/
+  /// achievement_title_clear_button.
+  static const Map<String, Map<String, String>> _w55ByLang = {
+    'es_ES': {
+      'achievement_title_set_button': 'Usar como Título',
+      'achievement_title_clear_button': 'Quitar Título',
+    },
+    'fr_FR': {
+      'achievement_title_set_button': 'Définir comme Titre',
+      'achievement_title_clear_button': 'Retirer le Titre',
+    },
+    'de_DE': {
+      'achievement_title_set_button': 'Als Titel festlegen',
+      'achievement_title_clear_button': 'Titel entfernen',
+    },
+    'pt_BR': {
+      'achievement_title_set_button': 'Usar como Título',
+      'achievement_title_clear_button': 'Remover Título',
+    },
+    'ru_RU': {
+      'achievement_title_set_button': 'Сделать титулом',
+      'achievement_title_clear_button': 'Убрать титул',
+    },
+    'zh_CN': {
+      'achievement_title_set_button': '设为称号',
+      'achievement_title_clear_button': '移除称号',
+    },
+    'ja_JP': {
+      'achievement_title_set_button': '称号に設定',
+      'achievement_title_clear_button': '称号を解除',
+    },
+    'ko_KR': {
+      'achievement_title_set_button': '칭호로 설정',
+      'achievement_title_clear_button': '칭호 해제',
+    },
+    'it_IT': {
+      'achievement_title_set_button': 'Imposta come Titolo',
+      'achievement_title_clear_button': 'Rimuovi Titolo',
+    },
+    'id_ID': {
+      'achievement_title_set_button': 'Jadikan Gelar',
+      'achievement_title_clear_button': 'Hapus Gelar',
+    },
+    'th_TH': {
+      'achievement_title_set_button': 'ตั้งเป็นฉายา',
+      'achievement_title_clear_button': 'ลบฉายา',
+    },
+    'hi_IN': {
+      'achievement_title_set_button': 'टाइटल के रूप में सेट करें',
+      'achievement_title_clear_button': 'टाइटल हटाएं',
+    },
+    'ar_SA': {
+      'achievement_title_set_button': 'تعيين كلقب',
+      'achievement_title_clear_button': 'إزالة اللقب',
+    },
+    'tr_TR': {
+      'achievement_title_set_button': 'Unvan Olarak Ayarla',
+      'achievement_title_clear_button': 'Unvanı Kaldır',
+    },
+    'nl_NL': {
+      'achievement_title_set_button': 'Instellen als Titel',
+      'achievement_title_clear_button': 'Titel Verwijderen',
+    },
+    'pl_PL': {
+      'achievement_title_set_button': 'Ustaw jako Tytuł',
+      'achievement_title_clear_button': 'Usuń Tytuł',
+    },
+    'fil_PH': {
+      'achievement_title_set_button': 'Gawing Titulo',
+      'achievement_title_clear_button': 'Alisin ang Titulo',
+    },
+    'ms_MY': {
+      'achievement_title_set_button': 'Jadikan Gelaran',
+      'achievement_title_clear_button': 'Buang Gelaran',
+    },
+    'uk_UA': {
+      'achievement_title_set_button': 'Зробити титулом',
+      'achievement_title_clear_button': 'Прибрати титул',
+    },
+    'bn_BD': {
+      'achievement_title_set_button': 'খেতাব হিসেবে সেট করুন',
+      'achievement_title_clear_button': 'খেতাব সরান',
+    },
+  };
+
+  /// I33 Daily Modifier Gauntlet: mode_gauntlet_label/gauntlet_modifier_*.
+  static const Map<String, Map<String, String>> _w56ByLang = {
+    'es_ES': {
+      'mode_gauntlet_label': 'Guantelete',
+      'gauntlet_modifier_no_undo_name': 'Sin Deshacer',
+      'gauntlet_modifier_no_undo_desc':
+          'Deshacer está deshabilitado en el tablero de hoy.',
+      'gauntlet_modifier_short_combo_name': 'Combo Rápido',
+      'gauntlet_modifier_short_combo_desc':
+          'La ventana de combo es mucho más corta hoy.',
+      'gauntlet_modifier_four_colors_name': 'Cuatro Colores',
+      'gauntlet_modifier_four_colors_desc':
+          'El tablero de hoy solo usa 4 colores.',
+      'gauntlet_modifier_reverse_gravity_name': 'Gravedad Inversa',
+      'gauntlet_modifier_reverse_gravity_desc':
+          'Las gemas caen hacia arriba hoy.',
+    },
+    'fr_FR': {
+      'mode_gauntlet_label': 'Gantelet',
+      'gauntlet_modifier_no_undo_name': 'Pas d\'Annulation',
+      'gauntlet_modifier_no_undo_desc':
+          'L\'annulation est désactivée sur le plateau du jour.',
+      'gauntlet_modifier_short_combo_name': 'Combo Rapide',
+      'gauntlet_modifier_short_combo_desc':
+          'La fenêtre de combo est bien plus courte aujourd\'hui.',
+      'gauntlet_modifier_four_colors_name': 'Quatre Couleurs',
+      'gauntlet_modifier_four_colors_desc':
+          'Le plateau du jour n\'utilise que 4 couleurs.',
+      'gauntlet_modifier_reverse_gravity_name': 'Gravité Inversée',
+      'gauntlet_modifier_reverse_gravity_desc':
+          'Les gemmes tombent vers le haut aujourd\'hui.',
+    },
+    'de_DE': {
+      'mode_gauntlet_label': 'Spießrutenlauf',
+      'gauntlet_modifier_no_undo_name': 'Kein Rückgängig',
+      'gauntlet_modifier_no_undo_desc':
+          'Rückgängig ist beim heutigen Feld deaktiviert.',
+      'gauntlet_modifier_short_combo_name': 'Schnelles Combo',
+      'gauntlet_modifier_short_combo_desc':
+          'Das Combo-Fenster ist heute viel kürzer.',
+      'gauntlet_modifier_four_colors_name': 'Vier Farben',
+      'gauntlet_modifier_four_colors_desc':
+          'Das heutige Feld nutzt nur 4 Farben.',
+      'gauntlet_modifier_reverse_gravity_name': 'Umgekehrte Schwerkraft',
+      'gauntlet_modifier_reverse_gravity_desc':
+          'Edelsteine fallen heute nach oben.',
+    },
+    'pt_BR': {
+      'mode_gauntlet_label': 'Desafio Extremo',
+      'gauntlet_modifier_no_undo_name': 'Sem Desfazer',
+      'gauntlet_modifier_no_undo_desc':
+          'Desfazer está desativado no tabuleiro de hoje.',
+      'gauntlet_modifier_short_combo_name': 'Combo Rápido',
+      'gauntlet_modifier_short_combo_desc':
+          'A janela de combo está bem mais curta hoje.',
+      'gauntlet_modifier_four_colors_name': 'Quatro Cores',
+      'gauntlet_modifier_four_colors_desc':
+          'O tabuleiro de hoje usa apenas 4 cores.',
+      'gauntlet_modifier_reverse_gravity_name': 'Gravidade Reversa',
+      'gauntlet_modifier_reverse_gravity_desc': 'As gemas caem para cima hoje.',
+    },
+    'ru_RU': {
+      'mode_gauntlet_label': 'Испытание',
+      'gauntlet_modifier_no_undo_name': 'Без отмены',
+      'gauntlet_modifier_no_undo_desc': 'Отмена отключена на сегодняшнем поле.',
+      'gauntlet_modifier_short_combo_name': 'Быстрое комбо',
+      'gauntlet_modifier_short_combo_desc':
+          'Сегодня окно комбо намного короче.',
+      'gauntlet_modifier_four_colors_name': 'Четыре цвета',
+      'gauntlet_modifier_four_colors_desc':
+          'Сегодняшнее поле использует только 4 цвета.',
+      'gauntlet_modifier_reverse_gravity_name': 'Обратная гравитация',
+      'gauntlet_modifier_reverse_gravity_desc':
+          'Сегодня самоцветы падают вверх.',
+    },
+    'zh_CN': {
+      'mode_gauntlet_label': '试炼场',
+      'gauntlet_modifier_no_undo_name': '禁用撤销',
+      'gauntlet_modifier_no_undo_desc': '今日棋盘禁止撤销。',
+      'gauntlet_modifier_short_combo_name': '连击加速',
+      'gauntlet_modifier_short_combo_desc': '今日连击时间窗口大幅缩短。',
+      'gauntlet_modifier_four_colors_name': '四色挑战',
+      'gauntlet_modifier_four_colors_desc': '今日棋盘只有 4 种颜色。',
+      'gauntlet_modifier_reverse_gravity_name': '逆重力',
+      'gauntlet_modifier_reverse_gravity_desc': '今日宝石向上掉落。',
+    },
+    'ja_JP': {
+      'mode_gauntlet_label': 'ガントレット',
+      'gauntlet_modifier_no_undo_name': 'アンドゥ禁止',
+      'gauntlet_modifier_no_undo_desc': '今日のボードではアンドゥが使えません。',
+      'gauntlet_modifier_short_combo_name': 'クイックコンボ',
+      'gauntlet_modifier_short_combo_desc': '今日はコンボ猶予時間が大幅に短くなります。',
+      'gauntlet_modifier_four_colors_name': '4色チャレンジ',
+      'gauntlet_modifier_four_colors_desc': '今日のボードは4色のみです。',
+      'gauntlet_modifier_reverse_gravity_name': '逆重力',
+      'gauntlet_modifier_reverse_gravity_desc': '今日は宝石が上に落ちます。',
+    },
+    'ko_KR': {
+      'mode_gauntlet_label': '건틀릿',
+      'gauntlet_modifier_no_undo_name': '되돌리기 금지',
+      'gauntlet_modifier_no_undo_desc': '오늘 보드에서는 되돌리기를 사용할 수 없습니다.',
+      'gauntlet_modifier_short_combo_name': '짧은 콤보',
+      'gauntlet_modifier_short_combo_desc': '오늘은 콤보 유지 시간이 훨씬 짧습니다.',
+      'gauntlet_modifier_four_colors_name': '4색 도전',
+      'gauntlet_modifier_four_colors_desc': '오늘 보드는 4가지 색만 사용합니다.',
+      'gauntlet_modifier_reverse_gravity_name': '역중력',
+      'gauntlet_modifier_reverse_gravity_desc': '오늘은 보석이 위로 떨어집니다.',
+    },
+    'it_IT': {
+      'mode_gauntlet_label': 'Guanto di Sfida',
+      'gauntlet_modifier_no_undo_name': 'Niente Annulla',
+      'gauntlet_modifier_no_undo_desc':
+          'Annulla è disabilitato sulla plancia di oggi.',
+      'gauntlet_modifier_short_combo_name': 'Combo Rapida',
+      'gauntlet_modifier_short_combo_desc':
+          'La finestra combo oggi è molto più corta.',
+      'gauntlet_modifier_four_colors_name': 'Quattro Colori',
+      'gauntlet_modifier_four_colors_desc':
+          'La plancia di oggi usa solo 4 colori.',
+      'gauntlet_modifier_reverse_gravity_name': 'Gravità Inversa',
+      'gauntlet_modifier_reverse_gravity_desc':
+          'Oggi le gemme cadono verso l\'alto.',
+    },
+    'id_ID': {
+      'mode_gauntlet_label': 'Gauntlet',
+      'gauntlet_modifier_no_undo_name': 'Tanpa Undo',
+      'gauntlet_modifier_no_undo_desc':
+          'Undo dinonaktifkan untuk papan hari ini.',
+      'gauntlet_modifier_short_combo_name': 'Combo Cepat',
+      'gauntlet_modifier_short_combo_desc':
+          'Jendela combo hari ini jauh lebih singkat.',
+      'gauntlet_modifier_four_colors_name': 'Empat Warna',
+      'gauntlet_modifier_four_colors_desc':
+          'Papan hari ini hanya memakai 4 warna.',
+      'gauntlet_modifier_reverse_gravity_name': 'Gravitasi Terbalik',
+      'gauntlet_modifier_reverse_gravity_desc':
+          'Permata jatuh ke atas hari ini.',
+    },
+    'th_TH': {
+      'mode_gauntlet_label': 'เกาน์ทเล็ต',
+      'gauntlet_modifier_no_undo_name': 'ห้ามย้อนกลับ',
+      'gauntlet_modifier_no_undo_desc': 'กระดานวันนี้ใช้การย้อนกลับไม่ได้',
+      'gauntlet_modifier_short_combo_name': 'คอมโบเร็ว',
+      'gauntlet_modifier_short_combo_desc': 'ช่วงเวลาคอมโบวันนี้สั้นลงมาก',
+      'gauntlet_modifier_four_colors_name': 'สี่สี',
+      'gauntlet_modifier_four_colors_desc': 'กระดานวันนี้มีแค่ 4 สี',
+      'gauntlet_modifier_reverse_gravity_name': 'แรงโน้มถ่วงกลับด้าน',
+      'gauntlet_modifier_reverse_gravity_desc': 'วันนี้อัญมณีตกขึ้นด้านบน',
+    },
+    'hi_IN': {
+      'mode_gauntlet_label': 'गॉन्टलेट',
+      'gauntlet_modifier_no_undo_name': 'अनडू नहीं',
+      'gauntlet_modifier_no_undo_desc': 'आज के बोर्ड पर अनडू बंद है।',
+      'gauntlet_modifier_short_combo_name': 'तेज़ कॉम्बो',
+      'gauntlet_modifier_short_combo_desc': 'आज कॉम्बो का समय काफी कम है।',
+      'gauntlet_modifier_four_colors_name': 'चार रंग',
+      'gauntlet_modifier_four_colors_desc': 'आज के बोर्ड में सिर्फ़ 4 रंग हैं।',
+      'gauntlet_modifier_reverse_gravity_name': 'उल्टा गुरुत्व',
+      'gauntlet_modifier_reverse_gravity_desc': 'आज रत्न ऊपर की ओर गिरते हैं।',
+    },
+    'ar_SA': {
+      'mode_gauntlet_label': 'التحدي القاسي',
+      'gauntlet_modifier_no_undo_name': 'بدون تراجع',
+      'gauntlet_modifier_no_undo_desc': 'التراجع معطّل في لوحة اليوم.',
+      'gauntlet_modifier_short_combo_name': 'كومبو سريع',
+      'gauntlet_modifier_short_combo_desc': 'نافذة الكومبو أقصر بكثير اليوم.',
+      'gauntlet_modifier_four_colors_name': 'أربعة ألوان',
+      'gauntlet_modifier_four_colors_desc': 'لوحة اليوم تستخدم 4 ألوان فقط.',
+      'gauntlet_modifier_reverse_gravity_name': 'جاذبية عكسية',
+      'gauntlet_modifier_reverse_gravity_desc': 'الجواهر تسقط للأعلى اليوم.',
+    },
+    'tr_TR': {
+      'mode_gauntlet_label': 'Meydan Okuma',
+      'gauntlet_modifier_no_undo_name': 'Geri Alma Yok',
+      'gauntlet_modifier_no_undo_desc': 'Bugünkü tahtada geri alma devre dışı.',
+      'gauntlet_modifier_short_combo_name': 'Hızlı Kombo',
+      'gauntlet_modifier_short_combo_desc': 'Bugün kombo süresi çok daha kısa.',
+      'gauntlet_modifier_four_colors_name': 'Dört Renk',
+      'gauntlet_modifier_four_colors_desc':
+          'Bugünkü tahta sadece 4 renk kullanıyor.',
+      'gauntlet_modifier_reverse_gravity_name': 'Ters Yerçekimi',
+      'gauntlet_modifier_reverse_gravity_desc': 'Bugün taşlar yukarı düşüyor.',
+    },
+    'nl_NL': {
+      'mode_gauntlet_label': 'Uitdaging',
+      'gauntlet_modifier_no_undo_name': 'Geen Ongedaan Maken',
+      'gauntlet_modifier_no_undo_desc':
+          'Ongedaan maken is uitgeschakeld op het bord van vandaag.',
+      'gauntlet_modifier_short_combo_name': 'Snelle Combo',
+      'gauntlet_modifier_short_combo_desc':
+          'Het combo-venster is vandaag veel korter.',
+      'gauntlet_modifier_four_colors_name': 'Vier Kleuren',
+      'gauntlet_modifier_four_colors_desc':
+          'Het bord van vandaag gebruikt maar 4 kleuren.',
+      'gauntlet_modifier_reverse_gravity_name': 'Omgekeerde Zwaartekracht',
+      'gauntlet_modifier_reverse_gravity_desc':
+          'Edelstenen vallen vandaag omhoog.',
+    },
+    'pl_PL': {
+      'mode_gauntlet_label': 'Próba Ognia',
+      'gauntlet_modifier_no_undo_name': 'Bez Cofania',
+      'gauntlet_modifier_no_undo_desc':
+          'Cofanie jest wyłączone na dzisiejszej planszy.',
+      'gauntlet_modifier_short_combo_name': 'Szybkie Combo',
+      'gauntlet_modifier_short_combo_desc':
+          'Okno combo jest dziś dużo krótsze.',
+      'gauntlet_modifier_four_colors_name': 'Cztery Kolory',
+      'gauntlet_modifier_four_colors_desc':
+          'Dzisiejsza plansza używa tylko 4 kolorów.',
+      'gauntlet_modifier_reverse_gravity_name': 'Odwrócona Grawitacja',
+      'gauntlet_modifier_reverse_gravity_desc': 'Dziś klejnoty spadają w górę.',
+    },
+    'fil_PH': {
+      'mode_gauntlet_label': 'Gauntlet',
+      'gauntlet_modifier_no_undo_name': 'Walang Undo',
+      'gauntlet_modifier_no_undo_desc':
+          'Naka-disable ang undo sa board ngayong araw.',
+      'gauntlet_modifier_short_combo_name': 'Mabilis na Combo',
+      'gauntlet_modifier_short_combo_desc':
+          'Mas maikli ngayon ang combo window.',
+      'gauntlet_modifier_four_colors_name': 'Apat na Kulay',
+      'gauntlet_modifier_four_colors_desc':
+          'Apat lang na kulay ang gamit ng board ngayong araw.',
+      'gauntlet_modifier_reverse_gravity_name': 'Baliktad na Gravity',
+      'gauntlet_modifier_reverse_gravity_desc':
+          'Pataas bumabagsak ang mga hiyas ngayong araw.',
+    },
+    'ms_MY': {
+      'mode_gauntlet_label': 'Gauntlet',
+      'gauntlet_modifier_no_undo_name': 'Tiada Buat Asal',
+      'gauntlet_modifier_no_undo_desc':
+          'Buat asal dilumpuhkan pada papan hari ini.',
+      'gauntlet_modifier_short_combo_name': 'Combo Pantas',
+      'gauntlet_modifier_short_combo_desc':
+          'Tempoh combo jauh lebih pendek hari ini.',
+      'gauntlet_modifier_four_colors_name': 'Empat Warna',
+      'gauntlet_modifier_four_colors_desc':
+          'Papan hari ini hanya guna 4 warna.',
+      'gauntlet_modifier_reverse_gravity_name': 'Graviti Terbalik',
+      'gauntlet_modifier_reverse_gravity_desc':
+          'Permata jatuh ke atas hari ini.',
+    },
+    'uk_UA': {
+      'mode_gauntlet_label': 'Випробування',
+      'gauntlet_modifier_no_undo_name': 'Без скасування',
+      'gauntlet_modifier_no_undo_desc':
+          'Скасування вимкнено на сьогоднішньому полі.',
+      'gauntlet_modifier_short_combo_name': 'Швидке комбо',
+      'gauntlet_modifier_short_combo_desc':
+          'Сьогодні вікно комбо набагато коротше.',
+      'gauntlet_modifier_four_colors_name': 'Чотири кольори',
+      'gauntlet_modifier_four_colors_desc':
+          'Сьогоднішнє поле використовує лише 4 кольори.',
+      'gauntlet_modifier_reverse_gravity_name': 'Зворотна гравітація',
+      'gauntlet_modifier_reverse_gravity_desc':
+          'Сьогодні самоцвіти падають вгору.',
+    },
+    'bn_BD': {
+      'mode_gauntlet_label': 'গন্টলেট',
+      'gauntlet_modifier_no_undo_name': 'আনডু নেই',
+      'gauntlet_modifier_no_undo_desc': 'আজকের বোর্ডে আনডু বন্ধ।',
+      'gauntlet_modifier_short_combo_name': 'দ্রুত কম্বো',
+      'gauntlet_modifier_short_combo_desc': 'আজ কম্বোর সময় অনেক কম।',
+      'gauntlet_modifier_four_colors_name': 'চার রঙ',
+      'gauntlet_modifier_four_colors_desc': 'আজকের বোর্ডে মাত্র ৪টি রঙ আছে।',
+      'gauntlet_modifier_reverse_gravity_name': 'উল্টো মাধ্যাকর্ষণ',
+      'gauntlet_modifier_reverse_gravity_desc': 'আজ রত্নগুলো উপরে পড়ে।',
+    },
+  };
+
+  // I38 Weekly Featured Level: mode_weekly_featured_label cho 20 ngôn ngữ
+  // còn lại (en/vi ở _extraEn/_extraVi).
+  static const Map<String, Map<String, String>> _w57ByLang = {
+    'es_ES': {'mode_weekly_featured_label': 'Destacado'},
+    'fr_FR': {'mode_weekly_featured_label': 'En vedette'},
+    'de_DE': {'mode_weekly_featured_label': 'Vorgestellt'},
+    'pt_BR': {'mode_weekly_featured_label': 'Destaque'},
+    'ru_RU': {'mode_weekly_featured_label': 'Избранное'},
+    'zh_CN': {'mode_weekly_featured_label': '精选'},
+    'ja_JP': {'mode_weekly_featured_label': '特集'},
+    'ko_KR': {'mode_weekly_featured_label': '특집'},
+    'it_IT': {'mode_weekly_featured_label': 'In evidenza'},
+    'id_ID': {'mode_weekly_featured_label': 'Unggulan'},
+    'th_TH': {'mode_weekly_featured_label': 'แนะนำ'},
+    'hi_IN': {'mode_weekly_featured_label': 'विशेष'},
+    'ar_SA': {'mode_weekly_featured_label': 'مميز'},
+    'tr_TR': {'mode_weekly_featured_label': 'Öne Çıkan'},
+    'nl_NL': {'mode_weekly_featured_label': 'Uitgelicht'},
+    'pl_PL': {'mode_weekly_featured_label': 'Wyróżnione'},
+    'fil_PH': {'mode_weekly_featured_label': 'Tampok'},
+    'ms_MY': {'mode_weekly_featured_label': 'Pilihan'},
+    'uk_UA': {'mode_weekly_featured_label': 'Вибране'},
+    'bn_BD': {'mode_weekly_featured_label': 'বিশেষ'},
+  };
+
+  // I51 Board Frame Cosmetics: 6 key cho 20 ngôn ngữ còn lại (en/vi ở
+  // _extraEn/_extraVi).
+  static const Map<String, Map<String, String>> _w58ByLang = {
+    'es_ES': {
+      'drawer_board_frame_label': 'Marco del tablero',
+      'board_frame_classic': 'Clásico',
+      'board_frame_neon_cyan': 'Cian Neón',
+      'board_frame_aurora_gold': 'Aurora Dorada',
+      'board_frame_diamond': 'Diamante',
+      'board_frame_unlock_prestige': 'Desbloquea en Prestigio @tier',
+    },
+    'fr_FR': {
+      'drawer_board_frame_label': 'Cadre du plateau',
+      'board_frame_classic': 'Classique',
+      'board_frame_neon_cyan': 'Cyan Néon',
+      'board_frame_aurora_gold': 'Aurore Dorée',
+      'board_frame_diamond': 'Diamant',
+      'board_frame_unlock_prestige': 'Débloqué au Prestige @tier',
+    },
+    'de_DE': {
+      'drawer_board_frame_label': 'Spielfeldrahmen',
+      'board_frame_classic': 'Klassisch',
+      'board_frame_neon_cyan': 'Neon-Cyan',
+      'board_frame_aurora_gold': 'Goldenes Polarlicht',
+      'board_frame_diamond': 'Diamant',
+      'board_frame_unlock_prestige': 'Freischalten bei Prestige @tier',
+    },
+    'pt_BR': {
+      'drawer_board_frame_label': 'Moldura do Tabuleiro',
+      'board_frame_classic': 'Clássico',
+      'board_frame_neon_cyan': 'Ciano Neon',
+      'board_frame_aurora_gold': 'Aurora Dourada',
+      'board_frame_diamond': 'Diamante',
+      'board_frame_unlock_prestige': 'Desbloqueie no Prestígio @tier',
+    },
+    'ru_RU': {
+      'drawer_board_frame_label': 'Рамка поля',
+      'board_frame_classic': 'Классика',
+      'board_frame_neon_cyan': 'Неоновый циан',
+      'board_frame_aurora_gold': 'Золотая аврора',
+      'board_frame_diamond': 'Алмаз',
+      'board_frame_unlock_prestige': 'Открывается на Престиже @tier',
+    },
+    'zh_CN': {
+      'drawer_board_frame_label': '棋盘边框',
+      'board_frame_classic': '经典',
+      'board_frame_neon_cyan': '霓虹青',
+      'board_frame_aurora_gold': '极光金',
+      'board_frame_diamond': '钻石',
+      'board_frame_unlock_prestige': '在声望 @tier 解锁',
+    },
+    'ja_JP': {
+      'drawer_board_frame_label': 'ボードフレーム',
+      'board_frame_classic': 'クラシック',
+      'board_frame_neon_cyan': 'ネオンシアン',
+      'board_frame_aurora_gold': 'オーロラゴールド',
+      'board_frame_diamond': 'ダイヤモンド',
+      'board_frame_unlock_prestige': 'プレステージ@tierで解放',
+    },
+    'ko_KR': {
+      'drawer_board_frame_label': '보드 프레임',
+      'board_frame_classic': '클래식',
+      'board_frame_neon_cyan': '네온 시안',
+      'board_frame_aurora_gold': '오로라 골드',
+      'board_frame_diamond': '다이아몬드',
+      'board_frame_unlock_prestige': '프레스티지 @tier에서 해금',
+    },
+    'it_IT': {
+      'drawer_board_frame_label': 'Cornice Tabellone',
+      'board_frame_classic': 'Classico',
+      'board_frame_neon_cyan': 'Ciano Neon',
+      'board_frame_aurora_gold': 'Aurora Dorata',
+      'board_frame_diamond': 'Diamante',
+      'board_frame_unlock_prestige': 'Sblocca al Prestigio @tier',
+    },
+    'id_ID': {
+      'drawer_board_frame_label': 'Bingkai Papan',
+      'board_frame_classic': 'Klasik',
+      'board_frame_neon_cyan': 'Cyan Neon',
+      'board_frame_aurora_gold': 'Aurora Emas',
+      'board_frame_diamond': 'Berlian',
+      'board_frame_unlock_prestige': 'Buka di Prestige @tier',
+    },
+    'th_TH': {
+      'drawer_board_frame_label': 'กรอบกระดาน',
+      'board_frame_classic': 'คลาสสิก',
+      'board_frame_neon_cyan': 'นีออนฟ้า',
+      'board_frame_aurora_gold': 'ออโรร่าทอง',
+      'board_frame_diamond': 'เพชร',
+      'board_frame_unlock_prestige': 'ปลดล็อกที่ Prestige @tier',
+    },
+    'hi_IN': {
+      'drawer_board_frame_label': 'बोर्ड फ्रेम',
+      'board_frame_classic': 'क्लासिक',
+      'board_frame_neon_cyan': 'नियॉन सायन',
+      'board_frame_aurora_gold': 'ऑरोरा गोल्ड',
+      'board_frame_diamond': 'डायमंड',
+      'board_frame_unlock_prestige': 'प्रेस्टीज @tier पर अनलॉक करें',
+    },
+    'ar_SA': {
+      'drawer_board_frame_label': 'إطار اللوحة',
+      'board_frame_classic': 'كلاسيكي',
+      'board_frame_neon_cyan': 'سماوي نيون',
+      'board_frame_aurora_gold': 'الشفق الذهبي',
+      'board_frame_diamond': 'ماس',
+      'board_frame_unlock_prestige': 'يُفتح عند المكانة @tier',
+    },
+    'tr_TR': {
+      'drawer_board_frame_label': 'Tahta Çerçevesi',
+      'board_frame_classic': 'Klasik',
+      'board_frame_neon_cyan': 'Neon Camgöbeği',
+      'board_frame_aurora_gold': 'Altın Aurora',
+      'board_frame_diamond': 'Elmas',
+      'board_frame_unlock_prestige': 'Prestij @tier seviyesinde açılır',
+    },
+    'nl_NL': {
+      'drawer_board_frame_label': 'Bordrand',
+      'board_frame_classic': 'Klassiek',
+      'board_frame_neon_cyan': 'Neon Cyaan',
+      'board_frame_aurora_gold': 'Gouden Aurora',
+      'board_frame_diamond': 'Diamant',
+      'board_frame_unlock_prestige': 'Ontgrendel bij Prestige @tier',
+    },
+    'pl_PL': {
+      'drawer_board_frame_label': 'Ramka planszy',
+      'board_frame_classic': 'Klasyczna',
+      'board_frame_neon_cyan': 'Neonowy Cyjan',
+      'board_frame_aurora_gold': 'Złota Aurora',
+      'board_frame_diamond': 'Diament',
+      'board_frame_unlock_prestige': 'Odblokuj przy Prestiżu @tier',
+    },
+    'fil_PH': {
+      'drawer_board_frame_label': 'Frame ng Board',
+      'board_frame_classic': 'Klasiko',
+      'board_frame_neon_cyan': 'Neon Cyan',
+      'board_frame_aurora_gold': 'Gintong Aurora',
+      'board_frame_diamond': 'Diyamante',
+      'board_frame_unlock_prestige': 'I-unlock sa Prestige @tier',
+    },
+    'ms_MY': {
+      'drawer_board_frame_label': 'Bingkai Papan',
+      'board_frame_classic': 'Klasik',
+      'board_frame_neon_cyan': 'Neon Sian',
+      'board_frame_aurora_gold': 'Aurora Emas',
+      'board_frame_diamond': 'Berlian',
+      'board_frame_unlock_prestige': 'Buka kunci di Prestij @tier',
+    },
+    'uk_UA': {
+      'drawer_board_frame_label': 'Рамка дошки',
+      'board_frame_classic': 'Класична',
+      'board_frame_neon_cyan': 'Неоновий ціан',
+      'board_frame_aurora_gold': 'Золота аврора',
+      'board_frame_diamond': 'Діамант',
+      'board_frame_unlock_prestige': 'Розблокується на Престижі @tier',
+    },
+    'bn_BD': {
+      'drawer_board_frame_label': 'বোর্ড ফ্রেম',
+      'board_frame_classic': 'ক্লাসিক',
+      'board_frame_neon_cyan': 'নিয়ন সায়ান',
+      'board_frame_aurora_gold': 'অরোরা গোল্ড',
+      'board_frame_diamond': 'হীরা',
+      'board_frame_unlock_prestige': 'প্রেস্টিজ @tier এ আনলক করুন',
     },
   };
 }

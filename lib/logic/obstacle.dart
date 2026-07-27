@@ -1,7 +1,9 @@
 import 'dart:math';
 
 import 'boss_tile.dart';
+import 'countdown_lock_tile.dart';
 import 'gift_tile.dart';
+import 'wildcard_tile.dart';
 
 /// F6a: obstacle (ice/crate) mã hoá bằng giá trị âm ngay trong colorGrid —
 /// -d nghĩa là còn d độ bền. Không phải màu nên `pop_detector` đã loại nó
@@ -12,6 +14,13 @@ import 'gift_tile.dart';
 /// bị obstacle-chip mutate `grid[p]! + 1` làm lệch id (vd -2000 → -1999),
 /// khiến [isBossTileId] sau đó nhận nhầm cell là không-boss và HP không bao
 /// giờ được trừ đúng chỗ.
+/// I45: Countdown Lock ([isCountdownLockId]) cũng âm nhưng chỉ giảm theo số
+/// lượt tap (xem `countdown_lock_tile.dart`), không theo pop-kề-cạnh — loại
+/// trừ tương tự, không thì bị chip nhầm thành obstacle.
+/// I46: Wildcard ([isWildcardTileValue]) luôn bị nổ chung nhóm màu liền kề
+/// trước khi hàm này chạy (xem `pop_detector.findConnectedGroup`) — loại trừ
+/// chỉ để phòng vệ, tránh chip nhầm nếu vì lý do gì đó nó còn sót lại trên
+/// bàn sau pop.
 
 /// Nhóm vừa nổ tại [poppedCells] chip 1 độ bền mọi obstacle liền kề (4 hướng).
 /// Hết độ bền → vỡ thành ô trống (null). Mutates [grid] in place. Trả về vị
@@ -32,7 +41,12 @@ Set<Point<int>> chipAdjacentObstacles(
     ]) {
       if (n.x < 0 || n.x >= rows || n.y < 0 || n.y >= cols) continue;
       final v = grid[n.x][n.y];
-      if (v != null && v < 0 && v != giftTileValue && !isBossTileId(v)) {
+      if (v != null &&
+          v < 0 &&
+          v != giftTileValue &&
+          !isBossTileId(v) &&
+          !isCountdownLockId(v) &&
+          !isWildcardTileValue(v)) {
         hit.add(n);
       }
     }
