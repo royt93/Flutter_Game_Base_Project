@@ -51,7 +51,9 @@ void main() {
 
   testWidgets(
     'mở dialog quit → huỷ → mở lại lần 2 vẫn hiện đúng nội dung, không lỗi '
-    '(chứng minh overlaySlot panelKey ổn định qua rebuild thật)',
+    '(smoke test luồng quit thật trên màn hình — bằng chứng panelKey không '
+    'replay animation nằm ở neon_dialog_test.dart, test này không assert '
+    'transientCallbackCount)',
     (tester) async {
       await tester.pumpWidget(_wrap(const BossRushScreen()));
       await tester.pump(const Duration(milliseconds: 100));

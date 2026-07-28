@@ -84,15 +84,17 @@ class NeonDialog {
             const SizedBox(height: NeonTheme.s16),
             content,
           ],
-          const SizedBox(height: NeonTheme.s24),
-          Row(
-            children: [
-              for (final a in actions) ...[
-                Expanded(child: NeonDialogButton(action: a)),
-                if (a != actions.last) const SizedBox(width: NeonTheme.s16),
+          if (actions.isNotEmpty) ...[
+            const SizedBox(height: NeonTheme.s24),
+            Row(
+              children: [
+                for (final a in actions) ...[
+                  Expanded(child: NeonDialogButton(action: a)),
+                  if (a != actions.last) const SizedBox(width: NeonTheme.s16),
+                ],
               ],
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );
@@ -199,12 +201,14 @@ class NeonDialog {
   /// [panelKey] xác định danh tính logic của [panel] (ví dụ enum trạng thái,
   /// id, hoặc điều kiện bool) — dùng để [AnimatedSwitcher] biết khi nào là
   /// "dialog khác" (cần replay animation) so với "vẫn dialog cũ, chỉ rebuild"
-  /// (không replay). Không truyền thì mọi panel non-null coi là cùng 1 trạng
-  /// thái (an toàn nhưng không phân biệt được đổi từ dialog A sang dialog B).
+  /// (không replay). Bắt buộc truyền (kể cả `null`) để mỗi call site phải chủ
+  /// động chọn danh tính thay vì vô tình rơi vào default — 2 panel non-null
+  /// khác nhau mà lỡ cùng bỏ qua tham số này sẽ bị coi là "cùng 1 dialog" và
+  /// mất animation chuyển cảnh.
   static Widget overlaySlot({
     required Widget? panel,
+    required Object? panelKey,
     VoidCallback? onBarrier,
-    Object? panelKey,
   }) {
     return Stack(
       children: [

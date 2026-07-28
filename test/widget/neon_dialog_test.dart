@@ -85,7 +85,9 @@ void main() {
     tester,
   ) async {
     Widget build(Widget? panel) => MaterialApp(
-      home: Stack(children: [NeonDialog.overlaySlot(panel: panel)]),
+      home: Stack(
+        children: [NeonDialog.overlaySlot(panel: panel, panelKey: 'streak')],
+      ),
     );
 
     await tester.pumpWidget(build(null));

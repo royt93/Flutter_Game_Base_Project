@@ -3884,3 +3884,44 @@ slow` → toàn bộ xanh, không regression.
   đang chạy — chụp screenshot xác nhận bố cục 4+3 đúng, không tràn/cắt, cả 7
   label đọc đầy đủ. `flutter analyze` 0 issues, `flutter test --exclude-tags
   slow` xanh toàn bộ 604 test.
+
+## ✅ Implemented: Fix 4 nitpick từ audit dialog-consolidation (2026-07-28)
+
+Audit chấm 9/10 cho refactor gộp dialog (`overlaySlot`/`panelKey`, xem mục
+trên) nêu 4 nitpick nhỏ, không blocker — dọn hết trong lượt này:
+
+- **`NeonDialog.overlaySlot()` — `panelKey` optional → required**: trước đây
+  `Object? panelKey` có default ngầm `null`, nên 1 call site lỡ quên truyền
+  vẫn compile được — nếu về sau xuất hiện 2 dialog non-null khác nhau mà
+  cùng bỏ qua tham số này, `AnimatedSwitcher` sẽ coi là "cùng 1 dialog" và
+  mất animation chuyển cảnh (đúng bug đã fix ở mục panelKey identity-fragility
+  phía trên, chỉ khác là do quên truyền thay vì truyền theo identity). Đổi
+  `required Object? panelKey` (vẫn nullable, chỉ bắt buộc truyền tường minh)
+  — lỗi thiếu tham số giờ bắt được lúc compile thay vì runtime. 3 call site
+  thật (`game_screen.dart` × 2, `boss_rush_screen.dart`) đã truyền sẵn nên
+  không ảnh hưởng; `test/widget/neon_dialog_test.dart` có 1 test case còn
+  thiếu → bổ sung `panelKey: 'streak'`.
+- **`NeonDialog.panel()` render `Row` action rỗng khi `actions: []`**: dialog
+  dùng `content:` để nhúng nút riêng (`login_streak_dialog.dart`,
+  `weekly_goal_dialog.dart`) vẫn luôn tốn thêm `SizedBox(height: s24)` +
+  `Row` rỗng phía dưới — lãng phí khoảng trống dialog. Fix: bọc cả 2 trong
+  `if (actions.isNotEmpty) ...[...]`.
+- **Test docstring overclaim**: `boss_rush_screen_test.dart` có 1 test tên
+  "chứng minh overlaySlot panelKey ổn định qua rebuild thật" nhưng không
+  assert `transientCallbackCount` nên thực chất không chứng minh được điều
+  đó (bằng chứng thật nằm ở 2 test dedicated trong `neon_dialog_test.dart`).
+  Sửa lại tên test cho đúng bản chất: smoke test luồng quit thật trên màn
+  hình, kèm chú thích trỏ sang nơi có bằng chứng thật.
+- **i18n overflow risk cho mode-tile label**: kiểm tra chuỗi dài nhất trong
+  22 locale cho 5 key label tĩnh (`mode_time_attack_label`, `mode_zen_label`,
+  `mode_endless_label`, `mode_boss_rush_label`, `mode_mirror_label`) — dài
+  nhất là tiếng Ý "Modalità Contro il tempo" (24 ký tự) và Filipino "Walang
+  Katapusang Mode" (22 ký tự). Thử đo bằng `TextPainter` với font fallback
+  của môi trường test cho kết quả không đáng tin (báo tràn cả chuỗi tiếng
+  Anh gốc "Time Attack Mode" — vốn đã chạy tốt trên máy thật vì dùng font
+  Baloo2 thật, khác font test). Kết luận: không cần sửa code — hộp label
+  (60dp/3 dòng/11px) đã được tinh chỉnh và verify trên device thật ở lần fix
+  bố cục 4+3 phía trên, và `TextOverflow.ellipsis` đảm bảo trường hợp xấu
+  nhất chỉ là cắt bớt chữ, không vỡ layout.
+- Verify: `flutter analyze` 0 issues, `flutter test --exclude-tags slow`
+  xanh toàn bộ 604 test.
