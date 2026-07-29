@@ -52,9 +52,11 @@ class GameScreenController extends GetxController {
   /// F15: chụp ảnh bàn chơi + text level/điểm/ngày rồi mở share sheet.
   Future<void> shareBoard() async {
     final date = DateTime.now().toIso8601String().split('T').first;
-    final text =
-        'Pop Star Blast — Level ${gameCtrl.currentLevel.id} — '
-        'Score ${gameCtrl.score.value} — $date';
+    final text = 'share_board_text'.trParams({
+      'level': '${gameCtrl.currentLevel.id}',
+      'score': '${gameCtrl.score.value}',
+      'date': date,
+    });
     await shareBoardImage(boundaryKey: boardKey, text: text);
   }
 
@@ -71,7 +73,7 @@ class GameScreenController extends GetxController {
         taps: g.recordedTaps,
       ),
     );
-    await shareText('Pop Star Blast — Ghost Replay: $code');
+    await shareText('share_replay_text'.trParams({'code': code}));
   }
 
   /// I28: có thể chia sẻ replay ván hiện tại không — dùng để ẩn/hiện nút chia
@@ -95,7 +97,7 @@ class GameScreenController extends GetxController {
         senderName: gameCtrl.playerName.value,
       ),
     );
-    await shareText('Pop Star Blast — Challenge: $code');
+    await shareText('share_challenge_text'.trParams({'code': code}));
   }
 
   @override

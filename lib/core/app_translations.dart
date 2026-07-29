@@ -1095,6 +1095,26 @@ class AppTranslations extends Translations {
     'weekly_goal_claim_button': 'Claim',
     'weekly_goal_claimed_label': 'Claimed',
     'drawer_weekly_goal_label': 'Weekly Goal',
+    // X7 — spin_wheel_dialog i18n fix: chuỗi hardcode chưa dịch (en+vi ở
+    // _extraEn/_extraVi, 20 ngôn ngữ còn lại dùng fallback English).
+    'spin_already_msg': "You've already spun today — come back tomorrow!",
+    'spin_reward_coins': '@n coins',
+    'spin_result_msg': 'You got @reward!',
+    'spin_spinning': 'Spinning...',
+    // X11 — broader hardcode sweep (audit sau X7): chuỗi hardcode còn sót ở
+    // game_screen/game_screen_controller/settings_screen/spin_wheel_dialog
+    // (en+vi ở _extraEn/_extraVi, 20 ngôn ngữ còn lại dùng fallback English).
+    'obj_clear_color': 'Clear color: @left left',
+    'obj_break_ice': 'Break ice: @left left',
+    'obj_collect': 'Collect: @left left',
+    'obj_open_gift': 'Open gifts: @left left',
+    'obj_bonus_star_moves': '(≤@moves moves for bonus star)',
+    'obj_finish_bonus_star': 'Finish in ≤@moves moves for bonus star',
+    'zen_no_target': 'Zen — no target',
+    'share_board_text': 'Pop Star Blast — Level @level — Score @score — @date',
+    'share_replay_text': 'Pop Star Blast — Ghost Replay: @code',
+    'share_challenge_text': 'Pop Star Blast — Challenge: @code',
+    'invite_friend_share_msg': 'Play Pop Star Blast with me! @link',
   };
 
   /// Key Wave 4 — Tiếng Việt (override English).
@@ -1912,6 +1932,23 @@ class AppTranslations extends Translations {
     'weekly_goal_claim_button': 'Nhận',
     'weekly_goal_claimed_label': 'Đã nhận',
     'drawer_weekly_goal_label': 'Mục tiêu tuần',
+    // X7 — spin_wheel_dialog i18n fix.
+    'spin_already_msg': 'Hôm nay quay rồi, quay lại vào ngày mai nhé!',
+    'spin_reward_coins': '@n xu',
+    'spin_result_msg': 'Nhận được @reward!',
+    'spin_spinning': 'Đang quay...',
+    // X11 — quét rộng hardcode sau X7.
+    'obj_clear_color': 'Xóa màu: còn @left',
+    'obj_break_ice': 'Phá băng: còn @left',
+    'obj_collect': 'Thu thập: còn @left',
+    'obj_open_gift': 'Mở quà: còn @left',
+    'obj_bonus_star_moves': '(≤@moves lượt để nhận sao thưởng)',
+    'obj_finish_bonus_star': 'Hoàn thành trong ≤@moves lượt để nhận sao thưởng',
+    'zen_no_target': 'Zen — không có mục tiêu',
+    'share_board_text': 'Pop Star Blast — Màn @level — Điểm @score — @date',
+    'share_replay_text': 'Pop Star Blast — Replay: @code',
+    'share_challenge_text': 'Pop Star Blast — Thách đấu: @code',
+    'invite_friend_share_msg': 'Chơi Pop Star Blast cùng mình! @link',
   };
 
   static const Map<String, String> _extraEs = {

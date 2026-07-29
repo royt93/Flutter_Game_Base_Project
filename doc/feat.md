@@ -3925,3 +3925,66 @@ trên) nêu 4 nitpick nhỏ, không blocker — dọn hết trong lượt này:
   nhất chỉ là cắt bớt chữ, không vỡ layout.
 - Verify: `flutter analyze` 0 issues, `flutter test --exclude-tags slow`
   xanh toàn bộ 604 test.
+
+## ✅ Implemented: Fix i18n hardcode ở spin_wheel_dialog.dart (X7 nối dài, 2026-07-29)
+
+Đóng nốt debt đã ghi nhận ở mục X10 phía trên ("spin_wheel_dialog.dart toàn
+bộ hardcode tiếng Việt thẳng... để lại cho lần rà soát i18n tiếp theo").
+6 chuỗi hardcode (2 title, 1 message, 2 label nút, 1 reward label) đổi sang
+`.tr`/`.trParams`:
+
+- Tái dùng 3 key có sẵn (đã có ở cả 22 locale): `spin_wheel_label` (cả 2
+  title, gộp luôn 2 bản Việt khác nhau "Vòng quay"/"Vòng quay may mắn" trước
+  đây thành 1 — thuần đổi copy, không đổi logic), `coll_close`, `daily_claim`.
+- Thêm 4 key mới vào `_extraEn`/`_extraVi` (fallback English cho 20 ngôn ngữ
+  còn lại, đúng pattern Wave 4+ đã dùng xuyên suốt file): `spin_already_msg`,
+  `spin_reward_coins` (`@n coins`/`@n xu`), `spin_result_msg` (`You got
+  @reward!`/`Nhận được @reward!`), `spin_spinning`.
+- `_spinRewardLabel()` dùng `'spin_reward_coins'.trParams({'n': ...})` lồng
+  vào `@reward` của `spin_result_msg` — không có ký tự `@` sót lại trong
+  chuỗi trung gian nên không rủi ro double-substitution.
+
+Audit code-review skill chấm 9.5/10 (không có bug), verify độc lập lại bằng
+1 sub-agent thứ 2 xác nhận `trParams` case-sensitive match đúng `@n`/
+`@reward`, không có `_wNNByLang` nào định nghĩa trùng 4 key mới để shadow
+fallback English. `flutter analyze` 0 issues, `flutter test
+test/core/app_translations_test.dart` (đủ key 22 locale) pass.
+
+Verify trên device thật (Samsung S24 Ultra) phát hiện 1 lần app chuyển sang
+app lạ khác (`com.tranphuloi.neon`) thay vì mở dialog vòng quay — điều tra kỹ
+(process không chết, không có code cross-promo/launch-app nào trong repo,
+live logcat ActivityManager lúc tap lại không có dòng nào liên quan) và
+không tái hiện được ở các lần tap sau, kết luận là artifact ngẫu nhiên ở
+tầng gesture/touch injection của thiết bị/ADB, không liên quan code.
+
+## ✅ Implemented: Quét rộng hardcode còn sót sau X7 (X11, 2026-07-29)
+
+Sub-agent quét toàn bộ `lib/presentation/` + `lib/game/` tìm thêm chuỗi
+hardcode chưa qua `.tr`/`.trParams`, phát hiện 8 vị trí thật (loại 2 false
+positive: `perks_screen.dart` đã dùng `.tr` cho phần chữ chỉ nối số,
+`prestige_action.dart` chuỗi `'P$tier'` là badge viết tắt không cần dịch):
+
+- `spin_wheel_dialog.dart:19` — nhánh fallback reward không phải coins
+  (bomb/shuffle/undo) hiện `'${r.type} x${r.amount}'` thẳng ra UI. Thêm
+  `_boosterLabel()` map sang 3 key có sẵn cả 22 locale: `booster_bomb_label`,
+  `shuffle`, `booster_undo_label`.
+- `game_screen.dart` — mô tả mục tiêu level (`_objectiveLine`, 6 nhánh
+  `ObjectiveType`) và 3 label HUD (`Time Xs`, `Zen — no target`, `Best X` ×2
+  cho Endless/Mirror). Tái dùng 2 key có sẵn cả 22 locale (`hud_time`,
+  `endless_best` — dùng chung cho cả Mirror Mode vì cùng ngữ nghĩa "điểm
+  cao nhất", tránh thêm key trùng lặp). Thêm 6 key mới (`obj_clear_color`,
+  `obj_break_ice`, `obj_collect`, `obj_open_gift`, `obj_bonus_star_moves`,
+  `obj_finish_bonus_star`, `zen_no_target`) vào `_extraEn`/`_extraVi`.
+- `game_screen_controller.dart` — 3 template text chia sẻ board/replay/
+  challenge (`shareBoardImage`/`shareText`), giữ nguyên brand name "Pop Star
+  Blast" không dịch, tham số hoá phần còn lại qua `trParams`. Thêm
+  `share_board_text`, `share_replay_text`, `share_challenge_text`.
+- `settings_screen.dart` — text mời bạn bè (dòng link store hardcode tiếng
+  Việt), tách link ra `trParams({'link': ...})` để 20 ngôn ngữ fallback
+  English không lẫn tiếng Việt cứng trong URL text. Thêm
+  `invite_friend_share_msg`.
+
+Tổng 11 key mới, đều theo đúng pattern `_extraEn`/`_extraVi` (fallback
+English cho 20 ngôn ngữ chưa dịch). `flutter analyze` 0 issues,
+`flutter test --exclude-tags slow` xanh toàn bộ, `app_translations_test.dart`
+(đủ key 22 locale) pass.

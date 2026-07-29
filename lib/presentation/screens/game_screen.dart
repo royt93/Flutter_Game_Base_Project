@@ -162,15 +162,16 @@ String? _objectiveLine(GameController gameCtrl) {
   final left = gameCtrl.objectiveRemaining.value;
   return switch (objective.type) {
     ObjectiveType.score => null,
-    ObjectiveType.clearColor => 'Clear color: $left left',
-    ObjectiveType.clearObstacle => 'Break ice: $left left',
-    ObjectiveType.collect => 'Collect: $left left',
+    ObjectiveType.clearColor => 'obj_clear_color'.trParams({'left': '$left'}),
+    ObjectiveType.clearObstacle => 'obj_break_ice'.trParams({'left': '$left'}),
+    ObjectiveType.collect => 'obj_collect'.trParams({'left': '$left'}),
     ObjectiveType.obstacleInMoves =>
-      'Break ice: $left left '
-          '(≤${objective.moveLimit} moves for bonus star)',
-    ObjectiveType.moveLimitBonus =>
-      'Finish in ≤${objective.moveLimit} moves for bonus star',
-    ObjectiveType.openGift => 'Open gifts: $left left',
+      '${'obj_break_ice'.trParams({'left': '$left'})} '
+          '${'obj_bonus_star_moves'.trParams({'moves': '${objective.moveLimit}'})}',
+    ObjectiveType.moveLimitBonus => 'obj_finish_bonus_star'.trParams({
+      'moves': '${objective.moveLimit}',
+    }),
+    ObjectiveType.openGift => 'obj_open_gift'.trParams({'left': '$left'}),
   };
 }
 
@@ -232,7 +233,7 @@ class _Hud extends StatelessWidget {
                           scoreText,
                           const SizedBox(height: NeonTheme.s8),
                           Text(
-                            'Time ${gsc.remainingSeconds.value}s',
+                            '${'hud_time'.tr} ${gsc.remainingSeconds.value}s',
                             style: TextStyle(
                               color: NeonTheme.inkSoft,
                               fontSize: 12,
@@ -248,7 +249,7 @@ class _Hud extends StatelessWidget {
                           scoreText,
                           const SizedBox(height: NeonTheme.s8),
                           Text(
-                            'Zen — no target',
+                            'zen_no_target'.tr,
                             style: TextStyle(
                               color: NeonTheme.inkSoft,
                               fontSize: 12,
@@ -264,7 +265,7 @@ class _Hud extends StatelessWidget {
                           scoreText,
                           const SizedBox(height: NeonTheme.s8),
                           Text(
-                            'Best ${gameCtrl.endlessBest.value}',
+                            '${'endless_best'.tr} ${gameCtrl.endlessBest.value}',
                             style: TextStyle(
                               color: NeonTheme.inkSoft,
                               fontSize: 12,
@@ -280,7 +281,7 @@ class _Hud extends StatelessWidget {
                           scoreText,
                           const SizedBox(height: NeonTheme.s8),
                           Text(
-                            'Best ${gameCtrl.mirrorModeBest.value}',
+                            '${'endless_best'.tr} ${gameCtrl.mirrorModeBest.value}',
                             style: TextStyle(
                               color: NeonTheme.inkSoft,
                               fontSize: 12,

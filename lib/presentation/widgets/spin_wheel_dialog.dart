@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../core/neon_theme.dart';
 import '../../core/utils/format.dart';
@@ -13,8 +14,16 @@ IconData _spinRewardIcon(String type) => switch (type) {
   _ => Icons.monetization_on_rounded,
 };
 
-String _spinRewardLabel(SpinReward r) =>
-    r.type == 'coins' ? '${fmtNum(r.amount)} xu' : '${r.type} x${r.amount}';
+String _boosterLabel(String type) => switch (type) {
+  'bomb' => 'booster_bomb_label'.tr,
+  'shuffle' => 'shuffle'.tr,
+  'undo' => 'booster_undo_label'.tr,
+  _ => type,
+};
+
+String _spinRewardLabel(SpinReward r) => r.type == 'coins'
+    ? 'spin_reward_coins'.trParams({'n': fmtNum(r.amount)})
+    : '${_boosterLabel(r.type)} x${r.amount}';
 
 /// I7: vòng quay hằng ngày. Kết quả đã chốt trước ([GameController.todaySpinReward],
 /// seed = ngày) — reel chỉ animate rồi dừng đúng ô đó, không tự random riêng.
@@ -22,12 +31,16 @@ void showSpinWheelDialog(BuildContext context, GameController gameCtrl) {
   if (!gameCtrl.canClaimSpin) {
     NeonDialog.show(
       context: context,
-      title: 'Vòng quay',
+      title: 'spin_wheel_label'.tr,
       color: NeonTheme.purple,
       icon: Icons.casino_rounded,
-      message: 'Hôm nay quay rồi, quay lại vào ngày mai nhé!',
+      message: 'spin_already_msg'.tr,
       actions: [
-        NeonDialogAction(label: 'Đóng', color: NeonTheme.purple, onTap: () {}),
+        NeonDialogAction(
+          label: 'coll_close'.tr,
+          color: NeonTheme.purple,
+          onTap: () {},
+        ),
       ],
     );
     return;
@@ -37,7 +50,7 @@ void showSpinWheelDialog(BuildContext context, GameController gameCtrl) {
 
   NeonDialog.show(
     context: context,
-    title: 'Vòng quay may mắn',
+    title: 'spin_wheel_label'.tr,
     color: NeonTheme.purple,
     content: _SpinWheelBody(
       target: target,
@@ -75,7 +88,9 @@ class _SpinWheelBodyState extends State<_SpinWheelBody> {
         if (_done) ...[
           const SizedBox(height: NeonTheme.s16),
           Text(
-            'Nhận được ${_spinRewardLabel(widget.target)}!',
+            'spin_result_msg'.trParams({
+              'reward': _spinRewardLabel(widget.target),
+            }),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: NeonTheme.inkSoft,
@@ -88,7 +103,7 @@ class _SpinWheelBodyState extends State<_SpinWheelBody> {
         const SizedBox(height: NeonTheme.s24),
         NeonDialogButton(
           action: NeonDialogAction(
-            label: _done ? 'Nhận' : 'Đang quay...',
+            label: _done ? 'daily_claim'.tr : 'spin_spinning'.tr,
             color: NeonTheme.purple,
             onTap: () {
               if (!_done) return;

@@ -202,8 +202,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onTap: () => shareText(
                         // X6: text-only, tái dùng shareText đã dựng ở F15.
                         // Placeholder link store — thay khi có link thật.
-                        'Chơi Pop Star Blast cùng mình! '
-                        'https://play.google.com/store/apps/details?id=com.galaxyjoy.pop_star_blast',
+                        'invite_friend_share_msg'.trParams({
+                          'link':
+                              'https://play.google.com/store/apps/details?id=com.galaxyjoy.pop_star_blast',
+                        }),
                       ),
                     ),
                     ListTile(
