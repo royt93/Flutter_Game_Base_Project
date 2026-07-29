@@ -3987,4 +3987,13 @@ positive: `perks_screen.dart` đã dùng `.tr` cho phần chữ chỉ nối số
 Tổng 11 key mới, đều theo đúng pattern `_extraEn`/`_extraVi` (fallback
 English cho 20 ngôn ngữ chưa dịch). `flutter analyze` 0 issues,
 `flutter test --exclude-tags slow` xanh toàn bộ, `app_translations_test.dart`
-(đủ key 22 locale) pass.
+(đủ key 22 locale) pass. Commit `6ff7914`.
+
+**Xác nhận regression trên device thật (2026-07-29):** chạy full
+`integration_test/lifecycle_test.dart` (tag `slow`, không bị exclude) trên
+Samsung S24 Ultra thật — 2/2 test case pass sau loạt thay đổi gần đây
+(dialog consolidation, weekly goal, challenge code, mirror mode, X11 i18n).
+2 warning `tap() ... would not hit test` trên nút PLAY (text-finder lệch
+offset so với `RenderParagraph` do stroke-outline text nằm trên button) —
+không fatal (`warnIfMissed` mặc định), tap vẫn thành công, không phải
+regression từ các thay đổi trên.
