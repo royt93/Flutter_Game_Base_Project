@@ -270,6 +270,7 @@ class PopStarGame extends FlameGame {
             (_) => List.generate(cols, (_) => _rng.nextInt(level.colorCount)),
           );
     lockGrid = List.generate(rows, (_) => List.generate(cols, (_) => 0));
+    _ensureCollectTargetIfNeeded(level);
     // I29: đặt boss tile TRƯỚC obstacle/chain-lock/gift — 3 hàm sau lọc ứng
     // viên bằng `>= 0` nên tự loại trừ cell boss (mã âm), tránh bị ghi đè.
     _placeBossTileIfNeeded(level);
@@ -300,6 +301,51 @@ class PopStarGame extends FlameGame {
       'boardLeft=$_boardLeft boardTop=$_boardTop nonNullCells='
       '${colorGrid.expand((r) => r).where((v) => v != null).length}',
     );
+  }
+
+  /// F9-fix: màn `collect` cần đủ SỐ Ô màu mục tiêu ngay từ đầu — bàn random
+  /// thuần i.i.d không đảm bảo đủ, khiến objective có thể không thể đạt được
+  /// (board không refill). Nếu thiếu, tô lại ngẫu nhiên vài ô KHÔNG PHẢI màu
+  /// target (qua `_rng`, giống cách [_placeGiftsIfNeeded] chọn candidate)
+  /// sang màu target. Không đụng preset board (guard `presetGrid == null`).
+  void _ensureCollectTargetIfNeeded(PopLevel level) {
+    if (presetGrid != null) return;
+    if (level.objective.type != ObjectiveType.collect) return;
+    final targetColor = level.objective.color!;
+    final needed = level.objective.target!;
+    final current = colorGrid
+        .expand((row) => row)
+        .where((v) => v == targetColor)
+        .length;
+    final shortfall = needed - current;
+    if (shortfall <= 0) return;
+    final candidates = _shuffledCandidates(
+      (idx) => colorGrid[idx ~/ cols][idx % cols] != targetColor,
+    );
+    for (final idx in candidates.take(shortfall)) {
+      colorGrid[idx ~/ cols][idx % cols] = targetColor;
+    }
+  }
+
+  /// Ô này có phải màu target của objective `collect` không — dùng để loại
+  /// trừ khỏi mọi ứng viên ghi đè `colorGrid` phía sau (countdown-lock,
+  /// wildcard...). Thiếu bước né này thì [_ensureCollectTargetIfNeeded] vừa
+  /// tô đủ số ô có thể bị ghi đè ngay sau đó, kéo số đếm xuống dưới target —
+  /// `_collectInitial` (chụp ở postFrameCallback, SAU mọi placement pass)
+  /// sẽ phản ánh số đã bị giảm, khiến objective collect vĩnh viễn không đạt.
+  bool _isCollectTarget(PopLevel level, int idx) {
+    if (level.objective.type != ObjectiveType.collect) return false;
+    return colorGrid[idx ~/ cols][idx % cols] == level.objective.color;
+  }
+
+  /// Idiom dùng chung cho mọi hàm `_place*IfNeeded`: liệt kê index hợp lệ
+  /// theo [eligible] rồi xáo bằng `_rng` (giữ seed-determinism cho
+  /// replay/challenge-code). Gọi `.take(n)` trên kết quả để lấy candidate.
+  List<int> _shuffledCandidates(bool Function(int idx) eligible) {
+    return [
+      for (var idx = 0; idx < rows * cols; idx++)
+        if (eligible(idx)) idx,
+    ]..shuffle(_rng);
   }
 
   /// I29: đặt 1 boss tile (nếu [PopLevel.bossTileSpec] khớp) — mỗi màn chỉ có
@@ -344,10 +390,9 @@ class PopStarGame extends FlameGame {
     final world = (level.id - 1) ~/ 20;
     final count = (2 + world ~/ 3).clamp(2, 6);
     final lockValue = 1 + world ~/ 5;
-    final candidates = [
-      for (var idx = 0; idx < rows * cols; idx++)
-        if ((colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0) idx,
-    ]..shuffle(_rng);
+    final candidates = _shuffledCandidates(
+      (idx) => (colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0,
+    );
     for (final idx in candidates.take(count)) {
       lockGrid[idx ~/ cols][idx % cols] = lockValue;
     }
@@ -359,12 +404,11 @@ class PopStarGame extends FlameGame {
   void _placeGiftsIfNeeded(PopLevel level) {
     if (level.objective.type != ObjectiveType.openGift) return;
     final count = level.objective.target!;
-    final candidates = [
-      for (var idx = 0; idx < rows * cols; idx++)
-        if ((colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0 &&
-            lockGrid[idx ~/ cols][idx % cols] == 0)
-          idx,
-    ]..shuffle(_rng);
+    final candidates = _shuffledCandidates(
+      (idx) =>
+          (colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0 &&
+          lockGrid[idx ~/ cols][idx % cols] == 0,
+    );
     for (final idx in candidates.take(count)) {
       colorGrid[idx ~/ cols][idx % cols] = giftTileValue;
     }
@@ -373,18 +417,21 @@ class PopStarGame extends FlameGame {
   /// I45: ~18% cơ hội 1 ô Countdown Lock ở world ≥4 (level > 60), campaign
   /// only — side-mode dùng `level.id` âm/đặc biệt nên tự loại, giống
   /// [_placeObstaclesIfNeeded] không cần check `controller.mode`. Né ô đã là
-  /// obstacle/chain-lock/gift/boss, giống [_placeGiftsIfNeeded].
+  /// obstacle/chain-lock/gift/boss, giống [_placeGiftsIfNeeded]. Né thêm ô
+  /// màu target của objective `collect` (xem [_isCollectTarget]) — nếu
+  /// không, có thể đè lên đúng ô [_ensureCollectTargetIfNeeded] vừa tô thêm
+  /// để đủ target, làm objective collect vĩnh viễn không đạt được.
   static const double _countdownLockChance = 0.18;
 
   void _placeCountdownLockTileIfNeeded(PopLevel level) {
     if (level.id <= 60) return;
     if (_rng.nextDouble() >= _countdownLockChance) return;
-    final candidates = [
-      for (var idx = 0; idx < rows * cols; idx++)
-        if ((colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0 &&
-            lockGrid[idx ~/ cols][idx % cols] == 0)
-          idx,
-    ]..shuffle(_rng);
+    final candidates = _shuffledCandidates(
+      (idx) =>
+          (colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0 &&
+          lockGrid[idx ~/ cols][idx % cols] == 0 &&
+          !_isCollectTarget(level, idx),
+    );
     if (candidates.isEmpty) return;
     final idx = candidates.first;
     colorGrid[idx ~/ cols][idx % cols] = countdownLockIdBase;
@@ -395,19 +442,21 @@ class PopStarGame extends FlameGame {
   /// dùng `level.id` <= 0 nên tự loại, giống [_placeCountdownLockTileIfNeeded].
   /// Né ô đã là obstacle/chain-lock/gift/boss/countdown-lock, giống
   /// [_placeGiftsIfNeeded] (mọi giá trị đặc biệt đều âm nên check `>= 0` đủ
-  /// loại hết). Không cần state map riêng — wildcard chỉ là 1 giá trị mã hoá
-  /// cố định trong `colorGrid`, không có số đếm/HP đi kèm.
+  /// loại hết). Né thêm ô màu target của objective `collect`, cùng lý do với
+  /// [_placeCountdownLockTileIfNeeded]. Không cần state map riêng — wildcard
+  /// chỉ là 1 giá trị mã hoá cố định trong `colorGrid`, không có số đếm/HP
+  /// đi kèm.
   static const double _wildcardTileChance = 0.15;
 
   void _placeWildcardTileIfNeeded(PopLevel level) {
     if (level.id <= 0) return;
     if (_rng.nextDouble() >= _wildcardTileChance) return;
-    final candidates = [
-      for (var idx = 0; idx < rows * cols; idx++)
-        if ((colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0 &&
-            lockGrid[idx ~/ cols][idx % cols] == 0)
-          idx,
-    ]..shuffle(_rng);
+    final candidates = _shuffledCandidates(
+      (idx) =>
+          (colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0 &&
+          lockGrid[idx ~/ cols][idx % cols] == 0 &&
+          !_isCollectTarget(level, idx),
+    );
     if (candidates.isEmpty) return;
     final idx = candidates.first;
     colorGrid[idx ~/ cols][idx % cols] = wildcardTileValue;

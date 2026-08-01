@@ -1577,13 +1577,34 @@ side-mode nhận `accent: null`/`aurora: false`. `flutter analyze` 0 issues,
 
 ## 💭 Ideas (ngoài scope hiện tại)
 
-- Gán `LevelObjective.clearColor/clearObstacle` cho các màn cụ thể trong
-  `kLevels` (cơ chế đã xong + có test qua `objective_test.dart`, nhưng chưa
-  màn campaign nào thực sự dùng objective khác score).
 - Monetize (`I19`/`I20` trong `IDEAS.md`) — user đã loại dứt khoát khỏi mọi
   wave (Option D), giữ nguyên "chưa chốt" cho tới khi có yêu cầu khác.
-- `I12` dynamic music layers — còn "chưa chốt" trong `IDEAS.md`, chưa có task
-  file.
+
+**(2026-07-30) Đính chính:** mục `I12` dynamic music layers từng ghi ở đây là
+"chưa chốt, chưa có task file" — **sai**, đã implement từ 2026-07-15 (xem mục
+`✅ F5d + I12` bên dưới), có task file
+`doc/task/tasks/I12-dynamic-music-layers.md`, `IDEAS.md` đã chuyển sang
+"✅ đã chốt".
+
+**(2026-07-30) Bàn nâng cấp I12 lên layering thật — hoãn:** kiểm tra thấy
+đây là asset-blocked chứ không phải code-blocked — `AudioManager` chỉ có 3
+track nhạc nền trọn vẹn (`bkg.ogg`/`bkg1.ogg`/`bkg2.ogg`), không có stem
+(drum/bass/melody loop riêng) để chồng lớp. `FlameAudio.bgm` cũng chỉ phát 1
+track tại 1 thời điểm — layering thật cần viết lại bằng nhiều `AudioPlayer`
+song song + crossfade volume theo bậc combo, việc không nhỏ. Quyết định:
+giữ nguyên cơ chế đổi-track hiện tại, quay lại khi có asset stem thật.
+
+**(2026-07-30) Đính chính:** mục "gán objective cho level cụ thể" từng ghi ở
+đây là **sai** — khảo sát lại cho thấy hệ thống đã wire đầy đủ end-to-end từ
+trước: `kLevels` gán objective cho cả 220 level qua chu kỳ 9-slot (score/
+clearColor/clearObstacle/collect/moveLimitBonus/obstacleInMoves/openGift) +
+4 biến thể boss; `GameController.updateObjectiveProgress`/`objectiveMet` +
+`PopStarGame._checkEnd` đánh giá thắng/thua theo đúng từng loại (không chỉ
+check score); obstacle (`lib/logic/obstacle.dart`, chip theo durability) và
+gift (`lib/logic/gift_tile.dart`, auto-open khi rơi xuống hàng cuối) đều có
+cơ chế runtime thật, không phải placeholder. Xem `doc/feat.md` mục fix bên
+dưới cho 2 gap thật sự còn lại (collect thiếu board-gen bias theo màu mục
+tiêu; `objective_test.dart` chỉ phủ 2/7 loại win-condition).
 
 ## ✅ Fix bug booster tốn lượt khi no-op (2026-07-13)
 
@@ -3997,3 +4018,52 @@ Samsung S24 Ultra thật — 2/2 test case pass sau loạt thay đổi gần đ�
 offset so với `RenderParagraph` do stroke-outline text nằm trên button) —
 không fatal (`warnIfMissed` mặc định), tap vẫn thành công, không phải
 regression từ các thay đổi trên.
+
+## ✅ Fix collect-objective board-gen bias + phủ test 3 loại win-condition còn thiếu (2026-07-30)
+
+2 gap thật được xác nhận khi rà soát lại hệ thống objective (xem đính chính
+2026-07-30 ở mục Ideas phía trên):
+
+- **Bug board-gen**: bàn màn `collect` (slot 5 trong chu kỳ 9, 11/220 level)
+  tô màu i.i.d thuần túy (`_rng.nextInt(colorCount)`), không đảm bảo đủ số ô
+  màu mục tiêu (`target = (cells/colorCount/2).clamp(2,12)`). Vì bàn không
+  refill, một lần random xui có thể khiến objective **không thể đạt được**.
+  Phân tích nhị thức xác nhận worst-case (level 6/15: 48 ô, 5 màu, target=5)
+  ~2.48% xác suất thiếu mỗi seed — có thật, không phải lý thuyết suông. Fix:
+  thêm `_ensureCollectTargetIfNeeded()` (`pop_star_game.dart`) — sau khi random
+  bàn, đếm thiếu bao nhiêu ô màu target rồi tô lại ngẫu nhiên qua `_rng` (cùng
+  idiom candidate→shuffle→take như `_placeGiftsIfNeeded`), gọi ngay đầu
+  `onLoad()` trước mọi bước đặt obstacle/gift khác để giữ determinism
+  replay/challenge-code.
+- **Test gap**: `objective_test.dart` trước đó chỉ phủ `clearColor` (win) và
+  `clearObstacle` (board-gen). Thêm 4 test: `collect` win, sweep 500 seed xác
+  nhận bàn luôn đủ ô màu target (regression cho bug trên), `openGift` win
+  (gift đáy bàn tự mở qua `_checkEnd`), `obstacleInMoves` win (obstacle liền
+  kề bị chip vỡ cùng lượt tap).
+
+`flutter analyze` 0 issues; `objective_test.dart` 6/6 pass;
+`replay_determinism_test.dart` 4/4 pass (xác nhận điểm tiêu thụ `_rng` mới
+không phá determinism); `flutter test --exclude-tags slow` 608 test pass, 0
+fail.
+
+**Code review phát hiện + vá lỗ hổng còn sót (2026-07-30):** review 8-góc phát
+hiện `_placeCountdownLockTileIfNeeded` (~18%, level>60) và
+`_placeWildcardTileIfNeeded` (~15%, mọi level) chạy **sau**
+`_ensureCollectTargetIfNeeded` trong `onLoad()` nhưng lọc ứng viên bằng
+`>= 0` — không loại trừ ô vừa được tô để đủ target — nên có thể đè lên đúng
+ô đó. Vì `GameController._collectInitial` chỉ chụp lần đầu qua
+`addPostFrameCallback` (chạy SAU toàn bộ `onLoad()`, gồm cả 2 hàm trên), số
+đếm ban đầu có thể phản ánh trạng thái đã bị giảm — tái diễn đúng bug vừa
+sửa, qua đường khác. Fix: thêm guard `_isCollectTarget()` loại trừ ô màu
+target khỏi candidate của 2 hàm trên; nhân tiện gộp idiom
+candidate→shuffle→take (lặp lại ở 5 hàm `_place*IfNeeded`) thành 1 helper
+dùng chung `_shuffledCandidates()`. Test mới: sweep 300 seed với level giả
+`id=61` (bật cả countdown-lock lẫn wildcard) + `target=cells` (toàn bộ ô
+phải là màu target) — bất kỳ ô nào bị 2 hàm trên đè lên cũng chắc chắn là ô
+target, tối đa hoá khả năng bắt lỗi. Cleanup thêm: test tự tính lại
+cellSize/boardLeft/boardTop thay vì gọi `PopStarGame.cellCenterFor()` có sẵn
+— đổi sang gọi thẳng để tránh lệch khi layout formula đổi.
+
+`flutter analyze` 0 issues; `objective_test.dart` 7/7 pass (thêm sweep
+300-seed cho fix mới); `replay_determinism_test.dart` 4/4 pass;
+`flutter test --exclude-tags slow` 609 test pass, 0 fail.
