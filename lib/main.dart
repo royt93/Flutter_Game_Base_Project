@@ -13,6 +13,7 @@ import 'core/debug_log.dart';
 import 'core/locale_service.dart';
 import 'core/neon_theme.dart';
 import 'core/storage_service.dart';
+import 'core/runtime_flags.dart';
 import 'presentation/controllers/game_controller.dart';
 import 'presentation/screens/home_screen.dart';
 
@@ -22,6 +23,7 @@ void main() => app();
 /// [withAudio] = false trong integration test: audioplayers đăng ký frame
 /// callback liên tục, gây lỗi "animation still running" lúc teardown.
 Future<void> app({bool withAudio = true}) async {
+  dlog('app: ensureInitialized');
   WidgetsFlutterBinding.ensureInitialized();
   // Full screen: ẩn status bar + navigation bar.
   // Dùng `manual` + overlays rỗng thay vì immersiveSticky để KHÔNG reserve
@@ -31,18 +33,33 @@ Future<void> app({bool withAudio = true}) async {
   // Giữ màn hình sáng suốt vòng đời app, không chỉ lúc chơi.
   WakelockPlus.enable();
 
+  dlog('app: loadAppVersion start');
   await loadAppVersion();
+  dlog('app: loadAppVersion done');
 
+  dlog('app: prefs start');
   final store = Get.put(StorageService(await _loadPrefs()), permanent: true);
+  dlog('app: prefs done');
   NeonTheme.dark = store.getBool(StorageKeys.themeDark);
   final locale = Get.put(LocaleService(store), permanent: true);
+  // GameController phải đăng ký TRƯỚC updateLocale(): updateLocale() gọi
+  // engine.performReassemble() (rebuild toàn bộ element tree kể cả widget
+  // offstage), nên nếu HomeScreen build lại trước khi GameController tồn
+  // tại → "GameController not found". Get.put() đồng bộ nên chỉ cần đổi
+  // thứ tự là đóng được race window này.
   Get.put(GameController(), permanent: true);
+  // GetMaterialApp's `locale:` param chỉ áp dụng lúc build lần đầu. Khi
+  // restartApp() gọi lại app() trong cùng process, GetX vẫn giữ Get.locale
+  // cũ (từ lần đổi ngôn ngữ trước) nên phải chủ động set lại ở đây, không
+  // thể chỉ dựa vào tham số constructor.
+  Get.updateLocale(locale.current.value);
 
   if (withAudio) {
     Get.put(AudioManager(), permanent: true);
   }
 
   runApp(PopStarBlastApp(initialLocale: locale.current.value));
+  dlog('app: runApp done');
 
   // Sau first frame: tránh I/O contention với Flame init → giảm startup jank.
   if (withAudio) {
@@ -50,6 +67,20 @@ Future<void> app({bool withAudio = true}) async {
       AudioManager.maybe?.init().then((_) => AudioManager.maybe?.startBgm());
     });
   }
+}
+
+/// Xoá mọi singleton GetX rồi chạy lại [app()] — dùng sau import backup để
+/// mọi controller đọc lại state mới từ storage, khỏi phải tự reload từng
+/// cái (dễ sót khi thêm service mới).
+Future<void> restartApp() async {
+  Get.deleteAll(force: true);
+  // Integration tests start without audio because its frame callbacks can
+  // keep the test binding alive during teardown. Production keeps audio.
+  await app(withAudio: !isE2eTest);
+  // runApp preserves the existing Navigator when the root widget type is the
+  // same. Reset the route stack so restore never leaves a stale Settings
+  // route or dialog on screen.
+  Get.offAll(() => const HomeScreen());
 }
 
 /// Khởi tạo SharedPreferences; thiết bị hiếm với storage lỗi không được làm
@@ -64,14 +95,21 @@ Future<SharedPreferences?> _loadPrefs() async {
   }
 }
 
+bool _appVersionLoaded = false;
+
 /// Nạp version thật từ pubspec (qua package_info_plus) vào [kAppVersion].
-/// Lỗi (vd nền tảng test) → giữ nguyên fallback.
+/// Lỗi (vd nền tảng test) → giữ nguyên fallback. Chỉ gọi platform channel 1
+/// lần cho cả tiến trình — `restartApp()` gọi lại `app()` mỗi lần import
+/// backup, không cần hỏi lại `PackageInfo.fromPlatform()` vì version không
+/// đổi trong lúc app đang chạy.
 Future<void> loadAppVersion() async {
+  if (_appVersionLoaded) return;
   try {
     final info = await PackageInfo.fromPlatform();
     if (info.version.isNotEmpty) kAppVersion = info.version;
+    _appVersionLoaded = true;
   } catch (_) {
-    // giữ fallback trong app_info.dart
+    // giữ fallback trong app_info.dart, thử lại ở lần app() kế tiếp
   }
 }
 

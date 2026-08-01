@@ -7,6 +7,8 @@ import '../../core/locale_service.dart';
 import '../../core/neon_theme.dart';
 import '../../core/share_helper.dart';
 import '../../core/storage_service.dart';
+import '../../logic/backup_code.dart';
+import '../../main.dart' show restartApp;
 import '../controllers/game_controller.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
@@ -36,6 +38,162 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _reduceMotion = StorageService.to.getBool(StorageKeys.reduceMotion);
   late bool _darkTheme = NeonTheme.dark;
   late bool _recordReplay = StorageService.to.getBool(StorageKeys.recordReplay);
+  final _importCodeCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _importCodeCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _showExportDialog(BuildContext context) async {
+    final code = await encodeSecureBackupCode(StorageService.to.exportAll());
+    if (!context.mounted) return;
+    NeonDialog.show(
+      context: context,
+      title: 'backup_export'.tr,
+      color: NeonTheme.cyan,
+      message: 'backup_export_msg'.tr,
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 160),
+        child: SingleChildScrollView(
+          child: SelectableText(
+            code,
+            style: TextStyle(color: NeonTheme.ink, fontSize: 12),
+          ),
+        ),
+      ),
+      actions: [
+        NeonDialogAction(
+          label: 'backup_share'.tr,
+          color: NeonTheme.cyan,
+          onTap: () => shareText(code),
+        ),
+        NeonDialogAction(
+          label: 'cancel'.tr,
+          color: NeonTheme.purple,
+          onTap: () {},
+        ),
+      ],
+    );
+  }
+
+  void _showImportDialog(BuildContext context) {
+    _importCodeCtrl.clear();
+    NeonDialog.show(
+      context: context,
+      title: 'backup_import'.tr,
+      color: NeonTheme.cyan,
+      message: 'backup_import_msg'.tr,
+      content: TextField(
+        controller: _importCodeCtrl,
+        style: TextStyle(color: NeonTheme.ink),
+        maxLines: 3,
+        minLines: 1,
+        decoration: InputDecoration(
+          hintText: 'friend_paste_code_hint'.tr,
+          hintStyle: TextStyle(color: NeonTheme.inkSoft),
+          filled: true,
+          fillColor: NeonTheme.card,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: NeonTheme.s16,
+            vertical: 12,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+      actions: [
+        NeonDialogAction(
+          label: 'cancel'.tr,
+          color: NeonTheme.purple,
+          onTap: () {},
+        ),
+        NeonDialogAction(
+          label: 'confirm'.tr,
+          color: NeonTheme.cyan,
+          onTap: () => _handleImportCode(context),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleImportCode(BuildContext context) async {
+    final decoded = await decodeSecureBackupCode(_importCodeCtrl.text);
+    if (!context.mounted) return;
+    final safeContext = context;
+    if (decoded == null) {
+      NeonDialog.show(
+        context: safeContext,
+        title: 'backup_import_invalid'.tr,
+        color: NeonTheme.orange,
+        actions: [
+          NeonDialogAction(
+            label: 'cancel'.tr,
+            color: NeonTheme.orange,
+            onTap: () {},
+          ),
+        ],
+      );
+      return;
+    }
+    NeonDialog.show(
+      context: safeContext,
+      title: 'backup_import_confirm_title'.tr,
+      color: NeonTheme.orange,
+      message: 'backup_import_confirm_msg'.tr,
+      actions: [
+        NeonDialogAction(
+          label: 'cancel'.tr,
+          color: NeonTheme.cyan,
+          onTap: () {},
+        ),
+        NeonDialogAction(
+          label: 'confirm'.tr,
+          color: NeonTheme.orange,
+          onTap: () async {
+            try {
+              await StorageService.to.importAll(decoded);
+            } catch (_) {
+              if (!safeContext.mounted) return;
+              NeonDialog.show(
+                context: safeContext,
+                title: 'backup_import_failed'.tr,
+                color: NeonTheme.orange,
+                actions: [
+                  NeonDialogAction(
+                    label: 'cancel'.tr,
+                    color: NeonTheme.orange,
+                    onTap: () {},
+                  ),
+                ],
+              );
+              return;
+            }
+            try {
+              await restartApp();
+            } catch (_) {
+              if (!safeContext.mounted) return;
+              NeonDialog.show(
+                context: safeContext,
+                title: 'backup_restart_failed'.tr,
+                color: NeonTheme.orange,
+                actions: [
+                  NeonDialogAction(
+                    label: 'cancel'.tr,
+                    color: NeonTheme.orange,
+                    onTap: () {},
+                  ),
+                ],
+              );
+            }
+          },
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -261,6 +419,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                         ],
                       ),
+                    ),
+                    const SizedBox(height: NeonTheme.s16),
+                    ListTile(
+                      leading: Icon(
+                        Icons.upload_file_rounded,
+                        color: NeonTheme.cyan,
+                      ),
+                      title: Text(
+                        'backup_export'.tr,
+                        style: TextStyle(color: NeonTheme.ink),
+                      ),
+                      onTap: () => _showExportDialog(context),
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.download_rounded,
+                        color: NeonTheme.cyan,
+                      ),
+                      title: Text(
+                        'backup_import'.tr,
+                        style: TextStyle(color: NeonTheme.ink),
+                      ),
+                      onTap: () => _showImportDialog(context),
                     ),
                     const SizedBox(height: NeonTheme.s24),
                     OutlinedButton(

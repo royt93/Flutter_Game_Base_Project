@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'debug_log.dart';
+
 /// Tập trung MỌI key lưu trữ — tránh gõ string literal rải rác, dễ sai.
 class StorageKeys {
   StorageKeys._();
@@ -233,5 +235,70 @@ class StorageService extends GetxService {
       return;
     }
     _fallback.remove(key);
+  }
+
+  /// Dump toàn bộ storage hiện có thành map — dùng API generic của
+  /// SharedPreferences (getKeys/get) thay vì hand-list từng StorageKeys, để
+  /// không phải nhớ cập nhật danh sách này mỗi khi thêm key mới.
+  Map<String, Object> exportAll() {
+    final prefs = _prefs;
+    if (prefs == null) return Map<String, Object>.from(_fallback);
+    return {for (final k in prefs.getKeys()) k: prefs.get(k) as Object};
+  }
+
+  /// Ghi đè storage từ map đã export. Giá trị chỉ có thể là int/bool/double/
+  /// String (StorageService không bao giờ set List thẳng xuống
+  /// SharedPreferences — [setStringList] tự JSON-encode thành String).
+  Future<void> importAll(Map<String, Object?> data) async {
+    if (data.values.any(
+      (value) =>
+          value is! int &&
+          value is! bool &&
+          value is! double &&
+          value is! String,
+    )) {
+      throw const FormatException('Unsupported backup value type');
+    }
+    final normalized = <String, Object>{
+      for (final entry in data.entries) entry.key: entry.value!,
+    };
+    final previous = exportAll();
+    try {
+      await _replaceAll(normalized);
+    } catch (error) {
+      // SharedPreferences has no transaction primitive. Re-apply the
+      // snapshot so a partial write cannot leave a half-restored profile.
+      try {
+        await _replaceAll(previous);
+      } catch (rollbackError) {
+        // Preserve the original failure; callers still show a restore error.
+        dlog('roy93~ importAll rollback thất bại: $rollbackError');
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _replaceAll(Map<String, Object> data) async {
+    final prefs = _prefs;
+    if (prefs != null) {
+      for (final key in prefs.getKeys().toList()) {
+        await prefs.remove(key);
+      }
+    } else {
+      _fallback.clear();
+    }
+    for (final entry in data.entries) {
+      final value = entry.value;
+      switch (value) {
+        case int v:
+          await setInt(entry.key, v);
+        case bool v:
+          await setBool(entry.key, v);
+        case double v:
+          await setDouble(entry.key, v);
+        case String v:
+          await setString(entry.key, v);
+      }
+    }
   }
 }

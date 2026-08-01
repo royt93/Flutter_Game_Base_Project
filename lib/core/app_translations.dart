@@ -228,6 +228,9 @@ class AppTranslations extends Translations {
           // drawer_board_frame_label (en+vi ở _extraEn/_extraVi, 20 ngôn ngữ
           // còn lại ở _w58ByLang).
           ...?_w58ByLang[e.key],
+          // Backup/Restore: backup_restart_failed (en+vi ở _extraEn/_extraVi,
+          // 20 ngôn ngữ còn lại ở _w59ByLang).
+          ...?_w59ByLang[e.key],
         },
     };
   }
@@ -286,6 +289,24 @@ class AppTranslations extends Translations {
     'bgm_volume': 'Music volume',
     'sfx_volume': 'Sound effects volume',
     'haptics': 'Haptics',
+    // Backup/Restore: xuất/nhập tiến trình qua mã text (chống mất data khi
+    // gỡ app / đổi thiết bị — SharedPreferences chỉ lưu local).
+    'backup_export': 'Export Backup Code',
+    'backup_export_msg':
+        'Save this code somewhere safe. Use it to restore your progress on '
+        'a new device or after reinstalling.',
+    'backup_share': 'Share',
+    'backup_import': 'Restore from Code',
+    'backup_import_msg': 'Paste your backup code below.',
+    'backup_import_invalid': 'Invalid backup code',
+    'backup_import_failed': 'Restore failed. Your current progress is safe.',
+    'backup_restart_failed':
+        'Progress restored, but the app failed to restart. Please restart '
+        'the app manually.',
+    'backup_import_confirm_title': 'Restore progress?',
+    'backup_import_confirm_msg':
+        'This will overwrite your current progress with the data in this '
+        'code. The app will restart.',
     // W22.3 — Home onboarding tour
     'tour_t0': 'Welcome!',
     'tour_m0':
@@ -1146,6 +1167,25 @@ class AppTranslations extends Translations {
     'bgm_volume': 'Âm lượng nhạc nền',
     'sfx_volume': 'Âm lượng hiệu ứng',
     'haptics': 'Rung phản hồi',
+    // Backup/Restore: xuất/nhập tiến trình qua mã text (chống mất data khi
+    // gỡ app / đổi thiết bị — SharedPreferences chỉ lưu local).
+    'backup_export': 'Xuất mã sao lưu',
+    'backup_export_msg':
+        'Lưu mã này ở nơi an toàn. Dùng để khôi phục tiến trình trên thiết '
+        'bị mới hoặc sau khi cài lại app.',
+    'backup_share': 'Chia sẻ',
+    'backup_import': 'Khôi phục từ mã',
+    'backup_import_msg': 'Dán mã sao lưu của bạn vào bên dưới.',
+    'backup_import_invalid': 'Mã sao lưu không hợp lệ',
+    'backup_import_failed':
+        'Khôi phục thất bại. Tiến trình hiện tại của bạn vẫn an toàn.',
+    'backup_restart_failed':
+        'Đã khôi phục tiến trình nhưng ứng dụng khởi động lại thất bại. '
+        'Vui lòng tự khởi động lại ứng dụng.',
+    'backup_import_confirm_title': 'Khôi phục tiến trình?',
+    'backup_import_confirm_msg':
+        'Thao tác này sẽ ghi đè tiến trình hiện tại bằng dữ liệu trong mã '
+        'này. Ứng dụng sẽ khởi động lại.',
     // W22.3 — Home onboarding tour
     'tour_t0': 'Chào Mừng!',
     'tour_m0':
@@ -28971,6 +29011,380 @@ class AppTranslations extends Translations {
       'board_frame_aurora_gold': 'অরোরা গোল্ড',
       'board_frame_diamond': 'হীরা',
       'board_frame_unlock_prestige': 'প্রেস্টিজ @tier এ আনলক করুন',
+    },
+  };
+
+  // Backup/Restore (en+vi ở _extraEn/_extraVi, 20 ngôn ngữ còn lại ở
+  // _w59ByLang).
+  static const Map<String, Map<String, String>> _w59ByLang = {
+    'es_ES': {
+      'backup_export': 'Exportar código de respaldo',
+      'backup_export_msg':
+          'Guarda este código en un lugar seguro. Úsalo para restaurar tu '
+          'progreso en un dispositivo nuevo o después de reinstalar.',
+      'backup_share': 'Compartir',
+      'backup_import': 'Restaurar desde código',
+      'backup_import_msg': 'Pega tu código de respaldo a continuación.',
+      'backup_import_invalid': 'Código de respaldo no válido',
+      'backup_import_failed':
+          'Restauración fallida. Tu progreso actual está a salvo.',
+      'backup_restart_failed':
+          'Progreso restaurado, pero la app no pudo reiniciarse. Reinicia '
+          'la app manualmente.',
+      'backup_import_confirm_title': '¿Restaurar progreso?',
+      'backup_import_confirm_msg':
+          'Esto sobrescribirá tu progreso actual con los datos de este '
+          'código. La app se reiniciará.',
+    },
+    'fr_FR': {
+      'backup_export': 'Exporter le code de sauvegarde',
+      'backup_export_msg':
+          'Enregistrez ce code en lieu sûr. Utilisez-le pour restaurer '
+          'votre progression sur un nouvel appareil ou après une '
+          'réinstallation.',
+      'backup_share': 'Partager',
+      'backup_import': 'Restaurer depuis un code',
+      'backup_import_msg': 'Collez votre code de sauvegarde ci-dessous.',
+      'backup_import_invalid': 'Code de sauvegarde invalide',
+      'backup_import_failed':
+          'Échec de la restauration. Votre progression actuelle est en '
+          'sécurité.',
+      'backup_restart_failed':
+          "Progression restaurée, mais l'application n'a pas pu "
+          'redémarrer. Veuillez la redémarrer manuellement.',
+      'backup_import_confirm_title': 'Restaurer la progression ?',
+      'backup_import_confirm_msg':
+          'Cela remplacera votre progression actuelle par les données de '
+          "ce code. L'application va redémarrer.",
+    },
+    'de_DE': {
+      'backup_export': 'Sicherungscode exportieren',
+      'backup_export_msg':
+          'Speichere diesen Code an einem sicheren Ort. Nutze ihn, um '
+          'deinen Fortschritt auf einem neuen Gerät oder nach einer '
+          'Neuinstallation wiederherzustellen.',
+      'backup_share': 'Teilen',
+      'backup_import': 'Aus Code wiederherstellen',
+      'backup_import_msg': 'Füge deinen Sicherungscode unten ein.',
+      'backup_import_invalid': 'Ungültiger Sicherungscode',
+      'backup_import_failed':
+          'Wiederherstellung fehlgeschlagen. Dein aktueller Fortschritt '
+          'ist sicher.',
+      'backup_restart_failed':
+          'Fortschritt wiederhergestellt, aber die App konnte nicht neu '
+          'gestartet werden. Bitte starte die App manuell neu.',
+      'backup_import_confirm_title': 'Fortschritt wiederherstellen?',
+      'backup_import_confirm_msg':
+          'Dadurch wird dein aktueller Fortschritt durch die Daten in '
+          'diesem Code überschrieben. Die App wird neu gestartet.',
+    },
+    'pt_BR': {
+      'backup_export': 'Exportar código de backup',
+      'backup_export_msg':
+          'Guarde este código em um lugar seguro. Use-o para restaurar '
+          'seu progresso em um novo dispositivo ou após reinstalar.',
+      'backup_share': 'Compartilhar',
+      'backup_import': 'Restaurar a partir do código',
+      'backup_import_msg': 'Cole seu código de backup abaixo.',
+      'backup_import_invalid': 'Código de backup inválido',
+      'backup_import_failed':
+          'Falha na restauração. Seu progresso atual está seguro.',
+      'backup_restart_failed':
+          'Progresso restaurado, mas o app falhou ao reiniciar. Reinicie '
+          'o app manualmente.',
+      'backup_import_confirm_title': 'Restaurar progresso?',
+      'backup_import_confirm_msg':
+          'Isso substituirá seu progresso atual pelos dados deste código. '
+          'O app será reiniciado.',
+    },
+    'ru_RU': {
+      'backup_export': 'Экспорт кода резервной копии',
+      'backup_export_msg':
+          'Сохраните этот код в надёжном месте. Используйте его для '
+          'восстановления прогресса на новом устройстве или после '
+          'переустановки.',
+      'backup_share': 'Поделиться',
+      'backup_import': 'Восстановить по коду',
+      'backup_import_msg': 'Вставьте код резервной копии ниже.',
+      'backup_import_invalid': 'Неверный код резервной копии',
+      'backup_import_failed':
+          'Не удалось восстановить. Ваш текущий прогресс в безопасности.',
+      'backup_restart_failed':
+          'Прогресс восстановлен, но приложению не удалось '
+          'перезапуститься. Перезапустите приложение вручную.',
+      'backup_import_confirm_title': 'Восстановить прогресс?',
+      'backup_import_confirm_msg':
+          'Это заменит ваш текущий прогресс данными из этого кода. '
+          'Приложение перезапустится.',
+    },
+    'zh_CN': {
+      'backup_export': '导出备份码',
+      'backup_export_msg': '请将此代码保存在安全的地方。可用于在新设备上或重新安装后恢复进度。',
+      'backup_share': '分享',
+      'backup_import': '通过代码恢复',
+      'backup_import_msg': '在下方粘贴您的备份码。',
+      'backup_import_invalid': '备份码无效',
+      'backup_import_failed': '恢复失败。您当前的进度是安全的。',
+      'backup_restart_failed': '进度已恢复，但应用重启失败。请手动重启应用。',
+      'backup_import_confirm_title': '恢复进度？',
+      'backup_import_confirm_msg': '这将用此代码中的数据覆盖您当前的进度。应用将重新启动。',
+    },
+    'ja_JP': {
+      'backup_export': 'バックアップコードを書き出す',
+      'backup_export_msg': 'このコードを安全な場所に保存してください。新しい端末や再インストール後の進行状況の復元に使用します。',
+      'backup_share': '共有',
+      'backup_import': 'コードから復元',
+      'backup_import_msg': '以下にバックアップコードを貼り付けてください。',
+      'backup_import_invalid': '無効なバックアップコードです',
+      'backup_import_failed': '復元に失敗しました。現在の進行状況は保持されています。',
+      'backup_restart_failed': '進行状況は復元されましたが、アプリの再起動に失敗しました。手動でアプリを再起動してください。',
+      'backup_import_confirm_title': '進行状況を復元しますか？',
+      'backup_import_confirm_msg': 'このコードのデータで現在の進行状況が上書きされます。アプリが再起動します。',
+    },
+    'ko_KR': {
+      'backup_export': '백업 코드 내보내기',
+      'backup_export_msg':
+          '이 코드를 안전한 곳에 저장하세요. 새 기기나 재설치 후 진행 상황을 복원하는 데 사용됩니다.',
+      'backup_share': '공유',
+      'backup_import': '코드로 복원',
+      'backup_import_msg': '아래에 백업 코드를 붙여넣으세요.',
+      'backup_import_invalid': '유효하지 않은 백업 코드입니다',
+      'backup_import_failed': '복원에 실패했습니다. 현재 진행 상황은 안전합니다.',
+      'backup_restart_failed':
+          '진행 상황은 복원되었지만 앱을 다시 시작하지 못했습니다. 앱을 수동으로 다시 시작해 주세요.',
+      'backup_import_confirm_title': '진행 상황을 복원하시겠습니까?',
+      'backup_import_confirm_msg':
+          '이 작업은 현재 진행 상황을 이 코드의 데이터로 덮어씁니다. 앱이 다시 시작됩니다.',
+    },
+    'it_IT': {
+      'backup_export': 'Esporta codice di backup',
+      'backup_export_msg':
+          'Salva questo codice in un luogo sicuro. Usalo per ripristinare '
+          'i tuoi progressi su un nuovo dispositivo o dopo una '
+          'reinstallazione.',
+      'backup_share': 'Condividi',
+      'backup_import': 'Ripristina da codice',
+      'backup_import_msg': 'Incolla qui sotto il tuo codice di backup.',
+      'backup_import_invalid': 'Codice di backup non valido',
+      'backup_import_failed':
+          'Ripristino non riuscito. I tuoi progressi attuali sono al '
+          'sicuro.',
+      'backup_restart_failed':
+          "Progressi ripristinati, ma il riavvio dell'app non è "
+          "riuscito. Riavvia l'app manualmente.",
+      'backup_import_confirm_title': 'Ripristinare i progressi?',
+      'backup_import_confirm_msg':
+          'Questo sovrascriverà i tuoi progressi attuali con i dati di '
+          "questo codice. L'app si riavvierà.",
+    },
+    'id_ID': {
+      'backup_export': 'Ekspor Kode Cadangan',
+      'backup_export_msg':
+          'Simpan kode ini di tempat yang aman. Gunakan untuk memulihkan '
+          'progres Anda di perangkat baru atau setelah menginstal ulang.',
+      'backup_share': 'Bagikan',
+      'backup_import': 'Pulihkan dari Kode',
+      'backup_import_msg': 'Tempelkan kode cadangan Anda di bawah ini.',
+      'backup_import_invalid': 'Kode cadangan tidak valid',
+      'backup_import_failed': 'Pemulihan gagal. Progres Anda saat ini aman.',
+      'backup_restart_failed':
+          'Progres berhasil dipulihkan, tetapi aplikasi gagal dimulai '
+          'ulang. Silakan mulai ulang aplikasi secara manual.',
+      'backup_import_confirm_title': 'Pulihkan progres?',
+      'backup_import_confirm_msg':
+          'Ini akan menimpa progres Anda saat ini dengan data dari kode '
+          'ini. Aplikasi akan dimulai ulang.',
+    },
+    'th_TH': {
+      'backup_export': 'ส่งออกรหัสสำรองข้อมูล',
+      'backup_export_msg':
+          'บันทึกรหัสนี้ไว้ในที่ปลอดภัย ใช้เพื่อกู้คืนความคืบหน้าของคุณบนอุปกรณ์ใหม่หรือหลังติดตั้งแอปใหม่',
+      'backup_share': 'แชร์',
+      'backup_import': 'กู้คืนจากรหัส',
+      'backup_import_msg': 'วางรหัสสำรองข้อมูลของคุณด้านล่าง',
+      'backup_import_invalid': 'รหัสสำรองข้อมูลไม่ถูกต้อง',
+      'backup_import_failed':
+          'กู้คืนไม่สำเร็จ ความคืบหน้าปัจจุบันของคุณปลอดภัยดี',
+      'backup_restart_failed':
+          'กู้คืนความคืบหน้าแล้ว แต่แอปรีสตาร์ทไม่สำเร็จ โปรดรีสตาร์ทแอปด้วยตนเอง',
+      'backup_import_confirm_title': 'กู้คืนความคืบหน้าหรือไม่?',
+      'backup_import_confirm_msg':
+          'การดำเนินการนี้จะเขียนทับความคืบหน้าปัจจุบันของคุณด้วยข้อมูลในรหัสนี้ แอปจะรีสตาร์ท',
+    },
+    'hi_IN': {
+      'backup_export': 'बैकअप कोड निर्यात करें',
+      'backup_export_msg':
+          'इस कोड को कहीं सुरक्षित सहेजें। इसका उपयोग नए डिवाइस पर या फिर '
+          'से इंस्टॉल करने के बाद अपनी प्रगति पुनर्स्थापित करने के लिए करें।',
+      'backup_share': 'साझा करें',
+      'backup_import': 'कोड से पुनर्स्थापित करें',
+      'backup_import_msg': 'नीचे अपना बैकअप कोड पेस्ट करें।',
+      'backup_import_invalid': 'अमान्य बैकअप कोड',
+      'backup_import_failed':
+          'पुनर्स्थापना विफल रही। आपकी वर्तमान प्रगति सुरक्षित है।',
+      'backup_restart_failed':
+          'प्रगति पुनर्स्थापित हो गई, लेकिन ऐप को पुनः आरंभ करने में विफल '
+          'रहा। कृपया ऐप को मैन्युअल रूप से पुनः आरंभ करें।',
+      'backup_import_confirm_title': 'प्रगति पुनर्स्थापित करें?',
+      'backup_import_confirm_msg':
+          'इससे आपकी वर्तमान प्रगति इस कोड के डेटा से अधिलेखित हो जाएगी। '
+          'ऐप पुनः आरंभ होगा।',
+    },
+    'ar_SA': {
+      'backup_export': 'تصدير رمز النسخ الاحتياطي',
+      'backup_export_msg':
+          'احفظ هذا الرمز في مكان آمن. استخدمه لاستعادة تقدمك على جهاز '
+          'جديد أو بعد إعادة التثبيت.',
+      'backup_share': 'مشاركة',
+      'backup_import': 'استعادة من رمز',
+      'backup_import_msg': 'الصق رمز النسخ الاحتياطي أدناه.',
+      'backup_import_invalid': 'رمز النسخ الاحتياطي غير صالح',
+      'backup_import_failed': 'فشلت الاستعادة. تقدمك الحالي آمن.',
+      'backup_restart_failed':
+          'تمت استعادة التقدم، لكن فشل إعادة تشغيل التطبيق. يرجى إعادة '
+          'تشغيل التطبيق يدويًا.',
+      'backup_import_confirm_title': 'استعادة التقدم؟',
+      'backup_import_confirm_msg':
+          'سيؤدي هذا إلى استبدال تقدمك الحالي بالبيانات الموجودة في هذا '
+          'الرمز. سيُعاد تشغيل التطبيق.',
+    },
+    'tr_TR': {
+      'backup_export': 'Yedekleme Kodunu Dışa Aktar',
+      'backup_export_msg':
+          'Bu kodu güvenli bir yerde saklayın. Yeni bir cihazda veya '
+          'yeniden yükledikten sonra ilerlemenizi geri yüklemek için '
+          'kullanın.',
+      'backup_share': 'Paylaş',
+      'backup_import': 'Koddan Geri Yükle',
+      'backup_import_msg': 'Yedekleme kodunuzu aşağıya yapıştırın.',
+      'backup_import_invalid': 'Geçersiz yedekleme kodu',
+      'backup_import_failed':
+          'Geri yükleme başarısız oldu. Mevcut ilerlemeniz güvende.',
+      'backup_restart_failed':
+          'İlerleme geri yüklendi ancak uygulama yeniden başlatılamadı. '
+          'Lütfen uygulamayı manuel olarak yeniden başlatın.',
+      'backup_import_confirm_title': 'İlerleme geri yüklensin mi?',
+      'backup_import_confirm_msg':
+          'Bu işlem, mevcut ilerlemenizin üzerine bu koddaki verileri '
+          'yazacaktır. Uygulama yeniden başlatılacak.',
+    },
+    'nl_NL': {
+      'backup_export': 'Back-upcode exporteren',
+      'backup_export_msg':
+          'Bewaar deze code op een veilige plek. Gebruik hem om je '
+          'voortgang te herstellen op een nieuw apparaat of na een '
+          'herinstallatie.',
+      'backup_share': 'Delen',
+      'backup_import': 'Herstellen vanaf code',
+      'backup_import_msg': 'Plak hieronder je back-upcode.',
+      'backup_import_invalid': 'Ongeldige back-upcode',
+      'backup_import_failed':
+          'Herstellen mislukt. Je huidige voortgang is veilig.',
+      'backup_restart_failed':
+          'Voortgang hersteld, maar de app kon niet opnieuw worden '
+          'gestart. Start de app handmatig opnieuw.',
+      'backup_import_confirm_title': 'Voortgang herstellen?',
+      'backup_import_confirm_msg':
+          'Dit overschrijft je huidige voortgang met de gegevens uit '
+          'deze code. De app wordt opnieuw gestart.',
+    },
+    'pl_PL': {
+      'backup_export': 'Eksportuj kod kopii zapasowej',
+      'backup_export_msg':
+          'Zapisz ten kod w bezpiecznym miejscu. Użyj go, aby przywrócić '
+          'postępy na nowym urządzeniu lub po ponownej instalacji.',
+      'backup_share': 'Udostępnij',
+      'backup_import': 'Przywróć z kodu',
+      'backup_import_msg': 'Wklej poniżej swój kod kopii zapasowej.',
+      'backup_import_invalid': 'Nieprawidłowy kod kopii zapasowej',
+      'backup_import_failed':
+          'Przywracanie nie powiodło się. Twoje obecne postępy są '
+          'bezpieczne.',
+      'backup_restart_failed':
+          'Postępy przywrócone, ale nie udało się ponownie uruchomić '
+          'aplikacji. Uruchom aplikację ponownie ręcznie.',
+      'backup_import_confirm_title': 'Przywrócić postępy?',
+      'backup_import_confirm_msg':
+          'Spowoduje to nadpisanie obecnych postępów danymi z tego kodu. '
+          'Aplikacja zostanie ponownie uruchomiona.',
+    },
+    'fil_PH': {
+      'backup_export': 'I-export ang Backup Code',
+      'backup_export_msg':
+          'I-save ang code na ito sa ligtas na lugar. Gamitin ito para '
+          'ibalik ang iyong progreso sa bagong device o pagkatapos '
+          'mag-reinstall.',
+      'backup_share': 'Ibahagi',
+      'backup_import': 'Ibalik Mula sa Code',
+      'backup_import_msg': 'I-paste ang iyong backup code sa ibaba.',
+      'backup_import_invalid': 'Hindi wastong backup code',
+      'backup_import_failed':
+          'Nabigo ang pagbawi. Ligtas ang iyong kasalukuyang progreso.',
+      'backup_restart_failed':
+          'Naibalik ang progreso, ngunit nabigong mag-restart ang app. '
+          'Paki-restart ang app nang manu-mano.',
+      'backup_import_confirm_title': 'Ibalik ang progreso?',
+      'backup_import_confirm_msg':
+          'Papalitan nito ang iyong kasalukuyang progreso ng data sa '
+          'code na ito. Mag-re-restart ang app.',
+    },
+    'ms_MY': {
+      'backup_export': 'Eksport Kod Sandaran',
+      'backup_export_msg':
+          'Simpan kod ini di tempat yang selamat. Gunakannya untuk '
+          'memulihkan kemajuan anda pada peranti baharu atau selepas '
+          'memasang semula.',
+      'backup_share': 'Kongsi',
+      'backup_import': 'Pulihkan Daripada Kod',
+      'backup_import_msg': 'Tampal kod sandaran anda di bawah.',
+      'backup_import_invalid': 'Kod sandaran tidak sah',
+      'backup_import_failed': 'Pemulihan gagal. Kemajuan semasa anda selamat.',
+      'backup_restart_failed':
+          'Kemajuan telah dipulihkan, tetapi aplikasi gagal dimulakan '
+          'semula. Sila mulakan semula aplikasi secara manual.',
+      'backup_import_confirm_title': 'Pulihkan kemajuan?',
+      'backup_import_confirm_msg':
+          'Ini akan menimpa kemajuan semasa anda dengan data dalam kod '
+          'ini. Aplikasi akan dimulakan semula.',
+    },
+    'uk_UA': {
+      'backup_export': 'Експортувати код резервної копії',
+      'backup_export_msg':
+          'Збережіть цей код у надійному місці. Використовуйте його для '
+          'відновлення прогресу на новому пристрої або після '
+          'перевстановлення.',
+      'backup_share': 'Поділитися',
+      'backup_import': 'Відновити за кодом',
+      'backup_import_msg': 'Вставте свій код резервної копії нижче.',
+      'backup_import_invalid': 'Недійсний код резервної копії',
+      'backup_import_failed':
+          'Не вдалося відновити. Ваш поточний прогрес у безпеці.',
+      'backup_restart_failed':
+          'Прогрес відновлено, але не вдалося перезапустити застосунок. '
+          'Будь ласка, перезапустіть застосунок вручну.',
+      'backup_import_confirm_title': 'Відновити прогрес?',
+      'backup_import_confirm_msg':
+          'Це замінить ваш поточний прогрес даними з цього коду. '
+          'Застосунок перезапуститься.',
+    },
+    'bn_BD': {
+      'backup_export': 'ব্যাকআপ কোড এক্সপোর্ট করুন',
+      'backup_export_msg':
+          'এই কোডটি কোথাও নিরাপদে সংরক্ষণ করুন। নতুন ডিভাইসে বা পুনরায় '
+          'ইনস্টল করার পরে আপনার অগ্রগতি পুনরুদ্ধার করতে এটি ব্যবহার করুন।',
+      'backup_share': 'শেয়ার করুন',
+      'backup_import': 'কোড থেকে পুনরুদ্ধার করুন',
+      'backup_import_msg': 'নিচে আপনার ব্যাকআপ কোড পেস্ট করুন।',
+      'backup_import_invalid': 'অবৈধ ব্যাকআপ কোড',
+      'backup_import_failed':
+          'পুনরুদ্ধার ব্যর্থ হয়েছে। আপনার বর্তমান অগ্রগতি নিরাপদ আছে।',
+      'backup_restart_failed':
+          'অগ্রগতি পুনরুদ্ধার হয়েছে, কিন্তু অ্যাপ পুনরায় চালু করতে ব্যর্থ '
+          'হয়েছে। অনুগ্রহ করে ম্যানুয়ালি অ্যাপটি পুনরায় চালু করুন।',
+      'backup_import_confirm_title': 'অগ্রগতি পুনরুদ্ধার করবেন?',
+      'backup_import_confirm_msg':
+          'এটি এই কোডের ডেটা দিয়ে আপনার বর্তমান অগ্রগতি ওভাররাইট করবে। '
+          'অ্যাপটি পুনরায় চালু হবে।',
     },
   };
 }

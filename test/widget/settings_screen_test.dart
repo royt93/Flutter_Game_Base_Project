@@ -4,8 +4,10 @@ import 'package:get/get.dart';
 import 'package:pop_star_blast/core/app_translations.dart';
 import 'package:pop_star_blast/core/locale_service.dart';
 import 'package:pop_star_blast/core/storage_service.dart';
+import 'package:pop_star_blast/logic/backup_code.dart';
 import 'package:pop_star_blast/presentation/controllers/game_controller.dart';
 import 'package:pop_star_blast/presentation/screens/settings_screen.dart';
+import 'package:pop_star_blast/presentation/widgets/neon_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // T1: `Get.updateLocale()` (dùng bởi `LocaleService.change()`) gọi
@@ -32,6 +34,14 @@ Future<void> _pumpSettings(WidgetTester tester, Locale locale) async {
   );
   // NeonBg có AnimationController.repeat() vô hạn — pumpAndSettle sẽ treo.
   await tester.pump(const Duration(milliseconds: 100));
+}
+
+Future<void> _scrollToBackupRows(WidgetTester tester) async {
+  final list = find.byType(ListView);
+  for (var i = 0; i < 3; i++) {
+    await tester.drag(list, const Offset(0, -250));
+    await tester.pump(const Duration(milliseconds: 50));
+  }
 }
 
 void main() {
@@ -127,4 +137,97 @@ void main() {
       Get.reset();
     },
   );
+
+  testWidgets('backup export mở dialog với mã BK2 và mã có thể chọn', (
+    tester,
+  ) async {
+    addTearDown(Get.reset);
+    await _pumpSettings(tester, const Locale('en', 'US'));
+    await _scrollToBackupRows(tester);
+
+    await tester.tap(find.text('Export Backup Code'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(SelectableText), findsOneWidget);
+    final code = tester
+        .widget<SelectableText>(find.byType(SelectableText))
+        .data;
+    expect(code, startsWith(secureBackupCodePrefix));
+    expect(find.text('Share'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('backup import mã sai hiển thị lỗi và không ghi storage', (
+    tester,
+  ) async {
+    addTearDown(Get.reset);
+    await _pumpSettings(tester, const Locale('en', 'US'));
+    await _scrollToBackupRows(tester);
+    await tester.tap(find.text('Restore from Code'));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.enterText(find.byType(TextField), 'BK2:12.not.valid');
+    tester.testTextInput.hide();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byType(NeonDialogButton).last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Invalid backup code'), findsOneWidget);
+    expect(StorageService.to.getString('bad_key'), isNull);
+  });
+
+  testWidgets('backup import mã hợp lệ hiển thị bước xác nhận destructive', (
+    tester,
+  ) async {
+    addTearDown(Get.reset);
+    await _pumpSettings(tester, const Locale('en', 'US'));
+    final code = await encodeSecureBackupCode({'coins': 777});
+    await _scrollToBackupRows(tester);
+    await tester.tap(find.text('Restore from Code'));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.enterText(find.byType(TextField), code);
+    tester.testTextInput.hide();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byType(NeonDialogButton).last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Restore progress?'), findsOneWidget);
+    expect(
+      find.textContaining('overwrite your current progress'),
+      findsOneWidget,
+    );
+    expect(find.text('Cancel'), findsOneWidget);
+  });
+
+  testWidgets('backup import mã có value không hỗ trợ hiển thị lỗi restore', (
+    tester,
+  ) async {
+    addTearDown(Get.reset);
+    await _pumpSettings(tester, const Locale('en', 'US'));
+    final code = await encodeSecureBackupCode({
+      'bad_list': <Object>[1, 2],
+    });
+    await _scrollToBackupRows(tester);
+    await tester.tap(find.text('Restore from Code'));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.enterText(find.byType(TextField), code);
+    tester.testTextInput.hide();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byType(NeonDialogButton).last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Restore progress?'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.byType(NeonDialogButton).last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(
+      find.text('Restore failed. Your current progress is safe.'),
+      findsOneWidget,
+    );
+  });
 }

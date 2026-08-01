@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../core/app_info.dart';
 import '../../core/haptics.dart';
 import '../../core/neon_theme.dart';
+import '../../core/runtime_flags.dart';
 import '../../data/worlds.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_screen_controller.dart';
@@ -58,6 +59,8 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     final gameCtrl = Get.find<GameController>();
     Get.put(HomeScreenController()).refreshCards(gameCtrl);
+    if (isE2eTest) return;
+
     final comebackReward = gameCtrl.checkComebackBonus();
     if (comebackReward != null) {
       WidgetsBinding.instance.addPostFrameCallback(

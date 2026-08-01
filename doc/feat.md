@@ -4067,3 +4067,121 @@ cellSize/boardLeft/boardTop thay vì gọi `PopStarGame.cellCenterFor()` có s�
 `flutter analyze` 0 issues; `objective_test.dart` 7/7 pass (thêm sweep
 300-seed cho fix mới); `replay_determinism_test.dart` 4/4 pass;
 `flutter test --exclude-tags slow` 609 test pass, 0 fail.
+
+## ✅ Backup/Restore tiến trình qua mã (2026-08-01)
+
+Chọn qua 2 vòng `AskUserQuestion` (so với Android App Shortcuts và
+home-screen status widget) — rủi ro thật: toàn bộ save (~50+ key trong
+`StorageKeys`: level progress, coins, booster, achievement, prestige tier…)
+chỉ sống trong `SharedPreferences` local, gỡ app/đổi máy = mất trắng vĩnh
+viễn. 2 nút mới trong Settings: "Xuất mã sao lưu" và "Nhập mã khôi phục".
+
+- `StorageService.exportAll()`/`importAll()` (`storage_service.dart`) dump/nạp
+  toàn bộ storage qua API generic `SharedPreferences.getKeys()`/`.get()` —
+  không hand-list từng `StorageKeys` (khỏi phải nhớ cập nhật mỗi khi thêm
+  key mới). `setStringList()` luôn JSON-encode thành `String` trước khi ghi
+  xuống, nên tầng dưới chỉ có thể là int/bool/double/String — `importAll`
+  không cần xử lý case `List`.
+- `lib/logic/backup_code.dart` (mới): mã hoá `BK:` + base64url(JSON), mirror
+  đúng idiom mã chia sẻ đã có (I28 replay code, I37 challenge code).
+- `restartApp()` (`main.dart`): `Get.deleteAll(force: true)` rồi chạy lại
+  `app()` bootstrap có sẵn — thay cho `SystemNavigator.pop()` (không đảm bảo
+  terminate thật trên iOS), mọi singleton (`StorageService`, `LocaleService`,
+  `GameController`, `AudioManager`) tự đọc lại state mới sau import mà khỏi
+  phải tự tay reload từng cái.
+- UI: export dùng `SelectableText` (long-press copy — native toolbar, không
+  thêm nút Copy/Clipboard riêng) + Share qua `shareText` có sẵn; import 2
+  bước (dán mã → xác nhận destructive giống hệt `reset_progress`) chain 3
+  `NeonDialog.show` liên tiếp trên cùng context màn Settings.
+
+`flutter analyze` 0 issues; `backup_code_test.dart` (round-trip, prefix
+sai/base64 hỏng/JSON không phải object → null) + 3 test mới trong
+`storage_service_test.dart` (export, import thủ công, round-trip đầy đủ qua
+`StorageService` độc lập mô phỏng cài mới) đều pass; `app_translations_test.dart`
+xác nhận đủ key ở 22 locale; `flutter test --exclude-tags slow` toàn bộ
+616 test pass, 0 fail.
+
+## ✅ Implemented
+
+- **Backup/Restore — transparent encryption không cần thao tác người dùng**:
+  mã `BK2` dùng AES-GCM 256-bit với nonce ngẫu nhiên, authentication tag và
+  version; decoder vẫn đọc format BK2 unversioned cũ và mã `BK:` legacy. Restore
+  validate trước, sau đó rollback snapshot nếu SharedPreferences lỗi giữa chừng.
+  Phương án chống đọc nhầm/chỉnh sửa thông thường, nhưng không chống được
+  reverse-engineering chuyên sâu vì không có secret riêng do người dùng cung cấp.
+- `flutter analyze` sạch; `flutter test --exclude-tags slow` pass **630 tests**.
+- Bổ sung unit tests cho malformed/version/tamper/Unicode/large payload,
+  storage fallback/rollback/stale key; widget tests cho export/import dialogs;
+  integration test cho export → import → restart trên Android.
+- Quality pass: reject `null` trước khi clear storage, hiển thị dialog khi
+  restore thất bại, integration helper hide keyboard + dùng `NeonDialogButton`,
+  thêm `E2E_TEST=true` để bỏ modal daily reward trong test, và loại
+  `.codebase-memory/` khỏi source control.
+- E2E hardening: `restartApp()` giữ `withAudio: false` khi build với
+  `E2E_TEST=true`, reset route stack về Home sau restore, locator theo locale
+  và xử lý an toàn keyboard/scroll. APK build/install trên S24 Ultra pass;
+  device gate Samsung S24 Ultra **1/1 pass**, `flutter analyze` 0 issues và
+  `flutter test --exclude-tags slow` **630 tests pass**.
+- Test thủ công trên thiết bị thật (Samsung S928B, `adb`) đi hết flow: Export
+  → copy mã `BK2:1.12...` → đổi state → Restore → xác nhận 2 bước → app
+  restart, mọi data (coins, daily streak, ngôn ngữ) khôi phục đúng 100%.
+  Phát hiện thêm 1 bug qua test này (không phải lỗi logic backup/restore):
+  sau `restartApp()`, UI không refresh ngôn ngữ dù storage đã đúng — do
+  `GetMaterialApp(locale: ...)` chỉ áp dụng ở lần build đầu tiên của process,
+  `Get.locale` nội bộ của GetX không tự re-apply khi `runApp()` chạy lại
+  trong cùng process (chỉ tái hiện trên restart trong-process, không phải
+  cold start thật — che giấu bởi test integration vì mỗi test là 1 process
+  mới). Fix: thêm `Get.updateLocale(locale.current.value)` trong `app()`
+  (`main.dart`) ngay sau khi khởi tạo `LocaleService`. Verify lại trên
+  device: đổi ngôn ngữ → Restore → Home hiện đúng ngôn ngữ ngay lập tức,
+  không cần force-stop.
+
+## ✅ Backup/Restore — hậu-audit lên 10/10 (2026-08-01)
+
+Sau đợt `code-review` skill chấm 6/10 (7 findings, 6 CONFIRMED), user hỏi
+"cần làm gì để 10/10?" — dùng `AskUserQuestion` cho 2 quyết định thiết kế
+(gỡ fallback `BK:` legacy; cách fix race condition), 6 fix sau đó áp dụng
+trực tiếp không cần hỏi thêm vì đã có phương án rõ ràng:
+
+1. **Gỡ fallback `BK:` legacy không xác thực** (`backup_code.dart`): decoder
+   chỉ còn nhận `BK2:` AES-GCM, không còn silently decode format cũ base64+JSON
+   không có authentication tag — trước đó ai cũng tạo được mã `BK:` giả mạo
+   ghi đè storage nạn nhân mà không cần biết secret nào. Xoá luôn
+   `encodeBackupCode`/`decodeBackupCode`/`backupCodePrefix` + toàn bộ test
+   liên quan (3 file: `backup_code_test.dart`, `storage_service_test.dart`,
+   `settings_screen_test.dart`).
+2. **Fix race `GameController not found` khi `restartApp()`**: nguyên nhân
+   thật là `Get.updateLocale()` gọi `engine.performReassemble()` (rebuild
+   toàn bộ element tree kể cả offstage) — nếu `HomeScreen` build lại trước
+   khi `GameController` kịp đăng ký thì crash. Phương án ban đầu định dùng
+   overlay che UI lúc restart bị bác bỏ sau khi đọc source GetX xác nhận
+   không giải quyết đúng gốc; fix thật là đổi thứ tự trong `app()`
+   (`main.dart`): `Get.put(GameController())` (đồng bộ) chạy TRƯỚC
+   `Get.updateLocale()`, đóng hẳn race window thay vì che giấu nó.
+3. **Sửa thông báo sai khi `restartApp()` throw sau import thành công**:
+   trước đây 1 try/catch bọc cả `importAll()` lẫn `restartApp()` nên nếu
+   restart lỗi (import đã ghi thành công) vẫn hiện `backup_import_failed`
+   — sai sự thật, có thể khiến user import lại vô ích. Tách 2 try/catch độc
+   lập trong `settings_screen.dart`, thêm key `backup_restart_failed` báo
+   đúng "đã khôi phục nhưng restart lỗi, tự khởi động lại app".
+4. **Log khi rollback double-failure trong `importAll()`**: nếu ghi dữ liệu
+   mới lỗi giữa chừng RỒI rollback về snapshot cũ cũng lỗi (storage state
+   không xác định), lỗi rollback trước đây bị nuốt im lặng. Thêm
+   `dlog('roy93~ importAll rollback thất bại: ...')` trong
+   `storage_service.dart` để còn dấu vết debug trên device thật.
+5. **Bổ sung bản dịch `backup_*` cho 20 locale còn lại**: 10 key (bao gồm
+   `backup_restart_failed` mới) trước đó chỉ có ở `_extraEn`/`_extraVi`, 20
+   ngôn ngữ khác fallback sang tiếng Anh. Thêm `_w59ByLang` trong
+   `app_translations.dart` dịch đủ cho es/fr/de/pt/ru/zh/ja/ko/it/id/th/hi/ar/tr/nl/pl/fil/ms/uk/bn,
+   wire vào merge-spread chain — `app_translations_test.dart` xác nhận đủ
+   key ở toàn bộ 22 locale.
+6. **Guard `loadAppVersion()` khỏi gọi lại `PackageInfo.fromPlatform()` mỗi
+   lần `restartApp()`**: version app không đổi trong lúc chạy nhưng trước
+   đây mỗi lần restart (sau mỗi lần import backup) đều gọi lại platform
+   channel không cần thiết. Thêm flag `_appVersionLoaded` trong `main.dart`,
+   chỉ set `true` khi gọi thành công (lỗi vẫn thử lại ở lần `app()` kế tiếp).
+
+`flutter analyze` 0 issues; `flutter test --exclude-tags slow` toàn bộ 625
+test pass, bao gồm `backup_code_test.dart`, `storage_service_test.dart`,
+`settings_screen_test.dart`, `app_translations_test.dart` chạy riêng để
+xác nhận không regression từ các thay đổi trên.
