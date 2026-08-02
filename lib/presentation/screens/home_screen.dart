@@ -36,6 +36,7 @@ import 'leaderboard_screen.dart';
 import 'level_select_screen.dart';
 import 'mascot_wardrobe_screen.dart';
 import 'perks_screen.dart';
+import 'raid_boss_screen.dart';
 import 'season_screen.dart';
 import 'settings_screen.dart';
 import 'shop_screen.dart';
@@ -403,6 +404,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: NeonTheme.magenta,
               label: 'mystery_crate_title'.tr,
               onTap: () => showMysteryCrateDialog(context, gameCtrl),
+            ),
+            _drawerTile(
+              icon: Icons.whatshot_rounded,
+              color: NeonTheme.red,
+              label: 'raid_boss_title'.tr,
+              onTap: () => Get.to(() => const RaidBossScreen()),
             ),
           ],
         ),

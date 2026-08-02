@@ -159,6 +159,14 @@ class StorageKeys {
   static const String starSeedCount = 'star_seed_count';
   static const String claimedStarSeedMask = 'claimed_star_seed_mask';
   static const String activeSkyAura = 'active_sky_aura';
+
+  // I61 Boss Breakout Event Raid: số lượt thử đã dùng hôm nay, tổng sát thương tuần,
+  // chỉ số tuần của sự kiện, và trạng thái đã nhận thưởng tuần chưa.
+  static const String raidBossAttemptsUsed = 'raid_boss_attempts_used';
+  static const String raidBossLastAttemptDay = 'raid_boss_last_attempt_day';
+  static const String raidBossTotalDamage = 'raid_boss_total_damage';
+  static const String raidBossEventWeek = 'raid_boss_event_week';
+  static const String raidBossRewardClaimedWeek = 'raid_boss_reward_claimed_week';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).
