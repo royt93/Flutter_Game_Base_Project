@@ -14,6 +14,8 @@ import '../../data/worlds.dart';
 import '../../game/pop_star_game.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/game_screen_controller.dart';
+import '../controllers/pass_and_play_controller.dart';
+import '../../logic/pass_and_play.dart';
 import '../widgets/coin_chip.dart';
 import '../widgets/coin_fly_overlay.dart';
 import '../widgets/confetti_overlay.dart';
@@ -878,6 +880,51 @@ class _Overlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = gsc.ui.value;
+    if (gsc.gameCtrl.mode.value == GameMode.passAndPlay &&
+        Get.isRegistered<PassAndPlayController>()) {
+      final duel = Get.find<PassAndPlayController>();
+      final handoff = duel.awaitingHandoff.value;
+      final completed = duel.completed.value;
+      if (handoff || completed) {
+        return Positioned.fill(
+          child: NeonDialog.overlaySlot(
+            panelKey: handoff ? 'duel-handoff' : 'duel-result',
+            panel: handoff
+                ? NeonDialog.panel(
+                    title: 'duel_handoff_title'.tr,
+                    color: NeonTheme.purple,
+                    message: 'duel_handoff_message'.trParams({
+                      'score': '${duel.player1Score.value}',
+                    }),
+                    actions: [
+                      NeonDialogAction(
+                        label: 'duel_ready'.tr,
+                        color: NeonTheme.purple,
+                        onTap: gsc.beginPlayer2,
+                      ),
+                    ],
+                  )
+                : NeonDialog.panel(
+                    title: 'duel_result_title'.tr,
+                    color: NeonTheme.gold,
+                    message: _duelResultMessage(duel),
+                    actions: [
+                      NeonDialogAction(
+                        label: 'menu'.tr,
+                        color: NeonTheme.cyan,
+                        onTap: gsc.quit,
+                      ),
+                      NeonDialogAction(
+                        label: 'retry'.tr,
+                        color: NeonTheme.orange,
+                        onTap: gsc.again,
+                      ),
+                    ],
+                  ),
+          ),
+        );
+      }
+    }
     return Positioned.fill(
       child: NeonDialog.overlaySlot(
         panel: _buildFor(ui),
@@ -969,6 +1016,19 @@ class _Overlay extends StatelessWidget {
         return null;
     }
   }
+}
+
+String _duelResultMessage(PassAndPlayController duel) {
+  final result = switch (duel.outcome) {
+    DuelOutcome.player1 => 'duel_player1_wins'.tr,
+    DuelOutcome.player2 => 'duel_player2_wins'.tr,
+    DuelOutcome.draw => 'duel_draw'.tr,
+  };
+  return 'duel_scores'.trParams({
+    'p1': '${duel.player1Score.value}',
+    'p2': '${duel.player2Score.value}',
+    'result': result,
+  });
 }
 
 /// I32 Craft Booster: icon/màu/nhãn hiển thị theo loại booster quy đổi được

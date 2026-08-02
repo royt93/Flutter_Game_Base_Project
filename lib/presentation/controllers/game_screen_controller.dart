@@ -13,6 +13,7 @@ import '../../game/pop_star_game.dart';
 import '../../logic/challenge_code.dart';
 import '../../logic/replay.dart';
 import 'game_controller.dart';
+import 'pass_and_play_controller.dart';
 
 /// Trạng thái UI của màn chơi (thay cho setState).
 enum GameUi { playing, quit, win, lose }
@@ -131,6 +132,7 @@ class GameScreenController extends GetxController {
 
   void _onEndChanged(bool ended) {
     if (!ended || ui.value != GameUi.playing) return;
+    if (gameCtrl.mode.value == GameMode.passAndPlay) return;
     final result = gameCtrl.starsEarned.value > 0 ? GameUi.win : GameUi.lose;
     Future.delayed(const Duration(milliseconds: 350), () {
       if (ui.value == GameUi.playing) ui.value = result;
@@ -153,6 +155,7 @@ class GameScreenController extends GetxController {
         GameMode.dailyChallenge => gameCtrl.dailyChallengeGrid,
         GameMode.gauntlet => gameCtrl.gauntletGrid,
         GameMode.puzzleLab => gameCtrl.puzzleLabGrid,
+        GameMode.passAndPlay => gameCtrl.passAndPlayGrid,
         // I47 Mirror Mode: bàn đầu đối xứng gương, seed ngẫu nhiên (khác
         // dailyChallenge — không cần seed cố định cho mode này).
         GameMode.mirrorMode => generateMirrorBoard(
@@ -270,8 +273,20 @@ class GameScreenController extends GetxController {
   }
 
   void quit() {
+    if (Get.isRegistered<PassAndPlayController>()) {
+      Get.delete<PassAndPlayController>();
+    }
     Get.delete<GameScreenController>();
     Get.back();
+  }
+
+  void beginPlayer2() {
+    final duel = Get.find<PassAndPlayController>();
+    duel.beginPlayer2();
+    armed.value = BoosterMode.none;
+    _swapFirst = null;
+    ui.value = GameUi.playing;
+    _newGame();
   }
 
   void again() {
@@ -293,6 +308,8 @@ class GameScreenController extends GetxController {
       // I33: cùng ngày → cùng modifier + cùng bàn (seed = ngày), không đè
       // điểm đã ghi nếu đã ghi lần đầu (xem `canRecordGauntletScore`).
       gameCtrl.startGauntlet();
+    } else if (mode == GameMode.passAndPlay) {
+      Get.find<PassAndPlayController>().startDuel();
     } else {
       gameCtrl.startSideMode(mode);
     }

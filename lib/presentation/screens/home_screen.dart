@@ -8,6 +8,7 @@ import '../../core/runtime_flags.dart';
 import '../../data/worlds.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_screen_controller.dart';
+import '../controllers/pass_and_play_controller.dart';
 import '../widgets/ambient_particles.dart';
 import '../widgets/board_frame_picker_dialog.dart';
 import '../widgets/burst_style_picker_dialog.dart';
@@ -182,6 +183,17 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () {
               Navigator.pop(context);
               gameCtrl.startGauntlet();
+              Get.to(() => const GameScreen());
+            },
+          ),
+          _modeTile(
+            icon: Icons.people_rounded,
+            color: NeonTheme.purple,
+            label: 'duel_title'.tr,
+            onTap: () {
+              Navigator.pop(context);
+              final duel = Get.put(PassAndPlayController(gameCtrl));
+              duel.startDuel();
               Get.to(() => const GameScreen());
             },
           ),

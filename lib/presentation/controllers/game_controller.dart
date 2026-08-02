@@ -47,6 +47,7 @@ enum GameMode {
   mirrorMode,
   gauntlet,
   weeklyFeatured,
+  passAndPlay,
 }
 
 /// I7: 1 ô phần thưởng trên vòng quay hằng ngày.
@@ -170,6 +171,10 @@ class GameController extends GetxController {
   /// [PopStarGame] dùng làm bàn cố định thay vì random, giống
   /// [dailyChallengeGrid].
   List<List<int>>? puzzleLabGrid;
+
+  /// I59: immutable-by-convention source board + per-turn mutable deep copy.
+  List<List<int>>? passAndPlayBaseGrid;
+  List<List<int>>? passAndPlayGrid;
 
   /// I33 Daily Modifier Gauntlet: bàn hôm nay + modifier đang áp dụng, sinh 1
   /// lần trong [startGauntlet] — giống [dailyChallengeGrid].
@@ -1253,6 +1258,37 @@ class GameController extends GetxController {
     _collectInitial = null;
   }
 
+  /// I59: one random seed produces the source board shared by both players.
+  void startPassAndPlayDuel() {
+    passAndPlayBaseGrid = generateDailyChallengeGrid(Random().nextInt(1 << 31));
+    startPassAndPlayTurn();
+  }
+
+  /// Each player receives a fresh deep copy because PopStarGame mutates it.
+  void startPassAndPlayTurn() {
+    final source = passAndPlayBaseGrid;
+    if (source == null) return;
+    mode.value = GameMode.passAndPlay;
+    passAndPlayGrid = source.map((row) => List<int>.from(row)).toList();
+    currentLevelRx.value = PopLevel(
+      id: -59,
+      rows: source.length,
+      cols: source.first.length,
+      colorCount: dailyChallengeColorCount,
+      targetScore: source.length * source.first.length * 6,
+    );
+    score.value = 0;
+    starsEarned.value = 0;
+    ended.value = false;
+    cleared.value = false;
+    resetCombo();
+    activeGame = null;
+    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
+    movesUsed.value = 0;
+    _collectInitial = null;
+  }
+
   /// I43: bắt đầu 1 lượt Boss Rush với bàn đầu tiên đã sinh sẵn (từ
   /// `BossRushController.startRun`) — mirror khuôn reset chung của các
   /// side-mode khác.
@@ -1415,7 +1451,8 @@ class GameController extends GetxController {
       );
       _checkAchievements();
     }
-    if (mode.value == GameMode.puzzleLab) {
+    if (mode.value == GameMode.puzzleLab ||
+        mode.value == GameMode.passAndPlay) {
       ended.value = true;
       return; // không thưởng coin/sao/unlock/best-score
     }

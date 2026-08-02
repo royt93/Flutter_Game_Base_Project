@@ -272,6 +272,16 @@ class AppTranslations extends Translations {
     'pigment_mint': 'Mint',
     'pigment_midnight': 'Midnight',
     'pigment_sunset': 'Sunset',
+    // I59 — Pass-and-Play Duel.
+    'duel_title': 'Pass-and-Play Duel',
+    'duel_handoff_title': 'Pass to Player 2',
+    'duel_handoff_message': 'Player 1 scored @score. Hand over the device.',
+    'duel_ready': 'Player 2 Ready',
+    'duel_result_title': 'Duel Result',
+    'duel_scores': 'Player 1: @p1\nPlayer 2: @p2\n@result',
+    'duel_player1_wins': 'Player 1 wins!',
+    'duel_player2_wins': 'Player 2 wins!',
+    'duel_draw': 'It is a draw!',
     // W25.2 — Câu luật thắng 1 dòng, hiện dưới label mở-màn mỗi mode.
     'rule_boss': 'Defeat the Boss before you run out of moves',
     'rule_rhythm': 'Match on the beat to keep your groove',
