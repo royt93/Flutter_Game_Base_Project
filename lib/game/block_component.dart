@@ -149,19 +149,9 @@ void paintTileBody(
             const [0.0, 0.45, 1.0],
           ),
       );
-      // gloss: dải sáng ngang mỏng giữa thân (phản chiếu kim loại).
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(
-            rect.left,
-            rect.top + rect.height * 0.42,
-            rect.width,
-            rect.height * 0.1,
-          ),
-          Radius.circular(s * 0.02),
-        ),
-        Paint()..color = Colors.white.withValues(alpha: 0.4),
-      );
+      // roy93~fix: dải gloss ngang full-width trước đây (giữa thân, alpha 0.4)
+      // giờ nổi thành 1 đường kẻ lạ trên gradient mượt (user feedback) — bỏ
+      // hẳn, viền xám ánh kim bên dưới đã đủ phân biệt material với jelly/crystal.
       // viền: dày, ngả xám nhẹ — cảm giác khung kim loại nhưng vẫn giữ đủ
       // hue để phân biệt màu (I17-fix: blend xám 0.6 trước đây quá nặng).
       canvas.drawRRect(
