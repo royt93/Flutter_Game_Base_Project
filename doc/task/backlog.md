@@ -168,6 +168,10 @@ Mục tiêu: xoá sạch dấu vết Neon Jewels / match-3 khỏi tài liệu.
 | E5-S6 | Sweep repo `.md` tìm ref cũ (neon_jewels/match-3/side-mode) | 2 | Should |
 | E5-S7 | Chốt cấu trúc `doc/` + index | 2 | Could |
 
-**E5-S1** quan trọng nhất: `CLAUDE.md` hiện mô tả 8 file `game_controller` part,
-side-mode, match_detector/settle, world map, meta-system — toàn bộ đã xoá. Viết lại
-đúng 4 layer + PopStar mechanic + 1 GameController đơn + booster + 6 screen.
+**E5-S1** ✅ Done (2026-08-02) — `CLAUDE.md` viết lại đúng quy mô hiện tại: 4 layer +
+220-level campaign + `GameMode` enum (10 mode) + side-mode ID-isolation pattern +
+toàn bộ meta-progression (prestige, achievements, weekly goal, daily reward/spin,
+login streak, season pass, cosmetics, social-lite), có ghi chú rõ clan là UI stub
+không backend. File inventory (`lib/logic/` 18, `lib/data/` 18, `lib/game/` 2,
+`lib/presentation/controllers/` 4, `screens/` 18, `widgets/` 24) đã verify bằng `ls`
+trực tiếp, không chỉ dựa vào agent report.
