@@ -61,7 +61,11 @@ dùng ở Home + win/lose. Placeholder vẽ bằng canvas nếu chưa có art. S
 
 ---
 
-## E2 — Gameplay Animation & Juice (Must)
+## E2 — Gameplay Animation & Juice (Must) — ✅ Done (2026-08-02)
+
+> Toàn bộ triển khai chi tiết hơn qua `doc/task/tasks/A1..A9-*.md` (đã audit
+> checkbox + verify trên device thật, không còn hạng mục nào mở). Bảng dưới
+> giữ lại làm lịch sử/tham chiếu, không còn là việc cần làm.
 
 Mục tiêu: pop/rơi/collapse có chuyển động mượt + phản hồi đã tay. Đây là đòn bẩy
 "vui" lớn nhất. Hiện block biến mất tức thì (`_rebuildBoard` dựng lại toàn bộ).
@@ -99,7 +103,12 @@ số effect/frame; test 60fps trên device tầm trung. File: `pop_star_game`,
 
 ---
 
-## E3 — Game-wide Animation & Transitions (Should)
+## E3 — Game-wide Animation & Transitions (Should) — ✅ Done (2026-08-02)
+
+> Chi tiết qua `doc/task/tasks/G1..G8-*.md` (audit checkbox + verify device
+> thật). Ngoại lệ duy nhất: idle shimmer trong G8 được code xong, test trên
+> device, rồi **chủ động xoá** (2026-07-15) vì gây chói mắt — không phải việc
+> còn dang dở, xem ghi chú trong `G8-glow-burst-shimmer.md`.
 
 | Story | Mô tả | SP | Pri |
 |-------|-------|----|----|
