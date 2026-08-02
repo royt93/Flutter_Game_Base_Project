@@ -203,6 +203,12 @@ class PopStarGame extends FlameGame {
   final List<_BurstRing> _rings = [];
   static const int _maxRings = 3;
 
+  /// spark/confetti/starburst đang bung, cap số lượng đồng thời (cùng lý do
+  /// [_rings]/[_maxRings]) để tránh combo dồn dập chồng quá nhiều particle
+  /// system cùng lúc.
+  final List<ParticleSystemComponent> _bursts = [];
+  static const int _maxBursts = 6;
+
   List<List<int?>>? _undoGrid;
   List<List<int>>? _undoLockGrid;
 
@@ -647,7 +653,35 @@ class PopStarGame extends FlameGame {
 
   /// A1: nhóm ≥[_shakeGroupThreshold] ô → bàn rung nhẹ (biên độ cap
   /// cellSize*0.12, tắt sau 3 nhịp ~0.12s) — nhẹ hơn/thường xuyên hơn punch A7.
+  /// I17-fix: trước đây không có cooldown — combo dồn dập trigger liên tục,
+  /// chồng SequenceEffect mới lên cùng block mỗi lần. Thêm cooldown ngắn
+  /// giống punch (nhưng ngắn hơn vì shake vốn nhẹ/thường xuyên hơn).
   static const int _shakeGroupThreshold = 5;
+  static const double _shakeCooldownDur = 0.3;
+  double _shakeCooldownTimer = 0;
+
+  /// I17-fix: punch/shake trước đây duyệt toàn bộ rows×cols (tới 132 ô ở
+  /// world 11) mỗi lần trigger — chỉ cần vùng quanh nhóm vừa nổ là đủ cảm
+  /// giác "rung/giật", giới hạn phạm vi để giảm số Effect cấp phát.
+  static const int _effectRegionMargin = 2;
+
+  /// Bounding box của [cells] mở rộng thêm [_effectRegionMargin], kẹp trong
+  /// biên bàn — dùng để giới hạn phạm vi duyệt của punch/shake.
+  (int, int, int, int) _effectRegion(Set<Point<int>> cells) {
+    var minR = rows, maxR = 0, minC = cols, maxC = 0;
+    for (final p in cells) {
+      if (p.x < minR) minR = p.x;
+      if (p.x > maxR) maxR = p.x;
+      if (p.y < minC) minC = p.y;
+      if (p.y > maxC) maxC = p.y;
+    }
+    return (
+      (minR - _effectRegionMargin).clamp(0, rows - 1),
+      (maxR + _effectRegionMargin).clamp(0, rows - 1),
+      (minC - _effectRegionMargin).clamp(0, cols - 1),
+      (maxC + _effectRegionMargin).clamp(0, cols - 1),
+    );
+  }
 
   /// A7: tắt slow-mo/zoom-punch/shake qua Settings cho người nhạy chuyển
   /// động. Không gate squash/settle (easeOutBack) hay pop cơ bản — chỉ các
@@ -927,6 +961,7 @@ class PopStarGame extends FlameGame {
     // _slowMoDur thay vì tự kéo dài do dt đã bị hạ.
     if (_slowMoTimer > 0) _slowMoTimer -= dt;
     if (_punchCooldownTimer > 0) _punchCooldownTimer -= dt;
+    if (_shakeCooldownTimer > 0) _shakeCooldownTimer -= dt;
     super.update(_slowMoTimer > 0 ? dt * _slowMoTimeScale : dt);
     if (controller.comboCount.value > 0) {
       _comboTimer -= dt;
@@ -1197,8 +1232,9 @@ class PopStarGame extends FlameGame {
     if (!bigGroup && !bigCombo) return;
     _slowMoTimer = _slowMoDur;
     _punchCooldownTimer = _punchCooldownDur;
-    for (var r = 0; r < rows; r++) {
-      for (var c = 0; c < cols; c++) {
+    final (minR, maxR, minC, maxC) = _effectRegion(cells);
+    for (var r = minR; r <= maxR; r++) {
+      for (var c = minC; c <= maxC; c++) {
         if (cells.contains(Point(r, c))) continue;
         final b = _blocks[r][c];
         if (b == null) continue;
@@ -1229,10 +1265,16 @@ class PopStarGame extends FlameGame {
   /// vị trí từng block 1 nhịp qua-lại-về (tổng dịch chuyển = 0, không cần
   /// lưu/khôi phục vị trí gốc). Không đụng ô vừa bị xoá (đã có scale pop riêng).
   void _maybeTriggerShake(Set<Point<int>> cells) {
-    if (_reduceMotion || cells.length < _shakeGroupThreshold) return;
+    if (_reduceMotion ||
+        _shakeCooldownTimer > 0 ||
+        cells.length < _shakeGroupThreshold) {
+      return;
+    }
+    _shakeCooldownTimer = _shakeCooldownDur;
     final amp = cellSize * 0.12;
-    for (var r = 0; r < rows; r++) {
-      for (var c = 0; c < cols; c++) {
+    final (minR, maxR, minC, maxC) = _effectRegion(cells);
+    for (var r = minR; r <= maxR; r++) {
+      for (var c = minC; c <= maxC; c++) {
         if (cells.contains(Point(r, c))) continue;
         final b = _blocks[r][c];
         if (b == null) continue;
@@ -1260,6 +1302,22 @@ class PopStarGame extends FlameGame {
     ring.onFinish = () => _rings.remove(ring);
     _rings.add(ring);
     add(ring);
+  }
+
+  /// cap [_maxBursts] particle system (spark/confetti/starburst) chạy đồng
+  /// thời, cùng lý do [_spawnRing]. I17-fix: bản trước lazy-prune bằng
+  /// [isMounted], nhưng `add()` chỉ mount ở lifecycle pass sau — nhiều burst
+  /// add liên tiếp trong 1 lần pop nhóm lớn đều "chưa mounted" nên bị coi là
+  /// đã xong, xoá sạch tracking list và làm cap vô hiệu. Dùng [RemoveEffect]
+  /// với [lifespan] biết trước (giống [onFinish] của [_spawnRing]) để prune
+  /// đúng lúc burst thật sự kết thúc, không phụ thuộc timing mount.
+  void _trackBurst(ParticleSystemComponent c, double lifespan) {
+    if (_bursts.length >= _maxBursts) {
+      _bursts.removeAt(0).removeFromParent();
+    }
+    _bursts.add(c);
+    c.add(RemoveEffect(delay: lifespan, onComplete: () => _bursts.remove(c)));
+    add(c);
   }
 
   /// A8: sóng nhẹ tại đúng điểm chạm cho mọi tap hợp lệ (kể cả không tạo
@@ -1501,7 +1559,7 @@ class PopStarGame extends FlameGame {
   void _spawnSparkBurst(Vector2 at, Color color, {int count = 10}) {
     const lifespan = 0.5;
     final accel = Vector2(0, 220);
-    add(
+    _trackBurst(
       ParticleSystemComponent(
         position: at,
         particle: Particle.generate(
@@ -1539,6 +1597,7 @@ class PopStarGame extends FlameGame {
           },
         ),
       ),
+      lifespan,
     );
   }
 
@@ -1548,7 +1607,7 @@ class PopStarGame extends FlameGame {
   void _spawnConfettiBurst(Vector2 at, {int count = 10}) {
     const lifespan = 0.5;
     final accel = Vector2(0, 220);
-    add(
+    _trackBurst(
       ParticleSystemComponent(
         position: at,
         particle: Particle.generate(
@@ -1583,6 +1642,7 @@ class PopStarGame extends FlameGame {
           },
         ),
       ),
+      lifespan,
     );
   }
 
@@ -1591,7 +1651,7 @@ class PopStarGame extends FlameGame {
   void _spawnStarburstBurst(Vector2 at, Color color, {int count = 10}) {
     const lifespan = 0.5;
     final accel = Vector2(0, 220);
-    add(
+    _trackBurst(
       ParticleSystemComponent(
         position: at,
         particle: Particle.generate(
@@ -1621,6 +1681,7 @@ class PopStarGame extends FlameGame {
           },
         ),
       ),
+      lifespan,
     );
   }
 

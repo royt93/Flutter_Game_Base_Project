@@ -106,7 +106,7 @@ const List<GameWorld> kWorlds = [
   ),
   GameWorld(
     nameKey: 'world_path_name_11',
-    color: NeonTheme.lime,
+    color: NeonTheme.gold,
     startId: 201,
     endId: 220,
     icon: Icons.diamond_rounded,

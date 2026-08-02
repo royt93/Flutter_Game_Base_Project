@@ -26,7 +26,16 @@ void main() {
     bands += smoothstep(0.10, 0.0, abs(uv.y - band)) * (0.55 - fi * 0.12);
   }
 
-  vec3 col = hueShift(uColor.rgb, bands * 2.4 + uTime * 0.15);
+  // roy93~fix: 2 lỗi cộng dồn khiến uColor (gold world 11) hầu như vô nghĩa:
+  // (1) uTime là giây trôi không giới hạn kể từ lúc layer mount, cộng thẳng
+  //     vào góc hueShift → màu trôi dạt qua hết vòng màu theo thời gian chơi;
+  // (2) biên độ `bands * 2.4` (tới ~2.9rad ≈ 166°) đủ lớn để tự nó đẩy gold
+  //     (~39°) sang hẳn vùng cyan/teal (~180-200°) dù không có yếu tố thời
+  //     gian. Hạ biên độ dải xuống 0.5 (~29° max) + bọc sin() cho phần thời
+  //     gian dao động nhẹ quanh 0 (~11° max) thay vì trôi vô hạn — tổng lệch
+  //     tối đa ~40°, đủ tạo hiệu ứng "shimmer" mà vẫn neo trong vùng
+  //     vàng/cam/hồng ấm thay vì lạc sang lạnh.
+  vec3 col = hueShift(uColor.rgb, bands * 0.5 + sin(uTime * 0.15) * 0.2);
   float alpha = clamp(bands * uColor.a, 0.0, 0.85);
   // premultiplied alpha (Flutter mong đợi)
   fragColor = vec4(col * alpha, alpha);

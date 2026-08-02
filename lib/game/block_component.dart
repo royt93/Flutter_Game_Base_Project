@@ -130,7 +130,11 @@ void paintTileBody(
           ..color = Color.lerp(c, Colors.white, 0.75)!.withValues(alpha: 0.95),
       );
     case TileMaterial.metal:
-      // thân: gradient ngang nhiều dải sáng/tối = ánh kim chải (brushed).
+      // thân: gradient ngang mượt sáng→đậm, không còn dải xen kẽ.
+      // roy93~fix: bản "brushed metal" cũ (5 dải sáng/tối xen kẽ) tạo hiệu
+      // ứng sọc ngang cạnh tranh với hue của gem, khiến world cuối "khó
+      // nhìn" (user feedback) — đổi về gradient 1 chiều như jelly/crystal,
+      // chỉ giữ viền xám ánh kim bên dưới để vẫn phân biệt material.
       canvas.drawRRect(
         rrect,
         Paint()
@@ -138,13 +142,11 @@ void paintTileBody(
             Offset(rect.left, rect.top),
             Offset(rect.right, rect.top),
             [
-              Color.lerp(c, Colors.black, 0.35)!,
-              Color.lerp(c, Colors.white, 0.55)!,
-              Color.lerp(c, Colors.black, 0.25)!,
-              Color.lerp(c, Colors.white, 0.35)!,
-              Color.lerp(c, Colors.black, 0.3)!,
+              Color.lerp(c, Colors.white, 0.32)!,
+              c,
+              Color.lerp(c, Colors.black, 0.28)!,
             ],
-            const [0.0, 0.25, 0.5, 0.75, 1.0],
+            const [0.0, 0.45, 1.0],
           ),
       );
       // gloss: dải sáng ngang mỏng giữa thân (phản chiếu kim loại).
@@ -160,7 +162,8 @@ void paintTileBody(
         ),
         Paint()..color = Colors.white.withValues(alpha: 0.4),
       );
-      // viền: dày, ngả xám — cảm giác khung kim loại.
+      // viền: dày, ngả xám nhẹ — cảm giác khung kim loại nhưng vẫn giữ đủ
+      // hue để phân biệt màu (I17-fix: blend xám 0.6 trước đây quá nặng).
       canvas.drawRRect(
         rrect,
         Paint()
@@ -169,7 +172,7 @@ void paintTileBody(
           ..color = Color.lerp(
             c,
             const Color(0xFFD9D9D9),
-            0.6,
+            0.35,
           )!.withValues(alpha: 0.85),
       );
   }
@@ -244,6 +247,21 @@ class BlockComponent extends PositionComponent
   static final Map<int, ui.Image> _bloomCache = {};
   static Future<void>? _bloomCacheFuture;
 
+  // ponytail: heat stroke bên dưới trước đây new Paint() mỗi frame cho MỌI ô
+  // khi combo đang "nóng" — churn GC không cần thiết vì chỉ vài property đổi
+  // theo heat. Tái dùng 1 Paint tĩnh, mutate thay vì cấp phát lại.
+  static final Paint _heatPaint = Paint()..style = PaintingStyle.stroke;
+
+  // roy93~fix: viền gem (paintTileBody) luôn nhạt/cùng tông với thân (kiểu
+  // "candy shine"), nên gem chỉ tách khỏi nền panel qua hue chứ không có biên
+  // độ sáng-tối — ở vùng panel sáng, gem màu vàng nhạt dễ chìm. Thử shadow
+  // lệch xuống trước nhưng vô nghĩa: lưới xếp khít, gem chủ yếu giáp gem khác
+  // (đã đủ tương phản qua hue) — cạnh cần tách nền panel thực ra là bất kỳ
+  // cạnh nào giáp ô trống (cột đã rút gọn do gravity không refill), không cố
+  // định là cạnh dưới. Đổi sang viền tối mỏng bao đều 4 cạnh (rrect.inflate),
+  // không MaskFilter.blur (tránh lặp chi phí per-frame blur đã fix ở heat).
+  static final Paint _dropShadowPaint = Paint();
+
   static Future<void> ensureBloomCache() {
     return _bloomCacheFuture ??= _buildBloomCache();
   }
@@ -267,7 +285,10 @@ class BlockComponent extends PositionComponent
       canvas.drawRRect(
         rrect,
         Paint()
-          ..color = NeonTheme.gemColors[i].withValues(alpha: 0.5)
+          // I17-fix: tăng alpha bloom (0.5→0.62) để quầng sáng theo màu rõ
+          // hơn, hỗ trợ phân biệt màu ở world dùng material crystal/metal
+          // (gradient thân bị desaturate nhiều).
+          ..color = NeonTheme.gemColors[i].withValues(alpha: 0.62)
           ..maskFilter = MaskFilter.blur(BlurStyle.normal, _bloomRef * 0.16),
       );
       final picture = recorder.endRecording();
@@ -330,7 +351,13 @@ class BlockComponent extends PositionComponent
     // fallback vẽ blur trực tiếp nếu cache chưa kịp dựng.
     final bloomImg = _bloomCache[colorIndex % NeonTheme.gemColors.length];
     if (bloomImg != null) {
-      final dstSize = s * (bloomImg.width / _bloomRef);
+      // roy93~fix: dstSize gốc = s*2.0 (quầng to gấp đôi ô) khiến bloom mọi
+      // ô tràn hết sang 4 ô lân cận. Bàn thường đặc kín ô → quầng chồng lấp
+      // khắp bàn thành 1 lớp mờ đồng nhất, ngả xanh ngọc (palette có
+      // cyan+lime) — chính là thứ user tưởng "nền cyan xấu", đồng thời xoá
+      // ranh giới giữa các ô khiến "gems khó nhìn". Hạ hệ số còn ~1.2x để
+      // quầng ôm sát viên gem, không lấn sang ô kế bên.
+      final dstSize = s * (bloomImg.width / _bloomRef) * 0.6;
       canvas.drawImageRect(
         bloomImg,
         Rect.fromLTWH(
@@ -355,6 +382,18 @@ class BlockComponent extends PositionComponent
       );
     }
 
+    // 1b. viền tối bao đều 4 cạnh, tách gem khỏi nền panel bằng tương phản
+    // sáng-tối (xem comment _dropShadowPaint) — không phụ thuộc hướng, luôn
+    // lộ ra ở cạnh nào giáp ô trống bất kể trên/dưới/trái/phải.
+    // roy93~fix: bản đầu inflate 0.025/alpha 0.14 quá mỏng (~2-3px thực) và
+    // bị quầng bloom màu (bước 1) lấn át — pixel-sample trên device xác nhận
+    // mắt thường không nhận ra viền. Tăng inflate lên 0.06 (~7px) + alpha
+    // 0.32 để viền thực sự nổi rõ mà vẫn không dày hơn khoảng cách giữa các ô.
+    canvas.drawRRect(
+      rrect.inflate(s * 0.06),
+      _dropShadowPaint..color = Colors.black.withValues(alpha: 0.32),
+    );
+
     // 2-4. thân gradient + gloss + viền — style theo material (I17).
     paintTileBody(canvas, rrect, rect, s, c, material);
 
@@ -367,17 +406,14 @@ class BlockComponent extends PositionComponent
     // vẫn thấy "nóng" qua màu/độ dày, mất glow mềm.
     final heat = game.heat;
     if (heat > 0) {
-      canvas.drawRRect(
-        rrect,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = s * (0.05 + 0.09 * heat)
-          ..color = Color.lerp(
-            NeonTheme.orange,
-            Colors.white,
-            heat * 0.5,
-          )!.withValues(alpha: 0.35 + 0.55 * heat),
-      );
+      _heatPaint
+        ..strokeWidth = s * (0.05 + 0.09 * heat)
+        ..color = Color.lerp(
+          NeonTheme.orange,
+          Colors.white,
+          heat * 0.5,
+        )!.withValues(alpha: 0.35 + 0.55 * heat);
+      canvas.drawRRect(rrect, _heatPaint);
     }
 
     // 6. preview highlight: quầng sáng trắng + viền trắng dày khi được chọn

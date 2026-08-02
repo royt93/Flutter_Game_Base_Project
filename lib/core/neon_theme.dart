@@ -52,7 +52,7 @@ class NeonTheme {
   static Color get ink => dark ? _inkDark : _inkLight;
   static Color get inkSoft => dark ? _inkSoftDark : _inkSoftLight;
 
-  // --- 6 màu block kiểu kẹo (saturated, thân thiện, dễ phân biệt) ---
+  // --- 7 màu block kiểu kẹo (saturated, thân thiện, dễ phân biệt) ---
   static const Color cyan = Color(0xFF35C4F0); // xanh dương kẹo
   static const Color magenta = Color(0xFFFF6FC1); // hồng kẹo
   static const Color lime = Color(0xFF5FD35A); // xanh lá kẹo
@@ -82,6 +82,8 @@ class NeonTheme {
     yellow,
     orange,
     purple,
+    red, // I17-fix: world 10-11 sinh colorCount tới 7 — thiếu màu này khiến
+    // colorIndex 6 alias trùng cyan qua modulo, 2 nhóm khác màu render y hệt.
   ];
 
   /// Gradient nền sáng candy dùng cho mọi screen (qua NeonBg).
@@ -97,20 +99,26 @@ class NeonTheme {
     Color color, {
     double blur = 18,
     double spread = 1,
+    // roy93~fix: BoxShadow vẽ 1 hình đặc cùng dạng box, không chỉ viền cạnh —
+    // với box có fill trong suốt (vd panel bàn chơi alpha 0.25) thì phần lớn
+    // shadow xuyên qua fill, nhuộm kín cả nội thất thay vì chỉ toả nhẹ ở
+    // mép. `intensity` cho phép hạ alpha 3 lớp shadow ở nơi cần fill mờ mà
+    // không đổi 14+ chỗ gọi khác đang dùng mặc định 1.0.
+    double intensity = 1.0,
   }) {
     return [
       BoxShadow(
-        color: color.withValues(alpha: 0.9),
+        color: color.withValues(alpha: 0.9 * intensity),
         blurRadius: blur * 0.5,
         spreadRadius: spread * 0.4,
       ),
       BoxShadow(
-        color: color.withValues(alpha: 0.5),
+        color: color.withValues(alpha: 0.5 * intensity),
         blurRadius: blur,
         spreadRadius: spread,
       ),
       BoxShadow(
-        color: color.withValues(alpha: 0.24),
+        color: color.withValues(alpha: 0.24 * intensity),
         blurRadius: blur * 2.4,
         spreadRadius: spread * 1.6,
       ),

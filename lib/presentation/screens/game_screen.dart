@@ -34,6 +34,11 @@ class GameScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final gsc = Get.put(GameScreenController(Get.find<GameController>()));
     final gameCtrl = gsc.gameCtrl;
+    // X8: side-mode (id âm) không match world nào → null, NeonBg/aura dùng
+    // palette mặc định thay vì crash worldForLevel.
+    final worldAccent = gameCtrl.currentLevel.id > 0
+        ? worldForLevel(gameCtrl.currentLevel.id).color
+        : null;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -43,12 +48,7 @@ class GameScreen extends StatelessWidget {
         backgroundColor: NeonTheme.bgMid,
         body: NeonBg(
           energyOf: () => gsc.game.heat,
-          // X8: side-mode (Zen/TimeAttack/Endless/Daily) dùng id âm —
-          // worldForLevel không match world nào nên bỏ qua, tránh ăn nhầm
-          // theme world cuối (I16 aurora chỉ dành world khó nhất thật sự).
-          accent: gameCtrl.currentLevel.id > 0
-              ? worldForLevel(gameCtrl.currentLevel.id).color
-              : null,
+          accent: worldAccent,
           aurora:
               gameCtrl.currentLevel.id > 0 &&
               worldForLevel(gameCtrl.currentLevel.id) == kWorlds.last,
@@ -67,9 +67,14 @@ class GameScreen extends StatelessWidget {
                         child: Stack(
                           children: [
                             // G5: aura shader sau bàn, hoà vào nền sáng.
+                            // I18-fix: trước đây hardcode cyan bất kể world —
+                            // phủ kín màn hình sau bàn nên đúng ra là nguồn
+                            // "nền cyan xấu" user báo (che mất gradient candy
+                            // của NeonBg). Đổi theo worldAccent giống NeonBg.
                             Positioned.fill(
                               child: NeonAuraLayer(
-                                color: NeonTheme.cyan.withValues(alpha: 0.35),
+                                color: (worldAccent ?? NeonTheme.cyan)
+                                    .withValues(alpha: 0.35),
                               ),
                             ),
                             RepaintBoundary(
@@ -90,8 +95,15 @@ class GameScreen extends StatelessWidget {
                                     color: gameCtrl.activeBoardFrame.color,
                                     width: 3,
                                   ),
+                                  // roy93~fix: shadow đặc xuyên qua fill
+                                  // trong suốt phía trên (color alpha 0.25)
+                                  // nhuộm kín cả nội thất panel thành mảng
+                                  // teal phẳng — chính là "nền cyan xấu" user
+                                  // báo, che luôn gradient candy của NeonBg.
+                                  // Hạ intensity để chỉ còn viền toả nhẹ.
                                   boxShadow: NeonTheme.glow(
                                     gameCtrl.activeBoardFrame.color,
+                                    intensity: 0.15,
                                   ),
                                 ),
                                 clipBehavior: Clip.antiAlias,
