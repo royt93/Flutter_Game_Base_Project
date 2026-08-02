@@ -15,6 +15,7 @@ import '../widgets/coin_chip.dart';
 import '../widgets/combo_text_style_picker_dialog.dart';
 import '../widgets/home_carousel.dart';
 import '../widgets/login_streak_dialog.dart';
+import '../widgets/mystery_crate_dialog.dart';
 import '../widgets/weekly_goal_dialog.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
@@ -396,6 +397,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: NeonTheme.cyan,
               label: 'sky_shrine_title'.tr,
               onTap: () => Get.to(() => const SkyShrineScreen()),
+            ),
+            _drawerTile(
+              icon: Icons.inventory_2_rounded,
+              color: NeonTheme.magenta,
+              label: 'mystery_crate_title'.tr,
+              onTap: () => showMysteryCrateDialog(context, gameCtrl),
             ),
           ],
         ),
