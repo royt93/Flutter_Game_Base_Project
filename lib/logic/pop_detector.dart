@@ -2,6 +2,10 @@ import 'dart:math';
 
 import 'wildcard_tile.dart';
 
+/// I60: caller-side rule for modes that demand larger groups.
+bool meetsMinGroupSize(Set<Point<int>> group, int? minGroupSize) =>
+    group.length >= (minGroupSize ?? 2);
+
 /// Tìm nhóm ô cùng màu liền kề (4 hướng) chứa (row, col), dùng flood-fill.
 /// Trả về rỗng nếu ô đó là null (đã trống), obstacle (F6a: mã hoá bằng giá
 /// trị âm — không thuộc nhóm màu nào, không nổ trực tiếp), hoặc đang bị khoá
@@ -100,7 +104,11 @@ Set<Point<int>> findLargestGroup(
 }
 
 /// Bàn còn nhóm nào ≥2 ô có thể nổ không (dùng để phát hiện bàn "kẹt").
-bool hasAnyMovableGroup(List<List<int?>> grid, {List<List<int>>? lockGrid}) {
+bool hasAnyMovableGroup(
+  List<List<int?>> grid, {
+  List<List<int>>? lockGrid,
+  int? minGroupSize,
+}) {
   final rows = grid.length;
   final cols = rows == 0 ? 0 : grid[0].length;
   final visited = <Point<int>>{};
@@ -112,7 +120,7 @@ bool hasAnyMovableGroup(List<List<int?>> grid, {List<List<int>>? lockGrid}) {
       if (visited.contains(p)) continue;
       final group = findConnectedGroup(grid, r, c, lockGrid: lockGrid);
       visited.addAll(group);
-      if (group.length >= 2) return true;
+      if (meetsMinGroupSize(group, minGroupSize)) return true;
     }
   }
   return false;

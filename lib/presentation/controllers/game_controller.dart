@@ -48,6 +48,7 @@ enum GameMode {
   gauntlet,
   weeklyFeatured,
   passAndPlay,
+  treasureMap,
 }
 
 /// I7: 1 ô phần thưởng trên vòng quay hằng ngày.
@@ -180,6 +181,7 @@ class GameController extends GetxController {
   /// lần trong [startGauntlet] — giống [dailyChallengeGrid].
   List<List<int>>? gauntletGrid;
   GauntletModifier? activeGauntletModifier;
+  GauntletModifier? activeTreasureMapModifier;
 
   /// I33: combo timer rút ngắn khi đang chơi Gauntlet với modifier
   /// `shortCombo` — `null` ngoài mode Gauntlet để tránh giá trị cũ còn sót
@@ -187,6 +189,15 @@ class GameController extends GetxController {
   double? get gauntletComboWindowOverride => mode.value == GameMode.gauntlet
       ? activeGauntletModifier?.comboWindowOverride
       : null;
+
+  GauntletModifier? get activeGameplayModifier => switch (mode.value) {
+    GameMode.gauntlet => activeGauntletModifier,
+    GameMode.treasureMap => activeTreasureMapModifier,
+    _ => null,
+  };
+
+  int? get activeMoveLimit => activeGameplayModifier?.moveLimit;
+  int? get activeMinGroupSize => activeGameplayModifier?.minGroupSize;
 
   PopLevel get currentLevel => currentLevelRx.value!;
 
@@ -393,11 +404,30 @@ class GameController extends GetxController {
       frame,
       prestigeTier.value,
       unlockedAchievementIds,
+      treasureMapCompleted: treasureMapCompleted.value,
     )) {
       return;
     }
     activeBoardFrameId.value = id;
     StorageService.to.setString(StorageKeys.activeBoardFrame, id);
+  }
+
+  final treasureMapCount = 0.obs;
+  final treasureMapCompleted = false.obs;
+
+  bool consumeTreasureMap() {
+    if (treasureMapCount.value <= 0) return false;
+    treasureMapCount.value--;
+    StorageService.to.setInt(
+      StorageKeys.treasureMapCount,
+      treasureMapCount.value,
+    );
+    return true;
+  }
+
+  void completeTreasureMap() {
+    treasureMapCompleted.value = true;
+    StorageService.to.setBool(StorageKeys.treasureMapCompleted, true);
   }
 
   // I62 Color Alchemy: pigment mua bằng xu được persist; pigment achievement
@@ -759,6 +789,9 @@ class GameController extends GetxController {
               storedFrame,
               prestigeTier.value,
               unlockedAchievementIds,
+              treasureMapCompleted: StorageService.to.getBool(
+                StorageKeys.treasureMapCompleted,
+              ),
             )
         ? storedFrame.id
         : kBoardFrames.first.id;
@@ -777,6 +810,12 @@ class GameController extends GetxController {
     );
     weeklyGoalProgress.value = StorageService.to.getInt(
       StorageKeys.weeklyGoalProgress,
+    );
+    treasureMapCount.value = StorageService.to.getInt(
+      StorageKeys.treasureMapCount,
+    );
+    treasureMapCompleted.value = StorageService.to.getBool(
+      StorageKeys.treasureMapCompleted,
     );
     _recomputeTotalStars();
     _checkSeasonRollover();
@@ -850,6 +889,7 @@ class GameController extends GetxController {
       currentWeekIndex,
     );
     StorageService.to.setInt(StorageKeys.coins, coins.value);
+    _grantTreasureMap();
     return true;
   }
 
@@ -962,7 +1002,16 @@ class GameController extends GetxController {
       loginStreakClaimedMask.value,
     );
     StorageService.to.setInt(StorageKeys.coins, coins.value);
+    _grantTreasureMap();
     return true;
+  }
+
+  void _grantTreasureMap() {
+    treasureMapCount.value++;
+    StorageService.to.setInt(
+      StorageKeys.treasureMapCount,
+      treasureMapCount.value,
+    );
   }
 
   /// Số ngày kể từ epoch (UTC), kẹp không lùi dưới mốc lớn nhất từng thấy —
@@ -1288,6 +1337,35 @@ class GameController extends GetxController {
       cols: source.first.length,
       colorCount: dailyChallengeColorCount,
       targetScore: source.length * source.first.length * 6,
+    );
+    score.value = 0;
+    starsEarned.value = 0;
+    ended.value = false;
+    cleared.value = false;
+    resetCombo();
+    activeGame = null;
+    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
+    movesUsed.value = 0;
+    _collectInitial = null;
+  }
+
+  /// I60: deterministic board for each of five stages on the current day.
+  void startTreasureMapStage(int stage) {
+    final modifier = kTreasureMapModifiers[stage - 1];
+    activeTreasureMapModifier = modifier;
+    mode.value = GameMode.treasureMap;
+    final grid = generateDailyChallengeGrid(
+      _todayEpochDay() + stage,
+      colorCount: modifier.colorCountOverride ?? dailyChallengeColorCount,
+    );
+    puzzleLabGrid = grid;
+    currentLevelRx.value = PopLevel(
+      id: -60 - stage,
+      rows: grid.length,
+      cols: grid.first.length,
+      colorCount: modifier.colorCountOverride ?? dailyChallengeColorCount,
+      targetScore: grid.length * grid.first.length * 5,
     );
     score.value = 0;
     starsEarned.value = 0;
@@ -1795,6 +1873,8 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.activeBoardFrame);
     await store.remove(StorageKeys.gemColorOverrides);
     await store.remove(StorageKeys.unlockedPigments);
+    await store.remove(StorageKeys.treasureMapCount);
+    await store.remove(StorageKeys.treasureMapCompleted);
     for (var id = 1; id <= kLevelCount; id++) {
       await store.remove(StorageKeys.highScore(id));
       await store.remove(StorageKeys.star(id));

@@ -15,6 +15,7 @@ import '../../logic/challenge_code.dart';
 import '../../logic/replay.dart';
 import 'game_controller.dart';
 import 'pass_and_play_controller.dart';
+import 'treasure_map_controller.dart';
 
 /// Trạng thái UI của màn chơi (thay cho setState).
 enum GameUi { playing, quit, win, lose }
@@ -207,6 +208,7 @@ class GameScreenController extends GetxController {
         GameMode.gauntlet => gameCtrl.gauntletGrid,
         GameMode.puzzleLab => gameCtrl.puzzleLabGrid,
         GameMode.passAndPlay => gameCtrl.passAndPlayGrid,
+        GameMode.treasureMap => gameCtrl.puzzleLabGrid,
         // I47 Mirror Mode: bàn đầu đối xứng gương, seed ngẫu nhiên (khác
         // dailyChallenge — không cần seed cố định cho mode này).
         GameMode.mirrorMode => generateMirrorBoard(
@@ -327,6 +329,9 @@ class GameScreenController extends GetxController {
     if (Get.isRegistered<PassAndPlayController>()) {
       Get.delete<PassAndPlayController>();
     }
+    if (Get.isRegistered<TreasureMapController>()) {
+      Get.delete<TreasureMapController>();
+    }
     Get.delete<GameScreenController>();
     Get.back();
   }
@@ -334,6 +339,14 @@ class GameScreenController extends GetxController {
   void beginPlayer2() {
     final duel = Get.find<PassAndPlayController>();
     duel.beginPlayer2();
+    armed.value = BoosterMode.none;
+    _swapFirst = null;
+    ui.value = GameUi.playing;
+    _newGame();
+  }
+
+  void beginNextTreasureStage() {
+    Get.find<TreasureMapController>().nextStage();
     armed.value = BoosterMode.none;
     _swapFirst = null;
     ui.value = GameUi.playing;
@@ -366,6 +379,10 @@ class GameScreenController extends GetxController {
       gameCtrl.startGauntlet();
     } else if (mode == GameMode.passAndPlay) {
       Get.find<PassAndPlayController>().startDuel();
+    } else if (mode == GameMode.treasureMap) {
+      // A failed run cannot retry without consuming another map from Home.
+      quit();
+      return;
     } else {
       gameCtrl.startSideMode(mode);
     }

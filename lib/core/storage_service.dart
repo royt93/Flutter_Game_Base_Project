@@ -157,6 +157,10 @@ class StorageKeys {
   // I62 Color Alchemy: map slot-index → pigment-id và các pigment đã mua.
   static const String gemColorOverrides = 'gem_color_overrides';
   static const String unlockedPigments = 'unlocked_pigments';
+
+  // I60 Treasure Map: consumable entry tickets + exclusive chest unlock.
+  static const String treasureMapCount = 'treasure_map_count';
+  static const String treasureMapCompleted = 'treasure_map_completed';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

@@ -9,6 +9,7 @@ import '../../data/worlds.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_screen_controller.dart';
 import '../controllers/pass_and_play_controller.dart';
+import '../controllers/treasure_map_controller.dart';
 import '../widgets/ambient_particles.dart';
 import '../widgets/board_frame_picker_dialog.dart';
 import '../widgets/burst_style_picker_dialog.dart';
@@ -184,6 +185,35 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pop(context);
               gameCtrl.startGauntlet();
               Get.to(() => const GameScreen());
+            },
+          ),
+          _modeTile(
+            icon: Icons.map_rounded,
+            color: NeonTheme.teal,
+            label: 'treasure_map_title'.tr,
+            onTap: () {
+              if (gameCtrl.treasureMapCount.value <= 0) {
+                Navigator.pop(context);
+                NeonDialog.show(
+                  context: context,
+                  title: 'treasure_map_title'.tr,
+                  color: NeonTheme.teal,
+                  message: 'treasure_no_maps'.tr,
+                  actions: [
+                    NeonDialogAction(
+                      label: 'coll_close'.tr,
+                      color: NeonTheme.teal,
+                      onTap: () {},
+                    ),
+                  ],
+                );
+                return;
+              }
+              Navigator.pop(context);
+              final expedition = Get.put(TreasureMapController(gameCtrl));
+              if (expedition.startExpedition()) {
+                Get.to(() => const GameScreen());
+              }
             },
           ),
           _modeTile(

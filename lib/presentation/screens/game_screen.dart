@@ -15,6 +15,7 @@ import '../../game/pop_star_game.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/game_screen_controller.dart';
 import '../controllers/pass_and_play_controller.dart';
+import '../controllers/treasure_map_controller.dart';
 import '../../logic/pass_and_play.dart';
 import '../widgets/coin_chip.dart';
 import '../widgets/coin_fly_overlay.dart';
@@ -921,6 +922,53 @@ class _Overlay extends StatelessWidget {
                       ),
                     ],
                   ),
+          ),
+        );
+      }
+    }
+    if (gsc.gameCtrl.mode.value == GameMode.treasureMap &&
+        Get.isRegistered<TreasureMapController>()) {
+      final expedition = Get.find<TreasureMapController>();
+      final next = expedition.awaitingNextStage.value;
+      final failed = expedition.failed.value;
+      final completed = expedition.completed.value;
+      if (next || failed || completed) {
+        return Positioned.fill(
+          child: NeonDialog.overlaySlot(
+            panelKey: 'treasure-${expedition.stageIndex.value}-$next-$failed',
+            panel: NeonDialog.panel(
+              title: completed
+                  ? 'treasure_chest_title'.tr
+                  : failed
+                  ? 'treasure_failed_title'.tr
+                  : 'treasure_stage_clear'.trParams({
+                      'stage': '${expedition.stageIndex.value}',
+                    }),
+              color: completed
+                  ? NeonTheme.gold
+                  : failed
+                  ? NeonTheme.red
+                  : NeonTheme.teal,
+              message: completed
+                  ? 'treasure_chest_message'.tr
+                  : failed
+                  ? 'treasure_failed_message'.tr
+                  : 'treasure_next_message'.tr,
+              actions: [
+                if (next)
+                  NeonDialogAction(
+                    label: 'treasure_next_stage'.tr,
+                    color: NeonTheme.teal,
+                    onTap: gsc.beginNextTreasureStage,
+                  )
+                else
+                  NeonDialogAction(
+                    label: 'menu'.tr,
+                    color: NeonTheme.cyan,
+                    onTap: gsc.quit,
+                  ),
+              ],
+            ),
           ),
         );
       }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/neon_theme.dart';
 
-enum BoardFrameUnlockKind { always, prestigeTier, achievement }
+enum BoardFrameUnlockKind { always, prestigeTier, achievement, treasureMap }
 
 class BoardFrame {
   const BoardFrame({
@@ -53,13 +53,20 @@ const List<BoardFrame> kBoardFrames = [
     unlockKind: BoardFrameUnlockKind.achievement,
     requiredAchievementId: 'clear_400',
   ),
+  BoardFrame(
+    id: 'treasure_relic',
+    nameKey: 'board_frame_treasure_relic',
+    color: Color(0xFF20BFA9),
+    unlockKind: BoardFrameUnlockKind.treasureMap,
+  ),
 ];
 
 bool isBoardFrameUnlocked(
   BoardFrame frame,
   int prestigeTier,
-  Set<String> unlockedAchievementIds,
-) {
+  Set<String> unlockedAchievementIds, {
+  bool treasureMapCompleted = false,
+}) {
   switch (frame.unlockKind) {
     case BoardFrameUnlockKind.always:
       return true;
@@ -67,5 +74,7 @@ bool isBoardFrameUnlocked(
       return prestigeTier >= frame.requiredPrestigeTier;
     case BoardFrameUnlockKind.achievement:
       return unlockedAchievementIds.contains(frame.requiredAchievementId);
+    case BoardFrameUnlockKind.treasureMap:
+      return treasureMapCompleted;
   }
 }
