@@ -7,7 +7,11 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
         <item name="android:windowSplashScreenBackground">#7ED8FF</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/android12splash</item>
+        <!-- flutter_native_splash has no `icon_animation` config key; wired by hand.
+             Re-apply after any `dart run flutter_native_splash:create` run, which
+             overwrites this file back to the static @drawable/android12splash. -->
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/android12_splash</item>
+        <item name="android:windowSplashScreenAnimationDuration">800</item>
     </style>
     <!-- Theme applied to the Android Window as soon as the process has started.
          This theme determines the color of the Android Window while your

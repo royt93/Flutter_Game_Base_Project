@@ -5,7 +5,17 @@ DoD/DoR chung ở `README.md`. Trạng thái mặc định 📋 To Do.
 
 ---
 
-## E1 — Art Revamp: Bright Casual Pivot (Must)
+## E1 — Art Revamp: Bright Casual Pivot (Must) — ✅ Done (2026-08-02)
+
+> Audit đối chiếu từng story S1-S12 với code thật (`neon_theme.dart`, `neon_bg.dart`,
+> `neon_button.dart`, `block_component.dart`, `game_screen.dart` HUD, `home_screen.dart`,
+> `level_select_screen.dart`, `shop/guide/settings_screen.dart`, `neon_dialog.dart`,
+> `star_mascot.dart`) xác nhận đủ 12/12 story: palette bright-casual, background gradient
+> sáng, nút chunky, block gloss/gradient theo material, HUD progress bar + booster tray,
+> home casual + mascot + PLAY lớn, level-select dạng path cong (v/l stretch goal S7 đã
+> đạt), shop/guide/settings casual card, dialog celebration, mascot 4 mood state
+> (idle/happy/sad/cheer). Không còn dấu vết nền tối "neon-dark" trong flow mặc định
+> (dark mode chỉ tồn tại như flag tuỳ chọn, không bật mặc định).
 
 Mục tiêu: chuyển từ neon-dark tĩnh sang bright-casual (Candy-Crush): nền sáng ấm,
 palette pastel + accent neon, nút chunky, mascot ngôi sao, cảm giác "kẹo".
