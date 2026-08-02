@@ -5,6 +5,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 import '../core/neon_theme.dart';
+import '../data/pigments.dart';
 import '../data/worlds.dart';
 import '../logic/boss_tile.dart' show isBossTileId;
 import '../logic/countdown_lock_tile.dart' show isCountdownLockId;
@@ -224,8 +225,7 @@ class BlockComponent extends PositionComponent
     this.material = TileMaterial.jelly,
   }) : super(position: position, size: size, anchor: Anchor.center);
 
-  Color get _color =>
-      NeonTheme.gemColors[colorIndex % NeonTheme.gemColors.length];
+  Color get _color => resolvedGemColor(colorIndex);
 
   // G8: quầng bloom (item 1 render) tốn blur mỗi frame cho MỌI ô bàn chơi dù
   // đứng yên. Bake sẵn 1 lần/màu thành bitmap tĩnh, mỗi frame chỉ blit

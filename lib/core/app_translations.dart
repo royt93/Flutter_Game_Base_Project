@@ -262,6 +262,16 @@ class AppTranslations extends Translations {
 
   /// Key Wave 4 — English (mặc định + fallback cho ngôn ngữ chưa dịch).
   static const Map<String, String> _extraEn = {
+    // I62 — Color Alchemy Lab.
+    'alchemy_title': 'Color Alchemy Lab',
+    'alchemy_hint': 'Choose a pigment for each gem color slot.',
+    'alchemy_slot': 'Gem slot @slot',
+    'alchemy_reset': 'Reset',
+    'pigment_aqua': 'Aqua',
+    'pigment_coral': 'Coral',
+    'pigment_mint': 'Mint',
+    'pigment_midnight': 'Midnight',
+    'pigment_sunset': 'Sunset',
     // W25.2 — Câu luật thắng 1 dòng, hiện dưới label mở-màn mỗi mode.
     'rule_boss': 'Defeat the Boss before you run out of moves',
     'rule_rhythm': 'Match on the beat to keep your groove',

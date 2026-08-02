@@ -153,6 +153,10 @@ class StorageKeys {
   // 'classic') — không persist "đã mở khoá" vì suy trực tiếp từ prestigeTier
   // (I27) + unlockedAchievements (I22) đã có sẵn.
   static const String activeBoardFrame = 'active_board_frame';
+
+  // I62 Color Alchemy: map slot-index → pigment-id và các pigment đã mua.
+  static const String gemColorOverrides = 'gem_color_overrides';
+  static const String unlockedPigments = 'unlocked_pigments';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

@@ -27,6 +27,7 @@ import '../widgets/star_mascot.dart';
 import '../widgets/stroke_text.dart';
 import 'achievements_screen.dart';
 import 'boss_rush_screen.dart';
+import 'color_alchemy_screen.dart';
 import 'friend_compare_screen.dart';
 import 'ghost_replay_screen.dart';
 import 'game_screen.dart';
@@ -347,6 +348,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: NeonTheme.magenta,
               label: 'wardrobe_title'.tr,
               onTap: () => Get.to(() => const MascotWardrobeScreen()),
+            ),
+            _drawerTile(
+              icon: Icons.palette_rounded,
+              color: NeonTheme.purple,
+              label: 'alchemy_title'.tr,
+              onTap: () => Get.to(() => const ColorAlchemyScreen()),
             ),
             _drawerTile(
               icon: Icons.military_tech_rounded,

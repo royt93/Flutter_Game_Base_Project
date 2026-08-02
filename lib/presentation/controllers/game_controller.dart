@@ -18,6 +18,7 @@ import '../../data/levels.dart';
 import '../../data/lucky_color.dart';
 import '../../data/mascot_skins.dart';
 import '../../data/perks.dart';
+import '../../data/pigments.dart';
 import '../../data/weekly_featured.dart';
 import '../../data/weekly_goal.dart';
 import '../../game/pop_star_game.dart';
@@ -394,6 +395,49 @@ class GameController extends GetxController {
     StorageService.to.setString(StorageKeys.activeBoardFrame, id);
   }
 
+  // I62 Color Alchemy: pigment mua bằng xu được persist; pigment achievement
+  // được suy trực tiếp từ unlockedAchievementIds. Override chỉ đổi màu render.
+  final unlockedPigmentIds = <String>{kPigments.first.id}.obs;
+  final gemColorOverrides = <int, String>{}.obs;
+
+  bool isPigmentUnlocked(Pigment pigment) =>
+      pigment.isFree ||
+      unlockedPigmentIds.contains(pigment.id) ||
+      (pigment.unlockAchievementId != null &&
+          unlockedAchievementIds.contains(pigment.unlockAchievementId));
+
+  bool buyPigment(Pigment pigment) {
+    if (pigment.coinPrice == null || isPigmentUnlocked(pigment)) return false;
+    if (coins.value < pigment.coinPrice!) return false;
+    coins.value -= pigment.coinPrice!;
+    unlockedPigmentIds.add(pigment.id);
+    StorageService.to.setInt(StorageKeys.coins, coins.value);
+    StorageService.to.setString(
+      StorageKeys.unlockedPigments,
+      unlockedPigmentIds.join(','),
+    );
+    return true;
+  }
+
+  bool setGemColorOverride(int slot, String pigmentId) {
+    final pigment = kPigments.where((p) => p.id == pigmentId).firstOrNull;
+    if (pigment == null || !isPigmentUnlocked(pigment)) return false;
+    gemColorOverrides[slot] = pigmentId;
+    StorageService.to.setString(
+      StorageKeys.gemColorOverrides,
+      encodeGemColorOverrides(gemColorOverrides),
+    );
+    return true;
+  }
+
+  void clearGemColorOverride(int slot) {
+    gemColorOverrides.remove(slot);
+    StorageService.to.setString(
+      StorageKeys.gemColorOverrides,
+      encodeGemColorOverrides(gemColorOverrides),
+    );
+  }
+
   /// Task #5: điểm cần vượt khi đang trong 1 lần Perfect Clear challenge
   /// (chụp trước khi chơi, vì [_saveBestScore] sẽ ghi đè `highScore` ngay khi
   /// thắng) — null khi không phải Perfect Clear.
@@ -703,6 +747,19 @@ class GameController extends GetxController {
             )
         ? storedFrame.id
         : kBoardFrames.first.id;
+    final validPigmentIds = kPigments.map((p) => p.id).toSet();
+    final storedPigments =
+        (StorageService.to.getString(StorageKeys.unlockedPigments) ?? '')
+            .split(',')
+            .where(validPigmentIds.contains)
+            .toSet()
+          ..add(kPigments.first.id);
+    unlockedPigmentIds.assignAll(storedPigments);
+    gemColorOverrides.assignAll(
+      decodeGemColorOverrides(
+        StorageService.to.getString(StorageKeys.gemColorOverrides),
+      )..removeWhere((_, id) => !validPigmentIds.contains(id)),
+    );
     weeklyGoalProgress.value = StorageService.to.getInt(
       StorageKeys.weeklyGoalProgress,
     );
@@ -1684,6 +1741,8 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.lastFeaturedWeekSeen);
     await store.remove(StorageKeys.featuredLevelScore);
     await store.remove(StorageKeys.activeBoardFrame);
+    await store.remove(StorageKeys.gemColorOverrides);
+    await store.remove(StorageKeys.unlockedPigments);
     for (var id = 1; id <= kLevelCount; id++) {
       await store.remove(StorageKeys.highScore(id));
       await store.remove(StorageKeys.star(id));
