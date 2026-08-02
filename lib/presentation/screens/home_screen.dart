@@ -552,13 +552,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Spacer(),
                 Padding(
                   padding: const EdgeInsets.only(bottom: NeonTheme.s16),
-                  child: Text(
-                    kCopyright,
-                    style: TextStyle(
-                      color: NeonTheme.ink.withValues(alpha: 0.45),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Column(
+                    children: [
+                      Text(
+                        kCopyright,
+                        style: TextStyle(
+                          color: NeonTheme.ink.withValues(alpha: 0.45),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        'v$kAppVersion+$kAppBuildNumber',
+                        style: TextStyle(
+                          color: NeonTheme.ink.withValues(alpha: 0.35),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

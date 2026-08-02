@@ -25,7 +25,7 @@ class NeonButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
-    final c = enabled ? color : const Color(0xFFB9B3CC);
+    final c = enabled ? color : NeonTheme.muted;
     // Nút kẹo: thân solid màu accent, viền đáy đậm hơn (bevel), bóng đổ chunky.
     final darker = Color.lerp(c, Colors.black, 0.22)!;
     return Semantics(

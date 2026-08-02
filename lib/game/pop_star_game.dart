@@ -206,6 +206,14 @@ class PopStarGame extends FlameGame {
   List<List<int?>>? _undoGrid;
   List<List<int>>? _undoLockGrid;
 
+  /// Snapshot điểm/combo tại thời điểm [_saveUndo] — thiếu phần này thì undo
+  /// chỉ hoàn tác bàn cờ mà giữ nguyên điểm vừa cộng, cho phép farm điểm vô
+  /// hạn (pop → undo giữ điểm → pop lại đúng nhóm đó → undo...).
+  int? _undoScore;
+  int? _undoComboCount;
+  double? _undoComboMultiplier;
+  int? _undoMovesUsed;
+
   /// I29: HP hiện tại từng boss tile trên bàn (id → HP), ngoài [colorGrid] —
   /// xem `lib/logic/boss_tile.dart`. Rỗng nếu màn không có boss tile.
   final Map<int, int> bossHp = {};
@@ -232,6 +240,14 @@ class PopStarGame extends FlameGame {
 
   /// Đang diễn hoạt → chặn tap để tránh chồng bước.
   bool _animating = false;
+
+  /// Codex review: tăng mỗi lần bắt đầu 1 chuỗi animation mới (set
+  /// `_animating = true`). TimerComponent hạ `_animating = false` phải chụp
+  /// giá trị này lúc lên lịch rồi so lại lúc chạy — nếu lệch nghĩa là một
+  /// animation MỚI đã đè lên (vd shuffle tự gọi `_checkEnd()` kích hoạt
+  /// `_clearAndCollapse()` do boss-decay-on-stuck) thì bỏ qua, tránh 2 timer
+  /// độc lập giành ghi `_animating` khiến khoá bị hạ sớm giữa animation khác.
+  int _animGen = 0;
 
   /// Đếm ngược cửa sổ combo; hết → reset combo ở controller.
   double _comboTimer = 0;
@@ -1004,6 +1020,7 @@ class PopStarGame extends FlameGame {
     final bossBroken = _chipAdjacentBossTiles(cells);
     chipAdjacentLocks(lockGrid, cells);
     _syncObstacleAndLockBlocks();
+    _spawnBombShockwave(_cellCenter(row, col));
     _clearAndCollapse(
       cells
         ..addAll(broken)
@@ -1089,6 +1106,10 @@ class PopStarGame extends FlameGame {
   /// đồng bộ colorGrid và kiểm tra kết thúc.
   void _clearAndCollapse(Set<Point<int>> cells) {
     _animating = true;
+    // Vô hiệu hoá timer hạ `_animating=false` của bất kỳ operation ngoài nào
+    // (shuffle/undo/rebuild) đã tự lên lịch trước đó rồi mới gọi `_checkEnd()`
+    // kích hoạt collapse này (vd shuffle xong vẫn kẹt bàn còn boss tile).
+    _animGen++;
     _maybeTriggerPunch(cells);
     _maybeTriggerShake(cells);
     if (cells.isNotEmpty) {
@@ -1119,11 +1140,13 @@ class PopStarGame extends FlameGame {
         radius,
       );
     }
-    // G9: pop nhóm lớn (20+ ô) x 10 particle/ô = spike hẳn số draw call.
-    // Giảm particle/ô khi nhóm lớn, giữ tổng toàn cụm quanh ~80.
+    // G9/A9: nhóm càng to càng "đã" (nhiều hạt hơn), nhưng vẫn trần tổng
+    // ngân sách hạt toàn cụm để tránh spike draw call khi clear 20-30+ ô.
+    final baseCount = (6 + (cells.length - 1) * 1.2).clamp(6, 16).round();
+    const totalBudget = 140;
     final burstCount = cells.length <= 8
-        ? 10
-        : (80 / cells.length).clamp(3, 10).round();
+        ? baseCount
+        : (totalBudget / cells.length).clamp(6, baseCount).round();
     for (final p in cells) {
       colorGrid[p.x][p.y] = null;
       final b = _blocks[p.x][p.y];
@@ -1249,6 +1272,19 @@ class PopStarGame extends FlameGame {
         color: Colors.white,
         maxRadius: cellSize * 0.9,
         maxAlpha: 0.35,
+      ),
+    );
+  }
+
+  /// E2-S6: 2 ring bung nối tiếp (cam rồi đỏ) tại tâm 3x3 của Bomb — tách hẳn
+  /// khỏi ring pop thường, tái dùng [_spawnRing] có sẵn (không component mới).
+  void _spawnBombShockwave(Vector2 center) {
+    _spawnRing(center, NeonTheme.orange, cellSize * 1.6);
+    add(
+      TimerComponent(
+        period: 0.08,
+        removeOnFinish: true,
+        onTick: () => _spawnRing(center, NeonTheme.red, cellSize * 2.0),
       ),
     );
   }
@@ -1617,25 +1653,45 @@ class PopStarGame extends FlameGame {
     _saveUndo();
     // F6a: obstacle không phải màu → giữ nguyên vị trí/độ bền, chỉ xáo màu thật.
     // I2: ô đang khoá cũng giữ nguyên (không xáo màu vào/ra chain tile).
-    final values = [
+    final movable = [
       for (var r = 0; r < rows; r++)
         for (var c = 0; c < cols; c++)
-          if ((colorGrid[r][c] ?? -1) >= 0 && lockGrid[r][c] == 0)
-            colorGrid[r][c]!,
+          if ((colorGrid[r][c] ?? -1) >= 0 && lockGrid[r][c] == 0) Point(r, c),
     ];
-    values.shuffle(_rng);
-    var i = 0;
-    for (var r = 0; r < rows; r++) {
-      for (var c = 0; c < cols; c++) {
-        final v = colorGrid[r][c];
-        if (v != null && v >= 0 && lockGrid[r][c] == 0) {
-          colorGrid[r][c] = values[i++];
-        }
+    // E2-S7: xáo chính các BlockComponent (không chỉ giá trị màu int) rồi bay
+    // tại chỗ sang vị trí mới — không phá huỷ/rơi lại từ ngoài bảng như trước.
+    final blocks = [for (final p in movable) _blocks[p.x][p.y]];
+    blocks.shuffle(_rng);
+    _animating = true;
+    final gen = ++_animGen;
+    for (var i = 0; i < movable.length; i++) {
+      final p = movable[i];
+      final b = blocks[i];
+      _blocks[p.x][p.y] = b;
+      colorGrid[p.x][p.y] = b?.colorIndex;
+      if (b == null) continue;
+      final target = _cellCenter(p.x, p.y);
+      if ((b.position - target).length2 > 0.01) {
+        b.add(
+          MoveToEffect(
+            target,
+            EffectController(duration: _fallDur, curve: Curves.easeOutBack),
+          ),
+        );
       }
     }
-    // A9: rebuild với animateIntro thay vì snap cứng — tái dùng đúng hiệu
-    // ứng rơi-vào-vị-trí đã có sẵn cho lúc vào level, cho cảm giác "xáo lại".
-    _rebuildBoard(animateIntro: true);
+    add(
+      TimerComponent(
+        period: _fallDur,
+        removeOnFinish: true,
+        // Codex review: chỉ hạ khoá nếu chưa bị `_checkEnd()` bên dưới kích
+        // hoạt 1 animation MỚI đè lên (vd bàn vẫn kẹt còn boss tile →
+        // `_clearAndCollapse` chạy tiếp, cần khoá lâu hơn `_fallDur` này).
+        onTick: () {
+          if (_animGen == gen) _animating = false;
+        },
+      ),
+    );
     _checkEnd();
     return true;
   }
@@ -1646,6 +1702,27 @@ class PopStarGame extends FlameGame {
     final savedLocks = _undoLockGrid;
     if (saved == null) return false;
     recordingValid = false;
+
+    // E2-S8: gom sẵn các BlockComponent đang sống (post-collapse) theo màu,
+    // trước khi ghi đè colorGrid — dùng làm nguồn bay ngược lại cho ô nào ở
+    // grid khôi phục vẫn giữ được (chỉ trôi dạt do collapse).
+    // ponytail: match theo colorIndex, không track ID vật lý từng viên —
+    // người chơi không phân biệt được 2 viên cùng màu nên chấp nhận được.
+    final pool = <int, List<BlockComponent>>{};
+    for (final row in _blocks) {
+      for (final b in row) {
+        if (b == null) continue;
+        // Codex review: huỷ effect còn dở trên block (vd `_swapFlip` từ
+        // `triggerSwap` gọi ngay trước đó — cố ý KHÔNG set `_animating` nên
+        // undo() không bị guard chặn, xem test I28 ở replay_recording_test).
+        // Nếu không huỷ, effect cũ hoàn tất muộn hơn sẽ tự ý ghi đè
+        // `colorIndex` (màu sau-swap) đè lên trạng thái vừa được undo khôi
+        // phục.
+        b.removeAll(b.children.whereType<Effect>().toList());
+        pool.putIfAbsent(b.colorIndex, () => []).add(b);
+      }
+    }
+
     colorGrid = saved;
     if (savedLocks != null) lockGrid = savedLocks;
     // I29: khôi phục HP boss tile đúng thời điểm snapshot — `bossHp` là
@@ -1668,8 +1745,86 @@ class PopStarGame extends FlameGame {
     _undoLockGrid = null;
     _undoBossHp = null;
     _undoCountdownRemaining = null;
-    // A9: tái dùng animateIntro cho hoàn tác, tránh bàn snap tức thì.
-    _rebuildBoard(animateIntro: true);
+    // Hoàn tác điểm/combo về đúng thời điểm snapshot — thiếu bước này thì
+    // pop → undo (giữ điểm) → pop lại đúng nhóm đó sẽ farm điểm vô hạn.
+    final savedScore = _undoScore;
+    if (savedScore != null) {
+      controller.score.value = savedScore;
+      controller.comboCount.value = _undoComboCount!;
+      controller.comboMultiplier.value = _undoComboMultiplier!;
+      controller.movesUsed.value = _undoMovesUsed!;
+    }
+    _undoScore = null;
+    _undoComboCount = null;
+    _undoComboMultiplier = null;
+    _undoMovesUsed = null;
+
+    clearHint();
+    _animating = true;
+    final gen = ++_animGen;
+    final material = materialForLevel(controller.currentLevel.id);
+    final next = List.generate(
+      rows,
+      (_) => List<BlockComponent?>.filled(cols, null),
+    );
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        final color = colorGrid[r][c];
+        if (color == null) continue;
+        final target = _cellCenter(r, c);
+        final candidates = pool[color];
+        final reused = (candidates != null && candidates.isNotEmpty)
+            ? candidates.removeLast()
+            : null;
+        if (reused != null) {
+          next[r][c] = reused;
+          if ((reused.position - target).length2 > 0.01) {
+            reused.add(
+              MoveToEffect(
+                target,
+                EffectController(duration: _fallDur, curve: Curves.easeOutBack),
+              ),
+            );
+          }
+        } else {
+          // Ô đã bị pop mất thật — không có "vị trí hiện tại" để bay từ đó,
+          // xuất hiện lại bằng scale-in (đảo ngược animation pop-biến-mất).
+          final b = BlockComponent(
+            colorIndex: color,
+            lockCount: lockGrid[r][c],
+            position: target,
+            size: Vector2.all(cellSize),
+            material: material,
+          )..scale = Vector2.zero();
+          add(b);
+          b.add(
+            ScaleEffect.to(
+              Vector2.all(1),
+              EffectController(duration: _fallDur, curve: Curves.easeOutBack),
+            ),
+          );
+          next[r][c] = b;
+        }
+      }
+    }
+    // Block thừa không map được vào ô nào ở grid khôi phục (hiếm, ví dụ
+    // obstacle đổi độ bền giữa lúc snapshot và lúc undo) hết chỗ đứng — bỏ.
+    for (final leftovers in pool.values) {
+      for (final b in leftovers) {
+        b.removeFromParent();
+      }
+    }
+    _blocks = next;
+    _syncObstacleAndLockBlocks();
+    add(
+      TimerComponent(
+        period: _fallDur,
+        removeOnFinish: true,
+        onTick: () {
+          if (_animGen == gen) _animating = false;
+        },
+      ),
+    );
     return true;
   }
 
@@ -1678,6 +1833,12 @@ class PopStarGame extends FlameGame {
     _undoLockGrid = lockGrid.map((row) => List<int>.from(row)).toList();
     _undoBossHp = Map<int, int>.from(bossHp);
     _undoCountdownRemaining = Map<int, int>.from(countdownRemaining);
+    if (!isReplay) {
+      _undoScore = controller.score.value;
+      _undoComboCount = controller.comboCount.value;
+      _undoComboMultiplier = controller.comboMultiplier.value;
+      _undoMovesUsed = controller.movesUsed.value;
+    }
   }
 
   void _checkEnd() {

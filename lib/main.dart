@@ -107,6 +107,7 @@ Future<void> loadAppVersion() async {
   try {
     final info = await PackageInfo.fromPlatform();
     if (info.version.isNotEmpty) kAppVersion = info.version;
+    if (info.buildNumber.isNotEmpty) kAppBuildNumber = info.buildNumber;
     _appVersionLoaded = true;
   } catch (_) {
     // giữ fallback trong app_info.dart, thử lại ở lần app() kế tiếp

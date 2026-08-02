@@ -5,10 +5,10 @@ Chưa có bản release nào — toàn bộ mục dưới đây cần verify l�
 
 ## A. Tự động
 
-- [ ] `flutter analyze` → 0 issue
-- [ ] `flutter test --exclude-tags slow` → all pass
-- [ ] `flutter test integration_test/ -d <device>` → pass
-- [ ] Build release: `flutter build apk --release` **và** `flutter build appbundle --release` → pass
+- [x] `flutter analyze` → 0 issue
+- [x] `flutter test --exclude-tags slow` → all pass
+- [x] `flutter test integration_test/ -d <device>` → pass (cần `--dart-define=E2E_TEST=true`)
+- [x] Build release: `flutter build apk --release` **và** `flutter build appbundle --release` → pass
 - [ ] Smoke AAB (bundletool → install-apks) trên device thật → không crash, không lộ raw i18n key
 
 ## B. Kiểm tay
@@ -32,8 +32,8 @@ Chưa có bản release nào — toàn bộ mục dưới đây cần verify l�
 
 ### B4. UI / Store sanity
 - [ ] Style bright-casual nhất quán mọi screen; label đọc rõ (stroke)
-- [ ] Version footer khớp `pubspec.yaml` + build number
-- [ ] App icon / splash đúng brand
-- [ ] Package id = `com.galaxyjoy.pop_star_blast` (Android), `com.galaxyjoy.popStarBlast*` (iOS)
-- [ ] Không còn tham chiếu `neon_jewels`: `grep -r neon_jewels lib android ios pubspec.yaml`
-- [ ] Không có ad SDK / quyền AD_ID thừa
+- [x] Version footer khớp `pubspec.yaml` + build number
+- [x] App icon / splash đúng brand
+- [x] Package id = `com.galaxyjoy.pop_star_blast` (Android), `com.galaxyjoy.popStarBlast*` (iOS)
+- [x] Không còn tham chiếu `neon_jewels`: `grep -r neon_jewels lib android ios pubspec.yaml`
+- [x] Không có ad SDK / quyền AD_ID thừa

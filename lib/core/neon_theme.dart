@@ -68,6 +68,13 @@ class NeonTheme {
   static const Color indigo = Color(0xFF6C7BFF);
   static const Color gold = Color(0xFFFFB300);
 
+  // Xám "disabled/muted" dùng chung cho nút/icon bị vô hiệu hoá.
+  static const Color muted = Color(0xFFC9C3DA);
+
+  // Node màn chưa mở khoá trên Level Select (viền/icon dùng chung 1 tông).
+  static const Color lockedBorder = Color(0xFFBFC7D6);
+  static const Color lockedFill = Color(0xFFEDEAF5);
+
   static const List<Color> gemColors = [
     cyan,
     magenta,

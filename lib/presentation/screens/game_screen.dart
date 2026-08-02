@@ -821,7 +821,7 @@ class _BoosterButton extends StatelessWidget {
             color: armed ? color : NeonTheme.card,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: enabled ? color : const Color(0xFFC9C3DA),
+              color: enabled ? color : NeonTheme.muted,
               width: 2.5,
             ),
             boxShadow: enabled ? NeonTheme.drop(y: 3, blur: 6) : null,
@@ -833,7 +833,7 @@ class _BoosterButton extends StatelessWidget {
                 icon,
                 color: armed
                     ? Colors.white
-                    : (enabled ? color : const Color(0xFFC9C3DA)),
+                    : (enabled ? color : NeonTheme.muted),
                 size: 20,
               ),
               const SizedBox(width: NeonTheme.s8),

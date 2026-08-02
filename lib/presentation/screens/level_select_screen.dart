@@ -753,7 +753,7 @@ class _LevelTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = locked
-        ? const Color(0xFFBFC7D6)
+        ? NeonTheme.lockedBorder
         : (isBoss ? NeonTheme.gold : NeonTheme.cyan);
     return GestureDetector(
       key: Key('level_tile_$id'),
@@ -761,7 +761,7 @@ class _LevelTile extends StatelessWidget {
       onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
-          color: locked ? const Color(0xFFEDEAF5) : NeonTheme.card,
+          color: locked ? NeonTheme.lockedFill : NeonTheme.card,
           shape: BoxShape.circle,
           border: Border.all(color: color, width: isBoss ? 4 : 3),
           boxShadow: locked ? null : NeonTheme.drop(y: 4, blur: 8),
@@ -775,7 +775,7 @@ class _LevelTile extends StatelessWidget {
                 if (locked)
                   const Icon(
                     Icons.lock_rounded,
-                    color: Color(0xFF9AA0B5),
+                    color: NeonTheme.lockedBorder,
                     size: 20,
                   )
                 else
@@ -811,7 +811,7 @@ class _LevelTile extends StatelessWidget {
                 child: Icon(
                   Icons.emoji_events_rounded,
                   size: 18,
-                  color: locked ? const Color(0xFF9AA0B5) : NeonTheme.gold,
+                  color: locked ? NeonTheme.lockedBorder : NeonTheme.gold,
                 ),
               ),
           ],
