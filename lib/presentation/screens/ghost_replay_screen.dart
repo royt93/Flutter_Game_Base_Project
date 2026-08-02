@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +43,7 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
   /// I37: mã dán vào bắt đầu bằng [challengeCodePrefix] — hiện UI mời chơi
   /// thay vì auto-play replay như mã ghost-replay bình thường.
   ChallengeCode? _challenge;
+  ChallengeSeedCode? _seedChallenge;
 
   @override
   void dispose() {
@@ -67,6 +69,19 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
 
   void _load() {
     final text = _codeCtrl.text.trim();
+    if (text.startsWith(challengeSeedCodePrefix)) {
+      final decoded = decodeChallengeSeedCode(text);
+      _timer?.cancel();
+      setState(() {
+        _invalid = decoded == null;
+        _finished = false;
+        _level = null;
+        _game = null;
+        _challenge = null;
+        _seedChallenge = decoded;
+      });
+      return;
+    }
     // I37: mã thách đấu dùng prefix rõ để phân biệt — không auto-play, chỉ
     // hiện tên người gửi + điểm cần vượt, người chơi tự bấm "Chơi ngay".
     if (text.startsWith(challengeCodePrefix)) {
@@ -78,6 +93,7 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
         _level = null;
         _game = null;
         _challenge = decoded;
+        _seedChallenge = null;
       });
       return;
     }
@@ -92,6 +108,7 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
         _level = null;
         _game = null;
         _challenge = null;
+        _seedChallenge = null;
       });
       return;
     }
@@ -106,6 +123,7 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
       _level = level;
       _game = PopStarGame(replayCtrl, seed: decoded.seed, isReplay: true);
       _challenge = null;
+      _seedChallenge = null;
     });
     _startPlayback(decoded);
   }
@@ -114,6 +132,24 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
     final challenge = _challenge;
     if (challenge == null) return;
     Get.find<GameController>().startChallenge(challenge);
+    Get.to(() => const GameScreen());
+  }
+
+  void _createSeedChallenge() {
+    final code = ChallengeSeedCode(
+      levelId: 1,
+      seed: Random.secure().nextInt(1 << 31),
+      score: 0,
+      senderName: Get.find<GameController>().playerName.value,
+    );
+    Get.find<GameController>().startSeedChallenge(code);
+    Get.to(() => const GameScreen());
+  }
+
+  void _playSeedChallenge() {
+    final challenge = _seedChallenge;
+    if (challenge == null) return;
+    Get.find<GameController>().startSeedChallenge(challenge);
     Get.to(() => const GameScreen());
   }
 
@@ -175,11 +211,23 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
                       ),
                       const SizedBox(height: NeonTheme.s16),
                       Center(
-                        child: NeonButton(
-                          label: 'ghost_replay_watch_button'.tr,
-                          color: NeonTheme.magenta,
-                          icon: Icons.play_circle_fill_rounded,
-                          onTap: _load,
+                        child: Wrap(
+                          spacing: NeonTheme.s8,
+                          runSpacing: NeonTheme.s8,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            NeonButton(
+                              label: 'ghost_replay_watch_button'.tr,
+                              color: NeonTheme.magenta,
+                              icon: Icons.play_circle_fill_rounded,
+                              onTap: _load,
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: _createSeedChallenge,
+                              icon: const Icon(Icons.qr_code_rounded),
+                              label: Text('seed_challenge_create'.tr),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: NeonTheme.s16),
@@ -224,6 +272,27 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
                             color: NeonTheme.gold,
                             icon: Icons.emoji_events_rounded,
                             onTap: _playChallenge,
+                          ),
+                        ),
+                      ],
+                      if (_seedChallenge != null) ...[
+                        Text(
+                          'seed_challenge_invite'.trParams({
+                            'sender': _seedChallenge!.senderName,
+                            'score': '${_seedChallenge!.score}',
+                          }),
+                          style: TextStyle(
+                            color: NeonTheme.ink,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: NeonTheme.s16),
+                        Center(
+                          child: NeonButton(
+                            label: 'challenge_play_button'.tr,
+                            color: NeonTheme.gold,
+                            icon: Icons.qr_code_rounded,
+                            onTap: _playSeedChallenge,
                           ),
                         ),
                       ],

@@ -58,3 +58,49 @@ ChallengeCode? decodeChallengeCode(String code) {
     return null;
   }
 }
+
+/// I58: seeded challenge codec, separate from the stable I37 `CH:` format.
+class ChallengeSeedCode {
+  const ChallengeSeedCode({
+    required this.levelId,
+    required this.seed,
+    required this.score,
+    required this.senderName,
+  });
+  final int levelId;
+  final int seed;
+  final int score;
+  final String senderName;
+}
+
+const String challengeSeedCodePrefix = 'CS:';
+
+String encodeChallengeSeedCode(ChallengeSeedCode data) {
+  final raw = '${data.levelId}|${data.seed}|${data.score}|${data.senderName}';
+  return '$challengeSeedCodePrefix${base64Url.encode(utf8.encode(raw))}';
+}
+
+ChallengeSeedCode? decodeChallengeSeedCode(String code) {
+  final trimmed = code.trim();
+  if (!trimmed.startsWith(challengeSeedCodePrefix)) return null;
+  try {
+    final raw = utf8.decode(
+      base64Url.decode(trimmed.substring(challengeSeedCodePrefix.length)),
+    );
+    final parts = raw.split('|');
+    if (parts.length < 4) return null;
+    final levelId = int.tryParse(parts[0]);
+    final seed = int.tryParse(parts[1]);
+    final score = int.tryParse(parts[2]);
+    if (levelId == null || levelId < 1 || levelId > kLevelCount) return null;
+    if (seed == null || seed < 0 || score == null || score < 0) return null;
+    return ChallengeSeedCode(
+      levelId: levelId,
+      seed: seed,
+      score: score,
+      senderName: parts.sublist(3).join('|'),
+    );
+  } catch (_) {
+    return null;
+  }
+}

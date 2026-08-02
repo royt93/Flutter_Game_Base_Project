@@ -282,6 +282,13 @@ class AppTranslations extends Translations {
     'duel_player1_wins': 'Player 1 wins!',
     'duel_player2_wins': 'Player 2 wins!',
     'duel_draw': 'It is a draw!',
+    // I58 — seeded QR challenge card.
+    'seed_challenge_create': 'Create QR Challenge',
+    'seed_challenge_invite': '@sender challenges you to beat @score points.',
+    'seed_challenge_card_score': 'Score to beat: @score',
+    'seed_challenge_share_text': 'Scan or paste this challenge code: @code',
+    'seed_challenge_win': 'You beat the challenge!',
+    'seed_challenge_lose': 'Challenge not beaten yet.',
     // W25.2 — Câu luật thắng 1 dòng, hiện dưới label mở-màn mỗi mode.
     'rule_boss': 'Defeat the Boss before you run out of moves',
     'rule_rhythm': 'Match on the beat to keep your groove',

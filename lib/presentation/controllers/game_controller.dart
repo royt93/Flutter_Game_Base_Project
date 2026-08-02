@@ -470,11 +470,21 @@ class GameController extends GetxController {
   /// không có thách đấu đang chơi.
   final challengeWon = Rxn<bool>();
 
+  /// I58: seeded QR challenge. score=0 marks the creator's first run.
+  final activeSeedChallenge = Rxn<ChallengeSeedCode>();
+  final seedChallengeWon = Rxn<bool>();
+
   /// Bắt đầu 1 level qua mã thách đấu — dùng nguyên [startLevel] (board
   /// random bình thường, không preset/replay) rồi gắn thêm mục tiêu so điểm.
   void startChallenge(ChallengeCode code) {
     startLevel(code.levelId);
     activeChallenge.value = code;
+  }
+
+  void startSeedChallenge(ChallengeSeedCode code) {
+    startPuzzleLevel(generateDailyChallengeGrid(code.seed));
+    activeSeedChallenge.value = code;
+    seedChallengeWon.value = null;
   }
 
   /// Public: [AchievementsScreen] dùng để hiển thị tiến độ mốc chưa mở khoá.
@@ -1093,6 +1103,8 @@ class GameController extends GetxController {
     craftRewardType.value = null;
     activeChallenge.value = null;
     challengeWon.value = null;
+    activeSeedChallenge.value = null;
+    seedChallengeWon.value = null;
   }
 
   /// Task #5: replay level đã qua ít nhất 1 sao, mục tiêu vượt best score
@@ -1453,6 +1465,9 @@ class GameController extends GetxController {
     }
     if (mode.value == GameMode.puzzleLab ||
         mode.value == GameMode.passAndPlay) {
+      if (activeSeedChallenge.value case final challenge?) {
+        seedChallengeWon.value = score.value > challenge.score;
+      }
       ended.value = true;
       return; // không thưởng coin/sao/unlock/best-score
     }

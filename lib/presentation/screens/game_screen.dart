@@ -997,8 +997,28 @@ class _Overlay extends StatelessWidget {
             // activeChallenge (startChallenge luôn gọi startLevel).
             content: gameCtrl.activeChallenge.value != null
                 ? _challengeResultBanner(gameCtrl)
+                : gameCtrl.activeSeedChallenge.value != null
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (gameCtrl.activeSeedChallenge.value!.score > 0)
+                        Text(
+                          gameCtrl.seedChallengeWon.value == true
+                              ? 'seed_challenge_win'.tr
+                              : 'seed_challenge_lose'.tr,
+                        ),
+                      const SizedBox(height: NeonTheme.s8),
+                      gsc.buildChallengeQrCard(),
+                    ],
+                  )
                 : null,
             actions: [
+              if (gameCtrl.activeSeedChallenge.value != null)
+                NeonDialogAction(
+                  label: 'share_challenge'.tr,
+                  color: NeonTheme.purple,
+                  onTap: gsc.shareChallenge,
+                ),
               NeonDialogAction(
                 label: 'menu'.tr,
                 color: NeonTheme.cyan,
