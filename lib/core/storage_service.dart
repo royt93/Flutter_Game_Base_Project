@@ -31,6 +31,8 @@ class StorageKeys {
   // F10: swap (đổi màu 2 ô), freeze (chặn giảm bền obstacle N lượt).
   static const String swapCount = 'swap_count';
   static const String freezeCount = 'freeze_count';
+  // I55: streak freeze — bảo vệ login streak (I48) khi lỡ đúng 1 ngày.
+  static const String streakFreezeCount = 'streak_freeze_count';
 
   // F7 Star road: bitmask rương đã claim (bit i = mốc thứ i).
   static const String claimedChests = 'claimed_chests';

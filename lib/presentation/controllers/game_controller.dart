@@ -125,6 +125,8 @@ class GameController extends GetxController {
   final rainbowCount = 0.obs;
   final swapCount = 0.obs;
   final freezeCount = 0.obs;
+  // I55: token bảo vệ login streak, mua qua cửa hàng như booster thường.
+  final streakFreezeCount = 0.obs;
 
   /// I5: undo đầu tiên mỗi màn miễn phí, không trừ `undoCount`. F14: perk
   /// `extra_undo` active thì cộng thêm 1 (2 lượt undo miễn phí).
@@ -584,6 +586,9 @@ class GameController extends GetxController {
     rainbowCount.value = StorageService.to.getInt(StorageKeys.rainbowCount);
     swapCount.value = StorageService.to.getInt(StorageKeys.swapCount);
     freezeCount.value = StorageService.to.getInt(StorageKeys.freezeCount);
+    streakFreezeCount.value = StorageService.to.getInt(
+      StorageKeys.streakFreezeCount,
+    );
     unlockedLevel.value = StorageService.to.getInt(
       StorageKeys.unlockedLevel,
       def: 1,
@@ -856,11 +861,13 @@ class GameController extends GetxController {
       );
       return;
     }
-    final newStreak = nextLoginStreak(
+    final result = nextLoginStreakWithFreeze(
       previousEpochDay: prevDay,
       todayEpochDay: today,
       previousStreak: prevStreak,
+      hasFreezeAvailable: streakFreezeCount.value > 0,
     );
+    final newStreak = result.streak;
     var claimedMask = StorageService.to.getInt(
       StorageKeys.loginStreakClaimedMask,
     );
@@ -872,6 +879,13 @@ class GameController extends GetxController {
     StorageService.to.setInt(StorageKeys.loginStreakCount, newStreak);
     StorageService.to.setInt(StorageKeys.lastLoginEpochDay, today);
     StorageService.to.setInt(StorageKeys.loginStreakClaimedMask, claimedMask);
+    if (result.usedFreeze) {
+      streakFreezeCount.value--;
+      StorageService.to.setInt(
+        StorageKeys.streakFreezeCount,
+        streakFreezeCount.value,
+      );
+    }
   }
 
   /// Ngày trong cycle 7 ngày hiện tại (1..7) ứng với [loginStreakCount].
@@ -1530,6 +1544,7 @@ class GameController extends GetxController {
   static const rainbowPrice = 80;
   static const swapPrice = 50;
   static const freezePrice = 70;
+  static const streakFreezePrice = 100;
 
   bool _buy(int price, RxInt count, String key) {
     if (coins.value < price) return false;
@@ -1548,6 +1563,8 @@ class GameController extends GetxController {
       _buy(rainbowPrice, rainbowCount, StorageKeys.rainbowCount);
   bool buySwap() => _buy(swapPrice, swapCount, StorageKeys.swapCount);
   bool buyFreeze() => _buy(freezePrice, freezeCount, StorageKeys.freezeCount);
+  bool buyStreakFreeze() =>
+      _buy(streakFreezePrice, streakFreezeCount, StorageKeys.streakFreezeCount);
 
   // I22 Achievements: gọi ở cuối mỗi nhánh dùng booster thành công.
   void _recordBoosterUsed() {

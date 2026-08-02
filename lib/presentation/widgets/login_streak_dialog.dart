@@ -41,7 +41,24 @@ Future<void> showLoginStreakDialog(
                 ),
             ],
           ),
-          const SizedBox(height: NeonTheme.s24),
+          const SizedBox(height: NeonTheme.s16),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.shield_moon_rounded, color: NeonTheme.blue, size: 18),
+              const SizedBox(width: NeonTheme.s8),
+              Text(
+                '${'booster_streak_freeze_label'.tr}: '
+                '${gameCtrl.streakFreezeCount.value}',
+                style: TextStyle(
+                  color: NeonTheme.inkSoft,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: NeonTheme.s16),
           NeonDialogButton(
             action: NeonDialogAction(
               label: canClaim

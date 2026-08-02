@@ -115,6 +115,21 @@ class ShopScreen extends StatelessWidget {
                         onBuy: gameCtrl.buyFreeze,
                       ),
                     ),
+                    const SizedBox(height: NeonTheme.s16),
+                    Obx(
+                      () => _BoosterRow(
+                        icon: Icons.shield_moon_rounded,
+                        color: NeonTheme.blue,
+                        label: 'booster_streak_freeze_label'.tr,
+                        desc: 'booster_streak_freeze_desc'.tr,
+                        count: gameCtrl.streakFreezeCount.value,
+                        price: GameController.streakFreezePrice,
+                        canAfford:
+                            gameCtrl.coins.value >=
+                            GameController.streakFreezePrice,
+                        onBuy: gameCtrl.buyStreakFreeze,
+                      ),
+                    ),
                   ],
                 ),
               ),

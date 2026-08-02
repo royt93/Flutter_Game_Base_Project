@@ -231,6 +231,9 @@ class AppTranslations extends Translations {
           // Backup/Restore: backup_restart_failed (en+vi ở _extraEn/_extraVi,
           // 20 ngôn ngữ còn lại ở _w59ByLang).
           ...?_w59ByLang[e.key],
+          // I55 — Streak Freeze Token: booster_streak_freeze_label/desc
+          // (en+vi ở _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w60ByLang).
+          ...?_w60ByLang[e.key],
         },
     };
   }
@@ -842,6 +845,10 @@ class AppTranslations extends Translations {
     'booster_freeze_label': 'Freeze',
     'booster_hint_label': 'Hint',
     'booster_freeze_desc': 'Obstacles stop losing durability for @n moves.',
+    // I55 — Streak Freeze Token
+    'booster_streak_freeze_label': 'Streak Freeze',
+    'booster_streak_freeze_desc':
+        'Protects your login streak once when you miss exactly 1 day.',
     // X5 — Home: semanticLabel cho icon chế độ chơi + màn phụ
     'mode_time_attack_label': 'Time Attack Mode',
     'mode_zen_label': 'Zen Mode',
@@ -1712,6 +1719,10 @@ class AppTranslations extends Translations {
     'booster_freeze_label': 'Đóng Băng',
     'booster_hint_label': 'Gợi Ý',
     'booster_freeze_desc': 'Chướng ngại vật ngừng giảm độ bền trong @n lượt.',
+    // I55 — Streak Freeze Token
+    'booster_streak_freeze_label': 'Đóng Băng Streak',
+    'booster_streak_freeze_desc':
+        'Bảo vệ streak đăng nhập một lần khi bạn lỡ đúng 1 ngày.',
     // X5 — Home: semanticLabel cho icon chế độ chơi + màn phụ
     'mode_time_attack_label': 'Chế độ Đấu thời gian',
     'mode_zen_label': 'Chế độ Thư giãn',
@@ -29385,6 +29396,124 @@ class AppTranslations extends Translations {
       'backup_import_confirm_msg':
           'এটি এই কোডের ডেটা দিয়ে আপনার বর্তমান অগ্রগতি ওভাররাইট করবে। '
           'অ্যাপটি পুনরায় চালু হবে।',
+    },
+  };
+
+  /// I55 — Streak Freeze Token: booster_streak_freeze_label/desc (en+vi ở
+  /// _extraEn/_extraVi, 20 ngôn ngữ còn lại ở đây).
+  static const Map<String, Map<String, String>> _w60ByLang = {
+    'es_ES': {
+      'booster_streak_freeze_label': 'Congelación de racha',
+      'booster_streak_freeze_desc':
+          'Protege tu racha de inicio de sesión una vez cuando te '
+          'pierdas exactamente 1 día.',
+    },
+    'fr_FR': {
+      'booster_streak_freeze_label': 'Gel de série',
+      'booster_streak_freeze_desc':
+          'Protège votre série de connexion une fois lorsque vous '
+          'manquez exactement 1 jour.',
+    },
+    'de_DE': {
+      'booster_streak_freeze_label': 'Serien-Einfrieren',
+      'booster_streak_freeze_desc':
+          'Schützt deine Login-Serie einmal, wenn du genau 1 Tag '
+          'verpasst.',
+    },
+    'pt_BR': {
+      'booster_streak_freeze_label': 'Congelar sequência',
+      'booster_streak_freeze_desc':
+          'Protege sua sequência de login uma vez quando você perder '
+          'exatamente 1 dia.',
+    },
+    'ru_RU': {
+      'booster_streak_freeze_label': 'Заморозка серии',
+      'booster_streak_freeze_desc':
+          'Защищает вашу серию входов один раз, если вы пропустите '
+          'ровно 1 день.',
+    },
+    'zh_CN': {
+      'booster_streak_freeze_label': '连胜冻结',
+      'booster_streak_freeze_desc': '当你恰好错过1天时，保护你的登录连续记录一次。',
+    },
+    'ja_JP': {
+      'booster_streak_freeze_label': 'ストリークフリーズ',
+      'booster_streak_freeze_desc': 'ログインストリークをちょうど1日逃したときに1回守ります。',
+    },
+    'ko_KR': {
+      'booster_streak_freeze_label': '스트릭 프리즈',
+      'booster_streak_freeze_desc': '정확히 하루를 놓쳤을 때 로그인 연속 기록을 한 번 보호합니다.',
+    },
+    'it_IT': {
+      'booster_streak_freeze_label': 'Congelamento serie',
+      'booster_streak_freeze_desc':
+          'Protegge la tua serie di accessi una volta quando salti '
+          'esattamente 1 giorno.',
+    },
+    'id_ID': {
+      'booster_streak_freeze_label': 'Pembekuan Beruntun',
+      'booster_streak_freeze_desc':
+          'Melindungi rentetan login Anda sekali saat Anda melewatkan '
+          'tepat 1 hari.',
+    },
+    'th_TH': {
+      'booster_streak_freeze_label': 'แช่แข็งสตรีค',
+      'booster_streak_freeze_desc':
+          'ปกป้องสตรีคการเข้าสู่ระบบของคุณหนึ่งครั้งเมื่อคุณพลาดไปพอดี 1 วัน',
+    },
+    'hi_IN': {
+      'booster_streak_freeze_label': 'स्ट्रीक फ़्रीज़',
+      'booster_streak_freeze_desc':
+          'जब आप ठीक 1 दिन चूकते हैं तो यह आपकी लॉगिन स्ट्रीक की एक बार '
+          'सुरक्षा करता है।',
+    },
+    'ar_SA': {
+      'booster_streak_freeze_label': 'تجميد التتابع',
+      'booster_streak_freeze_desc':
+          'يحمي سلسلة تسجيل الدخول الخاصة بك مرة واحدة عند تفويت يوم '
+          'واحد بالضبط.',
+    },
+    'tr_TR': {
+      'booster_streak_freeze_label': 'Seri Dondurma',
+      'booster_streak_freeze_desc':
+          'Tam olarak 1 gün kaçırdığınızda giriş serinizi bir kez '
+          'korur.',
+    },
+    'nl_NL': {
+      'booster_streak_freeze_label': 'Reeks bevriezen',
+      'booster_streak_freeze_desc':
+          'Beschermt je inlogreeks één keer wanneer je precies 1 dag '
+          'mist.',
+    },
+    'pl_PL': {
+      'booster_streak_freeze_label': 'Zamrożenie passy',
+      'booster_streak_freeze_desc':
+          'Chroni Twoją passę logowań raz, gdy ominiesz dokładnie 1 '
+          'dzień.',
+    },
+    'fil_PH': {
+      'booster_streak_freeze_label': 'Pag-freeze ng Streak',
+      'booster_streak_freeze_desc':
+          'Pinoprotektahan ang iyong login streak nang minsan kapag '
+          'nakaligtaan mo nang eksaktong 1 araw.',
+    },
+    'ms_MY': {
+      'booster_streak_freeze_label': 'Pembekuan Streak',
+      'booster_streak_freeze_desc':
+          'Melindungi streak log masuk anda sekali apabila anda '
+          'terlepas tepat 1 hari.',
+    },
+    'uk_UA': {
+      'booster_streak_freeze_label': 'Заморозка серії',
+      'booster_streak_freeze_desc':
+          'Захищає вашу серію входів один раз, якщо ви пропустите '
+          'рівно 1 день.',
+    },
+    'bn_BD': {
+      'booster_streak_freeze_label': 'স্ট্রিক ফ্রিজ',
+      'booster_streak_freeze_desc':
+          'আপনি ঠিক ১ দিন মিস করলে এটি আপনার লগইন স্ট্রিক একবার রক্ষা '
+          'করে।',
     },
   };
 }
