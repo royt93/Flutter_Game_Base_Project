@@ -38,6 +38,7 @@ import 'perks_screen.dart';
 import 'season_screen.dart';
 import 'settings_screen.dart';
 import 'shop_screen.dart';
+import 'sky_shrine_screen.dart';
 import 'star_road_screen.dart';
 import 'stats_screen.dart';
 import 'trophy_room_screen.dart';
@@ -389,6 +390,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: NeonTheme.indigo,
               label: 'drawer_board_frame_label'.tr,
               onTap: () => showBoardFramePickerDialog(context, gameCtrl),
+            ),
+            _drawerTile(
+              icon: Icons.auto_awesome_rounded,
+              color: NeonTheme.cyan,
+              label: 'sky_shrine_title'.tr,
+              onTap: () => Get.to(() => const SkyShrineScreen()),
             ),
           ],
         ),

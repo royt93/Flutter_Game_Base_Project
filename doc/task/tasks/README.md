@@ -72,6 +72,17 @@ quyền, floor/UX) dưới đây đã được user chốt. Ý tưởng còn l�
 | [I15](I15-day-night-toggle.md) | Day/Night theme toggle | 5 | Could |
 | [I16](I16-aurora-background-shader.md) | Aurora background shader | 8 | Could |
 | [I17](I17-tile-material-variants.md) | Tile material variants per world | 8 | Could |
+| [I55](I55-streak-freeze-token.md) | Streak Freeze Token | 3 | Should |
+| [I56](I56-local-smart-reminder.md) | Local Smart Reminder | 3 | Should |
+| [I57](I57-shareable-score-card.md) | Shareable Score Card | 3 | Could |
+| [I58](I58-challenge-card-qr-battle.md) | Challenge Card QR Battle | 5 | Could |
+| [I59](I59-pass-and-play-duel.md) | Pass-and-Play Duel | 5 | Could |
+| [I60](I60-treasure-map-expedition.md) | Treasure Map & Expedition | 5 | Could |
+| [I61](I61-boss-breakout-event-raid.md) | Boss Breakout Event Raid | 8 | Could |
+| [I62](I62-color-alchemy-lab.md) | Color Alchemy Lab | 3 | Could |
+| [I63](I63-cosmetic-mystery-crate.md) | Cosmetic Mystery Crate | 5 | Could |
+| [I64](I64-star-constellation-sky-shrine.md) | Star Constellation & Sky Shrine | 5 | Could |
+| [I65](I65-star-pet-companion-habitat.md) | Star Pet & Companion Habitat | 8 | Could |
 
 ### Floor/UX baseline (X)
 | ID | Task | SP | Pri |
@@ -133,6 +144,18 @@ I1 → I3 → I14 → I17 → I15 → I16 (Deps G5) → F15 → X6 (Deps F15) �
 > G5 đã xong (đã có). F15 (photo mode) làm trước X6 (share invite tái dùng hạ
 > tầng share của F15). F14 (relic/perk, chẻ nhỏ 13đ) nặng nhất, cần F4 (world)
 > + F7 (star road) ổn định, làm cuối cùng toàn bộ backlog.
+
+**Wave 11 — Retention + social-lite đợt 4 (I55-I65, làm sau khi Wave 9/10 ổn
+định):** I55 → I56 → I57 → I62 → I64 → I58 → I59 → I60 → I63 → I61 → I65.
+> I55 (streak freeze) và I56 (local reminder) độc lập, rẻ, ưu tiên trước vì
+> Should-priority. I57 (score card) tái dùng F15, làm ngay sau khi có nhu cầu
+> share. I62 (color alchemy) và I64 (sky shrine) độc lập, cosmetic thuần, xen
+> kẽ được. I58 (QR battle) mở rộng I37, cần sau I37 ổn định. I59 (pass-and-play)
+> độc lập hoàn toàn. I60 (treasure map) mở rộng I33 (gauntlet modifier) — làm
+> sau I33. I63 (mystery crate) cần CẢ 4 hệ cosmetic (I30/I51/I52/I54) đã ổn
+> định — làm gần cuối nhóm. I61 (boss raid, SP=8, hạ tầng lịch sự kiện mới
+> hoàn toàn) và I65 (star pet, SP=8, currency+timestamp mới) là 2 task nặng
+> nhất — làm cuối cùng của wave, có thể chẻ nhỏ nếu cần.
 
 Loại trừ khỏi mọi wave: Option D (monetize/ads/IAP/analytics infra) — I19/I20
 trong `IDEAS.md` giữ nguyên "chưa chốt", không có task file tương ứng.

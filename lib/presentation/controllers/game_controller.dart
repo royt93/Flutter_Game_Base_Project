@@ -482,6 +482,30 @@ class GameController extends GetxController {
   final totalStars = 0.obs;
   final claimedChestMask = 0.obs;
 
+  // I64 Star Constellation & Sky Shrine
+  final starSeedCount = 0.obs;
+  final claimedStarSeedMask = 0.obs;
+  final activeSkyAura = 'default'.obs;
+
+  bool isStarSeedClaimed(int index) =>
+      (claimedStarSeedMask.value >> index) & 1 == 1;
+
+  void claimStarSeedForConstellation(int index) {
+    if (isStarSeedClaimed(index)) return;
+    claimedStarSeedMask.value |= 1 << index;
+    starSeedCount.value += 1;
+    StorageService.to.setInt(
+      StorageKeys.claimedStarSeedMask,
+      claimedStarSeedMask.value,
+    );
+    StorageService.to.setInt(StorageKeys.starSeedCount, starSeedCount.value);
+  }
+
+  void setActiveSkyAura(String auraId) {
+    activeSkyAura.value = auraId;
+    StorageService.to.setString(StorageKeys.activeSkyAura, auraId);
+  }
+
   /// I26 (task #18): tên hiển thị dùng để tạo/hiển thị mã "so tài" bạn bè —
   /// không phải progress nên KHÔNG bị xoá trong [resetProgress].
   final playerName = ''.obs;
@@ -703,6 +727,13 @@ class GameController extends GetxController {
             )
         ? storedFrame.id
         : kBoardFrames.first.id;
+    // I64 Star Constellation & Sky Shrine
+    starSeedCount.value = StorageService.to.getInt(StorageKeys.starSeedCount);
+    claimedStarSeedMask.value = StorageService.to.getInt(
+      StorageKeys.claimedStarSeedMask,
+    );
+    activeSkyAura.value =
+        StorageService.to.getString(StorageKeys.activeSkyAura) ?? 'default';
     weeklyGoalProgress.value = StorageService.to.getInt(
       StorageKeys.weeklyGoalProgress,
     );

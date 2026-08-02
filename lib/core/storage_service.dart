@@ -153,6 +153,12 @@ class StorageKeys {
   // 'classic') — không persist "đã mở khoá" vì suy trực tiếp từ prestigeTier
   // (I27) + unlockedAchievements (I22) đã có sẵn.
   static const String activeBoardFrame = 'active_board_frame';
+
+  // I64 Star Constellation & Sky Shrine: Star Seed currency, mask chòm sao đã
+  // nhận Star Seed, và id hiệu ứng aura đang chọn.
+  static const String starSeedCount = 'star_seed_count';
+  static const String claimedStarSeedMask = 'claimed_star_seed_mask';
+  static const String activeSkyAura = 'active_sky_aura';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).
