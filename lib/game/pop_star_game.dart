@@ -735,7 +735,7 @@ class PopStarGame extends FlameGame {
         ? adjustedScore
         : controller.registerPop(adjustedScore, groupSize: group.length);
     _comboTimer =
-        controller.gauntletComboWindowOverride ?? GameController.comboWindow;
+        controller.activeComboWindowOverride ?? GameController.comboWindow;
     final gemColor = NeonTheme
         .gemColors[(colorGrid[row][col] ?? 0) % NeonTheme.gemColors.length];
     _spawnScorePopup(
@@ -921,7 +921,7 @@ class PopStarGame extends FlameGame {
             groupSize: cells.length,
           );
     _comboTimer =
-        controller.gauntletComboWindowOverride ?? GameController.comboWindow;
+        controller.activeComboWindowOverride ?? GameController.comboWindow;
     final gemColor = NeonTheme
         .gemColors[(colorGrid[row][col] ?? 0) % NeonTheme.gemColors.length];
     _spawnScorePopup(

@@ -187,17 +187,17 @@ class GameController extends GetxController {
   List<List<int>>? gauntletGrid;
   GauntletModifier? activeGauntletModifier;
   GauntletModifier? activeTreasureMapModifier;
+  GauntletModifier? activeEndlessModifier;
 
-  /// I33: combo timer rút ngắn khi đang chơi Gauntlet với modifier
-  /// `shortCombo` — `null` ngoài mode Gauntlet để tránh giá trị cũ còn sót
-  /// lại sau khi đổi sang mode khác (xem [PopStarGame]).
-  double? get gauntletComboWindowOverride => mode.value == GameMode.gauntlet
-      ? activeGauntletModifier?.comboWindowOverride
-      : null;
+  /// I69: combo timer rút ngắn khi đang chơi với modifier `shortCombo`
+  /// (đọc qua [activeGameplayModifier]) — `null` nếu mode không có override.
+  double? get activeComboWindowOverride =>
+      activeGameplayModifier?.comboWindowOverride;
 
   GauntletModifier? get activeGameplayModifier => switch (mode.value) {
     GameMode.gauntlet => activeGauntletModifier,
     GameMode.treasureMap => activeTreasureMapModifier,
+    GameMode.endless => activeEndlessModifier,
     _ => null,
   };
 
@@ -1401,7 +1401,11 @@ class GameController extends GetxController {
   void startEndless() {
     _endlessBoardIndex = 0;
     mode.value = GameMode.endless;
-    currentLevelRx.value = endlessLevelForIndex(_endlessBoardIndex);
+    activeEndlessModifier = modifierForDay(_todayEpochDay());
+    currentLevelRx.value = endlessLevelForIndex(
+      _endlessBoardIndex,
+      modifier: activeEndlessModifier,
+    );
     score.value = 0;
     starsEarned.value = 0;
     ended.value = false;
@@ -1688,7 +1692,10 @@ class GameController extends GetxController {
   /// điểm tích luỹ. Gọi từ [PopStarGame] khi `remaining == 0` ở mode endless.
   PopLevel advanceEndlessBoard() {
     _endlessBoardIndex++;
-    final next = endlessLevelForIndex(_endlessBoardIndex);
+    final next = endlessLevelForIndex(
+      _endlessBoardIndex,
+      modifier: activeEndlessModifier,
+    );
     currentLevelRx.value = next;
     return next;
   }
@@ -1988,9 +1995,8 @@ class GameController extends GetxController {
 
   void useUndo() {
     if (mode.value == GameMode.bossRush) return;
-    // I33: modifier "no_undo" khoá hẳn undo cho ván Gauntlet hôm nay.
-    if (mode.value == GameMode.gauntlet &&
-        activeGauntletModifier?.disableUndo == true) {
+    // I33/I69: modifier "no_undo" khoá hẳn undo cho ván chơi.
+    if (activeGameplayModifier?.disableUndo == true) {
       return;
     }
     if (activeGame == null) return;

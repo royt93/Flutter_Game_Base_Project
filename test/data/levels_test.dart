@@ -1,5 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pop_star_blast/data/gauntlet_modifiers.dart';
 import 'package:pop_star_blast/data/levels.dart';
+import 'package:pop_star_blast/logic/pop_collapse.dart';
 
 void main() {
   group('kLevels', () {
@@ -188,6 +191,26 @@ void main() {
       expect(lv.rows, 14);
       expect(lv.cols, 14);
       expect(lv.colorCount, 8);
+    });
+
+    test('I69: áp dụng colorCountOverride và gravityOverride từ modifier', () {
+      const modifier = GauntletModifier(
+        id: 'test_mod',
+        icon: Icons.star,
+        nameKey: 'test',
+        descKey: 'test',
+        colorCountOverride: 4,
+        gravityOverride: GravityDirection.up,
+      );
+      final lv = endlessLevelForIndex(100, modifier: modifier);
+      expect(lv.colorCount, 4);
+      expect(lv.gravityDirection, GravityDirection.up);
+    });
+
+    test('I69: modifier default null giữ nguyên hành vi cũ', () {
+      final lv = endlessLevelForIndex(0);
+      expect(lv.colorCount, 4);
+      expect(lv.gravityDirection, GravityDirection.down);
     });
   });
 
