@@ -642,7 +642,7 @@ class _AchievementUnlockOverlay extends StatelessWidget {
                 color: NeonTheme.gold,
                 icon: Icons.emoji_events_rounded,
                 message:
-                    '${a.titleKey.tr}\n${a.descKey.tr}\n+${a.coinReward} 🪙',
+                    '${a.titleKey.tr}\n${a.descKey.trParams({'n': '${a.threshold}'})}\n+${a.coinReward} 🪙',
                 actions: [
                   NeonDialogAction(
                     label: 'ok'.tr,

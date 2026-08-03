@@ -189,6 +189,13 @@ class StorageKeys {
   static const String starDustCount = 'star_dust_count';
   static const String starOwnedPets = 'star_owned_pets';
   static const String lastPetCollectTimestampMs = 'last_pet_collect_ms';
+
+  // I66 Clan Lite: đóng góp tuần (reset theo tuần, mirror weeklyGoalWeek) +
+  // đóng góp lifetime (không reset) + tuần/trạng thái đã nhận thưởng pool.
+  static const String clanContribWeek = 'clan_contrib_week';
+  static const String clanContribTotal = 'clan_contrib_total';
+  static const String clanGoalWeek = 'clan_goal_week';
+  static const String clanGoalClaimedWeek = 'clan_goal_claimed_week';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

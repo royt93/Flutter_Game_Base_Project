@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:pop_star_blast/core/storage_service.dart';
 import 'package:pop_star_blast/data/burst_styles.dart';
+import 'package:pop_star_blast/data/clan.dart';
 import 'package:pop_star_blast/data/combo_text_styles.dart';
 import 'package:pop_star_blast/data/gauntlet_modifiers.dart';
 import 'package:pop_star_blast/data/levels.dart';
@@ -1653,6 +1654,87 @@ void main() {
         await ctrl.resetProgress();
         expect(ctrl.weeklyGoalProgress.value, 0);
         expect(ctrl.weeklyGoalClaimed, isFalse);
+      },
+    );
+  });
+
+  group('I66 Clan Lite', () {
+    GameController relaunch() {
+      Get.delete<GameController>(force: true);
+      return Get.put(GameController(), permanent: true);
+    }
+
+    test('mới cài app → đóng góp 0, chưa nhận thưởng pool', () {
+      expect(ctrl.clanContribWeek.value, 0);
+      expect(ctrl.clanContribTotal.value, 0);
+      expect(ctrl.clanGoalClaimed, isFalse);
+    });
+
+    test('registerPop cộng dồn đóng góp clan theo groupSize, mọi mode', () {
+      ctrl.registerPop(10, groupSize: 4);
+      expect(ctrl.clanContribWeek.value, 4);
+      expect(ctrl.clanContribTotal.value, 4);
+      ctrl.registerPop(20, groupSize: 3);
+      expect(ctrl.clanContribWeek.value, 7);
+      expect(ctrl.clanContribTotal.value, 7);
+    });
+
+    test('claim khi pool cả clan chưa đủ target → false, không cộng xu', () {
+      final botsSum = clanPoolTotal(ctrl.currentWeekIndex, 0);
+      final missing = clanGoalTarget - botsSum;
+      if (missing > 1) ctrl.addClanContribution(missing - 1);
+      expect(ctrl.clanPoolThisWeek, lessThan(clanGoalTarget));
+      expect(ctrl.claimClanGoalReward(), isFalse);
+      expect(ctrl.coins.value, 0);
+    });
+
+    test('đủ pool cả clan → claim thành công đúng 1 lần, lần 2 trong cùng '
+        'tuần trả về false và không cộng thêm xu', () {
+      final botsSum = clanPoolTotal(ctrl.currentWeekIndex, 0);
+      final needed = (clanGoalTarget - botsSum).clamp(0, clanGoalTarget);
+      ctrl.addClanContribution(needed);
+      expect(ctrl.clanPoolThisWeek, greaterThanOrEqualTo(clanGoalTarget));
+
+      expect(ctrl.claimClanGoalReward(), isTrue);
+      final coinsAfterFirst = ctrl.coins.value;
+      expect(coinsAfterFirst, greaterThan(0));
+      expect(ctrl.clanGoalClaimed, isTrue);
+
+      expect(ctrl.claimClanGoalReward(), isFalse);
+      expect(ctrl.coins.value, coinsAfterFirst);
+    });
+
+    test('sang tuần mới → đóng góp tuần reset về 0, lifetime giữ nguyên, '
+        'cho claim lại', () {
+      final lastWeek = ctrl.currentWeekIndex - 1;
+      StorageService.to.setInt(StorageKeys.clanGoalWeek, lastWeek);
+      StorageService.to.setInt(StorageKeys.clanContribWeek, 500);
+      StorageService.to.setInt(StorageKeys.clanContribTotal, 500);
+      StorageService.to.setInt(StorageKeys.clanGoalClaimedWeek, lastWeek);
+
+      final next = relaunch();
+      expect(next.clanContribWeek.value, 0);
+      expect(next.clanContribTotal.value, 500);
+      expect(next.clanGoalClaimed, isFalse);
+
+      final botsSum = clanPoolTotal(next.currentWeekIndex, 0);
+      final needed = (clanGoalTarget - botsSum).clamp(0, clanGoalTarget);
+      next.addClanContribution(needed);
+      expect(next.claimClanGoalReward(), isTrue);
+    });
+
+    test(
+      'resetProgress() đưa đóng góp/trạng thái nhận thưởng về mặc định',
+      () async {
+        final botsSum = clanPoolTotal(ctrl.currentWeekIndex, 0);
+        final needed = (clanGoalTarget - botsSum).clamp(0, clanGoalTarget);
+        ctrl.addClanContribution(needed);
+        ctrl.claimClanGoalReward();
+
+        await ctrl.resetProgress();
+        expect(ctrl.clanContribWeek.value, 0);
+        expect(ctrl.clanContribTotal.value, 0);
+        expect(ctrl.clanGoalClaimed, isFalse);
       },
     );
   });

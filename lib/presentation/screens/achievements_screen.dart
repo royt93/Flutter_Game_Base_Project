@@ -121,7 +121,9 @@ class _AchievementRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    achievement.descKey.tr,
+                    achievement.descKey.trParams({
+                      'n': '${achievement.threshold}',
+                    }),
                     style: TextStyle(
                       color: NeonTheme.inkSoft,
                       fontSize: 13,

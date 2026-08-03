@@ -13,6 +13,7 @@ import '../../core/utils/weekend_event.dart';
 import '../../data/achievements.dart';
 import '../../data/board_frames.dart';
 import '../../data/burst_styles.dart';
+import '../../data/clan.dart';
 import '../../data/combo_text_styles.dart';
 import '../../data/gauntlet_modifiers.dart';
 import '../../data/levels.dart';
@@ -676,6 +677,7 @@ class GameController extends GetxController {
     AchievementMetric.levelsThreeStarred => levelsThreeStarred.value,
     AchievementMetric.boardsFullyCleared => boardsFullyCleared.value,
     AchievementMetric.totalBoostersUsed => totalBoostersUsed.value,
+    AchievementMetric.clanContribTotal => clanContribTotal.value,
   };
 
   void _checkAchievements() {
@@ -823,6 +825,14 @@ class GameController extends GetxController {
   static const int weeklyGoalRewardCoins = 100;
   final weeklyGoalProgress = 0.obs;
 
+  /// I66 Clan Lite: đóng góp gem-pop tuần này (reset theo tuần, cùng
+  /// `currentWeekIndex` với Weekly Goal) và lifetime (không reset, dùng cho
+  /// [AchievementMetric.clanContribTotal]). Thưởng pool 1 lần/tuần khi
+  /// [clanPoolTotal] (cả clan, gồm NPC) đạt [clanGoalTarget].
+  static const int clanGoalRewardCoins = 150;
+  final clanContribWeek = 0.obs;
+  final clanContribTotal = 0.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -878,6 +888,9 @@ class GameController extends GetxController {
             .toList();
     totalGemsPopped.value = StorageService.to.getInt(
       StorageKeys.totalGemsPopped,
+    );
+    clanContribTotal.value = StorageService.to.getInt(
+      StorageKeys.clanContribTotal,
     );
     maxComboEver.value = StorageService.to.getInt(StorageKeys.maxComboEver);
     levelsThreeStarred.value = StorageService.to.getInt(
@@ -1015,6 +1028,9 @@ class GameController extends GetxController {
     weeklyGoalProgress.value = StorageService.to.getInt(
       StorageKeys.weeklyGoalProgress,
     );
+    clanContribWeek.value = StorageService.to.getInt(
+      StorageKeys.clanContribWeek,
+    );
     treasureMapCount.value = StorageService.to.getInt(
       StorageKeys.treasureMapCount,
     );
@@ -1024,6 +1040,7 @@ class GameController extends GetxController {
     _recomputeTotalStars();
     _checkSeasonRollover();
     _checkWeeklyGoalRollover();
+    _checkClanGoalRollover();
   }
 
   /// Chỉ số mùa hiện tại (28 ngày/mùa), tăng tự động theo ngày thật.
@@ -1094,6 +1111,53 @@ class GameController extends GetxController {
     );
     StorageService.to.setInt(StorageKeys.coins, coins.value);
     _grantTreasureMap();
+    return true;
+  }
+
+  /// I66: qua tuần mới → reset đóng góp clan tuần về 0 (đóng góp lifetime +
+  /// thưởng đã nhận tuần trước giữ nguyên, cùng convention rollover I50).
+  void _checkClanGoalRollover() {
+    final last = StorageService.to.getInt(StorageKeys.clanGoalWeek, def: -1);
+    final current = currentWeekIndex;
+    if (current == last) return;
+    clanContribWeek.value = 0;
+    StorageService.to.setInt(StorageKeys.clanContribWeek, 0);
+    StorageService.to.setInt(StorageKeys.clanGoalWeek, current);
+  }
+
+  /// I66: cộng đóng góp clan tuần này + lifetime — gọi song song
+  /// [addWeeklyGoalProgress] tại [registerPop], mọi mode.
+  void addClanContribution(int amount) {
+    if (amount <= 0) return;
+    clanContribWeek.value += amount;
+    clanContribTotal.value += amount;
+    StorageService.to.setInt(
+      StorageKeys.clanContribWeek,
+      clanContribWeek.value,
+    );
+    StorageService.to.setInt(
+      StorageKeys.clanContribTotal,
+      clanContribTotal.value,
+    );
+  }
+
+  /// Tổng pool clan tuần này (NPC + người chơi).
+  int get clanPoolThisWeek =>
+      clanPoolTotal(currentWeekIndex, clanContribWeek.value);
+
+  /// Đã nhận thưởng pool clan tuần hiện tại chưa (chặn nhận 2 lần cùng tuần).
+  bool get clanGoalClaimed =>
+      StorageService.to.getInt(StorageKeys.clanGoalClaimedWeek, def: -1) ==
+      currentWeekIndex;
+
+  /// Nhận thưởng coin pool clan khi cả clan đạt đủ [clanGoalTarget] và chưa
+  /// nhận trong tuần hiện tại.
+  bool claimClanGoalReward() {
+    if (clanPoolThisWeek < clanGoalTarget) return false;
+    if (clanGoalClaimed) return false;
+    coins.value += clanGoalRewardCoins * weekendCoinMultiplier;
+    StorageService.to.setInt(StorageKeys.clanGoalClaimedWeek, currentWeekIndex);
+    StorageService.to.setInt(StorageKeys.coins, coins.value);
     return true;
   }
 
@@ -1730,6 +1794,7 @@ class GameController extends GetxController {
     addWeeklyGoalProgress(
       groupSize,
     ); // I50: mọi mode, không phân biệt campaign.
+    addClanContribution(groupSize); // I66: mọi mode, cùng hook với I50.
     if (comboCount.value > maxComboEver.value) {
       maxComboEver.value = comboCount.value;
       StorageService.to.setInt(StorageKeys.maxComboEver, maxComboEver.value);
@@ -2088,6 +2153,10 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.weeklyGoalProgress);
     await store.remove(StorageKeys.weeklyGoalWeek);
     await store.remove(StorageKeys.weeklyGoalClaimedWeek);
+    await store.remove(StorageKeys.clanContribWeek);
+    await store.remove(StorageKeys.clanContribTotal);
+    await store.remove(StorageKeys.clanGoalWeek);
+    await store.remove(StorageKeys.clanGoalClaimedWeek);
     await store.remove(StorageKeys.lastGauntletDay);
     await store.remove(StorageKeys.gauntletScore);
     await store.remove(StorageKeys.lastFeaturedWeekSeen);
@@ -2114,6 +2183,8 @@ class GameController extends GetxController {
     lastLoginEpochDay.value = 0;
     loginStreakClaimedMask.value = 0;
     weeklyGoalProgress.value = 0;
+    clanContribWeek.value = 0;
+    clanContribTotal.value = 0;
     _load();
     _checkLoginStreak();
   }

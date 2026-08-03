@@ -7,6 +7,7 @@ enum AchievementMetric {
   levelsThreeStarred,
   boardsFullyCleared,
   totalBoostersUsed,
+  clanContribTotal,
 }
 
 class Achievement {
@@ -229,6 +230,24 @@ const List<Achievement> kAchievements = [
     coinReward: 1000,
     titleKey: 'ach_booster_250_title',
     descKey: 'ach_booster_250_desc',
+  ),
+  // I66 Clan Lite: chỉ 2 mốc (không phải 5 như các metric khác) — khớp
+  // đúng số title key đã có sẵn (ach_clan_contrib1_t/ach_clan_contrib2_t).
+  Achievement(
+    id: 'clan_contrib1',
+    metric: AchievementMetric.clanContribTotal,
+    threshold: 2000,
+    coinReward: 100,
+    titleKey: 'ach_clan_contrib1_t',
+    descKey: 'ach_desc_clanContribTotal',
+  ),
+  Achievement(
+    id: 'clan_contrib2',
+    metric: AchievementMetric.clanContribTotal,
+    threshold: 10000,
+    coinReward: 400,
+    titleKey: 'ach_clan_contrib2_t',
+    descKey: 'ach_desc_clanContribTotal',
   ),
 ];
 
