@@ -10,6 +10,7 @@ import '../data/worlds.dart';
 import '../logic/boss_tile.dart' show isBossTileId;
 import '../logic/countdown_lock_tile.dart' show isCountdownLockId;
 import '../logic/gift_tile.dart';
+import '../logic/magnet_tile.dart';
 import '../logic/power_tile.dart';
 import '../logic/wildcard_tile.dart';
 import 'pop_star_game.dart';
@@ -327,6 +328,11 @@ class BlockComponent extends PositionComponent
     // chung bên dưới, không thì bị hiểu nhầm thành obstacle thường.
     if (isWildcardTileValue(colorIndex)) {
       _renderWildcard(canvas, rrect, s);
+      return;
+    }
+    // I68: Magnet giữ màu target bên dưới và phủ biểu tượng nam châm.
+    if (isMagnetId(colorIndex)) {
+      _renderMagnet(canvas, rrect, s, magnetColorIndex(colorIndex));
       return;
     }
     // 0e. F6a: obstacle (ice/crate) không phải màu — render riêng rồi thoát,
@@ -693,6 +699,35 @@ class BlockComponent extends PositionComponent
         ..style = PaintingStyle.stroke
         ..strokeWidth = s * 0.02
         ..color = Colors.black.withValues(alpha: 0.5),
+    );
+  }
+
+  void _renderMagnet(Canvas canvas, RRect rrect, double s, int targetColor) {
+    final color = resolvedGemColor(targetColor);
+    canvas.drawRRect(rrect, Paint()..color = color);
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.045
+        ..color = Colors.white.withValues(alpha: 0.9),
+    );
+    final painter = TextPainter(
+      text: TextSpan(
+        text: String.fromCharCode(Icons.u_turn_left_rounded.codePoint),
+        style: TextStyle(
+          fontFamily: Icons.u_turn_left_rounded.fontFamily,
+          package: Icons.u_turn_left_rounded.fontPackage,
+          fontSize: s * 0.58,
+          color: Colors.white,
+          shadows: const [Shadow(color: Colors.black54, blurRadius: 3)],
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    painter.paint(
+      canvas,
+      Offset((s - painter.width) / 2, (s - painter.height) / 2),
     );
   }
 

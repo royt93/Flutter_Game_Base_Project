@@ -143,6 +143,11 @@ class StorageKeys {
   static const String weeklyGoalWeek = 'weekly_goal_week';
   static const String weeklyGoalClaimedWeek = 'weekly_goal_claimed_week';
 
+  // I67 Daily Quest Board: ngày, ba tiến độ song song, và index đã claim.
+  static const String dailyQuestDay = 'daily_quest_day';
+  static const String dailyQuestProgress = 'daily_quest_progress';
+  static const String dailyQuestClaimed = 'daily_quest_claimed';
+
   // I33 Daily Modifier Gauntlet: ngày + điểm đã ghi nhận lần gần nhất (1
   // lượt/ngày, giống lastDailyChallengeDay/dailyChallengeScore).
   static const String lastGauntletDay = 'last_gauntlet_day';

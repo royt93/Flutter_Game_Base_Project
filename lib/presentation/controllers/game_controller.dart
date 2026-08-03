@@ -14,6 +14,7 @@ import '../../data/achievements.dart';
 import '../../data/board_frames.dart';
 import '../../data/burst_styles.dart';
 import '../../data/combo_text_styles.dart';
+import '../../data/daily_quests.dart';
 import '../../data/gauntlet_modifiers.dart';
 import '../../data/levels.dart';
 import '../../data/lucky_color.dart';
@@ -823,11 +824,18 @@ class GameController extends GetxController {
   static const int weeklyGoalRewardCoins = 100;
   final weeklyGoalProgress = 0.obs;
 
+  /// I67: ba quest cố định theo epoch-day, với tiến độ và claim độc lập.
+  final dailyQuestProgress = <int>[0, 0, 0].obs;
+  final dailyQuestClaimed = <int>{}.obs;
+  final dailyQuests = <DailyQuest>[].obs;
+  int _dailyQuestDay = -1;
+
   @override
   void onInit() {
     super.onInit();
     _load();
     _checkLoginStreak();
+    checkDailyQuestRollover();
   }
 
   void toggleColorblindMode() {
@@ -1015,6 +1023,23 @@ class GameController extends GetxController {
     weeklyGoalProgress.value = StorageService.to.getInt(
       StorageKeys.weeklyGoalProgress,
     );
+    dailyQuestProgress.assignAll(
+      (StorageService.to.getString(StorageKeys.dailyQuestProgress) ?? '')
+          .split(',')
+          .map(int.tryParse)
+          .whereType<int>()
+          .take(3),
+    );
+    if (dailyQuestProgress.length != 3) {
+      dailyQuestProgress.assignAll(const [0, 0, 0]);
+    }
+    dailyQuestClaimed.assignAll(
+      (StorageService.to.getString(StorageKeys.dailyQuestClaimed) ?? '')
+          .split(',')
+          .map(int.tryParse)
+          .whereType<int>()
+          .where((i) => i >= 0 && i < 3),
+    );
     treasureMapCount.value = StorageService.to.getInt(
       StorageKeys.treasureMapCount,
     );
@@ -1024,6 +1049,62 @@ class GameController extends GetxController {
     _recomputeTotalStars();
     _checkSeasonRollover();
     _checkWeeklyGoalRollover();
+  }
+
+  int get currentDailyQuestDay => _dailyQuestDay;
+
+  /// Re-evaluates daily state. [epochDay] is injectable for deterministic tests.
+  void checkDailyQuestRollover({int? epochDay}) {
+    final today = epochDay ?? _todayEpochDay();
+    final storedDay = StorageService.to.getInt(
+      StorageKeys.dailyQuestDay,
+      def: -1,
+    );
+    _dailyQuestDay = today;
+    dailyQuests.assignAll(questsForDay(today));
+    if (storedDay == today) return;
+    dailyQuestProgress.assignAll(const [0, 0, 0]);
+    dailyQuestClaimed.clear();
+    StorageService.to.setInt(StorageKeys.dailyQuestDay, today);
+    _persistDailyQuests();
+  }
+
+  void _persistDailyQuests() {
+    StorageService.to.setString(
+      StorageKeys.dailyQuestProgress,
+      dailyQuestProgress.join(','),
+    );
+    StorageService.to.setString(
+      StorageKeys.dailyQuestClaimed,
+      dailyQuestClaimed.join(','),
+    );
+  }
+
+  void _addDailyQuestProgress(QuestKind kind, int amount) {
+    if (amount <= 0) return;
+    checkDailyQuestRollover();
+    for (var i = 0; i < dailyQuests.length; i++) {
+      final quest = dailyQuests[i];
+      if (quest.kind == kind) {
+        dailyQuestProgress[i] = min(
+          quest.target,
+          dailyQuestProgress[i] + amount,
+        );
+      }
+    }
+    _persistDailyQuests();
+  }
+
+  bool claimDailyQuest(int index) {
+    checkDailyQuestRollover();
+    if (index < 0 || index >= dailyQuests.length) return false;
+    if (dailyQuestClaimed.contains(index)) return false;
+    if (dailyQuestProgress[index] < dailyQuests[index].target) return false;
+    dailyQuestClaimed.add(index);
+    coins.value += dailyQuests[index].coinReward;
+    StorageService.to.setInt(StorageKeys.coins, coins.value);
+    _persistDailyQuests();
+    return true;
   }
 
   /// Chỉ số mùa hiện tại (28 ngày/mùa), tăng tự động theo ngày thật.
@@ -1730,6 +1811,7 @@ class GameController extends GetxController {
     addWeeklyGoalProgress(
       groupSize,
     ); // I50: mọi mode, không phân biệt campaign.
+    _addDailyQuestProgress(QuestKind.popGems, groupSize);
     if (comboCount.value > maxComboEver.value) {
       maxComboEver.value = comboCount.value;
       StorageService.to.setInt(StorageKeys.maxComboEver, maxComboEver.value);
@@ -1758,6 +1840,7 @@ class GameController extends GetxController {
     }
     if (mode.value == GameMode.puzzleLab ||
         mode.value == GameMode.passAndPlay) {
+      if (boardCleared) _addDailyQuestProgress(QuestKind.winAnyMode, 1);
       if (activeSeedChallenge.value case final challenge?) {
         seedChallengeWon.value = score.value > challenge.score;
       }
@@ -1765,6 +1848,7 @@ class GameController extends GetxController {
       return; // không thưởng coin/sao/unlock/best-score
     }
     if (mode.value != GameMode.campaign) {
+      if (boardCleared) _addDailyQuestProgress(QuestKind.winAnyMode, 1);
       if (mode.value == GameMode.timeAttack) _saveTimeAttackBest();
       if (mode.value == GameMode.endless) _saveEndlessBest();
       if (mode.value == GameMode.mirrorMode) _saveMirrorModeBest();
@@ -1775,6 +1859,12 @@ class GameController extends GetxController {
       return;
     }
     starsEarned.value = _computeStars();
+    if (starsEarned.value > 0) {
+      _addDailyQuestProgress(QuestKind.winAnyMode, 1);
+    }
+    if (starsEarned.value == 3) {
+      _addDailyQuestProgress(QuestKind.threeStarLevel, 1);
+    }
     ended.value = true;
     if (activeChallenge.value != null) {
       challengeWon.value = score.value > activeChallenge.value!.score;
@@ -2088,6 +2178,9 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.weeklyGoalProgress);
     await store.remove(StorageKeys.weeklyGoalWeek);
     await store.remove(StorageKeys.weeklyGoalClaimedWeek);
+    await store.remove(StorageKeys.dailyQuestDay);
+    await store.remove(StorageKeys.dailyQuestProgress);
+    await store.remove(StorageKeys.dailyQuestClaimed);
     await store.remove(StorageKeys.lastGauntletDay);
     await store.remove(StorageKeys.gauntletScore);
     await store.remove(StorageKeys.lastFeaturedWeekSeen);
@@ -2114,7 +2207,12 @@ class GameController extends GetxController {
     lastLoginEpochDay.value = 0;
     loginStreakClaimedMask.value = 0;
     weeklyGoalProgress.value = 0;
+    dailyQuestProgress.assignAll(const [0, 0, 0]);
+    dailyQuestClaimed.clear();
+    dailyQuests.clear();
+    _dailyQuestDay = -1;
     _load();
     _checkLoginStreak();
+    checkDailyQuestRollover();
   }
 }

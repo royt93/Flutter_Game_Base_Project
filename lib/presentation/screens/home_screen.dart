@@ -15,6 +15,7 @@ import '../widgets/board_frame_picker_dialog.dart';
 import '../widgets/burst_style_picker_dialog.dart';
 import '../widgets/coin_chip.dart';
 import '../widgets/combo_text_style_picker_dialog.dart';
+import '../widgets/daily_quest_dialog.dart';
 import '../widgets/home_carousel.dart';
 import '../widgets/login_streak_dialog.dart';
 import '../widgets/mystery_crate_dialog.dart';
@@ -436,6 +437,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: NeonTheme.orange,
               label: 'drawer_stats_label'.tr,
               onTap: () => Get.to(() => const StatsScreen()),
+            ),
+            _drawerTile(
+              icon: Icons.task_alt_rounded,
+              color: NeonTheme.purple,
+              label: 'daily_quest_title'.tr,
+              onTap: () => showDailyQuestDialog(context, gameCtrl),
             ),
             _drawerTile(
               icon: Icons.flag_rounded,
