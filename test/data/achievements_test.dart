@@ -3,18 +3,21 @@ import 'package:pop_star_blast/data/achievements.dart';
 
 void main() {
   group('kAchievements', () {
-    test('25 thành tựu, mỗi id duy nhất', () {
-      expect(kAchievements.length, 25);
-      expect(kAchievements.map((a) => a.id).toSet().length, 25);
+    test('27 thành tựu, mỗi id duy nhất', () {
+      expect(kAchievements.length, 27);
+      expect(kAchievements.map((a) => a.id).toSet().length, 27);
     });
 
-    test('5 mốc tăng dần cho mỗi metric', () {
+    test('5 mốc tăng dần cho mỗi metric (riêng clanContribTotal: 2 mốc)', () {
       for (final metric in AchievementMetric.values) {
         final thresholds = kAchievements
             .where((a) => a.metric == metric)
             .map((a) => a.threshold)
             .toList();
-        expect(thresholds.length, 5);
+        final expectedCount = metric == AchievementMetric.clanContribTotal
+            ? 2
+            : 5;
+        expect(thresholds.length, expectedCount);
         expect(thresholds, List.of(thresholds)..sort());
       }
     });

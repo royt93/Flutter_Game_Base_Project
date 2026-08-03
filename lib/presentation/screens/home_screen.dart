@@ -14,6 +14,7 @@ import '../widgets/ambient_particles.dart';
 import '../widgets/board_frame_picker_dialog.dart';
 import '../widgets/burst_style_picker_dialog.dart';
 import '../widgets/coin_chip.dart';
+import '../widgets/clan_dialog.dart';
 import '../widgets/combo_text_style_picker_dialog.dart';
 import '../widgets/home_carousel.dart';
 import '../widgets/login_streak_dialog.dart';
@@ -442,6 +443,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: NeonTheme.teal,
               label: 'drawer_weekly_goal_label'.tr,
               onTap: () => showWeeklyGoalDialog(context, gameCtrl),
+            ),
+            _drawerTile(
+              icon: Icons.groups_rounded,
+              color: NeonTheme.purple,
+              label: 'clan_title'.tr,
+              onTap: () => showClanDialog(context, gameCtrl),
             ),
             _drawerTile(
               icon: Icons.crop_free_rounded,
