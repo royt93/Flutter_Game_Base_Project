@@ -69,4 +69,64 @@ void main() {
       );
     });
   });
+
+  group('nextLoginStreakWithFreeze', () {
+    test('gap 0 giữ nguyên streak, không đụng freeze', () {
+      final r = nextLoginStreakWithFreeze(
+        previousEpochDay: 100,
+        todayEpochDay: 100,
+        previousStreak: 4,
+        hasFreezeAvailable: true,
+      );
+      expect(r.streak, 4);
+      expect(r.usedFreeze, isFalse);
+    });
+
+    test('gap 1 tăng streak lên 1, không đụng freeze dù có token', () {
+      final r = nextLoginStreakWithFreeze(
+        previousEpochDay: 100,
+        todayEpochDay: 101,
+        previousStreak: 4,
+        hasFreezeAvailable: true,
+      );
+      expect(r.streak, 5);
+      expect(r.usedFreeze, isFalse);
+    });
+
+    test(
+      'gap 2 (lỡ đúng 1 ngày) + có freeze token → giữ streak, tiêu token',
+      () {
+        final r = nextLoginStreakWithFreeze(
+          previousEpochDay: 100,
+          todayEpochDay: 102,
+          previousStreak: 4,
+          hasFreezeAvailable: true,
+        );
+        expect(r.streak, 4);
+        expect(r.usedFreeze, isTrue);
+      },
+    );
+
+    test('gap 2 + không có freeze token → reset về 1 (behavior cũ)', () {
+      final r = nextLoginStreakWithFreeze(
+        previousEpochDay: 100,
+        todayEpochDay: 102,
+        previousStreak: 4,
+        hasFreezeAvailable: false,
+      );
+      expect(r.streak, 1);
+      expect(r.usedFreeze, isFalse);
+    });
+
+    test('gap >= 3 (lỡ từ 2 ngày trở lên) reset về 1 dù có freeze token', () {
+      final r = nextLoginStreakWithFreeze(
+        previousEpochDay: 100,
+        todayEpochDay: 103,
+        previousStreak: 6,
+        hasFreezeAvailable: true,
+      );
+      expect(r.streak, 1);
+      expect(r.usedFreeze, isFalse);
+    });
+  });
 }

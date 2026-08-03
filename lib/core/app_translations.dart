@@ -234,6 +234,21 @@ class AppTranslations extends Translations {
           ...?_i64ByLang[e.key],
           ...?_i63ByLang[e.key],
           ...?_i61ByLang[e.key],
+          // I55 — Streak Freeze Token: booster_streak_freeze_label/desc
+          // (en+vi ở _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w60ByLang).
+          ...?_w60ByLang[e.key],
+          // I56 — Local Smart Reminder: reminders_enabled,
+          // reminder_spin/streak/weekly_goal_title/body (en+vi ở
+          // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w61ByLang).
+          ...?_w61ByLang[e.key],
+          // I57 — Shareable Score Card: share_score_card,
+          // share_score_card_text, score_card_rank_label (en+vi ở
+          // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w62ByLang).
+          ...?_w62ByLang[e.key],
+          // I65 — Star Pet Companion Habitat: pet_habitat_*,
+          // pet_ember/aqua/luna_name (en+vi ở _extraEn/_extraVi, 20 ngôn
+          // ngữ còn lại ở _w63ByLang).
+          ...?_w63ByLang[e.key],
         },
     };
   }
@@ -894,6 +909,34 @@ class AppTranslations extends Translations {
     'booster_freeze_label': 'Freeze',
     'booster_hint_label': 'Hint',
     'booster_freeze_desc': 'Obstacles stop losing durability for @n moves.',
+    // I55 — Streak Freeze Token
+    'booster_streak_freeze_label': 'Streak Freeze',
+    'booster_streak_freeze_desc':
+        'Protects your login streak once when you miss exactly 1 day.',
+    // I56 — Local Smart Reminder
+    'reminders_enabled': 'Reminders',
+    'reminder_spin_title': 'Your lucky spin is waiting!',
+    'reminder_spin_body': "Don't forget to spin the wheel today.",
+    'reminder_streak_title': "Don't lose your streak!",
+    'reminder_streak_body': 'Log in today to keep your streak going.',
+    'reminder_weekly_goal_title': 'Weekly goal ending soon',
+    'reminder_weekly_goal_body': 'Play a bit more to finish this week\'s goal.',
+    // I57 — Shareable Score Card
+    'share_score_card': 'Share result card',
+    'share_score_card_text':
+        'Pop Star Blast — Level @level — Score @score — @date',
+    'score_card_rank_label': 'Rank #@rank',
+    // I65 — Star Pet Companion Habitat
+    'pet_habitat_title': 'Star Pet Habitat',
+    'pet_habitat_empty': 'No pets yet — hatch one below!',
+    'pet_habitat_hatch_section': 'Hatch a Pet',
+    'pet_habitat_star_dust_label': 'Star Dust',
+    'pet_habitat_claim_button': 'Claim +@amount',
+    'pet_habitat_owned_count': 'Owned: @count',
+    'pet_habitat_hatch_button': 'Hatch (@cost)',
+    'pet_ember_name': 'Ember',
+    'pet_aqua_name': 'Aqua',
+    'pet_luna_name': 'Luna',
     // X5 — Home: semanticLabel cho icon chế độ chơi + màn phụ
     'mode_time_attack_label': 'Time Attack Mode',
     'mode_zen_label': 'Zen Mode',
@@ -1764,6 +1807,35 @@ class AppTranslations extends Translations {
     'booster_freeze_label': 'Đóng Băng',
     'booster_hint_label': 'Gợi Ý',
     'booster_freeze_desc': 'Chướng ngại vật ngừng giảm độ bền trong @n lượt.',
+    // I55 — Streak Freeze Token
+    'booster_streak_freeze_label': 'Đóng Băng Streak',
+    'booster_streak_freeze_desc':
+        'Bảo vệ streak đăng nhập một lần khi bạn lỡ đúng 1 ngày.',
+    // I56 — Local Smart Reminder
+    'reminders_enabled': 'Nhắc nhở',
+    'reminder_spin_title': 'Lượt quay may mắn đang chờ bạn!',
+    'reminder_spin_body': 'Đừng quên quay vòng quay hôm nay.',
+    'reminder_streak_title': 'Đừng để mất streak!',
+    'reminder_streak_body': 'Đăng nhập hôm nay để giữ streak.',
+    'reminder_weekly_goal_title': 'Mục tiêu tuần sắp hết hạn',
+    'reminder_weekly_goal_body':
+        'Chơi thêm chút nữa để hoàn thành mục tiêu tuần này.',
+    // I57 — Shareable Score Card
+    'share_score_card': 'Chia sẻ thẻ kết quả',
+    'share_score_card_text':
+        'Pop Star Blast — Màn @level — Điểm @score — @date',
+    'score_card_rank_label': 'Hạng #@rank',
+    // I65 — Star Pet Companion Habitat
+    'pet_habitat_title': 'Chuồng thú cưng sao',
+    'pet_habitat_empty': 'Chưa có pet nào — nở một con bên dưới!',
+    'pet_habitat_hatch_section': 'Nở Pet',
+    'pet_habitat_star_dust_label': 'Bụi Sao',
+    'pet_habitat_claim_button': 'Nhận +@amount',
+    'pet_habitat_owned_count': 'Đang có: @count',
+    'pet_habitat_hatch_button': 'Nở (@cost)',
+    'pet_ember_name': 'Ember',
+    'pet_aqua_name': 'Aqua',
+    'pet_luna_name': 'Luna',
     // X5 — Home: semanticLabel cho icon chế độ chơi + màn phụ
     'mode_time_attack_label': 'Chế độ Đấu thời gian',
     'mode_zen_label': 'Chế độ Thư giãn',
@@ -29486,7 +29558,8 @@ class AppTranslations extends Translations {
       'constellation_pegasus': 'Pégase Nébuleuse',
       'constellation_serpent': 'Serpent Cosmique',
       'sky_shrine_stars_collected': '@stars Étoiles Collectées',
-      'sky_shrine_sub': 'Rassemblez des étoiles pour illuminer les constellations',
+      'sky_shrine_sub':
+          'Rassemblez des étoiles pour illuminer les constellations',
       'sky_shrine_lit': 'Illuminé',
       'sky_shrine_stars_req': '@curr / @req Étoiles Requises',
       'sky_shrine_aura_equip': 'Équiper Aura',
@@ -29681,7 +29754,8 @@ class AppTranslations extends Translations {
       'constellation_pegasus': 'Nebula Pegasus',
       'constellation_serpent': 'Cosmic Serpent',
       'sky_shrine_stars_collected': '@stars Bituin ang Nakuha',
-      'sky_shrine_sub': 'Kolektahin ang mga bituin upang tanglawan ang mga nagniningning na rasi',
+      'sky_shrine_sub':
+          'Kolektahin ang mga bituin upang tanglawan ang mga nagniningning na rasi',
       'sky_shrine_lit': 'Nailawan Na',
       'sky_shrine_stars_req': '@curr / @req Bituin ang Kailangan',
       'sky_shrine_aura_equip': 'I-equip ang Aura',
@@ -29731,49 +29805,56 @@ class AppTranslations extends Translations {
   static const Map<String, Map<String, String>> _i63ByLang = {
     'en_US': {
       'mystery_crate_title': 'Mystery Crate',
-      'mystery_crate_desc': 'Spend @cost coins to get a random unowned cosmetic!',
+      'mystery_crate_desc':
+          'Spend @cost coins to get a random unowned cosmetic!',
       'mystery_crate_open_button': 'Open (@cost Coins)',
       'mystery_crate_empty_pool': 'All Unlocked',
       'mystery_crate_unlocked_label': 'You Unlocked:',
     },
     'vi_VN': {
       'mystery_crate_title': 'Rương Bí Ẩn',
-      'mystery_crate_desc': 'Dùng @cost xu để nhận ngẫu nhiên 1 vật phẩm trang trí chưa sở hữu!',
+      'mystery_crate_desc':
+          'Dùng @cost xu để nhận ngẫu nhiên 1 vật phẩm trang trí chưa sở hữu!',
       'mystery_crate_open_button': 'Mở Rương (@cost Xu)',
       'mystery_crate_empty_pool': 'Đã Mở Hết',
       'mystery_crate_unlocked_label': 'Bạn Nhận Được:',
     },
     'es_ES': {
       'mystery_crate_title': 'Caja Misteriosa',
-      'mystery_crate_desc': '¡Gasta @cost monedas para obtener un objeto cosmético aleatorio!',
+      'mystery_crate_desc':
+          '¡Gasta @cost monedas para obtener un objeto cosmético aleatorio!',
       'mystery_crate_open_button': 'Abrir (@cost Monedas)',
       'mystery_crate_empty_pool': 'Todo Desbloqueado',
       'mystery_crate_unlocked_label': 'Desbloqueaste:',
     },
     'fr_FR': {
       'mystery_crate_title': 'Coffre Mystère',
-      'mystery_crate_desc': 'Dépensez @cost pièces pour obtenir un cosmétique aléatoire !',
+      'mystery_crate_desc':
+          'Dépensez @cost pièces pour obtenir un cosmétique aléatoire !',
       'mystery_crate_open_button': 'Ouvrir (@cost Pièces)',
       'mystery_crate_empty_pool': 'Tout Débloqué',
       'mystery_crate_unlocked_label': 'Vous avez débloqué :',
     },
     'de_DE': {
       'mystery_crate_title': 'Geheimnisvolle Kiste',
-      'mystery_crate_desc': 'Gib @cost Münzen aus, um einen zufälligen Kosmetikartikel zu erhalten!',
+      'mystery_crate_desc':
+          'Gib @cost Münzen aus, um einen zufälligen Kosmetikartikel zu erhalten!',
       'mystery_crate_open_button': 'Öffnen (@cost Münzen)',
       'mystery_crate_empty_pool': 'Alles Freigeschaltet',
       'mystery_crate_unlocked_label': 'Freigeschaltet:',
     },
     'pt_BR': {
       'mystery_crate_title': 'Baú Mistério',
-      'mystery_crate_desc': 'Gaste @cost moedas para obter um cosmético aleatório!',
+      'mystery_crate_desc':
+          'Gaste @cost moedas para obter um cosmético aleatório!',
       'mystery_crate_open_button': 'Abrir (@cost Moedas)',
       'mystery_crate_empty_pool': 'Tudo Desbloqueado',
       'mystery_crate_unlocked_label': 'Você Desbloqueou:',
     },
     'ru_RU': {
       'mystery_crate_title': 'Таинственный Сундук',
-      'mystery_crate_desc': 'Потратьте @cost монет, чтобы получить случайный предмет!',
+      'mystery_crate_desc':
+          'Потратьте @cost монет, чтобы получить случайный предмет!',
       'mystery_crate_open_button': 'Открыть (@cost Монет)',
       'mystery_crate_empty_pool': 'Все Разблокировано',
       'mystery_crate_unlocked_label': 'Вы Разблокировали:',
@@ -29801,14 +29882,16 @@ class AppTranslations extends Translations {
     },
     'it_IT': {
       'mystery_crate_title': 'Cassa Misteriosa',
-      'mystery_crate_desc': 'Spendi @cost monete per ottenere un oggetto cosmetico casuale!',
+      'mystery_crate_desc':
+          'Spendi @cost monete per ottenere un oggetto cosmetico casuale!',
       'mystery_crate_open_button': 'Apri (@cost Monete)',
       'mystery_crate_empty_pool': 'Tutto Sbloccato',
       'mystery_crate_unlocked_label': 'Hai Sbloccato:',
     },
     'id_ID': {
       'mystery_crate_title': 'Peti Misteri',
-      'mystery_crate_desc': 'Gunakan @cost koin untuk mendapatkan kosmetik acak!',
+      'mystery_crate_desc':
+          'Gunakan @cost koin untuk mendapatkan kosmetik acak!',
       'mystery_crate_open_button': 'Buka (@cost Koin)',
       'mystery_crate_empty_pool': 'Semua Terbuka',
       'mystery_crate_unlocked_label': 'Kamu Membuka:',
@@ -29822,7 +29905,8 @@ class AppTranslations extends Translations {
     },
     'hi_IN': {
       'mystery_crate_title': 'रहस्यमयी क्रेट',
-      'mystery_crate_desc': 'यादृच्छिक कॉस्मेटिक प्राप्त करने के लिए @cost सिक्के खर्च करें!',
+      'mystery_crate_desc':
+          'यादृच्छिक कॉस्मेटिक प्राप्त करने के लिए @cost सिक्के खर्च करें!',
       'mystery_crate_open_button': 'खोलें (@cost सिक्के)',
       'mystery_crate_empty_pool': 'सभी अनलॉक्ड',
       'mystery_crate_unlocked_label': 'आपने अनलॉक किया:',
@@ -29836,42 +29920,48 @@ class AppTranslations extends Translations {
     },
     'tr_TR': {
       'mystery_crate_title': 'Gizemli Sandık',
-      'mystery_crate_desc': 'Rastgele bir kozmetik eşya almak için @cost jeton harcayın!',
+      'mystery_crate_desc':
+          'Rastgele bir kozmetik eşya almak için @cost jeton harcayın!',
       'mystery_crate_open_button': 'Aç (@cost Jeton)',
       'mystery_crate_empty_pool': 'Tümü Açıldı',
       'mystery_crate_unlocked_label': 'Açılan Eşya:',
     },
     'nl_NL': {
       'mystery_crate_title': 'Mysterie Kist',
-      'mystery_crate_desc': 'Besteed @cost munten om een willekeurig cosmetisch item te krijgen!',
+      'mystery_crate_desc':
+          'Besteed @cost munten om een willekeurig cosmetisch item te krijgen!',
       'mystery_crate_open_button': 'Openen (@cost Munten)',
       'mystery_crate_empty_pool': 'Alles Ontgrendeld',
       'mystery_crate_unlocked_label': 'Je hebt ontgrendeld:',
     },
     'pl_PL': {
       'mystery_crate_title': 'Tajemnicza Skrzynia',
-      'mystery_crate_desc': 'Wydaj @cost monet, aby otrzymać losowy przedmiot kosmetyczny!',
+      'mystery_crate_desc':
+          'Wydaj @cost monet, aby otrzymać losowy przedmiot kosmetyczny!',
       'mystery_crate_open_button': 'Otwórz (@cost Monet)',
       'mystery_crate_empty_pool': 'Wszystko Odblokowane',
       'mystery_crate_unlocked_label': 'Odblokowano:',
     },
     'fil_PH': {
       'mystery_crate_title': 'Misteryosong Kahon',
-      'mystery_crate_desc': 'Gumastos ng @cost barya para makakuha ng random na kosmetiko!',
+      'mystery_crate_desc':
+          'Gumastos ng @cost barya para makakuha ng random na kosmetiko!',
       'mystery_crate_open_button': 'Buksan (@cost Barya)',
       'mystery_crate_empty_pool': 'Na-unlock Na Lahat',
       'mystery_crate_unlocked_label': 'Na-unlock Mo:',
     },
     'ms_MY': {
       'mystery_crate_title': 'Peti Misteri',
-      'mystery_crate_desc': 'Guna @cost syiling untuk mendapat barangan kosmetik rawak!',
+      'mystery_crate_desc':
+          'Guna @cost syiling untuk mendapat barangan kosmetik rawak!',
       'mystery_crate_open_button': 'Buka (@cost Syiling)',
       'mystery_crate_empty_pool': 'Semua Dibuka',
       'mystery_crate_unlocked_label': 'Anda Membuka:',
     },
     'uk_UA': {
       'mystery_crate_title': 'Таємничий Скринька',
-      'mystery_crate_desc': 'Витратьте @cost монет, щоб отримати випадковий предмет!',
+      'mystery_crate_desc':
+          'Витратьте @cost монет, щоб отримати випадковий предмет!',
       'mystery_crate_open_button': 'Відкрити (@cost Монет)',
       'mystery_crate_empty_pool': 'Все Розблоковано',
       'mystery_crate_unlocked_label': 'Ви Розблокували:',
@@ -30127,6 +30217,672 @@ class AppTranslations extends Translations {
       'raid_boss_reward_tiers': 'সাপ্তাহিক পুরস্কার',
       'raid_boss_tier_req': '@dmg মোট ক্ষতি',
       'raid_boss_claim_reward': 'সাপ্তাহিক পুরস্কার দাবি করুন',
+    },
+  };
+
+  /// I55 — Streak Freeze Token: booster_streak_freeze_label/desc (en+vi ở
+  /// _extraEn/_extraVi, 20 ngôn ngữ còn lại ở đây).
+  static const Map<String, Map<String, String>> _w60ByLang = {
+    'es_ES': {
+      'booster_streak_freeze_label': 'Congelación de racha',
+      'booster_streak_freeze_desc':
+          'Protege tu racha de inicio de sesión una vez cuando te '
+          'pierdas exactamente 1 día.',
+    },
+    'fr_FR': {
+      'booster_streak_freeze_label': 'Gel de série',
+      'booster_streak_freeze_desc':
+          'Protège votre série de connexion une fois lorsque vous '
+          'manquez exactement 1 jour.',
+    },
+    'de_DE': {
+      'booster_streak_freeze_label': 'Serien-Einfrieren',
+      'booster_streak_freeze_desc':
+          'Schützt deine Login-Serie einmal, wenn du genau 1 Tag '
+          'verpasst.',
+    },
+    'pt_BR': {
+      'booster_streak_freeze_label': 'Congelar sequência',
+      'booster_streak_freeze_desc':
+          'Protege sua sequência de login uma vez quando você perder '
+          'exatamente 1 dia.',
+    },
+    'ru_RU': {
+      'booster_streak_freeze_label': 'Заморозка серии',
+      'booster_streak_freeze_desc':
+          'Защищает вашу серию входов один раз, если вы пропустите '
+          'ровно 1 день.',
+    },
+    'zh_CN': {
+      'booster_streak_freeze_label': '连胜冻结',
+      'booster_streak_freeze_desc': '当你恰好错过1天时，保护你的登录连续记录一次。',
+    },
+    'ja_JP': {
+      'booster_streak_freeze_label': 'ストリークフリーズ',
+      'booster_streak_freeze_desc': 'ログインストリークをちょうど1日逃したときに1回守ります。',
+    },
+    'ko_KR': {
+      'booster_streak_freeze_label': '스트릭 프리즈',
+      'booster_streak_freeze_desc': '정확히 하루를 놓쳤을 때 로그인 연속 기록을 한 번 보호합니다.',
+    },
+    'it_IT': {
+      'booster_streak_freeze_label': 'Congelamento serie',
+      'booster_streak_freeze_desc':
+          'Protegge la tua serie di accessi una volta quando salti '
+          'esattamente 1 giorno.',
+    },
+    'id_ID': {
+      'booster_streak_freeze_label': 'Pembekuan Beruntun',
+      'booster_streak_freeze_desc':
+          'Melindungi rentetan login Anda sekali saat Anda melewatkan '
+          'tepat 1 hari.',
+    },
+    'th_TH': {
+      'booster_streak_freeze_label': 'แช่แข็งสตรีค',
+      'booster_streak_freeze_desc':
+          'ปกป้องสตรีคการเข้าสู่ระบบของคุณหนึ่งครั้งเมื่อคุณพลาดไปพอดี 1 วัน',
+    },
+    'hi_IN': {
+      'booster_streak_freeze_label': 'स्ट्रीक फ़्रीज़',
+      'booster_streak_freeze_desc':
+          'जब आप ठीक 1 दिन चूकते हैं तो यह आपकी लॉगिन स्ट्रीक की एक बार '
+          'सुरक्षा करता है।',
+    },
+    'ar_SA': {
+      'booster_streak_freeze_label': 'تجميد التتابع',
+      'booster_streak_freeze_desc':
+          'يحمي سلسلة تسجيل الدخول الخاصة بك مرة واحدة عند تفويت يوم '
+          'واحد بالضبط.',
+    },
+    'tr_TR': {
+      'booster_streak_freeze_label': 'Seri Dondurma',
+      'booster_streak_freeze_desc':
+          'Tam olarak 1 gün kaçırdığınızda giriş serinizi bir kez '
+          'korur.',
+    },
+    'nl_NL': {
+      'booster_streak_freeze_label': 'Reeks bevriezen',
+      'booster_streak_freeze_desc':
+          'Beschermt je inlogreeks één keer wanneer je precies 1 dag '
+          'mist.',
+    },
+    'pl_PL': {
+      'booster_streak_freeze_label': 'Zamrożenie passy',
+      'booster_streak_freeze_desc':
+          'Chroni Twoją passę logowań raz, gdy ominiesz dokładnie 1 '
+          'dzień.',
+    },
+    'fil_PH': {
+      'booster_streak_freeze_label': 'Pag-freeze ng Streak',
+      'booster_streak_freeze_desc':
+          'Pinoprotektahan ang iyong login streak nang minsan kapag '
+          'nakaligtaan mo nang eksaktong 1 araw.',
+    },
+    'ms_MY': {
+      'booster_streak_freeze_label': 'Pembekuan Streak',
+      'booster_streak_freeze_desc':
+          'Melindungi streak log masuk anda sekali apabila anda '
+          'terlepas tepat 1 hari.',
+    },
+    'uk_UA': {
+      'booster_streak_freeze_label': 'Заморозка серії',
+      'booster_streak_freeze_desc':
+          'Захищає вашу серію входів один раз, якщо ви пропустите '
+          'рівно 1 день.',
+    },
+    'bn_BD': {
+      'booster_streak_freeze_label': 'স্ট্রিক ফ্রিজ',
+      'booster_streak_freeze_desc':
+          'আপনি ঠিক ১ দিন মিস করলে এটি আপনার লগইন স্ট্রিক একবার রক্ষা '
+          'করে।',
+    },
+  };
+
+  /// I56 — Local Smart Reminder: reminders_enabled,
+  /// reminder_spin/streak/weekly_goal_title/body (en+vi ở _extraEn/_extraVi,
+  /// 20 ngôn ngữ còn lại ở đây).
+  static const Map<String, Map<String, String>> _w61ByLang = {
+    'es_ES': {
+      'reminders_enabled': 'Recordatorios',
+      'reminder_spin_title': '¡Tu giro de la suerte te espera!',
+      'reminder_spin_body': 'No olvides girar la rueda hoy.',
+      'reminder_streak_title': '¡No pierdas tu racha!',
+      'reminder_streak_body':
+          'Inicia sesión hoy para mantener tu racha activa.',
+      'reminder_weekly_goal_title': 'El objetivo semanal termina pronto',
+      'reminder_weekly_goal_body':
+          'Juega un poco más para completar el objetivo de esta semana.',
+    },
+    'fr_FR': {
+      'reminders_enabled': 'Rappels',
+      'reminder_spin_title': 'Votre tour de chance vous attend !',
+      'reminder_spin_body': "N'oubliez pas de tourner la roue aujourd'hui.",
+      'reminder_streak_title': 'Ne perdez pas votre série !',
+      'reminder_streak_body':
+          "Connectez-vous aujourd'hui pour garder votre série.",
+      'reminder_weekly_goal_title':
+          "L'objectif hebdomadaire se termine bientôt",
+      'reminder_weekly_goal_body':
+          "Jouez un peu plus pour terminer l'objectif de cette semaine.",
+    },
+    'de_DE': {
+      'reminders_enabled': 'Erinnerungen',
+      'reminder_spin_title': 'Dein Glücksdrehen wartet auf dich!',
+      'reminder_spin_body': 'Vergiss nicht, heute am Rad zu drehen.',
+      'reminder_streak_title': 'Verliere deine Serie nicht!',
+      'reminder_streak_body':
+          'Melde dich heute an, um deine Serie fortzusetzen.',
+      'reminder_weekly_goal_title': 'Wochenziel endet bald',
+      'reminder_weekly_goal_body':
+          'Spiele noch etwas, um das Wochenziel abzuschließen.',
+    },
+    'pt_BR': {
+      'reminders_enabled': 'Lembretes',
+      'reminder_spin_title': 'Seu giro da sorte está esperando!',
+      'reminder_spin_body': 'Não esqueça de girar a roda hoje.',
+      'reminder_streak_title': 'Não perca sua sequência!',
+      'reminder_streak_body': 'Faça login hoje para manter sua sequência viva.',
+      'reminder_weekly_goal_title': 'Meta semanal termina em breve',
+      'reminder_weekly_goal_body':
+          'Jogue um pouco mais para concluir a meta desta semana.',
+    },
+    'ru_RU': {
+      'reminders_enabled': 'Напоминания',
+      'reminder_spin_title': 'Вас ждёт удачное вращение!',
+      'reminder_spin_body': 'Не забудьте крутить колесо сегодня.',
+      'reminder_streak_title': 'Не потеряйте серию!',
+      'reminder_streak_body': 'Войдите сегодня, чтобы сохранить свою серию.',
+      'reminder_weekly_goal_title': 'Недельная цель скоро закончится',
+      'reminder_weekly_goal_body':
+          'Поиграйте ещё немного, чтобы завершить цель недели.',
+    },
+    'zh_CN': {
+      'reminders_enabled': '提醒',
+      'reminder_spin_title': '你的幸运转盘在等你！',
+      'reminder_spin_body': '别忘了今天转动转盘。',
+      'reminder_streak_title': '不要失去你的连续记录！',
+      'reminder_streak_body': '今天登录以保持你的连续记录。',
+      'reminder_weekly_goal_title': '每周目标即将结束',
+      'reminder_weekly_goal_body': '再玩一会儿以完成本周目标。',
+    },
+    'ja_JP': {
+      'reminders_enabled': 'リマインダー',
+      'reminder_spin_title': 'ラッキースピンが待っています！',
+      'reminder_spin_body': '今日ホイールを回すのを忘れずに。',
+      'reminder_streak_title': 'ストリークを失わないで！',
+      'reminder_streak_body': '今日ログインしてストリークを続けましょう。',
+      'reminder_weekly_goal_title': '週間目標がもうすぐ終了します',
+      'reminder_weekly_goal_body': 'もう少しプレイして今週の目標を達成しましょう。',
+    },
+    'ko_KR': {
+      'reminders_enabled': '알림',
+      'reminder_spin_title': '행운의 스핀이 기다리고 있어요!',
+      'reminder_spin_body': '오늘 휠 돌리는 것을 잊지 마세요.',
+      'reminder_streak_title': '스트릭을 잃지 마세요!',
+      'reminder_streak_body': '오늘 로그인해서 스트릭을 이어가세요.',
+      'reminder_weekly_goal_title': '주간 목표가 곧 종료됩니다',
+      'reminder_weekly_goal_body': '조금 더 플레이해서 이번 주 목표를 완료하세요.',
+    },
+    'it_IT': {
+      'reminders_enabled': 'Promemoria',
+      'reminder_spin_title': 'Il tuo giro fortunato ti aspetta!',
+      'reminder_spin_body': 'Non dimenticare di girare la ruota oggi.',
+      'reminder_streak_title': 'Non perdere la tua serie!',
+      'reminder_streak_body': 'Accedi oggi per mantenere attiva la tua serie.',
+      'reminder_weekly_goal_title': "L'obiettivo settimanale sta per finire",
+      'reminder_weekly_goal_body':
+          "Gioca ancora un po' per completare l'obiettivo di questa "
+          'settimana.',
+    },
+    'id_ID': {
+      'reminders_enabled': 'Pengingat',
+      'reminder_spin_title': 'Putaran keberuntunganmu menunggu!',
+      'reminder_spin_body': 'Jangan lupa putar roda hari ini.',
+      'reminder_streak_title': 'Jangan sampai beruntunmu hilang!',
+      'reminder_streak_body':
+          'Masuk hari ini untuk menjaga beruntunmu tetap berjalan.',
+      'reminder_weekly_goal_title': 'Target mingguan segera berakhir',
+      'reminder_weekly_goal_body':
+          'Bermain sedikit lagi untuk menyelesaikan target minggu ini.',
+    },
+    'th_TH': {
+      'reminders_enabled': 'การแจ้งเตือน',
+      'reminder_spin_title': 'การหมุนนำโชคของคุณกำลังรออยู่!',
+      'reminder_spin_body': 'อย่าลืมหมุนวงล้อวันนี้',
+      'reminder_streak_title': 'อย่าทำสตรีคของคุณหาย!',
+      'reminder_streak_body': 'เข้าสู่ระบบวันนี้เพื่อรักษาสตรีคของคุณ',
+      'reminder_weekly_goal_title': 'เป้าหมายรายสัปดาห์ใกล้จะสิ้นสุดแล้ว',
+      'reminder_weekly_goal_body':
+          'เล่นอีกนิดเพื่อทำเป้าหมายของสัปดาห์นี้ให้สำเร็จ',
+    },
+    'hi_IN': {
+      'reminders_enabled': 'रिमाइंडर',
+      'reminder_spin_title': 'आपका लकी स्पिन इंतज़ार कर रहा है!',
+      'reminder_spin_body': 'आज व्हील घुमाना न भूलें।',
+      'reminder_streak_title': 'अपनी स्ट्रीक न गंवाएं!',
+      'reminder_streak_body': 'अपनी स्ट्रीक जारी रखने के लिए आज लॉग इन करें।',
+      'reminder_weekly_goal_title': 'साप्ताहिक लक्ष्य जल्द समाप्त हो रहा है',
+      'reminder_weekly_goal_body':
+          'इस सप्ताह का लक्ष्य पूरा करने के लिए थोड़ा और खेलें।',
+    },
+    'ar_SA': {
+      'reminders_enabled': 'التذكيرات',
+      'reminder_spin_title': 'دورة الحظ الخاصة بك تنتظرك!',
+      'reminder_spin_body': 'لا تنسَ تدوير العجلة اليوم.',
+      'reminder_streak_title': 'لا تفقد سلسلتك!',
+      'reminder_streak_body': 'سجّل الدخول اليوم للحفاظ على سلسلتك.',
+      'reminder_weekly_goal_title': 'الهدف الأسبوعي ينتهي قريبًا',
+      'reminder_weekly_goal_body': 'العب قليلاً بعد لإكمال هدف هذا الأسبوع.',
+    },
+    'tr_TR': {
+      'reminders_enabled': 'Hatırlatıcılar',
+      'reminder_spin_title': 'Şanslı çevirmen seni bekliyor!',
+      'reminder_spin_body': 'Bugün çarkı çevirmeyi unutma.',
+      'reminder_streak_title': 'Serini kaybetme!',
+      'reminder_streak_body': 'Serini sürdürmek için bugün giriş yap.',
+      'reminder_weekly_goal_title': 'Haftalık hedef yakında sona eriyor',
+      'reminder_weekly_goal_body':
+          'Bu haftaki hedefi tamamlamak için biraz daha oyna.',
+    },
+    'nl_NL': {
+      'reminders_enabled': 'Herinneringen',
+      'reminder_spin_title': 'Je gelukswiel wacht op je!',
+      'reminder_spin_body': 'Vergeet niet om vandaag aan het wiel te draaien.',
+      'reminder_streak_title': 'Verlies je reeks niet!',
+      'reminder_streak_body':
+          'Log vandaag in om je reeks aan de gang te houden.',
+      'reminder_weekly_goal_title': 'Wekelijks doel eindigt binnenkort',
+      'reminder_weekly_goal_body':
+          'Speel nog even om het doel van deze week af te ronden.',
+    },
+    'pl_PL': {
+      'reminders_enabled': 'Przypomnienia',
+      'reminder_spin_title': 'Twoje szczęśliwe zakręcenie czeka!',
+      'reminder_spin_body': 'Nie zapomnij dziś zakręcić kołem.',
+      'reminder_streak_title': 'Nie strać swojej passy!',
+      'reminder_streak_body': 'Zaloguj się dziś, aby utrzymać swoją passę.',
+      'reminder_weekly_goal_title': 'Cel tygodniowy wkrótce się kończy',
+      'reminder_weekly_goal_body':
+          'Zagraj jeszcze trochę, aby ukończyć cel tego tygodnia.',
+    },
+    'fil_PH': {
+      'reminders_enabled': 'Mga Paalala',
+      'reminder_spin_title': 'Naghihintay na ang iyong lucky spin!',
+      'reminder_spin_body': 'Huwag kalimutang ikutin ang gulong ngayon.',
+      'reminder_streak_title': 'Huwag mawala ang iyong streak!',
+      'reminder_streak_body':
+          'Mag-login ngayon para mapanatili ang iyong streak.',
+      'reminder_weekly_goal_title':
+          'Malapit nang matapos ang lingguhang '
+          'layunin',
+      'reminder_weekly_goal_body':
+          'Maglaro pa ng kaunti para matapos ang layunin ngayong linggo.',
+    },
+    'ms_MY': {
+      'reminders_enabled': 'Peringatan',
+      'reminder_spin_title': 'Putaran bertuah anda sedang menanti!',
+      'reminder_spin_body': 'Jangan lupa putar roda hari ini.',
+      'reminder_streak_title': 'Jangan hilangkan streak anda!',
+      'reminder_streak_body':
+          'Log masuk hari ini untuk mengekalkan streak anda.',
+      'reminder_weekly_goal_title': 'Sasaran mingguan tamat tidak lama lagi',
+      'reminder_weekly_goal_body':
+          'Main sedikit lagi untuk melengkapkan sasaran minggu ini.',
+    },
+    'uk_UA': {
+      'reminders_enabled': 'Нагадування',
+      'reminder_spin_title': 'Ваше вдале обертання чекає!',
+      'reminder_spin_body': 'Не забудьте покрутити колесо сьогодні.',
+      'reminder_streak_title': 'Не втратьте свою серію!',
+      'reminder_streak_body': 'Увійдіть сьогодні, щоб продовжити свою серію.',
+      'reminder_weekly_goal_title': 'Тижнева мета скоро завершиться',
+      'reminder_weekly_goal_body':
+          'Пограйте ще трохи, щоб завершити мету цього тижня.',
+    },
+    'bn_BD': {
+      'reminders_enabled': 'রিমাইন্ডার',
+      'reminder_spin_title': 'আপনার লাকি স্পিন অপেক্ষা করছে!',
+      'reminder_spin_body': 'আজ চাকা ঘোরাতে ভুলবেন না।',
+      'reminder_streak_title': 'আপনার স্ট্রিক হারাবেন না!',
+      'reminder_streak_body': 'আপনার স্ট্রিক চালিয়ে যেতে আজ লগইন করুন।',
+      'reminder_weekly_goal_title': 'সাপ্তাহিক লক্ষ্য শীঘ্রই শেষ হচ্ছে',
+      'reminder_weekly_goal_body': 'এই সপ্তাহের লক্ষ্য পূরণ করতে আরেকটু খেলুন।',
+    },
+  };
+
+  // I57 — Shareable Score Card: share_score_card, score_card_rank_label
+  // (share_score_card_text giữ fallback tiếng Anh, cùng tiền lệ với
+  // share_board_text/share_challenge_text ở _extraEn/_extraVi).
+  static const Map<String, Map<String, String>> _w62ByLang = {
+    'es_ES': {
+      'share_score_card': 'Compartir tarjeta de resultado',
+      'score_card_rank_label': 'Puesto #@rank',
+    },
+    'fr_FR': {
+      'share_score_card': 'Partager la carte de résultat',
+      'score_card_rank_label': 'Rang #@rank',
+    },
+    'de_DE': {
+      'share_score_card': 'Ergebniskarte teilen',
+      'score_card_rank_label': 'Rang #@rank',
+    },
+    'pt_BR': {
+      'share_score_card': 'Compartilhar cartão de resultado',
+      'score_card_rank_label': 'Posição #@rank',
+    },
+    'ru_RU': {
+      'share_score_card': 'Поделиться карточкой результата',
+      'score_card_rank_label': 'Место №@rank',
+    },
+    'zh_CN': {
+      'share_score_card': '分享成绩卡',
+      'score_card_rank_label': '排名 #@rank',
+    },
+    'ja_JP': {
+      'share_score_card': 'スコアカードを共有',
+      'score_card_rank_label': '順位 #@rank',
+    },
+    'ko_KR': {
+      'share_score_card': '결과 카드 공유',
+      'score_card_rank_label': '순위 #@rank',
+    },
+    'it_IT': {
+      'share_score_card': 'Condividi scheda risultato',
+      'score_card_rank_label': 'Posizione #@rank',
+    },
+    'id_ID': {
+      'share_score_card': 'Bagikan kartu hasil',
+      'score_card_rank_label': 'Peringkat #@rank',
+    },
+    'th_TH': {
+      'share_score_card': 'แชร์การ์ดผลคะแนน',
+      'score_card_rank_label': 'อันดับ #@rank',
+    },
+    'hi_IN': {
+      'share_score_card': 'स्कोर कार्ड साझा करें',
+      'score_card_rank_label': 'रैंक #@rank',
+    },
+    'ar_SA': {
+      'share_score_card': 'مشاركة بطاقة النتيجة',
+      'score_card_rank_label': 'الترتيب #@rank',
+    },
+    'tr_TR': {
+      'share_score_card': 'Sonuç kartını paylaş',
+      'score_card_rank_label': 'Sıra #@rank',
+    },
+    'nl_NL': {
+      'share_score_card': 'Resultaatkaart delen',
+      'score_card_rank_label': 'Rang #@rank',
+    },
+    'pl_PL': {
+      'share_score_card': 'Udostępnij kartę wyniku',
+      'score_card_rank_label': 'Pozycja #@rank',
+    },
+    'fil_PH': {
+      'share_score_card': 'Ibahagi ang score card',
+      'score_card_rank_label': 'Ranggo #@rank',
+    },
+    'ms_MY': {
+      'share_score_card': 'Kongsi kad keputusan',
+      'score_card_rank_label': 'Kedudukan #@rank',
+    },
+    'uk_UA': {
+      'share_score_card': 'Поділитися карткою результату',
+      'score_card_rank_label': 'Місце №@rank',
+    },
+    'bn_BD': {
+      'share_score_card': 'স্কোর কার্ড শেয়ার করুন',
+      'score_card_rank_label': 'র‍্যাঙ্ক #@rank',
+    },
+  };
+
+  // I65 — Star Pet Companion Habitat: pet_habitat_*, pet_ember/aqua/luna_name
+  // (en+vi ở _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w63ByLang).
+  static const Map<String, Map<String, String>> _w63ByLang = {
+    'es_ES': {
+      'pet_habitat_title': 'Hábitat de mascotas estelares',
+      'pet_habitat_empty': 'Aún no tienes mascotas: ¡incuba una abajo!',
+      'pet_habitat_hatch_section': 'Incubar una mascota',
+      'pet_habitat_star_dust_label': 'Polvo estelar',
+      'pet_habitat_claim_button': 'Reclamar +@amount',
+      'pet_habitat_owned_count': 'En posesión: @count',
+      'pet_habitat_hatch_button': 'Incubar (@cost)',
+      'pet_ember_name': 'Ascua',
+      'pet_aqua_name': 'Agua',
+      'pet_luna_name': 'Luna',
+    },
+    'fr_FR': {
+      'pet_habitat_title': 'Habitat des animaux stellaires',
+      'pet_habitat_empty':
+          "Pas encore d'animaux — faites-en éclore un ci-dessous !",
+      'pet_habitat_hatch_section': 'Faire éclore un animal',
+      'pet_habitat_star_dust_label': "Poussière d'étoile",
+      'pet_habitat_claim_button': 'Récupérer +@amount',
+      'pet_habitat_owned_count': 'Possédés : @count',
+      'pet_habitat_hatch_button': 'Éclore (@cost)',
+      'pet_ember_name': 'Braise',
+      'pet_aqua_name': 'Aqua',
+      'pet_luna_name': 'Lune',
+    },
+    'de_DE': {
+      'pet_habitat_title': 'Sternentier-Habitat',
+      'pet_habitat_empty': 'Noch keine Haustiere – brüte unten eins aus!',
+      'pet_habitat_hatch_section': 'Haustier ausbrüten',
+      'pet_habitat_star_dust_label': 'Sternenstaub',
+      'pet_habitat_claim_button': 'Abholen +@amount',
+      'pet_habitat_owned_count': 'Besitz: @count',
+      'pet_habitat_hatch_button': 'Ausbrüten (@cost)',
+      'pet_ember_name': 'Glut',
+      'pet_aqua_name': 'Aqua',
+      'pet_luna_name': 'Luna',
+    },
+    'pt_BR': {
+      'pet_habitat_title': 'Habitat de bichinhos estelares',
+      'pet_habitat_empty': 'Ainda sem bichinhos — choque um abaixo!',
+      'pet_habitat_hatch_section': 'Chocar um bichinho',
+      'pet_habitat_star_dust_label': 'Poeira estelar',
+      'pet_habitat_claim_button': 'Coletar +@amount',
+      'pet_habitat_owned_count': 'Possuídos: @count',
+      'pet_habitat_hatch_button': 'Chocar (@cost)',
+      'pet_ember_name': 'Brasa',
+      'pet_aqua_name': 'Água',
+      'pet_luna_name': 'Luna',
+    },
+    'ru_RU': {
+      'pet_habitat_title': 'Дом звёздных питомцев',
+      'pet_habitat_empty': 'Питомцев пока нет — вылупите одного ниже!',
+      'pet_habitat_hatch_section': 'Вылупить питомца',
+      'pet_habitat_star_dust_label': 'Звёздная пыль',
+      'pet_habitat_claim_button': 'Забрать +@amount',
+      'pet_habitat_owned_count': 'В наличии: @count',
+      'pet_habitat_hatch_button': 'Вылупить (@cost)',
+      'pet_ember_name': 'Уголёк',
+      'pet_aqua_name': 'Аква',
+      'pet_luna_name': 'Луна',
+    },
+    'zh_CN': {
+      'pet_habitat_title': '星星宠物栖息地',
+      'pet_habitat_empty': '还没有宠物——在下方孵化一只吧！',
+      'pet_habitat_hatch_section': '孵化宠物',
+      'pet_habitat_star_dust_label': '星尘',
+      'pet_habitat_claim_button': '领取 +@amount',
+      'pet_habitat_owned_count': '拥有：@count',
+      'pet_habitat_hatch_button': '孵化 (@cost)',
+      'pet_ember_name': '余烬',
+      'pet_aqua_name': '水灵',
+      'pet_luna_name': '露娜',
+    },
+    'ja_JP': {
+      'pet_habitat_title': '星のペットの住処',
+      'pet_habitat_empty': 'まだペットがいません — 下でふ化させよう！',
+      'pet_habitat_hatch_section': 'ペットをふ化',
+      'pet_habitat_star_dust_label': 'スターダスト',
+      'pet_habitat_claim_button': '受け取る +@amount',
+      'pet_habitat_owned_count': '所持数：@count',
+      'pet_habitat_hatch_button': 'ふ化 (@cost)',
+      'pet_ember_name': 'エンバー',
+      'pet_aqua_name': 'アクア',
+      'pet_luna_name': 'ルナ',
+    },
+    'ko_KR': {
+      'pet_habitat_title': '별 반려동물 서식지',
+      'pet_habitat_empty': '아직 반려동물이 없어요 — 아래에서 부화시켜 보세요!',
+      'pet_habitat_hatch_section': '반려동물 부화',
+      'pet_habitat_star_dust_label': '별가루',
+      'pet_habitat_claim_button': '받기 +@amount',
+      'pet_habitat_owned_count': '보유: @count',
+      'pet_habitat_hatch_button': '부화 (@cost)',
+      'pet_ember_name': '엠버',
+      'pet_aqua_name': '아쿠아',
+      'pet_luna_name': '루나',
+    },
+    'it_IT': {
+      'pet_habitat_title': 'Habitat degli animaletti stellari',
+      'pet_habitat_empty':
+          'Nessun animaletto ancora — schiudine uno qui sotto!',
+      'pet_habitat_hatch_section': 'Schiudi un animaletto',
+      'pet_habitat_star_dust_label': 'Polvere di stelle',
+      'pet_habitat_claim_button': 'Riscuoti +@amount',
+      'pet_habitat_owned_count': 'Posseduti: @count',
+      'pet_habitat_hatch_button': 'Schiudi (@cost)',
+      'pet_ember_name': 'Brace',
+      'pet_aqua_name': 'Acqua',
+      'pet_luna_name': 'Luna',
+    },
+    'id_ID': {
+      'pet_habitat_title': 'Habitat Hewan Peliharaan Bintang',
+      'pet_habitat_empty':
+          'Belum ada hewan peliharaan — tetaskan satu di bawah!',
+      'pet_habitat_hatch_section': 'Tetaskan Hewan Peliharaan',
+      'pet_habitat_star_dust_label': 'Debu Bintang',
+      'pet_habitat_claim_button': 'Klaim +@amount',
+      'pet_habitat_owned_count': 'Dimiliki: @count',
+      'pet_habitat_hatch_button': 'Tetaskan (@cost)',
+      'pet_ember_name': 'Bara',
+      'pet_aqua_name': 'Aqua',
+      'pet_luna_name': 'Luna',
+    },
+    'th_TH': {
+      'pet_habitat_title': 'ที่อยู่อาศัยสัตว์เลี้ยงดาว',
+      'pet_habitat_empty': 'ยังไม่มีสัตว์เลี้ยง — ฟักตัวหนึ่งด้านล่าง!',
+      'pet_habitat_hatch_section': 'ฟักสัตว์เลี้ยง',
+      'pet_habitat_star_dust_label': 'ผงดาว',
+      'pet_habitat_claim_button': 'รับ +@amount',
+      'pet_habitat_owned_count': 'เป็นเจ้าของ: @count',
+      'pet_habitat_hatch_button': 'ฟัก (@cost)',
+      'pet_ember_name': 'ถ่านไฟ',
+      'pet_aqua_name': 'อควา',
+      'pet_luna_name': 'ลูน่า',
+    },
+    'hi_IN': {
+      'pet_habitat_title': 'स्टार पेट हैबिटैट',
+      'pet_habitat_empty': 'अभी तक कोई पालतू जानवर नहीं — नीचे एक को सेएं!',
+      'pet_habitat_hatch_section': 'पालतू जानवर सेएं',
+      'pet_habitat_star_dust_label': 'स्टार डस्ट',
+      'pet_habitat_claim_button': 'प्राप्त करें +@amount',
+      'pet_habitat_owned_count': 'स्वामित्व: @count',
+      'pet_habitat_hatch_button': 'सेएं (@cost)',
+      'pet_ember_name': 'अंगारा',
+      'pet_aqua_name': 'जल',
+      'pet_luna_name': 'लूना',
+    },
+    'ar_SA': {
+      'pet_habitat_title': 'موطن الحيوانات النجمية',
+      'pet_habitat_empty': 'لا توجد حيوانات أليفة بعد — فقّس واحدًا أدناه!',
+      'pet_habitat_hatch_section': 'فقّس حيوانًا أليفًا',
+      'pet_habitat_star_dust_label': 'غبار النجوم',
+      'pet_habitat_claim_button': 'استلام +@amount',
+      'pet_habitat_owned_count': 'مملوكة: @count',
+      'pet_habitat_hatch_button': 'فقّس (@cost)',
+      'pet_ember_name': 'جمرة',
+      'pet_aqua_name': 'أكوا',
+      'pet_luna_name': 'لونا',
+    },
+    'tr_TR': {
+      'pet_habitat_title': 'Yıldız Evcil Hayvan Yuvası',
+      'pet_habitat_empty':
+          'Henüz evcil hayvan yok — aşağıdan birini yumurtadan çıkar!',
+      'pet_habitat_hatch_section': 'Evcil Hayvan Çıkar',
+      'pet_habitat_star_dust_label': 'Yıldız Tozu',
+      'pet_habitat_claim_button': 'Al +@amount',
+      'pet_habitat_owned_count': 'Sahip Olunan: @count',
+      'pet_habitat_hatch_button': 'Çıkar (@cost)',
+      'pet_ember_name': 'Kor',
+      'pet_aqua_name': 'Aqua',
+      'pet_luna_name': 'Luna',
+    },
+    'nl_NL': {
+      'pet_habitat_title': 'Sterrenhuisdierverblijf',
+      'pet_habitat_empty': 'Nog geen huisdieren — broed er hieronder één uit!',
+      'pet_habitat_hatch_section': 'Broed een huisdier uit',
+      'pet_habitat_star_dust_label': 'Sterrenstof',
+      'pet_habitat_claim_button': 'Claim +@amount',
+      'pet_habitat_owned_count': 'In bezit: @count',
+      'pet_habitat_hatch_button': 'Uitbroeden (@cost)',
+      'pet_ember_name': 'Sintel',
+      'pet_aqua_name': 'Aqua',
+      'pet_luna_name': 'Luna',
+    },
+    'pl_PL': {
+      'pet_habitat_title': 'Siedlisko gwiezdnych pupili',
+      'pet_habitat_empty': 'Brak jeszcze pupili — wyklu jednego poniżej!',
+      'pet_habitat_hatch_section': 'Wyklu pupila',
+      'pet_habitat_star_dust_label': 'Gwiezdny pył',
+      'pet_habitat_claim_button': 'Odbierz +@amount',
+      'pet_habitat_owned_count': 'Posiadane: @count',
+      'pet_habitat_hatch_button': 'Wyklu (@cost)',
+      'pet_ember_name': 'Żar',
+      'pet_aqua_name': 'Aqua',
+      'pet_luna_name': 'Luna',
+    },
+    'fil_PH': {
+      'pet_habitat_title': 'Tirahan ng Star Pet',
+      'pet_habitat_empty': 'Wala pang alagang hayop — magpisa ng isa sa ibaba!',
+      'pet_habitat_hatch_section': 'Magpisa ng Alaga',
+      'pet_habitat_star_dust_label': 'Alikabok ng Bituin',
+      'pet_habitat_claim_button': 'Kunin +@amount',
+      'pet_habitat_owned_count': 'Pag-aari: @count',
+      'pet_habitat_hatch_button': 'Magpisa (@cost)',
+      'pet_ember_name': 'Baga',
+      'pet_aqua_name': 'Aqua',
+      'pet_luna_name': 'Luna',
+    },
+    'ms_MY': {
+      'pet_habitat_title': 'Habitat Haiwan Peliharaan Bintang',
+      'pet_habitat_empty':
+          'Belum ada haiwan peliharaan — tetaskan seekor di bawah!',
+      'pet_habitat_hatch_section': 'Tetaskan Haiwan Peliharaan',
+      'pet_habitat_star_dust_label': 'Habuk Bintang',
+      'pet_habitat_claim_button': 'Tuntut +@amount',
+      'pet_habitat_owned_count': 'Dimiliki: @count',
+      'pet_habitat_hatch_button': 'Tetas (@cost)',
+      'pet_ember_name': 'Bara',
+      'pet_aqua_name': 'Aqua',
+      'pet_luna_name': 'Luna',
+    },
+    'uk_UA': {
+      'pet_habitat_title': 'Оселя зоряних улюбленців',
+      'pet_habitat_empty': 'Улюбленців ще немає — вилупіть одного нижче!',
+      'pet_habitat_hatch_section': 'Вилупити улюбленця',
+      'pet_habitat_star_dust_label': 'Зоряний пил',
+      'pet_habitat_claim_button': 'Забрати +@amount',
+      'pet_habitat_owned_count': 'У власності: @count',
+      'pet_habitat_hatch_button': 'Вилупити (@cost)',
+      'pet_ember_name': 'Жарина',
+      'pet_aqua_name': 'Аква',
+      'pet_luna_name': 'Луна',
+    },
+    'bn_BD': {
+      'pet_habitat_title': 'স্টার পোষা প্রাণীর আবাসস্থল',
+      'pet_habitat_empty': 'এখনো কোনো পোষা প্রাণী নেই — নিচে একটি ফোটান!',
+      'pet_habitat_hatch_section': 'একটি পোষা প্রাণী ফোটান',
+      'pet_habitat_star_dust_label': 'তারার ধুলো',
+      'pet_habitat_claim_button': 'দাবি করুন +@amount',
+      'pet_habitat_owned_count': 'মালিকানাধীন: @count',
+      'pet_habitat_hatch_button': 'ফোটান (@cost)',
+      'pet_ember_name': 'অঙ্গার',
+      'pet_aqua_name': 'অ্যাকুয়া',
+      'pet_luna_name': 'লুনা',
     },
   };
 }

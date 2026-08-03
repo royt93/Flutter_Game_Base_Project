@@ -85,3 +85,22 @@ Future<void> shareBoardImage({
     ),
   );
 }
+
+/// I57: chụp `ScoreCard` (dựng tạm trong overlay ẩn ngay trước khi gọi, xem
+/// `GameScreenController.shareResultCard`) rồi mở share sheet kèm
+/// [levelText] — cùng pattern với [shareBoardImage] nhưng tách file/caption
+/// riêng vì đây là thẻ kết quả, không phải ảnh chụp board (F15).
+Future<void> shareScoreCard({
+  required GlobalKey boundaryKey,
+  required String levelText,
+}) async {
+  final png = await captureBoardPng(boundaryKey, overlayText: levelText);
+  if (png == null) return;
+  await SharePlus.instance.share(
+    ShareParams(
+      text: levelText,
+      files: [XFile.fromData(png, mimeType: 'image/png')],
+      fileNameOverrides: const ['pop_star_blast_score_card.png'],
+    ),
+  );
+}

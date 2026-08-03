@@ -31,6 +31,11 @@ class StorageKeys {
   // F10: swap (đổi màu 2 ô), freeze (chặn giảm bền obstacle N lượt).
   static const String swapCount = 'swap_count';
   static const String freezeCount = 'freeze_count';
+  // I55: streak freeze — bảo vệ login streak (I48) khi lỡ đúng 1 ngày.
+  static const String streakFreezeCount = 'streak_freeze_count';
+
+  // I56: bật/tắt local reminder nhắc spin/streak/weekly-goal (mặc định bật).
+  static const String remindersEnabled = 'reminders_enabled';
 
   // F7 Star road: bitmask rương đã claim (bit i = mốc thứ i).
   static const String claimedChests = 'claimed_chests';
@@ -176,6 +181,14 @@ class StorageKeys {
   // I60 Treasure Map: consumable entry tickets + exclusive chest unlock.
   static const String treasureMapCount = 'treasure_map_count';
   static const String treasureMapCompleted = 'treasure_map_completed';
+
+  // I65 Star Pet Companion Habitat: xu tiên tệ riêng (Star Dust), danh sách
+  // pet sở hữu (JSON-encode list PetInstance), mốc thời gian lần hốt thưởng
+  // idle gần nhất — key mới hoàn toàn, không tái dùng lastOpenDay (mục đích
+  // khác: đó là streak điểm danh, đây là mốc tính idle-reward liên tục).
+  static const String starDustCount = 'star_dust_count';
+  static const String starOwnedPets = 'star_owned_pets';
+  static const String lastPetCollectTimestampMs = 'last_pet_collect_ms';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

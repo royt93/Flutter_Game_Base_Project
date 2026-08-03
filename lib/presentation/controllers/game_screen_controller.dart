@@ -8,11 +8,16 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/share_helper.dart';
 import '../../core/storage_service.dart';
+import '../../data/daily_challenge_leaderboard_bots.dart';
+import '../../data/gauntlet_leaderboard_bots.dart';
 import '../../data/levels.dart';
 import '../../data/mirror_board.dart';
+import '../../data/weekly_featured_leaderboard_bots.dart';
 import '../../game/pop_star_game.dart';
 import '../../logic/challenge_code.dart';
+import '../../logic/leaderboard.dart';
 import '../../logic/replay.dart';
+import '../widgets/score_card.dart';
 import 'game_controller.dart';
 import 'pass_and_play_controller.dart';
 import 'treasure_map_controller.dart';
@@ -50,6 +55,10 @@ class GameScreenController extends GetxController {
   /// F15: key của `RepaintBoundary` bọc bàn chơi, dùng để chụp ảnh chia sẻ.
   final GlobalKey boardKey = GlobalKey();
   final GlobalKey challengeCardKey = GlobalKey();
+
+  /// I57: key của `RepaintBoundary` tạm bọc `ScoreCard` khi chụp ảnh chia
+  /// sẻ — dựng trong overlay ẩn ngay trước khi capture (xem [shareResultCard]).
+  final GlobalKey scoreCardKey = GlobalKey();
 
   PopStarGame get game => _game!;
 
@@ -151,6 +160,71 @@ class GameScreenController extends GetxController {
         ),
       ),
     );
+  }
+
+  /// I57: hạng offline hiện tại nếu mode đang chơi có leaderboard
+  /// (dailyChallenge/gauntlet/weeklyFeatured) — null cho mode khác (vd.
+  /// campaign) để `ScoreCard` ẩn hẳn dòng rank thay vì hiện "N/A".
+  int? get _currentModeRank {
+    switch (gameCtrl.mode.value) {
+      case GameMode.dailyChallenge:
+        return playerRank(
+          buildLeaderboard(
+            kDailyChallengeLeaderboardBots,
+            gameCtrl.dailyChallengeScoreForLeaderboard,
+          ),
+        );
+      case GameMode.gauntlet:
+        return playerRank(
+          buildLeaderboard(
+            kGauntletLeaderboardBots,
+            gameCtrl.gauntletScoreForLeaderboard,
+          ),
+        );
+      case GameMode.weeklyFeatured:
+        return playerRank(
+          buildLeaderboard(
+            kWeeklyFeaturedLeaderboardBots,
+            gameCtrl.featuredLevelScore,
+          ),
+        );
+      default:
+        return null;
+    }
+  }
+
+  /// I57: dựng `ScoreCard` tạm ngoài viewport (overlay ẩn, không phá UI
+  /// đang hiện) để chụp ảnh rồi gỡ ngay sau khi share xong — không refactor
+  /// `share_helper.dart` để nhận `Widget` trực tiếp (giữ nguyên API F15).
+  Future<void> shareResultCard() async {
+    final context = Get.context;
+    if (context == null) return;
+    final overlay = Overlay.of(context, rootOverlay: true);
+    final entry = OverlayEntry(
+      builder: (_) => Positioned(
+        left: -9999,
+        top: 0,
+        child: RepaintBoundary(
+          key: scoreCardKey,
+          child: ScoreCard(
+            score: gameCtrl.score.value,
+            totalStars: gameCtrl.totalStars.value,
+            mascotPalette: gameCtrl.activeMascotSkin.palette,
+            rank: _currentModeRank,
+          ),
+        ),
+      ),
+    );
+    overlay.insert(entry);
+    await WidgetsBinding.instance.endOfFrame;
+    final date = DateTime.now().toIso8601String().split('T').first;
+    final text = 'share_score_card_text'.trParams({
+      'level': '${gameCtrl.currentLevel.id}',
+      'score': '${gameCtrl.score.value}',
+      'date': date,
+    });
+    await shareScoreCard(boundaryKey: scoreCardKey, levelText: text);
+    entry.remove();
   }
 
   @override
