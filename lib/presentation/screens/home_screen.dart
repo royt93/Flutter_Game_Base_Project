@@ -9,7 +9,6 @@ import '../../data/worlds.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_screen_controller.dart';
 import '../widgets/ambient_particles.dart';
-import '../widgets/board_frame_picker_dialog.dart';
 import '../widgets/burst_style_picker_dialog.dart';
 import '../widgets/coin_chip.dart';
 import '../widgets/clan_dialog.dart';
@@ -17,6 +16,7 @@ import '../widgets/combo_text_style_picker_dialog.dart';
 import '../widgets/daily_quest_dialog.dart';
 import '../widgets/home_carousel.dart';
 import '../widgets/login_streak_dialog.dart';
+import '../widgets/milestone_journal_dialog.dart';
 import '../widgets/mystery_crate_dialog.dart';
 import '../widgets/weekly_goal_dialog.dart';
 import '../widgets/neon_bg.dart';
@@ -29,6 +29,7 @@ import '../widgets/spin_wheel_dialog.dart';
 import '../widgets/star_mascot.dart';
 import '../widgets/stroke_text.dart';
 import 'achievements_screen.dart';
+import 'board_frame_screen.dart';
 import 'color_alchemy_screen.dart';
 import 'friend_compare_screen.dart';
 import 'ghost_replay_screen.dart';
@@ -267,6 +268,12 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => Get.to(() => const StatsScreen()),
             ),
             _drawerTile(
+              icon: Icons.auto_stories_rounded,
+              color: NeonTheme.purple,
+              label: 'drawer_milestone_journal_label'.tr,
+              onTap: () => showMilestoneJournalDialog(context, gameCtrl),
+            ),
+            _drawerTile(
               icon: Icons.task_alt_rounded,
               color: NeonTheme.purple,
               label: 'daily_quest_title'.tr,
@@ -288,7 +295,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.crop_free_rounded,
               color: NeonTheme.indigo,
               label: 'drawer_board_frame_label'.tr,
-              onTap: () => showBoardFramePickerDialog(context, gameCtrl),
+              onTap: () => Get.to(() => const BoardFrameScreen()),
             ),
             _drawerTile(
               icon: Icons.auto_awesome_rounded,

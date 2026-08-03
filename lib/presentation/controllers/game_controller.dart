@@ -294,6 +294,10 @@ class GameController extends GetxController {
   final totalBoostersUsed = 0.obs;
   final unlockedAchievementIds = <String>{}.obs;
 
+  // I72 Milestone Journal: id -> epochDay lúc unlock, đọc trực tiếp bởi
+  // dialog (không cần Rx — chỉ là feed lịch sử tĩnh, không hiển thị realtime).
+  final Map<String, int> achievementUnlockDays = {};
+
   /// Set 1 lần khi vừa đạt mốc thành tựu mới, UI lắng nghe rồi tự clear.
   final justUnlockedAchievement = Rxn<Achievement>();
 
@@ -537,12 +541,25 @@ class GameController extends GetxController {
   // (suy trực tiếp từ state đời đã có để tránh lệch dữ liệu).
   final activeBoardFrameId = kBoardFrames.first.id.obs;
 
-  /// Khung đang active — phòng thủ id giả mạo/hỏng trong storage bằng cách
-  /// fallback về khung đầu tiên (`classic`, luôn mở khoá) nếu không khớp id.
-  BoardFrame get activeBoardFrame => kBoardFrames.firstWhere(
-    (f) => f.id == activeBoardFrameId.value,
-    orElse: () => kBoardFrames.first,
-  );
+  /// Khung đang active — phòng thủ id giả mạo/hỏng trong storage, và fallback
+  /// về khung đầu tiên (`classic`, luôn mở khoá) nếu id không khớp HOẶC khung
+  /// đang active không còn `isBoardFrameUnlocked()` (vd frame seasonal đã hết
+  /// mùa — không xây "revert" riêng, tái dùng đúng fallback đã có).
+  BoardFrame get activeBoardFrame {
+    final frame = kBoardFrames.firstWhere(
+      (f) => f.id == activeBoardFrameId.value,
+      orElse: () => kBoardFrames.first,
+    );
+    if (!isBoardFrameUnlocked(
+      frame,
+      prestigeTier.value,
+      unlockedAchievementIds,
+      treasureMapCompleted: treasureMapCompleted.value,
+    )) {
+      return kBoardFrames.first;
+    }
+    return frame;
+  }
 
   /// Đổi khung viền board — chặn chọn khung chưa mở khoá (phòng race/giả mạo
   /// qua storage trực tiếp). Thuần cosmetic, không ảnh hưởng điểm/xu/booster.
@@ -694,6 +711,7 @@ class GameController extends GetxController {
     for (final id in newlyUnlocked) {
       final a = kAchievements.firstWhere((e) => e.id == id);
       unlockedAchievementIds.add(id);
+      achievementUnlockDays[id] = _todayEpochDay();
       coins.value += a.coinReward * weekendCoinMultiplier;
       justUnlockedAchievement.value = a;
       // I30: thành tựu mốc cao tự mở khoá skin gắn với nó (không tốn xu).
@@ -707,6 +725,10 @@ class GameController extends GetxController {
     StorageService.to.setString(
       StorageKeys.unlockedAchievements,
       unlockedAchievementIds.join(','),
+    );
+    StorageService.to.setString(
+      StorageKeys.achievementUnlockDays,
+      jsonEncode(achievementUnlockDays),
     );
     StorageService.to.setInt(StorageKeys.coins, coins.value);
     if (mascotSkinsChanged) {
@@ -916,6 +938,24 @@ class GameController extends GetxController {
           .where((s) => s.isNotEmpty)
           .toSet(),
     );
+    // I72: nạp lại map ngày unlock đã lưu; bỏ qua id không còn hợp lệ
+    // (giống cách unlockedMascotSkins lọc theo validSkinIds ngay bên dưới).
+    achievementUnlockDays.clear();
+    final storedUnlockDaysRaw = StorageService.to.getString(
+      StorageKeys.achievementUnlockDays,
+    );
+    if (storedUnlockDaysRaw != null && storedUnlockDaysRaw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(storedUnlockDaysRaw) as Map<String, dynamic>;
+        for (final entry in decoded.entries) {
+          if (unlockedAchievementIds.contains(entry.key)) {
+            achievementUnlockDays[entry.key] = entry.value as int;
+          }
+        }
+      } catch (_) {
+        // Dữ liệu hỏng/giả mạo -> bỏ qua, feed chỉ thiếu mốc cũ chứ không crash.
+      }
+    }
     // I36: chỉ nhận lại danh hiệu đã lưu nếu id đó vẫn nằm trong achievement
     // đã unlock — phòng dữ liệu cũ/giả mạo trỏ tới id chưa (hoặc không còn)
     // được unlock.

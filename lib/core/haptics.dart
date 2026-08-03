@@ -17,6 +17,16 @@ void fireHaptic(HapticLevel level) {
   if (!StorageService.to.getBool(StorageKeys.hapticsEnabled, def: true)) {
     return;
   }
+  if (StorageService.to.getBool(StorageKeys.hapticSoftMode, def: false)) {
+    switch (level) {
+      case HapticLevel.heavy:
+        level = HapticLevel.medium;
+      case HapticLevel.medium:
+        level = HapticLevel.light;
+      case HapticLevel.light:
+        break;
+    }
+  }
   switch (level) {
     case HapticLevel.light:
       HapticFeedback.lightImpact();

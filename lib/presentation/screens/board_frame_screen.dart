@@ -5,50 +5,49 @@ import '../../core/neon_theme.dart';
 import '../../data/achievements.dart';
 import '../../data/board_frames.dart';
 import '../controllers/game_controller.dart';
-import 'neon_dialog.dart';
+import '../widgets/neon_app_bar.dart';
+import '../widgets/neon_bg.dart';
 
-/// I51 Board Frame Picker chọn khung viền board. Khung chưa mở khoá (theo
-/// `gameCtrl.prestigeTier`/`unlockedAchievementIds`) hiện mờ + điều kiện mở
-/// khoá, không tap được.
-Future<void> showBoardFramePickerDialog(
-  BuildContext context,
-  GameController gameCtrl,
-) {
-  return NeonDialog.show(
-    context: context,
-    title: 'drawer_board_frame_label'.tr,
-    color: NeonTheme.indigo,
-    icon: Icons.crop_free_rounded,
-    content: Column(
-      children: [
-        for (final frame in kBoardFrames)
-          _BoardFrameRow(
-            frame: frame,
-            gameCtrl: gameCtrl,
-            onSelected: () => Navigator.of(context, rootNavigator: true).pop(),
+/// I73: màn hình riêng thay cho dialog "Khung viền" cũ (bị tràn nội dung khi
+/// danh sách khung tăng lên 8) — full-screen route giống ModeSelectScreen,
+/// không giới hạn chiều cao nội dung.
+class BoardFrameScreen extends StatelessWidget {
+  const BoardFrameScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final gameCtrl = Get.find<GameController>();
+    return Scaffold(
+      body: NeonBg(
+        child: SafeArea(
+          child: Column(
+            children: [
+              NeonAppBar(
+                title: 'drawer_board_frame_label'.tr,
+                color: NeonTheme.indigo,
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(NeonTheme.s16),
+                  children: [
+                    for (final frame in kBoardFrames)
+                      _BoardFrameRow(frame: frame, gameCtrl: gameCtrl),
+                  ],
+                ),
+              ),
+            ],
           ),
-      ],
-    ),
-    actions: [
-      NeonDialogAction(
-        label: 'coll_close'.tr,
-        color: NeonTheme.indigo,
-        onTap: () {},
+        ),
       ),
-    ],
-  );
+    );
+  }
 }
 
 class _BoardFrameRow extends StatelessWidget {
-  const _BoardFrameRow({
-    required this.frame,
-    required this.gameCtrl,
-    required this.onSelected,
-  });
+  const _BoardFrameRow({required this.frame, required this.gameCtrl});
 
   final BoardFrame frame;
   final GameController gameCtrl;
-  final VoidCallback onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -63,12 +62,7 @@ class _BoardFrameRow extends StatelessWidget {
       return Opacity(
         opacity: unlocked ? 1 : 0.45,
         child: GestureDetector(
-          onTap: unlocked
-              ? () {
-                  gameCtrl.setActiveBoardFrame(frame.id);
-                  onSelected();
-                }
-              : null,
+          onTap: unlocked ? () => gameCtrl.setActiveBoardFrame(frame.id) : null,
           child: Container(
             margin: const EdgeInsets.only(bottom: NeonTheme.s8),
             padding: const EdgeInsets.symmetric(
@@ -103,7 +97,14 @@ class _BoardFrameRow extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      if (!unlocked) Text(_unlockText(), style: _lockStyle),
+                      if (!unlocked)
+                        Text(_unlockText(), style: _lockStyle)
+                      else if (frame.unlockKind ==
+                          BoardFrameUnlockKind.seasonal)
+                        Text(
+                          'board_frame_seasonal_badge'.tr,
+                          style: _lockStyle.copyWith(color: frame.color),
+                        ),
                     ],
                   ),
                 ),
@@ -140,6 +141,11 @@ class _BoardFrameRow extends StatelessWidget {
         });
       case BoardFrameUnlockKind.treasureMap:
         return 'board_frame_unlock_treasure'.tr;
+      case BoardFrameUnlockKind.seasonal:
+        return 'board_frame_unlock_seasonal'.trParams({
+          'start': '${frame.seasonStartDay}/${frame.seasonStartMonth}',
+          'end': '${frame.seasonEndDay}/${frame.seasonEndMonth}',
+        });
     }
   }
 }

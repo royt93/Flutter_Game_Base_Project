@@ -62,6 +62,12 @@ class StorageKeys {
   // A7: tắt slow-mo/zoom-punch/shake cho người nhạy chuyển động.
   static const String reduceMotion = 'reduce_motion';
 
+  // I71: giảm cường độ rung (heavy/medium hạ xuống 1 bậc), mặc định tắt.
+  static const String hapticSoftMode = 'haptic_soft_mode';
+
+  // I71: nới hit-test ở mép ngoài bàn cờ cho người khó nhắm chính xác.
+  static const String largerTapTargets = 'larger_tap_targets';
+
   // I28: bật ghi lại lượt tap để tạo mã ghost-replay chia sẻ (mặc định tắt).
   static const String recordReplay = 'record_replay';
 
@@ -97,6 +103,10 @@ class StorageKeys {
   static const String boardsFullyCleared = 'boards_fully_cleared';
   static const String totalBoostersUsed = 'total_boosters_used';
   static const String unlockedAchievements = 'unlocked_achievements';
+
+  // I72 Milestone Journal: epochDay lúc unlock từng achievement, JSON
+  // `Map<String,int>` id -> epochDay (để sort feed mốc lịch sử theo thời gian).
+  static const String achievementUnlockDays = 'achievement_unlock_days';
 
   // I36 Achievement Titles: id achievement đang chọn làm danh hiệu hiển thị
   // cạnh tên (rỗng = không có danh hiệu).

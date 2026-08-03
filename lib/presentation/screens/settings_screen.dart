@@ -37,6 +37,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     def: true,
   );
   late bool _reduceMotion = StorageService.to.getBool(StorageKeys.reduceMotion);
+  late bool _hapticSoftMode = StorageService.to.getBool(
+    StorageKeys.hapticSoftMode,
+  );
+  late bool _largerTapTargets = StorageService.to.getBool(
+    StorageKeys.largerTapTargets,
+  );
   late bool _darkTheme = NeonTheme.dark;
   late bool _recordReplay = StorageService.to.getBool(StorageKeys.recordReplay);
   late bool _remindersEnabled = StorageService.to.getBool(
@@ -284,6 +290,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     SwitchListTile(
+                      value: _hapticSoftMode,
+                      onChanged: !_hapticsEnabled
+                          ? null
+                          : (v) {
+                              setState(() => _hapticSoftMode = v);
+                              StorageService.to.setBool(
+                                StorageKeys.hapticSoftMode,
+                                v,
+                              );
+                            },
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: NeonTheme.cyan,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      contentPadding: const EdgeInsets.only(
+                        left: NeonTheme.s16,
+                        right: NeonTheme.s16 - _switchTrailingCompensation,
+                      ),
+                      title: Text(
+                        'haptic_soft_mode'.tr,
+                        style: TextStyle(color: NeonTheme.ink),
+                      ),
+                    ),
+                    SwitchListTile(
                       value: _reduceMotion,
                       onChanged: (v) {
                         setState(() => _reduceMotion = v);
@@ -360,6 +389,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           'colorblind_mode'.tr,
                           style: TextStyle(color: NeonTheme.ink),
                         ),
+                      ),
+                    ),
+                    SwitchListTile(
+                      value: _largerTapTargets,
+                      onChanged: (v) {
+                        setState(() => _largerTapTargets = v);
+                        StorageService.to.setBool(
+                          StorageKeys.largerTapTargets,
+                          v,
+                        );
+                      },
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: NeonTheme.cyan,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      contentPadding: const EdgeInsets.only(
+                        left: NeonTheme.s16,
+                        right: NeonTheme.s16 - _switchTrailingCompensation,
+                      ),
+                      title: Text(
+                        'larger_tap_targets'.tr,
+                        style: TextStyle(color: NeonTheme.ink),
                       ),
                     ),
                     SwitchListTile(

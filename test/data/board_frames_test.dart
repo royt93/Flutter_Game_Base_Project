@@ -55,9 +55,69 @@ void main() {
       },
     );
 
-    test('5 frame, id không trùng nhau', () {
-      expect(kBoardFrames.length, 5);
-      expect(kBoardFrames.map((f) => f.id).toSet().length, 5);
+    test('8 frame, id không trùng nhau', () {
+      expect(kBoardFrames.length, 8);
+      expect(kBoardFrames.map((f) => f.id).toSet().length, 8);
+    });
+
+    test('kind seasonal khoá ngoài khung, mở trong khung', () {
+      final tet = kBoardFrames.firstWhere((f) => f.id == 'seasonal_tet');
+      expect(
+        isBoardFrameUnlocked(tet, 0, {}, now: DateTime(2026, 1, 19)),
+        isFalse,
+        reason: 'trước khung (19/1) phải khoá',
+      );
+      expect(
+        isBoardFrameUnlocked(tet, 0, {}, now: DateTime(2026, 1, 20)),
+        isTrue,
+        reason: 'đúng mốc bắt đầu (20/1) phải mở',
+      );
+      expect(
+        isBoardFrameUnlocked(tet, 0, {}, now: DateTime(2026, 2, 10)),
+        isTrue,
+        reason: 'đúng mốc kết thúc (10/2) phải mở',
+      );
+      expect(
+        isBoardFrameUnlocked(tet, 0, {}, now: DateTime(2026, 2, 11)),
+        isFalse,
+        reason: 'sau khung (11/2) phải khoá',
+      );
+    });
+
+    test('kind seasonal xử lý wrap-around qua năm mới đúng cả 2 phía', () {
+      final christmas = kBoardFrames.firstWhere(
+        (f) => f.id == 'seasonal_christmas',
+      );
+      expect(
+        isBoardFrameUnlocked(christmas, 0, {}, now: DateTime(2026, 12, 14)),
+        isFalse,
+        reason: 'trước khung (14/12) phải khoá',
+      );
+      expect(
+        isBoardFrameUnlocked(christmas, 0, {}, now: DateTime(2026, 12, 15)),
+        isTrue,
+        reason: 'mốc bắt đầu (15/12) phải mở',
+      );
+      expect(
+        isBoardFrameUnlocked(christmas, 0, {}, now: DateTime(2026, 12, 31)),
+        isTrue,
+        reason: '31/12 vẫn trong khung (vắt qua năm mới) phải mở',
+      );
+      expect(
+        isBoardFrameUnlocked(christmas, 0, {}, now: DateTime(2027, 1, 1)),
+        isTrue,
+        reason: '1/1 năm sau vẫn trong khung phải mở',
+      );
+      expect(
+        isBoardFrameUnlocked(christmas, 0, {}, now: DateTime(2027, 1, 2)),
+        isTrue,
+        reason: 'đúng mốc kết thúc (2/1) phải mở',
+      );
+      expect(
+        isBoardFrameUnlocked(christmas, 0, {}, now: DateTime(2027, 1, 3)),
+        isFalse,
+        reason: 'sau khung (3/1) phải khoá',
+      );
     });
   });
 }

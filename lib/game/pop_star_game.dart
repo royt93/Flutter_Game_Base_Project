@@ -539,11 +539,28 @@ class PopStarGame extends FlameGame {
   /// (tránh tap trong lúc animation đang chạy, sẽ bị [handleTap] bỏ qua).
   bool get isAnimating => _animating;
 
+  /// I71: nới hit-test [_kEdgeTapTolerance]px ở mép NGOÀI bàn cờ khi bật
+  /// Settings > larger tap targets — chỉ kéo tap lệch ra ngoài về lại ô biên
+  /// gần nhất, không đổi ô nào được chọn khi tap đã nằm trong bàn (không
+  /// snap sang ô lân cận, tránh đổi kết quả gameplay không đoán trước).
+  static const double _kEdgeTapTolerance = 12.0;
+
+  bool get _largerTapTargets =>
+      StorageService.to.getBool(StorageKeys.largerTapTargets);
+
   /// Ô (row, col) tại [pos] trong không gian game, hoặc null nếu ngoài bàn.
   Point<int>? cellAt(Vector2 pos) {
-    final col = ((pos.x - _boardLeft) / cellSize).floor();
-    final row = ((pos.y - _boardTop) / cellSize).floor();
-    if (row < 0 || row >= rows || col < 0 || col >= cols) return null;
+    final tolerance = _largerTapTargets ? _kEdgeTapTolerance : 0.0;
+    final boardRight = _boardLeft + cols * cellSize;
+    final boardBottom = _boardTop + rows * cellSize;
+    if (pos.x < _boardLeft - tolerance || pos.x >= boardRight + tolerance) {
+      return null;
+    }
+    if (pos.y < _boardTop - tolerance || pos.y >= boardBottom + tolerance) {
+      return null;
+    }
+    final col = (((pos.x - _boardLeft) / cellSize).floor()).clamp(0, cols - 1);
+    final row = (((pos.y - _boardTop) / cellSize).floor()).clamp(0, rows - 1);
     return Point(row, col);
   }
 

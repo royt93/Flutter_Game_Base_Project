@@ -57,6 +57,10 @@ void main() {
     // render (guard `if (audio != null)` trong SettingsScreen) — chỉ assert
     // các text luôn render.
     expect(find.text('Colorblind mode'), findsOneWidget);
+    // I71: 2 switch mới (haptic soft mode, larger tap targets) đẩy "Language"
+    // ra ngoài viewport mặc định của test — scroll trước khi assert.
+    await tester.drag(find.byType(ListView), const Offset(0, -150));
+    await tester.pump();
     expect(find.text('Language'), findsOneWidget);
     expect(find.text('English'), findsOneWidget);
     expect(find.text('Tiếng Việt'), findsOneWidget);
@@ -82,6 +86,8 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('設定'), findsNWidgets(2));
     expect(find.text('色覚異常モード'), findsOneWidget);
+    await tester.drag(find.byType(ListView), const Offset(0, -150));
+    await tester.pump();
     expect(find.text('言語'), findsOneWidget);
     // Tên ngôn ngữ trên chip luôn hiển thị theo tên bản ngữ, không đổi theo locale.
     expect(find.text('English'), findsOneWidget);

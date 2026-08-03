@@ -5,6 +5,39 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
 
 ## ✅ Implemented
 
+- **I55 Streak Freeze Token**: vật phẩm bảo vệ login streak (I48) — lỡ đúng 1
+  ngày mà còn ≥1 token thì giữ nguyên streak thay vì reset về 1; đổi bằng coin
+  qua shop theo pattern booster hiện có.
+- **I56 Local Smart Reminder**: local notification (không backend, dùng
+  `flutter_local_notifications`) nhắc streak/spin/weekly-goal sắp hết hạn,
+  lên lịch lại mỗi lần mở app, tối đa 1 notification/ngày theo thứ tự ưu
+  tiên.
+- **I57 Shareable Score Card**: mở rộng challenge code (F15) mang thêm seed
+  bàn chơi để tạo ảnh/card điểm số chia sẻ được, không chỉ text.
+- **I58 Challenge Card QR Battle**: mã QR hoá challenge code offline-async để
+  quét trực tiếp thay vì chỉ copy/dán text.
+- **I59 Pass-and-Play Duel**: 2 người luân phiên trên cùng máy, mỗi người
+  chơi 1 bàn cùng seed (độc lập, không chia đôi bàn), so điểm cuối, hiện màn
+  thắng/thua — social đồng bộ tại chỗ, khác I37 (offline-async).
+- **I60 Treasure Map & Expedition**: mỗi 24h xuất hiện 1 bản đồ 5 chặng nối
+  tiếp, mỗi chặng có luật biến tấu riêng (tái dùng modifier I33); tiêu 1
+  "Bản đồ" (nhận từ streak/weekly goal) để thám hiểm.
+- **I61 Boss Breakout Event Raid**: sự kiện boss theo đợt, tái dùng cơ chế
+  Boss Rush (I43) với luật/thưởng riêng cho raid.
+- **I62 Color Alchemy Lab**: "pha chế" bộ màu gem riêng (pigment set) mở khoá
+  qua achievement/coin, thay bảng màu neon mặc định — thuần cosmetic, không
+  đổi luật match.
+- **I63 Cosmetic Mystery Crate**: rương may mắn tiêu coin, ngẫu nhiên trao 1
+  cosmetic (mascot skin/board frame/burst style/combo-text style) người chơi
+  chưa sở hữu nhưng đã đủ điều kiện mở khoá; trùng lặp quy đổi coin hoàn lại.
+- **I64 Star Constellation & Sky Shrine**: hệ thống thu thập/ghép "chòm sao"
+  thuần vanity, Neon/Glow độc quyền, không ảnh hưởng gameplay.
+- **I65 Star Pet Companion Habitat**: vật đồng hành (pet) DUY NHẤT thay
+  trang phục, có habitat riêng để chăm/hiển thị.
+- **I66 Clan Lite**: 1 clan cố định (không chọn/tạo, không backend) gồm
+  người chơi + NPC tĩnh; tổng đóng góp gem-pop cả clan hướng tới
+  `clanGoalTarget` mỗi tuần, đủ thì nhận thưởng xu 1 lần/tuần; có Clan
+  Standings trong tuần và 2 mốc thành tựu lifetime theo tổng đóng góp.
 - **I67 Daily Quest Board**: mỗi epoch-day chọn deterministic 3 quest không
   trùng từ pool 8 template; persist/reset tiến độ và claim độc lập, hook pop/
   thắng/3-sao trong `GameController`, dialog nhận thưởng riêng và i18n đủ 22
@@ -12,6 +45,14 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
 - **I68 Magnet Tile**: special tile campaign từ world 4, mang màu mục tiêu cố
   định; pop nhóm đúng màu kích hoạt Magnet trước gravity, xoá cùng đợt và cộng
   50 điểm/ô. Có overlay nam châm theo màu và pure-logic unit tests.
+- **I69 Endless Mode Modifiers**: Endless Mode có thêm 1 modifier luật chơi
+  mỗi ngày, tái dùng đúng `GauntletModifier`/`kGauntletModifiers`/
+  `modifierForDay` (I33), chọn theo epoch-day nên mọi người chơi cùng ngày
+  gặp cùng modifier.
+- **Mode-select redesign (2026-08-03)**: thay dialog "Chọn chế độ" (từng bị
+  overflow/chật khi gộp nhóm) bằng `ModeSelectScreen` full-screen route
+  riêng, 3 nhóm (Chế độ chính / Thử thách / Xã hội & Sự kiện), theo pattern
+  `BossRushScreen`/`AchievementsScreen` sẵn có.
 
 - Đổi định danh project: package `pop_star_blast`, Android `com.galaxyjoy.pop_star_blast`,
   iOS `com.galaxyjoy.popStarBlast*`.
