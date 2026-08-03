@@ -75,6 +75,7 @@ class GameScreen extends StatelessWidget {
                               child: NeonAuraLayer(
                                 color: (worldAccent ?? NeonTheme.cyan)
                                     .withValues(alpha: 0.35),
+                                variant: gameCtrl.activeSkyAura.value,
                               ),
                             ),
                             RepaintBoundary(

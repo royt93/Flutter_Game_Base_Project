@@ -8,8 +8,13 @@ import '../../core/debug_log.dart';
 /// G5: aura bloom động sau bàn, dùng shader `shaders/neon_glow.frag` (đã có
 /// sẵn trong repo). Load lỗi (thiết bị không hỗ trợ) → ẩn hẳn, không crash.
 class NeonAuraLayer extends StatefulWidget {
-  const NeonAuraLayer({super.key, required this.color});
+  const NeonAuraLayer({
+    super.key,
+    required this.color,
+    this.variant = 'default',
+  });
   final Color color;
+  final String variant;
 
   @override
   State<NeonAuraLayer> createState() => _NeonAuraLayerState();
@@ -44,7 +49,14 @@ class _NeonAuraLayerState extends State<NeonAuraLayer>
   }
 
   void _onTick(Duration elapsed) {
-    _time = elapsed.inMicroseconds / 1e6;
+    final speedMultiplier = switch (widget.variant) {
+      'starlight' => 1.5,
+      'cyan_blaze' => 2.0,
+      'nebula_pulse' => 0.7,
+      'cosmic_drift' => 2.5,
+      _ => 1.0,
+    };
+    _time = (elapsed.inMicroseconds / 1e6) * speedMultiplier;
     _skipFrame = !_skipFrame;
     if (_skipFrame && _shader != null && mounted) setState(() {});
   }

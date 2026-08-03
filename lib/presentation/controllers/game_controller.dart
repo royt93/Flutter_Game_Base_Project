@@ -23,6 +23,7 @@ import '../../data/weekly_goal.dart';
 import '../../game/pop_star_game.dart';
 import '../../logic/challenge_code.dart';
 import '../../logic/craft_points.dart';
+import '../../logic/mystery_crate.dart';
 import '../../logic/daily_challenge.dart';
 import '../../logic/gift_tile.dart';
 import '../../logic/login_streak.dart';
@@ -367,7 +368,95 @@ class GameController extends GetxController {
     StorageService.to.setString(StorageKeys.activeComboTextStyle, kind.name);
   }
 
-  // I51 Board Frame Cosmetics: id khung viền board đang chọn — mở khoá theo
+  static const int mysteryCrateCost = 250;
+  static const int mysteryCrateDuplicateRefund = 150;
+
+  /// I63: Mở Mystery Crate tiêu [mysteryCrateCost] coin.
+  /// Lọc pool cosmetic đã đủ điều kiện mở khoá nhưng CHƯA sở hữu/active.
+  /// Trả về null nếu không đủ xu hoặc pool rỗng.
+  CosmeticEntry? rollMysteryCrate({Random? rngOverride}) {
+    if (coins.value < mysteryCrateCost) return null;
+
+    final allEntries = getAllCosmeticEntries();
+    final eligiblePool = <CosmeticEntry>[];
+
+    for (final entry in allEntries) {
+      switch (entry.kind) {
+        case CosmeticKind.mascotSkin:
+          final skin = entry.originalItem as MascotSkin;
+          final isUnlocked = unlockedMascotSkinIds.contains(skin.id);
+          final isEligible = skin.coinPrice != null ||
+              (skin.unlockAchievementId != null &&
+                  unlockedAchievementIds.contains(skin.unlockAchievementId));
+          if (isEligible && !isUnlocked) {
+            eligiblePool.add(entry);
+          }
+        case CosmeticKind.boardFrame:
+          final frame = entry.originalItem as BoardFrame;
+          final isUnlocked = isBoardFrameUnlocked(
+            frame,
+            prestigeTier.value,
+            unlockedAchievementIds,
+          );
+          final isActive = activeBoardFrameId.value == frame.id;
+          if (isUnlocked && !isActive) {
+            eligiblePool.add(entry);
+          }
+        case CosmeticKind.burstStyle:
+          final burst = entry.originalItem as BurstStyle;
+          final isUnlocked = isBurstStyleUnlocked(
+            burst,
+            totalGemsPopped.value,
+          );
+          final isActive = activeBurstStyleKind.value == burst.kind;
+          if (isUnlocked && !isActive) {
+            eligiblePool.add(entry);
+          }
+        case CosmeticKind.comboTextStyle:
+          final combo = entry.originalItem as ComboTextStyle;
+          final isUnlocked = isComboTextStyleUnlocked(
+            combo,
+            maxComboEver.value,
+          );
+          final isActive = activeComboTextStyleKind.value == combo.kind;
+          if (isUnlocked && !isActive) {
+            eligiblePool.add(entry);
+          }
+      }
+    }
+
+    if (eligiblePool.isEmpty) return null;
+
+    coins.value -= mysteryCrateCost;
+    StorageService.to.setInt(StorageKeys.coins, coins.value);
+
+    final rng = rngOverride ?? Random();
+    final item = rollCrate(eligiblePool: eligiblePool, rng: rng);
+    if (item == null) return null;
+
+    switch (item.kind) {
+      case CosmeticKind.mascotSkin:
+        final skin = item.originalItem as MascotSkin;
+        unlockedMascotSkinIds.add(skin.id);
+        activeMascotSkinId.value = skin.id;
+        StorageService.to.setString(
+          StorageKeys.unlockedMascotSkins,
+          unlockedMascotSkinIds.join(','),
+        );
+        StorageService.to.setString(StorageKeys.activeMascotSkin, skin.id);
+      case CosmeticKind.boardFrame:
+        final frame = item.originalItem as BoardFrame;
+        setActiveBoardFrame(frame.id);
+      case CosmeticKind.burstStyle:
+        final burst = item.originalItem as BurstStyle;
+        setActiveBurstStyle(burst.kind);
+      case CosmeticKind.comboTextStyle:
+        final combo = item.originalItem as ComboTextStyle;
+        setActiveComboTextStyle(combo.kind);
+    }
+
+    return item;
+  }
   // [prestigeTier]/[unlockedAchievementIds], không persist riêng "đã mở khoá"
   // (suy trực tiếp từ state đời đã có để tránh lệch dữ liệu).
   final activeBoardFrameId = kBoardFrames.first.id.obs;
@@ -481,6 +570,30 @@ class GameController extends GetxController {
   static const List<int> starRoadRewards = [50, 100, 200, 400];
   final totalStars = 0.obs;
   final claimedChestMask = 0.obs;
+
+  // I64 Star Constellation & Sky Shrine
+  final starSeedCount = 0.obs;
+  final claimedStarSeedMask = 0.obs;
+  final activeSkyAura = 'default'.obs;
+
+  bool isStarSeedClaimed(int index) =>
+      (claimedStarSeedMask.value >> index) & 1 == 1;
+
+  void claimStarSeedForConstellation(int index) {
+    if (isStarSeedClaimed(index)) return;
+    claimedStarSeedMask.value |= 1 << index;
+    starSeedCount.value += 1;
+    StorageService.to.setInt(
+      StorageKeys.claimedStarSeedMask,
+      claimedStarSeedMask.value,
+    );
+    StorageService.to.setInt(StorageKeys.starSeedCount, starSeedCount.value);
+  }
+
+  void setActiveSkyAura(String auraId) {
+    activeSkyAura.value = auraId;
+    StorageService.to.setString(StorageKeys.activeSkyAura, auraId);
+  }
 
   /// I26 (task #18): tên hiển thị dùng để tạo/hiển thị mã "so tài" bạn bè —
   /// không phải progress nên KHÔNG bị xoá trong [resetProgress].
@@ -703,6 +816,13 @@ class GameController extends GetxController {
             )
         ? storedFrame.id
         : kBoardFrames.first.id;
+    // I64 Star Constellation & Sky Shrine
+    starSeedCount.value = StorageService.to.getInt(StorageKeys.starSeedCount);
+    claimedStarSeedMask.value = StorageService.to.getInt(
+      StorageKeys.claimedStarSeedMask,
+    );
+    activeSkyAura.value =
+        StorageService.to.getString(StorageKeys.activeSkyAura) ?? 'default';
     weeklyGoalProgress.value = StorageService.to.getInt(
       StorageKeys.weeklyGoalProgress,
     );

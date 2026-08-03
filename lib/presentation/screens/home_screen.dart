@@ -15,6 +15,7 @@ import '../widgets/coin_chip.dart';
 import '../widgets/combo_text_style_picker_dialog.dart';
 import '../widgets/home_carousel.dart';
 import '../widgets/login_streak_dialog.dart';
+import '../widgets/mystery_crate_dialog.dart';
 import '../widgets/weekly_goal_dialog.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
@@ -35,9 +36,11 @@ import 'leaderboard_screen.dart';
 import 'level_select_screen.dart';
 import 'mascot_wardrobe_screen.dart';
 import 'perks_screen.dart';
+import 'raid_boss_screen.dart';
 import 'season_screen.dart';
 import 'settings_screen.dart';
 import 'shop_screen.dart';
+import 'sky_shrine_screen.dart';
 import 'star_road_screen.dart';
 import 'stats_screen.dart';
 import 'trophy_room_screen.dart';
@@ -389,6 +392,24 @@ class _HomeScreenState extends State<HomeScreen> {
               color: NeonTheme.indigo,
               label: 'drawer_board_frame_label'.tr,
               onTap: () => showBoardFramePickerDialog(context, gameCtrl),
+            ),
+            _drawerTile(
+              icon: Icons.auto_awesome_rounded,
+              color: NeonTheme.cyan,
+              label: 'sky_shrine_title'.tr,
+              onTap: () => Get.to(() => const SkyShrineScreen()),
+            ),
+            _drawerTile(
+              icon: Icons.inventory_2_rounded,
+              color: NeonTheme.magenta,
+              label: 'mystery_crate_title'.tr,
+              onTap: () => showMysteryCrateDialog(context, gameCtrl),
+            ),
+            _drawerTile(
+              icon: Icons.whatshot_rounded,
+              color: NeonTheme.red,
+              label: 'raid_boss_title'.tr,
+              onTap: () => Get.to(() => const RaidBossScreen()),
             ),
           ],
         ),

@@ -9,8 +9,13 @@ import '../../core/debug_log.dart';
 /// `FragmentProgram.fromAsset` + fallback ẩn hẳn khi load lỗi như
 /// `neon_aura_layer.dart` (không viết lại logic phát hiện hỗ trợ shader).
 class AuroraBgLayer extends StatefulWidget {
-  const AuroraBgLayer({super.key, required this.color});
+  const AuroraBgLayer({
+    super.key,
+    required this.color,
+    this.variant = 'default',
+  });
   final Color color;
+  final String variant;
 
   @override
   State<AuroraBgLayer> createState() => _AuroraBgLayerState();
@@ -44,7 +49,14 @@ class _AuroraBgLayerState extends State<AuroraBgLayer>
   }
 
   void _onTick(Duration elapsed) {
-    _time = elapsed.inMicroseconds / 1e6;
+    final speedMultiplier = switch (widget.variant) {
+      'starlight' => 1.3,
+      'cyan_blaze' => 1.8,
+      'nebula_pulse' => 0.8,
+      'cosmic_drift' => 2.2,
+      _ => 1.0,
+    };
+    _time = (elapsed.inMicroseconds / 1e6) * speedMultiplier;
     _skipFrame = !_skipFrame;
     if (_skipFrame && _shader != null && mounted) setState(() {});
   }
