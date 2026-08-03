@@ -121,6 +121,7 @@ class AppTranslations extends Translations {
           ...?_w281ByLang[e.key],
           ...?_w285ByLang[e.key],
           ...?_w283ByLang[e.key],
+          ...?_w286ByLang[e.key],
           // X7 — comeback/daily-reward/weekend/leaderboard_you (en+vi ở
           // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w29ByLang).
           ...?_w29ByLang[e.key],
@@ -1354,6 +1355,9 @@ class AppTranslations extends Translations {
     'board_frame_unlock_prestige': 'Unlock at Prestige @tier',
     // Home Screen redesign — banner ưu tiên đơn + Modes dialog + Drawer.
     'modes_title': 'Choose Mode',
+    'modes_group_core': 'Core Modes',
+    'modes_group_challenge': 'Challenges',
+    'modes_group_social': 'Social & Events',
     'season_pass_banner_ready': 'Season Pass reward ready — tap to claim!',
     'daily_challenge_banner_reminder': 'Daily Challenge waiting — tap to play!',
     'menu_button_label': 'Menu',
@@ -2299,6 +2303,9 @@ class AppTranslations extends Translations {
     'board_frame_unlock_prestige': 'Mở khoá ở Prestige @tier',
     // Home Screen redesign — banner ưu tiên đơn + Modes dialog + Drawer.
     'modes_title': 'Chọn chế độ',
+    'modes_group_core': 'Chế độ chính',
+    'modes_group_challenge': 'Thử thách',
+    'modes_group_social': 'Xã hội & Sự kiện',
     'season_pass_banner_ready': 'Season Pass có thưởng, bấm để nhận!',
     'daily_challenge_banner_reminder':
         'Chưa chơi Daily Challenge hôm nay — bấm ngay!',
@@ -23864,6 +23871,111 @@ class AppTranslations extends Translations {
       'event_combo_desc': 'এই সপ্তাহে লেভেল পুরস্কার থেকে +২০% কয়েন!',
       'event_bigcoin_name': 'জ্যাকপট সপ্তাহ',
       'event_bigcoin_desc': 'এই সপ্তাহে লেভেল পুরস্কার থেকে +৫০% কয়েন!',
+    },
+  };
+
+  // Wave 286 — modes dialog section headers (grouped-grid revamp).
+  // en+vi ở _extraEn/_extraVi, 20 ngôn ngữ còn lại ở đây.
+  static const Map<String, Map<String, String>> _w286ByLang = {
+    'es_ES': {
+      'modes_group_core': 'Modos principales',
+      'modes_group_challenge': 'Desafíos',
+      'modes_group_social': 'Social y eventos',
+    },
+    'fr_FR': {
+      'modes_group_core': 'Modes principaux',
+      'modes_group_challenge': 'Défis',
+      'modes_group_social': 'Social et événements',
+    },
+    'de_DE': {
+      'modes_group_core': 'Hauptmodi',
+      'modes_group_challenge': 'Herausforderungen',
+      'modes_group_social': 'Sozial & Events',
+    },
+    'pt_BR': {
+      'modes_group_core': 'Modos principais',
+      'modes_group_challenge': 'Desafios',
+      'modes_group_social': 'Social e eventos',
+    },
+    'ru_RU': {
+      'modes_group_core': 'Основные режимы',
+      'modes_group_challenge': 'Испытания',
+      'modes_group_social': 'Соц. и события',
+    },
+    'zh_CN': {
+      'modes_group_core': '核心模式',
+      'modes_group_challenge': '挑战',
+      'modes_group_social': '社交与活动',
+    },
+    'ja_JP': {
+      'modes_group_core': 'コアモード',
+      'modes_group_challenge': 'チャレンジ',
+      'modes_group_social': 'ソーシャル＆イベント',
+    },
+    'ko_KR': {
+      'modes_group_core': '핵심 모드',
+      'modes_group_challenge': '도전',
+      'modes_group_social': '소셜 & 이벤트',
+    },
+    'it_IT': {
+      'modes_group_core': 'Modalità principali',
+      'modes_group_challenge': 'Sfide',
+      'modes_group_social': 'Social ed eventi',
+    },
+    'id_ID': {
+      'modes_group_core': 'Mode Utama',
+      'modes_group_challenge': 'Tantangan',
+      'modes_group_social': 'Sosial & Acara',
+    },
+    'th_TH': {
+      'modes_group_core': 'โหมดหลัก',
+      'modes_group_challenge': 'ความท้าทาย',
+      'modes_group_social': 'สังคมและกิจกรรม',
+    },
+    'hi_IN': {
+      'modes_group_core': 'मुख्य मोड',
+      'modes_group_challenge': 'चुनौतियाँ',
+      'modes_group_social': 'सामाजिक और इवेंट',
+    },
+    'ar_SA': {
+      'modes_group_core': 'الأوضاع الرئيسية',
+      'modes_group_challenge': 'التحديات',
+      'modes_group_social': 'اجتماعي وفعاليات',
+    },
+    'tr_TR': {
+      'modes_group_core': 'Ana Modlar',
+      'modes_group_challenge': 'Meydan Okumalar',
+      'modes_group_social': 'Sosyal ve Etkinlikler',
+    },
+    'nl_NL': {
+      'modes_group_core': 'Hoofdmodi',
+      'modes_group_challenge': 'Uitdagingen',
+      'modes_group_social': 'Sociaal & evenementen',
+    },
+    'pl_PL': {
+      'modes_group_core': 'Tryby główne',
+      'modes_group_challenge': 'Wyzwania',
+      'modes_group_social': 'Społeczność i wydarzenia',
+    },
+    'fil_PH': {
+      'modes_group_core': 'Pangunahing Mode',
+      'modes_group_challenge': 'Mga Hamon',
+      'modes_group_social': 'Social at Events',
+    },
+    'ms_MY': {
+      'modes_group_core': 'Mod Utama',
+      'modes_group_challenge': 'Cabaran',
+      'modes_group_social': 'Sosial & Acara',
+    },
+    'uk_UA': {
+      'modes_group_core': 'Основні режими',
+      'modes_group_challenge': 'Випробування',
+      'modes_group_social': 'Соц. і події',
+    },
+    'bn_BD': {
+      'modes_group_core': 'মূল মোড',
+      'modes_group_challenge': 'চ্যালেঞ্জ',
+      'modes_group_social': 'সামাজিক ও ইভেন্ট',
     },
   };
 

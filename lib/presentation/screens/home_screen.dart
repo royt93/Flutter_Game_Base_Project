@@ -8,8 +8,6 @@ import '../../core/runtime_flags.dart';
 import '../../data/worlds.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_screen_controller.dart';
-import '../controllers/pass_and_play_controller.dart';
-import '../controllers/treasure_map_controller.dart';
 import '../widgets/ambient_particles.dart';
 import '../widgets/board_frame_picker_dialog.dart';
 import '../widgets/burst_style_picker_dialog.dart';
@@ -31,7 +29,6 @@ import '../widgets/spin_wheel_dialog.dart';
 import '../widgets/star_mascot.dart';
 import '../widgets/stroke_text.dart';
 import 'achievements_screen.dart';
-import 'boss_rush_screen.dart';
 import 'color_alchemy_screen.dart';
 import 'friend_compare_screen.dart';
 import 'ghost_replay_screen.dart';
@@ -40,6 +37,7 @@ import 'guide_screen.dart';
 import 'leaderboard_screen.dart';
 import 'level_select_screen.dart';
 import 'mascot_wardrobe_screen.dart';
+import 'mode_select_screen.dart';
 import 'perks_screen.dart';
 import 'pet_habitat_screen.dart';
 import 'raid_boss_screen.dart';
@@ -117,177 +115,6 @@ class _HomeScreenState extends State<HomeScreen> {
             gameCtrl.claimDaily();
             Get.find<HomeScreenController>().refreshCards(gameCtrl);
           },
-        ),
-      ],
-    );
-  }
-
-  void _showModesDialog(BuildContext context, GameController gameCtrl) {
-    NeonDialog.show(
-      context: context,
-      title: 'modes_title'.tr,
-      color: NeonTheme.indigo,
-      icon: Icons.sports_esports_rounded,
-      content: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: NeonTheme.s8 / 2,
-        runSpacing: NeonTheme.s16,
-        children: [
-          _modeTile(
-            icon: Icons.timer_rounded,
-            color: NeonTheme.orange,
-            label: 'mode_time_attack_label'.tr,
-            onTap: () {
-              Navigator.pop(context);
-              gameCtrl.startSideMode(GameMode.timeAttack);
-              Get.to(() => const GameScreen());
-            },
-          ),
-          _modeTile(
-            icon: Icons.spa_rounded,
-            color: NeonTheme.teal,
-            label: 'mode_zen_label'.tr,
-            onTap: () {
-              Navigator.pop(context);
-              gameCtrl.startSideMode(GameMode.zen);
-              Get.to(() => const GameScreen());
-            },
-          ),
-          _modeTile(
-            icon: Icons.all_inclusive_rounded,
-            color: NeonTheme.indigo,
-            label: 'mode_endless_label'.tr,
-            onTap: () {
-              Navigator.pop(context);
-              gameCtrl.startEndless();
-              Get.to(() => const GameScreen());
-            },
-          ),
-          _modeTile(
-            icon: Icons.local_fire_department_rounded,
-            color: NeonTheme.red,
-            label: 'mode_boss_rush_label'.tr,
-            onTap: () {
-              Navigator.pop(context);
-              Get.to(() => const BossRushScreen());
-            },
-          ),
-          _modeTile(
-            icon: Icons.flip_rounded,
-            color: NeonTheme.cyan,
-            label: 'mode_mirror_label'.tr,
-            onTap: () {
-              Navigator.pop(context);
-              gameCtrl.startMirrorMode();
-              Get.to(() => const GameScreen());
-            },
-          ),
-          _modeTile(
-            icon: gameCtrl.todaysGauntletModifier.icon,
-            color: NeonTheme.gold,
-            label: gameCtrl.todaysGauntletModifier.nameKey.tr,
-            semanticLabel: 'mode_gauntlet_label'.tr,
-            onTap: () {
-              Navigator.pop(context);
-              gameCtrl.startGauntlet();
-              Get.to(() => const GameScreen());
-            },
-          ),
-          _modeTile(
-            icon: Icons.map_rounded,
-            color: NeonTheme.teal,
-            label: 'treasure_map_title'.tr,
-            onTap: () {
-              if (gameCtrl.treasureMapCount.value <= 0) {
-                Navigator.pop(context);
-                NeonDialog.show(
-                  context: context,
-                  title: 'treasure_map_title'.tr,
-                  color: NeonTheme.teal,
-                  message: 'treasure_no_maps'.tr,
-                  actions: [
-                    NeonDialogAction(
-                      label: 'coll_close'.tr,
-                      color: NeonTheme.teal,
-                      onTap: () {},
-                    ),
-                  ],
-                );
-                return;
-              }
-              Navigator.pop(context);
-              final expedition = Get.put(TreasureMapController(gameCtrl));
-              if (expedition.startExpedition()) {
-                Get.to(() => const GameScreen());
-              }
-            },
-          ),
-          _modeTile(
-            icon: Icons.people_rounded,
-            color: NeonTheme.purple,
-            label: 'duel_title'.tr,
-            onTap: () {
-              Navigator.pop(context);
-              final duel = Get.put(PassAndPlayController(gameCtrl));
-              duel.startDuel();
-              Get.to(() => const GameScreen());
-            },
-          ),
-          _modeTile(
-            icon: Icons.event_rounded,
-            color: NeonTheme.magenta,
-            label: worldForLevel(gameCtrl.featuredLevelId).nameKey.tr,
-            semanticLabel: 'mode_weekly_featured_label'.tr,
-            onTap: () {
-              Navigator.pop(context);
-              gameCtrl.startWeeklyFeatured();
-              Get.to(() => const GameScreen());
-            },
-          ),
-        ],
-      ),
-      actions: [
-        NeonDialogAction(
-          label: 'cancel'.tr,
-          color: NeonTheme.indigo,
-          onTap: () {},
-        ),
-      ],
-    );
-  }
-
-  Widget _modeTile({
-    required IconData icon,
-    required Color color,
-    required String label,
-    required VoidCallback onTap,
-    String? semanticLabel,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        NeonIconButton(
-          icon,
-          color: color,
-          size: 28,
-          boxed: true,
-          semanticLabel: semanticLabel ?? label,
-          onTap: onTap,
-        ),
-        const SizedBox(height: 4),
-        SizedBox(
-          width: 60,
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: NeonTheme.inkSoft,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
         ),
       ],
     );
@@ -636,7 +463,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       size: 28,
                       boxed: true,
                       semanticLabel: 'modes_title'.tr,
-                      onTap: () => _showModesDialog(context, gameCtrl),
+                      onTap: () => Get.to(() => const ModeSelectScreen()),
                     ),
                   ],
                 ),

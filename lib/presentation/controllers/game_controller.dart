@@ -1165,6 +1165,7 @@ class GameController extends GetxController {
   /// khác I49 Lucky Color chỉ áp dụng campaign), kẹp không vượt target.
   void addWeeklyGoalProgress(int amount) {
     if (amount <= 0) return;
+    _checkWeeklyGoalRollover();
     weeklyGoalProgress.value = min(
       weeklyGoalProgress.value + amount,
       weeklyGoalTarget,
@@ -1210,6 +1211,7 @@ class GameController extends GetxController {
   /// [addWeeklyGoalProgress] tại [registerPop], mọi mode.
   void addClanContribution(int amount) {
     if (amount <= 0) return;
+    _checkClanGoalRollover();
     clanContribWeek.value += amount;
     clanContribTotal.value += amount;
     StorageService.to.setInt(
