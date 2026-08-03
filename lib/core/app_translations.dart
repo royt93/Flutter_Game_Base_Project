@@ -238,6 +238,10 @@ class AppTranslations extends Translations {
           // reminder_spin/streak/weekly_goal_title/body (en+vi ở
           // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w61ByLang).
           ...?_w61ByLang[e.key],
+          // I57 — Shareable Score Card: share_score_card,
+          // share_score_card_text, score_card_rank_label (en+vi ở
+          // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w62ByLang).
+          ...?_w62ByLang[e.key],
         },
     };
   }
@@ -861,6 +865,11 @@ class AppTranslations extends Translations {
     'reminder_streak_body': 'Log in today to keep your streak going.',
     'reminder_weekly_goal_title': 'Weekly goal ending soon',
     'reminder_weekly_goal_body': 'Play a bit more to finish this week\'s goal.',
+    // I57 — Shareable Score Card
+    'share_score_card': 'Share result card',
+    'share_score_card_text':
+        'Pop Star Blast — Level @level — Score @score — @date',
+    'score_card_rank_label': 'Rank #@rank',
     // X5 — Home: semanticLabel cho icon chế độ chơi + màn phụ
     'mode_time_attack_label': 'Time Attack Mode',
     'mode_zen_label': 'Zen Mode',
@@ -1744,6 +1753,11 @@ class AppTranslations extends Translations {
     'reminder_weekly_goal_title': 'Mục tiêu tuần sắp hết hạn',
     'reminder_weekly_goal_body':
         'Chơi thêm chút nữa để hoàn thành mục tiêu tuần này.',
+    // I57 — Shareable Score Card
+    'share_score_card': 'Chia sẻ thẻ kết quả',
+    'share_score_card_text':
+        'Pop Star Blast — Màn @level — Điểm @score — @date',
+    'score_card_rank_label': 'Hạng #@rank',
     // X5 — Home: semanticLabel cho icon chế độ chơi + màn phụ
     'mode_time_attack_label': 'Chế độ Đấu thời gian',
     'mode_zen_label': 'Chế độ Thư giãn',
@@ -29747,6 +29761,92 @@ class AppTranslations extends Translations {
       'reminder_streak_body': 'আপনার স্ট্রিক চালিয়ে যেতে আজ লগইন করুন।',
       'reminder_weekly_goal_title': 'সাপ্তাহিক লক্ষ্য শীঘ্রই শেষ হচ্ছে',
       'reminder_weekly_goal_body': 'এই সপ্তাহের লক্ষ্য পূরণ করতে আরেকটু খেলুন।',
+    },
+  };
+
+  // I57 — Shareable Score Card: share_score_card, score_card_rank_label
+  // (share_score_card_text giữ fallback tiếng Anh, cùng tiền lệ với
+  // share_board_text/share_challenge_text ở _extraEn/_extraVi).
+  static const Map<String, Map<String, String>> _w62ByLang = {
+    'es_ES': {
+      'share_score_card': 'Compartir tarjeta de resultado',
+      'score_card_rank_label': 'Puesto #@rank',
+    },
+    'fr_FR': {
+      'share_score_card': 'Partager la carte de résultat',
+      'score_card_rank_label': 'Rang #@rank',
+    },
+    'de_DE': {
+      'share_score_card': 'Ergebniskarte teilen',
+      'score_card_rank_label': 'Rang #@rank',
+    },
+    'pt_BR': {
+      'share_score_card': 'Compartilhar cartão de resultado',
+      'score_card_rank_label': 'Posição #@rank',
+    },
+    'ru_RU': {
+      'share_score_card': 'Поделиться карточкой результата',
+      'score_card_rank_label': 'Место №@rank',
+    },
+    'zh_CN': {
+      'share_score_card': '分享成绩卡',
+      'score_card_rank_label': '排名 #@rank',
+    },
+    'ja_JP': {
+      'share_score_card': 'スコアカードを共有',
+      'score_card_rank_label': '順位 #@rank',
+    },
+    'ko_KR': {
+      'share_score_card': '결과 카드 공유',
+      'score_card_rank_label': '순위 #@rank',
+    },
+    'it_IT': {
+      'share_score_card': 'Condividi scheda risultato',
+      'score_card_rank_label': 'Posizione #@rank',
+    },
+    'id_ID': {
+      'share_score_card': 'Bagikan kartu hasil',
+      'score_card_rank_label': 'Peringkat #@rank',
+    },
+    'th_TH': {
+      'share_score_card': 'แชร์การ์ดผลคะแนน',
+      'score_card_rank_label': 'อันดับ #@rank',
+    },
+    'hi_IN': {
+      'share_score_card': 'स्कोर कार्ड साझा करें',
+      'score_card_rank_label': 'रैंक #@rank',
+    },
+    'ar_SA': {
+      'share_score_card': 'مشاركة بطاقة النتيجة',
+      'score_card_rank_label': 'الترتيب #@rank',
+    },
+    'tr_TR': {
+      'share_score_card': 'Sonuç kartını paylaş',
+      'score_card_rank_label': 'Sıra #@rank',
+    },
+    'nl_NL': {
+      'share_score_card': 'Resultaatkaart delen',
+      'score_card_rank_label': 'Rang #@rank',
+    },
+    'pl_PL': {
+      'share_score_card': 'Udostępnij kartę wyniku',
+      'score_card_rank_label': 'Pozycja #@rank',
+    },
+    'fil_PH': {
+      'share_score_card': 'Ibahagi ang score card',
+      'score_card_rank_label': 'Ranggo #@rank',
+    },
+    'ms_MY': {
+      'share_score_card': 'Kongsi kad keputusan',
+      'score_card_rank_label': 'Kedudukan #@rank',
+    },
+    'uk_UA': {
+      'share_score_card': 'Поділитися карткою результату',
+      'score_card_rank_label': 'Місце №@rank',
+    },
+    'bn_BD': {
+      'share_score_card': 'স্কোর কার্ড শেয়ার করুন',
+      'score_card_rank_label': 'র‍্যাঙ্ক #@rank',
     },
   };
 }

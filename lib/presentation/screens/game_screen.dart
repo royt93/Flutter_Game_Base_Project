@@ -1173,6 +1173,16 @@ class _WinChoreographyState extends State<_WinChoreography> {
                       onTap: widget.gsc.shareChallenge,
                       semanticLabel: 'share_challenge'.tr,
                     ),
+                    // I57: thẻ kết quả tổng hợp (điểm/sao/rank/mascot) —
+                    // thêm lựa chọn thứ 2 cạnh share board (F15), không thay thế.
+                    const SizedBox(width: NeonTheme.s8),
+                    NeonIconButton(
+                      Icons.auto_awesome_rounded,
+                      color: NeonTheme.teal,
+                      size: 20,
+                      onTap: widget.gsc.shareResultCard,
+                      semanticLabel: 'share_score_card'.tr,
+                    ),
                   ],
                 ),
               ),
