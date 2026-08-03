@@ -166,7 +166,16 @@ class StorageKeys {
   static const String raidBossLastAttemptDay = 'raid_boss_last_attempt_day';
   static const String raidBossTotalDamage = 'raid_boss_total_damage';
   static const String raidBossEventWeek = 'raid_boss_event_week';
-  static const String raidBossRewardClaimedWeek = 'raid_boss_reward_claimed_week';
+  static const String raidBossRewardClaimedWeek =
+      'raid_boss_reward_claimed_week';
+
+  // I62 Color Alchemy: map slot-index → pigment-id và các pigment đã mua.
+  static const String gemColorOverrides = 'gem_color_overrides';
+  static const String unlockedPigments = 'unlocked_pigments';
+
+  // I60 Treasure Map: consumable entry tickets + exclusive chest unlock.
+  static const String treasureMapCount = 'treasure_map_count';
+  static const String treasureMapCompleted = 'treasure_map_completed';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

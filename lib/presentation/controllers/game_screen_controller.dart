@@ -2,8 +2,9 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flame/game.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/share_helper.dart';
 import '../../core/storage_service.dart';
@@ -13,6 +14,8 @@ import '../../game/pop_star_game.dart';
 import '../../logic/challenge_code.dart';
 import '../../logic/replay.dart';
 import 'game_controller.dart';
+import 'pass_and_play_controller.dart';
+import 'treasure_map_controller.dart';
 
 /// Trạng thái UI của màn chơi (thay cho setState).
 enum GameUi { playing, quit, win, lose }
@@ -46,6 +49,7 @@ class GameScreenController extends GetxController {
 
   /// F15: key của `RepaintBoundary` bọc bàn chơi, dùng để chụp ảnh chia sẻ.
   final GlobalKey boardKey = GlobalKey();
+  final GlobalKey challengeCardKey = GlobalKey();
 
   PopStarGame get game => _game!;
 
@@ -90,6 +94,22 @@ class GameScreenController extends GetxController {
   /// share sheet, để bạn bè dán mã vào `GhostReplayScreen` chơi lại đúng level
   /// đó và so điểm — không kèm replay đầy đủ như [shareReplay].
   Future<void> shareChallenge() async {
+    final seeded = gameCtrl.activeSeedChallenge.value;
+    if (seeded != null) {
+      final code = encodeChallengeSeedCode(
+        ChallengeSeedCode(
+          levelId: seeded.levelId,
+          seed: seeded.seed,
+          score: gameCtrl.score.value,
+          senderName: gameCtrl.playerName.value,
+        ),
+      );
+      await shareBoardImage(
+        boundaryKey: challengeCardKey,
+        text: 'seed_challenge_share_text'.trParams({'code': code}),
+      );
+      return;
+    }
     final code = encodeChallengeCode(
       ChallengeCode(
         levelId: gameCtrl.currentLevel.id,
@@ -98,6 +118,39 @@ class GameScreenController extends GetxController {
       ),
     );
     await shareText('share_challenge_text'.trParams({'code': code}));
+  }
+
+  Widget buildChallengeQrCard() {
+    final seeded = gameCtrl.activeSeedChallenge.value!;
+    final code = encodeChallengeSeedCode(
+      ChallengeSeedCode(
+        levelId: seeded.levelId,
+        seed: seeded.seed,
+        score: gameCtrl.score.value,
+        senderName: gameCtrl.playerName.value,
+      ),
+    );
+    return RepaintBoundary(
+      key: challengeCardKey,
+      child: ColoredBox(
+        color: const Color(0xFFFFFFFF),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              QrImageView(data: code, size: 132),
+              Text(
+                'seed_challenge_card_score'.trParams({
+                  'score': '${gameCtrl.score.value}',
+                }),
+              ),
+              SelectableText(code, style: const TextStyle(fontSize: 7)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -131,6 +184,7 @@ class GameScreenController extends GetxController {
 
   void _onEndChanged(bool ended) {
     if (!ended || ui.value != GameUi.playing) return;
+    if (gameCtrl.mode.value == GameMode.passAndPlay) return;
     final result = gameCtrl.starsEarned.value > 0 ? GameUi.win : GameUi.lose;
     Future.delayed(const Duration(milliseconds: 350), () {
       if (ui.value == GameUi.playing) ui.value = result;
@@ -153,6 +207,8 @@ class GameScreenController extends GetxController {
         GameMode.dailyChallenge => gameCtrl.dailyChallengeGrid,
         GameMode.gauntlet => gameCtrl.gauntletGrid,
         GameMode.puzzleLab => gameCtrl.puzzleLabGrid,
+        GameMode.passAndPlay => gameCtrl.passAndPlayGrid,
+        GameMode.treasureMap => gameCtrl.puzzleLabGrid,
         // I47 Mirror Mode: bàn đầu đối xứng gương, seed ngẫu nhiên (khác
         // dailyChallenge — không cần seed cố định cho mode này).
         GameMode.mirrorMode => generateMirrorBoard(
@@ -270,8 +326,31 @@ class GameScreenController extends GetxController {
   }
 
   void quit() {
+    if (Get.isRegistered<PassAndPlayController>()) {
+      Get.delete<PassAndPlayController>();
+    }
+    if (Get.isRegistered<TreasureMapController>()) {
+      Get.delete<TreasureMapController>();
+    }
     Get.delete<GameScreenController>();
     Get.back();
+  }
+
+  void beginPlayer2() {
+    final duel = Get.find<PassAndPlayController>();
+    duel.beginPlayer2();
+    armed.value = BoosterMode.none;
+    _swapFirst = null;
+    ui.value = GameUi.playing;
+    _newGame();
+  }
+
+  void beginNextTreasureStage() {
+    Get.find<TreasureMapController>().nextStage();
+    armed.value = BoosterMode.none;
+    _swapFirst = null;
+    ui.value = GameUi.playing;
+    _newGame();
   }
 
   void again() {
@@ -288,11 +367,22 @@ class GameScreenController extends GetxController {
       gameCtrl.startDailyChallenge();
     } else if (mode == GameMode.puzzleLab) {
       // I42: KHÔNG rơi vào startSideMode — phải giữ đúng puzzleLabGrid đã vẽ.
-      gameCtrl.startPuzzleLevel(gameCtrl.puzzleLabGrid!);
+      final seeded = gameCtrl.activeSeedChallenge.value;
+      if (seeded != null) {
+        gameCtrl.startSeedChallenge(seeded);
+      } else {
+        gameCtrl.startPuzzleLevel(gameCtrl.puzzleLabGrid!);
+      }
     } else if (mode == GameMode.gauntlet) {
       // I33: cùng ngày → cùng modifier + cùng bàn (seed = ngày), không đè
       // điểm đã ghi nếu đã ghi lần đầu (xem `canRecordGauntletScore`).
       gameCtrl.startGauntlet();
+    } else if (mode == GameMode.passAndPlay) {
+      Get.find<PassAndPlayController>().startDuel();
+    } else if (mode == GameMode.treasureMap) {
+      // A failed run cannot retry without consuming another map from Home.
+      quit();
+      return;
     } else {
       gameCtrl.startSideMode(mode);
     }

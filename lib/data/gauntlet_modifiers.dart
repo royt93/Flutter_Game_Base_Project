@@ -14,6 +14,8 @@ class GauntletModifier {
   final double? comboWindowOverride;
   final GravityDirection? gravityOverride;
   final int? colorCountOverride;
+  final int? moveLimit;
+  final int? minGroupSize;
 
   const GauntletModifier({
     required this.id,
@@ -24,8 +26,51 @@ class GauntletModifier {
     this.comboWindowOverride,
     this.gravityOverride,
     this.colorCountOverride,
+    this.moveLimit,
+    this.minGroupSize,
   });
 }
+
+/// I60: fixed, increasingly restrictive five-stage expedition rules.
+const List<GauntletModifier> kTreasureMapModifiers = [
+  GauntletModifier(
+    id: 'treasure_1',
+    icon: Icons.filter_3_rounded,
+    nameKey: 'treasure_stage_1',
+    descKey: 'treasure_min_group_3',
+    minGroupSize: 3,
+  ),
+  GauntletModifier(
+    id: 'treasure_2',
+    icon: Icons.looks_one_rounded,
+    nameKey: 'treasure_stage_2',
+    descKey: 'treasure_move_limit_14',
+    moveLimit: 14,
+  ),
+  GauntletModifier(
+    id: 'treasure_3',
+    icon: Icons.filter_4_rounded,
+    nameKey: 'treasure_stage_3',
+    descKey: 'treasure_min_group_4',
+    minGroupSize: 4,
+  ),
+  GauntletModifier(
+    id: 'treasure_4',
+    icon: Icons.timer_rounded,
+    nameKey: 'treasure_stage_4',
+    descKey: 'treasure_stage_4_rule',
+    moveLimit: 12,
+    minGroupSize: 3,
+  ),
+  GauntletModifier(
+    id: 'treasure_5',
+    icon: Icons.workspace_premium_rounded,
+    nameKey: 'treasure_stage_5',
+    descKey: 'treasure_stage_5_rule',
+    moveLimit: 10,
+    minGroupSize: 5,
+  ),
+];
 
 const List<GauntletModifier> kGauntletModifiers = [
   GauntletModifier(

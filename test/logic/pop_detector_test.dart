@@ -5,6 +5,27 @@ import 'package:pop_star_blast/logic/pop_detector.dart';
 import 'package:pop_star_blast/logic/wildcard_tile.dart';
 
 void main() {
+  test('I60: minGroupSize blocks small groups and accepts the threshold', () {
+    expect(
+      meetsMinGroupSize({const Point(0, 0), const Point(0, 1)}, 3),
+      isFalse,
+    );
+    expect(
+      hasAnyMovableGroup([
+        [0, 0, 1],
+      ], minGroupSize: 3),
+      isFalse,
+    );
+    expect(
+      meetsMinGroupSize({
+        const Point(0, 0),
+        const Point(0, 1),
+        const Point(1, 0),
+      }, 3),
+      isTrue,
+    );
+  });
+
   group('findConnectedGroup', () {
     test('gom nhóm liền kề 4 hướng cùng màu', () {
       final grid = [

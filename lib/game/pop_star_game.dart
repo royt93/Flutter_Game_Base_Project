@@ -700,6 +700,10 @@ class PopStarGame extends FlameGame {
       }
       return;
     }
+    if (!meetsMinGroupSize(group, controller.activeMinGroupSize)) {
+      fireHaptic(HapticLevel.light);
+      return;
+    }
     // I44: ô Time Freeze pop chung trong 1 nhóm màu ≥2 vẫn kích hoạt +10s
     // (tối đa 1 ô được tag/bàn nên chỉ có thể trúng đúng 1 ô trong group).
     for (final p in group) {
@@ -1925,7 +1929,11 @@ class PopStarGame extends FlameGame {
         .any((b) => b?.powerKind != null);
     final stuck =
         remaining > 0 &&
-        !hasAnyMovableGroup(colorGrid, lockGrid: lockGrid) &&
+        !hasAnyMovableGroup(
+          colorGrid,
+          lockGrid: lockGrid,
+          minGroupSize: controller.activeMinGroupSize,
+        ) &&
         !hasPowerTile;
     // I29: bàn kẹt nhưng còn boss tile chưa vỡ (không còn gem thường liền kề
     // để nổ nứt boss) → tự giảm 1 HP mọi boss tile thay vì kết thúc màn ngay,
@@ -1991,6 +1999,11 @@ class PopStarGame extends FlameGame {
       return;
     }
     controller.updateObjectiveProgress(colorGrid);
+    final hardMoveLimit = controller.activeMoveLimit;
+    if (hardMoveLimit != null && controller.movesUsed.value >= hardMoveLimit) {
+      controller.checkEnd(remaining == 0);
+      return;
+    }
     // F6b: màn có mục tiêu ngoài điểm → thắng ngay khi dọn xong, không cần
     // đợi bàn hết/kẹt như luật score mặc định.
     if (controller.objectiveMet) {

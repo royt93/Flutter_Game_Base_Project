@@ -32,4 +32,12 @@ void main() {
       expect(ids, {'no_undo', 'short_combo', 'four_colors', 'reverse_gravity'});
     },
   );
+
+  test('treasure modifiers expose moveLimit and minGroupSize rules', () {
+    expect(kTreasureMapModifiers, hasLength(5));
+    expect(kTreasureMapModifiers.any((m) => m.moveLimit != null), isTrue);
+    expect(kTreasureMapModifiers.any((m) => m.minGroupSize != null), isTrue);
+    expect(kTreasureMapModifiers[4].moveLimit, 10);
+    expect(kTreasureMapModifiers[4].minGroupSize, 5);
+  });
 }

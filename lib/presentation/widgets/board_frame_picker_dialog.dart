@@ -57,6 +57,7 @@ class _BoardFrameRow extends StatelessWidget {
         frame,
         gameCtrl.prestigeTier.value,
         gameCtrl.unlockedAchievementIds,
+        treasureMapCompleted: gameCtrl.treasureMapCompleted.value,
       );
       final active = gameCtrl.activeBoardFrameId.value == frame.id;
       return Opacity(
@@ -137,6 +138,8 @@ class _BoardFrameRow extends StatelessWidget {
         return 'wardrobe_unlock_via'.trParams({
           'achievement': achievement.titleKey.tr,
         });
+      case BoardFrameUnlockKind.treasureMap:
+        return 'board_frame_unlock_treasure'.tr;
     }
   }
 }

@@ -1,10 +1,31 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pop_star_blast/logic/daily_challenge.dart';
 import 'package:pop_star_blast/data/levels.dart';
 import 'package:pop_star_blast/logic/challenge_code.dart';
 
 void main() {
+  test('ChallengeSeedCode round-trips with its separate prefix', () {
+    const original = ChallengeSeedCode(
+      levelId: 7,
+      seed: 123456,
+      score: 987,
+      senderName: 'Alice|Bob',
+    );
+    final encoded = encodeChallengeSeedCode(original);
+    final decoded = decodeChallengeSeedCode(encoded);
+    expect(encoded, startsWith(challengeSeedCodePrefix));
+    expect(decoded?.levelId, original.levelId);
+    expect(decoded?.seed, original.seed);
+    expect(decoded?.score, original.score);
+    expect(decoded?.senderName, original.senderName);
+  });
+
+  test('seeded challenge grid is deterministic', () {
+    expect(generateDailyChallengeGrid(42), generateDailyChallengeGrid(42));
+  });
+
   group('encodeChallengeCode / decodeChallengeCode', () {
     test('round-trip đúng', () {
       const data = ChallengeCode(levelId: 12, score: 3400, senderName: 'Roy');

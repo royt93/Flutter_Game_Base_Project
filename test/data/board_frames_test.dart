@@ -2,6 +2,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pop_star_blast/data/board_frames.dart';
 
 void main() {
+  test('treasure relic frame unlocks only after expedition completion', () {
+    final frame = kBoardFrames.firstWhere((f) => f.id == 'treasure_relic');
+    expect(isBoardFrameUnlocked(frame, 0, {}), isFalse);
+    expect(
+      isBoardFrameUnlocked(frame, 0, {}, treasureMapCompleted: true),
+      isTrue,
+    );
+  });
+
   group('isBoardFrameUnlocked', () {
     test('classic luôn mở khoá bất kể prestigeTier/achievement', () {
       final classic = kBoardFrames.firstWhere((f) => f.id == 'classic');
@@ -46,9 +55,9 @@ void main() {
       },
     );
 
-    test('4 frame, id không trùng nhau', () {
-      expect(kBoardFrames.length, 4);
-      expect(kBoardFrames.map((f) => f.id).toSet().length, 4);
+    test('5 frame, id không trùng nhau', () {
+      expect(kBoardFrames.length, 5);
+      expect(kBoardFrames.map((f) => f.id).toSet().length, 5);
     });
   });
 }

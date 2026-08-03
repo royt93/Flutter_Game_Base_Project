@@ -14,6 +14,9 @@ import '../../data/worlds.dart';
 import '../../game/pop_star_game.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/game_screen_controller.dart';
+import '../controllers/pass_and_play_controller.dart';
+import '../controllers/treasure_map_controller.dart';
+import '../../logic/pass_and_play.dart';
 import '../widgets/coin_chip.dart';
 import '../widgets/coin_fly_overlay.dart';
 import '../widgets/confetti_overlay.dart';
@@ -879,6 +882,98 @@ class _Overlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = gsc.ui.value;
+    if (gsc.gameCtrl.mode.value == GameMode.passAndPlay &&
+        Get.isRegistered<PassAndPlayController>()) {
+      final duel = Get.find<PassAndPlayController>();
+      final handoff = duel.awaitingHandoff.value;
+      final completed = duel.completed.value;
+      if (handoff || completed) {
+        return Positioned.fill(
+          child: NeonDialog.overlaySlot(
+            panelKey: handoff ? 'duel-handoff' : 'duel-result',
+            panel: handoff
+                ? NeonDialog.panel(
+                    title: 'duel_handoff_title'.tr,
+                    color: NeonTheme.purple,
+                    message: 'duel_handoff_message'.trParams({
+                      'score': '${duel.player1Score.value}',
+                    }),
+                    actions: [
+                      NeonDialogAction(
+                        label: 'duel_ready'.tr,
+                        color: NeonTheme.purple,
+                        onTap: gsc.beginPlayer2,
+                      ),
+                    ],
+                  )
+                : NeonDialog.panel(
+                    title: 'duel_result_title'.tr,
+                    color: NeonTheme.gold,
+                    message: _duelResultMessage(duel),
+                    actions: [
+                      NeonDialogAction(
+                        label: 'menu'.tr,
+                        color: NeonTheme.cyan,
+                        onTap: gsc.quit,
+                      ),
+                      NeonDialogAction(
+                        label: 'retry'.tr,
+                        color: NeonTheme.orange,
+                        onTap: gsc.again,
+                      ),
+                    ],
+                  ),
+          ),
+        );
+      }
+    }
+    if (gsc.gameCtrl.mode.value == GameMode.treasureMap &&
+        Get.isRegistered<TreasureMapController>()) {
+      final expedition = Get.find<TreasureMapController>();
+      final next = expedition.awaitingNextStage.value;
+      final failed = expedition.failed.value;
+      final completed = expedition.completed.value;
+      if (next || failed || completed) {
+        return Positioned.fill(
+          child: NeonDialog.overlaySlot(
+            panelKey: 'treasure-${expedition.stageIndex.value}-$next-$failed',
+            panel: NeonDialog.panel(
+              title: completed
+                  ? 'treasure_chest_title'.tr
+                  : failed
+                  ? 'treasure_failed_title'.tr
+                  : 'treasure_stage_clear'.trParams({
+                      'stage': '${expedition.stageIndex.value}',
+                    }),
+              color: completed
+                  ? NeonTheme.gold
+                  : failed
+                  ? NeonTheme.red
+                  : NeonTheme.teal,
+              message: completed
+                  ? 'treasure_chest_message'.tr
+                  : failed
+                  ? 'treasure_failed_message'.tr
+                  : 'treasure_next_message'.tr,
+              actions: [
+                if (next)
+                  NeonDialogAction(
+                    label: 'treasure_next_stage'.tr,
+                    color: NeonTheme.teal,
+                    onTap: gsc.beginNextTreasureStage,
+                  )
+                else
+                  NeonDialogAction(
+                    label: 'menu'.tr,
+                    color: NeonTheme.cyan,
+                    onTap: gsc.quit,
+                  ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
     return Positioned.fill(
       child: NeonDialog.overlaySlot(
         panel: _buildFor(ui),
@@ -951,8 +1046,28 @@ class _Overlay extends StatelessWidget {
             // activeChallenge (startChallenge luôn gọi startLevel).
             content: gameCtrl.activeChallenge.value != null
                 ? _challengeResultBanner(gameCtrl)
+                : gameCtrl.activeSeedChallenge.value != null
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (gameCtrl.activeSeedChallenge.value!.score > 0)
+                        Text(
+                          gameCtrl.seedChallengeWon.value == true
+                              ? 'seed_challenge_win'.tr
+                              : 'seed_challenge_lose'.tr,
+                        ),
+                      const SizedBox(height: NeonTheme.s8),
+                      gsc.buildChallengeQrCard(),
+                    ],
+                  )
                 : null,
             actions: [
+              if (gameCtrl.activeSeedChallenge.value != null)
+                NeonDialogAction(
+                  label: 'share_challenge'.tr,
+                  color: NeonTheme.purple,
+                  onTap: gsc.shareChallenge,
+                ),
               NeonDialogAction(
                 label: 'menu'.tr,
                 color: NeonTheme.cyan,
@@ -970,6 +1085,19 @@ class _Overlay extends StatelessWidget {
         return null;
     }
   }
+}
+
+String _duelResultMessage(PassAndPlayController duel) {
+  final result = switch (duel.outcome) {
+    DuelOutcome.player1 => 'duel_player1_wins'.tr,
+    DuelOutcome.player2 => 'duel_player2_wins'.tr,
+    DuelOutcome.draw => 'duel_draw'.tr,
+  };
+  return 'duel_scores'.trParams({
+    'p1': '${duel.player1Score.value}',
+    'p2': '${duel.player2Score.value}',
+    'result': result,
+  });
 }
 
 /// I32 Craft Booster: icon/màu/nhãn hiển thị theo loại booster quy đổi được

@@ -18,6 +18,7 @@ import '../../data/levels.dart';
 import '../../data/lucky_color.dart';
 import '../../data/mascot_skins.dart';
 import '../../data/perks.dart';
+import '../../data/pigments.dart';
 import '../../data/weekly_featured.dart';
 import '../../data/weekly_goal.dart';
 import '../../game/pop_star_game.dart';
@@ -47,6 +48,8 @@ enum GameMode {
   mirrorMode,
   gauntlet,
   weeklyFeatured,
+  passAndPlay,
+  treasureMap,
 }
 
 /// I7: 1 ô phần thưởng trên vòng quay hằng ngày.
@@ -171,10 +174,15 @@ class GameController extends GetxController {
   /// [dailyChallengeGrid].
   List<List<int>>? puzzleLabGrid;
 
+  /// I59: immutable-by-convention source board + per-turn mutable deep copy.
+  List<List<int>>? passAndPlayBaseGrid;
+  List<List<int>>? passAndPlayGrid;
+
   /// I33 Daily Modifier Gauntlet: bàn hôm nay + modifier đang áp dụng, sinh 1
   /// lần trong [startGauntlet] — giống [dailyChallengeGrid].
   List<List<int>>? gauntletGrid;
   GauntletModifier? activeGauntletModifier;
+  GauntletModifier? activeTreasureMapModifier;
 
   /// I33: combo timer rút ngắn khi đang chơi Gauntlet với modifier
   /// `shortCombo` — `null` ngoài mode Gauntlet để tránh giá trị cũ còn sót
@@ -182,6 +190,15 @@ class GameController extends GetxController {
   double? get gauntletComboWindowOverride => mode.value == GameMode.gauntlet
       ? activeGauntletModifier?.comboWindowOverride
       : null;
+
+  GauntletModifier? get activeGameplayModifier => switch (mode.value) {
+    GameMode.gauntlet => activeGauntletModifier,
+    GameMode.treasureMap => activeTreasureMapModifier,
+    _ => null,
+  };
+
+  int? get activeMoveLimit => activeGameplayModifier?.moveLimit;
+  int? get activeMinGroupSize => activeGameplayModifier?.minGroupSize;
 
   PopLevel get currentLevel => currentLevelRx.value!;
 
@@ -385,7 +402,8 @@ class GameController extends GetxController {
         case CosmeticKind.mascotSkin:
           final skin = entry.originalItem as MascotSkin;
           final isUnlocked = unlockedMascotSkinIds.contains(skin.id);
-          final isEligible = skin.coinPrice != null ||
+          final isEligible =
+              skin.coinPrice != null ||
               (skin.unlockAchievementId != null &&
                   unlockedAchievementIds.contains(skin.unlockAchievementId));
           if (isEligible && !isUnlocked) {
@@ -404,10 +422,7 @@ class GameController extends GetxController {
           }
         case CosmeticKind.burstStyle:
           final burst = entry.originalItem as BurstStyle;
-          final isUnlocked = isBurstStyleUnlocked(
-            burst,
-            totalGemsPopped.value,
-          );
+          final isUnlocked = isBurstStyleUnlocked(burst, totalGemsPopped.value);
           final isActive = activeBurstStyleKind.value == burst.kind;
           if (isUnlocked && !isActive) {
             eligiblePool.add(entry);
@@ -457,6 +472,7 @@ class GameController extends GetxController {
 
     return item;
   }
+
   // [prestigeTier]/[unlockedAchievementIds], không persist riêng "đã mở khoá"
   // (suy trực tiếp từ state đời đã có để tránh lệch dữ liệu).
   final activeBoardFrameId = kBoardFrames.first.id.obs;
@@ -476,11 +492,73 @@ class GameController extends GetxController {
       frame,
       prestigeTier.value,
       unlockedAchievementIds,
+      treasureMapCompleted: treasureMapCompleted.value,
     )) {
       return;
     }
     activeBoardFrameId.value = id;
     StorageService.to.setString(StorageKeys.activeBoardFrame, id);
+  }
+
+  final treasureMapCount = 0.obs;
+  final treasureMapCompleted = false.obs;
+
+  bool consumeTreasureMap() {
+    if (treasureMapCount.value <= 0) return false;
+    treasureMapCount.value--;
+    StorageService.to.setInt(
+      StorageKeys.treasureMapCount,
+      treasureMapCount.value,
+    );
+    return true;
+  }
+
+  void completeTreasureMap() {
+    treasureMapCompleted.value = true;
+    StorageService.to.setBool(StorageKeys.treasureMapCompleted, true);
+  }
+
+  // I62 Color Alchemy: pigment mua bằng xu được persist; pigment achievement
+  // được suy trực tiếp từ unlockedAchievementIds. Override chỉ đổi màu render.
+  final unlockedPigmentIds = <String>{kPigments.first.id}.obs;
+  final gemColorOverrides = <int, String>{}.obs;
+
+  bool isPigmentUnlocked(Pigment pigment) =>
+      pigment.isFree ||
+      unlockedPigmentIds.contains(pigment.id) ||
+      (pigment.unlockAchievementId != null &&
+          unlockedAchievementIds.contains(pigment.unlockAchievementId));
+
+  bool buyPigment(Pigment pigment) {
+    if (pigment.coinPrice == null || isPigmentUnlocked(pigment)) return false;
+    if (coins.value < pigment.coinPrice!) return false;
+    coins.value -= pigment.coinPrice!;
+    unlockedPigmentIds.add(pigment.id);
+    StorageService.to.setInt(StorageKeys.coins, coins.value);
+    StorageService.to.setString(
+      StorageKeys.unlockedPigments,
+      unlockedPigmentIds.join(','),
+    );
+    return true;
+  }
+
+  bool setGemColorOverride(int slot, String pigmentId) {
+    final pigment = kPigments.where((p) => p.id == pigmentId).firstOrNull;
+    if (pigment == null || !isPigmentUnlocked(pigment)) return false;
+    gemColorOverrides[slot] = pigmentId;
+    StorageService.to.setString(
+      StorageKeys.gemColorOverrides,
+      encodeGemColorOverrides(gemColorOverrides),
+    );
+    return true;
+  }
+
+  void clearGemColorOverride(int slot) {
+    gemColorOverrides.remove(slot);
+    StorageService.to.setString(
+      StorageKeys.gemColorOverrides,
+      encodeGemColorOverrides(gemColorOverrides),
+    );
   }
 
   /// Task #5: điểm cần vượt khi đang trong 1 lần Perfect Clear challenge
@@ -510,11 +588,21 @@ class GameController extends GetxController {
   /// không có thách đấu đang chơi.
   final challengeWon = Rxn<bool>();
 
+  /// I58: seeded QR challenge. score=0 marks the creator's first run.
+  final activeSeedChallenge = Rxn<ChallengeSeedCode>();
+  final seedChallengeWon = Rxn<bool>();
+
   /// Bắt đầu 1 level qua mã thách đấu — dùng nguyên [startLevel] (board
   /// random bình thường, không preset/replay) rồi gắn thêm mục tiêu so điểm.
   void startChallenge(ChallengeCode code) {
     startLevel(code.levelId);
     activeChallenge.value = code;
+  }
+
+  void startSeedChallenge(ChallengeSeedCode code) {
+    startPuzzleLevel(generateDailyChallengeGrid(code.seed));
+    activeSeedChallenge.value = code;
+    seedChallengeWon.value = null;
   }
 
   /// Public: [AchievementsScreen] dùng để hiển thị tiến độ mốc chưa mở khoá.
@@ -813,6 +901,9 @@ class GameController extends GetxController {
               storedFrame,
               prestigeTier.value,
               unlockedAchievementIds,
+              treasureMapCompleted: StorageService.to.getBool(
+                StorageKeys.treasureMapCompleted,
+              ),
             )
         ? storedFrame.id
         : kBoardFrames.first.id;
@@ -823,8 +914,27 @@ class GameController extends GetxController {
     );
     activeSkyAura.value =
         StorageService.to.getString(StorageKeys.activeSkyAura) ?? 'default';
+    final validPigmentIds = kPigments.map((p) => p.id).toSet();
+    final storedPigments =
+        (StorageService.to.getString(StorageKeys.unlockedPigments) ?? '')
+            .split(',')
+            .where(validPigmentIds.contains)
+            .toSet()
+          ..add(kPigments.first.id);
+    unlockedPigmentIds.assignAll(storedPigments);
+    gemColorOverrides.assignAll(
+      decodeGemColorOverrides(
+        StorageService.to.getString(StorageKeys.gemColorOverrides),
+      )..removeWhere((_, id) => !validPigmentIds.contains(id)),
+    );
     weeklyGoalProgress.value = StorageService.to.getInt(
       StorageKeys.weeklyGoalProgress,
+    );
+    treasureMapCount.value = StorageService.to.getInt(
+      StorageKeys.treasureMapCount,
+    );
+    treasureMapCompleted.value = StorageService.to.getBool(
+      StorageKeys.treasureMapCompleted,
     );
     _recomputeTotalStars();
     _checkSeasonRollover();
@@ -898,6 +1008,7 @@ class GameController extends GetxController {
       currentWeekIndex,
     );
     StorageService.to.setInt(StorageKeys.coins, coins.value);
+    _grantTreasureMap();
     return true;
   }
 
@@ -1010,7 +1121,16 @@ class GameController extends GetxController {
       loginStreakClaimedMask.value,
     );
     StorageService.to.setInt(StorageKeys.coins, coins.value);
+    _grantTreasureMap();
     return true;
+  }
+
+  void _grantTreasureMap() {
+    treasureMapCount.value++;
+    StorageService.to.setInt(
+      StorageKeys.treasureMapCount,
+      treasureMapCount.value,
+    );
   }
 
   /// Số ngày kể từ epoch (UTC), kẹp không lùi dưới mốc lớn nhất từng thấy —
@@ -1151,6 +1271,8 @@ class GameController extends GetxController {
     craftRewardType.value = null;
     activeChallenge.value = null;
     challengeWon.value = null;
+    activeSeedChallenge.value = null;
+    seedChallengeWon.value = null;
   }
 
   /// Task #5: replay level đã qua ít nhất 1 sao, mục tiêu vượt best score
@@ -1303,6 +1425,66 @@ class GameController extends GetxController {
       cols: cols,
       colorCount: kPuzzleMaxColorCount,
       targetScore: rows * cols * 6,
+    );
+    score.value = 0;
+    starsEarned.value = 0;
+    ended.value = false;
+    cleared.value = false;
+    resetCombo();
+    activeGame = null;
+    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
+    movesUsed.value = 0;
+    _collectInitial = null;
+  }
+
+  /// I59: one random seed produces the source board shared by both players.
+  void startPassAndPlayDuel() {
+    passAndPlayBaseGrid = generateDailyChallengeGrid(Random().nextInt(1 << 31));
+    startPassAndPlayTurn();
+  }
+
+  /// Each player receives a fresh deep copy because PopStarGame mutates it.
+  void startPassAndPlayTurn() {
+    final source = passAndPlayBaseGrid;
+    if (source == null) return;
+    mode.value = GameMode.passAndPlay;
+    passAndPlayGrid = source.map((row) => List<int>.from(row)).toList();
+    currentLevelRx.value = PopLevel(
+      id: -59,
+      rows: source.length,
+      cols: source.first.length,
+      colorCount: dailyChallengeColorCount,
+      targetScore: source.length * source.first.length * 6,
+    );
+    score.value = 0;
+    starsEarned.value = 0;
+    ended.value = false;
+    cleared.value = false;
+    resetCombo();
+    activeGame = null;
+    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
+    movesUsed.value = 0;
+    _collectInitial = null;
+  }
+
+  /// I60: deterministic board for each of five stages on the current day.
+  void startTreasureMapStage(int stage) {
+    final modifier = kTreasureMapModifiers[stage - 1];
+    activeTreasureMapModifier = modifier;
+    mode.value = GameMode.treasureMap;
+    final grid = generateDailyChallengeGrid(
+      _todayEpochDay() + stage,
+      colorCount: modifier.colorCountOverride ?? dailyChallengeColorCount,
+    );
+    puzzleLabGrid = grid;
+    currentLevelRx.value = PopLevel(
+      id: -60 - stage,
+      rows: grid.length,
+      cols: grid.first.length,
+      colorCount: modifier.colorCountOverride ?? dailyChallengeColorCount,
+      targetScore: grid.length * grid.first.length * 5,
     );
     score.value = 0;
     starsEarned.value = 0;
@@ -1478,7 +1660,11 @@ class GameController extends GetxController {
       );
       _checkAchievements();
     }
-    if (mode.value == GameMode.puzzleLab) {
+    if (mode.value == GameMode.puzzleLab ||
+        mode.value == GameMode.passAndPlay) {
+      if (activeSeedChallenge.value case final challenge?) {
+        seedChallengeWon.value = score.value > challenge.score;
+      }
       ended.value = true;
       return; // không thưởng coin/sao/unlock/best-score
     }
@@ -1804,6 +1990,10 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.lastFeaturedWeekSeen);
     await store.remove(StorageKeys.featuredLevelScore);
     await store.remove(StorageKeys.activeBoardFrame);
+    await store.remove(StorageKeys.gemColorOverrides);
+    await store.remove(StorageKeys.unlockedPigments);
+    await store.remove(StorageKeys.treasureMapCount);
+    await store.remove(StorageKeys.treasureMapCompleted);
     for (var id = 1; id <= kLevelCount; id++) {
       await store.remove(StorageKeys.highScore(id));
       await store.remove(StorageKeys.star(id));

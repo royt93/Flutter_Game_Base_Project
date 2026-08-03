@@ -8,6 +8,8 @@ import '../../core/runtime_flags.dart';
 import '../../data/worlds.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_screen_controller.dart';
+import '../controllers/pass_and_play_controller.dart';
+import '../controllers/treasure_map_controller.dart';
 import '../widgets/ambient_particles.dart';
 import '../widgets/board_frame_picker_dialog.dart';
 import '../widgets/burst_style_picker_dialog.dart';
@@ -28,6 +30,7 @@ import '../widgets/star_mascot.dart';
 import '../widgets/stroke_text.dart';
 import 'achievements_screen.dart';
 import 'boss_rush_screen.dart';
+import 'color_alchemy_screen.dart';
 import 'friend_compare_screen.dart';
 import 'ghost_replay_screen.dart';
 import 'game_screen.dart';
@@ -184,6 +187,46 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () {
               Navigator.pop(context);
               gameCtrl.startGauntlet();
+              Get.to(() => const GameScreen());
+            },
+          ),
+          _modeTile(
+            icon: Icons.map_rounded,
+            color: NeonTheme.teal,
+            label: 'treasure_map_title'.tr,
+            onTap: () {
+              if (gameCtrl.treasureMapCount.value <= 0) {
+                Navigator.pop(context);
+                NeonDialog.show(
+                  context: context,
+                  title: 'treasure_map_title'.tr,
+                  color: NeonTheme.teal,
+                  message: 'treasure_no_maps'.tr,
+                  actions: [
+                    NeonDialogAction(
+                      label: 'coll_close'.tr,
+                      color: NeonTheme.teal,
+                      onTap: () {},
+                    ),
+                  ],
+                );
+                return;
+              }
+              Navigator.pop(context);
+              final expedition = Get.put(TreasureMapController(gameCtrl));
+              if (expedition.startExpedition()) {
+                Get.to(() => const GameScreen());
+              }
+            },
+          ),
+          _modeTile(
+            icon: Icons.people_rounded,
+            color: NeonTheme.purple,
+            label: 'duel_title'.tr,
+            onTap: () {
+              Navigator.pop(context);
+              final duel = Get.put(PassAndPlayController(gameCtrl));
+              duel.startDuel();
               Get.to(() => const GameScreen());
             },
           ),
@@ -350,6 +393,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: NeonTheme.magenta,
               label: 'wardrobe_title'.tr,
               onTap: () => Get.to(() => const MascotWardrobeScreen()),
+            ),
+            _drawerTile(
+              icon: Icons.palette_rounded,
+              color: NeonTheme.purple,
+              label: 'alchemy_title'.tr,
+              onTap: () => Get.to(() => const ColorAlchemyScreen()),
             ),
             _drawerTile(
               icon: Icons.military_tech_rounded,
