@@ -21,6 +21,7 @@ import '../logic/boss_tile.dart';
 import '../logic/chain_tile.dart';
 import '../logic/countdown_lock_tile.dart';
 import '../logic/gift_tile.dart';
+import '../logic/magnet_tile.dart';
 import '../logic/obstacle.dart';
 import '../logic/pop_collapse.dart';
 import '../logic/pop_detector.dart';
@@ -301,6 +302,7 @@ class PopStarGame extends FlameGame {
     _placeGiftsIfNeeded(level);
     _placeCountdownLockTileIfNeeded(level);
     _placeWildcardTileIfNeeded(level);
+    _placeMagnetTileIfNeeded(level);
     controller.activeGame = this;
     _layout();
     // ponytail: không await — toImage() có thể không hoàn tất trong widget
@@ -482,6 +484,26 @@ class PopStarGame extends FlameGame {
     if (candidates.isEmpty) return;
     final idx = candidates.first;
     colorGrid[idx ~/ cols][idx % cols] = wildcardTileValue;
+  }
+
+  /// I68: tối đa một Magnet từ world 4 (level > 60), campaign only.
+  /// Placement chạy sau các special tile khác và chỉ chọn ô màu chưa khoá,
+  /// nên không thể ghi đè obstacle/gift/boss/wildcard/countdown/chain.
+  static const double _magnetTileChance = 0.18;
+
+  void _placeMagnetTileIfNeeded(PopLevel level) {
+    if (level.id <= 60 || controller.mode.value != GameMode.campaign) return;
+    if (_rng.nextDouble() >= _magnetTileChance) return;
+    final candidates = _shuffledCandidates(
+      (idx) =>
+          (colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0 &&
+          lockGrid[idx ~/ cols][idx % cols] == 0 &&
+          !_isCollectTarget(level, idx),
+    );
+    if (candidates.isEmpty) return;
+    final idx = candidates.first;
+    final targetColor = _rng.nextInt(level.colorCount);
+    colorGrid[idx ~/ cols][idx % cols] = encodeMagnetTile(targetColor);
   }
 
   @override
@@ -726,11 +748,19 @@ class PopStarGame extends FlameGame {
     // (xem [isReplay]); dùng điểm thô không nhân combo cho popup hiển thị.
     // I49: campaign pop trúng đúng lucky color của ngày → nhân thêm ×1.2.
     final popColor = colorGrid[row][col] ?? -1;
+    // I68: lấy tọa độ trước khi bất kỳ gravity/collapse nào chạy. Magnet
+    // không thuộc flood-fill, vì vậy chỉ được cộng đúng bonus thụ động này.
+    final triggeredMagnets = magnetTilesTriggeredBy(
+      colorGrid,
+      popColor,
+    ).map((cell) => Point(cell.$1, cell.$2)).toSet();
     final baseScore = scoreForGroup(group.length);
     final isLucky =
         controller.mode.value == GameMode.campaign &&
         popColor == controller.luckyColorIndex.value;
-    final adjustedScore = isLucky ? (baseScore * 1.2).round() : baseScore;
+    final adjustedScore =
+        (isLucky ? (baseScore * 1.2).round() : baseScore) +
+        triggeredMagnets.length * magnetBonusScore;
     final gained = isReplay
         ? adjustedScore
         : controller.registerPop(adjustedScore, groupSize: group.length);
@@ -759,6 +789,7 @@ class PopStarGame extends FlameGame {
     final cleared = kind != null
         ? (Set<Point<int>>.from(group)..remove(Point(row, col)))
         : group;
+    cleared.addAll(triggeredMagnets);
     // F6a: nổ nhóm liền kề obstacle → chip độ bền; vỡ thì gộp vào cùng đợt xoá.
     final broken = _chipObstaclesOrFrozen(cleared);
     // I29: nổ nhóm liền kề boss tile → chip 1 HP; vỡ thì gộp vào cùng đợt xoá.

@@ -5,6 +5,14 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
 
 ## ✅ Implemented
 
+- **I67 Daily Quest Board**: mỗi epoch-day chọn deterministic 3 quest không
+  trùng từ pool 8 template; persist/reset tiến độ và claim độc lập, hook pop/
+  thắng/3-sao trong `GameController`, dialog nhận thưởng riêng và i18n đủ 22
+  locale.
+- **I68 Magnet Tile**: special tile campaign từ world 4, mang màu mục tiêu cố
+  định; pop nhóm đúng màu kích hoạt Magnet trước gravity, xoá cùng đợt và cộng
+  50 điểm/ô. Có overlay nam châm theo màu và pure-logic unit tests.
+
 - Đổi định danh project: package `pop_star_blast`, Android `com.galaxyjoy.pop_star_blast`,
   iOS `com.galaxyjoy.popStarBlast*`.
 - Logic thuần Dart: `pop_detector.dart` (flood-fill nhóm cùng màu, `hasAnyMovableGroup`),
