@@ -232,16 +232,17 @@ const PopLevel kZenLevel = PopLevel(
 /// trước). Ramp liên tục (không chia world như campaign) — rows/cols/colors
 /// nới rộng dần rồi kẹp trần để bàn không phình vô hạn. id âm giống các
 /// side-mode khác, không đụng storage theo id.
-PopLevel endlessLevelForIndex(int boardIndex) {
+PopLevel endlessLevelForIndex(int boardIndex, {GauntletModifier? modifier}) {
   final rows = (7 + boardIndex ~/ 4).clamp(7, 14);
   final cols = (6 + boardIndex ~/ 3).clamp(6, 14);
-  final colorCount = (4 + boardIndex ~/ 6).clamp(4, 8);
+  final colorCount = modifier?.colorCountOverride ?? (4 + boardIndex ~/ 6).clamp(4, 8);
   return PopLevel(
     id: -3,
     rows: rows,
     cols: cols,
     colorCount: colorCount,
     targetScore: 0,
+    gravityDirection: modifier?.gravityOverride ?? GravityDirection.down,
   );
 }
 

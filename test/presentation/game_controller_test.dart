@@ -695,10 +695,10 @@ void main() {
       expect(ctrl.canRecordGauntletScore, isTrue);
     });
 
-    test('gauntletComboWindowOverride chỉ khác null khi mode là gauntlet và '
+    test('activeComboWindowOverride chỉ khác null khi mode có modifier và '
         'modifier có comboWindowOverride', () {
       ctrl.startLevel(1);
-      expect(ctrl.gauntletComboWindowOverride, isNull);
+      expect(ctrl.activeComboWindowOverride, isNull);
 
       ctrl.activeGauntletModifier = kGauntletModifiers.firstWhere(
         (m) => m.id == 'short_combo',
@@ -707,12 +707,12 @@ void main() {
       ctrl.activeGauntletModifier = kGauntletModifiers.firstWhere(
         (m) => m.id == 'short_combo',
       );
-      expect(ctrl.gauntletComboWindowOverride, 1.5);
+      expect(ctrl.activeComboWindowOverride, 1.5);
 
       ctrl.activeGauntletModifier = kGauntletModifiers.firstWhere(
         (m) => m.id == 'no_undo',
       );
-      expect(ctrl.gauntletComboWindowOverride, isNull);
+      expect(ctrl.activeComboWindowOverride, isNull);
     });
 
     test('modifier no_undo chặn useUndo(), modifier khác thì không', () {

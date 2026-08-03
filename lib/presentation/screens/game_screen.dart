@@ -276,6 +276,7 @@ class _Hud extends StatelessWidget {
                       );
                     }
                     if (gameCtrl.mode.value == GameMode.endless) {
+                      final mod = gameCtrl.activeEndlessModifier;
                       return Column(
                         children: [
                           scoreText,
@@ -288,6 +289,24 @@ class _Hud extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
+                          if (mod != null) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(mod.icon, size: 14, color: NeonTheme.gold),
+                                const SizedBox(width: 4),
+                                Text(
+                                  mod.nameKey.tr,
+                                  style: const TextStyle(
+                                    color: NeonTheme.gold,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       );
                     }
