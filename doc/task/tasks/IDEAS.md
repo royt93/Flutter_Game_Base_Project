@@ -5,8 +5,10 @@ rã thành task md.
 **Đã chốt và rã task** (xem `README.md`): I2, I4, I5, I11, I13, I18 (đợt đầu);
 I1, I3, I6, I7, I8, I9, I10, I14, I15, I16, I17 (đợt audit 2026-07); I27,
 I28, I29, I30 (đợt brainstorm 2026-07-18); I31, I32, I33, I34, I35, I36, I37,
-I38, I39, I40, I41, I42, I43 (đợt brainstorm 2026-07-18, round 2). Danh sách
-dưới giữ nguyên để tra cứu mô tả gốc.
+I38, I39, I40, I41, I42, I43 (đợt brainstorm 2026-07-18, round 2); I44, I45,
+I46, I47, I48, I49, I50, I51, I52, I53, I54 (đợt brainstorm 2026-07-19, round
+3); I55, I56, I57, I58, I59, I60, I61, I62, I63, I64, I65 (đợt brainstorm
+2026-08-02, round 4). Danh sách dưới giữ nguyên để tra cứu mô tả gốc.
 
 ## Gameplay depth
 - **I1 Gift/present tiles** ✅ đã chốt — [I1-gift-present-tiles.md](I1-gift-present-tiles.md).
@@ -107,3 +109,41 @@ dưới giữ nguyên để tra cứu mô tả gốc.
   cao nhất đã unlock ✅ đã chốt — [I53-home-screen-theme-pack.md](I53-home-screen-theme-pack.md).
 - **I54 Combo Text Style** — đổi kiểu chữ hiệu ứng combo-milestone, mở
   khoá theo `maxComboEver` ✅ đã chốt — [I54-combo-text-style.md](I54-combo-text-style.md).
+
+## Đợt brainstorm 2026-08-02 (round 4 — retention + social-lite + cosmetic +
+gameplay depth, tổng hợp từ audit backlog + tham vấn Codex/Gemini/Claude độc
+lập)
+
+- **I55 Streak Freeze Token** — vật phẩm giữ streak điểm danh khi lỡ 1 ngày,
+  mở rộng `login_streak.dart` không phá logic gốc ✅ đã chốt —
+  [I55-streak-freeze-token.md](I55-streak-freeze-token.md).
+- **I56 Local Smart Reminder** — local notification nhắc streak/spin/weekly
+  goal sắp hết hạn, ưu tiên tối đa 1/ngày ✅ đã chốt —
+  [I56-local-smart-reminder.md](I56-local-smart-reminder.md).
+- **I57 Shareable Score Card** — thẻ kết quả tổng hợp (điểm/sao/rank/mascot
+  skin) chia sẻ ra ngoài app, tách biệt Photo Mode (F15) ✅ đã chốt —
+  [I57-shareable-score-card.md](I57-shareable-score-card.md).
+- **I58 Challenge Card QR Battle** — mở rộng Async Challenge Code (I37) thành
+  ảnh thẻ có mã QR mang cả seed bàn chơi ✅ đã chốt —
+  [I58-challenge-card-qr-battle.md](I58-challenge-card-qr-battle.md).
+- **I59 Pass-and-Play Duel** — 2 người luân phiên cùng máy, cùng seed bàn,
+  so điểm cuối cùng ✅ đã chốt —
+  [I59-pass-and-play-duel.md](I59-pass-and-play-duel.md).
+- **I60 Treasure Map & Expedition** — chuỗi 5 chặng biến tấu luật (move
+  limit/min group size) đổi lấy cosmetic hiếm ✅ đã chốt —
+  [I60-treasure-map-expedition.md](I60-treasure-map-expedition.md).
+- **I61 Boss Breakout Event Raid** — sự kiện tuần, boss chủ động ra chiêu,
+  giới hạn lượt/ngày, thưởng theo tổng sát thương ✅ đã chốt —
+  [I61-boss-breakout-event-raid.md](I61-boss-breakout-event-raid.md).
+- **I62 Color Alchemy Lab** — pha chế bảng màu gem riêng, cosmetic thuần,
+  không đổi luật match ✅ đã chốt —
+  [I62-color-alchemy-lab.md](I62-color-alchemy-lab.md).
+- **I63 Cosmetic Mystery Crate** — rương ngẫu nhiên tổng hợp 4 hệ cosmetic
+  hiện có (mascot/frame/burst/combo-text), trùng quy đổi coin ✅ đã chốt —
+  [I63-cosmetic-mystery-crate.md](I63-cosmetic-mystery-crate.md).
+- **I64 Star Constellation & Sky Shrine** — chuỗi chòm sao thắp sáng theo
+  `totalStars`, mở khoá hiệu ứng aura/glow độc quyền ✅ đã chốt —
+  [I64-star-constellation-sky-shrine.md](I64-star-constellation-sky-shrine.md).
+- **I65 Star Pet & Companion Habitat** — thú cưng sao sưu tầm đa-thực-thể,
+  thưởng idle theo thời gian rời app ✅ đã chốt —
+  [I65-star-pet-companion-habitat.md](I65-star-pet-companion-habitat.md).
