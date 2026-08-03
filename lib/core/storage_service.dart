@@ -158,6 +158,14 @@ class StorageKeys {
   // 'classic') — không persist "đã mở khoá" vì suy trực tiếp từ prestigeTier
   // (I27) + unlockedAchievements (I22) đã có sẵn.
   static const String activeBoardFrame = 'active_board_frame';
+
+  // I65 Star Pet Companion Habitat: xu tiên tệ riêng (Star Dust), danh sách
+  // pet sở hữu (JSON-encode list PetInstance), mốc thời gian lần hốt thưởng
+  // idle gần nhất — key mới hoàn toàn, không tái dùng lastOpenDay (mục đích
+  // khác: đó là streak điểm danh, đây là mốc tính idle-reward liên tục).
+  static const String starDustCount = 'star_dust_count';
+  static const String starOwnedPets = 'star_owned_pets';
+  static const String lastPetCollectTimestampMs = 'last_pet_collect_ms';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

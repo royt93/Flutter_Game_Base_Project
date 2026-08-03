@@ -35,6 +35,7 @@ import 'leaderboard_screen.dart';
 import 'level_select_screen.dart';
 import 'mascot_wardrobe_screen.dart';
 import 'perks_screen.dart';
+import 'pet_habitat_screen.dart';
 import 'season_screen.dart';
 import 'settings_screen.dart';
 import 'shop_screen.dart';
@@ -353,6 +354,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: NeonTheme.gold,
               label: 'trophy_room_title'.tr,
               onTap: () => Get.to(() => const TrophyRoomScreen()),
+            ),
+            _drawerTile(
+              icon: Icons.auto_awesome_rounded,
+              color: NeonTheme.teal,
+              label: 'pet_habitat_title'.tr,
+              onTap: () => Get.to(() => const PetHabitatScreen()),
             ),
             _drawerTile(
               icon: Icons.auto_awesome_motion_rounded,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:get/get.dart';
@@ -18,6 +19,7 @@ import '../../data/levels.dart';
 import '../../data/lucky_color.dart';
 import '../../data/mascot_skins.dart';
 import '../../data/perks.dart';
+import '../../data/star_pets.dart';
 import '../../data/weekly_featured.dart';
 import '../../data/weekly_goal.dart';
 import '../../game/pop_star_game.dart';
@@ -341,6 +343,60 @@ class GameController extends GetxController {
     return true;
   }
 
+  // I65 Star Pet Companion Habitat: tiền tệ riêng (Star Dust) + danh sách
+  // pet sở hữu (nhiều instance cùng loại, khác skin mascot ở trên).
+  final starDust = 0.obs;
+  final starOwnedPets = <PetInstance>[].obs;
+  final lastPetCollectMs = 0.obs;
+
+  /// Xu idle đang chờ thu hoạch, tính tới thời điểm hiện tại — không mutate
+  /// state, dùng để hiển thị preview trước khi người chơi bấm nút hốt.
+  int get pendingIdlePetReward => idleRewardCoins(
+    lastCollectMs: lastPetCollectMs.value,
+    nowMs: DateTime.now().millisecondsSinceEpoch,
+    petCount: starOwnedPets.length,
+  );
+
+  /// Ấp 1 pet loại [type] bằng Star Dust. False nếu không đủ Star Dust.
+  bool hatchPet(PetType type) {
+    if (starDust.value < type.hatchCost) return false;
+    starDust.value -= type.hatchCost;
+    starOwnedPets.add(
+      PetInstance(
+        typeId: type.id,
+        hatchedAtMs: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+    StorageService.to.setInt(StorageKeys.starDustCount, starDust.value);
+    _persistOwnedPets();
+    return true;
+  }
+
+  /// Hốt thưởng xu idle tích luỹ từ lần mở Habitat trước tới giờ, rồi reset
+  /// mốc thời gian. 0 nếu chưa có pet hoặc chưa đủ thời gian trôi qua.
+  int claimIdlePetReward() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final reward = idleRewardCoins(
+      lastCollectMs: lastPetCollectMs.value,
+      nowMs: now,
+      petCount: starOwnedPets.length,
+    );
+    lastPetCollectMs.value = now;
+    StorageService.to.setInt(StorageKeys.lastPetCollectTimestampMs, now);
+    if (reward > 0) {
+      coins.value += reward;
+      StorageService.to.setInt(StorageKeys.coins, coins.value);
+    }
+    return reward;
+  }
+
+  void _persistOwnedPets() {
+    StorageService.to.setString(
+      StorageKeys.starOwnedPets,
+      jsonEncode(starOwnedPets.map((p) => p.toJson()).toList()),
+    );
+  }
+
   // I52 Pop Burst Style Picker: kiểu hiệu ứng nổ đang chọn — mở khoá theo
   // [totalGemsPopped], không persist riêng "đã mở khoá" (suy trực tiếp từ
   // counter đời để tránh lệch dữ liệu).
@@ -406,6 +462,12 @@ class GameController extends GetxController {
   final perfectClearSuccess = false.obs;
 
   static const int perfectClearBonusCoins = 50;
+
+  // I65: Star Dust thưởng mỗi lần thắng campaign 3 sao (mọi lần, không chỉ
+  // lần đầu — cùng nếp với _grantCoins ở dưới), hoặc hoàn thành Daily
+  // Challenge (1 lần/ngày, dùng chung guard canRecordDailyChallengeScore).
+  static const int starDustPerThreeStarWin = 5;
+  static const int starDustPerDailyChallenge = 10;
 
   /// I32 Craft Booster: 'bomb'/'shuffle'/'undo' vừa quy đổi từ cell còn sót
   /// lại cuối màn thắng (không full-clear) — null nếu không đủ ngưỡng craft
@@ -657,6 +719,24 @@ class GameController extends GetxController {
     activeMascotSkinId.value = validSkinIds.contains(storedActiveId)
         ? storedActiveId!
         : kMascotSkins.first.id;
+    // I65: lọc theo typeId còn tồn tại trong kStarPetTypes, cùng lý do với
+    // block skin ở trên — id hỏng/của type đã gỡ không được giữ lại.
+    starDust.value = StorageService.to.getInt(StorageKeys.starDustCount);
+    final storedPetsJson = StorageService.to.getString(
+      StorageKeys.starOwnedPets,
+    );
+    if (storedPetsJson != null && storedPetsJson.isNotEmpty) {
+      final decoded = jsonDecode(storedPetsJson) as List<dynamic>;
+      starOwnedPets.assignAll(
+        decoded
+            .map((e) => PetInstance.fromJson(e as Map<String, Object?>))
+            .whereType<PetInstance>()
+            .where((p) => petTypeById(p.typeId) != null),
+      );
+    }
+    lastPetCollectMs.value = StorageService.to.getInt(
+      StorageKeys.lastPetCollectTimestampMs,
+    );
     // I52: validate lại theo BurstStyleKind hợp lệ + ngưỡng mở khoá hiện tại
     // (phòng storage bị sửa tay trỏ style chưa đủ điều kiện).
     final storedBurstKind = BurstStyleKind.values
@@ -1257,6 +1337,8 @@ class GameController extends GetxController {
       _todayEpochDay(),
     );
     StorageService.to.setInt(StorageKeys.dailyChallengeScore, score.value);
+    starDust.value += starDustPerDailyChallenge;
+    StorageService.to.setInt(StorageKeys.starDustCount, starDust.value);
   }
 
   /// I33: đã ghi điểm Gauntlet hôm nay chưa — mirror
@@ -1401,6 +1483,10 @@ class GameController extends GetxController {
       _unlockNext();
       _saveBestScore();
       _grantCoins();
+      if (starsEarned.value == 3) {
+        starDust.value += starDustPerThreeStarWin;
+        StorageService.to.setInt(StorageKeys.starDustCount, starDust.value);
+      }
       _maybeRequestReview();
       _checkSeasonRollover();
       _addSeasonPoints(starsEarned.value * 10);
