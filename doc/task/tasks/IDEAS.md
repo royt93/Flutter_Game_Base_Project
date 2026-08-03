@@ -8,7 +8,8 @@ I28, I29, I30 (đợt brainstorm 2026-07-18); I31, I32, I33, I34, I35, I36, I37,
 I38, I39, I40, I41, I42, I43 (đợt brainstorm 2026-07-18, round 2); I44, I45,
 I46, I47, I48, I49, I50, I51, I52, I53, I54 (đợt brainstorm 2026-07-19, round
 3); I55, I56, I57, I58, I59, I60, I61, I62, I63, I64, I65 (đợt brainstorm
-2026-08-02, round 4). Danh sách dưới giữ nguyên để tra cứu mô tả gốc.
+2026-08-02, round 4); I66, I67, I68, I69 (đợt brainstorm 2026-08-03, round
+5). Danh sách dưới giữ nguyên để tra cứu mô tả gốc.
 
 ## Gameplay depth
 - **I1 Gift/present tiles** ✅ đã chốt — [I1-gift-present-tiles.md](I1-gift-present-tiles.md).
@@ -147,3 +148,21 @@ lập)
 - **I65 Star Pet & Companion Habitat** — thú cưng sao sưu tầm đa-thực-thể,
   thưởng idle theo thời gian rời app ✅ đã chốt —
   [I65-star-pet-companion-habitat.md](I65-star-pet-companion-habitat.md).
+
+## Đợt brainstorm 2026-08-03 (round 5 — audit I55-I65 phát hiện 7 key i18n
+mồ côi (clan) + rà lại các "khoảng trống" gameplay/meta còn lại sau round 4)
+
+- **I66 Clan Lite** — clan cố định duy nhất (không backend), mục tiêu tuần
+  cộng dồn giữa người chơi + NPC tĩnh, bảng xếp hạng đóng góp, đóng lại 7 key
+  i18n mồ côi (`clan_*`, `ach_*clanContrib*`) ✅ đã chốt —
+  [I66-clan-lite.md](I66-clan-lite.md).
+- **I67 Daily Quest Board** — 3 nhiệm vụ nhỏ chọn theo ngày (epoch-seeded),
+  tiến độ/thưởng riêng từng cái, tách biệt Weekly Goal (I50) và Daily
+  Reward/Spin hiện có ✅ đã chốt —
+  [I67-daily-quest-board.md](I67-daily-quest-board.md).
+- **I68 Magnet Tile** — special tile campaign mới, kích hoạt passive khi
+  nhóm cùng màu mục tiêu bị pop ở nơi khác trên bàn ✅ đã chốt —
+  [I68-magnet-tile.md](I68-magnet-tile.md).
+- **I69 Endless Mode Modifiers** — tái dùng `GauntletModifier` (I33) áp lên
+  Endless theo ngày, cố định suốt 1 run, không đổi ramp độ khó gốc ✅ đã
+  chốt — [I69-endless-mode-modifiers.md](I69-endless-mode-modifiers.md).

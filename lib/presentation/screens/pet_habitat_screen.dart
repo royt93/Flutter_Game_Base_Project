@@ -245,9 +245,9 @@ class _HatchCard extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.auto_awesome_rounded,
-                    color: Colors.white,
+                    color: canAfford ? Colors.white : NeonTheme.inkSoft,
                     size: 14,
                   ),
                   const SizedBox(width: 4),
