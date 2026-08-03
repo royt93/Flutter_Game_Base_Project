@@ -234,6 +234,10 @@ class AppTranslations extends Translations {
           // I55 — Streak Freeze Token: booster_streak_freeze_label/desc
           // (en+vi ở _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w60ByLang).
           ...?_w60ByLang[e.key],
+          // I56 — Local Smart Reminder: reminders_enabled,
+          // reminder_spin/streak/weekly_goal_title/body (en+vi ở
+          // _extraEn/_extraVi, 20 ngôn ngữ còn lại ở _w61ByLang).
+          ...?_w61ByLang[e.key],
         },
     };
   }
@@ -849,6 +853,14 @@ class AppTranslations extends Translations {
     'booster_streak_freeze_label': 'Streak Freeze',
     'booster_streak_freeze_desc':
         'Protects your login streak once when you miss exactly 1 day.',
+    // I56 — Local Smart Reminder
+    'reminders_enabled': 'Reminders',
+    'reminder_spin_title': 'Your lucky spin is waiting!',
+    'reminder_spin_body': "Don't forget to spin the wheel today.",
+    'reminder_streak_title': "Don't lose your streak!",
+    'reminder_streak_body': 'Log in today to keep your streak going.',
+    'reminder_weekly_goal_title': 'Weekly goal ending soon',
+    'reminder_weekly_goal_body': 'Play a bit more to finish this week\'s goal.',
     // X5 — Home: semanticLabel cho icon chế độ chơi + màn phụ
     'mode_time_attack_label': 'Time Attack Mode',
     'mode_zen_label': 'Zen Mode',
@@ -1723,6 +1735,15 @@ class AppTranslations extends Translations {
     'booster_streak_freeze_label': 'Đóng Băng Streak',
     'booster_streak_freeze_desc':
         'Bảo vệ streak đăng nhập một lần khi bạn lỡ đúng 1 ngày.',
+    // I56 — Local Smart Reminder
+    'reminders_enabled': 'Nhắc nhở',
+    'reminder_spin_title': 'Lượt quay may mắn đang chờ bạn!',
+    'reminder_spin_body': 'Đừng quên quay vòng quay hôm nay.',
+    'reminder_streak_title': 'Đừng để mất streak!',
+    'reminder_streak_body': 'Đăng nhập hôm nay để giữ streak.',
+    'reminder_weekly_goal_title': 'Mục tiêu tuần sắp hết hạn',
+    'reminder_weekly_goal_body':
+        'Chơi thêm chút nữa để hoàn thành mục tiêu tuần này.',
     // X5 — Home: semanticLabel cho icon chế độ chơi + màn phụ
     'mode_time_attack_label': 'Chế độ Đấu thời gian',
     'mode_zen_label': 'Chế độ Thư giãn',
@@ -29514,6 +29535,218 @@ class AppTranslations extends Translations {
       'booster_streak_freeze_desc':
           'আপনি ঠিক ১ দিন মিস করলে এটি আপনার লগইন স্ট্রিক একবার রক্ষা '
           'করে।',
+    },
+  };
+
+  /// I56 — Local Smart Reminder: reminders_enabled,
+  /// reminder_spin/streak/weekly_goal_title/body (en+vi ở _extraEn/_extraVi,
+  /// 20 ngôn ngữ còn lại ở đây).
+  static const Map<String, Map<String, String>> _w61ByLang = {
+    'es_ES': {
+      'reminders_enabled': 'Recordatorios',
+      'reminder_spin_title': '¡Tu giro de la suerte te espera!',
+      'reminder_spin_body': 'No olvides girar la rueda hoy.',
+      'reminder_streak_title': '¡No pierdas tu racha!',
+      'reminder_streak_body':
+          'Inicia sesión hoy para mantener tu racha activa.',
+      'reminder_weekly_goal_title': 'El objetivo semanal termina pronto',
+      'reminder_weekly_goal_body':
+          'Juega un poco más para completar el objetivo de esta semana.',
+    },
+    'fr_FR': {
+      'reminders_enabled': 'Rappels',
+      'reminder_spin_title': 'Votre tour de chance vous attend !',
+      'reminder_spin_body': "N'oubliez pas de tourner la roue aujourd'hui.",
+      'reminder_streak_title': 'Ne perdez pas votre série !',
+      'reminder_streak_body':
+          "Connectez-vous aujourd'hui pour garder votre série.",
+      'reminder_weekly_goal_title':
+          "L'objectif hebdomadaire se termine bientôt",
+      'reminder_weekly_goal_body':
+          "Jouez un peu plus pour terminer l'objectif de cette semaine.",
+    },
+    'de_DE': {
+      'reminders_enabled': 'Erinnerungen',
+      'reminder_spin_title': 'Dein Glücksdrehen wartet auf dich!',
+      'reminder_spin_body': 'Vergiss nicht, heute am Rad zu drehen.',
+      'reminder_streak_title': 'Verliere deine Serie nicht!',
+      'reminder_streak_body':
+          'Melde dich heute an, um deine Serie fortzusetzen.',
+      'reminder_weekly_goal_title': 'Wochenziel endet bald',
+      'reminder_weekly_goal_body':
+          'Spiele noch etwas, um das Wochenziel abzuschließen.',
+    },
+    'pt_BR': {
+      'reminders_enabled': 'Lembretes',
+      'reminder_spin_title': 'Seu giro da sorte está esperando!',
+      'reminder_spin_body': 'Não esqueça de girar a roda hoje.',
+      'reminder_streak_title': 'Não perca sua sequência!',
+      'reminder_streak_body': 'Faça login hoje para manter sua sequência viva.',
+      'reminder_weekly_goal_title': 'Meta semanal termina em breve',
+      'reminder_weekly_goal_body':
+          'Jogue um pouco mais para concluir a meta desta semana.',
+    },
+    'ru_RU': {
+      'reminders_enabled': 'Напоминания',
+      'reminder_spin_title': 'Вас ждёт удачное вращение!',
+      'reminder_spin_body': 'Не забудьте крутить колесо сегодня.',
+      'reminder_streak_title': 'Не потеряйте серию!',
+      'reminder_streak_body': 'Войдите сегодня, чтобы сохранить свою серию.',
+      'reminder_weekly_goal_title': 'Недельная цель скоро закончится',
+      'reminder_weekly_goal_body':
+          'Поиграйте ещё немного, чтобы завершить цель недели.',
+    },
+    'zh_CN': {
+      'reminders_enabled': '提醒',
+      'reminder_spin_title': '你的幸运转盘在等你！',
+      'reminder_spin_body': '别忘了今天转动转盘。',
+      'reminder_streak_title': '不要失去你的连续记录！',
+      'reminder_streak_body': '今天登录以保持你的连续记录。',
+      'reminder_weekly_goal_title': '每周目标即将结束',
+      'reminder_weekly_goal_body': '再玩一会儿以完成本周目标。',
+    },
+    'ja_JP': {
+      'reminders_enabled': 'リマインダー',
+      'reminder_spin_title': 'ラッキースピンが待っています！',
+      'reminder_spin_body': '今日ホイールを回すのを忘れずに。',
+      'reminder_streak_title': 'ストリークを失わないで！',
+      'reminder_streak_body': '今日ログインしてストリークを続けましょう。',
+      'reminder_weekly_goal_title': '週間目標がもうすぐ終了します',
+      'reminder_weekly_goal_body': 'もう少しプレイして今週の目標を達成しましょう。',
+    },
+    'ko_KR': {
+      'reminders_enabled': '알림',
+      'reminder_spin_title': '행운의 스핀이 기다리고 있어요!',
+      'reminder_spin_body': '오늘 휠 돌리는 것을 잊지 마세요.',
+      'reminder_streak_title': '스트릭을 잃지 마세요!',
+      'reminder_streak_body': '오늘 로그인해서 스트릭을 이어가세요.',
+      'reminder_weekly_goal_title': '주간 목표가 곧 종료됩니다',
+      'reminder_weekly_goal_body': '조금 더 플레이해서 이번 주 목표를 완료하세요.',
+    },
+    'it_IT': {
+      'reminders_enabled': 'Promemoria',
+      'reminder_spin_title': 'Il tuo giro fortunato ti aspetta!',
+      'reminder_spin_body': 'Non dimenticare di girare la ruota oggi.',
+      'reminder_streak_title': 'Non perdere la tua serie!',
+      'reminder_streak_body': 'Accedi oggi per mantenere attiva la tua serie.',
+      'reminder_weekly_goal_title': "L'obiettivo settimanale sta per finire",
+      'reminder_weekly_goal_body':
+          "Gioca ancora un po' per completare l'obiettivo di questa "
+          'settimana.',
+    },
+    'id_ID': {
+      'reminders_enabled': 'Pengingat',
+      'reminder_spin_title': 'Putaran keberuntunganmu menunggu!',
+      'reminder_spin_body': 'Jangan lupa putar roda hari ini.',
+      'reminder_streak_title': 'Jangan sampai beruntunmu hilang!',
+      'reminder_streak_body':
+          'Masuk hari ini untuk menjaga beruntunmu tetap berjalan.',
+      'reminder_weekly_goal_title': 'Target mingguan segera berakhir',
+      'reminder_weekly_goal_body':
+          'Bermain sedikit lagi untuk menyelesaikan target minggu ini.',
+    },
+    'th_TH': {
+      'reminders_enabled': 'การแจ้งเตือน',
+      'reminder_spin_title': 'การหมุนนำโชคของคุณกำลังรออยู่!',
+      'reminder_spin_body': 'อย่าลืมหมุนวงล้อวันนี้',
+      'reminder_streak_title': 'อย่าทำสตรีคของคุณหาย!',
+      'reminder_streak_body': 'เข้าสู่ระบบวันนี้เพื่อรักษาสตรีคของคุณ',
+      'reminder_weekly_goal_title': 'เป้าหมายรายสัปดาห์ใกล้จะสิ้นสุดแล้ว',
+      'reminder_weekly_goal_body':
+          'เล่นอีกนิดเพื่อทำเป้าหมายของสัปดาห์นี้ให้สำเร็จ',
+    },
+    'hi_IN': {
+      'reminders_enabled': 'रिमाइंडर',
+      'reminder_spin_title': 'आपका लकी स्पिन इंतज़ार कर रहा है!',
+      'reminder_spin_body': 'आज व्हील घुमाना न भूलें।',
+      'reminder_streak_title': 'अपनी स्ट्रीक न गंवाएं!',
+      'reminder_streak_body': 'अपनी स्ट्रीक जारी रखने के लिए आज लॉग इन करें।',
+      'reminder_weekly_goal_title': 'साप्ताहिक लक्ष्य जल्द समाप्त हो रहा है',
+      'reminder_weekly_goal_body':
+          'इस सप्ताह का लक्ष्य पूरा करने के लिए थोड़ा और खेलें।',
+    },
+    'ar_SA': {
+      'reminders_enabled': 'التذكيرات',
+      'reminder_spin_title': 'دورة الحظ الخاصة بك تنتظرك!',
+      'reminder_spin_body': 'لا تنسَ تدوير العجلة اليوم.',
+      'reminder_streak_title': 'لا تفقد سلسلتك!',
+      'reminder_streak_body': 'سجّل الدخول اليوم للحفاظ على سلسلتك.',
+      'reminder_weekly_goal_title': 'الهدف الأسبوعي ينتهي قريبًا',
+      'reminder_weekly_goal_body': 'العب قليلاً بعد لإكمال هدف هذا الأسبوع.',
+    },
+    'tr_TR': {
+      'reminders_enabled': 'Hatırlatıcılar',
+      'reminder_spin_title': 'Şanslı çevirmen seni bekliyor!',
+      'reminder_spin_body': 'Bugün çarkı çevirmeyi unutma.',
+      'reminder_streak_title': 'Serini kaybetme!',
+      'reminder_streak_body': 'Serini sürdürmek için bugün giriş yap.',
+      'reminder_weekly_goal_title': 'Haftalık hedef yakında sona eriyor',
+      'reminder_weekly_goal_body':
+          'Bu haftaki hedefi tamamlamak için biraz daha oyna.',
+    },
+    'nl_NL': {
+      'reminders_enabled': 'Herinneringen',
+      'reminder_spin_title': 'Je gelukswiel wacht op je!',
+      'reminder_spin_body': 'Vergeet niet om vandaag aan het wiel te draaien.',
+      'reminder_streak_title': 'Verlies je reeks niet!',
+      'reminder_streak_body':
+          'Log vandaag in om je reeks aan de gang te houden.',
+      'reminder_weekly_goal_title': 'Wekelijks doel eindigt binnenkort',
+      'reminder_weekly_goal_body':
+          'Speel nog even om het doel van deze week af te ronden.',
+    },
+    'pl_PL': {
+      'reminders_enabled': 'Przypomnienia',
+      'reminder_spin_title': 'Twoje szczęśliwe zakręcenie czeka!',
+      'reminder_spin_body': 'Nie zapomnij dziś zakręcić kołem.',
+      'reminder_streak_title': 'Nie strać swojej passy!',
+      'reminder_streak_body': 'Zaloguj się dziś, aby utrzymać swoją passę.',
+      'reminder_weekly_goal_title': 'Cel tygodniowy wkrótce się kończy',
+      'reminder_weekly_goal_body':
+          'Zagraj jeszcze trochę, aby ukończyć cel tego tygodnia.',
+    },
+    'fil_PH': {
+      'reminders_enabled': 'Mga Paalala',
+      'reminder_spin_title': 'Naghihintay na ang iyong lucky spin!',
+      'reminder_spin_body': 'Huwag kalimutang ikutin ang gulong ngayon.',
+      'reminder_streak_title': 'Huwag mawala ang iyong streak!',
+      'reminder_streak_body':
+          'Mag-login ngayon para mapanatili ang iyong streak.',
+      'reminder_weekly_goal_title':
+          'Malapit nang matapos ang lingguhang '
+          'layunin',
+      'reminder_weekly_goal_body':
+          'Maglaro pa ng kaunti para matapos ang layunin ngayong linggo.',
+    },
+    'ms_MY': {
+      'reminders_enabled': 'Peringatan',
+      'reminder_spin_title': 'Putaran bertuah anda sedang menanti!',
+      'reminder_spin_body': 'Jangan lupa putar roda hari ini.',
+      'reminder_streak_title': 'Jangan hilangkan streak anda!',
+      'reminder_streak_body':
+          'Log masuk hari ini untuk mengekalkan streak anda.',
+      'reminder_weekly_goal_title': 'Sasaran mingguan tamat tidak lama lagi',
+      'reminder_weekly_goal_body':
+          'Main sedikit lagi untuk melengkapkan sasaran minggu ini.',
+    },
+    'uk_UA': {
+      'reminders_enabled': 'Нагадування',
+      'reminder_spin_title': 'Ваше вдале обертання чекає!',
+      'reminder_spin_body': 'Не забудьте покрутити колесо сьогодні.',
+      'reminder_streak_title': 'Не втратьте свою серію!',
+      'reminder_streak_body': 'Увійдіть сьогодні, щоб продовжити свою серію.',
+      'reminder_weekly_goal_title': 'Тижнева мета скоро завершиться',
+      'reminder_weekly_goal_body':
+          'Пограйте ще трохи, щоб завершити мету цього тижня.',
+    },
+    'bn_BD': {
+      'reminders_enabled': 'রিমাইন্ডার',
+      'reminder_spin_title': 'আপনার লাকি স্পিন অপেক্ষা করছে!',
+      'reminder_spin_body': 'আজ চাকা ঘোরাতে ভুলবেন না।',
+      'reminder_streak_title': 'আপনার স্ট্রিক হারাবেন না!',
+      'reminder_streak_body': 'আপনার স্ট্রিক চালিয়ে যেতে আজ লগইন করুন।',
+      'reminder_weekly_goal_title': 'সাপ্তাহিক লক্ষ্য শীঘ্রই শেষ হচ্ছে',
+      'reminder_weekly_goal_body': 'এই সপ্তাহের লক্ষ্য পূরণ করতে আরেকটু খেলুন।',
     },
   };
 }

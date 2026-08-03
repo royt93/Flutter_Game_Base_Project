@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
+import '../../core/reminder_service.dart';
 import '../widgets/home_carousel.dart';
 import 'game_controller.dart';
 
@@ -27,6 +28,9 @@ class HomeScreenController extends GetxController with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       refreshCards(Get.find<GameController>());
+      // I56: quay lại app cũng tính là "mở app" — reschedule reminder theo
+      // state mới nhất (đã claim spin/streak/weekly-goal chưa).
+      ReminderService.maybe?.scheduleNext();
     }
   }
 

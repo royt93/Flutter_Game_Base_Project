@@ -12,6 +12,7 @@ import 'core/audio_manager.dart';
 import 'core/debug_log.dart';
 import 'core/locale_service.dart';
 import 'core/neon_theme.dart';
+import 'core/reminder_service.dart';
 import 'core/storage_service.dart';
 import 'core/runtime_flags.dart';
 import 'presentation/controllers/game_controller.dart';
@@ -48,6 +49,7 @@ Future<void> app({bool withAudio = true}) async {
   // tại → "GameController not found". Get.put() đồng bộ nên chỉ cần đổi
   // thứ tự là đóng được race window này.
   Get.put(GameController(), permanent: true);
+  Get.put(ReminderService(), permanent: true);
   // GetMaterialApp's `locale:` param chỉ áp dụng lúc build lần đầu. Khi
   // restartApp() gọi lại app() trong cùng process, GetX vẫn giữ Get.locale
   // cũ (từ lần đổi ngôn ngữ trước) nên phải chủ động set lại ở đây, không
@@ -67,6 +69,11 @@ Future<void> app({bool withAudio = true}) async {
       AudioManager.maybe?.init().then((_) => AudioManager.maybe?.startBgm());
     });
   }
+  // I56: lên lịch lại reminder mỗi lần app mở (mọi lỗi permission/plugin bị
+  // nuốt bên trong scheduleNext(), không cần gate theo withAudio).
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    ReminderService.maybe?.scheduleNext();
+  });
 }
 
 /// Xoá mọi singleton GetX rồi chạy lại [app()] — dùng sau import backup để

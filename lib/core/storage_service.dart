@@ -34,6 +34,9 @@ class StorageKeys {
   // I55: streak freeze — bảo vệ login streak (I48) khi lỡ đúng 1 ngày.
   static const String streakFreezeCount = 'streak_freeze_count';
 
+  // I56: bật/tắt local reminder nhắc spin/streak/weekly-goal (mặc định bật).
+  static const String remindersEnabled = 'reminders_enabled';
+
   // F7 Star road: bitmask rương đã claim (bit i = mốc thứ i).
   static const String claimedChests = 'claimed_chests';
 

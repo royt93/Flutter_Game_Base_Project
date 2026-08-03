@@ -5,6 +5,7 @@ import '../../core/app_translations.dart';
 import '../../core/audio_manager.dart';
 import '../../core/locale_service.dart';
 import '../../core/neon_theme.dart';
+import '../../core/reminder_service.dart';
 import '../../core/share_helper.dart';
 import '../../core/storage_service.dart';
 import '../../logic/backup_code.dart';
@@ -38,6 +39,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _reduceMotion = StorageService.to.getBool(StorageKeys.reduceMotion);
   late bool _darkTheme = NeonTheme.dark;
   late bool _recordReplay = StorageService.to.getBool(StorageKeys.recordReplay);
+  late bool _remindersEnabled = StorageService.to.getBool(
+    StorageKeys.remindersEnabled,
+    def: true,
+  );
   final _importCodeCtrl = TextEditingController();
 
   @override
@@ -311,6 +316,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       title: Text(
                         'record_replay'.tr,
+                        style: TextStyle(color: NeonTheme.ink),
+                      ),
+                    ),
+                    SwitchListTile(
+                      value: _remindersEnabled,
+                      onChanged: (v) {
+                        setState(() => _remindersEnabled = v);
+                        final reminders = ReminderService.maybe;
+                        if (reminders != null) {
+                          reminders.setEnabled(v);
+                        } else {
+                          StorageService.to.setBool(
+                            StorageKeys.remindersEnabled,
+                            v,
+                          );
+                        }
+                      },
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: NeonTheme.cyan,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      contentPadding: const EdgeInsets.only(
+                        left: NeonTheme.s16,
+                        right: NeonTheme.s16 - _switchTrailingCompensation,
+                      ),
+                      title: Text(
+                        'reminders_enabled'.tr,
                         style: TextStyle(color: NeonTheme.ink),
                       ),
                     ),
