@@ -23,8 +23,12 @@ flutter test test/data/levels_test.dart
 # Run a specific test by name
 flutter test test/data/levels_test.dart --plain-name "kLevelCount"
 
-# Full slow integration suite on a device (nightly / device-farm)
-flutter test integration_test/lifecycle_test.dart -d <device-id>
+# Full slow integration suite on a device (nightly / device-farm).
+# --dart-define=E2E_TEST=true is required for any test that calls
+# restartApp() (e.g. backup_restore_test.dart) — without it AudioManager
+# re-inits on restart and leaks a frame callback past tearDown, which the
+# scheduler reports as a false test failure.
+flutter test integration_test/lifecycle_test.dart -d <device-id> --dart-define=E2E_TEST=true
 
 # Static analysis (must be 0 issues before committing)
 flutter analyze
