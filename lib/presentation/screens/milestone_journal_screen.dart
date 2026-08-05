@@ -6,73 +6,82 @@ import '../../core/storage_service.dart';
 import '../../data/achievements.dart';
 import '../../logic/milestone_journal.dart';
 import '../controllers/game_controller.dart';
-import 'neon_dialog.dart';
+import '../widgets/neon_app_bar.dart';
+import '../widgets/neon_bg.dart';
 
-/// I72 Milestone Journal — xem lại các mốc đã đạt (login streak, achievement,
-/// daily challenge...) theo thời gian, mới nhất trước. Chỉ đọc dữ liệu đã có
-/// sẵn timestamp thật, không tạo subsystem lưu trữ mới ngoài
-/// [StorageKeys.achievementUnlockDays] (ghi trong `_checkAchievements()`).
-Future<void> showMilestoneJournalDialog(
-  BuildContext context,
-  GameController gameCtrl,
-) {
-  final entries = buildMilestoneJournal(
-    lastLoginEpochDay: gameCtrl.lastLoginEpochDay.value,
-    loginStreakCount: gameCtrl.loginStreakCount.value,
-    lastClaimDay: StorageService.to.getInt(StorageKeys.lastClaimDay, def: -1),
-    lastDailyChallengeDay: StorageService.to.getInt(
-      StorageKeys.lastDailyChallengeDay,
-      def: -1,
-    ),
-    lastSpinDay: StorageService.to.getInt(StorageKeys.lastSpinDay, def: -1),
-    lastGauntletDay: StorageService.to.getInt(
-      StorageKeys.lastGauntletDay,
-      def: -1,
-    ),
-    raidBossLastAttemptDay: StorageService.to.getInt(
-      StorageKeys.raidBossLastAttemptDay,
-      def: -1,
-    ),
-    lastFeaturedWeekSeen: StorageService.to.getInt(
-      StorageKeys.lastFeaturedWeekSeen,
-      def: -1,
-    ),
-    lastPetCollectTimestampMs: gameCtrl.lastPetCollectMs.value,
-    achievementUnlockDays: gameCtrl.achievementUnlockDays,
-  );
-  final todayEpochDay =
-      DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000;
+/// I72: màn hình riêng thay cho dialog "Nhật ký mốc" cũ (bị giới hạn chiều
+/// cao 320px trong `NeonDialog`, tràn/xấu khi số mốc tăng lên) — full-screen
+/// route giống `BoardFrameScreen`, không giới hạn chiều cao nội dung.
+class MilestoneJournalScreen extends StatelessWidget {
+  const MilestoneJournalScreen({super.key});
 
-  return NeonDialog.show(
-    context: context,
-    title: 'milestone_journal_title'.tr,
-    color: NeonTheme.purple,
-    icon: Icons.auto_stories_rounded,
-    dismissible: true,
-    content: entries.isEmpty
-        ? Padding(
-            padding: const EdgeInsets.symmetric(vertical: NeonTheme.s16),
-            child: Text(
-              'milestone_journal_empty'.tr,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: NeonTheme.inkSoft),
-            ),
-          )
-        : SizedBox(
-            width: double.maxFinite,
-            height: 320,
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: entries.length,
-              separatorBuilder: (_, _) => const SizedBox(height: NeonTheme.s8),
-              itemBuilder: (_, i) => _MilestoneRow(
-                entry: entries[i],
-                todayEpochDay: todayEpochDay,
+  @override
+  Widget build(BuildContext context) {
+    final gameCtrl = Get.find<GameController>();
+    final entries = buildMilestoneJournal(
+      lastLoginEpochDay: gameCtrl.lastLoginEpochDay.value,
+      loginStreakCount: gameCtrl.loginStreakCount.value,
+      lastClaimDay: StorageService.to.getInt(StorageKeys.lastClaimDay, def: -1),
+      lastDailyChallengeDay: StorageService.to.getInt(
+        StorageKeys.lastDailyChallengeDay,
+        def: -1,
+      ),
+      lastSpinDay: StorageService.to.getInt(StorageKeys.lastSpinDay, def: -1),
+      lastGauntletDay: StorageService.to.getInt(
+        StorageKeys.lastGauntletDay,
+        def: -1,
+      ),
+      raidBossLastAttemptDay: StorageService.to.getInt(
+        StorageKeys.raidBossLastAttemptDay,
+        def: -1,
+      ),
+      lastFeaturedWeekSeen: StorageService.to.getInt(
+        StorageKeys.lastFeaturedWeekSeen,
+        def: -1,
+      ),
+      lastPetCollectTimestampMs: gameCtrl.lastPetCollectMs.value,
+      achievementUnlockDays: gameCtrl.achievementUnlockDays,
+    );
+    final todayEpochDay = gameCtrl.todayEpochDay();
+
+    return Scaffold(
+      body: NeonBg(
+        child: SafeArea(
+          child: Column(
+            children: [
+              NeonAppBar(
+                title: 'milestone_journal_title'.tr,
+                color: NeonTheme.purple,
               ),
-            ),
+              Expanded(
+                child: entries.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(NeonTheme.s16),
+                          child: Text(
+                            'milestone_journal_empty'.tr,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: NeonTheme.inkSoft),
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(NeonTheme.s16),
+                        itemCount: entries.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: NeonTheme.s8),
+                        itemBuilder: (_, i) => _MilestoneRow(
+                          entry: entries[i],
+                          todayEpochDay: todayEpochDay,
+                        ),
+                      ),
+              ),
+            ],
           ),
-    actions: const [],
-  );
+        ),
+      ),
+    );
+  }
 }
 
 IconData _iconFor(MilestoneKind kind) {

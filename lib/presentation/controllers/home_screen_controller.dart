@@ -27,10 +27,14 @@ class HomeScreenController extends GetxController with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      refreshCards(Get.find<GameController>());
+      final gameCtrl = Get.find<GameController>();
+      refreshCards(gameCtrl);
       // I56: quay lại app cũng tính là "mở app" — reschedule reminder theo
       // state mới nhất (đã claim spin/streak/weekly-goal chưa).
       ReminderService.maybe?.scheduleNext();
+      // I73: khung theo mùa có thể vừa hết hạn trong lúc app ở background —
+      // sửa lại activeBoardFrameId nếu cần để storage khớp với hiển thị.
+      gameCtrl.revalidateActiveBoardFrame();
     }
   }
 

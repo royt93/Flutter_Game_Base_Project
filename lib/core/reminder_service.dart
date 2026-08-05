@@ -15,7 +15,7 @@ import 'storage_service.dart';
 enum ReminderKind { spin, streak, weeklyGoal }
 
 /// Thời gian còn lại tới UTC midnight kế tiếp — cùng boundary với
-/// `_todayEpochDay()` (`game_controller.dart` dòng ~898-906).
+/// `todayEpochDay()` (`game_controller.dart` dòng ~898-906).
 Duration timeUntilNextDailyReset({required int nowEpochMs}) {
   final now = DateTime.fromMillisecondsSinceEpoch(nowEpochMs, isUtc: true);
   final today = DateTime.utc(now.year, now.month, now.day);
@@ -78,7 +78,7 @@ class ReminderService extends GetxService {
     tzdata.initializeTimeZones();
     // Chỉ dùng để cộng Duration tương đối vào "now" — không cần đúng
     // timezone thiết bị, ponytail: giữ UTC cho đơn giản + nhất quán với
-    // `_todayEpochDay()` (cũng tính theo UTC).
+    // `todayEpochDay()` (cũng tính theo UTC).
     tz.setLocalLocation(tz.UTC);
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings();

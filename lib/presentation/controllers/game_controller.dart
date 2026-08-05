@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:in_app_review/in_app_review.dart';
 
 import '../../core/audio_manager.dart';
+import '../../core/home_widget_sync.dart';
 import '../../core/storage_service.dart';
 import '../../core/utils/comeback_bonus.dart';
 import '../../core/utils/friend_code.dart';
@@ -577,6 +578,22 @@ class GameController extends GetxController {
     StorageService.to.setString(StorageKeys.activeBoardFrame, id);
   }
 
+  /// I73: chỉ sửa `activeBoardFrameId` khi id đã lưu KHÔNG còn tồn tại trong
+  /// `kBoardFrames` (hỏng/frame bị xoá khỏi bản cập nhật) — cố ý KHÔNG đụng
+  /// tới id của khung theo mùa chỉ đang tạm khoá ngoài khung thời gian: nếu
+  /// ghi đè storage về classic lúc đó, sang mùa sau khung mở lại nhưng người
+  /// chơi đã mất lựa chọn, phải tự chọn lại. Bằng cách chỉ sửa khi id thật sự
+  /// hỏng, [activeBoardFrame] tự hiển thị fallback lúc khung đang khoá mà
+  /// storage vẫn giữ nguyên id gốc — mùa sau tự hiện lại đúng khung đã chọn.
+  void revalidateActiveBoardFrame() {
+    final idExists = kBoardFrames.any((f) => f.id == activeBoardFrameId.value);
+    if (!idExists) {
+      final fallback = kBoardFrames.first.id;
+      activeBoardFrameId.value = fallback;
+      StorageService.to.setString(StorageKeys.activeBoardFrame, fallback);
+    }
+  }
+
   final treasureMapCount = 0.obs;
   final treasureMapCompleted = false.obs;
 
@@ -711,7 +728,7 @@ class GameController extends GetxController {
     for (final id in newlyUnlocked) {
       final a = kAchievements.firstWhere((e) => e.id == id);
       unlockedAchievementIds.add(id);
-      achievementUnlockDays[id] = _todayEpochDay();
+      achievementUnlockDays[id] = todayEpochDay();
       coins.value += a.coinReward * weekendCoinMultiplier;
       justUnlockedAchievement.value = a;
       // I30: thành tựu mốc cao tự mở khoá skin gắn với nó (không tốn xu).
@@ -820,6 +837,12 @@ class GameController extends GetxController {
   /// I18: vẽ thêm symbol theo màu lên mỗi gem — hỗ trợ người mù màu.
   final colorblindMode = false.obs;
 
+  /// I71: nới hit-test mép ngoài bàn cờ trong `cellAt()`. Rx thay vì cached
+  /// field + refresh-method riêng trên `PopStarGame` — cùng pattern với
+  /// [colorblindMode], luôn phản ánh giá trị mới nhất mà không cần plumbing
+  /// refresh qua `GameScreenController.maybe`/app-resume lifecycle hook.
+  final largerTapTargets = false.obs;
+
   /// I6 Battle-pass mùa (free-track only, không premium): mùa 28 ngày, điểm
   /// mùa cộng khi thắng level campaign (stars * 10), mốc thưởng coin/booster.
   static const int seasonLengthDays = 28;
@@ -835,7 +858,7 @@ class GameController extends GetxController {
   final claimedSeasonMask = 0.obs;
 
   /// I48 Login Streak Calendar: streak điểm danh liên tục (theo ngày thật,
-  /// chống gian lận qua [_todayEpochDay]), ngày cuối đã điểm danh, và bitmask
+  /// chống gian lận qua [todayEpochDay]), ngày cuối đã điểm danh, và bitmask
   /// các ngày (1-7) đã nhận thưởng trong cycle 7 ngày hiện tại.
   static const Map<int, int> loginStreakRewards = {3: 20, 5: 40, 7: 100};
   final loginStreakCount = 0.obs;
@@ -843,7 +866,7 @@ class GameController extends GetxController {
   final loginStreakClaimedMask = 0.obs;
 
   /// I50 Weekly Goal Card: tiến độ pop gem cộng dồn xuyên suốt mọi mode
-  /// (campaign + side-mode) trong tuần hiện tại (`_todayEpochDay() ~/ 7`),
+  /// (campaign + side-mode) trong tuần hiện tại (`todayEpochDay() ~/ 7`),
   /// reset mỗi khi sang tuần mới. Thưởng 1 lần/tuần khi đạt [weeklyGoalTarget].
   static const int weeklyGoalRewardCoins = 100;
   final weeklyGoalProgress = 0.obs;
@@ -862,12 +885,55 @@ class GameController extends GetxController {
   final dailyQuests = <DailyQuest>[].obs;
   int _dailyQuestDay = -1;
 
+  /// I74: đồng bộ home widget mỗi khi coin hoặc login streak đổi, thay cho
+  /// gọi tay `syncHomeWidget(...)` rải rác ở từng chỗ cộng thưởng (dễ sót,
+  /// vd `claimSpin()` từng thiếu). Trước đó dùng `debounce()` của GetX nhưng
+  /// `Debouncer` nội bộ tạo `Timer` riêng mà `Worker.dispose()` không cancel
+  /// được, Timer treo lại sau khi controller đã đóng — và `Get.reset()`
+  /// (cách teardown chuẩn của test suite) còn không gọi `onClose()` nên dù
+  /// tự quản lý Timer cũng không cứu được. Thay bằng `scheduleMicrotask` gộp
+  /// nhiều lần đổi coins/loginStreak trong cùng 1 tick (vd loop mở khoá
+  /// nhiều achievement) thành đúng 1 lần gọi platform channel — không dùng
+  /// `Timer` nên không có gì để leak qua `Get.reset()`.
+  Worker? _coinsSyncWorker;
+  Worker? _loginStreakSyncWorker;
+  bool _widgetSyncScheduled = false;
+
+  void _scheduleWidgetSync([_]) {
+    if (_widgetSyncScheduled) return;
+    _widgetSyncScheduled = true;
+    scheduleMicrotask(() {
+      _widgetSyncScheduled = false;
+      syncHomeWidget(streak: loginStreakCount.value, coins: coins.value);
+    });
+  }
+
   @override
   void onInit() {
     super.onInit();
     _load();
     _checkLoginStreak();
     checkDailyQuestRollover();
+    // I74 fix: vài test gọi lại onInit() thủ công để giả lập reload app (vd
+    // star_road_test.dart) — dispose worker cũ trước khi tạo mới để tránh
+    // leak Worker cũ và để 2 field này không cần khai `late final` (chỉ gán
+    // được 1 lần, crash `LateInitializationError` nếu onInit() chạy lần 2).
+    _coinsSyncWorker?.dispose();
+    _loginStreakSyncWorker?.dispose();
+    _coinsSyncWorker = ever(coins, _scheduleWidgetSync);
+    _loginStreakSyncWorker = ever(loginStreakCount, _scheduleWidgetSync);
+    // `_load()`/`_checkLoginStreak()` ở trên đã set coins/streak TRƯỚC khi 2
+    // Worker này tồn tại — `ever()` không bắt giá trị đã set trước lúc đăng
+    // ký, nên nếu không gọi tay ở đây, widget sẽ đứng ở giá trị cũ cho tới
+    // lần đổi coins/streak đầu tiên sau khi mở app.
+    _scheduleWidgetSync();
+  }
+
+  @override
+  void onClose() {
+    _coinsSyncWorker?.dispose();
+    _loginStreakSyncWorker?.dispose();
+    super.onClose();
   }
 
   void toggleColorblindMode() {
@@ -875,9 +941,20 @@ class GameController extends GetxController {
     StorageService.to.setBool(StorageKeys.colorblindMode, colorblindMode.value);
   }
 
+  void toggleLargerTapTargets() {
+    largerTapTargets.value = !largerTapTargets.value;
+    StorageService.to.setBool(
+      StorageKeys.largerTapTargets,
+      largerTapTargets.value,
+    );
+  }
+
   void _load() {
     colorblindMode.value = StorageService.to.getBool(
       StorageKeys.colorblindMode,
+    );
+    largerTapTargets.value = StorageService.to.getBool(
+      StorageKeys.largerTapTargets,
     );
     coins.value = StorageService.to.getInt(StorageKeys.coins);
     bombCount.value = StorageService.to.getInt(StorageKeys.bombCount, def: 3);
@@ -1112,7 +1189,7 @@ class GameController extends GetxController {
 
   /// Re-evaluates daily state. [epochDay] is injectable for deterministic tests.
   void checkDailyQuestRollover({int? epochDay}) {
-    final today = epochDay ?? _todayEpochDay();
+    final today = epochDay ?? todayEpochDay();
     final storedDay = StorageService.to.getInt(
       StorageKeys.dailyQuestDay,
       def: -1,
@@ -1165,7 +1242,7 @@ class GameController extends GetxController {
   }
 
   /// Chỉ số mùa hiện tại (28 ngày/mùa), tăng tự động theo ngày thật.
-  int get currentSeasonIndex => _todayEpochDay() ~/ seasonLengthDays;
+  int get currentSeasonIndex => todayEpochDay() ~/ seasonLengthDays;
 
   /// Qua mùa mới → reset điểm mùa + mốc đã nhận (thưởng đã phát giữ nguyên,
   /// vì coin/booster đã cộng vào kho rồi, không bị thu lại).
@@ -1181,7 +1258,7 @@ class GameController extends GetxController {
   }
 
   /// I50: tuần hiện tại (7 ngày/tuần), tăng tự động theo ngày thật.
-  int get currentWeekIndex => weekIndexForEpochDay(_todayEpochDay());
+  int get currentWeekIndex => weekIndexForEpochDay(todayEpochDay());
 
   /// Qua tuần mới → reset tiến độ mục tiêu tuần về 0 (không cộng dồn qua
   /// tuần, khác thưởng đã nhận vẫn giữ nguyên vì coin đã cộng vào kho rồi).
@@ -1345,7 +1422,7 @@ class GameController extends GetxController {
   /// danh cuối với hôm nay để tăng/giữ/reset streak; qua cycle 7 ngày mới thì
   /// xoá bitmask thưởng đã nhận (không thu lại thưởng cũ, chỉ mở lại slot mới).
   void _checkLoginStreak() {
-    final today = _todayEpochDay();
+    final today = todayEpochDay();
     final prevDay = StorageService.to.getInt(
       StorageKeys.lastLoginEpochDay,
       def: -1,
@@ -1416,7 +1493,7 @@ class GameController extends GetxController {
 
   /// Số ngày kể từ epoch (UTC), kẹp không lùi dưới mốc lớn nhất từng thấy —
   /// chống gian lận bằng cách chỉnh lùi đồng hồ máy.
-  int _todayEpochDay() {
+  int todayEpochDay() {
     final current = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000;
     final maxSeen = StorageService.to.getInt(StorageKeys.maxEpochDaySeen);
     final today = current > maxSeen ? current : maxSeen;
@@ -1429,17 +1506,17 @@ class GameController extends GetxController {
   /// I33: modifier Gauntlet hôm nay — dùng để hiện icon+tên trước khi vào
   /// chơi (xem `home_screen.dart`), không cần bắt đầu ván mới để biết.
   GauntletModifier get todaysGauntletModifier =>
-      modifierForDay(_todayEpochDay());
+      modifierForDay(todayEpochDay());
 
   bool get canClaimDaily =>
-      _todayEpochDay() !=
+      todayEpochDay() !=
       StorageService.to.getInt(StorageKeys.lastClaimDay, def: -1);
 
   /// Nhận thưởng ngày: +1 streak nếu liên tiếp hôm qua, ngược lại reset về 1.
   /// Trả về số xu vừa nhận, hoặc null nếu hôm nay đã nhận rồi.
   int? claimDaily() {
     if (!canClaimDaily) return null;
-    final today = _todayEpochDay();
+    final today = todayEpochDay();
     final last = StorageService.to.getInt(StorageKeys.lastClaimDay, def: -1);
     dailyStreak.value = last == today - 1 ? dailyStreak.value + 1 : 1;
     StorageService.to.setInt(StorageKeys.dailyStreak, dailyStreak.value);
@@ -1453,14 +1530,14 @@ class GameController extends GetxController {
   }
 
   bool get canClaimSpin =>
-      _todayEpochDay() !=
+      todayEpochDay() !=
       StorageService.to.getInt(StorageKeys.lastSpinDay, def: -1);
 
   /// Ô đã "chốt" cho hôm nay, seed = ngày hiện tại → gọi bao nhiêu lần trong
   /// cùng 1 ngày cũng ra cùng kết quả (UI vòng quay chỉ animate tới ô này,
   /// không tự random riêng). Không đổi state, gọi được trước khi [claimSpin].
   SpinReward get todaySpinReward {
-    final rnd = Random(_todayEpochDay());
+    final rnd = Random(todayEpochDay());
     final total = spinWeights.reduce((a, b) => a + b);
     var r = rnd.nextInt(total);
     for (var i = 0; i < spinWeights.length; i++) {
@@ -1474,7 +1551,7 @@ class GameController extends GetxController {
   SpinReward? claimSpin() {
     if (!canClaimSpin) return null;
     final reward = todaySpinReward;
-    StorageService.to.setInt(StorageKeys.lastSpinDay, _todayEpochDay());
+    StorageService.to.setInt(StorageKeys.lastSpinDay, todayEpochDay());
     switch (reward.type) {
       case 'bomb':
         _grant(bombCount, StorageKeys.bombCount, reward.amount);
@@ -1516,7 +1593,7 @@ class GameController extends GetxController {
   /// coin + 1 bomb + 1 shuffle, trả về số coin đã tặng; null nếu chưa đủ điều
   /// kiện. Luôn cập nhật lastOpenDay = hôm nay (mốc cho lần vắng kế tiếp).
   int? checkComebackBonus() {
-    final today = _todayEpochDay();
+    final today = todayEpochDay();
     final last = StorageService.to.getInt(StorageKeys.lastOpenDay, def: -1);
     StorageService.to.setInt(StorageKeys.lastOpenDay, today);
     if (!needsComebackBonus(lastOpenEpochDay: last, todayEpochDay: today)) {
@@ -1534,7 +1611,7 @@ class GameController extends GetxController {
     mode.value = GameMode.campaign;
     currentLevelRx.value = kLevels[levelId - 1];
     luckyColorIndex.value = luckyColorIndexForDay(
-      _todayEpochDay(),
+      todayEpochDay(),
       currentLevel.colorCount,
     );
     score.value = 0;
@@ -1588,7 +1665,7 @@ class GameController extends GetxController {
   void startEndless() {
     _endlessBoardIndex = 0;
     mode.value = GameMode.endless;
-    activeEndlessModifier = modifierForDay(_todayEpochDay());
+    activeEndlessModifier = modifierForDay(todayEpochDay());
     currentLevelRx.value = endlessLevelForIndex(
       _endlessBoardIndex,
       modifier: activeEndlessModifier,
@@ -1629,7 +1706,7 @@ class GameController extends GetxController {
   void startDailyChallenge() {
     mode.value = GameMode.dailyChallenge;
     currentLevelRx.value = kDailyChallengeLevel;
-    dailyChallengeGrid = generateDailyChallengeGrid(_todayEpochDay());
+    dailyChallengeGrid = generateDailyChallengeGrid(todayEpochDay());
     score.value = 0;
     starsEarned.value = 0;
     ended.value = false;
@@ -1648,11 +1725,11 @@ class GameController extends GetxController {
   /// thể đổi theo modifier `fourColors`.
   void startGauntlet() {
     mode.value = GameMode.gauntlet;
-    final modifier = modifierForDay(_todayEpochDay());
+    final modifier = modifierForDay(todayEpochDay());
     activeGauntletModifier = modifier;
     currentLevelRx.value = gauntletLevelFor(modifier);
     gauntletGrid = generateDailyChallengeGrid(
-      _todayEpochDay(),
+      todayEpochDay(),
       colorCount: modifier.colorCountOverride ?? dailyChallengeColorCount,
     );
     score.value = 0;
@@ -1760,7 +1837,7 @@ class GameController extends GetxController {
     activeTreasureMapModifier = modifier;
     mode.value = GameMode.treasureMap;
     final grid = generateDailyChallengeGrid(
-      _todayEpochDay() + stage,
+      todayEpochDay() + stage,
       colorCount: modifier.colorCountOverride ?? dailyChallengeColorCount,
     );
     puzzleLabGrid = grid;
@@ -1810,7 +1887,7 @@ class GameController extends GetxController {
   /// F13: đã ghi điểm Daily Challenge hôm nay chưa — chơi lại trong ngày
   /// không đè điểm cũ (giống `canClaimDaily`).
   bool get canRecordDailyChallengeScore =>
-      _todayEpochDay() !=
+      todayEpochDay() !=
       StorageService.to.getInt(StorageKeys.lastDailyChallengeDay, def: -1);
 
   /// F13: điểm Daily Challenge đã ghi nhận lần gần nhất (mọi ngày, không chỉ
@@ -1827,7 +1904,7 @@ class GameController extends GetxController {
     if (!canRecordDailyChallengeScore) return;
     StorageService.to.setInt(
       StorageKeys.lastDailyChallengeDay,
-      _todayEpochDay(),
+      todayEpochDay(),
     );
     StorageService.to.setInt(StorageKeys.dailyChallengeScore, score.value);
     starDust.value += starDustPerDailyChallenge;
@@ -1837,7 +1914,7 @@ class GameController extends GetxController {
   /// I33: đã ghi điểm Gauntlet hôm nay chưa — mirror
   /// [canRecordDailyChallengeScore] (1 lượt tính điểm/ngày).
   bool get canRecordGauntletScore =>
-      _todayEpochDay() !=
+      todayEpochDay() !=
       StorageService.to.getInt(StorageKeys.lastGauntletDay, def: -1);
 
   /// I33: điểm Gauntlet đã ghi nhận lần gần nhất (mọi ngày).
@@ -1851,7 +1928,7 @@ class GameController extends GetxController {
 
   void _saveGauntletScore() {
     if (!canRecordGauntletScore) return;
-    StorageService.to.setInt(StorageKeys.lastGauntletDay, _todayEpochDay());
+    StorageService.to.setInt(StorageKeys.lastGauntletDay, todayEpochDay());
     StorageService.to.setInt(StorageKeys.gauntletScore, score.value);
   }
 
@@ -2278,6 +2355,7 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.boardsFullyCleared);
     await store.remove(StorageKeys.totalBoostersUsed);
     await store.remove(StorageKeys.unlockedAchievements);
+    await store.remove(StorageKeys.achievementUnlockDays);
     await store.remove(StorageKeys.activeAchievementTitleId);
     await store.remove(StorageKeys.prestigeTier);
     await store.remove(StorageKeys.allLevelsCompleted);

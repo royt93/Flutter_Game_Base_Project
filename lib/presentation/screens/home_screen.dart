@@ -16,7 +16,6 @@ import '../widgets/combo_text_style_picker_dialog.dart';
 import '../widgets/daily_quest_dialog.dart';
 import '../widgets/home_carousel.dart';
 import '../widgets/login_streak_dialog.dart';
-import '../widgets/milestone_journal_dialog.dart';
 import '../widgets/mystery_crate_dialog.dart';
 import '../widgets/weekly_goal_dialog.dart';
 import '../widgets/neon_bg.dart';
@@ -38,6 +37,7 @@ import 'guide_screen.dart';
 import 'leaderboard_screen.dart';
 import 'level_select_screen.dart';
 import 'mascot_wardrobe_screen.dart';
+import 'milestone_journal_screen.dart';
 import 'mode_select_screen.dart';
 import 'perks_screen.dart';
 import 'pet_habitat_screen.dart';
@@ -271,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.auto_stories_rounded,
               color: NeonTheme.purple,
               label: 'drawer_milestone_journal_label'.tr,
-              onTap: () => showMilestoneJournalDialog(context, gameCtrl),
+              onTap: () => Get.to(() => const MilestoneJournalScreen()),
             ),
             _drawerTile(
               icon: Icons.task_alt_rounded,

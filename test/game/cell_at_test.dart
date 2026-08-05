@@ -29,6 +29,14 @@ Future<PopStarGame> _buildGame(WidgetTester tester) async {
   return game;
 }
 
+/// I71 fix: `largerTapTargets` giờ là Rx trên [GameController] (cùng
+/// pattern [GameController.colorblindMode]), không còn cached field +
+/// `refreshLargerTapTargets()` riêng trên [PopStarGame] — set thẳng qua
+/// `Get.find` thay vì gọi lại storage rồi refresh tay.
+void _enableLargerTapTargets() {
+  Get.find<GameController>().largerTapTargets.value = true;
+}
+
 void main() {
   tearDown(Get.reset);
 
@@ -36,7 +44,7 @@ void main() {
     tester,
   ) async {
     final game = await _buildGame(tester);
-    expect(StorageService.to.getBool(StorageKeys.largerTapTargets), isFalse);
+    expect(Get.find<GameController>().largerTapTargets.value, isFalse);
 
     final boardLeft = (game.size.x - game.cols * game.cellSize) / 2;
     final boardTop = (game.size.y - game.rows * game.cellSize) / 2;
@@ -63,7 +71,7 @@ void main() {
     'tolerance ON: tap ngay ngoài mép (trong khoảng 12px) resolve về ô biên',
     (tester) async {
       final game = await _buildGame(tester);
-      await StorageService.to.setBool(StorageKeys.largerTapTargets, true);
+      _enableLargerTapTargets();
 
       final boardLeft = (game.size.x - game.cols * game.cellSize) / 2;
       final boardTop = (game.size.y - game.rows * game.cellSize) / 2;
@@ -84,7 +92,7 @@ void main() {
     tester,
   ) async {
     final game = await _buildGame(tester);
-    await StorageService.to.setBool(StorageKeys.largerTapTargets, true);
+    _enableLargerTapTargets();
 
     final boardLeft = (game.size.x - game.cols * game.cellSize) / 2;
     final boardTop = (game.size.y - game.rows * game.cellSize) / 2;
@@ -96,7 +104,7 @@ void main() {
     tester,
   ) async {
     final game = await _buildGame(tester);
-    await StorageService.to.setBool(StorageKeys.largerTapTargets, true);
+    _enableLargerTapTargets();
 
     final boardLeft = (game.size.x - game.cols * game.cellSize) / 2;
     final boardTop = (game.size.y - game.rows * game.cellSize) / 2;

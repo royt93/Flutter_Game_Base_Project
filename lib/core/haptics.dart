@@ -13,19 +13,22 @@ HapticLevel hapticLevelForGroupSize(int size) {
   return HapticLevel.light;
 }
 
+/// Giảm 1 mức rung cho soft mode (heavy→medium, medium→light, light→light)
+/// bằng cách lùi 1 chỉ số trong `HapticLevel.values` (khai theo đúng thứ tự
+/// light < medium < heavy) — tự đúng nếu sau này thêm/bớt tier, không cần
+/// sửa tay từng cặp ánh xạ.
+HapticLevel _softModeDowngrade(HapticLevel level) =>
+    HapticLevel.values[(level.index - 1).clamp(
+      0,
+      HapticLevel.values.length - 1,
+    )];
+
 void fireHaptic(HapticLevel level) {
   if (!StorageService.to.getBool(StorageKeys.hapticsEnabled, def: true)) {
     return;
   }
   if (StorageService.to.getBool(StorageKeys.hapticSoftMode, def: false)) {
-    switch (level) {
-      case HapticLevel.heavy:
-        level = HapticLevel.medium;
-      case HapticLevel.medium:
-        level = HapticLevel.light;
-      case HapticLevel.light:
-        break;
-    }
+    level = _softModeDowngrade(level);
   }
   switch (level) {
     case HapticLevel.light:

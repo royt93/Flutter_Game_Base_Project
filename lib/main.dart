@@ -149,12 +149,11 @@ class _PopStarBlastAppState extends State<PopStarBlastApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final audio = AudioManager.maybe;
-    if (audio == null) return;
     if (state == AppLifecycleState.resumed) {
-      audio.resumeBgm();
+      audio?.resumeBgm();
     } else {
       // paused / inactive / hidden / detached → dừng nhạc
-      audio.pauseBgm();
+      audio?.pauseBgm();
     }
   }
 

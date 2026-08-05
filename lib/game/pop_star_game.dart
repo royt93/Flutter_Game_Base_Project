@@ -545,12 +545,11 @@ class PopStarGame extends FlameGame {
   /// snap sang ô lân cận, tránh đổi kết quả gameplay không đoán trước).
   static const double _kEdgeTapTolerance = 12.0;
 
-  bool get _largerTapTargets =>
-      StorageService.to.getBool(StorageKeys.largerTapTargets);
-
   /// Ô (row, col) tại [pos] trong không gian game, hoặc null nếu ngoài bàn.
   Point<int>? cellAt(Vector2 pos) {
-    final tolerance = _largerTapTargets ? _kEdgeTapTolerance : 0.0;
+    final tolerance = controller.largerTapTargets.value
+        ? _kEdgeTapTolerance
+        : 0.0;
     final boardRight = _boardLeft + cols * cellSize;
     final boardBottom = _boardTop + rows * cellSize;
     if (pos.x < _boardLeft - tolerance || pos.x >= boardRight + tolerance) {

@@ -61,6 +61,7 @@ class GameScreen extends StatelessWidget {
           child: SafeArea(
             child: Obx(() {
               gsc.gameVersion.value; // rebuild GameWidget khi đổi ván
+              final frameColor = gameCtrl.activeBoardFrame.color;
               return Stack(
                 children: [
                   Column(
@@ -96,7 +97,7 @@ class GameScreen extends StatelessWidget {
                                   color: Colors.white.withValues(alpha: 0.25),
                                   borderRadius: BorderRadius.circular(26),
                                   border: Border.all(
-                                    color: gameCtrl.activeBoardFrame.color,
+                                    color: frameColor,
                                     width: 3,
                                   ),
                                   // roy93~fix: shadow đặc xuyên qua fill
@@ -106,7 +107,7 @@ class GameScreen extends StatelessWidget {
                                   // báo, che luôn gradient candy của NeonBg.
                                   // Hạ intensity để chỉ còn viền toả nhẹ.
                                   boxShadow: NeonTheme.glow(
-                                    gameCtrl.activeBoardFrame.color,
+                                    frameColor,
                                     intensity: 0.15,
                                   ),
                                 ),

@@ -17,6 +17,12 @@ class BoardFrameScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gameCtrl = Get.find<GameController>();
+    // I73 fix: trước đó chỉ revalidate lúc app resume (HomeScreenController) —
+    // nếu màn hình này đang mở sẵn khi khung thời gian mùa vừa hết hạn (app ở
+    // foreground xuyên qua mốc), storage/id đã sai nhưng screen không tự phát
+    // hiện cho tới khi resume lần sau. Gọi ở đây để mọi lần mở màn hình này
+    // đều đối chiếu lại, không phụ thuộc lifecycle event khác.
+    gameCtrl.revalidateActiveBoardFrame();
     return Scaffold(
       body: NeonBg(
         child: SafeArea(
@@ -58,7 +64,11 @@ class _BoardFrameRow extends StatelessWidget {
         gameCtrl.unlockedAchievementIds,
         treasureMapCompleted: gameCtrl.treasureMapCompleted.value,
       );
-      final active = gameCtrl.activeBoardFrameId.value == frame.id;
+      // Dùng getter activeBoardFrame (có fallback về classic khi frame
+      // lưu trữ đã hết hạn/không còn unlock) thay vì so trực tiếp
+      // activeBoardFrameId.value — tránh highlight nhầm 1 frame theo mùa
+      // đã hết hạn trong khi UI thực tế đang hiển thị classic.
+      final active = gameCtrl.activeBoardFrame.id == frame.id;
       return Opacity(
         opacity: unlocked ? 1 : 0.45,
         child: GestureDetector(

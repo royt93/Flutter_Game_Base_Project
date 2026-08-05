@@ -34,6 +34,14 @@ class GameScreenController extends GetxController {
 
   GameScreenController(this.gameCtrl);
 
+  /// I71: cho phép truy cập an toàn từ nơi không thuộc route game (vd
+  /// `main.dart` app-resume observer) — null khi không có ván nào đang mở,
+  /// theo đúng convention `AudioManager.maybe`/`ReminderService.maybe`.
+  static GameScreenController? get maybe =>
+      Get.isRegistered<GameScreenController>()
+      ? Get.find<GameScreenController>()
+      : null;
+
   final Rx<GameUi> ui = GameUi.playing.obs;
   final RxInt gameVersion = 0.obs; // tăng để Obx dựng lại GameWidget
   final Rx<BoosterMode> armed = BoosterMode.none.obs;

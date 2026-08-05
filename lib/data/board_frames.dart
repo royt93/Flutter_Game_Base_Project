@@ -112,7 +112,7 @@ const List<BoardFrame> kBoardFrames = [
 /// Khoảng ngày-tháng (giờ máy), xử lý wrap-around qua năm (vd Tết 20/1-10/2,
 /// Giáng sinh 15/12-2/1). Cosmetic thuần hiển thị theo lịch, không có gì để
 /// exploit qua chỉnh giờ máy nên dùng [DateTime.now()] trực tiếp thay vì cơ
-/// chế `_todayEpochDay()` chống-cheat (dành cho streak/quota có giá trị).
+/// chế `todayEpochDay()` chống-cheat (dành cho streak/quota có giá trị).
 bool isWithinSeasonalWindow(
   DateTime now,
   int startMonth,
@@ -146,12 +146,34 @@ bool isBoardFrameUnlocked(
     case BoardFrameUnlockKind.treasureMap:
       return treasureMapCompleted;
     case BoardFrameUnlockKind.seasonal:
+      final startMonth = frame.seasonStartMonth;
+      final startDay = frame.seasonStartDay;
+      final endMonth = frame.seasonEndMonth;
+      final endDay = frame.seasonEndDay;
+      // I73 fix: thiếu field mùa là lỗi khai báo data (vd thêm entry seasonal
+      // mới quên set 1 trong 4 field), không phải trạng thái hợp lệ — assert
+      // để lộ lỗi ngay lúc dev/QA thay vì âm thầm khoá vĩnh viễn không dấu
+      // hiệu. Vẫn giữ `return false` cho release build (an toàn hơn crash).
+      assert(
+        startMonth != null &&
+            startDay != null &&
+            endMonth != null &&
+            endDay != null,
+        'BoardFrame "${frame.id}" khai báo unlockKind = seasonal nhưng '
+        'thiếu 1 trong 4 field seasonStartMonth/Day/seasonEndMonth/Day.',
+      );
+      if (startMonth == null ||
+          startDay == null ||
+          endMonth == null ||
+          endDay == null) {
+        return false;
+      }
       return isWithinSeasonalWindow(
         now ?? DateTime.now(),
-        frame.seasonStartMonth!,
-        frame.seasonStartDay!,
-        frame.seasonEndMonth!,
-        frame.seasonEndDay!,
+        startMonth,
+        startDay,
+        endMonth,
+        endDay,
       );
   }
 }

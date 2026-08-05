@@ -49,10 +49,33 @@ không swap/cascade). Kế hoạch gốc: `/Users/loitran/.claude/plans/giggly-s
   mỗi ngày, tái dùng đúng `GauntletModifier`/`kGauntletModifiers`/
   `modifierForDay` (I33), chọn theo epoch-day nên mọi người chơi cùng ngày
   gặp cùng modifier.
-- **Mode-select redesign (2026-08-03)**: thay dialog "Chọn chế độ" (từng bị
+- **I70 Mode-select redesign (2026-08-03)**: thay dialog "Chọn chế độ" (từng bị
   overflow/chật khi gộp nhóm) bằng `ModeSelectScreen` full-screen route
   riêng, 3 nhóm (Chế độ chính / Thử thách / Xã hội & Sự kiện), theo pattern
   `BossRushScreen`/`AchievementsScreen` sẵn có.
+- **I71 Accessibility Toolkit**: 2 switch trong Settings — haptic soft mode
+  (downgrade heavy→medium→light trong `fireHaptic()`) và larger tap-target
+  (nới tolerance mép ngoài bàn cờ trong `cellAt()`, KHÔNG snap sang ô lân
+  cận; khi tắt — mặc định — hành vi y hệt trước khi có tính năng này).
+- **I72 Milestone Journal**: full-screen route (`MilestoneJournalScreen`,
+  đổi từ dialog sau feedback UI xấu khi list dài) gom các mốc đã có
+  timestamp thật (login streak, daily claim, daily challenge, spin, gauntlet,
+  raid boss, weekly featured, pet collected) cộng thêm timestamp unlock
+  achievement mới bổ sung (`achievementUnlockDays`), sort mới nhất trước.
+- **I73 Seasonal Board Skins**: mở rộng `BoardFrame`/`kBoardFrames` có sẵn
+  với `BoardFrameUnlockKind.seasonal` + khung ngày-tháng (`isWithinSeasonalWindow`,
+  xử lý đúng wrap-around như Christmas 12/15→1/2); 3 khung mới (Tết,
+  Halloween, Christmas), badge "trong mùa" ở `BoardFrameScreen`, tự fallback
+  về classic khi khung active hết mùa.
+- **I74 Home Screen Widget**: widget Android (`StreakWidgetProvider`, qua
+  package `home_widget`) hiện login streak + coin trên home screen máy.
+  Đồng bộ reactive qua `ever(coins, ...)`/`ever(loginStreakCount, ...)` trong
+  `GameController.onInit()` (không rải `syncHomeWidget()` tay ở từng chỗ
+  cộng thưởng — dễ sót, vd `claimSpin()` từng thiếu), gọi `syncHomeWidget()`
+  best-effort (silent catch, không ảnh hưởng gameplay nếu launcher không hỗ
+  trợ). Cân nhắc debounce bằng Timer lúc đầu nhưng bỏ vì Timer treo lại sau
+  khi test teardown qua `Get.reset()` (không gọi `onClose()`) — sync ngay
+  lập tức khớp đúng pattern mọi Worker khác trong codebase.
 
 - Đổi định danh project: package `pop_star_blast`, Android `com.galaxyjoy.pop_star_blast`,
   iOS `com.galaxyjoy.popStarBlast*`.
@@ -4234,3 +4257,168 @@ trực tiếp không cần hỏi thêm vì đã có phương án rõ ràng:
 test pass, bao gồm `backup_code_test.dart`, `storage_service_test.dart`,
 `settings_screen_test.dart`, `app_translations_test.dart` chạy riêng để
 xác nhận không regression từ các thay đổi trên.
+
+## ✅ Round-6 (I71-I74) — hậu-audit lên 10/10 (2026-08-04)
+
+Sau đợt `code-review` skill chấm batch I71 Accessibility Toolkit / I72
+Milestone Journal / I73 Seasonal Board Skins / I74 Home Screen Widget
+**7/10** (10 findings), user yêu cầu sửa lên 10/10 — mỗi issue hỏi qua
+`AskUserQuestion` với phương án đề xuất kèm ưu/nhược điểm trước khi sửa
+(theo R1). 10 fix áp dụng theo các pick của user:
+
+1. **`resetProgress()` sót cleanup `achievementUnlockDays`**
+   (`game_controller.dart`): method xoá 60+ key storage khi reset progress
+   nhưng thiếu `store.remove(StorageKeys.achievementUnlockDays)` — timestamp
+   unlock achievement bị mồ côi, nạp lại từ storage cũ dù đã reset. Thêm dòng
+   `remove` cùng chỗ với `unlockedAchievements`.
+2. **`claimSpin()` quên `syncHomeWidget()` khi thưởng coin** (I74): các
+   chokepoint khác (`_checkLoginStreak`, `claimDaily`) đều gọi
+   `syncHomeWidget()` sau khi đổi coin, riêng nhánh `default` (coin) của
+   `claimSpin()` thì không — widget home màn hình bị stale tới lần sync kế
+   tiếp. Thay vì vá thêm 1 call rời rạc (dễ sót lần nữa), gộp vào fix #7.
+3. **`GameController._todayEpochDay()` private, bị duplicate logic**: 
+   `milestone_journal_screen.dart` tự tính lại epoch-day bằng công thức
+   giống hệt (`DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000`).
+   Đổi thành `todayEpochDay()` public (25+ call site nội bộ đổi tên theo),
+   screen gọi lại qua `gameCtrl.todayEpochDay()` — 1 nguồn tính duy nhất.
+4. **`isBoardFrameUnlocked()` force-unwrap ngày seasonal có thể null**
+   (`board_frames.dart`): case `seasonal` dùng `!` trên
+   `seasonStartMonth/Day`/`seasonEndMonth/Day` — crash nếu 1 `BoardFrame`
+   seasonal cấu hình thiếu field. Đổi sang null-check tường minh, trả `false`
+   sớm nếu thiếu bất kỳ field nào thay vì force-unwrap.
+5. **Highlight chọn frame sai khi seasonal hết hạn** (`board_frame_screen.dart`):
+   so `gameCtrl.activeBoardFrameId.value == frame.id` trực tiếp — nếu frame
+   seasonal đang active hết hạn, gameplay đã fallback về `classic` (qua
+   getter `activeBoardFrame`) nhưng UI vẫn highlight frame cũ đã hết hạn.
+   Đổi sang so `gameCtrl.activeBoardFrame.id == frame.id` (cùng logic
+   fallback với phần render thật).
+6. **Storage `activeBoardFrameId` không tự sync khi seasonal hết hạn**: getter
+   `activeBoardFrame` áp fallback lúc render nhưng ID lưu trong storage vẫn
+   trỏ frame hết hạn — đợi seasonal sau còn mở lại đúng đợt hay không tuỳ
+   thuộc trạng thái ẩn này bị trôi. Thêm `revalidateActiveBoardFrame()` trên
+   `GameController` (so ID lưu với ID sau fallback, ghi lại storage nếu lệch)
+   gọi từ `HomeScreenController.didChangeAppLifecycleState` khi app resume.
+7. **Widget sync rải rác, dễ sót chokepoint mới** (gộp fix #2, I74): thay vì
+   gọi tay `syncHomeWidget()` ở từng chỗ cộng thưởng, thêm 2 `Worker` phản
+   ứng theo `coins`/`loginStreakCount` trong `GameController.onInit()` — mọi
+   thay đổi coin/streak tự sync, không cần nhớ gọi tay ở chokepoint mới.
+8. **`cellAt()` hot path đọc `StorageService` mỗi lần tap** (I71, tap-target
+   tolerance): getter `_largerTapTargets` gọi `StorageService.getBool()` trên
+   mọi tap. Đổi thành field cache nạp 1 lần lúc `onLoad()`, thêm
+   `refreshLargerTapTargets()` để đồng bộ khi setting đổi giữa lúc đang chơi
+   hoặc lúc app resume — thêm `GameScreenController.maybe` (static, an toàn
+   khi không có game đang chạy, theo đúng pattern `AudioManager.maybe`) để
+   `main.dart` gọi refresh từ lifecycle observer.
+9. **`cell_at_test.dart` không gọi `refreshLargerTapTargets()` sau khi đổi
+   setting**: test set `StorageKeys.largerTapTargets` qua storage trực tiếp
+   nhưng game đã cache giá trị cũ (do fix #8) nên tolerance không áp dụng —
+   sửa test gọi `game.refreshLargerTapTargets()` ngay sau khi đổi setting,
+   đúng với cách `main.dart`/`GameScreenController` gọi trong production.
+10. **Magic string trùng lặp key `home_widget` giữa Dart và Kotlin**: cả
+    `home_widget_sync.dart` lẫn `StreakWidgetProvider.kt` đều hardcode
+    `"streak"`/`"coins"` — 2 ngôn ngữ không share được constant nên rủi ro
+    desync nếu sửa 1 bên quên bên kia. Thêm `StorageKeys.widgetStreakKey`/
+    `widgetCoinsKey` (Dart) và `KEY_STREAK`/`KEY_COINS` trong companion
+    object (Kotlin), comment chéo tham chiếu nhau để rõ ràng đây là coupling
+    theo tên, không phải import thật.
+
+**Regression phát sinh trong lúc verify (không thuộc 10 finding gốc)**: sau
+khi gộp fix #2+#7 bằng `debounce(coins, ...)`/`debounce(loginStreakCount, ...)`
+của GetX (2s), `flutter test --exclude-tags slow` phát hiện 24 test fail —
+đọc source GetX 4.7.3 xác nhận `Debouncer` nội bộ của `debounce()` tự tạo
+`Timer` riêng mà `Worker.dispose()` không cancel được (chỉ cancel
+`StreamSubscription`), Timer treo lại sau khi test kết thúc. Thử đổi sang
+`ever()` + tự quản lý `Timer` (cancel trong `onClose()`) chỉ sửa được 1/24 —
+đọc tiếp source `GetResetExt.reset()`/`resetInstance()` xác nhận
+**`Get.reset()` (cách teardown chuẩn toàn bộ test suite qua `tearDown(Get.reset)`)
+không hề gọi `onClose()`** trên bất kỳ controller nào (`_singl.clear()` chỉ
+xoá reference khỏi map nội bộ) — nghĩa là không có Timer nào tự quản lý được
+cancel đúng cách dưới test harness này, bất kể là `debounce()` hay Timer tay.
+Hỏi qua `AskUserQuestion` (3 phương án: bỏ hẳn Timer / sửa từng test pump đủ
+2s / tắt Timer khi chạy test), user chọn phương án được đề xuất: **bỏ hẳn
+Timer, sync ngay lập tức qua `ever()`** — khớp đúng pattern mọi `Worker`
+khác trong codebase (`game_screen_controller.dart`, `boss_rush_controller.dart`,
+`treasure_map_controller.dart`, `pass_and_play_controller.dart` — toàn bộ
+dùng `ever()` trơn, không Timer), sửa tận gốc thay vì vá từng test.
+
+`flutter analyze` 0 issues; `flutter test --exclude-tags slow` toàn bộ
+**701 test pass** (tăng từ 677 pass/24 fail lúc phát hiện regression).
+
+## ✅ Round-6 (I71-I74) — audit thứ 2, 10/10 (2026-08-04)
+
+Chạy lại `code-review` skill lần 2 trên cùng batch I71-I74 (sau khi pass 1 ở
+trên đã merge) để bắt các bug còn sót — 8 finding "confirmed", cộng 2
+code-quality fix nhỏ tự phát hiện lúc sửa (#9, #10) thành 10. User chọn
+**"Toàn bộ 10 finding"** qua `AskUserQuestion` (bỏ qua phương án hẹp hơn được
+đề xuất). 10 fix:
+
+1. **Widget cold-start: `ever()` không bắt giá trị đã set trước khi đăng ký**
+   (`game_controller.dart`, I74): `_load()`/`_checkLoginStreak()` set
+   `coins`/`loginStreakCount` TRƯỚC khi 2 `Worker` đồng bộ widget tồn tại —
+   mở app lần đầu, home widget đứng ở giá trị cũ tới lần đổi coin/streak kế
+   tiếp. Gọi thêm `_scheduleWidgetSync()` ngay sau khi đăng ký 2 `Worker`
+   trong `onInit()`.
+2. **Widget sync không throttle**: mỗi lần `coins`/`loginStreakCount` đổi gọi
+   thẳng `syncHomeWidget()` (platform channel) — vòng lặp mở khoá nhiều
+   achievement cùng lúc gọi channel nhiều lần liên tiếp không cần thiết. Gộp
+   qua `scheduleMicrotask` (coalesce trong cùng 1 tick), không dùng `Timer`
+   (tránh lặp lại đúng bug Timer-leak đã sửa ở pass 1).
+3. **Lựa chọn frame theo mùa bị mất khi revalidate** (`board_frames.dart`,
+   I73): bản đầu của `revalidateActiveBoardFrame()` ghi đè storage về
+   `classic` bất cứ khi nào `isBoardFrameUnlocked()` trả `false` — kể cả khi
+   frame chỉ đang tạm khoá ngoài khung thời gian (không phải ID hỏng). Sửa
+   chỉ ghi đè khi ID không còn tồn tại trong `kBoardFrames`, giữ nguyên ID đã
+   chọn khi chỉ đang tạm khoá — mùa sau quay lại tự hiện đúng frame cũ.
+4. **`isBoardFrameUnlocked()` khoá vĩnh viễn không dấu hiệu khi thiếu field
+   seasonal**: null-check ở pass 1 (finding #4 cũ) trả `false` im lặng nếu 1
+   `BoardFrame` khai `unlockKind: seasonal` nhưng thiếu 1 trong 4 field ngày —
+   lỗi khai báo data sẽ không bị phát hiện tới khi QA thủ công. Thêm `assert`
+   trước null-check để crash ngay lúc dev/debug, vẫn giữ `return false` an
+   toàn cho release build.
+5. **`home_widget_sync.dart` nuốt exception hoàn toàn**: `catch (e) {}` rỗng —
+   lỗi tích hợp thật (vd sai `androidName`) không phân biệt được với trường
+   hợp bình thường "chạy trong test, không có platform channel". Thêm
+   `dlog('syncHomeWidget lỗi: $e')` trong catch.
+6. **`home_widget_sync.dart` await tuần tự không cần thiết**: 2 lệnh
+   `HomeWidget.saveWidgetData()` (streak, coins) độc lập nhau nhưng gọi
+   `await` lần lượt — gộp qua `Future.wait([...])` chạy song song.
+7. **Highlight frame trong `BoardFrameScreen` chỉ tự đối chiếu lại lúc app
+   resume**: `revalidateActiveBoardFrame()` (fix #3) chỉ được gọi từ
+   `HomeScreenController.didChangeAppLifecycleState` — nếu màn hình
+   `BoardFrameScreen` đang mở sẵn đúng lúc khung thời gian mùa hết hạn (app ở
+   foreground xuyên qua mốc), storage/id sai nhưng screen không tự phát hiện
+   tới lần resume kế tiếp. Gọi thêm `revalidateActiveBoardFrame()` ngay đầu
+   `build()` của `BoardFrameScreen`.
+8. **Haptic soft-mode downgrade dùng switch-case liệt kê tay từng cặp**
+   (`haptics.dart`, I71): `heavy→medium, medium→light` khai bằng switch —
+   thêm/bớt tier sau này phải sửa tay từng nhánh, dễ quên. Đổi thành hàm
+   `_softModeDowngrade()` lùi 1 chỉ số trong `HapticLevel.values` (`.clamp`
+   chặn dưới 0) — tự đúng theo thứ tự khai enum, không cần sửa khi đổi số
+   tier.
+9. **`_widgetSyncWorkers` (fix #2) khai dạng list `List<Worker>` không cần
+   thiết**: chỉ có đúng 2 worker cố định (coins, loginStreak), không có nhu
+   cầu thêm/bớt động — đổi thành 2 field riêng `_coinsSyncWorker`/
+   `_loginStreakSyncWorker` cho rõ tên, dễ trace hơn duyệt list.
+10. **`largerTapTargets` (I71) dùng cached field + refresh-method riêng thay
+    vì Rx**: `PopStarGame._largerTapTargets` (cached bool, nạp 1 lần lúc
+    `onLoad()`) + `refreshLargerTapTargets()` (gọi từ
+    `GameScreenController`/app-resume lifecycle trong `main.dart`) là 1
+    pattern song song với `colorblindMode` (Rx thẳng trên `GameController`,
+    không cache/refresh) — 2 pattern cho cùng 1 loại setting. Kiểm tra thực
+    tế: Settings là màn hình top-level, không có đường vào khi `PopStarGame`
+    đang chạy (grep xác nhận không có overlay path), nên lý do ban đầu của
+    cache ("tránh đọc storage mỗi tap") không còn áp dụng — đổi
+    `largerTapTargets` thành `Rx<bool>` trên `GameController` (đúng pattern
+    `colorblindMode`), xoá field cache + `refreshLargerTapTargets()` khỏi
+    `PopStarGame`/`GameScreenController`/`main.dart`.
+
+**Regression phát hiện lúc verify cuối (không thuộc 10 finding gốc)**: `late
+final Worker _coinsSyncWorker`/`_loginStreakSyncWorker` (fix #9) chỉ gán
+được 1 lần — `star_road_test.dart` có pattern gọi lại `ctrl.onInit()` thủ
+công để giả lập reload app sau khi sửa storage tay (pattern đã tồn tại từ
+trước, không phải mới), gây `LateInitializationError` khi chạy full suite.
+Đổi 2 field sang `Worker?`, dispose worker cũ trước khi gán worker mới trong
+`onInit()` — hỗ trợ gọi lại `onInit()` nhiều lần mà không leak worker.
+
+`flutter analyze` 0 issues; `flutter test --exclude-tags slow` toàn bộ
+**701 test pass**.

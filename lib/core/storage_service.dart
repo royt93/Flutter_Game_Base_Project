@@ -211,6 +211,16 @@ class StorageKeys {
   static const String clanContribTotal = 'clan_contrib_total';
   static const String clanGoalWeek = 'clan_goal_week';
   static const String clanGoalClaimedWeek = 'clan_goal_claimed_week';
+
+  // I74 Home Screen Widget: KHÔNG phải key của SharedPreferences app (không
+  // đọc/ghi qua StorageService.to) — đây là key của file prefs riêng do
+  // `home_widget` plugin quản lý (`HomeWidget.saveWidgetData`), phía Kotlin
+  // đọc lại đúng 2 chuỗi này trong `StreakWidgetProvider.kt`. Đặt const ở
+  // đây chỉ để tránh string-literal trùng lặp phía Dart + làm điểm đối
+  // chiếu tên với hằng số Kotlin tương ứng (2 ngôn ngữ không thể import
+  // chung 1 hằng số, chỉ đồng bộ được tên).
+  static const String widgetStreakKey = 'streak';
+  static const String widgetCoinsKey = 'coins';
 }
 
 /// Service lưu trữ local dùng chung (bọc SharedPreferences).

@@ -4,7 +4,7 @@
 const int weeklyGoalTarget = 300;
 
 /// Tuần hiện tại theo [epochDay] — cùng convention `epochDay ~/ 7` với
-/// `currentSeasonIndex` (`_todayEpochDay() ~/ seasonLengthDays`).
+/// `currentSeasonIndex` (`todayEpochDay() ~/ seasonLengthDays`).
 int weekIndexForEpochDay(int epochDay) => epochDay ~/ 7;
 
 /// Tiến độ mục tiêu tuần sau khi xử lý reset-nếu-sang-tuần-mới. Tuần không
