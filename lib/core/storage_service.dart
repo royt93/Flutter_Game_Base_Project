@@ -54,6 +54,12 @@ class StorageKeys {
   // X1 Onboarding/FTUE: đã xem overlay "chạm để nổ" chưa (chỉ hiện 1 lần).
   static const String hasSeenFtue = 'has_seen_ftue';
 
+  // Round-7 Tutorial mở rộng: 3 coach-mark thêm cho tính năng dễ bị bỏ sót.
+  static const String hasSeenShopTutorial = 'has_seen_shop_tutorial';
+  static const String hasSeenBoosterTutorial = 'has_seen_booster_tutorial';
+  static const String hasSeenDailyChallengeTutorial =
+      'has_seen_daily_challenge_tutorial';
+
   // X2: mức âm lượng riêng nhạc nền/hiệu ứng (0.0..1.0) + bật/tắt haptics.
   static const String bgmVolume = 'bgm_volume';
   static const String sfxVolume = 'sfx_volume';

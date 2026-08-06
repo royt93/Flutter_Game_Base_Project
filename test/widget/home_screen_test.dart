@@ -71,8 +71,8 @@ void main() {
     expect(bg.accent, worldForLevel(90).color);
     expect(bg.weather, worldForLevel(90).weather);
 
-    // Mốc world cuối (level 220 -> kWorlds.last).
-    gameCtrl.unlockedLevel.value = 220;
+    // Mốc world cuối (level 240 -> kWorlds.last, World 12 Round-7).
+    gameCtrl.unlockedLevel.value = 240;
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 900));
     expect(tester.takeException(), isNull);

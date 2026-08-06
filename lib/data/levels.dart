@@ -117,9 +117,9 @@ int prestigeTargetScore(PopLevel level, int tier) {
 /// Thưởng khi dọn sạch toàn bộ bàn.
 const int clearBoardBonus = 1000;
 
-const int kLevelCount = 220;
+const int kLevelCount = 240;
 
-/// 220 màn tăng dần độ khó: cols và colorCount nới rộng theo world (mỗi 20
+/// 240 màn tăng dần độ khó: cols và colorCount nới rộng theo world (mỗi 20
 /// màn). Bàn hữu hạn, KHÔNG refill → điểm đạt được scale theo số ô, không theo
 /// index màn. Vì vậy targetScore neo vào `cells * 6` (ngưỡng 1-sao chơi thường)
 /// và chỉ nhích nhẹ theo world; công thức leo-tuyến-tính cũ khiến ~146/200 màn
@@ -235,7 +235,8 @@ const PopLevel kZenLevel = PopLevel(
 PopLevel endlessLevelForIndex(int boardIndex, {GauntletModifier? modifier}) {
   final rows = (7 + boardIndex ~/ 4).clamp(7, 14);
   final cols = (6 + boardIndex ~/ 3).clamp(6, 14);
-  final colorCount = modifier?.colorCountOverride ?? (4 + boardIndex ~/ 6).clamp(4, 8);
+  final colorCount =
+      modifier?.colorCountOverride ?? (4 + boardIndex ~/ 6).clamp(4, 8);
   return PopLevel(
     id: -3,
     rows: rows,

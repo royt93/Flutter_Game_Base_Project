@@ -341,168 +341,271 @@ class _HomeScreenState extends State<HomeScreen> {
             child: child!,
           ),
           child: SafeArea(
-            child: Column(
+            child: Stack(
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: NeonTheme.s16,
-                    vertical: NeonTheme.s8,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      NeonIconButton(
-                        Icons.menu_rounded,
-                        color: NeonTheme.cyan,
-                        onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
-                        semanticLabel: 'menu_button_label'.tr,
+                Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: NeonTheme.s16,
+                        vertical: NeonTheme.s8,
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          PrestigeAction(
-                            gameCtrl: gameCtrl,
-                            onTap: () => showPrestigeDialog(context, gameCtrl),
+                          NeonIconButton(
+                            Icons.menu_rounded,
+                            color: NeonTheme.cyan,
+                            onTap: () =>
+                                _scaffoldKey.currentState?.openEndDrawer(),
+                            semanticLabel: 'menu_button_label'.tr,
                           ),
-                          CoinChip(gameCtrl),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              PrestigeAction(
+                                gameCtrl: gameCtrl,
+                                onTap: () =>
+                                    showPrestigeDialog(context, gameCtrl),
+                              ),
+                              CoinChip(gameCtrl),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                Obx(() {
-                  final homeCtrl = Get.find<HomeScreenController>();
-                  return HomeCarousel(
-                    cards: homeCtrl.cards,
-                    currentIndex: homeCtrl.currentIndex.value,
-                    onPageChanged: (i) => homeCtrl.currentIndex.value = i,
-                    onCardTapped: () => homeCtrl.refreshCards(gameCtrl),
-                  );
-                }),
-                const Spacer(flex: 2),
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    const SizedBox(
-                      width: 220,
-                      height: 220,
-                      child: AmbientParticles(),
                     ),
-                    Obx(
-                      () => StarMascot(
-                        size: 128,
-                        onTap: () => fireHaptic(HapticLevel.light),
-                        palette: gameCtrl.activeMascotSkin.palette,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: NeonTheme.s8),
-                StrokeText(
-                  kAppName,
-                  fontSize: 46,
-                  color: Colors.white,
-                  stroke: NeonTheme.magenta,
-                  strokeWidth: 6,
-                  letterSpacing: 1.5,
-                  shadows: [
-                    Shadow(
-                      color: NeonTheme.purple.withValues(alpha: 0.5),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                Obx(() {
-                  final name = gameCtrl.playerName.value;
-                  if (name.isEmpty) return const SizedBox.shrink();
-                  final title = gameCtrl.activeTitleAchievement;
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      title == null ? name : '$name · ${title.titleKey.tr}',
-                      style: TextStyle(
-                        color: NeonTheme.inkSoft,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  );
-                }),
-                const Spacer(flex: 3),
-                PulseGlow(
-                  color: NeonTheme.cyan,
-                  child: NeonButton(
-                    label: 'PLAY',
-                    color: NeonTheme.cyan,
-                    icon: Icons.play_arrow_rounded,
-                    onTap: () => Get.to(() => const LevelSelectScreen()),
-                  ),
-                ),
-                const SizedBox(height: NeonTheme.s24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    NeonIconButton(
-                      Icons.storefront_rounded,
-                      color: NeonTheme.yellow,
-                      size: 28,
-                      boxed: true,
-                      semanticLabel: 'shop_title'.tr,
-                      onTap: () => Get.to(() => const ShopScreen()),
-                    ),
-                    const SizedBox(width: NeonTheme.s24),
-                    NeonIconButton(
-                      Icons.calendar_month_rounded,
-                      color: NeonTheme.red,
-                      size: 28,
-                      boxed: true,
-                      semanticLabel: 'daily_challenge_label'.tr,
-                      onTap: () {
-                        gameCtrl.startDailyChallenge();
-                        Get.to(() => const GameScreen());
-                      },
-                    ),
-                    const SizedBox(width: NeonTheme.s24),
-                    NeonIconButton(
-                      Icons.sports_esports_rounded,
-                      color: NeonTheme.indigo,
-                      size: 28,
-                      boxed: true,
-                      semanticLabel: 'modes_title'.tr,
-                      onTap: () => Get.to(() => const ModeSelectScreen()),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: NeonTheme.s16),
-                  child: Column(
-                    children: [
-                      Text(
-                        kCopyright,
-                        style: TextStyle(
-                          color: NeonTheme.ink.withValues(alpha: 0.45),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                    Obx(() {
+                      final homeCtrl = Get.find<HomeScreenController>();
+                      return HomeCarousel(
+                        cards: homeCtrl.cards,
+                        currentIndex: homeCtrl.currentIndex.value,
+                        onPageChanged: (i) => homeCtrl.currentIndex.value = i,
+                        onCardTapped: () => homeCtrl.refreshCards(gameCtrl),
+                      );
+                    }),
+                    const Spacer(flex: 2),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        const SizedBox(
+                          width: 220,
+                          height: 220,
+                          child: AmbientParticles(),
                         ),
-                      ),
-                      Text(
-                        'v$kAppVersion+$kAppBuildNumber',
-                        style: TextStyle(
-                          color: NeonTheme.ink.withValues(alpha: 0.35),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
+                        Obx(
+                          () => StarMascot(
+                            size: 128,
+                            onTap: () => fireHaptic(HapticLevel.light),
+                            palette: gameCtrl.activeMascotSkin.palette,
+                          ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: NeonTheme.s8),
+                    StrokeText(
+                      kAppName,
+                      fontSize: 46,
+                      color: Colors.white,
+                      stroke: NeonTheme.magenta,
+                      strokeWidth: 6,
+                      letterSpacing: 1.5,
+                      shadows: [
+                        Shadow(
+                          color: NeonTheme.purple.withValues(alpha: 0.5),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    Obx(() {
+                      final name = gameCtrl.playerName.value;
+                      if (name.isEmpty) return const SizedBox.shrink();
+                      final title = gameCtrl.activeTitleAchievement;
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          title == null ? name : '$name · ${title.titleKey.tr}',
+                          style: TextStyle(
+                            color: NeonTheme.inkSoft,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      );
+                    }),
+                    const Spacer(flex: 3),
+                    PulseGlow(
+                      color: NeonTheme.cyan,
+                      child: NeonButton(
+                        label: 'PLAY',
+                        color: NeonTheme.cyan,
+                        icon: Icons.play_arrow_rounded,
+                        onTap: () => Get.to(() => const LevelSelectScreen()),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: NeonTheme.s24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Obx(() {
+                          final homeCtrl = Get.find<HomeScreenController>();
+                          final shopButton = NeonIconButton(
+                            Icons.storefront_rounded,
+                            color: NeonTheme.yellow,
+                            size: 28,
+                            boxed: true,
+                            semanticLabel: 'shop_title'.tr,
+                            onTap: () {
+                              homeCtrl.dismissShopTutorial();
+                              Get.to(() => const ShopScreen());
+                            },
+                          );
+                          return homeCtrl.showShopTutorial.value
+                              ? PulseGlow(
+                                  color: NeonTheme.yellow,
+                                  child: shopButton,
+                                )
+                              : shopButton;
+                        }),
+                        const SizedBox(width: NeonTheme.s24),
+                        Obx(() {
+                          final homeCtrl = Get.find<HomeScreenController>();
+                          final dailyButton = NeonIconButton(
+                            Icons.calendar_month_rounded,
+                            color: NeonTheme.red,
+                            size: 28,
+                            boxed: true,
+                            semanticLabel: 'daily_challenge_label'.tr,
+                            onTap: () {
+                              homeCtrl.dismissDailyChallengeTutorial();
+                              gameCtrl.startDailyChallenge();
+                              Get.to(() => const GameScreen());
+                            },
+                          );
+                          return homeCtrl.showDailyChallengeTutorial.value
+                              ? PulseGlow(
+                                  color: NeonTheme.red,
+                                  child: dailyButton,
+                                )
+                              : dailyButton;
+                        }),
+                        const SizedBox(width: NeonTheme.s24),
+                        NeonIconButton(
+                          Icons.sports_esports_rounded,
+                          color: NeonTheme.indigo,
+                          size: 28,
+                          boxed: true,
+                          semanticLabel: 'modes_title'.tr,
+                          onTap: () => Get.to(() => const ModeSelectScreen()),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: NeonTheme.s16),
+                      child: Column(
+                        children: [
+                          Text(
+                            kCopyright,
+                            style: TextStyle(
+                              color: NeonTheme.ink.withValues(alpha: 0.45),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            'v$kAppVersion+$kAppBuildNumber',
+                            style: TextStyle(
+                              color: NeonTheme.ink.withValues(alpha: 0.35),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+                _ShopTutorialOverlay(gameCtrl: gameCtrl),
+                _DailyChallengeTutorialOverlay(),
               ],
             ),
           ),
         );
       }),
+    );
+  }
+}
+
+/// Round-7 Tutorial: coach-mark trỏ vào nút Shop trên hàng truy cập nhanh —
+/// hiện lần đầu vào Home, tự tắt khi người chơi bấm vào Shop.
+class _ShopTutorialOverlay extends StatelessWidget {
+  const _ShopTutorialOverlay({required this.gameCtrl});
+  final GameController gameCtrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final homeCtrl = Get.find<HomeScreenController>();
+      if (!homeCtrl.showShopTutorial.value) return const SizedBox.shrink();
+      return IgnorePointer(
+        child: Align(
+          alignment: const Alignment(-0.62, 0.9),
+          child: _TutorialBubble(textKey: 'tutorial_shop_body'),
+        ),
+      );
+    });
+  }
+}
+
+/// Round-7 Tutorial: coach-mark trỏ vào nút Daily Challenge — chỉ hiện sau
+/// khi tutorial Shop đã được xem, tránh chồng 2 tooltip cùng lúc.
+class _DailyChallengeTutorialOverlay extends StatelessWidget {
+  const _DailyChallengeTutorialOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final homeCtrl = Get.find<HomeScreenController>();
+      if (!homeCtrl.showDailyChallengeTutorial.value) {
+        return const SizedBox.shrink();
+      }
+      return IgnorePointer(
+        child: Align(
+          alignment: const Alignment(0, 0.9),
+          child: _TutorialBubble(textKey: 'tutorial_daily_challenge_body'),
+        ),
+      );
+    });
+  }
+}
+
+class _TutorialBubble extends StatelessWidget {
+  const _TutorialBubble({required this.textKey});
+  final String textKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 140),
+      padding: const EdgeInsets.symmetric(
+        horizontal: NeonTheme.s16,
+        vertical: NeonTheme.s8,
+      ),
+      decoration: BoxDecoration(
+        color: NeonTheme.card,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: NeonTheme.drop(y: 3, blur: 8),
+      ),
+      child: Text(
+        textKey.tr,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: NeonTheme.ink,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+        ),
+      ),
     );
   }
 }

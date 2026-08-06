@@ -24,6 +24,7 @@ import '../widgets/neon_aura_layer.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
 import '../widgets/pressable_scale.dart';
+import '../widgets/pulse_glow.dart';
 import '../widgets/star_mascot.dart';
 import '../widgets/stroke_text.dart';
 import '../widgets/neon_dialog.dart';
@@ -163,6 +164,7 @@ class GameScreen extends StatelessWidget {
                     child: _AchievementUnlockOverlay(gameCtrl: gameCtrl),
                   ),
                   _Overlay(gsc: gsc),
+                  _BoosterTutorialOverlay(gsc: gsc),
                 ],
               );
             }),
@@ -415,13 +417,23 @@ class _Hud extends StatelessWidget {
                 () => Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _BoosterButton(
-                      icon: Icons.dangerous_rounded,
-                      color: NeonTheme.orange,
-                      count: gameCtrl.bombCount.value,
-                      armed: gsc.armed.value == BoosterMode.bomb,
-                      onTap: gsc.toggleBombArm,
-                      label: 'booster_bomb_label'.tr,
+                    Builder(
+                      builder: (_) {
+                        final bombButton = _BoosterButton(
+                          icon: Icons.dangerous_rounded,
+                          color: NeonTheme.orange,
+                          count: gameCtrl.bombCount.value,
+                          armed: gsc.armed.value == BoosterMode.bomb,
+                          onTap: gsc.toggleBombArm,
+                          label: 'booster_bomb_label'.tr,
+                        );
+                        return gsc.showBoosterTutorial.value
+                            ? PulseGlow(
+                                color: NeonTheme.orange,
+                                child: bombButton,
+                              )
+                            : bombButton;
+                      },
                     ),
                     const SizedBox(width: NeonTheme.s16),
                     _BoosterButton(
@@ -726,6 +738,46 @@ class _FtueOverlay extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+}
+
+/// Round-7 Tutorial: coach-mark trỏ vào thanh booster (neo ở bomb, nút đầu
+/// tiên) — hiện lần đầu người chơi có booster mà chưa từng dùng cái nào. Tự
+/// tắt vĩnh viễn ngay khi họ arm/dùng bất kỳ booster nào (xem
+/// [GameScreenController._dismissBoosterTutorialIfNeeded]).
+class _BoosterTutorialOverlay extends StatelessWidget {
+  const _BoosterTutorialOverlay({required this.gsc});
+  final GameScreenController gsc;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (!gsc.showBoosterTutorial.value) return const SizedBox.shrink();
+      return IgnorePointer(
+        child: Align(
+          alignment: const Alignment(0, 0.78),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: NeonTheme.s16,
+              vertical: NeonTheme.s8,
+            ),
+            decoration: BoxDecoration(
+              color: NeonTheme.card,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: NeonTheme.drop(y: 3, blur: 8),
+            ),
+            child: Text(
+              'tutorial_booster_body'.tr,
+              style: TextStyle(
+                color: NeonTheme.ink,
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+              ),
             ),
           ),
         ),

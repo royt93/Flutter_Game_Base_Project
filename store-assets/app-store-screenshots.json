@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "appName": "Neon Jewels",
+  "appName": "Pop Star Blast",
   "themeId": "dark-bold",
   "connectedCanvas": true,
   "locales": [
@@ -16,7 +16,7 @@
         "id": "iphone-01-home",
         "layout": "device-bottom",
         "label": {
-          "en": "A GALAXY OF MATCH-3 FUN"
+          "en": "A GALAXY OF POP-STAR FUN"
         },
         "headline": {
           "en": "Light Up\nEvery Match"
@@ -128,7 +128,7 @@
         "id": "ipad-01-home",
         "layout": "hero",
         "label": {
-          "en": "A GALAXY OF MATCH-3 FUN"
+          "en": "A GALAXY OF POP-STAR FUN"
         },
         "headline": {
           "en": "Light Up\nEvery Match"

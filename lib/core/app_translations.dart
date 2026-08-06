@@ -618,6 +618,10 @@ class AppTranslations extends Translations {
     'reduce_motion': 'Reduce motion effects',
     // X1 — Level 1 FTUE (chạm để nổ)
     'ftue_tap_hint': 'Tap this group!',
+    // Round-7 Tutorial — 3 coach-mark mới (Shop/Booster/Daily Challenge)
+    'tutorial_shop_body': 'Visit the Shop for boosters!',
+    'tutorial_booster_body': 'Try a booster to clear tricky tiles!',
+    'tutorial_daily_challenge_body': 'New board every day — try it!',
     // X2 — Settings: âm lượng riêng + haptics
     'bgm_volume': 'Music volume',
     'sfx_volume': 'Sound effects volume',
@@ -1162,6 +1166,8 @@ class AppTranslations extends Translations {
     'world_path_name_10': 'Starlight Galaxy',
     // I24 — World 11 (level 201-220).
     'world_path_name_11': 'Diamond Nebula',
+    // Round-7 — World 12 (level 221-240).
+    'world_path_name_12': 'Aurora Comet Trail',
     // X4 — Shop: nhãn/mô tả booster
     'booster_bomb_label': 'Bomb',
     'booster_bomb_desc': 'Clears a 3x3 area on the board.',
@@ -1319,7 +1325,7 @@ class AppTranslations extends Translations {
     // I27 — Prestige/New Game+.
     'prestige_title': 'Prestige',
     'prestige_msg':
-        'Restart from level 1 at Tier @tier — all 220 levels get a harder '
+        'Restart from level 1 at Tier @tier — all 240 levels get a harder '
         'target score, and you keep your high scores. Get +@coin bonus coins!',
     'prestige_confirm': 'Prestige',
     'prestige_ready': 'Prestige Tier @tier',
@@ -1605,6 +1611,10 @@ class AppTranslations extends Translations {
     'reduce_motion': 'Giảm hiệu ứng động',
     // X1 — Level 1 FTUE (chạm để nổ)
     'ftue_tap_hint': 'Chạm vào nhóm này!',
+    // Round-7 Tutorial — 3 coach-mark mới (Shop/Booster/Daily Challenge)
+    'tutorial_shop_body': 'Ghé Cửa hàng để mua booster!',
+    'tutorial_booster_body': 'Thử dùng booster để phá ô khó!',
+    'tutorial_daily_challenge_body': 'Bảng mới mỗi ngày — thử ngay!',
     // X2 — Settings: âm lượng riêng + haptics
     'bgm_volume': 'Âm lượng nhạc nền',
     'sfx_volume': 'Âm lượng hiệu ứng',
@@ -2141,6 +2151,8 @@ class AppTranslations extends Translations {
     'world_path_name_10': 'Thiên Hà Sao',
     // I24 — World 11 (level 201-220).
     'world_path_name_11': 'Tinh Vân Kim Cương',
+    // Round-7 — World 12 (level 221-240).
+    'world_path_name_12': 'Vệt Sao Chổi Cực Quang',
     // X4 — Shop: nhãn/mô tả booster
     'booster_bomb_label': 'Bom',
     'booster_bomb_desc': 'Phá nổ khu vực 3x3 trên bàn cờ.',
@@ -2292,7 +2304,7 @@ class AppTranslations extends Translations {
     // I27 — Prestige/New Game+.
     'prestige_title': 'Prestige',
     'prestige_msg':
-        'Chơi lại từ level 1 ở Tier @tier — cả 220 level tăng độ khó '
+        'Chơi lại từ level 1 ở Tier @tier — cả 240 level tăng độ khó '
         'mục tiêu, điểm cao cũ vẫn giữ nguyên. Nhận ngay +@coin xu thưởng!',
     'prestige_confirm': 'Prestige',
     'prestige_ready': 'Prestige Tier @tier',
@@ -27705,7 +27717,7 @@ class AppTranslations extends Translations {
     'es_ES': {
       'prestige_title': 'Prestigio',
       'prestige_msg':
-          'Reinicia desde el nivel 1 en el Nivel de Prestigio @tier: los 220 '
+          'Reinicia desde el nivel 1 en el Nivel de Prestigio @tier: los 240 '
           'niveles tendrán una puntuación objetivo más alta, pero conservas '
           'tus puntuaciones máximas. ¡Recibe +@coin monedas de bonificación!',
       'prestige_confirm': 'Prestigio',
@@ -27714,7 +27726,7 @@ class AppTranslations extends Translations {
     'fr_FR': {
       'prestige_title': 'Prestige',
       'prestige_msg':
-          'Recommencez depuis le niveau 1 au Palier @tier : les 220 niveaux '
+          'Recommencez depuis le niveau 1 au Palier @tier : les 240 niveaux '
           'auront un score cible plus élevé, mais vous gardez vos meilleurs '
           'scores. Recevez +@coin pièces bonus !',
       'prestige_confirm': 'Prestige',
@@ -27723,7 +27735,7 @@ class AppTranslations extends Translations {
     'de_DE': {
       'prestige_title': 'Prestige',
       'prestige_msg':
-          'Starte ab Level 1 auf Stufe @tier neu — alle 220 Level erhalten '
+          'Starte ab Level 1 auf Stufe @tier neu — alle 240 Level erhalten '
           'ein höheres Zielscore, deine Bestwerte bleiben erhalten. Erhalte '
           '+@coin Bonusmünzen!',
       'prestige_confirm': 'Prestige',
@@ -27732,7 +27744,7 @@ class AppTranslations extends Translations {
     'pt_BR': {
       'prestige_title': 'Prestígio',
       'prestige_msg':
-          'Reinicie do nível 1 no Nível de Prestígio @tier — todos os 220 '
+          'Reinicie do nível 1 no Nível de Prestígio @tier — todos os 240 '
           'níveis terão uma pontuação alvo mais difícil, mas suas pontuações '
           'máximas são mantidas. Ganhe +@coin moedas de bônus!',
       'prestige_confirm': 'Prestígio',
@@ -27741,7 +27753,7 @@ class AppTranslations extends Translations {
     'ru_RU': {
       'prestige_title': 'Престиж',
       'prestige_msg':
-          'Начните заново с уровня 1 на Уровне Престижа @tier — во всех 220 '
+          'Начните заново с уровня 1 на Уровне Престижа @tier — во всех 240 '
           'уровнях цель по очкам станет сложнее, но рекорды сохранятся. '
           'Получите +@coin бонусных монет!',
       'prestige_confirm': 'Престиж',
@@ -27750,7 +27762,7 @@ class AppTranslations extends Translations {
     'zh_CN': {
       'prestige_title': '转生',
       'prestige_msg':
-          '从第1关重新开始，进入转生等级 @tier —— 全部220关的目标分数都会提高，但你的最高分会保留。'
+          '从第1关重新开始，进入转生等级 @tier —— 全部240关的目标分数都会提高，但你的最高分会保留。'
           '立即获得 +@coin 枚奖励金币！',
       'prestige_confirm': '转生',
       'prestige_ready': '转生等级 @tier',
@@ -27758,7 +27770,7 @@ class AppTranslations extends Translations {
     'ja_JP': {
       'prestige_title': 'プレステージ',
       'prestige_msg':
-          'レベル1からプレステージ階層@tierで再スタート——220レベル全ての目標スコアが上がりますが、'
+          'レベル1からプレステージ階層@tierで再スタート——240レベル全ての目標スコアが上がりますが、'
           'ハイスコアはそのまま残ります。+@coin枚のボーナスコインを獲得！',
       'prestige_confirm': 'プレステージ',
       'prestige_ready': 'プレステージ階層 @tier',
@@ -27766,7 +27778,7 @@ class AppTranslations extends Translations {
     'ko_KR': {
       'prestige_title': '프레스티지',
       'prestige_msg':
-          '레벨 1부터 프레스티지 티어 @tier로 다시 시작합니다 — 220개 레벨 전체 목표 점수가 더 '
+          '레벨 1부터 프레스티지 티어 @tier로 다시 시작합니다 — 240개 레벨 전체 목표 점수가 더 '
           '어려워지지만 최고 점수는 유지됩니다. 보너스 코인 +@coin개 획득!',
       'prestige_confirm': '프레스티지',
       'prestige_ready': '프레스티지 티어 @tier',
@@ -27774,7 +27786,7 @@ class AppTranslations extends Translations {
     'it_IT': {
       'prestige_title': 'Prestigio',
       'prestige_msg':
-          'Ricomincia dal livello 1 al Livello Prestigio @tier: tutti i 220 '
+          'Ricomincia dal livello 1 al Livello Prestigio @tier: tutti i 240 '
           'livelli avranno un punteggio obiettivo più difficile, ma i tuoi '
           'record restano. Ricevi +@coin monete bonus!',
       'prestige_confirm': 'Prestigio',
@@ -27783,7 +27795,7 @@ class AppTranslations extends Translations {
     'id_ID': {
       'prestige_title': 'Prestise',
       'prestige_msg':
-          'Mulai ulang dari level 1 di Tingkat Prestise @tier — semua 220 '
+          'Mulai ulang dari level 1 di Tingkat Prestise @tier — semua 240 '
           'level akan memiliki skor target yang lebih sulit, tapi skor '
           'tertinggimu tetap tersimpan. Dapatkan +@coin koin bonus!',
       'prestige_confirm': 'Prestise',
@@ -27792,7 +27804,7 @@ class AppTranslations extends Translations {
     'th_TH': {
       'prestige_title': 'เพรสทีจ',
       'prestige_msg':
-          'เริ่มใหม่จากด่าน 1 ที่ระดับเพรสทีจ @tier — ทั้ง 220 ด่านจะมีคะแนน'
+          'เริ่มใหม่จากด่าน 1 ที่ระดับเพรสทีจ @tier — ทั้ง 240 ด่านจะมีคะแนน'
           'เป้าหมายยากขึ้น แต่คะแนนสูงสุดเดิมของคุณยังคงอยู่ รับเหรียญโบนัส '
           '+@coin ทันที!',
       'prestige_confirm': 'เพรสทีจ',
@@ -27801,7 +27813,7 @@ class AppTranslations extends Translations {
     'hi_IN': {
       'prestige_title': 'प्रेस्टीज',
       'prestige_msg':
-          'लेवल 1 से प्रेस्टीज टियर @tier पर फिर से शुरू करें — सभी 220 लेवल '
+          'लेवल 1 से प्रेस्टीज टियर @tier पर फिर से शुरू करें — सभी 240 लेवल '
           'का लक्ष्य स्कोर कठिन हो जाएगा, लेकिन आपके हाई स्कोर सुरक्षित '
           'रहेंगे। +@coin बोनस सिक्के पाएं!',
       'prestige_confirm': 'प्रेस्टीज',
@@ -27811,7 +27823,7 @@ class AppTranslations extends Translations {
       'prestige_title': 'الترقية الفخرية',
       'prestige_msg':
           'ابدأ من جديد من المستوى 1 عند مستوى الفخر @tier — ستحصل جميع '
-          'المستويات الـ220 على هدف نقاط أصعب، لكنك تحتفظ بأعلى نتائجك. احصل '
+          'المستويات الـ240 على هدف نقاط أصعب، لكنك تحتفظ بأعلى نتائجك. احصل '
           'على +@coin عملة إضافية!',
       'prestige_confirm': 'الترقية الفخرية',
       'prestige_ready': 'الفخر مستوى @tier',
@@ -27819,7 +27831,7 @@ class AppTranslations extends Translations {
     'tr_TR': {
       'prestige_title': 'Prestij',
       'prestige_msg':
-          '1. seviyeden Prestij Kademesi @tier ile yeniden başla — 220 '
+          '1. seviyeden Prestij Kademesi @tier ile yeniden başla — 240 '
           'seviyenin tamamında hedef skor zorlaşır, ancak en yüksek '
           'skorların saklı kalır. +@coin bonus jeton kazan!',
       'prestige_confirm': 'Prestij',
@@ -27828,7 +27840,7 @@ class AppTranslations extends Translations {
     'nl_NL': {
       'prestige_title': 'Prestige',
       'prestige_msg':
-          'Begin opnieuw vanaf level 1 op Prestige-tier @tier — alle 220 '
+          'Begin opnieuw vanaf level 1 op Prestige-tier @tier — alle 240 '
           'levels krijgen een moeilijker doelscore, maar je hoogste scores '
           'blijven behouden. Ontvang +@coin bonusmunten!',
       'prestige_confirm': 'Prestige',
@@ -27838,7 +27850,7 @@ class AppTranslations extends Translations {
       'prestige_title': 'Prestiż',
       'prestige_msg':
           'Zacznij od nowa od poziomu 1 na poziomie prestiżu @tier — '
-          'wszystkie 220 poziomów będzie miało trudniejszy wynik docelowy, '
+          'wszystkie 240 poziomów będzie miało trudniejszy wynik docelowy, '
           'ale Twoje rekordy pozostaną. Zdobądź +@coin monet bonusowych!',
       'prestige_confirm': 'Prestiż',
       'prestige_ready': 'Prestiż Poziom @tier',
@@ -27847,7 +27859,7 @@ class AppTranslations extends Translations {
       'prestige_title': 'Prestige',
       'prestige_msg':
           'Magsimula ulit mula sa level 1 sa Prestige Tier @tier — magiging '
-          'mas mahirap ang target score ng lahat ng 220 level, pero '
+          'mas mahirap ang target score ng lahat ng 240 level, pero '
           'mananatili ang iyong high scores. Kumuha ng +@coin bonus coins!',
       'prestige_confirm': 'Prestige',
       'prestige_ready': 'Prestige Tier @tier',
@@ -27855,7 +27867,7 @@ class AppTranslations extends Translations {
     'ms_MY': {
       'prestige_title': 'Prestij',
       'prestige_msg':
-          'Mula semula dari tahap 1 pada Prestij Tier @tier — kesemua 220 '
+          'Mula semula dari tahap 1 pada Prestij Tier @tier — kesemua 240 '
           'tahap akan mempunyai skor sasaran yang lebih sukar, tetapi skor '
           'tertinggi anda kekal. Dapatkan +@coin syiling bonus!',
       'prestige_confirm': 'Prestij',
@@ -27864,7 +27876,7 @@ class AppTranslations extends Translations {
     'uk_UA': {
       'prestige_title': 'Престиж',
       'prestige_msg':
-          'Почніть заново з рівня 1 на рівні престижу @tier — усі 220 рівнів '
+          'Почніть заново з рівня 1 на рівні престижу @tier — усі 240 рівнів '
           'отримають складнішу цільову кількість очок, але ваші рекорди '
           'збережуться. Отримайте +@coin бонусних монет!',
       'prestige_confirm': 'Престиж',
@@ -27873,7 +27885,7 @@ class AppTranslations extends Translations {
     'bn_BD': {
       'prestige_title': 'প্রেস্টিজ',
       'prestige_msg':
-          'লেভেল ১ থেকে প্রেস্টিজ টিয়ার @tier-এ আবার শুরু করুন — সবগুলো ২২০ '
+          'লেভেল ১ থেকে প্রেস্টিজ টিয়ার @tier-এ আবার শুরু করুন — সবগুলো ২৪০ '
           'লেভেলের লক্ষ্য স্কোর কঠিন হয়ে যাবে, তবে আপনার হাই স্কোর অক্ষত '
           'থাকবে। +@coin বোনাস কয়েন পান!',
       'prestige_confirm': 'প্রেস্টিজ',

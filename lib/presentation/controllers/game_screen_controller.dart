@@ -49,6 +49,10 @@ class GameScreenController extends GetxController {
   /// X1: overlay "chạm để nổ" — chỉ hiện lần mở app đầu tiên trên level 1.
   final RxBool showFtue = false.obs;
 
+  /// Round-7 Tutorial: coach-mark trỏ vào thanh booster — hiện lần đầu người
+  /// chơi có booster (mặc định có sẵn 3 bomb) mà chưa từng dùng cái nào.
+  final RxBool showBoosterTutorial = false.obs;
+
   /// F8 Time-attack: đếm ngược 60s, hết giờ → kết thúc ván.
   static const int timeAttackSeconds = 60;
   final RxInt remainingSeconds = timeAttackSeconds.obs;
@@ -310,6 +314,21 @@ class GameScreenController extends GetxController {
     );
     gameVersion.value++;
     showFtue.value = ftue;
+    // Round-7 Tutorial: không chồng lên FTUE gốc — chỉ hiện khi FTUE đã qua
+    // (hoặc không áp dụng) và người chơi thực sự có booster để dùng.
+    showBoosterTutorial.value =
+        !ftue &&
+        gameCtrl.mode.value == GameMode.campaign &&
+        gameCtrl.bombCount.value > 0 &&
+        !StorageService.to.getBool(StorageKeys.hasSeenBoosterTutorial);
+  }
+
+  /// Round-7 Tutorial: bất kỳ thao tác booster nào (arm hay dùng ngay) đều
+  /// tắt coach-mark vĩnh viễn — người chơi đã tự tìm ra thanh booster.
+  void _dismissBoosterTutorialIfNeeded() {
+    if (!showBoosterTutorial.value) return;
+    showBoosterTutorial.value = false;
+    StorageService.to.setBool(StorageKeys.hasSeenBoosterTutorial, true);
   }
 
   /// X1: tap đầu tiên (đúng hay sai nhóm) đều tắt overlay FTUE — không để
@@ -321,18 +340,21 @@ class GameScreenController extends GetxController {
   }
 
   void toggleBombArm() {
+    _dismissBoosterTutorialIfNeeded();
     armed.value = armed.value == BoosterMode.bomb
         ? BoosterMode.none
         : BoosterMode.bomb;
   }
 
   void toggleRainbowArm() {
+    _dismissBoosterTutorialIfNeeded();
     armed.value = armed.value == BoosterMode.rainbow
         ? BoosterMode.none
         : BoosterMode.rainbow;
   }
 
   void toggleSwapArm() {
+    _dismissBoosterTutorialIfNeeded();
     _swapFirst = null;
     armed.value = armed.value == BoosterMode.swap
         ? BoosterMode.none
@@ -383,14 +405,17 @@ class GameScreenController extends GetxController {
   }
 
   void useShuffle() {
+    _dismissBoosterTutorialIfNeeded();
     gameCtrl.useShuffle();
   }
 
   void useUndo() {
+    _dismissBoosterTutorialIfNeeded();
     gameCtrl.useUndo();
   }
 
   void useFreeze() {
+    _dismissBoosterTutorialIfNeeded();
     gameCtrl.useFreeze();
   }
 
