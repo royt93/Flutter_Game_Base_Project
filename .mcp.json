@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "dart": {
+      "type": "stdio",
+      "command": "/Users/loitran/development/flutter_sdk/flutter/bin/dart",
+      "args": [
+        "mcp-server"
+      ],
+      "env": {}
+    },
+    "xcodebuild": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "xcodebuildmcp@latest",
+        "mcp"
+      ],
+      "env": {
+        "XCODEBUILDMCP_ENABLED_WORKFLOWS": "simulator,debugging,ui-automation"
+      }
+    }
+  }
+}
