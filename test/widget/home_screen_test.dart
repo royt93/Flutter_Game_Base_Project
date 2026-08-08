@@ -71,8 +71,18 @@ void main() {
     expect(bg.accent, worldForLevel(90).color);
     expect(bg.weather, worldForLevel(90).weather);
 
-    // Mốc world cuối (level 240 -> kWorlds.last, World 12 Round-7).
+    // Mốc World 12 (level 240, Round-7) — không còn là world cuối kể từ
+    // Round-8 (World 13), dùng worldForLevel() thay vì kWorlds.last.
     gameCtrl.unlockedLevel.value = 240;
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(tester.takeException(), isNull);
+    bg = tester.widget<NeonBg>(find.byType(NeonBg));
+    expect(bg.accent, worldForLevel(240).color);
+    expect(bg.weather, worldForLevel(240).weather);
+
+    // Mốc world cuối (level 260 -> kWorlds.last, World 13 Round-8).
+    gameCtrl.unlockedLevel.value = 260;
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 900));
     expect(tester.takeException(), isNull);

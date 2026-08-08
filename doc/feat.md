@@ -4581,3 +4581,547 @@ theo dõi tại đây). User yêu cầu tạm bỏ qua lúc 2026-08-06 sau khi 4
 Android. Chưa hủy khỏi scope — làm lại khi cần validate parity iOS so với
 Android (simulator sẵn sàng: iPhone 17 Pro, iPhone 17 Pro Max, iOS 26.5, qua
 Xcode 26.6 + `xcodebuild__*` MCP tools).
+
+## ✅ Round-8 — Item 0: Backlog E4/E5 reconciliation
+
+Bookkeeping-only, không đổi code. Re-verify từng story trong
+`doc/task/backlog.md` bằng bằng chứng trực tiếp (grep/`ls`) thay vì tin story
+point cũ:
+
+- **E4-S5** (unit booster) → ✅ Done, cite `test/game/booster_test.dart` (151
+  dòng, dựng đủ case biên bomb/shuffle giữ multiset/undo stack).
+- **E4-S6** (achievability greedy-sim) → ✅ Done, cite
+  `test/data/levels_achievability_test.dart` (168 dòng, assertion thật — không
+  phải stub — chuyển từ greedy-bot sim ở scratchpad thành test chính thức).
+- **E4-S12** (coverage report + ngưỡng tối thiểu) → xác nhận **vẫn còn mở**
+  (Could, ưu tiên thấp) — không tìm thấy config coverage threshold nào trong
+  repo, không tự bịa ra để đánh dấu Done.
+- **E5-S5** (audit `store-assets/` ref "Neon Jewels") → ✅ Done, verify lại
+  bằng `grep -rn "neon_jewels\|Neon Jewels\|match-3" store-assets/` không còn
+  match (Round-7 đã sửa `app-store-screenshots.json`).
+- **E5-S7** (chốt cấu trúc `doc/` + index) → ✅ Done, `doc/README.md` tồn tại
+  và hoạt động đúng vai trò index (bảng liên kết `feat.md` /
+  `RELEASE_CHECKLIST.md` / `task/README.md`).
+- **E5-S2, S3, S4, S6** → re-verify nguồn, xác nhận **thoả mãn từ trước
+  Round-7**, không cần việc mới.
+
+Kết quả: `doc/task/backlog.md` đã cập nhật marker `✅ Done (YYYY-MM-DD)` +
+ghi chú trích dẫn cho từng story ở trên; không có hạng mục nào bị đánh dấu
+Done sai (E4-S12 giữ nguyên trạng thái mở).
+
+## ✅ Round-8 — Item 1: I79 World 13 "Coral Reef Cove" (levels 241-260)
+
+World mới thứ 13, tiếp theo ngay sau World 12 (Round-7). Thuần data — không
+đổi logic pop/gravity/obstacle.
+
+- **`lib/data/levels.dart`** — `kLevelCount` 240 → 260. Công thức độ khó
+  (rows/cols/colorBase) không đổi vì world index 12 đã bão hoà ở cùng ceiling
+  clamp như World 12 (`rows=11/cols=12/colorBase=7`); chỉ `ramp` tăng
+  (`1.0 + 12*0.03 = 1.36`), giữ đúng bất biến "target achievability" (neo theo
+  cell count, không tuyến tính theo level index — xem `CLAUDE.md`).
+- **`lib/core/neon_theme.dart`** — thêm màu `coral = Color(0xFFFF7A5C)`, tách
+  biệt rõ khỏi 12 màu world trước (đã verify bằng test không trùng màu).
+- **`lib/data/worlds.dart`** — thêm `GameWorld` thứ 13 (`world_path_name_13`,
+  range 241-260, màu `coral`).
+- **i18n (`lib/core/app_translations.dart`)** — thêm key `world_path_name_13`
+  vào `_extraEn` ("Coral Reef Cove") và `_extraVi` ("Vịnh San Hô"); các locale
+  khác tự fallback về tiếng Anh qua cơ chế `_extraEn`, không cần sửa từng file
+  locale riêng (đúng tiền lệ World 12). Sweep "240 levels"/"240 màn" (text mô
+  tả prestige) → "260" trên toàn bộ 18+ locale liên quan.
+- **Test — `test/data/worlds_test.dart`** — nhóm `'World 12'` đổi từ
+  `kWorlds.last` sang index cố định `kWorlds[11]` (không còn là world cuối);
+  thêm nhóm `'World 13'` mới dùng `kWorlds.last` + literal `241`/`260`, kiểm
+  tra màu không trùng 12 world trước.
+- **`test/data/levels_test.dart`**, **`levels_achievability_test.dart`** —
+  không cần sửa: cả hai đã dùng `kLevelCount`/`kLevels` tổng quát, không có
+  literal `240`/`260` hardcode.
+
+**Bug tự phát hiện lúc verify** (không nằm trong scope kế hoạch ban đầu):
+`test/widget/home_screen_test.dart`, case "I53: nền home đổi accent/weather
+đúng theo world đã unlock" giả định `unlockedLevel = 240` → accent luôn bằng
+`kWorlds.last.color`. Giả định này sai ngay khi World 13 lên ngôi world cuối
+(level 240 giờ thuộc World 12/lime, không phải World 13/coral) — phát hiện
+qua exception log của `flutter test` (expected coral `0xFFFF7A5C`, got lime
+`0xFF5FD35A`). Sửa bằng cách dùng `worldForLevel(240)` cho mốc level 240 (thay
+vì `kWorlds.last`), và thêm mốc mới ở level 260 để verify đúng world cuối thật
+sự (World 13). Đã grep toàn bộ `test/` để xác nhận không còn file nào khác
+giả định `kWorlds.last`/"World 12 = cuối" lỗi thời tương tự.
+
+**Verify:** `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
+→ 713/713 pass (bao gồm cả `app_translations_test.dart` xác nhận parity 22
+locale cho key `world_path_name_13` mới).
+
+**Bug thứ 2 tự phát hiện lúc audit** (2026-08-06, sau khi item đã "xong"):
+sweep "240 màn" → "260 màn" trong kế hoạch chỉ nhắm `app_translations.dart`
+(text prestige trong game), bỏ sót `doc/RELEASE_CHECKLIST.md` dòng mở đầu
+("campaign 240 màn") — dòng này vừa được Item 0 sửa từ "200 màn" lên "240 màn"
+(đồng bộ theo Round-7), rồi bị Item 1 (World 13, 240→260) sweep bỏ lỡ vì nó
+nằm ngoài `app_translations.dart`. Không có test nào phủ file doc này (thuần
+markdown) nên `flutter test` xanh không bắt được. Đã sửa lại "260 màn" trực
+tiếp; grep toàn repo (`.md`+`.dart`, loại trừ `build/`/`.dart_tool/`/`Pods/`)
+xác nhận không còn tham chiếu "240" nào liên quan đến tổng số màn (các match
+"240" còn lại đều là số khác: `endId: 240` của World 12 — đúng ranh giới, không
+phải tổng số màn — hoặc duration/coinPrice/width không liên quan).
+
+## ✅ Round-8 — Item 0/1 audit thứ 2: 3 review độc lập (codex + agy + Claude subagent, 2026-08-06)
+
+Sau audit nội bộ (10/10 tự chấm) ở trên, người dùng yêu cầu second-opinion từ
+2 AI agent ngoài (`codex review --uncommitted`, `agy --print`) + 1 Claude
+subagent độc lập (không thấy audit trước, review "mù" trên cùng diff) để
+tránh anchoring bias. Cả 3 review chạy song song, sau đó verify từng finding
+trực tiếp trên source trước khi sửa — chỉ sửa cái xác nhận thật, không sửa
+theo phản xạ vì "AI khác nói vậy".
+
+**Kết quả 3 review:**
+
+- **codex** — 1 finding **P1, xác nhận thật**: `GameController.canPrestige`
+  (`game_controller.dart`) đọc thẳng `allLevelsCompletedOnce` (Rx<bool>) từ
+  SharedPreferences ở `_init()`, không hề version-check với `kLevelCount`
+  hiện tại. Save cũ nào đã có cờ này = `true` (từ hoàn thành campaign 240 màn
+  bản cũ) sẽ khiến `canPrestige` trả `true` ngay sau update lên 260 màn — cho
+  phép Prestige "chui" mà chưa từng chơi World 13 (241-260). Tác động thực tế
+  hiện tại = 0 (theo `doc/RELEASE_CHECKLIST.md`: "Chưa có bản release nào",
+  chưa có save thật ngoài đời), nhưng đúng pattern latent-bug sẽ tái diễn ở
+  MỌI lần mở rộng campaign sau này nếu không sửa — đáng sửa phòng ngừa ngay
+  từ bây giờ trong khi rẻ.
+- **Claude subagent (blind)** — 1 finding **Low, xác nhận thật**: dòng ghi
+  chú evidence tại `doc/task/backlog.md` (E5-S3) mô tả `RELEASE_CHECKLIST.md`
+  là "240 màn" — đã lỗi thời vì bug thứ 2 ở mục Item 1 phía trên vừa sửa file
+  đó thành "260 màn". Chính audit-note lại trở thành nguồn stale-number mới.
+- **agy** — 2 finding, **cả hai đều false positive** sau khi verify trực tiếp
+  trên source (không sửa gì):
+  1. Claim World 13 thiếu `weather` property. Sai — `weather: none` cho world
+     CUỐI CÙNG là rule cố ý, đã document trong `lib/data/worlds.dart` (tránh
+     chồng hiệu ứng aurora, I16) và áp dụng generic qua so sánh `kWorlds.last`
+     trong `game_screen.dart` — World 13 tự động kế thừa đúng hành vi này vì
+     nó là world cuối mới, không phải thiếu sót.
+  2. Claim `test/data/worlds_test.dart` thiếu test phủ liên tục range level
+     1..260 và `kWorlds.last.endId == kLevelCount`. Sai — cả hai đã tồn tại
+     sẵn (test continuity tổng quát + assertion literal `w13.endId == 260`
+     trong nhóm `'World 13'`).
+  - agy cũng tự chạy full suite và xác nhận "714 test cases... pass thành
+    công" độc lập với lần chạy của tôi.
+
+**Fix đã áp dụng (chỉ 2 finding xác nhận thật ở trên):**
+
+- `doc/task/backlog.md` — nối thêm dòng ghi chú cập nhật ngay dưới evidence
+  note cũ của E5-S3, KHÔNG sửa đè câu gốc (giữ nguyên audit trail lịch sử),
+  chỉ đính chính rằng số liệu hiện tại của `RELEASE_CHECKLIST.md` là "260
+  màn" chứ không còn "240 màn" như câu gốc mô tả tại thời điểm viết.
+- `lib/core/storage_service.dart` — thêm key mới
+  `StorageKeys.allLevelsCompletedAtCount`, kèm comment giải thích mục đích
+  (version-stamp cho `allLevelsCompleted`).
+- `lib/presentation/controllers/game_controller.dart` — 3 thay đổi:
+  1. `checkEnd()`: khi set `allLevelsCompletedOnce = true`, đồng thời ghi
+     `kLevelCount` hiện tại vào `allLevelsCompletedAtCount`.
+  2. `_init()`: gọi `_migrateAllLevelsCompletedFlag()` ngay sau khi load cờ
+     từ storage.
+  3. `_migrateAllLevelsCompletedFlag()` (method mới): nếu cờ đang `true`
+     nhưng `allLevelsCompletedAtCount` lưu (mặc định **0**, KHÔNG phải
+     `kLevelCount` — cố ý, vì save cũ trước Round-8 chưa từng ghi key này dù
+     cờ đã `true`, phải coi là "chưa rõ, cần migrate") nhỏ hơn `kLevelCount`
+     hiện tại → reset cờ về `false` cả trong memory lẫn storage. Không đụng
+     gì nếu chưa từng đạt cờ, hoặc cờ đã đúng ở `kLevelCount` hiện tại.
+  4. `resetProgress()`: thêm dọn key `allLevelsCompletedAtCount` cho nhất
+     quán với các key khác.
+- `test/presentation/game_controller_test.dart` — 2 test mới trong nhóm
+  `'I27 Prestige/New Game+'`: (1) save cũ có cờ `true` nhưng thiếu
+  `allLevelsCompletedAtCount` → relaunch controller → cờ bị reset về `false`,
+  `canPrestige` = `false`; (2) save đã hoàn thành đúng `kLevelCount` hiện tại
+  (có `allLevelsCompletedAtCount` khớp) → relaunch → giữ nguyên
+  `canPrestige` = `true` (không bị migrate sai, không phá hỏng trường hợp
+  hợp lệ).
+
+**Bug tự phát hiện khi viết fix** (không phải do review nào chỉ ra): viết
+nháp đầu `_migrateAllLevelsCompletedFlag()` dùng `def: kLevelCount` làm giá
+trị mặc định cho key mới — tự nhận ra ngay đây là sai, vì fallback này sẽ vô
+hiệu hoá chính migration cho đúng trường hợp cần bắt (save cũ chưa từng ghi
+key). Sửa lại `def: 0` trước khi chạy test nào.
+
+**Verify:** `flutter analyze` → 0 issues. Nhóm test `"I27 Prestige"`
+(13 test, gồm 2 test mới) → pass. Full suite `flutter test --exclude-tags
+slow` → pass sạch, không regression nào ở nơi khác.
+
+**Phương pháp luận đáng ghi lại:** 2/3 reviewer độc lập (agy) đưa ra finding
+mà khi verify trực tiếp trên source đều là false positive — chứng minh giá
+trị của bước verify bắt buộc sau mỗi blind review: chỉ sửa cái xác nhận
+được bằng code thật, không sửa chỉ vì "một AI khác gắn cờ nó".
+
+**Safeguard phòng ngừa mới — `test/tool/campaign_total_sweep_test.dart`:**
+2 bug thật của audit này (stale "240 màn"/"240 levels" sau khi `kLevelCount`
+tăng lên 260) đều thuộc đúng 1 lớp lỗi: prose/doc quên sweep theo tổng số
+màn mới, và cả hai đều KHÔNG bị `flutter test` xanh bắt được (một cái vì
+nằm ngoài `app_translations_test.dart`'s phạm vi kiểm — test đó chỉ check
+key parity giữa các locale, không check nội dung; cái kia vì
+`doc/RELEASE_CHECKLIST.md` là markdown thuần, không nằm trong phạm vi test
+nào cả). Thêm 2 test mới tự so với `kLevelCount` hiện tại (không hardcode
+số, không cần sửa tay ở round sau):
+1. `doc/RELEASE_CHECKLIST.md` phải chứa `"$kLevelCount màn"` và KHÔNG được
+   còn chứa `"${kLevelCount - 20} màn"` (tổng số màn của round liền trước).
+2. Toàn bộ text trong `AppTranslations().keys` (mọi locale) không còn chứa
+   `"${kLevelCount - 20} level"` hay `"${kLevelCount - 20} màn"`.
+
+Cố ý chỉ bắt lỗi "quên sweep 1 bước" (round liền trước) thay vì mọi số cũ
+trong lịch sử — đủ để khớp đúng dạng lỗi đã xảy ra thực tế 2 lần, tránh
+over-engineer một bộ quét tổng quát cho thứ chưa từng là vấn đề thật.
+Verify: cả 2 test pass ngay ở trạng thái hiện tại (260); `flutter analyze`
+→ 0 issues.
+
+## ✅ Round-8 — Item 2: I76 Ice Tile (cơ chế lõi)
+
+Obstacle "băng" 2 lớp mới, campaign-only, gate từ world ≥2 (level > 20) —
+gate sớm hơn Countdown Lock (world ≥4) vì đây là cơ chế nhẹ nhàng hơn.
+
+- **`lib/logic/ice_tile.dart`** (file mới) — mã hoá độ bền TRỰC TIẾP trong
+  `colorGrid` bằng 1 dải ID âm riêng (`iceTileIdBase = -1400`,
+  `iceTileDurability = 2` → dải hợp lệ đúng 2 giá trị: `-1401` mới/2 lớp,
+  `-1400` đã nứt/1 lớp), nằm gọn giữa gift (`-1000`) và countdown-lock
+  (`-1500`), không đụng dải nào khác. Đây là quyết định kiến trúc quan
+  trọng nhất: khác với boss HP/countdown-remaining (theo dõi qua
+  `Map<int,int>` riêng ngoài grid), Ice Tile **không cần state map mới**
+  vì độ bền tự sống trong `colorGrid` — kéo theo 3 hệ quả rẻ:
+  1. Không cần thêm field mới trong `PopStarGame`.
+  2. Không cần thêm field undo-snapshot mới — `undo()` restore nguyên
+     `colorGrid` nên tự động đúng.
+  3. Không cần thêm dòng riêng trong `_syncObstacleAndLockBlocks()` — nhánh
+     tổng quát có sẵn `if (v != null && v < 0) ...` đã phủ.
+  - `chipAdjacentIceTiles()` quét 4 hướng liền kề y hệt
+    `chipAdjacentObstacles()` (`obstacle.dart`) nhưng **cố ý không copy**
+    kiểu loại trừ thủ công từng loại tile khác của hàm đó — quét thẳng qua
+    `isIceTileId()`, đúng vì dải ID không giao nhau với bất kỳ tile đặc
+    biệt nào khác. Tránh lặp lại 1 gap có sẵn ở `chipAdjacentObstacles`
+    (hàm đó thiếu check magnet-ID).
+- **`lib/game/pop_star_game.dart`** — thêm `_placeIceTilesIfNeeded()` theo
+  đúng idiom `_place*IfNeeded` (gate xác suất `_iceTileChance = 0.18`, né ô
+  đã là obstacle/chain-lock/gift/boss/countdown-lock và ô màu target của
+  objective `collect`), gọi trong `onLoad()` giữa
+  `_placeCountdownLockTileIfNeeded` và `_placeWildcardTileIfNeeded`. Gộp
+  `chipAdjacentIceTiles()` vào cùng 1 điểm chốt với obstacle
+  (`_chipObstaclesOrFrozen`) thay vì tách nhánh riêng — quyết định thiết
+  kế: F10 Freeze nên bảo vệ Ice Tile giống hệt obstacle (cùng ngữ nghĩa
+  "độ bền không giảm khi đang đóng băng"), tổng quát hoá cơ chế sẵn có
+  thay vì đặc cách. Boss Rush (`_nextBossRushBoard`) và Zen
+  (`_refillBoard`) đã tự động không đụng Ice Tile — verify trực tiếp,
+  không cần sửa (Boss Rush chỉ gọi `_placeBossTileIfNeeded`; Zen không gọi
+  hàm placement nào).
+- **`lib/game/block_component.dart`** — thêm nhánh render Ice Tile trong
+  `render()`, PHẢI đặt trước nhánh obstacle chung (nếu không, ID âm của Ice
+  Tile bị hiểu nhầm thành obstacle durability sai). `_renderIceTile()`:
+  gradient xanh băng 3 điểm dừng, viền trắng, 1 vệt nứt zigzag khi chỉ còn
+  1 lớp, badge chấm trắng đếm số lớp còn lại (tái dùng ngôn ngữ hình ảnh
+  của `_renderObstacle`).
+- **`lib/logic/pop_detector.dart`** — không cần sửa: verify trực tiếp nhánh
+  loại trừ flood-fill có sẵn (`if (color < 0 && !isWildcardTileValue(color))
+  return {};`) đã tự động loại Ice Tile khỏi nhóm màu có thể nổ.
+- **Test — `test/logic/ice_tile_test.dart`** (file mới) — 10 case: range
+  đúng của `isIceTileId()` (2 giá trị hợp lệ, không nhận nhầm null/màu
+  thường/obstacle/mọi tile đặc biệt khác gồm cả magnet), `iceTileRemaining()`
+  đúng số lớp, `chipAdjacentIceTiles()` chip đúng/vỡ đúng/không ảnh hưởng ô
+  không liền kề/không chip đúp khi 1 ô liền kề nhiều ô nổ cùng đợt.
+
+**Verify:** `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
+→ 727/727 pass (bao gồm 10 test mới của `ice_tile_test.dart`).
+
+## ✅ Round-8 — Item 3: I80 Remix Levels
+
+7 level campaign đã có sẵn được "remix" lại với 1 luật chơi phụ (tái dùng
+nguyên `GauntletModifier` của I33, không định nghĩa modifier riêng) — kết hợp
+pattern "chơi lại 1 level campaign có sẵn" của `startWeeklyFeatured()` với
+pattern "áp modifier" của `startGauntlet()`.
+
+- **`lib/data/gauntlet_modifiers.dart`** thêm class `RemixLevel` (chỉ
+  `levelId` + `modifier`, KHÔNG có field `nameKey` riêng — tên hiển thị lấy
+  từ `worldForLevel(levelId).nameKey` sẵn có, tránh phát sinh thêm i18n key
+  cho từng entry, đúng pattern `weeklyFeatured` mode tile đã dùng) và
+  `kRemixLevels` — 7 entry, 1 entry gần giữa mỗi world lẻ (level 10/50/90/
+  130/170/210/250 trong tổng 260 level), modifier tuần hoàn qua 4 modifier
+  có sẵn của Gauntlet. Refactor phụ: 4 `GauntletModifier` trong
+  `kGauntletModifiers` được tách thành hằng số top-level có tên riêng
+  (`kModNoUndo`, `kModShortCombo`, `kModFourColors`, `kModReverseGravity`) vì
+  index vào 1 const list (`kGauntletModifiers[i]`) không phải hằng số hợp lệ
+  trong Dart để dùng lại trong 1 const list khác — `kRemixLevels` cần tham
+  chiếu lại đúng các modifier này.
+- **`lib/presentation/controllers/game_controller.dart`** — thêm
+  `GameMode.remixLevel`, field `activeRemixModifier`, nhánh
+  `GameMode.remixLevel => activeRemixModifier` trong getter
+  `activeGameplayModifier` (kéo theo `activeMoveLimit`/`activeMinGroupSize`/
+  `activeComboWindowOverride` tự động áp dụng — **không cần sửa gì trong
+  `pop_star_game.dart`**), `startRemixLevel(levelId, mod)` (mirror y hệt
+  block reset của `startWeeklyFeatured`/`startGauntlet`), và best-score riêng
+  từng level qua `remixBestFor(levelId)`/`_saveRemixBest()` (đọc trực tiếp
+  từ storage theo levelId thay vì 1 Rx duy nhất, vì "best" ở đây là nhiều
+  giá trị theo từng level — cùng cách `highScore`/`star` đọc theo id). Wire
+  vào `checkEnd()`'s generic non-campaign save block.
+- **`lib/core/storage_service.dart`** thêm
+  `StorageKeys.remixBest(levelId) => 'remix_best_$levelId'`.
+- **`lib/presentation/screens/mode_select_screen.dart`** thêm nhóm mode
+  "Remix Levels" (màu `NeonTheme.pink`), 1 tile mỗi entry của `kRemixLevels`
+  (icon lấy từ modifier, label = tên world + số level, semanticLabel = tên
+  modifier), tap gọi `startRemixLevel()` rồi vào `GameScreen`.
+- **i18n** — thêm key `modes_group_remix` cho đủ 22 locale (`app_translations.dart`,
+  base English/Vietnamese + 20 locale trong `_w286ByLang`).
+- **Test** — thêm group `I80 Remix Levels` trong
+  `test/presentation/game_controller_test.dart` (không tách file riêng, theo
+  đúng pattern I33/I38 đã có sẵn trong cùng file) — 4 case: mọi entry
+  `kRemixLevels` có `levelId` hợp lệ trong `1..kLevelCount`, `startRemixLevel()`
+  set đúng mode/level/modifier và reset toàn bộ state ván mới,
+  `activeGameplayModifier` trả đúng modifier (spot-check `activeComboWindowOverride`),
+  `remixBestFor()` chỉ tăng khi điểm mới cao hơn và tách biệt theo từng
+  levelId.
+
+**Verify:** `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
+→ 731/731 pass (727 + 4 test mới của group `I80 Remix Levels`).
+`flutter test test/core/app_translations_test.dart` → pass (22/22 locale đủ
+key `modes_group_remix`).
+
+## ✅ Round-8 — Item 4: I75 Combo Rush
+
+Side mode đua giữ combo càng lâu càng tốt, không timer kết thúc — bàn không
+refill (như mọi side mode khác trừ Zen), ván kết thúc tự nhiên khi hết nhóm
+gộp được hoặc bàn kẹt. HUD chính là 1 thanh meter thể hiện thời gian còn lại
+trước khi combo tự reset (đếm ngược `_comboTimer`/`comboWindow`, cùng nguồn
+dữ liệu engine đã dùng để tự gọi `resetCombo()`), không thêm state gameplay
+mới.
+
+- **`lib/data/levels.dart`** thêm `kComboRushLevel` (id `-8`, tránh đụng
+  `kLevels` dương và các id âm khác của side mode).
+- **`lib/presentation/controllers/game_controller.dart`** — thêm
+  `GameMode.comboRush`, nhánh `GameMode.comboRush => kComboRushLevel` trong
+  `startSideMode()`, field `comboRushBest` (load ở `_init()`, mirror
+  `timeAttackBest`), `_saveComboRushBest()` (chỉ ghi khi điểm mới cao hơn),
+  wire vào `checkEnd()`'s side-mode save block, và xoá key trong
+  `resetProgress()` — không cần sửa `registerPop()` vì `comboMultiplier` đã
+  áp dụng toàn cục sẵn.
+- **`lib/core/storage_service.dart`** thêm `StorageKeys.comboRushBest`.
+- **`lib/game/pop_star_game.dart`** thêm getter `comboTimerFraction` (0..1,
+  đọc trực tiếp `_comboTimer`/`comboWindow` hiện có — cùng pattern getter
+  `heat` đã dùng cho `NeonBg`, không set state Flame mỗi frame).
+- **`lib/presentation/controllers/game_screen_controller.dart`** thêm
+  `RxDouble comboMeterFraction`, poll bằng `Timer.periodic` 100ms (10Hz, mượt
+  hơn `_startCountdown()`'s 1s vì đây là progress bar liên tục chứ không phải
+  số nguyên đếm ngược), khởi động khi `mode == comboRush`, huỷ trong
+  `onClose()`.
+- **`lib/presentation/screens/game_screen.dart`** thêm nhánh HUD Combo Rush
+  (tái dùng widget `_ProgressBar` sẵn có, trước đó chỉ dùng cho target-score
+  campaign) hiển thị meter + best score.
+- **`lib/presentation/screens/mode_select_screen.dart`** thêm 1 tile trong
+  nhóm `modes_group_core`, gọi `startSideMode(GameMode.comboRush)`.
+- **i18n** — thêm key `mode_combo_rush_label` cho đủ 22 locale, chèn trực
+  tiếp vào wave map `_w286ByLang` sẵn có (cùng chỗ `modes_group_remix` của
+  Item 3) thay vì tạo wave map mới.
+- **Test** — thêm group `I75 Combo Rush` trong
+  `test/presentation/game_controller_test.dart` (theo đúng pattern
+  `F8 Time-attack + Zen` đã có sẵn trong cùng file) — 4 case:
+  `startSideMode(comboRush)` set đúng mode/level, không đụng
+  `unlockedLevel` campaign; `checkEnd()` không mở khoá/thưởng xu/lưu
+  highScore campaign; `comboRushBest` chỉ tăng khi điểm mới cao hơn;
+  `resetProgress()` xoá `comboRushBest`.
+
+**Verify:** `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
+→ 735/735 pass (731 + 4 test mới của group `I75 Combo Rush`).
+`flutter test test/core/app_translations_test.dart` → pass (22/22 locale đủ
+key `mode_combo_rush_label`).
+
+## ✅ Round-8 — Item 5: I76b Frost Rush
+
+Side mode tái dùng đúng cơ chế Combo Rush (đua giữ combo, không timer kết
+thúc) nhưng dựng trên 1 bàn ép mật độ Ice Tile rất cao (~35% số ô) — bàn
+"toàn phủ băng" chứ không phải chờ xác suất world/level như campaign. Không
+thêm cơ chế gameplay mới, chỉ tái dùng 2 hệ đã có (Ice Tile từ Item 2, Combo
+Rush meter từ Item 4) theo kiểu "side mode dựng bàn riêng" giống Mirror
+Mode/Daily Challenge.
+
+- **`lib/data/levels.dart`** thêm `kFrostRushLevel` (id `-9`, kế tiếp `-8`
+  của Combo Rush) — cùng kích thước bàn Combo Rush, `targetScore: 0` vì
+  không có mục tiêu điểm, chỉ đua combo.
+- **`lib/game/pop_star_game.dart`** — `_placeIceTilesIfNeeded()` rẽ nhánh đầu
+  hàm: nếu `controller.mode.value == GameMode.frostRush` thì gọi
+  `_placeForcedIceTiles()` (bỏ qua gate world/xác suất của campaign) rồi
+  return sớm, không đụng logic Ice Tile gốc. `_placeForcedIceTiles()` tái
+  dùng `_shuffledCandidates()` sẵn có (cùng helper mọi special-tile khác
+  dùng) lấy `.take(35% * rows * cols)` ô hợp lệ để đặt Ice Tile — không quét
+  lưới thủ công riêng.
+- **`lib/presentation/controllers/game_controller.dart`** — thêm
+  `GameMode.frostRush`, nhánh `GameMode.frostRush => kFrostRushLevel` trong
+  `startSideMode()`, field `frostRushBest` (load ở `_init()`, độc lập với
+  `comboRushBest` dù chung cơ chế combo), `_saveFrostRushBest()`, wire vào
+  `checkEnd()`'s side-mode save block (không cần sửa gì thêm — block generic
+  đã xử lý mọi `GameMode` không phải campaign), xoá key trong
+  `resetProgress()`.
+- **`lib/core/storage_service.dart`** thêm `StorageKeys.frostRushBest`.
+- **`lib/presentation/screens/game_screen.dart`** — mở rộng nhánh HUD Combo
+  Rush thành `comboRush || frostRush` (cùng 1 progress-bar meter, chỉ đổi
+  nguồn `best` theo mode) thay vì tạo nhánh HUD trùng lặp.
+- **`lib/presentation/screens/mode_select_screen.dart`** thêm 1 tile trong
+  nhóm `modes_group_core`, gọi `startSideMode(GameMode.frostRush)`.
+- **`lib/game/block_component.dart`** — không cần sửa: xác nhận file này
+  không tham chiếu `GameMode`/`mode.value` ở đâu cả (render thuần theo giá
+  trị ô), nên tự động tương thích bàn Frost Rush mà không cần thay đổi.
+- **i18n** — thêm key `mode_frost_rush_label` cho đủ 22 locale, chèn ngay
+  sau `mode_combo_rush_label` trong cả 2 map gốc (EN/VI) và wave map
+  `_w286ByLang` — dùng script Python với anchor là dòng đầy đủ duy nhất
+  (`'mode_combo_rush_label': '<giá trị theo locale>',`) để tránh lặp lại lỗi
+  first-occurrence từng gặp ở Item 4, xác nhận lại bằng `grep -c` → đúng 22.
+- **Test** — thêm group `I76b Frost Rush` trong
+  `test/presentation/game_controller_test.dart` (ngay sau group `I75 Combo
+  Rush`) — 4 case cùng shape: `startSideMode(frostRush)` set đúng
+  mode/level, không đụng `unlockedLevel` campaign; `checkEnd()` không mở
+  khoá/thưởng xu/lưu highScore campaign; `frostRushBest` chỉ tăng khi điểm
+  mới cao hơn và độc lập với `comboRushBest`; `resetProgress()` xoá
+  `frostRushBest`.
+
+**Verify:** `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
+→ 739/739 pass (735 + 4 test mới của group `I76b Frost Rush`).
+`flutter test test/core/app_translations_test.dart` → pass (22/22 locale đủ
+key `mode_frost_rush_label`).
+
+## ✅ Round-8 — Item 6: I78 Daily Quest Board — tích hợp ReminderService
+
+Rescoped theo xác nhận của user (`AskUserQuestion`, xem "Context" đầu file
+plan): Daily Quest Board đã ship đầy đủ end-to-end từ trước
+(`lib/data/daily_quests.dart`, `daily_quest_dialog.dart`, state/claim trên
+`GameController`) — Item 6 **chỉ** thêm 1 nhánh ưu tiên mới (thấp nhất) vào
+`ReminderService` (I56) đang có sẵn, không xây lại quest plumbing.
+
+- **`lib/core/reminder_service.dart`**
+  - `enum ReminderKind` thêm `questBoard` (thứ 4, sau `spin/streak/
+    weeklyGoal`).
+  - `pickReminderKind()` thêm tham số bắt buộc `questBoardClaimable`, nhánh
+    cuối cùng trước `return null`: `if (questBoardClaimable) return
+    ReminderKind.questBoard;` — giữ nguyên thứ tự ưu tiên cố định
+    spin > streak > weeklyGoal > questBoard.
+  - Thêm helper `_questBoardClaimable(GameController gameCtrl)`: gọi
+    `checkDailyQuestRollover()` trước (đảm bảo `dailyQuests`/tiến độ khớp
+    ngày hiện tại, cùng cách phòng thủ mà `claimDailyQuest` đã làm), sau đó
+    quét `dailyQuests` tìm ≥1 chỉ số `i` thoả `dailyQuestProgress[i] >=
+    dailyQuests[i].target && !dailyQuestClaimed.contains(i)`. Chỉ implement
+    đúng điều kiện "có nhiệm vụ đủ điều kiện nhận nhưng chưa nhận" — bỏ qua
+    nhánh phụ "cuối ngày còn tiến độ chưa nhận" mà plan gợi ý, vì
+    `_clampedDelay()`/`_leadTime` đã tự nhắc gần cuối ngày cho mọi loại rồi,
+    thêm gate riêng cho quest board là dư thừa.
+  - `scheduleNext()` — truyền thêm `questBoardClaimable:
+    _questBoardClaimable(gameCtrl)` vào lệnh gọi `pickReminderKind()`.
+    `_clampedDelay()` không cần sửa: `questBoard` tự rơi vào nhánh
+    `dailyRemaining` (else của `kind == weeklyGoal`) — đúng cadence reset
+    hằng ngày, giống spin/streak.
+  - `_contentFor()` thêm case `ReminderKind.questBoard` trả về
+    `reminder_quest_board_title`/`reminder_quest_board_body`.
+- **i18n** — thêm 2 key `reminder_quest_board_title`/
+  `reminder_quest_board_body` cho đủ 22 locale (map gốc EN/VI +
+  `_w61ByLang` — đúng map I56 đã chứa 3 loại nhắc kia). Dùng script Python
+  với anchor riêng từng locale (dòng `reminder_weekly_goal_body` — cuối cùng
+  trong mỗi entry của `_w61ByLang`, chèn ngay trước dấu đóng `},` của
+  locale đó); xác nhận `grep -c` → đúng 22/22 cho cả 2 key.
+- **Test** — `test/core/reminder_service_test.dart` (file có sẵn từ I56):
+  cập nhật 4 test cũ trong group `pickReminderKind` để truyền thêm
+  `questBoardClaimable` (giữ hành vi cũ không đổi), thêm 3 test mới: quest
+  board tự nhắc khi không còn điều kiện nào khác; quest board bị đè bởi
+  weekly-goal-sắp-hết (ưu tiên cao hơn); quest board chưa claimable thì
+  không nhắc dù mọi loại khác cũng tắt.
+
+**Verify:** `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
+→ 742/742 pass (739 + 3 test mới của group `pickReminderKind`/questBoard).
+`flutter test test/core/app_translations_test.dart` → pass (22/22 locale đủ
+2 key `reminder_quest_board_title`/`reminder_quest_board_body`).
+
+---
+
+## ✅ Round-8 — Item 7: I77 Sticker Album
+
+Màn hình mới gộp cả 4 hệ cosmetic đã ship riêng lẻ (Mascot Skin I30, Board
+Frame I51, Burst Style I52, Combo Text Style I54) vào 1 "album" duy nhất,
+cộng thêm 1 lớp mốc thưởng xu nhẹ dựa trên tổng số cosmetic đang sở hữu —
+thuần trình bày lại state đã có, không thêm hệ unlock mới.
+
+- **`lib/presentation/screens/sticker_album_screen.dart`** (mới) —
+  `StickerAlbumScreen`, pattern-match `TrophyRoomScreen`: `_ProgressBanner`
+  (tổng sở hữu/tổng có thể có, đọc `gameCtrl.totalCosmeticsOwned`), rồi 4
+  `Obx()` + `GridView.builder` liên tiếp cho Mascot Skin
+  (`unlockedMascotSkinIds`), Board Frame (`isBoardFrameUnlocked`), Burst
+  Style (`isBurstStyleUnlocked`), Combo Text Style
+  (`isComboTextStyleUnlocked`) — mỗi hệ khoá/mở đọc thẳng hàm/state đã có
+  sẵn ở `board_frames.dart`/`burst_styles.dart`/`combo_text_styles.dart`,
+  không tạo thêm state persist mới cho phần hiển thị.
+- **`lib/presentation/screens/trophy_room_screen.dart`** — thêm 1
+  `NeonButton` cuối `ListView` dẫn sang `StickerAlbumScreen` (quyết định
+  của user: tách màn riêng thay vì nhồi thêm 4 grid vào Trophy Room).
+- **`lib/presentation/controllers/game_controller.dart`**
+  - Getter `totalCosmeticsOwned` — tổng cosmetic đang mở khoá trên cả 4 hệ
+    (tối đa 24: 6 mascot + 9 board frame + 5 burst style + 4 combo text).
+  - `stickerAlbumMilestones = [5, 10, 15, 20]`,
+    `stickerAlbumRewards = [50, 100, 200, 400]`,
+    `claimedStickerMilestoneMask` (bitmask `.obs`, persist qua
+    `StorageKeys.stickerMilestonesClaimed`).
+  - `_checkStickerMilestones()` — tự động cộng xu khi vượt mốc mới (không
+    cần người chơi bấm nhận, giống cách `_checkAchievements()` hoạt động,
+    khác kiểu Star Road chest phải claim thủ công); gọi cùng 4 điểm với
+    `_checkAchievements()`: trong `registerPop()`, trong `checkEnd()` (khi
+    `boardCleared`), và 2 điểm khác (dùng booster / cuối level).
+- **`lib/core/storage_service.dart`** — thêm
+  `StorageKeys.stickerMilestonesClaimed`.
+- **`lib/core/app_translations.dart`** — thêm `_i77ByLang`, map tự chứa đủ
+  22 locale (pattern giống `_i64`/`_i63`/`_i61`, không cần tách
+  `_extraEn`/`_extraVi`) cho 2 key `sticker_album_title` /
+  `sticker_album_progress`.
+- **Test** — `test/presentation/sticker_album_screen_test.dart` (mới):
+  không có tiền lệ widget-pump test cho màn cosmetic trong codebase (đối
+  chiếu gần nhất, `star_road_test.dart`, thực chất cũng là unit test thẳng
+  vào `GameController`) nên viết theo đúng khuôn đó — baseline mặc định
+  `totalCosmeticsOwned == 4` (1 mascot + 1 frame + 1 burst + 1 combo text,
+  đều là tier luôn-mở-khoá), vượt mốc 5 cộng đúng xu 1 lần không
+  double-grant, mốc sau vẫn khoá khi chưa đủ, mask persist đúng qua reload.
+  - **Phát hiện phụ khi chạy full suite**: test cũ
+    `I22 Achievements — ... mở khoá mốc gems_500` trong
+    `game_controller_test.dart` giả định chỉ có 1 hệ thống cộng xu, nhưng
+    `groupSize: 500` cũng vô tình vượt ngưỡng unlock burst style
+    `confetti` (500) → `totalCosmeticsOwned` 4→5 → chạm luôn mốc sticker
+    album đầu tiên → 2 khoản thưởng cộng xu độc lập cùng lúc (không phải
+    bug, là tương tác đúng giữa 2 hệ thống thật). Cập nhật lại kỳ vọng của
+    test để cộng cả `GameController.stickerAlbumRewards[0]`.
+
+**Verify:** `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
+→ 746/746 pass (742 + 4 test mới của `sticker_album_screen_test.dart`, sau
+khi sửa lại kỳ vọng của 1 test `I22` bị ảnh hưởng bởi tương tác cosmetic
+mới). `flutter test test/core/app_translations_test.dart` → pass (22/22
+locale đủ 2 key `sticker_album_title`/`sticker_album_progress`).
+
+---
+
+## ✅ Round-8 — Item 8: Performance/stability pass (static-analysis only)
+
+Theo lựa chọn của user (`AskUserQuestion` lúc lập kế hoạch): không profiling
+trực tiếp trên máy — chỉ xác nhận lại bằng static-analysis, không có code
+permanent nào thêm cho mục này. Grep trực tiếp source để xác nhận các phát
+hiện gốc từ lúc lập kế hoạch vẫn đúng, cộng thêm spot-check riêng cho code
+mới trong Round-8 (HUD meter Combo Rush, render Ice Tile, 4 grid Sticker
+Album):
+
+- **`AnimationController` trong tầng controller/game** — `grep -rn
+  "AnimationController" lib/presentation/controllers/ lib/game/` → 0 kết
+  quả. Toàn bộ `AnimationController` trong repo (`level_select_screen`,
+  `game_screen`, `pulse_glow`, `confetti_overlay`, `star_mascot`,
+  `ambient_weather_layer`, `ambient_particles`, `coin_fly_overlay`,
+  `star_pet_habitat`) nằm ở tầng `State` widget và đều tự `dispose()` đúng
+  chuẩn Flutter (vd `game_screen.dart:835`) — không phải tầng
+  controller/game engine mà mục này quan tâm.
+- **`TimerComponent` trong `pop_star_game.dart`** — 7/7 lần khởi tạo đều có
+  `removeOnFinish: true` liền kề, không lần nào thiếu.
+- **Combo Rush HUD meter (I75, Item 4)** — dùng 1 `Timer` thường
+  (`_comboMeterPoll` trong `game_screen_controller.dart`), không phải
+  `AnimationController`; đã cancel trong `onClose()` (dòng 263) cùng
+  `_countdown` và `_endWorker`.
+- **GetX `Worker`** — không chỉ "2 worker" như ghi chú gốc lúc lập kế
+  hoạch (dữ liệu cũ trước khi Round 6-8 thêm Pass-and-Play/Treasure
+  Map/Boss Rush) — thực tế có 6 worker (`ever(...)`) rải trên
+  `game_controller.dart` (2: `_coinsSyncWorker`, `_loginStreakSyncWorker`),
+  `game_screen_controller.dart`, `boss_rush_controller.dart`,
+  `pass_and_play_controller.dart`, `treasure_map_controller.dart` — cả 6
+  đều `?.dispose()` đúng trong `onClose()` tương ứng, không leak.
+- **Ice Tile render (`block_component.dart`) / Sticker Album grids
+  (`sticker_album_screen.dart`)** — grep xác nhận không có
+  `AnimationController`/`Timer(`/`TimerComponent` nào trong 2 file này;
+  thuần `Obx()` + `GridView.builder` tĩnh, tái vẽ theo Rx thay đổi.
+
+**Kết luận:** không phát hiện leak candidate mới nào phát sinh từ code
+Round-8. Không cần build/run — xác nhận bằng đọc trực tiếp source đủ để
+đóng mục này.

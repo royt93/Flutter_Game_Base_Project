@@ -67,6 +67,7 @@ class NeonTheme {
   static const Color red = Color(0xFFFF6B6B);
   static const Color indigo = Color(0xFF6C7BFF);
   static const Color gold = Color(0xFFFFB300);
+  static const Color coral = Color(0xFFFF7A5C); // I79: World 13
 
   // Xám "disabled/muted" dùng chung cho nút/icon bị vô hiệu hoá.
   static const Color muted = Color(0xFFC9C3DA);

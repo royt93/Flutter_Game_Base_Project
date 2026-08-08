@@ -329,6 +329,36 @@ class _Hud extends StatelessWidget {
                         ],
                       );
                     }
+                    if (gameCtrl.mode.value == GameMode.comboRush ||
+                        gameCtrl.mode.value == GameMode.frostRush) {
+                      final best = gameCtrl.mode.value == GameMode.frostRush
+                          ? gameCtrl.frostRushBest.value
+                          : gameCtrl.comboRushBest.value;
+                      return Column(
+                        children: [
+                          scoreText,
+                          const SizedBox(height: NeonTheme.s8),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 190),
+                            child: Obx(
+                              () => _ProgressBar(
+                                value: gsc.comboMeterFraction.value,
+                                reached: false,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: NeonTheme.s8),
+                          Text(
+                            '${'endless_best'.tr} $best',
+                            style: TextStyle(
+                              color: NeonTheme.inkSoft,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
                     if (gameCtrl.mode.value == GameMode.dailyChallenge) {
                       return Column(
                         children: [

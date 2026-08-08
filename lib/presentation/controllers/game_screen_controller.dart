@@ -58,6 +58,13 @@ class GameScreenController extends GetxController {
   final RxInt remainingSeconds = timeAttackSeconds.obs;
   Timer? _countdown;
 
+  /// I75 Combo Rush: đua giữ combo càng lâu càng tốt, không timer kết thúc.
+  /// Poll [PopStarGame.comboTimerFraction] (0..1, tự tính lại mỗi frame Flame)
+  /// vào một Rx để HUD vẽ thanh meter — cùng cơ chế Timer.periodic như
+  /// [_startCountdown], chỉ khác tần suất (10Hz đủ mượt cho progress bar).
+  final RxDouble comboMeterFraction = 0.0.obs;
+  Timer? _comboMeterPoll;
+
   PopStarGame? _game;
   Worker? _endWorker;
 
@@ -247,11 +254,13 @@ class GameScreenController extends GetxController {
     _endWorker = ever(gameCtrl.ended, _onEndChanged);
     _newGame();
     if (gameCtrl.mode.value == GameMode.timeAttack) _startCountdown();
+    if (gameCtrl.mode.value == GameMode.comboRush) _startComboMeterPoll();
   }
 
   @override
   void onClose() {
     _countdown?.cancel();
+    _comboMeterPoll?.cancel();
     _endWorker?.dispose();
     super.onClose();
   }
@@ -265,6 +274,13 @@ class GameScreenController extends GetxController {
         _countdown?.cancel();
         gameCtrl.checkEnd(false);
       }
+    });
+  }
+
+  void _startComboMeterPoll() {
+    _comboMeterPoll?.cancel();
+    _comboMeterPoll = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      comboMeterFraction.value = game.comboTimerFraction;
     });
   }
 

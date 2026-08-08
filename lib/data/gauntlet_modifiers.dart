@@ -72,38 +72,71 @@ const List<GauntletModifier> kTreasureMapModifiers = [
   ),
 ];
 
+// I80 Remix Levels cần tham chiếu lại từng modifier cụ thể trong 1
+// const list khác (`kRemixLevels`) — index vào 1 const list (`kGauntletModifiers[i]`)
+// không phải hằng số trong Dart, nên đặt tên riêng từng modifier rồi mới gom
+// vào `kGauntletModifiers`.
+const kModNoUndo = GauntletModifier(
+  id: 'no_undo',
+  icon: Icons.block_rounded,
+  nameKey: 'gauntlet_modifier_no_undo_name',
+  descKey: 'gauntlet_modifier_no_undo_desc',
+  disableUndo: true,
+);
+const kModShortCombo = GauntletModifier(
+  id: 'short_combo',
+  icon: Icons.hourglass_bottom_rounded,
+  nameKey: 'gauntlet_modifier_short_combo_name',
+  descKey: 'gauntlet_modifier_short_combo_desc',
+  comboWindowOverride: 1.5,
+);
+const kModFourColors = GauntletModifier(
+  id: 'four_colors',
+  icon: Icons.palette_rounded,
+  nameKey: 'gauntlet_modifier_four_colors_name',
+  descKey: 'gauntlet_modifier_four_colors_desc',
+  colorCountOverride: 4,
+);
+const kModReverseGravity = GauntletModifier(
+  id: 'reverse_gravity',
+  icon: Icons.swap_vert_rounded,
+  nameKey: 'gauntlet_modifier_reverse_gravity_name',
+  descKey: 'gauntlet_modifier_reverse_gravity_desc',
+  gravityOverride: GravityDirection.up,
+);
+
 const List<GauntletModifier> kGauntletModifiers = [
-  GauntletModifier(
-    id: 'no_undo',
-    icon: Icons.block_rounded,
-    nameKey: 'gauntlet_modifier_no_undo_name',
-    descKey: 'gauntlet_modifier_no_undo_desc',
-    disableUndo: true,
-  ),
-  GauntletModifier(
-    id: 'short_combo',
-    icon: Icons.hourglass_bottom_rounded,
-    nameKey: 'gauntlet_modifier_short_combo_name',
-    descKey: 'gauntlet_modifier_short_combo_desc',
-    comboWindowOverride: 1.5,
-  ),
-  GauntletModifier(
-    id: 'four_colors',
-    icon: Icons.palette_rounded,
-    nameKey: 'gauntlet_modifier_four_colors_name',
-    descKey: 'gauntlet_modifier_four_colors_desc',
-    colorCountOverride: 4,
-  ),
-  GauntletModifier(
-    id: 'reverse_gravity',
-    icon: Icons.swap_vert_rounded,
-    nameKey: 'gauntlet_modifier_reverse_gravity_name',
-    descKey: 'gauntlet_modifier_reverse_gravity_desc',
-    gravityOverride: GravityDirection.up,
-  ),
+  kModNoUndo,
+  kModShortCombo,
+  kModFourColors,
+  kModReverseGravity,
 ];
 
 /// Modifier hôm nay = tuần hoàn đều theo [epochDay] % số modifier — thuần,
 /// không phụ thuộc thời điểm gọi trong ngày.
 GauntletModifier modifierForDay(int epochDay) =>
     kGauntletModifiers[epochDay % kGauntletModifiers.length];
+
+/// I80 Remix Levels: 1 level campaign đã có sẵn ghép với 1
+/// [GauntletModifier] có sẵn — không cần `nameKey` riêng, UI lấy tên hiển
+/// thị qua `worldForLevel(levelId).nameKey` (đã có sẵn, tránh phát sinh
+/// thêm i18n key mới cho từng entry).
+class RemixLevel {
+  final int levelId;
+  final GauntletModifier modifier;
+
+  const RemixLevel({required this.levelId, required this.modifier});
+}
+
+/// Curated, 1 entry gần giữa mỗi world cách quãng (world lẻ), modifier tuần
+/// hoàn qua 4 modifier có sẵn của Gauntlet — đủ đa dạng luật chơi mà không
+/// cần định nghĩa modifier riêng cho Remix.
+const List<RemixLevel> kRemixLevels = [
+  RemixLevel(levelId: 10, modifier: kModNoUndo),
+  RemixLevel(levelId: 50, modifier: kModShortCombo),
+  RemixLevel(levelId: 90, modifier: kModFourColors),
+  RemixLevel(levelId: 130, modifier: kModReverseGravity),
+  RemixLevel(levelId: 170, modifier: kModNoUndo),
+  RemixLevel(levelId: 210, modifier: kModShortCombo),
+  RemixLevel(levelId: 250, modifier: kModFourColors),
+];

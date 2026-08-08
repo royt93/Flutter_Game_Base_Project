@@ -10,6 +10,7 @@ import '../data/worlds.dart';
 import '../logic/boss_tile.dart' show isBossTileId;
 import '../logic/countdown_lock_tile.dart' show isCountdownLockId;
 import '../logic/gift_tile.dart';
+import '../logic/ice_tile.dart' show isIceTileId, iceTileRemaining;
 import '../logic/magnet_tile.dart';
 import '../logic/power_tile.dart';
 import '../logic/wildcard_tile.dart';
@@ -333,6 +334,14 @@ class BlockComponent extends PositionComponent
     // I68: Magnet giữ màu target bên dưới và phủ biểu tượng nam châm.
     if (isMagnetId(colorIndex)) {
       _renderMagnet(canvas, rrect, s, magnetColorIndex(colorIndex));
+      return;
+    }
+    // I76: Ice Tile cũng mã hoá âm (dải riêng `iceTileIdBase`, xem
+    // `logic/ice_tile.dart`) nên PHẢI kiểm tra trước nhánh obstacle chung
+    // bên dưới, không thì bị hiểu nhầm thành obstacle thường (durability âm
+    // sai be bét vì `-colorIndex` không phải durability của Ice Tile).
+    if (isIceTileId(colorIndex)) {
+      _renderIceTile(canvas, rrect, s, iceTileRemaining(colorIndex));
       return;
     }
     // 0e. F6a: obstacle (ice/crate) không phải màu — render riêng rồi thoát,
@@ -781,6 +790,55 @@ class BlockComponent extends PositionComponent
     for (var i = 0; i < durability; i++) {
       canvas.drawCircle(
         Offset(startX + spacing * i, mid),
+        dotR,
+        Paint()..color = Colors.white.withValues(alpha: 0.95),
+      );
+    }
+  }
+
+  /// I76: Ice Tile — nền gradient xanh băng (khác hẳn xám obstacle thường),
+  /// chấm trắng đếm số lớp còn lại (tái dùng ngôn ngữ hình ảnh của
+  /// [_renderObstacle], tối đa 2 chấm vì `iceTileDurability = 2`), cộng thêm
+  /// 1 đường nứt zigzag khi [remaining] == 1 để báo hiệu sắp vỡ.
+  void _renderIceTile(Canvas canvas, RRect rrect, double s, int remaining) {
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset(rrect.left, rrect.top),
+          Offset(rrect.right, rrect.bottom),
+          const [Color(0xFFBFEFFF), Color(0xFF5FC9F0), Color(0xFF2E8FC7)],
+          const [0.0, 0.5, 1.0],
+        ),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.06
+        ..color = Colors.white.withValues(alpha: 0.85),
+    );
+    if (remaining <= 1) {
+      final crack = Path()
+        ..moveTo(s * 0.3, s * 0.18)
+        ..lineTo(s * 0.5, s * 0.45)
+        ..lineTo(s * 0.38, s * 0.5)
+        ..lineTo(s * 0.62, s * 0.85);
+      canvas.drawPath(
+        crack,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.045
+          ..color = Colors.white.withValues(alpha: 0.9),
+      );
+    }
+    final mid = s / 2;
+    final dotR = s * 0.07;
+    final spacing = s * 0.2;
+    final startX = mid - spacing * (remaining - 1) / 2;
+    for (var i = 0; i < remaining; i++) {
+      canvas.drawCircle(
+        Offset(startX + spacing * i, s * 0.82),
         dotR,
         Paint()..color = Colors.white.withValues(alpha: 0.95),
       );

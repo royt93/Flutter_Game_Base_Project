@@ -260,6 +260,9 @@ class AppTranslations extends Translations {
           // ngữ còn lại ở _w66ByLang).
           ...?_w66ByLang[e.key],
           ..._i67Translations(e.key),
+          // I77 — Sticker Album: sticker_album_title/sticker_album_progress,
+          // tự chứa đủ 22 ngôn ngữ trong _i77ByLang.
+          ...?_i77ByLang[e.key],
         },
     };
   }
@@ -1168,6 +1171,8 @@ class AppTranslations extends Translations {
     'world_path_name_11': 'Diamond Nebula',
     // Round-7 — World 12 (level 221-240).
     'world_path_name_12': 'Aurora Comet Trail',
+    // Round-8 — World 13 (level 241-260).
+    'world_path_name_13': 'Coral Reef Cove',
     // X4 — Shop: nhãn/mô tả booster
     'booster_bomb_label': 'Bomb',
     'booster_bomb_desc': 'Clears a 3x3 area on the board.',
@@ -1193,6 +1198,9 @@ class AppTranslations extends Translations {
     'reminder_streak_body': 'Log in today to keep your streak going.',
     'reminder_weekly_goal_title': 'Weekly goal ending soon',
     'reminder_weekly_goal_body': 'Play a bit more to finish this week\'s goal.',
+    'reminder_quest_board_title': 'Daily quests ready to claim!',
+    'reminder_quest_board_body':
+        "You've completed a quest — come collect your reward.",
     // I57 — Shareable Score Card
     'share_score_card': 'Share result card',
     'share_score_card_text':
@@ -1325,7 +1333,7 @@ class AppTranslations extends Translations {
     // I27 — Prestige/New Game+.
     'prestige_title': 'Prestige',
     'prestige_msg':
-        'Restart from level 1 at Tier @tier — all 240 levels get a harder '
+        'Restart from level 1 at Tier @tier — all 260 levels get a harder '
         'target score, and you keep your high scores. Get +@coin bonus coins!',
     'prestige_confirm': 'Prestige',
     'prestige_ready': 'Prestige Tier @tier',
@@ -1373,6 +1381,9 @@ class AppTranslations extends Translations {
     'modes_group_core': 'Core Modes',
     'modes_group_challenge': 'Challenges',
     'modes_group_social': 'Social & Events',
+    'modes_group_remix': 'Remix Levels',
+    'mode_combo_rush_label': 'Combo Rush',
+    'mode_frost_rush_label': 'Frost Rush',
     'season_pass_banner_ready': 'Season Pass reward ready — tap to claim!',
     'daily_challenge_banner_reminder': 'Daily Challenge waiting — tap to play!',
     'menu_button_label': 'Menu',
@@ -2153,6 +2164,8 @@ class AppTranslations extends Translations {
     'world_path_name_11': 'Tinh Vân Kim Cương',
     // Round-7 — World 12 (level 221-240).
     'world_path_name_12': 'Vệt Sao Chổi Cực Quang',
+    // Round-8 — World 13 (level 241-260).
+    'world_path_name_13': 'Vịnh San Hô',
     // X4 — Shop: nhãn/mô tả booster
     'booster_bomb_label': 'Bom',
     'booster_bomb_desc': 'Phá nổ khu vực 3x3 trên bàn cờ.',
@@ -2179,6 +2192,9 @@ class AppTranslations extends Translations {
     'reminder_weekly_goal_title': 'Mục tiêu tuần sắp hết hạn',
     'reminder_weekly_goal_body':
         'Chơi thêm chút nữa để hoàn thành mục tiêu tuần này.',
+    'reminder_quest_board_title': 'Nhiệm vụ hằng ngày đã sẵn sàng!',
+    'reminder_quest_board_body':
+        'Bạn đã hoàn thành nhiệm vụ — vào nhận thưởng ngay.',
     // I57 — Shareable Score Card
     'share_score_card': 'Chia sẻ thẻ kết quả',
     'share_score_card_text':
@@ -2304,7 +2320,7 @@ class AppTranslations extends Translations {
     // I27 — Prestige/New Game+.
     'prestige_title': 'Prestige',
     'prestige_msg':
-        'Chơi lại từ level 1 ở Tier @tier — cả 240 level tăng độ khó '
+        'Chơi lại từ level 1 ở Tier @tier — cả 260 level tăng độ khó '
         'mục tiêu, điểm cao cũ vẫn giữ nguyên. Nhận ngay +@coin xu thưởng!',
     'prestige_confirm': 'Prestige',
     'prestige_ready': 'Prestige Tier @tier',
@@ -2354,6 +2370,9 @@ class AppTranslations extends Translations {
     'modes_group_core': 'Chế độ chính',
     'modes_group_challenge': 'Thử thách',
     'modes_group_social': 'Xã hội & Sự kiện',
+    'modes_group_remix': 'Level Remix',
+    'mode_combo_rush_label': 'Đua Combo',
+    'mode_frost_rush_label': 'Đua Băng',
     'season_pass_banner_ready': 'Season Pass có thưởng, bấm để nhận!',
     'daily_challenge_banner_reminder':
         'Chưa chơi Daily Challenge hôm nay — bấm ngay!',
@@ -23953,101 +23972,161 @@ class AppTranslations extends Translations {
       'modes_group_core': 'Modos principales',
       'modes_group_challenge': 'Desafíos',
       'modes_group_social': 'Social y eventos',
+      'modes_group_remix': 'Niveles remix',
+      'mode_combo_rush_label': 'Ráfaga de Combos',
+      'mode_frost_rush_label': 'Ráfaga de Escarcha',
     },
     'fr_FR': {
       'modes_group_core': 'Modes principaux',
       'modes_group_challenge': 'Défis',
       'modes_group_social': 'Social et événements',
+      'modes_group_remix': 'Niveaux remix',
+      'mode_combo_rush_label': 'Rafale de Combos',
+      'mode_frost_rush_label': 'Rafale de Givre',
     },
     'de_DE': {
       'modes_group_core': 'Hauptmodi',
       'modes_group_challenge': 'Herausforderungen',
       'modes_group_social': 'Sozial & Events',
+      'modes_group_remix': 'Remix-Level',
+      'mode_combo_rush_label': 'Combo-Rausch',
+      'mode_frost_rush_label': 'Frost-Rausch',
     },
     'pt_BR': {
       'modes_group_core': 'Modos principais',
       'modes_group_challenge': 'Desafios',
       'modes_group_social': 'Social e eventos',
+      'modes_group_remix': 'Níveis remix',
+      'mode_combo_rush_label': 'Rajada de Combos',
+      'mode_frost_rush_label': 'Rajada de Gelo',
     },
     'ru_RU': {
       'modes_group_core': 'Основные режимы',
       'modes_group_challenge': 'Испытания',
       'modes_group_social': 'Соц. и события',
+      'modes_group_remix': 'Ремикс-уровни',
+      'mode_combo_rush_label': 'Комбо-рывок',
+      'mode_frost_rush_label': 'Ледяной рывок',
     },
     'zh_CN': {
       'modes_group_core': '核心模式',
       'modes_group_challenge': '挑战',
       'modes_group_social': '社交与活动',
+      'modes_group_remix': '重制关卡',
+      'mode_combo_rush_label': '连击冲刺',
+      'mode_frost_rush_label': '冰霜冲刺',
     },
     'ja_JP': {
       'modes_group_core': 'コアモード',
       'modes_group_challenge': 'チャレンジ',
       'modes_group_social': 'ソーシャル＆イベント',
+      'modes_group_remix': 'リミックスレベル',
+      'mode_combo_rush_label': 'コンボラッシュ',
+      'mode_frost_rush_label': 'フロストラッシュ',
     },
     'ko_KR': {
       'modes_group_core': '핵심 모드',
       'modes_group_challenge': '도전',
       'modes_group_social': '소셜 & 이벤트',
+      'modes_group_remix': '리믹스 레벨',
+      'mode_combo_rush_label': '콤보 러시',
+      'mode_frost_rush_label': '프로스트 러시',
     },
     'it_IT': {
       'modes_group_core': 'Modalità principali',
       'modes_group_challenge': 'Sfide',
       'modes_group_social': 'Social ed eventi',
+      'modes_group_remix': 'Livelli remix',
+      'mode_combo_rush_label': 'Raffica di Combo',
+      'mode_frost_rush_label': 'Raffica di Gelo',
     },
     'id_ID': {
       'modes_group_core': 'Mode Utama',
       'modes_group_challenge': 'Tantangan',
       'modes_group_social': 'Sosial & Acara',
+      'modes_group_remix': 'Level Remix',
+      'mode_combo_rush_label': 'Serbuan Combo',
+      'mode_frost_rush_label': 'Serbuan Es',
     },
     'th_TH': {
       'modes_group_core': 'โหมดหลัก',
       'modes_group_challenge': 'ความท้าทาย',
       'modes_group_social': 'สังคมและกิจกรรม',
+      'modes_group_remix': 'ด่านรีมิกซ์',
+      'mode_combo_rush_label': 'พุ่งคอมโบ',
+      'mode_frost_rush_label': 'พุ่งน้ำแข็ง',
     },
     'hi_IN': {
       'modes_group_core': 'मुख्य मोड',
       'modes_group_challenge': 'चुनौतियाँ',
       'modes_group_social': 'सामाजिक और इवेंट',
+      'modes_group_remix': 'रीमिक्स लेवल',
+      'mode_combo_rush_label': 'कॉम्बो रश',
+      'mode_frost_rush_label': 'फ्रॉस्ट रश',
     },
     'ar_SA': {
       'modes_group_core': 'الأوضاع الرئيسية',
       'modes_group_challenge': 'التحديات',
       'modes_group_social': 'اجتماعي وفعاليات',
+      'modes_group_remix': 'مستويات الريمكس',
+      'mode_combo_rush_label': 'اندفاع الكومبو',
+      'mode_frost_rush_label': 'اندفاع الصقيع',
     },
     'tr_TR': {
       'modes_group_core': 'Ana Modlar',
       'modes_group_challenge': 'Meydan Okumalar',
       'modes_group_social': 'Sosyal ve Etkinlikler',
+      'modes_group_remix': 'Remix Seviyeleri',
+      'mode_combo_rush_label': 'Kombo Hücumu',
+      'mode_frost_rush_label': 'Buz Hücumu',
     },
     'nl_NL': {
       'modes_group_core': 'Hoofdmodi',
       'modes_group_challenge': 'Uitdagingen',
       'modes_group_social': 'Sociaal & evenementen',
+      'modes_group_remix': 'Remixlevels',
+      'mode_combo_rush_label': 'Combostorm',
+      'mode_frost_rush_label': 'Vorststorm',
     },
     'pl_PL': {
       'modes_group_core': 'Tryby główne',
       'modes_group_challenge': 'Wyzwania',
       'modes_group_social': 'Społeczność i wydarzenia',
+      'modes_group_remix': 'Poziomy remiks',
+      'mode_combo_rush_label': 'Pościg Combo',
+      'mode_frost_rush_label': 'Pościg Mrozu',
     },
     'fil_PH': {
       'modes_group_core': 'Pangunahing Mode',
       'modes_group_challenge': 'Mga Hamon',
       'modes_group_social': 'Social at Events',
+      'modes_group_remix': 'Mga Remix Level',
+      'mode_combo_rush_label': 'Sugod ng Combo',
+      'mode_frost_rush_label': 'Sugod ng Yelo',
     },
     'ms_MY': {
       'modes_group_core': 'Mod Utama',
       'modes_group_challenge': 'Cabaran',
       'modes_group_social': 'Sosial & Acara',
+      'modes_group_remix': 'Tahap Remix',
+      'mode_combo_rush_label': 'Rempuhan Combo',
+      'mode_frost_rush_label': 'Rempuhan Ais',
     },
     'uk_UA': {
       'modes_group_core': 'Основні режими',
       'modes_group_challenge': 'Випробування',
       'modes_group_social': 'Соц. і події',
+      'modes_group_remix': 'Ремікс-рівні',
+      'mode_combo_rush_label': 'Комбо-ривок',
+      'mode_frost_rush_label': 'Крижаний ривок',
     },
     'bn_BD': {
       'modes_group_core': 'মূল মোড',
       'modes_group_challenge': 'চ্যালেঞ্জ',
       'modes_group_social': 'সামাজিক ও ইভেন্ট',
+      'modes_group_remix': 'রিমিক্স লেভেল',
+      'mode_combo_rush_label': 'কম্বো রাশ',
+      'mode_frost_rush_label': 'ফ্রস্ট রাশ',
     },
   };
 
@@ -27717,7 +27796,7 @@ class AppTranslations extends Translations {
     'es_ES': {
       'prestige_title': 'Prestigio',
       'prestige_msg':
-          'Reinicia desde el nivel 1 en el Nivel de Prestigio @tier: los 240 '
+          'Reinicia desde el nivel 1 en el Nivel de Prestigio @tier: los 260 '
           'niveles tendrán una puntuación objetivo más alta, pero conservas '
           'tus puntuaciones máximas. ¡Recibe +@coin monedas de bonificación!',
       'prestige_confirm': 'Prestigio',
@@ -27726,7 +27805,7 @@ class AppTranslations extends Translations {
     'fr_FR': {
       'prestige_title': 'Prestige',
       'prestige_msg':
-          'Recommencez depuis le niveau 1 au Palier @tier : les 240 niveaux '
+          'Recommencez depuis le niveau 1 au Palier @tier : les 260 niveaux '
           'auront un score cible plus élevé, mais vous gardez vos meilleurs '
           'scores. Recevez +@coin pièces bonus !',
       'prestige_confirm': 'Prestige',
@@ -27735,7 +27814,7 @@ class AppTranslations extends Translations {
     'de_DE': {
       'prestige_title': 'Prestige',
       'prestige_msg':
-          'Starte ab Level 1 auf Stufe @tier neu — alle 240 Level erhalten '
+          'Starte ab Level 1 auf Stufe @tier neu — alle 260 Level erhalten '
           'ein höheres Zielscore, deine Bestwerte bleiben erhalten. Erhalte '
           '+@coin Bonusmünzen!',
       'prestige_confirm': 'Prestige',
@@ -27744,7 +27823,7 @@ class AppTranslations extends Translations {
     'pt_BR': {
       'prestige_title': 'Prestígio',
       'prestige_msg':
-          'Reinicie do nível 1 no Nível de Prestígio @tier — todos os 240 '
+          'Reinicie do nível 1 no Nível de Prestígio @tier — todos os 260 '
           'níveis terão uma pontuação alvo mais difícil, mas suas pontuações '
           'máximas são mantidas. Ganhe +@coin moedas de bônus!',
       'prestige_confirm': 'Prestígio',
@@ -27753,7 +27832,7 @@ class AppTranslations extends Translations {
     'ru_RU': {
       'prestige_title': 'Престиж',
       'prestige_msg':
-          'Начните заново с уровня 1 на Уровне Престижа @tier — во всех 240 '
+          'Начните заново с уровня 1 на Уровне Престижа @tier — во всех 260 '
           'уровнях цель по очкам станет сложнее, но рекорды сохранятся. '
           'Получите +@coin бонусных монет!',
       'prestige_confirm': 'Престиж',
@@ -27762,7 +27841,7 @@ class AppTranslations extends Translations {
     'zh_CN': {
       'prestige_title': '转生',
       'prestige_msg':
-          '从第1关重新开始，进入转生等级 @tier —— 全部240关的目标分数都会提高，但你的最高分会保留。'
+          '从第1关重新开始，进入转生等级 @tier —— 全部260关的目标分数都会提高，但你的最高分会保留。'
           '立即获得 +@coin 枚奖励金币！',
       'prestige_confirm': '转生',
       'prestige_ready': '转生等级 @tier',
@@ -27770,7 +27849,7 @@ class AppTranslations extends Translations {
     'ja_JP': {
       'prestige_title': 'プレステージ',
       'prestige_msg':
-          'レベル1からプレステージ階層@tierで再スタート——240レベル全ての目標スコアが上がりますが、'
+          'レベル1からプレステージ階層@tierで再スタート——260レベル全ての目標スコアが上がりますが、'
           'ハイスコアはそのまま残ります。+@coin枚のボーナスコインを獲得！',
       'prestige_confirm': 'プレステージ',
       'prestige_ready': 'プレステージ階層 @tier',
@@ -27778,7 +27857,7 @@ class AppTranslations extends Translations {
     'ko_KR': {
       'prestige_title': '프레스티지',
       'prestige_msg':
-          '레벨 1부터 프레스티지 티어 @tier로 다시 시작합니다 — 240개 레벨 전체 목표 점수가 더 '
+          '레벨 1부터 프레스티지 티어 @tier로 다시 시작합니다 — 260개 레벨 전체 목표 점수가 더 '
           '어려워지지만 최고 점수는 유지됩니다. 보너스 코인 +@coin개 획득!',
       'prestige_confirm': '프레스티지',
       'prestige_ready': '프레스티지 티어 @tier',
@@ -27786,7 +27865,7 @@ class AppTranslations extends Translations {
     'it_IT': {
       'prestige_title': 'Prestigio',
       'prestige_msg':
-          'Ricomincia dal livello 1 al Livello Prestigio @tier: tutti i 240 '
+          'Ricomincia dal livello 1 al Livello Prestigio @tier: tutti i 260 '
           'livelli avranno un punteggio obiettivo più difficile, ma i tuoi '
           'record restano. Ricevi +@coin monete bonus!',
       'prestige_confirm': 'Prestigio',
@@ -27795,7 +27874,7 @@ class AppTranslations extends Translations {
     'id_ID': {
       'prestige_title': 'Prestise',
       'prestige_msg':
-          'Mulai ulang dari level 1 di Tingkat Prestise @tier — semua 240 '
+          'Mulai ulang dari level 1 di Tingkat Prestise @tier — semua 260 '
           'level akan memiliki skor target yang lebih sulit, tapi skor '
           'tertinggimu tetap tersimpan. Dapatkan +@coin koin bonus!',
       'prestige_confirm': 'Prestise',
@@ -27804,7 +27883,7 @@ class AppTranslations extends Translations {
     'th_TH': {
       'prestige_title': 'เพรสทีจ',
       'prestige_msg':
-          'เริ่มใหม่จากด่าน 1 ที่ระดับเพรสทีจ @tier — ทั้ง 240 ด่านจะมีคะแนน'
+          'เริ่มใหม่จากด่าน 1 ที่ระดับเพรสทีจ @tier — ทั้ง 260 ด่านจะมีคะแนน'
           'เป้าหมายยากขึ้น แต่คะแนนสูงสุดเดิมของคุณยังคงอยู่ รับเหรียญโบนัส '
           '+@coin ทันที!',
       'prestige_confirm': 'เพรสทีจ',
@@ -27813,7 +27892,7 @@ class AppTranslations extends Translations {
     'hi_IN': {
       'prestige_title': 'प्रेस्टीज',
       'prestige_msg':
-          'लेवल 1 से प्रेस्टीज टियर @tier पर फिर से शुरू करें — सभी 240 लेवल '
+          'लेवल 1 से प्रेस्टीज टियर @tier पर फिर से शुरू करें — सभी 260 लेवल '
           'का लक्ष्य स्कोर कठिन हो जाएगा, लेकिन आपके हाई स्कोर सुरक्षित '
           'रहेंगे। +@coin बोनस सिक्के पाएं!',
       'prestige_confirm': 'प्रेस्टीज',
@@ -27823,7 +27902,7 @@ class AppTranslations extends Translations {
       'prestige_title': 'الترقية الفخرية',
       'prestige_msg':
           'ابدأ من جديد من المستوى 1 عند مستوى الفخر @tier — ستحصل جميع '
-          'المستويات الـ240 على هدف نقاط أصعب، لكنك تحتفظ بأعلى نتائجك. احصل '
+          'المستويات الـ260 على هدف نقاط أصعب، لكنك تحتفظ بأعلى نتائجك. احصل '
           'على +@coin عملة إضافية!',
       'prestige_confirm': 'الترقية الفخرية',
       'prestige_ready': 'الفخر مستوى @tier',
@@ -27831,7 +27910,7 @@ class AppTranslations extends Translations {
     'tr_TR': {
       'prestige_title': 'Prestij',
       'prestige_msg':
-          '1. seviyeden Prestij Kademesi @tier ile yeniden başla — 240 '
+          '1. seviyeden Prestij Kademesi @tier ile yeniden başla — 260 '
           'seviyenin tamamında hedef skor zorlaşır, ancak en yüksek '
           'skorların saklı kalır. +@coin bonus jeton kazan!',
       'prestige_confirm': 'Prestij',
@@ -27840,7 +27919,7 @@ class AppTranslations extends Translations {
     'nl_NL': {
       'prestige_title': 'Prestige',
       'prestige_msg':
-          'Begin opnieuw vanaf level 1 op Prestige-tier @tier — alle 240 '
+          'Begin opnieuw vanaf level 1 op Prestige-tier @tier — alle 260 '
           'levels krijgen een moeilijker doelscore, maar je hoogste scores '
           'blijven behouden. Ontvang +@coin bonusmunten!',
       'prestige_confirm': 'Prestige',
@@ -27850,7 +27929,7 @@ class AppTranslations extends Translations {
       'prestige_title': 'Prestiż',
       'prestige_msg':
           'Zacznij od nowa od poziomu 1 na poziomie prestiżu @tier — '
-          'wszystkie 240 poziomów będzie miało trudniejszy wynik docelowy, '
+          'wszystkie 260 poziomów będzie miało trudniejszy wynik docelowy, '
           'ale Twoje rekordy pozostaną. Zdobądź +@coin monet bonusowych!',
       'prestige_confirm': 'Prestiż',
       'prestige_ready': 'Prestiż Poziom @tier',
@@ -27859,7 +27938,7 @@ class AppTranslations extends Translations {
       'prestige_title': 'Prestige',
       'prestige_msg':
           'Magsimula ulit mula sa level 1 sa Prestige Tier @tier — magiging '
-          'mas mahirap ang target score ng lahat ng 240 level, pero '
+          'mas mahirap ang target score ng lahat ng 260 level, pero '
           'mananatili ang iyong high scores. Kumuha ng +@coin bonus coins!',
       'prestige_confirm': 'Prestige',
       'prestige_ready': 'Prestige Tier @tier',
@@ -27867,7 +27946,7 @@ class AppTranslations extends Translations {
     'ms_MY': {
       'prestige_title': 'Prestij',
       'prestige_msg':
-          'Mula semula dari tahap 1 pada Prestij Tier @tier — kesemua 240 '
+          'Mula semula dari tahap 1 pada Prestij Tier @tier — kesemua 260 '
           'tahap akan mempunyai skor sasaran yang lebih sukar, tetapi skor '
           'tertinggi anda kekal. Dapatkan +@coin syiling bonus!',
       'prestige_confirm': 'Prestij',
@@ -27876,7 +27955,7 @@ class AppTranslations extends Translations {
     'uk_UA': {
       'prestige_title': 'Престиж',
       'prestige_msg':
-          'Почніть заново з рівня 1 на рівні престижу @tier — усі 240 рівнів '
+          'Почніть заново з рівня 1 на рівні престижу @tier — усі 260 рівнів '
           'отримають складнішу цільову кількість очок, але ваші рекорди '
           'збережуться. Отримайте +@coin бонусних монет!',
       'prestige_confirm': 'Престиж',
@@ -27885,7 +27964,7 @@ class AppTranslations extends Translations {
     'bn_BD': {
       'prestige_title': 'প্রেস্টিজ',
       'prestige_msg':
-          'লেভেল ১ থেকে প্রেস্টিজ টিয়ার @tier-এ আবার শুরু করুন — সবগুলো ২৪০ '
+          'লেভেল ১ থেকে প্রেস্টিজ টিয়ার @tier-এ আবার শুরু করুন — সবগুলো ২৬০ '
           'লেভেলের লক্ষ্য স্কোর কঠিন হয়ে যাবে, তবে আপনার হাই স্কোর অক্ষত '
           'থাকবে। +@coin বোনাস কয়েন পান!',
       'prestige_confirm': 'প্রেস্টিজ',
@@ -31884,6 +31963,9 @@ class AppTranslations extends Translations {
       'reminder_weekly_goal_title': 'El objetivo semanal termina pronto',
       'reminder_weekly_goal_body':
           'Juega un poco más para completar el objetivo de esta semana.',
+      'reminder_quest_board_title': '¡Misiones diarias listas para reclamar!',
+      'reminder_quest_board_body':
+          'Completaste una misión — ven a reclamar tu recompensa.',
     },
     'fr_FR': {
       'reminders_enabled': 'Rappels',
@@ -31896,6 +31978,9 @@ class AppTranslations extends Translations {
           "L'objectif hebdomadaire se termine bientôt",
       'reminder_weekly_goal_body':
           "Jouez un peu plus pour terminer l'objectif de cette semaine.",
+      'reminder_quest_board_title': 'Quêtes quotidiennes prêtes à récupérer !',
+      'reminder_quest_board_body':
+          'Vous avez terminé une quête — venez récupérer votre récompense.',
     },
     'de_DE': {
       'reminders_enabled': 'Erinnerungen',
@@ -31907,6 +31992,9 @@ class AppTranslations extends Translations {
       'reminder_weekly_goal_title': 'Wochenziel endet bald',
       'reminder_weekly_goal_body':
           'Spiele noch etwas, um das Wochenziel abzuschließen.',
+      'reminder_quest_board_title': 'Tägliche Quests bereit zum Abholen!',
+      'reminder_quest_board_body':
+          'Du hast eine Quest abgeschlossen — hol dir jetzt deine Belohnung.',
     },
     'pt_BR': {
       'reminders_enabled': 'Lembretes',
@@ -31917,6 +32005,9 @@ class AppTranslations extends Translations {
       'reminder_weekly_goal_title': 'Meta semanal termina em breve',
       'reminder_weekly_goal_body':
           'Jogue um pouco mais para concluir a meta desta semana.',
+      'reminder_quest_board_title': 'Missões diárias prontas para resgatar!',
+      'reminder_quest_board_body':
+          'Você completou uma missão — venha resgatar sua recompensa.',
     },
     'ru_RU': {
       'reminders_enabled': 'Напоминания',
@@ -31927,6 +32018,9 @@ class AppTranslations extends Translations {
       'reminder_weekly_goal_title': 'Недельная цель скоро закончится',
       'reminder_weekly_goal_body':
           'Поиграйте ещё немного, чтобы завершить цель недели.',
+      'reminder_quest_board_title': 'Ежедневные задания готовы к получению!',
+      'reminder_quest_board_body':
+          'Вы выполнили задание — заберите свою награду.',
     },
     'zh_CN': {
       'reminders_enabled': '提醒',
@@ -31936,6 +32030,8 @@ class AppTranslations extends Translations {
       'reminder_streak_body': '今天登录以保持你的连续记录。',
       'reminder_weekly_goal_title': '每周目标即将结束',
       'reminder_weekly_goal_body': '再玩一会儿以完成本周目标。',
+      'reminder_quest_board_title': '每日任务可以领取了！',
+      'reminder_quest_board_body': '你已完成一个任务——快去领取奖励吧。',
     },
     'ja_JP': {
       'reminders_enabled': 'リマインダー',
@@ -31945,6 +32041,8 @@ class AppTranslations extends Translations {
       'reminder_streak_body': '今日ログインしてストリークを続けましょう。',
       'reminder_weekly_goal_title': '週間目標がもうすぐ終了します',
       'reminder_weekly_goal_body': 'もう少しプレイして今週の目標を達成しましょう。',
+      'reminder_quest_board_title': 'デイリークエストの報酬を受け取れます！',
+      'reminder_quest_board_body': 'クエストを達成しました。報酬を受け取りに行きましょう。',
     },
     'ko_KR': {
       'reminders_enabled': '알림',
@@ -31954,6 +32052,8 @@ class AppTranslations extends Translations {
       'reminder_streak_body': '오늘 로그인해서 스트릭을 이어가세요.',
       'reminder_weekly_goal_title': '주간 목표가 곧 종료됩니다',
       'reminder_weekly_goal_body': '조금 더 플레이해서 이번 주 목표를 완료하세요.',
+      'reminder_quest_board_title': '일일 퀘스트 보상을 받을 수 있어요!',
+      'reminder_quest_board_body': '퀘스트를 완료했어요 — 지금 보상을 받으세요.',
     },
     'it_IT': {
       'reminders_enabled': 'Promemoria',
@@ -31965,6 +32065,10 @@ class AppTranslations extends Translations {
       'reminder_weekly_goal_body':
           "Gioca ancora un po' per completare l'obiettivo di questa "
           'settimana.',
+      'reminder_quest_board_title':
+          'Missioni giornaliere pronte da riscattare!',
+      'reminder_quest_board_body':
+          'Hai completato una missione — vieni a riscattare la tua ricompensa.',
     },
     'id_ID': {
       'reminders_enabled': 'Pengingat',
@@ -31976,6 +32080,9 @@ class AppTranslations extends Translations {
       'reminder_weekly_goal_title': 'Target mingguan segera berakhir',
       'reminder_weekly_goal_body':
           'Bermain sedikit lagi untuk menyelesaikan target minggu ini.',
+      'reminder_quest_board_title': 'Misi harian siap diklaim!',
+      'reminder_quest_board_body':
+          'Kamu telah menyelesaikan misi — ambil hadiahmu sekarang.',
     },
     'th_TH': {
       'reminders_enabled': 'การแจ้งเตือน',
@@ -31986,6 +32093,9 @@ class AppTranslations extends Translations {
       'reminder_weekly_goal_title': 'เป้าหมายรายสัปดาห์ใกล้จะสิ้นสุดแล้ว',
       'reminder_weekly_goal_body':
           'เล่นอีกนิดเพื่อทำเป้าหมายของสัปดาห์นี้ให้สำเร็จ',
+      'reminder_quest_board_title': 'ภารกิจประจำวันพร้อมรับรางวัลแล้ว!',
+      'reminder_quest_board_body':
+          'คุณทำภารกิจสำเร็จแล้ว — มารับรางวัลของคุณเลย',
     },
     'hi_IN': {
       'reminders_enabled': 'रिमाइंडर',
@@ -31996,6 +32106,10 @@ class AppTranslations extends Translations {
       'reminder_weekly_goal_title': 'साप्ताहिक लक्ष्य जल्द समाप्त हो रहा है',
       'reminder_weekly_goal_body':
           'इस सप्ताह का लक्ष्य पूरा करने के लिए थोड़ा और खेलें।',
+      'reminder_quest_board_title':
+          'दैनिक क्वेस्ट का इनाम लेने के लिए तैयार है!',
+      'reminder_quest_board_body':
+          'आपने एक क्वेस्ट पूरा कर लिया है — अपना इनाम लेने आएं।',
     },
     'ar_SA': {
       'reminders_enabled': 'التذكيرات',
@@ -32005,6 +32119,8 @@ class AppTranslations extends Translations {
       'reminder_streak_body': 'سجّل الدخول اليوم للحفاظ على سلسلتك.',
       'reminder_weekly_goal_title': 'الهدف الأسبوعي ينتهي قريبًا',
       'reminder_weekly_goal_body': 'العب قليلاً بعد لإكمال هدف هذا الأسبوع.',
+      'reminder_quest_board_title': 'المهام اليومية جاهزة للمطالبة بها!',
+      'reminder_quest_board_body': 'لقد أكملت مهمة — تعال واحصل على مكافأتك.',
     },
     'tr_TR': {
       'reminders_enabled': 'Hatırlatıcılar',
@@ -32015,6 +32131,9 @@ class AppTranslations extends Translations {
       'reminder_weekly_goal_title': 'Haftalık hedef yakında sona eriyor',
       'reminder_weekly_goal_body':
           'Bu haftaki hedefi tamamlamak için biraz daha oyna.',
+      'reminder_quest_board_title': 'Günlük görevler almaya hazır!',
+      'reminder_quest_board_body':
+          'Bir görevi tamamladın — ödülünü almaya gel.',
     },
     'nl_NL': {
       'reminders_enabled': 'Herinneringen',
@@ -32026,6 +32145,9 @@ class AppTranslations extends Translations {
       'reminder_weekly_goal_title': 'Wekelijks doel eindigt binnenkort',
       'reminder_weekly_goal_body':
           'Speel nog even om het doel van deze week af te ronden.',
+      'reminder_quest_board_title': 'Dagelijkse quests klaar om te claimen!',
+      'reminder_quest_board_body':
+          'Je hebt een quest voltooid — kom je beloning ophalen.',
     },
     'pl_PL': {
       'reminders_enabled': 'Przypomnienia',
@@ -32036,6 +32158,8 @@ class AppTranslations extends Translations {
       'reminder_weekly_goal_title': 'Cel tygodniowy wkrótce się kończy',
       'reminder_weekly_goal_body':
           'Zagraj jeszcze trochę, aby ukończyć cel tego tygodnia.',
+      'reminder_quest_board_title': 'Codzienne questy gotowe do odebrania!',
+      'reminder_quest_board_body': 'Ukończyłeś quest — odbierz swoją nagrodę.',
     },
     'fil_PH': {
       'reminders_enabled': 'Mga Paalala',
@@ -32049,6 +32173,10 @@ class AppTranslations extends Translations {
           'layunin',
       'reminder_weekly_goal_body':
           'Maglaro pa ng kaunti para matapos ang layunin ngayong linggo.',
+      'reminder_quest_board_title':
+          'Handa nang kunin ang mga pang-araw-araw na quest!',
+      'reminder_quest_board_body':
+          'Natapos mo ang isang quest — kunin na ang iyong gantimpala.',
     },
     'ms_MY': {
       'reminders_enabled': 'Peringatan',
@@ -32060,6 +32188,9 @@ class AppTranslations extends Translations {
       'reminder_weekly_goal_title': 'Sasaran mingguan tamat tidak lama lagi',
       'reminder_weekly_goal_body':
           'Main sedikit lagi untuk melengkapkan sasaran minggu ini.',
+      'reminder_quest_board_title': 'Kuest harian sedia untuk dituntut!',
+      'reminder_quest_board_body':
+          'Anda telah menyelesaikan kuest — datang tuntut ganjaran anda.',
     },
     'uk_UA': {
       'reminders_enabled': 'Нагадування',
@@ -32070,6 +32201,9 @@ class AppTranslations extends Translations {
       'reminder_weekly_goal_title': 'Тижнева мета скоро завершиться',
       'reminder_weekly_goal_body':
           'Пограйте ще трохи, щоб завершити мету цього тижня.',
+      'reminder_quest_board_title': 'Щоденні завдання готові до отримання!',
+      'reminder_quest_board_body':
+          'Ви виконали завдання — заберіть свою нагороду.',
     },
     'bn_BD': {
       'reminders_enabled': 'রিমাইন্ডার',
@@ -32079,6 +32213,9 @@ class AppTranslations extends Translations {
       'reminder_streak_body': 'আপনার স্ট্রিক চালিয়ে যেতে আজ লগইন করুন।',
       'reminder_weekly_goal_title': 'সাপ্তাহিক লক্ষ্য শীঘ্রই শেষ হচ্ছে',
       'reminder_weekly_goal_body': 'এই সপ্তাহের লক্ষ্য পূরণ করতে আরেকটু খেলুন।',
+      'reminder_quest_board_title': 'দৈনিক কোয়েস্ট সংগ্রহের জন্য প্রস্তুত!',
+      'reminder_quest_board_body':
+          'আপনি একটি কোয়েস্ট সম্পন্ন করেছেন — এসে আপনার পুরস্কার সংগ্রহ করুন।',
     },
   };
 
@@ -32967,6 +33104,99 @@ class AppTranslations extends Translations {
       'board_frame_seasonal_christmas': 'বড়দিন',
       'board_frame_seasonal_badge': 'এই মৌসুমে উপলব্ধ',
       'board_frame_unlock_seasonal': 'উপলব্ধ @start - @end',
+    },
+  };
+
+  /// I77 — Sticker Album: sticker_album_title/sticker_album_progress, đủ 22
+  /// ngôn ngữ (tự chứa, không cần _extraEn/_extraVi).
+  static const Map<String, Map<String, String>> _i77ByLang = {
+    'en_US': {
+      'sticker_album_title': 'Sticker Album',
+      'sticker_album_progress': '@owned / @total Collected',
+    },
+    'vi_VN': {
+      'sticker_album_title': 'Album Sticker',
+      'sticker_album_progress': 'Đã sưu tầm @owned / @total',
+    },
+    'es_ES': {
+      'sticker_album_title': 'Álbum de Pegatinas',
+      'sticker_album_progress': '@owned / @total Coleccionados',
+    },
+    'fr_FR': {
+      'sticker_album_title': 'Album d’Autocollants',
+      'sticker_album_progress': '@owned / @total Collectés',
+    },
+    'de_DE': {
+      'sticker_album_title': 'Sticker-Album',
+      'sticker_album_progress': '@owned / @total Gesammelt',
+    },
+    'pt_BR': {
+      'sticker_album_title': 'Álbum de Figurinhas',
+      'sticker_album_progress': '@owned / @total Coletados',
+    },
+    'ru_RU': {
+      'sticker_album_title': 'Альбом Наклеек',
+      'sticker_album_progress': '@owned / @total Собрано',
+    },
+    'zh_CN': {
+      'sticker_album_title': '贴纸相册',
+      'sticker_album_progress': '已收集 @owned / @total',
+    },
+    'ja_JP': {
+      'sticker_album_title': 'ステッカーアルバム',
+      'sticker_album_progress': '@owned / @total 収集済み',
+    },
+    'ko_KR': {
+      'sticker_album_title': '스티커 앨범',
+      'sticker_album_progress': '@owned / @total 수집됨',
+    },
+    'it_IT': {
+      'sticker_album_title': 'Album Adesivi',
+      'sticker_album_progress': '@owned / @total Raccolti',
+    },
+    'id_ID': {
+      'sticker_album_title': 'Album Stiker',
+      'sticker_album_progress': '@owned / @total Terkumpul',
+    },
+    'th_TH': {
+      'sticker_album_title': 'อัลบั้มสติกเกอร์',
+      'sticker_album_progress': 'สะสมแล้ว @owned / @total',
+    },
+    'hi_IN': {
+      'sticker_album_title': 'स्टिकर एल्बम',
+      'sticker_album_progress': '@owned / @total एकत्रित',
+    },
+    'ar_SA': {
+      'sticker_album_title': 'ألبوم الملصقات',
+      'sticker_album_progress': 'تم جمع @owned / @total',
+    },
+    'tr_TR': {
+      'sticker_album_title': 'Çıkartma Albümü',
+      'sticker_album_progress': '@owned / @total Toplandı',
+    },
+    'nl_NL': {
+      'sticker_album_title': 'Stickeralbum',
+      'sticker_album_progress': '@owned / @total Verzameld',
+    },
+    'pl_PL': {
+      'sticker_album_title': 'Album Naklejek',
+      'sticker_album_progress': '@owned / @total Zebrano',
+    },
+    'fil_PH': {
+      'sticker_album_title': 'Album ng Sticker',
+      'sticker_album_progress': '@owned / @total Nakolekta',
+    },
+    'ms_MY': {
+      'sticker_album_title': 'Album Pelekat',
+      'sticker_album_progress': '@owned / @total Dikumpul',
+    },
+    'uk_UA': {
+      'sticker_album_title': 'Альбом Наклейок',
+      'sticker_album_progress': '@owned / @total Зібрано',
+    },
+    'bn_BD': {
+      'sticker_album_title': 'স্টিকার অ্যালবাম',
+      'sticker_album_progress': '@owned / @total সংগৃহীত',
     },
   };
 }

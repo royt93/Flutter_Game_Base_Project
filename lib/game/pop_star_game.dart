@@ -21,6 +21,7 @@ import '../logic/boss_tile.dart';
 import '../logic/chain_tile.dart';
 import '../logic/countdown_lock_tile.dart';
 import '../logic/gift_tile.dart';
+import '../logic/ice_tile.dart';
 import '../logic/magnet_tile.dart';
 import '../logic/obstacle.dart';
 import '../logic/pop_collapse.dart';
@@ -301,6 +302,7 @@ class PopStarGame extends FlameGame {
     _placeChainLocksIfNeeded(level);
     _placeGiftsIfNeeded(level);
     _placeCountdownLockTileIfNeeded(level);
+    _placeIceTilesIfNeeded(level);
     _placeWildcardTileIfNeeded(level);
     _placeMagnetTileIfNeeded(level);
     controller.activeGame = this;
@@ -460,6 +462,56 @@ class PopStarGame extends FlameGame {
     final idx = candidates.first;
     colorGrid[idx ~/ cols][idx % cols] = countdownLockIdBase;
     countdownRemaining[countdownLockIdBase] = countdownLockStartValue;
+  }
+
+  /// I76: ~18% cơ hội 1 ô băng (2 lớp) ở world ≥2 (level > 20), campaign
+  /// only — gate sớm hơn Countdown Lock (world ≥4) vì đây là cơ chế nhẹ
+  /// nhàng hơn, phù hợp giới thiệu sớm. Né ô đã là obstacle/chain-lock/
+  /// gift/boss/countdown-lock và ô màu target của objective `collect`,
+  /// giống [_placeCountdownLockTileIfNeeded]. Không cần state map riêng —
+  /// độ bền mã hoá trực tiếp trong `colorGrid` (xem `logic/ice_tile.dart`),
+  /// nên tự động đúng qua undo (snapshot nguyên `colorGrid`) mà không cần
+  /// thêm field `_undoIceRemaining` như boss HP/countdown.
+  static const double _iceTileChance = 0.18;
+
+  /// I76b Frost Rush: mật độ băng ép cố định, ~35% số ô — bỏ qua gate
+  /// world/xác suất của campaign vì đây là mode chuyên biệt "toàn bàn phủ
+  /// băng", tái dùng nguyên máy lưới (`_shuffledCandidates`) như các
+  /// side-mode dựng bàn riêng khác (Mirror Mode/Daily Challenge).
+  static const double _frostRushIceDensity = 0.35;
+
+  void _placeIceTilesIfNeeded(PopLevel level) {
+    if (controller.mode.value == GameMode.frostRush) {
+      _placeForcedIceTiles();
+      return;
+    }
+    if (level.id <= 20) return;
+    if (_rng.nextDouble() >= _iceTileChance) return;
+    final candidates = _shuffledCandidates(
+      (idx) =>
+          (colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0 &&
+          lockGrid[idx ~/ cols][idx % cols] == 0 &&
+          !_isCollectTarget(level, idx),
+    );
+    if (candidates.isEmpty) return;
+    final idx = candidates.first;
+    colorGrid[idx ~/ cols][idx % cols] = iceTileIdBase - iceTileDurability + 1;
+  }
+
+  void _placeForcedIceTiles() {
+    final candidates = _shuffledCandidates(
+      (idx) =>
+          (colorGrid[idx ~/ cols][idx % cols] ?? -1) >= 0 &&
+          lockGrid[idx ~/ cols][idx % cols] == 0,
+    );
+    final targetCount = (rows * cols * _frostRushIceDensity).round().clamp(
+      1,
+      candidates.length,
+    );
+    for (final idx in candidates.take(targetCount)) {
+      colorGrid[idx ~/ cols][idx % cols] =
+          iceTileIdBase - iceTileDurability + 1;
+    }
   }
 
   /// I46: ~15% cơ hội 1 ô Wildcard, campaign only (mọi world) — side-mode
@@ -824,12 +876,16 @@ class PopStarGame extends FlameGame {
   /// F10: freeze đang hiệu lực → bỏ qua chip (trừ 1 lượt), ngược lại chip
   /// bình thường qua [chipAdjacentObstacles]. Dùng thay thế tại mọi nơi từng
   /// gọi thẳng [chipAdjacentObstacles] để obstacle "miễn nhiễm" đúng N lượt.
+  /// I76: gộp luôn [chipAdjacentIceTiles] vào cùng điểm chốt này — băng cũng
+  /// nên được Freeze bảo vệ giống obstacle (cùng ngữ nghĩa "durability
+  /// không giảm khi đang đóng băng"), thay vì đặc cách 1 nhánh riêng.
   Set<Point<int>> _chipObstaclesOrFrozen(Set<Point<int>> cells) {
     if (freezeTurnsLeft > 0) {
       freezeTurnsLeft--;
       return {};
     }
-    return chipAdjacentObstacles(colorGrid, cells);
+    return chipAdjacentObstacles(colorGrid, cells)
+      ..addAll(chipAdjacentIceTiles(colorGrid, cells));
   }
 
   /// I29: nổ nhóm liền kề boss tile → chip 1 HP; HP về 0 thì trả về cell vừa
@@ -1004,6 +1060,16 @@ class PopStarGame extends FlameGame {
   double get heat =>
       ((controller.comboMultiplier.value - 1) / (GameController.comboMax - 1))
           .clamp(0.0, 1.0);
+
+  /// I75 Combo Rush: thời gian còn lại trước khi combo tự reset, quy về
+  /// 0..1 để vẽ thanh meter HUD — cùng nguồn với [_comboTimer] dùng để
+  /// quyết định gọi [GameController.resetCombo] mỗi frame, không thêm state.
+  double get comboTimerFraction {
+    if (controller.comboCount.value <= 0) return 0.0;
+    final window =
+        controller.activeComboWindowOverride ?? GameController.comboWindow;
+    return (_comboTimer / window).clamp(0.0, 1.0);
+  }
 
   @override
   void update(double dt) {

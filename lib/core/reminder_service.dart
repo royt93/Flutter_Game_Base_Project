@@ -10,9 +10,9 @@ import '../presentation/controllers/game_controller.dart';
 import 'debug_log.dart';
 import 'storage_service.dart';
 
-/// I56: 3 loại nhắc local (không backend), ưu tiên theo thứ tự cố định —
+/// I56/I78: 4 loại nhắc local (không backend), ưu tiên theo thứ tự cố định —
 /// [pickReminderKind] chỉ chọn 1 loại/lần.
-enum ReminderKind { spin, streak, weeklyGoal }
+enum ReminderKind { spin, streak, weeklyGoal, questBoard }
 
 /// Thời gian còn lại tới UTC midnight kế tiếp — cùng boundary với
 /// `todayEpochDay()` (`game_controller.dart` dòng ~898-906).
@@ -32,18 +32,22 @@ Duration timeUntilNextWeeklyReset({required int nowEpochMs}) {
 
 /// Chọn loại nhắc theo thứ tự ưu tiên cố định: (1) còn spin hôm nay chưa
 /// quay, (2) chưa nhận thưởng streak hôm nay, (3) weekly goal chưa xong và
-/// tuần sắp hết (≤1 ngày). Pure — test độc lập với plugin thật.
+/// tuần sắp hết (≤1 ngày), (4) có Daily Quest đã đủ điều kiện nhận nhưng
+/// chưa nhận (I78 — thấp nhất, chỉ nhắc khi 3 loại trên không áp dụng). Pure
+/// — test độc lập với plugin thật.
 ReminderKind? pickReminderKind({
   required bool canClaimSpin,
   required bool streakRewardUnclaimed,
   required bool weeklyGoalIncomplete,
   required Duration weeklyRemaining,
+  required bool questBoardClaimable,
 }) {
   if (canClaimSpin) return ReminderKind.spin;
   if (streakRewardUnclaimed) return ReminderKind.streak;
   if (weeklyGoalIncomplete && weeklyRemaining <= const Duration(days: 1)) {
     return ReminderKind.weeklyGoal;
   }
+  if (questBoardClaimable) return ReminderKind.questBoard;
   return null;
 }
 
@@ -142,6 +146,7 @@ class ReminderService extends GetxService {
         weeklyGoalIncomplete:
             gameCtrl.weeklyGoalProgress.value < weeklyGoalTarget,
         weeklyRemaining: weeklyRemaining,
+        questBoardClaimable: _questBoardClaimable(gameCtrl),
       );
       if (kind == null) return;
 
@@ -182,6 +187,20 @@ class ReminderService extends GetxService {
     return (gameCtrl.loginStreakClaimedMask.value >> day) & 1 == 0;
   }
 
+  /// I78 — có ≥1 Daily Quest hôm nay đã đủ điều kiện nhận thưởng nhưng chưa
+  /// nhận. Gọi `checkDailyQuestRollover()` trước để đảm bảo `dailyQuests`/
+  /// tiến độ đã khớp ngày hiện tại (mirror cách `claimDailyQuest` tự vệ).
+  bool _questBoardClaimable(GameController gameCtrl) {
+    gameCtrl.checkDailyQuestRollover();
+    final quests = gameCtrl.dailyQuests;
+    final progress = gameCtrl.dailyQuestProgress;
+    for (var i = 0; i < quests.length; i++) {
+      if (gameCtrl.dailyQuestClaimed.contains(i)) continue;
+      if (progress[i] >= quests[i].target) return true;
+    }
+    return false;
+  }
+
   _ReminderContent _contentFor(ReminderKind kind) {
     switch (kind) {
       case ReminderKind.spin:
@@ -198,6 +217,11 @@ class ReminderService extends GetxService {
         return _ReminderContent(
           'reminder_weekly_goal_title'.tr,
           'reminder_weekly_goal_body'.tr,
+        );
+      case ReminderKind.questBoard:
+        return _ReminderContent(
+          'reminder_quest_board_title'.tr,
+          'reminder_quest_board_body'.tr,
         );
     }
   }

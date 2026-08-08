@@ -1,6 +1,6 @@
 # Release Checklist — Pop Star Blast
 
-Fork mới từ Neon Jewels, MVP tap-to-pop (campaign 200 màn + shop booster).
+Fork mới từ Neon Jewels, MVP tap-to-pop (campaign 260 màn + shop booster).
 Chưa có bản release nào — toàn bộ mục dưới đây cần verify lại từ đầu.
 
 ## A. Tự động

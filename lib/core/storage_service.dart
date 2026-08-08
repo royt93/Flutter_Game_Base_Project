@@ -22,6 +22,10 @@ class StorageKeys {
   static String highScore(int level) => 'hs_$level';
   static String star(int level) => 'star_$level';
 
+  // I80 Remix Levels: điểm cao nhất riêng từng level remix (biệt lập
+  // highScore campaign của cùng levelId).
+  static String remixBest(int levelId) => 'remix_best_$levelId';
+
   // Booster (mid-game): bomb (nổ 3x3), shuffle (xáo bàn), undo (revert 1 bước),
   // rainbow (xoá mọi ô cùng màu)
   static const String bombCount = 'bomb_count';
@@ -50,6 +54,16 @@ class StorageKeys {
 
   // F8 Time-attack side mode best score (không đụng campaign highScore).
   static const String timeAttackBest = 'time_attack_best';
+
+  // I75 Combo Rush side mode best score (đua giữ combo, không timer).
+  static const String comboRushBest = 'combo_rush_best';
+
+  // I76b Frost Rush side mode best score (Combo Rush + mật độ Ice Tile ép cao).
+  static const String frostRushBest = 'frost_rush_best';
+
+  // I77 Sticker Album: bitmask mốc "tổng cosmetic sở hữu" đã nhận thưởng xu
+  // (bit i = mốc thứ i trong GameController.stickerAlbumMilestones).
+  static const String stickerMilestonesClaimed = 'sticker_milestones_claimed';
 
   // X1 Onboarding/FTUE: đã xem overlay "chạm để nổ" chưa (chỉ hiện 1 lần).
   static const String hasSeenFtue = 'has_seen_ftue';
@@ -124,6 +138,12 @@ class StorageKeys {
   // dùng được làm tín hiệu "đã xong hết").
   static const String prestigeTier = 'prestige_tier';
   static const String allLevelsCompleted = 'all_levels_completed';
+  // Round-8 I79: `kLevelCount` tại thời điểm [allLevelsCompleted] được set —
+  // dùng để phát hiện campaign đã mở rộng (vd 240→260) sau khi cờ này đã lưu
+  // `true`, tránh Prestige "chui" mà chưa chơi các level mới. Xem
+  // `_migrateAllLevelsCompletedFlag` trong game_controller.dart.
+  static const String allLevelsCompletedAtCount =
+      'all_levels_completed_at_count';
 
   // I30 Mascot Wardrobe: id skin đang active + set id skin đã mở khoá (CSV,
   // giống unlockedAchievements) — mặc định chỉ có skin free.

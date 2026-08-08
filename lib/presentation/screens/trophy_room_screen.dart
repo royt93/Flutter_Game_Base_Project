@@ -5,8 +5,10 @@ import '../../core/neon_theme.dart';
 import '../../data/achievements.dart';
 import '../../data/mascot_skins.dart';
 import '../controllers/game_controller.dart';
+import 'sticker_album_screen.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
+import '../widgets/neon_button.dart';
 import '../widgets/prestige_action.dart';
 import '../widgets/star_mascot.dart';
 
@@ -98,6 +100,15 @@ class TrophyRoomScreen extends StatelessWidget {
                         },
                       );
                     }),
+                    const SizedBox(height: NeonTheme.s16),
+                    Center(
+                      child: NeonButton(
+                        label: 'sticker_album_title'.tr,
+                        color: NeonTheme.magenta,
+                        icon: Icons.auto_awesome_rounded,
+                        onTap: () => Get.to(() => const StickerAlbumScreen()),
+                      ),
+                    ),
                   ],
                 ),
               ),

@@ -55,6 +55,9 @@ enum GameMode {
   weeklyFeatured,
   passAndPlay,
   treasureMap,
+  remixLevel,
+  comboRush,
+  frostRush,
 }
 
 /// I7: 1 ô phần thưởng trên vòng quay hằng ngày.
@@ -192,6 +195,10 @@ class GameController extends GetxController {
   GauntletModifier? activeTreasureMapModifier;
   GauntletModifier? activeEndlessModifier;
 
+  /// I80 Remix Levels: modifier đang áp dụng cho level campaign đang được
+  /// "remix", set trong [startRemixLevel].
+  GauntletModifier? activeRemixModifier;
+
   /// I69: combo timer rút ngắn khi đang chơi với modifier `shortCombo`
   /// (đọc qua [activeGameplayModifier]) — `null` nếu mode không có override.
   double? get activeComboWindowOverride =>
@@ -201,6 +208,7 @@ class GameController extends GetxController {
     GameMode.gauntlet => activeGauntletModifier,
     GameMode.treasureMap => activeTreasureMapModifier,
     GameMode.endless => activeEndlessModifier,
+    GameMode.remixLevel => activeRemixModifier,
     _ => null,
   };
 
@@ -245,6 +253,24 @@ class GameController extends GetxController {
     StorageService.to.setInt(StorageKeys.unlockedLevel, unlockedLevel.value);
     StorageService.to.setBool(StorageKeys.allLevelsCompleted, false);
     StorageService.to.setInt(StorageKeys.coins, coins.value);
+  }
+
+  /// Round-8 I79: nếu [allLevelsCompletedOnce] đã lưu `true` từ trước khi
+  /// campaign được mở rộng (vd bản cũ 240 màn → bản mới 260 màn), reset về
+  /// `false` — người chơi phải thắng đúng level cuối MỚI mới đủ điều kiện
+  /// Prestige, không được "chui" nhờ cờ cũ. Không đụng gì nếu chưa từng đạt
+  /// cờ này, hoặc cờ đã được set đúng ở `kLevelCount` hiện tại.
+  void _migrateAllLevelsCompletedFlag() {
+    if (!allLevelsCompletedOnce.value) return;
+    // Mặc định 0 (không phải `kLevelCount`): save cũ trước Round-8 chưa
+    // từng ghi key này dù cờ đã `true` — phải coi là "chưa rõ, cần
+    // migrate", không phải "vừa mới đạt ở kLevelCount hiện tại".
+    final completedAtCount = StorageService.to.getInt(
+      StorageKeys.allLevelsCompletedAtCount,
+    );
+    if (completedAtCount >= kLevelCount) return;
+    allLevelsCompletedOnce.value = false;
+    StorageService.to.setBool(StorageKeys.allLevelsCompleted, false);
   }
 
   /// Set 1 lần ngay khi 1 màn mới vừa được mở khoá (id màn mới), để
@@ -765,6 +791,52 @@ class GameController extends GetxController {
   final totalStars = 0.obs;
   final claimedChestMask = 0.obs;
 
+  // I77 Sticker Album: mốc "tổng cosmetic sở hữu" (mascot skin + board frame +
+  // burst style + combo text style) tự động cộng xu, tương tự achievements —
+  // không cần người chơi bấm nhận (khác kiểu star-road chest thủ công).
+  static const List<int> stickerAlbumMilestones = [5, 10, 15, 20];
+  static const List<int> stickerAlbumRewards = [50, 100, 200, 400];
+  final claimedStickerMilestoneMask = 0.obs;
+
+  /// Tổng số cosmetic đang sở hữu/mở khoá trên cả 4 hệ thống (tối đa 24:
+  /// 6 mascot skin + 9 board frame + 5 burst style + 4 combo text style).
+  int get totalCosmeticsOwned =>
+      unlockedMascotSkinIds.length +
+      kBoardFrames
+          .where(
+            (f) => isBoardFrameUnlocked(
+              f,
+              prestigeTier.value,
+              unlockedAchievementIds,
+              treasureMapCompleted: treasureMapCompleted.value,
+            ),
+          )
+          .length +
+      kBurstStyles
+          .where((s) => isBurstStyleUnlocked(s, totalGemsPopped.value))
+          .length +
+      kComboTextStyles
+          .where((s) => isComboTextStyleUnlocked(s, maxComboEver.value))
+          .length;
+
+  void _checkStickerMilestones() {
+    final owned = totalCosmeticsOwned;
+    var changed = false;
+    for (var i = 0; i < stickerAlbumMilestones.length; i++) {
+      if ((claimedStickerMilestoneMask.value >> i) & 1 == 1) continue;
+      if (owned < stickerAlbumMilestones[i]) continue;
+      claimedStickerMilestoneMask.value |= 1 << i;
+      coins.value += stickerAlbumRewards[i] * weekendCoinMultiplier;
+      changed = true;
+    }
+    if (!changed) return;
+    StorageService.to.setInt(
+      StorageKeys.stickerMilestonesClaimed,
+      claimedStickerMilestoneMask.value,
+    );
+    StorageService.to.setInt(StorageKeys.coins, coins.value);
+  }
+
   // I64 Star Constellation & Sky Shrine
   final starSeedCount = 0.obs;
   final claimedStarSeedMask = 0.obs;
@@ -824,6 +896,16 @@ class GameController extends GetxController {
   /// F8 Time-attack: điểm cao nhất từng đạt (biệt lập, không phải highScore
   /// campaign theo id).
   final timeAttackBest = 0.obs;
+
+  /// I75 Combo Rush: điểm cao nhất từng đạt — không timer, thắng thua bằng
+  /// cách giữ combo càng lâu càng tốt (bàn không refill nên ván tự kết thúc
+  /// khi hết ô/kẹt), biệt lập với timeAttackBest.
+  final comboRushBest = 0.obs;
+
+  /// I76b Frost Rush: điểm cao nhất từng đạt trên bàn mật độ Ice Tile ép cao
+  /// (`PopStarGame._placeForcedIceTiles`) — biệt lập với comboRushBest dù
+  /// tái dùng cùng cơ chế combo.
+  final frostRushBest = 0.obs;
 
   /// F12 Endless: điểm cao nhất từng đạt + bàn hiện tại (0-based, tăng mỗi
   /// khi dọn sạch bàn trước để bàn kế tiếp khó hơn).
@@ -977,11 +1059,17 @@ class GameController extends GetxController {
     allLevelsCompletedOnce.value = StorageService.to.getBool(
       StorageKeys.allLevelsCompleted,
     );
+    _migrateAllLevelsCompletedFlag();
     claimedChestMask.value = StorageService.to.getInt(
       StorageKeys.claimedChests,
     );
+    claimedStickerMilestoneMask.value = StorageService.to.getInt(
+      StorageKeys.stickerMilestonesClaimed,
+    );
     dailyStreak.value = StorageService.to.getInt(StorageKeys.dailyStreak);
     timeAttackBest.value = StorageService.to.getInt(StorageKeys.timeAttackBest);
+    comboRushBest.value = StorageService.to.getInt(StorageKeys.comboRushBest);
+    frostRushBest.value = StorageService.to.getInt(StorageKeys.frostRushBest);
     endlessBest.value = StorageService.to.getInt(StorageKeys.endlessBest);
     mirrorModeBest.value = StorageService.to.getInt(StorageKeys.mirrorModeBest);
     seasonPoints.value = StorageService.to.getInt(StorageKeys.seasonPoints);
@@ -1642,13 +1730,16 @@ class GameController extends GetxController {
     perfectClearTarget.value = target;
   }
 
-  /// F8: bắt đầu 1 ván side-mode (Time-attack/Zen) — không đụng
-  /// currentLevelRx/unlockedLevel của campaign.
+  /// F8: bắt đầu 1 ván side-mode (Time-attack/Zen/Combo Rush/Frost Rush) —
+  /// không đụng currentLevelRx/unlockedLevel của campaign.
   void startSideMode(GameMode sideMode) {
     mode.value = sideMode;
-    currentLevelRx.value = sideMode == GameMode.timeAttack
-        ? kTimeAttackLevel
-        : kZenLevel;
+    currentLevelRx.value = switch (sideMode) {
+      GameMode.timeAttack => kTimeAttackLevel,
+      GameMode.comboRush => kComboRushLevel,
+      GameMode.frostRush => kFrostRushLevel,
+      _ => kZenLevel,
+    };
     score.value = 0;
     starsEarned.value = 0;
     ended.value = false;
@@ -1761,6 +1852,25 @@ class GameController extends GetxController {
   void startWeeklyFeatured() {
     mode.value = GameMode.weeklyFeatured;
     currentLevelRx.value = kLevels[featuredLevelId - 1];
+    score.value = 0;
+    starsEarned.value = 0;
+    ended.value = false;
+    cleared.value = false;
+    resetCombo();
+    activeGame = null;
+    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
+    hintCount.value = hintsPerRun;
+    movesUsed.value = 0;
+    _collectInitial = null;
+  }
+
+  /// I80 Remix Levels: chơi lại 1 level campaign đã có sẵn ([levelId]) với 1
+  /// [GauntletModifier] áp lên trên — mirror [startWeeklyFeatured] (chỉ đọc
+  /// [kLevels], không đụng star/highScore/unlock campaign của level đó).
+  void startRemixLevel(int levelId, GauntletModifier mod) {
+    mode.value = GameMode.remixLevel;
+    activeRemixModifier = mod;
+    currentLevelRx.value = kLevels[levelId - 1];
     score.value = 0;
     starsEarned.value = 0;
     ended.value = false;
@@ -1978,6 +2088,19 @@ class GameController extends GetxController {
     }
   }
 
+  /// I80 Remix Levels: best riêng từng level (không có 1 Rx duy nhất như
+  /// các mode khác vì "best" ở đây là 1 giá trị theo mỗi [levelId]) — đọc
+  /// trực tiếp từ storage khi cần, cùng cách `highScore`/`star` đọc theo id.
+  int remixBestFor(int levelId) =>
+      StorageService.to.getInt(StorageKeys.remixBest(levelId));
+
+  void _saveRemixBest() {
+    final levelId = currentLevel.id;
+    if (score.value > remixBestFor(levelId)) {
+      StorageService.to.setInt(StorageKeys.remixBest(levelId), score.value);
+    }
+  }
+
   void addScore(int points) => score.value += points;
 
   /// Ghi nhận 1 lần nổ nhóm: tăng combo, cộng điểm đã nhân hệ số.
@@ -2008,6 +2131,7 @@ class GameController extends GetxController {
       StorageService.to.setInt(StorageKeys.maxComboEver, maxComboEver.value);
     }
     _checkAchievements();
+    _checkStickerMilestones();
     return gained;
   }
 
@@ -2028,6 +2152,7 @@ class GameController extends GetxController {
         boardsFullyCleared.value,
       );
       _checkAchievements();
+      _checkStickerMilestones();
     }
     if (mode.value == GameMode.puzzleLab ||
         mode.value == GameMode.passAndPlay) {
@@ -2041,11 +2166,14 @@ class GameController extends GetxController {
     if (mode.value != GameMode.campaign) {
       if (boardCleared) _addDailyQuestProgress(QuestKind.winAnyMode, 1);
       if (mode.value == GameMode.timeAttack) _saveTimeAttackBest();
+      if (mode.value == GameMode.comboRush) _saveComboRushBest();
+      if (mode.value == GameMode.frostRush) _saveFrostRushBest();
       if (mode.value == GameMode.endless) _saveEndlessBest();
       if (mode.value == GameMode.mirrorMode) _saveMirrorModeBest();
       if (mode.value == GameMode.dailyChallenge) _saveDailyChallengeScore();
       if (mode.value == GameMode.gauntlet) _saveGauntletScore();
       if (mode.value == GameMode.weeklyFeatured) _saveFeaturedLevelScore();
+      if (mode.value == GameMode.remixLevel) _saveRemixBest();
       ended.value = true;
       return;
     }
@@ -2083,6 +2211,10 @@ class GameController extends GetxController {
       if (currentLevel.id == kLevelCount && !allLevelsCompletedOnce.value) {
         allLevelsCompletedOnce.value = true;
         StorageService.to.setBool(StorageKeys.allLevelsCompleted, true);
+        StorageService.to.setInt(
+          StorageKeys.allLevelsCompletedAtCount,
+          kLevelCount,
+        );
       }
       // I32 Craft Booster: bàn còn sót gem (không full-clear — full-clear đã
       // có clearBoardBonus riêng, không cộng trùng) đủ ngưỡng craft point →
@@ -2145,6 +2277,20 @@ class GameController extends GetxController {
     }
   }
 
+  void _saveComboRushBest() {
+    if (score.value > comboRushBest.value) {
+      comboRushBest.value = score.value;
+      StorageService.to.setInt(StorageKeys.comboRushBest, score.value);
+    }
+  }
+
+  void _saveFrostRushBest() {
+    if (score.value > frostRushBest.value) {
+      frostRushBest.value = score.value;
+      StorageService.to.setInt(StorageKeys.frostRushBest, score.value);
+    }
+  }
+
   int _computeStars() {
     final target = prestigeTargetScore(currentLevel, prestigeTier.value);
     int stars;
@@ -2201,6 +2347,7 @@ class GameController extends GetxController {
       );
     }
     _checkAchievements();
+    _checkStickerMilestones();
   }
 
   void _grantCoins() {
@@ -2247,6 +2394,7 @@ class GameController extends GetxController {
       totalBoostersUsed.value,
     );
     _checkAchievements();
+    _checkStickerMilestones();
   }
 
   void useBomb(int row, int col) {
@@ -2335,10 +2483,13 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.swapCount);
     await store.remove(StorageKeys.freezeCount);
     await store.remove(StorageKeys.claimedChests);
+    await store.remove(StorageKeys.stickerMilestonesClaimed);
     await store.remove(StorageKeys.lastClaimDay);
     await store.remove(StorageKeys.dailyStreak);
     await store.remove(StorageKeys.maxEpochDaySeen);
     await store.remove(StorageKeys.timeAttackBest);
+    await store.remove(StorageKeys.comboRushBest);
+    await store.remove(StorageKeys.frostRushBest);
     await store.remove(StorageKeys.endlessBest);
     await store.remove(StorageKeys.mirrorModeBest);
     await store.remove(StorageKeys.lastDailyChallengeDay);
@@ -2359,6 +2510,7 @@ class GameController extends GetxController {
     await store.remove(StorageKeys.activeAchievementTitleId);
     await store.remove(StorageKeys.prestigeTier);
     await store.remove(StorageKeys.allLevelsCompleted);
+    await store.remove(StorageKeys.allLevelsCompletedAtCount);
     await store.remove(StorageKeys.activeMascotSkin);
     await store.remove(StorageKeys.unlockedMascotSkins);
     await store.remove(StorageKeys.activeBurstStyle);

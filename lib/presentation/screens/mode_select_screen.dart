@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/neon_theme.dart';
+import '../../data/gauntlet_modifiers.dart';
 import '../../data/worlds.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/pass_and_play_controller.dart';
@@ -72,6 +73,26 @@ class ModeSelectScreen extends StatelessWidget {
                           onTap: () {
                             Get.back();
                             gameCtrl.startMirrorMode();
+                            Get.to(() => const GameScreen());
+                          },
+                        ),
+                        _modeTile(
+                          icon: Icons.bolt_rounded,
+                          color: NeonTheme.magenta,
+                          label: 'mode_combo_rush_label'.tr,
+                          onTap: () {
+                            Get.back();
+                            gameCtrl.startSideMode(GameMode.comboRush);
+                            Get.to(() => const GameScreen());
+                          },
+                        ),
+                        _modeTile(
+                          icon: Icons.ac_unit_rounded,
+                          color: NeonTheme.cyan,
+                          label: 'mode_frost_rush_label'.tr,
+                          onTap: () {
+                            Get.back();
+                            gameCtrl.startSideMode(GameMode.frostRush);
                             Get.to(() => const GameScreen());
                           },
                         ),
@@ -163,6 +184,29 @@ class ModeSelectScreen extends StatelessWidget {
                             Get.to(() => const GameScreen());
                           },
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: NeonTheme.s24),
+                    _modeGroup(
+                      label: 'modes_group_remix'.tr,
+                      tiles: [
+                        for (final remix in kRemixLevels)
+                          _modeTile(
+                            icon: remix.modifier.icon,
+                            color: NeonTheme.pink,
+                            label:
+                                '${worldForLevel(remix.levelId).nameKey.tr} '
+                                '#${remix.levelId}',
+                            semanticLabel: remix.modifier.nameKey.tr,
+                            onTap: () {
+                              Get.back();
+                              gameCtrl.startRemixLevel(
+                                remix.levelId,
+                                remix.modifier,
+                              );
+                              Get.to(() => const GameScreen());
+                            },
+                          ),
                       ],
                     ),
                   ],

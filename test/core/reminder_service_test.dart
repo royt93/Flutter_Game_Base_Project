@@ -61,6 +61,7 @@ void main() {
           streakRewardUnclaimed: true,
           weeklyGoalIncomplete: true,
           weeklyRemaining: const Duration(hours: 1),
+          questBoardClaimable: true,
         ),
         ReminderKind.spin,
       );
@@ -73,6 +74,7 @@ void main() {
           streakRewardUnclaimed: true,
           weeklyGoalIncomplete: true,
           weeklyRemaining: const Duration(hours: 1),
+          questBoardClaimable: true,
         ),
         ReminderKind.streak,
       );
@@ -85,6 +87,7 @@ void main() {
           streakRewardUnclaimed: false,
           weeklyGoalIncomplete: true,
           weeklyRemaining: const Duration(days: 1),
+          questBoardClaimable: true,
         ),
         ReminderKind.weeklyGoal,
       );
@@ -94,6 +97,7 @@ void main() {
           streakRewardUnclaimed: false,
           weeklyGoalIncomplete: true,
           weeklyRemaining: const Duration(days: 2),
+          questBoardClaimable: false,
         ),
         null,
       );
@@ -106,9 +110,52 @@ void main() {
           streakRewardUnclaimed: false,
           weeklyGoalIncomplete: false,
           weeklyRemaining: const Duration(hours: 1),
+          questBoardClaimable: false,
         ),
         null,
       );
     });
+
+    test('quest board (I78) chỉ nhắc khi không còn điều kiện nào khác', () {
+      expect(
+        pickReminderKind(
+          canClaimSpin: false,
+          streakRewardUnclaimed: false,
+          weeklyGoalIncomplete: false,
+          weeklyRemaining: const Duration(hours: 1),
+          questBoardClaimable: true,
+        ),
+        ReminderKind.questBoard,
+      );
+    });
+
+    test('quest board bị đè bởi weekly goal sắp hết (ưu tiên cao hơn)', () {
+      expect(
+        pickReminderKind(
+          canClaimSpin: false,
+          streakRewardUnclaimed: false,
+          weeklyGoalIncomplete: true,
+          weeklyRemaining: const Duration(hours: 1),
+          questBoardClaimable: true,
+        ),
+        ReminderKind.weeklyGoal,
+      );
+    });
+
+    test(
+      'quest board chưa claimable thì không nhắc dù các loại khác cũng tắt',
+      () {
+        expect(
+          pickReminderKind(
+            canClaimSpin: false,
+            streakRewardUnclaimed: false,
+            weeklyGoalIncomplete: true,
+            weeklyRemaining: const Duration(days: 2),
+            questBoardClaimable: false,
+          ),
+          null,
+        );
+      },
+    );
   });
 }

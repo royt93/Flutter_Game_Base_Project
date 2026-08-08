@@ -381,7 +381,14 @@ void main() {
         ctrl.registerPop(10, groupSize: 500);
         expect(ctrl.totalGemsPopped.value, 500);
         expect(ctrl.unlockedAchievementIds, contains('gems_500'));
-        expect(ctrl.coins.value, 50 * ctrl.weekendCoinMultiplier);
+        // I77: totalGemsPopped=500 cũng mở khoá burst style "confetti"
+        // (threshold 500), đẩy totalCosmeticsOwned 4 -> 5, vượt luôn mốc
+        // sticker album đầu tiên — 2 hệ thống cộng xu độc lập cùng lúc.
+        expect(
+          ctrl.coins.value,
+          (50 + GameController.stickerAlbumRewards[0]) *
+              ctrl.weekendCoinMultiplier,
+        );
       },
     );
 
@@ -831,6 +838,178 @@ void main() {
     });
   });
 
+  group('I80 Remix Levels', () {
+    test('kRemixLevels: mọi entry đều tham chiếu levelId hợp lệ trong '
+        '1..kLevelCount', () {
+      for (final remix in kRemixLevels) {
+        expect(remix.levelId, greaterThanOrEqualTo(1));
+        expect(remix.levelId, lessThanOrEqualTo(kLevelCount));
+      }
+    });
+
+    test('startRemixLevel() set mode remixLevel, load đúng level, đúng '
+        'modifier, reset toàn bộ state ván mới', () {
+      ctrl.startLevel(1);
+      ctrl.addScore(500);
+      ctrl.movesUsed.value = 3;
+      ctrl.hintCount.value = 0;
+
+      final remix = kRemixLevels.first;
+      ctrl.startRemixLevel(remix.levelId, remix.modifier);
+
+      expect(ctrl.mode.value, GameMode.remixLevel);
+      expect(ctrl.currentLevel.id, remix.levelId);
+      expect(ctrl.activeRemixModifier?.id, remix.modifier.id);
+      expect(ctrl.score.value, 0);
+      expect(ctrl.starsEarned.value, 0);
+      expect(ctrl.ended.value, isFalse);
+      expect(ctrl.cleared.value, isFalse);
+      expect(ctrl.movesUsed.value, 0);
+      expect(ctrl.hintCount.value, GameController.hintsPerRun);
+    });
+
+    test('activeGameplayModifier trả đúng activeRemixModifier khi mode là '
+        'remixLevel, áp cả activeMoveLimit lẫn activeComboWindowOverride', () {
+      final noUndoEntry = kRemixLevels.firstWhere(
+        (r) => r.modifier.id == 'no_undo',
+      );
+      ctrl.startRemixLevel(noUndoEntry.levelId, noUndoEntry.modifier);
+      expect(ctrl.activeGameplayModifier?.id, 'no_undo');
+
+      final shortComboEntry = kRemixLevels.firstWhere(
+        (r) => r.modifier.id == 'short_combo',
+      );
+      ctrl.startRemixLevel(shortComboEntry.levelId, shortComboEntry.modifier);
+      expect(ctrl.activeComboWindowOverride, 1.5);
+    });
+
+    test('remixBestFor: chỉ tăng khi điểm mới cao hơn, best riêng theo từng '
+        'levelId, không lẫn giữa các entry', () {
+      final entryA = kRemixLevels[0];
+      final entryB = kRemixLevels[1];
+      expect(ctrl.remixBestFor(entryA.levelId), 0);
+      expect(ctrl.remixBestFor(entryB.levelId), 0);
+
+      ctrl.startRemixLevel(entryA.levelId, entryA.modifier);
+      ctrl.score.value = 800;
+      ctrl.checkEnd(false);
+      expect(ctrl.remixBestFor(entryA.levelId), 800);
+      expect(ctrl.remixBestFor(entryB.levelId), 0);
+
+      ctrl.startRemixLevel(entryA.levelId, entryA.modifier);
+      ctrl.score.value = 300;
+      ctrl.checkEnd(false);
+      expect(ctrl.remixBestFor(entryA.levelId), 800);
+
+      ctrl.startRemixLevel(entryA.levelId, entryA.modifier);
+      ctrl.score.value = 1200;
+      ctrl.checkEnd(false);
+      expect(ctrl.remixBestFor(entryA.levelId), 1200);
+    });
+  });
+
+  group('I75 Combo Rush', () {
+    test('startSideMode(comboRush) set mode, load kComboRushLevel, không '
+        'đụng unlockedLevel campaign', () {
+      ctrl.startLevel(1);
+      ctrl.startSideMode(GameMode.comboRush);
+      expect(ctrl.mode.value, GameMode.comboRush);
+      expect(ctrl.currentLevel.id, kComboRushLevel.id);
+      expect(ctrl.unlockedLevel.value, 1);
+    });
+
+    test('checkEnd ở Combo Rush không mở khoá/thưởng xu/lưu highScore '
+        'campaign', () {
+      ctrl.startSideMode(GameMode.comboRush);
+      ctrl.addScore(9999);
+      ctrl.checkEnd(false);
+      expect(ctrl.ended.value, isTrue);
+      expect(ctrl.starsEarned.value, 0);
+      expect(ctrl.unlockedLevel.value, 1);
+      expect(ctrl.coins.value, 0);
+      expect(StorageService.to.getInt(StorageKeys.highScore(1)), 0);
+    });
+
+    test('Combo Rush: chỉ lưu best khi điểm mới cao hơn', () {
+      ctrl.startSideMode(GameMode.comboRush);
+      ctrl.addScore(100);
+      ctrl.checkEnd(false);
+      expect(ctrl.comboRushBest.value, 100);
+
+      ctrl.startSideMode(GameMode.comboRush);
+      ctrl.addScore(50);
+      ctrl.checkEnd(false);
+      expect(ctrl.comboRushBest.value, 100);
+
+      ctrl.startSideMode(GameMode.comboRush);
+      ctrl.addScore(200);
+      ctrl.checkEnd(false);
+      expect(ctrl.comboRushBest.value, 200);
+    });
+
+    test('resetProgress xoá comboRushBest', () async {
+      ctrl.startSideMode(GameMode.comboRush);
+      ctrl.addScore(300);
+      ctrl.checkEnd(false);
+      expect(ctrl.comboRushBest.value, 300);
+
+      await ctrl.resetProgress();
+      expect(ctrl.comboRushBest.value, 0);
+    });
+  });
+
+  group('I76b Frost Rush', () {
+    test('startSideMode(frostRush) set mode, load kFrostRushLevel, không '
+        'đụng unlockedLevel campaign', () {
+      ctrl.startLevel(1);
+      ctrl.startSideMode(GameMode.frostRush);
+      expect(ctrl.mode.value, GameMode.frostRush);
+      expect(ctrl.currentLevel.id, kFrostRushLevel.id);
+      expect(ctrl.unlockedLevel.value, 1);
+    });
+
+    test('checkEnd ở Frost Rush không mở khoá/thưởng xu/lưu highScore '
+        'campaign', () {
+      ctrl.startSideMode(GameMode.frostRush);
+      ctrl.addScore(9999);
+      ctrl.checkEnd(false);
+      expect(ctrl.ended.value, isTrue);
+      expect(ctrl.starsEarned.value, 0);
+      expect(ctrl.unlockedLevel.value, 1);
+      expect(ctrl.coins.value, 0);
+      expect(StorageService.to.getInt(StorageKeys.highScore(1)), 0);
+    });
+
+    test('Frost Rush: chỉ lưu best khi điểm mới cao hơn, độc lập với '
+        'comboRushBest', () {
+      ctrl.startSideMode(GameMode.frostRush);
+      ctrl.addScore(100);
+      ctrl.checkEnd(false);
+      expect(ctrl.frostRushBest.value, 100);
+      expect(ctrl.comboRushBest.value, 0);
+
+      ctrl.startSideMode(GameMode.frostRush);
+      ctrl.addScore(50);
+      ctrl.checkEnd(false);
+      expect(ctrl.frostRushBest.value, 100);
+
+      ctrl.startSideMode(GameMode.frostRush);
+      ctrl.addScore(200);
+      ctrl.checkEnd(false);
+      expect(ctrl.frostRushBest.value, 200);
+    });
+
+    test('resetProgress xoá frostRushBest', () async {
+      ctrl.startSideMode(GameMode.frostRush);
+      ctrl.addScore(300);
+      ctrl.checkEnd(false);
+      expect(ctrl.frostRushBest.value, 300);
+
+      await ctrl.resetProgress();
+      expect(ctrl.frostRushBest.value, 0);
+    });
+  });
+
   group('I6 Battle-pass season', () {
     test('thắng campaign cộng điểm mùa = sao * 10', () {
       ctrl.startLevel(1);
@@ -1244,6 +1423,33 @@ void main() {
       expect(ctrl.canPrestige, isTrue);
       expect(ctrl.allLevelsCompletedOnce.value, isTrue);
       expect(StorageService.to.getBool(StorageKeys.allLevelsCompleted), isTrue);
+    });
+
+    test('save cũ trước Round-8 (allLevelsCompleted=true, chưa có '
+        'allLevelsCompletedAtCount) → migrate về false khi campaign mở '
+        'rộng (bug do codex phát hiện, 240→260)', () {
+      StorageService.to.setBool(StorageKeys.allLevelsCompleted, true);
+      Get.delete<GameController>(force: true);
+      final relaunched = Get.put(GameController(), permanent: true);
+
+      expect(relaunched.allLevelsCompletedOnce.value, isFalse);
+      expect(relaunched.canPrestige, isFalse);
+      expect(
+        StorageService.to.getBool(StorageKeys.allLevelsCompleted),
+        isFalse,
+      );
+    });
+
+    test('save đã hoàn thành đúng kLevelCount hiện tại (có '
+        'allLevelsCompletedAtCount khớp) → giữ nguyên canPrestige=true khi '
+        'relaunch', () {
+      winLevel(kLevelCount);
+      expect(ctrl.canPrestige, isTrue);
+      Get.delete<GameController>(force: true);
+      final relaunched = Get.put(GameController(), permanent: true);
+
+      expect(relaunched.allLevelsCompletedOnce.value, isTrue);
+      expect(relaunched.canPrestige, isTrue);
     });
 
     test('gọi prestige() khi chưa đủ điều kiện → no-op hoàn toàn', () {

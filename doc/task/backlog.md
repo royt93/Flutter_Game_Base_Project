@@ -162,6 +162,36 @@ Ghi chú: E4-S6 chuyển greedy-bot sim (đang ở scratchpad) thành test chín
 `test/data/levels_achievability_test.dart`. E4-S11 golden CHỜ E1 xong (chốt visual).
 Anim (E2/E3) test bằng pump theo mốc thời gian + kiểm trạng thái cuối, không so pixel.
 
+**E4-S5** ✅ Done (2026-08-05) — `test/game/booster_test.dart` (151 dòng, dựng
+`PopStarGame` thật qua `GameWidget` theo pattern `cell_at_test.dart`, gọi thẳng
+trigger method cho bomb/shuffle/undo, xác nhận biên + giữ multiset + stack undo).
+Commit `e64f991`.
+
+**E4-S6** ✅ Done (2026-08-05) — `test/data/levels_achievability_test.dart` (168
+dòng, có assertion thật — mô phỏng greedy bot theo đúng `_blastCellsFor` của
+`pop_star_game.dart` line/bomb/rainbow, không phải file stub). Commit `e64f991`.
+
+**E4-S1, S2, S3, S4, S7, S8, S9, S10, S11** — re-verify lại nguồn thay vì tin
+ước lượng cũ: đã **thoả mãn từ trước Round-7**, không cần việc mới.
+- S1: 46 file test dùng chung pattern `SharedPreferences.setMockInitialValues` +
+  `Get.put(StorageService(...))` nhất quán (helper "de facto" qua convention, không
+  phải hàm `pumpApp()` tách riêng — chấp nhận được, không phải gap thật).
+- S2/S3/S4: `test/logic/pop_detector_test.dart`, `pop_collapse_test.dart`,
+  `test/presentation/game_controller_test.dart` đã tồn tại và chạy trong suite
+  chính (`flutter test --exclude-tags slow`).
+- S7: `test/widget/` có 45+ file, phủ gần như mọi screen/widget (achievements,
+  boss_rush, guide, home, settings, shop, trophy_room, star_road, mascot_wardrobe...).
+- S8: `neon_dialog_test.dart` + `game_screen_smoke_test.dart` phủ flow dialog.
+- S9: `test/core/locale_service_test.dart` + `app_translations_test.dart` (parity
+  key 22 ngôn ngữ).
+- S10: `integration_test/lifecycle_test.dart` + `backup_restore_test.dart`.
+- S11: `test/widget/goldens/` có 7 golden test (neon_icon, stroke_text, coin_chip,
+  neon_button, neon_app_bar, block_component_material, theme_dark_toggle).
+
+**E4-S12** ❌ Còn mở (Could, ưu tiên thấp) — không tìm thấy config coverage
+threshold/gate trong CI hay `pubspec.yaml`. Chưa có việc nào enforce ngưỡng
+coverage tối thiểu; để lại cho vòng sau nếu cần.
+
 ---
 
 ## E5 — Docs & Markdown Audit (Should)
@@ -185,3 +215,24 @@ login streak, season pass, cosmetics, social-lite), có ghi chú rõ clan là UI
 không backend. File inventory (`lib/logic/` 18, `lib/data/` 18, `lib/game/` 2,
 `lib/presentation/controllers/` 4, `screens/` 18, `widgets/` 24) đã verify bằng `ls`
 trực tiếp, không chỉ dựa vào agent report.
+
+**E5-S5** ✅ Done (2026-08-05) — `grep -rn "neon_jewels\|Neon Jewels\|match-3" store-assets/`
+không còn match nào (Round-7 đã sửa `app-store-screenshots.json`).
+
+**E5-S7** ✅ Done (2026-08-05) — `doc/README.md` tồn tại, hoạt động đúng vai trò
+index (bảng liên kết `feat.md` / `RELEASE_CHECKLIST.md` / `task/README.md`).
+
+**E5-S2, S3, S4, S6** — re-verify lại nguồn: **thoả mãn từ trước Round-7**.
+- S2: `README.md` gốc đã viết lại đúng cho Pop Star Blast (không còn mô tả
+  match-3 cũ), có link `feat.md` + `task/`.
+- S3: `doc/RELEASE_CHECKLIST.md` tồn tại và có checklist tự động + thủ công.
+  Sweep lần này phát hiện 1 số liệu cũ ("200 màn" từ thời MVP) — đã sửa thành
+  "240 màn" trong cùng lần audit này (không phải việc mới, chỉ đồng bộ số liệu).
+  Cập nhật (Item 1, World 13): dòng này của `RELEASE_CHECKLIST.md` được sweep
+  tiếp sang "260 màn" — số liệu hiện tại của file là "260 màn", không còn là
+  "240 màn" như câu trên mô tả tại thời điểm viết.
+- S4: `doc/feat.md` tồn tại, có link tới `doc/task/` plan.
+- S6: sweep `grep -rln "neon_jewels\|match-3" --include=*.md .` — các match còn
+  lại (ví dụ dòng mở đầu `README.md`/`RELEASE_CHECKLIST.md` "Fork mới từ Neon
+  Jewels") là tham chiếu lịch sử fork **cố ý giữ lại** theo đúng phần "History"
+  của `CLAUDE.md`, không phải dấu vết code cũ còn sót — không cần xoá.

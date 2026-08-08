@@ -117,9 +117,9 @@ int prestigeTargetScore(PopLevel level, int tier) {
 /// Thưởng khi dọn sạch toàn bộ bàn.
 const int clearBoardBonus = 1000;
 
-const int kLevelCount = 240;
+const int kLevelCount = 260;
 
-/// 240 màn tăng dần độ khó: cols và colorCount nới rộng theo world (mỗi 20
+/// 260 màn tăng dần độ khó: cols và colorCount nới rộng theo world (mỗi 20
 /// màn). Bàn hữu hạn, KHÔNG refill → điểm đạt được scale theo số ô, không theo
 /// index màn. Vì vậy targetScore neo vào `cells * 6` (ngưỡng 1-sao chơi thường)
 /// và chỉ nhích nhẹ theo world; công thức leo-tuyến-tính cũ khiến ~146/200 màn
@@ -280,4 +280,27 @@ PopLevel gauntletLevelFor(GauntletModifier modifier) => PopLevel(
   colorCount: modifier.colorCountOverride ?? 5,
   targetScore: 0,
   gravityDirection: modifier.gravityOverride ?? GravityDirection.down,
+);
+
+/// I75 Combo Rush: bàn cùng kích thước Time-attack/Zen (id -8, kế tiếp -7
+/// của Gauntlet) — luật chơi (đua giữ combo, không timer) hoàn toàn nằm ở
+/// controller/UI, PopLevel này chỉ định kích thước hiển thị.
+const PopLevel kComboRushLevel = PopLevel(
+  id: -8,
+  rows: 9,
+  cols: 8,
+  colorCount: 5,
+  targetScore: 0,
+);
+
+/// I76b Frost Rush: bàn cùng kích thước Combo Rush (id -9, kế tiếp -8) —
+/// mật độ Ice Tile ép cao được dựng riêng trong `PopStarGame._placeForcedIceTiles`
+/// (đọc `controller.mode.value == GameMode.frostRush`), PopLevel này chỉ
+/// định kích thước hiển thị như mọi side mode khác.
+const PopLevel kFrostRushLevel = PopLevel(
+  id: -9,
+  rows: 9,
+  cols: 8,
+  colorCount: 5,
+  targetScore: 0,
 );

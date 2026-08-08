@@ -53,18 +53,37 @@ void main() {
     });
   });
 
-  // Round-7: World 12 "Aurora Comet Trail" (level 221-240) — world mới
-  // nhất, phải khớp đúng range đã khai báo trong kWorlds và có màu/icon
-  // riêng (không trùng 11 world trước).
+  // I24 (task #14): World 12 (level 221-240) — không còn là world cuối kể
+  // từ Round-8 (World 13), dùng index cố định thay vì `kWorlds.last`.
   group('World 12', () {
     test('startId 221, endId 240, nameKey world_path_name_12', () {
-      final w12 = kWorlds.last;
+      final w12 = kWorlds[11];
       expect(w12.startId, 221);
       expect(w12.endId, 240);
       expect(w12.nameKey, 'world_path_name_12');
     });
 
-    test('màu không trùng bất kỳ world nào trong 11 world trước', () {
+    test('màu không trùng bất kỳ world nào khác', () {
+      final otherColors = kWorlds
+          .where((w) => w.nameKey != 'world_path_name_12')
+          .map((w) => w.color)
+          .toSet();
+      expect(otherColors.contains(kWorlds[11].color), isFalse);
+    });
+  });
+
+  // Round-8: World 13 "Coral Reef Cove" (level 241-260) — world mới nhất,
+  // phải khớp đúng range đã khai báo trong kWorlds và có màu/icon riêng
+  // (không trùng 12 world trước).
+  group('World 13', () {
+    test('startId 241, endId 260, nameKey world_path_name_13', () {
+      final w13 = kWorlds.last;
+      expect(w13.startId, 241);
+      expect(w13.endId, 260);
+      expect(w13.nameKey, 'world_path_name_13');
+    });
+
+    test('màu không trùng bất kỳ world nào trong 12 world trước', () {
       final earlierColors = kWorlds
           .sublist(0, kWorlds.length - 1)
           .map((w) => w.color)
