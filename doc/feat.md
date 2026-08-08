@@ -5201,3 +5201,29 @@ hash của Home screen trước khi mở dialog).
 **Kết luận:** iOS build/run sạch, cả 3/3 vấn đề accessibility phát hiện
 trong phiên QA này đã fix và verify trực tiếp trên simulator. Scope iOS
 build/QA parity check đóng hoàn toàn.
+
+## ✅ Round-8 (bổ sung) — Fix lỗ hổng commit + regression test
+
+Sau khi user commit Round-8 (`e8b9739`/`da30204`, 2 commit trùng message do
+thao tác tay của user), phát hiện qua `git status`/`git ls-files`: 5 file
+thuộc Round-8 CHƯA từng được `git add` vào bất kỳ commit nào — dù các file
+đã commit khác (`lib/game/block_component.dart`, `lib/game/pop_star_game.dart`,
+`lib/presentation/screens/trophy_room_screen.dart`) đã tham chiếu tới chúng:
+
+- `lib/logic/ice_tile.dart` (I76 core mechanic)
+- `lib/presentation/screens/sticker_album_screen.dart` (I77)
+- `test/logic/ice_tile_test.dart`
+- `test/presentation/sticker_album_screen_test.dart`
+- `test/tool/campaign_total_sweep_test.dart`
+
+**Rủi ro:** clone lại repo từ HEAD lúc đó sẽ build lỗi ngay (thiếu file mà
+code khác import). `flutter analyze` local trước đó pass được chỉ vì các
+file này vẫn tồn tại vật lý trên đĩa, chưa từng bị mất.
+
+**Fix:** `git add` đúng 5 file trên (không gồm `.claude/`, `.mcp.json` — đây
+là tooling config cục bộ, không thuộc mã nguồn game), commit riêng
+(`2522b84`, "fix: add missing Round-8 source/test files").
+
+**Verify:** `flutter test --exclude-tags slow` → 746 test pass (1 skip có
+chủ đích), bao gồm `app_translations_test.dart` (parity 22 locale) và các
+test Round-8 mới. `flutter analyze` → 0 issues.
