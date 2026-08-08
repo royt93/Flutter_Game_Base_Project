@@ -8,9 +8,9 @@ import '../controllers/game_controller.dart';
 import 'sticker_album_screen.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
+import '../widgets/mascot_skin_tile.dart';
 import '../widgets/neon_button.dart';
 import '../widgets/prestige_action.dart';
-import '../widgets/star_mascot.dart';
 
 /// I34: gộp hiển thị prestige tier (I27), thành tựu đã unlock (I22) và mascot
 /// skin đã sở hữu (I30) vào 1 màn "khoe" duy nhất — thuần trình bày, không
@@ -96,7 +96,7 @@ class TrophyRoomScreen extends StatelessWidget {
                           final skin = kMascotSkins[i];
                           final unlocked = gameCtrl.unlockedMascotSkinIds
                               .contains(skin.id);
-                          return _SkinTile(skin: skin, unlocked: unlocked);
+                          return MascotSkinTile(skin: skin, unlocked: unlocked);
                         },
                       );
                     }),
@@ -166,50 +166,6 @@ class _AchievementTile extends StatelessWidget {
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Thẻ mascot skin trong Trophy Room — tái dùng cách preview `StarMascot` của
-/// `_SkinCard` ở `MascotWardrobeScreen` nhưng rút gọn (không có action mua/chọn).
-class _SkinTile extends StatelessWidget {
-  const _SkinTile({required this.skin, required this.unlocked});
-
-  final MascotSkin skin;
-  final bool unlocked;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = unlocked ? NeonTheme.magenta : NeonTheme.inkSoft;
-    return Container(
-      padding: const EdgeInsets.all(NeonTheme.s8),
-      decoration: BoxDecoration(
-        color: NeonTheme.card,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color, width: unlocked ? 2 : 1.5),
-        boxShadow: unlocked ? NeonTheme.glow(color) : null,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Opacity(
-            opacity: unlocked ? 1.0 : 0.45,
-            child: StarMascot(size: 56, palette: skin.palette),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            skin.nameKey.tr,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: NeonTheme.ink,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
       ),
     );
   }

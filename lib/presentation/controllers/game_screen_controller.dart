@@ -254,7 +254,10 @@ class GameScreenController extends GetxController {
     _endWorker = ever(gameCtrl.ended, _onEndChanged);
     _newGame();
     if (gameCtrl.mode.value == GameMode.timeAttack) _startCountdown();
-    if (gameCtrl.mode.value == GameMode.comboRush) _startComboMeterPoll();
+    if (gameCtrl.mode.value == GameMode.comboRush ||
+        gameCtrl.mode.value == GameMode.frostRush) {
+      _startComboMeterPoll();
+    }
   }
 
   @override

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'boss_tile.dart';
 import 'countdown_lock_tile.dart';
 import 'gift_tile.dart';
+import 'ice_tile.dart';
 import 'wildcard_tile.dart';
 
 /// F6a: obstacle (ice/crate) mã hoá bằng giá trị âm ngay trong colorGrid —
@@ -21,6 +22,9 @@ import 'wildcard_tile.dart';
 /// trước khi hàm này chạy (xem `pop_detector.findConnectedGroup`) — loại trừ
 /// chỉ để phòng vệ, tránh chip nhầm nếu vì lý do gì đó nó còn sót lại trên
 /// bàn sau pop.
+/// I76: Ice Tile ([isIceTileId]) chip riêng qua [chipAdjacentIceTiles] (dải ID
+/// độc lập, độ bền tính theo lớp băng chứ không phải -d như obstacle) — loại
+/// trừ tương tự, không thì bị hàm này chip đè thêm 1 lần nữa trong cùng 1 pop.
 
 /// Nhóm vừa nổ tại [poppedCells] chip 1 độ bền mọi obstacle liền kề (4 hướng).
 /// Hết độ bền → vỡ thành ô trống (null). Mutates [grid] in place. Trả về vị
@@ -46,7 +50,8 @@ Set<Point<int>> chipAdjacentObstacles(
           v != giftTileValue &&
           !isBossTileId(v) &&
           !isCountdownLockId(v) &&
-          !isWildcardTileValue(v)) {
+          !isWildcardTileValue(v) &&
+          !isIceTileId(v)) {
         hit.add(n);
       }
     }

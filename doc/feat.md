@@ -5227,3 +5227,68 @@ là tooling config cục bộ, không thuộc mã nguồn game), commit riêng
 **Verify:** `flutter test --exclude-tags slow` → 746 test pass (1 skip có
 chủ đích), bao gồm `app_translations_test.dart` (parity 22 locale) và các
 test Round-8 mới. `flutter analyze` → 0 issues.
+
+## ✅ Round-8 (bổ sung) — Code review Items 2-8 + fix 7 finding
+
+Chạy `code-review` skill (high effort) trên diff Round-8 Items 2-8 (I76 Ice
+Tile, I80 Remix Levels, I75 Combo Rush, I76b Frost Rush, I78 Daily Quest
+reminder, I77 Sticker Album, Performance pass) — 8 finder angle + 1-vote
+verify, ra 7 finding sống sót (3 bug + 4 cleanup). User chọn qua
+`AskUserQuestion`: fix cả 7 + viết test.
+
+**Bug #1 — Ice tile bị chip nhầm 2 lần mỗi pop.** `chipAdjacentObstacles()`
+(`lib/logic/obstacle.dart`) quét adjacency chung cho mọi ID âm mà không loại
+trừ range Ice Tile (`iceTileIdBase=-1400`), nên 1 lần pop cạnh ice tile vừa
+bị `chipAdjacentIceTiles()` trừ đúng 1 độ bền, vừa bị hàm obstacle trừ thêm 1
+lần nữa — ice tile vỡ nhanh gấp đôi thiết kế. Fix: thêm guard loại trừ
+`isIceTileId(v)` trong `chipAdjacentObstacles()`, cùng họ với guard đã có sẵn
+cho gift/wildcard/magnet/countdown-lock/boss. Test:
+`test/logic/obstacle_test.dart` — ice tile liền kề giữ nguyên độ bền sau khi
+gọi `chipAdjacentObstacles()`.
+
+**Bug #2 — Combo meter HUD của Frost Rush đứng yên.** `GameScreenController
+.onInit()` chỉ gọi `_startComboMeterPoll()` khi `mode == GameMode.comboRush`,
+bỏ sót `GameMode.frostRush` dù HUD combo meter render cho cả 2 mode như
+nhau — người chơi Frost Rush thấy thanh combo luôn 0% dù đang giữ combo
+thật. Fix: mở rộng điều kiện gọi `_startComboMeterPoll()` sang cả
+`frostRush`. Test mới: `test/widget/frost_rush_combo_meter_test.dart` — vào
+`GameMode.frostRush` qua `startSideMode()`, ép bàn 1 màu, tap tạo combo, bơm
+frame >100ms rồi assert `comboMeterFraction.value > 0`.
+
+**Bug #3 — Remix Levels không áp modifier vào board thật sự chơi.**
+`startRemixLevel()` set `currentLevelRx.value = kLevels[levelId - 1]` — level
+gốc y nguyên, không hề dùng `modifier.colorCountOverride`/`gravityOverride`
+để dựng board. Kết quả: chọn Remix Level "4 màu"/"đảo trọng lực" nhưng board
+sinh ra vẫn y hệt board gốc — modifier chỉ ảnh hưởng combo-window/move-limit
+(đọc qua getter riêng ở gameplay loop) chứ không hề chạm board generation.
+Fix: thêm factory `remixLevelFor(base, modifier)`
+(`lib/data/levels.dart`) dựng `PopLevel` mới với `colorCount`/
+`gravityDirection` lấy từ modifier (fallback về base nếu modifier không
+override), gọi nó trong `startRemixLevel()`. Test:
+`test/presentation/game_controller_test.dart` (group I80) — spot-check 3
+entry `kRemixLevels` (four_colors, reverse_gravity, no_undo) đúng
+colorCount/gravityDirection/giữ nguyên rows/cols/targetScore từ level gốc.
+
+**Cleanup #1 — gọi trùng milestone check.** Gộp `_checkAchievements()` +
+`_checkStickerMilestones()` thành 1 lời gọi tại mọi trigger site thay vì 2
+lời gọi rời rạc.
+
+**Cleanup #2 — early-exit cho hot path.** `_checkStickerMilestones()` thêm
+early-return khi `totalCosmeticsOwned` không đổi so với lần check trước,
+tránh quét lại toàn bộ danh sách milestone mỗi lần trigger.
+
+**Cleanup #3 — trùng lặp widget mascot skin tile.** `trophy_room_screen.dart`
+(`_SkinTile`) và `sticker_album_screen.dart` (`_MascotSkinTile`) định nghĩa 2
+widget gần như giống hệt nhau. Gộp thành
+`lib/presentation/widgets/mascot_skin_tile.dart` (`MascotSkinTile`, tham số
+`mascotSize` để 2 màn dùng kích thước khác nhau), xoá cả 2 class private cũ.
+
+**Cleanup #4 — trùng lặp khai báo synthetic level.** `kTimeAttackLevel`,
+`kZenLevel`, `kComboRushLevel`, `kFrostRushLevel` (`lib/data/levels.dart`)
+mỗi cái là 1 `const PopLevel` riêng chỉ khác `id`. Gộp thành factory
+`_sideModeLevel(int id)`, 4 hằng số gọi factory với ID riêng (giữ nguyên,
+không đổi giá trị ID).
+
+**Verify:** `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
+→ 749 test pass (bao gồm 1 test mới cho Bug#1, 1 group test mở rộng cho
+Bug#3, 1 file widget test mới cho Bug#2).

@@ -12,6 +12,7 @@ import 'package:pop_star_blast/data/weekly_goal.dart';
 import 'package:pop_star_blast/game/pop_star_game.dart';
 import 'package:pop_star_blast/logic/challenge_code.dart';
 import 'package:pop_star_blast/logic/gift_tile.dart';
+import 'package:pop_star_blast/logic/pop_collapse.dart';
 import 'package:pop_star_blast/presentation/controllers/game_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -881,6 +882,38 @@ void main() {
       );
       ctrl.startRemixLevel(shortComboEntry.levelId, shortComboEntry.modifier);
       expect(ctrl.activeComboWindowOverride, 1.5);
+    });
+
+    test('startRemixLevel() áp colorCountOverride/gravityOverride của '
+        'modifier vào currentLevel dùng để dựng bàn — không phải chỉ giữ '
+        'nguyên level gốc (regression cho bug modifier không tác động board '
+        'generation)', () {
+      final fourColorsEntry = kRemixLevels.firstWhere(
+        (r) => r.modifier.id == 'four_colors',
+      );
+      final baseLevel = kLevels[fourColorsEntry.levelId - 1];
+      ctrl.startRemixLevel(fourColorsEntry.levelId, fourColorsEntry.modifier);
+      expect(ctrl.currentLevel.colorCount, 4);
+      expect(ctrl.currentLevel.rows, baseLevel.rows);
+      expect(ctrl.currentLevel.cols, baseLevel.cols);
+      expect(ctrl.currentLevel.targetScore, baseLevel.targetScore);
+
+      final reverseGravityEntry = kRemixLevels.firstWhere(
+        (r) => r.modifier.id == 'reverse_gravity',
+      );
+      ctrl.startRemixLevel(
+        reverseGravityEntry.levelId,
+        reverseGravityEntry.modifier,
+      );
+      expect(ctrl.currentLevel.gravityDirection, GravityDirection.up);
+
+      final noUndoEntry = kRemixLevels.firstWhere(
+        (r) => r.modifier.id == 'no_undo',
+      );
+      final noUndoBase = kLevels[noUndoEntry.levelId - 1];
+      ctrl.startRemixLevel(noUndoEntry.levelId, noUndoEntry.modifier);
+      expect(ctrl.currentLevel.colorCount, noUndoBase.colorCount);
+      expect(ctrl.currentLevel.gravityDirection, noUndoBase.gravityDirection);
     });
 
     test('remixBestFor: chỉ tăng khi điểm mới cao hơn, best riêng theo từng '

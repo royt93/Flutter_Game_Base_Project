@@ -7,9 +7,9 @@ import '../../data/burst_styles.dart';
 import '../../data/combo_text_styles.dart';
 import '../../data/mascot_skins.dart';
 import '../controllers/game_controller.dart';
+import '../widgets/mascot_skin_tile.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
-import '../widgets/star_mascot.dart';
 
 /// I77: gộp cả 4 hệ cosmetic (mascot skin, board frame, burst style, combo
 /// text style) đã shipped riêng lẻ vào 1 màn "album" duy nhất, đọc lại state
@@ -75,9 +75,10 @@ class StickerAlbumScreen extends StatelessWidget {
                           final skin = kMascotSkins[i];
                           final unlocked = gameCtrl.unlockedMascotSkinIds
                               .contains(skin.id);
-                          return _MascotSkinTile(
+                          return MascotSkinTile(
                             skin: skin,
                             unlocked: unlocked,
+                            mascotSize: 48,
                           );
                         },
                       );
@@ -215,48 +216,6 @@ class _ProgressBanner extends StatelessWidget {
             style: TextStyle(
               color: NeonTheme.ink,
               fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MascotSkinTile extends StatelessWidget {
-  const _MascotSkinTile({required this.skin, required this.unlocked});
-
-  final MascotSkin skin;
-  final bool unlocked;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = unlocked ? NeonTheme.magenta : NeonTheme.inkSoft;
-    return Container(
-      padding: const EdgeInsets.all(NeonTheme.s8),
-      decoration: BoxDecoration(
-        color: NeonTheme.card,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color, width: unlocked ? 2 : 1.5),
-        boxShadow: unlocked ? NeonTheme.glow(color) : null,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Opacity(
-            opacity: unlocked ? 1.0 : 0.45,
-            child: StarMascot(size: 48, palette: skin.palette),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            skin.nameKey.tr,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: NeonTheme.ink,
-              fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
           ),

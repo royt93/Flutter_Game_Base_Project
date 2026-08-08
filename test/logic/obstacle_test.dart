@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pop_star_blast/logic/gift_tile.dart';
+import 'package:pop_star_blast/logic/ice_tile.dart';
 import 'package:pop_star_blast/logic/obstacle.dart';
 
 void main() {
@@ -13,6 +14,17 @@ void main() {
       final broken = chipAdjacentObstacles(grid, {const Point(0, 0)});
       expect(broken, isEmpty);
       expect(grid[0][1], giftTileValue);
+    });
+
+    test('I76: ice tile liền kề không bị chip nhầm bởi hàm obstacle — chỉ '
+        'chipAdjacentIceTiles mới được chip nó, không thì 1 pop bị trừ độ '
+        'bền 2 lần (double-chip regression)', () {
+      final grid = <List<int?>>[
+        [0, iceTileIdBase - iceTileDurability + 1],
+      ];
+      final broken = chipAdjacentObstacles(grid, {const Point(0, 0)});
+      expect(broken, isEmpty);
+      expect(grid[0][1], iceTileIdBase - iceTileDurability + 1);
     });
 
     test('chip 1 độ bền obstacle liền kề ô vừa nổ', () {

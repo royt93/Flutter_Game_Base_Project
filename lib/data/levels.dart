@@ -211,22 +211,16 @@ final List<PopLevel> kLevels = List.generate(kLevelCount, (i) {
   );
 });
 
-/// Bàn cho F8 side-mode (Time-attack / Zen). id âm — không trùng id campaign
-/// 1..200 nên không đụng storage key theo id (highScore/star).
-const PopLevel kTimeAttackLevel = PopLevel(
-  id: -1,
-  rows: 9,
-  cols: 8,
-  colorCount: 5,
-  targetScore: 0,
-);
-const PopLevel kZenLevel = PopLevel(
-  id: -2,
-  rows: 9,
-  cols: 8,
-  colorCount: 5,
-  targetScore: 0,
-);
+/// Bàn 9x8/5-màu dùng chung cho các side-mode không ramp độ khó (Time-attack,
+/// Zen, Combo Rush, Frost Rush) — chỉ [id] khác nhau, luật chơi riêng của mỗi
+/// mode nằm ở controller/UI chứ không phải kích thước bàn.
+PopLevel _sideModeLevel(int id) =>
+    PopLevel(id: id, rows: 9, cols: 8, colorCount: 5, targetScore: 0);
+
+/// id âm — không trùng id campaign 1..200 nên không đụng storage key theo id
+/// (highScore/star).
+final PopLevel kTimeAttackLevel = _sideModeLevel(-1);
+final PopLevel kZenLevel = _sideModeLevel(-2);
 
 /// F12 Endless: bàn thứ [boardIndex] (0-based, tăng mỗi khi dọn sạch bàn
 /// trước). Ramp liên tục (không chia world như campaign) — rows/cols/colors
@@ -282,25 +276,30 @@ PopLevel gauntletLevelFor(GauntletModifier modifier) => PopLevel(
   gravityDirection: modifier.gravityOverride ?? GravityDirection.down,
 );
 
+/// I80 Remix Levels: [base] là 1 màn campaign có sẵn trong [kLevels] —
+/// rows/cols/targetScore/objective/isBoss/bossTileSpec giữ nguyên (đây vẫn
+/// là chính màn đó, chỉ chơi lại với biến số khác), chỉ colorCount/
+/// gravityDirection đổi theo [modifier] (mirror [gauntletLevelFor]). id giữ
+/// nguyên [base.id] — Remix không lưu highScore/star riêng theo id level.
+PopLevel remixLevelFor(PopLevel base, GauntletModifier modifier) => PopLevel(
+  id: base.id,
+  rows: base.rows,
+  cols: base.cols,
+  colorCount: modifier.colorCountOverride ?? base.colorCount,
+  targetScore: base.targetScore,
+  objective: base.objective,
+  isBoss: base.isBoss,
+  gravityDirection: modifier.gravityOverride ?? base.gravityDirection,
+  bossTileSpec: base.bossTileSpec,
+);
+
 /// I75 Combo Rush: bàn cùng kích thước Time-attack/Zen (id -8, kế tiếp -7
 /// của Gauntlet) — luật chơi (đua giữ combo, không timer) hoàn toàn nằm ở
 /// controller/UI, PopLevel này chỉ định kích thước hiển thị.
-const PopLevel kComboRushLevel = PopLevel(
-  id: -8,
-  rows: 9,
-  cols: 8,
-  colorCount: 5,
-  targetScore: 0,
-);
+final PopLevel kComboRushLevel = _sideModeLevel(-8);
 
 /// I76b Frost Rush: bàn cùng kích thước Combo Rush (id -9, kế tiếp -8) —
 /// mật độ Ice Tile ép cao được dựng riêng trong `PopStarGame._placeForcedIceTiles`
 /// (đọc `controller.mode.value == GameMode.frostRush`), PopLevel này chỉ
 /// định kích thước hiển thị như mọi side mode khác.
-const PopLevel kFrostRushLevel = PopLevel(
-  id: -9,
-  rows: 9,
-  cols: 8,
-  colorCount: 5,
-  targetScore: 0,
-);
+final PopLevel kFrostRushLevel = _sideModeLevel(-9);

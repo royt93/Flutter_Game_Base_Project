@@ -741,7 +741,11 @@ class GameController extends GetxController {
     AchievementMetric.clanContribTotal => clanContribTotal.value,
   };
 
+  /// Gộp chung với [_checkStickerMilestones] — cả 2 đều là "mốc tích luỹ tự
+  /// động cộng xu" chạy trên cùng trigger (registerPop/checkEnd), gọi tách
+  /// rời ở 4 call site trước đây dễ quên đồng bộ khi thêm trigger mới.
   void _checkAchievements() {
+    _checkStickerMilestones();
     final metricValues = {
       for (final m in AchievementMetric.values) m: metricValue(m),
     };
@@ -819,7 +823,16 @@ class GameController extends GetxController {
           .where((s) => isComboTextStyleUnlocked(s, maxComboEver.value))
           .length;
 
+  static final int _allStickerMilestonesMask =
+      (1 << stickerAlbumMilestones.length) - 1;
+
+  /// Gọi mỗi pop (qua [_checkAchievements]) — bỏ sớm khi đã nhận hết mốc để
+  /// khỏi lặp lại phép tính [totalCosmeticsOwned] (18 mục) trên hot path sau
+  /// khi không còn mốc nào để nhận nữa.
   void _checkStickerMilestones() {
+    if (claimedStickerMilestoneMask.value == _allStickerMilestonesMask) {
+      return;
+    }
     final owned = totalCosmeticsOwned;
     var changed = false;
     for (var i = 0; i < stickerAlbumMilestones.length; i++) {
@@ -1870,7 +1883,7 @@ class GameController extends GetxController {
   void startRemixLevel(int levelId, GauntletModifier mod) {
     mode.value = GameMode.remixLevel;
     activeRemixModifier = mod;
-    currentLevelRx.value = kLevels[levelId - 1];
+    currentLevelRx.value = remixLevelFor(kLevels[levelId - 1], mod);
     score.value = 0;
     starsEarned.value = 0;
     ended.value = false;
@@ -2131,7 +2144,6 @@ class GameController extends GetxController {
       StorageService.to.setInt(StorageKeys.maxComboEver, maxComboEver.value);
     }
     _checkAchievements();
-    _checkStickerMilestones();
     return gained;
   }
 
@@ -2152,7 +2164,6 @@ class GameController extends GetxController {
         boardsFullyCleared.value,
       );
       _checkAchievements();
-      _checkStickerMilestones();
     }
     if (mode.value == GameMode.puzzleLab ||
         mode.value == GameMode.passAndPlay) {
@@ -2347,7 +2358,6 @@ class GameController extends GetxController {
       );
     }
     _checkAchievements();
-    _checkStickerMilestones();
   }
 
   void _grantCoins() {
@@ -2394,7 +2404,6 @@ class GameController extends GetxController {
       totalBoostersUsed.value,
     );
     _checkAchievements();
-    _checkStickerMilestones();
   }
 
   void useBomb(int row, int col) {
