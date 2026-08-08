@@ -252,29 +252,34 @@ class NeonDialogButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PressableScale(
-      onTap: action.onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: NeonTheme.s16,
-          vertical: NeonTheme.s16,
-        ),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: action.color, width: 2),
-          boxShadow: NeonTheme.glow(action.color, blur: 10),
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            action.label,
-            maxLines: 1,
-            style: TextStyle(
-              color: NeonTheme.ink,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
-              shadows: [Shadow(color: action.color, blurRadius: 8)],
+    return Semantics(
+      button: true,
+      container: true,
+      label: action.label,
+      child: PressableScale(
+        onTap: action.onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: NeonTheme.s16,
+            vertical: NeonTheme.s16,
+          ),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: action.color, width: 2),
+            boxShadow: NeonTheme.glow(action.color, blur: 10),
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              action.label,
+              maxLines: 1,
+              style: TextStyle(
+                color: NeonTheme.ink,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1,
+                shadows: [Shadow(color: action.color, blurRadius: 8)],
+              ),
             ),
           ),
         ),

@@ -4573,14 +4573,15 @@ Sửa: guard đầu case, nếu `botsSum >= clanGoalTarget` thì
 Verify: `flutter test --exclude-tags slow` → 711 pass + 1 skip (đúng lý do),
 0 fail; `flutter analyze` 0 issues.
 
-## ⏸️ Round-7 — iOS build/QA parity check (item 5/5)
+## ✅ Round-7 — iOS build/QA parity check (item 5/5)
 
 Hạng mục cuối trong kế hoạch Round-7 (`doc/task/tasks/` không có file riêng —
 theo dõi tại đây). User yêu cầu tạm bỏ qua lúc 2026-08-06 sau khi 4/5 mục
 (World 12, E4, E5, Tutorial) đã hoàn tất và pass toàn bộ test + QA on-device
-Android. Chưa hủy khỏi scope — làm lại khi cần validate parity iOS so với
-Android (simulator sẵn sàng: iPhone 17 Pro, iPhone 17 Pro Max, iOS 26.5, qua
-Xcode 26.6 + `xcodebuild__*` MCP tools).
+Android. Thực hiện lại lúc 2026-08-08 (full build+run+smoke test trên
+simulator iPhone 17 Pro, iOS 26.5). Chi tiết kết quả + 3 bug fix (đã verify
+trực tiếp trên simulator): xem mục cuối cùng của file này
+("Round-8 (bổ sung) — iOS build/QA parity check").
 
 ## ✅ Round-8 — Item 0: Backlog E4/E5 reconciliation
 
@@ -5125,3 +5126,78 @@ Album):
 **Kết luận:** không phát hiện leak candidate mới nào phát sinh từ code
 Round-8. Không cần build/run — xác nhận bằng đọc trực tiếp source đủ để
 đóng mục này.
+
+## ✅ Round-8 (bổ sung) — iOS build/QA parity check
+
+Thực hiện lại Task iOS parity (đã tạm hoãn ở Round-7) sau khi Round-8 hoàn
+tất. User chọn qua `AskUserQuestion`: mức độ "Full build+run+smoke test",
+device "iPhone 17 Pro — iOS 26.5" (simulator UDID
+`69EFF3D6-E015-4170-AC71-48246C08FD60`, bundleId
+`com.galaxyjoy.popStarBlast`).
+
+**Build fix:** `ios/Podfile` thiếu deployment target khớp yêu cầu tối thiểu
+của `home_widget` (iOS 14.0) — đã set `platform :ios, '14.0'`
+(`ios/Podfile:2`). Sau fix: build sạch, 0 lỗi/warning liên quan code dự án
+(chỉ còn warning `in_app_review` PrivacyInfo.xcprivacy — của package bên thứ
+3, không thuộc phạm vi sửa).
+
+**Smoke test coverage:** home screen, vào/thoát campaign level, Zen Mode,
+Mode Select (toàn bộ side mode Round-8: Combo Rush, Frost Rush, Remix
+Levels...), Menu với toàn bộ drawer item, Trophy Room, Sticker Album, Daily
+Quest dialog. Không phát hiện quảng cáo ở bất kỳ màn nào (R4 — không có lần
+nào phải dừng).
+
+**Bug #1 — đã fix:** `NeonDialogButton`
+(`lib/presentation/widgets/neon_dialog.dart:254-286`) thiếu bọc `Semantics
+(button: true, ...)` → nút trong toàn bộ dialog dùng chung (Daily Reward,
+Quit-Level, v.v.) không có target accessibility riêng biệt để
+VoiceOver/XCUITest nhận tap. Đã bọc `Semantics(button: true, label:
+action.label, ...)` quanh `PressableScale`. Verify: test lại nhiều dialog
+(Daily Reward, Quit-Level) — tap chính xác nút mong muốn qua
+`snapshot_ui`/`tap`.
+
+**Bug #2 — đã fix:** `_LevelTile`
+(`lib/presentation/screens/level_select_screen.dart`) dùng `GestureDetector`
+trần, không có `Semantics` → mỗi ô level trong lưới 220+ level không có
+target accessibility riêng. Đã bọc `Semantics(button: true, enabled:
+!locked, label: locked ? 'Level $id, locked' : 'Level $id', child: ...)`.
+Verify: tap trực tiếp từng level qua accessibility tree hoạt động đúng.
+
+**Bug #3 — đã fix (điều tra sâu theo yêu cầu user):** Daily Quest dialog
+(`lib/presentation/widgets/daily_quest_dialog.dart`) — nội dung động (`Obx`
++ `List.generate` sinh nhiều dòng quest với Text/LinearProgressIndicator/
+FilledButton) bị gộp chung thành MỘT SemanticsNode duy nhất với luôn cả nút
+"Close". `snapshot_ui` ban đầu chỉ trả về 2 phần tử cho cả dialog: 1 text
+tiêu đề đứng riêng + 1 node `tap|button` gộp toàn bộ label các quest lẫn nút
+Close; tap vào node gộp này không kích hoạt Close.
+
+**Nguyên nhân gốc:** `Semantics` widget trong Flutter chỉ trở thành một
+*boundary* riêng (không merge với anh em/tổ tiên) khi tham số `container:
+true` được truyền. `NeonDialogButton`
+(`lib/presentation/widgets/neon_dialog.dart:254-257`) chỉ có `Semantics
+(button: true, label: ..., child: ...)` — thiếu `container: true` — nên nút
+này KHÔNG tạo boundary riêng, mà "trôi nổi" và bị gộp vào node cha/anh em gần
+nhất. Ở các dialog nội dung đơn giản (Daily Reward, Quit-Level) không có
+node nào khác để gộp cùng nên bug ẩn (merge với 1 phần tử duy nhất vẫn giữ
+đúng action tap) — chỉ lộ ra khi dialog có nội dung động phong phú (nhiều
+Text/Button) như Daily Quest, nơi nút Close bị nuốt chung vào khối nội dung
+lớn. Cùng họ lỗi thiếu-semantics-annotation với bug #1, nhưng bug #1 chỉ sửa
+phần nổi ("thêm Semantics") mà chưa xử lý phần chìm ("đảm bảo là boundary
+riêng") — Daily Quest dialog phơi bày phần thiếu đó.
+
+**Fix:** thêm `container: true` vào `Semantics(...)` của `NeonDialogButton`
+(`lib/presentation/widgets/neon_dialog.dart:255`) — buộc mọi action-button
+dùng chung trong `NeonDialog` luôn có accessibility boundary riêng, bất kể
+`content:` xung quanh phức tạp thế nào. Đây là fix ở tầng dùng chung
+(`NeonDialogButton`), áp dụng cho toàn bộ dialog trong app, không phải patch
+riêng cho Daily Quest dialog.
+
+**Verify:** `flutter analyze` → 0 issues. Build lại + relaunch trên simulator
+iPhone 17 Pro, mở lại Daily Quest dialog qua Menu → "Daily Quests": nút Close
+giờ là 1 SemanticsNode riêng biệt (label chỉ còn "Close Close", không còn
+gộp nội dung quest) — tap vào đóng đúng dialog (screen hash quay lại đúng
+hash của Home screen trước khi mở dialog).
+
+**Kết luận:** iOS build/run sạch, cả 3/3 vấn đề accessibility phát hiện
+trong phiên QA này đã fix và verify trực tiếp trên simulator. Scope iOS
+build/QA parity check đóng hoàn toàn.

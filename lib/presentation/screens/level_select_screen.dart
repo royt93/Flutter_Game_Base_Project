@@ -755,66 +755,71 @@ class _LevelTile extends StatelessWidget {
     final color = locked
         ? NeonTheme.lockedBorder
         : (isBoss ? NeonTheme.gold : NeonTheme.cyan);
-    return GestureDetector(
-      key: Key('level_tile_$id'),
-      onTap: onTap,
-      onLongPress: onLongPress,
-      child: Container(
-        decoration: BoxDecoration(
-          color: locked ? NeonTheme.lockedFill : NeonTheme.card,
-          shape: BoxShape.circle,
-          border: Border.all(color: color, width: isBoss ? 4 : 3),
-          boxShadow: locked ? null : NeonTheme.drop(y: 4, blur: 8),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (locked)
-                  const Icon(
-                    Icons.lock_rounded,
-                    color: NeonTheme.lockedBorder,
-                    size: 20,
-                  )
-                else
-                  Text(
-                    '$id',
-                    style: TextStyle(
-                      color: NeonTheme.ink,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                if (!locked && stars > 0)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: List.generate(
-                      3,
-                      (s) => Icon(
-                        Icons.star_rounded,
-                        size: 13,
-                        color: s < stars
-                            ? NeonTheme.gold
-                            : NeonTheme.ink.withValues(alpha: 0.15),
+    return Semantics(
+      button: true,
+      enabled: !locked,
+      label: locked ? 'Level $id, locked' : 'Level $id',
+      child: GestureDetector(
+        key: Key('level_tile_$id'),
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: Container(
+          decoration: BoxDecoration(
+            color: locked ? NeonTheme.lockedFill : NeonTheme.card,
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: isBoss ? 4 : 3),
+            boxShadow: locked ? null : NeonTheme.drop(y: 4, blur: 8),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (locked)
+                    const Icon(
+                      Icons.lock_rounded,
+                      color: NeonTheme.lockedBorder,
+                      size: 20,
+                    )
+                  else
+                    Text(
+                      '$id',
+                      style: TextStyle(
+                        color: NeonTheme.ink,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                  ),
-              ],
-            ),
-            // F11: node boss (cuối mỗi world) — vương miện góc trên phân biệt
-            // với node thường trên path map, kể cả khi chưa mở khoá.
-            if (isBoss)
-              Positioned(
-                top: -4,
-                child: Icon(
-                  Icons.emoji_events_rounded,
-                  size: 18,
-                  color: locked ? NeonTheme.lockedBorder : NeonTheme.gold,
-                ),
+                  if (!locked && stars > 0)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(
+                        3,
+                        (s) => Icon(
+                          Icons.star_rounded,
+                          size: 13,
+                          color: s < stars
+                              ? NeonTheme.gold
+                              : NeonTheme.ink.withValues(alpha: 0.15),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-          ],
+              // F11: node boss (cuối mỗi world) — vương miện góc trên phân biệt
+              // với node thường trên path map, kể cả khi chưa mở khoá.
+              if (isBoss)
+                Positioned(
+                  top: -4,
+                  child: Icon(
+                    Icons.emoji_events_rounded,
+                    size: 18,
+                    color: locked ? NeonTheme.lockedBorder : NeonTheme.gold,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
