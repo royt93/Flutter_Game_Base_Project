@@ -5388,3 +5388,11 @@ lần đầu → tooltip "Ghé Cửa hàng để mua booster!" hiện đúng nga
 (glow vàng) → tap Shop (dismiss tutorial, qua màn Cửa Hàng) → back về Home →
 tooltip "Bảng mới mỗi ngày — thử ngay!" hiện đúng ngay dưới nút Daily
 Challenge (glow đỏ). Cả 2 tooltip bám chính xác nút cha ở mọi bước.
+## ✅ App Store screenshots — Pop Star Blast (2026-08-09)
+
+- Scaffold editor biệt lập trong `store-assets/`; không sửa source Flutter.
+- Capture mới từ Pixel 7 Pro release qua ADB: Home, gameplay, mode library,
+  Shop, Daily Challenge, feature menu, Star Road và Season Pass.
+- Prefill 8 slide iPhone + 8 slide iPad, app name `Pop Star Blast`, theme
+  `dark-bold`, connected canvas và headline marketing outcome-first.
+- `bun run build` pass; editor chạy tại `http://localhost:3000`.
