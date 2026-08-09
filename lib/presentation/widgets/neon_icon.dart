@@ -56,6 +56,7 @@ class NeonIconButton extends StatelessWidget {
   final VoidCallback? onTap;
   final bool boxed;
   final String? semanticLabel;
+  final bool compact;
 
   const NeonIconButton(
     this.icon, {
@@ -65,6 +66,7 @@ class NeonIconButton extends StatelessWidget {
     this.size = 24,
     this.boxed = false,
     this.semanticLabel,
+    this.compact = false,
   });
 
   @override
@@ -106,6 +108,10 @@ class NeonIconButton extends StatelessWidget {
       icon: NeonIcon(icon, color: color, size: size),
       splashRadius: 24,
       tooltip: semanticLabel,
+      padding: compact ? EdgeInsets.zero : const EdgeInsets.all(8),
+      constraints: compact
+          ? const BoxConstraints(minWidth: 32, minHeight: 32)
+          : null,
     );
   }
 }

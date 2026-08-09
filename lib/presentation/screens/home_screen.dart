@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:in_app_review/in_app_review.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_info.dart';
 import '../../core/haptics.dart';
 import '../../core/neon_theme.dart';
 import '../../core/runtime_flags.dart';
+import '../../core/share_helper.dart';
 import '../../data/worlds.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_screen_controller.dart';
@@ -61,6 +64,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _shopButtonLink = LayerLink();
+  final _dailyButtonLink = LayerLink();
 
   @override
   void initState() {
@@ -145,6 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: NeonTheme.card,
       child: SafeArea(
         child: ListView(
+          key: const PageStorageKey('home_drawer_list'),
           padding: EdgeInsets.zero,
           children: [
             Padding(
@@ -348,7 +354,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: NeonTheme.s16,
-                        vertical: NeonTheme.s8,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -377,7 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Obx(() {
                       final homeCtrl = Get.find<HomeScreenController>();
                       return HomeCarousel(
-                        cards: homeCtrl.cards,
+                        cards: homeCtrl.cards.toList(),
                         currentIndex: homeCtrl.currentIndex.value,
                         onPageChanged: (i) => homeCtrl.currentIndex.value = i,
                         onCardTapped: () => homeCtrl.refreshCards(gameCtrl),
@@ -401,7 +406,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: NeonTheme.s8),
                     StrokeText(
                       kAppName,
                       fontSize: 46,
@@ -443,7 +447,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () => Get.to(() => const LevelSelectScreen()),
                       ),
                     ),
-                    const SizedBox(height: NeonTheme.s24),
+                    const SizedBox(height: NeonTheme.s8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -460,12 +464,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               Get.to(() => const ShopScreen());
                             },
                           );
-                          return homeCtrl.showShopTutorial.value
-                              ? PulseGlow(
-                                  color: NeonTheme.yellow,
-                                  child: shopButton,
-                                )
-                              : shopButton;
+                          return CompositedTransformTarget(
+                            link: _shopButtonLink,
+                            child: homeCtrl.showShopTutorial.value
+                                ? PulseGlow(
+                                    color: NeonTheme.yellow,
+                                    child: shopButton,
+                                  )
+                                : shopButton,
+                          );
                         }),
                         const SizedBox(width: NeonTheme.s24),
                         Obx(() {
@@ -482,12 +489,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               Get.to(() => const GameScreen());
                             },
                           );
-                          return homeCtrl.showDailyChallengeTutorial.value
-                              ? PulseGlow(
-                                  color: NeonTheme.red,
-                                  child: dailyButton,
-                                )
-                              : dailyButton;
+                          return CompositedTransformTarget(
+                            link: _dailyButtonLink,
+                            child: homeCtrl.showDailyChallengeTutorial.value
+                                ? PulseGlow(
+                                    color: NeonTheme.red,
+                                    child: dailyButton,
+                                  )
+                                : dailyButton,
+                          );
                         }),
                         const SizedBox(width: NeonTheme.s24),
                         NeonIconButton(
@@ -500,9 +510,53 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        NeonIconButton(
+                          Icons.star_rounded,
+                          color: NeonTheme.yellow,
+                          size: 20,
+                          compact: true,
+                          semanticLabel: 'rate_app'.tr,
+                          onTap: () async {
+                            final review = InAppReview.instance;
+                            if (await review.isAvailable()) {
+                              await review.openStoreListing();
+                            }
+                          },
+                        ),
+                        NeonIconButton(
+                          Icons.apps_rounded,
+                          color: NeonTheme.indigo,
+                          size: 20,
+                          compact: true,
+                          semanticLabel: 'more_apps'.tr,
+                          onTap: () => launchUrl(
+                            Uri.parse(
+                              'https://play.google.com/store/apps/dev?id=6193840742938642798',
+                            ),
+                            mode: LaunchMode.externalApplication,
+                          ),
+                        ),
+                        NeonIconButton(
+                          Icons.share_rounded,
+                          color: NeonTheme.cyan,
+                          size: 20,
+                          compact: true,
+                          semanticLabel: 'invite_friend'.tr,
+                          onTap: () => shareText(
+                            'invite_friend_share_msg'.trParams({
+                              'link':
+                                  'https://play.google.com/store/apps/details?id=$kPackageName',
+                            }),
+                          ),
+                        ),
+                      ],
+                    ),
                     const Spacer(),
                     Padding(
-                      padding: const EdgeInsets.only(bottom: NeonTheme.s16),
+                      padding: const EdgeInsets.only(bottom: NeonTheme.s8),
                       child: Column(
                         children: [
                           Text(
@@ -526,8 +580,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                _ShopTutorialOverlay(gameCtrl: gameCtrl),
-                _DailyChallengeTutorialOverlay(),
+                _ShopTutorialOverlay(gameCtrl: gameCtrl, link: _shopButtonLink),
+                _DailyChallengeTutorialOverlay(link: _dailyButtonLink),
               ],
             ),
           ),
@@ -540,8 +594,9 @@ class _HomeScreenState extends State<HomeScreen> {
 /// Round-7 Tutorial: coach-mark trỏ vào nút Shop trên hàng truy cập nhanh —
 /// hiện lần đầu vào Home, tự tắt khi người chơi bấm vào Shop.
 class _ShopTutorialOverlay extends StatelessWidget {
-  const _ShopTutorialOverlay({required this.gameCtrl});
+  const _ShopTutorialOverlay({required this.gameCtrl, required this.link});
   final GameController gameCtrl;
+  final LayerLink link;
 
   @override
   Widget build(BuildContext context) {
@@ -549,8 +604,11 @@ class _ShopTutorialOverlay extends StatelessWidget {
       final homeCtrl = Get.find<HomeScreenController>();
       if (!homeCtrl.showShopTutorial.value) return const SizedBox.shrink();
       return IgnorePointer(
-        child: Align(
-          alignment: const Alignment(-0.62, 0.9),
+        child: CompositedTransformFollower(
+          link: link,
+          targetAnchor: Alignment.bottomCenter,
+          followerAnchor: Alignment.topCenter,
+          offset: const Offset(0, 8),
           child: _TutorialBubble(textKey: 'tutorial_shop_body'),
         ),
       );
@@ -561,7 +619,8 @@ class _ShopTutorialOverlay extends StatelessWidget {
 /// Round-7 Tutorial: coach-mark trỏ vào nút Daily Challenge — chỉ hiện sau
 /// khi tutorial Shop đã được xem, tránh chồng 2 tooltip cùng lúc.
 class _DailyChallengeTutorialOverlay extends StatelessWidget {
-  const _DailyChallengeTutorialOverlay();
+  const _DailyChallengeTutorialOverlay({required this.link});
+  final LayerLink link;
 
   @override
   Widget build(BuildContext context) {
@@ -571,8 +630,11 @@ class _DailyChallengeTutorialOverlay extends StatelessWidget {
         return const SizedBox.shrink();
       }
       return IgnorePointer(
-        child: Align(
-          alignment: const Alignment(0, 0.9),
+        child: CompositedTransformFollower(
+          link: link,
+          targetAnchor: Alignment.bottomCenter,
+          followerAnchor: Alignment.topCenter,
+          offset: const Offset(0, 8),
           child: _TutorialBubble(textKey: 'tutorial_daily_challenge_body'),
         ),
       );

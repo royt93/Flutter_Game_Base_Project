@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../core/app_info.dart';
 import '../../core/app_translations.dart';
 import '../../core/audio_manager.dart';
 import '../../core/locale_service.dart';
@@ -433,10 +434,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       onTap: () => shareText(
                         // X6: text-only, tái dùng shareText đã dựng ở F15.
-                        // Placeholder link store — thay khi có link thật.
                         'invite_friend_share_msg'.trParams({
                           'link':
-                              'https://play.google.com/store/apps/details?id=com.galaxyjoy.pop_star_blast',
+                              'https://play.google.com/store/apps/details?id=$kPackageName',
                         }),
                       ),
                     ),

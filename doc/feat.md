@@ -5292,3 +5292,99 @@ không đổi giá trị ID).
 **Verify:** `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
 → 749 test pass (bao gồm 1 test mới cho Bug#1, 1 group test mở rộng cho
 Bug#3, 1 file widget test mới cho Bug#2).
+
+## ✅ Fix 2 bug Home screen + bổ sung Rate/More Apps/Share App (2026-08-09)
+
+User báo 3 việc trên Home screen. Root-cause qua đọc code + test trực tiếp
+trên device (Pixel 7 Pro).
+
+**Bug #1 — Nút "Nhận" trên banner chào buổi chiều không biến mất sau khi
+claim.** `Obx` ở `home_screen.dart` chỉ track `homeCtrl.currentIndex.value`
+làm dependency; dòng `cards: homeCtrl.cards` là truy cập field trần vào
+`RxList`, không đi qua getter reactive nên không đăng ký dependency —
+`Obx` không rebuild khi `refreshCards()` gọi `cards.assignAll(...)`. Fix:
+đổi `cards: homeCtrl.cards` thành `cards: homeCtrl.cards.toList()` (đọc qua
+getter reactive của `RxList`). Root-cause fix này tự động sửa luôn cả banner
+claim lẫn 4 card carousel khác (starRoad/seasonPass/achievement/perk) vì
+cùng chung nguyên nhân — không cần vá riêng từng nơi.
+
+**Bug #2 — Drawer menu mất vị trí scroll khi đóng/mở lại.** `DrawerController`
+dispose luôn subtree con khi đóng hẳn (không giữ offstage) → `ListView` bên
+trong mất `ScrollPosition`, tạo mới khi mở lại, luôn reset về đầu. Fix: thêm
+`key: const PageStorageKey('home_drawer_list')` cho `ListView` trong
+`_buildDrawer()` — dùng đúng cơ chế `PageStorage` của Flutter cho case này.
+
+**Feature — Rate App / More Apps / Share App trên Home.** Audit trước đó:
+share chỉ có ở Settings (hardcode package name trong URL), rate chỉ có flow
+tự động lúc thắng 3 sao, more-apps chưa tồn tại. Thêm:
+- `kPackageName` (`lib/core/app_info.dart`) — global mutable, nạp giá trị
+  thật qua `PackageInfo.fromPlatform()` trong `loadAppVersion()`
+  (`main.dart`), cùng pattern với `kAppVersion`. Settings hết hardcode,
+  dùng `$kPackageName` thay vì chuỗi cứng.
+- 3 nút mới (`NeonIconButton`, `boxed: true`) đặt ngay dưới hàng
+  Shop/Daily Challenge/Modes, trên label copyright/version: Rate
+  (`InAppReview.openStoreListing()`), More Apps (`launchUrl()` tới
+  `https://play.google.com/store/apps/dev?id=6193840742938642798`), Share
+  (tái dùng `shareText()` + key `invite_friend_share_msg` có sẵn, chèn
+  `$kPackageName` động).
+- Thêm `compact` mode cho `NeonIconButton` (padding/constraints nhỏ hơn) để
+  giải quyết RenderFlex overflow phát sinh khi chèn hàng nút phụ này.
+- Thêm 2 key dịch mới `rate_app`/`more_apps` theo đúng convention wave hiện
+  có (`_extraEn`/`_extraVi` + wave mới `_w287ByLang` cho 20 ngôn ngữ còn
+  lại), merge vào `keys` getter.
+
+**Verify:** `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
+pass (kể cả `app_translations_test.dart` kiểm đủ key 22 ngôn ngữ). Live-test
+trên Pixel 7 Pro (`2B051FDH3006MU`) qua `adb`, dùng UI Automator dump để lấy
+toạ độ tap chính xác:
+- Vấn đề 1: claim thưởng qua dialog "Phần thưởng hằng ngày" → coin 0→100
+  ngay lập tức, banner đổi thành "Đang giữ chuỗi 1 ngày!", nút "Nhận" biến
+  mất hoàn toàn — không cần refresh/hot-restart.
+- Vấn đề 2: mở drawer → scroll xuống đáy (xác nhận qua 2 screenshot liên
+  tiếp giống hệt nhau) → đóng → mở lại → vị trí scroll giữ nguyên y hệt.
+- Vấn đề 3: tap Rate → mở đúng Play Store listing cho package của chính
+  app (báo "Không tìm thấy mục nào" — đúng dự kiến vì app chưa publish,
+  không phải lỗi code). Tap More Apps → mở đúng trang dev "SAIGON PHANTOM
+  LABS" trên Play Store (`dev?id=6193840742938642798`). Tap Share → mở
+  share sheet hệ thống với text chứa đúng `com.galaxyjoy.pop_star_blast`
+  (package thật, không phải chuỗi hardcode).
+
+## ✅ Fix tooltip coach-mark Shop/Daily Challenge lệch vị trí trên Home (2026-08-09)
+
+User báo tooltip của Shop/Daily Challenge/Modes bị lệch nghiêm trọng so với
+nút cha. Đọc code xác nhận: chỉ có tooltip cho Shop và Daily Challenge
+(`HomeScreenController.showShopTutorial`/`showDailyChallengeTutorial`) —
+Modes chưa từng có tooltip trong code.
+
+**Root cause:** `_ShopTutorialOverlay`/`_DailyChallengeTutorialOverlay` định
+vị bubble bằng `Align(alignment: const Alignment(x, 0.9))` — toạ độ phân số
+cố định tính theo toàn màn hình, không hề bám theo vị trí thật của nút. Khi
+hàng nút phụ Rate/More Apps/Share được chèn thêm vào `Column` (feature ở
+trên), layout flex dịch chuyển, vị trí thật của hàng nút Shop/Daily/Modes
+đổi theo nhưng 2 hằng số `Alignment` không được cập nhật → tooltip trôi khỏi
+nút. Đây là lần thứ 2 lỗi cùng loại xảy ra (từng "ăn may" đúng vị trí lúc
+đầu) — chứng tỏ cách hardcode phân số về bản chất giòn, sẽ tái diễn ở lần
+đổi layout kế tiếp nếu chỉ retune số.
+
+**Fix (root cause, dùng đúng cơ chế Flutter cho bài toán "neo 1 widget vào vị
+trí 1 widget khác", không có sẵn trong codebase trước đó nên đưa mới):**
+`CompositedTransformTarget`/`CompositedTransformFollower` qua `LayerLink`.
+- `_HomeScreenState` (`home_screen.dart`): thêm 2 field `_shopButtonLink`,
+  `_dailyButtonLink` (`LayerLink()`).
+- Bọc `NeonIconButton` Shop và Daily Challenge trong `CompositedTransformTarget`
+  (giữ nguyên logic `PulseGlow` điều kiện bên trong).
+- `_ShopTutorialOverlay`/`_DailyChallengeTutorialOverlay` nhận thêm field
+  `link`, thay `Align(alignment: ...)` bằng `CompositedTransformFollower(
+  link: link, targetAnchor: Alignment.bottomCenter, followerAnchor:
+  Alignment.topCenter, offset: Offset(0, 8))` — bubble luôn bám sát mép dưới
+  của đúng nút, bất kể layout Column phía trên thay đổi thế nào sau này.
+
+**Verify:** `flutter analyze` → 0 issues. `flutter test --exclude-tags slow`
+→ chỉ có 1 fail pre-existing không liên quan (`campaign_total_sweep_test.dart`
+thiếu dòng "260 màn" trong `RELEASE_CHECKLIST.md`, xác nhận fail y hệt trên
+`main` sạch qua `git stash` — không phải regression của fix này). Live-test
+trên Pixel 7 Pro (`2B051FDH3006MU`): `pm clear` + relaunch để trigger tutorial
+lần đầu → tooltip "Ghé Cửa hàng để mua booster!" hiện đúng ngay dưới nút Shop
+(glow vàng) → tap Shop (dismiss tutorial, qua màn Cửa Hàng) → back về Home →
+tooltip "Bảng mới mỗi ngày — thử ngay!" hiện đúng ngay dưới nút Daily
+Challenge (glow đỏ). Cả 2 tooltip bám chính xác nút cha ở mọi bước.

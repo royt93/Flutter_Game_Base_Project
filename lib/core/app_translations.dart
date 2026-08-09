@@ -263,6 +263,9 @@ class AppTranslations extends Translations {
           // I77 — Sticker Album: sticker_album_title/sticker_album_progress,
           // tự chứa đủ 22 ngôn ngữ trong _i77ByLang.
           ...?_i77ByLang[e.key],
+          // Home: nút Rate App/More Apps (en+vi ở _extraEn/_extraVi, 20 ngôn
+          // ngữ còn lại ở _w287ByLang).
+          ...?_w287ByLang[e.key],
         },
     };
   }
@@ -549,6 +552,9 @@ class AppTranslations extends Translations {
 
   /// Key Wave 4 — English (mặc định + fallback cho ngôn ngữ chưa dịch).
   static const Map<String, String> _extraEn = {
+    // Home: Rate App / More Apps buttons.
+    'rate_app': 'Rate us',
+    'more_apps': 'More games',
     // I62 — Color Alchemy Lab.
     'alchemy_title': 'Color Alchemy Lab',
     'alchemy_hint': 'Choose a pigment for each gem color slot.',
@@ -1548,6 +1554,9 @@ class AppTranslations extends Translations {
 
   /// Key Wave 4 — Tiếng Việt (override English).
   static const Map<String, String> _extraVi = {
+    // Home: nút Rate App / More Apps.
+    'rate_app': 'Đánh giá',
+    'more_apps': 'Ứng dụng khác',
     // I62 — Color Alchemy Lab.
     'alchemy_title': 'Phòng Luyện Màu',
     'alchemy_hint': 'Chọn sắc tố cho từng ô màu viên đá.',
@@ -24128,6 +24137,30 @@ class AppTranslations extends Translations {
       'mode_combo_rush_label': 'কম্বো রাশ',
       'mode_frost_rush_label': 'ফ্রস্ট রাশ',
     },
+  };
+
+  /// Wave 287 — Home: nút Rate App / More Apps (en+vi ở _extraEn/_extraVi).
+  static const Map<String, Map<String, String>> _w287ByLang = {
+    'es_ES': {'rate_app': 'Valóranos', 'more_apps': 'Más juegos'},
+    'fr_FR': {'rate_app': 'Notez-nous', 'more_apps': 'Plus de jeux'},
+    'de_DE': {'rate_app': 'Bewerte uns', 'more_apps': 'Mehr Spiele'},
+    'pt_BR': {'rate_app': 'Avalie-nos', 'more_apps': 'Mais jogos'},
+    'ru_RU': {'rate_app': 'Оцените нас', 'more_apps': 'Другие игры'},
+    'zh_CN': {'rate_app': '给我们评分', 'more_apps': '更多游戏'},
+    'ja_JP': {'rate_app': '評価する', 'more_apps': 'もっと見る'},
+    'ko_KR': {'rate_app': '평가하기', 'more_apps': '더 많은 게임'},
+    'it_IT': {'rate_app': 'Valutaci', 'more_apps': 'Altri giochi'},
+    'id_ID': {'rate_app': 'Beri nilai', 'more_apps': 'Game lainnya'},
+    'th_TH': {'rate_app': 'ให้คะแนนเรา', 'more_apps': 'เกมอื่นๆ'},
+    'hi_IN': {'rate_app': 'हमें रेट करें', 'more_apps': 'और गेम'},
+    'ar_SA': {'rate_app': 'قيّمنا', 'more_apps': 'المزيد من الألعاب'},
+    'tr_TR': {'rate_app': 'Bizi puanla', 'more_apps': 'Daha fazla oyun'},
+    'nl_NL': {'rate_app': 'Beoordeel ons', 'more_apps': 'Meer games'},
+    'pl_PL': {'rate_app': 'Oceń nas', 'more_apps': 'Więcej gier'},
+    'fil_PH': {'rate_app': 'I-rate kami', 'more_apps': 'Iba pang laro'},
+    'ms_MY': {'rate_app': 'Nilaikan kami', 'more_apps': 'Permainan lain'},
+    'uk_UA': {'rate_app': 'Оцініть нас', 'more_apps': 'Інші ігри'},
+    'bn_BD': {'rate_app': 'আমাদের রেট করুন', 'more_apps': 'আরও গেম'},
   };
 
   /// W28.3 — Dead-feature rescue: Piggy full-bonus hint, Collection milestone
