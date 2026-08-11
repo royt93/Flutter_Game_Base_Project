@@ -232,6 +232,17 @@ class PopStarGame extends FlameGame {
   /// theo pop-kề-cạnh. Rỗng nếu màn không có Countdown Lock.
   final Map<int, int> countdownRemaining = {};
   Map<int, int>? _undoCountdownRemaining;
+
+  /// X20: loại power tile (F5) chỉ sống trên [BlockComponent.powerKind], KHÔNG
+  /// mã hoá trong [colorGrid] như mọi special tile khác — nên `undo()` dựng
+  /// lại `_blocks` từ grid sẽ xoá sạch power tile đã có trên bàn từ trước nước
+  /// đi bị hoàn tác. Chụp riêng ở đây, mirror [_undoBossHp].
+  List<List<PowerTileKind?>>? _undoPowerKinds;
+
+  /// X21: [freezeTurnsLeft] giảm mỗi lần pop khi Freeze đang bật (xem
+  /// [_chipObstaclesOrFrozen]) — cũng là state theo lượt như [bossHp], phải
+  /// khôi phục cùng, nếu không người chơi mất 1 lượt Freeze cho nước đã hoàn tác.
+  int? _undoFreezeTurns;
   late final Random _rng = Random(seed);
 
   /// F10: > 0 nghĩa freeze đang hiệu lực — obstacle không giảm bền, mỗi lần
@@ -586,6 +597,15 @@ class PopStarGame extends FlameGame {
   /// I28: bản public của [_cellCenter] để `GhostReplayScreen` tính toạ độ tap
   /// từ (row, col) đã ghi trong [recordedTaps], phục vụ auto-playback.
   Vector2 cellCenterFor(int row, int col) => _cellCenter(row, col);
+
+  /// X20: loại power tile (F5) tại 1 ô, hoặc null nếu ô trống/không phải power
+  /// tile. [_blocks] là private nên đây là đường duy nhất để đọc trạng thái
+  /// power tile từ ngoài — cần cho test undo, vì power tile là special tile
+  /// duy nhất không mã hoá trong [colorGrid].
+  PowerTileKind? powerKindAt(int row, int col) {
+    if (row < 0 || row >= rows || col < 0 || col >= cols) return null;
+    return _blocks[row][col]?.powerKind;
+  }
 
   /// I28: cho `GhostReplayScreen` biết khi nào an toàn để tap lượt kế tiếp
   /// (tránh tap trong lúc animation đang chạy, sẽ bị [handleTap] bỏ qua).
@@ -1216,8 +1236,15 @@ class PopStarGame extends FlameGame {
   /// chain tile (không có "màu" thật để đổi). Trả về false nếu không đổi được
   /// (đang animate, hoặc 1 trong 2 ô là obstacle/lock) — caller dùng để tránh
   /// trừ nhầm lượt booster.
+  /// **Hợp đồng với [GameController]: trả `false` nghĩa là KHÔNG tiêu booster.**
+  /// Caller chỉ trừ lượt khi hàm này trả `true` — nên mọi nhánh không thật sự
+  /// đổi bàn đều phải trả `false` (X23).
   bool triggerSwap(int row1, int col1, int row2, int col2) {
     if (_animating) return false;
+    // X23: đổi 1 ô với chính nó không đổi gì. Rất dễ bấm nhầm (tap 2 lần cùng
+    // ô vì tưởng lần đầu chưa ăn) — bản cũ vẫn `_saveUndo()`, chạy animation
+    // lật, trả `true`, và người chơi mất 1 lượt Swap cho thao tác vô hiệu.
+    if (row1 == row2 && col1 == col2) return false;
     if ((colorGrid[row1][col1] ?? -1) < 0 || lockGrid[row1][col1] != 0) {
       return false;
     }
@@ -1825,10 +1852,10 @@ class PopStarGame extends FlameGame {
 
   /// Trả về false nếu đang animate (không xáo được) — caller dùng để tránh
   /// trừ nhầm lượt booster.
+  /// **Hợp đồng với [GameController]: trả `false` nghĩa là KHÔNG tiêu booster.**
+  /// Xem [triggerSwap].
   bool shuffleBoard() {
     if (_animating) return false;
-    recordingValid = false;
-    _saveUndo();
     // F6a: obstacle không phải màu → giữ nguyên vị trí/độ bền, chỉ xáo màu thật.
     // I2: ô đang khoá cũng giữ nguyên (không xáo màu vào/ra chain tile).
     final movable = [
@@ -1836,10 +1863,43 @@ class PopStarGame extends FlameGame {
         for (var c = 0; c < cols; c++)
           if ((colorGrid[r][c] ?? -1) >= 0 && lockGrid[r][c] == 0) Point(r, c),
     ];
+    // X23: 0 hoặc 1 ô xáo được thì không có gì để xáo. Đây đúng là lúc người
+    // chơi tuyệt vọng nhất (bàn gần hết, đang kẹt) — bản cũ vẫn chạy animation
+    // và trả `true`, nuốt mất booster mà bàn y nguyên.
+    //
+    // Vẫn gọi `_checkEnd()` trước khi bỏ cuộc: Shuffle là hành động "tôi kẹt
+    // rồi" của người chơi, nên đánh giá lại trạng thái bàn là đúng — và đó
+    // chính là lưới chống softlock mà I29 dựa vào (bàn chỉ còn boss tile thì
+    // `_checkEnd` khởi động chuỗi decay-on-stuck thay vì kết thúc màn). Bỏ
+    // nhánh này đi thì bàn toàn boss tile không còn đường tiến.
+    if (movable.length < 2) {
+      _checkEnd();
+      return false;
+    }
     // E2-S7: xáo chính các BlockComponent (không chỉ giá trị màu int) rồi bay
     // tại chỗ sang vị trí mới — không phá huỷ/rơi lại từ ngoài bảng như trước.
     final blocks = [for (final p in movable) _blocks[p.x][p.y]];
-    blocks.shuffle(_rng);
+    // X23: hoán vị có thể ra đúng trạng thái cũ (hay gặp khi còn ít ô, hoặc
+    // các ô xáo được đều cùng màu). Thử lại vài lần rồi bỏ cuộc — bàn không
+    // đổi thì không được tính là đã dùng booster. Giới hạn số lần thử để
+    // không lặp vô hạn trên bàn mà mọi hoán vị đều tương đương.
+    final before = [for (final p in movable) colorGrid[p.x][p.y]];
+    var changed = false;
+    for (var attempt = 0; attempt < 3 && !changed; attempt++) {
+      blocks.shuffle(_rng);
+      for (var i = 0; i < movable.length; i++) {
+        if (blocks[i]?.colorIndex != before[i]) {
+          changed = true;
+          break;
+        }
+      }
+    }
+    if (!changed) {
+      _checkEnd(); // cùng lý do với nhánh `movable.length < 2` ở trên.
+      return false;
+    }
+    recordingValid = false;
+    _saveUndo();
     _animating = true;
     final gen = ++_animGen;
     for (var i = 0; i < movable.length; i++) {
@@ -1919,10 +1979,16 @@ class PopStarGame extends FlameGame {
         ..clear()
         ..addAll(savedCountdown);
     }
+    // X21: freeze là state theo lượt, khôi phục cùng nhịp với bossHp/countdown.
+    final savedFreeze = _undoFreezeTurns;
+    if (savedFreeze != null) freezeTurnsLeft = savedFreeze;
+    final savedPowerKinds = _undoPowerKinds;
     _undoGrid = null;
     _undoLockGrid = null;
     _undoBossHp = null;
     _undoCountdownRemaining = null;
+    _undoFreezeTurns = null;
+    _undoPowerKinds = null;
     // Hoàn tác điểm/combo về đúng thời điểm snapshot — thiếu bước này thì
     // pop → undo (giữ điểm) → pop lại đúng nhóm đó sẽ farm điểm vô hạn.
     final savedScore = _undoScore;
@@ -1931,6 +1997,10 @@ class PopStarGame extends FlameGame {
       controller.comboCount.value = _undoComboCount!;
       controller.comboMultiplier.value = _undoComboMultiplier!;
       controller.movesUsed.value = _undoMovesUsed!;
+      // X17: counter ĐỜI (totalGemsPopped, weekly goal, clan, daily quest,
+      // maxComboEver) cũng phải lùi về mốc snapshot — cùng lý do với điểm ở
+      // trên, chỉ khác là chúng persist ra đĩa nên farm được xuyên ván.
+      controller.restoreUndoCounters();
     }
     _undoScore = null;
     _undoComboCount = null;
@@ -1993,6 +2063,20 @@ class PopStarGame extends FlameGame {
       }
     }
     _blocks = next;
+    // X20: gán lại `powerKind` cho MỌI ô từ snapshot (kể cả gán null) — block
+    // được tái dùng từ `pool` có thể mang theo `powerKind` cũ của ô khác cùng
+    // màu, nên chỉ gán ở ô có giá trị là không đủ.
+    if (savedPowerKinds != null) {
+      for (var r = 0; r < rows; r++) {
+        for (var c = 0; c < cols; c++) {
+          if (r < savedPowerKinds.length && c < savedPowerKinds[r].length) {
+            _blocks[r][c]?.powerKind = savedPowerKinds[r][c];
+          } else {
+            _blocks[r][c]?.powerKind = null;
+          }
+        }
+      }
+    }
     _syncObstacleAndLockBlocks();
     add(
       TimerComponent(
@@ -2006,16 +2090,32 @@ class PopStarGame extends FlameGame {
     return true;
   }
 
+  /// Snapshot cho `undo()`. **Mọi state thay đổi theo lượt phải được chụp ở
+  /// đây** — danh sách này đã trôi lại phía sau 3 lần (X17 counter đời, X20
+  /// power tile, X21 freeze), nên khi thêm cơ chế theo lượt mới, thêm vào
+  /// đúng chỗ này:
+  /// - bàn cờ: [colorGrid], [lockGrid]
+  /// - state theo lượt trong engine: [bossHp] (I29), [countdownRemaining]
+  ///   (I45), [freezeTurnsLeft] (F10/X21), `powerKind` trên từng
+  ///   [BlockComponent] (F5/X20 — power tile là special tile DUY NHẤT không
+  ///   sống trong [colorGrid], nên phải chụp riêng)
+  /// - state trong controller: điểm/combo/lượt, và counter ĐỜI qua
+  ///   [GameController.saveUndoCounters] (X17)
   void _saveUndo() {
     _undoGrid = colorGrid.map((row) => List<int?>.from(row)).toList();
     _undoLockGrid = lockGrid.map((row) => List<int>.from(row)).toList();
     _undoBossHp = Map<int, int>.from(bossHp);
     _undoCountdownRemaining = Map<int, int>.from(countdownRemaining);
+    _undoFreezeTurns = freezeTurnsLeft;
+    _undoPowerKinds = _blocks
+        .map((row) => row.map((b) => b?.powerKind).toList())
+        .toList();
     if (!isReplay) {
       _undoScore = controller.score.value;
       _undoComboCount = controller.comboCount.value;
       _undoComboMultiplier = controller.comboMultiplier.value;
       _undoMovesUsed = controller.movesUsed.value;
+      controller.saveUndoCounters();
     }
   }
 

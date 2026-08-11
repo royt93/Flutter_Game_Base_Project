@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'boss_tile.dart';
 import 'gift_tile.dart';
+import 'replay.dart' show kMaxCodeLength;
 
 /// I42: trần màu thực tế toàn game (`lib/data/levels.dart`
 /// `colorCount = (colorBase + i%3 - 1).clamp(4, 7)` → tối đa 7, index 0..6).
@@ -52,11 +53,22 @@ String encodePuzzleGrid(List<List<int?>> grid) {
   return base64Url.encode(utf8.encode(raw));
 }
 
-/// Giải mã ngược [encodePuzzleGrid]. Trả `null` nếu: base64 hỏng, thiếu 3
-/// phần `|`, số hàng/cột không khớp khai báo, hoặc có giá trị cell không hợp
-/// lệ (xem [isValidPuzzleCellValue]). KHÔNG tự chặn bàn rỗng toàn gem — đó là
+/// X25: trần kích thước bàn tự vẽ. Editor giới hạn 8..11 hàng × 6..12 cột
+/// (xem stepper trong `puzzle_lab_screen.dart`); bàn lớn nhất toàn game là
+/// 14×14 (endless). 20 nới đủ rộng để bản sau mở rộng board mà không làm hỏng
+/// mã đã chia sẻ, nhưng vẫn chặn mã khai báo bàn 500×500 — mã đó chỉ vài KB
+/// (ô trống mã hoá thành chuỗi rỗng) nhưng dựng ra 250k `BlockComponent`.
+///
+/// Nghĩa là chỉ chặn độ dài chuỗi thôi **không đủ** cho codec này.
+const int kMaxPuzzleSide = 20;
+
+/// Giải mã ngược [encodePuzzleGrid]. Trả `null` nếu: mã dài quá
+/// [kMaxCodeLength], base64 hỏng, thiếu 3 phần `|`, số hàng/cột không khớp
+/// khai báo hoặc vượt [kMaxPuzzleSide], hoặc có giá trị cell không hợp lệ
+/// (xem [isValidPuzzleCellValue]). KHÔNG tự chặn bàn rỗng toàn gem — đó là
 /// việc của caller qua [hasAnyGem] trước khi cho chơi.
 List<List<int?>>? decodePuzzleGrid(String code) {
+  if (code.length > kMaxCodeLength) return null;
   try {
     final raw = utf8.decode(base64Url.decode(code.trim()));
     final parts = raw.split('|');
@@ -64,6 +76,7 @@ List<List<int?>>? decodePuzzleGrid(String code) {
     final rows = int.tryParse(parts[0]);
     final cols = int.tryParse(parts[1]);
     if (rows == null || cols == null || rows < 0 || cols < 0) return null;
+    if (rows > kMaxPuzzleSide || cols > kMaxPuzzleSide) return null;
 
     final rowsRaw = parts[2].isEmpty && rows == 0
         ? const <String>[]

@@ -23,10 +23,27 @@ String encodeReplay(ReplayData data) {
   return base64Url.encode(utf8.encode(raw));
 }
 
+/// X25: trần độ dài mã, áp ở **mọi** codec nhận input không tin cậy (người
+/// chơi dán mã từ bạn bè / QR / internet). Bàn lớn nhất trong game là 14×14
+/// (endless) = 196 ô; mã replay dài nhất thực tế ~1KB. 4096 là dư dả cho mọi
+/// mã thật mà vẫn chặn payload hàng MB.
+const int kMaxCodeLength = 4096;
+
+/// X25: trần số tap trong 1 replay. Bàn không refill (Zen là ngoại lệ và
+/// không ghi replay được) nên mỗi tap hợp lệ xoá ≥2 ô — 196 ô ⇒ tối đa ~98
+/// tap thật. 512 là dư dả, đồng thời chặn mã chứa hàng trăm nghìn entry
+/// `0,0;` làm treo UI isolate khi materialize list và khi phát lại từng tap
+/// bằng timer.
+const int kMaxReplayTaps = 512;
+
 /// Giải mã ngược [encodeReplay]. Trả `null` nếu mã sai định dạng, thiếu cột,
-/// số âm, hoặc 1 tap không đúng định dạng `row,col` — không throw để callsite
-/// chỉ cần check null (không phân biệt lỗi cụ thể, mã giả mạo/hỏng đều `null`).
+/// số âm, vượt [kMaxCodeLength]/[kMaxReplayTaps], hoặc 1 tap không đúng định
+/// dạng `row,col` — không throw để callsite chỉ cần check null (không phân
+/// biệt lỗi cụ thể, mã giả mạo/hỏng đều `null`).
 ReplayData? decodeReplay(String code) {
+  // Kiểm TRƯỚC khi decode: base64 của 10MB rác vẫn cấp phát 10MB chuỗi rồi
+  // mới hỏng, mà lúc đó đã treo rồi.
+  if (code.length > kMaxCodeLength) return null;
   try {
     final raw = utf8.decode(base64Url.decode(code.trim()));
     final parts = raw.split('|');
@@ -38,7 +55,9 @@ ReplayData? decodeReplay(String code) {
     final tapsRaw = parts[2];
     final taps = <(int, int)>[];
     if (tapsRaw.isNotEmpty) {
-      for (final entry in tapsRaw.split(';')) {
+      final entries = tapsRaw.split(';');
+      if (entries.length > kMaxReplayTaps) return null;
+      for (final entry in entries) {
         final rc = entry.split(',');
         if (rc.length != 2) return null;
         final r = int.tryParse(rc[0]);

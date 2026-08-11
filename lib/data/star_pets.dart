@@ -95,17 +95,33 @@ const idlePetCoinsPerHour = 6;
 /// I65: phần thưởng idle thu hoạch được khi mở lại Habitat. Pure — không đụng
 /// storage/đồng hồ hệ thống, test độc lập. An toàn khi đồng hồ máy lùi
 /// ([nowMs] <= [lastCollectMs]): trả 0 thay vì âm.
+///
+/// X22: tính **theo từng pet**, mốc bắt đầu là `max(lastCollectMs,
+/// pet.hatchedAtMs)`. Bản cũ nhân `petCount` hiện tại với toàn bộ khoảng
+/// `nowMs - lastCollectMs` và không hề đọc `hatchedAtMs` (dù đã lưu sẵn), nên
+/// trả thưởng cho thời gian pet **chưa tồn tại**:
+/// - tài khoản chưa từng collect có `lastCollectMs == 0` (mốc 1970) → ấp con
+///   đầu tiên rồi hốt ngay là ăn trọn trần 10 giờ;
+/// - đã có 1 pet chờ đủ 10 giờ → ấp thêm con thứ 2 ngay trước khi hốt thì con
+///   mới cũng được tính đủ 10 giờ dù vừa sinh ra.
+///
+/// Trần [idlePetRewardCapMs] áp cho **mỗi pet**, giữ đúng ngữ nghĩa cũ ("mỗi
+/// pet cộng dồn tối đa 10 giờ rời app").
 int idleRewardCoins({
   required int lastCollectMs,
   required int nowMs,
-  required int petCount,
+  required List<PetInstance> pets,
 }) {
-  if (petCount <= 0) return 0;
-  final elapsedMs = nowMs - lastCollectMs;
-  if (elapsedMs <= 0) return 0;
-  final cappedMs = elapsedMs > idlePetRewardCapMs
-      ? idlePetRewardCapMs
-      : elapsedMs;
-  final hours = cappedMs / (60 * 60 * 1000);
-  return (hours * idlePetCoinsPerHour * petCount).floor();
+  var totalMs = 0;
+  for (final pet in pets) {
+    final from = pet.hatchedAtMs > lastCollectMs
+        ? pet.hatchedAtMs
+        : lastCollectMs;
+    final elapsedMs = nowMs - from;
+    if (elapsedMs <= 0) continue;
+    totalMs += elapsedMs > idlePetRewardCapMs ? idlePetRewardCapMs : elapsedMs;
+  }
+  if (totalMs <= 0) return 0;
+  final hours = totalMs / (60 * 60 * 1000);
+  return (hours * idlePetCoinsPerHour).floor();
 }

@@ -136,8 +136,8 @@ void main() {
         await store.setDouble(StorageKeys.bgmVolume, 0.3);
         await store.setString(StorageKeys.playerName, 'Roy');
 
-        final code = await encodeSecureBackupCode(store.exportAll());
-        final decoded = await decodeSecureBackupCode(code);
+        final code = await encodeBackupCode(store.exportAll());
+        final decoded = await decodeBackupCode(code);
         expect(decoded, isNotNull);
 
         SharedPreferences.setMockInitialValues({});

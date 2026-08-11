@@ -49,6 +49,10 @@ class StorageKeys {
   static const String dailyStreak = 'daily_streak';
   static const String maxEpochDaySeen = 'max_epoch_day_seen';
 
+  /// X22: mốc mili-giây lớn nhất từng thấy — bản độ-phân-giải-cao của
+  /// [maxEpochDaySeen], dùng cho thưởng idle của Star Pet (I65).
+  static const String maxMsSeen = 'max_ms_seen';
+
   // I10 Comeback bonus.
   static const String lastOpenDay = 'last_open_day';
 
@@ -268,9 +272,62 @@ class StorageService extends GetxService {
   static StorageService? get maybe =>
       Get.isRegistered<StorageService>() ? Get.find<StorageService>() : null;
 
+  /// X24: số lần thật sự chạm `SharedPreferences` (platform channel + ghi
+  /// đĩa). Tăng ở mọi `setX` **không** đi qua buffer, và mỗi key được
+  /// [flush] đẩy xuống.
+  ///
+  /// Tồn tại để đo được khiếm khuyết X24 bằng test tất định thay vì profile
+  /// tay trên device: `registerPop()` từng ghi 6 lần cho MỖI cú tap. Một
+  /// `int++` không đáng kể ở runtime, đổi lại có lưới chống hồi quy vĩnh
+  /// viễn — round sau ai thêm hệ mới vào hot path là test đỏ ngay.
+  int platformWrites = 0;
+
+  /// X24: write-behind cho hot path. Giá trị ghi qua `setXBuffered` nằm ở đây
+  /// tới khi [flush] đẩy xuống đĩa một lượt.
+  ///
+  /// **Mọi đường đọc phải tra buffer TRƯỚC `_prefs`** — nếu không, giá trị vừa
+  /// ghi mà chưa flush sẽ đọc ra số cũ. Đó là bẫy chính của kiểu tối ưu này,
+  /// nên [getInt]/[getBool]/[getString]/[getDouble]/[allKeys]/[exportAll] đều
+  /// đã xử lý, và [remove]/[importAll] dọn buffer.
+  ///
+  /// CHỈ dùng cho counter trên hot path (xem `GameController.registerPop`).
+  /// Giao dịch thật — mua bán, nhận thưởng, reset — phải ghi ngay bằng `setX`
+  /// thường: mất chúng khi app bị kill là mất tiền/vật phẩm của người chơi.
+  final Map<String, Object> _buffer = {};
+
+  Future<void> setIntBuffered(String key, int value) async =>
+      _buffer[key] = value;
+
+  Future<void> setStringBuffered(String key, String value) async =>
+      _buffer[key] = value;
+
+  /// Đẩy toàn bộ giá trị đang đệm xuống đĩa. Gọi ở mốc an toàn: kết thúc màn,
+  /// app vào nền, controller đóng, và trước mọi giao dịch có thưởng.
+  Future<void> flush() async {
+    if (_buffer.isEmpty) return;
+    final pending = Map<String, Object>.from(_buffer);
+    _buffer.clear();
+    for (final entry in pending.entries) {
+      final value = entry.value;
+      if (value is int) {
+        await setInt(entry.key, value);
+      } else if (value is String) {
+        await setString(entry.key, value);
+      } else if (value is bool) {
+        await setBool(entry.key, value);
+      } else if (value is double) {
+        await setDouble(entry.key, value);
+      }
+    }
+  }
+
   int getInt(String key, {int def = 0}) =>
-      _prefs?.getInt(key) ?? (_fallback[key] as int?) ?? def;
+      (_buffer[key] as int?) ??
+      _prefs?.getInt(key) ??
+      (_fallback[key] as int?) ??
+      def;
   Future<void> setInt(String key, int value) async {
+    platformWrites++;
     if (_prefs != null) {
       await _prefs.setInt(key, value);
       return;
@@ -279,8 +336,12 @@ class StorageService extends GetxService {
   }
 
   bool getBool(String key, {bool def = false}) =>
-      _prefs?.getBool(key) ?? (_fallback[key] as bool?) ?? def;
+      (_buffer[key] as bool?) ??
+      _prefs?.getBool(key) ??
+      (_fallback[key] as bool?) ??
+      def;
   Future<void> setBool(String key, bool value) async {
+    platformWrites++;
     if (_prefs != null) {
       await _prefs.setBool(key, value);
       return;
@@ -289,8 +350,12 @@ class StorageService extends GetxService {
   }
 
   double getDouble(String key, {double def = 1.0}) =>
-      _prefs?.getDouble(key) ?? (_fallback[key] as double?) ?? def;
+      (_buffer[key] as double?) ??
+      _prefs?.getDouble(key) ??
+      (_fallback[key] as double?) ??
+      def;
   Future<void> setDouble(String key, double value) async {
+    platformWrites++;
     if (_prefs != null) {
       await _prefs.setDouble(key, value);
       return;
@@ -299,8 +364,11 @@ class StorageService extends GetxService {
   }
 
   String? getString(String key) =>
-      _prefs?.getString(key) ?? _fallback[key] as String?;
+      (_buffer[key] as String?) ??
+      _prefs?.getString(key) ??
+      _fallback[key] as String?;
   Future<void> setString(String key, String value) async {
+    platformWrites++;
     if (_prefs != null) {
       await _prefs.setString(key, value);
       return;
@@ -324,6 +392,9 @@ class StorageService extends GetxService {
       setString(key, jsonEncode(value));
 
   Future<void> remove(String key) async {
+    // X24: xoá cả bản đang đệm, nếu không thì giá trị chưa flush sẽ "sống
+    // lại" ở lần đọc kế tiếp dù key đã bị xoá khỏi đĩa.
+    _buffer.remove(key);
     if (_prefs != null) {
       await _prefs.remove(key);
       return;
@@ -331,13 +402,25 @@ class StorageService extends GetxService {
     _fallback.remove(key);
   }
 
+  /// X19: mọi key đang tồn tại. Cùng lý do với [exportAll] — dùng API generic
+  /// thay vì hand-list `StorageKeys`, để `resetProgress()` không phải nhớ cập
+  /// nhật danh sách mỗi khi thêm key mới (danh sách tay đó đã trôi lại phía
+  /// sau qua 5 round và là root cause của X19).
+  Set<String> allKeys() =>
+      {...?_prefs?.getKeys(), ..._fallback.keys, ..._buffer.keys};
+
   /// Dump toàn bộ storage hiện có thành map — dùng API generic của
   /// SharedPreferences (getKeys/get) thay vì hand-list từng StorageKeys, để
   /// không phải nhớ cập nhật danh sách này mỗi khi thêm key mới.
   Map<String, Object> exportAll() {
     final prefs = _prefs;
-    if (prefs == null) return Map<String, Object>.from(_fallback);
-    return {for (final k in prefs.getKeys()) k: prefs.get(k) as Object};
+    // X24: giá trị đang đệm phải đè lên bản trên đĩa — backup và
+    // `resetProgress` đều đọc qua đây, cả hai cần trạng thái mới nhất.
+    if (prefs == null) return {..._fallback, ..._buffer};
+    return {
+      for (final k in prefs.getKeys()) k: prefs.get(k) as Object,
+      ..._buffer,
+    };
   }
 
   /// Ghi đè storage từ map đã export. Giá trị chỉ có thể là int/bool/double/
@@ -357,6 +440,9 @@ class StorageService extends GetxService {
       for (final entry in data.entries) entry.key: entry.value!,
     };
     final previous = exportAll();
+    // X24: import ghi đè toàn bộ profile — mọi giá trị đang đệm không còn ý
+    // nghĩa và sẽ ghi đè ngược lên dữ liệu vừa khôi phục nếu flush sau đó.
+    _buffer.clear();
     try {
       await _replaceAll(normalized);
     } catch (error) {

@@ -155,6 +155,11 @@ class _PopStarBlastAppState extends State<PopStarBlastApp>
     } else {
       // paused / inactive / hidden / detached → dừng nhạc
       audio?.pauseBgm();
+      // X24: đây là mốc cuối cùng chắc chắn còn chạy trước khi OS có thể giết
+      // process — đẩy nốt counter đang đệm (xem [StorageService.flush]).
+      // Không await: `didChangeAppLifecycleState` là sync, và SharedPreferences
+      // ghi vào bộ nhớ trước rồi mới xuống đĩa nên giá trị không mất.
+      StorageService.maybe?.flush();
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../core/storage_service.dart';
+import '../../core/utils/clamped_clock.dart';
 import 'game_controller.dart';
 
 /// Pure logic function check if Raid is active for a given epochDay (e.g. Fri, Sat, Sun).
@@ -42,7 +43,15 @@ class RaidBossController extends GetxController {
     _loadAndRollover();
   }
 
-  int _todayEpochDay() => DateTime.now().millisecondsSinceEpoch ~/ 86400000;
+  /// X22: dùng đồng hồ đã kẹp, KHÔNG `DateTime.now()` thô. Bản cũ tự tính lại
+  /// epoch-day từ đồng hồ hệ thống nên bỏ qua lớp chống chỉnh giờ mà cả phần
+  /// còn lại của game đã dùng: chỉnh máy tiến 1 ngày → nhận lại đủ lượt Raid
+  /// Boss → chỉnh về → lặp, farm damage và thưởng tuần không giới hạn.
+  ///
+  /// Sau khi kẹp, bước "chỉnh về" mất tác dụng: ngày trong game đứng ở mốc đã
+  /// nhảy tới, nên mỗi lần gian lận đốt luôn ngày thật của người chơi (mất mốc
+  /// daily reward/login streak/mùa tương ứng).
+  int _todayEpochDay() => todayEpochDayClamped();
   int _currentWeek() => _todayEpochDay() ~/ 7;
 
   void _loadAndRollover() {
@@ -74,10 +83,11 @@ class RaidBossController extends GetxController {
         StorageService.to.setInt(StorageKeys.raidBossAttemptsUsed, 0);
         attemptsRemaining.value = maxDailyAttempts;
       } else {
-        final used = StorageService.to.getInt(
-          StorageKeys.raidBossAttemptsUsed,
+        final used = StorageService.to.getInt(StorageKeys.raidBossAttemptsUsed);
+        attemptsRemaining.value = (maxDailyAttempts - used).clamp(
+          0,
+          maxDailyAttempts,
         );
-        attemptsRemaining.value = (maxDailyAttempts - used).clamp(0, maxDailyAttempts);
       }
     }
   }

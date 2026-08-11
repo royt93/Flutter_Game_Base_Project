@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:in_app_review/in_app_review.dart';
 
 import '../../core/audio_manager.dart';
+import '../../core/utils/clamped_clock.dart' as clamped;
 import '../../core/home_widget_sync.dart';
 import '../../core/storage_service.dart';
 import '../../core/utils/comeback_bonus.dart';
@@ -404,8 +405,8 @@ class GameController extends GetxController {
   /// state, dùng để hiển thị preview trước khi người chơi bấm nút hốt.
   int get pendingIdlePetReward => idleRewardCoins(
     lastCollectMs: lastPetCollectMs.value,
-    nowMs: DateTime.now().millisecondsSinceEpoch,
-    petCount: starOwnedPets.length,
+    nowMs: nowMsClamped(),
+    pets: starOwnedPets,
   );
 
   /// Ấp 1 pet loại [type] bằng Star Dust. False nếu không đủ Star Dust.
@@ -413,10 +414,7 @@ class GameController extends GetxController {
     if (starDust.value < type.hatchCost) return false;
     starDust.value -= type.hatchCost;
     starOwnedPets.add(
-      PetInstance(
-        typeId: type.id,
-        hatchedAtMs: DateTime.now().millisecondsSinceEpoch,
-      ),
+      PetInstance(typeId: type.id, hatchedAtMs: nowMsClamped()),
     );
     StorageService.to.setInt(StorageKeys.starDustCount, starDust.value);
     _persistOwnedPets();
@@ -426,11 +424,11 @@ class GameController extends GetxController {
   /// Hốt thưởng xu idle tích luỹ từ lần mở Habitat trước tới giờ, rồi reset
   /// mốc thời gian. 0 nếu chưa có pet hoặc chưa đủ thời gian trôi qua.
   int claimIdlePetReward() {
-    final now = DateTime.now().millisecondsSinceEpoch;
+    final now = nowMsClamped();
     final reward = idleRewardCoins(
       lastCollectMs: lastPetCollectMs.value,
       nowMs: now,
-      petCount: starOwnedPets.length,
+      pets: starOwnedPets,
     );
     lastPetCollectMs.value = now;
     StorageService.to.setInt(StorageKeys.lastPetCollectTimestampMs, now);
@@ -533,12 +531,17 @@ class GameController extends GetxController {
 
     if (eligiblePool.isEmpty) return null;
 
-    coins.value -= mysteryCrateCost;
-    StorageService.to.setInt(StorageKeys.coins, coins.value);
-
+    // X27: roll TRƯỚC, trừ xu SAU. Bản cũ trừ 250 xu rồi mới gọi [rollCrate],
+    // nên nhánh `item == null` bên dưới sẽ ăn mất xu mà không trả gì. Với code
+    // hiện tại nhánh đó không với tới được (pool đã được kiểm rỗng ở trên),
+    // nhưng thứ tự "trừ tiền trước, kiểm tra sau" là quả mìn cho bất kỳ ai sửa
+    // [rollCrate] về sau.
     final rng = rngOverride ?? Random();
     final item = rollCrate(eligiblePool: eligiblePool, rng: rng);
     if (item == null) return null;
+
+    coins.value -= mysteryCrateCost;
+    StorageService.to.setInt(StorageKeys.coins, coins.value);
 
     switch (item.kind) {
       case CosmeticKind.mascotSkin:
@@ -787,6 +790,19 @@ class GameController extends GetxController {
   }
 
   /// I8: cuối tuần nhân đôi mọi coin thưởng (thắng level, chest, daily, spin).
+  ///
+  /// X22: **cố ý** dùng `DateTime.now()` thô, KHÔNG qua [todayEpochDay] đã kẹp
+  /// — đã cân nhắc và bác bỏ. Kẹp monotonic chỉ chặn được kiểu gian lận "nhảy
+  /// tiến rồi lùi về" (pet idle, lượt Raid Boss): chặn bước lùi khiến mỗi lần
+  /// gian lận đốt luôn thời gian thật. Nhưng ở đây người gian lận **muốn ở lại
+  /// tương lai** — đặt máy sang thứ Bảy là xong. Kẹp monotonic sẽ khoá cứng
+  /// trạng thái đó thành vĩnh viễn, tức là biến exploit tạm thời thành exploit
+  /// không gỡ được. Tệ hơn hẳn hiện trạng.
+  ///
+  /// Đây là exploit "nhảy đồng hồ một chiều", không sửa được ở client nếu
+  /// không có nguồn thời gian tin cậy từ server. Chấp nhận có chủ đích: game
+  /// không có IAP/leaderboard thật nên người chơi tự nhân đôi coin của mình
+  /// chỉ tự phá trải nghiệm của mình. Xem thêm `lib/core/utils/clamped_clock.dart`.
   int get weekendCoinMultiplier => isWeekendEvent(DateTime.now()) ? 2 : 1;
 
   /// F7 Star road: tổng sao tốt nhất mọi màn + mốc rương xu.
@@ -1026,6 +1042,8 @@ class GameController extends GetxController {
 
   @override
   void onClose() {
+    // X24: đẩy nốt counter đang đệm trước khi controller biến mất.
+    StorageService.to.flush();
     _coinsSyncWorker?.dispose();
     _loginStreakSyncWorker?.dispose();
     super.onClose();
@@ -1064,9 +1082,14 @@ class GameController extends GetxController {
     streakFreezeCount.value = StorageService.to.getInt(
       StorageKeys.streakFreezeCount,
     );
-    unlockedLevel.value = StorageService.to.getInt(
-      StorageKeys.unlockedLevel,
-      def: 1,
+    // X27: kẹp ở nguồn. `def: 1` chỉ áp dụng khi key KHÔNG tồn tại — save hỏng
+    // hoặc backup giả mạo có thể lưu thẳng giá trị 0/âm, và `def` không cứu
+    // được. Giá trị đó làm `featuredLevelId` chia lấy dư cho 0 (crash ở màn
+    // Home) và làm `kLevels[unlockedLevel - 1]` văng chỉ số. Kẹp tại đây thì
+    // mọi consumer đều an toàn, không phải rải guard ở từng chỗ dùng.
+    unlockedLevel.value = max(
+      1,
+      StorageService.to.getInt(StorageKeys.unlockedLevel, def: 1),
     );
     prestigeTier.value = StorageService.to.getInt(StorageKeys.prestigeTier);
     allLevelsCompletedOnce.value = StorageService.to.getBool(
@@ -1165,14 +1188,38 @@ class GameController extends GetxController {
     final storedPetsJson = StorageService.to.getString(
       StorageKeys.starOwnedPets,
     );
+    // X18: `clear()` vô điều kiện TRƯỚC khi nạp — nếu chỉ `assignAll` bên
+    // trong nhánh "có dữ liệu" thì sau [resetProgress] (key đã bị xoá) list Rx
+    // vẫn giữ nguyên pet cũ trong bộ nhớ.
+    starOwnedPets.clear();
     if (storedPetsJson != null && storedPetsJson.isNotEmpty) {
-      final decoded = jsonDecode(storedPetsJson) as List<dynamic>;
-      starOwnedPets.assignAll(
-        decoded
-            .map((e) => PetInstance.fromJson(e as Map<String, Object?>))
-            .whereType<PetInstance>()
-            .where((p) => petTypeById(p.typeId) != null),
-      );
+      // X18: save hỏng ở đây từng làm `onInit` ném và app KHÔNG BOOT ĐƯỢC
+      // (`GameController` là `permanent: true`, dựng trong `main.dart`) —
+      // người chơi phải gỡ cài đặt, mất sạch tiến độ. `jsonDecode` ném
+      // `FormatException` với chuỗi không phải JSON, và `as List`/`as Map`
+      // ném `TypeError` với JSON hợp lệ nhưng sai hình dạng. Cùng khuôn
+      // try/catch với block `achievementUnlockDays` ở trên.
+      //
+      // Đường vào dữ liệu hỏng có thật: import backup từ nguồn không tin cậy,
+      // app bị kill giữa `setString`, hoặc hạ version sau khi format đổi.
+      try {
+        final decoded = jsonDecode(storedPetsJson);
+        if (decoded is List) {
+          for (final entry in decoded) {
+            // 1 phần tử hỏng không được giết cả list.
+            if (entry is! Map) continue;
+            final pet = PetInstance.fromJson(entry.cast<String, Object?>());
+            if (pet != null && petTypeById(pet.typeId) != null) {
+              starOwnedPets.add(pet);
+            }
+          }
+        }
+      } catch (_) {
+        // Dữ liệu hỏng/giả mạo → bỏ pet, app vẫn boot với mọi state khác
+        // nguyên vẹn (giống cách `achievementUnlockDays` chỉ thiếu mốc cũ).
+      }
+      // Ghi lại bản đã lọc để lần boot sau không phải parse lại rác.
+      _persistOwnedPets();
     }
     lastPetCollectMs.value = StorageService.to.getInt(
       StorageKeys.lastPetCollectTimestampMs,
@@ -1304,12 +1351,15 @@ class GameController extends GetxController {
     _persistDailyQuests();
   }
 
+  /// X24: ghi đệm — hàm này nằm trên hot path qua [_addDailyQuestProgress]
+  /// (mỗi cú tap). Nhánh nhận thưởng ([claimDailyQuest]) tự gọi
+  /// `StorageService.to.flush()` để giao dịch xuống đĩa ngay.
   void _persistDailyQuests() {
-    StorageService.to.setString(
+    StorageService.to.setStringBuffered(
       StorageKeys.dailyQuestProgress,
       dailyQuestProgress.join(','),
     );
-    StorageService.to.setString(
+    StorageService.to.setStringBuffered(
       StorageKeys.dailyQuestClaimed,
       dailyQuestClaimed.join(','),
     );
@@ -1339,6 +1389,9 @@ class GameController extends GetxController {
     coins.value += dailyQuests[index].coinReward;
     StorageService.to.setInt(StorageKeys.coins, coins.value);
     _persistDailyQuests();
+    // X24: nhận thưởng là giao dịch thật — cờ "đã nhận" phải xuống đĩa cùng
+    // lúc với xu, nếu không app bị kill giữa chừng là nhận được 2 lần.
+    StorageService.to.flush();
     return true;
   }
 
@@ -1388,7 +1441,8 @@ class GameController extends GetxController {
       weeklyGoalProgress.value + amount,
       weeklyGoalTarget,
     );
-    StorageService.to.setInt(
+    // X24: hot path (gọi từ [registerPop] mỗi cú tap) -> ghi đệm.
+    StorageService.to.setIntBuffered(
       StorageKeys.weeklyGoalProgress,
       weeklyGoalProgress.value,
     );
@@ -1432,11 +1486,12 @@ class GameController extends GetxController {
     _checkClanGoalRollover();
     clanContribWeek.value += amount;
     clanContribTotal.value += amount;
-    StorageService.to.setInt(
+    // X24: hot path (cùng hook với [addWeeklyGoalProgress]) -> ghi đệm.
+    StorageService.to.setIntBuffered(
       StorageKeys.clanContribWeek,
       clanContribWeek.value,
     );
-    StorageService.to.setInt(
+    StorageService.to.setIntBuffered(
       StorageKeys.clanContribTotal,
       clanContribTotal.value,
     );
@@ -1592,17 +1647,18 @@ class GameController extends GetxController {
     );
   }
 
+  /// X22: mốc mili-giây, kẹp không lùi. Cùng cơ chế với [todayEpochDay], chỉ
+  /// khác độ phân giải — idle pet (I65) tính theo giờ nên không dùng được đơn
+  /// vị ngày. Key riêng ([StorageKeys.maxMsSeen]) vì hai giá trị khác đơn vị.
+  ///
+  /// Uỷ quyền cho `lib/core/utils/clamped_clock.dart` để hệ nào không cầm được
+  /// controller (vd [RaidBossController]) cũng dùng đúng lớp bảo vệ này thay
+  /// vì tự viết `DateTime.now()` thô.
+  int nowMsClamped() => clamped.nowMsClamped();
+
   /// Số ngày kể từ epoch (UTC), kẹp không lùi dưới mốc lớn nhất từng thấy —
   /// chống gian lận bằng cách chỉnh lùi đồng hồ máy.
-  int todayEpochDay() {
-    final current = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000;
-    final maxSeen = StorageService.to.getInt(StorageKeys.maxEpochDaySeen);
-    final today = current > maxSeen ? current : maxSeen;
-    if (today > maxSeen) {
-      StorageService.to.setInt(StorageKeys.maxEpochDaySeen, today);
-    }
-    return today;
-  }
+  int todayEpochDay() => clamped.todayEpochDayClamped();
 
   /// I33: modifier Gauntlet hôm nay — dùng để hiện icon+tên trước khi vào
   /// chơi (xem `home_screen.dart`), không cần bắt đầu ván mới để biết.
@@ -1856,7 +1912,12 @@ class GameController extends GetxController {
   int get featuredLevelId {
     final picked = featuredLevelIdForWeek(currentWeekIndex);
     if (picked <= unlockedLevel.value) return picked;
-    return currentWeekIndex % unlockedLevel.value + 1;
+    // X27: lớp phòng thủ thứ hai cho phép chia lấy dư. Nguồn đã được kẹp trong
+    // `_load()`, nhưng getter này cũng đọc được `unlockedLevel` do code khác
+    // gán, và chia cho 0 ở đây làm crash thẳng màn Home.
+    final unlocked = unlockedLevel.value;
+    if (unlocked < 1) return 1;
+    return currentWeekIndex % unlocked + 1;
   }
 
   /// I38: bắt đầu ván Weekly Featured Level — chơi lại [featuredLevelId]
@@ -2116,6 +2177,73 @@ class GameController extends GetxController {
 
   void addScore(int points) => score.value += points;
 
+  /// X17: ảnh chụp các counter ĐỜI tại thời điểm `PopStarGame._saveUndo()` —
+  /// không phải state của ván. Thiếu nó thì Undo chỉ hoàn tác bàn/điểm còn
+  /// `totalGemsPopped`, weekly goal, clan contribution, daily quest và
+  /// `maxComboEver` vẫn giữ giá trị đã cộng, cho phép farm vô hạn bằng vòng
+  /// "nổ → undo → nổ lại đúng nhóm đó" (undo đầu mỗi màn còn miễn phí, I5).
+  ///
+  /// Chụp ở [saveUndoCounters] (gọi từ `_saveUndo`) chứ KHÔNG ở [registerPop]:
+  /// booster bomb/rainbow/swap/shuffle cũng tạo điểm undo nhưng không gọi
+  /// [registerPop], nên nếu chụp trong [registerPop] thì undo sau một cú bomb
+  /// sẽ khôi phục nhầm counter về mốc của lần pop trước đó.
+  ({
+    int gems,
+    int weekly,
+    int clanWeek,
+    int clanTotal,
+    List<int> quests,
+    int maxCombo,
+  })?
+  _undoCounters;
+
+  void saveUndoCounters() {
+    _undoCounters = (
+      gems: totalGemsPopped.value,
+      weekly: weeklyGoalProgress.value,
+      clanWeek: clanContribWeek.value,
+      clanTotal: clanContribTotal.value,
+      quests: List<int>.from(dailyQuestProgress),
+      maxCombo: maxComboEver.value,
+    );
+  }
+
+  /// Khôi phục counter đời về mốc [saveUndoCounters] gần nhất và ghi lại đĩa.
+  ///
+  /// Achievement/sticker đã mở khoá trong nước đi bị hoàn tác **không** bị thu
+  /// hồi (xu đã trao rồi) — nhưng cũng không mở khoá lại lần nữa khi nổ lại,
+  /// vì [newlyUnlockedAchievementIds] lọc theo [unlockedAchievementIds] đã
+  /// persist. Nghĩa là không có đường cộng xu lặp.
+  void restoreUndoCounters() {
+    final snapshot = _undoCounters;
+    if (snapshot == null) return;
+    _undoCounters = null;
+    totalGemsPopped.value = snapshot.gems;
+    weeklyGoalProgress.value = snapshot.weekly;
+    clanContribWeek.value = snapshot.clanWeek;
+    clanContribTotal.value = snapshot.clanTotal;
+    dailyQuestProgress.assignAll(snapshot.quests);
+    maxComboEver.value = snapshot.maxCombo;
+    StorageService.to.setInt(
+      StorageKeys.totalGemsPopped,
+      totalGemsPopped.value,
+    );
+    StorageService.to.setInt(
+      StorageKeys.weeklyGoalProgress,
+      weeklyGoalProgress.value,
+    );
+    StorageService.to.setInt(
+      StorageKeys.clanContribWeek,
+      clanContribWeek.value,
+    );
+    StorageService.to.setInt(
+      StorageKeys.clanContribTotal,
+      clanContribTotal.value,
+    );
+    StorageService.to.setInt(StorageKeys.maxComboEver, maxComboEver.value);
+    _persistDailyQuests();
+  }
+
   /// Ghi nhận 1 lần nổ nhóm: tăng combo, cộng điểm đã nhân hệ số.
   /// Trả về điểm thực cộng (để UI hiện popup).
   int registerPop(int baseScore, {int groupSize = 1}) {
@@ -2130,7 +2258,8 @@ class GameController extends GetxController {
     AudioManager.maybe?.applyComboLayer(comboCount.value); // I12
     // I22 Achievements.
     totalGemsPopped.value += groupSize;
-    StorageService.to.setInt(
+    // X24: ghi đệm — xem [StorageService.flush] cho danh sách mốc flush.
+    StorageService.to.setIntBuffered(
       StorageKeys.totalGemsPopped,
       totalGemsPopped.value,
     );
@@ -2141,7 +2270,10 @@ class GameController extends GetxController {
     _addDailyQuestProgress(QuestKind.popGems, groupSize);
     if (comboCount.value > maxComboEver.value) {
       maxComboEver.value = comboCount.value;
-      StorageService.to.setInt(StorageKeys.maxComboEver, maxComboEver.value);
+      StorageService.to.setIntBuffered(
+        StorageKeys.maxComboEver,
+        maxComboEver.value,
+      );
     }
     _checkAchievements();
     return gained;
@@ -2153,7 +2285,16 @@ class GameController extends GetxController {
     AudioManager.maybe?.applyComboLayer(0); // I12
   }
 
+  /// X24: mốc flush chính. Kết thúc màn là lúc an toàn nhất để đẩy counter
+  /// đang đệm xuống đĩa — bọc ngoài thay vì rải `flush()` trước từng `return`
+  /// của [_checkEnd] (hàm đó có 3 đường thoát, rất dễ thêm đường thứ 4 mà
+  /// quên).
   void checkEnd(bool boardCleared) {
+    _checkEnd(boardCleared);
+    StorageService.to.flush();
+  }
+
+  void _checkEnd(bool boardCleared) {
     if (ended.value) return;
     cleared.value = boardCleared;
     if (boardCleared) {
@@ -2481,74 +2622,59 @@ class GameController extends GetxController {
     hintCount.value--;
   }
 
+  /// X19: các key **cố ý giữ lại** khi Reset Progress. Mọi key khác bị xoá.
+  ///
+  /// Đảo chiều so với bản cũ (liệt kê tay ~55 key cần xoá): danh sách tay đó
+  /// đã trôi lại phía sau qua 5 round — Round 4-8 thêm ~20 hệ meta mà quên bổ
+  /// sung, để lại pet/Star Dust/Star Seed/streak-freeze/remix-best nguyên vẹn
+  /// sau khi người chơi bấm "xoá sạch", và pet cũ vẫn tiếp tục sinh coin idle.
+  /// Với whitelist, hệ mới **tự động** được xoá đúng; chỉ khi cố ý muốn giữ
+  /// mới phải đụng danh sách này.
+  ///
+  /// Phân loại (chốt với PO 2026-08-11):
+  /// - **Cài đặt** (ngôn ngữ, âm thanh, haptics, theme, trợ năng, nhắc nhở):
+  ///   không phải tiến độ, người chơi đã tự chỉnh — giữ.
+  /// - **Trạng thái UX đã-xem-rồi** (`hasSeen*`, review prompt): reset xong bị
+  ///   bắt xem lại tutorial hoặc bị hỏi đánh giá lần 2 đều khó chịu — giữ.
+  /// - **Tên người chơi**: nội dung người dùng nhập, không phải tiến độ — giữ
+  ///   (đã có tiền lệ ghi ở [playerName]).
+  /// - Mọi thứ khác — kể cả `savedPuzzles`, `bossRushBestStreak`, `raidBoss*`
+  ///   — là tiến độ/record kiếm được bằng chơi → **xoá**.
+  ///
+  /// Thêm key mới vào đây CHỈ khi nó thật sự không phải tiến độ.
+  static const Set<String> keepOnReset = {
+    // Cài đặt
+    StorageKeys.localeCode,
+    StorageKeys.audioMuted,
+    StorageKeys.bgmVolume,
+    StorageKeys.sfxVolume,
+    StorageKeys.hapticsEnabled,
+    StorageKeys.hapticSoftMode,
+    StorageKeys.themeDark,
+    StorageKeys.remindersEnabled,
+    StorageKeys.recordReplay,
+    // Trợ năng
+    StorageKeys.colorblindMode,
+    StorageKeys.reduceMotion,
+    StorageKeys.largerTapTargets,
+    // Trạng thái UX đã-xem-rồi
+    StorageKeys.hasSeenFtue,
+    StorageKeys.hasSeenShopTutorial,
+    StorageKeys.hasSeenBoosterTutorial,
+    StorageKeys.hasSeenDailyChallengeTutorial,
+    StorageKeys.hasShownReviewPrompt,
+    // Nội dung người dùng nhập
+    StorageKeys.playerName,
+  };
+
   Future<void> resetProgress() async {
     final store = StorageService.to;
-    await store.remove(StorageKeys.unlockedLevel);
-    await store.remove(StorageKeys.coins);
-    await store.remove(StorageKeys.bombCount);
-    await store.remove(StorageKeys.shuffleCount);
-    await store.remove(StorageKeys.undoCount);
-    await store.remove(StorageKeys.rainbowCount);
-    await store.remove(StorageKeys.swapCount);
-    await store.remove(StorageKeys.freezeCount);
-    await store.remove(StorageKeys.claimedChests);
-    await store.remove(StorageKeys.stickerMilestonesClaimed);
-    await store.remove(StorageKeys.lastClaimDay);
-    await store.remove(StorageKeys.dailyStreak);
-    await store.remove(StorageKeys.maxEpochDaySeen);
-    await store.remove(StorageKeys.timeAttackBest);
-    await store.remove(StorageKeys.comboRushBest);
-    await store.remove(StorageKeys.frostRushBest);
-    await store.remove(StorageKeys.endlessBest);
-    await store.remove(StorageKeys.mirrorModeBest);
-    await store.remove(StorageKeys.lastDailyChallengeDay);
-    await store.remove(StorageKeys.dailyChallengeScore);
-    await store.remove(StorageKeys.lastSpinDay);
-    await store.remove(StorageKeys.lastOpenDay);
-    await store.remove(StorageKeys.seasonPoints);
-    await store.remove(StorageKeys.claimedSeasonMask);
-    await store.remove(StorageKeys.lastSeasonIndex);
-    await store.remove(StorageKeys.activePerks);
-    await store.remove(StorageKeys.totalGemsPopped);
-    await store.remove(StorageKeys.maxComboEver);
-    await store.remove(StorageKeys.levelsThreeStarred);
-    await store.remove(StorageKeys.boardsFullyCleared);
-    await store.remove(StorageKeys.totalBoostersUsed);
-    await store.remove(StorageKeys.unlockedAchievements);
-    await store.remove(StorageKeys.achievementUnlockDays);
-    await store.remove(StorageKeys.activeAchievementTitleId);
-    await store.remove(StorageKeys.prestigeTier);
-    await store.remove(StorageKeys.allLevelsCompleted);
-    await store.remove(StorageKeys.allLevelsCompletedAtCount);
-    await store.remove(StorageKeys.activeMascotSkin);
-    await store.remove(StorageKeys.unlockedMascotSkins);
-    await store.remove(StorageKeys.activeBurstStyle);
-    await store.remove(StorageKeys.loginStreakCount);
-    await store.remove(StorageKeys.lastLoginEpochDay);
-    await store.remove(StorageKeys.loginStreakClaimedMask);
-    await store.remove(StorageKeys.activeComboTextStyle);
-    await store.remove(StorageKeys.weeklyGoalProgress);
-    await store.remove(StorageKeys.weeklyGoalWeek);
-    await store.remove(StorageKeys.weeklyGoalClaimedWeek);
-    await store.remove(StorageKeys.clanContribWeek);
-    await store.remove(StorageKeys.clanContribTotal);
-    await store.remove(StorageKeys.clanGoalWeek);
-    await store.remove(StorageKeys.clanGoalClaimedWeek);
-    await store.remove(StorageKeys.dailyQuestDay);
-    await store.remove(StorageKeys.dailyQuestProgress);
-    await store.remove(StorageKeys.dailyQuestClaimed);
-    await store.remove(StorageKeys.lastGauntletDay);
-    await store.remove(StorageKeys.gauntletScore);
-    await store.remove(StorageKeys.lastFeaturedWeekSeen);
-    await store.remove(StorageKeys.featuredLevelScore);
-    await store.remove(StorageKeys.activeBoardFrame);
-    await store.remove(StorageKeys.gemColorOverrides);
-    await store.remove(StorageKeys.unlockedPigments);
-    await store.remove(StorageKeys.treasureMapCount);
-    await store.remove(StorageKeys.treasureMapCompleted);
-    for (var id = 1; id <= kLevelCount; id++) {
-      await store.remove(StorageKeys.highScore(id));
-      await store.remove(StorageKeys.star(id));
+    // Quét key thật đang tồn tại thay vì liệt kê tay — phủ luôn key động
+    // (`highScore(id)`, `star(id)`, `remixBest(id)`) mà không cần vòng lặp
+    // riêng theo `kLevelCount`.
+    for (final key in store.allKeys().toList()) {
+      if (keepOnReset.contains(key)) continue;
+      await store.remove(key);
     }
     coins.value = 0;
     score.value = 0;

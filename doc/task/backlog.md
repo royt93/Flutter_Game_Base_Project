@@ -236,3 +236,74 @@ index (bảng liên kết `feat.md` / `RELEASE_CHECKLIST.md` / `task/README.md`)
   lại (ví dụ dòng mở đầu `README.md`/`RELEASE_CHECKLIST.md` "Fork mới từ Neon
   Jewels") là tham chiếu lịch sử fork **cố ý giữ lại** theo đúng phần "History"
   của `CLAUDE.md`, không phải dấu vết code cũ còn sót — không cần xoá.
+
+---
+
+## E6–E9 — Round 9: audit toàn source (2026-08-11)
+
+> Chi tiết đầy đủ + sprint plan: [`ROUND-9.md`](ROUND-9.md).
+> Nguồn: đọc toàn bộ `lib/` + đối chiếu 2 AI agent độc lập (`codex exec`,
+> `claude -p`). Mọi bug đã verify lại với source thật trước khi ghi.
+>
+> **Phạm vi đã chốt với PO:** hardening + retention + content. **KHÔNG**
+> đưa quảng cáo hay IAP vào backlog — game giữ hướng miễn phí hoàn toàn.
+> Mọi cơ chế "cơ hội thứ hai" trả bằng coin/booster có sẵn.
+
+### E6 — Hardening: đúng đắn, chống gian lận, hiệu năng (Must, 34 SP)
+
+| ID | Mô tả | SP | Pri | Mức |
+|----|-------|----|----|-----|
+| X16 | Test suite **đang đỏ** — `RELEASE_CHECKLIST.md` chưa sweep "260 màn" | 1 | Must | P0 |
+| X17 | Undo không rollback counter đời → farm achievement/quest/weekly/clan | 5 | Must | P1 |
+| X18 | `star_owned_pets` JSON hỏng → `onInit` throw → **app không boot** | 2 | Must | P1 |
+| X19 | `resetProgress()` bỏ sót 8 key + `remixBest` → progress ma sau reset | 3 | Must | P1 |
+| X20 | Undo xoá mất `powerKind` của power tile đã có trên bàn | 3 | Must | P1 |
+| X21 | Undo không khôi phục `freezeTurnsLeft` | 2 | Should | P2 |
+| X22 | Idle pet trả thưởng cho thời gian trước khi ấp + farm bằng chỉnh đồng hồ | 3 | Must | P1 |
+| X23 | Swap cùng-ô / Shuffle no-op vẫn tiêu booster | 2 | Should | P2 |
+| X24 | ~6 lần ghi `SharedPreferences` **mỗi cú tap** trên hot path | 5 | Must | P1 |
+| X25 | `decodeReplay`/challenge code không giới hạn payload → treo/OOM UI | 3 | Should | P2 |
+| X26 | Khoá AES-GCM backup hard-code trong binary | 3 | Should | P2 |
+| X27 | Guard phòng thủ: crate trừ coin trước khi roll, `featuredLevelId` chia 0 | 2 | Could | P2 |
+
+Thứ tự bắt buộc: **X16 trước tiên** (unblock CI) → X17/X20/X21 gộp 1 nhánh
+(cùng đụng `_saveUndo`) → còn lại song song.
+
+### E7 — Test coverage cho vùng chưa cover (Must, 16 SP)
+
+| ID | Mô tả | SP | Pri |
+|----|-------|----|----|
+| T2 | 5 controller không có test nào (`game_screen`, `home_screen`, `pass_and_play`, `treasure_map`, `raid_boss`) | 8 | Must |
+| T3 | `wildcard_tile`, `pigments`, `mascot_skins`, 4 bảng bot leaderboard | 3 | Should |
+| T4 | Fuzz save hỏng + test whitelist `resetProgress` — lưới an toàn cho X18/X19 | 5 | Must |
+
+### E8 — Enhance: biến hệ vanity thành hệ có ý nghĩa (Should, 39 SP)
+
+| ID | Mô tả | SP | Pri |
+|----|-------|----|----|
+| I81 | `WeatherKind` gắn luật gameplay thật (đang chỉ là skin) | 5 | Should |
+| I82 | Star Pet có passive nhẹ (đang thuần cosmetic) | 5 | Should |
+| I83 | Sky Shrine thành skill tree cho Prestige — NG+ có chiều sâu | 8 | Should |
+| I84 | Home gợi ý "làm gì tiếp theo" thay vì liệt kê 14 mode | 5 | **Must** |
+| I85 | FTUE dạy target/sao/combo/không-refill, không chỉ 1 hint | 5 | **Must** |
+| I86 | Comeback bonus kèm digest "bạn đã bỏ lỡ gì" | 3 | Could |
+| I87 | Milestone Journal xuất share card "hành trình của bạn" | 3 | Could |
+| I88 | Second chance khi kẹt — trả bằng coin, **không** quảng cáo | 5 | Should |
+
+I84 + I85 là 2 việc tác động retention lớn nhất đợt này.
+
+### E9 — Tính năng mới / độc quyền (Could, 55 SP)
+
+| ID | Mô tả | SP | Pri |
+|----|-------|----|----|
+| F16 | Ghost Duel bất đồng bộ — xem ghost đối thủ chạy trên bàn mình | 8 | Should |
+| F17 | Combo Bank — tiền tệ nối 14 side-mode đang là silo | 5 | Should |
+| F18 | Puzzle Lab Daily — board tự vẽ thành thử thách hằng ngày | 3 | Could |
+| F19 | Pigment Fusion — pha 2 pigment ra pigment hiếm | 5 | Could |
+| F20 | Boss Relay — 2 người thay phiên đánh chung 1 boss HP pool | 13 | Could |
+| F21 | Mirror Draft — tap nổ đối xứng ở nửa bàn đối thủ | 8 | Could |
+| F22 | Tile-DNA Lab — người chơi tự phối cơ chế special tile | 13 | **Won't** (đợt này) |
+
+**Đề xuất: chỉ lấy F16 + F17.** Game đã có 14 mode; mode thứ 15 không ai
+chơi là rủi ro chính của epic này. F20 và F21 trùng mục đích (co-op 2 người
+cùng máy) — chỉ làm một. F22 đã ghi rõ điều kiện mở lại trong file của nó.

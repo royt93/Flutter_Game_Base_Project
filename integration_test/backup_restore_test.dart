@@ -84,7 +84,7 @@ void main() {
     await StorageService.to.setInt(StorageKeys.coins, 321);
     await StorageService.to.setString(StorageKeys.playerName, 'Integration');
     final expected = StorageService.to.exportAll();
-    final expectedCode = await encodeSecureBackupCode(expected);
+    final expectedCode = await encodeBackupCode(expected);
 
     await _openSettings(tester);
     debugPrint('E2E: settings ready');
@@ -101,8 +101,8 @@ void main() {
     final exported = tester
         .widget<SelectableText>(find.byType(SelectableText))
         .data!;
-    expect(exported, startsWith(secureBackupCodePrefix));
-    expect(await decodeSecureBackupCode(exported), expected);
+    expect(exported, startsWith(backupCodePrefix));
+    expect(await decodeBackupCode(exported), expected);
     expect(exported, isNot(expectedCode));
     await tester.tap(find.text('cancel'.tr).last);
     await _pumpBounded(tester, times: 2);

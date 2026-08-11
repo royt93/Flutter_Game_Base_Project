@@ -1,6 +1,13 @@
 import 'dart:convert';
 
 import '../data/levels.dart';
+import 'replay.dart' show kMaxCodeLength;
+
+/// X25: trần độ dài tên người gửi. `senderName` là "phần còn lại của chuỗi"
+/// nên trước đây không có giới hạn nào — mã chứa tên vài trăm KB vẫn decode
+/// thành công rồi được nhét thẳng vào `Text` widget ở màn nhập mã, làm treo
+/// layout. Người chơi thật không đặt tên dài hơn mức này.
+const int kMaxSenderNameLength = 32;
 
 /// I37: mã "thách đấu" — chỉ mang levelId + điểm cần vượt + tên người gửi,
 /// KHÔNG kèm replay đầy đủ (khác `ReplayData`/`encodeReplay` ở `replay.dart`
@@ -34,6 +41,7 @@ String encodeChallengeCode(ChallengeCode data) {
 /// `senderName` là phần còn lại sau cột thứ 2 (không split hết theo `|`) nên
 /// giữ nguyên mọi ký tự `|` gốc trong tên — không cần escape khi encode.
 ChallengeCode? decodeChallengeCode(String code) {
+  if (code.length > kMaxCodeLength) return null;
   final trimmed = code.trim();
   if (!trimmed.startsWith(challengeCodePrefix)) return null;
   try {
@@ -49,6 +57,7 @@ ChallengeCode? decodeChallengeCode(String code) {
     final senderName = raw.substring(secondBar + 1);
     if (levelId == null || levelId < 1 || levelId > kLevelCount) return null;
     if (score == null || score < 0) return null;
+    if (senderName.length > kMaxSenderNameLength) return null;
     return ChallengeCode(
       levelId: levelId,
       score: score,
@@ -81,6 +90,7 @@ String encodeChallengeSeedCode(ChallengeSeedCode data) {
 }
 
 ChallengeSeedCode? decodeChallengeSeedCode(String code) {
+  if (code.length > kMaxCodeLength) return null;
   final trimmed = code.trim();
   if (!trimmed.startsWith(challengeSeedCodePrefix)) return null;
   try {
@@ -94,11 +104,13 @@ ChallengeSeedCode? decodeChallengeSeedCode(String code) {
     final score = int.tryParse(parts[2]);
     if (levelId == null || levelId < 1 || levelId > kLevelCount) return null;
     if (seed == null || seed < 0 || score == null || score < 0) return null;
+    final senderName = parts.sublist(3).join('|');
+    if (senderName.length > kMaxSenderNameLength) return null;
     return ChallengeSeedCode(
       levelId: levelId,
       seed: seed,
       score: score,
-      senderName: parts.sublist(3).join('|'),
+      senderName: senderName,
     );
   } catch (_) {
     return null;

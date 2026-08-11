@@ -1,6 +1,6 @@
 # Release Checklist — Pop Star Blast
 
-Campaign 220 màn (11 world) + shop booster + 9 side mode + lớp meta-progression
+Campaign 260 màn (13 world) + shop booster + 14 side mode + lớp meta-progression
 (prestige, achievement, weekly goal, login streak, season pass, cosmetics...).
 
 **Xác nhận verify thật gần nhất: 2026-08-08, version `2026.08.08+20260808`**,

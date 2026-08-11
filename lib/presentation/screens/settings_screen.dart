@@ -56,7 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _showExportDialog(BuildContext context) async {
-    final code = await encodeSecureBackupCode(StorageService.to.exportAll());
+    final code = await encodeBackupCode(StorageService.to.exportAll());
     if (!context.mounted) return;
     NeonDialog.show(
       context: context,
@@ -130,7 +130,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _handleImportCode(BuildContext context) async {
-    final decoded = await decodeSecureBackupCode(_importCodeCtrl.text);
+    final decoded = await decodeBackupCode(_importCodeCtrl.text);
     if (!context.mounted) return;
     final safeContext = context;
     if (decoded == null) {

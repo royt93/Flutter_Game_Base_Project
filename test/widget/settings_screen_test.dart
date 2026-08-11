@@ -158,7 +158,7 @@ void main() {
     final code = tester
         .widget<SelectableText>(find.byType(SelectableText))
         .data;
-    expect(code, startsWith(secureBackupCodePrefix));
+    expect(code, startsWith(backupCodePrefix));
     expect(find.text('Share'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -189,7 +189,7 @@ void main() {
   ) async {
     addTearDown(Get.reset);
     await _pumpSettings(tester, const Locale('en', 'US'));
-    final code = await encodeSecureBackupCode({'coins': 777});
+    final code = await encodeBackupCode({'coins': 777});
     await _scrollToBackupRows(tester);
     await tester.tap(find.text('Restore from Code'));
     await tester.pump(const Duration(milliseconds: 400));
@@ -213,7 +213,7 @@ void main() {
   ) async {
     addTearDown(Get.reset);
     await _pumpSettings(tester, const Locale('en', 'US'));
-    final code = await encodeSecureBackupCode({
+    final code = await encodeBackupCode({
       'bad_list': <Object>[1, 2],
     });
     await _scrollToBackupRows(tester);

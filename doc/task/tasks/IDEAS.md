@@ -166,3 +166,43 @@ mồ côi (clan) + rà lại các "khoảng trống" gameplay/meta còn lại sa
 - **I69 Endless Mode Modifiers** — tái dùng `GauntletModifier` (I33) áp lên
   Endless theo ngày, cố định suốt 1 run, không đổi ramp độ khó gốc ✅ đã
   chốt — [I69-endless-mode-modifiers.md](I69-endless-mode-modifiers.md).
+
+## Đợt audit 2026-08-11 (Round 9 — đọc toàn source + 2 AI agent độc lập)
+
+Roadmap đầy đủ: [`../ROUND-9.md`](../ROUND-9.md). Tất cả đã rã task, không
+còn ý tưởng nào ở trạng thái "chưa chốt" trong đợt này.
+
+**Enhance — cho hệ đã có một lý do tồn tại** (rẻ hơn xây hệ thứ 21):
+- **I81 Weather gameplay rules** ✅ đã chốt — [I81-weather-gameplay-rules.md](I81-weather-gameplay-rules.md).
+- **I82 Star Pet passive** ✅ đã chốt — [I82-star-pet-passive-skill.md](I82-star-pet-passive-skill.md).
+- **I83 Constellation prestige tree** ✅ đã chốt — [I83-constellation-prestige-tree.md](I83-constellation-prestige-tree.md).
+- **I84 Home next-best-action** ✅ đã chốt — [I84-home-next-best-action.md](I84-home-next-best-action.md).
+- **I85 FTUE dạy luật lõi** ✅ đã chốt — [I85-ftue-teach-core-rules.md](I85-ftue-teach-core-rules.md).
+- **I86 Comeback digest** ✅ đã chốt — [I86-comeback-digest.md](I86-comeback-digest.md).
+- **I87 Milestone story reel** ✅ đã chốt — [I87-milestone-story-reel.md](I87-milestone-story-reel.md).
+- **I88 Second chance (không ads)** ✅ đã chốt — [I88-second-chance-no-ads.md](I88-second-chance-no-ads.md).
+
+**Tính năng mới / độc quyền:**
+- **F16 Ghost Duel bất đồng bộ** ✅ đã chốt — [F16-ghost-duel-async.md](F16-ghost-duel-async.md).
+- **F17 Combo Bank liên-mode** ✅ đã chốt — [F17-combo-bank-cross-mode.md](F17-combo-bank-cross-mode.md).
+- **F18 Puzzle Lab Daily** ✅ đã chốt — [F18-puzzle-lab-daily-roulette.md](F18-puzzle-lab-daily-roulette.md).
+- **F19 Pigment Fusion** ✅ đã chốt — [F19-pigment-fusion.md](F19-pigment-fusion.md).
+- **F20 Boss Relay co-op** ✅ đã chốt (SP 13, cần chẻ nhỏ) — [F20-boss-relay-coop.md](F20-boss-relay-coop.md).
+- **F21 Mirror Draft** ✅ đã chốt — [F21-mirror-draft.md](F21-mirror-draft.md).
+- **F22 Tile-DNA Lab** ⏸️ **Deferred** có chủ đích, điều kiện mở lại ghi trong file — [F22-tile-dna-remix-lab.md](F22-tile-dna-remix-lab.md).
+
+### Ý tưởng đã cân nhắc và **bác bỏ** trong đợt này
+
+Ghi lại để lần audit sau không đề xuất lại:
+
+- **Rewarded ads + IAP.** Agent audit xếp "không có đường doanh thu" là điểm
+  yếu #1 (`pubspec.yaml` không có `google_mobile_ads`/`in_app_purchase`).
+  Đây là **quyết định sản phẩm có chủ đích**, không phải thiếu sót — PO chốt
+  giữ game miễn phí hoàn toàn (2026-08-11). Mọi cơ chế "second chance" phải
+  trả bằng coin/booster có sẵn (xem I88).
+- **Clan có backend thật.** `clan.dart` là clan-lite cố ý: 1 clan cứng, 6 NPC,
+  bot seeded theo tuần. Làm clan nhiều người thật cần server — ngoài ràng
+  buộc "không backend" của dự án.
+- **Khoá backup theo thiết bị** (thay cho khoá hard-code, xem X26). Sẽ phá
+  đúng tính năng mà backup tồn tại để phục vụ: chuyển save sang máy khác.
+  Hướng đã chọn là ghi rõ giới hạn thay vì giả vờ an toàn.
