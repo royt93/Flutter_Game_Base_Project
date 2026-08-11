@@ -321,11 +321,28 @@ class StorageService extends GetxService {
     }
   }
 
-  int getInt(String key, {int def = 0}) =>
-      (_buffer[key] as int?) ??
-      _prefs?.getInt(key) ??
-      (_fallback[key] as int?) ??
-      def;
+  /// X28: đọc giá trị thô rồi **kiểm kiểu**, không cast thẳng.
+  ///
+  /// Bản cũ dùng `_prefs.getInt(key)` / `as int?`, mà cả hai đều ném
+  /// `TypeError` nếu key đang giữ kiểu khác (String ở chỗ đáng lẽ là int).
+  /// Vì `GameController._load()` đọc gần 100 key và chạy trong `onInit()` của
+  /// một singleton `permanent: true` dựng ngay ở `main.dart`, một key sai kiểu
+  /// duy nhất là **app không boot được** — người chơi phải gỡ cài đặt.
+  ///
+  /// Đường vào có thật: [importAll] chỉ kiểm giá trị thuộc int/bool/double/
+  /// String, KHÔNG kiểm từng key có đúng kiểu mong đợi không. Cộng với khoá
+  /// backup nằm sẵn trong binary (xem `logic/backup_code.dart`), ai cũng tạo
+  /// được mã backup hợp lệ chứa `"coins": "abc"`.
+  ///
+  /// Sai kiểu → trả mặc định, giống hệt như key chưa tồn tại. Sửa ở đây phủ
+  /// **mọi** key một lượt, thay vì bọc try/catch ở từng chỗ hydrate (cách đó
+  /// đã trôi mất 1 chỗ, xem [X18]).
+  Object? _raw(String key) => _buffer[key] ?? _prefs?.get(key) ?? _fallback[key];
+
+  int getInt(String key, {int def = 0}) {
+    final v = _raw(key);
+    return v is int ? v : def;
+  }
   Future<void> setInt(String key, int value) async {
     platformWrites++;
     if (_prefs != null) {
@@ -335,11 +352,10 @@ class StorageService extends GetxService {
     _fallback[key] = value;
   }
 
-  bool getBool(String key, {bool def = false}) =>
-      (_buffer[key] as bool?) ??
-      _prefs?.getBool(key) ??
-      (_fallback[key] as bool?) ??
-      def;
+  bool getBool(String key, {bool def = false}) {
+    final v = _raw(key);
+    return v is bool ? v : def;
+  }
   Future<void> setBool(String key, bool value) async {
     platformWrites++;
     if (_prefs != null) {
@@ -349,11 +365,10 @@ class StorageService extends GetxService {
     _fallback[key] = value;
   }
 
-  double getDouble(String key, {double def = 1.0}) =>
-      (_buffer[key] as double?) ??
-      _prefs?.getDouble(key) ??
-      (_fallback[key] as double?) ??
-      def;
+  double getDouble(String key, {double def = 1.0}) {
+    final v = _raw(key);
+    return v is double ? v : def;
+  }
   Future<void> setDouble(String key, double value) async {
     platformWrites++;
     if (_prefs != null) {
@@ -363,10 +378,10 @@ class StorageService extends GetxService {
     _fallback[key] = value;
   }
 
-  String? getString(String key) =>
-      (_buffer[key] as String?) ??
-      _prefs?.getString(key) ??
-      _fallback[key] as String?;
+  String? getString(String key) {
+    final v = _raw(key);
+    return v is String ? v : null;
+  }
   Future<void> setString(String key, String value) async {
     platformWrites++;
     if (_prefs != null) {

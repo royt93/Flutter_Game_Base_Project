@@ -2,7 +2,7 @@
 
 **Epic:** E7 Test coverage · **SP:** 5 · **Pri:** Must
 **Deps:** làm cùng [[X18]] và [[X19]]
-**Trạng thái:** 📋 To Do
+**Trạng thái:** ✅ Done (2026-08-11)
 
 ## Mục tiêu
 Biến 2 bug đã tìm được ([[X18]] crash boot, [[X19]] reset không sạch) thành
@@ -26,35 +26,49 @@ quên thêm key vào reset *so that* tôi không phát hành một bug chặn bo
 ## Acceptance criteria
 
 ### A. Fuzz hydrate
-- [ ] Test lặp qua **mọi** `StorageKeys` (dùng reflection trên hằng số, hoặc
-      một danh sách khai báo một lần) và với mỗi key, thử các giá trị rác:
-      chuỗi rỗng, `"không-phải-json"`, `"{}"`, `"[]"`, `"[1,2,3]"`, số âm
-      khổng lồ, chuỗi 1 MB.
-- [ ] Với mỗi tổ hợp: `GameController` khởi tạo thành công, `onInit()` không
-      ném, app "boot" được.
-- [ ] Test **đỏ** nếu ai đó thêm một hydrate không guard — kiểm chứng bằng
-      cách tạm bỏ `try/catch` của [[X18]] và xác nhận test bắt được.
+- [x] Test lặp qua **mọi** `StorageKeys` × 10 giá trị rác (chuỗi rỗng, JSON
+      hỏng/cụt/sai kiểu, `null` literal, số âm khổng lồ, bool).
+- [x] Với mỗi tổ hợp: `GameController` khởi tạo thành công, `onInit()` không ném.
+- [x] Test **đỏ** khi hydrate mất guard — kiểm chứng ở [[X28]] (trả getter về
+      bản cast cũ → 3/4 test đỏ).
+- [x] Thêm ngoài AC: key động (`highScore`/`star`/`remixBest`), và ca "save
+      hỏng toàn bộ" (mọi key = rác cùng lúc).
 
 ### B. Whitelist reset
-- [ ] Test: gieo giá trị khác mặc định vào **mọi** key game biết đến →
-      `resetProgress()` → `StorageService.exportAll()` chỉ còn key nằm trong
-      whitelist đã chốt (xem [[X19]]).
-- [ ] Whitelist là hằng số trong test, có comment giải thích vì sao từng key
-      được giữ lại (ngôn ngữ, âm lượng, `hasSeen*`…).
-- [ ] Test **đỏ** nếu thêm key mới mà không phân loại — đây là điểm chính:
-      nó buộc người thêm key phải quyết định.
+- [x] Đã làm sẵn ở [[X19]] — `save_resilience_test.dart` so `exportAll()` của
+      profile-vừa-reset với profile-cài-mới. Tự đúng cho key tương lai.
+- [x] Whitelist là `GameController.keepOnReset`, có comment phân loại.
+- [x] Đỏ khi thêm key mới mà không phân loại (đã mutation-check ở X19).
 
-## Subtask
-1. `test/core/storage_service_test.dart` (đã có) hoặc file mới
-   `test/presentation/save_resilience_test.dart` — phần A.
-2. Phần B: cần một cách liệt kê mọi key. `StorageKeys` là các hằng `static
-   const String`; đơn giản nhất là khai báo `StorageKeys.all` (một `List`
-   trong chính file đó) và assert trong test rằng nó không sót — hoặc chấp
-   nhận danh sách trong test và để chính test đó là nơi buộc cập nhật.
-   **Chọn cách nào cũng được, miễn có đúng MỘT chỗ phải cập nhật khi thêm key,
-   và quên nó thì test đỏ.**
-3. Chạy fuzz, sửa mọi hydrate chưa guard mà nó tìm ra (dự kiến sẽ ra thêm vài
-   chỗ ngoài pet).
+## Cách liệt kê key — chọn đường tự phát hiện
+Subtask 2 để mở 2 lựa chọn. Chọn **đọc chính source**: test parse
+`lib/core/storage_service.dart` bằng regex, rút mọi `static const String`.
+
+Lý do: yêu cầu bắt buộc là *"quên thì test đỏ"*. Danh sách chép tay trong test
+không đạt — thêm key mà quên cập nhật danh sách thì fuzz vẫn xanh, tức là im
+lặng bỏ sót đúng thứ nó sinh ra để bắt. Đọc source thì key mới **tự động** vào
+vòng fuzz. Cùng thủ pháp với `campaign_total_sweep_test.dart`.
+
+Đánh đổi: phụ thuộc cách viết source. Đã chặn bằng một test riêng assert rút
+được ≥90 key — nếu `StorageKeys` đổi sang enum/codegen làm regex mục, test đỏ
+ngay thay vì biến fuzz thành no-op âm thầm.
+
+## Kết quả: tìm ra bug P1 mới
+Fuzz **đỏ ngay lần chạy đầu**, và không phải lỗi nhỏ: mọi key giữ sai kiểu đều
+làm `getInt`/`getBool`/`getDouble`/`getString` ném `TypeError` → `onInit()`
+ném → **app không boot được**. Xem [[X28]] (đã sửa).
+
+Đây đúng là thứ [[X18]] bỏ sót: X18 vá try/catch cho riêng block pet, còn lỗ
+thật rộng bằng toàn bộ bảng key. 970 test trước đó không bắt được vì tất cả
+đều gieo dữ liệu **đúng kiểu** — người viết test biết key nào là int.
+
+Phụ: fuzz cũng lộ `widgetCoinsKey` trùng chuỗi `'coins'` với `StorageKeys.coins`.
+Kiểm lại thì **cố ý** (namespace riêng của home widget, Kotlin đọc) — đã loại
+2 widget key khỏi phép kiểm trùng kèm giải thích.
+
+## Subtask 3 — sửa mọi hydrate chưa guard
+Không cần sửa từng chỗ. Sửa ở tầng getter ([[X28]]) phủ toàn bộ một lượt; sau
+đó fuzz xanh, không còn hydrate nào hở.
 
 ## Ghi chú kỹ thuật
 `StorageService.exportAll()` (`storage_service.dart:337`) đã dùng
