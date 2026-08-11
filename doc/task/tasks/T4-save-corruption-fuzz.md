@@ -79,3 +79,24 @@ tay". Test này dựa thẳng vào nó.
 key là đủ và chạy trong vài trăm ms.
 
 DoD chung: `../README.md`.
+
+## Bổ sung: integration test (2026-08-11)
+`integration_test/save_resilience_test.dart` — 3 case, chạy trên thiết bị thật.
+
+Vì sao cần dù đã có fuzz unit test: fuzz dựng `GameController` **trực tiếp**,
+nên nó chỉ chứng minh controller chịu được dữ liệu xấu. Đường khởi động thật
+(`app.main()`) còn có `AudioManager`, `ReminderService`, `LocaleService`,
+`HomeWidgetSync` và thứ tự `Get.put` — một key hỏng có thể làm gãy ở đó mà
+unit test không thấy.
+
+Gieo save sai kiểu bằng `SharedPreferences.setString(StorageKeys.coins, 'abc')`
+**trước** khi gọi `app.app()` — đúng tình huống người chơi mở app sau khi
+import mã backup giả mạo, và làm được hoàn toàn ở tầng Dart (không cần root
+hay sửa file XML như lúc kiểm tay).
+
+Kiểm chứng trên Pixel 7 Pro (Android 17):
+- Bản có fix: **3/3 xanh**.
+- Gỡ fix [[X28]] rồi chạy lại: **3/3 đỏ**, đúng lỗi
+  `type 'String' is not a subtype of type 'int?'`.
+
+Chạy: `flutter test integration_test/save_resilience_test.dart -d <device>`
