@@ -28,9 +28,11 @@ import '../../data/star_pets.dart';
 import '../../data/weekly_featured.dart';
 import '../../data/weekly_goal.dart';
 import '../../game/pop_star_game.dart';
+import 'raid_boss_controller.dart';
 import '../../logic/challenge_code.dart';
 import '../../logic/craft_points.dart';
 import '../../logic/mystery_crate.dart';
+import '../../logic/next_action.dart';
 import '../../logic/daily_challenge.dart';
 import '../../logic/gift_tile.dart';
 import '../../logic/login_streak.dart';
@@ -1557,6 +1559,55 @@ class GameController extends GetxController {
       sum += StorageService.to.getInt(StorageKeys.star(id));
     }
     totalStars.value = sum;
+  }
+
+  /// I84: gom state rời rạc thành danh sách "làm gì tiếp theo".
+  ///
+  /// Toàn bộ luật xếp hạng nằm ở [rankNextActions] (thuần, test riêng); hàm
+  /// này chỉ đọc state và **không** tự quyết định thứ tự — để đổi ưu tiên chỉ
+  /// phải sửa đúng một chỗ.
+  ///
+  /// Raid Boss cố ý không đọc qua `RaidBossController`: controller đó chỉ tồn
+  /// tại khi đang ở màn raid, còn Home cần biết ngay lúc dựng. Dùng vị từ
+  /// thuần [isRaidActiveForEpochDay] + số lượt đã dùng trong ngày.
+  List<NextAction> nextActions() {
+    final today = todayEpochDay();
+    final raidAttemptsUsed =
+        StorageService.to.getInt(StorageKeys.raidBossLastAttemptDay, def: -1) ==
+            today
+        ? StorageService.to.getInt(StorageKeys.raidBossAttemptsUsed)
+        : 0;
+
+    return rankNextActions(
+      canClaimDailyReward: canClaimDaily,
+      canClaimSpin: canClaimSpin,
+      questsReadyToClaim: _questsReadyToClaim(),
+      weeklyGoalReady:
+          weeklyGoalProgress.value >= weeklyGoalTarget && !weeklyGoalClaimed,
+      clanGoalReady: clanPoolThisWeek >= clanGoalTarget && !clanGoalClaimed,
+      chestReady: List.generate(
+        starRoadMilestones.length,
+        canClaimChest,
+      ).any((v) => v),
+      seasonMilestoneReady: List.generate(
+        seasonMilestones.length,
+        canClaimSeason,
+      ).any((v) => v),
+      raidActiveToday: isRaidActiveForEpochDay(today),
+      raidHasAttemptsLeft:
+          raidAttemptsUsed < RaidBossController.maxDailyAttempts,
+      unlockedLevel: unlockedLevel.value,
+      levelCount: kLevelCount,
+    );
+  }
+
+  int _questsReadyToClaim() {
+    var ready = 0;
+    for (var i = 0; i < dailyQuests.length; i++) {
+      if (dailyQuestClaimed.contains(i)) continue;
+      if (dailyQuestProgress[i] >= dailyQuests[i].target) ready++;
+    }
+    return ready;
   }
 
   bool isChestClaimed(int index) => (claimedChestMask.value >> index) & 1 == 1;
