@@ -552,6 +552,19 @@ class AppTranslations extends Translations {
 
   /// Key Wave 4 — English (mặc định + fallback cho ngôn ngữ chưa dịch).
   static const Map<String, String> _extraEn = {
+    // I84 — "Next up": gợi ý tối đa 3 việc đáng làm nhất, thay cho việc bắt
+    // người chơi tự lọc 14 mode + ~20 hệ meta trong carousel.
+    'home_next_title': 'Next up',
+    'home_next_daily': 'Daily reward',
+    'home_next_spin': 'Lucky spin',
+    'home_next_quest': 'Quests done (@n)',
+    'home_next_chest': 'Chest ready',
+    'home_next_season': 'Season reward',
+    'home_next_weekly': 'Weekly goal',
+    'home_next_clan': 'Clan reward',
+    'home_next_level': 'Level @n',
+    'home_next_empty': 'All caught up!',
+
     // Home: Rate App / More Apps buttons.
     'rate_app': 'Rate us',
     'more_apps': 'More games',
@@ -1554,6 +1567,18 @@ class AppTranslations extends Translations {
 
   /// Key Wave 4 — Tiếng Việt (override English).
   static const Map<String, String> _extraVi = {
+    // I84 — "Tiếp theo".
+    'home_next_title': 'Tiếp theo',
+    'home_next_daily': 'Thưởng hằng ngày',
+    'home_next_spin': 'Vòng quay may mắn',
+    'home_next_quest': 'Nhiệm vụ đã xong (@n)',
+    'home_next_chest': 'Rương đã mở khoá',
+    'home_next_season': 'Thưởng mùa',
+    'home_next_weekly': 'Mục tiêu tuần',
+    'home_next_clan': 'Thưởng clan',
+    'home_next_level': 'Màn @n',
+    'home_next_empty': 'Hết việc rồi!',
+
     // Home: nút Rate App / More Apps.
     'rate_app': 'Đánh giá',
     'more_apps': 'Ứng dụng khác',

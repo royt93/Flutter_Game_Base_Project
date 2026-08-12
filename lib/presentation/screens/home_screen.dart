@@ -9,6 +9,7 @@ import '../../core/neon_theme.dart';
 import '../../core/runtime_flags.dart';
 import '../../core/share_helper.dart';
 import '../../data/worlds.dart';
+import '../../logic/next_action.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/home_screen_controller.dart';
 import '../widgets/ambient_particles.dart';
@@ -20,6 +21,7 @@ import '../widgets/daily_quest_dialog.dart';
 import '../widgets/home_carousel.dart';
 import '../widgets/login_streak_dialog.dart';
 import '../widgets/mystery_crate_dialog.dart';
+import '../widgets/next_up_bar.dart';
 import '../widgets/weekly_goal_dialog.dart';
 import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
@@ -349,236 +351,293 @@ class _HomeScreenState extends State<HomeScreen> {
           child: SafeArea(
             child: Stack(
               children: [
-                Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: NeonTheme.s16,
+                // I84: Home vốn là Column cố định với Spacer, và ở chiều cao
+                // ~600dp nó đã vừa khít — thêm BẤT KỲ nội dung nào cũng tràn
+                // (dải "Tiếp theo" làm lộ ra điều này, nhưng hạn chế có sẵn từ
+                // trước). Bọc scroll + ép cao tối thiểu bằng viewport: máy cao
+                // vẫn dàn đều nhờ Spacer như cũ, máy thấp thì cuộn được thay
+                // vì vẽ tràn.
+                LayoutBuilder(
+                  builder: (context, constraints) => SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          NeonIconButton(
-                            Icons.menu_rounded,
-                            color: NeonTheme.cyan,
-                            onTap: () =>
-                                _scaffoldKey.currentState?.openEndDrawer(),
-                            semanticLabel: 'menu_button_label'.tr,
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              PrestigeAction(
-                                gameCtrl: gameCtrl,
-                                onTap: () =>
-                                    showPrestigeDialog(context, gameCtrl),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: NeonTheme.s16,
                               ),
-                              CoinChip(gameCtrl),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Obx(() {
-                      final homeCtrl = Get.find<HomeScreenController>();
-                      return HomeCarousel(
-                        cards: homeCtrl.cards.toList(),
-                        currentIndex: homeCtrl.currentIndex.value,
-                        onPageChanged: (i) => homeCtrl.currentIndex.value = i,
-                        onCardTapped: () => homeCtrl.refreshCards(gameCtrl),
-                      );
-                    }),
-                    const Spacer(flex: 2),
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        const SizedBox(
-                          width: 220,
-                          height: 220,
-                          child: AmbientParticles(),
-                        ),
-                        Obx(
-                          () => StarMascot(
-                            size: 128,
-                            onTap: () => fireHaptic(HapticLevel.light),
-                            palette: gameCtrl.activeMascotSkin.palette,
-                          ),
-                        ),
-                      ],
-                    ),
-                    StrokeText(
-                      kAppName,
-                      fontSize: 46,
-                      color: Colors.white,
-                      stroke: NeonTheme.magenta,
-                      strokeWidth: 6,
-                      letterSpacing: 1.5,
-                      shadows: [
-                        Shadow(
-                          color: NeonTheme.purple.withValues(alpha: 0.5),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    Obx(() {
-                      final name = gameCtrl.playerName.value;
-                      if (name.isEmpty) return const SizedBox.shrink();
-                      final title = gameCtrl.activeTitleAchievement;
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          title == null ? name : '$name · ${title.titleKey.tr}',
-                          style: TextStyle(
-                            color: NeonTheme.inkSoft,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      );
-                    }),
-                    const Spacer(flex: 3),
-                    PulseGlow(
-                      color: NeonTheme.cyan,
-                      child: NeonButton(
-                        label: 'PLAY',
-                        color: NeonTheme.cyan,
-                        icon: Icons.play_arrow_rounded,
-                        onTap: () => Get.to(() => const LevelSelectScreen()),
-                      ),
-                    ),
-                    const SizedBox(height: NeonTheme.s8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Obx(() {
-                          final homeCtrl = Get.find<HomeScreenController>();
-                          final shopButton = NeonIconButton(
-                            Icons.storefront_rounded,
-                            color: NeonTheme.yellow,
-                            size: 28,
-                            boxed: true,
-                            semanticLabel: 'shop_title'.tr,
-                            onTap: () {
-                              homeCtrl.dismissShopTutorial();
-                              Get.to(() => const ShopScreen());
-                            },
-                          );
-                          return CompositedTransformTarget(
-                            link: _shopButtonLink,
-                            child: homeCtrl.showShopTutorial.value
-                                ? PulseGlow(
-                                    color: NeonTheme.yellow,
-                                    child: shopButton,
-                                  )
-                                : shopButton,
-                          );
-                        }),
-                        const SizedBox(width: NeonTheme.s24),
-                        Obx(() {
-                          final homeCtrl = Get.find<HomeScreenController>();
-                          final dailyButton = NeonIconButton(
-                            Icons.calendar_month_rounded,
-                            color: NeonTheme.red,
-                            size: 28,
-                            boxed: true,
-                            semanticLabel: 'daily_challenge_label'.tr,
-                            onTap: () {
-                              homeCtrl.dismissDailyChallengeTutorial();
-                              gameCtrl.startDailyChallenge();
-                              Get.to(() => const GameScreen());
-                            },
-                          );
-                          return CompositedTransformTarget(
-                            link: _dailyButtonLink,
-                            child: homeCtrl.showDailyChallengeTutorial.value
-                                ? PulseGlow(
-                                    color: NeonTheme.red,
-                                    child: dailyButton,
-                                  )
-                                : dailyButton,
-                          );
-                        }),
-                        const SizedBox(width: NeonTheme.s24),
-                        NeonIconButton(
-                          Icons.sports_esports_rounded,
-                          color: NeonTheme.indigo,
-                          size: 28,
-                          boxed: true,
-                          semanticLabel: 'modes_title'.tr,
-                          onTap: () => Get.to(() => const ModeSelectScreen()),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        NeonIconButton(
-                          Icons.star_rounded,
-                          color: NeonTheme.yellow,
-                          size: 20,
-                          compact: true,
-                          semanticLabel: 'rate_app'.tr,
-                          onTap: () async {
-                            final review = InAppReview.instance;
-                            if (await review.isAvailable()) {
-                              await review.openStoreListing();
-                            }
-                          },
-                        ),
-                        NeonIconButton(
-                          Icons.apps_rounded,
-                          color: NeonTheme.indigo,
-                          size: 20,
-                          compact: true,
-                          semanticLabel: 'more_apps'.tr,
-                          onTap: () => launchUrl(
-                            Uri.parse(
-                              'https://play.google.com/store/apps/dev?id=6193840742938642798',
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  NeonIconButton(
+                                    Icons.menu_rounded,
+                                    color: NeonTheme.cyan,
+                                    onTap: () => _scaffoldKey.currentState
+                                        ?.openEndDrawer(),
+                                    semanticLabel: 'menu_button_label'.tr,
+                                  ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      PrestigeAction(
+                                        gameCtrl: gameCtrl,
+                                        onTap: () => showPrestigeDialog(
+                                          context,
+                                          gameCtrl,
+                                        ),
+                                      ),
+                                      CoinChip(gameCtrl),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                            mode: LaunchMode.externalApplication,
-                          ),
-                        ),
-                        NeonIconButton(
-                          Icons.share_rounded,
-                          color: NeonTheme.cyan,
-                          size: 20,
-                          compact: true,
-                          semanticLabel: 'invite_friend'.tr,
-                          onTap: () => shareText(
-                            'invite_friend_share_msg'.trParams({
-                              'link':
-                                  'https://play.google.com/store/apps/details?id=$kPackageName',
+                            // I84: dải "Tiếp theo" nằm TRÊN carousel — carousel đầy đủ
+                            // vẫn ở dưới cho ai muốn khám phá, không thay thế nó.
+                            Obx(() {
+                              // Đọc vài Rx để Obx dựng lại khi state đổi (nhận thưởng,
+                              // thắng màn...) — `nextActions()` là hàm thường, không tự
+                              // đăng ký phụ thuộc.
+                              gameCtrl.coins.value;
+                              gameCtrl.unlockedLevel.value;
+                              gameCtrl.totalStars.value;
+                              gameCtrl.weeklyGoalProgress.value;
+                              gameCtrl.dailyQuestProgress.length;
+                              return NextUpBar(
+                                actions: gameCtrl.nextActions(),
+                                onTap: (a) =>
+                                    _onNextAction(context, gameCtrl, a),
+                              );
                             }),
-                          ),
+                            const SizedBox(height: NeonTheme.s8),
+                            Obx(() {
+                              final homeCtrl = Get.find<HomeScreenController>();
+                              return HomeCarousel(
+                                cards: homeCtrl.cards.toList(),
+                                currentIndex: homeCtrl.currentIndex.value,
+                                onPageChanged: (i) =>
+                                    homeCtrl.currentIndex.value = i,
+                                onCardTapped: () =>
+                                    homeCtrl.refreshCards(gameCtrl),
+                              );
+                            }),
+                            const Spacer(flex: 2),
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                const SizedBox(
+                                  width: 220,
+                                  height: 220,
+                                  child: AmbientParticles(),
+                                ),
+                                Obx(
+                                  () => StarMascot(
+                                    size: 128,
+                                    onTap: () => fireHaptic(HapticLevel.light),
+                                    palette: gameCtrl.activeMascotSkin.palette,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            StrokeText(
+                              kAppName,
+                              fontSize: 46,
+                              color: Colors.white,
+                              stroke: NeonTheme.magenta,
+                              strokeWidth: 6,
+                              letterSpacing: 1.5,
+                              shadows: [
+                                Shadow(
+                                  color: NeonTheme.purple.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            Obx(() {
+                              final name = gameCtrl.playerName.value;
+                              if (name.isEmpty) return const SizedBox.shrink();
+                              final title = gameCtrl.activeTitleAchievement;
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  title == null
+                                      ? name
+                                      : '$name · ${title.titleKey.tr}',
+                                  style: TextStyle(
+                                    color: NeonTheme.inkSoft,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              );
+                            }),
+                            const Spacer(flex: 3),
+                            PulseGlow(
+                              color: NeonTheme.cyan,
+                              child: NeonButton(
+                                label: 'PLAY',
+                                color: NeonTheme.cyan,
+                                icon: Icons.play_arrow_rounded,
+                                onTap: () =>
+                                    Get.to(() => const LevelSelectScreen()),
+                              ),
+                            ),
+                            const SizedBox(height: NeonTheme.s8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Obx(() {
+                                  final homeCtrl =
+                                      Get.find<HomeScreenController>();
+                                  final shopButton = NeonIconButton(
+                                    Icons.storefront_rounded,
+                                    color: NeonTheme.yellow,
+                                    size: 28,
+                                    boxed: true,
+                                    semanticLabel: 'shop_title'.tr,
+                                    onTap: () {
+                                      homeCtrl.dismissShopTutorial();
+                                      Get.to(() => const ShopScreen());
+                                    },
+                                  );
+                                  return CompositedTransformTarget(
+                                    link: _shopButtonLink,
+                                    child: homeCtrl.showShopTutorial.value
+                                        ? PulseGlow(
+                                            color: NeonTheme.yellow,
+                                            child: shopButton,
+                                          )
+                                        : shopButton,
+                                  );
+                                }),
+                                const SizedBox(width: NeonTheme.s24),
+                                Obx(() {
+                                  final homeCtrl =
+                                      Get.find<HomeScreenController>();
+                                  final dailyButton = NeonIconButton(
+                                    Icons.calendar_month_rounded,
+                                    color: NeonTheme.red,
+                                    size: 28,
+                                    boxed: true,
+                                    semanticLabel: 'daily_challenge_label'.tr,
+                                    onTap: () {
+                                      homeCtrl.dismissDailyChallengeTutorial();
+                                      gameCtrl.startDailyChallenge();
+                                      Get.to(() => const GameScreen());
+                                    },
+                                  );
+                                  return CompositedTransformTarget(
+                                    link: _dailyButtonLink,
+                                    child:
+                                        homeCtrl
+                                            .showDailyChallengeTutorial
+                                            .value
+                                        ? PulseGlow(
+                                            color: NeonTheme.red,
+                                            child: dailyButton,
+                                          )
+                                        : dailyButton,
+                                  );
+                                }),
+                                const SizedBox(width: NeonTheme.s24),
+                                NeonIconButton(
+                                  Icons.sports_esports_rounded,
+                                  color: NeonTheme.indigo,
+                                  size: 28,
+                                  boxed: true,
+                                  semanticLabel: 'modes_title'.tr,
+                                  onTap: () =>
+                                      Get.to(() => const ModeSelectScreen()),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                NeonIconButton(
+                                  Icons.star_rounded,
+                                  color: NeonTheme.yellow,
+                                  size: 20,
+                                  compact: true,
+                                  semanticLabel: 'rate_app'.tr,
+                                  onTap: () async {
+                                    final review = InAppReview.instance;
+                                    if (await review.isAvailable()) {
+                                      await review.openStoreListing();
+                                    }
+                                  },
+                                ),
+                                NeonIconButton(
+                                  Icons.apps_rounded,
+                                  color: NeonTheme.indigo,
+                                  size: 20,
+                                  compact: true,
+                                  semanticLabel: 'more_apps'.tr,
+                                  onTap: () => launchUrl(
+                                    Uri.parse(
+                                      'https://play.google.com/store/apps/dev?id=6193840742938642798',
+                                    ),
+                                    mode: LaunchMode.externalApplication,
+                                  ),
+                                ),
+                                NeonIconButton(
+                                  Icons.share_rounded,
+                                  color: NeonTheme.cyan,
+                                  size: 20,
+                                  compact: true,
+                                  semanticLabel: 'invite_friend'.tr,
+                                  onTap: () => shareText(
+                                    'invite_friend_share_msg'.trParams({
+                                      'link':
+                                          'https://play.google.com/store/apps/details?id=$kPackageName',
+                                    }),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Spacer(),
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: NeonTheme.s8,
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    kCopyright,
+                                    style: TextStyle(
+                                      color: NeonTheme.ink.withValues(
+                                        alpha: 0.45,
+                                      ),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    'v$kAppVersion+$kAppBuildNumber',
+                                    style: TextStyle(
+                                      color: NeonTheme.ink.withValues(
+                                        alpha: 0.35,
+                                      ),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: NeonTheme.s8),
-                      child: Column(
-                        children: [
-                          Text(
-                            kCopyright,
-                            style: TextStyle(
-                              color: NeonTheme.ink.withValues(alpha: 0.45),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            'v$kAppVersion+$kAppBuildNumber',
-                            style: TextStyle(
-                              color: NeonTheme.ink.withValues(alpha: 0.35),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
                 _ShopTutorialOverlay(gameCtrl: gameCtrl, link: _shopButtonLink),
                 _DailyChallengeTutorialOverlay(link: _dailyButtonLink),
@@ -613,6 +672,38 @@ class _ShopTutorialOverlay extends StatelessWidget {
         ),
       );
     });
+  }
+}
+
+/// I84: điều hướng cho từng loại gợi ý.
+///
+/// Mỗi nhánh dẫn tới **đúng chỗ mà entry point sẵn có đã dùng** (xem hàng nút
+/// truy cập nhanh phía trên) — cố ý không tạo màn/dialog riêng cho dải này, để
+/// không có 2 đường vào cùng một tính năng phải giữ đồng bộ.
+void _onNextAction(
+  BuildContext context,
+  GameController gameCtrl,
+  NextAction action,
+) {
+  switch (action.kind) {
+    case NextActionKind.dailyReward:
+      showLoginStreakDialog(context, gameCtrl);
+    case NextActionKind.dailySpin:
+      showSpinWheelDialog(context, gameCtrl);
+    case NextActionKind.dailyQuest:
+      showDailyQuestDialog(context, gameCtrl);
+    case NextActionKind.raidBoss:
+      Get.to(() => const RaidBossScreen());
+    case NextActionKind.starRoadChest:
+      Get.to(() => const StarRoadScreen());
+    case NextActionKind.seasonMilestone:
+      Get.to(() => const SeasonScreen());
+    case NextActionKind.weeklyGoal:
+      showWeeklyGoalDialog(context, gameCtrl);
+    case NextActionKind.clanGoal:
+      showClanDialog(context, gameCtrl);
+    case NextActionKind.campaignLevel:
+      Get.to(() => const LevelSelectScreen());
   }
 }
 
