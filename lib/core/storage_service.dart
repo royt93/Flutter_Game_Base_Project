@@ -72,6 +72,14 @@ class StorageKeys {
   // X1 Onboarding/FTUE: đã xem overlay "chạm để nổ" chưa (chỉ hiện 1 lần).
   static const String hasSeenFtue = 'has_seen_ftue';
 
+  // I85: mẩu hướng dẫn dạy luật lõi mà X1 không dạy — mỗi mẩu tắt độc lập.
+  static const String hasSeenBigGroupTip = 'has_seen_big_group_tip';
+  static const String hasSeenNoRefillTip = 'has_seen_no_refill_tip';
+
+  /// I85: công tắc "Bỏ qua hướng dẫn" trong Settings — tắt MỌI mẩu cùng lúc,
+  /// dành cho người chơi cũ cài lại.
+  static const String skipTips = 'skip_tips';
+
   // Round-7 Tutorial mở rộng: 3 coach-mark thêm cho tính năng dễ bị bỏ sót.
   static const String hasSeenShopTutorial = 'has_seen_shop_tutorial';
   static const String hasSeenBoosterTutorial = 'has_seen_booster_tutorial';

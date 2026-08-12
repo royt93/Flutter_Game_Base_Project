@@ -38,6 +38,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     def: true,
   );
   late bool _reduceMotion = StorageService.to.getBool(StorageKeys.reduceMotion);
+
+  /// I85: tắt mọi mẩu hướng dẫn cùng lúc — dành cho người chơi cũ cài lại,
+  /// họ không cần được dạy lại luật.
+  late bool _skipTips = StorageService.to.getBool(StorageKeys.skipTips);
   late bool _hapticSoftMode = StorageService.to.getBool(
     StorageKeys.hapticSoftMode,
   );
@@ -307,6 +311,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       title: Text(
                         'haptic_soft_mode'.tr,
+                        style: TextStyle(color: NeonTheme.ink),
+                      ),
+                    ),
+                    SwitchListTile(
+                      key: const Key('settings_skip_tips'),
+                      value: _skipTips,
+                      onChanged: (v) {
+                        setState(() => _skipTips = v);
+                        StorageService.to.setBool(StorageKeys.skipTips, v);
+                      },
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: NeonTheme.cyan,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      contentPadding: const EdgeInsets.only(
+                        left: NeonTheme.s16,
+                        right: NeonTheme.s8,
+                      ),
+                      title: Text(
+                        'settings_skip_tips'.tr,
                         style: TextStyle(color: NeonTheme.ink),
                       ),
                     ),

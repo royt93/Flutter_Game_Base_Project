@@ -8,6 +8,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/share_helper.dart';
 import '../../core/storage_service.dart';
+import '../../logic/ftue_tips.dart';
 import '../../data/daily_challenge_leaderboard_bots.dart';
 import '../../data/gauntlet_leaderboard_bots.dart';
 import '../../data/levels.dart';
@@ -52,6 +53,11 @@ class GameScreenController extends GetxController {
   /// Round-7 Tutorial: coach-mark trỏ vào thanh booster — hiện lần đầu người
   /// chơi có booster (mặc định có sẵn 3 bomb) mà chưa từng dùng cái nào.
   final RxBool showBoosterTutorial = false.obs;
+
+  /// I85: dòng "nhóm càng lớn điểm càng cao", hiện kèm gợi ý FTUE ở level 1.
+  /// Dùng chung bong bóng của X1 thay vì thêm overlay thứ hai — 2 popup chồng
+  /// nhau còn tệ hơn không có popup nào.
+  final RxBool showBigGroupTip = false.obs;
 
   /// F8 Time-attack: đếm ngược 60s, hết giờ → kết thúc ván.
   static const int timeAttackSeconds = 60;
@@ -333,6 +339,12 @@ class GameScreenController extends GetxController {
     );
     gameVersion.value++;
     showFtue.value = ftue;
+    showBigGroupTip.value = shouldShowBiggerGroupsTip(
+      isCampaign: gameCtrl.mode.value == GameMode.campaign,
+      levelId: gameCtrl.currentLevel.id,
+      alreadySeen: StorageService.to.getBool(StorageKeys.hasSeenBigGroupTip),
+      skipAllTips: StorageService.to.getBool(StorageKeys.skipTips),
+    );
     // Round-7 Tutorial: không chồng lên FTUE gốc — chỉ hiện khi FTUE đã qua
     // (hoặc không áp dụng) và người chơi thực sự có booster để dùng.
     showBoosterTutorial.value =
@@ -353,9 +365,33 @@ class GameScreenController extends GetxController {
   /// X1: tap đầu tiên (đúng hay sai nhóm) đều tắt overlay FTUE — không để
   /// overlay "kẹt" khi hint đã bị [PopStarGame.clearHint] xoá theo mọi tap.
   void _dismissFtueIfNeeded() {
+    // I85: mẩu "nhóm lớn hơn" sống cùng bong bóng FTUE nên tắt cùng lúc, kể
+    // cả khi FTUE đã tắt từ trước (người chơi cũ chỉ thấy riêng mẩu này).
+    if (showBigGroupTip.value) {
+      showBigGroupTip.value = false;
+      StorageService.to.setBool(StorageKeys.hasSeenBigGroupTip, true);
+    }
     if (!showFtue.value) return;
     showFtue.value = false;
     StorageService.to.setBool(StorageKeys.hasSeenFtue, true);
+  }
+
+  /// I85: mẩu "bàn không refill" ở màn thua đầu tiên — trả về lời khuyên cần
+  /// hiện, hoặc null nếu không phải lúc. Gọi từ overlay thua; **đánh dấu đã
+  /// xem ngay tại đây** để lần thua sau không lặp lại.
+  FtueLossAdvice? takeNoRefillAdvice() {
+    final show = shouldShowNoRefillTip(
+      isCampaign: gameCtrl.mode.value == GameMode.campaign,
+      starsEarned: gameCtrl.starsEarned.value,
+      alreadySeen: StorageService.to.getBool(StorageKeys.hasSeenNoRefillTip),
+      skipAllTips: StorageService.to.getBool(StorageKeys.skipTips),
+    );
+    if (!show) return null;
+    StorageService.to.setBool(StorageKeys.hasSeenNoRefillTip, true);
+    return lossAdviceFor(
+      score: gameCtrl.score.value,
+      targetScore: gameCtrl.currentLevel.targetScore,
+    );
   }
 
   void toggleBombArm() {

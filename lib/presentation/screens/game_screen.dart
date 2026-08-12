@@ -13,6 +13,7 @@ import '../../data/mascot_skins.dart';
 import '../../data/worlds.dart';
 import '../../game/pop_star_game.dart';
 import '../controllers/game_controller.dart';
+import '../../logic/ftue_tips.dart';
 import '../controllers/game_screen_controller.dart';
 import '../controllers/pass_and_play_controller.dart';
 import '../controllers/treasure_map_controller.dart';
@@ -740,7 +741,11 @@ class _FtueOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (!gsc.showFtue.value) return const SizedBox.shrink();
+      // I85: bong bóng dùng chung — hiện khi có gợi ý tap (X1) HOẶC mẩu
+      // "nhóm lớn hơn". Người chơi cũ đã qua FTUE vẫn thấy riêng mẩu mới.
+      if (!gsc.showFtue.value && !gsc.showBigGroupTip.value) {
+        return const SizedBox.shrink();
+      }
       return IgnorePointer(
         child: Align(
           alignment: Alignment(0, _ftueAlignY(gsc.game)),
@@ -754,19 +759,39 @@ class _FtueOverlay extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               boxShadow: NeonTheme.drop(y: 3, blur: 8),
             ),
-            child: Row(
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const _BouncingHand(),
-                const SizedBox(width: NeonTheme.s8),
-                Text(
-                  'ftue_tap_hint'.tr,
-                  style: TextStyle(
-                    color: NeonTheme.ink,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
+                if (gsc.showFtue.value)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const _BouncingHand(),
+                      const SizedBox(width: NeonTheme.s8),
+                      Text(
+                        'ftue_tap_hint'.tr,
+                        style: TextStyle(
+                          color: NeonTheme.ink,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                if (gsc.showBigGroupTip.value)
+                  Padding(
+                    padding: EdgeInsets.only(top: gsc.showFtue.value ? 4 : 0),
+                    child: Text(
+                      'tip_bigger_groups'.tr,
+                      key: const Key('tip_bigger_groups'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: NeonTheme.inkSoft,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -1142,7 +1167,7 @@ class _Overlay extends StatelessWidget {
                     'score': '${gameCtrl.score.value}',
                     'recorded': '${gameCtrl.dailyChallengeScoreToday}',
                   })
-                : 'no_moves_retry_msg'.tr,
+                : _loseMessageWithTip(gsc),
             // I37 Async Challenge Code: hiện kết quả so điểm thách đấu dù
             // màn kết thúc thắng/thua bình thường — chỉ campaign mới có
             // activeChallenge (startChallenge luôn gọi startLevel).
@@ -1574,4 +1599,21 @@ class _MascotDialog extends StatelessWidget {
       ],
     );
   }
+}
+
+/// I85: ghép mẩu "bàn không refill" vào lời nhắn màn thua đầu tiên.
+///
+/// Nối vào message có sẵn thay vì mở popup riêng — người vừa thua không cần
+/// thêm một hộp thoại nữa để bấm. Lời khuyên chọn theo mức hụt điểm: nói "gom
+/// nhóm lớn hơn" với người thiếu 5 điểm là vô ích.
+String _loseMessageWithTip(GameScreenController gsc) {
+  final base = 'no_moves_retry_msg'.tr;
+  final advice = gsc.takeNoRefillAdvice();
+  if (advice == null) return base;
+  final adviceKey = switch (advice) {
+    FtueLossAdvice.soClose => 'tip_advice_so_close',
+    FtueLossAdvice.biggerGroups => 'tip_advice_bigger_groups',
+    FtueLossAdvice.planAhead => 'tip_advice_plan_ahead',
+  };
+  return '$base\n\n${'tip_no_refill'.tr} ${adviceKey.tr}';
 }

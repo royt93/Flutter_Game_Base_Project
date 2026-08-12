@@ -554,6 +554,13 @@ class AppTranslations extends Translations {
   static const Map<String, String> _extraEn = {
     // I84 — "Next up": gợi ý tối đa 3 việc đáng làm nhất, thay cho việc bắt
     // người chơi tự lọc 14 mode + ~20 hệ meta trong carousel.
+    // I85 — dạy luật lõi mà FTUE cũ bỏ qua.
+    'tip_bigger_groups': 'Bigger groups score much more!',
+    'tip_no_refill': 'The board never refills — every tile counts.',
+    'tip_advice_so_close': 'So close! One bigger group would have done it.',
+    'tip_advice_bigger_groups': 'Try joining tiles into bigger groups first.',
+    'tip_advice_plan_ahead': 'Plan ahead: tiles run out, they never come back.',
+    'settings_skip_tips': 'Skip tutorials',
     'home_next_title': 'Next up',
     'home_next_daily': 'Daily reward',
     'home_next_spin': 'Lucky spin',
@@ -1568,6 +1575,13 @@ class AppTranslations extends Translations {
   /// Key Wave 4 — Tiếng Việt (override English).
   static const Map<String, String> _extraVi = {
     // I84 — "Tiếp theo".
+    // I85.
+    'tip_bigger_groups': 'Nhóm càng lớn, điểm càng nhiều!',
+    'tip_no_refill': 'Bàn không tự đầy lại — mỗi ô đều đáng giá.',
+    'tip_advice_so_close': 'Sát quá! Thêm một nhóm lớn nữa là được.',
+    'tip_advice_bigger_groups': 'Thử gom ô thành nhóm lớn hơn trước khi nổ.',
+    'tip_advice_plan_ahead': 'Tính trước: ô hết là hết, không sinh thêm.',
+    'settings_skip_tips': 'Bỏ qua hướng dẫn',
     'home_next_title': 'Tiếp theo',
     'home_next_daily': 'Thưởng hằng ngày',
     'home_next_spin': 'Vòng quay may mắn',

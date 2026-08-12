@@ -57,9 +57,15 @@ void main() {
     // render (guard `if (audio != null)` trong SettingsScreen) — chỉ assert
     // các text luôn render.
     expect(find.text('Colorblind mode'), findsOneWidget);
-    // I71: 2 switch mới (haptic soft mode, larger tap targets) đẩy "Language"
-    // ra ngoài viewport mặc định của test — scroll trước khi assert.
-    await tester.drag(find.byType(ListView), const Offset(0, -150));
+    // "Language" nằm ngoài viewport mặc định của test và tụt dần mỗi khi
+    // Settings thêm switch (I71 thêm 2 cái, I85 thêm 1). Dùng
+    // dragUntilVisible thay cho hằng số cuộn cố định — nếu không, mỗi lần
+    // thêm một dòng cài đặt lại phải chỉnh tay con số ở đây.
+    await tester.dragUntilVisible(
+      find.text('Language'),
+      find.byType(ListView),
+      const Offset(0, -60),
+    );
     await tester.pump();
     expect(find.text('Language'), findsOneWidget);
     expect(find.text('English'), findsOneWidget);
@@ -86,7 +92,12 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('設定'), findsNWidgets(2));
     expect(find.text('色覚異常モード'), findsOneWidget);
-    await tester.drag(find.byType(ListView), const Offset(0, -150));
+    // Cùng lý do với bản en_US ở trên: dùng dragUntilVisible thay hằng số.
+    await tester.dragUntilVisible(
+      find.text('言語'),
+      find.byType(ListView),
+      const Offset(0, -60),
+    );
     await tester.pump();
     expect(find.text('言語'), findsOneWidget);
     // Tên ngôn ngữ trên chip luôn hiển thị theo tên bản ngữ, không đổi theo locale.
