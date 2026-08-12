@@ -241,6 +241,9 @@ class StorageKeys {
   // khác: đó là streak điểm danh, đây là mốc tính idle-reward liên tục).
   static const String starDustCount = 'star_dust_count';
   static const String starOwnedPets = 'star_owned_pets';
+
+  /// I82: id loại pet đang trang bị (rỗng = không trang bị).
+  static const String equippedPet = 'equipped_pet';
   static const String lastPetCollectTimestampMs = 'last_pet_collect_ms';
 
   // I66 Clan Lite: đóng góp tuần (reset theo tuần, mirror weeklyGoalWeek) +

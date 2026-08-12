@@ -95,6 +95,18 @@ class PetHabitatScreen extends StatelessWidget {
                               owned: owned,
                               canAfford: canAfford,
                               onHatch: () => gameCtrl.hatchPet(type),
+                              // I82: chỉ trang bị được con đã sở hữu; bấm lại
+                              // con đang trang bị để tháo.
+                              equipped:
+                                  gameCtrl.equippedPetTypeId.value == type.id,
+                              onEquip: owned > 0
+                                  ? () => gameCtrl.equipPet(
+                                      gameCtrl.equippedPetTypeId.value ==
+                                              type.id
+                                          ? ''
+                                          : type.id,
+                                    )
+                                  : null,
                             );
                           },
                         ),
@@ -188,12 +200,20 @@ class _HatchCard extends StatelessWidget {
     required this.owned,
     required this.canAfford,
     required this.onHatch,
+    required this.equipped,
+    this.onEquip,
   });
 
   final PetType type;
   final int owned;
   final bool canAfford;
   final VoidCallback onHatch;
+
+  /// I82: pet này đang được trang bị chưa.
+  final bool equipped;
+
+  /// Null nếu chưa sở hữu con nào — nút trang bị bị vô hiệu.
+  final VoidCallback? onEquip;
 
   @override
   Widget build(BuildContext context) {
@@ -229,10 +249,47 @@ class _HatchCard extends StatelessWidget {
               'pet_habitat_owned_count'.trParams({'count': '$owned'}),
               style: TextStyle(color: NeonTheme.inkSoft, fontSize: 11),
             ),
+          // I82: nhãn passive — hiệu ứng vô hình là hiệu ứng không tồn tại.
+          Text(
+            _passiveLabel(type.passive),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: NeonTheme.teal,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (onEquip != null) ...[
+            const SizedBox(height: 4),
+            PressableScale(
+              onTap: onEquip,
+              child: Container(
+                key: Key('equip_${type.id}'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: equipped ? NeonTheme.teal : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: NeonTheme.teal, width: 2),
+                ),
+                child: Text(
+                  equipped ? 'pet_equipped'.tr : 'pet_equip'.tr,
+                  style: TextStyle(
+                    color: equipped ? Colors.white : NeonTheme.teal,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: NeonTheme.s8),
           PressableScale(
             onTap: canAfford ? onHatch : null,
             child: Container(
+              key: Key('hatch_${type.id}'),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: canAfford ? NeonTheme.teal : Colors.transparent,
@@ -270,3 +327,10 @@ class _HatchCard extends StatelessWidget {
     );
   }
 }
+
+/// I82: nhãn mô tả passive của một loại pet.
+String _passiveLabel(PetPassive passive) => switch (passive) {
+  PetPassive.extraUndo => 'pet_passive_undo'.tr,
+  PetPassive.extraHint => 'pet_passive_hint'.tr,
+  PetPassive.coinBonus => 'pet_passive_coin'.tr,
+};

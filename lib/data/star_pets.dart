@@ -2,6 +2,23 @@ import 'package:flutter/material.dart';
 
 import 'mascot_skins.dart';
 
+/// I82: hiệu ứng bị động nhẹ của pet đang trang bị.
+///
+/// Cố ý giữ ở mức "dễ chịu", không cái nào đổi được thắng-thua: pet kiếm bằng
+/// thắng 3 sao campaign và Daily Challenge, tức là phần thưởng cho kỹ năng —
+/// biến nó thành sức mạnh quyết định sẽ tạo cảm giác pay-to-win dù game không
+/// có IAP.
+enum PetPassive {
+  /// +1 lượt undo miễn phí mỗi màn (chồng với perk `extra_undo`).
+  extraUndo,
+
+  /// +1 gợi ý mỗi ván.
+  extraHint,
+
+  /// +5% xu thưởng cuối màn (chồng với perk `coin_bonus`).
+  coinBonus,
+}
+
 /// I65: 1 loại pet — tái dùng `MascotPalette` (I30) làm bảng màu thay vì
 /// định nghĩa struct màu riêng trùng lặp.
 class PetType {
@@ -10,13 +27,22 @@ class PetType {
     required this.nameKey,
     required this.palette,
     required this.hatchCost,
+    required this.passive,
   });
 
   final String id;
   final String nameKey;
   final MascotPalette palette;
   final int hatchCost;
+
+  /// I82: hiệu ứng khi pet này đang được trang bị.
+  final PetPassive passive;
 }
+
+/// I82: trần cứng khi cộng dồn passive với perk F14 — không để hai hệ tăng
+/// sức mạnh chồng nhau thành vô hạn.
+const int kMaxFreeUndoPerLevel = 3;
+const int kMaxHintsPerRun = 5;
 
 /// 3 loại pet cho bản đầu, theo gợi ý giảm scope của task spec (SP8) nếu cần.
 const kStarPetTypes = <PetType>[
@@ -30,6 +56,7 @@ const kStarPetTypes = <PetType>[
       outline: Color(0xFFBF360C),
     ),
     hatchCost: 80,
+    passive: PetPassive.extraUndo,
   ),
   PetType(
     id: 'aqua',
@@ -41,6 +68,7 @@ const kStarPetTypes = <PetType>[
       outline: Color(0xFF01579B),
     ),
     hatchCost: 120,
+    passive: PetPassive.extraHint,
   ),
   PetType(
     id: 'luna',
@@ -52,6 +80,7 @@ const kStarPetTypes = <PetType>[
       outline: Color(0xFF4A148C),
     ),
     hatchCost: 200,
+    passive: PetPassive.coinBonus,
   ),
 ];
 

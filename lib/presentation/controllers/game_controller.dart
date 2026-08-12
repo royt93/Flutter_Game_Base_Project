@@ -413,6 +413,61 @@ class GameController extends GetxController {
     pets: starOwnedPets,
   );
 
+  /// I82: id loại pet đang trang bị (rỗng = không trang bị). Tối đa 1 con.
+  final equippedPetTypeId = ''.obs;
+
+  PetType? get equippedPetType => equippedPetTypeId.value.isEmpty
+      ? null
+      : petTypeById(equippedPetTypeId.value);
+
+  /// Trang bị pet — chỉ thành công nếu người chơi đang sở hữu ít nhất 1 con
+  /// loại đó. Truyền chuỗi rỗng để tháo.
+  bool equipPet(String typeId) {
+    if (typeId.isNotEmpty) {
+      if (petTypeById(typeId) == null) return false;
+      if (!starOwnedPets.any((p) => p.typeId == typeId)) return false;
+    }
+    equippedPetTypeId.value = typeId;
+    StorageService.to.setString(StorageKeys.equippedPet, typeId);
+    return true;
+  }
+
+  /// I82: passive có hiệu lực lúc này không.
+  ///
+  /// **Loại trừ mọi mode dùng best-score** (time attack, combo rush, frost
+  /// rush, endless, mirror): cho passive chạy ở đó thì mọi kỷ lục cũ đều bị vô
+  /// hiệu vì người chơi mới có lợi thế người cũ không có khi lập kỷ lục.
+  bool hasPetPassive(PetPassive passive) {
+    if (_isBestScoreMode) return false;
+    return equippedPetType?.passive == passive;
+  }
+
+  static const Set<GameMode> _bestScoreModes = {
+    GameMode.timeAttack,
+    GameMode.comboRush,
+    GameMode.frostRush,
+    GameMode.endless,
+    GameMode.mirrorMode,
+  };
+
+  bool get _isBestScoreMode => _bestScoreModes.contains(mode.value);
+
+  /// I82: số undo miễn phí đầu màn — gom về một chỗ thay vì lặp biểu thức ở
+  /// 6 điểm `start*`. Perk F14 và passive pet cộng dồn, kẹp trần.
+  int get _initialFreeUndo {
+    var n = 1;
+    if (hasPerk('extra_undo')) n++;
+    if (hasPetPassive(PetPassive.extraUndo)) n++;
+    return n > kMaxFreeUndoPerLevel ? kMaxFreeUndoPerLevel : n;
+  }
+
+  /// I82: số gợi ý mỗi ván, cùng khuôn với [_initialFreeUndo].
+  int get _initialHints {
+    var n = hintsPerRun;
+    if (hasPetPassive(PetPassive.extraHint)) n++;
+    return n > kMaxHintsPerRun ? kMaxHintsPerRun : n;
+  }
+
   /// Ấp 1 pet loại [type] bằng Star Dust. False nếu không đủ Star Dust.
   bool hatchPet(PetType type) {
     if (starDust.value < type.hatchCost) return false;
@@ -1228,6 +1283,15 @@ class GameController extends GetxController {
     lastPetCollectMs.value = StorageService.to.getInt(
       StorageKeys.lastPetCollectTimestampMs,
     );
+    // I82: re-validate id pet đang trang bị theo bảng const hiện tại VÀ theo
+    // pet đang thực sự sở hữu — cùng nếp với skin/frame/pigment ở trên.
+    final storedPet =
+        StorageService.to.getString(StorageKeys.equippedPet) ?? '';
+    equippedPetTypeId.value =
+        petTypeById(storedPet) != null &&
+            starOwnedPets.any((p) => p.typeId == storedPet)
+        ? storedPet
+        : '';
     // I52: validate lại theo BurstStyleKind hợp lệ + ngưỡng mở khoá hiện tại
     // (phòng storage bị sửa tay trỏ style chưa đủ điều kiện).
     final storedBurstKind = BurstStyleKind.values
@@ -1859,8 +1923,8 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
-    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
-    hintCount.value = hintsPerRun;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
     movesUsed.value = 0;
     _collectInitial = null;
     perfectClearTarget.value = null;
@@ -1899,8 +1963,8 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
-    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
-    hintCount.value = hintsPerRun;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -1920,8 +1984,8 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
-    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
-    hintCount.value = hintsPerRun;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -1938,8 +2002,8 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
-    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
-    hintCount.value = hintsPerRun;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -1957,8 +2021,8 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
-    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
-    hintCount.value = hintsPerRun;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -1982,8 +2046,8 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
-    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
-    hintCount.value = hintsPerRun;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -2016,8 +2080,8 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
-    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
-    hintCount.value = hintsPerRun;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -2035,8 +2099,8 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
-    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
-    hintCount.value = hintsPerRun;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -2062,8 +2126,8 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
-    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
-    hintCount.value = hintsPerRun;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -2093,8 +2157,8 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
-    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
-    hintCount.value = hintsPerRun;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -2122,8 +2186,8 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
-    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
-    hintCount.value = hintsPerRun;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -2140,8 +2204,8 @@ class GameController extends GetxController {
     cleared.value = false;
     resetCombo();
     activeGame = null;
-    _freeUndoLeft = hasPerk('extra_undo') ? 2 : 1;
-    hintCount.value = hintsPerRun;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
     movesUsed.value = 0;
     _collectInitial = null;
   }
@@ -2638,6 +2702,8 @@ class GameController extends GetxController {
     var reward = starsEarned.value * 20 * weekendCoinMultiplier;
     // F14: perk coin_bonus +10%.
     if (hasPerk('coin_bonus')) reward = (reward * 1.1).round();
+    // I82: cộng dồn với perk trên, không thay thế.
+    if (hasPetPassive(PetPassive.coinBonus)) reward = (reward * 1.05).round();
     coins.value += reward;
     StorageService.to.setInt(StorageKeys.coins, coins.value);
   }

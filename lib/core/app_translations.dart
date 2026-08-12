@@ -554,6 +554,12 @@ class AppTranslations extends Translations {
   static const Map<String, String> _extraEn = {
     // I84 — "Next up": gợi ý tối đa 3 việc đáng làm nhất, thay cho việc bắt
     // người chơi tự lọc 14 mode + ~20 hệ meta trong carousel.
+    // I82 — passive của Star Pet.
+    'pet_equip': 'Equip',
+    'pet_equipped': 'Equipped',
+    'pet_passive_undo': '+1 free undo',
+    'pet_passive_hint': '+1 hint',
+    'pet_passive_coin': '+5% coins',
     // I86 — digest "bạn đã bỏ lỡ gì" kèm thưởng quay lại.
     'digest_days_away': 'You were away @n days',
     'digest_stars_to_chest': '@n more stars to the next chest',
@@ -1585,6 +1591,12 @@ class AppTranslations extends Translations {
   /// Key Wave 4 — Tiếng Việt (override English).
   static const Map<String, String> _extraVi = {
     // I84 — "Tiếp theo".
+    // I82.
+    'pet_equip': 'Trang bị',
+    'pet_equipped': 'Đang dùng',
+    'pet_passive_undo': '+1 undo miễn phí',
+    'pet_passive_hint': '+1 gợi ý',
+    'pet_passive_coin': '+5% xu',
     // I86.
     'digest_days_away': 'Bạn vắng @n ngày',
     'digest_stars_to_chest': 'Còn @n sao nữa là mở rương kế',

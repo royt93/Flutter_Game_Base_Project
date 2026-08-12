@@ -40,12 +40,11 @@ Future<void> _pump(
 
 /// Nút "ấp" của loại pet [type].
 ///
-/// Nút là `PressableScale` nằm trong cùng `Column` với tên pet — không tìm
-/// theo nhãn nút vì mọi pet dùng chung nhãn giá, trùng nhau.
-Finder _hatchButton(PetType type) => find.descendant(
-  of: find
-      .ancestor(of: find.text(type.nameKey.tr), matching: find.byType(Column))
-      .first,
+/// Tìm theo `Key` chứ không theo vị trí trong cây: từ I82 mỗi tile có HAI
+/// `PressableScale` (ấp + trang bị), nên `.first` sẽ trúng nhầm nút trang bị
+/// ngay khi người chơi sở hữu con đầu tiên.
+Finder _hatchButton(PetType type) => find.ancestor(
+  of: find.byKey(Key('hatch_${type.id}')),
   matching: find.byType(PressableScale),
 );
 
