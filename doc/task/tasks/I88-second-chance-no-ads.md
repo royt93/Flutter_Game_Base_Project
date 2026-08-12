@@ -2,7 +2,7 @@
 
 **Epic:** E8 Enhance · **SP:** 5 · **Pri:** Should
 **Deps:** — · **Liên quan:** [[I5]] [[F10]]
-**Trạng thái:** 📋 To Do
+**Trạng thái:** ✅ Done (2026-08-11)
 
 ## Vấn đề
 Bàn campaign **không refill** (Zen là ngoại lệ duy nhất). Khi bàn cạn hoặc
@@ -74,3 +74,17 @@ kiếm được *so that* 3 phút vừa rồi không mất trắng.
 trên bàn**, nên bồi ô mới là cách duy nhất khớp với luật hiện có.
 
 DoD chung: `../README.md`.
+
+## Đã làm
+
+`lib/logic/second_chance.dart` (thuần) + `usedSecondChance`, `boardWasRefilled`,
+`canBuySecondChance`, `secondChanceUnaffordable`, `buySecondChance()` trên
+`GameController`; `PopStarGame.refillForSecondChance()`; UI ở `game_screen.dart`.
+
+**Trả bằng xu, không quảng cáo, không IAP** — theo quyết định sản phẩm đã chốt
+(xem phần ý tưởng bị từ chối trong `IDEAS.md`).
+
+## Kiểm chứng
+
+- `test/logic/second_chance_test.dart` — 15 ca thuần.
+- `test/presentation/second_chance_wiring_test.dart` — 11 ca nối controller.

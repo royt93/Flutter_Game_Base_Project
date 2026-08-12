@@ -3,7 +3,7 @@
 **Epic:** E8 Enhance · **SP:** 3 · **Pri:** Could
 **Deps:** [[I84]] nên làm trước (dùng chung hàm xếp hạng)
 **Mở rộng:** [[I10]] · **Liên quan:** [[I72]]
-**Trạng thái:** 📋 To Do
+**Trạng thái:** ✅ Done (2026-08-11)
 
 ## Hiện trạng
 `checkComebackBonus()` (`game_controller.dart:1696-1709`): vắng ≥3 ngày →
@@ -68,3 +68,17 @@ trước, có thể phần lớn dữ liệu digest cần đã nằm sẵn ở �
 sáo rỗng.
 
 DoD chung: `../README.md`.
+
+## Đã làm
+
+`lib/logic/comeback_digest.dart` (thuần, tối đa 3 dòng, chỉ trả dòng còn ý
+nghĩa) + `GameController.comebackDigest(daysAway)` / `lastComebackDaysAway`,
+hiển thị trong popup comeback ở `home_screen.dart` (`_comebackMessage`).
+
+Cố ý tránh câu cảm xúc do máy ghép; chỉ dùng số liệu có sẵn trong máy.
+
+## Kiểm chứng
+
+- `test/logic/comeback_digest_test.dart` — 16 ca thuần.
+- `test/presentation/comeback_digest_wiring_test.dart` — 8 ca nối controller.
+- Đã verify trên thiết bị thật (gieo số ngày vắng + sao + tiến độ tuần).

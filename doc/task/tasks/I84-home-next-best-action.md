@@ -2,7 +2,7 @@
 
 **Epic:** E8 Enhance · **SP:** 5 · **Pri:** Must
 **Deps:** — · **Liên quan:** [[X14]] [[X9]] [[I85]]
-**Trạng thái:** 📋 To Do
+**Trạng thái:** ✅ Done (2026-08-11)
 
 ## Vấn đề
 Game có 14 `GameMode` + ~20 hệ meta (prestige, achievements, daily quests,
@@ -70,3 +70,20 @@ Không đụng carousel hiện có ([[X14]] vừa hợp nhất nó xong) — th�
 không thay thế.
 
 DoD chung: `../README.md`.
+
+## Đã làm
+
+`lib/logic/next_action.dart` (thuần) + `GameController.nextActions()` /
+`_questsReadyToClaim()`, widget `lib/presentation/widgets/next_up_bar.dart`
+(`Key('next_up_<kind>')`, `next_up_empty`), gắn lên đầu Home kèm router
+`_onNextAction`.
+
+Home phải bọc `LayoutBuilder + SingleChildScrollView + ConstrainedBox +
+IntrinsicHeight`: đo trước khi thêm cho thấy Home vốn vừa khít **không dư một
+pixel**, nên mọi thứ thêm vào đều tràn 110px.
+
+## Kiểm chứng
+
+- `test/logic/next_action_test.dart` — 16 ca (thuần, không đọc storage/GetX).
+- `test/presentation/next_actions_wiring_test.dart` — 9 ca nối controller.
+- `test/widget/next_up_bar_test.dart` — 8 ca hiển thị.

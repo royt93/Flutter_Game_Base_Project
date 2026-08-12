@@ -693,7 +693,32 @@ class _WorldBanner extends StatelessWidget {
                 ),
               ),
             ),
-            StrokeText(world.nameKey.tr, fontSize: 18),
+            // I81: tên vùng + luật thời tiết phải nằm trong `Column` RIÊNG.
+            // `Stack` bên ngoài là để lớp hoạ tiết chạy nền phía sau chữ; thả
+            // thêm một child vào đó là nó vẽ **đè lên** tên vùng — đã thấy tận
+            // mắt trên máy trước khi sửa.
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StrokeText(world.nameKey.tr, fontSize: 18),
+                // Luật vô hình = luật không tồn tại, nên hiện ngay dưới tên
+                // vùng. World không có luật thì không dựng gì.
+                if (kWeatherRules[world.weather] case final rule?)
+                  Padding(
+                    key: Key('world_rule_${world.startId}'),
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      'weather_rule_banner'.trParams({'rule': rule.descKey.tr}),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
       ),

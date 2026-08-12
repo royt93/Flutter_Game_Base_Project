@@ -120,3 +120,45 @@ List<MilestoneEntry> buildMilestoneJournal({
   entries.sort((a, b) => b.epochDay.compareTo(a.epochDay));
   return entries;
 }
+
+/// I87: số mốc tối đa in lên thẻ chia sẻ. Nhiều hơn thì thẻ thành bảng dữ
+/// liệu, không ai đọc — và đó chính là thứ thẻ sinh ra để tránh.
+const int kJourneyCardMilestones = 5;
+
+/// Chọn "mốc đáng nhớ nhất" từ [entries] (đã sort mới nhất trước) để in lên
+/// thẻ chia sẻ.
+///
+/// Hai luật, theo đúng thứ tự:
+///
+/// 1. **Mỗi [MilestoneKind] nhiều nhất một dòng.** Không lọc thì thẻ đầy
+///    achievement — người chơi lâu năm có hàng chục cái cùng ngày, đẩy hết mọi
+///    loại khác ra ngoài và thẻ nào cũng giống thẻ nào.
+/// 2. **Thành tựu trước, phần còn lại theo thời gian.** Điểm danh hằng ngày
+///    mới hơn không có nghĩa là đáng khoe hơn một thành tựu.
+///
+/// Thuần và tất định: cùng input luôn ra cùng thứ tự, không đọc đồng hồ.
+List<MilestoneEntry> pickJourneyMilestones(
+  List<MilestoneEntry> entries, {
+  int max = kJourneyCardMilestones,
+}) {
+  if (max <= 0) return const [];
+
+  final seen = <MilestoneKind>{};
+  final unique = <MilestoneEntry>[];
+  for (final e in entries) {
+    if (seen.add(e.kind)) unique.add(e);
+  }
+
+  // `sort` của Dart KHÔNG ổn định, nên không dựa vào thứ tự sẵn có cho các mốc
+  // cùng nhóm — so tiếp bằng epochDay rồi kind để kết quả tất định tuyệt đối.
+  unique.sort((a, b) {
+    final aAch = a.kind == MilestoneKind.achievementUnlocked ? 0 : 1;
+    final bAch = b.kind == MilestoneKind.achievementUnlocked ? 0 : 1;
+    if (aAch != bAch) return aAch.compareTo(bAch);
+    final byDay = b.epochDay.compareTo(a.epochDay);
+    if (byDay != 0) return byDay;
+    return a.kind.index.compareTo(b.kind.index);
+  });
+
+  return unique.take(max).toList();
+}

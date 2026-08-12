@@ -122,4 +122,83 @@ void main() {
           'đĩa ngay, không được gom buffer',
     );
   });
+
+  /// X29 — buffer của X24 từng **nuốt** mọi lần ghi thẳng sau đó.
+  ///
+  /// Phát hiện qua `integration_test/undo_test.dart` trên máy thật: sau khi
+  /// undo, `totalGemsPopped` trong bộ nhớ về 0 đúng như X17 mong đợi, nhưng
+  /// đĩa vẫn 3 — vì `restoreUndoCounters()` gọi `setInt` trong khi
+  /// `_buffer[key]` vẫn giữ giá trị đã nổ, nên `_raw` đọc ra bản đệm cũ và cú
+  /// `flush()` kế tiếp ghi đè luôn xuống đĩa.
+  ///
+  /// Hệ quả rộng hơn X17: mọi key từng đi qua hot path rồi được ghi thẳng —
+  /// hoàn tác, reset, mua bán, import — đều mất tác dụng theo cách y hệt.
+  group('X29: ghi thẳng huỷ bản đang đệm', () {
+    const key = StorageKeys.totalGemsPopped;
+
+    test('setInt sau setIntBuffered: đọc ra giá trị mới', () async {
+      await _boot();
+      final store = StorageService.to;
+
+      await store.setIntBuffered(key, 99);
+      await store.setInt(key, 7);
+
+      expect(
+        store.getInt(key),
+        7,
+        reason: 'bản đệm cũ không được che giá trị vừa ghi thẳng',
+      );
+    });
+
+    test('flush sau đó KHÔNG hồi sinh giá trị đã đệm', () async {
+      await _boot();
+      final store = StorageService.to;
+
+      await store.setIntBuffered(key, 99);
+      await store.setInt(key, 7);
+      await store.flush();
+
+      expect(store.getInt(key), 7);
+      expect(
+        _prefs.getInt(key),
+        7,
+        reason: 'đĩa phải là 7; 99 nghĩa là flush đã ghi đè bản ghi thẳng',
+      );
+    });
+
+    test('setString cũng vậy', () async {
+      await _boot();
+      final store = StorageService.to;
+      const skey = StorageKeys.dailyQuestProgress;
+
+      await store.setStringBuffered(skey, 'cu');
+      await store.setString(skey, 'moi');
+      await store.flush();
+
+      expect(store.getString(skey), 'moi');
+      expect(_prefs.getString(skey), 'moi');
+    });
+
+    test('undo: counter đời lùi cả trong bộ nhớ lẫn trên đĩa', () async {
+      // Bản thu nhỏ của ca integration đã bắt được lỗi.
+      final ctrl = await _boot();
+      final store = StorageService.to;
+
+      final before = ctrl.totalGemsPopped.value;
+      ctrl.saveUndoCounters();
+      ctrl.registerPop(100, groupSize: 5);
+      expect(ctrl.totalGemsPopped.value, greaterThan(before));
+
+      ctrl.restoreUndoCounters();
+      await store.flush();
+
+      expect(ctrl.totalGemsPopped.value, before);
+      expect(
+        store.getInt(key),
+        before,
+        reason: 'kill app ngay sau undo vẫn không được giữ lại số đã farm',
+      );
+      expect(_prefs.getInt(key) ?? 0, before);
+    });
+  });
 }

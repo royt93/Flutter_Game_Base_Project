@@ -2,7 +2,7 @@
 
 **Epic:** E8 Enhance · **SP:** 5 · **Pri:** Should
 **Deps:** [[X22]] (sửa exploit idle **trước**) · **Mở rộng:** [[I65]]
-**Trạng thái:** 📋 To Do
+**Trạng thái:** ✅ Done (2026-08-11)
 
 ## Hiện trạng
 Star Pet (I65) có: tiền tệ riêng (Star Dust), nhiều loại pet, habitat, thưởng
@@ -77,3 +77,25 @@ Làm sau [[X22]]. Nếu gắn passive vào pet trong khi vẫn còn farm đượ
 idle bằng chỉnh đồng hồ, tự dưng passive cũng farm được theo.
 
 DoD chung: `../README.md`.
+
+## Đã làm
+
+`PetPassive` enum + field `passive` trên `PetType` (`lib/data/star_pets.dart`),
+`equippedPetTypeId` / `equipPet()` / `hasPetPassive()` trên `GameController`,
+nút Trang bị trên `pet_habitat_screen.dart` (`Key('equip_<id>')`).
+
+Trần cộng dồn với perk F14: `kMaxFreeUndoPerLevel` / `kMaxHintsPerRun`. Hai
+hằng `_initialFreeUndo` / `_initialHints` thay cho biểu thức lặp ở **cả 12**
+hàm `start*`.
+
+Passive **không** có hiệu lực ở mode chấm best-score (time attack, combo rush,
+frost rush, endless, mirror) — cho chạy ở đó là vô hiệu hoá mọi kỷ lục cũ.
+
+## Kiểm chứng
+
+- `test/presentation/pet_passive_test.dart` — 18 ca (bảng dữ liệu, trang bị,
+  từng passive, loại trừ mode best-score, trần cộng dồn).
+- `test/widget/pet_habitat_screen_test.dart` — 12 ca cho màn hình.
+- **Ghi chú trung thực:** trần `kMaxHintsPerRun` hiện **chưa chạm tới được**
+  (1 cơ bản + 1 perk + 1 pet = 3, hint 3+1=4 < 5); mutation-check xác nhận gỡ
+  nó vẫn xanh. Giữ lại cho [[I83]] và đã ghi rõ trong file test.

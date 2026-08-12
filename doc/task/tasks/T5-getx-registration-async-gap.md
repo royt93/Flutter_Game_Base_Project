@@ -2,7 +2,7 @@
 
 **Epic:** E7 Test coverage · **SP:** 3 · **Pri:** Should
 **Deps:** — · **Phát hiện khi làm:** [[T3]]
-**Trạng thái:** 📋 To Do
+**Trạng thái:** ✅ Done (2026-08-12) — **tiền đề không tái hiện được**
 
 ## Hiện tượng
 Đăng ký `StorageService` bên trong một hàm helper `async` rồi dùng sau khi
@@ -70,3 +70,54 @@ ngay sau khi sửa file test có thể cho kết quả khác lần chạy thứ 
 build cũ). Khi kiểm chứng, luôn chạy lại ≥2 lần trước khi kết luận.
 
 DoD chung: `../README.md`.
+
+---
+
+## Kết luận (2026-08-12)
+
+**Tiền đề của task này sai.** Chạy lại đúng đoạn mã ở phần "Hiện tượng":
+
+```
+REG[trong _boot, ngay sau put] = true
+REG[sau await _boot]           = true
+```
+
+`Get.isRegistered<StorageService>()` trả `true` ở **cả hai** phía async gap, và
+`todayEpochDayClamped()` / `nowMsClamped()` gọi thẳng sau `await _boot()` chạy
+bình thường, không ném. Thử thêm biến thể có/không `tearDown(Get.reset)`,
+có/không `TestWidgetsFlutterBinding.ensureInitialized()` — đều `true`.
+
+Không sửa gì trong `lib/`: **không có gì để sửa**. Nghi phạm còn lại chính là
+thứ mục "Ghi chú" của task này đã cảnh báo — lần chạy đầu sau khi sửa file test
+dùng kernel cũ. Đúng cái bẫy đó đã dẫn tới chẩn đoán `SmartManagement`.
+
+Bài học giữ lại: **luôn chạy lại ≥2 lần trước khi kết luận về hạ tầng test**, và
+đừng chốt nguyên nhân (ở đây là `SmartManagement`) khi mới chỉ quan sát triệu
+chứng. Không thêm workaround nào — nếu có, giờ đã là một đoạn code không ai dám
+xoá, để chữa một bệnh không tồn tại.
+
+## Đã làm (phần việc thật của task)
+
+- `test/core/utils/clamped_clock_test.dart` — **14 ca**, đúng nội dung đã phác
+  thảo ở [[T3]]: máy sạch ghi mốc; mốc tương lai không bị lùi (kể cả lệch đúng
+  1 ngày); mốc quá khứ tiến lên giờ thật; hai đồng hồ dùng key riêng không đè
+  nhau; `current > maxSeen` là so sánh **chặt** nên không ghi thừa khi bằng
+  nhau; save sai kiểu/âm không ném ([[X28]]).
+  Có một ca riêng cho **giới hạn có chủ ý**: nhảy tiến một chiều không bị chặn
+  và trạng thái đó không tự hồi — để ai định "vá nốt" thấy ngay vì sao không
+  nên áp lớp kẹp cho `isWeekendEvent`.
+- `test/core/home_widget_sync_test.dart` — 2 ca ghim hợp đồng "nuốt mọi lỗi"
+  của `syncHomeWidget`. Trước đây hợp đồng này chỉ đúng *tình cờ*: cả bộ test
+  xanh trong khi log đầy `MissingPluginException`.
+
+## Kiểm chứng
+
+- 14/14 + 2/2 xanh, chạy lại lần hai vẫn xanh (đúng cảnh báo kernel cũ).
+- **Mutation-check** trên `clamped_clock.dart`, 3/3 bị bắt: bỏ điều kiện kẹp;
+  cho hai đồng hồ dùng chung một key; đổi `>` thành `>=`.
+
+## Rà util còn thiếu test
+
+`lib/core/debug_log.dart` (7 dòng) và `lib/core/runtime_flags.dart` (5 dòng) là
+hằng số/one-liner — cố ý **không** viết test. `lib/core/home_widget_sync.dart`
+đã có ở trên. Không còn util nào thiếu test vì lý do hạ tầng.

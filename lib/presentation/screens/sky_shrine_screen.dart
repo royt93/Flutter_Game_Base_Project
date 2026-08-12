@@ -147,8 +147,20 @@ class _ConstellationCard extends StatelessWidget {
   final int index;
   final GameController gameCtrl;
 
+  /// X30: `Obx` RIÊNG cho từng thẻ.
+  ///
+  /// `Obx` ở màn cha chỉ đăng ký các observable đọc **trong closure của nó**
+  /// (`totalStars`, `starSeedCount`). `build` của thẻ chạy sau đó, nên
+  /// `activeSkyAura` và `claimedStarSeedMask` đọc ở đây không hề được đăng ký:
+  /// bấm "gắn hào quang" đổi state nhưng nhãn không đổi, và vì `isActiveAura`
+  /// vẫn là giá trị cũ nên bấm lần hai **gắn lại** thay vì tháo — người chơi
+  /// không có cách nào tháo ngoài việc thoát màn rồi vào lại.
   @override
   Widget build(BuildContext context) {
+    return Obx(() => _card(context));
+  }
+
+  Widget _card(BuildContext context) {
     final totalStars = gameCtrl.totalStars.value;
     final isLit = isConstellationLit(constellation, totalStars);
     final isSeedClaimed = gameCtrl.isStarSeedClaimed(index);
@@ -170,7 +182,9 @@ class _ConstellationCard extends StatelessWidget {
             : NeonTheme.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isLit ? constellation.color : NeonTheme.inkSoft.withValues(alpha: 0.2),
+          color: isLit
+              ? constellation.color
+              : NeonTheme.inkSoft.withValues(alpha: 0.2),
           width: isLit ? 2 : 1,
         ),
         boxShadow: isLit ? NeonTheme.glow(constellation.color) : null,

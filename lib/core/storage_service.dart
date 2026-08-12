@@ -177,6 +177,11 @@ class StorageKeys {
   // I48 Login Streak Calendar: streak hiện tại, epoch-day lần điểm danh
   // cuối, bitmask ngày đã claim thưởng trong cycle 7 ngày hiện tại.
   static const String loginStreakCount = 'login_streak_count';
+
+  /// I87: tổng số ngày THẬT đã mở game, không reset khi đứt streak. Tăng đúng
+  /// một lần mỗi ngày trong `_checkLoginStreak` — chỗ duy nhất đã biết "hôm nay
+  /// khác hôm qua", nên không cần mốc thời gian thứ hai.
+  static const String totalDaysPlayed = 'total_days_played';
   static const String lastLoginEpochDay = 'last_login_epoch_day';
   static const String loginStreakClaimedMask = 'login_streak_claimed_mask';
 
@@ -354,7 +359,12 @@ class StorageService extends GetxService {
     final v = _raw(key);
     return v is int ? v : def;
   }
+  /// X29: ghi thẳng phải **huỷ bản đang đệm** của cùng key. Không có dòng
+  /// này thì giá trị buffered cũ vẫn che kết quả ở `_raw`, và cú [flush] kế
+  /// tiếp ghi đè luôn xuống đĩa — đường hoàn tác (X17), reset, mua bán và
+  /// import đều lặng lẽ mất tác dụng nếu key đó từng đi qua hot path.
   Future<void> setInt(String key, int value) async {
+    _buffer.remove(key);
     platformWrites++;
     if (_prefs != null) {
       await _prefs.setInt(key, value);
@@ -367,7 +377,9 @@ class StorageService extends GetxService {
     final v = _raw(key);
     return v is bool ? v : def;
   }
+  /// X29: xem ghi chú ở [setInt].
   Future<void> setBool(String key, bool value) async {
+    _buffer.remove(key);
     platformWrites++;
     if (_prefs != null) {
       await _prefs.setBool(key, value);
@@ -380,7 +392,9 @@ class StorageService extends GetxService {
     final v = _raw(key);
     return v is double ? v : def;
   }
+  /// X29: xem ghi chú ở [setInt].
   Future<void> setDouble(String key, double value) async {
+    _buffer.remove(key);
     platformWrites++;
     if (_prefs != null) {
       await _prefs.setDouble(key, value);
@@ -393,7 +407,9 @@ class StorageService extends GetxService {
     final v = _raw(key);
     return v is String ? v : null;
   }
+  /// X29: xem ghi chú ở [setInt].
   Future<void> setString(String key, String value) async {
+    _buffer.remove(key);
     platformWrites++;
     if (_prefs != null) {
       await _prefs.setString(key, value);

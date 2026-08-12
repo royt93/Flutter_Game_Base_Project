@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/neon_theme.dart';
+import 'gauntlet_modifiers.dart';
 
 /// I40: kiểu particle thời tiết nền theo world. `none` = không có lớp
 /// weather (mặc định, và luôn dùng cho world cuối để không chồng aurora I16).
@@ -129,3 +130,51 @@ const List<GameWorld> kWorlds = [
 
 GameWorld worldForLevel(int id) =>
     kWorlds.firstWhere((w) => w.contains(id), orElse: () => kWorlds.last);
+
+/// I81: luật gameplay gắn với từng [WeatherKind] — khai báo **tập trung ở đây**
+/// chứ không rải `if (weather == ...)` khắp engine, và tái dùng thẳng
+/// [GauntletModifier] (khuôn đã phục vụ Gauntlet/Treasure Map/Remix) thay vì
+/// dựng loại modifier thứ hai.
+///
+/// ## Vì sao chỉ có luật CỘNG THÊM
+///
+/// Bàn campaign không refill, nên `targetScore` chỉ đạt được nếu neo theo số ô
+/// (xem "Target achievability" trong CLAUDE.md). Bất kỳ luật nào **giảm số ô
+/// khả dụng hoặc giảm điểm** đều có thể khiến cả một world thành bất khả thi.
+///
+/// `test/data/levels_achievability_test.dart` mô phỏng bàn **màu thuần** —
+/// không obstacle, không ice. Nó **không** chứng minh được một luật kiểu "tăng
+/// mật độ ice" là an toàn. Vì vậy hai luật dưới đây đều thuộc loại chỉ-thêm:
+/// cửa sổ combo dài hơn và điểm thưởng nhóm lớn. Cả hai đúng theo cấu trúc là
+/// không thể làm màn khó hơn, nên achievability giữ nguyên mà không cần chạy
+/// lại mô phỏng với từng world.
+///
+/// [WeatherKind.snow] (tăng ice) **cố ý chưa làm**: nó là luật trừ đi đầu tiên
+/// và cần mở rộng bộ mô phỏng achievability để mô hình hoá ice trước. Ship mù
+/// là cách nhanh nhất phá cân bằng 260 màn.
+const Map<WeatherKind, GauntletModifier> kWeatherRules = {
+  WeatherKind.bubble: GauntletModifier(
+    id: 'weather_bubble',
+    icon: Icons.bubble_chart_rounded,
+    nameKey: 'weather_bubble_name',
+    descKey: 'weather_bubble_desc',
+    comboWindowOverride: 3.5,
+  ),
+  WeatherKind.spark: GauntletModifier(
+    id: 'weather_spark',
+    icon: Icons.auto_awesome_rounded,
+    nameKey: 'weather_spark_name',
+    descKey: 'weather_spark_desc',
+    bigGroupBonus: 1.2,
+  ),
+};
+
+/// Luật thời tiết của màn campaign [id], `null` nếu world đó không có luật.
+///
+/// Trả `null` cho mọi id <= 0: side-mode dùng `PopLevel` tổng hợp không thuộc
+/// world nào, và [worldForLevel] có `orElse` trả world cuối nên nếu không chặn
+/// ở đây thì side-mode sẽ ăn luật của world 13.
+GauntletModifier? weatherRuleForLevel(int id) {
+  if (id <= 0) return null;
+  return kWeatherRules[worldForLevel(id).weather];
+}

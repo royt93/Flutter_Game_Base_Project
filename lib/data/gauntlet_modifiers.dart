@@ -17,6 +17,12 @@ class GauntletModifier {
   final int? moveLimit;
   final int? minGroupSize;
 
+  /// I81: hệ số điểm thêm cho nhóm lớn (`>= bigGroupThreshold`). `null` = không
+  /// có. Chỉ **cộng thêm**, không bao giờ trừ — xem ghi chú an toàn ở
+  /// `kWeatherRules` trong `worlds.dart`.
+  final double? bigGroupBonus;
+  final int bigGroupThreshold;
+
   const GauntletModifier({
     required this.id,
     required this.icon,
@@ -28,6 +34,8 @@ class GauntletModifier {
     this.colorCountOverride,
     this.moveLimit,
     this.minGroupSize,
+    this.bigGroupBonus,
+    this.bigGroupThreshold = 7,
   });
 }
 

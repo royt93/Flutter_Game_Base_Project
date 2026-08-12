@@ -2,7 +2,7 @@
 
 **Epic:** E8 Enhance · **SP:** 3 · **Pri:** Could
 **Deps:** — · **Mở rộng:** [[I72]] · **Liên quan:** [[I57]] [[X6]]
-**Trạng thái:** 📋 To Do
+**Trạng thái:** ✅ Done (2026-08-12)
 
 ## Hiện trạng
 `milestone_journal.dart` gom mọi mốc có dấu thời gian rải rác trong
@@ -62,3 +62,64 @@ mở lại sau**. Không đáng dựng pipeline xuất ảnh thứ hai cho một
 Could.
 
 DoD chung: `../README.md`.
+
+---
+
+## Đã làm
+
+Subtask 1 trả lời được ngay: `share_helper.dart` + `ScoreCard` (I57) **đã đủ
+tổng quát**. `captureBoardPng(GlobalKey)` chụp bất kỳ `RepaintBoundary` nào, và
+`shareResultCard` đã có sẵn khuôn "dựng widget trong overlay ẩn ở `left: -9999`
+→ chụp → gỡ". Nên task này đúng như dự đoán: **một layout mới + một hàm thuần +
+nối dây**, không refactor gì.
+
+- `lib/logic/milestone_journal.dart` — thêm `pickJourneyMilestones` (thuần, mở
+  rộng file đã có, không tạo file mới) + hằng `kJourneyCardMilestones`.
+- `lib/presentation/widgets/journey_card.dart` — thẻ **vuông 1:1**, bố cục cố
+  định, dữ liệu vào qua constructor y như `ScoreCard`.
+- `lib/core/share_helper.dart` — `shareJourneyCard` nhận **bytes** (bên gọi
+  phải gỡ overlay ngay sau khi chụp) nhưng vẫn qua đúng `captureBoardPng`.
+- `MilestoneJournalScreen` — nút "Chia sẻ hành trình", ẩn khi chưa có mốc nào.
+- `StorageKeys.totalDaysPlayed` + bộ đếm trên `GameController` — số ngày chơi
+  **không reset khi đứt streak**, khác hẳn `loginStreakCount`.
+
+### Luật chọn mốc
+
+Hai luật, theo thứ tự: (1) mỗi `MilestoneKind` nhiều nhất một dòng — không lọc
+thì người chơi lâu năm có hàng chục achievement cùng ngày, đẩy hết mọi loại
+khác ra ngoài và thẻ nào cũng giống thẻ nào; (2) thành tựu trước, phần còn lại
+theo thời gian — điểm danh mới hơn không có nghĩa là đáng khoe hơn.
+
+## Lỗi bắt được khi chạy trên máy
+
+Thẻ hiện **"0 days"** cho người đang chơi. `_checkLoginStreak` thoát sớm khi
+`prevDay == today`, nên save tạo trước khi có bộ đếm (hoặc người đã mở game hôm
+nay rồi mới cập nhật bản này) đứng ở 0 tới tận ngày hôm sau. Bù đúng một lần về
+1 trong nhánh thoát sớm — không đoán ngược lịch sử.
+
+## Kiểm chứng
+
+- `test/logic/journey_milestones_test.dart` — 11 ca thuần, gồm ca "cùng ngày
+  vẫn tất định" (sort của Dart **không** ổn định) và ca "không sửa danh sách
+  đầu vào".
+- `test/widget/journey_card_test.dart` — 11 ca. Đây là ảnh sẽ đi **ra ngoài
+  app**, nên khoá chặt nhất là không có ô trống/"null" (tên rỗng, tên toàn
+  khoảng trắng, số 0) và không tràn bố cục (đủ trần mốc, mốc chữ 300 ký tự).
+- `test/widget/milestone_journal_screen_test.dart` — 9 ca, gồm 5 ca cho bộ đếm
+  ngày chơi.
+- **Mutation-check 4/4 bị bắt:** bỏ lọc trùng loại; bỏ ưu tiên thành tựu; bỏ
+  cộng ngày chơi; bỏ backfill.
+- Verify trên Samsung S24 Ultra: mở drawer → Milestone Journal → "Share
+  journey" → share sheet nhận PNG và hiện preview thẻ đúng.
+
+## Nợ đã ghi, không giấu
+
+1. **Nhánh "chưa có mốc nào" gần như không với tới được.** `_checkLoginStreak`
+   đẩy `loginStreakCount` lên 1 ngay lần boot đầu, nên feed luôn có ít nhất một
+   mốc. Guard `if (entries.isNotEmpty)` quanh nút chia sẻ vẫn giữ (rẻ và đúng)
+   nhưng đừng đọc bộ test như bằng chứng nhánh đó được phủ — đã ghi rõ trong
+   file test.
+2. i18n mới en + vi (đúng DoD tối thiểu); 20 ngôn ngữ còn lại rơi về bản en qua
+   `_extraEn`.
+3. Phần **hình** của thẻ đúng như task đã lường: code chạy, còn đẹp hay không
+   là việc của thiết kế. Bố cục hiện tại là bản dùng được, không phải bản đẹp.

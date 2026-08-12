@@ -2,18 +2,66 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/neon_theme.dart';
+import '../../core/share_helper.dart';
 import '../../core/storage_service.dart';
 import '../../data/achievements.dart';
 import '../../logic/milestone_journal.dart';
 import '../controllers/game_controller.dart';
+import '../widgets/journey_card.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
+import '../widgets/neon_button.dart';
 
 /// I72: màn hình riêng thay cho dialog "Nhật ký mốc" cũ (bị giới hạn chiều
 /// cao 320px trong `NeonDialog`, tràn/xấu khi số mốc tăng lên) — full-screen
 /// route giống `BoardFrameScreen`, không giới hạn chiều cao nội dung.
 class MilestoneJournalScreen extends StatelessWidget {
   const MilestoneJournalScreen({super.key});
+
+  /// I87: `RepaintBoundary` của thẻ dựng tạm trong overlay ẩn — đúng pattern
+  /// `shareResultCard` (I57), không dựng pipeline xuất ảnh thứ hai.
+  static final GlobalKey journeyCardKey = GlobalKey();
+
+  /// Dựng `JourneyCard` ngoài viewport, chụp, share, rồi gỡ ngay.
+  static Future<void> shareJourney(
+    BuildContext context,
+    GameController gameCtrl,
+    List<MilestoneEntry> entries,
+  ) async {
+    final overlay = Overlay.of(context, rootOverlay: true);
+    final entry = OverlayEntry(
+      builder: (_) => Positioned(
+        left: -9999,
+        top: 0,
+        child: RepaintBoundary(
+          key: journeyCardKey,
+          child: JourneyCard(
+            playerName: gameCtrl.playerName.value,
+            totalStars: gameCtrl.totalStars.value,
+            highestLevel: gameCtrl.unlockedLevel.value,
+            maxCombo: gameCtrl.maxComboEver.value,
+            daysPlayed: gameCtrl.totalDaysPlayed.value,
+            milestoneLines: pickJourneyMilestones(
+              entries,
+            ).map(_titleFor).toList(),
+            mascotPalette: gameCtrl.activeMascotSkin.palette,
+          ),
+        ),
+      ),
+    );
+    overlay.insert(entry);
+    await WidgetsBinding.instance.endOfFrame;
+    final png = await captureBoardPng(journeyCardKey);
+    entry.remove();
+    if (png == null) return;
+    await shareJourneyCard(
+      png: png,
+      text: 'journey_share_text'.trParams({
+        'stars': '${gameCtrl.totalStars.value}',
+        'level': '${gameCtrl.unlockedLevel.value}',
+      }),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +124,18 @@ class MilestoneJournalScreen extends StatelessWidget {
                         ),
                       ),
               ),
+              // I87: không có mốc nào thì không có gì để khoe — ẩn hẳn nút thay
+              // vì chia sẻ một tấm thẻ rỗng.
+              if (entries.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(NeonTheme.s16),
+                  child: NeonButton(
+                    key: const Key('journey_share_button'),
+                    label: 'journey_share_action'.tr,
+                    color: NeonTheme.purple,
+                    onTap: () => shareJourney(context, gameCtrl, entries),
+                  ),
+                ),
             ],
           ),
         ),

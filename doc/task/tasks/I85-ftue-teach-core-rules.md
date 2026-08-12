@@ -2,7 +2,7 @@
 
 **Epic:** E8 Enhance · **SP:** 5 · **Pri:** Must
 **Deps:** — · **Mở rộng:** [[X1]] · **Liên quan:** [[I84]]
-**Trạng thái:** 📋 To Do
+**Trạng thái:** ✅ Done (2026-08-11)
 
 ## Hiện trạng (đã verify — FTUE **có** tồn tại)
 `game_screen_controller.dart:303-306` + `355-359`:
@@ -91,3 +91,17 @@ Nếu chỉ làm được 2 mẩu trong sprint, làm **"bàn không refill" (dia
 lớn giá trị.
 
 DoD chung: `../README.md`.
+
+## Đã làm
+
+`lib/logic/ftue_tips.dart` (thuần) + trạng thái đã-xem trong `StorageKeys`
+(`hasSeenBigGroupTip`, `hasSeenNoRefillTip`, `skipTips`), hiển thị qua
+`game_screen.dart`, công tắc "Bỏ qua hướng dẫn" ở `settings_screen.dart`
+(`Key('settings_skip_tips')`).
+
+## Kiểm chứng
+
+- `test/logic/ftue_tips_test.dart` — 16 ca thuần.
+- `test/widget/ftue_tips_widget_test.dart` — 12 ca.
+- **Bẫy đã gặp:** trigger thật là `handleBoardTap`, không phải `toggleBombArm`;
+  và nó cần `GameWidget` đã mount, nếu không `cellAt` ném.

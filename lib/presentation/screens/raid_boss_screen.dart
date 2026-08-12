@@ -174,7 +174,10 @@ class RaidBossScreen extends StatelessWidget {
                                     ),
                                   ),
                                   Text(
-                                    '${tier.coinReward} xu',
+                                    // X31: 21/22 ngôn ngữ từng thấy chữ "xu"
+                                    // tiếng Việt ở đây. `coins_short` đã có
+                                    // sẵn đủ 22 locale nên không cần key mới.
+                                    '${tier.coinReward} ${'coins_short'.tr}',
                                     style: const TextStyle(
                                       color: NeonTheme.gold,
                                       fontWeight: FontWeight.bold,
@@ -197,7 +200,10 @@ class RaidBossScreen extends StatelessWidget {
                           onTap: () {
                             final claimed = raidCtrl.claimWeeklyReward(gameCtrl);
                             if (claimed > 0) {
-                              Get.snackbar('raid_boss_title'.tr, '+$claimed xu');
+                              Get.snackbar(
+                                'raid_boss_title'.tr,
+                                '+$claimed ${'coins_short'.tr}',
+                              );
                             }
                           },
                         ),

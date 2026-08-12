@@ -2,7 +2,7 @@
 
 **Epic:** E8 Enhance · **SP:** 5 · **Pri:** Should
 **Deps:** — · **Mở rộng:** [[I40]] · **Liên quan:** [[I76]] [[I2]]
-**Trạng thái:** 📋 To Do
+**Trạng thái:** ✅ Done (2026-08-12) — **2/3 luật, snow cố ý hoãn**
 
 ## Hiện trạng
 `worlds.dart` gán mỗi world một `WeatherKind`; `ambient_weather_layer.dart`
@@ -75,3 +75,75 @@ thử, đo, rồi mới quyết có làm 3 cái còn lại không. Làm cả 5 n
 cách chắc chắn nhất để phá cân bằng 260 màn cùng lúc.
 
 DoD chung: `../README.md`.
+
+---
+
+## Đã làm
+
+**Bảng luật tập trung** ở `lib/data/worlds.dart` (`kWeatherRules`,
+`weatherRuleForLevel`), tái dùng thẳng `GauntletModifier` — khuôn đã phục vụ
+Gauntlet/Treasure Map/Remix — thay vì dựng loại modifier thứ hai. Chỉ thêm đúng
+1 field vào khuôn cũ (`bigGroupBonus` + `bigGroupThreshold`).
+
+**Nối dây** qua đúng đường sẵn có: `activeGameplayModifier` thêm nhánh
+`GameMode.campaign => activeWeatherModifier`, chụp ở `startLevel`. Nhờ vậy
+`comboWindowOverride` tự chạy — engine không cần một dòng nào mới.
+
+| Thời tiết | World | Luật |
+|---|---|---|
+| `bubble` | 41-60, 161-180 | cửa sổ combo 3.0 → 3.5s |
+| `spark` | 21-40, 141-160 | nhóm ≥7 ô được ×1.2 điểm |
+| `snow` | 121-140 | **chưa có** — xem dưới |
+| `none` | 8 world còn lại | không luật |
+
+**UI:** dòng luật ngay dưới tên vùng trên banner `LevelSelectScreen`, i18n
+(en + vi), world không có luật thì không dựng gì.
+
+## Vì sao snow bị hoãn
+
+AC yêu cầu `levels_achievability_test.dart` xanh. Nó **xanh** — nhưng đọc kỹ thì
+nó mô phỏng bàn **màu thuần**, không obstacle không ice. Nghĩa là nó **không thể
+bắt** hồi quy của luật "tăng mật độ ice". Chạy nó rồi tuyên bố an toàn là tự lừa
+mình.
+
+Nên hai luật đã ship đều thuộc loại **chỉ cộng thêm** (combo window dài hơn,
+điểm thưởng nhóm lớn): đúng theo cấu trúc là không thể làm màn khó hơn, nên
+achievability giữ nguyên mà không cần mô phỏng lại. `snow` (tăng ice) là luật
+trừ đi đầu tiên và phải chờ mở rộng bộ mô phỏng để mô hình hoá ice trước.
+
+Đúng như ghi chú kỹ thuật của chính task này: làm cả 5 luật ngay là cách chắc
+chắn nhất để phá cân bằng 260 màn cùng lúc.
+
+## Lỗi bắt được khi build lên máy
+
+Bản đầu thả dòng luật thẳng vào `Stack` của banner — `Stack` ở đó là để lớp
+hoạ tiết chạy **nền sau** chữ, nên dòng luật vẽ **đè lên** tên world. Trên
+Samsung S24 Ultra đọc ra `World rCietrluss GTrove`. Sửa: bọc tên + luật trong
+`Column` riêng. Screenshot không giữ được bất biến này nên đã khoá bằng test so
+toạ độ.
+
+## Kiểm chứng
+
+- `test/data/weather_rules_test.dart` — **21 ca**. Nhóm "an toàn: chỉ luật cộng
+  thêm" là nhóm quan trọng nhất: không luật nào được rút ngắn combo window,
+  giới hạn lượt, ép nhóm tối thiểu, khoá undo, hay đặt hệ số điểm < 1. Ai thêm
+  luật trừ đi sẽ đỏ **trước khi** kịp phá cân bằng.
+- `test/widget/world_rule_banner_test.dart` — 4 ca, trong đó ca so toạ độ khoá
+  đúng lỗi đè chữ ở trên.
+- `levels_achievability_test.dart` — 260/260 xanh.
+- **Mutation-check 5/5 bị bắt:** luật rút ngắn combo window; campaign không đọc
+  luật; bỏ ngưỡng nhóm lớn; trả `Column` về `Stack` children; (M2 bỏ chốt
+  `id <= 0` **không** bị bắt — xem dưới).
+- Verify trên thiết bị thật: world 1 (`none`) không có dòng luật, banner sạch.
+
+## Nợ đã ghi, không giấu
+
+1. **Chốt `id <= 0` trong `weatherRuleForLevel` hiện chưa chứng minh được.**
+   Gỡ nó mà test vẫn xanh — không phải vì thừa, mà vì world cuối đang là
+   `WeatherKind.none` nên `orElse: kWorlds.last` vô tình trả null. Đã đặt
+   TRIPWIRE trong test: ai gán thời tiết có luật cho world cuối sẽ thấy đỏ đúng
+   lúc chốt đó bắt đầu có tác dụng thật.
+2. **snow chưa có luật** — có ca test riêng ghi rõ là *cố ý*, ai thêm luật cho
+   snow buộc phải xoá ca đó và khi ấy phải đọc lý do.
+3. i18n mới chỉ en + vi (đúng DoD tối thiểu); 20 ngôn ngữ còn lại rơi về bản en
+   qua `_extraEn`.

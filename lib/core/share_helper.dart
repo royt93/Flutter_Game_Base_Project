@@ -104,3 +104,21 @@ Future<void> shareScoreCard({
     ),
   );
 }
+
+/// I87: mở share sheet với PNG thẻ hành trình đã chụp sẵn.
+///
+/// Nhận **bytes** chứ không nhận `GlobalKey` như [shareScoreCard]: bên gọi phải
+/// gỡ overlay ẩn ngay sau khi chụp, nên nó cầm bytes trước khi tới đây. Vẫn là
+/// cùng một pipeline — [captureBoardPng] — không phải đường xuất ảnh thứ hai.
+Future<void> shareJourneyCard({
+  required Uint8List png,
+  required String text,
+}) async {
+  await SharePlus.instance.share(
+    ShareParams(
+      text: text,
+      files: [XFile.fromData(png, mimeType: 'image/png')],
+      fileNameOverrides: const ['pop_star_blast_journey.png'],
+    ),
+  );
+}

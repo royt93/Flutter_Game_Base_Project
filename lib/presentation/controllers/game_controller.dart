@@ -27,6 +27,7 @@ import '../../data/pigments.dart';
 import '../../data/star_pets.dart';
 import '../../data/weekly_featured.dart';
 import '../../data/weekly_goal.dart';
+import '../../data/worlds.dart';
 import '../../game/pop_star_game.dart';
 import 'raid_boss_controller.dart';
 import '../../logic/challenge_code.dart';
@@ -209,13 +210,25 @@ class GameController extends GetxController {
   double? get activeComboWindowOverride =>
       activeGameplayModifier?.comboWindowOverride;
 
+  /// I81: luật thời tiết của world đang chơi. Chụp ở `startLevel` chứ không
+  /// tra lại từ `currentLevelRx` mỗi lần đọc — getter này được gọi trên hot
+  /// path (mỗi lần tính combo window) và `currentLevelRx` có thể null.
+  GauntletModifier? activeWeatherModifier;
+
   GauntletModifier? get activeGameplayModifier => switch (mode.value) {
     GameMode.gauntlet => activeGauntletModifier,
     GameMode.treasureMap => activeTreasureMapModifier,
     GameMode.endless => activeEndlessModifier,
     GameMode.remixLevel => activeRemixModifier,
+    // Chỉ campaign: side-mode dùng `PopLevel` tổng hợp không thuộc world nào.
+    GameMode.campaign => activeWeatherModifier,
     _ => null,
   };
+
+  /// I81: hệ số điểm thêm cho nhóm lớn, `null` nếu luật hiện tại không có.
+  double? get activeBigGroupBonus => activeGameplayModifier?.bigGroupBonus;
+  int get activeBigGroupThreshold =>
+      activeGameplayModifier?.bigGroupThreshold ?? 0;
 
   int? get activeMoveLimit => activeGameplayModifier?.moveLimit;
   int? get activeMinGroupSize => activeGameplayModifier?.minGroupSize;
@@ -1032,6 +1045,10 @@ class GameController extends GetxController {
   /// các ngày (1-7) đã nhận thưởng trong cycle 7 ngày hiện tại.
   static const Map<int, int> loginStreakRewards = {3: 20, 5: 40, 7: 100};
   final loginStreakCount = 0.obs;
+
+  /// I87: tổng ngày đã mở game, không reset khi đứt streak (khác hẳn
+  /// [loginStreakCount]). Dùng cho thẻ "hành trình của bạn".
+  final totalDaysPlayed = 0.obs;
   final lastLoginEpochDay = 0.obs;
   final loginStreakClaimedMask = 0.obs;
 
@@ -1168,6 +1185,9 @@ class GameController extends GetxController {
     endlessBest.value = StorageService.to.getInt(StorageKeys.endlessBest);
     mirrorModeBest.value = StorageService.to.getInt(StorageKeys.mirrorModeBest);
     seasonPoints.value = StorageService.to.getInt(StorageKeys.seasonPoints);
+    totalDaysPlayed.value = StorageService.to.getInt(
+      StorageKeys.totalDaysPlayed,
+    ); // I87
     claimedSeasonMask.value = StorageService.to.getInt(
       StorageKeys.claimedSeasonMask,
     );
@@ -1702,6 +1722,15 @@ class GameController extends GetxController {
     );
     final prevStreak = StorageService.to.getInt(StorageKeys.loginStreakCount);
     if (prevDay == today) {
+      // I87: save tạo TRƯỚC khi có `totalDaysPlayed` (hoặc người chơi đã mở
+      // game hôm nay rồi mới cập nhật bản này) sẽ không đi qua nhánh cộng bên
+      // dưới, và đứng ở 0 mãi tới ngày mai. Nhìn thấy trên máy thật: thẻ chia
+      // sẻ hiện "0 days" cho người đang chơi. Bù đúng 1 lần, không đoán ngược
+      // lịch sử.
+      if (totalDaysPlayed.value == 0) {
+        totalDaysPlayed.value = 1;
+        StorageService.to.setInt(StorageKeys.totalDaysPlayed, 1);
+      }
       loginStreakCount.value = prevStreak;
       lastLoginEpochDay.value = prevDay;
       loginStreakClaimedMask.value = StorageService.to.getInt(
@@ -1721,6 +1750,13 @@ class GameController extends GetxController {
     );
     final crossedCycle = (newStreak - 1) % 7 == 0 && newStreak > 1;
     if (newStreak == 1 || crossedCycle) claimedMask = 0;
+    // I87: ngày chơi cộng dồn cả đời, KHÔNG reset khi đứt streak — nhánh này
+    // chỉ chạy khi `prevDay != today` nên mỗi ngày đúng một lần.
+    totalDaysPlayed.value++;
+    StorageService.to.setInt(
+      StorageKeys.totalDaysPlayed,
+      totalDaysPlayed.value,
+    );
     loginStreakCount.value = newStreak;
     lastLoginEpochDay.value = today;
     loginStreakClaimedMask.value = claimedMask;
@@ -1913,6 +1949,7 @@ class GameController extends GetxController {
   void startLevel(int levelId) {
     mode.value = GameMode.campaign;
     currentLevelRx.value = kLevels[levelId - 1];
+    activeWeatherModifier = weatherRuleForLevel(levelId); // I81
     luckyColorIndex.value = luckyColorIndexForDay(
       todayEpochDay(),
       currentLevel.colorCount,
@@ -2448,7 +2485,16 @@ class GameController extends GetxController {
       1.0,
       comboMax,
     );
-    final gained = (baseScore * comboMultiplier.value).round();
+    // I81: thời tiết `spark` thưởng thêm cho nhóm lớn. Nhân SAU combo để hai
+    // hệ cộng hưởng đúng như người chơi kỳ vọng, và chỉ nhân lên — luật thời
+    // tiết không bao giờ trừ điểm (xem `kWeatherRules`).
+    final weatherBonus = activeBigGroupBonus;
+    final bonusMultiplier = (weatherBonus != null &&
+            groupSize >= activeBigGroupThreshold)
+        ? weatherBonus
+        : 1.0;
+    final gained = (baseScore * comboMultiplier.value * bonusMultiplier)
+        .round();
     score.value += gained;
     AudioManager.maybe?.applyComboLayer(comboCount.value); // I12
     // I22 Achievements.
