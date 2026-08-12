@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'home_comeback_title'.tr,
       color: NeonTheme.purple,
       icon: Icons.favorite_rounded,
-      message: 'home_comeback_msg'.trParams({'coin': '$reward'}),
+      message: _comebackMessage(reward),
       actions: [
         NeonDialogAction(
           label: 'daily_claim'.tr,
@@ -761,4 +761,17 @@ class _TutorialBubble extends StatelessWidget {
       ),
     );
   }
+}
+
+/// I86: ghép digest vào lời nhắn comeback.
+///
+/// Nối vào message có sẵn thay vì mở khung riêng — digest rỗng thì popup y
+/// hệt như trước, KHÔNG hiện khung trống.
+String _comebackMessage(int reward) {
+  final gameCtrl = Get.find<GameController>();
+  final base = 'home_comeback_msg'.trParams({'coin': '$reward'});
+  final lines = gameCtrl.comebackDigest(gameCtrl.lastComebackDaysAway);
+  if (lines.isEmpty) return base;
+  final body = lines.map((l) => '• ${l.key.trParams(l.params)}').join('\n');
+  return '$base\n\n$body';
 }

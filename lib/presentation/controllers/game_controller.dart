@@ -30,6 +30,7 @@ import '../../data/weekly_goal.dart';
 import '../../game/pop_star_game.dart';
 import 'raid_boss_controller.dart';
 import '../../logic/challenge_code.dart';
+import '../../logic/comeback_digest.dart';
 import '../../logic/craft_points.dart';
 import '../../logic/mystery_crate.dart';
 import '../../logic/next_action.dart';
@@ -1796,14 +1797,43 @@ class GameController extends GetxController {
     }
   }
 
+  /// I86: digest kèm phần thưởng quay lại — vài dòng số liệu cụ thể thay cho
+  /// một popup chỉ đưa tiền.
+  ///
+  /// [daysAway] do [checkComebackBonus] tính sẵn từ [todayEpochDay] (đã kẹp
+  /// chống chỉnh đồng hồ), không đọc `DateTime.now()` thô.
+  List<DigestLine> comebackDigest(int daysAway) {
+    // Mốc rương gần nhất còn CHƯA đạt; 0 nghĩa là đã qua hết mốc.
+    final nextChest = starRoadMilestones.firstWhere(
+      (m) => totalStars.value < m,
+      orElse: () => 0,
+    );
+    final dayInSeason = todayEpochDay() % seasonLengthDays;
+    return buildComebackDigest(
+      daysAway: daysAway,
+      totalStars: totalStars.value,
+      nextChestStars: nextChest,
+      weeklyGoalProgress: weeklyGoalProgress.value,
+      weeklyGoalTarget: weeklyGoalTarget,
+      seasonDaysLeft: seasonLengthDays - dayInSeason,
+      unlockedLevel: unlockedLevel.value,
+      levelCount: kLevelCount,
+    );
+  }
+
   static const int comebackBonusCoins = 300;
 
   /// I10: gọi 1 lần mỗi khi mở Home. Vắng >=3 ngày kể từ lần mở trước → tặng
   /// coin + 1 bomb + 1 shuffle, trả về số coin đã tặng; null nếu chưa đủ điều
   /// kiện. Luôn cập nhật lastOpenDay = hôm nay (mốc cho lần vắng kế tiếp).
+  /// I86: số ngày vắng của lần [checkComebackBonus] gần nhất — UI dùng để
+  /// dựng digest. 0 nếu không đủ điều kiện thưởng.
+  int lastComebackDaysAway = 0;
+
   int? checkComebackBonus() {
     final today = todayEpochDay();
     final last = StorageService.to.getInt(StorageKeys.lastOpenDay, def: -1);
+    lastComebackDaysAway = last < 0 ? 0 : today - last;
     StorageService.to.setInt(StorageKeys.lastOpenDay, today);
     if (!needsComebackBonus(lastOpenEpochDay: last, todayEpochDay: today)) {
       return null;

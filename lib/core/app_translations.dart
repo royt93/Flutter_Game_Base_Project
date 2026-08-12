@@ -554,6 +554,12 @@ class AppTranslations extends Translations {
   static const Map<String, String> _extraEn = {
     // I84 — "Next up": gợi ý tối đa 3 việc đáng làm nhất, thay cho việc bắt
     // người chơi tự lọc 14 mode + ~20 hệ meta trong carousel.
+    // I86 — digest "bạn đã bỏ lỡ gì" kèm thưởng quay lại.
+    'digest_days_away': 'You were away @n days',
+    'digest_stars_to_chest': '@n more stars to the next chest',
+    'digest_weekly_left': '@n gems left on this week\'s goal',
+    'digest_season_ending': 'Season ends in @n days',
+    'digest_next_level': 'Level @n is waiting',
     // I88 — cơ hội thứ hai, trả bằng xu (dự án không dùng quảng cáo).
     'second_chance_action': 'Keep going (@cost)',
     'second_chance_need_coins': 'Need @cost coins',
@@ -1579,6 +1585,12 @@ class AppTranslations extends Translations {
   /// Key Wave 4 — Tiếng Việt (override English).
   static const Map<String, String> _extraVi = {
     // I84 — "Tiếp theo".
+    // I86.
+    'digest_days_away': 'Bạn vắng @n ngày',
+    'digest_stars_to_chest': 'Còn @n sao nữa là mở rương kế',
+    'digest_weekly_left': 'Mục tiêu tuần còn @n gem',
+    'digest_season_ending': 'Mùa kết thúc sau @n ngày',
+    'digest_next_level': 'Màn @n đang chờ bạn',
     // I88.
     'second_chance_action': 'Chơi tiếp (@cost)',
     'second_chance_need_coins': 'Cần @cost xu',
