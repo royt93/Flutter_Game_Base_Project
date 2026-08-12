@@ -394,6 +394,17 @@ class GameScreenController extends GetxController {
     );
   }
 
+  /// I88: mua cơ hội thứ hai rồi quay lại màn chơi.
+  ///
+  /// Không tự kiểm điều kiện — `GameController.buySecondChance()` đã làm và
+  /// trả `false` nếu không đủ; ở đây chỉ đóng overlay khi mua thành công.
+  void buySecondChance() {
+    if (!gameCtrl.buySecondChance()) return;
+    armed.value = BoosterMode.none;
+    _swapFirst = null;
+    ui.value = GameUi.playing;
+  }
+
   void toggleBombArm() {
     _dismissBoosterTutorialIfNeeded();
     armed.value = armed.value == BoosterMode.bomb

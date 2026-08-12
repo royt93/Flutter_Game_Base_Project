@@ -554,6 +554,10 @@ class AppTranslations extends Translations {
   static const Map<String, String> _extraEn = {
     // I84 — "Next up": gợi ý tối đa 3 việc đáng làm nhất, thay cho việc bắt
     // người chơi tự lọc 14 mode + ~20 hệ meta trong carousel.
+    // I88 — cơ hội thứ hai, trả bằng xu (dự án không dùng quảng cáo).
+    'second_chance_action': 'Keep going (@cost)',
+    'second_chance_need_coins': 'Need @cost coins',
+    'second_chance_hint': 'Refill the board and keep your score.',
     // I85 — dạy luật lõi mà FTUE cũ bỏ qua.
     'tip_bigger_groups': 'Bigger groups score much more!',
     'tip_no_refill': 'The board never refills — every tile counts.',
@@ -1575,6 +1579,10 @@ class AppTranslations extends Translations {
   /// Key Wave 4 — Tiếng Việt (override English).
   static const Map<String, String> _extraVi = {
     // I84 — "Tiếp theo".
+    // I88.
+    'second_chance_action': 'Chơi tiếp (@cost)',
+    'second_chance_need_coins': 'Cần @cost xu',
+    'second_chance_hint': 'Bồi thêm ô và giữ nguyên điểm.',
     // I85.
     'tip_bigger_groups': 'Nhóm càng lớn, điểm càng nhiều!',
     'tip_no_refill': 'Bàn không tự đầy lại — mỗi ô đều đáng giá.',

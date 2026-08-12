@@ -14,6 +14,7 @@ import '../../data/worlds.dart';
 import '../../game/pop_star_game.dart';
 import '../controllers/game_controller.dart';
 import '../../logic/ftue_tips.dart';
+import '../../logic/second_chance.dart';
 import '../controllers/game_screen_controller.dart';
 import '../controllers/pass_and_play_controller.dart';
 import '../controllers/treasure_map_controller.dart';
@@ -1189,6 +1190,28 @@ class _Overlay extends StatelessWidget {
                   )
                 : null,
             actions: [
+              // I88: chỉ chào khi thua sát nút (>=70% target) và còn đủ xu —
+              // xem `logic/second_chance.dart`. Đứng đầu danh sách vì đó là
+              // thứ người chơi muốn nhất lúc này.
+              if (gameCtrl.canBuySecondChance)
+                NeonDialogAction(
+                  label: 'second_chance_action'.trParams({
+                    'cost': '$kSecondChanceCost',
+                  }),
+                  color: NeonTheme.teal,
+                  onTap: gsc.buySecondChance,
+                ),
+              // Không đủ xu thì vẫn cho thấy, dạng vô hiệu kèm lý do — im
+              // lặng khiến người chơi tưởng tính năng bị lỗi. Cố ý KHÔNG đẩy
+              // sang cửa hàng: vừa thua mà bị mời mua tiếp là phản cảm.
+              if (gameCtrl.secondChanceUnaffordable)
+                NeonDialogAction(
+                  label: 'second_chance_need_coins'.trParams({
+                    'cost': '$kSecondChanceCost',
+                  }),
+                  color: NeonTheme.inkSoft,
+                  onTap: () {},
+                ),
               if (gameCtrl.activeSeedChallenge.value != null)
                 NeonDialogAction(
                   label: 'share_challenge'.tr,

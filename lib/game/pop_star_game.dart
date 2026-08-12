@@ -2281,6 +2281,18 @@ class PopStarGame extends FlameGame {
     _rebuildBoard();
   }
 
+  /// I88: bồi bàn cho "cơ hội thứ hai" đã mua.
+  ///
+  /// Tái dùng nguyên [_refillBoard] của Zen thay vì viết generator thứ hai —
+  /// khác biệt duy nhất là điểm/combo được giữ nguyên (caller không reset) và
+  /// replay bị vô hiệu.
+  void refillForSecondChance() {
+    // I28: ván có bồi bàn không tái tạo được chỉ từ seed + danh sách tap, nên
+    // không cho chia sẻ replay của ván đó.
+    recordingValid = false;
+    _refillBoard();
+  }
+
   /// F8 Zen: bàn mới toàn bộ khi hết/kẹt — xem [refillEnabled]. I2: chain
   /// tile chỉ dành cho campaign, bàn Zen mới luôn không khoá ô nào.
   void _refillBoard() {

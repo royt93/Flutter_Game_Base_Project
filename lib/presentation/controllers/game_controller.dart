@@ -33,6 +33,7 @@ import '../../logic/challenge_code.dart';
 import '../../logic/craft_points.dart';
 import '../../logic/mystery_crate.dart';
 import '../../logic/next_action.dart';
+import '../../logic/second_chance.dart';
 import '../../logic/daily_challenge.dart';
 import '../../logic/gift_tile.dart';
 import '../../logic/login_streak.dart';
@@ -1834,6 +1835,8 @@ class GameController extends GetxController {
     _collectInitial = null;
     perfectClearTarget.value = null;
     perfectClearSuccess.value = false;
+    usedSecondChance = false;
+    boardWasRefilled = false;
     craftRewardType.value = null;
     activeChallenge.value = null;
     challengeWon.value = null;
@@ -2226,6 +2229,53 @@ class GameController extends GetxController {
     }
   }
 
+  /// I88: đã dùng cơ hội thứ hai trong màn đang chơi chưa (tối đa 1 lần).
+  /// Không persist — chỉ có ý nghĩa trong phạm vi 1 ván.
+  bool usedSecondChance = false;
+
+  /// I88: bàn đã được bồi thêm ô trong ván này chưa.
+  ///
+  /// Dùng để loại ván đó khỏi [boardsFullyCleared]: thành tựu "dọn sạch bàn"
+  /// phải nói về bàn gốc, không phải bàn đã được mua thêm ô.
+  bool boardWasRefilled = false;
+
+  bool get canBuySecondChance => canOfferSecondChance(
+    isCampaign: mode.value == GameMode.campaign,
+    starsEarned: starsEarned.value,
+    score: score.value,
+    targetScore: currentLevel.targetScore,
+    alreadyUsedThisLevel: usedSecondChance,
+    coins: coins.value,
+  );
+
+  bool get secondChanceUnaffordable => isSecondChanceUnaffordable(
+    isCampaign: mode.value == GameMode.campaign,
+    starsEarned: starsEarned.value,
+    score: score.value,
+    targetScore: currentLevel.targetScore,
+    alreadyUsedThisLevel: usedSecondChance,
+    coins: coins.value,
+  );
+
+  /// Mua 1 cơ hội: trừ xu, bồi bàn, mở lại ván. Giữ nguyên **điểm và combo** —
+  /// đây là cứu trợ, không phải chơi lại từ đầu.
+  ///
+  /// Trả `false` nếu không đủ điều kiện; caller không cần tự kiểm lại.
+  bool buySecondChance() {
+    if (!canBuySecondChance) return false;
+    coins.value -= kSecondChanceCost;
+    StorageService.to.setInt(StorageKeys.coins, coins.value);
+    usedSecondChance = true;
+    boardWasRefilled = true;
+
+    // Mở lại ván: `ended` đã bật khi thua nên phải hạ xuống, nếu không mọi
+    // `checkEnd` sau đó đều bị chặn ở dòng `if (ended.value) return;`.
+    ended.value = false;
+    cleared.value = false;
+    activeGame?.refillForSecondChance();
+    return true;
+  }
+
   void addScore(int points) => score.value += points;
 
   /// X17: ảnh chụp các counter ĐỜI tại thời điểm `PopStarGame._saveUndo()` —
@@ -2348,7 +2398,9 @@ class GameController extends GetxController {
   void _checkEnd(bool boardCleared) {
     if (ended.value) return;
     cleared.value = boardCleared;
-    if (boardCleared) {
+    // I88: bàn đã được bồi thêm ô thì không tính là "dọn sạch bàn" — thành
+    // tựu đó phải nói về bàn gốc, không phải bàn mua thêm.
+    if (boardCleared && !boardWasRefilled) {
       // I22 Achievements: counter tích lũy đời, áp dụng mọi mode.
       boardsFullyCleared.value++;
       StorageService.to.setInt(
