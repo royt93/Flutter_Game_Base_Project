@@ -16,13 +16,16 @@ import '../../data/achievements.dart';
 import '../../data/board_frames.dart';
 import '../../data/burst_styles.dart';
 import '../../data/clan.dart';
+import '../../data/constellations.dart';
 import '../../data/combo_text_styles.dart';
 import '../../data/daily_quests.dart';
 import '../../data/gauntlet_modifiers.dart';
 import '../../data/levels.dart';
 import '../../data/lucky_color.dart';
 import '../../data/mascot_skins.dart';
+import '../../data/mirror_board.dart';
 import '../../data/perks.dart';
+import '../../data/puzzle_presets.dart';
 import '../../data/pigments.dart';
 import '../../data/star_pets.dart';
 import '../../data/weekly_featured.dart';
@@ -37,9 +40,12 @@ import '../../logic/mystery_crate.dart';
 import '../../logic/next_action.dart';
 import '../../logic/second_chance.dart';
 import '../../logic/daily_challenge.dart';
+import '../../logic/ghost_duel.dart';
 import '../../logic/gift_tile.dart';
 import '../../logic/login_streak.dart';
 import '../../logic/puzzle_code.dart';
+import '../../logic/replay.dart';
+import '../../logic/puzzle_daily.dart';
 
 /// F8: campaign (200 màn có target/sao/mở khoá) vs side-mode biệt lập
 /// (không đụng unlockedLevel/coin-campaign/star). F12: endless thêm vào nhóm
@@ -64,6 +70,13 @@ enum GameMode {
   remixLevel,
   comboRush,
   frostRush,
+
+  /// F21: Mirror Draft — 2 người trên bàn đối xứng, tap nổ cả nhóm gương.
+  mirrorDraft,
+
+  /// F16: đấu bất đồng bộ với "ghost" của người gửi mã — cùng bàn sinh từ
+  /// seed, so điểm cuối ván. Không đụng star/highScore/unlock campaign.
+  duel,
 }
 
 /// I7: 1 ô phần thưởng trên vòng quay hằng ngày.
@@ -172,9 +185,24 @@ class GameController extends GetxController {
   /// bởi UI ngay sau khi tick đổi (không phải Rx vì chỉ cần đọc 1 lần/tick).
   final comboMilestoneTick = 0.obs;
   int comboMilestoneValue = 0;
+  /// F17 Combo Bank: tiền tệ thứ ba. Kiếm ở **mọi** `GameMode` — kể cả Zen và
+  /// Puzzle Lab — vì toàn bộ mục đích của nó là nối 14 mode đang là silo.
+  /// Không phụ thuộc điểm hay thắng thua: người chơi kém vẫn kiếm được, chỉ
+  /// chậm hơn.
+  final comboTokens = 0.obs;
+
+  static const int tokensPerComboMilestone = 1;
+
   void triggerComboMilestone(int milestone) {
     comboMilestoneValue = milestone;
     comboMilestoneTick.value++;
+    // F17: mốc combo là đường kiếm token DUY NHẤT. Ghi đệm vì đây là hot path
+    // (xem [[X24]]); `checkEnd` flush.
+    comboTokens.value += tokensPerComboMilestone;
+    StorageService.to.setIntBuffered(
+      StorageKeys.comboTokens,
+      comboTokens.value,
+    );
   }
 
   /// Set bởi [PopStarGame.onLoad] khi bàn được dựng — dùng để booster gọi
@@ -304,8 +332,47 @@ class GameController extends GetxController {
   /// Perk đã mở khoá theo world đã hoàn thành (suy từ [unlockedLevel]).
   List<Perk> get unlockedPerksList => unlockedPerks(unlockedLevel.value);
 
+  /// I83: perk prestige đã mở khoá (constellation đã sáng + đã prestige).
+  List<Perk> get unlockedPrestigePerksList => unlockedPrestigePerks(
+    totalStars: totalStars.value,
+    prestigeTier: prestigeTier.value,
+  );
+
+  /// Toàn bộ perk đang có hiệu lực được: F14 (theo world) + I83 (theo
+  /// constellation & prestige). Một danh sách duy nhất — không có hệ buff
+  /// thứ ba, xem ghi chú ở `kPrestigePerks`.
+  List<Perk> get allUnlockedPerks => [
+    ...unlockedPerksList,
+    ...unlockedPrestigePerksList,
+  ];
+
+  /// I83: số perk bật được cùng lúc, tra từ bảng theo prestige tier.
+  int get perkSlots => perkSlotsForPrestigeTier(prestigeTier.value);
+
+  /// I83: giá booster sau giảm giá (hệ số ở `kBoosterDiscountRate`).
+  static const double kBoosterDiscountRate = 0.85;
+  static const int kStarDustPerkBonus = 2;
+  static const double kCraftPerkMultiplier = 1.5;
+
+  int _starDustGain(int base) =>
+      base +
+      (hasPrestigePerk(PerkEffect.starDustBonus) ? kStarDustPerkBonus : 0);
+
+  double get _craftMultiplier =>
+      hasPrestigePerk(PerkEffect.craftBonus) ? kCraftPerkMultiplier : 1.0;
+
   bool hasPerk(String id) =>
-      activePerkIds.contains(id) && unlockedPerksList.any((p) => p.id == id);
+      activePerkIds.contains(id) && allUnlockedPerks.any((p) => p.id == id);
+
+  /// I83: perk prestige KHÔNG có hiệu lực ở mode chấm best-score — cùng lý do
+  /// và cùng khuôn với [hasPetPassive] ([[I82]]): cho chạy ở đó là vô hiệu hoá
+  /// mọi kỷ lục cũ. Perk F14 giữ nguyên hành vi cũ (xem ghi chú ở [[I83]]).
+  bool hasPrestigePerk(PerkEffect effect) {
+    if (_bestScoreModes.contains(mode.value)) return false;
+    return unlockedPrestigePerksList.any(
+      (p) => p.effect == effect && activePerkIds.contains(p.id),
+    );
+  }
 
   /// Bật/tắt 1 perk trong danh sách active, tối đa [max] cái cùng lúc.
   /// Thuần, test được: input/output là list id perk.
@@ -324,7 +391,11 @@ class GameController extends GetxController {
   }
 
   void togglePerk(String id) {
-    activePerkIds.value = togglePerkSelection(activePerkIds, id);
+    activePerkIds.value = togglePerkSelection(
+      activePerkIds,
+      id,
+      max: perkSlots, // I83: trần theo prestige tier, không còn cứng 2
+    );
     StorageService.to.setString(
       StorageKeys.activePerks,
       activePerkIds.join(','),
@@ -737,6 +808,43 @@ class GameController extends GetxController {
     return true;
   }
 
+  /// F19: pha 2 pigment đã sở hữu thành pigment hiếm.
+  ///
+  /// Nguyên liệu **không** bị mất — nếu mất thì không ai dám thử, mà mục đích
+  /// của tính năng là khuyến khích thử.
+  ///
+  /// Trả `null` khi không pha được (thiếu craft point, chưa sở hữu nguyên
+  /// liệu, hoặc tổ hợp không có công thức); **không** tiêu craft point ở mọi
+  /// nhánh thất bại.
+  String? fusePigments(String idA, String idB) {
+    final a = kPigments.where((p) => p.id == idA).firstOrNull;
+    final b = kPigments.where((p) => p.id == idB).firstOrNull;
+    if (a == null || b == null) return null;
+    if (!isPigmentUnlocked(a) || !isPigmentUnlocked(b)) return null;
+
+    final resultId = fusionResultFor(idA, idB);
+    if (resultId == null) return null;
+    if (unlockedPigmentIds.contains(resultId)) return null; // đã có rồi
+    if (craftPoints.value < kFusionCraftCost) return null;
+
+    craftPoints.value -= kFusionCraftCost;
+    unlockedPigmentIds.add(resultId);
+    discoveredRecipes.add(recipeKey(idA, idB));
+    StorageService.to.setInt(StorageKeys.craftPoints, craftPoints.value);
+    StorageService.to.setString(
+      StorageKeys.unlockedPigments,
+      unlockedPigmentIds.join(','),
+    );
+    StorageService.to.setString(
+      StorageKeys.discoveredRecipes,
+      discoveredRecipes.join(','),
+    );
+    return resultId;
+  }
+
+  /// F19: công thức đã khám phá — dùng để hiện sổ công thức.
+  final discoveredRecipes = <String>{}.obs;
+
   bool setGemColorOverride(int slot, String pigmentId) {
     final pigment = kPigments.where((p) => p.id == pigmentId).firstOrNull;
     if (pigment == null || !isPigmentUnlocked(pigment)) return false;
@@ -892,6 +1000,16 @@ class GameController extends GetxController {
 
   /// Tổng số cosmetic đang sở hữu/mở khoá trên cả 4 hệ thống (tối đa 24:
   /// 6 mascot skin + 9 board frame + 5 burst style + 4 combo text style).
+  /// F19 đã cân nhắc và **chốt KHÔNG** đếm pigment vào đây.
+  ///
+  /// Pigment (I62) chưa bao giờ được tính — kể cả loại mua bằng xu, từ trước
+  /// khi có fusion. Thêm vào bây giờ làm con số nhảy vọt cho mọi người chơi
+  /// hiện tại, và Sticker Album trao mốc theo `totalCosmeticsOwned`: mốc đã
+  /// nhận thì không lấy lại được, nên đây là phát thưởng khống một lần cho
+  /// toàn bộ người chơi cũ.
+  ///
+  /// `mystery_crate.dart` cũng cố ý chỉ bọc 4 hệ cosmetic, không có pigment.
+  /// Giữ nguyên ranh giới đó.
   int get totalCosmeticsOwned =>
       unlockedMascotSkinIds.length +
       kBoardFrames
@@ -1188,13 +1306,23 @@ class GameController extends GetxController {
     totalDaysPlayed.value = StorageService.to.getInt(
       StorageKeys.totalDaysPlayed,
     ); // I87
+    comboTokens.value = StorageService.to.getInt(StorageKeys.comboTokens); // F17
+    craftPoints.value = StorageService.to.getInt(StorageKeys.craftPoints); // F19
     claimedSeasonMask.value = StorageService.to.getInt(
       StorageKeys.claimedSeasonMask,
     );
+    // I83: re-validate theo bảng const hiện tại (perk bị gỡ khỏi `kPerks`/
+    // `kPrestigePerks` ở bản sau không được làm hỏng save) VÀ kẹp theo trần
+    // slot — save từ tier cao rồi reset tiến độ sẽ dư perk đang bật.
+    final knownPerkIds = {
+      ...kPerks.map((p) => p.id),
+      ...kPrestigePerks.map((p) => p.id),
+    };
     activePerkIds.value =
         (StorageService.to.getString(StorageKeys.activePerks) ?? '')
             .split(',')
-            .where((s) => s.isNotEmpty)
+            .where((s) => s.isNotEmpty && knownPerkIds.contains(s))
+            .take(perkSlotsForPrestigeTier(prestigeTier.value))
             .toList();
     totalGemsPopped.value = StorageService.to.getInt(
       StorageKeys.totalGemsPopped,
@@ -1381,6 +1509,13 @@ class GameController extends GetxController {
             .toSet()
           ..add(kPigments.first.id);
     unlockedPigmentIds.assignAll(storedPigments);
+    // F19: re-validate theo bảng công thức const hiện tại — công thức bị gỡ ở
+    // bản sau không được để lại rác trong sổ.
+    discoveredRecipes.assignAll(
+      (StorageService.to.getString(StorageKeys.discoveredRecipes) ?? '')
+          .split(',')
+          .where((k) => k.isNotEmpty && kPigmentRecipes.containsKey(k)),
+    );
     gemColorOverrides.assignAll(
       decodeGemColorOverrides(
         StorageService.to.getString(StorageKeys.gemColorOverrides),
@@ -2089,6 +2224,92 @@ class GameController extends GetxController {
     _collectInitial = null;
   }
 
+  // ===== F17 Combo Bank: ba đường tiêu =====
+  //
+  // Chỉ chọn thứ **cắt ngang mode** — đó là toàn bộ ý nghĩa của tiền tệ này.
+  // Đã loại "mở Weekly Featured sớm" khỏi danh sách đề xuất ban đầu: xem
+  // `featuredLevelId`, nó vốn đã tự thay bằng level đã mở khoá thay vì chặn,
+  // nên chẳng có cổng nào để mở.
+  //
+  // Mỗi đường có **giới hạn theo ngày/tuần**. Không phải tuỳ chọn: token mua
+  // được mọi thứ thì nhịp hằng ngày/hằng tuần sụp, và đó là rủi ro số 2 ghi
+  // trong [[F17]].
+
+  static const int tokenCostRerollQuest = 6;
+  static const int tokenCostRaidAttempt = 10;
+  static const int tokenCostTreasureMap = 12;
+
+  /// Số lần đã đổi quest trong ngày — hiện tại chỉ cho 1 lần/ngày.
+  bool get canRerollDailyQuests =>
+      comboTokens.value >= tokenCostRerollQuest &&
+      StorageService.to.getInt(StorageKeys.tokenRerollQuestDay, def: -1) !=
+          todayEpochDay();
+
+  /// Đổi bộ quest hôm nay sang bộ khác. Tiến độ **reset** — bộ mới là quest
+  /// khác, giữ lại tiến độ cũ là cho không.
+  bool rerollDailyQuests() {
+    if (!canRerollDailyQuests) return false;
+    _spendTokens(tokenCostRerollQuest);
+    StorageService.to.setInt(
+      StorageKeys.tokenRerollQuestDay,
+      todayEpochDay(),
+    );
+    final offset =
+        StorageService.to.getInt(StorageKeys.tokenQuestOffset) + 1;
+    StorageService.to.setInt(StorageKeys.tokenQuestOffset, offset);
+    dailyQuests.assignAll(questsForDay(todayEpochDay() + offset * 1000));
+    dailyQuestProgress.assignAll(const [0, 0, 0]);
+    dailyQuestClaimed.clear();
+    _persistDailyQuests();
+    StorageService.to.flush();
+    return true;
+  }
+
+  /// F17: lượt Raid Boss mua thêm hôm nay (0 hoặc 1). `RaidBossController` đọc
+  /// giá trị này khi dựng lượt, thay vì `GameController` với tay vào controller
+  /// của run — hai bên vốn cố ý tách rời để tránh phụ thuộc vòng.
+  int get bonusRaidAttemptsToday =>
+      StorageService.to.getInt(StorageKeys.tokenRaidDay, def: -1) ==
+          todayEpochDay()
+      ? 1
+      : 0;
+
+  bool get canBuyRaidAttempt =>
+      comboTokens.value >= tokenCostRaidAttempt && bonusRaidAttemptsToday == 0;
+
+  bool buyRaidAttempt() {
+    if (!canBuyRaidAttempt) return false;
+    _spendTokens(tokenCostRaidAttempt);
+    StorageService.to.setInt(StorageKeys.tokenRaidDay, todayEpochDay());
+    StorageService.to.flush();
+    return true;
+  }
+
+  bool get canBuyTreasureMap =>
+      comboTokens.value >= tokenCostTreasureMap &&
+      StorageService.to.getInt(StorageKeys.tokenFeaturedWeek, def: -1) !=
+          todayEpochDay();
+
+  /// Mua thêm 1 bản đồ Treasure Map. Dùng lại key `tokenFeaturedWeek` cho mốc
+  /// ngày (tên key giữ nguyên để không đổi schema save đã phát hành).
+  bool buyTreasureMap() {
+    if (!canBuyTreasureMap) return false;
+    _spendTokens(tokenCostTreasureMap);
+    StorageService.to.setInt(StorageKeys.tokenFeaturedWeek, todayEpochDay());
+    treasureMapCount.value++;
+    StorageService.to.setInt(
+      StorageKeys.treasureMapCount,
+      treasureMapCount.value,
+    );
+    StorageService.to.flush();
+    return true;
+  }
+
+  void _spendTokens(int amount) {
+    comboTokens.value -= amount;
+    StorageService.to.setInt(StorageKeys.comboTokens, comboTokens.value);
+  }
+
   /// I38: id level campaign được chọn làm "Level tuần này" — deterministic
   /// theo [currentWeekIndex] ([featuredLevelIdForWeek]). Nếu level đó chưa
   /// mở khoá (`unlockedLevel` chưa tới), tự thay bằng 1 level chắc chắn đã
@@ -2145,7 +2366,18 @@ class GameController extends GetxController {
   /// I42 Puzzle Lab: bắt đầu ván với bàn tự vẽ/nhập mã — mirror
   /// [startSideMode] (không cần reset perfectClearTarget/perfectClearSuccess
   /// vì Puzzle Lab không có Perfect Clear).
+  /// F18: ván hiện tại có phải "Bàn hôm nay" không (có thưởng), hay Puzzle Lab
+  /// thường (sandbox, không thưởng gì).
+  ///
+  /// Cờ chứ không phải `GameMode` mới: thêm giá trị vào enum bắt phải rà lại
+  /// mọi `switch (mode.value)` trong app cho một khác biệt duy nhất là "có
+  /// thưởng hay không". [startPuzzleLevel] là cửa vào **chung** của mọi ván
+  /// puzzleLab nên xoá cờ ở đây là đủ — không có đường nào bật cờ mà không đi
+  /// qua đây trước.
+  bool puzzleDailyRun = false;
+
   void startPuzzleLevel(List<List<int>> grid) {
+    puzzleDailyRun = false;
     mode.value = GameMode.puzzleLab;
     puzzleLabGrid = grid;
     final rows = grid.length;
@@ -2253,6 +2485,201 @@ class GameController extends GetxController {
     currentLevelRx.value = level;
   }
 
+  /// F18: mã bàn đưa vào vòng chọn — bàn tự vẽ của người chơi TRƯỚC, preset
+  /// sau. Người chơi chưa lưu gì vẫn có đủ preset để chơi (AC bắt buộc).
+  List<String> get puzzleDailyCandidateCodes => [
+    ...StorageService.to.getStringList(StorageKeys.savedPuzzles),
+    ...kPuzzlePresets.map((p) => p.code),
+  ];
+
+  /// F18: bàn của hôm nay, `null` nếu không mã nào chơi được.
+  List<List<int?>>? get puzzleDailyBoard =>
+      pickPuzzleDailyBoard(todayEpochDay(), puzzleDailyCandidateCodes);
+
+  /// F18: bắt đầu "Bàn hôm nay". Trả `false` khi không có bàn nào chơi được —
+  /// caller phải xử lý thay vì vào ván với bàn rỗng.
+  bool startPuzzleDaily() {
+    final board = puzzleDailyBoard;
+    if (board == null) return false;
+    startPuzzleLevel(fillEmptyCells(board));
+    puzzleDailyRun = true;
+    currentLevelRx.value = PopLevel(
+      id: -18,
+      rows: board.length,
+      cols: board.first.length,
+      colorCount: kPuzzleMaxColorCount,
+      targetScore: puzzleTargetScore(board.length, board.first.length),
+    );
+    return true;
+  }
+
+  /// F18: đã ghi điểm "Bàn hôm nay" hôm nay chưa — mirror
+  /// [canRecordDailyChallengeScore], key riêng.
+  bool get canRecordPuzzleDailyScore =>
+      todayEpochDay() !=
+      StorageService.to.getInt(StorageKeys.lastPuzzleDailyDay, def: -1);
+
+  int get puzzleDailyScore =>
+      StorageService.to.getInt(StorageKeys.puzzleDailyScore);
+
+  /// Thưởng coin theo điểm, trần cứng để bàn tự vẽ khổng lồ không thành máy in
+  /// tiền — người chơi tự thiết kế bàn nên KHÔNG được tin vào kích thước bàn.
+  static const int puzzleDailyCoinCap = 120;
+
+  void _savePuzzleDailyScore() {
+    if (!canRecordPuzzleDailyScore) return;
+    StorageService.to.setInt(StorageKeys.lastPuzzleDailyDay, todayEpochDay());
+    StorageService.to.setInt(StorageKeys.puzzleDailyScore, score.value);
+    final reward = (score.value ~/ 50).clamp(0, puzzleDailyCoinCap);
+    if (reward > 0) {
+      coins.value += reward;
+      StorageService.to.setInt(StorageKeys.coins, coins.value);
+    }
+  }
+
+  // ===== F21 Mirror Draft =====
+
+  /// Nước đi vừa rồi có nổ được cả nửa gương không — UI cần biết để báo, nếu
+  /// không người chơi tưởng đối xứng vỡ là lỗi.
+  bool lastMirrorMirrored = false;
+
+  /// F21: tăng mỗi khi một nước đi **không** nổ được nửa gương — UI nghe cái
+  /// này để báo, nếu không "đối xứng vỡ" trông y hệt lỗi (rủi ro số 2 của
+  /// [[F21]]).
+  final mirrorMissTick = 0.obs;
+
+  int get mirrorDraftBest =>
+      StorageService.to.getInt(StorageKeys.mirrorDraftBest);
+
+  void _saveMirrorDraftBest() {
+    if (score.value <= mirrorDraftBest) return;
+    StorageService.to.setInt(StorageKeys.mirrorDraftBest, score.value);
+  }
+
+  /// Bắt đầu ván Mirror Draft. Bàn sinh bằng `generateMirrorBoard` (I47) —
+  /// không viết generator mới.
+  void startMirrorDraft() {
+    mode.value = GameMode.mirrorDraft;
+    lastMirrorMirrored = false;
+    final grid = generateMirrorBoard(9, 8, 5, Random());
+    puzzleLabGrid = grid;
+    currentLevelRx.value = PopLevel(
+      id: -21,
+      rows: grid.length,
+      cols: grid.first.length,
+      colorCount: 5,
+      targetScore: grid.length * grid.first.length * 5,
+    );
+    score.value = 0;
+    starsEarned.value = 0;
+    ended.value = false;
+    cleared.value = false;
+    resetCombo();
+    activeGame = null;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
+    movesUsed.value = 0;
+    _collectInitial = null;
+  }
+
+  // ===== F16 Ghost Duel =====
+
+  /// Lời thách đang chơi, `null` nếu không ở chế độ duel.
+  DuelData? activeDuel;
+
+  /// Điểm ghost sau từng nước đi — mô phỏng lại từ taps của người gửi.
+  List<int> ghostTimeline = const [];
+
+  /// F16: có hiện điểm ghost trên HUD không.
+  ///
+  /// Mặc định **tắt** khi người chơi đã bật `reduceMotion` — một con số nhấp
+  /// nháy theo từng nước đi là đúng loại chuyển động họ vừa xin bớt. Bật/tắt
+  /// được giữa ván, không persist: đây là lựa chọn của một trận, không phải
+  /// cài đặt.
+  final showGhostScore = true.obs;
+
+  void toggleGhostScore() => showGhostScore.value = !showGhostScore.value;
+
+  /// Điểm ghost tại nước đi hiện tại của người chơi.
+  int get ghostScoreNow =>
+      ghostScoreAtMove(ghostTimeline, movesUsed.value - 1);
+
+  /// Bắt đầu ván duel từ [duel]. Trả `false` nếu bàn không dựng được.
+  bool startDuel(DuelData duel) {
+    final grid = generateDailyChallengeGrid(duel.seed);
+    activeDuel = duel;
+    showGhostScore.value = !StorageService.to.getBool(
+      StorageKeys.reduceMotion,
+    );
+    ghostTimeline = ghostScoreTimeline(
+      grid.map((r) => List<int?>.from(r)).toList(),
+      duel.taps,
+    );
+    mode.value = GameMode.duel;
+    puzzleLabGrid = grid;
+    currentLevelRx.value = PopLevel(
+      id: -16,
+      rows: grid.length,
+      cols: grid.first.length,
+      colorCount: dailyChallengeColorCount,
+      targetScore: grid.length * grid.first.length * 5,
+    );
+    score.value = 0;
+    starsEarned.value = 0;
+    ended.value = false;
+    cleared.value = false;
+    resetCombo();
+    activeGame = null;
+    _freeUndoLeft = _initialFreeUndo;
+    hintCount.value = _initialHints;
+    movesUsed.value = 0;
+    _collectInitial = null;
+    return true;
+  }
+
+  /// Kết quả trận duel vừa xong — so với điểm **thật** của ghost.
+  GhostDuelOutcome? get duelOutcomeNow {
+    final duel = activeDuel;
+    if (duel == null) return null;
+    return ghostDuelOutcome(playerScore: score.value, ghostScore: duel.score);
+  }
+
+  int get duelBest => StorageService.to.getInt(StorageKeys.duelBest);
+
+  void _saveDuelBest() {
+    if (score.value <= duelBest) return;
+    StorageService.to.setInt(StorageKeys.duelBest, score.value);
+  }
+
+  /// Mã trả đũa: cùng seed, nhưng mang lượt chơi và điểm của NGƯỜI CHƠI.
+  String? buildRematchCode() {
+    final duel = activeDuel;
+    final game = activeGame;
+    if (duel == null || game == null) return null;
+    return encodeDuelCode(
+      DuelData(
+        seed: duel.seed,
+        taps: game.recordedTaps,
+        score: score.value,
+        senderName: playerName.value,
+      ),
+    );
+  }
+
+  /// F19: số dư craft point tích luỹ.
+  ///
+  /// Trước F19, `craft_points.dart` chỉ là **hàm thuần đo cell còn sót** — đo
+  /// xong đổi ngay thành booster nếu đủ ngưỡng, dưới ngưỡng thì mất trắng.
+  /// Không hề có số dư nào để tiêu. AC của [[F19]] viết "tái dùng craft point"
+  /// như thể đã có sẵn tiền tệ; thực tế phải dựng nó ở đây.
+  final craftPoints = 0.obs;
+
+  void addCraftPoints(int amount) {
+    if (amount <= 0) return;
+    craftPoints.value += amount;
+    StorageService.to.setInt(StorageKeys.craftPoints, craftPoints.value);
+  }
+
   /// F13: đã ghi điểm Daily Challenge hôm nay chưa — chơi lại trong ngày
   /// không đè điểm cũ (giống `canClaimDaily`).
   bool get canRecordDailyChallengeScore =>
@@ -2276,7 +2703,7 @@ class GameController extends GetxController {
       todayEpochDay(),
     );
     StorageService.to.setInt(StorageKeys.dailyChallengeScore, score.value);
-    starDust.value += starDustPerDailyChallenge;
+    starDust.value += _starDustGain(starDustPerDailyChallenge); // I83
     StorageService.to.setInt(StorageKeys.starDustCount, starDust.value);
   }
 
@@ -2394,8 +2821,12 @@ class GameController extends GetxController {
   /// Trả `false` nếu không đủ điều kiện; caller không cần tự kiểm lại.
   bool buySecondChance() {
     if (!canBuySecondChance) return false;
-    coins.value -= kSecondChanceCost;
-    StorageService.to.setInt(StorageKeys.coins, coins.value);
+    // I83: perk `freeSecondChance` miễn phí lần đầu mỗi màn. `usedSecondChance`
+    // ngay dưới đã chặn lần thứ hai, nên không cần cờ riêng.
+    if (!hasPrestigePerk(PerkEffect.freeSecondChance)) {
+      coins.value -= kSecondChanceCost;
+      StorageService.to.setInt(StorageKeys.coins, coins.value);
+    }
     usedSecondChance = true;
     boardWasRefilled = true;
 
@@ -2426,6 +2857,7 @@ class GameController extends GetxController {
     int clanTotal,
     List<int> quests,
     int maxCombo,
+    int tokens,
   })?
   _undoCounters;
 
@@ -2437,6 +2869,7 @@ class GameController extends GetxController {
       clanTotal: clanContribTotal.value,
       quests: List<int>.from(dailyQuestProgress),
       maxCombo: maxComboEver.value,
+      tokens: comboTokens.value, // F17: cùng lý do với [[X17]]
     );
   }
 
@@ -2456,6 +2889,7 @@ class GameController extends GetxController {
     clanContribTotal.value = snapshot.clanTotal;
     dailyQuestProgress.assignAll(snapshot.quests);
     maxComboEver.value = snapshot.maxCombo;
+    comboTokens.value = snapshot.tokens; // F17
     StorageService.to.setInt(
       StorageKeys.totalGemsPopped,
       totalGemsPopped.value,
@@ -2473,6 +2907,9 @@ class GameController extends GetxController {
       clanContribTotal.value,
     );
     StorageService.to.setInt(StorageKeys.maxComboEver, maxComboEver.value);
+    // F17: ghi thẳng chứ không đệm — đây là đường HOÀN TÁC, và [[X29]] đã cho
+    // thấy giá trị đệm cũ có thể che mất lần ghi thẳng nếu thứ tự sai.
+    StorageService.to.setInt(StorageKeys.comboTokens, comboTokens.value);
     _persistDailyQuests();
   }
 
@@ -2552,6 +2989,8 @@ class GameController extends GetxController {
     if (mode.value == GameMode.puzzleLab ||
         mode.value == GameMode.passAndPlay) {
       if (boardCleared) _addDailyQuestProgress(QuestKind.winAnyMode, 1);
+      // F18: "Bàn hôm nay" là ván DUY NHẤT của puzzleLab có thưởng thật.
+      if (puzzleDailyRun) _savePuzzleDailyScore();
       if (activeSeedChallenge.value case final challenge?) {
         seedChallengeWon.value = score.value > challenge.score;
       }
@@ -2561,6 +3000,8 @@ class GameController extends GetxController {
     if (mode.value != GameMode.campaign) {
       if (boardCleared) _addDailyQuestProgress(QuestKind.winAnyMode, 1);
       if (mode.value == GameMode.timeAttack) _saveTimeAttackBest();
+      if (mode.value == GameMode.duel) _saveDuelBest(); // F16
+      if (mode.value == GameMode.mirrorDraft) _saveMirrorDraftBest(); // F21
       if (mode.value == GameMode.comboRush) _saveComboRushBest();
       if (mode.value == GameMode.frostRush) _saveFrostRushBest();
       if (mode.value == GameMode.endless) _saveEndlessBest();
@@ -2594,7 +3035,7 @@ class GameController extends GetxController {
       _saveBestScore();
       _grantCoins();
       if (starsEarned.value == 3) {
-        starDust.value += starDustPerThreeStarWin;
+        starDust.value += _starDustGain(starDustPerThreeStarWin); // I83
         StorageService.to.setInt(StorageKeys.starDustCount, starDust.value);
       }
       _maybeRequestReview();
@@ -2615,10 +3056,20 @@ class GameController extends GetxController {
       // có clearBoardBonus riêng, không cộng trùng) đủ ngưỡng craft point →
       // đổi thành 1 booster ngẫu nhiên thay vì mất trắng.
       final grid = activeGame?.colorGrid;
-      if (!boardCleared &&
-          grid != null &&
-          craftPointsForRemainingCells(grid) >= craftPointThreshold) {
-        craftRewardType.value = _grantRandomBooster();
+      if (!boardCleared && grid != null) {
+        // I83: perk `craftBonus` nhân điểm craft, tức là dễ chạm ngưỡng hơn.
+        final points = (craftPointsForRemainingCells(grid) * _craftMultiplier)
+            .round();
+        // F19: quyết định nằm ở hàm thuần `craftOutcomeFor` — mỗi ván ra ĐÚNG
+        // một phần thưởng, không trả hai lần cho cùng một phép đo.
+        switch (craftOutcomeFor(points, craftPointThreshold)) {
+          case CraftOutcome.booster:
+            craftRewardType.value = _grantRandomBooster();
+          case CraftOutcome.bankPoints:
+            addCraftPoints(points);
+          case CraftOutcome.none:
+            break;
+        }
       }
     }
   }
@@ -2762,7 +3213,15 @@ class GameController extends GetxController {
   static const freezePrice = 70;
   static const streakFreezePrice = 100;
 
-  bool _buy(int price, RxInt count, String key) {
+  /// I83: giá sau giảm của perk prestige `boosterDiscount`. Làm tròn LÊN để
+  /// không bao giờ ra giá 0 khi thêm booster rẻ ở bản sau.
+  int discountedPrice(int price) =>
+      hasPrestigePerk(PerkEffect.boosterDiscount)
+      ? (price * kBoosterDiscountRate).ceil()
+      : price;
+
+  bool _buy(int rawPrice, RxInt count, String key) {
+    final price = discountedPrice(rawPrice);
     if (coins.value < price) return false;
     coins.value -= price;
     count.value++;

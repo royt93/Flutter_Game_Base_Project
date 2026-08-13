@@ -3,7 +3,7 @@
 **Epic:** E8 Enhance · **SP:** 8 · **Pri:** Should
 **Deps:** [[I82]] nên làm trước (tránh 3 hệ buff cùng lúc)
 **Mở rộng:** [[I64]] [[I27]]
-**Trạng thái:** 📋 To Do
+**Trạng thái:** ✅ Done (2026-08-13) — **đi đường gộp, SP 3 thay vì 8**
 
 ## Hiện trạng
 **Prestige (I27)** hiện là: reset `unlockedLevel` về 1, `prestigeTier++`,
@@ -78,3 +78,82 @@ cân nhắc phương án rẻ hơn: **gộp** constellation vào chính hệ per
 riêng. Đường đó SP 3 thay vì 8 và đạt được phần lớn giá trị.
 
 DoD chung: `../README.md`.
+
+---
+
+## Quyết định: KHÔNG dựng cây kỹ năng riêng
+
+Phác thảo xong lộ ra đúng thứ mục "Ghi chú" của task đã lường. Đối chiếu hai
+bảng hiệu ứng đang có:
+
+| Hệ | Hiệu ứng |
+|---|---|
+| `PerkEffect` (F14) | `extraUndo`, `moveHint`, `coinBonus` |
+| `PetPassive` ([[I82]]) | `extraUndo`, `extraHint`, `coinBonus` |
+
+**Trùng nhau.** Hệ thứ ba nói lại cùng ba điều đó là nhiễu thuần tuý, và người
+chơi phải tự cộng ba nguồn buff trong đầu — đúng rủi ro số 1 mà task tự ghi.
+
+Nên đi đường rẻ đã được task cho phép: **constellation mở thêm perk vào chính
+hệ F14**. Tái dùng nguyên `activePerkIds`, `togglePerk`, `PerksScreen`. Không
+có đường buff thứ ba, không có màn hình thứ hai để chọn perk. SP thực tế ~3.
+
+## Đã làm
+
+- `constellations.dart` — `kPrestigePerks` (4 perk, mỗi constellation mở 1),
+  `kPerkSlotsByPrestigeTier` (bảng, không phải công thức rải rác),
+  `perkSlotsForPrestigeTier`, `unlockedPrestigePerks`.
+- `perks.dart` — 4 giá trị `PerkEffect` mới.
+- `game_controller.dart` — `allUnlockedPerks`, `perkSlots`, `hasPrestigePerk`;
+  `togglePerk` dùng trần động; `_load` re-validate id **và** kẹp theo trần.
+- `perks_screen.dart` — perk prestige nằm chung danh sách, chưa mở thì hiện
+  "Prestige để mở khoá" thay vì ẩn (động lực prestige mà AC yêu cầu).
+
+### 4 perk và vì sao chọn đúng 4 hiệu ứng đó
+
+| Perk | Chòm sao | Hiệu ứng | Điểm nối sẵn có |
+|---|---|---|---|
+| Sao Thương Nhân | Phoenix (20★) | booster rẻ 15% | `_buy` — choke point duy nhất |
+| Nở Bụi Sao | Dragon (60★) | +2 Star Dust mỗi 3 sao | 2 chỗ cộng star dust |
+| Trời Nghệ Nhân | Pegasus (120★) | craft point ×1.5 | ngưỡng craft |
+| Bình Minh Thứ Hai | Serpent (200★) | cơ hội thứ hai đầu màn miễn phí | `buySecondChance` ([[I88]]) |
+
+**Cả 4 đều thuộc kinh tế/tiện ích, KHÔNG chạm điểm số.** Đây là chốt an toàn
+quan trọng nhất: AC lo cả hai chiều (màn bất khả thi **lẫn** màn dễ tới mức 3
+sao tự động). Hiệu ứng không đổi điểm thì `levels_achievability_test` giữ
+nguyên kết quả ở mọi tier — không phải tune tay qua 260 màn × nhiều tier, đúng
+thứ mục "Rủi ro" của task cảnh báo.
+
+Có test chốt tính chất này (`mọi hiệu ứng prestige đều thuộc kinh tế/tiện ích`):
+ai thêm hiệu ứng chạm điểm buộc phải sửa ca đó, và khi ấy phải chạy lại
+achievability ở mọi tier.
+
+## Kiểm chứng
+
+- `test/data/prestige_perks_test.dart` — **30 ca**: bảng dữ liệu (không trùng
+  id/hiệu ứng với F14), bảng ô theo tier (đơn điệu, không ngoại suy vô hạn,
+  tier âm), mở khoá (tier 0 chỉ xem trước), chọn perk, hiệu lực từng perk, loại
+  trừ mode best-score, save hỏng.
+- `levels_achievability_test.dart` — 260/260 xanh.
+- **Mutation-check 5/5 bị bắt:** bỏ gate `prestigeTier >= 1`; ngoại suy slot vô
+  hạn; bỏ loại trừ mode best-score; bỏ re-validate khi nạp; trần perk quay về
+  cứng 2.
+- Toàn bộ suite: **1334 xanh**, `flutter analyze` 0 issue.
+
+## Lỗ test tự tìm ra và đã vá
+
+Mutation "trần perk quay về cứng 2" **ban đầu không bị bắt**: ca "không bật quá
+số ô" boot ở tier 0 (đúng 2 ô) nên không phân biệt được với bản hard-code. Đã
+thêm ca boot ở tier 1 bật thật >2 perk.
+
+## Nợ đã ghi, không giấu
+
+1. **Perk F14 vẫn chạy ở mode best-score.** `hasPrestigePerk` loại trừ, nhưng
+   `hasPerk` (F14) thì không — hành vi có từ trước I83, cố ý không đổi trong
+   task này vì nó ảnh hưởng kỷ lục đã lưu của người chơi hiện tại. Đáng mở task
+   riêng để quyết định.
+2. i18n mới en + vi; 20 ngôn ngữ còn lại rơi về bản en qua `_extraEn`.
+3. ~~Chưa verify trên thiết bị thật.~~ Đã verify trên Pixel 7 Pro với save gieo
+   sẵn (prestige tier 3, 210 sao): màn Bảo bối hiện `Ô perk: 0/4` đúng bảng
+   tier, đủ 4 perk prestige mở khoá kèm mô tả đã dịch, và 3 perk F14 nằm chung
+   một danh sách — không có màn hình thứ hai.

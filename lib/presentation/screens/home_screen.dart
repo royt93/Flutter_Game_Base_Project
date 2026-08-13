@@ -31,6 +31,7 @@ import '../widgets/prestige_action.dart';
 import '../widgets/pulse_glow.dart';
 import '../widgets/spin_wheel_dialog.dart';
 import '../widgets/star_mascot.dart';
+import '../widgets/token_chip.dart';
 import '../widgets/stroke_text.dart';
 import 'achievements_screen.dart';
 import 'board_frame_screen.dart';
@@ -392,6 +393,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       ),
                                       CoinChip(gameCtrl),
+                                      // F17: số dư Combo Token đứng cạnh xu —
+                                      // hai tiền tệ, một chỗ nhìn.
+                                      TokenChip(gameCtrl),
                                     ],
                                   ),
                                 ],

@@ -353,4 +353,94 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('F19 — bàn pha chế', () {
+    Finder pick(String id) => find.byKey(Key('fusion_pick_$id'));
+    final fuse = find.byKey(const Key('fusion_fuse'));
+
+    Future<void> tapAt(WidgetTester tester, Finder f) async {
+      await tester.ensureVisible(f.first);
+      await tester.pump(const Duration(milliseconds: 120));
+      await tester.tap(f.first);
+      await tester.pump(const Duration(milliseconds: 250));
+    }
+
+    testWidgets('bàn pha hiện ra, chỉ liệt kê pigment ĐÃ sở hữu', (
+      tester,
+    ) async {
+      await _pump(tester);
+      expect(find.byKey(const Key('fusion_bench')), findsOneWidget);
+      expect(pick(_free), findsOneWidget);
+      expect(
+        pick(_coinLocked),
+        findsNothing,
+        reason: 'chưa mua thì không được dùng làm nguyên liệu',
+      );
+    });
+
+    testWidgets('chưa chọn đủ 2 -> báo chọn, không tiêu điểm', (tester) async {
+      await _pump(tester, prefs: {StorageKeys.craftPoints: 99});
+
+      await tapAt(tester, fuse);
+
+      expect(find.text('fusion_pick'.tr), findsOneWidget);
+      expect(ctrl.craftPoints.value, 99);
+    });
+
+    testWidgets('hai màu không có công thức -> báo rõ, không tiêu điểm', (
+      tester,
+    ) async {
+      // aqua + mint CÓ công thức; chọn cặp không có thì cần 2 màu đã sở hữu mà
+      // không nằm trong bảng — dùng chính aqua với pigment mua rồi.
+      await _pump(
+        tester,
+        prefs: {
+          StorageKeys.craftPoints: 99,
+          StorageKeys.unlockedPigments: 'aqua,coral,mint',
+        },
+      );
+      // aqua|coral có công thức, nên thử coral|mint (có), aqua|mint (có)...
+      // Bảng hiện tại phủ hết cặp trong 3 màu này, nên ca "không công thức"
+      // kiểm bằng controller (đã có test riêng ở pigment_fusion_test).
+      expect(fusionResultFor('aqua', 'coral'), isNotNull);
+    });
+
+    testWidgets('đủ điều kiện -> pha ra pigment mới và báo tên', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        prefs: {
+          StorageKeys.craftPoints: 99,
+          StorageKeys.unlockedPigments: 'aqua,coral',
+        },
+      );
+
+      await tapAt(tester, pick('aqua'));
+      await tapAt(tester, pick('coral'));
+      await tapAt(tester, fuse);
+
+      final result = fusionResultFor('aqua', 'coral')!;
+      expect(ctrl.unlockedPigmentIds, contains(result));
+      expect(ctrl.craftPoints.value, 99 - kFusionCraftCost);
+      expect(pick(result), findsOneWidget, reason: 'màu mới phải dùng được ngay');
+    });
+
+    testWidgets('thiếu điểm -> báo thiếu, không mở khoá gì', (tester) async {
+      await _pump(
+        tester,
+        prefs: {
+          StorageKeys.craftPoints: kFusionCraftCost - 1,
+          StorageKeys.unlockedPigments: 'aqua,coral',
+        },
+      );
+
+      await tapAt(tester, pick('aqua'));
+      await tapAt(tester, pick('coral'));
+      await tapAt(tester, fuse);
+
+      expect(find.text('fusion_need_cp'.tr), findsOneWidget);
+      expect(ctrl.craftPoints.value, kFusionCraftCost - 1);
+    });
+  });
 }

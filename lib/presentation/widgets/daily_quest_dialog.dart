@@ -19,7 +19,12 @@ Future<void> showDailyQuestDialog(
     content: Obx(
       () => Column(
         mainAxisSize: MainAxisSize.min,
-        children: List.generate(controller.dailyQuests.length, (index) {
+        children: [
+          // F17: nút tiêu Combo Token đặt NGAY tại chỗ hệ này đang hiển thị —
+          // không dựng màn hình riêng cho từng đường tiêu.
+          _RerollRow(controller: controller),
+          const SizedBox(height: NeonTheme.s16),
+          ...List.generate(controller.dailyQuests.length, (index) {
           final quest = controller.dailyQuests[index];
           final progress = controller.dailyQuestProgress[index];
           final claimed = controller.dailyQuestClaimed.contains(index);
@@ -84,6 +89,7 @@ Future<void> showDailyQuestDialog(
             ),
           );
         }),
+        ],
       ),
     ),
     actions: [
@@ -94,4 +100,39 @@ Future<void> showDailyQuestDialog(
       ),
     ],
   );
+}
+
+/// F17: dòng "đổi nhiệm vụ" + số dư Combo Token.
+class _RerollRow extends StatelessWidget {
+  const _RerollRow({required this.controller});
+
+  final GameController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final can = controller.canRerollDailyQuests;
+    return Row(
+      children: [
+        const Icon(Icons.bolt_rounded, color: NeonTheme.cyan, size: 18),
+        const SizedBox(width: 4),
+        Text(
+          '${controller.comboTokens.value}',
+          style: const TextStyle(
+            color: NeonTheme.cyan,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const Spacer(),
+        FilledButton(
+          key: const Key('token_reroll_quests'),
+          onPressed: can ? controller.rerollDailyQuests : null,
+          child: Text(
+            'token_reroll_quest'.trParams({
+              'n': '${GameController.tokenCostRerollQuest}',
+            }),
+          ),
+        ),
+      ],
+    );
+  }
 }

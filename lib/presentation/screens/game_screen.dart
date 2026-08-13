@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../core/neon_theme.dart';
@@ -14,6 +15,7 @@ import '../../data/worlds.dart';
 import '../../game/pop_star_game.dart';
 import '../controllers/game_controller.dart';
 import '../../logic/ftue_tips.dart';
+import '../../logic/ghost_duel.dart';
 import '../../logic/second_chance.dart';
 import '../controllers/game_screen_controller.dart';
 import '../controllers/pass_and_play_controller.dart';
@@ -29,6 +31,7 @@ import '../widgets/pressable_scale.dart';
 import '../widgets/pulse_glow.dart';
 import '../widgets/star_mascot.dart';
 import '../widgets/stroke_text.dart';
+import '../widgets/token_chip.dart';
 import '../widgets/neon_dialog.dart';
 import '../widgets/neon_icon.dart';
 
@@ -165,6 +168,9 @@ class GameScreen extends StatelessWidget {
                   Positioned.fill(
                     child: _AchievementUnlockOverlay(gameCtrl: gameCtrl),
                   ),
+                  // F21: báo "nửa kia không có nhóm khớp" — không có tín hiệu
+                  // này thì đối xứng vỡ dần trông y hệt lỗi.
+                  Positioned.fill(child: _MirrorMissToast(gameCtrl: gameCtrl)),
                   _Overlay(gsc: gsc),
                   _BoosterTutorialOverlay(gsc: gsc),
                 ],
@@ -430,6 +436,48 @@ class _Hud extends StatelessWidget {
                   }),
                 ),
                 CoinChip(gameCtrl),
+                // F16: điểm ghost chạy theo SỐ NƯỚC ĐI của người chơi, không
+                // theo thời gian — người chơi chậm mà thấy ghost về đích từ lâu
+                // thì hết ý nghĩa đua.
+                if (gameCtrl.mode.value == GameMode.duel)
+                  Obx(
+                    () => GestureDetector(
+                      // F16: chạm để bật/tắt điểm ghost giữa ván. Tắt rồi vẫn
+                      // chừa chỗ bấm để bật lại — ẩn hẳn thì không có đường về.
+                      onTap: gameCtrl.toggleGhostScore,
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Row(
+                        key: const Key('ghost_score'),
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Chỉ icon + số: bản đầu dùng cả cụm "Bóng ma: 330"
+                          // và nó ăn hết bề ngang của thanh HUD, đẩy ĐIỂM SỐ
+                          // xuống 3 dòng ("2. / 85 / 0"). Thấy trên máy thật.
+                          const Icon(
+                            Icons.blur_on_rounded,
+                            color: NeonTheme.magenta,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            gameCtrl.showGhostScore.value
+                                ? '${gameCtrl.ghostScoreNow}'
+                                : '—',
+                            style: const TextStyle(
+                              color: NeonTheme.magenta,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      ),
+                    ),
+                  ),
+                // F17: bản gọn — thanh HUD lúc đang chơi đã chật.
+                TokenChip(gameCtrl, compact: true),
                 const SizedBox(width: NeonTheme.s8),
                 IgnorePointer(
                   child: Obx(
@@ -744,7 +792,11 @@ class _FtueOverlay extends StatelessWidget {
     return Obx(() {
       // I85: bong bóng dùng chung — hiện khi có gợi ý tap (X1) HOẶC mẩu
       // "nhóm lớn hơn". Người chơi cũ đã qua FTUE vẫn thấy riêng mẩu mới.
-      if (!gsc.showFtue.value && !gsc.showBigGroupTip.value) {
+      // F21: hướng dẫn Mirror Draft dùng CHUNG bong bóng này — không dựng
+      // overlay tip thứ ba cho một mode.
+      if (!gsc.showFtue.value &&
+          !gsc.showBigGroupTip.value &&
+          !gsc.showMirrorDraftTip.value) {
         return const SizedBox.shrink();
       }
       return IgnorePointer(
@@ -778,6 +830,23 @@ class _FtueOverlay extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                if (gsc.showMirrorDraftTip.value)
+                  Padding(
+                    padding: EdgeInsets.only(top: gsc.showFtue.value ? 4 : 0),
+                    child: SizedBox(
+                      width: 260,
+                      child: Text(
+                        'mirror_draft_tip'.tr,
+                        key: const Key('tip_mirror_draft'),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: NeonTheme.ink,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                   ),
                 if (gsc.showBigGroupTip.value)
                   Padding(
@@ -1172,7 +1241,11 @@ class _Overlay extends StatelessWidget {
             // I37 Async Challenge Code: hiện kết quả so điểm thách đấu dù
             // màn kết thúc thắng/thua bình thường — chỉ campaign mới có
             // activeChallenge (startChallenge luôn gọi startLevel).
-            content: gameCtrl.activeChallenge.value != null
+            // F16: kết quả duel đứng TRƯỚC mọi banner khác — nếu đang đấu
+            // ghost thì đó là thứ người chơi quan tâm nhất lúc này.
+            content: gameCtrl.activeDuel != null
+                ? _duelResultBanner(gameCtrl)
+                : gameCtrl.activeChallenge.value != null
                 ? _challengeResultBanner(gameCtrl)
                 : gameCtrl.activeSeedChallenge.value != null
                 ? Column(
@@ -1190,6 +1263,23 @@ class _Overlay extends StatelessWidget {
                   )
                 : null,
             actions: [
+              // F16: mã trả đũa — cùng bàn, mang lượt chơi và điểm của người
+              // vừa chơi. Chỉ hiện khi thật sự dựng được mã.
+              if (gameCtrl.activeDuel != null &&
+                  gameCtrl.buildRematchCode() != null)
+                NeonDialogAction(
+                  label: 'ghost_duel_rematch'.tr,
+                  color: NeonTheme.magenta,
+                  onTap: () {
+                    final code = gameCtrl.buildRematchCode();
+                    if (code == null) return;
+                    Clipboard.setData(ClipboardData(text: code));
+                    Get.snackbar(
+                      'ghost_duel_title'.tr,
+                      'ghost_duel_copied'.tr,
+                    );
+                  },
+                ),
               // I88: chỉ chào khi thua sát nút (>=70% target) và còn đủ xu —
               // xem `logic/second_chance.dart`. Đứng đầu danh sách vì đó là
               // thứ người chơi muốn nhất lúc này.
@@ -1639,4 +1729,105 @@ String _loseMessageWithTip(GameScreenController gsc) {
     FtueLossAdvice.planAhead => 'tip_advice_plan_ahead',
   };
   return '$base\n\n${'tip_no_refill'.tr} ${adviceKey.tr}';
+}
+
+/// F16: băng kết quả trận đấu ghost — so với điểm THẬT của đối thủ.
+Widget _duelResultBanner(GameController gameCtrl) {
+  final duel = gameCtrl.activeDuel!;
+  final outcome = gameCtrl.duelOutcomeNow;
+  final color = switch (outcome) {
+    GhostDuelOutcome.win => NeonTheme.teal,
+    GhostDuelOutcome.lose => NeonTheme.red,
+    _ => NeonTheme.inkSoft,
+  };
+  return Container(
+    key: const Key('duel_result_banner'),
+    padding: const EdgeInsets.all(NeonTheme.s8),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: color),
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          switch (outcome) {
+            GhostDuelOutcome.win => 'ghost_duel_win'.tr,
+            GhostDuelOutcome.lose => 'ghost_duel_lose'.tr,
+            _ => 'ghost_duel_draw'.tr,
+          },
+          style: TextStyle(color: color, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${gameCtrl.score.value} - ${duel.score}',
+          style: TextStyle(color: NeonTheme.ink, fontWeight: FontWeight.w700),
+        ),
+      ],
+    ),
+  );
+}
+
+/// F21: nhãn thoáng qua khi nước đi chỉ nổ được một nửa.
+class _MirrorMissToast extends StatefulWidget {
+  const _MirrorMissToast({required this.gameCtrl});
+
+  final GameController gameCtrl;
+
+  @override
+  State<_MirrorMissToast> createState() => _MirrorMissToastState();
+}
+
+class _MirrorMissToastState extends State<_MirrorMissToast> {
+  Worker? _worker;
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _worker = ever(widget.gameCtrl.mirrorMissTick, (_) async {
+      if (!mounted) return;
+      setState(() => _visible = true);
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      if (mounted) setState(() => _visible = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _worker?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_visible) return const SizedBox.shrink();
+    return IgnorePointer(
+      child: Align(
+        alignment: const Alignment(0, 0.72),
+        child: Container(
+          key: const Key('mirror_miss_toast'),
+          padding: const EdgeInsets.symmetric(
+            horizontal: NeonTheme.s16,
+            vertical: NeonTheme.s8,
+          ),
+          decoration: BoxDecoration(
+            color: NeonTheme.card,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: NeonTheme.magenta),
+            boxShadow: NeonTheme.drop(y: 3, blur: 8),
+          ),
+          child: Text(
+            'mirror_draft_no_mirror'.tr,
+            style: const TextStyle(
+              color: NeonTheme.magenta,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

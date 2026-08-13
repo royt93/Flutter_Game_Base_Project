@@ -2,7 +2,7 @@
 
 **Epic:** E9 Tính năng mới · **SP:** 5 · **Pri:** Could
 **Deps:** — · **Mở rộng:** [[I62]] · **Tái dùng:** [[I32]] craft points
-**Trạng thái:** 📋 To Do
+**Trạng thái:** ✅ Done (2026-08-13)
 
 ## Hiện trạng
 Color Alchemy (I62): `pigments.dart` là bảng màu, mỗi pigment **hoặc** miễn
@@ -67,3 +67,68 @@ cảm giác khám phá. Ít công thức được chọn tay, mỗi cái cho ra 
 khác biệt, tốt hơn nhiều.
 
 DoD chung: `../README.md`.
+
+---
+
+## Tiền đề của AC sai: craft point KHÔNG phải tiền tệ
+
+AC viết "Fusion tiêu craft point (tái dùng `craft_points.dart` — đã có)". Đọc
+file thì `craft_points.dart` chỉ là **hàm thuần đo số cell còn sót**: đo xong,
+đủ ngưỡng thì đổi ngay thành 1 booster, **dưới ngưỡng thì mất trắng**. Không hề
+có số dư nào để tiêu.
+
+Nên F19 phải dựng số dư đó. Cách làm giữ đúng tinh thần "không thêm tiền tệ thứ
+tư": mỗi ván thắng-không-full-clear cho **đúng một** phần thưởng — đủ ngưỡng thì
+booster (như cũ), dưới ngưỡng thì gom vào số dư thay vì mất trắng. Không trả hai
+lần cho cùng một phép đo, và phần trước đây vứt đi giờ có chỗ dùng.
+
+Quyết định đó nằm ở hàm thuần `craftOutcomeFor` chứ không phải `if/else` trong
+`checkEnd` — nhánh trong `checkEnd` cần `activeGame` thật nên chỉ test được bằng
+harness engine, mà quy tắc "một phần thưởng" thì đáng khoá bằng test rẻ.
+Mutation-check bắt đúng chỗ này: bản đầu để `if/else` inline và gỡ nhánh gom
+điểm **không** làm test nào đỏ.
+
+## Đã làm
+
+- `pigments.dart` — 6 pigment `fusionOnly`, `kPigmentRecipes` (6 công thức,
+  khoá chuẩn hoá `recipeKey` nên đổi chỗ nguyên liệu vẫn ra một), `assert` mới
+  cấm pigment fusion vừa mua được bằng xu.
+- `craft_points.dart` — `craftOutcomeFor` (thuần).
+- `game_controller.dart` — số dư `craftPoints`, `fusePigments`,
+  `discoveredRecipes` (re-validate theo bảng const khi nạp).
+- `color_alchemy_screen.dart` — bàn pha là mục **đầu tiên trong** `ListView`.
+
+## Hai lỗi tự gây ra rồi tự bắt
+
+1. **Bàn pha đặt ngoài `ListView` làm tràn màn hình** — 18 ca test cũ đỏ cùng
+   lúc. Đưa vào trong danh sách cuộn.
+2. **`_PigmentChip` ném `Bad state: No element`.** Nó giả định pigment còn khoá
+   **luôn** có coin hoặc achievement, rồi gọi `firstWhere` không `orElse`. Thêm
+   dạng mở khoá thứ tư là màn hình chết ngay khi dựng. Đây đúng là thứ AC cảnh
+   báo ("đừng để assert nói dối") — nhưng chỗ nói dối lại nằm ở UI, không phải
+   ở assert.
+
+Cùng lý do, `test/data/pigments_test.dart` khẳng định "đúng 1 trong **3** dạng"
+đã cập nhật thành 4 — sửa cho đúng sự thật thay vì nới lỏng điều kiện.
+
+## Kiểm chứng
+
+- `test/data/pigment_fusion_test.dart` — 25 ca: bảng dữ liệu (mọi công thức trỏ
+  pigment có thật, mọi pigment fusion đều pha ra được, không công thức nào ra
+  pigment mua được), số dư craft point, pha (nguyên liệu **không** mất, thiếu
+  điểm/chưa sở hữu/không công thức đều **không** trừ điểm, không pha lại được),
+  sổ công thức, và nhóm "mỗi ván đúng MỘT phần thưởng".
+- `test/widget/color_alchemy_screen_test.dart` — +5 ca cho bàn pha.
+- **Mutation-check 4/4 bị bắt** (sau khi tách hàm thuần).
+- Verify trên Pixel 7 Pro: 40 → 32 CP, báo "Khám phá ra Bọt Biển!", màu mới
+  dùng được ngay, hai nguyên liệu vẫn còn, 6 pigment fusion hiện nhãn
+  "Chỉ pha ra".
+- Toàn bộ suite: **1437 xanh**.
+
+## Nợ đã ghi
+
+1. Công thức chưa khám phá **không** hiện gợi ý mờ như AC yêu cầu — hiện chỉ có
+   bộ đếm `0/6`. Người chơi phải tự thử.
+2. Chưa rà `mystery_crate.dart` và `totalCosmeticsOwned` xem pigment fusion có
+   nên tính vào không — AC có yêu cầu, chưa làm.
+3. i18n mới en + vi.

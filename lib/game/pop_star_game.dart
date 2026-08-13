@@ -25,6 +25,7 @@ import '../logic/ice_tile.dart';
 import '../logic/magnet_tile.dart';
 import '../logic/obstacle.dart';
 import '../logic/pop_collapse.dart';
+import '../logic/mirror_draft.dart';
 import '../logic/pop_detector.dart';
 import '../logic/power_tile.dart';
 import '../logic/time_freeze_tile.dart';
@@ -423,6 +424,15 @@ class PopStarGame extends FlameGame {
   /// giống cách [_placeObstaclesIfNeeded] đã làm. Chỉ chọn trong ô màu thật
   /// nên tự bỏ qua ô đã là obstacle nếu 2 điều kiện trùng level.
   void _placeChainLocksIfNeeded(PopLevel level) {
+    // X32: chốt side-mode phải đứng TRƯỚC phép chia lấy dư. `id % 6 == 0` đúng
+    // với cả số âm trong Dart, nên mọi side mode có id chia hết cho 6 vô tình
+    // bị chèn chain lock: `mirrorMode` (-6) — phá đúng tính đối xứng vốn là
+    // toàn bộ ý nghĩa của mode — và `puzzleDaily` (-18) — sửa bàn người chơi
+    // tự vẽ.
+    //
+    // Cùng khuôn `id <= 0` mà `_placeWildcardTileIfNeeded` đã dùng; các placer
+    // khác chốt bằng `id <= 60` nên tự loại số âm.
+    if (level.id <= 0) return;
     if (level.id % 6 != 0) return;
     final world = (level.id - 1) ~/ 20;
     final count = (2 + world ~/ 3).clamp(2, 6);
@@ -799,7 +809,22 @@ class PopStarGame extends FlameGame {
   bool get _reduceMotion => StorageService.to.getBool(StorageKeys.reduceMotion);
 
   void _tryPop(int row, int col) {
-    final group = findConnectedGroup(colorGrid, row, col, lockGrid: lockGrid);
+    var group = findConnectedGroup(colorGrid, row, col, lockGrid: lockGrid);
+    // F21 Mirror Draft: MỞ RỘNG nhóm bằng nhóm ở vị trí gương (nếu nhóm đó
+    // cũng hợp lệ), rồi để nguyên đường điểm/combo/power-tile bên dưới chạy
+    // tiếp. Cố ý không tách nhánh riêng: `_tryPop` là đường hot dùng chung cho
+    // mọi mode, thêm một lối đi song song là thêm một chỗ để lệch.
+    if (controller.mode.value == GameMode.mirrorDraft && group.length >= 2) {
+      final draft = mirrorDraftCells(colorGrid, row, col);
+      controller.lastMirrorMirrored = draft.mirroredToo;
+      if (draft.mirroredToo) {
+        group = draft.allCells;
+      } else if (draft.isValid) {
+        // Báo cho UI: nước này chỉ nổ một bên. Không báo thì người chơi thấy
+        // đối xứng vỡ dần và tưởng game lỗi.
+        controller.mirrorMissTick.value++;
+      }
+    }
     if (group.length < 2) {
       // I44: ô Time Freeze tap lẻ loi (không cần gộp nhóm ≥2) vẫn kích hoạt
       // +10s rồi biến mất, tái dùng nguyên hiệu ứng nổ/rơi của 1 ô thường.

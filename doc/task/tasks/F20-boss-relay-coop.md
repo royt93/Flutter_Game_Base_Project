@@ -3,7 +3,7 @@
 **Epic:** E9 Tính năng mới · **SP:** 13 · **Pri:** Could
 **Deps:** [[T2]] bắt buộc trước (cả 2 controller liên quan đều chưa có test)
 **Ghép:** [[I59]] pass & play · [[I61]] raid boss · [[I43]] boss rush
-**Trạng thái:** 📋 To Do — **cần chẻ nhỏ trước khi kéo vào sprint (SP 13)**
+**Trạng thái:** ❌ Skipped (2026-08-13) — **đã làm [[F21]] thay thế**
 
 ## Pitch
 Hai người trên cùng một máy thay phiên nhau đánh **chung một boss**, chia sẻ
@@ -66,3 +66,17 @@ Không kéo F20b vào sprint trước khi F20a xong.
   tính năng Could.
 
 DoD chung: `../README.md`.
+
+---
+
+## Vì sao bỏ
+
+Chính [[F21]] ghi: *"Trùng lặp với F20: cả hai là co-op 2 người trên một máy.
+**Chỉ làm một trong hai.** F21 rẻ hơn và độc đáo hơn; F20 dễ hiểu hơn."*
+
+F21 đã làm xong (2026-08-13). Làm tiếp F20 là thêm mode thứ hai nói cùng một
+điều — đúng thứ [[I83]] đã từ chối vì lý do tương tự.
+
+Giữ file làm hồ sơ. Nếu sau này đo được người chơi thấy luật gương của F21 khó
+hiểu (rủi ro số 1 của nó) thì F20 là phương án thay thế dễ hiểu hơn — lúc đó
+mới chẻ nhỏ SP 13 như ghi chú gốc.

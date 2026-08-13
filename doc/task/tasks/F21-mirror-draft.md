@@ -3,7 +3,7 @@
 **Epic:** E9 Tính năng mới · **SP:** 8 · **Pri:** Could
 **Deps:** [[T2]] (`pass_and_play_controller` chưa có test)
 **Tái dùng:** [[I47]] mirror board · [[I59]] pass & play
-**Trạng thái:** 📋 To Do
+**Trạng thái:** ✅ Done (2026-08-13)
 
 ## Pitch
 Hai người chơi trên một bàn đối xứng gương. Mỗi người chỉ điều khiển nửa của
@@ -61,3 +61,91 @@ cần onboarding riêng cho một mode Could.
   trong hai.** F21 rẻ hơn và độc đáo hơn; F20 dễ hiểu hơn.
 
 DoD chung: `../README.md`.
+
+---
+
+## Subtask 1: prototype luật trước, kết quả
+
+Chơi thử 6 nước bằng test thuần trên bàn gương 6×6 trước khi đụng UI. Đọc được:
+có nước nổ cả hai nửa, có nước chỉ nổ một bên, bàn phân kỳ dần. Luật đứng
+vững nên làm tiếp — nếu khó hiểu thì đã đóng task ở đây như subtask 1 yêu cầu.
+
+## Luật đã chốt
+
+Nhóm gương **chỉ** nổ khi nó cũng hợp lệ ở nửa bên kia. Ba ca ngoại lệ, đều có
+test:
+
+| Ca | Xử lý | Vì sao |
+|---|---|---|
+| Nửa kia đã phân kỳ, không còn nhóm | chỉ nổ bên tap | ép nổ = xoá ô không cùng màu, vô lý |
+| Tap cột giữa (bàn lẻ) | chỉ nổ một lần | cột giữa tự soi vào chính nó |
+| Nhóm chạy **ngang** qua trục | chỉ nổ một lần | hai bên là MỘT nhóm, nhân đôi là cộng điểm khống |
+
+`lastMirrorMirrored` cho UI biết nước vừa rồi có nổ được nửa kia không — thiếu
+tín hiệu này thì "đối xứng vỡ" trông như bug, đúng rủi ro task ghi.
+
+## Nối vào engine: MỞ RỘNG nhóm, không rẽ nhánh
+
+`_tryPop` là đường hot dùng chung cho mọi mode. Thay vì thêm một lối đi song
+song (thêm một chỗ để lệch), luật gương chỉ **mở rộng tập ô** rồi để nguyên
+đường điểm/combo/power-tile chạy tiếp.
+
+## Bug nghiêm trọng tìm được — ảnh hưởng cả [[F16]]
+
+Test dựng engine thật cho thấy bàn Mirror Draft **không đối xứng**. Nguyên
+nhân: `presetGrid` chọn theo mode trong `GameScreenController`, và mode mới
+không có trong danh sách → rơi vào `_ => null` → engine **tự sinh bàn ngẫu
+nhiên**.
+
+Nghĩa là **F16 Ghost Duel cũng hỏng**: hai người chơi hai bàn khác nhau — phá
+đúng tiền đề của tính năng. Test controller của F16 không bắt được vì nó chỉ
+kiểm `puzzleLabGrid`; chỉ test dựng engine mới thấy.
+
+Đã tách phép chọn thành hàm thuần `presetGridForMode(gameCtrl)` và test trực
+tiếp, để mode thêm sau này quên đăng ký thì đỏ ngay thay vì im lặng.
+
+## Kiểm chứng
+
+- `test/logic/mirror_draft_test.dart` — 13 ca (cả 3 ngoại lệ, toạ độ ngoài
+  bàn, không sửa bàn gốc, nối với `generateMirrorBoard` thật).
+- `test/presentation/mirror_draft_wiring_test.dart` — 8 ca, gồm ca chốt
+  **không đè best của Mirror Mode (I47)** — hai mode tên gần giống nhau.
+- `test/game/mirror_draft_engine_test.dart` — 6 ca dựng engine thật + 3 ca cho
+  `presetGridForMode`.
+- **Mutation-check 5/5 bị bắt** sau khi bổ sung test engine (ban đầu 3/5).
+- Verify Pixel 7 Pro: "Gương Đôi" trong nhóm Xã hội → bàn đối xứng → tap nhóm
+  2 ô nửa trái làm **4 ô** biến mất, điểm 60 = `scoreForGroup(4)`.
+- `RELEASE_CHECKLIST.md`: 15 → 16 side mode.
+- Toàn bộ suite: **1513 xanh**.
+
+## Hai ca test tự sửa vì assertion sai, không phải sản phẩm sai
+
+1. "mode khác không bị áp luật gương" đỏ với 7/8 ô — vì campaign **giữ lại 1 ô
+   làm power tile** khi nhóm ≥5. Đổi sang chỉ chọn nhóm 2..4.
+2. "nổ gấp đôi" đỏ 2/3 lần vì cùng lý do. Đổi assertion sang "nổ nhiều hơn
+   nhóm vừa tap" + biên `total-1..total`.
+
+## Trả nợ UI (cùng ngày)
+
+Hai khoản nợ lớn nhất đã trả:
+
+1. **Hướng dẫn 2 câu lần đầu** — dùng CHUNG bong bóng FTUE của I85, không dựng
+   overlay tip thứ ba. Tôn trọng cả `hasSeenMirrorDraftTip` lẫn công tắc "bỏ
+   qua hướng dẫn" (`skipTips`), và tắt ngay ở tap đầu tiên.
+2. **Tín hiệu khi nửa kia KHÔNG nổ** — `mirrorMissTick` tăng mỗi nước chỉ nổ
+   một bên; UI hiện nhãn thoáng qua 900ms. Đây là rủi ro số 2 của task
+   ("đối xứng vỡ trông như bug"), giờ có lời giải thích tại chỗ.
+
+Kiểm chứng: `test/widget/mirror_draft_ui_test.dart` — 8 ca (hiện/không hiện
+theo `hasSeen*` và `skipTips`, tắt là nhớ vĩnh viễn, mode khác không hiện,
+độ dài hướng dẫn < 160 ký tự, tick tăng đúng khi nổ một bên).
+**Mutation-check 3/3 bị bắt.**
+
+Verify Pixel 7 Pro: hướng dẫn hiện đúng 2 câu tiếng Việt giữa bàn. **Nhãn
+"nửa bên kia không có nhóm khớp" KHÔNG bắt được bằng ảnh chụp** — nó chỉ sống
+900ms, ngắn hơn thời gian `screencap` + `uiautomator dump`. Phần này mới chỉ
+có test chứng minh, chưa nhìn tận mắt.
+
+## Nợ còn lại
+1. Mode dùng chung điểm/lượt, chưa phân định "nửa nào của ai" trên UI.
+2. i18n mới en + vi.

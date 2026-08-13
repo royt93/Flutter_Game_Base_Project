@@ -20,19 +20,23 @@ void main() {
       expect(kPigments.first.isFree, isTrue);
     });
 
-    test('mỗi pigment thuộc ĐÚNG 1 trong 3 dạng mở khoá', () {
+    test('mỗi pigment thuộc ĐÚNG 1 trong 4 dạng mở khoá', () {
+      // [[F19]] thêm dạng thứ tư: `fusionOnly` (chỉ pha ra được). Bản cũ liệt
+      // kê 3 dạng và sẽ đỏ ngay khi có pigment fusion — đúng như AC yêu cầu
+      // ("đừng để assert nói dối"), nên cập nhật ở đây thay vì nới lỏng.
       for (final p in kPigments) {
         final forms = [
           p.isFree,
           p.coinPrice != null,
           p.unlockAchievementId != null,
+          p.fusionOnly,
         ].where((v) => v).length;
         expect(
           forms,
           1,
           reason:
               'pigment "${p.id}" thoả $forms dạng mở khoá — phải đúng 1 '
-              '(free / coinPrice / unlockAchievementId)',
+              '(free / coinPrice / unlockAchievementId / fusionOnly)',
         );
       }
     });

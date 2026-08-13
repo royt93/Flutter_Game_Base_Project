@@ -59,6 +59,10 @@ class GameScreenController extends GetxController {
   /// nhau còn tệ hơn không có popup nào.
   final RxBool showBigGroupTip = false.obs;
 
+  /// F21: hướng dẫn 2 câu lần đầu vào Mirror Draft. Dùng CHUNG bong bóng FTUE
+  /// và cùng nếp `hasSeen*` của I85 — không dựng cơ chế tip thứ hai.
+  final RxBool showMirrorDraftTip = false.obs;
+
   /// F8 Time-attack: đếm ngược 60s, hết giờ → kết thúc ván.
   static const int timeAttackSeconds = 60;
   final RxInt remainingSeconds = timeAttackSeconds.obs;
@@ -314,22 +318,7 @@ class GameScreenController extends GetxController {
       gameCtrl,
       refillEnabled: gameCtrl.mode.value == GameMode.zen,
       startWithFtueHint: ftue,
-      presetGrid: switch (gameCtrl.mode.value) {
-        GameMode.dailyChallenge => gameCtrl.dailyChallengeGrid,
-        GameMode.gauntlet => gameCtrl.gauntletGrid,
-        GameMode.puzzleLab => gameCtrl.puzzleLabGrid,
-        GameMode.passAndPlay => gameCtrl.passAndPlayGrid,
-        GameMode.treasureMap => gameCtrl.puzzleLabGrid,
-        // I47 Mirror Mode: bàn đầu đối xứng gương, seed ngẫu nhiên (khác
-        // dailyChallenge — không cần seed cố định cho mode này).
-        GameMode.mirrorMode => generateMirrorBoard(
-          gameCtrl.currentLevel.rows,
-          gameCtrl.currentLevel.cols,
-          gameCtrl.currentLevel.colorCount,
-          Random(),
-        ),
-        _ => null,
-      },
+      presetGrid: presetGridForMode(gameCtrl),
       // I28: chỉ ghi replay ở campaign — zen/endless không có bàn cố định,
       // dailyChallenge dùng presetGrid riêng mà replay (chỉ seed+levelId)
       // không tái tạo được.
@@ -345,6 +334,12 @@ class GameScreenController extends GetxController {
       alreadySeen: StorageService.to.getBool(StorageKeys.hasSeenBigGroupTip),
       skipAllTips: StorageService.to.getBool(StorageKeys.skipTips),
     );
+    // F21: hướng dẫn lần đầu vào Mirror Draft — luật "tap nổ cả nửa gương"
+    // không đoán ra được nếu không nói.
+    showMirrorDraftTip.value =
+        gameCtrl.mode.value == GameMode.mirrorDraft &&
+        !StorageService.to.getBool(StorageKeys.hasSeenMirrorDraftTip) &&
+        !StorageService.to.getBool(StorageKeys.skipTips);
     // Round-7 Tutorial: không chồng lên FTUE gốc — chỉ hiện khi FTUE đã qua
     // (hoặc không áp dụng) và người chơi thực sự có booster để dùng.
     showBoosterTutorial.value =
@@ -356,6 +351,12 @@ class GameScreenController extends GetxController {
 
   /// Round-7 Tutorial: bất kỳ thao tác booster nào (arm hay dùng ngay) đều
   /// tắt coach-mark vĩnh viễn — người chơi đã tự tìm ra thanh booster.
+  void dismissMirrorDraftTip() {
+    if (!showMirrorDraftTip.value) return;
+    showMirrorDraftTip.value = false;
+    StorageService.to.setBool(StorageKeys.hasSeenMirrorDraftTip, true);
+  }
+
   void _dismissBoosterTutorialIfNeeded() {
     if (!showBoosterTutorial.value) return;
     showBoosterTutorial.value = false;
@@ -371,6 +372,7 @@ class GameScreenController extends GetxController {
       showBigGroupTip.value = false;
       StorageService.to.setBool(StorageKeys.hasSeenBigGroupTip, true);
     }
+    dismissMirrorDraftTip(); // F21: tap đầu tiên là đã hiểu, tắt luôn
     if (!showFtue.value) return;
     showFtue.value = false;
     StorageService.to.setBool(StorageKeys.hasSeenFtue, true);
@@ -578,4 +580,40 @@ class GameScreenController extends GetxController {
     ui.value = GameUi.playing;
     _newGame();
   }
+}
+
+/// F16/F21: bàn dựng sẵn cho từng mode.
+///
+/// Tách khỏi `_newGame` để **test được**: thiếu một mode ở đây thì engine tự
+/// sinh bàn ngẫu nhiên, và triệu chứng chỉ lộ ra khi chạy thật. Đúng lỗi đã
+/// xảy ra với `GameMode.duel` — hai người chơi hai bàn khác nhau.
+List<List<int>>? presetGridForMode(GameController gameCtrl) {
+  return switch (gameCtrl.mode.value) {
+    GameMode.dailyChallenge => gameCtrl.dailyChallengeGrid,
+    GameMode.gauntlet => gameCtrl.gauntletGrid,
+    GameMode.puzzleLab => gameCtrl.puzzleLabGrid,
+    GameMode.passAndPlay => gameCtrl.passAndPlayGrid,
+    GameMode.treasureMap => gameCtrl.puzzleLabGrid,
+    // I47 Mirror Mode: bàn đầu đối xứng gương, seed ngẫu nhiên (khác
+    // dailyChallenge — không cần seed cố định cho mode này).
+    GameMode.mirrorMode => generateMirrorBoard(
+      gameCtrl.currentLevel.rows,
+      gameCtrl.currentLevel.cols,
+      gameCtrl.currentLevel.colorCount,
+      Random(),
+    ),
+    // F16/F21: bàn đã dựng sẵn trong controller (duel từ seed, mirror
+    // draft từ `generateMirrorBoard`) và để ở `puzzleLabGrid`.
+    //
+    // Thiếu hai dòng này thì engine rơi vào `_ => null` và tự sinh bàn
+    // NGẪU NHIÊN — với duel nghĩa là hai người chơi hai bàn khác nhau,
+    // phá đúng tiền đề của tính năng; với mirror draft nghĩa là bàn không
+    // đối xứng nên luật gương gần như không bao giờ kích hoạt.
+    //
+    // Test controller không bắt được vì nó chỉ kiểm `puzzleLabGrid`; chỉ
+    // test dựng engine thật mới thấy.
+    GameMode.duel => gameCtrl.puzzleLabGrid,
+    GameMode.mirrorDraft => gameCtrl.puzzleLabGrid,
+    _ => null,
+  };
 }

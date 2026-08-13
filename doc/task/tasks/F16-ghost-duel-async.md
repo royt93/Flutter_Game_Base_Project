@@ -3,7 +3,7 @@
 **Epic:** E9 Tính năng mới · **SP:** 8 · **Pri:** Should
 **Deps:** [[X25]] (giới hạn payload) bắt buộc trước
 **Tái dùng:** [[I28]] replay · [[I37]] challenge code · [[I58]] seed challenge
-**Trạng thái:** 📋 To Do
+**Trạng thái:** ✅ Done (2026-08-13) — **bản rút gọn có chủ ý, xem dưới**
 
 ## Pitch
 Thách bạn bằng một mã; đối thủ chơi **cùng bàn** với bạn và thấy "ghost"
@@ -72,3 +72,94 @@ người khác thì tính năng mới hoạt động.
   1/3 công sức.
 
 DoD chung: `../README.md`.
+
+---
+
+## Subtask 1: chọn mở rộng `replay.dart`
+
+Duel cần **danh sách tap** — chỉ `replay.dart` có. `challenge_code.dart` chỉ
+mang điểm số; thêm taps vào đó là dựng lại replay lần thứ hai. AC cấm codec thứ
+ba nên dùng đúng nhà của taps.
+
+Khác `ReplayData` ở một điểm quan trọng: `DuelData` mang **seed**, không mang
+`levelId`. Replay tất định chỉ đúng ở campaign (bàn campaign sinh ngẫu nhiên
+mỗi lần chơi) — đúng rủi ro task đã ghi. Duel dựng bàn từ seed như Daily
+Challenge, nếu không hai người chơi hai bàn khác nhau và so điểm là vô nghĩa.
+
+## Rút gọn có chủ ý: ghost trên HUD, KHÔNG render lớp ghost trên bàn
+
+Task cho sẵn đường lùi: *"Nếu prototype ghost không đọc được: hạ xuống chỉ hiện
+điểm ghost chạy trên HUD. Vẫn giữ được phần lớn cảm giác đối đầu với 1/3 công
+sức."* Đã chọn đường đó ngay từ đầu, vì hai bàn phân kỳ ngay sau nước đi đầu
+tiên nên "nhóm ghost vừa nổ" nhấp nháy trên bàn **của người chơi** trỏ vào ô đã
+không còn tồn tại — rối mắt và sai.
+
+Điểm ghost chạy theo **số nước đi** (không theo thời gian): người chơi chậm mà
+thấy ghost về đích từ lâu thì hết ý nghĩa đua.
+
+## Điểm ghost lấy ở đâu
+
+Mã duel chỉ mang điểm CUỐI. Muốn HUD hiện điểm ghost tại nước thứ N thì phải
+biết đường đi của nó — nội suy tuyến tính từ điểm cuối là nói dối. Nên
+`ghost_duel.dart` **mô phỏng lại** lượt chơi bằng chính máy logic thuần đã có
+(`findConnectedGroup` + `applyGravityAndCollapse` + `scoreForGroup`).
+
+**Giới hạn có chủ ý:** mô phỏng bỏ qua power tile, booster, combo multiplier.
+Điểm mô phỏng là **cận dưới**. Vì vậy phần so thắng-thua luôn dùng
+`DuelData.score` (con số thật), còn đường điểm theo nước chỉ để tạo cảm giác
+đua. Có test riêng chốt điều này, và mutation "so bằng điểm mô phỏng" bị bắt.
+
+## Kiểm chứng
+
+- `test/logic/ghost_duel_test.dart` — 30 ca: codec round-trip, tên chứa `|`,
+  mã hỏng/quá dài/quá nhiều tap ([[X25]]), bàn tất định từ seed, mô phỏng
+  (điểm không giảm, tap ngoài bàn không ném, **không sửa bàn gốc**, tất định).
+- `test/presentation/duel_wiring_test.dart` — 15 ca: bàn từ seed, điểm ghost
+  theo số nước, giữ điểm cuối khi người chơi đi dài hơn, **không** đụng
+  star/highScore/unlock, best score key riêng chỉ tăng.
+- **Mutation-check 4/4 bị bắt.**
+- `RELEASE_CHECKLIST.md` cập nhật 14 → 15 side mode (sweep test bắt đúng lúc).
+- Verify trên Pixel 7 Pro: dán mã → "đấu với Roy1 / Điểm cần vượt: 640" →
+  vào ván, bàn 9×8 từ seed, HUD hiện "Bóng ma: 0".
+- Toàn bộ suite: **1482 xanh**.
+
+## Ghi chú khi verify: `adb input text` làm hỏng mã
+
+Mã bị từ chối hai lần trên máy. Đọc lại ô nhập bằng `uiautomator dump` thì thấy
+`OCww` thành `OCw` — **bàn phím Telex tiếng Việt** nuốt `ww` thành `ư`. Tắt IME
+thì mã khớp và chạy đúng. Lỗi công cụ test, không phải sản phẩm — nhưng đáng
+ghi lại vì mọi lần verify mã dán sau này đều sẽ vấp.
+
+## Trả nợ UI (cùng ngày)
+
+- **Băng kết quả** trong dialog kết thúc: thắng/thua/hoà + tỉ số
+  `điểm bạn - điểm ghost`. Đặt **trước** banner challenge/seed-challenge vì khi
+  đang đấu ghost thì đó là thứ người chơi quan tâm nhất.
+- **Nút "Chép mã trả đũa"** — cùng seed, mang lượt chơi và điểm của người vừa
+  chơi. Chỉ hiện khi `buildRematchCode()` thật sự dựng được mã.
+
+### Lỗi bố cục do chính lần này gây ra
+
+Bản đầu để nguyên cụm chữ `Bóng ma: 330` trên thanh HUD. Trên Pixel 7 Pro nó
+ăn hết bề ngang và đẩy **điểm số xuống 3 dòng** (`2.` / `85` / `0`). Thu gọn
+còn icon + số. Đây là loại lỗi chỉ nhìn trên máy mới thấy — test widget dựng ở
+kích thước rộng hơn nên không bao giờ đỏ.
+
+### Va chạm tên với Pass-and-Play (I59) — hai lần
+
+`I59` đã chiếm cả `duel_*` (i18n) lẫn `DuelOutcome` (enum). Lần đầu làm map
+const không dựng được, lần hai làm `game_screen.dart` không import nổi cả hai.
+Đã đổi thành tiền tố `ghost_duel_` và `GhostDuelOutcome`. Ai thêm thứ gì tên
+"duel" nữa nên kiểm trước.
+
+## Nợ đã ghi
+
+1. **Không có lớp ghost trên bàn** — đã giải thích ở trên, đây là đường lùi
+   task cho phép chứ không phải thiếu sót âm thầm.
+2. Nút bật/tắt ghost giữa ván và mặc-định-tắt theo `reduceMotion`: **chưa làm**
+   (không có gì để tắt khi ghost chỉ là một dòng chữ trên HUD).
+3. ~~Màn kết thúc chưa hiện thắng/thua/hoà và nút tạo mã trả đũa.~~ Đã nối
+   (xem "Trả nợ UI"). Băng kết quả và nút trả đũa **chưa verify tận mắt** trên
+   máy — chơi hết ván bằng tap mù không tin cậy được, phần này mới chỉ có test.
+4. i18n mới en + vi. Tiền tố `ghost_duel_` vì `duel_*` đã thuộc Pass-and-Play
+   (I59) — trùng key làm cả map const không dựng được.

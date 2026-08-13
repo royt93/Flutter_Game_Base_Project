@@ -45,9 +45,14 @@ class ColorAlchemyScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                       horizontal: NeonTheme.s16,
                     ),
-                    itemCount: NeonTheme.gemColors.length,
-                    itemBuilder: (_, slot) =>
-                        _SlotRow(slot: slot, controller: controller),
+                    // F19: bàn pha là mục ĐẦU TIÊN **trong** danh sách cuộn,
+                    // không phải widget cố định phía trên. Đặt ngoài `ListView`
+                    // thì màn hình tràn ngay trên máy nhỏ — 18 ca test cũ đỏ
+                    // cùng lúc vì đúng chuyện đó.
+                    itemCount: NeonTheme.gemColors.length + 1,
+                    itemBuilder: (_, i) => i == 0
+                        ? _FusionBench(controller: controller)
+                        : _SlotRow(slot: i - 1, controller: controller),
                   );
                 }),
               ),
@@ -158,14 +163,11 @@ class _PigmentChip extends StatelessWidget {
             if (!unlocked) ...[
               const SizedBox(width: 4),
               Text(
-                pigment.coinPrice != null
-                    ? fmtNum(pigment.coinPrice!)
-                    : kAchievements
-                          .firstWhere(
-                            (a) => a.id == pigment.unlockAchievementId,
-                          )
-                          .titleKey
-                          .tr,
+                // F19: dạng mở khoá thứ tư (fusion) không có coin lẫn
+                // achievement. Bản cũ giả định luôn có một trong hai và gọi
+                // `firstWhere` không `orElse` — thêm pigment fusion là màn hình
+                // ném `Bad state: No element` ngay khi dựng.
+                _lockLabel(pigment),
                 style: const TextStyle(fontSize: 10),
               ),
             ],
@@ -174,4 +176,189 @@ class _PigmentChip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// F19: bàn pha chế — chọn 2 pigment đã sở hữu, tiêu craft point, ra pigment
+/// hiếm.
+class _FusionBench extends StatefulWidget {
+  const _FusionBench({required this.controller});
+
+  final GameController controller;
+
+  @override
+  State<_FusionBench> createState() => _FusionBenchState();
+}
+
+class _FusionBenchState extends State<_FusionBench> {
+  String? _a;
+  String? _b;
+  String? _message;
+
+  void _pick(String id) {
+    setState(() {
+      _message = null;
+      if (_a == id) {
+        _a = null;
+      } else if (_b == id) {
+        _b = null;
+      } else if (_a == null) {
+        _a = id;
+      } else if (_b == null) {
+        _b = id;
+      } else {
+        _a = _b;
+        _b = id;
+      }
+    });
+  }
+
+  void _fuse() {
+    final a = _a, b = _b;
+    if (a == null || b == null) {
+      setState(() => _message = 'fusion_pick'.tr);
+      return;
+    }
+    final result = widget.controller.fusePigments(a, b);
+    setState(() {
+      if (result != null) {
+        _message = 'fusion_done'.trParams({
+          'name': kPigments.firstWhere((p) => p.id == result).nameKey.tr,
+        });
+        _a = null;
+        _b = null;
+        return;
+      }
+      // Phân biệt hai lý do thất bại: không có công thức vs thiếu điểm. Gộp
+      // thành một câu chung thì người chơi không biết nên đổi màu hay đi kiếm
+      // thêm điểm.
+      _message = fusionResultFor(a, b) == null
+          ? 'fusion_no_recipe'.tr
+          : 'fusion_need_cp'.tr;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final owned = kPigments
+          .where(widget.controller.isPigmentUnlocked)
+          .toList();
+      return Container(
+        key: const Key('fusion_bench'),
+        margin: const EdgeInsets.only(bottom: NeonTheme.s8),
+        padding: const EdgeInsets.all(NeonTheme.s8),
+        decoration: BoxDecoration(
+          color: NeonTheme.cardAlt,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'fusion_title'.tr,
+                    style: TextStyle(
+                      color: NeonTheme.ink,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Text(
+                  'fusion_cp'.trParams({
+                    'n': '${widget.controller.craftPoints.value}',
+                  }),
+                  style: TextStyle(color: NeonTheme.inkSoft, fontSize: 12),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'fusion_hint'.tr,
+              style: TextStyle(color: NeonTheme.inkSoft, fontSize: 11),
+            ),
+            const SizedBox(height: NeonTheme.s8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final p in owned)
+                  PressableScale(
+                    key: Key('fusion_pick_${p.id}'),
+                    onTap: () => _pick(p.id),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: p.color.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: (p.id == _a || p.id == _b)
+                              ? p.color
+                              : Colors.transparent,
+                          width: 2.5,
+                        ),
+                      ),
+                      child: Text(p.nameKey.tr, style: const TextStyle(fontSize: 11)),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: NeonTheme.s8),
+            Row(
+              children: [
+                PressableScale(
+                  key: const Key('fusion_fuse'),
+                  onTap: _fuse,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: NeonTheme.s16,
+                      vertical: NeonTheme.s8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: NeonTheme.purple,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'fusion_cost'.trParams({'n': '$kFusionCraftCost'}),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: NeonTheme.s8),
+                Expanded(
+                  child: Text(
+                    _message ??
+                        'fusion_book'.trParams({
+                          'n': '${widget.controller.discoveredRecipes.length}',
+                          'total': '${kPigmentRecipes.length}',
+                        }),
+                    style: TextStyle(color: NeonTheme.inkSoft, fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+/// Nhãn giải thích vì sao pigment còn khoá.
+String _lockLabel(Pigment pigment) {
+  if (pigment.fusionOnly) return 'pigment_fusion_only'.tr;
+  final price = pigment.coinPrice;
+  if (price != null) return fmtNum(price);
+  final match = kAchievements.where(
+    (a) => a.id == pigment.unlockAchievementId,
+  );
+  return match.isEmpty ? '' : match.first.titleKey.tr;
 }

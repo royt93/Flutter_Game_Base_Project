@@ -102,6 +102,25 @@ class ModeSelectScreen extends StatelessWidget {
                     _modeGroup(
                       label: 'modes_group_challenge'.tr,
                       tiles: [
+                        // F18: "Bàn hôm nay" — bàn tự vẽ của chính người chơi
+                        // (hoặc preset) thành thử thách có thưởng.
+                        _modeTile(
+                          key: const Key('mode_puzzle_daily'),
+                          icon: Icons.today_rounded,
+                          color: NeonTheme.purple,
+                          // F18: nhãn cho biết hôm nay đã chơi chưa — mode này
+                          // chỉ ghi điểm 1 lần/ngày nên người chơi cần biết
+                          // trước khi vào.
+                          label: gameCtrl.canRecordPuzzleDailyScore
+                              ? 'puzzle_daily_label'.tr
+                              : '${'puzzle_daily_label'.tr}\n'
+                                    '(${'puzzle_daily_done'.tr})',
+                          onTap: () {
+                            if (!gameCtrl.startPuzzleDaily()) return;
+                            Get.back();
+                            Get.to(() => const GameScreen());
+                          },
+                        ),
                         _modeTile(
                           icon: Icons.local_fire_department_rounded,
                           color: NeonTheme.red,
@@ -128,12 +147,25 @@ class ModeSelectScreen extends StatelessWidget {
                           label: 'treasure_map_title'.tr,
                           onTap: () {
                             if (gameCtrl.treasureMapCount.value <= 0) {
+                              // F17: hết bản đồ là ĐÚNG chỗ để chào bán bằng
+                              // Combo Token — người chơi đang muốn chơi ngay.
+                              // Nút chỉ hiện khi thật sự mua được, để dialog
+                              // không quảng cáo thứ bấm vào không ăn.
                               NeonDialog.show(
                                 context: context,
                                 title: 'treasure_map_title'.tr,
                                 color: NeonTheme.teal,
                                 message: 'treasure_no_maps'.tr,
                                 actions: [
+                                  if (gameCtrl.canBuyTreasureMap)
+                                    NeonDialogAction(
+                                      label: 'token_buy_map'.trParams({
+                                        'n':
+                                            '${GameController.tokenCostTreasureMap}',
+                                      }),
+                                      color: NeonTheme.cyan,
+                                      onTap: gameCtrl.buyTreasureMap,
+                                    ),
                                   NeonDialogAction(
                                     label: 'coll_close'.tr,
                                     color: NeonTheme.teal,
@@ -158,6 +190,19 @@ class ModeSelectScreen extends StatelessWidget {
                     _modeGroup(
                       label: 'modes_group_social'.tr,
                       tiles: [
+                        // F21: Mirror Draft cũng là mode 2 người trên cùng
+                        // một máy — đứng cạnh Pass-and-Play.
+                        _modeTile(
+                          key: const Key('mode_mirror_draft'),
+                          icon: Icons.flip_camera_android_rounded,
+                          color: NeonTheme.magenta,
+                          label: 'mirror_draft_label'.tr,
+                          onTap: () {
+                            Get.back();
+                            gameCtrl.startMirrorDraft();
+                            Get.to(() => const GameScreen());
+                          },
+                        ),
                         _modeTile(
                           icon: Icons.people_rounded,
                           color: NeonTheme.purple,
@@ -252,8 +297,10 @@ class ModeSelectScreen extends StatelessWidget {
     required String label,
     required VoidCallback onTap,
     String? semanticLabel,
+    Key? key,
   }) {
     return Column(
+      key: key,
       mainAxisSize: MainAxisSize.min,
       children: [
         NeonIconButton(

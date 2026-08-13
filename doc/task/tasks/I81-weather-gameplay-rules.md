@@ -134,7 +134,9 @@ toạ độ.
 - **Mutation-check 5/5 bị bắt:** luật rút ngắn combo window; campaign không đọc
   luật; bỏ ngưỡng nhóm lớn; trả `Column` về `Stack` children; (M2 bỏ chốt
   `id <= 0` **không** bị bắt — xem dưới).
-- Verify trên thiết bị thật: world 1 (`none`) không có dòng luật, banner sạch.
+- Verify trên thiết bị thật (Pixel 7 Pro, locale vi): world 8 "Đỉnh Hoàng Hôn"
+  hiện đúng dòng `Luật vùng: Nhóm từ 7 ô trở lên được thêm điểm` **dưới** tên
+  vùng, không đè, không tràn ngang; world `none` banner sạch một dòng.
 
 ## Nợ đã ghi, không giấu
 

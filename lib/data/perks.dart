@@ -2,7 +2,25 @@ import 'worlds.dart';
 
 /// F14: perk vĩnh viễn, mở khoá khi hoàn thành 1 world — KHÔNG mua bằng
 /// coin/tiền thật. Hiệu ứng tiện ích nhẹ, không đổi target/luật thắng-thua.
-enum PerkEffect { extraUndo, moveHint, coinBonus }
+enum PerkEffect {
+  extraUndo,
+  moveHint,
+  coinBonus,
+
+  // I83 — perk prestige, mở bằng constellation (xem `constellations.dart`).
+  // Toàn bộ đều là kinh tế/tiện ích, KHÔNG chạm điểm số.
+  /// Giá mọi booster trong shop rẻ hơn.
+  boosterDiscount,
+
+  /// Thêm Star Dust mỗi lần thắng 3 sao.
+  starDustBonus,
+
+  /// Craft point nhận được nhân thêm.
+  craftBonus,
+
+  /// Lần "cơ hội thứ hai" ([[I88]]) đầu tiên mỗi màn miễn phí.
+  freeSecondChance,
+}
 
 class Perk {
   final String id;

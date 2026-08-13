@@ -117,6 +117,36 @@ class StorageKeys {
 
   // F13 Daily Challenge: ngày + điểm đã ghi nhận lần gần nhất (1 lượt/ngày).
   static const String lastDailyChallengeDay = 'last_daily_challenge_day';
+
+  /// F18 "Bàn hôm nay": ghi điểm 1 lần/ngày, key riêng để không đụng Daily
+  /// Challenge (hai thứ khác nhau, chơi cùng ngày được cả hai).
+  /// F17 Combo Bank: tiền tệ thứ ba, kiếm bằng mốc combo ở MỌI mode.
+  /// KHÔNG nằm trong `keepOnReset` — reset tiến độ phải xoá nó (xem [[X19]]).
+  static const String comboTokens = 'combo_tokens';
+
+  /// F19: số dư craft point (trước đó craft point chỉ là phép đo tức thời).
+  static const String craftPoints = 'craft_points';
+
+  /// F16: điểm cao nhất ở chế độ Ghost Duel (key riêng, không đụng mode khác).
+  static const String duelBest = 'duel_best';
+
+  /// F21: điểm cao nhất Mirror Draft.
+  static const String mirrorDraftBest = 'mirror_draft_best';
+
+  /// F21: đã xem hướng dẫn Mirror Draft chưa (nếp `hasSeen*`).
+  static const String hasSeenMirrorDraftTip = 'has_seen_mirror_draft_tip';
+
+  /// F19: công thức pigment đã khám phá (khoá chuẩn hoá `a|b`).
+  static const String discoveredRecipes = 'discovered_recipes';
+
+  /// F17: mốc ngày/tuần của từng đường tiêu, để giới hạn số lần dùng.
+  static const String tokenRerollQuestDay = 'token_reroll_quest_day';
+  static const String tokenQuestOffset = 'token_quest_offset';
+  static const String tokenFeaturedWeek = 'token_featured_week';
+  static const String tokenRaidDay = 'token_raid_day';
+
+  static const String lastPuzzleDailyDay = 'last_puzzle_daily_day';
+  static const String puzzleDailyScore = 'puzzle_daily_score';
   static const String dailyChallengeScore = 'daily_challenge_score';
 
   // I6 Battle-pass mùa (free-track only): điểm mùa, mốc đã nhận, mùa gần nhất.

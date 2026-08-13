@@ -72,3 +72,89 @@ ReplayData? decodeReplay(String code) {
     return null;
   }
 }
+
+// ===== F16 Ghost Duel =====
+
+/// F16: dữ liệu một lời thách đấu — bàn tất định từ [seed], toàn bộ nước đi
+/// của người thách, điểm cuối và tên họ.
+///
+/// **Vì sao mở rộng `replay.dart` chứ không phải `challenge_code.dart`:**
+/// duel cần *danh sách tap*, mà chỉ replay có. `challenge_code` chỉ mang điểm
+/// số — thêm taps vào đó là biến nó thành replay lần thứ hai. AC cấm codec thứ
+/// ba, nên dùng lại đúng nhà của taps.
+///
+/// **Vì sao có `seed` mà không có `levelId`:** replay tất định chỉ đúng ở
+/// campaign (bàn campaign sinh ngẫu nhiên mỗi lần chơi). Duel phải dùng bàn
+/// sinh từ seed như Daily Challenge, nếu không hai người chơi hai bàn khác nhau.
+class DuelData {
+  const DuelData({
+    required this.seed,
+    required this.taps,
+    required this.score,
+    required this.senderName,
+  });
+
+  final int seed;
+  final List<(int, int)> taps;
+  final int score;
+  final String senderName;
+}
+
+/// Prefix để phân biệt với mã replay trần và mã challenge (`CH:`).
+const String duelCodePrefix = 'DU:';
+
+/// Mã hoá `seed|score|taps|senderName`.
+///
+/// `senderName` là field **cuối** và không split hết theo `|`, nên tên chứa
+/// dấu `|` vẫn giữ nguyên — cùng thủ thuật `challenge_code.dart` đang dùng.
+String encodeDuelCode(DuelData data) {
+  final tapsRaw = data.taps.map((t) => '${t.$1},${t.$2}').join(';');
+  final raw = '${data.seed}|${data.score}|$tapsRaw|${data.senderName}';
+  return '$duelCodePrefix${base64Url.encode(utf8.encode(raw))}';
+}
+
+/// Giải mã ngược [encodeDuelCode]. `null` nếu thiếu prefix, sai định dạng, số
+/// âm, hoặc vượt [kMaxCodeLength]/[kMaxReplayTaps] ([[X25]]).
+DuelData? decodeDuelCode(String code) {
+  if (code.length > kMaxCodeLength) return null;
+  final trimmed = code.trim();
+  if (!trimmed.startsWith(duelCodePrefix)) return null;
+  try {
+    final raw = utf8.decode(
+      base64Url.decode(trimmed.substring(duelCodePrefix.length)),
+    );
+    final b1 = raw.indexOf('|');
+    if (b1 < 0) return null;
+    final b2 = raw.indexOf('|', b1 + 1);
+    if (b2 < 0) return null;
+    final b3 = raw.indexOf('|', b2 + 1);
+    if (b3 < 0) return null;
+
+    final seed = int.tryParse(raw.substring(0, b1));
+    final score = int.tryParse(raw.substring(b1 + 1, b2));
+    if (seed == null || score == null || seed < 0 || score < 0) return null;
+
+    final tapsRaw = raw.substring(b2 + 1, b3);
+    final taps = <(int, int)>[];
+    if (tapsRaw.isNotEmpty) {
+      final entries = tapsRaw.split(';');
+      if (entries.length > kMaxReplayTaps) return null;
+      for (final e in entries) {
+        final rc = e.split(',');
+        if (rc.length != 2) return null;
+        final r = int.tryParse(rc[0]);
+        final c = int.tryParse(rc[1]);
+        if (r == null || c == null || r < 0 || c < 0) return null;
+        taps.add((r, c));
+      }
+    }
+    return DuelData(
+      seed: seed,
+      taps: taps,
+      score: score,
+      senderName: raw.substring(b3 + 1),
+    );
+  } catch (_) {
+    return null;
+  }
+}

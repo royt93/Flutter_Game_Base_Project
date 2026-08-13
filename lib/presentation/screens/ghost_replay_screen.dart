@@ -67,8 +67,26 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
     ),
   );
 
+  /// F16: lời thách Ghost Duel đã dán, `null` nếu mã không phải duel.
+  DuelData? _duel;
+
   void _load() {
     final text = _codeCtrl.text.trim();
+    // F16: mã duel có prefix riêng — vào thẳng ván đấu thay vì auto-play.
+    if (text.startsWith(duelCodePrefix)) {
+      final decoded = decodeDuelCode(text);
+      _timer?.cancel();
+      setState(() {
+        _invalid = decoded == null;
+        _finished = false;
+        _level = null;
+        _game = null;
+        _challenge = null;
+        _seedChallenge = null;
+        _duel = decoded;
+      });
+      return;
+    }
     if (text.startsWith(challengeSeedCodePrefix)) {
       final decoded = decodeChallengeSeedCode(text);
       _timer?.cancel();
@@ -78,6 +96,7 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
         _level = null;
         _game = null;
         _challenge = null;
+        _duel = null;
         _seedChallenge = decoded;
       });
       return;
@@ -93,6 +112,7 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
         _level = null;
         _game = null;
         _challenge = decoded;
+        _duel = null;
         _seedChallenge = null;
       });
       return;
@@ -247,6 +267,43 @@ class _GhostReplayScreenState extends State<GhostReplayScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                      // F16: lời thách Ghost Duel — vào ván đấu cùng bàn.
+                      if (_duel case final duel?) ...[
+                        Text(
+                          'ghost_duel_vs'.trParams({
+                            'name': duel.senderName.isEmpty
+                                ? 'journey_card_anonymous'.tr
+                                : duel.senderName,
+                          }),
+                          style: TextStyle(
+                            color: NeonTheme.ink,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: NeonTheme.s8),
+                        Text(
+                          'challenge_score_to_beat_label'.trParams({
+                            'score': '${duel.score}',
+                          }),
+                          style: TextStyle(color: NeonTheme.inkSoft),
+                        ),
+                        const SizedBox(height: NeonTheme.s16),
+                        Center(
+                          child: NeonButton(
+                            key: const Key('ghost_duel_start'),
+                            label: 'ghost_duel_start'.tr,
+                            color: NeonTheme.magenta,
+                            icon: Icons.sports_esports_rounded,
+                            onTap: () {
+                              if (!Get.find<GameController>().startDuel(duel)) {
+                                return;
+                              }
+                              Get.to(() => const GameScreen());
+                            },
+                          ),
+                        ),
+                      ],
                       if (_challenge != null) ...[
                         Text(
                           'challenge_invite_title'.trParams({

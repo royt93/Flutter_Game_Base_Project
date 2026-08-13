@@ -13,3 +13,17 @@ int craftPointsForRemainingCells(List<List<int?>> grid) {
       .length;
   return remaining ~/ cellsPerCraftPoint;
 }
+
+/// F19: mỗi ván thắng-không-full-clear cho **đúng một** phần thưởng từ số cell
+/// còn sót — booster nếu đủ ngưỡng, ngược lại gom vào số dư craft point.
+///
+/// Tách thành hàm thuần thay vì để `if/else` nằm trong `checkEnd`: nhánh đó
+/// cần `activeGame` thật nên chỉ test được bằng harness engine, mà quy tắc
+/// "không trả hai lần" thì đáng khoá bằng test rẻ.
+enum CraftOutcome { none, booster, bankPoints }
+
+CraftOutcome craftOutcomeFor(int points, int threshold) {
+  if (points >= threshold) return CraftOutcome.booster;
+  if (points > 0) return CraftOutcome.bankPoints;
+  return CraftOutcome.none;
+}

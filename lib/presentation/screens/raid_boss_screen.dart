@@ -98,7 +98,10 @@ class RaidBossScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '$attempts / ${RaidBossController.maxDailyAttempts}',
+                                  // F17: trần đọc từ controller, không phải
+                                  // hằng số — người chơi mua thêm lượt bằng
+                                  // Combo Token thì mẫu số phải đổi theo.
+                                  '$attempts / ${raidCtrl.maxAttemptsToday}',
                                   style: TextStyle(
                                     color: NeonTheme.ink,
                                     fontWeight: FontWeight.bold,
@@ -192,6 +195,29 @@ class RaidBossScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      // F17: mua thêm 1 lượt bằng Combo Token — nút nằm ngay
+                      // chỗ đang hiện số lượt, không dựng màn riêng.
+                      if (gameCtrl.canBuyRaidAttempt)
+                        NeonButton(
+                          key: const Key('token_buy_raid'),
+                          label: 'token_buy_raid'.trParams({
+                            'n': '${GameController.tokenCostRaidAttempt}',
+                          }),
+                          color: NeonTheme.cyan,
+                          onTap: () {
+                            if (!gameCtrl.buyRaidAttempt()) return;
+                            // Cộng thẳng vào Rx thay vì nạp lại controller:
+                            // `raidCtrl` đã bị bắt trong `build`, nên
+                            // `Get.delete` + `Get.put` KHÔNG làm `Obx` ở đây
+                            // trỏ sang instance mới — số hiển thị vẫn đứng yên.
+                            // (Phát hiện bằng test kiểm đúng chuỗi "4 / 4".)
+                            //
+                            // `_maxAttemptsToday` đọc thẳng storage nên mẫu số
+                            // tự đúng; chỉ tử số cần đẩy tay.
+                            raidCtrl.attemptsRemaining.value++;
+                          },
+                        ),
                       const SizedBox(height: 24),
                       if (raidCtrl.canClaimWeeklyReward())
                         NeonButton(

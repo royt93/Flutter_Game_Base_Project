@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/neon_theme.dart';
+import '../../data/constellations.dart';
 import '../../data/perks.dart';
 import '../controllers/game_controller.dart';
 import '../widgets/neon_app_bar.dart';
@@ -23,19 +24,48 @@ class PerksScreen extends StatelessWidget {
               NeonAppBar(title: 'perks_title'.tr, color: NeonTheme.magenta),
               Expanded(
                 child: Obx(() {
-                  final unlockedIds = gameCtrl.unlockedPerksList
+                  // I83: perk prestige nằm CHUNG danh sách này, không có màn
+                  // riêng — cả game chỉ có một chỗ chọn perk.
+                  final unlockedIds = gameCtrl.allUnlockedPerks
                       .map((p) => p.id)
                       .toSet();
+                  final all = [...kPerks, ...kPrestigePerks];
                   return ListView.builder(
                     padding: const EdgeInsets.all(NeonTheme.s16),
-                    itemCount: kPerks.length,
+                    // +1 cho dòng đếm ô perk ở đầu danh sách.
+                    itemCount: all.length + 1,
                     itemBuilder: (context, i) {
-                      final perk = kPerks[i];
+                      if (i == 0) {
+                        return Padding(
+                          key: const Key('perk_slots_label'),
+                          padding: const EdgeInsets.only(bottom: NeonTheme.s8),
+                          child: Text(
+                            'pp_slots'.trParams({
+                              'used': '${gameCtrl.activePerkIds.length}',
+                              'max': '${gameCtrl.perkSlots}',
+                            }),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: NeonTheme.inkSoft,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        );
+                      }
+                      final perk = all[i - 1];
+                      final isPrestige = kPrestigePerks.contains(perk);
                       return Padding(
                         padding: const EdgeInsets.only(bottom: NeonTheme.s8),
                         child: _PerkRow(
                           perk: perk,
                           unlocked: unlockedIds.contains(perk.id),
+                          // Perk prestige chưa mở hiện gợi ý "Prestige để mở
+                          // khoá" — đây chính là động lực prestige mà AC yêu
+                          // cầu, thay vì ẩn hẳn.
+                          lockedHint:
+                              isPrestige && !unlockedIds.contains(perk.id)
+                              ? 'pp_locked_hint'.tr
+                              : null,
                           active: gameCtrl.activePerkIds.contains(perk.id),
                           onTap: () => gameCtrl.togglePerk(perk.id),
                         ),
@@ -58,11 +88,15 @@ class _PerkRow extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;
 
+  /// I83: dòng phụ giải thích vì sao perk còn khoá (`null` = không hiện).
+  final String? lockedHint;
+
   const _PerkRow({
     required this.perk,
     required this.unlocked,
     required this.active,
     required this.onTap,
+    this.lockedHint,
   });
 
   @override
@@ -106,9 +140,13 @@ class _PerkRow extends StatelessWidget {
                       ),
                     ),
                     Text(
+                      // I83: perk prestige gate theo constellation + tier chứ
+                      // không theo world, nên `unlockAfterWorld` (= 0) vô
+                      // nghĩa với chúng — dùng `lockedHint` thay.
                       unlocked
                           ? perk.descKey.tr
-                          : '${'perk_locked'.tr} ${perk.unlockAfterWorld}',
+                          : lockedHint ??
+                                '${'perk_locked'.tr} ${perk.unlockAfterWorld}',
                       style: TextStyle(
                         color: NeonTheme.inkSoft,
                         fontWeight: FontWeight.w600,

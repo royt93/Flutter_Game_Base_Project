@@ -67,7 +67,10 @@ class RaidBossController extends GetxController {
       StorageService.to.setInt(StorageKeys.raidBossTotalDamage, 0);
       StorageService.to.setInt(StorageKeys.raidBossAttemptsUsed, 0);
       StorageService.to.setInt(StorageKeys.raidBossLastAttemptDay, today);
-      attemptsRemaining.value = maxDailyAttempts;
+      // F17: dùng trần của hôm nay, KHÔNG phải hằng số. Bỏ sót nhánh này thì
+      // lượt vừa mua bằng Combo Token biến mất ngay khi sang tuần mới — test
+      // widget bắt được đúng chỗ này.
+      attemptsRemaining.value = _maxAttemptsToday;
     } else {
       currentEventWeek.value = week;
       totalDamageThisEvent.value = StorageService.to.getInt(
@@ -81,16 +84,34 @@ class RaidBossController extends GetxController {
         // Sang ngày mới trong tuần -> reset 3 lượt/ngày
         StorageService.to.setInt(StorageKeys.raidBossLastAttemptDay, today);
         StorageService.to.setInt(StorageKeys.raidBossAttemptsUsed, 0);
-        attemptsRemaining.value = maxDailyAttempts;
+        attemptsRemaining.value = _maxAttemptsToday;
       } else {
         final used = StorageService.to.getInt(StorageKeys.raidBossAttemptsUsed);
-        attemptsRemaining.value = (maxDailyAttempts - used).clamp(
+        attemptsRemaining.value = (_maxAttemptsToday - used).clamp(
           0,
-          maxDailyAttempts,
+          _maxAttemptsToday,
         );
       }
     }
   }
+
+  /// F17: trần lượt của HÔM NAY = 3 cơ bản + lượt đã mua bằng Combo Token.
+  ///
+  /// Đọc mốc ngày từ storage chứ không cầm `GameController`: controller này cố
+  /// ý tách rời để tránh phụ thuộc vòng (xem doc lớp). Trả về trần chứ không
+  /// cộng thẳng vào `attemptsRemaining` — nếu cộng thẳng thì mỗi lần dựng lại
+  /// controller sẽ cộng thêm một lần nữa.
+  int get _maxAttemptsToday {
+    final bought =
+        StorageService.to.getInt(StorageKeys.tokenRaidDay, def: -1) ==
+            _todayEpochDay()
+        ? 1
+        : 0;
+    return maxDailyAttempts + bought;
+  }
+
+  /// Trần lượt hôm nay, để UI hiện "x / trần" đúng khi đã mua thêm.
+  int get maxAttemptsToday => _maxAttemptsToday;
 
   bool get isRaidActive => isRaidActiveForEpochDay(_todayEpochDay());
 

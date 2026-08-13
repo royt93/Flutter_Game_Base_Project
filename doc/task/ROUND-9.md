@@ -52,13 +52,14 @@ khác** — 3 trong số này làm hỏng dữ liệu người chơi hoặc ch�
 | [X29](tasks/X29-buffered-write-shadows-direct-write.md) | Buffer của X24 nuốt mọi lần ghi thẳng → undo/reset/import mất tác dụng trên đĩa | 2 | Must | P1 |
 | [X30](tasks/X30-sky-shrine-aura-not-reactive.md) | Sky Shrine: thẻ chòm sao ngoài phạm vi `Obx` → gắn hào quang không đổi nhãn, không tháo ra được | 2 | Should | P2 |
 | [X31](tasks/X31-hardcoded-vietnamese-in-raid-screen.md) | Chuỗi "xu" tiếng Việt hard-code trong màn Raid Boss → 21/22 locale hiện sai | 1 | Should | P2 |
+| [X32](tasks/X32-chain-lock-leaks-into-side-modes.md) | `id % 6` trên id âm → chain lock rò vào Mirror Mode và Board of the Day | 1 | Should | P2 |
 
-X28 đến X31 **không nằm trong kế hoạch ban đầu** — cả hai do test tìm ra sau
+X28 đến X32 **không nằm trong kế hoạch ban đầu** — cả hai do test tìm ra sau
 khi E6 đã "xong": X28 từ fuzz [[T4]], X29 từ integration test undo chạy trên
 máy thật. Ghi lại ở đây để lần sau đọc bảng này không tưởng nhầm 12 dòng đầu
 là toàn bộ những gì hardening tìm được.
 
-**Tổng E6: 42 SP.** Thứ tự bắt buộc: X16 (unblock CI) → X17/X20/X21 (cùng
+**Tổng E6: 43 SP.** Thứ tự bắt buộc: X16 (unblock CI) → X17/X20/X21 (cùng
 đụng `_saveUndo`, gộp 1 nhánh) → phần còn lại song song được.
 
 ---
