@@ -105,19 +105,25 @@ Map<String, Object> _richSave() => <String, Object>{
   for (var id = 1; id <= 139; id++) StorageKeys.star(id): 3,
   for (var id = 1; id <= 139; id++) StorageKeys.highScore(id): 9000 + id,
 };
-/// Màn tràn ở khung 360dp **kể cả tiếng Anh** — nợ layout màn hẹp, không phải
-/// nợ i18n.
+/// Màn "tràn" ở khung 360dp **kể cả tiếng Anh** — và đã xác minh là **ảo**.
 ///
-/// Giữ ở đây thay vì lặng lẽ bỏ qua, và ca kiểm đòi chúng **vẫn phải tràn**:
-/// sửa xong mà quên xoá khỏi danh sách thì test đỏ, nên danh sách không mục
-/// rữa thành lời nói dối.
+/// `flutter test` không nạp Baloo2 mà thay bằng font có metric khác, chữ rộng
+/// và cao hơn thật. Ba màn dưới đây vượt khung trong test nhưng KHÔNG vượt
+/// trên máy: đã đặt Pixel 7 Pro về đúng 360x640dp (`wm size 1080x1920` +
+/// `wm density 320`), chạy tiếng Đức — chuỗi dài nhất repo — và chụp cả ba.
+/// Không màn nào có vạch tràn:
 ///
-/// Chưa sửa trong vòng này vì hai lý do. Một, không do bản dịch nên nằm ngoài
-/// phạm vi đợt quét. Hai, chưa đo được trên máy thật: `flutter test` không nạp
-/// Baloo2 mà dùng font thay thế có metric khác, nên vài trường hợp có thể là
-/// ảo — ví dụ site `level_select_screen.dart:801` chỉ chứa chữ số và icon sao,
-/// không có chữ nào để dịch dài ra. Phải chụp ở 360dp trên thiết bị thật rồi
-/// mới biết chỗ nào thật sự vỡ.
+/// * Home — thẻ chào, carousel, hàng nút dưới đều vừa.
+/// * Level Select — kể cả header có luật vùng, chỗ dài nhất:
+///   "Minzfälle" + "Zonenregel: Das Combo-Fenster hält hier länger" nằm gọn
+///   một dòng. (Site `level_select_screen.dart:801` vốn chỉ có chữ số và icon
+///   sao, không có gì để dịch dài ra — đúng như đã ngờ.)
+/// * Pet Habitat — thẻ pet với "+1 gratis Rückgängig" vừa khít.
+///
+/// Vì vậy KHÔNG sửa: sửa layout theo một phép đo sai là tự tạo bug. Ca kiểm
+/// đòi chúng **vẫn phải tràn trong test**, nên nếu Flutter đổi font thay thế
+/// (hoặc ai đó nạp font thật vào test) thì suite đỏ và đoạn ghi chú này được
+/// đọc lại thay vì mục rữa.
 const _kNarrowScreenDebt = <String>{
   'HomeScreen',
   'LevelSelectScreen',
