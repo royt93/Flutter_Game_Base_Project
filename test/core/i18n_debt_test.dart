@@ -111,6 +111,54 @@ const _kDebt1 = <String>[
   'back_button_label',
 ];
 
+/// Đợt 2 đã dọn: mục tiêu màn (`obj_*`), vòng quay, chuỗi chia sẻ, Ghost, và
+/// 13 tên thế giới.
+///
+/// `world_path_name_*` hiện ngay trên Mode Select bằng tiếng Anh giữa màn
+/// hình đã dịch hết — bộ tên cũ `world_name_*` thì đã dịch đủ, nên đây là bỏ
+/// sót lúc đổi chủ đề sang kẹo.
+const _kDebt2 = <String>[
+  'ghost_hud',
+  'ghost_play',
+  'invite_friend_share_msg',
+  'obj_bonus_star_moves',
+  'obj_break_ice',
+  'obj_clear_color',
+  'obj_collect',
+  'obj_finish_bonus_star',
+  'obj_open_gift',
+  'pigment_fusion_only',
+  'rush_title',
+  'rush_short',
+  'zen_no_target',
+  'coop_mode',
+  'versus_mode',
+  'share_board_text',
+  'share_score_card_text',
+  'share_challenge_text',
+  'share_replay_text',
+  'spin_already_msg',
+  'spin_result_msg',
+  'spin_reward_coins',
+  'spin_spinning',
+  'world_path_name_1',
+  'world_path_name_2',
+  'world_path_name_3',
+  'world_path_name_4',
+  'world_path_name_5',
+  'world_path_name_6',
+  'world_path_name_7',
+  'world_path_name_8',
+  'world_path_name_9',
+  'world_path_name_10',
+  'world_path_name_11',
+  'world_path_name_12',
+  'world_path_name_13',
+];
+
+/// Mọi key đã dọn, gộp lại — các ca dưới chạy trên tập này.
+const _kDone = <String>[..._kDebt1, ..._kDebt2];
+
 /// `'<key>|<locale>'` mà bản dịch **cố tình** trùng tiếng Anh.
 ///
 /// Từ mượn đã là cách nói bản ngữ: "Level" trong tiếng Đức/Hà Lan/Indonesia/
@@ -139,13 +187,17 @@ const _kSameAsEnglishOk = <String>{
   'score_value_label|nl_NL',
   'target_value|fil_PH',
   'target_value|id_ID',
+  'share_board_text|nl_NL',
+  'share_score_card_text|nl_NL',
 };
 
-/// Số ô còn rơi về tiếng Anh sau đợt 1 — **chốt một chiều**.
+/// Số ô còn rơi về tiếng Anh sau đợt 2 — **chốt một chiều**.
+///
+/// Đường đi: 1626 (ban đầu) → 1001 (đợt 1) → 289 (đợt 2).
 ///
 /// Ca cuối chỉ cho phép con số này ĐI XUỐNG. Dọn thêm thì hạ hằng số; nếu ai
 /// đó thêm key mới mà quên dịch, số vọt lên và test đỏ.
-const _kDebtRemaining = 1001;
+const _kDebtRemaining = 289;
 
 void main() {
   final keys = AppTranslations().keys;
@@ -153,24 +205,24 @@ void main() {
   final locales = keys.keys.where((l) => l != 'en_US').toList();
   final placeholder = RegExp(r'@[a-z]+');
 
-  test('danh sách đợt 1 không trùng lặp và có thật', () {
-    expect(_kDebt1.toSet().length, _kDebt1.length);
-    for (final k in _kDebt1) {
+  test('danh sách key đã dọn không trùng lặp và có thật', () {
+    expect(_kDone.toSet().length, _kDone.length);
+    for (final k in _kDone) {
       expect(en.containsKey(k), isTrue, reason: 'key "$k" không có ở en_US');
     }
   });
 
-  test('_kUniversal không giẫm lên _kDebt1', () {
+  test('_kUniversal không giẫm lên danh sách đã dọn', () {
     // Một key vừa "được phép giữ tiếng Anh" vừa "đã dịch" là mâu thuẫn: ca
     // dưới sẽ đòi dịch, còn phần đếm lại bỏ qua nó.
-    expect(_kUniversal.intersection(_kDebt1.toSet()), isEmpty);
+    expect(_kUniversal.intersection(_kDone.toSet()), isEmpty);
   });
 
-  group('đợt 1 đã dịch thật ở mọi ngôn ngữ', () {
+  group('key đã dọn phải dịch thật ở mọi ngôn ngữ', () {
     for (final lang in locales) {
       test(lang, () {
         final m = keys[lang]!;
-        for (final k in _kDebt1) {
+        for (final k in _kDone) {
           expect(m.containsKey(k), isTrue, reason: '$lang thiếu "$k"');
           expect(m[k]!.trim(), isNotEmpty, reason: '$lang rỗng ở "$k"');
 
@@ -201,7 +253,7 @@ void main() {
     for (final entry in _kSameAsEnglishOk) {
       final parts = entry.split('|');
       expect(parts.length, 2, reason: 'sai định dạng: $entry');
-      expect(_kDebt1, contains(parts[0]), reason: '$entry: key ngoài đợt 1');
+      expect(_kDone, contains(parts[0]), reason: '$entry: key chưa được dọn');
       expect(
         keys[parts[1]]?[parts[0]],
         en[parts[0]],
