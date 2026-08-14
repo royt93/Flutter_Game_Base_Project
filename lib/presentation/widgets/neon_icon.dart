@@ -42,7 +42,9 @@ class NeonBackButton extends StatelessWidget {
       Icons.arrow_back_rounded,
       color: color,
       onTap: onTap ?? Get.back,
-      semanticLabel: 'Quay lại',
+      // Trước đây hardcode tiếng Việt — người dùng 21 ngôn ngữ khác nghe
+      // TalkBack đọc 'Quay lại'.
+      semanticLabel: 'back_button_label'.tr,
     );
   }
 }

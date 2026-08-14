@@ -487,7 +487,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             PulseGlow(
                               color: NeonTheme.cyan,
                               child: NeonButton(
-                                label: 'PLAY',
+                                // Nút to nhất màn hình mà trước đây hardcode
+                                // 'PLAY' — không đi qua i18n nên đứng nguyên
+                                // tiếng Anh ở cả 21 ngôn ngữ. `play_now` đã
+                                // có sẵn bản dịch cho đủ 22 locale.
+                                label: 'play_now'.tr.toUpperCase(),
                                 color: NeonTheme.cyan,
                                 icon: Icons.play_arrow_rounded,
                                 onTap: () =>
