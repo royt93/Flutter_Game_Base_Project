@@ -143,12 +143,17 @@ class _SkinCard extends StatelessWidget {
             size: 16,
           ),
           const SizedBox(width: 4),
-          Text(
-            'wardrobe_selected_label'.tr,
-            style: const TextStyle(
-              color: NeonTheme.gold,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+          // Nhánh "đã khoá" bên dưới đã bọc `Flexible` từ đầu; nhánh này thì
+          // không, và tiếng Đức ("Ausgewählt") tràn ra khỏi ô 7.5px.
+          Flexible(
+            child: Text(
+              'wardrobe_selected_label'.tr,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: NeonTheme.gold,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],

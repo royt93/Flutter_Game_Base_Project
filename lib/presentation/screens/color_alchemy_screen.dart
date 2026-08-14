@@ -159,7 +159,13 @@ class _PigmentChip extends StatelessWidget {
           children: [
             CircleAvatar(radius: 7, backgroundColor: pigment.color),
             const SizedBox(width: 5),
-            Text(pigment.nameKey.tr),
+            // `Flexible` chứ không `Text` trần: `Wrap` xuống dòng giữa các
+            // chip nhưng không thu nhỏ một chip rộng hơn cả dòng. Tên pigment
+            // tiếng Đức/Filipino dài hơn tiếng Anh đủ để tràn — cắt bớt còn
+            // hơn vẽ đè ra ngoài viền.
+            Flexible(
+              child: Text(pigment.nameKey.tr, overflow: TextOverflow.ellipsis),
+            ),
             if (!unlocked) ...[
               const SizedBox(width: 4),
               Text(
@@ -302,7 +308,10 @@ class _FusionBenchState extends State<_FusionBench> {
                           width: 2.5,
                         ),
                       ),
-                      child: Text(p.nameKey.tr, style: const TextStyle(fontSize: 11)),
+                      child: Text(
+                        p.nameKey.tr,
+                        style: const TextStyle(fontSize: 11),
+                      ),
                     ),
                   ),
               ],
@@ -357,8 +366,6 @@ String _lockLabel(Pigment pigment) {
   if (pigment.fusionOnly) return 'pigment_fusion_only'.tr;
   final price = pigment.coinPrice;
   if (price != null) return fmtNum(price);
-  final match = kAchievements.where(
-    (a) => a.id == pigment.unlockAchievementId,
-  );
+  final match = kAchievements.where((a) => a.id == pigment.unlockAchievementId);
   return match.isEmpty ? '' : match.first.titleKey.tr;
 }
