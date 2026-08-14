@@ -57,7 +57,9 @@ Future<PopStarGame> _enterLevelOne(WidgetTester tester) async {
 
   // Home cuộn được từ I84 (NextUpBar đẩy nội dung xuống), nên trên máy màn
   // ngắn nút PLAY nằm dưới mép — tap thẳng sẽ trượt hit-test.
-  final play = find.text('PLAY').first;
+  // Nhãn nút đi qua i18n (trước đây hardcode 'PLAY') — tra bảng dịch, đừng
+  // gõ chuỗi tiếng Anh.
+  final play = find.text('play_now'.tr.toUpperCase()).first;
   await tester.ensureVisible(play);
   await _pumpBounded(tester, times: 3);
   await tester.tap(play);

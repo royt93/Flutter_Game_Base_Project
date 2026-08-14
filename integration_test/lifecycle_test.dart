@@ -48,9 +48,12 @@ void main() {
     await pumpBounded(tester, times: 15);
     await dismissDailyRewardIfShown(tester);
 
-    // 'PLAY' hiện qua StrokeText (stroke + fill xếp chồng trong Stack) → 2
+    // Nút PLAY hiện qua StrokeText (stroke + fill xếp chồng trong Stack) → 2
     // Text trùng nội dung tại cùng vị trí, .first vẫn trúng đúng nút.
-    await tester.tap(find.text('PLAY').first);
+    //
+    // Nhãn đi qua i18n (trước đây hardcode 'PLAY'), nên phải tra bảng dịch —
+    // tìm theo chuỗi tiếng Anh sẽ trượt trên máy đặt ngôn ngữ khác.
+    await tester.tap(find.text('play_now'.tr.toUpperCase()).first);
     await pumpBounded(tester);
     expect(find.byType(LevelSelectScreen), findsOneWidget);
 
@@ -85,7 +88,7 @@ void main() {
       await pumpBounded(tester, times: 15);
       await dismissDailyRewardIfShown(tester);
 
-      await tester.tap(find.text('PLAY').first);
+      await tester.tap(find.text('play_now'.tr.toUpperCase()).first);
       await pumpBounded(tester);
       expect(find.byType(LevelSelectScreen), findsOneWidget);
 
