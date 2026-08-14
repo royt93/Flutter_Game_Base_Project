@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/neon_theme.dart';
+import '../../core/utils/label_fit.dart';
 import '../../data/gauntlet_modifiers.dart';
 import '../../data/worlds.dart';
 import '../controllers/game_controller.dart';
@@ -264,6 +265,10 @@ class ModeSelectScreen extends StatelessWidget {
     );
   }
 
+  /// Bề ngang nhãn dưới mỗi ô mode. Giữ nguyên 60 để `Wrap` vẫn xếp 4 cột
+  /// trên máy hẹp 360dp; chữ co lại thay vì ô nới ra.
+  static const double _kTileLabelWidth = 60;
+
   Widget _modeGroup({required String label, required List<Widget> tiles}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,7 +318,7 @@ class ModeSelectScreen extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         SizedBox(
-          width: 60,
+          width: _kTileLabelWidth,
           child: Text(
             label,
             textAlign: TextAlign.center,
@@ -321,7 +326,9 @@ class ModeSelectScreen extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: NeonTheme.inkSoft,
-              fontSize: 11,
+              // Thu nhỏ khi một từ đơn dài hơn ô. Tiếng Đức vỡ ở đây:
+              // "Doppelspiegel" và "Zitronenwüste" bị ngắt giữa từ.
+              fontSize: fitFontSizeForLongestWord(label, _kTileLabelWidth),
               fontWeight: FontWeight.w700,
             ),
           ),
