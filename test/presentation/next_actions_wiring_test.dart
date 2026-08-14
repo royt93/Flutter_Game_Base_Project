@@ -25,6 +25,18 @@ Future<void> _boot([Map<String, Object> prefs = const {}]) async {
 
 List<NextActionKind> _kinds() => ctrl.nextActions().map((a) => a.kind).toList();
 
+/// Dọn hai việc "hết hạn trong ngày" luôn sẵn ở tài khoản mới.
+///
+/// Trần là [kMaxNextActions] = 3, và nhóm sắp-hết-hạn xếp trước nhóm
+/// đã-đủ-điều-kiện. Cuối tuần `raidBoss` cũng sẵn (Fri–Sun), nên nếu để cả
+/// thưởng ngày + vòng quay thì 3 slot đầy trước khi tới mục tiêu tuần/rương —
+/// mấy ca dưới hoá ra **chỉ xanh từ thứ Hai đến thứ Năm**. Dọn ở đây để kết
+/// quả không phụ thuộc hôm nay là thứ mấy.
+void _clearDailyUrgent() {
+  ctrl.claimDaily();
+  ctrl.claimSpin();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   tearDown(Get.reset);
@@ -42,8 +54,7 @@ void main() {
     // Dọn bớt việc gấp hơn để campaign chắc chắn còn chỗ trong 3 slot.
     // Riêng pool clan có thể tự đạt ngưỡng nhờ NPC bot (I66) mà người chơi
     // chưa đóng góp gì, nên nó vẫn có thể chiếm 1 slot — chấp nhận được.
-    ctrl.claimDaily();
-    ctrl.claimSpin();
+    _clearDailyUrgent();
 
     final campaign = ctrl.nextActions().firstWhere(
       (a) => a.kind == NextActionKind.campaignLevel,
@@ -62,6 +73,7 @@ void main() {
 
   test('mục tiêu tuần đạt mà chưa nhận -> có gợi ý', () async {
     await _boot({StorageKeys.unlockedLevel: 50});
+    _clearDailyUrgent();
     ctrl.addWeeklyGoalProgress(weeklyGoalTarget);
     expect(_kinds(), contains(NextActionKind.weeklyGoal));
   });
@@ -81,6 +93,7 @@ void main() {
       await StorageService.to.setInt(StorageKeys.star(id), 3);
     }
     ctrl.onInit(); // nạp lại totalStars như khi quay về Home
+    _clearDailyUrgent();
 
     expect(_kinds(), contains(NextActionKind.starRoadChest));
     expect(ctrl.claimChest(0), isTrue);

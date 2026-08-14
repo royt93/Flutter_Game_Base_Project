@@ -13,43 +13,111 @@ import 'package:pop_star_blast/core/app_translations.dart';
 /// thì **chuyển sang `_done`** — quên chuyển thì test không nhắc, nên phần
 /// dưới có ca đếm để con số luôn hiện ra.
 const _round9Keys = <String>[
-  'weather_bubble_name', 'weather_bubble_desc', 'weather_spark_name',
-  'weather_spark_desc', 'weather_rule_banner',
-  'pp_discount', 'pp_discount_desc', 'pp_star_dust', 'pp_star_dust_desc',
-  'pp_craft', 'pp_craft_desc', 'pp_free_second_chance',
-  'pp_free_second_chance_desc', 'pp_locked_hint', 'pp_slots',
-  'journey_card_title', 'journey_card_anonymous', 'journey_card_stars',
-  'journey_card_level', 'journey_card_combo', 'journey_card_days',
-  'journey_share_action', 'journey_share_text',
-  'digest_days_away', 'digest_stars_to_chest', 'digest_weekly_left',
-  'digest_season_ending', 'digest_next_level',
-  'combo_token_label', 'combo_token_short', 'token_reroll_quest',
-  'token_buy_raid', 'token_buy_map', 'token_limit_reached',
+  'weather_bubble_name',
+  'weather_bubble_desc',
+  'weather_spark_name',
+  'weather_spark_desc',
+  'weather_rule_banner',
+  'pp_discount',
+  'pp_discount_desc',
+  'pp_star_dust',
+  'pp_star_dust_desc',
+  'pp_craft',
+  'pp_craft_desc',
+  'pp_free_second_chance',
+  'pp_free_second_chance_desc',
+  'pp_locked_hint',
+  'pp_slots',
+  'journey_card_title',
+  'journey_card_anonymous',
+  'journey_card_stars',
+  'journey_card_level',
+  'journey_card_combo',
+  'journey_card_days',
+  'journey_share_action',
+  'journey_share_text',
+  'digest_days_away',
+  'digest_stars_to_chest',
+  'digest_weekly_left',
+  'digest_season_ending',
+  'digest_next_level',
+  'combo_token_label',
+  'combo_token_short',
+  'token_reroll_quest',
+  'token_buy_raid',
+  'token_buy_map',
+  'token_limit_reached',
   'token_not_enough',
-  'puzzle_daily_label', 'puzzle_daily_desc', 'puzzle_daily_done',
-  'fusion_title', 'fusion_hint', 'fusion_cost', 'fusion_cp',
-  'fusion_no_recipe', 'fusion_need_cp', 'fusion_pick', 'fusion_done',
+  'puzzle_daily_label',
+  'puzzle_daily_desc',
+  'puzzle_daily_done',
+  'fusion_title',
+  'fusion_hint',
+  'fusion_cost',
+  'fusion_cp',
+  'fusion_no_recipe',
+  'fusion_need_cp',
+  'fusion_pick',
+  'fusion_done',
   'fusion_book',
-  'pigment_seafoam', 'pigment_orchid', 'pigment_ember', 'pigment_twilight',
-  'pigment_moss', 'pigment_rose_quartz',
-  'ghost_duel_title', 'ghost_duel_paste_hint', 'ghost_duel_start',
-  'ghost_duel_bad_code', 'ghost_duel_vs', 'ghost_duel_score',
-  'ghost_duel_win', 'ghost_duel_lose', 'ghost_duel_draw',
-  'ghost_duel_rematch', 'ghost_duel_copied',
-  'mirror_draft_label', 'mirror_draft_tip', 'mirror_draft_no_mirror',
+  'pigment_seafoam',
+  'pigment_orchid',
+  'pigment_ember',
+  'pigment_twilight',
+  'pigment_moss',
+  'pigment_rose_quartz',
+  'ghost_duel_title',
+  'ghost_duel_paste_hint',
+  'ghost_duel_start',
+  'ghost_duel_bad_code',
+  'ghost_duel_vs',
+  'ghost_duel_score',
+  'ghost_duel_win',
+  'ghost_duel_lose',
+  'ghost_duel_draw',
+  'ghost_duel_rematch',
+  'ghost_duel_copied',
+  'mirror_draft_label',
+  'mirror_draft_tip',
+  'mirror_draft_no_mirror',
 ];
 
-/// Ngôn ngữ đã dịch xong 67 key Round 9.
+/// Ngôn ngữ đã dịch xong 67 key Round 9 — hiện là **toàn bộ 21 locale** có
+/// bảng `_extra*` riêng.
 const _done = <String>[
-  'en_US', 'vi_VN', 'es_ES', 'fr_FR', 'de_DE', 'pt_BR',
-  'zh_CN', 'ja_JP', 'ko_KR', 'ru_RU',
+  'en_US',
+  'vi_VN',
+  'es_ES',
+  'fr_FR',
+  'de_DE',
+  'pt_BR',
+  'zh_CN',
+  'ja_JP',
+  'ko_KR',
+  'ru_RU',
+  'it_IT',
+  'id_ID',
+  'th_TH',
+  'hi_IN',
+  'ar_SA',
+  'tr_TR',
+  'nl_NL',
+  'pl_PL',
+  'ms_MY',
+  'uk_UA',
+  'bn_BD',
+  // fil_PH nằm ngoài CẢ HAI danh sách ở bản đầu — 22 locale nhưng 10+11=21.
+  // Nó có `_extraFil` thật, chỉ là bị bỏ sót. Ca "phủ hết locale" bên dưới
+  // tồn tại để lỗ đó không mở lại.
+  'fil_PH',
 ];
 
 /// Chưa dịch — vẫn rơi về tiếng Anh. Không phải lỗi, là việc còn lại.
-const _pending = <String>[
-  'it_IT', 'id_ID', 'th_TH', 'hi_IN', 'ar_SA', 'tr_TR',
-  'nl_NL', 'pl_PL', 'ms_MY', 'uk_UA', 'bn_BD',
-];
+///
+/// Rỗng từ vòng này: 11 ngôn ngữ cuối đã chuyển sang [_done]. Giữ danh sách
+/// (thay vì xoá) vì key Round 10 trở đi sẽ lại đi qua đúng luồng
+/// `_pending` → `_done` này.
+const _pending = <String>[];
 
 void main() {
   final keys = AppTranslations().keys;
@@ -104,10 +172,20 @@ void main() {
     }
   });
 
-  test('CÔNG KHAI phần còn thiếu — 11 ngôn ngữ vẫn rơi về tiếng Anh', () {
-    // Ca này không đỏ; nó tồn tại để con số luôn hiện ra trong output test
-    // thay vì bị quên. Dịch xong ngôn ngữ nào thì chuyển từ `_pending` sang
-    // `_done`, và ca "không rơi về tiếng Anh" sẽ tự canh nó.
+  test('mọi locale được liệt kê ở _done hoặc _pending', () {
+    // Lỗ đã từng có: fil_PH không nằm ở danh sách nào nên KHÔNG ca nào canh
+    // nó — thiếu bản dịch mà test vẫn xanh. Ca này khoá cả bảng locale.
+    expect(
+      keys.keys.toSet(),
+      {..._done, ..._pending},
+      reason: 'thêm locale mới thì phải khai báo ở _done hoặc _pending',
+    );
+  });
+
+  test('CÔNG KHAI phần còn thiếu — đếm chuỗi vẫn rơi về tiếng Anh', () {
+    // Ca này không đỏ khi còn nợ; nó tồn tại để con số luôn hiện ra trong
+    // output test thay vì bị quên. Dịch xong ngôn ngữ nào thì chuyển từ
+    // `_pending` sang `_done`, và ca "không rơi về tiếng Anh" sẽ tự canh nó.
     // `keys` MERGE `_extraEn` vào mọi locale làm fallback, nên `containsKey`
     // luôn true — phải so GIÁ TRỊ mới biết đã dịch hay chưa. (Bản đầu của ca
     // này đếm bằng `containsKey` và ra 0, tưởng đã dịch hết.)
@@ -120,11 +198,11 @@ void main() {
         if (m[k] == en[k]) stillEnglish++;
       }
     }
-    expect(_pending.length, 11);
     expect(
       stillEnglish,
       _pending.length * multiWord.length,
       reason: 'nếu số này giảm, có ngôn ngữ đã dịch mà chưa chuyển sang _done',
     );
+    expect(_pending, isEmpty, reason: 'Round 9 đã dịch đủ 22 locale');
   });
 }
