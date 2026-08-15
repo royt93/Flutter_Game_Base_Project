@@ -22,7 +22,8 @@ class TokenChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       key: const Key('token_chip'),
-      margin: const EdgeInsets.only(right: NeonTheme.s8),
+      // Xem ghi chú cùng chỗ ở `coin_chip.dart` — khoảng hở phải lật theo RTL.
+      margin: const EdgeInsetsDirectional.only(end: NeonTheme.s8),
       padding: EdgeInsets.symmetric(
         horizontal: compact ? NeonTheme.s8 : NeonTheme.s16,
         vertical: compact ? 4 : NeonTheme.s8,

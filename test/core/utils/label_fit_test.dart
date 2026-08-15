@@ -36,11 +36,11 @@ void main() {
   /// Đáp án đúng theo định nghĩa: cỡ lớn nhất mà từ dài nhất còn vừa, không
   /// có thì cỡ nhỏ nhất.
   double expected(String label) {
-    final words = label.split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
+    final words = label.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
     if (words.isEmpty) return candidates.first;
-    final longest = words.reduce((a, b) => a.length >= b.length ? a : b);
     for (final size in candidates) {
-      if (widthOf(longest, size) <= width) return size;
+      final widest = words.map((w) => widthOf(w, size)).reduce((a, b) => a > b ? a : b);
+      if (widest <= width) return size;
     }
     return candidates.last;
   }
@@ -60,6 +60,36 @@ void main() {
         expect(fitFontSizeForLongestWord(label, width), expected(label));
       });
     }
+  });
+
+  test('chọn theo BỀ RỘNG, không theo số ký tự', () {
+    // Không dùng font thật: `flutter test` thay bằng font mọi glyph rộng bằng
+    // nhau, nên ở đó "nhiều ký tự nhất" luôn trùng "rộng nhất" và ca này
+    // không thể đỏ. Đo giả: 'W' rộng gấp 5 lần 'i'.
+    double fake(String word, double size) =>
+        size * word.split('').fold<double>(0, (a, ch) => a + (ch == 'W' ? 5 : 1));
+
+    // 'WWW' = 15 đơn vị/cỡ, 'iiiiiiii' = 8 — từ NGẮN hơn lại rộng hơn.
+    const label = 'WWW iiiiiiii';
+    // Ở cỡ 11: 15*11 = 165 > 60. Cỡ 8: 15*8 = 120 > 60. Không cỡ nào vừa.
+    expect(
+      fitFontSizeForLongestWord(label, width, measureWord: fake),
+      candidates.last,
+    );
+    // Bản sai (lấy từ theo .length) sẽ đo 'iiiiiiii': 8*8 = 64 > 60 -> cũng 8.
+    // Nên dùng thêm ô rộng hơn để hai bản KHÁC nhau rõ ràng:
+    // 'iiiiiiii' vừa ở cỡ 7 (56 <= 60) còn 'WWW' thì không.
+    expect(
+      fitFontSizeForLongestWord(
+        label,
+        width,
+        candidates: const [7, 1],
+        measureWord: fake,
+      ),
+      1,
+      reason: 'phải bị chi phối bởi "WWW" (rộng nhất), không phải "iiiiiiii" '
+          '(nhiều ký tự nhất)',
+    );
   });
 
   test('một ký tự luôn giữ cỡ lớn nhất, bất kể font', () {

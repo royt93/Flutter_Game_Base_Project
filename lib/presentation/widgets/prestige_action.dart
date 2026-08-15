@@ -57,7 +57,7 @@ class PrestigeAction extends StatelessWidget {
         key: const Key('prestige_badge'),
         onTap: ready ? onTap : null,
         child: Container(
-          margin: const EdgeInsets.only(right: NeonTheme.s8),
+          margin: const EdgeInsetsDirectional.only(end: NeonTheme.s8),
           padding: const EdgeInsets.symmetric(
             horizontal: NeonTheme.s16,
             vertical: NeonTheme.s8,

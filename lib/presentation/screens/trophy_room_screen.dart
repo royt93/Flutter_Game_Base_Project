@@ -45,7 +45,7 @@ class TrophyRoomScreen extends StatelessWidget {
                   children: [
                     _sectionHeader('trophy_room_prestige_section'.tr),
                     Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: AlignmentDirectional.centerStart,
                       child: PrestigeAction(
                         gameCtrl: gameCtrl,
                         onTap: () => showPrestigeDialog(context, gameCtrl),

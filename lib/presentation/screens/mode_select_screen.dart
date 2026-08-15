@@ -275,7 +275,7 @@ class ModeSelectScreen extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          padding: const EdgeInsetsDirectional.only(start: 4, bottom: 6),
           child: Text(
             label,
             style: TextStyle(

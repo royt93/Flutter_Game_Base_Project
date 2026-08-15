@@ -447,7 +447,7 @@ class _Hud extends StatelessWidget {
                       onTap: gameCtrl.toggleGhostScore,
                       behavior: HitTestBehavior.opaque,
                       child: Padding(
-                      padding: const EdgeInsets.only(right: 4),
+                      padding: const EdgeInsetsDirectional.only(end: 4),
                       child: Row(
                         key: const Key('ghost_score'),
                         mainAxisSize: MainAxisSize.min,
@@ -1674,7 +1674,9 @@ class _ProgressBar extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: Align(
-        alignment: Alignment.centerLeft,
+        // Thanh tiến độ phải đầy từ phía BẮT ĐẦU của dòng đọc: ở RTL là bên
+        // phải. `Alignment.centerLeft` khiến nó đầy ngược chiều mọi thứ khác.
+        alignment: AlignmentDirectional.centerStart,
         child: FractionallySizedBox(
           widthFactor: value.clamp(0.001, 1.0),
           child: Container(

@@ -24,7 +24,9 @@ class CoinChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(right: NeonTheme.s8),
+      // `end` chứ không `right`: ở tiếng Ả Rập hàng chip lật, khoảng hở phải
+      // theo sang bên kia, nếu không hai chip dính vào nhau.
+      margin: const EdgeInsetsDirectional.only(end: NeonTheme.s8),
       padding: const EdgeInsets.symmetric(
         horizontal: NeonTheme.s16,
         vertical: NeonTheme.s8,

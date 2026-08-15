@@ -50,7 +50,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///
 /// Vì sao tiếng Đức và Filipino: đo trên bảng dịch thật, hai ngôn ngữ này có
 /// chuỗi dài nhất so với tiếng Anh (từ ghép Đức, và cụm "ng/na" của Filipino).
-const _kLocales = <Locale>[Locale('en', 'US'), Locale('de', 'DE'), Locale('fil', 'PH')];
+const _kLocales = <Locale>[
+  Locale('en', 'US'),
+  Locale('de', 'DE'),
+  Locale('fil', 'PH'),
+  // ar_SA để bắt lỗi RTL. Nó KHÔNG bắt được chuyện "không lật" (khoảng hở
+  // sai bên, thanh tiến độ đầy ngược chiều) vì mấy lỗi đó không ném gì —
+  // phần ấy do `test/tool/rtl_direction_test.dart` quét tĩnh.
+  Locale('ar', 'SA'),
+];
 
 /// 360x640 dp — máy Android phổ thông hẹp nhất còn đáng đỡ. Rộng hơn thì
 /// không bắt được gì; hẹp hơn thì báo động giả trên thiết bị chẳng ai dùng.
@@ -141,6 +149,16 @@ void main() {
           addTearDown(tester.view.resetDevicePixelRatio);
           addTearDown(Get.reset);
 
+          // Thu TỪNG lỗi thay vì dựa vào `tester.takeException()`: khi có
+          // nhiều lỗi, hàm đó chỉ trả chuỗi tóm tắt "Multiple exceptions (3)
+          // were detected" và giấu mất loại lỗi — không phân biệt được tràn
+          // layout với crash thật.
+          final errors = <String>[];
+          final previousOnError = FlutterError.onError;
+          FlutterError.onError = (details) =>
+              errors.add(details.exception.toString());
+          addTearDown(() => FlutterError.onError = previousOnError);
+
           SharedPreferences.setMockInitialValues(_richSave());
           final prefs = await SharedPreferences.getInstance();
           final store = Get.put(StorageService(prefs), permanent: true);
@@ -164,20 +182,31 @@ void main() {
             await tester.pump(const Duration(milliseconds: 120));
           }
 
-          final error = tester.takeException();
           if (_kNarrowScreenDebt.contains(entry.key)) {
             expect(
-              error,
-              isNotNull,
+              errors,
+              isNotEmpty,
               reason:
-                  '${entry.key} hết tràn rồi — bỏ nó khỏi _kNarrowScreenDebt '
-                  'để ca này canh tiếp',
+                  '${entry.key} hết tràn rồi — bỏ khỏi _kNarrowScreenDebt để '
+                  'ca này canh tiếp',
             );
+            // Phải đúng là TRÀN, không phải lỗi bất kỳ: `isNotEmpty` trần sẽ
+            // nuốt cả crash thật (StateError, null check) và biến ca này
+            // thành xanh giả.
+            for (final e in errors) {
+              expect(
+                e,
+                contains('RenderFlex overflowed'),
+                reason:
+                    '${entry.key} ném lỗi KHÔNG phải tràn layout — đó là bug '
+                    'thật, không phải nợ màn hẹp',
+              );
+            }
             return;
           }
           expect(
-            error,
-            isNull,
+            errors,
+            isEmpty,
             reason:
                 '${entry.key} vỡ ở ${locale.languageCode} trên khung 360dp. '
                 'Nếu en_US cũng đỏ thì không phải lỗi bản dịch — thêm vào '
