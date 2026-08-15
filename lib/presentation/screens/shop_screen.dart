@@ -37,9 +37,8 @@ class ShopScreen extends StatelessWidget {
                         label: 'booster_bomb_label'.tr,
                         desc: 'booster_bomb_desc'.tr,
                         count: gameCtrl.bombCount.value,
-                        price: GameController.bombPrice,
-                        canAfford:
-                            gameCtrl.coins.value >= GameController.bombPrice,
+                        price: gameCtrl.discountedPrice(GameController.bombPrice),
+                        coins: gameCtrl.coins.value,
                         onBuy: gameCtrl.buyBomb,
                       ),
                     ),
@@ -51,9 +50,8 @@ class ShopScreen extends StatelessWidget {
                         label: 'shuffle'.tr,
                         desc: 'booster_shuffle_desc'.tr,
                         count: gameCtrl.shuffleCount.value,
-                        price: GameController.shufflePrice,
-                        canAfford:
-                            gameCtrl.coins.value >= GameController.shufflePrice,
+                        price: gameCtrl.discountedPrice(GameController.shufflePrice),
+                        coins: gameCtrl.coins.value,
                         onBuy: gameCtrl.buyShuffle,
                       ),
                     ),
@@ -65,9 +63,8 @@ class ShopScreen extends StatelessWidget {
                         label: 'booster_undo_label'.tr,
                         desc: 'booster_undo_desc'.tr,
                         count: gameCtrl.undoCount.value,
-                        price: GameController.undoPrice,
-                        canAfford:
-                            gameCtrl.coins.value >= GameController.undoPrice,
+                        price: gameCtrl.discountedPrice(GameController.undoPrice),
+                        coins: gameCtrl.coins.value,
                         onBuy: gameCtrl.buyUndo,
                       ),
                     ),
@@ -79,9 +76,8 @@ class ShopScreen extends StatelessWidget {
                         label: 'booster_rainbow_label'.tr,
                         desc: 'booster_rainbow_desc'.tr,
                         count: gameCtrl.rainbowCount.value,
-                        price: GameController.rainbowPrice,
-                        canAfford:
-                            gameCtrl.coins.value >= GameController.rainbowPrice,
+                        price: gameCtrl.discountedPrice(GameController.rainbowPrice),
+                        coins: gameCtrl.coins.value,
                         onBuy: gameCtrl.buyRainbow,
                       ),
                     ),
@@ -93,9 +89,8 @@ class ShopScreen extends StatelessWidget {
                         label: 'booster_swap_label'.tr,
                         desc: 'booster_swap_desc'.tr,
                         count: gameCtrl.swapCount.value,
-                        price: GameController.swapPrice,
-                        canAfford:
-                            gameCtrl.coins.value >= GameController.swapPrice,
+                        price: gameCtrl.discountedPrice(GameController.swapPrice),
+                        coins: gameCtrl.coins.value,
                         onBuy: gameCtrl.buySwap,
                       ),
                     ),
@@ -109,9 +104,8 @@ class ShopScreen extends StatelessWidget {
                           'n': '${GameController.freezeTurns}',
                         }),
                         count: gameCtrl.freezeCount.value,
-                        price: GameController.freezePrice,
-                        canAfford:
-                            gameCtrl.coins.value >= GameController.freezePrice,
+                        price: gameCtrl.discountedPrice(GameController.freezePrice),
+                        coins: gameCtrl.coins.value,
                         onBuy: gameCtrl.buyFreeze,
                       ),
                     ),
@@ -123,10 +117,8 @@ class ShopScreen extends StatelessWidget {
                         label: 'booster_streak_freeze_label'.tr,
                         desc: 'booster_streak_freeze_desc'.tr,
                         count: gameCtrl.streakFreezeCount.value,
-                        price: GameController.streakFreezePrice,
-                        canAfford:
-                            gameCtrl.coins.value >=
-                            GameController.streakFreezePrice,
+                        price: gameCtrl.discountedPrice(GameController.streakFreezePrice),
+                        coins: gameCtrl.coins.value,
                         onBuy: gameCtrl.buyStreakFreeze,
                       ),
                     ),
@@ -147,8 +139,11 @@ class _BoosterRow extends StatelessWidget {
   final String label;
   final String desc;
   final int count;
+
+  /// Giá **đã áp giảm giá** (perk Merchant Star, [[I83]]). Truyền giá gốc vào
+  /// đây là hiện sai số cho người chơi và tính sai điều kiện mua.
   final int price;
-  final bool canAfford;
+  final int coins;
   final VoidCallback onBuy;
 
   const _BoosterRow({
@@ -158,9 +153,17 @@ class _BoosterRow extends StatelessWidget {
     required this.desc,
     required this.count,
     required this.price,
-    required this.canAfford,
+    required this.coins,
     required this.onBuy,
   });
+
+  /// Suy ra từ [price] chứ KHÔNG nhận từ ngoài.
+  ///
+  /// Bản cũ để caller truyền `canAfford` riêng, và cả 7 dòng đều truyền
+  /// `coins >= <giá GỐC>` trong khi `buyBomb()` trừ theo giá đã giảm. Người
+  /// chơi có perk giảm giá thấy nút khoá dù đủ tiền, và thấy sai luôn con số
+  /// phải trả. Tính tại chỗ thì hai bên không thể lệch nhau nữa.
+  bool get canAfford => coins >= price;
 
   @override
   Widget build(BuildContext context) {
