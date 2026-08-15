@@ -208,15 +208,19 @@ class _ProgressBanner extends StatelessWidget {
         children: [
           Icon(Icons.auto_awesome_rounded, color: NeonTheme.magenta),
           const SizedBox(width: NeonTheme.s8),
-          Text(
-            'sticker_album_progress'.trParams({
-              'owned': '$owned',
-              'total': '$total',
-            }),
-            style: TextStyle(
-              color: NeonTheme.ink,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+          // `Expanded` để chuỗi xuống dòng thay vì tràn: nó dài theo bản dịch
+          // VÀ theo cỡ chữ hệ thống, hai thứ layout này không kiểm soát.
+          Expanded(
+            child: Text(
+              'sticker_album_progress'.trParams({
+                'owned': '$owned',
+                'total': '$total',
+              }),
+              style: TextStyle(
+                color: NeonTheme.ink,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],

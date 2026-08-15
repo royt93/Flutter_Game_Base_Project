@@ -33,13 +33,22 @@ class NeonAppBar extends StatelessWidget {
           NeonBackButton(color: color, onTap: onBack),
           const SizedBox(width: NeonTheme.s8),
           Expanded(
-            child: StrokeText(
-              title,
-              fontSize: 23,
-              color: Colors.white,
-              stroke: color,
-              strokeWidth: 4,
-              letterSpacing: 1,
+            // `FittedBox` chứ không để `StrokeText` tự xuống dòng: thanh này
+            // là con KHÔNG co giãn của `Column` bọc ngoài ở mọi màn phụ. Tiêu
+            // đề dài (bản dịch dài + cỡ chữ hệ thống lớn) làm nó cao thêm, và
+            // `Expanded` bên dưới không cứu được — Sky Shrine tiếng Filipino ở
+            // cỡ chữ 1.3 tràn 64px đúng vì vậy.
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: StrokeText(
+                title,
+                fontSize: 23,
+                color: Colors.white,
+                stroke: color,
+                strokeWidth: 4,
+                letterSpacing: 1,
+              ),
             ),
           ),
           ...actions,

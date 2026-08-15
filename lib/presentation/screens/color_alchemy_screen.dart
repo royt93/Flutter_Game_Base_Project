@@ -271,11 +271,16 @@ class _FusionBenchState extends State<_FusionBench> {
                     ),
                   ),
                 ),
-                Text(
-                  'fusion_cp'.trParams({
-                    'n': '${widget.controller.craftPoints.value}',
-                  }),
-                  style: TextStyle(color: NeonTheme.inkSoft, fontSize: 12),
+                // `Flexible`: chuỗi này dài theo bản dịch và theo cỡ chữ hệ
+                // thống, hàng chỉ rộng bằng thẻ chứa nó.
+                Flexible(
+                  child: Text(
+                    'fusion_cp'.trParams({
+                      'n': '${widget.controller.craftPoints.value}',
+                    }),
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: NeonTheme.inkSoft, fontSize: 12),
+                  ),
                 ),
               ],
             ),

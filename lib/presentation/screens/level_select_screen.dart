@@ -697,27 +697,37 @@ class _WorldBanner extends StatelessWidget {
             // `Stack` bên ngoài là để lớp hoạ tiết chạy nền phía sau chữ; thả
             // thêm một child vào đó là nó vẽ **đè lên** tên vùng — đã thấy tận
             // mắt trên máy trước khi sửa.
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                StrokeText(world.nameKey.tr, fontSize: 18),
-                // Luật vô hình = luật không tồn tại, nên hiện ngay dưới tên
-                // vùng. World không có luật thì không dựng gì.
-                if (kWeatherRules[world.weather] case final rule?)
-                  Padding(
-                    key: Key('world_rule_${world.startId}'),
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      'weather_rule_banner'.trParams({'rule': rule.descKey.tr}),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+            // `FittedBox` vì băng tên vùng cao CỐ ĐỊNH `_bannerHeight` (60):
+            // con số đó còn được dùng để tính toạ độ đường đi, nên không nới
+            // ra được. Nội dung thì co giãn theo hai thứ nằm ngoài tầm với
+            // của hằng số — độ dài bản dịch, và **cỡ chữ hệ thống người dùng
+            // đặt**. Trên S24 Ultra với font_scale 1.08 nó tràn đúng 3px.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  StrokeText(world.nameKey.tr, fontSize: 18),
+                  // Luật vô hình = luật không tồn tại, nên hiện ngay dưới
+                  // tên vùng. World không có luật thì không dựng gì.
+                  if (kWeatherRules[world.weather] case final rule?)
+                    Padding(
+                      key: Key('world_rule_${world.startId}'),
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        'weather_rule_banner'.trParams({
+                          'rule': rule.descKey.tr,
+                        }),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

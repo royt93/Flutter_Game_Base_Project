@@ -124,23 +124,35 @@ class _ChestRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      color: NeonTheme.gold,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$milestone',
-                      style: TextStyle(
-                        color: NeonTheme.ink,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
+                // Bọc CẢ HÀNG: `Flexible` quanh riêng con số vẫn không đủ vì
+                // icon 16px + khoảng hở đã chiếm gần hết bề ngang còn lại sau
+                // khi icon rương và cột phần thưởng lấy phần của chúng.
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerStart,
+                  // KHÔNG dùng `Flexible` bên trong: `FittedBox` truyền ràng
+                  // buộc VÔ HẠN cho con, mà `Flexible` trong `Row` không giới
+                  // hạn bề ngang thì hỏng. `mainAxisSize.min` + để `FittedBox`
+                  // lo phần thu nhỏ mới đúng.
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.star_rounded,
+                        color: NeonTheme.gold,
+                        size: 16,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Text(
+                        '$milestone',
+                        style: TextStyle(
+                          color: NeonTheme.ink,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: NeonTheme.s8),
                 Text(
@@ -158,12 +170,18 @@ class _ChestRow extends StatelessWidget {
                 color: NeonTheme.gold,
                 size: 16,
               ),
-              Text(
-                '+${fmtNum(reward)}',
-                style: const TextStyle(
-                  color: NeonTheme.gold,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
+              // Số thưởng có thể dài (fmtNum chèn dấu phân cách) và còn giãn
+              // theo cỡ chữ hệ thống. Không bọc thì cột này nở ra, bóp cột
+              // giữa tới mức chính nó tràn.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '+${fmtNum(reward)}',
+                  style: const TextStyle(
+                    color: NeonTheme.gold,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],

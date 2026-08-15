@@ -253,14 +253,19 @@ class _ConstellationCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(color: constellation.color),
                 ),
-                child: Text(
-                  isActiveAura
-                      ? 'sky_shrine_aura_active'.tr
-                      : 'sky_shrine_aura_equip'.tr,
-                  style: TextStyle(
-                    color: isActiveAura ? Colors.white : constellation.color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                // Nhãn nút dài theo bản dịch VÀ theo cỡ chữ hệ thống; hàng
+                // này còn phải chứa icon chòm sao và cột tên/mô tả.
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    isActiveAura
+                        ? 'sky_shrine_aura_active'.tr
+                        : 'sky_shrine_aura_equip'.tr,
+                    style: TextStyle(
+                      color: isActiveAura ? Colors.white : constellation.color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),
