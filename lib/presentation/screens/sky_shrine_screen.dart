@@ -233,38 +233,46 @@ class _ConstellationCard extends StatelessWidget {
             ),
           ),
           if (isLit)
-            PressableScale(
-              onTap: () {
-                if (isActiveAura) {
-                  gameCtrl.setActiveSkyAura('default');
-                } else {
-                  gameCtrl.setActiveSkyAura(constellation.auraVariant);
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: NeonTheme.s8 * 1.5,
-                  vertical: NeonTheme.s8,
-                ),
-                decoration: BoxDecoration(
-                  color: isActiveAura
-                      ? constellation.color
-                      : constellation.color.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: constellation.color),
-                ),
-                // Nhãn nút dài theo bản dịch VÀ theo cỡ chữ hệ thống; hàng
-                // này còn phải chứa icon chòm sao và cột tên/mô tả.
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    isActiveAura
-                        ? 'sky_shrine_aura_active'.tr
-                        : 'sky_shrine_aura_equip'.tr,
-                    style: TextStyle(
-                      color: isActiveAura ? Colors.white : constellation.color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+            Flexible(
+              child: PressableScale(
+                onTap: () {
+                  if (isActiveAura) {
+                    gameCtrl.setActiveSkyAura('default');
+                  } else {
+                    gameCtrl.setActiveSkyAura(constellation.auraVariant);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: NeonTheme.s8 * 1.5,
+                    vertical: NeonTheme.s8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isActiveAura
+                        ? constellation.color
+                        : constellation.color.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: constellation.color),
+                  ),
+                  // Nhãn nút dài theo bản dịch VÀ theo cỡ chữ hệ thống; hàng
+                  // này còn phải chứa icon chòm sao và cột tên/mô tả.
+                  //
+                  // `FittedBox` MỘT MÌNH không đủ: trong `Row` nó nhận ràng buộc
+                  // bề ngang vô hạn nên chẳng có gì để co lại. Phải có `Flexible`
+                  // bọc ngoài (xem chỗ này ở `_ChestRow` — cùng cái bẫy).
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      isActiveAura
+                          ? 'sky_shrine_aura_active'.tr
+                          : 'sky_shrine_aura_equip'.tr,
+                      style: TextStyle(
+                        color: isActiveAura
+                            ? Colors.white
+                            : constellation.color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ),

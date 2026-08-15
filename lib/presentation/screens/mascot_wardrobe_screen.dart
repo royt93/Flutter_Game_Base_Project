@@ -116,16 +116,24 @@ class _SkinCard extends StatelessWidget {
               child: Center(child: StarMascot(size: 72, palette: skin.palette)),
             ),
           ),
-          Text(
-            skin.nameKey.tr,
-            style: TextStyle(
-              color: NeonTheme.ink,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
+          // Thẻ cao cố định theo tỉ lệ ô lưới; tên skin và vùng hành động
+          // cao thêm khi người dùng đặt cỡ chữ lớn. `FittedBox` cho cụm chữ
+          // co lại thay vì đẩy tràn đáy thẻ.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              skin.nameKey.tr,
+              style: TextStyle(
+                color: NeonTheme.ink,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           const SizedBox(height: NeonTheme.s8),
-          _actionArea(),
+          Flexible(
+            child: FittedBox(fit: BoxFit.scaleDown, child: _actionArea()),
+          ),
         ],
       ),
     );

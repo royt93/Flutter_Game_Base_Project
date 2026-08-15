@@ -157,12 +157,7 @@ const _kNarrowScreenDebt = <String>{
 /// Ca kiểm đòi chúng **vẫn phải tràn**: sửa xong mà quên xoá khỏi danh sách
 /// thì suite đỏ. Không có gì bị giấu đi.
 const _kTextScaleDebt = <String>{
-  'de_DE|ColorAlchemyScreen|1.3',
-  'de_DE|MascotWardrobeScreen|1.3',
-  'de_DE|SkyShrineScreen|1.3',
-  'fil_PH|ColorAlchemyScreen|1.3',
-  'fil_PH|MascotWardrobeScreen|1.3',
-  'fil_PH|SkyShrineScreen|1.3',
+  // Rỗng: 5 tổ hợp trước đây đã sửa xong.
 };
 
 void main() {

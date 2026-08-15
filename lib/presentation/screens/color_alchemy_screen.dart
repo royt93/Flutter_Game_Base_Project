@@ -168,13 +168,16 @@ class _PigmentChip extends StatelessWidget {
             ),
             if (!unlocked) ...[
               const SizedBox(width: 4),
-              Text(
-                // F19: dạng mở khoá thứ tư (fusion) không có coin lẫn
-                // achievement. Bản cũ giả định luôn có một trong hai và gọi
-                // `firstWhere` không `orElse` — thêm pigment fusion là màn hình
-                // ném `Bad state: No element` ngay khi dựng.
-                _lockLabel(pigment),
-                style: const TextStyle(fontSize: 10),
+              Flexible(
+                child: Text(
+                  // F19: dạng mở khoá thứ tư (fusion) không có coin lẫn
+                  // achievement. Bản cũ giả định luôn có một trong hai và gọi
+                  // `firstWhere` không `orElse` — thêm pigment fusion là màn
+                  // hình ném `Bad state: No element` ngay khi dựng.
+                  _lockLabel(pigment),
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 10),
+                ),
               ),
             ],
           ],
@@ -324,24 +327,27 @@ class _FusionBenchState extends State<_FusionBench> {
             const SizedBox(height: NeonTheme.s8),
             Row(
               children: [
-                PressableScale(
-                  key: const Key('fusion_fuse'),
-                  onTap: _fuse,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: NeonTheme.s16,
-                      vertical: NeonTheme.s8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: NeonTheme.purple,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'fusion_cost'.trParams({'n': '$kFusionCraftCost'}),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
+                Flexible(
+                  child: PressableScale(
+                    key: const Key('fusion_fuse'),
+                    onTap: _fuse,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: NeonTheme.s16,
+                        vertical: NeonTheme.s8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: NeonTheme.purple,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'fusion_cost'.trParams({'n': '$kFusionCraftCost'}),
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ),
