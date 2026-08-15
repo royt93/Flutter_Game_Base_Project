@@ -246,12 +246,19 @@ class _Hud extends StatelessWidget {
                       tween: Tween(end: score.toDouble()),
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeOut,
-                      builder: (_, v, _) => StrokeText(
-                        fmtNum(v.round()),
-                        fontSize: 30,
-                        color: NeonTheme.ink,
-                        stroke: Colors.white,
-                        strokeWidth: 4.5,
+                      // `scaleDown` vì cột giữa của HUD co lại rất hẹp trên
+                      // máy 360dp: nó phải chia chỗ với nút thoát, chip xu,
+                      // chip năng lượng và linh vật. Điểm 5 chữ số ở cỡ 30
+                      // rộng hơn phần còn lại.
+                      builder: (_, v, _) => FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: StrokeText(
+                          fmtNum(v.round()),
+                          fontSize: 30,
+                          color: NeonTheme.ink,
+                          stroke: Colors.white,
+                          strokeWidth: 4.5,
+                        ),
                       ),
                     );
                     if (gameCtrl.mode.value == GameMode.timeAttack) {
@@ -415,7 +422,13 @@ class _Hud extends StatelessWidget {
                         // puzzleLab/bossRush dù chúng dùng chung layout này.
                         if (gameCtrl.mode.value == GameMode.campaign) ...[
                           const SizedBox(height: NeonTheme.s8),
-                          _LuckyColorBadge(gameCtrl: gameCtrl),
+                          // Badge là `Row(mainAxisSize.min)` nên bề ngang cố
+                          // định; ở 360dp nó rộng hơn cột chứa và tràn đúng
+                          // 21px — thấy sọc vàng-đen trên S24 Ultra.
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: _LuckyColorBadge(gameCtrl: gameCtrl),
+                          ),
                         ],
                         // F6b/F9: màn có mục tiêu ngoài điểm hiện thêm dòng
                         // tiến độ riêng (moveLimitBonus không có "còn lại" —
@@ -821,12 +834,18 @@ class _FtueOverlay extends StatelessWidget {
                     children: [
                       const _BouncingHand(),
                       const SizedBox(width: NeonTheme.s8),
-                      Text(
-                        'ftue_tap_hint'.tr,
-                        style: TextStyle(
-                          color: NeonTheme.ink,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14,
+                      // `Flexible` để chuỗi dài xuống dòng thay vì tràn.
+                      // `mainAxisSize.min` giữ bong bóng ôm sát nội dung khi
+                      // chuỗi ngắn; không có `Flexible` thì bản dịch dài hơn
+                      // tiếng Anh làm hàng này vượt bề ngang màn hẹp.
+                      Flexible(
+                        child: Text(
+                          'ftue_tap_hint'.tr,
+                          style: TextStyle(
+                            color: NeonTheme.ink,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                     ],
