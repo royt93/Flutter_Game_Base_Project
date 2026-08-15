@@ -231,21 +231,24 @@ class AudioManager extends GetxService {
   }
 
   // --------------------------------------------------------------------------
-  // I12: nhạc nền "thêm lớp" theo combo — combo càng cao, đổi sang track bkg
-  // cường độ hơn (tái dùng 3 track có sẵn qua startBgm, không cần audio stem
-  // riêng cho từng lớp). Combo rớt → trả về track nền.
+  // Nhạc nền đổi theo MÀN, không theo combo.
+  //
+  // I12 cũ đổi track theo bậc combo (0-2 / 3-5 / ≥6) và trả về track nền khi
+  // combo rớt. Vì `startBgm` đổi track bằng stop() + play(), mỗi lần đổi là một
+  // bài mới phát lại từ giây 0 — chơi một phút nhảy bài cả chục lần. Ba file
+  // bkg/bkg1/bkg2 là ba bài khác key/tempo nên crossfade cũng không cứu được.
+  // Giữ 3 track, chỉ đổi ở ranh giới màn: trong một ván nhạc không bao giờ đổi.
   // --------------------------------------------------------------------------
 
-  /// THUẦN (test được): bậc track nền (0..2) ứng với [comboCount] hiện tại.
-  static int bgmTierFor(int comboCount) {
-    if (comboCount >= 6) return 2;
-    if (comboCount >= 3) return 1;
-    return 0;
-  }
+  /// THUẦN (test được): track nền (0..2) cho một level id.
+  /// - Campaign (id > 0): đổi nhạc mỗi world (20 màn/world).
+  /// - Side mode (id âm, xem `levels.dart`): đổi theo id để các mode khác nhau
+  ///   không dính chung một bài.
+  static int bgmTrackForLevel(int levelId) =>
+      (levelId > 0 ? (levelId - 1) ~/ 20 : levelId.abs()) % _bgmTracks.length;
 
-  /// Áp bậc lớp nhạc theo combo — [startBgm] tự no-op nếu đã đúng track.
-  void applyComboLayer(int comboCount) =>
-      startBgm(track: bgmTierFor(comboCount));
+  /// Áp track nền của màn — [startBgm] tự no-op nếu đã đúng track.
+  void applyLevelBgm(int levelId) => startBgm(track: bgmTrackForLevel(levelId));
 
   /// Âm cho gem special (nốt cao nhất, to hơn).
   void playSpecial() {

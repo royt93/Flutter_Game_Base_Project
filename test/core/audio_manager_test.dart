@@ -2,20 +2,32 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pop_star_blast/core/audio_manager.dart';
 
 void main() {
-  group('AudioManager.bgmTierFor (I12 — nhạc thêm lớp theo combo)', () {
-    test('combo thấp (<3) → track nền (0)', () {
-      expect(AudioManager.bgmTierFor(0), 0);
-      expect(AudioManager.bgmTierFor(2), 0);
+  group('AudioManager.bgmTrackForLevel (nhạc nền đổi theo màn)', () {
+    test('mọi màn trong cùng 1 world dùng chung 1 track', () {
+      for (int id = 1; id <= 20; id++) {
+        expect(AudioManager.bgmTrackForLevel(id), 0, reason: 'level $id');
+      }
+      for (int id = 21; id <= 40; id++) {
+        expect(AudioManager.bgmTrackForLevel(id), 1, reason: 'level $id');
+      }
     });
 
-    test('combo vừa (3..5) → track lớp 1', () {
-      expect(AudioManager.bgmTierFor(3), 1);
-      expect(AudioManager.bgmTierFor(5), 1);
+    test('world kế tiếp đổi track, xoay vòng 3 track', () {
+      expect(AudioManager.bgmTrackForLevel(41), 2);
+      expect(AudioManager.bgmTrackForLevel(61), 0);
     });
 
-    test('combo cao (>=6, wombo) → track lớp 2', () {
-      expect(AudioManager.bgmTierFor(6), 2);
-      expect(AudioManager.bgmTierFor(20), 2);
+    test('side mode (id âm) không dồn hết vào 1 track', () {
+      final tracks = [
+        for (int id = -1; id >= -9; id--) AudioManager.bgmTrackForLevel(id),
+      ];
+      expect(tracks.toSet().length, 3);
+    });
+
+    test('mọi id đều rơi vào dải track hợp lệ 0..2', () {
+      for (final id in [1, 260, -1, -9, 999]) {
+        expect(AudioManager.bgmTrackForLevel(id), inInclusiveRange(0, 2));
+      }
     });
   });
 

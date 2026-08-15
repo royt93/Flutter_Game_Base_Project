@@ -185,6 +185,7 @@ class GameController extends GetxController {
   /// bởi UI ngay sau khi tick đổi (không phải Rx vì chỉ cần đọc 1 lần/tick).
   final comboMilestoneTick = 0.obs;
   int comboMilestoneValue = 0;
+
   /// F17 Combo Bank: tiền tệ thứ ba. Kiếm ở **mọi** `GameMode` — kể cả Zen và
   /// Puzzle Lab — vì toàn bộ mục đích của nó là nối 14 mode đang là silo.
   /// Không phụ thuộc điểm hay thắng thua: người chơi kém vẫn kiếm được, chỉ
@@ -1202,6 +1203,7 @@ class GameController extends GetxController {
   /// `Timer` nên không có gì để leak qua `Get.reset()`.
   Worker? _coinsSyncWorker;
   Worker? _loginStreakSyncWorker;
+  Worker? _bgmTrackWorker;
   bool _widgetSyncScheduled = false;
 
   void _scheduleWidgetSync([_]) {
@@ -1225,8 +1227,15 @@ class GameController extends GetxController {
     // được 1 lần, crash `LateInitializationError` nếu onInit() chạy lần 2).
     _coinsSyncWorker?.dispose();
     _loginStreakSyncWorker?.dispose();
+    _bgmTrackWorker?.dispose();
     _coinsSyncWorker = ever(coins, _scheduleWidgetSync);
     _loginStreakSyncWorker = ever(loginStreakCount, _scheduleWidgetSync);
+    // Nhạc nền đổi theo màn: bám `currentLevelRx` thay vì gọi tay trong 17 hàm
+    // `start*` — mọi mode đều đi qua đây. `ever` chỉ bắn khi giá trị đổi, nên
+    // chơi lại đúng màn đó không restart nhạc.
+    _bgmTrackWorker = ever(currentLevelRx, (PopLevel? lv) {
+      if (lv != null) AudioManager.maybe?.applyLevelBgm(lv.id);
+    });
     // `_load()`/`_checkLoginStreak()` ở trên đã set coins/streak TRƯỚC khi 2
     // Worker này tồn tại — `ever()` không bắt giá trị đã set trước lúc đăng
     // ký, nên nếu không gọi tay ở đây, widget sẽ đứng ở giá trị cũ cho tới
@@ -1240,6 +1249,7 @@ class GameController extends GetxController {
     StorageService.to.flush();
     _coinsSyncWorker?.dispose();
     _loginStreakSyncWorker?.dispose();
+    _bgmTrackWorker?.dispose();
     super.onClose();
   }
 
@@ -1306,8 +1316,12 @@ class GameController extends GetxController {
     totalDaysPlayed.value = StorageService.to.getInt(
       StorageKeys.totalDaysPlayed,
     ); // I87
-    comboTokens.value = StorageService.to.getInt(StorageKeys.comboTokens); // F17
-    craftPoints.value = StorageService.to.getInt(StorageKeys.craftPoints); // F19
+    comboTokens.value = StorageService.to.getInt(
+      StorageKeys.comboTokens,
+    ); // F17
+    craftPoints.value = StorageService.to.getInt(
+      StorageKeys.craftPoints,
+    ); // F19
     claimedSeasonMask.value = StorageService.to.getInt(
       StorageKeys.claimedSeasonMask,
     );
@@ -2250,12 +2264,8 @@ class GameController extends GetxController {
   bool rerollDailyQuests() {
     if (!canRerollDailyQuests) return false;
     _spendTokens(tokenCostRerollQuest);
-    StorageService.to.setInt(
-      StorageKeys.tokenRerollQuestDay,
-      todayEpochDay(),
-    );
-    final offset =
-        StorageService.to.getInt(StorageKeys.tokenQuestOffset) + 1;
+    StorageService.to.setInt(StorageKeys.tokenRerollQuestDay, todayEpochDay());
+    final offset = StorageService.to.getInt(StorageKeys.tokenQuestOffset) + 1;
     StorageService.to.setInt(StorageKeys.tokenQuestOffset, offset);
     dailyQuests.assignAll(questsForDay(todayEpochDay() + offset * 1000));
     dailyQuestProgress.assignAll(const [0, 0, 0]);
@@ -2601,16 +2611,13 @@ class GameController extends GetxController {
   void toggleGhostScore() => showGhostScore.value = !showGhostScore.value;
 
   /// Điểm ghost tại nước đi hiện tại của người chơi.
-  int get ghostScoreNow =>
-      ghostScoreAtMove(ghostTimeline, movesUsed.value - 1);
+  int get ghostScoreNow => ghostScoreAtMove(ghostTimeline, movesUsed.value - 1);
 
   /// Bắt đầu ván duel từ [duel]. Trả `false` nếu bàn không dựng được.
   bool startDuel(DuelData duel) {
     final grid = generateDailyChallengeGrid(duel.seed);
     activeDuel = duel;
-    showGhostScore.value = !StorageService.to.getBool(
-      StorageKeys.reduceMotion,
-    );
+    showGhostScore.value = !StorageService.to.getBool(StorageKeys.reduceMotion);
     ghostTimeline = ghostScoreTimeline(
       grid.map((r) => List<int?>.from(r)).toList(),
       duel.taps,
@@ -2926,14 +2933,13 @@ class GameController extends GetxController {
     // hệ cộng hưởng đúng như người chơi kỳ vọng, và chỉ nhân lên — luật thời
     // tiết không bao giờ trừ điểm (xem `kWeatherRules`).
     final weatherBonus = activeBigGroupBonus;
-    final bonusMultiplier = (weatherBonus != null &&
-            groupSize >= activeBigGroupThreshold)
+    final bonusMultiplier =
+        (weatherBonus != null && groupSize >= activeBigGroupThreshold)
         ? weatherBonus
         : 1.0;
     final gained = (baseScore * comboMultiplier.value * bonusMultiplier)
         .round();
     score.value += gained;
-    AudioManager.maybe?.applyComboLayer(comboCount.value); // I12
     // I22 Achievements.
     totalGemsPopped.value += groupSize;
     // X24: ghi đệm — xem [StorageService.flush] cho danh sách mốc flush.
@@ -2960,7 +2966,6 @@ class GameController extends GetxController {
   void resetCombo() {
     comboCount.value = 0;
     comboMultiplier.value = 1.0;
-    AudioManager.maybe?.applyComboLayer(0); // I12
   }
 
   /// X24: mốc flush chính. Kết thúc màn là lúc an toàn nhất để đẩy counter
@@ -3215,8 +3220,7 @@ class GameController extends GetxController {
 
   /// I83: giá sau giảm của perk prestige `boosterDiscount`. Làm tròn LÊN để
   /// không bao giờ ra giá 0 khi thêm booster rẻ ở bản sau.
-  int discountedPrice(int price) =>
-      hasPrestigePerk(PerkEffect.boosterDiscount)
+  int discountedPrice(int price) => hasPrestigePerk(PerkEffect.boosterDiscount)
       ? (price * kBoosterDiscountRate).ceil()
       : price;
 
