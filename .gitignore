@@ -45,9 +45,14 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Signing (contains secrets — do not track)
-/android/gradle.properties
-/android/keystore.jks
+# Signing (contains secrets — do not track). See example/android/app.properties.example
+# for the setup a fresh clone needs (keystore alias/password + external keystore path).
+/example/android/gradle.properties
+/example/android/app.properties
+/example/android/keystore.jks
 
 # Machine-local SDK path, not shared across dev machines
 **/local.properties
+
+# Build output
+/example/build/

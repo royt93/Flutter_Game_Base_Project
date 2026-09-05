@@ -145,7 +145,7 @@ class _RoyBaseGameAppState extends State<RoyBaseGameApp>
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Roy Project Base Game',
+      title: 'Roy Casual Kit Example',
       debugShowCheckedModeBanner: false,
       defaultTransition: Transition.cupertino,
       transitionDuration: const Duration(milliseconds: 280),

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,8 +7,16 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Single local, gitignored file for this app's sensitive config (release
+// signing today, any future ad-SDK keys later) — see app.properties.example.
+val appProperties = Properties()
+val appPropertiesFile = rootProject.file("app.properties")
+if (appPropertiesFile.exists()) {
+    appPropertiesFile.inputStream().use { appProperties.load(it) }
+}
+
 android {
-    namespace = "com.galaxyjoy.roybasegame"
+    namespace = "com.galaxyjoy.roycasualkit"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -23,7 +33,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.galaxyjoy.roybasegame"
+        applicationId = "com.galaxyjoy.roycasualkit"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -34,10 +44,13 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("../keystore.jks")
-            storePassword = project.findProperty("KS_PW") as String? ?: ""
-            keyAlias = project.findProperty("KS_ALIAS") as String? ?: ""
-            keyPassword = project.findProperty("KS_PW") as String? ?: ""
+            val keystorePath = appProperties.getProperty("KEYSTORE_PATH")
+            if (keystorePath != null) {
+                storeFile = file(keystorePath)
+            }
+            storePassword = appProperties.getProperty("KS_PW") ?: ""
+            keyAlias = appProperties.getProperty("KS_ALIAS") ?: ""
+            keyPassword = appProperties.getProperty("KS_PW") ?: ""
         }
     }
 

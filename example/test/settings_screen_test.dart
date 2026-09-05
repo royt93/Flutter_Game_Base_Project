@@ -39,7 +39,7 @@ void main() {
 
       // StrokeText renders a stroke Text + a fill Text stacked, so both
       // titles match twice.
-      expect(find.text('Roy Project Base Game'), findsWidgets);
+      expect(find.text('Roy Casual Kit Example'), findsWidgets);
       expect(find.text('Settings'), findsWidgets);
       expect(tester.takeException(), isNull);
     });

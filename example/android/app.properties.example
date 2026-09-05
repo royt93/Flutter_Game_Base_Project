@@ -1,0 +1,12 @@
+# Copy this file to app.properties (gitignored) and fill in real values.
+# app.properties is the single place for this app's sensitive local config —
+# release signing today, any future ad-SDK keys/IDs later — so nothing
+# secret ever needs to live in a tracked file again.
+
+# Release keystore. Kept out of this repo entirely — the source of truth is
+# the private https://github.com/royt93/myKeyStore vault, folder
+# com.galaxyjoy.roycasualkit/ (named after this app's applicationId).
+# KEYSTORE_PATH points at wherever you cloned that vault locally.
+KEYSTORE_PATH=/absolute/path/to/myKeyStore/com.galaxyjoy.roycasualkit/keystore.jks
+KS_ALIAS=
+KS_PW=

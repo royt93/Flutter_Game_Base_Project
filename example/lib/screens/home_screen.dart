@@ -22,7 +22,7 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const StrokeText('Roy Project Base Game', fontSize: 28),
+              const StrokeText('Roy Casual Kit Example', fontSize: 28),
               const SizedBox(height: 24),
               NeonButton(
                 label: 'settings'.tr,
