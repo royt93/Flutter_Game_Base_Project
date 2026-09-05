@@ -109,26 +109,3 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-
-# Launcher icon (chạy: dart run icons_launcher:create)
-icons_launcher:
-  image_path: "asset/icon/ic_launcher.png"
-  platforms:
-    android:
-      enable: true
-      adaptive_background_color: "#7ED8FF"
-      adaptive_foreground_image: "asset/icon/ic_launcher.png"
-    ios:
-      enable: true
-
-# Splash screen bright-casual (chạy: dart run flutter_native_splash:create)
-flutter_native_splash:
-  color: "#7ED8FF"
-  image_android: asset/icon/ic_launcher.png
-  background_image_ios: asset/icon/ios_background.png
-  fullscreen: true
-  android_gravity: center
-
-  android_12:
-    color: "#7ED8FF"
-    image: asset/icon/ic_launcher.png

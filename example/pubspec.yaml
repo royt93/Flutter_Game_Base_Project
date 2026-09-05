@@ -1,0 +1,51 @@
+name: roy_casual_kit_example
+description: "Example app + widget showcase for the roy_base_game package."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  roy_base_game:
+    path: ../
+  get: ^4.7.3
+  wakelock_plus: ^1.4.0
+  package_info_plus: ^9.0.1
+  shared_preferences: ^2.5.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  integration_test:
+    sdk: flutter
+  icons_launcher: ^3.0.3
+  flutter_native_splash: ^2.4.7
+
+flutter:
+  uses-material-design: true
+
+icons_launcher:
+  image_path: "asset/icon/ic_launcher.png"
+  platforms:
+    android:
+      enable: true
+      adaptive_background_color: "#7ED8FF"
+      adaptive_foreground_image: "asset/icon/ic_launcher.png"
+    ios:
+      enable: true
+
+flutter_native_splash:
+  color: "#7ED8FF"
+  image_android: asset/icon/ic_launcher.png
+  background_image_ios: asset/icon/ios_background.png
+  fullscreen: true
+  android_gravity: center
+  android_12:
+    color: "#7ED8FF"
+    image: asset/icon/ic_launcher.png
