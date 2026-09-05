@@ -15,11 +15,13 @@ class NeonBg extends StatefulWidget {
   /// một sắc thái riêng (cyan → magenta → lime → ...).
   final Color? accent;
 
-  /// G4: lấy mức "energy" combo hiện tại (0..1) mỗi frame, vd `() => game.heat`.
-  /// Null = nền tĩnh mặc định (màn không có combo, vd Home).
+  /// Lấy mức "energy" hiện tại (0..1) mỗi frame — dùng để nền phản ứng theo
+  /// một tín hiệu gameplay liên tục (vd combo/heat) một khi có màn chơi
+  /// thật. Null = nền tĩnh mặc định (màn không có tín hiệu đó, vd Home).
   final double Function()? energyOf;
 
-  /// I16: phủ thêm dải aurora chuyển sắc lên trên nền — chỉ world cuối.
+  /// Phủ thêm dải aurora chuyển sắc lên trên nền — dùng cho màn muốn nhấn
+  /// mạnh (vd màn cuối một chuỗi nội dung dài).
   final bool aurora;
 
   const NeonBg({
@@ -44,7 +46,7 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
   final _rnd = math.Random(7);
   late final List<_Orb> _orbs;
   late final List<_Star> _stars;
-  double _energy = 0; // G4: mượt hoá combo heat, lerp mỗi frame (~60fps)
+  double _energy = 0; // mượt hoá tín hiệu energy, lerp mỗi frame (~60fps)
 
   @override
   void initState() {
@@ -154,14 +156,14 @@ class _NeonBgPainter extends CustomPainter {
   final List<_Orb> orbs;
   final List<_Star> stars;
   final Color? accent;
-  final double energy; // G4: 0..1, combo heat mượt hoá
+  final double energy; // 0..1, tín hiệu energy đã mượt hoá
   _NeonBgPainter(this.t, this.orbs, this.stars, this.accent, this.energy);
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
     final tau = t * math.pi * 2;
-    // G4: energy cao → orb trôi nhanh hơn (biên độ nhỏ để tránh chói/khó đọc).
+    // energy cao → orb trôi nhanh hơn (biên độ nhỏ để tránh chói/khó đọc).
     final orbTau = tau * (1 + energy * 0.7);
 
     // 1) Nền gradient candy sáng

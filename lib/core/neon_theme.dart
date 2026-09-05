@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 /// ấm, palette kẹo, thẻ trắng, chữ mực đậm. Giữ tên hằng cũ (cyan/magenta/…) để
 /// khỏi rename hàng loạt callsite — giá trị đã tinh chỉnh sang tông "kẹo".
 ///
-/// I15: bộ token nền/thẻ/mực (bg*/card*/ink*) là getter đổi theo [dark] — bật
+/// Bộ token nền/thẻ/mực (bg*/card*/ink*) là getter đổi theo [dark] — bật
 /// lên dùng lại đúng bảng màu neon-dark gốc trước pivot. Callsite cũ gọi
 /// `NeonTheme.ink`/`NeonTheme.card`/… không cần sửa gì, tự đổi theo flag.
 class NeonTheme {
@@ -67,7 +67,7 @@ class NeonTheme {
   static const Color red = Color(0xFFFF6B6B);
   static const Color indigo = Color(0xFF6C7BFF);
   static const Color gold = Color(0xFFFFB300);
-  static const Color coral = Color(0xFFFF7A5C); // I79: World 13
+  static const Color coral = Color(0xFFFF7A5C); // extra accent, unused by any current screen
 
   // Xám "disabled/muted" dùng chung cho nút/icon bị vô hiệu hoá.
   static const Color muted = Color(0xFFC9C3DA);
@@ -83,8 +83,9 @@ class NeonTheme {
     yellow,
     orange,
     purple,
-    red, // I17-fix: world 10-11 sinh colorCount tới 7 — thiếu màu này khiến
-    // colorIndex 6 alias trùng cyan qua modulo, 2 nhóm khác màu render y hệt.
+    red, // 7th color — without it, a caller needing colorIndex 6 aliases
+    // back to cyan via modulo, and two different-color groups would render
+    // identically.
   ];
 
   /// Gradient nền sáng candy dùng cho mọi screen (qua NeonBg).

@@ -1,9 +1,10 @@
 # Khai báo tag dùng trong test (tránh cảnh báo "undefined tag").
-# 'slow': test integration điều khiển app thật trên device, chạy real-time rất chậm
-# (vào GameScreen + vòng đời ~5-8 phút/case). Bộ test thường:
+# 'slow': dành cho test integration điều khiển app thật trên device, chạy
+# real-time chậm hơn nhiều so với unit/widget test. Bộ test hiện tại (base
+# project, không tag nào dùng 'slow') chạy đủ nhanh nên không cần loại trừ
+# gì trong CI thường; cứ tag test integration mới bằng 'slow' nếu nó hoá ra
+# chạy chậm. Bộ test thường:
 #   flutter test --exclude-tags slow
-# Nightly / device-farm chạy đầy đủ (kể cả slow):
-#   flutter test integration_test/app_test.dart -d <device>
 tags:
   slow:
     description: Integration test chạy real-time trên device thật, rất chậm — dành cho nightly.

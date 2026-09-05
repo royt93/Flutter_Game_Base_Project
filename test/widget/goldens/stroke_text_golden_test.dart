@@ -12,7 +12,7 @@ void main() {
             child: SizedBox(
               width: 200,
               height: 60,
-              child: StrokeText('Pop Star', fontSize: 24),
+              child: StrokeText('Preview', fontSize: 24),
             ),
           ),
         ),

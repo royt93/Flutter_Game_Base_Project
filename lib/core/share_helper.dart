@@ -5,9 +5,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:share_plus/share_plus.dart';
 
-/// F15/X6: 1 pipeline share dùng chung cho mọi nơi gọi trong app —
-/// text-only (X6 mời bạn bè) hoặc kèm ảnh chụp bàn chơi (F15).
-/// Không tạo hàm/plugin share riêng ở nơi khác.
+/// 1 pipeline share dùng chung cho mọi nơi gọi trong app — text-only (vd
+/// mời bạn bè) hoặc kèm ảnh chụp (vd kết quả màn chơi). Không tạo hàm/plugin
+/// share riêng ở nơi khác.
 Future<void> shareText(String text) {
   return SharePlus.instance.share(ShareParams(text: text));
 }
@@ -86,10 +86,11 @@ Future<void> shareBoardImage({
   );
 }
 
-/// I57: chụp `ScoreCard` (dựng tạm trong overlay ẩn ngay trước khi gọi, xem
-/// `GameScreenController.shareResultCard`) rồi mở share sheet kèm
-/// [levelText] — cùng pattern với [shareBoardImage] nhưng tách file/caption
-/// riêng vì đây là thẻ kết quả, không phải ảnh chụp board (F15).
+/// Chụp một widget kết quả (dựng tạm trong overlay ẩn ngay trước khi gọi)
+/// rồi mở share sheet kèm [levelText] — cùng pattern với [shareBoardImage]
+/// nhưng tách file/caption riêng vì đây là thẻ kết quả, không phải ảnh chụp
+/// board. Unused in the base today (no ScoreCard widget survived the
+/// strip) — wire this to your own result-card widget when you build one.
 Future<void> shareScoreCard({
   required GlobalKey boundaryKey,
   required String levelText,
@@ -105,11 +106,13 @@ Future<void> shareScoreCard({
   );
 }
 
-/// I87: mở share sheet với PNG thẻ hành trình đã chụp sẵn.
+/// Mở share sheet với PNG thẻ hành trình đã chụp sẵn.
 ///
 /// Nhận **bytes** chứ không nhận `GlobalKey` như [shareScoreCard]: bên gọi phải
 /// gỡ overlay ẩn ngay sau khi chụp, nên nó cầm bytes trước khi tới đây. Vẫn là
 /// cùng một pipeline — [captureBoardPng] — không phải đường xuất ảnh thứ hai.
+/// Unused in the base today (no JourneyCard widget survived the strip) —
+/// wire this to your own result-card widget when you build one.
 Future<void> shareJourneyCard({
   required Uint8List png,
   required String text,

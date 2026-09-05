@@ -14,7 +14,6 @@ import 'core/locale_service.dart';
 import 'core/neon_theme.dart';
 import 'core/reminder_service.dart';
 import 'core/storage_service.dart';
-import 'core/runtime_flags.dart';
 import 'presentation/screens/home_screen.dart';
 
 void main() => app();
@@ -43,10 +42,10 @@ Future<void> app({bool withAudio = true}) async {
   NeonTheme.dark = store.getBool(StorageKeys.themeDark);
   final locale = Get.put(LocaleService(store), permanent: true);
   Get.put(ReminderService(), permanent: true);
-  // GetMaterialApp's `locale:` param chỉ áp dụng lúc build lần đầu. Khi
-  // restartApp() gọi lại app() trong cùng process, GetX vẫn giữ Get.locale
-  // cũ (từ lần đổi ngôn ngữ trước) nên phải chủ động set lại ở đây, không
-  // thể chỉ dựa vào tham số constructor.
+  // GetMaterialApp's `locale:` param chỉ áp dụng lúc build lần đầu; nếu
+  // `app()` từng chạy trước đó trong cùng process (vd test gọi lại), GetX
+  // vẫn giữ `Get.locale` cũ nên phải chủ động set lại ở đây, không thể chỉ
+  // dựa vào tham số constructor.
   Get.updateLocale(locale.current.value);
 
   if (withAudio) {
@@ -69,20 +68,6 @@ Future<void> app({bool withAudio = true}) async {
   });
 }
 
-/// Xoá mọi singleton GetX rồi chạy lại [app()] — dùng sau import backup để
-/// mọi controller đọc lại state mới từ storage, khỏi phải tự reload từng
-/// cái (dễ sót khi thêm service mới).
-Future<void> restartApp() async {
-  Get.deleteAll(force: true);
-  // Integration tests start without audio because its frame callbacks can
-  // keep the test binding alive during teardown. Production keeps audio.
-  await app(withAudio: !isE2eTest);
-  // runApp preserves the existing Navigator when the root widget type is the
-  // same. Reset the route stack so restore never leaves a stale Settings
-  // route or dialog on screen.
-  Get.offAll(() => const HomeScreen());
-}
-
 /// Khởi tạo SharedPreferences; thiết bị hiếm với storage lỗi không được làm
 /// app crash trắng màn hình — trả null để [StorageService] tự dùng fallback
 /// in-memory.
@@ -99,9 +84,9 @@ bool _appVersionLoaded = false;
 
 /// Nạp version thật từ pubspec (qua package_info_plus) vào [kAppVersion].
 /// Lỗi (vd nền tảng test) → giữ nguyên fallback. Chỉ gọi platform channel 1
-/// lần cho cả tiến trình — `restartApp()` gọi lại `app()` mỗi lần import
-/// backup, không cần hỏi lại `PackageInfo.fromPlatform()` vì version không
-/// đổi trong lúc app đang chạy.
+/// lần cho cả tiến trình — version không đổi trong lúc app đang chạy, nên
+/// [_appVersionLoaded] chặn gọi lại nếu `app()` từng chạy nhiều lần trong
+/// cùng process (vd test).
 Future<void> loadAppVersion() async {
   if (_appVersionLoaded) return;
   try {

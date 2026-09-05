@@ -2,11 +2,12 @@ import 'package:flutter/services.dart';
 
 import 'storage_service.dart';
 
-/// X2: rung xúc giác — mọi điểm gọi `HapticFeedback.*` trong app phải đi qua
+/// Rung xúc giác — mọi điểm gọi `HapticFeedback.*` trong app phải đi qua
 /// đây để tôn trọng cờ `StorageKeys.hapticsEnabled` (tắt trong Settings).
 enum HapticLevel { light, medium, heavy }
 
-/// I11: cỡ nhóm vừa nổ → mức rung (thuần, test được).
+/// Cỡ nhóm vừa nổ → mức rung (thuần, test được) — dùng khi có luật ghép
+/// nhóm/pop thật.
 HapticLevel hapticLevelForGroupSize(int size) {
   if (size >= 8) return HapticLevel.heavy;
   if (size >= 4) return HapticLevel.medium;

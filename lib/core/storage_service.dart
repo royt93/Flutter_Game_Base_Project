@@ -12,9 +12,8 @@ class StorageKeys {
   static const String audioMuted = 'audio_muted';
   static const String themeDark = 'theme_dark';
 
-  // Kept beyond the base-project's own 3 keys because lib/core/haptics.dart
-  // and lib/core/utils/clamped_clock.dart (both out of this task's scope)
-  // read/write them directly — see task-3-report.md for why.
+  // 4 extra keys beyond the base project's own 3: lib/core/haptics.dart and
+  // lib/core/utils/clamped_clock.dart read/write them directly.
   static const String hapticsEnabled = 'haptics_enabled';
   static const String hapticSoftMode = 'haptic_soft_mode';
   static const String maxEpochDaySeen = 'max_epoch_day_seen';
@@ -40,17 +39,17 @@ class StorageService extends GetxService {
   static StorageService? get maybe =>
       Get.isRegistered<StorageService>() ? Get.find<StorageService>() : null;
 
-  /// X24: số lần thật sự chạm `SharedPreferences` (platform channel + ghi
+  /// Số lần thật sự chạm `SharedPreferences` (platform channel + ghi
   /// đĩa). Tăng ở mọi `setX` **không** đi qua buffer, và mỗi key được
   /// [flush] đẩy xuống.
   ///
-  /// Tồn tại để đo được khiếm khuyết X24 bằng test tất định thay vì profile
-  /// tay trên device: `registerPop()` từng ghi 6 lần cho MỖI cú tap. Một
-  /// `int++` không đáng kể ở runtime, đổi lại có lưới chống hồi quy vĩnh
-  /// viễn — round sau ai thêm hệ mới vào hot path là test đỏ ngay.
+  /// Tồn tại để có test tất định thay vì phải profile tay trên device khi
+  /// một hot path (vd một counter ghi mỗi lần tap trong gameplay) vô tình
+  /// ghi thẳng xuống đĩa nhiều lần thay vì qua buffer. Một `int++` không
+  /// đáng kể ở runtime, đổi lại có lưới chống hồi quy vĩnh viễn.
   int platformWrites = 0;
 
-  /// X24: write-behind cho hot path. Giá trị ghi qua `setXBuffered` nằm ở đây
+  /// Write-behind cho hot path. Giá trị ghi qua `setXBuffered` nằm ở đây
   /// tới khi [flush] đẩy xuống đĩa một lượt.
   ///
   /// **Mọi đường đọc phải tra buffer TRƯỚC `_prefs`** — nếu không, giá trị vừa
@@ -58,9 +57,10 @@ class StorageService extends GetxService {
   /// nên [getInt]/[getBool]/[getString]/[getDouble]/[allKeys]/[exportAll] đều
   /// đã xử lý, và [remove]/[importAll] dọn buffer.
   ///
-  /// CHỈ dùng cho counter trên hot path (xem `GameController.registerPop`).
-  /// Giao dịch thật — mua bán, nhận thưởng, reset — phải ghi ngay bằng `setX`
-  /// thường: mất chúng khi app bị kill là mất tiền/vật phẩm của người chơi.
+  /// CHỈ dùng cho counter trên hot path (vd một counter ghi mỗi lần tap
+  /// trong gameplay). Giao dịch thật — mua bán, nhận thưởng, reset — phải
+  /// ghi ngay bằng `setX` thường: mất chúng khi app bị kill là mất tiền/vật
+  /// phẩm của người chơi.
   final Map<String, Object> _buffer = {};
 
   Future<void> setIntBuffered(String key, int value) async =>
@@ -89,32 +89,30 @@ class StorageService extends GetxService {
     }
   }
 
-  /// X28: đọc giá trị thô rồi **kiểm kiểu**, không cast thẳng.
+  /// Đọc giá trị thô rồi **kiểm kiểu**, không cast thẳng.
   ///
   /// Bản cũ dùng `_prefs.getInt(key)` / `as int?`, mà cả hai đều ném
   /// `TypeError` nếu key đang giữ kiểu khác (String ở chỗ đáng lẽ là int).
-  /// Vì `GameController._load()` đọc gần 100 key và chạy trong `onInit()` của
-  /// một singleton `permanent: true` dựng ngay ở `main.dart`, một key sai kiểu
+  /// Một khi state thật hydrate hàng chục key trong `onInit()` của một
+  /// singleton `permanent: true` dựng ngay ở `main.dart`, một key sai kiểu
   /// duy nhất là **app không boot được** — người chơi phải gỡ cài đặt.
   ///
   /// Đường vào có thật: [importAll] chỉ kiểm giá trị thuộc int/bool/double/
-  /// String, KHÔNG kiểm từng key có đúng kiểu mong đợi không. Cộng với khoá
-  /// backup nằm sẵn trong binary (xem `logic/backup_code.dart`), ai cũng tạo
-  /// được mã backup hợp lệ chứa `"coins": "abc"`.
+  /// String, KHÔNG kiểm từng key có đúng kiểu mong đợi không — một bản
+  /// backup hỏng hoặc chỉnh tay chứa `"coins": "abc"` là đủ để trúng lỗi này.
   ///
   /// Sai kiểu → trả mặc định, giống hệt như key chưa tồn tại. Sửa ở đây phủ
-  /// **mọi** key một lượt, thay vì bọc try/catch ở từng chỗ hydrate (cách đó
-  /// đã trôi mất 1 chỗ, xem [X18]).
+  /// **mọi** key một lượt, thay vì bọc try/catch ở từng chỗ hydrate.
   Object? _raw(String key) => _buffer[key] ?? _prefs?.get(key) ?? _fallback[key];
 
   int getInt(String key, {int def = 0}) {
     final v = _raw(key);
     return v is int ? v : def;
   }
-  /// X29: ghi thẳng phải **huỷ bản đang đệm** của cùng key. Không có dòng
+  /// Ghi thẳng phải **huỷ bản đang đệm** của cùng key. Không có dòng
   /// này thì giá trị buffered cũ vẫn che kết quả ở `_raw`, và cú [flush] kế
-  /// tiếp ghi đè luôn xuống đĩa — đường hoàn tác (X17), reset, mua bán và
-  /// import đều lặng lẽ mất tác dụng nếu key đó từng đi qua hot path.
+  /// tiếp ghi đè luôn xuống đĩa — một undo, reset, mua bán hay import đều
+  /// lặng lẽ mất tác dụng nếu key đó từng đi qua hot path.
   Future<void> setInt(String key, int value) async {
     _buffer.remove(key);
     platformWrites++;
@@ -129,7 +127,7 @@ class StorageService extends GetxService {
     final v = _raw(key);
     return v is bool ? v : def;
   }
-  /// X29: xem ghi chú ở [setInt].
+  /// Xem ghi chú ở [setInt].
   Future<void> setBool(String key, bool value) async {
     _buffer.remove(key);
     platformWrites++;
@@ -144,7 +142,7 @@ class StorageService extends GetxService {
     final v = _raw(key);
     return v is double ? v : def;
   }
-  /// X29: xem ghi chú ở [setInt].
+  /// Xem ghi chú ở [setInt].
   Future<void> setDouble(String key, double value) async {
     _buffer.remove(key);
     platformWrites++;
@@ -159,7 +157,7 @@ class StorageService extends GetxService {
     final v = _raw(key);
     return v is String ? v : null;
   }
-  /// X29: xem ghi chú ở [setInt].
+  /// Xem ghi chú ở [setInt].
   Future<void> setString(String key, String value) async {
     _buffer.remove(key);
     platformWrites++;
@@ -170,8 +168,8 @@ class StorageService extends GetxService {
     _fallback[key] = value;
   }
 
-  /// I42: đọc JSON list (khác pattern CSV-join của các key khác trong file
-  /// này) — dùng cho danh sách mã puzzle tự vẽ đã lưu.
+  /// Đọc JSON list (khác pattern CSV-join của các key khác trong file này)
+  /// — dùng cho các key cần lưu một danh sách string thay vì 1 giá trị.
   List<String> getStringList(String key) {
     final raw = getString(key);
     if (raw == null) return [];
@@ -186,8 +184,8 @@ class StorageService extends GetxService {
       setString(key, jsonEncode(value));
 
   Future<void> remove(String key) async {
-    // X24: xoá cả bản đang đệm, nếu không thì giá trị chưa flush sẽ "sống
-    // lại" ở lần đọc kế tiếp dù key đã bị xoá khỏi đĩa.
+    // Xoá cả bản đang đệm, nếu không thì giá trị chưa flush sẽ "sống lại"
+    // ở lần đọc kế tiếp dù key đã bị xoá khỏi đĩa.
     _buffer.remove(key);
     if (_prefs != null) {
       await _prefs.remove(key);
@@ -196,10 +194,10 @@ class StorageService extends GetxService {
     _fallback.remove(key);
   }
 
-  /// X19: mọi key đang tồn tại. Cùng lý do với [exportAll] — dùng API generic
-  /// thay vì hand-list `StorageKeys`, để `resetProgress()` không phải nhớ cập
-  /// nhật danh sách mỗi khi thêm key mới (danh sách tay đó đã trôi lại phía
-  /// sau qua 5 round và là root cause của X19).
+  /// Mọi key đang tồn tại. Cùng lý do với [exportAll] — dùng API generic
+  /// thay vì hand-list `StorageKeys`, để không có chỗ nào phải nhớ cập nhật
+  /// một danh sách tay mỗi khi thêm key mới (một danh sách tay kiểu đó rất
+  /// dễ trôi lạc hậu qua vài round code review).
   Set<String> allKeys() =>
       {...?_prefs?.getKeys(), ..._fallback.keys, ..._buffer.keys};
 
@@ -208,8 +206,8 @@ class StorageService extends GetxService {
   /// không phải nhớ cập nhật danh sách này mỗi khi thêm key mới.
   Map<String, Object> exportAll() {
     final prefs = _prefs;
-    // X24: giá trị đang đệm phải đè lên bản trên đĩa — backup và
-    // `resetProgress` đều đọc qua đây, cả hai cần trạng thái mới nhất.
+    // Giá trị đang đệm phải đè lên bản trên đĩa — backup/export đọc qua
+    // đây và cần trạng thái mới nhất, kể cả phần chưa flush.
     if (prefs == null) return {..._fallback, ..._buffer};
     return {
       for (final k in prefs.getKeys()) k: prefs.get(k) as Object,
@@ -234,7 +232,7 @@ class StorageService extends GetxService {
       for (final entry in data.entries) entry.key: entry.value!,
     };
     final previous = exportAll();
-    // X24: import ghi đè toàn bộ profile — mọi giá trị đang đệm không còn ý
+    // Import ghi đè toàn bộ profile — mọi giá trị đang đệm không còn ý
     // nghĩa và sẽ ghi đè ngược lên dữ liệu vừa khôi phục nếu flush sau đó.
     _buffer.clear();
     try {

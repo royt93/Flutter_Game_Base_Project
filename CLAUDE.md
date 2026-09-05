@@ -76,3 +76,6 @@ Use `dlog('message')` from `lib/core/debug_log.dart`. No-ops in release builds. 
 
 ### Theme
 `NeonTheme` (`lib/core/neon_theme.dart`) is a bright-casual (Candy-Crush-style) look by default: light candy-sky gradient background, tokens `ink`/`inkSoft` (text), `card`/`cardAlt` (panels), and `glow(...)`/`drop(...)` shadow helpers over a candy color palette. Flip `NeonTheme.dark = true` (persisted via `StorageKeys.themeDark`) for the original neon-dark palette instead — the same token getters resolve to different colors, no call site needs to change.
+
+### Testing gotcha: `NeonBg`'s ticker never settles
+`NeonBg` (used by every screen) runs a permanent, never-stopping `Ticker` for its background animation. That means `pumpAndSettle()` will never return in any test that renders a screen wrapped in `NeonBg` — it just times out. Use a bounded `await tester.pump(const Duration(seconds: N))` instead (see `integration_test/app_boot_test.dart` and `test/widget/settings_screen_test.dart` for the pattern already in use). A plain widget test can also wrap the tree in `TickerMode(enabled: false)` to suppress the ticker if it needs to avoid the animation entirely.
