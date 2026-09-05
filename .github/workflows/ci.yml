@@ -26,3 +26,11 @@ jobs:
         run: flutter analyze
       - name: Test host (loại nhóm slow cần device)
         run: flutter test --exclude-tags slow
+      - run: flutter pub get
+        working-directory: example
+      - name: Analyze example (0 issue bắt buộc)
+        run: flutter analyze
+        working-directory: example
+      - name: Test example host (loại nhóm slow cần device)
+        run: flutter test --exclude-tags slow
+        working-directory: example
