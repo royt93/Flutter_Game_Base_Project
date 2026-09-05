@@ -21,7 +21,7 @@ class AudioManager extends GetxService {
     // Restore the saved mute state before loading audio
     muted.value = StorageService.to.getBool(StorageKeys.audioMuted, def: false);
 
-    FlameAudio.audioCache.prefix = 'asset/audio/';
+    FlameAudio.audioCache.prefix = 'packages/roy_casual_kit/asset/audio/';
     try {
       await FlameAudio.audioCache.loadAll([_bgmTrack]);
       _ready = true;

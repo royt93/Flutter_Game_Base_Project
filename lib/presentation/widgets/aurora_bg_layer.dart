@@ -40,7 +40,7 @@ class _AuroraBgLayerState extends State<AuroraBgLayer>
   Future<void> _load() async {
     try {
       final program = await ui.FragmentProgram.fromAsset(
-        'shaders/aurora_bg.frag',
+        'packages/roy_casual_kit/shaders/aurora_bg.frag',
       );
       if (mounted) setState(() => _shader = program.fragmentShader());
     } catch (e) {

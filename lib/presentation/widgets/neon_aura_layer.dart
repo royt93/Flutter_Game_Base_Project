@@ -40,7 +40,7 @@ class _NeonAuraLayerState extends State<NeonAuraLayer>
   Future<void> _load() async {
     try {
       final program = await ui.FragmentProgram.fromAsset(
-        'shaders/neon_glow.frag',
+        'packages/roy_casual_kit/shaders/neon_glow.frag',
       );
       if (mounted) setState(() => _shader = program.fragmentShader());
     } catch (e) {
