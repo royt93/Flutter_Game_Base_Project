@@ -1,53 +1,107 @@
-# Roy Project Base Game
+# roy_casual_kit
 
-A lean Flutter + GetX + Flame starting point. Stripped from a full match-3
-game (Pop Star Blast, see git history before this rename) down to just the
-reusable core: storage, i18n, audio, haptics, local reminders, theme tokens,
-and a small neon-styled widget kit.
+A Flutter package bundling the core services and casual-game widget kit
+behind a Candy-Crush-style puzzle game: local storage, i18n, audio, haptics,
+local reminders, and theme tokens, plus a 21-widget UI kit (buttons,
+overlays, progress/reward, layout & cards) built on GetX and styled with a
+bright candy palette.
+
+## What's in the package
+
+- `lib/core/` — `StorageService`/`StorageKeys` (SharedPreferences wrapper),
+  `AppTranslations`/`LocaleService` (i18n), `AudioManager`, `Haptics`,
+  `ReminderService` (local notifications), `NeonTheme` design tokens, plus
+  `ShareHelper`, `AppInfo`, `RuntimeFlags`, `debug_log`, and small utils
+  (clamped clock, number formatting, longest-word font-fit).
+- `lib/presentation/widgets/` — the neon widget kit (`NeonButton`,
+  `NeonDialog`, `NeonAppBar`, `NeonBg`, `NeonAuraLayer`, `AuroraBgLayer`,
+  `NeonIcon`, `StrokeText`, `PressableScale`) plus
+  `lib/presentation/widgets/common/`: 21 generic, game-agnostic widgets —
+  buttons & interactive (`CommonButton`, `ToggleSwitch`, `SegmentedTabBar`,
+  `IconBadgeButton`), feedback & overlay (`LoadingOverlay`, `ToastBanner`,
+  `TooltipBubble`, `BottomSheetPanel`, `ConfirmDialog`), progress & reward
+  (`ProgressBarStars`, `CircularProgressRing`, `StarRating`,
+  `CurrencyCounter`, `RewardPopup`, `BadgeDot`, `StreakCounter`), and layout
+  & cards (`PanelCard`, `ListTileRow`, `SectionHeader`,
+  `EmptyStatePlaceholder`, `AvatarFrame`) — all exported from one barrel,
+  `lib/presentation/widgets/common/common_widgets.dart`.
+
+## Install
+
+Not yet published to pub.dev. Once it is:
+
+```bash
+flutter pub add roy_casual_kit
+```
+
+For local testing before publishing, depend on it directly:
+
+```yaml
+dependencies:
+  roy_casual_kit:
+    path: ../roy_casual_kit # or: git: { url: ..., ref: main }
+```
+
+## Usage
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
+
+class MyScreen extends StatelessWidget {
+  const MyScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return CommonButton(
+      label: 'Play',
+      variant: CommonButtonVariant.primary,
+      onTap: () => debugPrint('tapped'),
+    );
+  }
+}
+```
+
+Core services follow the same import pattern, e.g.
+`package:roy_casual_kit/core/storage_service.dart` for `StorageService.to`,
+or `package:roy_casual_kit/core/neon_theme.dart` for `NeonTheme` tokens.
+
+## See it live
+
+`example/` is a separate Flutter app (its own `pubspec.yaml`, `android/`,
+`ios/`) that depends on this package via `path: ../` and exercises every
+widget in `WidgetShowcaseScreen`:
+
+```bash
+cd example && flutter run
+```
 
 ## Commands
 
 ```bash
+# From the package root
 flutter analyze
 flutter test --exclude-tags slow
-flutter run -d <device-id>
+
+# From example/ — the demo app has its own test/analyze surface
+cd example
+flutter analyze
+flutter test --exclude-tags slow
 ```
 
-## What's here
+## History
 
-- `lib/core/` — storage (`StorageService`/`StorageKeys`), i18n
-  (`AppTranslations`, 2 seed locales: en/vi), `AudioManager`, `LocaleService`,
-  `ReminderService`, `NeonTheme` design tokens, `Haptics`, `ShareHelper`,
-  `AppInfo`, `RuntimeFlags`, plus `lib/core/utils/` (clamped clock, number
-  formatting, longest-word font-fit).
-- `lib/presentation/widgets/` — a small neon-styled widget kit: `NeonButton`,
-  `NeonDialog`, `NeonAppBar`, `NeonBg`, `NeonAuraLayer`, `AuroraBgLayer`,
-  `NeonIcon`, `StrokeText`, `PressableScale`.
-  - `ambient_particles`, `ambient_weather_layer`, `coin_chip`,
-    `confetti_overlay`, and `pulse_glow` were removed as dead weight during
-    the strip (they'd become orphaned by earlier deletions). If a project
-    built on this base wants them back, they're recoverable from git history
-    at commit `9262a03^` (the parent of "reduce core services to
-    base-project scope" — i.e. right before they became orphaned).
-- `lib/presentation/screens/` — `HomeScreen` + `SettingsScreen`, both
-  placeholders — replace with your game's actual screens.
-- `lib/logic/`, `lib/data/`, `lib/game/` — don't exist yet (deliberately, git
-  doesn't track empty directories). Add your game's pure-Dart rules under
-  `lib/logic/`, static content under `lib/data/`, and your Flame engine under
-  `lib/game/`.
+This repo used to be a full match-3 puzzle game, "Pop Star Blast" (see git
+history). It was first stripped down to a reusable app base — core services
+plus a small widget kit, with `lib/logic/`, `lib/data/`, and `lib/game/`
+emptied out — documented in
+`docs/superpowers/plans/2026-09-05-strip-to-base-game.md`. It was then
+reshaped again from an app into this pub.dev package: the reusable code
+stayed at the repo root as `lib/`, and everything app-specific (entry point,
+demo screens, `android/`, `ios/`) moved into a separate `example/` app that
+depends on the package via a `path:` dependency — documented in
+`docs/superpowers/plans/2026-09-05-convert-to-pub-package.md`.
 
-## Starting a new game from this base
+## License
 
-1. Rename the package again if this clone needs its own identity (see
-   `docs/superpowers/plans/2026-09-05-strip-to-base-game.md` Task 6 for the
-   exact sed commands — same steps, different target name).
-2. Create `lib/logic/` + `lib/data/` + `lib/game/` and fill them with your
-   game's rules.
-3. Replace `HomeScreen`/`SettingsScreen` with real screens; wire a
-   `GameController` the same way the original Pop Star Blast one did
-   (single file, reactive `Rx` state, see git history before this rename for
-   a worked example).
-4. `asset/icon/ic_launcher.png` and `asset/icon/ios_background.png` are still
-   the original Pop Star Blast artwork — replace them (and re-run
-   `dart run icons_launcher:create` / `dart run flutter_native_splash:create`)
-   before shipping a new game.
+MIT — see `LICENSE`.
