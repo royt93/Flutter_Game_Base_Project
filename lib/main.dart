@@ -15,7 +15,6 @@ import 'core/neon_theme.dart';
 import 'core/reminder_service.dart';
 import 'core/storage_service.dart';
 import 'core/runtime_flags.dart';
-import 'presentation/controllers/game_controller.dart';
 import 'presentation/screens/home_screen.dart';
 
 void main() => app();
@@ -43,12 +42,6 @@ Future<void> app({bool withAudio = true}) async {
   dlog('app: prefs done');
   NeonTheme.dark = store.getBool(StorageKeys.themeDark);
   final locale = Get.put(LocaleService(store), permanent: true);
-  // GameController phải đăng ký TRƯỚC updateLocale(): updateLocale() gọi
-  // engine.performReassemble() (rebuild toàn bộ element tree kể cả widget
-  // offstage), nên nếu HomeScreen build lại trước khi GameController tồn
-  // tại → "GameController not found". Get.put() đồng bộ nên chỉ cần đổi
-  // thứ tự là đóng được race window này.
-  Get.put(GameController(), permanent: true);
   Get.put(ReminderService(), permanent: true);
   // GetMaterialApp's `locale:` param chỉ áp dụng lúc build lần đầu. Khi
   // restartApp() gọi lại app() trong cùng process, GetX vẫn giữ Get.locale
@@ -60,7 +53,7 @@ Future<void> app({bool withAudio = true}) async {
     Get.put(AudioManager(), permanent: true);
   }
 
-  runApp(PopStarBlastApp(initialLocale: locale.current.value));
+  runApp(RoyBaseGameApp(initialLocale: locale.current.value));
   dlog('app: runApp done');
 
   // Sau first frame: tránh I/O contention với Flame init → giảm startup jank.
@@ -122,16 +115,16 @@ Future<void> loadAppVersion() async {
   }
 }
 
-class PopStarBlastApp extends StatefulWidget {
+class RoyBaseGameApp extends StatefulWidget {
   final Locale initialLocale;
 
-  const PopStarBlastApp({super.key, required this.initialLocale});
+  const RoyBaseGameApp({super.key, required this.initialLocale});
 
   @override
-  State<PopStarBlastApp> createState() => _PopStarBlastAppState();
+  State<RoyBaseGameApp> createState() => _RoyBaseGameAppState();
 }
 
-class _PopStarBlastAppState extends State<PopStarBlastApp>
+class _RoyBaseGameAppState extends State<RoyBaseGameApp>
     with WidgetsBindingObserver {
   @override
   void initState() {
@@ -166,7 +159,7 @@ class _PopStarBlastAppState extends State<PopStarBlastApp>
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Pop Star Blast',
+      title: 'Roy Project Base Game',
       debugShowCheckedModeBanner: false,
       defaultTransition: Transition.cupertino,
       transitionDuration: const Duration(milliseconds: 280),

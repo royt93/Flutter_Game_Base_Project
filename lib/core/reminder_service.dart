@@ -21,7 +21,10 @@ class ReminderService extends GetxController {
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings();
     await _plugin.initialize(
-      const InitializationSettings(android: androidInit, iOS: iosInit),
+      settings: const InitializationSettings(
+        android: androidInit,
+        iOS: iosInit,
+      ),
     );
     _initialized = true;
   }
@@ -34,11 +37,11 @@ class ReminderService extends GetxController {
     try {
       await _ensureInit();
       await _plugin.zonedSchedule(
-        0,
-        title,
-        body,
-        tz.TZDateTime.now(tz.local).add(delay),
-        const NotificationDetails(
+        id: 0,
+        title: title,
+        body: body,
+        scheduledDate: tz.TZDateTime.now(tz.local).add(delay),
+        notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails('reminders', 'Reminders'),
           iOS: DarwinNotificationDetails(),
         ),
@@ -52,7 +55,7 @@ class ReminderService extends GetxController {
   Future<void> cancel() async {
     try {
       await _ensureInit();
-      await _plugin.cancel(0);
+      await _plugin.cancel(id: 0);
     } catch (e) {
       dlog('roy93~ ReminderService.cancel failed: $e');
     }

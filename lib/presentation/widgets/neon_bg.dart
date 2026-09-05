@@ -2,8 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import '../../core/neon_theme.dart';
-import '../../data/worlds.dart';
-import 'ambient_weather_layer.dart';
 import 'aurora_bg_layer.dart';
 
 /// Background neon ĐỘNG dùng chung cho mọi màn:
@@ -24,17 +22,12 @@ class NeonBg extends StatefulWidget {
   /// I16: phủ thêm dải aurora chuyển sắc lên trên nền — chỉ world cuối.
   final bool aurora;
 
-  /// I40: lớp particle thời tiết theo world (tuyết/tia lửa/bong bóng).
-  /// `none` = không vẽ gì thêm.
-  final WeatherKind weather;
-
   const NeonBg({
     super.key,
     required this.child,
     this.accent,
     this.energyOf,
     this.aurora = false,
-    this.weather = WeatherKind.none,
   });
 
   @override
@@ -118,8 +111,6 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
               color: (widget.accent ?? NeonTheme.indigo).withValues(alpha: 0.5),
             ),
           ),
-        if (widget.weather != WeatherKind.none)
-          Positioned.fill(child: AmbientWeatherLayer(weather: widget.weather)),
         widget.child,
       ],
     );
