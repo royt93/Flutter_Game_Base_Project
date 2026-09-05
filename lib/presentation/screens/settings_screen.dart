@@ -4,6 +4,9 @@ import 'package:get/get.dart';
 import '../../core/app_translations.dart';
 import '../../core/audio_manager.dart';
 import '../../core/locale_service.dart';
+import '../../core/neon_theme.dart';
+import '../widgets/common/bottom_sheet_panel.dart';
+import '../widgets/common/list_tile_row.dart';
 import '../widgets/neon_app_bar.dart';
 import '../widgets/neon_bg.dart';
 
@@ -29,22 +32,15 @@ class SettingsScreen extends StatelessWidget {
                 child: ListView(
                   children: [
                     Obx(
-                      () => ListTile(
-                        title: Text('language'.tr),
-                        trailing: DropdownButton<Locale>(
-                          value: locale.current.value,
-                          items: AppTranslations.supported
-                              .map(
-                                (l) => DropdownMenuItem(
-                                  value: l,
-                                  child: Text(l.languageCode),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (l) {
-                            if (l != null) locale.change(l);
-                          },
+                      () => CommonListTile(
+                        title: 'language'.tr,
+                        subtitle: locale.current.value.languageCode
+                            .toUpperCase(),
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: NeonTheme.inkSoft,
                         ),
+                        onTap: () => _pickLanguage(context, locale),
                       ),
                     ),
                     // AudioManager may not be registered (e.g.
@@ -69,4 +65,44 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Opens a candy-styled bottom sheet (common widget kit's
+/// [showCommonBottomSheet]/[CommonListTile]) listing every locale in
+/// [AppTranslations.supported], instead of a plain [DropdownButton] —
+/// dogfoods the kit and matches the rest of the app's visual language.
+void _pickLanguage(BuildContext context, LocaleService locale) {
+  showCommonBottomSheet(
+    context,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: NeonTheme.s16),
+          child: Text(
+            'language'.tr,
+            style: TextStyle(
+              color: NeonTheme.ink,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        for (final l in AppTranslations.supported) ...[
+          CommonListTile(
+            title: l.languageCode.toUpperCase(),
+            trailing: locale.isCurrent(l)
+                ? const Icon(Icons.check_circle, color: NeonTheme.purple)
+                : null,
+            onTap: () {
+              locale.change(l);
+              Navigator.of(context).pop();
+            },
+          ),
+          const SizedBox(height: NeonTheme.s8),
+        ],
+      ],
+    ),
+  );
 }
