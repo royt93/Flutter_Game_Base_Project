@@ -48,3 +48,6 @@ app.*.map.json
 # Signing (contains secrets — do not track)
 /android/gradle.properties
 /android/keystore.jks
+
+# Machine-local SDK path, not shared across dev machines
+**/local.properties

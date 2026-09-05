@@ -47,3 +47,7 @@ flutter run -d <device-id>
    `GameController` the same way the original Pop Star Blast one did
    (single file, reactive `Rx` state, see git history before this rename for
    a worked example).
+4. `asset/icon/ic_launcher.png` and `asset/icon/ios_background.png` are still
+   the original Pop Star Blast artwork — replace them (and re-run
+   `dart run icons_launcher:create` / `dart run flutter_native_splash:create`)
+   before shipping a new game.
