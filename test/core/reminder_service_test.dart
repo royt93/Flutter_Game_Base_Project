@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:roy_base_game/core/reminder_service.dart';
+import 'package:roy_casual_kit/core/reminder_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

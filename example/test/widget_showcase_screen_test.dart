@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:roy_base_game/core/app_translations.dart';
-import 'package:roy_base_game/presentation/widgets/common/toggle_switch.dart';
+import 'package:roy_casual_kit/core/app_translations.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/toggle_switch.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
 
 /// Smoke test for the common-widget-kit demo screen. `NeonBg` (used by the

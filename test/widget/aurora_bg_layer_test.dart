@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roy_base_game/core/neon_theme.dart';
-import 'package:roy_base_game/presentation/widgets/aurora_bg_layer.dart';
-import 'package:roy_base_game/presentation/widgets/neon_bg.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/presentation/widgets/aurora_bg_layer.dart';
+import 'package:roy_casual_kit/presentation/widgets/neon_bg.dart';
 
 void main() {
   testWidgets('AuroraBgLayer does not crash whether shader loads or not', (

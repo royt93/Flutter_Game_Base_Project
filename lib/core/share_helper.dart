@@ -81,7 +81,7 @@ Future<void> shareBoardImage({
     ShareParams(
       text: text,
       files: [XFile.fromData(png, mimeType: 'image/png')],
-      fileNameOverrides: const ['roy_base_game.png'],
+      fileNameOverrides: const ['roy_casual_kit.png'],
     ),
   );
 }
@@ -101,7 +101,7 @@ Future<void> shareScoreCard({
     ShareParams(
       text: levelText,
       files: [XFile.fromData(png, mimeType: 'image/png')],
-      fileNameOverrides: const ['roy_base_game_score_card.png'],
+      fileNameOverrides: const ['roy_casual_kit_score_card.png'],
     ),
   );
 }
@@ -121,7 +121,7 @@ Future<void> shareJourneyCard({
     ShareParams(
       text: text,
       files: [XFile.fromData(png, mimeType: 'image/png')],
-      fileNameOverrides: const ['roy_base_game_journey.png'],
+      fileNameOverrides: const ['roy_casual_kit_journey.png'],
     ),
   );
 }

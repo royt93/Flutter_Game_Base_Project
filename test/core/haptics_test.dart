@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roy_base_game/core/haptics.dart';
+import 'package:roy_casual_kit/core/haptics.dart';
 
 void main() {
   group('hapticLevelForGroupSize (I11 — rung theo cỡ nhóm nổ)', () {

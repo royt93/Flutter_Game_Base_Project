@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'package:roy_base_game/core/neon_theme.dart';
-import 'package:roy_base_game/presentation/widgets/neon_bg.dart';
-import 'package:roy_base_game/presentation/widgets/neon_button.dart';
-import 'package:roy_base_game/presentation/widgets/stroke_text.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/presentation/widgets/neon_bg.dart';
+import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
+import 'package:roy_casual_kit/presentation/widgets/stroke_text.dart';
 
 import 'settings_screen.dart';
 import 'widget_showcase_screen.dart';

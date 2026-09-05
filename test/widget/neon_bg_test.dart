@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roy_base_game/presentation/widgets/neon_bg.dart';
+import 'package:roy_casual_kit/presentation/widgets/neon_bg.dart';
 
 void main() {
   testWidgets('renders child over the animated background', (tester) async {

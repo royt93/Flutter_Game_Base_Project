@@ -3,7 +3,7 @@
 /// import in one line:
 ///
 /// ```dart
-/// import 'package:roy_base_game/presentation/widgets/common/common_widgets.dart';
+/// import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 /// ```
 library;
 

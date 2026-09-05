@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:roy_base_game/core/app_translations.dart';
-import 'package:roy_base_game/core/audio_manager.dart';
-import 'package:roy_base_game/core/locale_service.dart';
-import 'package:roy_base_game/core/storage_service.dart';
+import 'package:roy_casual_kit/core/app_translations.dart';
+import 'package:roy_casual_kit/core/audio_manager.dart';
+import 'package:roy_casual_kit/core/locale_service.dart';
+import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
 import 'package:roy_casual_kit_example/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';

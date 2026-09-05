@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roy_base_game/presentation/widgets/pressable_scale.dart';
+import 'package:roy_casual_kit/presentation/widgets/pressable_scale.dart';
 
 void main() {
   testWidgets('tap invokes onTap', (tester) async {

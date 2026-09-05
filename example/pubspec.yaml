@@ -1,5 +1,5 @@
 name: roy_casual_kit_example
-description: "Example app + widget showcase for the roy_base_game package."
+description: "Example app + widget showcase for the roy_casual_kit package."
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  roy_base_game:
+  roy_casual_kit:
     path: ../
   get: ^4.7.3
   wakelock_plus: ^1.4.0

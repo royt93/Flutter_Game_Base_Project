@@ -6,14 +6,14 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
-import 'package:roy_base_game/core/app_info.dart';
-import 'package:roy_base_game/core/app_translations.dart';
-import 'package:roy_base_game/core/audio_manager.dart';
-import 'package:roy_base_game/core/debug_log.dart';
-import 'package:roy_base_game/core/locale_service.dart';
-import 'package:roy_base_game/core/neon_theme.dart';
-import 'package:roy_base_game/core/reminder_service.dart';
-import 'package:roy_base_game/core/storage_service.dart';
+import 'package:roy_casual_kit/core/app_info.dart';
+import 'package:roy_casual_kit/core/app_translations.dart';
+import 'package:roy_casual_kit/core/audio_manager.dart';
+import 'package:roy_casual_kit/core/debug_log.dart';
+import 'package:roy_casual_kit/core/locale_service.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/core/reminder_service.dart';
+import 'package:roy_casual_kit/core/storage_service.dart';
 
 import 'screens/home_screen.dart';
 

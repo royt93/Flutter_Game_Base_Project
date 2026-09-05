@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roy_base_game/core/utils/format.dart';
+import 'package:roy_casual_kit/core/utils/format.dart';
 
 void main() {
   group('fmtDur', () {

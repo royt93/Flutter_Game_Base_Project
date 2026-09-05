@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roy_base_game/core/neon_theme.dart';
-import 'package:roy_base_game/presentation/widgets/common/reward_popup.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/reward_popup.dart';
 
 void main() {
   testWidgets('RewardPopup burst animation runs without throwing', (
