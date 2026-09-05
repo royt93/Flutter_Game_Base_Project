@@ -90,7 +90,10 @@ class ToastBanner extends StatelessWidget {
           opacity: controller,
           child: SlideTransition(
             position: slide,
-            child: ToastBanner(message: message, color: color ?? NeonTheme.purple),
+            child: ToastBanner(
+              message: message,
+              color: color ?? NeonTheme.purple,
+            ),
           ),
         ),
       ),

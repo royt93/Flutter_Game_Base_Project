@@ -36,10 +36,15 @@ void main() {
   /// Đáp án đúng theo định nghĩa: cỡ lớn nhất mà từ dài nhất còn vừa, không
   /// có thì cỡ nhỏ nhất.
   double expected(String label) {
-    final words = label.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    final words = label
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
     if (words.isEmpty) return candidates.first;
     for (final size in candidates) {
-      final widest = words.map((w) => widthOf(w, size)).reduce((a, b) => a > b ? a : b);
+      final widest = words
+          .map((w) => widthOf(w, size))
+          .reduce((a, b) => a > b ? a : b);
       if (widest <= width) return size;
     }
     return candidates.last;
@@ -67,7 +72,8 @@ void main() {
     // nhau, nên ở đó "nhiều ký tự nhất" luôn trùng "rộng nhất" và ca này
     // không thể đỏ. Đo giả: 'W' rộng gấp 5 lần 'i'.
     double fake(String word, double size) =>
-        size * word.split('').fold<double>(0, (a, ch) => a + (ch == 'W' ? 5 : 1));
+        size *
+        word.split('').fold<double>(0, (a, ch) => a + (ch == 'W' ? 5 : 1));
 
     // 'WWW' = 15 đơn vị/cỡ, 'iiiiiiii' = 8 — từ NGẮN hơn lại rộng hơn.
     const label = 'WWW iiiiiiii';
@@ -87,7 +93,8 @@ void main() {
         measureWord: fake,
       ),
       1,
-      reason: 'phải bị chi phối bởi "WWW" (rộng nhất), không phải "iiiiiiii" '
+      reason:
+          'phải bị chi phối bởi "WWW" (rộng nhất), không phải "iiiiiiii" '
           '(nhiều ký tự nhất)',
     );
   });

@@ -17,7 +17,12 @@ class SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: TextStyle(color: NeonTheme.ink, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+            style: TextStyle(
+              color: NeonTheme.ink,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+            ),
           ),
         ),
         if (trailing != null) trailing!,

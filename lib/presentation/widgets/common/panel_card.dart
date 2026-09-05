@@ -33,7 +33,9 @@ class PanelCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: alt ? NeonTheme.cardAlt : NeonTheme.card,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: borderColor != null ? Border.all(color: borderColor!, width: 2) : null,
+        border: borderColor != null
+            ? Border.all(color: borderColor!, width: 2)
+            : null,
         boxShadow: NeonTheme.drop(),
       ),
       child: child,

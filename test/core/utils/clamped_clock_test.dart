@@ -50,19 +50,22 @@ void main() {
   });
 
   group('chống chỉnh đồng hồ LÙI', () {
-    test('ngày: mốc ở tương lai thì giữ nguyên, không lùi về ngày thật', () async {
-      // Đây đúng là bước "chỉnh về" của vòng farm: tiến 30 ngày, nhận thưởng,
-      // rồi chỉnh lại. Sau khi kẹp, bước chỉnh lại vô tác dụng.
-      final future = _realDay + 30;
-      await _boot({StorageKeys.maxEpochDaySeen: future});
+    test(
+      'ngày: mốc ở tương lai thì giữ nguyên, không lùi về ngày thật',
+      () async {
+        // Đây đúng là bước "chỉnh về" của vòng farm: tiến 30 ngày, nhận thưởng,
+        // rồi chỉnh lại. Sau khi kẹp, bước chỉnh lại vô tác dụng.
+        final future = _realDay + 30;
+        await _boot({StorageKeys.maxEpochDaySeen: future});
 
-      expect(todayEpochDayClamped(), future);
-      expect(
-        StorageService.to.getInt(StorageKeys.maxEpochDaySeen),
-        future,
-        reason: 'mốc không được hạ xuống',
-      );
-    });
+        expect(todayEpochDayClamped(), future);
+        expect(
+          StorageService.to.getInt(StorageKeys.maxEpochDaySeen),
+          future,
+          reason: 'mốc không được hạ xuống',
+        );
+      },
+    );
 
     test('mili-giây: mốc ở tương lai thì giữ nguyên', () async {
       final future = _realMs + 86400000;

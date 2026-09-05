@@ -44,7 +44,9 @@ class CommonButton extends StatelessWidget {
 
   Color get _baseColor {
     if (color != null) return color!;
-    return variant == CommonButtonVariant.danger ? NeonTheme.red : NeonTheme.cyan;
+    return variant == CommonButtonVariant.danger
+        ? NeonTheme.red
+        : NeonTheme.cyan;
   }
 
   @override
@@ -56,7 +58,9 @@ class CommonButton extends StatelessWidget {
       label: semanticLabel ?? label ?? icon?.toString(),
       child: PressableScale(
         onTap: onTap,
-        child: variant == CommonButtonVariant.icon ? _buildIcon(c) : _buildPill(c),
+        child: variant == CommonButtonVariant.icon
+            ? _buildIcon(c)
+            : _buildPill(c),
       ),
     );
   }

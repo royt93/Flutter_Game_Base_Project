@@ -193,7 +193,11 @@ class _BurstPainter extends CustomPainter {
       canvas.rotate(b.rot + b.rotV * t);
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset.zero, width: b.size, height: b.size * 0.6),
+          Rect.fromCenter(
+            center: Offset.zero,
+            width: b.size,
+            height: b.size * 0.6,
+          ),
           const Radius.circular(2),
         ),
         Paint()..color = b.color.withValues(alpha: fade.clamp(0.0, 1.0)),

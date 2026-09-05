@@ -121,7 +121,10 @@ class _BubblePainter extends CustomPainter {
       size.width - inset,
       bodyBottom - inset,
     );
-    final rrect = RRect.fromRectAndRadius(bodyRect, const Radius.circular(radius));
+    final rrect = RRect.fromRectAndRadius(
+      bodyRect,
+      const Radius.circular(radius),
+    );
 
     final minCenter = radius + nubWidth / 2;
     final maxCenter = size.width - radius - nubWidth / 2;

@@ -314,7 +314,11 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                         children: [
                           CurrencyCounter(value: _coins),
                           const SizedBox(width: NeonTheme.s24),
-                          CommonButton(label: '+25', width: 90, onTap: _bumpCoins),
+                          CommonButton(
+                            label: '+25',
+                            width: 90,
+                            onTap: _bumpCoins,
+                          ),
                         ],
                       ),
                     ),
@@ -336,7 +340,11 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                             size: 32,
                             color: NeonTheme.ink,
                           ),
-                          const Positioned(top: -2, right: -2, child: BadgeDot()),
+                          const Positioned(
+                            top: -2,
+                            right: -2,
+                            child: BadgeDot(),
+                          ),
                         ],
                       ),
                     ),

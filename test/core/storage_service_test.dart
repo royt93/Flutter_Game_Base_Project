@@ -123,23 +123,20 @@ void main() {
       expect(store.getString('existing_key'), 'keep');
     });
 
-    test(
-      'round-trip đầy đủ: export → import vào StorageService mới',
-      () async {
-        await store.setString(StorageKeys.localeCode, 'vi');
-        await store.setBool(StorageKeys.audioMuted, true);
-        await store.setBool(StorageKeys.themeDark, true);
+    test('round-trip đầy đủ: export → import vào StorageService mới', () async {
+      await store.setString(StorageKeys.localeCode, 'vi');
+      await store.setBool(StorageKeys.audioMuted, true);
+      await store.setBool(StorageKeys.themeDark, true);
 
-        final dump = store.exportAll();
+      final dump = store.exportAll();
 
-        SharedPreferences.setMockInitialValues({});
-        final fresh = StorageService(await SharedPreferences.getInstance());
-        await fresh.importAll(dump);
+      SharedPreferences.setMockInitialValues({});
+      final fresh = StorageService(await SharedPreferences.getInstance());
+      await fresh.importAll(dump);
 
-        expect(fresh.getString(StorageKeys.localeCode), 'vi');
-        expect(fresh.getBool(StorageKeys.audioMuted), true);
-        expect(fresh.getBool(StorageKeys.themeDark), true);
-      },
-    );
+      expect(fresh.getString(StorageKeys.localeCode), 'vi');
+      expect(fresh.getBool(StorageKeys.audioMuted), true);
+      expect(fresh.getBool(StorageKeys.themeDark), true);
+    });
   });
 }

@@ -22,6 +22,7 @@ double fitFontSizeForLongestWord(
   List<double> candidates = const [11, 10, 9, 8],
   FontWeight fontWeight = FontWeight.w700,
   String? fontFamily = 'Baloo2',
+
   /// Test-only measurement seam.
   ///
   /// `flutter test` doesn't load Baloo2 and substitutes a font where every
@@ -32,10 +33,7 @@ double fitFontSizeForLongestWord(
   @visibleForTesting double Function(String word, double fontSize)? measureWord,
 }) {
   assert(candidates.isNotEmpty, 'cần ít nhất một cỡ chữ');
-  final words = label
-      .split(RegExp(r'\s+'))
-      .where((w) => w.isNotEmpty)
-      .toList();
+  final words = label.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
   if (words.isEmpty || maxWidth <= 0) return candidates.first;
 
   double measure(String word, double size) {

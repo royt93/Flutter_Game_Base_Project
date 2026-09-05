@@ -73,13 +73,19 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(SwitchListTile), findsOneWidget);
-      expect(tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value, isTrue);
+      expect(
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        isTrue,
+      );
 
       await tester.tap(find.byType(SwitchListTile));
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(audio.muted.value, isTrue);
-      expect(tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value, isFalse);
+      expect(
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        isFalse,
+      );
     });
   });
 }

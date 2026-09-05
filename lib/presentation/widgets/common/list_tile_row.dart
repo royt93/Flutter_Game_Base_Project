@@ -29,7 +29,10 @@ class CommonListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final row = Container(
-      padding: const EdgeInsets.symmetric(horizontal: NeonTheme.s16, vertical: NeonTheme.s16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: NeonTheme.s16,
+        vertical: NeonTheme.s16,
+      ),
       decoration: filled
           ? BoxDecoration(
               color: NeonTheme.card,
@@ -39,7 +42,10 @@ class CommonListTile extends StatelessWidget {
           : null,
       child: Row(
         children: [
-          if (leading != null) ...[leading!, const SizedBox(width: NeonTheme.s16)],
+          if (leading != null) ...[
+            leading!,
+            const SizedBox(width: NeonTheme.s16),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,19 +53,30 @@ class CommonListTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(color: NeonTheme.ink, fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: NeonTheme.ink,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
                   Text(
                     subtitle!,
-                    style: TextStyle(color: NeonTheme.inkSoft, fontSize: 13, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: NeonTheme.inkSoft,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ],
             ),
           ),
-          if (trailing != null) ...[const SizedBox(width: NeonTheme.s16), trailing!],
+          if (trailing != null) ...[
+            const SizedBox(width: NeonTheme.s16),
+            trailing!,
+          ],
         ],
       ),
     );

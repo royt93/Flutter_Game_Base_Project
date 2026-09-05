@@ -111,12 +111,14 @@ class StorageService extends GetxService {
   /// Wrong type → returns the default, exactly as if the key didn't exist.
   /// Fixing it here covers **every** key at once, instead of wrapping
   /// try/catch around each hydration call site.
-  Object? _raw(String key) => _buffer[key] ?? _prefs?.get(key) ?? _fallback[key];
+  Object? _raw(String key) =>
+      _buffer[key] ?? _prefs?.get(key) ?? _fallback[key];
 
   int getInt(String key, {int def = 0}) {
     final v = _raw(key);
     return v is int ? v : def;
   }
+
   /// A direct write must **invalidate the buffered copy** of the same key.
   /// Without this line, the stale buffered value would still shadow the
   /// result in `_raw`, and the next [flush] would overwrite it right back
@@ -136,6 +138,7 @@ class StorageService extends GetxService {
     final v = _raw(key);
     return v is bool ? v : def;
   }
+
   /// See the note on [setInt].
   Future<void> setBool(String key, bool value) async {
     _buffer.remove(key);
@@ -151,6 +154,7 @@ class StorageService extends GetxService {
     final v = _raw(key);
     return v is double ? v : def;
   }
+
   /// See the note on [setInt].
   Future<void> setDouble(String key, double value) async {
     _buffer.remove(key);
@@ -166,6 +170,7 @@ class StorageService extends GetxService {
     final v = _raw(key);
     return v is String ? v : null;
   }
+
   /// See the note on [setInt].
   Future<void> setString(String key, String value) async {
     _buffer.remove(key);
@@ -209,8 +214,11 @@ class StorageService extends GetxService {
   /// place that must remember to update a hand-written list every time a
   /// new key is added (that kind of hand-written list drifts out of date
   /// very easily across a few rounds of code review).
-  Set<String> allKeys() =>
-      {...?_prefs?.getKeys(), ..._fallback.keys, ..._buffer.keys};
+  Set<String> allKeys() => {
+    ...?_prefs?.getKeys(),
+    ..._fallback.keys,
+    ..._buffer.keys,
+  };
 
   /// Dumps all current storage into a map — uses SharedPreferences's
   /// generic API (getKeys/get) instead of hand-listing every StorageKeys

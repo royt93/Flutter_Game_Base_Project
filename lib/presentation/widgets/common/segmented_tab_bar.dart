@@ -12,7 +12,10 @@ class SegmentedTabBar extends StatelessWidget {
     required this.labels,
     required this.selectedIndex,
     required this.onChanged,
-  }) : assert(labels.length >= 2 && labels.length <= 4, 'SegmentedTabBar supports 2-4 segments');
+  }) : assert(
+         labels.length >= 2 && labels.length <= 4,
+         'SegmentedTabBar supports 2-4 segments',
+       );
 
   final List<String> labels;
   final int selectedIndex;
@@ -36,7 +39,10 @@ class SegmentedTabBar extends StatelessWidget {
               AnimatedAlign(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOut,
-                alignment: Alignment(n == 1 ? 0 : -1 + 2 * selectedIndex / (n - 1), 0),
+                alignment: Alignment(
+                  n == 1 ? 0 : -1 + 2 * selectedIndex / (n - 1),
+                  0,
+                ),
                 child: Container(
                   width: segW,
                   height: 36,
@@ -69,8 +75,12 @@ class SegmentedTabBar extends StatelessWidget {
                               labels[i],
                               style: TextStyle(
                                 fontFamily: NeonTheme.fontFamily,
-                                fontWeight: active ? FontWeight.w800 : FontWeight.w700,
-                                color: active ? Colors.white : NeonTheme.inkSoft,
+                                fontWeight: active
+                                    ? FontWeight.w800
+                                    : FontWeight.w700,
+                                color: active
+                                    ? Colors.white
+                                    : NeonTheme.inkSoft,
                                 fontSize: 14,
                               ),
                             ),

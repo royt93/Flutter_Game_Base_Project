@@ -24,14 +24,22 @@ class EmptyStatePlaceholder extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.all(NeonTheme.s16),
-          decoration: BoxDecoration(color: NeonTheme.cardAlt, shape: BoxShape.circle),
+          decoration: BoxDecoration(
+            color: NeonTheme.cardAlt,
+            shape: BoxShape.circle,
+          ),
           child: Icon(icon, color: color, size: 40),
         ),
         const SizedBox(height: NeonTheme.s16),
         Text(
           message,
           textAlign: TextAlign.center,
-          style: TextStyle(color: NeonTheme.inkSoft, fontSize: 14, fontWeight: FontWeight.w600, height: 1.4),
+          style: TextStyle(
+            color: NeonTheme.inkSoft,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            height: 1.4,
+          ),
         ),
       ],
     );

@@ -70,7 +70,10 @@ class _StarRatingState extends State<StarRating>
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final s in stars) ...[s, if (s != stars.last) const SizedBox(width: 4)],
+        for (final s in stars) ...[
+          s,
+          if (s != stars.last) const SizedBox(width: 4),
+        ],
       ],
     );
   }

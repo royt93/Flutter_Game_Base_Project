@@ -61,7 +61,11 @@ class ProgressBarStars extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: fill,
                           borderRadius: BorderRadius.circular(height),
-                          boxShadow: NeonTheme.glow(fill, blur: 10, spread: 0.5),
+                          boxShadow: NeonTheme.glow(
+                            fill,
+                            blur: 10,
+                            spread: 0.5,
+                          ),
                         ),
                       ),
                     ),

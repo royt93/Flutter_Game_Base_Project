@@ -108,7 +108,11 @@ class IconBadgeButton extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         text,
-        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }

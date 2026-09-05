@@ -25,7 +25,9 @@ class CandyToggleSwitch extends StatelessWidget {
     final enabled = onChanged != null;
     final onC = enabled ? (activeColor ?? NeonTheme.lime) : NeonTheme.muted;
     final trackColor = value ? onC : NeonTheme.cardAlt;
-    final borderColor = value ? Color.lerp(onC, Colors.black, 0.22)! : NeonTheme.muted;
+    final borderColor = value
+        ? Color.lerp(onC, Colors.black, 0.22)!
+        : NeonTheme.muted;
     return Semantics(
       button: true,
       toggled: value,
