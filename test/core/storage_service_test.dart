@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pop_star_blast/core/storage_service.dart';
-import 'package:pop_star_blast/logic/backup_code.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -36,9 +35,10 @@ void main() {
       expect(store.getInt('k_int'), 0);
     });
 
-    test('StorageKeys.highScore/star sinh key khác nhau theo level', () {
-      expect(StorageKeys.highScore(1), isNot(StorageKeys.highScore(2)));
-      expect(StorageKeys.star(1), isNot(StorageKeys.highScore(1)));
+    test('StorageKeys giữ 3 hằng số cơ bản, key khác nhau', () {
+      expect(StorageKeys.localeCode, isNot(StorageKeys.audioMuted));
+      expect(StorageKeys.audioMuted, isNot(StorageKeys.themeDark));
+      expect(StorageKeys.localeCode, isNot(StorageKeys.themeDark));
     });
 
     test('getDouble trả về def khi chưa có key', () {
@@ -46,21 +46,16 @@ void main() {
       expect(store.getDouble('missing', def: 0.5), 0.5);
     });
 
-    test('setDouble rồi đọc lại đúng giá trị (X2 bgm/sfx volume)', () async {
-      await store.setDouble(StorageKeys.bgmVolume, 0.4);
-      await store.setDouble(StorageKeys.sfxVolume, 0.7);
-      expect(store.getDouble(StorageKeys.bgmVolume), 0.4);
-      expect(store.getDouble(StorageKeys.sfxVolume), 0.7);
+    test('setDouble rồi đọc lại đúng giá trị', () async {
+      await store.setDouble('k_double', 0.4);
+      expect(store.getDouble('k_double'), 0.4);
     });
 
-    test(
-      'X2 haptics: setBool persist qua StorageKeys.hapticsEnabled',
-      () async {
-        expect(store.getBool(StorageKeys.hapticsEnabled, def: true), true);
-        await store.setBool(StorageKeys.hapticsEnabled, false);
-        expect(store.getBool(StorageKeys.hapticsEnabled, def: true), false);
-      },
-    );
+    test('setBool persist qua StorageKeys.audioMuted', () async {
+      expect(store.getBool(StorageKeys.audioMuted, def: false), false);
+      await store.setBool(StorageKeys.audioMuted, true);
+      expect(store.getBool(StorageKeys.audioMuted, def: false), true);
+    });
 
     test('exportAll trả đúng toàn bộ key/giá trị đã set', () async {
       await store.setInt('k_int', 42);
@@ -129,25 +124,21 @@ void main() {
     });
 
     test(
-      'round-trip đầy đủ: export → encode → decode → import vào StorageService mới',
+      'round-trip đầy đủ: export → import vào StorageService mới',
       () async {
-        await store.setInt(StorageKeys.coins, 999);
-        await store.setBool(StorageKeys.colorblindMode, true);
-        await store.setDouble(StorageKeys.bgmVolume, 0.3);
-        await store.setString(StorageKeys.playerName, 'Roy');
+        await store.setString(StorageKeys.localeCode, 'vi');
+        await store.setBool(StorageKeys.audioMuted, true);
+        await store.setBool(StorageKeys.themeDark, true);
 
-        final code = await encodeBackupCode(store.exportAll());
-        final decoded = await decodeBackupCode(code);
-        expect(decoded, isNotNull);
+        final dump = store.exportAll();
 
         SharedPreferences.setMockInitialValues({});
         final fresh = StorageService(await SharedPreferences.getInstance());
-        await fresh.importAll(decoded!);
+        await fresh.importAll(dump);
 
-        expect(fresh.getInt(StorageKeys.coins), 999);
-        expect(fresh.getBool(StorageKeys.colorblindMode), true);
-        expect(fresh.getDouble(StorageKeys.bgmVolume), 0.3);
-        expect(fresh.getString(StorageKeys.playerName), 'Roy');
+        expect(fresh.getString(StorageKeys.localeCode), 'vi');
+        expect(fresh.getBool(StorageKeys.audioMuted), true);
+        expect(fresh.getBool(StorageKeys.themeDark), true);
       },
     );
   });
