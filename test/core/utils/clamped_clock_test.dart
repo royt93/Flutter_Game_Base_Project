@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:pop_star_blast/core/storage_service.dart';
-import 'package:pop_star_blast/core/utils/clamped_clock.dart';
+import 'package:roy_base_game/core/storage_service.dart';
+import 'package:roy_base_game/core/utils/clamped_clock.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// `clamped_clock.dart` ([[X22]]) — lớp chống gian lận đồng hồ dùng chung cho

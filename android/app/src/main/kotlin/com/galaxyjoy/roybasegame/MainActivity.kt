@@ -1,4 +1,4 @@
-package com.galaxyjoy.pop_star_blast
+package com.galaxyjoy.roybasegame
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pop_star_blast/core/neon_theme.dart';
-import 'package:pop_star_blast/presentation/widgets/neon_icon.dart';
+import 'package:roy_base_game/core/neon_theme.dart';
+import 'package:roy_base_game/presentation/widgets/neon_icon.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
   home: Material(

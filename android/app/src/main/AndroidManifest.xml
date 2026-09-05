@@ -10,7 +10,7 @@
     <application
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:label="Pop Star Blast">
+        android:label="Roy Project Base Game">
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
@@ -55,17 +55,6 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
-        </receiver>
-        <!-- I74: Home Screen Widget — hiện login streak + coin, đồng bộ từ
-             Dart qua HomeWidget.saveWidgetData/updateWidget tại vài chokepoint
-             (app resume, sau claim daily, sau cập nhật login streak). -->
-        <receiver android:name=".StreakWidgetProvider" android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/streak_widget_info" />
         </receiver>
     </application>
     <!-- Required to query activities that can process text, see:

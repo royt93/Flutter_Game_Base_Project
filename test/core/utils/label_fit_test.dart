@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pop_star_blast/core/utils/label_fit.dart';
+import 'package:roy_base_game/core/utils/label_fit.dart';
 
 /// Nhãn ô trên Mode Select rộng cố định 60px. Chuỗi nhiều từ tự xuống dòng ở
 /// khoảng trắng nên luôn vừa; cái vỡ là **một từ đơn dài hơn 60px** — Flutter

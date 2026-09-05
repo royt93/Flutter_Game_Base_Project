@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pop_star_blast/core/storage_service.dart';
+import 'package:roy_base_game/core/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

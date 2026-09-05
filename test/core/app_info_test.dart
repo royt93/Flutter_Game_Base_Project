@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pop_star_blast/core/app_info.dart';
+import 'package:roy_base_game/core/app_info.dart';
 
 void main() {
   test('kAppName/kCopyright/kAppVersion có giá trị hợp lệ', () {

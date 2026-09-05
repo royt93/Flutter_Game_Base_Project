@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pop_star_blast/core/share_helper.dart';
+import 'package:roy_base_game/core/share_helper.dart';
 
 void main() {
   testWidgets('captureBoardPng trả về PNG bytes khi context đã build', (
