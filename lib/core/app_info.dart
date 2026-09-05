@@ -1,5 +1,5 @@
 /// Thông tin ứng dụng (hiển thị ở Home / About).
-const String kAppName = 'Pop Star Blast';
+const String kAppName = 'Roy Project Base Game';
 const String kCopyright = '© SAIGON PHANTOM LABS';
 
 /// Version + build number hiển thị — đọc TỰ ĐỘNG từ pubspec lúc khởi chạy (xem
@@ -10,4 +10,4 @@ String kAppBuildNumber = '20260615';
 
 /// Package/bundle id — đọc TỰ ĐỘNG từ `loadAppVersion` giống [kAppVersion],
 /// dùng cho link store (rate/share) thay vì hardcode chuỗi cố định.
-String kPackageName = 'com.galaxyjoy.pop_star_blast';
+String kPackageName = 'com.galaxyjoy.roybasegame';
