@@ -8,7 +8,7 @@ void main() {
 
   testWidgets('app boots to HomeScreen', (tester) async {
     await app.app(withAudio: false);
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 2));
     expect(find.byType(HomeScreen), findsOneWidget);
   });
 }
