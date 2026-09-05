@@ -5,19 +5,20 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:share_plus/share_plus.dart';
 
-/// 1 pipeline share dùng chung cho mọi nơi gọi trong app — text-only (vd
-/// mời bạn bè) hoặc kèm ảnh chụp (vd kết quả màn chơi). Không tạo hàm/plugin
-/// share riêng ở nơi khác.
+/// One shared share pipeline used by every call site in the app — text-only
+/// (e.g. inviting friends) or with a captured screenshot (e.g. a level
+/// result). Don't create a separate share function/plugin call elsewhere.
 Future<void> shareText(String text) {
   return SharePlus.instance.share(ShareParams(text: text));
 }
 
-/// Chụp [boundaryKey] (phải là `RepaintBoundary`) thành PNG, in đè
-/// [overlayText] (nếu có) lên dải nền mờ ở đáy ảnh — để ảnh tự chứa thông tin
-/// level/điểm/ngày kể cả khi người nhận chỉ xem/lưu ảnh, tách khỏi caption
-/// chia sẻ. Null nếu widget chưa build (context null). Tách riêng khỏi
-/// [shareBoardImage] để test được không cần chạm platform channel của
-/// share_plus.
+/// Captures [boundaryKey] (must be a `RepaintBoundary`) as a PNG, overlaying
+/// [overlayText] (if any) on a translucent bar at the bottom of the image —
+/// so the image carries its own level/score/date info even if the recipient
+/// only views/saves the picture, independent of the share caption. Returns
+/// null if the widget hasn't built yet (context is null). Kept separate from
+/// [shareBoardImage] so it's testable without touching share_plus's platform
+/// channel.
 Future<Uint8List?> captureBoardPng(
   GlobalKey boundaryKey, {
   double pixelRatio = 2.0,
@@ -34,7 +35,8 @@ Future<Uint8List?> captureBoardPng(
   return bytes?.buffer.asUint8List();
 }
 
-/// Vẽ [board] cùng dải nền mờ + [text] trắng ở đáy ảnh lên 1 canvas mới.
+/// Draws [board] plus a translucent bar + white [text] at the bottom of the
+/// image onto a new canvas.
 Future<ui.Image> _withTextOverlay(
   ui.Image board,
   String text,
@@ -70,7 +72,8 @@ Future<ui.Image> _withTextOverlay(
   return picture.toImage(board.width, board.height);
 }
 
-/// Chụp bàn chơi rồi mở share sheet kèm [text]. No-op nếu chụp thất bại.
+/// Captures the board then opens the share sheet with [text]. No-op if the
+/// capture fails.
 Future<void> shareBoardImage({
   required GlobalKey boundaryKey,
   required String text,
@@ -86,11 +89,12 @@ Future<void> shareBoardImage({
   );
 }
 
-/// Chụp một widget kết quả (dựng tạm trong overlay ẩn ngay trước khi gọi)
-/// rồi mở share sheet kèm [levelText] — cùng pattern với [shareBoardImage]
-/// nhưng tách file/caption riêng vì đây là thẻ kết quả, không phải ảnh chụp
-/// board. Unused in the base today (no ScoreCard widget survived the
-/// strip) — wire this to your own result-card widget when you build one.
+/// Captures a result widget (built temporarily in a hidden overlay right
+/// before calling this) then opens the share sheet with [levelText] — same
+/// pattern as [shareBoardImage] but with a separate file/caption because
+/// this is a result card, not a board screenshot. Unused in the base today
+/// (no ScoreCard widget survived the strip) — wire this to your own
+/// result-card widget when you build one.
 Future<void> shareScoreCard({
   required GlobalKey boundaryKey,
   required String levelText,
@@ -106,13 +110,14 @@ Future<void> shareScoreCard({
   );
 }
 
-/// Mở share sheet với PNG thẻ hành trình đã chụp sẵn.
+/// Opens the share sheet with an already-captured journey card PNG.
 ///
-/// Nhận **bytes** chứ không nhận `GlobalKey` như [shareScoreCard]: bên gọi phải
-/// gỡ overlay ẩn ngay sau khi chụp, nên nó cầm bytes trước khi tới đây. Vẫn là
-/// cùng một pipeline — [captureBoardPng] — không phải đường xuất ảnh thứ hai.
-/// Unused in the base today (no JourneyCard widget survived the strip) —
-/// wire this to your own result-card widget when you build one.
+/// Takes **bytes** rather than a `GlobalKey` like [shareScoreCard]: the
+/// caller must tear down the hidden overlay right after capturing, so it
+/// holds the bytes before reaching here. Still the same pipeline —
+/// [captureBoardPng] — not a second image export path. Unused in the base
+/// today (no JourneyCard widget survived the strip) — wire this to your own
+/// result-card widget when you build one.
 Future<void> shareJourneyCard({
   required Uint8List png,
   required String text,

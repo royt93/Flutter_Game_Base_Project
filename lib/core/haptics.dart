@@ -2,22 +2,24 @@ import 'package:flutter/services.dart';
 
 import 'storage_service.dart';
 
-/// Rung xúc giác — mọi điểm gọi `HapticFeedback.*` trong app phải đi qua
-/// đây để tôn trọng cờ `StorageKeys.hapticsEnabled` (tắt trong Settings).
+/// Haptic feedback — every call site in the app using `HapticFeedback.*`
+/// must go through here to respect the `StorageKeys.hapticsEnabled` flag
+/// (disabled from Settings).
 enum HapticLevel { light, medium, heavy }
 
-/// Cỡ nhóm vừa nổ → mức rung (thuần, test được) — dùng khi có luật ghép
-/// nhóm/pop thật.
+/// Maps a just-popped group's size to a haptic level (pure, testable) — use
+/// this once real group/pop matching rules exist.
 HapticLevel hapticLevelForGroupSize(int size) {
   if (size >= 8) return HapticLevel.heavy;
   if (size >= 4) return HapticLevel.medium;
   return HapticLevel.light;
 }
 
-/// Giảm 1 mức rung cho soft mode (heavy→medium, medium→light, light→light)
-/// bằng cách lùi 1 chỉ số trong `HapticLevel.values` (khai theo đúng thứ tự
-/// light < medium < heavy) — tự đúng nếu sau này thêm/bớt tier, không cần
-/// sửa tay từng cặp ánh xạ.
+/// Steps a haptic level down by one tier for soft mode (heavy→medium,
+/// medium→light, light→light) by moving back one index in
+/// `HapticLevel.values` (declared in order light < medium < heavy) — stays
+/// correct automatically if tiers are added/removed later, no need to hand-edit
+/// each mapping pair.
 HapticLevel _softModeDowngrade(HapticLevel level) =>
     HapticLevel.values[(level.index - 1).clamp(
       0,

@@ -20,13 +20,14 @@ class StorageKeys {
   static const String maxMsSeen = 'max_ms_seen';
 }
 
-/// Service lưu trữ local dùng chung (bọc SharedPreferences).
-/// Đăng ký 1 lần ở main: `Get.put(StorageService(prefs), permanent: true)`.
+/// Shared local storage service (wraps SharedPreferences).
+/// Registered once in main: `Get.put(StorageService(prefs), permanent: true)`.
 ///
-/// [_prefs] null khi `SharedPreferences.getInstance()` lỗi lúc boot (thiết bị
-/// hiếm, storage hỏng) — dùng [_fallback] in-memory để app vẫn chạy được với
-/// giá trị mặc định an toàn thay vì crash trắng màn hình (không persist qua
-/// session, nhưng đó là quyền lấy sau, không phải crash).
+/// [_prefs] is null when `SharedPreferences.getInstance()` fails at boot
+/// (rare devices, corrupted storage) — the in-memory [_fallback] is used so
+/// the app can still run with safe default values instead of a hard crash
+/// (it doesn't persist across sessions, but that's a tradeoff to fix later,
+/// not a crash).
 class StorageService extends GetxService {
   final SharedPreferences? _prefs;
   final Map<String, Object> _fallback = {};
@@ -34,33 +35,36 @@ class StorageService extends GetxService {
 
   static StorageService get to => Get.find<StorageService>();
 
-  /// An toàn khi gọi từ widget test độc lập chưa đăng ký service (vd các
-  /// widget hiệu ứng nhỏ như confetti/mascot/pulse-glow test riêng lẻ).
+  /// Safe to call from a standalone widget test that hasn't registered the
+  /// service (e.g. small effect widgets like confetti/mascot/pulse-glow
+  /// tested in isolation).
   static StorageService? get maybe =>
       Get.isRegistered<StorageService>() ? Get.find<StorageService>() : null;
 
-  /// Số lần thật sự chạm `SharedPreferences` (platform channel + ghi
-  /// đĩa). Tăng ở mọi `setX` **không** đi qua buffer, và mỗi key được
-  /// [flush] đẩy xuống.
+  /// Count of actual `SharedPreferences` hits (platform channel + disk
+  /// write). Incremented on every `setX` that does **not** go through the
+  /// buffer, and on every key [flush] pushes down.
   ///
-  /// Tồn tại để có test tất định thay vì phải profile tay trên device khi
-  /// một hot path (vd một counter ghi mỗi lần tap trong gameplay) vô tình
-  /// ghi thẳng xuống đĩa nhiều lần thay vì qua buffer. Một `int++` không
-  /// đáng kể ở runtime, đổi lại có lưới chống hồi quy vĩnh viễn.
+  /// Exists to make this deterministically testable instead of having to
+  /// hand-profile on a device when a hot path (e.g. a counter written on
+  /// every tap in gameplay) accidentally writes straight to disk repeatedly
+  /// instead of going through the buffer. One `int++` is negligible at
+  /// runtime, in exchange for a permanent regression guard.
   int platformWrites = 0;
 
-  /// Write-behind cho hot path. Giá trị ghi qua `setXBuffered` nằm ở đây
-  /// tới khi [flush] đẩy xuống đĩa một lượt.
+  /// Write-behind buffer for hot paths. Values written via `setXBuffered`
+  /// live here until [flush] pushes them down to disk in one batch.
   ///
-  /// **Mọi đường đọc phải tra buffer TRƯỚC `_prefs`** — nếu không, giá trị vừa
-  /// ghi mà chưa flush sẽ đọc ra số cũ. Đó là bẫy chính của kiểu tối ưu này,
-  /// nên [getInt]/[getBool]/[getString]/[getDouble]/[allKeys]/[exportAll] đều
-  /// đã xử lý, và [remove]/[importAll] dọn buffer.
+  /// **Every read path must check the buffer BEFORE `_prefs`** — otherwise a
+  /// value just written but not yet flushed would read back as the old
+  /// number. That's the main trap of this kind of optimization, so
+  /// [getInt]/[getBool]/[getString]/[getDouble]/[allKeys]/[exportAll] all
+  /// handle it, and [remove]/[importAll] clear the buffer.
   ///
-  /// CHỈ dùng cho counter trên hot path (vd một counter ghi mỗi lần tap
-  /// trong gameplay). Giao dịch thật — mua bán, nhận thưởng, reset — phải
-  /// ghi ngay bằng `setX` thường: mất chúng khi app bị kill là mất tiền/vật
-  /// phẩm của người chơi.
+  /// ONLY use this for hot-path counters (e.g. a counter written on every
+  /// tap in gameplay). Real transactions — purchases, reward grants, resets
+  /// — must write immediately via the regular `setX`: losing them if the app
+  /// is killed means losing the player's money/items.
   final Map<String, Object> _buffer = {};
 
   Future<void> setIntBuffered(String key, int value) async =>
@@ -69,8 +73,9 @@ class StorageService extends GetxService {
   Future<void> setStringBuffered(String key, String value) async =>
       _buffer[key] = value;
 
-  /// Đẩy toàn bộ giá trị đang đệm xuống đĩa. Gọi ở mốc an toàn: kết thúc màn,
-  /// app vào nền, controller đóng, và trước mọi giao dịch có thưởng.
+  /// Pushes every buffered value down to disk. Call this at safe
+  /// checkpoints: level end, app going to background, controller disposal,
+  /// and before any transaction that grants a reward.
   Future<void> flush() async {
     if (_buffer.isEmpty) return;
     final pending = Map<String, Object>.from(_buffer);
@@ -89,30 +94,34 @@ class StorageService extends GetxService {
     }
   }
 
-  /// Đọc giá trị thô rồi **kiểm kiểu**, không cast thẳng.
+  /// Reads the raw value then **checks its type**, instead of casting directly.
   ///
-  /// Bản cũ dùng `_prefs.getInt(key)` / `as int?`, mà cả hai đều ném
-  /// `TypeError` nếu key đang giữ kiểu khác (String ở chỗ đáng lẽ là int).
-  /// Một khi state thật hydrate hàng chục key trong `onInit()` của một
-  /// singleton `permanent: true` dựng ngay ở `main.dart`, một key sai kiểu
-  /// duy nhất là **app không boot được** — người chơi phải gỡ cài đặt.
+  /// The old version used `_prefs.getInt(key)` / `as int?`, both of which
+  /// throw a `TypeError` if the key holds a different type (a String where
+  /// an int was expected). Once real state hydrates dozens of keys in the
+  /// `onInit()` of a `permanent: true` singleton set up right in
+  /// `main.dart`, a single wrong-typed key means **the app can't boot** —
+  /// the player has to uninstall.
   ///
-  /// Đường vào có thật: [importAll] chỉ kiểm giá trị thuộc int/bool/double/
-  /// String, KHÔNG kiểm từng key có đúng kiểu mong đợi không — một bản
-  /// backup hỏng hoặc chỉnh tay chứa `"coins": "abc"` là đủ để trúng lỗi này.
+  /// A real entry point for this: [importAll] only checks that values are
+  /// int/bool/double/String, it does NOT check that each key holds the type
+  /// it's expected to — a corrupted backup or a hand-edited one containing
+  /// `"coins": "abc"` is enough to trigger this.
   ///
-  /// Sai kiểu → trả mặc định, giống hệt như key chưa tồn tại. Sửa ở đây phủ
-  /// **mọi** key một lượt, thay vì bọc try/catch ở từng chỗ hydrate.
+  /// Wrong type → returns the default, exactly as if the key didn't exist.
+  /// Fixing it here covers **every** key at once, instead of wrapping
+  /// try/catch around each hydration call site.
   Object? _raw(String key) => _buffer[key] ?? _prefs?.get(key) ?? _fallback[key];
 
   int getInt(String key, {int def = 0}) {
     final v = _raw(key);
     return v is int ? v : def;
   }
-  /// Ghi thẳng phải **huỷ bản đang đệm** của cùng key. Không có dòng
-  /// này thì giá trị buffered cũ vẫn che kết quả ở `_raw`, và cú [flush] kế
-  /// tiếp ghi đè luôn xuống đĩa — một undo, reset, mua bán hay import đều
-  /// lặng lẽ mất tác dụng nếu key đó từng đi qua hot path.
+  /// A direct write must **invalidate the buffered copy** of the same key.
+  /// Without this line, the stale buffered value would still shadow the
+  /// result in `_raw`, and the next [flush] would overwrite it right back
+  /// down to disk — an undo, reset, purchase, or import would silently have
+  /// no effect if that key had ever gone through the hot path.
   Future<void> setInt(String key, int value) async {
     _buffer.remove(key);
     platformWrites++;
@@ -127,7 +136,7 @@ class StorageService extends GetxService {
     final v = _raw(key);
     return v is bool ? v : def;
   }
-  /// Xem ghi chú ở [setInt].
+  /// See the note on [setInt].
   Future<void> setBool(String key, bool value) async {
     _buffer.remove(key);
     platformWrites++;
@@ -142,7 +151,7 @@ class StorageService extends GetxService {
     final v = _raw(key);
     return v is double ? v : def;
   }
-  /// Xem ghi chú ở [setInt].
+  /// See the note on [setInt].
   Future<void> setDouble(String key, double value) async {
     _buffer.remove(key);
     platformWrites++;
@@ -157,7 +166,7 @@ class StorageService extends GetxService {
     final v = _raw(key);
     return v is String ? v : null;
   }
-  /// Xem ghi chú ở [setInt].
+  /// See the note on [setInt].
   Future<void> setString(String key, String value) async {
     _buffer.remove(key);
     platformWrites++;
@@ -168,8 +177,9 @@ class StorageService extends GetxService {
     _fallback[key] = value;
   }
 
-  /// Đọc JSON list (khác pattern CSV-join của các key khác trong file này)
-  /// — dùng cho các key cần lưu một danh sách string thay vì 1 giá trị.
+  /// Reads a JSON list (unlike the CSV-join pattern of other keys in this
+  /// file) — used for keys that need to store a list of strings instead of
+  /// a single value.
   List<String> getStringList(String key) {
     final raw = getString(key);
     if (raw == null) return [];
@@ -194,16 +204,17 @@ class StorageService extends GetxService {
     _fallback.remove(key);
   }
 
-  /// Mọi key đang tồn tại. Cùng lý do với [exportAll] — dùng API generic
-  /// thay vì hand-list `StorageKeys`, để không có chỗ nào phải nhớ cập nhật
-  /// một danh sách tay mỗi khi thêm key mới (một danh sách tay kiểu đó rất
-  /// dễ trôi lạc hậu qua vài round code review).
+  /// Every key currently in storage. Same reasoning as [exportAll] — uses
+  /// the generic API instead of hand-listing `StorageKeys`, so there's no
+  /// place that must remember to update a hand-written list every time a
+  /// new key is added (that kind of hand-written list drifts out of date
+  /// very easily across a few rounds of code review).
   Set<String> allKeys() =>
       {...?_prefs?.getKeys(), ..._fallback.keys, ..._buffer.keys};
 
-  /// Dump toàn bộ storage hiện có thành map — dùng API generic của
-  /// SharedPreferences (getKeys/get) thay vì hand-list từng StorageKeys, để
-  /// không phải nhớ cập nhật danh sách này mỗi khi thêm key mới.
+  /// Dumps all current storage into a map — uses SharedPreferences's
+  /// generic API (getKeys/get) instead of hand-listing every StorageKeys
+  /// entry, so this list doesn't need updating every time a new key is added.
   Map<String, Object> exportAll() {
     final prefs = _prefs;
     // Giá trị đang đệm phải đè lên bản trên đĩa — backup/export đọc qua
@@ -215,9 +226,9 @@ class StorageService extends GetxService {
     };
   }
 
-  /// Ghi đè storage từ map đã export. Giá trị chỉ có thể là int/bool/double/
-  /// String (StorageService không bao giờ set List thẳng xuống
-  /// SharedPreferences — [setStringList] tự JSON-encode thành String).
+  /// Overwrites storage from an exported map. Values can only be
+  /// int/bool/double/String (StorageService never sets a List directly on
+  /// SharedPreferences — [setStringList] JSON-encodes it to a String itself).
   Future<void> importAll(Map<String, Object?> data) async {
     if (data.values.any(
       (value) =>

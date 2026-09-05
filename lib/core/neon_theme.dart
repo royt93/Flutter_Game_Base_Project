@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 
-/// Bảng màu & style dùng chung. Đợt revamp bright-casual (Candy-Crush): nền sáng
-/// ấm, palette kẹo, thẻ trắng, chữ mực đậm. Giữ tên hằng cũ (cyan/magenta/…) để
-/// khỏi rename hàng loạt callsite — giá trị đã tinh chỉnh sang tông "kẹo".
+/// Shared color palette & styles. Bright-casual (Candy-Crush-style) revamp:
+/// warm light background, candy palette, white cards, bold ink text. Keeps
+/// the old constant names (cyan/magenta/…) to avoid a mass callsite rename —
+/// the values themselves have been retuned to a "candy" tone.
 ///
-/// Bộ token nền/thẻ/mực (bg*/card*/ink*) là getter đổi theo [dark] — bật
-/// lên dùng lại đúng bảng màu neon-dark gốc trước pivot. Callsite cũ gọi
-/// `NeonTheme.ink`/`NeonTheme.card`/… không cần sửa gì, tự đổi theo flag.
+/// The bg*/card*/ink* background/card/ink token set are getters that switch
+/// on [dark] — flip it on to fall back to the original neon-dark palette from
+/// before the pivot. Existing callsites calling `NeonTheme.ink`/`NeonTheme.card`/…
+/// need no changes; they switch automatically with the flag.
 class NeonTheme {
   NeonTheme._();
 
-  /// true = bảng màu neon-dark gốc, false (mặc định) = bright-casual hiện tại.
+  /// true = original neon-dark palette, false (default) = current bright-casual look.
   static bool dark = false;
 
-  /// Font toàn app — Baloo2 (đủ glyph tiếng Việt + bo tròn vui mắt).
+  /// App-wide font — Baloo2 (full Vietnamese glyph coverage + a friendly rounded look).
   static const String fontFamily = 'Baloo2';
 
   // Hệ spacing chuẩn (8 / 16 / 24).
@@ -88,15 +90,15 @@ class NeonTheme {
     // identically.
   ];
 
-  /// Gradient nền sáng candy dùng cho mọi screen (qua NeonBg).
+  /// Bright candy background gradient used across every screen (via NeonBg).
   static LinearGradient get bgGradient => LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [bgTop, bgMid, bgBot],
   );
 
-  /// Đổ bóng phát sáng quanh widget theo màu. 3 lớp: lõi sáng gắt + vầng giữa +
-  /// quầng rộng mờ → bloom mềm kiểu ánh kẹo bóng.
+  /// Colored glow shadow around a widget. 3 layers: a sharp bright core +
+  /// a mid halo + a wide soft glow → a soft bloom in a glossy-candy style.
   static List<BoxShadow> glow(
     Color color, {
     double blur = 18,
@@ -127,7 +129,8 @@ class NeonTheme {
     ];
   }
 
-  /// Đổ bóng "chunky" cho thẻ/nút casual: bóng mềm đổ xuống dưới tạo khối nổi.
+  /// "Chunky" drop shadow for casual cards/buttons: a soft shadow cast
+  /// downward to create a raised-block look.
   static List<BoxShadow> drop({double y = 4, double blur = 10}) {
     return [
       BoxShadow(

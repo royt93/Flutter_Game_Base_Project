@@ -1,34 +1,36 @@
-// Tiện ích định dạng dùng chung.
+// Shared formatting utilities.
 
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
-/// Định dạng [Duration] thành "mm:ss" (phút:giây, mỗi phần 2 chữ số).
-/// Dùng cho đếm ngược hồi mạng ở Home / Level Select / World Map.
+/// Formats a [Duration] as "mm:ss" (minutes:seconds, each part 2 digits).
+/// Used for the reconnect countdown on Home / Level Select / World Map.
 String fmtDur(Duration d) {
   final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
   final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
   return '$m:$s';
 }
 
-/// Thời gian còn lại tới **nửa đêm GIỜ MÁY** sau [daysLeft] ngày kể từ hôm nay.
+/// Time remaining until **DEVICE-LOCAL midnight** [daysLeft] days from today.
 ///
-/// Dùng cho đếm ngược kết thúc Mùa / Giải đấu tuần. Mốc kết thúc dựng từ CÁC
-/// THÀNH PHẦN NGÀY ĐỊA PHƯƠNG (`DateTime(year, month, day + daysLeft)`) — khớp
-/// cách `todayEpochDay` tính (cũng theo local date). Trước đây mốc kết thúc bị
-/// tái dựng bằng UTC midnight (`endDay * 86400000`) trong khi epoch-day lại theo
-/// local → lệch đúng offset múi giờ (UTC+7 → countdown nhảy 00:00:00 sớm 7 giờ).
-/// Dart tự chuẩn hoá `day` tràn (vd 35 → tháng kế).
+/// Used for the Season / weekly tournament end countdown. The end timestamp
+/// is built from LOCAL DATE COMPONENTS (`DateTime(year, month, day +
+/// daysLeft)`) — matching how `todayEpochDay` computes it (also by local
+/// date). The end timestamp used to be reconstructed with UTC midnight
+/// (`endDay * 86400000`) while epoch-day was local → off by exactly the
+/// timezone offset (UTC+7 → the countdown jumps to 00:00:00 7 hours early).
+/// Dart normalizes an overflowing `day` automatically (e.g. 35 → next month).
 Duration durationToLocalMidnight(DateTime now, int daysLeft) {
   final end = DateTime(now.year, now.month, now.day + daysLeft);
   final ms = end.millisecondsSinceEpoch - now.millisecondsSinceEpoch;
   return ms <= 0 ? Duration.zero : Duration(milliseconds: ms);
 }
 
-/// Định dạng số nguyên lớn (xu, điểm, giá, máu boss…) với DẤU PHÂN TÁCH HÀNG
-/// NGHÌN theo NGÔN NGỮ hiện tại: vi → "10.000", en → "10,000", de → "10.000"…
-/// Dùng [NumberFormat] (intl) theo `Get.locale`; nếu locale lạ/chưa có dữ liệu
-/// thì fallback nhóm thủ công bằng dấu '.' (kiểu Việt) để KHÔNG bao giờ ném lỗi.
+/// Formats a large integer (coins, score, price, boss HP…) with a THOUSANDS
+/// SEPARATOR matching the CURRENT LANGUAGE: vi → "10.000", en → "10,000",
+/// de → "10.000"… Uses [NumberFormat] (intl) keyed on `Get.locale`; if the
+/// locale is unknown/has no data, falls back to manual grouping with '.'
+/// (Vietnamese-style) so it NEVER throws.
 String fmtNum(int n) {
   try {
     return NumberFormat.decimalPattern(

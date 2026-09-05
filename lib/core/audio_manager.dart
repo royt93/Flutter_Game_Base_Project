@@ -4,7 +4,7 @@ import 'package:flame_audio/flame_audio.dart';
 import 'package:get/get.dart';
 import 'storage_service.dart';
 
-/// Quản lý nhạc nền: một track duy nhất (`asset/audio/bkg.ogg`) + mute.
+/// Manages the background music: a single track (`asset/audio/bkg.ogg`) + mute.
 class AudioManager extends GetxService {
   static const _bgmTrack = 'bkg.ogg';
 
@@ -13,12 +13,12 @@ class AudioManager extends GetxService {
   bool _bgmPlaying = false;
   bool _ready = false;
 
-  /// Lấy instance nếu đã đăng ký (an toàn khi gọi từ game/widget test).
+  /// Gets the instance if already registered (safe to call from game/widget tests).
   static AudioManager? get maybe =>
       Get.isRegistered<AudioManager>() ? Get.find<AudioManager>() : null;
 
   Future<void> init() async {
-    // Khôi phục trạng thái mute đã lưu trước khi load audio
+    // Restore the saved mute state before loading audio
     muted.value = StorageService.to.getBool(StorageKeys.audioMuted, def: false);
 
     FlameAudio.audioCache.prefix = 'asset/audio/';
@@ -26,7 +26,7 @@ class AudioManager extends GetxService {
       await FlameAudio.audioCache.loadAll([_bgmTrack]);
       _ready = true;
     } catch (_) {
-      // môi trường không có audio (vd: một số test) → bỏ qua, không crash
+      // environment has no audio (e.g. some tests) → ignore, don't crash
       _ready = false;
     }
   }
@@ -43,14 +43,16 @@ class AudioManager extends GetxService {
     _bgmPlaying = false;
   }
 
-  /// Tạm dừng nhạc khi app vào background (lifecycle paused/inactive/hidden).
-  /// Giữ `_bgmPlaying = true` để biết có nhạc cần resume khi quay lại.
+  /// Pauses the music when the app goes to background (lifecycle
+  /// paused/inactive/hidden). Keeps `_bgmPlaying = true` so it knows there's
+  /// music to resume when coming back.
   void pauseBgm() {
     if (!_bgmPlaying || muted.value) return;
     _ignoreAudio(FlameAudio.bgm.pause());
   }
 
-  /// Phát tiếp khi app trở lại foreground (resumed). Không resume nếu user mute.
+  /// Resumes playback when the app returns to foreground (resumed). Does
+  /// not resume if the user has muted.
   void resumeBgm() {
     if (!_bgmPlaying || muted.value) return;
     _ignoreAudio(FlameAudio.bgm.resume());

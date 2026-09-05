@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 
-/// Log debug 'roy93~' — CHỈ in ở debug build, no-op (bị tree-shake) ở release.
-/// Gom mọi vết debug trên máy về 1 chỗ, không gây nhiễu log bản phát hành.
+/// Debug log prefixed 'roy93~' — prints ONLY in debug builds, no-op
+/// (tree-shaken away) in release. Funnels every on-device debug trace
+/// through one place, without cluttering release logs.
 void dlog(String msg) {
   if (kDebugMode) debugPrint('roy93~ $msg');
 }

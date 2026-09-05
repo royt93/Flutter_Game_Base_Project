@@ -1,23 +1,26 @@
 import '../storage_service.dart';
 
-/// Đồng hồ "không bao giờ lùi" — một monotonic day/ms clock dùng chung cho
-/// mọi hệ thưởng theo thời gian (daily reward, streak, mùa...). Một helper
-/// độc lập ở đây, thay vì logic nằm rải rác trong từng nơi cần nó, để mọi
-/// hệ thưởng theo ngày đều đi qua cùng một lớp bảo vệ.
+/// A "never goes backward" clock — a monotonic day/ms clock shared by every
+/// time-based reward system (daily reward, streaks, season...). It's a
+/// standalone helper here, rather than logic scattered across each place
+/// that needs it, so every date-based reward system goes through the same
+/// protection layer.
 ///
-/// **Chống được gì:** vòng lặp "chỉnh đồng hồ tiến → nhận thưởng → chỉnh lùi
-/// lại → lặp". Sau khi kẹp, chỉnh lùi không có tác dụng, nên mỗi lần gian lận
-/// đốt luôn thời gian tương lai thật của người chơi (mất mốc daily/streak/mùa
-/// tương ứng). Đó là mức bảo vệ tối đa mà client làm được khi không có nguồn
-/// thời gian tin cậy từ server.
+/// **What this defends against:** the "advance the clock → claim the reward
+/// → wind it back → repeat" loop. Once clamped, winding the clock back has
+/// no effect, so every cheat attempt permanently burns the player's real
+/// future time (losing the corresponding daily/streak/season checkpoint).
+/// That's the strongest protection a client can offer without a trusted
+/// server time source.
 ///
-/// **KHÔNG chống được:** nhảy đồng hồ tiến một chiều. Vì vậy **đừng** áp lớp
-/// kẹp này cho những thứ mà "ở lại tương lai" chính là điều người gian lận
-/// muốn — ví dụ một sự kiện cuối tuần: đặt máy sang thứ Bảy rồi ở nguyên đó
-/// là đã đạt mục đích, và kẹp monotonic còn khiến trạng thái đó thành vĩnh
-/// viễn, tức là làm mọi thứ tệ hơn.
+/// **What this does NOT defend against:** jumping the clock forward one-way.
+/// So **don't** apply this clamp to anything where "staying in the future"
+/// is exactly what the cheater wants — e.g. a weekend event: setting the
+/// device to Saturday and leaving it there already achieves their goal, and
+/// a monotonic clamp would make that state permanent, which makes things
+/// worse.
 
-/// Mốc mili-giây hiện tại, kẹp không lùi dưới giá trị lớn nhất từng thấy.
+/// Current millisecond timestamp, clamped to never go below the largest value seen so far.
 int nowMsClamped() {
   final current = DateTime.now().toUtc().millisecondsSinceEpoch;
   final maxSeen = StorageService.to.getInt(StorageKeys.maxMsSeen);
@@ -28,7 +31,7 @@ int nowMsClamped() {
   return maxSeen;
 }
 
-/// Số ngày kể từ epoch (UTC), kẹp không lùi dưới mốc lớn nhất từng thấy.
+/// Days since epoch (UTC), clamped to never go below the largest value seen so far.
 int todayEpochDayClamped() {
   final current = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000;
   final maxSeen = StorageService.to.getInt(StorageKeys.maxEpochDaySeen);

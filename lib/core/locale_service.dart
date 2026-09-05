@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'app_translations.dart';
 import 'storage_service.dart';
 
-/// Quản lý ngôn ngữ hiện tại + lưu lựa chọn của người dùng.
+/// Manages the current language + persists the user's choice.
 class LocaleService extends GetxService {
   final StorageService _store;
   final Rx<Locale> current;

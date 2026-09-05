@@ -1,31 +1,34 @@
 import 'package:flutter/widgets.dart';
 
-/// Cỡ chữ lớn nhất trong [candidates] mà **mọi từ** của [label] còn nằm gọn
-/// trong [maxWidth].
+/// The largest font size in [candidates] for which **every word** of [label]
+/// still fits within [maxWidth].
 ///
-/// Vì sao xét theo từ chứ không theo cả chuỗi: `Text` tự xuống dòng ở khoảng
-/// trắng, nên chuỗi nhiều từ luôn vừa. Cái vỡ là **một từ đơn rộng hơn ô
-/// chứa** — lúc đó Flutter ngắt giữa từ. Trên Mode Select tiếng Đức nó ra
-/// "Doppelspiege" + "l" và "Zitronenwüst" + "e", nhìn như lỗi hiển thị.
+/// Why this checks per-word rather than the whole string: `Text` wraps at
+/// whitespace on its own, so a multi-word string always fits. What breaks is
+/// **a single word wider than the container** — that's when Flutter breaks
+/// mid-word. On the German Mode Select screen this produced
+/// "Doppelspiege" + "l" and "Zitronenwüst" + "e", which looks like a display bug.
 ///
-/// Đo BỀ RỘNG từng từ, không lấy từ nhiều ký tự nhất. Bản đầu chọn từ theo
-/// `.length` và sai: "WWW" hẹp hơn "mmmmm" về số ký tự nhưng rộng hơn về
-/// pixel, nên từ thật sự tràn có thể bị bỏ qua.
+/// Measures each word's WIDTH, not the word with the most characters. The
+/// first version picked a word by `.length` and was wrong: "WWW" has fewer
+/// characters than "mmmmm" but is wider in pixels, so the word that actually
+/// overflows could be missed.
 ///
-/// Trả về phần tử cuối của [candidates] nếu không cỡ nào vừa: thà chữ nhỏ hơn
-/// mức mong muốn còn hơn ngắt giữa từ.
+/// Returns the last element of [candidates] if no size fits: a smaller font
+/// than intended beats breaking in the middle of a word.
 double fitFontSizeForLongestWord(
   String label,
   double maxWidth, {
   List<double> candidates = const [11, 10, 9, 8],
   FontWeight fontWeight = FontWeight.w700,
   String? fontFamily = 'Baloo2',
-  /// Khe đo, chỉ dùng cho test.
+  /// Test-only measurement seam.
   ///
-  /// `flutter test` không nạp Baloo2 mà thay bằng font có mọi glyph rộng bằng
-  /// nhau, nên trong test "từ nhiều ký tự nhất" luôn trùng "từ rộng nhất" —
-  /// không cách nào phân biệt bản đúng với bản sai. Có khe này thì tính chất
-  /// "đo theo bề rộng" mới kiểm được.
+  /// `flutter test` doesn't load Baloo2 and substitutes a font where every
+  /// glyph has equal width, so in tests "word with the most characters"
+  /// always coincides with "widest word" — there's no way to tell a correct
+  /// implementation from a broken one. This seam is what lets the
+  /// "measures by width" property actually be tested.
   @visibleForTesting double Function(String word, double fontSize)? measureWord,
 }) {
   assert(candidates.isNotEmpty, 'cần ít nhất một cỡ chữ');
