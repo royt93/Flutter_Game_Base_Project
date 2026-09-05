@@ -4,13 +4,14 @@ import '../../../core/neon_theme.dart';
 import '../pressable_scale.dart';
 import '../stroke_text.dart';
 
-/// Kiểu nút: 3 dạng pill có nhãn + 1 dạng tròn chỉ icon.
+/// Button style: 3 labeled pill variants + 1 icon-only round variant.
 enum CommonButtonVariant { primary, secondary, danger, icon }
 
-/// Nút bấm dùng chung, nhiều biến thể hơn [NeonButton] (vẫn giữ nguyên
-/// NeonButton, không thay thế). `primary`/`secondary`/`danger` là pill bo
-/// tròn có nhãn (secondary = viền/nền nhạt thay vì gradient đặc, danger =
-/// tông đỏ); `icon` là nút tròn chỉ icon (settings/close...).
+/// Shared button widget, with more variants than [NeonButton] (NeonButton
+/// stays as-is, this doesn't replace it). `primary`/`secondary`/`danger` are
+/// rounded pills with a label (secondary = outline/light background instead
+/// of a solid gradient, danger = red tone); `icon` is a round icon-only
+/// button (settings/close/...).
 class CommonButton extends StatelessWidget {
   const CommonButton({
     super.key,
@@ -31,10 +32,11 @@ class CommonButton extends StatelessWidget {
   final CommonButtonVariant variant;
   final VoidCallback? onTap;
 
-  /// Màu accent. Mặc định: cyan (primary/secondary), đỏ (danger).
+  /// Accent color. Default: cyan (primary/secondary), red (danger).
   final Color? color;
 
-  /// Bề rộng pill (bỏ qua với variant icon, dùng [width] làm đường kính nếu có).
+  /// Pill width (ignored for the icon variant, which uses [width] as its
+  /// diameter instead, if given).
   final double? width;
   final String? semanticLabel;
 

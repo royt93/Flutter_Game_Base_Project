@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
 
-/// Icon + số lượng currency, đếm chạy mượt lên/xuống khi [value] đổi (thay vì
-/// nhảy số tức thì) — thay thế generic cho `CoinChip` cũ (đã xoá vì gắn chặt
-/// state game cụ thể). Không tự biết coins/gems là gì, chỉ hiển thị 1 con số.
+/// Icon + a currency amount, smoothly counting up/down when [value] changes
+/// (instead of jumping instantly) — a generic replacement for the old
+/// `CoinChip` (removed because it was tightly bound to specific game state).
+/// Doesn't know what coins/gems are itself, it just displays a number.
 class CurrencyCounter extends StatefulWidget {
   const CurrencyCounter({
     super.key,

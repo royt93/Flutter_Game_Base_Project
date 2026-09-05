@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../core/neon_theme.dart';
 import '../pressable_scale.dart';
 
-/// Switch bật/tắt kiểu kẹo: track pill + thumb tròn trượt trái/phải, thay
-/// cho `Switch`/`SwitchListTile` mặc định của Material khi cần đồng bộ style
-/// với bộ widget candy.
+/// A candy-styled on/off switch: pill track + a round thumb that slides
+/// left/right, replacing Material's default `Switch`/`SwitchListTile` when
+/// visual style needs to match the candy widget kit.
 class CandyToggleSwitch extends StatelessWidget {
   const CandyToggleSwitch({
     super.key,
@@ -17,7 +17,7 @@ class CandyToggleSwitch extends StatelessWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
 
-  /// Màu track khi bật. Mặc định: lime.
+  /// Track color when on. Default: lime.
   final Color? activeColor;
 
   @override

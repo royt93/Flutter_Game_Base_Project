@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
 
-/// Chấm tròn nhỏ báo "có cái mới"/"chưa nhận thưởng" — đặt trong 1 [Stack] bọc
-/// icon/widget khác của caller (vd `Stack(children: [Icon(...), Positioned(
-/// top: -2, right: -2, child: BadgeDot())])`). Không tự định vị.
+/// Small round dot signaling "something's new"/"unclaimed reward" — placed
+/// inside a [Stack] wrapping the caller's own icon/widget (e.g.
+/// `Stack(children: [Icon(...), Positioned(
+/// top: -2, right: -2, child: BadgeDot())])`). Does not position itself.
 class BadgeDot extends StatelessWidget {
   const BadgeDot({super.key, this.size = 10, this.color});
 

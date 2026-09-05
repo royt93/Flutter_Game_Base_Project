@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
 
-/// Hàng N sao (thường 3) — [earned] sao đầu tô sáng/glow, phần còn lại outline
-/// mờ. Kiểu "level complete, đạt 2/3 sao" kinh điển. [animate] = true thì mỗi
-/// sao pop-in lệch delay sau sao trước (dùng lúc vừa nhận thưởng); false thì
-/// vẽ tĩnh (đã đạt từ trước, hiển thị lại không cần replay animation).
+/// A row of N stars (usually 3) — the first [earned] stars are lit/glowing,
+/// the rest are a dim outline. The classic "level complete, got 2/3 stars"
+/// look. [animate] = true makes each star pop in with a staggered delay
+/// after the previous one (used right after earning the reward); false
+/// draws it statically (already earned earlier, shown again without
+/// replaying the animation).
 class StarRating extends StatefulWidget {
   const StarRating({
     super.key,

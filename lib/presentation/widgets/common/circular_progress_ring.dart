@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
 
-/// Vòng tiến trình dạng ring (custom-painted, không dùng CircularProgressIndicator
-/// mặc định) — dùng cho countdown timer / daily quest ring, có label/icon giữa
-/// tâm. Animate arc khi [progress] đổi qua TweenAnimationBuilder.
+/// Ring-shaped progress indicator (custom-painted, not the default
+/// CircularProgressIndicator) — used for a countdown timer / daily quest
+/// ring, with a label/icon centered inside it. Animates the arc when
+/// [progress] changes via TweenAnimationBuilder.
 class CircularProgressRing extends StatelessWidget {
   const CircularProgressRing({
     super.key,

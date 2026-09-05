@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../core/neon_theme.dart';
 import '../pressable_scale.dart';
 
-/// Dải tab pill 2-4 mục (vd chọn mode), 1 mục active được highlight bằng 1
-/// pill nền trượt animated, các mục còn lại chỉ chữ thường.
+/// A 2-4 item pill tab bar (e.g. mode selection) — the active item is
+/// highlighted by an animated sliding background pill, the rest are plain
+/// text.
 class SegmentedTabBar extends StatelessWidget {
   const SegmentedTabBar({
     super.key,

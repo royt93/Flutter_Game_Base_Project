@@ -4,11 +4,12 @@ import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
 
-/// Popup ăn mừng (level-up, mở thưởng...) — bố cục panel giống
-/// `NeonDialog.panel` (thẻ bo tròn `NeonTheme.card`, viền màu, glow+drop shadow,
-/// title/message) nhưng là widget đứng độc lập, không route qua `NeonDialog`,
-/// vì cần lớp hiệu ứng burst pháo giấy toả quanh panel mà `NeonDialog` không hỗ
-/// trợ. [content] là slot tự do — caller nhét `StarRating`/`CurrencyCounter`/...
+/// Celebration popup (level-up, reward unlocked, ...) — a panel layout like
+/// `NeonDialog.panel` (rounded `NeonTheme.card` card, colored border,
+/// glow+drop shadow, title/message) but a standalone widget that doesn't
+/// route through `NeonDialog`, since it needs the confetti burst effect
+/// radiating around the panel, which `NeonDialog` doesn't support. [content]
+/// is a free slot — the caller drops in a `StarRating`/`CurrencyCounter`/...
 class RewardPopup extends StatefulWidget {
   const RewardPopup({
     super.key,
@@ -26,7 +27,8 @@ class RewardPopup extends StatefulWidget {
   final Color? color;
   final Widget? content;
 
-  /// Tắt burst pháo giấy (vd người dùng bật giảm chuyển động, hoặc test).
+  /// Disables the confetti burst (e.g. the user enabled reduced motion, or
+  /// this is a test).
   final bool enableParticles;
 
   @override

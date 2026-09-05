@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../core/neon_theme.dart';
 import '../pressable_scale.dart';
 
-/// Nút icon tròn (vd settings/shop) có thể gắn 1 badge nhỏ ở góc — chấm tròn
-/// báo có-thông-báo (`showBadge`), hoặc số lượng (`badgeCount`) khi cần đếm.
+/// Round icon button (e.g. settings/shop) that can carry a small badge in
+/// its corner — a plain notification dot (`showBadge`), or a count
+/// (`badgeCount`) when a number is needed.
 class IconBadgeButton extends StatelessWidget {
   const IconBadgeButton({
     super.key,
@@ -20,15 +21,16 @@ class IconBadgeButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
 
-  /// Hiện 1 chấm badge trơn (không số) khi true.
+  /// Shows a plain (numberless) badge dot when true.
   final bool showBadge;
 
-  /// Khi > 0, hiện badge dạng số thay cho chấm trơn (badgeCount > 99 -> "99+").
+  /// When > 0, shows a numeric badge instead of the plain dot (badgeCount >
+  /// 99 -> "99+").
   final int? badgeCount;
 
   final Color? color;
 
-  /// Màu badge. Mặc định: đỏ.
+  /// Badge color. Default: red.
   final Color? badgeColor;
 
   final double size;

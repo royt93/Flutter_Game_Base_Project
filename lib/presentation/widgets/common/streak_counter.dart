@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
 
-/// Icon lửa + số ngày streak (đăng nhập liên tiếp...). Bố cục/spacing giống
-/// [CurrencyCounter] nhưng đơn giản hơn — không cần đếm chạy số.
+/// Fire icon + a streak day count (consecutive logins, ...). Same
+/// layout/spacing as [CurrencyCounter] but simpler — no count-up animation
+/// needed.
 class StreakCounter extends StatelessWidget {
   const StreakCounter({
     super.key,

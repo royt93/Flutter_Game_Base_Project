@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
 
-/// Thanh tiến trình dạng pill bo tròn, có 1-3 mốc sao dọc theo track — mốc nào
-/// đã bị fill vượt qua thì sáng lên (filled), ngược lại là outline mờ. Dùng
-/// cho world progress / event track kiểu "đạt 33%/66%/100% mở sao".
+/// Rounded pill-shaped progress bar with 1-3 star markers along the track —
+/// a marker the fill has passed lights up (filled), otherwise it stays a
+/// dim outline. Used for world progress / event tracks like "reach
+/// 33%/66%/100% to unlock a star".
 class ProgressBarStars extends StatelessWidget {
   const ProgressBarStars({
     super.key,
@@ -18,7 +19,7 @@ class ProgressBarStars extends StatelessWidget {
   /// 0.0-1.0.
   final double progress;
 
-  /// Mốc sao (0.0-1.0), tối đa dùng thực tế 1-3 mốc.
+  /// Star markers (0.0-1.0), in practice 1-3 of them at most.
   final List<double> starThresholds;
   final double height;
   final Color? fillColor;
