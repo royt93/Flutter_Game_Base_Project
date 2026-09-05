@@ -18,6 +18,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = Get.find<LocaleService>();
+    final audio = AudioManager.maybe;
     return Scaffold(
       body: NeonBg(
         child: SafeArea(
@@ -46,13 +47,19 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Obx(
-                      () => SwitchListTile(
-                        title: Text('sound'.tr),
-                        value: !(AudioManager.maybe?.muted.value ?? true),
-                        onChanged: (_) => AudioManager.maybe?.toggleMute(),
+                    // AudioManager may not be registered (e.g.
+                    // `app(withAudio: false)`, used by tests) — the
+                    // null-check must sit outside Obx, or `?.` short-circuits
+                    // and Obx registers no observable, which GetX treats as
+                    // "improper use of a GetX".
+                    if (audio != null)
+                      Obx(
+                        () => SwitchListTile(
+                          title: Text('sound'.tr),
+                          value: !audio.muted.value,
+                          onChanged: (_) => audio.toggleMute(),
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
