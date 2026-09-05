@@ -6,6 +6,7 @@ import '../widgets/neon_bg.dart';
 import '../widgets/neon_button.dart';
 import '../widgets/stroke_text.dart';
 import 'settings_screen.dart';
+import 'widget_showcase_screen.dart';
 
 /// Minimal home screen: base-project placeholder, one entry to Settings.
 /// Extend per-project (add your own cards/actions) rather than growing this.
@@ -26,6 +27,12 @@ class HomeScreen extends StatelessWidget {
                 label: 'settings'.tr,
                 color: NeonTheme.cyan,
                 onTap: () => Get.to(() => const SettingsScreen()),
+              ),
+              const SizedBox(height: 16),
+              NeonButton(
+                label: 'widget_showcase'.tr,
+                color: NeonTheme.magenta,
+                onTap: () => Get.to(() => const WidgetShowcaseScreen()),
               ),
             ],
           ),

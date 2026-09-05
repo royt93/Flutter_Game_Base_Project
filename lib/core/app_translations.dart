@@ -21,6 +21,7 @@ class AppTranslations extends Translations {
       'sound': 'Sound',
       'ok': 'OK',
       'cancel': 'Cancel',
+      'widget_showcase': 'Widget Kit',
     },
     'vi': {
       'app_name': 'Roy Project Base Game',
@@ -29,6 +30,7 @@ class AppTranslations extends Translations {
       'sound': 'Âm thanh',
       'ok': 'Đồng ý',
       'cancel': 'Huỷ',
+      'widget_showcase': 'Bộ Widget',
     },
   };
 }
