@@ -70,7 +70,7 @@ class CommonButton extends StatelessWidget {
     final outlined = variant == CommonButtonVariant.secondary;
     return Container(
       width: width ?? 240,
-      padding: const EdgeInsets.symmetric(vertical: NeonTheme.s16),
+      padding: const EdgeInsets.symmetric(vertical: NeonTheme.s8),
       decoration: BoxDecoration(
         gradient: outlined
             ? null

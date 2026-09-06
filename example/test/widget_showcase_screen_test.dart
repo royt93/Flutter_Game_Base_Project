@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/format.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
@@ -390,4 +391,44 @@ void main() {
     expect(find.byType(FloatingComboText), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'BUG: CurrencyCounter demo row không tràn viền ở width hẹp thật (đo '
+    'thật trên Samsung S24 Ultra: density override đẩy vùng chứa PanelCard '
+    'xuống còn max-width 296 — tái hiện chính xác constraint đó, cô lập '
+    'khỏi phần còn lại của màn hình vì các section khác đã có sẵn vấn đề '
+    'tràn viền riêng ở width hẹp, không thuộc phạm vi bug này)',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          Material(
+            child: Center(
+              child: SizedBox(
+                width: 296,
+                child: Wrap(
+                  spacing: NeonTheme.s16,
+                  runSpacing: NeonTheme.s8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    const CurrencyCounter(value: 12345678),
+                    const CommonButton(label: '+25', width: 90, onTap: null),
+                    CommonButton(
+                      label: 'Fly +25',
+                      width: 110,
+                      color: NeonTheme.gold,
+                      onTap: null,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Fly +25'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

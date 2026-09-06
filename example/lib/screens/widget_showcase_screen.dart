@@ -523,20 +523,28 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
+                              // Wrap (not Row) — on a narrower effective
+                              // width (larger system font scale / display
+                              // zoom, e.g. reproduced on a real Samsung
+                              // device with font_scale 1.08 + a density
+                              // override), 3 fixed-width items in a plain
+                              // Row(mainAxisSize.min) overflow instead of
+                              // shrinking; Wrap just flows the 3rd item to
+                              // a new line instead.
+                              Wrap(
+                                spacing: NeonTheme.s16,
+                                runSpacing: NeonTheme.s8,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   CurrencyCounter(
                                     key: _coinCounterKey,
                                     value: _coins,
                                   ),
-                                  const SizedBox(width: NeonTheme.s24),
                                   CommonButton(
                                     label: '+25',
                                     width: 90,
                                     onTap: _bumpCoins,
                                   ),
-                                  const SizedBox(width: NeonTheme.s16),
                                   // FEAT-12: coins fly from the bottom of
                                   // the screen to this CurrencyCounter's
                                   // GlobalKey, bumping the value on arrival

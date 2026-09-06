@@ -23,6 +23,25 @@ void main() {
     expect(tapped, true);
   });
 
+  testWidgets(
+    'CommonButton pill chiều cao vừa phải, không quá cao so với text bên trong',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Center(child: CommonButton(label: 'Play', onTap: () {})),
+          ),
+        ),
+      );
+
+      // Trước đây padding dọc 16 mỗi bên khiến nút cao 63px cho text 19sp —
+      // quá dày so với quy ước nút mobile thường (~44-52px). Giờ phải rõ
+      // ràng thấp hơn hẳn, không chỉ nhích nhẹ.
+      final height = tester.getSize(find.byType(CommonButton)).height;
+      expect(height, lessThan(52));
+    },
+  );
+
   for (final variant in CommonButtonVariant.values) {
     testWidgets('CommonButton render variant $variant không throw', (
       tester,
