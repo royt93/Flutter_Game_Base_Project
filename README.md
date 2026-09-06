@@ -2,9 +2,9 @@
 
 A Flutter package bundling the core services and casual-game widget kit
 behind a Candy-Crush-style puzzle game: local storage, i18n, audio, haptics,
-local reminders, and theme tokens, plus a 21-widget UI kit (buttons,
-overlays, progress/reward, layout & cards) built on GetX and styled with a
-bright candy palette.
+local reminders, and theme tokens, plus a 39-widget UI kit (buttons,
+overlays, progress/reward, layout & cards, game-specific, and game-feel/juice)
+built on GetX and styled with a bright candy palette.
 
 ## What's in the package
 
@@ -16,14 +16,20 @@ bright candy palette.
 - `lib/presentation/widgets/` — the neon widget kit (`NeonButton`,
   `NeonDialog`, `NeonAppBar`, `NeonBg`, `NeonAuraLayer`, `AuroraBgLayer`,
   `NeonIcon`, `StrokeText`, `PressableScale`) plus
-  `lib/presentation/widgets/common/`: 21 generic, game-agnostic widgets —
+  `lib/presentation/widgets/common/`: 39 generic, game-agnostic widgets —
   buttons & interactive (`CommonButton`, `ToggleSwitch`, `SegmentedTabBar`,
-  `IconBadgeButton`), feedback & overlay (`LoadingOverlay`, `ToastBanner`,
-  `TooltipBubble`, `BottomSheetPanel`, `ConfirmDialog`), progress & reward
-  (`ProgressBarStars`, `CircularProgressRing`, `StarRating`,
-  `CurrencyCounter`, `RewardPopup`, `BadgeDot`, `StreakCounter`), and layout
-  & cards (`PanelCard`, `ListTileRow`, `SectionHeader`,
-  `EmptyStatePlaceholder`, `AvatarFrame`) — all exported from one barrel,
+  `IconBadgeButton`, `SoundToggleFab`), feedback & overlay
+  (`LoadingOverlay`, `ToastBanner`, `TooltipBubble`, `BottomSheetPanel`,
+  `ConfirmDialog`, `ConfettiOverlay`, `FloatingComboText`,
+  `NetworkStatusBanner`, `ShimmerPlaceholder`, `SpotlightOverlay`), progress
+  & reward (`ProgressBarStars`, `CircularProgressRing`, `StarRating`,
+  `CurrencyCounter`, `RewardPopup`, `BadgeDot`, `StreakCounter`,
+  `CountdownChip`, `PaginatedDotsIndicator`, `CoinFlyOverlay`,
+  `DailyLoginCalendarWidget`, `EnergyBar`), layout & cards (`PanelCard`,
+  `ListTileRow`, `SectionHeader`, `EmptyStatePlaceholder`, `AvatarFrame`,
+  `RibbonBadge`, `ShopItemCard`, `VictoryCardTemplate`), game-specific
+  (`LevelSelectGrid`), and game-feel/juice (`SquashStretch`, `ScreenShake`,
+  `ComboHeatBackground`) — all exported from one barrel,
   `lib/presentation/widgets/common/common_widgets.dart`.
 
 ## Cheat-proof offline earnings

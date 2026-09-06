@@ -1,5 +1,5 @@
 name: roy_casual_kit
-description: "A lean core-services + casual-game widget kit for Flutter (GetX + Flame): storage, i18n, audio, haptics, local reminders, theme tokens, and a 21-widget candy-styled UI kit."
+description: "A lean core-services + casual-game widget kit for Flutter (GetX + Flame): storage, i18n, audio, haptics, local reminders, theme tokens, and a 39-widget candy-styled UI kit."
 version: 0.1.0
 homepage: https://github.com/royt93/Flutter_Game_Base_Project
 repository: https://github.com/royt93/Flutter_Game_Base_Project
