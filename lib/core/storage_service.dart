@@ -26,6 +26,9 @@ class StorageKeys {
 
   // lib/core/offline_progression_service.dart reads/writes this directly.
   static const String offlineLastClaimedMs = 'offline_last_claimed_ms';
+
+  // lib/core/in_app_review_helper.dart reads/writes this directly.
+  static const String reviewLastAskedMs = 'review_last_asked_ms';
 }
 
 /// Shared local storage service (wraps SharedPreferences).

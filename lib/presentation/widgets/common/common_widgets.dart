@@ -24,6 +24,7 @@ export 'confetti_overlay.dart';
 export 'floating_combo_text.dart';
 export 'network_status_banner.dart';
 export 'shimmer_placeholder.dart';
+export 'spotlight_overlay.dart';
 
 // Progress & Reward
 export 'progress_bar_stars.dart';
@@ -35,6 +36,7 @@ export 'badge_dot.dart';
 export 'streak_counter.dart';
 export 'countdown_chip.dart';
 export 'paginated_dots_indicator.dart';
+export 'coin_fly_overlay.dart';
 
 // Layout & Cards
 export 'panel_card.dart';

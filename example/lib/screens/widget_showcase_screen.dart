@@ -27,6 +27,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   bool _toggleOn = false;
   int _tabIndex = 0;
   int _coins = 100;
+  final GlobalKey _coinCounterKey = GlobalKey();
   int _plainTapCount = 0;
   int _throttledTapCount = 0;
   late final _throttledIncrement = throttled(
@@ -43,6 +44,14 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   late DateTime _countdownTarget = DateTime.now().add(
     const Duration(seconds: 15),
   );
+
+  // FEAT-11: SpotlightOverlay demo — highlights the "Primary" CommonButton
+  // from the Buttons & Interactive section above.
+  final _spotlightTargetKey = GlobalKey();
+  bool _spotlightActive = false;
+
+  void _startTutorial() => setState(() => _spotlightActive = true);
+  void _endTutorial() => setState(() => _spotlightActive = false);
 
   @override
   void dispose() {
@@ -68,6 +77,24 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   bool _showShimmer = true;
 
   void _bumpCoins() => setState(() => _coins += 25);
+
+  // FEAT-12: fly 5 coins from the button toward the CurrencyCounter's
+  // GlobalKey, bumping the displayed value by 5 (25 ~/ 5) per arrival so
+  // the running total lands on +25 once the last coin lands.
+  void _flyCoins() {
+    const totalAmount = 25;
+    const coinCount = 5;
+    final size = MediaQuery.of(context).size;
+    CoinFlyOverlay.show(
+      context,
+      from: Offset(size.width / 2, size.height - 80),
+      targetKey: _coinCounterKey,
+      coinCount: coinCount,
+      onArrive: () {
+        if (mounted) setState(() => _coins += totalAmount ~/ coinCount);
+      },
+    );
+  }
 
   // FEAT-21: fire several in quick succession — the "spam" test the task
   // asks for. Each self-cleans via FloatingComboText.show, no state to
@@ -182,6 +209,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               CommonButton(
+                                key: _spotlightTargetKey,
                                 label: 'Primary',
                                 width: 140,
                                 onTap: () {},
@@ -475,12 +503,26 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  CurrencyCounter(value: _coins),
+                                  CurrencyCounter(
+                                    key: _coinCounterKey,
+                                    value: _coins,
+                                  ),
                                   const SizedBox(width: NeonTheme.s24),
                                   CommonButton(
                                     label: '+25',
                                     width: 90,
                                     onTap: _bumpCoins,
+                                  ),
+                                  const SizedBox(width: NeonTheme.s16),
+                                  // FEAT-12: coins fly from the bottom of
+                                  // the screen to this CurrencyCounter's
+                                  // GlobalKey, bumping the value on arrival
+                                  // instead of jumping instantly.
+                                  CommonButton(
+                                    label: 'Fly +25',
+                                    width: 110,
+                                    color: NeonTheme.gold,
+                                    onTap: _flyCoins,
                                   ),
                                 ],
                               ),
@@ -541,6 +583,17 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   ),
                               ],
                             ),
+                          ),
+                        ),
+                        _Demo(
+                          // Highlights the "Primary" CommonButton up in
+                          // Buttons & Interactive (keyed via
+                          // _spotlightTargetKey) — scroll up after
+                          // dismissing to see which one it was.
+                          label: 'SpotlightOverlay',
+                          child: CommonButton(
+                            label: 'Start tutorial',
+                            onTap: _startTutorial,
                           ),
                         ),
                         _Demo(
@@ -793,6 +846,18 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                     content: const StarRating(earned: 3, animate: true),
                   ),
                 ),
+              ),
+            ),
+          if (_spotlightActive)
+            Positioned.fill(
+              child: SpotlightOverlay(
+                targetKey: _spotlightTargetKey,
+                title: 'Try this',
+                message:
+                    'This is the Primary button — the main action '
+                    'on any screen.',
+                color: NeonTheme.cyan,
+                onDismiss: _endTutorial,
               ),
             ),
         ],

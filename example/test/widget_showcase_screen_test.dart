@@ -84,6 +84,35 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'CoinFlyOverlay demo: Fly +25 flies 5 coins to CurrencyCounter, bumping '
+    'it by 5 per arrival, then self-removes',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      // CommonButton renders its label as a stacked stroke+fill StrokeText
+      // (2 Text matches) — tap .last, same convention as the '+25' test
+      // above.
+      await tester.tap(find.text('Fly +25').last);
+      await tester.pump(); // insert CoinFlyOverlay entry
+
+      expect(find.byType(CoinFlyOverlay), findsOneWidget);
+
+      // Default duration 550ms + stagger 70ms * 4 = 830ms total timeline for
+      // 5 coins, then CurrencyCounter's own 500ms count-up tween on top of
+      // that once the last arrival bumps its value — bounded pumps well
+      // past both (NOT pumpAndSettle, NeonBg's permanent ticker never
+      // settles, see CLAUDE.md).
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+
+      expect(find.text('125'), findsOneWidget);
+      expect(find.byType(CoinFlyOverlay), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('Page Dots demo: swiping the PageView moves the highlight', (
     tester,
   ) async {
@@ -253,6 +282,32 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'SpotlightOverlay demo: Start tutorial highlights the Primary button, '
+    'Got it dismisses it',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      expect(find.byType(SpotlightOverlay), findsNothing);
+
+      // CommonButton renders its label as a stacked stroke+fill StrokeText,
+      // so 2 Text widgets match — the fill Text paints on top and is the
+      // one that actually hit-tests (same pattern as elsewhere in this
+      // file / settings_screen_test.dart).
+      await tester.tap(find.text('Start tutorial').last);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(SpotlightOverlay), findsOneWidget);
+      expect(find.text('Try this'), findsOneWidget);
+
+      await tester.tap(find.text('Got it').last);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(SpotlightOverlay), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('FloatingComboText spam button triggers without throwing or '
       'leaking', (tester) async {
