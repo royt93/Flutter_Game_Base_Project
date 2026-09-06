@@ -4,6 +4,7 @@ import 'package:flame_audio/bgm.dart';
 import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'debug_log.dart';
 import 'storage_service.dart';
 
 /// Manages the background music: a single track (`asset/audio/bkg.ogg`) + mute.
@@ -22,6 +23,14 @@ class AudioManager extends GetxService {
   final AudioCache _cache = AudioCache(prefix: _prefix);
   late final Bgm _bgm = Bgm(audioCache: _cache);
 
+  /// Separate cache for one-shot SFX from a CONSUMING app's own assets
+  /// (e.g. `assets/audio/tap.mp3` in the app's project) — kept apart from
+  /// [_cache] (this package's own bgm asset, hardcoded to the
+  /// `packages/roy_casual_kit/...` prefix) for the exact multi-tenant-prefix
+  /// reason documented above for BUG-04. Uses audioplayers' own default
+  /// prefix (`assets/`) so a host app's normal asset paths resolve as-is.
+  final AudioCache _sfxCache = AudioCache();
+
   final RxBool muted = false.obs;
 
   bool _bgmPlaying = false;
@@ -35,6 +44,12 @@ class AudioManager extends GetxService {
   /// never touches the shared `FlameAudio.audioCache` global.
   @visibleForTesting
   String get debugAudioCachePrefix => _cache.prefix;
+
+  /// Exposes the SFX cache's prefix for tests — proves it's a separate
+  /// instance from the bgm [_cache], not locked to this package's own asset
+  /// location.
+  @visibleForTesting
+  String get debugSfxCachePrefix => _sfxCache.prefix;
 
   Future<void> init() async {
     // Restore the saved mute state before loading audio
@@ -74,6 +89,23 @@ class AudioManager extends GetxService {
   void resumeBgm() {
     if (!_bgmPlaying || muted.value) return;
     _ignoreAudio(_bgm.resume());
+  }
+
+  /// Plays a one-shot SFX from a CONSUMING app's own assets (e.g.
+  /// `assets/audio/tap.mp3`), respecting the same [muted] state as the bgm
+  /// track. No-ops immediately when muted — doesn't even touch the audio
+  /// cache. A fresh [AudioPlayer] is used per call (via [_sfxCache]) so
+  /// rapid overlapping taps each play independently instead of cutting each
+  /// other off.
+  Future<void> playSfx(String fileName, {double volume = 1.0}) async {
+    if (muted.value) return;
+    try {
+      final player = AudioPlayer()..audioCache = _sfxCache;
+      await player.play(AssetSource(fileName), volume: volume);
+    } catch (e) {
+      // no audio backend (tests) or missing asset → swallow, don't crash
+      dlog('playSfx failed for $fileName: $e');
+    }
   }
 
   void toggleMute() {

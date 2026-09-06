@@ -79,5 +79,55 @@ void main() {
         );
       },
     );
+
+    test('playSfx không throw và no-op ngay khi muted.value == true', () async {
+      final manager = AudioManager();
+      manager.muted.value = true;
+
+      await expectLater(
+        manager.playSfx('tap.mp3').timeout(const Duration(seconds: 2)),
+        completes,
+      );
+    });
+
+    test(
+      'playSfx khi không muted vẫn không throw dù không có audio backend thật',
+      () async {
+        final manager = AudioManager();
+        manager.muted.value = false;
+
+        await expectLater(
+          manager.playSfx('tap.mp3').timeout(const Duration(seconds: 2)),
+          completes,
+        );
+      },
+    );
+
+    test(
+      'playSfx dùng AudioCache riêng biệt, KHÔNG trùng prefix với bgm cache '
+      '(guard chống lại lỗi kiểu BUG-04 cho SFX)',
+      () {
+        final manager = AudioManager();
+
+        expect(manager.debugSfxCachePrefix, 'assets/');
+        expect(
+          manager.debugSfxCachePrefix,
+          isNot(equals(manager.debugAudioCachePrefix)),
+        );
+      },
+    );
+
+    test('playSfx gọi liên tiếp (rapid taps) không throw', () async {
+      final manager = AudioManager();
+      manager.muted.value = false;
+
+      await expectLater(
+        Future.wait([
+          manager.playSfx('tap.mp3'),
+          manager.playSfx('tap.mp3'),
+        ]).timeout(const Duration(seconds: 2)),
+        completes,
+      );
+    });
   });
 }

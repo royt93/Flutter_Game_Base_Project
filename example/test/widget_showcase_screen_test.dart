@@ -263,8 +263,15 @@ void main() {
     await _pumpShowcase(tester);
 
     // Sample data: level 4 is the only `unlocked` node (1-3 completed,
-    // 5-8 locked).
-    await tester.tap(find.text('4'));
+    // 5-8 locked). Scoped to LevelSelectGrid — the DailyLoginCalendarWidget
+    // demo elsewhere on this screen also renders a bare "4" (day 4, an
+    // unclaimed slot).
+    await tester.tap(
+      find.descendant(
+        of: find.byType(LevelSelectGrid),
+        matching: find.text('4'),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Level 4 tapped'), findsOneWidget);
@@ -428,6 +435,74 @@ void main() {
       await tester.pump();
 
       expect(find.text('Fly +25'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'DailyLoginCalendarWidget demo: claiming today updates the displayed '
+    'streak',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final calendar = find.byType(DailyLoginCalendarWidget);
+      expect(calendar, findsOneWidget);
+      // Fresh service, never claimed -> highlight/tappable day is 1. Scoped
+      // to the widget itself — LevelSelectGrid elsewhere on this screen also
+      // renders a bare "1" (level 1, completed).
+      final day1 = find.descendant(of: calendar, matching: find.text('1'));
+      expect(day1, findsOneWidget);
+
+      await tester.tap(day1);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Day 1 now claimed -> shown as a checkmark, not a bare '1', and
+      // today's already claimed so the Claim button goes disabled.
+      expect(
+        find.descendant(of: calendar, matching: find.text('1')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: calendar,
+          matching: find.byIcon(Icons.check_rounded),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'EnergyBar demo: consuming energy updates the displayed pips and shows '
+    'a countdown',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final energyBar = find.byType(EnergyBar);
+      expect(energyBar, findsOneWidget);
+      expect(find.byIcon(Icons.favorite), findsNWidgets(5));
+      // Fresh service starts full -> no countdown text yet. Scoped to the
+      // widget itself — the CountdownChip/VictoryCardTemplate demos
+      // elsewhere on this screen also render "mm:ss"-shaped text.
+      expect(
+        find.descendant(of: energyBar, matching: find.textContaining(':')),
+        findsNothing,
+      );
+
+      await tester.tap(find.text('Consume 1 energy').last);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byIcon(Icons.favorite), findsNWidgets(4));
+      expect(find.byIcon(Icons.favorite_border), findsNWidgets(1));
+      // A real ~30-minute countdown now shows — not asserting the exact
+      // "30:00" text since a few ms of real wall-clock time elapse between
+      // EnergyService recording its baseline and this rebuild reading it
+      // back, which can legitimately round down to "29:59".
+      expect(
+        find.descendant(of: energyBar, matching: find.textContaining(':')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     },
   );

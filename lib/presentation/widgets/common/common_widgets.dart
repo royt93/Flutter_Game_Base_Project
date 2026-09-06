@@ -37,6 +37,8 @@ export 'streak_counter.dart';
 export 'countdown_chip.dart';
 export 'paginated_dots_indicator.dart';
 export 'coin_fly_overlay.dart';
+export 'daily_login_calendar.dart';
+export 'energy_bar.dart';
 
 // Layout & Cards
 export 'panel_card.dart';

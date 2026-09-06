@@ -47,31 +47,67 @@ class EnergyService extends GetxService {
     if (hasInfiniteLives) return true;
     _regen();
 
-    final energy = StorageService.to.getInt(StorageKeys.energyCount, def: maxEnergy);
+    final energy = StorageService.to.getInt(
+      StorageKeys.energyCount,
+      def: maxEnergy,
+    );
     if (energy < amount) return false;
 
     if (energy >= maxEnergy) {
       // Đầy tim trước khi trừ -> đây là lượt tiêu đầu tiên, bắt đầu tính giờ
       // hồi tim mới kể từ đúng thời điểm này (không dùng mốc cũ đã lỗi thời).
-      unawaited(StorageService.to.setInt(StorageKeys.energyLastMs, nowMsClamped()));
+      unawaited(
+        StorageService.to.setInt(StorageKeys.energyLastMs, nowMsClamped()),
+      );
     }
-    unawaited(StorageService.to.setInt(StorageKeys.energyCount, energy - amount));
+    unawaited(
+      StorageService.to.setInt(StorageKeys.energyCount, energy - amount),
+    );
     return true;
   }
 
   /// Grants temporary unlimited energy for [duration] — `consumeEnergy`
   /// succeeds without deducting until it elapses.
-  Future<void> grantInfiniteLives(Duration duration) => StorageService.to.setInt(
-    StorageKeys.energyInfiniteUntilMs,
-    nowMsClamped() + duration.inMilliseconds,
-  );
+  Future<void> grantInfiniteLives(Duration duration) =>
+      StorageService.to.setInt(
+        StorageKeys.energyInfiniteUntilMs,
+        nowMsClamped() + duration.inMilliseconds,
+      );
+
+  /// Time remaining until the next energy point regens. `Duration.zero`
+  /// when already full ([maxEnergy] reached) or while [hasInfiniteLives] is
+  /// active. Mirrors [_regen]'s own math exactly (same tick-remainder
+  /// computation) rather than approximating, so a UI countdown built on
+  /// this never drifts out of sync with when [currentEnergy] actually ticks
+  /// up.
+  Duration get timeUntilNextEnergy {
+    if (hasInfiniteLives) return Duration.zero;
+    _regen();
+
+    final energy = StorageService.to.getInt(
+      StorageKeys.energyCount,
+      def: maxEnergy,
+    );
+    if (energy >= maxEnergy) return Duration.zero;
+
+    final intervalMs = refillInterval.inMilliseconds;
+    if (intervalMs <= 0) return Duration.zero;
+
+    final now = nowMsClamped();
+    final lastMs = StorageService.to.getInt(StorageKeys.energyLastMs, def: now);
+    final elapsed = (now - lastMs) % intervalMs;
+    return Duration(milliseconds: intervalMs - elapsed);
+  }
 
   /// Credits whole refill ticks earned since the stored baseline. Leaves
   /// any leftover (sub-tick) progress toward the next point intact instead
   /// of resetting it, so reading [currentEnergy] repeatedly never costs
   /// partial progress.
   void _regen() {
-    final energy = StorageService.to.getInt(StorageKeys.energyCount, def: maxEnergy);
+    final energy = StorageService.to.getInt(
+      StorageKeys.energyCount,
+      def: maxEnergy,
+    );
     if (energy >= maxEnergy) return;
 
     final intervalMs = refillInterval.inMilliseconds;
@@ -84,7 +120,9 @@ class EnergyService extends GetxService {
 
     var newEnergy = energy + ticks;
     if (newEnergy > maxEnergy) newEnergy = maxEnergy;
-    final newLastMs = newEnergy >= maxEnergy ? now : lastMs + ticks * intervalMs;
+    final newLastMs = newEnergy >= maxEnergy
+        ? now
+        : lastMs + ticks * intervalMs;
 
     unawaited(StorageService.to.setInt(StorageKeys.energyCount, newEnergy));
     unawaited(StorageService.to.setInt(StorageKeys.energyLastMs, newLastMs));

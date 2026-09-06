@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:roy_casual_kit/core/daily_login_service.dart';
+import 'package:roy_casual_kit/core/energy_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/share_helper.dart';
+import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/throttle.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_app_bar.dart';
@@ -69,6 +72,18 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    if (StorageService.maybe == null) {
+      Get.put(StorageService(null), permanent: true);
+    }
+    _dailyLogin =
+        DailyLoginService.maybe ??
+        Get.put(DailyLoginService(), permanent: true);
+    _energy = EnergyService.maybe ?? Get.put(EnergyService(), permanent: true);
+  }
+
+  @override
   void dispose() {
     _dotsPageController.dispose();
     _screenShakeController.dispose();
@@ -91,6 +106,19 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   final Map<int, int> _levelStars = const {1: 3, 2: 2, 3: 1};
   bool _networkConnected = true;
   bool _showShimmer = true;
+
+  // DailyLoginCalendarWidget / EnergyBar demos wire to a real service
+  // instance — self-registered here (permanent: true, like main.dart's own
+  // singletons) if a host app hasn't already put one, so this section works
+  // standalone in a widget test too. `StorageService(null)` is the same
+  // safe in-memory fallback `storage_service.dart` already uses when
+  // `SharedPreferences.getInstance()` fails at boot.
+  late final DailyLoginService _dailyLogin;
+  late final EnergyService _energy;
+
+  void _claimDailyLogin() => setState(() => _dailyLogin.claimToday());
+
+  void _consumeEnergy() => setState(() => _energy.consumeEnergy());
 
   void _bumpCoins() => setState(() => _coins += 25);
 
@@ -711,6 +739,36 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   count: 4,
                                   currentIndex: _dotsPageIndex,
                                 ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        _Demo(
+                          label: 'DailyLoginCalendarWidget',
+                          child: DailyLoginCalendarWidget(
+                            currentStreakDay: _dailyLogin.currentStreakDay,
+                            claimedDaysInCycle: _dailyLogin.claimedDaysInCycle,
+                            canClaimToday: _dailyLogin.canClaimToday(),
+                            onClaim: _claimDailyLogin,
+                          ),
+                        ),
+                        _Demo(
+                          label: 'EnergyBar',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              EnergyBar(
+                                currentEnergy: _energy.currentEnergy,
+                                maxEnergy: _energy.maxEnergy,
+                                timeUntilNextEnergy:
+                                    _energy.timeUntilNextEnergy,
+                                hasInfiniteLives: _energy.hasInfiniteLives,
+                              ),
+                              const SizedBox(height: NeonTheme.s16),
+                              CommonButton(
+                                label: 'Consume 1 energy',
+                                onTap: _consumeEnergy,
                               ),
                             ],
                           ),

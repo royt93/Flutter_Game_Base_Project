@@ -54,30 +54,27 @@ void main() {
       expect(service.currentEnergy, 0, reason: 'không đủ thì không được trừ');
     });
 
-    test(
-      'tim tự hồi đúng số lượng sau khi mô phỏng trôi qua N phút',
-      () {
-        final service = EnergyService(
-          maxEnergy: 5,
-          refillInterval: const Duration(minutes: 30),
-        );
+    test('tim tự hồi đúng số lượng sau khi mô phỏng trôi qua N phút', () {
+      final service = EnergyService(
+        maxEnergy: 5,
+        refillInterval: const Duration(minutes: 30),
+      );
 
-        // Trừ 3 tim -> baseline hồi tim bắt đầu tính từ đây.
-        expect(service.consumeEnergy(3), true);
-        expect(service.currentEnergy, 2);
+      // Trừ 3 tim -> baseline hồi tim bắt đầu tính từ đây.
+      expect(service.consumeEnergy(3), true);
+      expect(service.currentEnergy, 2);
 
-        // Mô phỏng "đóng app -> mở lại sau 30 phút" bằng cách đẩy mốc
-        // nowMsClamped() đọc/kẹp vào (StorageKeys.maxMsSeen) tiến lên, thay vì
-        // chờ Future.delayed thật.
-        store.setInt(StorageKeys.maxMsSeen, _realMs + 30 * 60 * 1000);
-        expect(service.currentEnergy, 3, reason: 'hồi đúng 1 tim sau 30 phút');
+      // Mô phỏng "đóng app -> mở lại sau 30 phút" bằng cách đẩy mốc
+      // nowMsClamped() đọc/kẹp vào (StorageKeys.maxMsSeen) tiến lên, thay vì
+      // chờ Future.delayed thật.
+      store.setInt(StorageKeys.maxMsSeen, _realMs + 30 * 60 * 1000);
+      expect(service.currentEnergy, 3, reason: 'hồi đúng 1 tim sau 30 phút');
 
-        // Tiến thêm 65 phút nữa (tổng ~95 phút từ lúc trừ tim) -> hồi thêm 2
-        // tim nữa (3 tick trọn vẹn), tổng phải đầy lại (max = 5), không vượt.
-        store.setInt(StorageKeys.maxMsSeen, _realMs + 95 * 60 * 1000);
-        expect(service.currentEnergy, 5, reason: 'hồi đủ và không vượt max');
-      },
-    );
+      // Tiến thêm 65 phút nữa (tổng ~95 phút từ lúc trừ tim) -> hồi thêm 2
+      // tim nữa (3 tick trọn vẹn), tổng phải đầy lại (max = 5), không vượt.
+      store.setInt(StorageKeys.maxMsSeen, _realMs + 95 * 60 * 1000);
+      expect(service.currentEnergy, 5, reason: 'hồi đủ và không vượt max');
+    });
 
     test(
       'chỉnh lùi mốc thời gian trực tiếp không làm tim tụt lại hay tăng khống',
@@ -117,7 +114,8 @@ void main() {
         expect(
           service.currentEnergy,
           0,
-          reason: 'infinite lives không cộng dồn tim, chỉ cho phép tiêu thoải mái',
+          reason:
+              'infinite lives không cộng dồn tim, chỉ cho phép tiêu thoải mái',
         );
       },
     );
@@ -131,7 +129,51 @@ void main() {
       expect(service.hasInfiniteLives, false);
 
       expect(service.consumeEnergy(3), true);
-      expect(service.consumeEnergy(1), false, reason: 'hết hạn rồi thì hết tim là thua');
+      expect(
+        service.consumeEnergy(1),
+        false,
+        reason: 'hết hạn rồi thì hết tim là thua',
+      );
+    });
+
+    test('timeUntilNextEnergy trả về Duration.zero khi đã đầy tim', () {
+      final service = EnergyService(maxEnergy: 5);
+      expect(service.timeUntilNextEnergy, Duration.zero);
+    });
+
+    test(
+      'timeUntilNextEnergy trả về Duration.zero khi đang có infinite lives',
+      () {
+        final service = EnergyService(maxEnergy: 3);
+        expect(service.consumeEnergy(3), true);
+        service.grantInfiniteLives(const Duration(minutes: 10));
+        expect(service.timeUntilNextEnergy, Duration.zero);
+      },
+    );
+
+    test('timeUntilNextEnergy đếm ngược đúng khi tim chưa đầy', () {
+      final service = EnergyService(
+        maxEnergy: 5,
+        refillInterval: const Duration(minutes: 30),
+      );
+
+      // Đầy tim trước khi trừ -> baseline hồi tim = đúng thời điểm
+      // consumeEnergy() chạy, đọc thẳng từ storage để tránh lệch vài ms so
+      // với đồng hồ thật lúc test tiếp tục chạy sau đó.
+      expect(service.consumeEnergy(2), true);
+      final baseline = store.getInt(StorageKeys.energyLastMs);
+
+      // Tiến đúng 10 phút kể từ baseline (không phải từ "bây giờ" của đồng
+      // hồ thật, để phép so sánh Duration bên dưới chính xác tuyệt đối).
+      store.setInt(StorageKeys.maxMsSeen, baseline + 10 * 60 * 1000);
+      expect(service.timeUntilNextEnergy, const Duration(minutes: 20));
+
+      // Tiến đúng tới mốc tick tiếp theo (30 phút kể từ baseline) -> tim vừa
+      // hồi lên 4 (3 + 1 tick), đếm ngược bắt đầu lại nguyên 1 chu kỳ mới
+      // (30 phút).
+      store.setInt(StorageKeys.maxMsSeen, baseline + 30 * 60 * 1000);
+      expect(service.currentEnergy, 4);
+      expect(service.timeUntilNextEnergy, const Duration(minutes: 30));
     });
   });
 }
