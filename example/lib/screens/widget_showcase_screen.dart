@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/core/utils/throttle.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_app_bar.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_bg.dart';
@@ -24,6 +25,11 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   bool _toggleOn = false;
   int _tabIndex = 0;
   int _coins = 100;
+  int _plainTapCount = 0;
+  int _throttledTapCount = 0;
+  late final _throttledIncrement = throttled(
+    () => setState(() => _throttledTapCount++),
+  );
   int _starsEarned = 1;
   double _progress = 0.4;
   bool _showLoadingOverlay = false;
@@ -179,6 +185,39 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 semanticLabel: 'Mail',
                                 badgeCount: 12,
                                 onTap: () {},
+                              ),
+                            ],
+                          ),
+                        ),
+                        _Demo(
+                          label: 'throttled() — bấm nhanh nhiều lần để so sánh',
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    CommonButton(
+                                      label: 'Không throttle',
+                                      onTap: () => setState(
+                                        () => _plainTapCount++,
+                                      ),
+                                    ),
+                                    Text('Đếm: $_plainTapCount'),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: NeonTheme.s16),
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    CommonButton(
+                                      label: 'Có throttle',
+                                      onTap: _throttledIncrement,
+                                    ),
+                                    Text('Đếm: $_throttledTapCount'),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
