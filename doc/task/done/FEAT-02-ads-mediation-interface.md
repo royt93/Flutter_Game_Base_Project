@@ -29,3 +29,7 @@ App dùng kit tự implement adapter cắm AdMob/Applovin/... vào interface nà
 ## Acceptance criteria
 - [ ] 2 interface tồn tại trong `lib/core/` (ví dụ `ads_provider.dart`), có doc comment rõ đây là seam để app tự cắm SDK.
 - [ ] 1 fake implementation trong test để chứng minh interface dùng được.
+
+## Quyết định
+**Từ chối, không làm.** Chủ repo (Roy) không muốn quảng cáo trong base kit này.
+Không phải vấn đề kỹ thuật — quyết định phạm vi sản phẩm.

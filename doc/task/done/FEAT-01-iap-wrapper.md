@@ -23,3 +23,7 @@ widget kit) hoàn toàn chưa có gì cho monetization qua IAP.
 ## Acceptance criteria
 - [ ] Mua 1 sản phẩm non-consumable, tắt/mở lại app vẫn nhớ đã mua.
 - [ ] Test service với mock `in_app_purchase` (không cần store thật).
+
+## Quyết định
+**Từ chối, không làm.** Chủ repo (Roy) không muốn IAP trong base kit này.
+Không phải vấn đề kỹ thuật — quyết định phạm vi sản phẩm.
