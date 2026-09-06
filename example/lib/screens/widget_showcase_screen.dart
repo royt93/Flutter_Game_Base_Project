@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/core/share_helper.dart';
 import 'package:roy_casual_kit/core/utils/throttle.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_app_bar.dart';
@@ -28,6 +29,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _tabIndex = 0;
   int _coins = 100;
   final GlobalKey _coinCounterKey = GlobalKey();
+  final GlobalKey _victoryCardKey = GlobalKey();
   int _plainTapCount = 0;
   int _throttledTapCount = 0;
   late final _throttledIncrement = throttled(
@@ -164,6 +166,16 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // IDEA-06: proves the VictoryCardTemplate -> RepaintBoundary ->
+  // shareScoreCard wiring described in that widget's doc comment actually
+  // works end-to-end, not just that the card renders.
+  Future<void> _shareVictoryCard() {
+    return shareScoreCard(
+      boundaryKey: _victoryCardKey,
+      levelText: 'Level 50 Complete!',
     );
   }
 
@@ -735,6 +747,34 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                             ),
+                          ),
+                        ),
+                        _Demo(
+                          label: 'VictoryCardTemplate (share_helper wiring)',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              RepaintBoundary(
+                                key: _victoryCardKey,
+                                child: VictoryCardTemplate(
+                                  title: 'Level 50 Complete!',
+                                  statLines: const [
+                                    'Score: 12,340',
+                                    'Time: 01:23',
+                                  ],
+                                  avatar: const CircleAvatar(
+                                    child: Text('RB'),
+                                  ),
+                                  qrData: 'https://example.com/invite/abc123',
+                                ),
+                              ),
+                              const SizedBox(height: NeonTheme.s16),
+                              CommonButton(
+                                label: 'Share',
+                                width: 140,
+                                onTap: _shareVictoryCard,
+                              ),
+                            ],
                           ),
                         ),
 

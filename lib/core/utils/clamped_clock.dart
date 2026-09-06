@@ -20,6 +20,13 @@ import '../storage_service.dart';
 /// a monotonic clamp would make that state permanent, which makes things
 /// worse.
 
+/// Counts how many times a clock-rewind attempt was actually blocked by the
+/// clamp (i.e. `current <= maxSeen`, the device clock was NOT ahead of the
+/// stored watermark) in [nowMsClamped]/[todayEpochDayClamped]. Not
+/// incremented on the normal "clock moved forward" path. Exposed for the
+/// debug/QA overlay to show as a live diagnostic; tests reset it directly.
+int clockRewindBlockedCount = 0;
+
 /// Current millisecond timestamp, clamped to never go below the largest value seen so far.
 int nowMsClamped() {
   final current = DateTime.now().toUtc().millisecondsSinceEpoch;
@@ -28,6 +35,7 @@ int nowMsClamped() {
     StorageService.to.setInt(StorageKeys.maxMsSeen, current);
     return current;
   }
+  clockRewindBlockedCount++;
   return maxSeen;
 }
 
@@ -39,5 +47,6 @@ int todayEpochDayClamped() {
     StorageService.to.setInt(StorageKeys.maxEpochDaySeen, current);
     return current;
   }
+  clockRewindBlockedCount++;
   return maxSeen;
 }

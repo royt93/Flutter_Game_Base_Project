@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
@@ -305,6 +306,37 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(SpotlightOverlay), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'VictoryCardTemplate demo renders title/stats/avatar/QR and a Share '
+    'button, wrapped in a RepaintBoundary for share_helper wiring',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      expect(
+        find.text('VictoryCardTemplate (share_helper wiring)'),
+        findsOneWidget,
+      );
+      // StrokeText stacks stroke+fill Text for the title, so 2 matches.
+      expect(find.text('Level 50 Complete!'), findsWidgets);
+      expect(find.text('Score: 12,340'), findsOneWidget);
+      expect(find.text('Time: 01:23'), findsOneWidget);
+      expect(find.byType(CircleAvatar), findsOneWidget);
+      expect(find.byType(QrImageView), findsOneWidget);
+      expect(find.byType(VictoryCardTemplate), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.byType(VictoryCardTemplate),
+          matching: find.byType(RepaintBoundary),
+        ),
+        findsWidgets,
+      );
+      // CommonButton renders its label via StrokeText (stroke+fill), so 2
+      // Text matches — same convention noted elsewhere in this file.
+      expect(find.text('Share'), findsWidgets);
       expect(tester.takeException(), isNull);
     },
   );

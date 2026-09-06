@@ -46,6 +46,7 @@ export 'empty_state_placeholder.dart';
 export 'avatar_frame.dart';
 export 'ribbon_badge.dart';
 export 'shop_item_card.dart';
+export 'victory_card_template.dart';
 
 // Game-specific
 export 'level_select_grid.dart';

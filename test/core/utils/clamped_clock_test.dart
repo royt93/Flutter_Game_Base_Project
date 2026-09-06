@@ -23,6 +23,7 @@ int get _realDay => DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000;
 int get _realMs => DateTime.now().toUtc().millisecondsSinceEpoch;
 
 void main() {
+  setUp(() => clockRewindBlockedCount = 0);
   tearDown(Get.reset);
 
   group('máy sạch', () {
@@ -166,6 +167,53 @@ void main() {
         jumped,
         reason: 'gọi lại vẫn ở tương lai — trạng thái này không tự hồi',
       );
+    });
+  });
+
+  group('đếm số lần chặn tua ngược (clockRewindBlockedCount)', () {
+    test('máy sạch, đồng hồ tiến bình thường -> không tăng đếm', () async {
+      await _boot();
+
+      todayEpochDayClamped();
+      nowMsClamped();
+
+      expect(clockRewindBlockedCount, 0);
+    });
+
+    test('mốc ở tương lai (bị chặn) -> đếm tăng 1', () async {
+      final future = _realDay + 30;
+      await _boot({StorageKeys.maxEpochDaySeen: future});
+
+      todayEpochDayClamped();
+
+      expect(clockRewindBlockedCount, 1);
+    });
+
+    test('mili-giây bị chặn -> đếm tăng 1', () async {
+      final future = _realMs + 86400000;
+      await _boot({StorageKeys.maxMsSeen: future});
+
+      nowMsClamped();
+
+      expect(clockRewindBlockedCount, 1);
+    });
+
+    test('gọi lặp lại khi bị chặn -> đếm tăng theo từng lần gọi', () async {
+      await _boot({StorageKeys.maxEpochDaySeen: _realDay + 5});
+
+      todayEpochDayClamped();
+      todayEpochDayClamped();
+      todayEpochDayClamped();
+
+      expect(clockRewindBlockedCount, 3);
+    });
+
+    test('mốc ở quá khứ (tiến lên bình thường) -> không tăng đếm', () async {
+      await _boot({StorageKeys.maxEpochDaySeen: _realDay - 10});
+
+      todayEpochDayClamped();
+
+      expect(clockRewindBlockedCount, 0);
     });
   });
 

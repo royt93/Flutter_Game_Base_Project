@@ -92,9 +92,9 @@ Future<void> shareBoardImage({
 /// Captures a result widget (built temporarily in a hidden overlay right
 /// before calling this) then opens the share sheet with [levelText] — same
 /// pattern as [shareBoardImage] but with a separate file/caption because
-/// this is a result card, not a board screenshot. Unused in the base today
-/// (no ScoreCard widget survived the strip) — wire this to your own
-/// result-card widget when you build one.
+/// this is a result card, not a board screenshot. Wire this to
+/// `VictoryCardTemplate` (`presentation/widgets/common/victory_card_template.dart`)
+/// — wrap it in a `RepaintBoundary(key: ...)` and pass that key here.
 Future<void> shareScoreCard({
   required GlobalKey boundaryKey,
   required String levelText,
@@ -115,9 +115,10 @@ Future<void> shareScoreCard({
 /// Takes **bytes** rather than a `GlobalKey` like [shareScoreCard]: the
 /// caller must tear down the hidden overlay right after capturing, so it
 /// holds the bytes before reaching here. Still the same pipeline —
-/// [captureBoardPng] — not a second image export path. Unused in the base
-/// today (no JourneyCard widget survived the strip) — wire this to your own
-/// result-card widget when you build one.
+/// [captureBoardPng] — not a second image export path. Wire this to
+/// `VictoryCardTemplate` (`presentation/widgets/common/victory_card_template.dart`)
+/// the same way as [shareScoreCard], capturing the PNG via [captureBoardPng]
+/// before calling this.
 Future<void> shareJourneyCard({
   required Uint8List png,
   required String text,
