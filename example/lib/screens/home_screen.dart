@@ -6,6 +6,7 @@ import 'package:roy_casual_kit/presentation/widgets/neon_bg.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/stroke_text.dart';
 
+import 'game_demo_screen.dart';
 import 'settings_screen.dart';
 import 'widget_showcase_screen.dart';
 
@@ -34,6 +35,12 @@ class HomeScreen extends StatelessWidget {
                 label: 'widget_showcase'.tr,
                 color: NeonTheme.magenta,
                 onTap: () => Get.to(() => const WidgetShowcaseScreen()),
+              ),
+              const SizedBox(height: 16),
+              NeonButton(
+                label: 'game_demo'.tr,
+                color: NeonTheme.orange,
+                onTap: () => Get.to(() => const GameDemoScreen()),
               ),
             ],
           ),

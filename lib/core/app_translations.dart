@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
-/// Minimal seed translations for the base project — 2 locales, 9 keys.
+/// Minimal seed translations for the base project — 2 locales, 10 keys.
 /// Copy this file's pattern (one `Map<String,String>` per locale code) when
 /// a new game needs more languages or more keys.
 class AppTranslations extends Translations {
@@ -24,6 +24,7 @@ class AppTranslations extends Translations {
       'cancel': 'Cancel',
       'widget_showcase': 'Widget Kit',
       'back_button_label': 'Back',
+      'game_demo': 'Flame Demo',
     },
     'vi': {
       'app_name': 'Roy Project Base Game',
@@ -35,6 +36,7 @@ class AppTranslations extends Translations {
       'cancel': 'Huỷ',
       'widget_showcase': 'Bộ Widget',
       'back_button_label': 'Quay lại',
+      'game_demo': 'Demo Flame',
     },
   };
 }
