@@ -18,6 +18,14 @@ class StorageKeys {
   static const String hapticSoftMode = 'haptic_soft_mode';
   static const String maxEpochDaySeen = 'max_epoch_day_seen';
   static const String maxMsSeen = 'max_ms_seen';
+
+  // lib/core/energy_service.dart reads/writes these directly.
+  static const String energyCount = 'energy_count';
+  static const String energyLastMs = 'energy_last_ms';
+  static const String energyInfiniteUntilMs = 'energy_infinite_until_ms';
+
+  // lib/core/offline_progression_service.dart reads/writes this directly.
+  static const String offlineLastClaimedMs = 'offline_last_claimed_ms';
 }
 
 /// Shared local storage service (wraps SharedPreferences).
