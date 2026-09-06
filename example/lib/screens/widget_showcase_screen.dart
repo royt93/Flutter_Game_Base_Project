@@ -55,9 +55,23 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   void _startTutorial() => setState(() => _spotlightActive = true);
   void _endTutorial() => setState(() => _spotlightActive = false);
 
+  // IDEA-08: Game Feel demo state — SquashStretch tap count, a
+  // ScreenShakeController the caller owns/disposes, and a cycling combo
+  // heat value.
+  int _squashTapCount = 0;
+  final _screenShakeController = ScreenShakeController();
+  double _comboHeat = 0.0;
+
+  void _bumpSquashTapCount() => setState(() => _squashTapCount++);
+
+  void _cycleComboHeat() => setState(
+    () => _comboHeat = (_comboHeat + 0.25) > 1 ? 0 : _comboHeat + 0.25,
+  );
+
   @override
   void dispose() {
     _dotsPageController.dispose();
+    _screenShakeController.dispose();
     super.dispose();
   }
 
@@ -762,9 +776,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     'Score: 12,340',
                                     'Time: 01:23',
                                   ],
-                                  avatar: const CircleAvatar(
-                                    child: Text('RB'),
-                                  ),
+                                  avatar: const CircleAvatar(child: Text('RB')),
                                   qrData: 'https://example.com/invite/abc123',
                                 ),
                               ),
@@ -861,6 +873,91 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                             ],
                           ),
                         ),
+
+                        const SizedBox(height: NeonTheme.s24),
+                        const SectionHeader(title: 'Game Feel'),
+                        const SizedBox(height: NeonTheme.s16),
+                        _Demo(
+                          label: 'SquashStretch (tap the card)',
+                          child: SquashStretch(
+                            onTap: _bumpSquashTapCount,
+                            child: PanelCard(
+                              alt: true,
+                              child: SizedBox(
+                                width: 120,
+                                height: 60,
+                                child: Center(
+                                  child: Text(
+                                    'Taps: $_squashTapCount',
+                                    style: TextStyle(
+                                      color: NeonTheme.ink,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        _Demo(
+                          label: 'ScreenShake',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ScreenShake(
+                                controller: _screenShakeController,
+                                child: PanelCard(
+                                  alt: true,
+                                  child: SizedBox(
+                                    width: 120,
+                                    height: 60,
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.warning_amber_rounded,
+                                        color: NeonTheme.orange,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: NeonTheme.s16),
+                              CommonButton(
+                                label: 'Shake!',
+                                onTap: () => _screenShakeController.shake(),
+                              ),
+                            ],
+                          ),
+                        ),
+                        _Demo(
+                          label: 'ComboHeatBackground',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ComboHeatBackground(
+                                heat: _comboHeat,
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  height: 60,
+                                  child: Center(
+                                    child: Text(
+                                      'Heat: ${(_comboHeat * 100).round()}%',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: NeonTheme.s16),
+                              CommonButton(
+                                label: 'Bump heat',
+                                onTap: _cycleComboHeat,
+                              ),
+                            ],
+                          ),
+                        ),
+
                         const SizedBox(height: NeonTheme.s24),
                       ],
                     ),

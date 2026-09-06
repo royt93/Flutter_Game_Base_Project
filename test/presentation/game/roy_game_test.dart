@@ -43,4 +43,32 @@ void main() {
     expect(game.circle.tapped, isNot(equals(before)));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'BUG: world origin phải map đúng vào góc màn hình (top-left camera), '
+    'không lệch theo kiểu camera-centered mặc định của Flame '
+    '(FlameTrackedOverlay/IDEA-07 phụ thuộc đúng điều này)',
+    (tester) async {
+      final game = RoyGame();
+
+      await tester.pumpWidget(
+        MaterialApp(home: Material(child: GameWidget(game: game))),
+      );
+      await game.toBeLoaded();
+      await tester.pump();
+
+      // Flame's FlameGame auto-creates a CameraComponent with the DEFAULT
+      // Anchor.center — world (0,0) maps to the VIEWPORT CENTER, not its
+      // top-left corner. RoyGame's own components (TappableCircle.position
+      // = size / 2) assume traditional top-left world coordinates instead
+      // (matching how the circle visibly renders centered on screen) — a
+      // mismatch that silently doubles any camera.localToGlobal() result
+      // exactly at world position == size/2 (this exact case).
+      final origin = game.camera.localToGlobal(Vector2.zero());
+      expect(origin, Vector2.zero());
+
+      final circleScreenPos = game.camera.localToGlobal(game.circle.position);
+      expect(circleScreenPos, game.circle.position);
+    },
+  );
 }

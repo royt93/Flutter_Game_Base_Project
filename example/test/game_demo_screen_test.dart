@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/presentation/game/roy_game.dart';
+import 'package:roy_casual_kit/presentation/widgets/flame_tracked_overlay.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
 
 /// GameDemoScreen doesn't use NeonBg, but the FlameGame it hosts runs its own
@@ -53,6 +54,28 @@ void main() {
       // least 2 matches once the overlay is up (StrokeText also stacks a
       // stroke + fill Text for each render).
       expect(find.text('game_demo'.tr), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'shows a FlameTrackedOverlay label tracking the circle, without throwing '
+    '(IDEA-07)',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const GameDemoScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(FlameTrackedOverlay), findsOneWidget);
+      // StrokeText stacks a stroke + fill Text for each render (see the
+      // "tapping the info button" test above for the same gotcha).
+      expect(find.text('Circle'), findsWidgets);
+      expect(
+        find.descendant(
+          of: find.byType(FlameTrackedOverlay),
+          matching: find.byType(Positioned),
+        ),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     },
   );

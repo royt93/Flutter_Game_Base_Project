@@ -50,3 +50,8 @@ export 'victory_card_template.dart';
 
 // Game-specific
 export 'level_select_grid.dart';
+
+// Game-feel / juice (IDEA-08)
+export 'squash_stretch.dart';
+export 'screen_shake.dart';
+export 'combo_heat_background.dart';

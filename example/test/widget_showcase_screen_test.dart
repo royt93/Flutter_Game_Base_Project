@@ -46,8 +46,38 @@ void main() {
     expect(find.text('Layout & Cards'), findsOneWidget);
     expect(find.text('Level Select'), findsOneWidget);
     expect(find.text('Shop'), findsOneWidget);
+    expect(find.text('Game Feel'), findsOneWidget);
     expect(find.byType(RibbonBadge), findsWidgets);
     expect(find.byType(ShopItemCard), findsNWidgets(3));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('IDEA-08: Game Feel demos respond to taps without throwing', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+
+    // SquashStretch demo card: tapping bumps the displayed tap count.
+    expect(find.text('Taps: 0'), findsOneWidget);
+    await tester.tap(find.text('Taps: 0'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Taps: 1'), findsOneWidget);
+
+    // ScreenShake demo: tapping "Shake!" starts a decaying shake — just
+    // prove it doesn't throw and eventually settles back down (bounded
+    // pump, not pumpAndSettle, per CLAUDE.md's NeonBg ticker gotcha).
+    await tester.tap(find.text('Shake!').last);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.takeException(), isNull);
+
+    // ComboHeatBackground demo: tapping "Bump heat" cycles the displayed
+    // heat percentage.
+    expect(find.text('Heat: 0%'), findsOneWidget);
+    await tester.tap(find.text('Bump heat').last);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Heat: 25%'), findsOneWidget);
+
     expect(tester.takeException(), isNull);
   });
 

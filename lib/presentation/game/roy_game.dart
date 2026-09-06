@@ -19,6 +19,14 @@ class RoyGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
+    // Flame's auto-created CameraComponent defaults to Anchor.center — world
+    // (0,0) maps to the viewport's CENTER, not its top-left corner. This
+    // template (and anything positioning components via traditional
+    // top-left world coordinates, e.g. `circle.position = size / 2` below)
+    // assumes world space maps 1:1 to screen pixels instead — without this,
+    // `camera.localToGlobal(...)` (used by FlameTrackedOverlay, IDEA-07)
+    // silently doubles any position that happens to equal size / 2.
+    camera.viewfinder.anchor = Anchor.topLeft;
     circle = TappableCircle()..position = size / 2;
     add(circle);
   }
