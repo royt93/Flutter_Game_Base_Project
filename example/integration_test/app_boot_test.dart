@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
+import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
 import 'package:roy_casual_kit_example/main.dart' as app;
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
@@ -22,10 +23,12 @@ Future<void> _goToWidgetShowcase(WidgetTester tester) async {
     Get.back();
     await tester.pump(const Duration(milliseconds: 300));
   }
-  // NeonButton renders its label via StrokeText (a stacked stroke+fill
-  // pair of Text widgets) — the fill Text on top is the one that
-  // actually hit-tests.
-  await tester.tap(find.text('Widget Kit').last);
+  // Tap by widget type + index, not by label text — HomeScreen's button
+  // label is `'widget_showcase'.tr`, so it reads "Widget Kit" in English
+  // but a different string on a device set to another supported locale
+  // (e.g. "Bộ Widget" in Vietnamese) — a real difference this test hit on
+  // a real device set to vi-VN. [Settings, Widget Showcase] in that order.
+  await tester.tap(find.byType(NeonButton).at(1));
   // NeonBg's permanent Ticker never settles (CLAUDE.md) — bounded pump.
   await tester.pump(const Duration(seconds: 1));
   expect(find.byType(WidgetShowcaseScreen), findsOneWidget);
@@ -66,7 +69,7 @@ void main() {
     // với `--dart-define=E2E_TEST=true` để tắt audio init, tránh audioplayers
     // đăng ký frame callback còn sống sau tearDown.
     await app.app();
-    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 4));
     expect(find.byType(HomeScreen), findsOneWidget);
   });
 
@@ -89,7 +92,7 @@ void main() {
     tester,
   ) async {
     await app.app();
-    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 4));
     await _goToWidgetShowcase(tester);
 
     await _scrollUntilVisible(tester, find.byType(PaginatedDotsIndicator));
@@ -127,7 +130,7 @@ void main() {
     tester,
   ) async {
     await app.app(withAudio: true);
-    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 4));
     await _goToWidgetShowcase(tester);
 
     await _scrollUntilVisible(tester, find.byType(SoundToggleFab));
@@ -145,7 +148,7 @@ void main() {
     'FEAT-21: FloatingComboText spam trigger liên tiếp nhanh không crash/leak',
     (tester) async {
       await app.app();
-      await tester.pump(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 4));
       await _goToWidgetShowcase(tester);
 
       // CommonButton (primary variant, default) renders its label via
@@ -181,7 +184,7 @@ void main() {
     tester,
   ) async {
     await app.app();
-    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 4));
     await _goToWidgetShowcase(tester);
 
     // See the FEAT-21 comment above for why `find.widgetWithText(...)`
@@ -208,7 +211,7 @@ void main() {
     'FEAT-27: ShimmerPlaceholder mount/unmount nhanh nhiều lần không leak',
     (tester) async {
       await app.app();
-      await tester.pump(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 4));
       await _goToWidgetShowcase(tester);
 
       // See the FEAT-21 comment above for why `find.widgetWithText(...)`
@@ -238,7 +241,7 @@ void main() {
   testWidgets('LevelSelectGrid: tapping an unlocked node fires its callback '
       '(FEAT-19)', (tester) async {
     await app.app();
-    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 4));
     await _goToWidgetShowcase(tester);
 
     // Showcase sample data: level 4 is the only `unlocked` node (1-3
@@ -270,7 +273,7 @@ void main() {
     '(FEAT-18)',
     (tester) async {
       await app.app();
-      await tester.pump(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 4));
       await _goToWidgetShowcase(tester);
 
       // ConfettiOverlay's demo sits near the end of the screen's ListView,
