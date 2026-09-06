@@ -2,8 +2,10 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:get/get.dart';
 
 import '../../core/debug_log.dart';
+import '../../core/performance_tier_service.dart';
 
 /// Hạ tầng dùng chung cho các layer full-screen chạy 1 `FragmentShader`
 /// (`AuroraBgLayer`, `NeonAuraLayer`): load `FragmentProgram.fromAsset` với
@@ -37,6 +39,7 @@ abstract class ShaderTickerLayerState<T extends StatefulWidget>
   ui.FragmentShader? get shader => _shader;
 
   bool _startedOnce = false;
+  Worker? _tierWorker;
 
   @override
   void didChangeDependencies() {
@@ -47,12 +50,39 @@ abstract class ShaderTickerLayerState<T extends StatefulWidget>
     // Reduce Motion flag is fixed for the process, so checking once here
     // (not re-checking on later calls) is enough — this class's job is to
     // skip a purely decorative, GPU-heavy effect entirely for
-    // motion-sensitive users, not toggle it live mid-session.
+    // motion-sensitive users, not toggle it live mid-session. Reduce Motion
+    // is a stronger, static veto than the performance tier below: if it's
+    // on, bail out before even looking at PerformanceTierService, so the
+    // live tier listener never gets registered and can never re-enable
+    // this layer mid-session.
     if (_startedOnce) return;
     _startedOnce = true;
-    if (!MediaQuery.of(context).disableAnimations) {
+    if (MediaQuery.of(context).disableAnimations) return;
+
+    // Separate, genuinely dynamic check (unlike Reduce Motion above): a
+    // device that's hot/throttling can flip PerformanceTierService's tier
+    // to `low` mid-session, so this doesn't just gate the initial start —
+    // it also reacts live via the `ever()` listener below.
+    final tierService = PerformanceTierService.maybe;
+    if (tierService?.tier.value != PerformanceTier.low) {
       _ticker = createTicker(_onTick)..start();
       _load();
+    }
+
+    if (tierService != null) {
+      _tierWorker = ever<PerformanceTier>(tierService.tier, (tier) {
+        if (tier == PerformanceTier.low) {
+          _ticker?.stop();
+        } else if (_ticker == null) {
+          // Tier was already low at mount, so the ticker was never created
+          // in the first place (see above) — recovering to `high` must
+          // create it now, not just call `.start()` on a null ticker.
+          _ticker = createTicker(_onTick)..start();
+          _load();
+        } else {
+          _ticker!.start();
+        }
+      });
     }
   }
 
@@ -75,6 +105,7 @@ abstract class ShaderTickerLayerState<T extends StatefulWidget>
 
   @override
   void dispose() {
+    _tierWorker?.dispose();
     _ticker?.dispose();
     _shader?.dispose();
     super.dispose();
