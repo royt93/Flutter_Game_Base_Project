@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 import '../../core/audio_manager.dart';
 import '../../core/locale_service.dart';
@@ -91,9 +90,7 @@ class _Panel extends StatelessWidget {
   Widget build(BuildContext context) {
     final storage = StorageService.maybe?.exportAll() ?? const {};
     final audioMuted = AudioManager.maybe?.muted.value;
-    final locale = Get.isRegistered<LocaleService>()
-        ? Get.find<LocaleService>().current.value
-        : null;
+    final locale = LocaleService.maybe?.current.value;
 
     return Positioned.fill(
       child: GestureDetector(

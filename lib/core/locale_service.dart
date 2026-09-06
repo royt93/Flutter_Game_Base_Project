@@ -10,6 +10,12 @@ class LocaleService extends GetxService {
 
   LocaleService(this._store) : current = _loadInitial(_store).obs;
 
+  /// Safe to call from a call site that may run before/without this
+  /// service registered (e.g. widget tests), matching every other service
+  /// in this codebase (`AudioManager.maybe`, `CrashReporter.maybe`, ...).
+  static LocaleService? get maybe =>
+      Get.isRegistered<LocaleService>() ? Get.find<LocaleService>() : null;
+
   static Locale _loadInitial(StorageService store) {
     final saved = store.getString(StorageKeys.localeCode);
     if (saved != null) {

@@ -27,12 +27,21 @@ import '../storage_service.dart';
 /// debug/QA overlay to show as a live diagnostic; tests reset it directly.
 int clockRewindBlockedCount = 0;
 
-/// Current millisecond timestamp, clamped to never go below the largest value seen so far.
-int nowMsClamped() {
+/// Current millisecond timestamp, clamped to never go below the largest
+/// value seen so far.
+///
+/// Reads/writes the ambient [StorageService.to] singleton by default. Pass
+/// [storage] explicitly for a class that holds its own injected
+/// `StorageService` instance instead of going through the global singleton
+/// (e.g. `VersionedJsonStore`) — using the wrong instance here would clamp
+/// against a different watermark than the one the caller actually persists
+/// its own data through.
+int nowMsClamped([StorageService? storage]) {
+  final store = storage ?? StorageService.to;
   final current = DateTime.now().toUtc().millisecondsSinceEpoch;
-  final maxSeen = StorageService.to.getInt(StorageKeys.maxMsSeen);
+  final maxSeen = store.getInt(StorageKeys.maxMsSeen);
   if (current > maxSeen) {
-    StorageService.to.setInt(StorageKeys.maxMsSeen, current);
+    store.setInt(StorageKeys.maxMsSeen, current);
     return current;
   }
   clockRewindBlockedCount++;

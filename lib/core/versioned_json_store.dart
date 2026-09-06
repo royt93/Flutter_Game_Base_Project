@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'cloud_save_provider.dart';
 import 'storage_service.dart';
+import 'utils/clamped_clock.dart';
 
 /// A thin, versioned JSON object store on top of [StorageService]'s plain
 /// key-value strings — for save data with actual shape (player profile,
@@ -41,7 +42,12 @@ class VersionedJsonStore<T> {
     final json = {
       ...toJson(value),
       'schemaVersion': schemaVersion,
-      'syncedAtMs': DateTime.now().millisecondsSinceEpoch,
+      // nowMsClamped(storage) — NOT raw DateTime.now() — with THIS store's
+      // own injected `storage` (not the ambient StorageService.to), so the
+      // last-write-wins cloud-sync timestamp can't be rolled back by
+      // winding the device clock, matching every other reward-adjacent
+      // timestamp in this package (BUG-13).
+      'syncedAtMs': nowMsClamped(storage),
     };
     await storage.setString(key, jsonEncode(json));
   }

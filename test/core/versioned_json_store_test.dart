@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/versioned_json_store.dart';
@@ -84,4 +86,37 @@ void main() {
     final loaded = s.load();
     expect(loaded!.name, 'Carol');
   });
+
+  test(
+    'BUG-13: save() stamp syncedAtMs qua nowMsClamped(storage) — không lùi '
+    'được dù đồng hồ máy bị chỉnh lùi giữa 2 lần save()',
+    () async {
+      final s = makeStore();
+      await s.save(const _Profile(name: 'Dave', level: 1));
+
+      final rawAfterFirst = store.getString('profile');
+      final firstSyncedAt =
+          (jsonDecode(rawAfterFirst!) as Map)['syncedAtMs'] as int;
+
+      // Đẩy mốc kẹp đồng hồ (StorageKeys.maxMsSeen) lên tương lai xa —
+      // mô phỏng "đã từng thấy" 1 thời điểm rất xa, y hệt cách
+      // clamped_clock_test.dart giả lập tua đồng hồ mà không cần chờ thời
+      // gian thật trôi qua.
+      await store.setInt(StorageKeys.maxMsSeen, firstSyncedAt + 100000);
+
+      await s.save(const _Profile(name: 'Dave', level: 2));
+      final rawAfterSecond = store.getString('profile');
+      final secondSyncedAt =
+          (jsonDecode(rawAfterSecond!) as Map)['syncedAtMs'] as int;
+
+      expect(
+        secondSyncedAt,
+        greaterThanOrEqualTo(firstSyncedAt + 100000),
+        reason:
+            'syncedAtMs phải theo mốc kẹp đồng hồ (nowMsClamped), không phải '
+            'DateTime.now() thô — nếu không, đồng hồ máy thật (nhỏ hơn mốc '
+            'đã kẹp) sẽ làm syncedAtMs lùi lại, phá last-write-wins.',
+      );
+    },
+  );
 }

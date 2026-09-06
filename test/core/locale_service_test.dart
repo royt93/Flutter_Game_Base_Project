@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/locale_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
@@ -11,6 +12,18 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       store = StorageService(await SharedPreferences.getInstance());
+    });
+
+    tearDown(Get.reset);
+
+    test('maybe trả về null khi chưa Get.put', () {
+      expect(LocaleService.maybe, isNull);
+    });
+
+    test('maybe trả về đúng instance khi đã đăng ký', () {
+      final service = LocaleService(store);
+      Get.put(service, permanent: true);
+      expect(LocaleService.maybe, same(service));
     });
 
     test('chưa có locale đã lưu → dùng fallback', () {
