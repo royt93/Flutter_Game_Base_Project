@@ -34,3 +34,8 @@ cụ thể gọi tới nó — không tạo demo giả cho 1 hàm thuần không
 
 ## Acceptance criteria
 - [ ] (Chỉ khi có game mechanic thật cần) callsite mới gọi `hapticLevelForGroupSize` thay vì viết lại mapping riêng.
+
+## Quyết định
+**Đóng, không làm ngay.** Không có cơ chế match/combo thật nào để nối vào —
+seam đã ghi nhận đầy đủ ở trên, nối `fireHaptic` với
+`hapticLevelForGroupSize(groupSize)` khi 1 game thật dùng kit này cần.

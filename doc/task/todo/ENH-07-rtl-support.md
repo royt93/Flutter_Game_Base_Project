@@ -20,3 +20,7 @@ bằng `Directionality(textDirection: TextDirection.rtl, ...)`.
 
 ## Acceptance criteria
 - [ ] (Khi triển khai) mỗi widget hiển thị đúng hướng khi bọc trong `Directionality.rtl`.
+
+## Quyết định
+**Đóng, không làm ngay.** Chưa có nhu cầu RTL cụ thể — nợ kỹ thuật đã ghi
+nhận đầy đủ ở trên, không có gì thêm để code cho tới khi có yêu cầu thật.

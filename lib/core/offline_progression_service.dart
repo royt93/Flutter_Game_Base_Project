@@ -28,19 +28,26 @@ class OfflineProgressionService extends GetxService {
           ? Get.find<OfflineProgressionService>()
           : null;
 
-  /// Falls back to "now" (never persisted) when nothing has been claimed
+  /// Falls back to [now] (never persisted) when nothing has been claimed
   /// yet, so a fresh install doesn't hand out a free `maxOfflineCap` of
   /// earnings on its very first read.
-  int get _lastClaimedMs {
+  ///
+  /// Takes the caller's already-sampled [now] as the fallback instead of
+  /// calling `nowMsClamped()` again — a second real-clock read here could
+  /// land on a later millisecond than the first, permanently baking a few
+  /// milliseconds of phantom earnings into every future claim (the two
+  /// timestamps disagree forever after, since only one of them gets
+  /// persisted as `offlineLastClaimedMs`).
+  int _lastClaimedMsOr(int now) {
     final saved = StorageService.to.getInt(
       StorageKeys.offlineLastClaimedMs,
       def: 0,
     );
-    return saved > 0 ? saved : nowMsClamped();
+    return saved > 0 ? saved : now;
   }
 
   double _earningsAt(int now, double productionRatePerSecond) {
-    final elapsedMs = (now - _lastClaimedMs).clamp(
+    final elapsedMs = (now - _lastClaimedMsOr(now)).clamp(
       0,
       maxOfflineCap.inMilliseconds,
     );

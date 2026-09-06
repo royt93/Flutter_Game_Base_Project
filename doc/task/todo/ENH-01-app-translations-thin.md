@@ -19,5 +19,12 @@ dụ thật của việc thiếu key mà không ai phát hiện cho tới khi gr
    rộng được dễ dàng như CLAUDE.md mô tả).
 
 ## Acceptance criteria
-- [ ] Test key-parity tồn tại trong `test/core/`, fail khi cố tình xoá 1 key ở 1 locale.
-- [ ] CLAUDE.md cập nhật số locale/key nếu thêm locale mới.
+- [x] Test key-parity tồn tại trong `test/core/`, fail khi cố tình xoá 1 key ở 1 locale.
+- [x] CLAUDE.md cập nhật số locale/key nếu thêm locale mới.
+
+## Quyết định
+**Đã xong.** `test/core/app_translations_test.dart` đã có test key-parity
+đúng như đề xuất (so `keys['en'].keys.toSet()` với `keys['vi'].keys.toSet()`)
+từ trước, chỉ chưa được đóng task. CLAUDE.md cũng đã cập nhật lại đúng số
+liệu hiện tại (10 key, không còn ghi "chưa có test key-parity"). Không thêm
+locale thứ 3 (đề xuất tuỳ chọn trong task, không phải acceptance criteria).

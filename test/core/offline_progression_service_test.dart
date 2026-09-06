@@ -7,7 +7,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  tearDown(Get.reset);
+  // Get.reset() does NOT remove permanent:true registrations — a stale
+  // StorageService/OfflineProgressionService from an earlier test would
+  // keep serving nowMsClamped()'s reads/writes, leaking real timestamps
+  // across tests despite each test's own fresh mock SharedPreferences.
+  tearDown(() => Get.deleteAll(force: true));
 
   late StorageService store;
 
@@ -45,6 +49,27 @@ void main() {
 
       expect(service.pendingEarnings(10), 0.0);
     });
+
+    test(
+      'BUG: claim() lần đầu tiên không được lấy đồng hồ thật 2 lần khác nhau '
+      '(offlineLastClaimedMs phải khớp đúng maxMsSeen sau khi claim xong)',
+      () async {
+        final service = OfflineProgressionService();
+        Get.put(service, permanent: true);
+
+        await service.claim(5); // lần claim đầu tiên, chưa từng có mốc cũ
+
+        // claim() nội bộ nếu lấy nowMsClamped() 2 lần khác nhau cho cùng 1
+        // mốc "bây giờ" (1 lần trực tiếp, 1 lần qua fallback của
+        // _lastClaimedMs khi chưa từng claim) thì 2 giá trị này sẽ lệch
+        // nhau đúng bằng khoảng thời gian thực trôi qua giữa 2 lần đọc —
+        // baked vĩnh viễn vào earnings của mọi claim sau đó.
+        expect(
+          store.getInt(StorageKeys.offlineLastClaimedMs),
+          store.getInt(StorageKeys.maxMsSeen),
+        );
+      },
+    );
 
     test('round-trip: đặt tốc độ, giả lập thời gian trôi, verify đúng số', () async {
       final service = OfflineProgressionService(
@@ -99,8 +124,10 @@ void main() {
       final earned = await service.claim(4);
       expect(earned, 1 * 3600 * 4);
 
-      // Ngay sau khi claim, không còn gì để nhận nữa.
-      expect(service.pendingEarnings(4), 0.0);
+      // Ngay sau khi claim, gần như không còn gì để nhận nữa — không đúng
+      // 0.0 tuyệt đối vì thời gian thực vẫn trôi 1 chút giữa claim() và
+      // pendingEarnings() (2 lệnh gọi async riêng biệt), nhưng phải rất nhỏ.
+      expect(service.pendingEarnings(4), closeTo(0.0, 0.5));
     });
 
     test('claim() persist mốc lastClaimed qua StorageKeys (sống sót qua restart)', () async {
@@ -113,7 +140,9 @@ void main() {
 
       // "Restart": tạo instance service mới, đọc lại từ storage.
       final restarted = OfflineProgressionService();
-      expect(restarted.pendingEarnings(1), 0.0);
+      // Không đúng 0.0 tuyệt đối — cùng lý do ở test claim() ngay phía
+      // trên: thời gian thực trôi 1 chút giữa claim() và pendingEarnings().
+      expect(restarted.pendingEarnings(1), closeTo(0.0, 0.5));
       expect(
         store.getInt(StorageKeys.offlineLastClaimedMs),
         greaterThanOrEqualTo(before),

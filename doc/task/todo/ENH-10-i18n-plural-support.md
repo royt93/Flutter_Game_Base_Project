@@ -23,3 +23,8 @@ chuỗi.
 
 ## Acceptance criteria
 - [ ] (Khi cần) text số nhiều đầu tiên trong app dùng `Intl.plural`, không string-concat thủ công.
+
+## Quyết định
+**Đóng, không làm ngay.** Chưa có text plural nào cần trong app hiện tại —
+nợ kỹ thuật đã ghi nhận đầy đủ ở trên, dùng `Intl.plural` (đã sẵn có qua
+`intl`) khi phát sinh nhu cầu thật.
