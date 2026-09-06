@@ -57,5 +57,26 @@ push riêng không chờ task này. Vẫn giữ trong `todo/`, làm khi có quy�
 hướng 1/2 ở trên.
 
 ## Acceptance criteria
-- [ ] App dùng `roy_casual_kit` + tự phát SFX riêng từ asset của mình không bị lỗi path.
-- [ ] Nhạc nền `bkg.ogg` của package vẫn phát đúng như cũ.
+- [x] App dùng `roy_casual_kit` + tự phát SFX riêng từ asset của mình không bị lỗi path.
+- [x] Nhạc nền `bkg.ogg` của package vẫn phát đúng như cũ.
+
+## Quyết định cuối cùng (2026-09-06)
+**Đã sửa**, bằng 1 hướng thứ 3 không có trong phân tích ở trên: `Bgm`
+(class của `flame_audio`) nhận `AudioCache` qua constructor
+(`Bgm({AudioCache? audioCache})`), không bắt buộc phải là
+`FlameAudio.audioCache`. `AudioManager` giờ tự tạo `AudioCache` +
+`Bgm` riêng của chính nó (`_cache`/`_bgm`), hoàn toàn không đụng tới
+`FlameAudio.audioCache`/`FlameAudio.bgm` toàn cục nữa. Vẫn dùng
+`flame_audio`'s `Bgm` (không cần viết lại pause/resume/lifecycle),
+không cần thêm dependency `audioplayers` trực tiếp — nhỏ hơn cả 2
+hướng đã liệt kê ở trên và sửa dứt điểm, không còn state dùng chung.
+Nhận xét trước đó ("tạo AudioCache riêng không ảnh hưởng gì tới
+FlameAudio.bgm.play()") vẫn đúng — nhưng chỉ đúng nếu tiếp tục gọi
+qua `FlameAudio.bgm`; fix thật là ngừng dùng `FlameAudio.bgm` luôn,
+gọi thẳng `_bgm` (instance riêng).
+
+Xác nhận: `test/core/audio_manager_test.dart` có test regression
+(`FlameAudio.audioCache.prefix` không bị ghi đè) + test prefix riêng
+đúng; `flutter analyze`/`flutter test` xanh (root 318, example 23);
+smoke test thật trên iOS Simulator (log
+`AudioManager: loaded OK, prefix=packages/roy_casual_kit/asset/audio/`).

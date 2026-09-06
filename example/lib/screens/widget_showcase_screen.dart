@@ -153,13 +153,13 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
           const SizedBox(height: NeonTheme.s16),
           CommonListTile(
             title: 'Restart level',
-            leading: const Icon(Icons.replay_rounded, color: NeonTheme.cyan),
+            leading: Icon(Icons.replay_rounded, color: NeonTheme.cyan),
             onTap: Get.back,
           ),
           const SizedBox(height: NeonTheme.s8),
           CommonListTile(
             title: 'Share score',
-            leading: const Icon(Icons.share_rounded, color: NeonTheme.magenta),
+            leading: Icon(Icons.share_rounded, color: NeonTheme.magenta),
             onTap: Get.back,
           ),
         ],
@@ -191,10 +191,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
             child: SafeArea(
               child: Column(
                 children: [
-                  const NeonAppBar(
-                    title: 'Widget Kit',
-                    color: NeonTheme.magenta,
-                  ),
+                  NeonAppBar(title: 'Widget Kit', color: NeonTheme.magenta),
                   Expanded(
                     child: ListView(
                       padding: const EdgeInsets.all(NeonTheme.s16),
@@ -695,7 +692,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               CommonListTile(
                                 title: 'Daily Reward',
                                 subtitle: 'Claim your coins',
-                                leading: const Icon(
+                                leading: Icon(
                                   Icons.card_giftcard_rounded,
                                   color: NeonTheme.magenta,
                                 ),
@@ -707,7 +704,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               const SizedBox(height: NeonTheme.s8),
                               CommonListTile(
                                 title: 'Leaderboard',
-                                leading: const Icon(
+                                leading: Icon(
                                   Icons.leaderboard_rounded,
                                   color: NeonTheme.cyan,
                                 ),

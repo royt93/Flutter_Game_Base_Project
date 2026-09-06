@@ -23,9 +23,10 @@ Future<bool> showConfirmDialog(
   String? message,
   String confirmLabel = 'OK',
   String cancelLabel = 'Cancel',
-  Color color = NeonTheme.purple,
+  Color? color,
   IconData? icon,
 }) {
+  color ??= NeonTheme.purple;
   final completer = Completer<bool>();
   NeonDialog.show<void>(
     context: context,

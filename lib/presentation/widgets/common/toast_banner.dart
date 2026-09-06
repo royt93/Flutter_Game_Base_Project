@@ -15,14 +15,18 @@ class ToastBanner extends StatelessWidget {
   const ToastBanner({
     super.key,
     required this.message,
-    this.color = NeonTheme.purple,
+    this.color,
   });
 
   final String message;
-  final Color color;
+
+  /// Defaults to [NeonTheme.purple] — nullable because a `NeonTheme` color
+  /// field is no longer a compile-time constant.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? NeonTheme.purple;
     return Material(
       color: Colors.transparent,
       child: Container(

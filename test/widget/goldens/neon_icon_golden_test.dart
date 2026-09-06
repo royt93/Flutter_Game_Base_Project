@@ -13,7 +13,7 @@ void main() {
   testWidgets('NeonIcon plain', (tester) async {
     await tester.pumpWidget(
       _wrap(
-        const NeonIcon(Icons.star_rounded, color: NeonTheme.gold, size: 40),
+        NeonIcon(Icons.star_rounded, color: NeonTheme.gold, size: 40),
       ),
     );
     await tester.pump();
@@ -44,7 +44,7 @@ void main() {
   testWidgets('NeonIconButton boxed disabled', (tester) async {
     await tester.pumpWidget(
       _wrap(
-        const NeonIconButton(
+        NeonIconButton(
           Icons.settings_rounded,
           color: NeonTheme.cyan,
           onTap: null,

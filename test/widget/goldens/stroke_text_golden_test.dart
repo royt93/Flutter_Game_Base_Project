@@ -27,7 +27,7 @@ void main() {
 
   testWidgets('StrokeText custom color/stroke', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
         home: Material(
           child: Center(
             child: SizedBox(

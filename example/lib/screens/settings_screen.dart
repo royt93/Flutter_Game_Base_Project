@@ -114,7 +114,7 @@ void _pickLanguage(BuildContext context, LocaleService locale) {
           CommonListTile(
             title: l.languageCode.toUpperCase(),
             trailing: locale.isCurrent(l)
-                ? const Icon(Icons.check_circle, color: NeonTheme.purple)
+                ? Icon(Icons.check_circle, color: NeonTheme.purple)
                 : null,
             onTap: () {
               locale.change(l);

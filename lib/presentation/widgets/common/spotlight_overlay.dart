@@ -23,7 +23,7 @@ class SpotlightOverlay extends StatefulWidget {
     required this.onDismiss,
     this.title,
     this.buttonLabel = 'Got it',
-    this.color = NeonTheme.purple,
+    this.color,
     this.holeRadius = 16,
     this.holePadding = 8,
     this.dimColor,
@@ -35,7 +35,10 @@ class SpotlightOverlay extends StatefulWidget {
   final String? title;
   final String buttonLabel;
   final VoidCallback onDismiss;
-  final Color color;
+
+  /// Defaults to [NeonTheme.purple] — nullable because a `NeonTheme` color
+  /// field is no longer a compile-time constant.
+  final Color? color;
 
   /// Corner radius of the cut-out hole.
   final double holeRadius;
@@ -105,7 +108,7 @@ class _SpotlightOverlayState extends State<SpotlightOverlay> {
             title: widget.title,
             message: widget.message,
             buttonLabel: widget.buttonLabel,
-            color: widget.color,
+            color: widget.color ?? NeonTheme.purple,
             onDismiss: widget.onDismiss,
           ),
       ],

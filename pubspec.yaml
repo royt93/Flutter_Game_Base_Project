@@ -18,6 +18,7 @@ dependencies:
   flutter:
     sdk: flutter
   intl: ^0.20.2
+  crypto: ^3.0.6
   get: ^4.7.3
   flame: ^1.35.1
   shared_preferences: ^2.5.5

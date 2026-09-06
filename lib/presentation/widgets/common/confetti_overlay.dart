@@ -103,13 +103,17 @@ class ConfettiOverlay extends StatefulWidget {
     super.key,
     this.particleCount = 60,
     this.duration = const Duration(milliseconds: 2200),
-    this.colors = NeonTheme.gemColors,
+    this.colors,
     this.onFinished,
   });
 
   final int particleCount;
   final Duration duration;
-  final List<Color> colors;
+
+  /// Defaults to [NeonTheme.gemColors] — nullable because `gemColors` is a
+  /// getter (not a compile-time constant list) so it can't be a `const`
+  /// constructor default value.
+  final List<Color>? colors;
 
   /// Called once, right after [duration] elapses and the overlay hides
   /// itself — the usual place to `setState` the parent to unmount this
@@ -137,7 +141,10 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
   @override
   void initState() {
     super.initState();
-    _particles = generateConfettiParticles(widget.particleCount, widget.colors);
+    _particles = generateConfettiParticles(
+      widget.particleCount,
+      widget.colors ?? NeonTheme.gemColors,
+    );
     _ticker = createTicker(_onTick)..start();
   }
 

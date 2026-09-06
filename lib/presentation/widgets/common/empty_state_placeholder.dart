@@ -10,15 +10,19 @@ class EmptyStatePlaceholder extends StatelessWidget {
     super.key,
     required this.icon,
     required this.message,
-    this.color = NeonTheme.purple,
+    this.color,
   });
 
   final IconData icon;
   final String message;
-  final Color color;
+
+  /// Defaults to [NeonTheme.purple] — nullable because a `NeonTheme` color
+  /// field is no longer a compile-time constant.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? NeonTheme.purple;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

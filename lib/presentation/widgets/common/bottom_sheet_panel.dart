@@ -9,16 +9,21 @@ class BottomSheetPanel extends StatelessWidget {
   const BottomSheetPanel({
     super.key,
     required this.child,
-    this.color = NeonTheme.purple,
+    this.color,
     this.padding = const EdgeInsets.all(NeonTheme.s24),
   });
 
   final Widget child;
-  final Color color;
+
+  /// Defaults to [NeonTheme.purple] — nullable because a `NeonTheme` color
+  /// field is no longer a compile-time constant, so it can't be a `const`
+  /// constructor default value.
+  final Color? color;
   final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? NeonTheme.purple;
     return Container(
       width: double.infinity,
       padding: padding,
@@ -67,7 +72,7 @@ class BottomSheetPanel extends StatelessWidget {
 Future<T?> showCommonBottomSheet<T>(
   BuildContext context, {
   required Widget child,
-  Color color = NeonTheme.purple,
+  Color? color,
 }) {
   return showModalBottomSheet<T>(
     context: context,

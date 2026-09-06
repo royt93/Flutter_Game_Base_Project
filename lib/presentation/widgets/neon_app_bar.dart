@@ -7,20 +7,24 @@ import 'stroke_text.dart';
 /// Là widget cố định trên cùng — nội dung cuộn nằm dưới, không bị đè.
 class NeonAppBar extends StatelessWidget {
   final String title;
-  final Color color;
+
+  /// Defaults to [NeonTheme.cyan] — nullable because a `NeonTheme` color
+  /// field is no longer a compile-time constant.
+  final Color? color;
   final VoidCallback? onBack;
   final List<Widget> actions;
 
   const NeonAppBar({
     super.key,
     required this.title,
-    this.color = NeonTheme.cyan,
+    this.color,
     this.onBack,
     this.actions = const [],
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? NeonTheme.cyan;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         NeonTheme.s8,

@@ -9,18 +9,23 @@ class AvatarFrame extends StatelessWidget {
   const AvatarFrame({
     super.key,
     required this.child,
-    this.color = NeonTheme.cyan,
+    this.color,
     this.size = 64,
     this.ringWidth = 3,
   });
 
   final Widget child;
-  final Color color;
+
+  /// Defaults to [NeonTheme.cyan] — nullable because a `NeonTheme` color
+  /// field is no longer a compile-time constant (see exportPalette/
+  /// importPalette), so it can't be a `const` constructor default value.
+  final Color? color;
   final double size;
   final double ringWidth;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? NeonTheme.cyan;
     return Container(
       width: size,
       height: size,

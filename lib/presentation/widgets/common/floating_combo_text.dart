@@ -16,7 +16,7 @@ class FloatingComboText extends StatefulWidget {
   const FloatingComboText({
     super.key,
     required this.text,
-    this.color = NeonTheme.gold,
+    this.color,
     this.fontSize = 22,
     this.duration = const Duration(milliseconds: 900),
     this.riseDistance = 40,
@@ -24,7 +24,10 @@ class FloatingComboText extends StatefulWidget {
   });
 
   final String text;
-  final Color color;
+
+  /// Defaults to [NeonTheme.gold] — nullable because a `NeonTheme` color
+  /// field is no longer a compile-time constant.
+  final Color? color;
   final double fontSize;
   final Duration duration;
   final double riseDistance;
@@ -41,7 +44,7 @@ class FloatingComboText extends StatefulWidget {
   static void show(
     BuildContext context, {
     required String text,
-    Color color = NeonTheme.gold,
+    Color? color,
     double fontSize = 22,
     Duration duration = const Duration(milliseconds: 900),
     Alignment alignment = Alignment.center,
@@ -113,7 +116,7 @@ class _FloatingComboTextState extends State<FloatingComboText>
       child: Text(
         widget.text,
         style: TextStyle(
-          color: widget.color,
+          color: widget.color ?? NeonTheme.gold,
           fontSize: widget.fontSize,
           fontWeight: FontWeight.w900,
         ),

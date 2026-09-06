@@ -19,7 +19,7 @@ class TooltipBubble extends StatelessWidget {
   const TooltipBubble({
     super.key,
     required this.child,
-    this.color = NeonTheme.purple,
+    this.color,
     this.direction = TooltipPointerDirection.up,
     this.nubAlign = 0.5,
     this.padding = const EdgeInsets.symmetric(
@@ -32,7 +32,7 @@ class TooltipBubble extends StatelessWidget {
   TooltipBubble.text(
     String text, {
     super.key,
-    this.color = NeonTheme.purple,
+    this.color,
     this.direction = TooltipPointerDirection.up,
     this.nubAlign = 0.5,
     this.padding = const EdgeInsets.symmetric(
@@ -50,7 +50,10 @@ class TooltipBubble extends StatelessWidget {
        );
 
   final Widget child;
-  final Color color;
+
+  /// Defaults to [NeonTheme.purple] — nullable because a `NeonTheme` color
+  /// field is no longer a compile-time constant.
+  final Color? color;
   final TooltipPointerDirection direction;
 
   /// Horizontal position of the nub, 0 (left) .. 1 (right) of the bubble
@@ -60,6 +63,7 @@ class TooltipBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? NeonTheme.purple;
     final nubPadding = EdgeInsets.only(
       top: direction == TooltipPointerDirection.up
           ? _BubblePainter.nubHeight

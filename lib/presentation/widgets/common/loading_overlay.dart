@@ -37,7 +37,7 @@ class LoadingOverlay extends StatelessWidget {
               height: 56,
               child: CircularProgressIndicator(
                 strokeWidth: 5,
-                valueColor: const AlwaysStoppedAnimation(NeonTheme.magenta),
+                valueColor: AlwaysStoppedAnimation(NeonTheme.magenta),
                 backgroundColor: NeonTheme.purple.withValues(alpha: 0.3),
               ),
             ),

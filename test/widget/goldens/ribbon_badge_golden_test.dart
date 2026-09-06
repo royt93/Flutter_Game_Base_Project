@@ -30,10 +30,10 @@ void main() {
   testWidgets('RibbonBadge custom color', (tester) async {
     await tester.pumpWidget(
       _wrap(
-        const RibbonBadge(
+        RibbonBadge(
           text: 'NEW',
           color: NeonTheme.cyan,
-          child: SizedBox.expand(),
+          child: const SizedBox.expand(),
         ),
       ),
     );
@@ -47,10 +47,10 @@ void main() {
   testWidgets('RibbonBadge long text', (tester) async {
     await tester.pumpWidget(
       _wrap(
-        const RibbonBadge(
+        RibbonBadge(
           text: 'BEST VALUE',
           color: NeonTheme.gold,
-          child: SizedBox.expand(),
+          child: const SizedBox.expand(),
         ),
       ),
     );
