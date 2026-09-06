@@ -26,6 +26,30 @@ bright candy palette.
   `EmptyStatePlaceholder`, `AvatarFrame`) — all exported from one barrel,
   `lib/presentation/widgets/common/common_widgets.dart`.
 
+## Cheat-proof offline earnings
+
+Idle/incremental games pay out rewards based on "how long was the player
+away" — almost every other base kit computes that straight from
+`DateTime.now()`, so winding the device clock back and forth farms free
+rewards indefinitely. This kit's `OfflineProgressionService`
+(`lib/core/offline_progression_service.dart`) is built on `ClampedClock`
+(`lib/core/utils/clamped_clock.dart`) instead: a monotonic clock that never
+goes backward, so a rewind attempt permanently burns the player's own future
+time rather than resetting the calculation.
+
+```dart
+final offline = OfflineProgressionService(maxOfflineCap: const Duration(hours: 8));
+Get.put(offline, permanent: true);
+
+// e.g. on app resume, or whenever the player checks in:
+final earned = await offline.claim(coinsPerSecond);
+if (earned > 0) grantCoins(earned);
+```
+
+`maxOfflineCap` caps the payout (an 8h absence still only pays out 8 hours'
+worth), and a fresh install never hands out a free payout on its very first
+read — the baseline is seeded to "now", not epoch zero.
+
 ## Install
 
 Not yet published to pub.dev. Once it is:
