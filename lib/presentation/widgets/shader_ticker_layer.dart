@@ -15,7 +15,7 @@ import '../../core/debug_log.dart';
 abstract class ShaderTickerLayerState<T extends StatefulWidget>
     extends State<T> with SingleTickerProviderStateMixin {
   ui.FragmentShader? _shader;
-  late final Ticker _ticker;
+  Ticker? _ticker;
   double time = 0;
   // Shader full-screen mỗi frame khá nặng — hạ tần suất repaint thật sự
   // xuống ~30fps (bỏ qua mỗi tick lẻ), `time` vẫn cập nhật mỗi tick nên
@@ -36,11 +36,24 @@ abstract class ShaderTickerLayerState<T extends StatefulWidget>
 
   ui.FragmentShader? get shader => _shader;
 
+  bool _startedOnce = false;
+
   @override
-  void initState() {
-    super.initState();
-    _ticker = createTicker(_onTick)..start();
-    _load();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MediaQuery can't be read in initState (no inherited-widget lookups
+    // are allowed before it completes) — didChangeDependencies is the
+    // earliest safe place, and runs once before the first build. The OS
+    // Reduce Motion flag is fixed for the process, so checking once here
+    // (not re-checking on later calls) is enough — this class's job is to
+    // skip a purely decorative, GPU-heavy effect entirely for
+    // motion-sensitive users, not toggle it live mid-session.
+    if (_startedOnce) return;
+    _startedOnce = true;
+    if (!MediaQuery.of(context).disableAnimations) {
+      _ticker = createTicker(_onTick)..start();
+      _load();
+    }
   }
 
   Future<void> _load() async {
@@ -62,7 +75,7 @@ abstract class ShaderTickerLayerState<T extends StatefulWidget>
 
   @override
   void dispose() {
-    _ticker.dispose();
+    _ticker?.dispose();
     _shader?.dispose();
     super.dispose();
   }

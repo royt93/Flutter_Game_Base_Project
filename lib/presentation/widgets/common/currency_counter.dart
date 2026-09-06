@@ -56,7 +56,9 @@ class _CurrencyCounterState extends State<CurrencyCounter> {
         Flexible(
           child: TweenAnimationBuilder<int>(
             tween: IntTween(begin: _from, end: _to),
-            duration: const Duration(milliseconds: 500),
+            duration: NeonTheme.reducedMotion(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 500),
             curve: Curves.easeOut,
             builder: (context, n, _) => FittedBox(
               fit: BoxFit.scaleDown,

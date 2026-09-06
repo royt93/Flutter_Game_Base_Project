@@ -29,11 +29,16 @@ class StarRating extends StatefulWidget {
 class _StarRatingState extends State<StarRating>
     with SingleTickerProviderStateMixin {
   AnimationController? _c;
+  bool _startedOnce = false;
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.animate) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MediaQuery can't be read in initState — didChangeDependencies is the
+    // earliest safe place, and runs once before the first build.
+    if (_startedOnce) return;
+    _startedOnce = true;
+    if (widget.animate && !NeonTheme.reducedMotion(context)) {
       _c = AnimationController(
         vsync: this,
         duration: Duration(milliseconds: 300 + widget.total * 150),

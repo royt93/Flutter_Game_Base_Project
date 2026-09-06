@@ -57,6 +57,26 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'FEAT-17: Reduce Motion bật → animate: true không chạy pop-in, hiện tĩnh',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: StarRating(earned: 2, total: 3, animate: true),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(ScaleTransition), findsNothing);
+      expect(find.byIcon(Icons.star_rounded), findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('StarRating earned=0 thì tất cả sao đều là outline (dim)', (
     tester,
   ) async {

@@ -15,6 +15,14 @@ class NeonTheme {
   /// true = original neon-dark palette, false (default) = current bright-casual look.
   static bool dark = false;
 
+  /// Whether the OS "Reduce Motion" accessibility flag is on — check this
+  /// before running a purely decorative animation (shader background,
+  /// pop-in, scale-on-press...) and skip/shorten it for motion-sensitive
+  /// users. One central helper so every animated widget in the kit checks
+  /// the same flag the same way.
+  static bool reducedMotion(BuildContext context) =>
+      MediaQuery.of(context).disableAnimations;
+
   /// App-wide font — Baloo2 (full Vietnamese glyph coverage + a friendly rounded look).
   static const String fontFamily = 'Baloo2';
 

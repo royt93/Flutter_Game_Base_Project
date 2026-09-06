@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -9,6 +11,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:roy_casual_kit/core/app_info.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
+import 'package:roy_casual_kit/core/crash_reporter.dart';
 import 'package:roy_casual_kit/core/debug_log.dart';
 import 'package:roy_casual_kit/core/locale_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
@@ -18,7 +21,33 @@ import 'package:roy_casual_kit/core/storage_service.dart';
 
 import 'screens/home_screen.dart';
 
-void main() => app();
+void main() => runZonedGuarded(() => app(), reportUncaughtError);
+
+/// Shared sink for every runtime error this app can catch — the
+/// `runZonedGuarded` zone error callback below (async errors: timers,
+/// stream listeners, unawaited futures) AND `FlutterError.onError` (framework
+/// build/layout/paint errors), set inside [app]. Forwards to
+/// `CrashReporter.maybe` so nothing is silent in a release build (`dlog()`
+/// itself no-ops there). No-op if the consuming app hasn't registered a
+/// `CrashReporter` implementation.
+void reportUncaughtError(Object error, StackTrace stack) {
+  CrashReporter.maybe?.recordError(error, stack);
+}
+
+/// Overrides `FlutterError.onError` to forward framework (build/layout/
+/// paint) errors into [reportUncaughtError] too, chaining to whatever
+/// handler was already set (test bindings install their own). Split out
+/// from [app] so it's testable without that function's platform-channel-
+/// heavy init (SharedPreferences, PackageInfo, Wakelock — none of which
+/// have real handlers in a plain `flutter test`, only on a real device/
+/// integration_test).
+void installErrorHandlers() {
+  final previousOnError = FlutterError.onError;
+  FlutterError.onError = (details) {
+    reportUncaughtError(details.exception, details.stack ?? StackTrace.empty);
+    (previousOnError ?? FlutterError.presentError)(details);
+  };
+}
 
 /// Điểm khởi chạy app (tách riêng để integration_test gọi lại được).
 /// [withAudio] mặc định `!isE2eTest`: audioplayers đăng ký frame callback
@@ -28,6 +57,7 @@ void main() => app();
 Future<void> app({bool withAudio = !isE2eTest}) async {
   dlog('app: ensureInitialized');
   WidgetsFlutterBinding.ensureInitialized();
+  installErrorHandlers();
   // Full screen: ẩn status bar + navigation bar.
   // Dùng `manual` + overlays rỗng thay vì immersiveSticky để KHÔNG reserve
   // vùng cử chỉ mép trên (vốn nuốt tap nút X ở HUD).

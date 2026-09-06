@@ -49,6 +49,27 @@ void main() {
     expect(tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale, 1.0);
   });
 
+  testWidgets(
+    'FEAT-17: Reduce Motion bật → chuyển scale tức thời (duration = 0)',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: PressableScale(onTap: () {}, child: const Text('X')),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.widget<AnimatedScale>(find.byType(AnimatedScale)).duration,
+        Duration.zero,
+      );
+    },
+  );
+
   testWidgets('disabled (onTap null) ignores tap without crash', (
     tester,
   ) async {

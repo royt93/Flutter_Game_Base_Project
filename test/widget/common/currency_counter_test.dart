@@ -37,4 +37,35 @@ void main() {
       expect(find.text('$value'), findsNothing);
     },
   );
+
+  testWidgets(
+    'FEAT-17: Reduce Motion bật → đổi giá trị hiển thị ngay, không animation',
+    (tester) async {
+      var value = 10;
+      late StateSetter setValue;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  setValue = setState;
+                  return CurrencyCounter(value: value);
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text(fmtNum(10)), findsOneWidget);
+
+      setValue(() => value = 99);
+      await tester.pump(); // 1 frame, không chờ 500ms animation.
+
+      expect(find.text(fmtNum(99)), findsOneWidget);
+      expect(find.text(fmtNum(10)), findsNothing);
+    },
+  );
 }

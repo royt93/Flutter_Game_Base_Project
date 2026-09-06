@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/neon_theme.dart';
+
 /// Bọc 1 nút bấm để co nhẹ (scale) lúc nhấn xuống — micro-bounce dùng chung
 /// cho mọi nút (A3). Tái dùng 1 chỗ thay vì lặp GestureDetector+AnimatedScale
 /// ở từng widget nút.
@@ -36,7 +38,9 @@ class _PressableScaleState extends State<PressableScale> {
       onTap: widget.onTap,
       child: AnimatedScale(
         scale: _down ? widget.scale : 1.0,
-        duration: const Duration(milliseconds: 90),
+        duration: NeonTheme.reducedMotion(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 90),
         curve: Curves.easeOut,
         child: widget.child,
       ),
