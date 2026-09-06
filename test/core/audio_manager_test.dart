@@ -1,3 +1,4 @@
+import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
@@ -52,5 +53,31 @@ void main() {
 
       expect(manager.muted.value, true);
     });
+
+    test(
+      'BUG-04: init() không ghi đè FlameAudio.audioCache.prefix toàn cục '
+      '(app dùng kit tự phát SFX riêng qua FlameAudio.play() không bị vỡ)',
+      () async {
+        FlameAudio.audioCache.prefix = 'assets/audio/'; // app tự set riêng
+        final manager = AudioManager();
+
+        await manager.init();
+
+        expect(FlameAudio.audioCache.prefix, 'assets/audio/');
+      },
+    );
+
+    test(
+      'AudioManager dùng AudioCache riêng, đúng prefix của kit',
+      () async {
+        final manager = AudioManager();
+        await manager.init();
+
+        expect(
+          manager.debugAudioCachePrefix,
+          'packages/roy_casual_kit/asset/audio/',
+        );
+      },
+    );
   });
 }
