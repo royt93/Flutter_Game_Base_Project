@@ -1,0 +1,63 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/ribbon_badge.dart';
+
+Widget _wrap(Widget child) => MaterialApp(
+  home: Material(
+    child: Center(
+      child: SizedBox(
+        width: 160,
+        height: 120,
+        child: Container(color: NeonTheme.cardAlt, child: child),
+      ),
+    ),
+  ),
+);
+
+void main() {
+  testWidgets('RibbonBadge default color', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const RibbonBadge(text: 'SALE', child: SizedBox.expand())),
+    );
+    await tester.pump();
+    await expectLater(
+      find.byType(RibbonBadge),
+      matchesGoldenFile('ribbon_badge_default.png'),
+    );
+  });
+
+  testWidgets('RibbonBadge custom color', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const RibbonBadge(
+          text: 'NEW',
+          color: NeonTheme.cyan,
+          child: SizedBox.expand(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await expectLater(
+      find.byType(RibbonBadge),
+      matchesGoldenFile('ribbon_badge_custom_color.png'),
+    );
+  });
+
+  testWidgets('RibbonBadge long text', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const RibbonBadge(
+          text: 'BEST VALUE',
+          color: NeonTheme.gold,
+          child: SizedBox.expand(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await expectLater(
+      find.byType(RibbonBadge),
+      matchesGoldenFile('ribbon_badge_long_text.png'),
+    );
+  });
+}

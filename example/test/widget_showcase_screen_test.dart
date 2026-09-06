@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
-import 'package:roy_casual_kit/presentation/widgets/common/toggle_switch.dart';
+import 'package:roy_casual_kit/core/audio_manager.dart';
+import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/format.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Smoke test for the common-widget-kit demo screen. `NeonBg` (used by the
 /// screen) runs a permanent `Ticker`, so `pumpAndSettle()` never returns here
@@ -39,7 +43,25 @@ void main() {
     expect(find.text('Feedback & Overlay'), findsOneWidget);
     expect(find.text('Progress & Reward'), findsOneWidget);
     expect(find.text('Layout & Cards'), findsOneWidget);
+    expect(find.text('Level Select'), findsOneWidget);
+    expect(find.text('Shop'), findsOneWidget);
+    expect(find.byType(RibbonBadge), findsWidgets);
+    expect(find.byType(ShopItemCard), findsNWidgets(3));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('ShopItemCard demo buy button shows a toast', (tester) async {
+    await _pumpShowcase(tester);
+
+    await tester.tap(find.text(r'$0.99').last);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Purchased!'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    // Let the toast's auto-dismiss timer (2s) + reverse animation finish so
+    // no pending Future/AnimationController survives past this test.
+    await tester.pump(const Duration(seconds: 3));
   });
 
   testWidgets('interactive demos update local state on tap', (tester) async {
@@ -62,6 +84,73 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Page Dots demo: swiping the PageView moves the highlight', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+
+    expect(find.text('Page Dots'), findsOneWidget);
+    expect(find.byType(PaginatedDotsIndicator), findsOneWidget);
+    expect(
+      tester
+          .widget<PaginatedDotsIndicator>(find.byType(PaginatedDotsIndicator))
+          .currentIndex,
+      0,
+    );
+
+    await tester.drag(find.text('Page 1'), const Offset(-800, 0));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Page 2'), findsOneWidget);
+    expect(
+      tester
+          .widget<PaginatedDotsIndicator>(find.byType(PaginatedDotsIndicator))
+          .currentIndex,
+      1,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('CountdownChip demo: live countdown, restart resets it', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+
+    expect(find.text('CountdownChip'), findsOneWidget);
+    expect(find.text(fmtDur(const Duration(seconds: 15))), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text(fmtDur(const Duration(seconds: 14))), findsOneWidget);
+
+    await tester.tap(find.text('Restart 15s').last);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text(fmtDur(const Duration(seconds: 15))), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'SoundToggleFab demo: renders and toggles when AudioManager exists',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      Get.put(StorageService(await SharedPreferences.getInstance()));
+      final audio = Get.put(AudioManager(), permanent: true);
+
+      await _pumpShowcase(tester);
+
+      expect(find.text('SoundToggleFab'), findsOneWidget);
+      expect(find.byType(SoundToggleFab), findsOneWidget);
+      expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
+
+      await tester.tap(find.byType(SoundToggleFab));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(audio.muted.value, isTrue);
+      expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('RewardPopup dialog opens and dismisses without throwing', (
     tester,
   ) async {
@@ -81,6 +170,107 @@ void main() {
     await tester.tapAt(const Offset(10, 10));
     await tester.pump(const Duration(milliseconds: 300));
 
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('ConfettiOverlay: triggering it repeatedly does not crash', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+
+    // CommonButton renders its label as a stacked stroke+fill StrokeText, so
+    // 2 Text widgets match — the fill Text paints on top and is the one that
+    // actually hit-tests (mirrors the pattern already used elsewhere in this
+    // file / settings_screen_test.dart).
+    final trigger = find.text('Trigger').last;
+
+    // Re-trigger mid-burst a few times — the bug this widget's spec (FEAT-18)
+    // explicitly calls out is a leaked Ticker/AnimationController on retrigger.
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(trigger);
+      await tester.pump(const Duration(milliseconds: 150));
+    }
+    // Let the last burst finish and hide itself.
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('LevelSelectGrid: tapping the unlocked node fires onLevelTap', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+
+    // Sample data: level 4 is the only `unlocked` node (1-3 completed,
+    // 5-8 locked).
+    await tester.tap(find.text('4'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Level 4 tapped'), findsOneWidget);
+
+    // ToastBanner.show uses its 2s default duration + a 220ms/180ms
+    // in/out transition — let it fully self-remove and dispose its
+    // AnimationController before the test ends, or its still-pending
+    // Future.delayed(remove) timer fails the test on teardown.
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Network Banner demo toggles offline/online', (tester) async {
+    await _pumpShowcase(tester);
+
+    expect(find.byType(NetworkStatusBanner), findsOneWidget);
+    expect(find.text('No internet connection'), findsNothing);
+
+    await tester.tap(find.text('Go offline').last);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('No internet connection'), findsOneWidget);
+
+    await tester.tap(find.text('Go online').last);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('No internet connection'), findsNothing);
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Shimmer Loading demo toggles between shimmer and content', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+
+    expect(find.byType(ShimmerPlaceholder), findsWidgets);
+    expect(find.text('Shop item loaded'), findsNothing);
+
+    await tester.tap(find.text('Show loaded content').last);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byType(ShimmerPlaceholder), findsNothing);
+    expect(find.text('Shop item loaded'), findsOneWidget);
+
+    await tester.tap(find.text('Show shimmer').last);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byType(ShimmerPlaceholder), findsWidgets);
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('FloatingComboText spam button triggers without throwing or '
+      'leaking', (tester) async {
+    await _pumpShowcase(tester);
+
+    await tester.tap(find.text('Spam combo x5').last);
+    // 5 triggers staggered 90ms apart + 900ms rise/fade each. Pump in small
+    // steps (not one big jump) — a controller created by a Future.delayed
+    // callback mid-pump only starts ticking on the *next* pump call, so a
+    // single large pump() wouldn't let a late-started one finish.
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byType(FloatingComboText), findsWidgets);
+    expect(tester.takeException(), isNull);
+
+    for (var i = 0; i < 15; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+    expect(find.byType(FloatingComboText), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

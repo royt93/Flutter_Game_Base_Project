@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -34,8 +36,54 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   double _progress = 0.4;
   bool _showLoadingOverlay = false;
   bool _rewardPopupOpen = false;
+  bool _confettiActive = false;
+  int _confettiTrigger = 0;
+  final PageController _dotsPageController = PageController();
+  int _dotsPageIndex = 0;
+  late DateTime _countdownTarget = DateTime.now().add(
+    const Duration(seconds: 15),
+  );
+
+  @override
+  void dispose() {
+    _dotsPageController.dispose();
+    super.dispose();
+  }
+
+  // Sample world map: 3 completed (with stars), 1 unlocked, 4 locked —
+  // LevelSelectGrid itself holds no progress state, this is what a real
+  // save/progress system would hand in.
+  final List<LevelState> _levelStates = const [
+    LevelState.completed,
+    LevelState.completed,
+    LevelState.completed,
+    LevelState.unlocked,
+    LevelState.locked,
+    LevelState.locked,
+    LevelState.locked,
+    LevelState.locked,
+  ];
+  final Map<int, int> _levelStars = const {1: 3, 2: 2, 3: 1};
+  bool _networkConnected = true;
+  bool _showShimmer = true;
 
   void _bumpCoins() => setState(() => _coins += 25);
+
+  // FEAT-21: fire several in quick succession — the "spam" test the task
+  // asks for. Each self-cleans via FloatingComboText.show, no state to
+  // track here.
+  void _spamComboText() {
+    for (var i = 0; i < 5; i++) {
+      Future.delayed(Duration(milliseconds: i * 90), () {
+        if (!mounted) return;
+        FloatingComboText.show(
+          context,
+          text: '+${(i + 1) * 10}',
+          color: NeonTheme.gold,
+        );
+      });
+    }
+  }
 
   void _cycleStars() => setState(() => _starsEarned = (_starsEarned + 1) % 4);
 
@@ -92,9 +140,20 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     );
   }
 
+  void _showBoughtToast() {
+    ToastBanner.show(context, message: 'Purchased!', color: NeonTheme.lime);
+  }
+
   void _openRewardPopup() => setState(() => _rewardPopupOpen = true);
 
   void _closeRewardPopup() => setState(() => _rewardPopupOpen = false);
+
+  void _fireConfetti() {
+    setState(() {
+      _confettiTrigger++;
+      _confettiActive = true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -189,6 +248,13 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                             ],
                           ),
                         ),
+                        // Hidden if AudioManager isn't registered — the
+                        // example app always registers it (see main.dart),
+                        // so it renders here.
+                        const _Demo(
+                          label: 'SoundToggleFab',
+                          child: SoundToggleFab(),
+                        ),
                         _Demo(
                           label: 'throttled() — bấm nhanh nhiều lần để so sánh',
                           child: Row(
@@ -199,9 +265,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   children: [
                                     CommonButton(
                                       label: 'Không throttle',
-                                      onTap: () => setState(
-                                        () => _plainTapCount++,
-                                      ),
+                                      onTap: () =>
+                                          setState(() => _plainTapCount++),
                                     ),
                                     Text('Đếm: $_plainTapCount'),
                                   ],
@@ -301,6 +366,68 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                             onTap: _runConfirmDialog,
                           ),
                         ),
+                        _Demo(
+                          label: 'Network Banner',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: NetworkStatusBanner(
+                                  connected: _networkConnected,
+                                ),
+                              ),
+                              const SizedBox(height: NeonTheme.s16),
+                              CommonButton(
+                                label: _networkConnected
+                                    ? 'Go offline'
+                                    : 'Go online',
+                                variant: _networkConnected
+                                    ? CommonButtonVariant.danger
+                                    : CommonButtonVariant.primary,
+                                onTap: () => setState(
+                                  () => _networkConnected = !_networkConnected,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        _Demo(
+                          label: 'Shimmer Loading',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_showShimmer)
+                                const Column(
+                                  children: [
+                                    ShimmerPlaceholder(
+                                      height: 48,
+                                      borderRadius: 12,
+                                    ),
+                                    SizedBox(height: NeonTheme.s8),
+                                    ShimmerPlaceholder(
+                                      height: 48,
+                                      borderRadius: 12,
+                                    ),
+                                  ],
+                                )
+                              else
+                                const CommonListTile(
+                                  title: 'Shop item loaded',
+                                  subtitle: 'Content ready',
+                                ),
+                              const SizedBox(height: NeonTheme.s16),
+                              CommonButton(
+                                label: _showShimmer
+                                    ? 'Show loaded content'
+                                    : 'Show shimmer',
+                                onTap: () => setState(
+                                  () => _showShimmer = !_showShimmer,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
                         const SizedBox(height: NeonTheme.s24),
                         const SectionHeader(title: 'Progress & Reward'),
@@ -366,11 +493,54 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                           ),
                         ),
                         _Demo(
+                          // FloatingComboText.show() inserts into the root
+                          // Overlay (screen-wide), so it pops centered over
+                          // the whole screen rather than inside this card —
+                          // tap repeatedly to see the spam behavior.
+                          label: 'FloatingComboText',
+                          child: CommonButton(
+                            label: 'Spam combo x5',
+                            color: NeonTheme.gold,
+                            onTap: _spamComboText,
+                          ),
+                        ),
+                        _Demo(
                           label: 'RewardPopup',
                           child: CommonButton(
                             label: 'Show reward',
                             color: NeonTheme.gold,
                             onTap: _openRewardPopup,
+                          ),
+                        ),
+                        _Demo(
+                          label: 'ConfettiOverlay',
+                          child: SizedBox(
+                            height: 160,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: CommonButton(
+                                    label: 'Trigger',
+                                    onTap: _fireConfetti,
+                                  ),
+                                ),
+                                if (_confettiActive)
+                                  Positioned.fill(
+                                    child: ConfettiOverlay(
+                                      key: ValueKey(_confettiTrigger),
+                                      onFinished: () {
+                                        if (mounted) {
+                                          setState(
+                                            () => _confettiActive = false,
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                         _Demo(
@@ -394,6 +564,72 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                         _Demo(
                           label: 'StreakCounter',
                           child: const StreakCounter(days: 7),
+                        ),
+                        _Demo(
+                          label: 'CountdownChip',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CountdownChip(
+                                key: ValueKey(_countdownTarget),
+                                target: _countdownTarget,
+                                onDone: () => ToastBanner.show(
+                                  context,
+                                  message: 'Countdown done!',
+                                  color: NeonTheme.orange,
+                                ),
+                              ),
+                              const SizedBox(height: NeonTheme.s16),
+                              CommonButton(
+                                label: 'Restart 15s',
+                                onTap: () => setState(
+                                  () => _countdownTarget = DateTime.now().add(
+                                    const Duration(seconds: 15),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        _Demo(
+                          label: 'Page Dots',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                height: 80,
+                                child: PageView(
+                                  controller: _dotsPageController,
+                                  onPageChanged: (i) =>
+                                      setState(() => _dotsPageIndex = i),
+                                  children: List.generate(
+                                    4,
+                                    (i) => Container(
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: NeonTheme.cardAlt,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        'Page ${i + 1}',
+                                        style: TextStyle(
+                                          color: NeonTheme.ink,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: NeonTheme.s16),
+                              Center(
+                                child: PaginatedDotsIndicator(
+                                  count: 4,
+                                  currentIndex: _dotsPageIndex,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
 
                         const SizedBox(height: NeonTheme.s24),
@@ -449,6 +685,90 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                             ),
+                          ),
+                        ),
+
+                        const SizedBox(height: NeonTheme.s24),
+                        const SectionHeader(title: 'Level Select'),
+                        const SizedBox(height: NeonTheme.s16),
+                        _Demo(
+                          label: 'LevelSelectGrid',
+                          child: LevelSelectGrid(
+                            states: _levelStates,
+                            starsEarnedByLevel: _levelStars,
+                            onLevelTap: (level) => ToastBanner.show(
+                              context,
+                              message: 'Level $level tapped',
+                              color: NeonTheme.cyan,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: NeonTheme.s24),
+                        const SectionHeader(title: 'Shop'),
+                        const SizedBox(height: NeonTheme.s16),
+                        _Demo(
+                          label: 'RibbonBadge',
+                          child: Wrap(
+                            spacing: NeonTheme.s16,
+                            runSpacing: NeonTheme.s16,
+                            children: [
+                              RibbonBadge(
+                                text: 'SALE',
+                                child: SizedBox(
+                                  width: 100,
+                                  height: 80,
+                                  child: PanelCard(
+                                    alt: true,
+                                    child: SizedBox.expand(),
+                                  ),
+                                ),
+                              ),
+                              RibbonBadge(
+                                text: 'NEW',
+                                color: NeonTheme.lime,
+                                child: SizedBox(
+                                  width: 100,
+                                  height: 80,
+                                  child: PanelCard(
+                                    alt: true,
+                                    child: SizedBox.expand(),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        _Demo(
+                          label: 'ShopItemCard',
+                          child: Wrap(
+                            spacing: NeonTheme.s16,
+                            runSpacing: NeonTheme.s16,
+                            children: [
+                              ShopItemCard(
+                                icon: Icons.diamond_rounded,
+                                title: '100 Gems',
+                                priceLabel: r'$0.99',
+                                onBuy: _showBoughtToast,
+                              ),
+                              ShopItemCard(
+                                icon: Icons.diamond_rounded,
+                                title: 'Mega Gem Pack',
+                                priceLabel: r'$4.99',
+                                ribbonText: 'BEST VALUE',
+                                ribbonColor: NeonTheme.gold,
+                                iconColor: NeonTheme.gold,
+                                onBuy: _showBoughtToast,
+                              ),
+                              ShopItemCard(
+                                icon: Icons.block_rounded,
+                                title: 'Remove Ads',
+                                priceLabel: r'$2.99',
+                                ribbonText: 'NEW',
+                                ribbonColor: NeonTheme.lime,
+                                onBuy: null,
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: NeonTheme.s24),

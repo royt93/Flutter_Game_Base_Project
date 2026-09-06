@@ -76,7 +76,13 @@ class ToastBanner extends StatelessWidget {
 
     Future<void> remove() async {
       if (!entry.mounted) return;
-      await controller.reverse();
+      try {
+        await controller.reverse();
+      } catch (_) {
+        // vsync (the Navigator) may already be gone if the whole app was
+        // torn down mid-toast — still clean up below regardless, so the
+        // AnimationController/Ticker never leaks.
+      }
       entry.remove();
       controller.dispose();
     }
