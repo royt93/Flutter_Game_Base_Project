@@ -62,43 +62,60 @@ class LevelNodeButton extends StatelessWidget {
       LevelState.locked => NeonTheme.inkSoft,
       LevelState.unlocked => NeonTheme.ink,
     };
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        PressableScale(
-          onTap: levelStateTappable(state) ? onTap : null,
-          child: Container(
-            width: size,
-            height: size,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: levelStateFillColor(state),
-              border: Border.all(
-                color: levelStateBorderColor(state),
-                width: 3,
+    // SingleChildScrollView (never actually scrolls — NeverScrollableScrollPhysics):
+    // the GridView cell height (from childAspectRatio) and this Column's
+    // natural height (circle + gap + StarRating) are meant to match
+    // exactly, but floating-point division doesn't always land on the
+    // same value — real device testing (Samsung S24 Ultra, narrow
+    // effective width from a display-zoom override) hit a genuine
+    // "RenderFlex overflowed by 0.0328 pixels" from this. A `ClipRect`
+    // was tried first and does NOT fix it — that only clips *painting*,
+    // the RenderFlex still computes and flags the overflow at layout
+    // time regardless of an ancestor clip. A scrollable's child is
+    // allowed to exceed its viewport without violating any constraint,
+    // so wrapping in one — Flutter's own suggested remedy for exactly
+    // this class of issue — makes the sub-pixel mismatch a non-issue
+    // instead of merely hiding its visual symptom.
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          PressableScale(
+            onTap: levelStateTappable(state) ? onTap : null,
+            child: Container(
+              width: size,
+              height: size,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: levelStateFillColor(state),
+                border: Border.all(
+                  color: levelStateBorderColor(state),
+                  width: 3,
+                ),
+                boxShadow: state == LevelState.locked
+                    ? null
+                    : NeonTheme.drop(y: 3, blur: 8),
               ),
-              boxShadow: state == LevelState.locked
-                  ? null
-                  : NeonTheme.drop(y: 3, blur: 8),
-            ),
-            child: icon != null
-                ? Icon(icon, color: textColor, size: size * 0.4)
-                : Text(
-                    '$levelNumber',
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: size * 0.32,
-                      fontWeight: FontWeight.w900,
+              child: icon != null
+                  ? Icon(icon, color: textColor, size: size * 0.4)
+                  : Text(
+                      '$levelNumber',
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: size * 0.32,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
+            ),
           ),
-        ),
-        if (state == LevelState.completed) ...[
-          const SizedBox(height: 4),
-          StarRating(earned: starsEarned, size: size * 0.18),
+          if (state == LevelState.completed) ...[
+            const SizedBox(height: 4),
+            StarRating(earned: starsEarned, size: size * 0.18),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

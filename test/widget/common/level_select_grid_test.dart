@@ -148,5 +148,38 @@ void main() {
       await tester.pump();
       expect(tappedLevels, [2]); // unchanged
     });
+
+    testWidgets(
+      'BUG: completed node (circle + star badge) không tràn viền dù chỉ '
+      '0.03px, ở width hẹp thật (tái hiện lỗi thấy trên Samsung S24 Ultra '
+      'thật — GridView childAspectRatio chia ra chiều cao ô hụt đúng vài '
+      'phần trăm pixel so với circle+gap+StarRating cộng lại)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Center(
+                child: SizedBox(
+                  width: 360,
+                  child: LevelSelectGrid(
+                    states: const [
+                      LevelState.completed,
+                      LevelState.completed,
+                      LevelState.completed,
+                      LevelState.unlocked,
+                    ],
+                    starsEarnedByLevel: const {1: 3, 2: 2, 3: 1},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(LevelNodeButton), findsNWidgets(4));
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }
