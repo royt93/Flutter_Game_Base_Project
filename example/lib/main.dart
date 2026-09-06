@@ -13,6 +13,7 @@ import 'package:roy_casual_kit/core/debug_log.dart';
 import 'package:roy_casual_kit/core/locale_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/reminder_service.dart';
+import 'package:roy_casual_kit/core/runtime_flags.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 
 import 'screens/home_screen.dart';
@@ -20,9 +21,11 @@ import 'screens/home_screen.dart';
 void main() => app();
 
 /// Điểm khởi chạy app (tách riêng để integration_test gọi lại được).
-/// [withAudio] = false trong integration test: audioplayers đăng ký frame
-/// callback liên tục, gây lỗi "animation still running" lúc teardown.
-Future<void> app({bool withAudio = true}) async {
+/// [withAudio] mặc định `!isE2eTest`: audioplayers đăng ký frame callback
+/// liên tục, gây lỗi "animation still running" lúc teardown trong device
+/// test tự động (`--dart-define=E2E_TEST=true`) — vẫn có thể override thủ
+/// công khi gọi `app()` trực tiếp.
+Future<void> app({bool withAudio = !isE2eTest}) async {
   dlog('app: ensureInitialized');
   WidgetsFlutterBinding.ensureInitialized();
   // Full screen: ẩn status bar + navigation bar.

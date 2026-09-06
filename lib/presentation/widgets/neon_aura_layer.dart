@@ -1,9 +1,8 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
-import '../../core/debug_log.dart';
+import 'shader_ticker_layer.dart';
 
 /// G5: aura bloom động sau bàn, dùng shader `shaders/neon_glow.frag` (đã có
 /// sẵn trong repo). Load lỗi (thiết bị không hỗ trợ) → ẩn hẳn, không crash.
@@ -20,66 +19,33 @@ class NeonAuraLayer extends StatefulWidget {
   State<NeonAuraLayer> createState() => _NeonAuraLayerState();
 }
 
-class _NeonAuraLayerState extends State<NeonAuraLayer>
-    with SingleTickerProviderStateMixin {
-  ui.FragmentShader? _shader;
-  late final Ticker _ticker;
-  double _time = 0;
-  // G10: shader full-screen mỗi frame khá nặng — hạ tần suất repaint thật
-  // sự xuống ~30fps (bỏ qua mỗi tick lẻ), _time vẫn cập nhật mỗi tick nên
-  // animation không bị giật khi throttle.
-  bool _skipFrame = false;
+class _NeonAuraLayerState extends ShaderTickerLayerState<NeonAuraLayer> {
+  @override
+  String get shaderAssetPath => 'packages/roy_casual_kit/shaders/neon_glow.frag';
 
   @override
-  void initState() {
-    super.initState();
-    _ticker = createTicker(_onTick)..start();
-    _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      final program = await ui.FragmentProgram.fromAsset(
-        'packages/roy_casual_kit/shaders/neon_glow.frag',
-      );
-      if (mounted) setState(() => _shader = program.fragmentShader());
-    } catch (e) {
-      dlog('roy93~ NeonAuraLayer: load shader thất bại, bỏ qua aura ($e)');
-    }
-  }
-
-  void _onTick(Duration elapsed) {
-    final speedMultiplier = switch (widget.variant) {
-      'starlight' => 1.5,
-      'cyan_blaze' => 2.0,
-      'nebula_pulse' => 0.7,
-      'cosmic_drift' => 2.5,
-      _ => 1.0,
-    };
-    _time = (elapsed.inMicroseconds / 1e6) * speedMultiplier;
-    _skipFrame = !_skipFrame;
-    if (_skipFrame && _shader != null && mounted) setState(() {});
-  }
+  String get debugLabel => 'NeonAuraLayer';
 
   @override
-  void dispose() {
-    _ticker.dispose();
-    _shader?.dispose();
-    super.dispose();
-  }
+  String get effectNoun => 'aura';
+
+  @override
+  double get speedMultiplier => switch (widget.variant) {
+    'starlight' => 1.5,
+    'cyan_blaze' => 2.0,
+    'nebula_pulse' => 0.7,
+    'cosmic_drift' => 2.5,
+    _ => 1.0,
+  };
 
   @override
   Widget build(BuildContext context) {
-    final shader = _shader;
+    final shader = this.shader;
     if (shader == null) return const SizedBox.shrink();
     return IgnorePointer(
       child: RepaintBoundary(
         child: CustomPaint(
-          painter: _AuraPainter(
-            shader: shader,
-            time: _time,
-            color: widget.color,
-          ),
+          painter: _AuraPainter(shader: shader, time: time, color: widget.color),
           size: Size.infinite,
         ),
       ),

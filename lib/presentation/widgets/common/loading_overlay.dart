@@ -19,6 +19,12 @@ class LoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    assert(
+      context.findAncestorWidgetOfExactType<Stack>() != null,
+      'LoadingOverlay must be a direct child of a Stack. '
+      'Wrap it in your own Stack, e.g. '
+      'Stack(children: [..., if (isLoading) const LoadingOverlay()]).',
+    );
     return Positioned.fill(
       child: Container(
         color: Colors.black.withValues(alpha: 0.45),

@@ -48,4 +48,41 @@ void main() {
       expect(fmtNum(1000000).replaceAll(RegExp(r'[.,]'), ''), '1000000');
     });
   });
+
+  group('fmtDurLong', () {
+    test('dưới 1 giờ → giống fmtDur (mm:ss)', () {
+      expect(fmtDurLong(const Duration(seconds: 5)), '00:05');
+      expect(fmtDurLong(const Duration(minutes: 45, seconds: 9)), '45:09');
+    });
+
+    test('từ 1 giờ trở lên → hh:mm:ss', () {
+      expect(fmtDurLong(const Duration(hours: 1, minutes: 15)), '01:15:00');
+      expect(
+        fmtDurLong(const Duration(hours: 26, minutes: 5, seconds: 3)),
+        '26:05:03',
+      );
+    });
+  });
+
+  group('fmtNumCompact', () {
+    test('dưới 1000 → giống fmtNum, không rút gọn', () {
+      expect(fmtNumCompact(0), '0');
+      expect(fmtNumCompact(999), '999');
+      expect(fmtNumCompact(-500), '-500');
+    });
+
+    test('hàng nghìn/triệu/tỷ rút gọn K/M/B, bỏ .0 thừa', () {
+      expect(fmtNumCompact(1000), '1K');
+      expect(fmtNumCompact(1500), '1.5K');
+      expect(fmtNumCompact(999000), '999K');
+      expect(fmtNumCompact(1000000), '1M');
+      expect(fmtNumCompact(12345678), '12.3M');
+      expect(fmtNumCompact(1000000000), '1B');
+      expect(fmtNumCompact(-1500), '-1.5K');
+    });
+
+    test('hàng nghìn tỷ (T)', () {
+      expect(fmtNumCompact(1000000000000), '1T');
+    });
+  });
 }

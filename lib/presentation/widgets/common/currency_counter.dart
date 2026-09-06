@@ -53,16 +53,22 @@ class _CurrencyCounterState extends State<CurrencyCounter> {
       children: [
         Icon(widget.icon, color: c, size: widget.fontSize + 6),
         const SizedBox(width: 4),
-        TweenAnimationBuilder<int>(
-          tween: IntTween(begin: _from, end: _to),
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeOut,
-          builder: (context, n, _) => Text(
-            fmtNum(n),
-            style: TextStyle(
-              color: NeonTheme.ink,
-              fontSize: widget.fontSize,
-              fontWeight: FontWeight.w800,
+        Flexible(
+          child: TweenAnimationBuilder<int>(
+            tween: IntTween(begin: _from, end: _to),
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOut,
+            builder: (context, n, _) => FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                fmtNumCompact(n),
+                style: TextStyle(
+                  color: NeonTheme.ink,
+                  fontSize: widget.fontSize,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ),
         ),

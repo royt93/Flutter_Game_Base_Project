@@ -73,6 +73,9 @@ void main() {
 
     expect(find.text('Level Complete!'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    // ENH-08: the reward popup must render via NeonDialog's overlay pattern,
+    // not Flutter's native `showDialog`/`Dialog` route widget.
+    expect(find.byType(Dialog), findsNothing);
 
     // Dismiss by tapping the barrier.
     await tester.tapAt(const Offset(10, 10));

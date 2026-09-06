@@ -47,3 +47,39 @@ String fmtNum(int n) {
     return neg ? '-$buf' : buf.toString();
   }
 }
+
+/// Formats [Duration] as "mm:ss" when under an hour (same as [fmtDur]), or
+/// "hh:mm:ss" once it reaches an hour — for longer timers (energy/lives
+/// refill, boss events) where [fmtDur] would wrap and understate the time
+/// left. [fmtDur] itself is untouched (kept for its existing short-timer
+/// contract); use this one for anything that can run past 60 minutes.
+String fmtDurLong(Duration d) {
+  if (d.inHours <= 0) return fmtDur(d);
+  final h = d.inHours.toString().padLeft(2, '0');
+  final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+  return '$h:$m:$s';
+}
+
+const _compactUnits = [
+  (1000000000000, 'T'),
+  (1000000000, 'B'),
+  (1000000, 'M'),
+  (1000, 'K'),
+];
+
+/// Abbreviates large numbers (idle/tycoon-scale coin balances) as
+/// `1.5K`/`2.4M`/`10.8B`/`1T`, one decimal place, trailing `.0` dropped.
+/// Below 1000 falls back to [fmtNum] (locale-aware thousands separator).
+String fmtNumCompact(num n) {
+  final abs = n.abs();
+  for (final (threshold, suffix) in _compactUnits) {
+    if (abs >= threshold) {
+      final scaled = n / threshold;
+      var text = scaled.toStringAsFixed(1);
+      if (text.endsWith('.0')) text = text.substring(0, text.length - 2);
+      return '$text$suffix';
+    }
+  }
+  return fmtNum(n.toInt());
+}

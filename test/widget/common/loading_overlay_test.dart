@@ -11,9 +11,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Material(
-          child: Stack(children: [LoadingOverlay()]),
-        ),
+        home: Material(child: Stack(children: [LoadingOverlay()])),
       ),
     );
 
@@ -44,4 +42,22 @@ void main() {
 
     expect(find.byType(Text), findsNothing);
   });
+
+  testWidgets(
+    'LoadingOverlay đặt ngoài Stack ném lỗi rõ ràng nhắc nhở bọc trong Stack',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: Center(child: LoadingOverlay())),
+        ),
+      );
+
+      final exception = tester.takeException();
+      expect(exception, isNotNull);
+      expect(
+        exception.toString(),
+        contains('LoadingOverlay must be a direct child of a Stack'),
+      );
+    },
+  );
 }

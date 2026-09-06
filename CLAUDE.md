@@ -42,7 +42,7 @@ cd example
 flutter analyze
 flutter test --exclude-tags slow
 flutter run -d <device-id>
-flutter test integration_test/app_boot_test.dart -d <device-id>   # device smoke test
+flutter test integration_test/app_boot_test.dart -d <device-id> --dart-define=E2E_TEST=true   # device smoke test
 ```
 
 `dart_test.yaml` (root) declares a `slow` tag for future heavy device-driven

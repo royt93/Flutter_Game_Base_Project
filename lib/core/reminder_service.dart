@@ -8,7 +8,7 @@ import 'debug_log.dart';
 /// One local notification, scheduled a fixed delay out. Games that need
 /// several reminder kinds/priorities should extend this, not add branches
 /// here — keep the base's default path to exactly one notification.
-class ReminderService extends GetxController {
+class ReminderService extends GetxService {
   static ReminderService? get maybe =>
       Get.isRegistered<ReminderService>() ? Get.find<ReminderService>() : null;
 

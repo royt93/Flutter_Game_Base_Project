@@ -7,7 +7,10 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('app boots to HomeScreen', (tester) async {
-    await app.app(withAudio: false);
+    // withAudio mặc định `!isE2eTest` (lib/core/runtime_flags.dart) — chạy
+    // với `--dart-define=E2E_TEST=true` để tắt audio init, tránh audioplayers
+    // đăng ký frame callback còn sống sau tearDown.
+    await app.app();
     await tester.pump(const Duration(seconds: 2));
     expect(find.byType(HomeScreen), findsOneWidget);
   });

@@ -7,6 +7,13 @@ void main() {
   tearDown(Get.reset);
 
   group('ReminderService', () {
+    // ENH-05: phải cùng base GetxService như StorageService/LocaleService/
+    // AudioManager (permanent singleton, GetX không tự dispose) thay vì
+    // GetxController (có thể bị dispose theo lifecycle route/binding).
+    test('extends GetxService, không phải GetxController thường', () {
+      expect(ReminderService(), isA<GetxService>());
+    });
+
     test('maybe trả về null khi chưa Get.put', () {
       expect(ReminderService.maybe, isNull);
     });
