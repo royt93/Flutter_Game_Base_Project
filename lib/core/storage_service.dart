@@ -150,7 +150,7 @@ class StorageService extends GetxService {
     _fallback[key] = value;
   }
 
-  double getDouble(String key, {double def = 1.0}) {
+  double getDouble(String key, {double def = 0.0}) {
     final v = _raw(key);
     return v is double ? v : def;
   }

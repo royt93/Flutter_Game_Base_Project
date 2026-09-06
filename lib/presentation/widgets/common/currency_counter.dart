@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
+import '../../../core/utils/format.dart';
 
 /// Icon + a currency amount, smoothly counting up/down when [value] changes
 /// (instead of jumping instantly) — a generic replacement for the old
@@ -57,7 +58,7 @@ class _CurrencyCounterState extends State<CurrencyCounter> {
           duration: const Duration(milliseconds: 500),
           curve: Curves.easeOut,
           builder: (context, n, _) => Text(
-            '$n',
+            fmtNum(n),
             style: TextStyle(
               color: NeonTheme.ink,
               fontSize: widget.fontSize,

@@ -179,12 +179,14 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                         children: [
                           IconBadgeButton(
                             icon: Icons.notifications_rounded,
+                            semanticLabel: 'Notifications',
                             showBadge: true,
                             onTap: () {},
                           ),
                           const SizedBox(width: NeonTheme.s24),
                           IconBadgeButton(
                             icon: Icons.mail_rounded,
+                            semanticLabel: 'Mail',
                             badgeCount: 12,
                             onTap: () {},
                           ),

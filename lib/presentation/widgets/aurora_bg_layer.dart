@@ -64,6 +64,7 @@ class _AuroraBgLayerState extends State<AuroraBgLayer>
   @override
   void dispose() {
     _ticker.dispose();
+    _shader?.dispose();
     super.dispose();
   }
 

@@ -5,6 +5,7 @@ import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/locale_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/bottom_sheet_panel.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/list_tile_row.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_app_bar.dart';
@@ -15,9 +16,14 @@ import 'package:roy_casual_kit/presentation/widgets/neon_bg.dart';
 ///
 /// NeonAppBar is a plain widget (not a PreferredSizeWidget), so it's placed
 /// inside the body's Column rather than passed to Scaffold's `appBar:`.
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final locale = Get.find<LocaleService>();
@@ -56,6 +62,21 @@ class SettingsScreen extends StatelessWidget {
                           onChanged: (_) => audio.toggleMute(),
                         ),
                       ),
+                    SwitchListTile(
+                      title: Text('dark_mode'.tr),
+                      value: NeonTheme.dark,
+                      onChanged: (v) {
+                        StorageService.maybe?.setBool(
+                          StorageKeys.themeDark,
+                          v,
+                        );
+                        // NeonTheme.dark is a plain static, not observable —
+                        // setState re-renders this screen with the new
+                        // palette immediately; other already-mounted screens
+                        // pick it up next time they rebuild/navigate.
+                        setState(() => NeonTheme.dark = v);
+                      },
+                    ),
                   ],
                 ),
               ),

@@ -73,20 +73,10 @@ class AudioManager extends GetxService {
     }
   }
 
-  void _ignoreAudio(Future<dynamic> op) {
-    unawaited(
-      op
-          .then((value) {
-            if (value is AudioPlayer) {
-              unawaited(
-                value.onPlayerComplete.first
-                    .timeout(const Duration(seconds: 5), onTimeout: () {})
-                    .whenComplete(value.dispose)
-                    .catchError((_) {}),
-              );
-            }
-          })
-          .catchError((_) {}),
-    );
+  // flame_audio's Bgm.play/pause/resume/stop all resolve to Future<void> —
+  // there's nothing to inspect/dispose on completion, just swallow errors so
+  // a transient audio failure never crashes a fire-and-forget call site.
+  void _ignoreAudio(Future<void> op) {
+    unawaited(op.catchError((_) {}));
   }
 }

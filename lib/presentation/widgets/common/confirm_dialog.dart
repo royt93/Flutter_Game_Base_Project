@@ -12,8 +12,11 @@ import '../neon_dialog.dart';
 /// actions and resolves to `true`/`false` based on which one was tapped.
 ///
 /// `dismissible` is left at its `NeonDialog.show` default (`false`) so the
-/// barrier can't be tapped away without picking an action — otherwise the
-/// returned future would never complete.
+/// barrier can't be tapped away without picking an action. The route can
+/// still be popped without picking an action (Android hardware back/gesture
+/// pops the topmost route regardless of `dismissible`) — [completer] guards
+/// against that: if the route closes for any other reason, it defaults to
+/// `false` instead of leaving the returned future pending forever.
 Future<bool> showConfirmDialog(
   BuildContext context, {
   required String title,
@@ -42,6 +45,16 @@ Future<bool> showConfirmDialog(
         onTap: () => completer.complete(true),
       ),
     ],
-  );
+  ).then((_) {
+    // NeonDialog.show's wrapped actions pop the route synchronously, then
+    // run the real `onTap` (which completes `completer`) in a deferred
+    // `addPostFrameCallback` (see neon_dialog.dart) — so this `.then()` can
+    // fire BEFORE that callback runs. Defer the fallback the same way so it
+    // queues after any already-scheduled action callback instead of racing
+    // it.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!completer.isCompleted) completer.complete(false);
+    });
+  });
   return completer.future;
 }

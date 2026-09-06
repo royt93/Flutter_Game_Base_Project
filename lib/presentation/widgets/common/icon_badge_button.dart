@@ -16,10 +16,15 @@ class IconBadgeButton extends StatelessWidget {
     this.color,
     this.badgeColor,
     this.size = 44,
+    this.semanticLabel,
   });
 
   final IconData icon;
   final VoidCallback? onTap;
+
+  /// Screen-reader label. Falls back to [icon]'s debug string (not
+  /// human-readable) when omitted — always pass this in real usage.
+  final String? semanticLabel;
 
   /// Shows a plain (numberless) badge dot when true.
   final bool showBadge;
@@ -46,7 +51,7 @@ class IconBadgeButton extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: enabled,
-      label: icon.toString(),
+      label: semanticLabel ?? icon.toString(),
       child: PressableScale(
         onTap: onTap,
         child: SizedBox(

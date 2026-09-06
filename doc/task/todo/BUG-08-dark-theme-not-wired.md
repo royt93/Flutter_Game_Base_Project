@@ -22,12 +22,20 @@ source: Claude (fork nội bộ) + agy, verify lại code thật
    sẽ KHÔNG tự rebuild vì đây là static field thường, không phải observable —
    cần gọi thủ công `Get.forceAppUpdate()` mà không nơi nào làm.
 
-## Đề xuất fix
-- Thêm 1 `SwitchListTile`/`ToggleSwitch` trong `SettingsScreen` set
-  `NeonTheme.dark` + `StorageService.to.setBool(StorageKeys.themeDark, v)` +
-  `Get.forceAppUpdate()`.
-- Cân nhắc đổi `NeonTheme.dark` thành `RxBool` hoặc tài liệu rõ nghĩa vụ gọi
-  `forceAppUpdate()` sau khi đổi (đỡ phải sửa API công khai).
+## Đề xuất fix — ĐÃ LÀM (xem code), cập nhật sau khi thử `Get.forceAppUpdate()`
+Thêm `SwitchListTile` trong `SettingsScreen`, set `NeonTheme.dark` +
+`StorageService.maybe?.setBool(StorageKeys.themeDark, v)`.
+
+`Get.forceAppUpdate()` (đề xuất ban đầu) **KHÔNG dùng được** — verify bằng
+test thật: nó gọi `engine.performReassemble()` (cơ chế hot-reload nặng, tự
+ghi trong doc chính GetX "touch events will not work until end of
+rendering"), gây vỡ assertion `schedulerPhase == SchedulerPhase.idle` khi gọi
+giữa lúc đang xử lý tap trong test. Thay bằng: đổi `SettingsScreen` từ
+`StatelessWidget` sang `StatefulWidget`, gọi `setState(() => NeonTheme.dark =
+v)` cục bộ — nhẹ, an toàn, đủ để switch trên chính màn hình này cập nhật
+ngay. Cân nhắc đổi `NeonTheme.dark` thành `RxBool` sau này nếu cần các màn
+hình KHÁC đang mở cùng lúc cũng đổi màu ngay lập tức không cần điều hướng lại
+(chưa làm ở fix này — ngoài phạm vi test đã viết).
 
 ## Acceptance criteria
 - [ ] Có UI toggle dark mode trong `SettingsScreen`, persist qua restart.

@@ -64,6 +64,7 @@ class _NeonAuraLayerState extends State<NeonAuraLayer>
   @override
   void dispose() {
     _ticker.dispose();
+    _shader?.dispose();
     super.dispose();
   }
 

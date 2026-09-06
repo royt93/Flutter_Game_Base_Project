@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/locale_service.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
 import 'package:roy_casual_kit_example/screens/settings_screen.dart';
@@ -28,7 +29,10 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 void main() {
-  tearDown(Get.reset);
+  tearDown(() {
+    Get.reset();
+    NeonTheme.dark = false;
+  });
 
   group('HomeScreen', () {
     testWidgets('renders title and a Settings entry point', (tester) async {
@@ -55,8 +59,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(tester.takeException(), isNull);
-      // No audio switch to show when AudioManager isn't registered.
-      expect(find.byType(SwitchListTile), findsNothing);
+      // Only the dark-mode switch shows when AudioManager isn't registered
+      // (no audio switch without it).
+      expect(find.byType(SwitchListTile), findsOneWidget);
+      expect(find.widgetWithText(SwitchListTile, 'Dark Mode'), findsOneWidget);
       // Language picker still renders fine on its own.
       expect(find.text('Language'), findsOneWidget);
     });
@@ -72,20 +78,38 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(tester.takeException(), isNull);
-      expect(find.byType(SwitchListTile), findsOneWidget);
-      expect(
-        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
-        isTrue,
-      );
+      final soundSwitch = find.widgetWithText(SwitchListTile, 'Sound');
+      expect(soundSwitch, findsOneWidget);
+      expect(tester.widget<SwitchListTile>(soundSwitch).value, isTrue);
 
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(soundSwitch);
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(audio.muted.value, isTrue);
-      expect(
-        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
-        isFalse,
-      );
+      expect(tester.widget<SwitchListTile>(soundSwitch).value, isFalse);
     });
+  });
+
+  group('SettingsScreen dark mode toggle', () {
+    testWidgets(
+      'toggling persists StorageKeys.themeDark and flips NeonTheme.dark',
+      (tester) async {
+        final store = await _boot();
+        expect(NeonTheme.dark, isFalse);
+
+        await tester.pumpWidget(_wrap(const SettingsScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final darkSwitch = find.widgetWithText(SwitchListTile, 'Dark Mode');
+        expect(tester.widget<SwitchListTile>(darkSwitch).value, isFalse);
+
+        await tester.tap(darkSwitch);
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(NeonTheme.dark, isTrue);
+        expect(store.getBool(StorageKeys.themeDark, def: false), isTrue);
+        expect(tester.widget<SwitchListTile>(darkSwitch).value, isTrue);
+      },
+    );
   });
 }

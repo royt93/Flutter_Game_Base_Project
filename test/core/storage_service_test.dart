@@ -42,7 +42,7 @@ void main() {
     });
 
     test('getDouble trả về def khi chưa có key', () {
-      expect(store.getDouble('missing'), 1.0);
+      expect(store.getDouble('missing'), 0.0);
       expect(store.getDouble('missing', def: 0.5), 0.5);
     });
 

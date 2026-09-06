@@ -1,7 +1,9 @@
 name: CI
 
 # Cổng nhanh cho mọi push/PR: analyze + toàn bộ test host (BỎ QUA nhóm 'slow' của
-# integration vì cần thiết bị thật — chạy ở nightly.yml).
+# integration vì cần thiết bị thật). Chưa có workflow nightly.yml — hiện chưa
+# test nào gắn tag 'slow' (xem dart_test.yaml) nên chưa cần; tạo nightly.yml
+# khi có integration test 'slow' đầu tiên cần chạy định kỳ trên thiết bị thật.
 on:
   push:
     branches: [main]

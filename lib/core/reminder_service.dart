@@ -26,6 +26,14 @@ class ReminderService extends GetxController {
         iOS: iosInit,
       ),
     );
+    // Android 13+ requires this granted at runtime or scheduling silently
+    // never fires; iOS handles its own permission prompt via
+    // DarwinInitializationSettings defaults.
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.requestNotificationsPermission();
     _initialized = true;
   }
 
@@ -45,7 +53,7 @@ class ReminderService extends GetxController {
           android: AndroidNotificationDetails('reminders', 'Reminders'),
           iOS: DarwinNotificationDetails(),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
     } catch (e) {
       dlog('roy93~ ReminderService.scheduleNext failed: $e');
