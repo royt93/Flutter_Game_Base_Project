@@ -26,5 +26,11 @@ sản phẩm, không phải kỹ thuật thuần — cần hỏi ý kiến trư�
 (BUG-01 đến BUG-13). Bump `pubspec.yaml` version khớp.
 
 ## Acceptance criteria
-- [ ] `CHANGELOG.md` có entry mới phản ánh đúng công việc đã làm.
-- [ ] `pubspec.yaml` version bump khớp entry mới nhất.
+- [x] `CHANGELOG.md` có entry mới phản ánh đúng công việc đã làm.
+- [x] `pubspec.yaml` version bump khớp entry mới nhất.
+
+## Quyết định
+Theo đúng đề xuất mặc định: 1 entry `0.2.0` tóm tắt theo nhóm (core services
+mới, widget kit 40-widget, Flame starter + FlameTrackedOverlay, bug fix đáng
+chú ý). `pubspec.yaml` bump `0.1.0` → `0.2.0`, description + README cập nhật
+số lượng widget (39 → 40, do IDEA-10/`LeaderboardList` thêm cùng lúc).
