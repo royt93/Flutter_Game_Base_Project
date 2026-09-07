@@ -31,8 +31,28 @@ tự quyết render — cần thiết kế kỹ trước khi chọn hướng nà
 ## Acceptance criteria
 - [ ] Quyết định rõ hình dạng API (widget wrapper hay controller thuần) trước khi code.
 - [ ] Test TDD: next()/skip() chuyển đúng bước, gọi xong bước cuối thì tự đóng, `onBeforeShow` (nếu có) chạy trước khi soi target.
-- [ ] Demo trong `WidgetShowcaseScreen` (tutorial 2-3 bước qua nhiều widget khác nhau, không chỉ 1 target như demo hiện tại).
-- [ ] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test.
+- [x] Demo trong `WidgetShowcaseScreen` (tutorial 2-3 bước qua nhiều widget khác nhau, không chỉ 1 target như demo hiện tại).
+- [x] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test.
+
+## Quyết định
+API shape: controller thuần — `TutorialSequenceController extends
+ChangeNotifier` (caller tự tạo/sở hữu, đúng pattern `ScreenShakeController`
+đã có trong `screen_shake.dart`, không phải `GetxService` toàn cục vì state
+này cục bộ theo 1 lần chạy tutorial). `TutorialSequence` là
+`StatefulWidget` bọc quanh `child`, tự dựng `SpotlightOverlay` cho bước
+hiện tại (compose, không viết lại logic soi sáng), `onDismiss` tự gọi
+`controller.next()`. Có thêm `onComplete` callback (không có trong đề xuất
+gốc) — bắn khi chuỗi kết thúc (hết bước hoặc `skip()`), tiện cho app lưu
+"đã xem tutorial". TDD: viết test trước cho cả controller (start/next/skip)
+và widget (hiện/ẩn overlay, dismiss tự next, onComplete), xác nhận fail
+đúng lý do trước khi code. Demo nối 2 target có sẵn (`_spotlightTargetKey`,
+`_coinCounterKey`) thay vì tạo key mới. Verify: `flutter analyze` sạch +
+`flutter test` 440 pass ở root (434+6 mới), 29 pass ở `example/`. Device
+smoke trên Pixel 7 Pro thật: start → dim scrim hiện đúng (target ngoài màn
+hình do vị trí demo ở cuối trang dài — cùng hạn chế đã biết từ demo
+`SpotlightOverlay` gốc, comment code cũ đã ghi "scroll up after dismissing
+to see which one it was"), tap dismiss 2 lần → chuỗi tự đóng đúng, không
+exception, scroll lại bình thường sau khi đóng.
 
 ## Ghi chú độ tin cậy
 Trung bình — nhu cầu thật nhưng API shape (widget vs controller) cần bàn kỹ
