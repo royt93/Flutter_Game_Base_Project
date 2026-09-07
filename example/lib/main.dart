@@ -109,7 +109,7 @@ Future<SharedPreferences?> _loadPrefs() async {
   try {
     return await SharedPreferences.getInstance();
   } catch (e) {
-    dlog('roy93~ SharedPreferences init failed, dùng in-memory fallback: $e');
+    dlog('SharedPreferences init failed, dùng in-memory fallback: $e');
     return null;
   }
 }

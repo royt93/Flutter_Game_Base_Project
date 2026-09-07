@@ -56,7 +56,7 @@ class ReminderService extends GetxService {
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
     } catch (e) {
-      dlog('roy93~ ReminderService.scheduleNext failed: $e');
+      dlog('ReminderService.scheduleNext failed: $e');
     }
   }
 
@@ -65,7 +65,7 @@ class ReminderService extends GetxService {
       await _ensureInit();
       await _plugin.cancel(id: 0);
     } catch (e) {
-      dlog('roy93~ ReminderService.cancel failed: $e');
+      dlog('ReminderService.cancel failed: $e');
     }
   }
 }

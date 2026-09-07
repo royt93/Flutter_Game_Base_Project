@@ -28,19 +28,15 @@ class NeonIcon extends StatelessWidget {
 
 /// Nút back neon dùng chung cho mọi màn phụ (mặc định quay lại màn trước).
 class NeonBackButton extends StatelessWidget {
-  final Color color;
+  final Color? color;
   final VoidCallback? onTap;
-  const NeonBackButton({
-    super.key,
-    this.color = const Color(0xFF00F0FF),
-    this.onTap,
-  });
+  const NeonBackButton({super.key, this.color, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return NeonIconButton(
       Icons.arrow_back_rounded,
-      color: color,
+      color: color ?? NeonTheme.cyan,
       onTap: onTap ?? Get.back,
       // Trước đây hardcode tiếng Việt — người dùng 21 ngôn ngữ khác nghe
       // TalkBack đọc 'Quay lại'.

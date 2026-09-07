@@ -91,9 +91,7 @@ abstract class ShaderTickerLayerState<T extends StatefulWidget>
       final program = await ui.FragmentProgram.fromAsset(shaderAssetPath);
       if (mounted) setState(() => _shader = program.fragmentShader());
     } catch (e) {
-      dlog(
-        'roy93~ $debugLabel: load shader thất bại, bỏ qua $effectNoun ($e)',
-      );
+      dlog('$debugLabel: load shader thất bại, bỏ qua $effectNoun ($e)');
     }
   }
 
