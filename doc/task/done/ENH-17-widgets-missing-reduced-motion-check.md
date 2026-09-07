@@ -34,7 +34,31 @@ khi làm:
 - Còn lại: xem từng case cụ thể trước khi quyết định.
 
 ## Acceptance criteria
-- [ ] Từng widget trong danh sách "nên sửa": Duration → `Duration.zero` khi
+- [x] Từng widget trong danh sách "nên sửa": Duration → `Duration.zero` khi
       `reducedMotion` bật (đúng pattern `CurrencyCounter`/`ComboHeatBackground`
       đã dùng), hoặc tắt hẳn animation nếu là particle/ticker liên tục.
-- [ ] Test riêng cho mỗi widget vừa sửa xác nhận hành vi dưới `reducedMotion`.
+- [x] Test riêng cho mỗi widget vừa sửa xác nhận hành vi dưới `reducedMotion`.
+
+## Quyết định
+Sửa 13/14 widget trong danh sách: `circular_progress_ring`,
+`coin_fly_overlay`, `confetti_overlay`, `floating_combo_text`,
+`network_status_banner`, `paginated_dots_indicator`, `progress_bar_stars`,
+`reward_popup`, `shimmer_placeholder`, `toast_banner`, `toggle_switch`,
+`neon_bg`, `neon_dialog`. Loại `flame_tracked_overlay` khỏi phạm vi — motion
+ở đó gắn với vị trí thật của component Flame (chức năng, không phải trang
+trí), tắt animation sẽ làm overlay lệch khỏi world position.
+
+`StatefulWidget` tạo controller/ticker trong `initState()` chuyển sang
+`didChangeDependencies()` (MediaQuery không đọc được sớm hơn); static
+method không có context riêng (`NeonDialog.overlay`/`overlaySlot`) bọc phần
+animated trong `Builder` để lấy context. Nhân tiện sửa luôn 1 bug thật ở
+`RewardPopup`: field `_burst` là `late final` lazy-init, chỉ được tạo (và
+dispose đúng) khi từng bị truy cập — nay luôn được tạo ở
+`didChangeDependencies()`.
+
+Verify: `flutter analyze` sạch + `flutter test --exclude-tags slow` 422 pass
+ở root, sạch + 29 pass ở `example/`. Test trực tiếp trên Pixel 7 Pro thật
+(`2B051FDH3006MU`, S24U lúc đó không kết nối được) qua `flutter run`: mở
+Widget Kit, kích hoạt `ToastBanner`, `PaginatedDotsIndicator`,
+`LevelSelectGrid` (regression check ENH cũ), `RewardPopup` (dialog + confetti
+burst) — không exception, không overflow trong toàn bộ live log.
