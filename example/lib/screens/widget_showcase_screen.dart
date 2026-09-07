@@ -878,6 +878,27 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                             ],
                           ),
                         ),
+                        _Demo(
+                          label: 'GameOverCardTemplate',
+                          child: GameOverCardTemplate(
+                            title: 'Out of moves!',
+                            message: 'So close — try again?',
+                            icon: Icons.sentiment_dissatisfied_rounded,
+                            statLines: const ['Score: 1,200'],
+                            primaryActionLabel: 'Retry',
+                            onPrimaryAction: () => ToastBanner.show(
+                              context,
+                              message: 'Retry tapped',
+                              color: NeonTheme.cyan,
+                            ),
+                            secondaryActionLabel: 'Home',
+                            onSecondaryAction: () => ToastBanner.show(
+                              context,
+                              message: 'Home tapped',
+                              color: NeonTheme.muted,
+                            ),
+                          ),
+                        ),
 
                         const SizedBox(height: NeonTheme.s24),
                         const SectionHeader(title: 'Level Select'),

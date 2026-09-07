@@ -50,6 +50,7 @@ export 'ribbon_badge.dart';
 export 'shop_item_card.dart';
 export 'victory_card_template.dart';
 export 'leaderboard_list.dart';
+export 'game_over_card_template.dart';
 
 // Game-specific
 export 'level_select_grid.dart';
