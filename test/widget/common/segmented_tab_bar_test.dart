@@ -63,4 +63,28 @@ void main() {
       throwsAssertionError,
     );
   });
+
+  testWidgets(
+    'ENH-20: Reduce Motion bật → AnimatedAlign duration = 0 (không tween)',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: SegmentedTabBar(
+                labels: const ['A', 'B'],
+                selectedIndex: 0,
+                onChanged: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final align = tester.widget<AnimatedAlign>(find.byType(AnimatedAlign));
+      expect(align.duration, Duration.zero);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

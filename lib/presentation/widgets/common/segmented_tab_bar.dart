@@ -37,7 +37,9 @@ class SegmentedTabBar extends StatelessWidget {
           return Stack(
             children: [
               AnimatedAlign(
-                duration: const Duration(milliseconds: 220),
+                duration: NeonTheme.reducedMotion(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 220),
                 curve: Curves.easeOut,
                 alignment: Alignment(
                   n == 1 ? 0 : -1 + 2 * selectedIndex / (n - 1),
