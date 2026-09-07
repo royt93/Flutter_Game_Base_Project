@@ -58,6 +58,28 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   void _startTutorial() => setState(() => _spotlightActive = true);
   void _endTutorial() => setState(() => _spotlightActive = false);
 
+  // IDEA-14: TutorialSequence demo — chains 2 existing spotlight targets
+  // (the same Primary button as above, then the CurrencyCounter) into one
+  // guided sequence instead of a single one-off SpotlightOverlay.
+  final _tutorialSequenceController = TutorialSequenceController();
+
+  void _startTutorialSequence() {
+    _tutorialSequenceController.start([
+      TutorialStep(
+        targetKey: _spotlightTargetKey,
+        title: 'Step 1 of 2',
+        message: 'This is the Primary button — the main action on any screen.',
+        color: NeonTheme.cyan,
+      ),
+      TutorialStep(
+        targetKey: _coinCounterKey,
+        title: 'Step 2 of 2',
+        message: 'Your coin balance lives here — it updates live as you earn.',
+        color: NeonTheme.gold,
+      ),
+    ]);
+  }
+
   // IDEA-08: Game Feel demo state — SquashStretch tap count, a
   // ScreenShakeController the caller owns/disposes, and a cycling combo
   // heat value.
@@ -87,6 +109,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   void dispose() {
     _dotsPageController.dispose();
     _screenShakeController.dispose();
+    _tutorialSequenceController.dispose();
     super.dispose();
   }
 
@@ -656,6 +679,13 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                           ),
                         ),
                         _Demo(
+                          label: 'TutorialSequence',
+                          child: CommonButton(
+                            label: 'Start 2-step tutorial',
+                            onTap: _startTutorialSequence,
+                          ),
+                        ),
+                        _Demo(
                           label: 'BadgeDot',
                           child: Stack(
                             clipBehavior: Clip.none,
@@ -1104,6 +1134,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                 onDismiss: _endTutorial,
               ),
             ),
+          TutorialSequence(
+            controller: _tutorialSequenceController,
+            child: const SizedBox.shrink(),
+          ),
         ],
       ),
     );

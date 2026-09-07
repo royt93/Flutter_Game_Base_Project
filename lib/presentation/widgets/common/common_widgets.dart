@@ -25,6 +25,7 @@ export 'floating_combo_text.dart';
 export 'network_status_banner.dart';
 export 'shimmer_placeholder.dart';
 export 'spotlight_overlay.dart';
+export 'tutorial_sequence.dart';
 
 // Progress & Reward
 export 'progress_bar_stars.dart';
