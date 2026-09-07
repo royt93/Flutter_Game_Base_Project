@@ -74,15 +74,29 @@ Flutter-free pure-Dart layer is ever added to the package (none exists today).
 - **`utils/clamped_clock.dart`** — `nowMsClamped()`/`todayEpochDayClamped()`, a monotonic (never-goes-backward) clock built on `StorageKeys.maxMsSeen`/`maxEpochDaySeen`, for any time-gated reward system that shouldn't be exploitable by turning the device clock back.
 - **`utils/format.dart`** — `fmtDur` (mm:ss), `durationToLocalMidnight`, `fmtNum` (locale-aware thousands separator via `intl`).
 - **`utils/label_fit.dart`** — `fitFontSizeForLongestWord`, shrinks a label's font size until every individual word (not the whole string) fits a max width — guards against mid-word line breaks in long-word languages (German, etc.).
+- **`utils/safe_json.dart`** — `asIntOr`/`asStringOr`/`asDoubleOr`, tolerant type-coercing readers for a decoded JSON map (e.g. a `VersionedJsonStore` payload) where a field might be the wrong type or missing.
+- **`utils/throttle.dart`** — `throttled(VoidCallback, {Duration window})`, wraps a callback so rapid repeat calls (double-tap, spam) within `window` are dropped after the first.
+- **`utils/weighted_random_pick.dart`** — `weightedRandomPick<T>(...)`, picks one item from a weighted list (loot tables, reward rarities).
+- **`offline_progression_service.dart`** — `OfflineProgressionService`, idle/offline earnings (`min(elapsed, maxOfflineCap) * rate`) since the last claim, built on `nowMsClamped()` so winding the device clock back can't re-farm the payout. No "watch an ad to double" flow — that's layered on top of `claim()` by the consumer app.
+- **`versioned_json_store.dart`** — `VersionedJsonStore<T>`, a thin versioned-JSON-object store on top of `StorageService`'s plain key/value strings, for save data with real shape (player profile, level progress) that must survive a schema change between game versions — caller supplies `toJson`/`fromJson`/a `migrate` step, and (optionally) a `CloudSaveProvider` to `syncWith`.
+- **`performance_tier_service.dart`** — `PerformanceTierService`, a pure FPS tracker (no `SchedulerBinding` dependency, unit-testable with synthetic frame durations) with hysteresis (separate downgrade/upgrade FPS thresholds) that decorative shader/ticker layers (`AuroraBgLayer`/`NeonAuraLayer`, via `ShaderTickerLayerState`) check to decide whether to keep animating.
+- **`daily_login_service.dart`** — `DailyLoginService`, a repeating 7-day login-streak cycle (`claimToday()`), day 1..7 then wraps back to day 1.
+- **`energy_service.dart`** — `EnergyService`, a refill-over-time energy/lives system (Candy Crush-style hearts) — current energy is computed lazily from elapsed time via `nowMsClamped()`, never `DateTime.now()` directly, for the same anti-clock-rewind reason as `ClampedClock`.
+- **`achievement_service.dart`** — `AchievementService` (a `GetxService`), local achievement/badge progress tracking — no Game Center/Play Games dependency.
+- **`save_integrity.dart`** — an HMAC checksum layer over `StorageService.exportAll()`/`importAll()`: sign a save on export, verify on import, so a consuming game can detect a hand-edited save (e.g. an externally bumped coin count).
+- **`in_app_review_helper.dart`** — `InAppReviewHelper`, decision logic for "should we ask for a store review right now" (the classic casual-game pattern: prompt right after a happy moment, not too often) — platform-neutral, no concrete review-prompt SDK baked in.
+- **Seams (platform-neutral, no concrete SDK dependency; a consumer app implements and registers its own adapter via `Get.put<X>(myAdapter, permanent: true)`)** — `crash_reporter.dart` (`CrashReporter`, since `dlog()` is debug-only/tree-shaken from release builds), `analytics_provider.dart` (`AnalyticsProvider` + a `NoopAnalyticsProvider` default), `cloud_save_provider.dart` (`CloudSaveProvider`, passed to `VersionedJsonStore.syncWith`), `remote_config_service.dart` (`RemoteConfigService`, feature-flag/remote-config seam).
 
 ### 2. Widgets (`lib/presentation/widgets/`)
 - **Neon kit** (loose files, not in `common/`) — `NeonButton`, `NeonDialog`, `NeonAppBar`, `NeonBg`, `NeonAuraLayer`, `AuroraBgLayer`, `NeonIcon`, `StrokeText`, `PressableScale`.
-- **`common/`** — 21 generic, game-agnostic widgets plus a barrel
+- **`common/`** — 40 generic, game-agnostic widgets plus a barrel
   (`common_widgets.dart`) exporting all of them in one import:
-  - Buttons & interactive: `CommonButton` (4 variants: primary/secondary/danger/icon), `ToggleSwitch`, `SegmentedTabBar`, `IconBadgeButton`.
-  - Feedback & overlay: `LoadingOverlay`, `ToastBanner`, `TooltipBubble`, `BottomSheetPanel`, `ConfirmDialog`.
-  - Progress & reward: `ProgressBarStars`, `CircularProgressRing`, `StarRating`, `CurrencyCounter`, `RewardPopup`, `BadgeDot`, `StreakCounter`.
-  - Layout & cards: `PanelCard`, `ListTileRow`, `SectionHeader`, `EmptyStatePlaceholder`, `AvatarFrame`.
+  - Buttons & interactive (5): `CommonButton` (4 variants: primary/secondary/danger/icon), `ToggleSwitch`, `SegmentedTabBar`, `IconBadgeButton`, `SoundToggleFab`.
+  - Feedback & overlay (10): `LoadingOverlay`, `ToastBanner`, `TooltipBubble`, `BottomSheetPanel`, `ConfirmDialog`, `ConfettiOverlay`, `FloatingComboText`, `NetworkStatusBanner`, `ShimmerPlaceholder`, `SpotlightOverlay`.
+  - Progress & reward (12): `ProgressBarStars`, `CircularProgressRing`, `StarRating`, `CurrencyCounter`, `RewardPopup`, `BadgeDot`, `StreakCounter`, `CountdownChip`, `PaginatedDotsIndicator`, `CoinFlyOverlay`, `DailyLoginCalendarWidget`, `EnergyBar`.
+  - Layout & cards (9): `PanelCard`, `ListTileRow`, `SectionHeader`, `EmptyStatePlaceholder`, `AvatarFrame`, `RibbonBadge`, `ShopItemCard`, `VictoryCardTemplate`, `LeaderboardList`.
+  - Game-specific (1): `LevelSelectGrid`.
+  - Game-feel / juice (3): `SquashStretch`, `ScreenShake`, `ComboHeatBackground`.
   - `CommonButton` is a superset of `NeonButton` (more variants) — `NeonButton` stays as-is, this doesn't replace it.
   - `example/lib/screens/widget_showcase_screen.dart` is the living reference for how each one is meant to be used — check it before guessing a constructor signature.
 
