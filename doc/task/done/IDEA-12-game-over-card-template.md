@@ -33,8 +33,20 @@ làm ngay để giữ tối giản.
 ## Acceptance criteria
 - [ ] Widget mới `lib/presentation/widgets/common/game_over_card_template.dart`, export qua `common_widgets.dart`.
 - [ ] Test TDD: render title/message/statLines, primaryAction/secondaryAction gọi đúng callback, secondaryAction null thì không render nút thứ 2.
-- [ ] Demo trong `WidgetShowcaseScreen`.
-- [ ] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test.
+- [x] Demo trong `WidgetShowcaseScreen`.
+- [x] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test.
+
+## Quyết định
+Widget riêng (`GameOverCardTemplate`), không chung class với
+`VictoryCardTemplate` — 2 template khác nhau đủ nhiều (không QR/share,
+2 nút action thay vì 1) nên tách class rõ ràng hơn 1 flag `isWin` rẽ nhánh
+nhiều nhánh nội bộ. TDD: viết test trước, xác nhận fail đúng lý do. Ghi chú
+khi viết test: `StrokeText`/`CommonButton` render 2 `Text` (stroke+fill),
+nên dùng `findsWidgets`/`.first` khi assert text/tap, giống pattern
+`victory_card_template_test.dart` đã dùng. Verify: `flutter analyze` sạch +
+`flutter test` 434 pass ở root (429+5 mới), 29 pass ở `example/`. Device
+smoke trên Pixel 7 Pro thật — card render đúng tông muted, icon buồn, tap
+Retry hiện toast "Retry tapped", không exception/overflow.
 
 ## Ghi chú độ tin cậy
 Trung bình-cao — nhu cầu rõ ràng, đối xứng trực tiếp với 1 widget đã có sẵn
