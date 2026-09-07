@@ -67,11 +67,14 @@ class ToastBanner extends StatelessWidget {
     Duration duration = const Duration(seconds: 2),
   }) {
     final overlay = Overlay.of(context, rootOverlay: true);
+    final reduced = NeonTheme.reducedMotion(context);
     late OverlayEntry entry;
     final controller = AnimationController(
       vsync: Navigator.of(context),
-      duration: const Duration(milliseconds: 220),
-      reverseDuration: const Duration(milliseconds: 180),
+      duration: reduced ? Duration.zero : const Duration(milliseconds: 220),
+      reverseDuration: reduced
+          ? Duration.zero
+          : const Duration(milliseconds: 180),
     );
     final slide = Tween<Offset>(
       begin: const Offset(0, -0.3),

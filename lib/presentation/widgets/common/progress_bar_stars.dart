@@ -52,7 +52,9 @@ class ProgressBarStars extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0, end: p),
-                    duration: const Duration(milliseconds: 400),
+                    duration: NeonTheme.reducedMotion(context)
+                        ? Duration.zero
+                        : const Duration(milliseconds: 400),
                     curve: Curves.easeOut,
                     builder: (context, t, _) => FractionallySizedBox(
                       widthFactor: t,

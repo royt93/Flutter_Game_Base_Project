@@ -51,11 +51,14 @@ class NetworkStatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final show = !connected;
+    final effectiveDuration = NeonTheme.reducedMotion(context)
+        ? Duration.zero
+        : duration;
     return AnimatedSize(
-      duration: duration,
+      duration: effectiveDuration,
       alignment: Alignment.topCenter,
       child: AnimatedOpacity(
-        duration: duration,
+        duration: effectiveDuration,
         opacity: show ? 1 : 0,
         child: !show
             ? const SizedBox(width: double.infinity)

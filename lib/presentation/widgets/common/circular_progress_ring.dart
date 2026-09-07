@@ -34,7 +34,9 @@ class CircularProgressRing extends StatelessWidget {
     final ringColor = color ?? NeonTheme.cyan;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
-      duration: const Duration(milliseconds: 400),
+      duration: NeonTheme.reducedMotion(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 400),
       curve: Curves.easeOut,
       builder: (context, t, _) => CustomPaint(
         size: Size.square(size),

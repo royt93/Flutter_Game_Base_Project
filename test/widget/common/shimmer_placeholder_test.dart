@@ -66,4 +66,34 @@ void main() {
       expect(tester.binding.transientCallbackCount, 0);
     },
   );
+
+  testWidgets(
+    'ENH-17: Reduce Motion bật → sweep ticker không chạy, block vẫn hiện tĩnh',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: const MaterialApp(
+            home: Material(
+              child: ShimmerPlaceholder(
+                width: 120,
+                height: 20,
+                duration: Duration(milliseconds: 1000),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final gradientAt0 = _decorationOf(tester).gradient! as LinearGradient;
+      await tester.pump(const Duration(milliseconds: 250));
+      final gradientAt250 = _decorationOf(tester).gradient! as LinearGradient;
+
+      expect(gradientAt250.begin, equals(gradientAt0.begin));
+      expect(find.byType(ShimmerPlaceholder), findsOneWidget);
+      expect(tester.binding.transientCallbackCount, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

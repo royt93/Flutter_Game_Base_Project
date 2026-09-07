@@ -37,11 +37,10 @@ class RewardPopup extends StatefulWidget {
 
 class _RewardPopupState extends State<RewardPopup>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _burst = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  );
+  late final AnimationController _burst;
   late final List<_Confetto> _bits;
+  bool _startedOnce = false;
+  bool _showParticles = false;
 
   @override
   void initState() {
@@ -58,7 +57,24 @@ class _RewardPopupState extends State<RewardPopup>
         color: NeonTheme.gemColors[rng.nextInt(NeonTheme.gemColors.length)],
       );
     });
-    if (widget.enableParticles) _burst.forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MediaQuery can't be read in initState — didChangeDependencies is the
+    // earliest safe place, and runs once before the first build. The burst
+    // is purely decorative celebration juice, so Reduce Motion vetoes it
+    // the same way `enableParticles: false` already does (the caller's own
+    // opt-out stays honored too — either one is enough to skip it).
+    if (_startedOnce) return;
+    _startedOnce = true;
+    _burst = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _showParticles = widget.enableParticles && !NeonTheme.reducedMotion(context);
+    if (_showParticles) _burst.forward();
   }
 
   @override
@@ -74,7 +90,7 @@ class _RewardPopupState extends State<RewardPopup>
       alignment: Alignment.center,
       clipBehavior: Clip.none,
       children: [
-        if (widget.enableParticles)
+        if (_showParticles)
           IgnorePointer(
             child: CustomPaint(
               painter: _BurstPainter(_burst, _bits),
@@ -83,7 +99,9 @@ class _RewardPopupState extends State<RewardPopup>
           ),
         TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: 1),
-          duration: const Duration(milliseconds: 320),
+          duration: NeonTheme.reducedMotion(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 320),
           curve: Curves.easeOutBack,
           builder: (context, t, child) => Opacity(
             opacity: t.clamp(0.0, 1.0),

@@ -43,4 +43,23 @@ void main() {
 
     expect(_widths(tester), [8, 8, 12, 8, 8, 8]);
   });
+
+  testWidgets(
+    'ENH-17: Reduce Motion bật → AnimatedContainer duration = 0 (không tween)',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: _wrap(const PaginatedDotsIndicator(count: 4, currentIndex: 0)),
+        ),
+      );
+
+      final durations = tester
+          .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+          .map((c) => c.duration)
+          .toSet();
+      expect(durations, {Duration.zero});
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

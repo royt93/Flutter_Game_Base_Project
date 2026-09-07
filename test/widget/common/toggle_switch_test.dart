@@ -82,4 +82,30 @@ void main() {
     await tester.pump();
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'ENH-17: Reduce Motion bật → AnimatedContainer/AnimatedAlign duration = 0',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: CandyToggleSwitch(value: true, onChanged: (_) {}),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.widget<AnimatedContainer>(find.byType(AnimatedContainer)).duration,
+        Duration.zero,
+      );
+      expect(
+        tester.widget<AnimatedAlign>(find.byType(AnimatedAlign)).duration,
+        Duration.zero,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

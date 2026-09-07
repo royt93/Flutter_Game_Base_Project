@@ -37,7 +37,8 @@ class NeonBg extends StatefulWidget {
 }
 
 class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
-  late final Ticker _ticker;
+  Ticker? _ticker;
+  bool _startedOnce = false;
   double _t = 0;
   // P1: vẽ 6 orb (RadialGradient + softLight, đắt) + 60 star mỗi frame —
   // hạ tần suất repaint thật xuống ~30fps giống NeonAuraLayer (#10), _t/_energy
@@ -51,7 +52,6 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker(_onTick)..start();
     _orbs = List.generate(6, (i) {
       return _Orb(
         base: Offset(_rnd.nextDouble(), _rnd.nextDouble()),
@@ -76,6 +76,21 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MediaQuery can't be read in initState — didChangeDependencies is the
+    // earliest safe place, and runs once before the first build. This
+    // ticker is purely decorative/ambient background motion (nebula drift,
+    // sparkle twinkle) with no natural end state, so Reduce Motion skips
+    // starting it entirely rather than trying to "instantly complete" it —
+    // NeonBg then just renders a static frame (t=0, energy=0).
+    if (_startedOnce) return;
+    _startedOnce = true;
+    if (NeonTheme.reducedMotion(context)) return;
+    _ticker = createTicker(_onTick)..start();
+  }
+
   void _onTick(Duration elapsed) {
     _t = (elapsed.inMicroseconds / 1e6 / 24) % 1.0;
     final target = (widget.energyOf?.call() ?? 0).clamp(0.0, 1.0);
@@ -86,7 +101,7 @@ class _NeonBgState extends State<NeonBg> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
-    _ticker.dispose();
+    _ticker?.dispose();
     super.dispose();
   }
 

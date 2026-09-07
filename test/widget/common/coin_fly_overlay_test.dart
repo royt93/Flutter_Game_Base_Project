@@ -142,4 +142,37 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'ENH-17: Reduce Motion bật → coin bay tới đích ngay lập tức, onArrive/onDone gọi ngay',
+    (tester) async {
+      var arrivedCount = 0;
+      var doneCount = 0;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: CoinFlyOverlay(
+                from: const Offset(0, 0),
+                to: const Offset(100, 100),
+                coinCount: 4,
+                duration: const Duration(milliseconds: 550),
+                stagger: const Duration(milliseconds: 70),
+                onArrive: () => arrivedCount++,
+                onDone: () => doneCount++,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // 1 frame duy nhất — không cần chờ nhiều bước như bản animate đầy đủ.
+      await tester.pump();
+
+      expect(arrivedCount, 4);
+      expect(doneCount, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

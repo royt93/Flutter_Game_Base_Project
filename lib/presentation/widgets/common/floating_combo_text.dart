@@ -78,11 +78,19 @@ class _FloatingComboTextState extends State<FloatingComboText>
   late final AnimationController _controller;
   late final Animation<double> _rise;
   late final Animation<double> _opacity;
+  bool _startedOnce = false;
 
   @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration)
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MediaQuery can't be read in initState — didChangeDependencies is the
+    // earliest safe place, and runs once before the first build.
+    if (_startedOnce) return;
+    _startedOnce = true;
+    final duration = NeonTheme.reducedMotion(context)
+        ? Duration.zero
+        : widget.duration;
+    _controller = AnimationController(vsync: this, duration: duration)
       ..addStatusListener((status) {
         if (status == AnimationStatus.completed) widget.onDone?.call();
       })

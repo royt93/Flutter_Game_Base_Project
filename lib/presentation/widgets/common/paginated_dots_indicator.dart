@@ -34,7 +34,9 @@ class PaginatedDotsIndicator extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(right: i == count - 1 ? 0 : spacing),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: NeonTheme.reducedMotion(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 200),
               curve: Curves.easeOut,
               width: i == currentIndex ? activeDotSize : dotSize,
               height: i == currentIndex ? activeDotSize : dotSize,

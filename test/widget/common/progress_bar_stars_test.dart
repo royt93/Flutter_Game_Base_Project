@@ -94,4 +94,33 @@ void main() {
     );
     expect(fractionally.widthFactor, closeTo(0.4, 0.001));
   });
+
+  testWidgets(
+    'ENH-17: Reduce Motion bật → fill nhảy thẳng tới progress, không cần chờ 400ms',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: Center(
+                child: SizedBox(
+                  width: 300,
+                  child: ProgressBarStars(progress: 0.4),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      // 1 frame duy nhất — không chờ 400ms fill animation.
+      await tester.pump();
+
+      final fractionally = tester.widget<FractionallySizedBox>(
+        find.byType(FractionallySizedBox),
+      );
+      expect(fractionally.widthFactor, closeTo(0.4, 0.001));
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

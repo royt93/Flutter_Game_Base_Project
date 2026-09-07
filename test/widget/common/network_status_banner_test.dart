@@ -96,4 +96,31 @@ void main() {
     expect(find.text('No internet connection'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'ENH-17: Reduce Motion bật → banner hiện/ẩn ngay lập tức (duration = 0)',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: const MaterialApp(
+            home: Material(child: NetworkStatusBanner(connected: false)),
+          ),
+        ),
+      );
+      // 1 frame duy nhất — không pumpAndSettle/pump(250ms) chờ entrance.
+      await tester.pump();
+
+      expect(find.text('No internet connection'), findsOneWidget);
+      expect(
+        tester.widget<AnimatedSize>(find.byType(AnimatedSize)).duration,
+        Duration.zero,
+      );
+      expect(
+        tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity)).duration,
+        Duration.zero,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

@@ -120,13 +120,26 @@ class _CoinFlyOverlayState extends State<CoinFlyOverlay>
   late final List<double> _endAt;
   late final List<bool> _arrived;
   bool _done = false;
+  bool _startedOnce = false;
 
   @override
-  void initState() {
-    super.initState();
-    final totalUs =
-        widget.duration.inMicroseconds +
-        widget.stagger.inMicroseconds * (widget.coinCount - 1);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MediaQuery can't be read in initState — didChangeDependencies is the
+    // earliest safe place, and runs once before the first build. Reduce
+    // Motion collapses the whole shared timeline to zero: the controller
+    // jumps straight to its end value, every coin's [start, end] window
+    // collapses to [0, 1] (see the `totalUs <= 0` branches below), so
+    // onArrive/onDone fire immediately without a mid-flight frame — the
+    // same effect as "skip the burst entirely", reusing the existing
+    // zero-duration machinery instead of a separate code path.
+    if (_startedOnce) return;
+    _startedOnce = true;
+    final reduced = NeonTheme.reducedMotion(context);
+    final totalUs = reduced
+        ? 0
+        : widget.duration.inMicroseconds +
+              widget.stagger.inMicroseconds * (widget.coinCount - 1);
     _controller = AnimationController(
       vsync: this,
       duration: Duration(microseconds: totalUs < 0 ? 0 : totalUs),

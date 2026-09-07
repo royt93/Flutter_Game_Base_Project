@@ -126,4 +126,33 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'ENH-17: Reduce Motion bật → rise+fade hoàn tất ngay, onDone gọi ngay',
+    (tester) async {
+      var done = false;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: FloatingComboText(
+                text: 'Combo x3',
+                duration: const Duration(milliseconds: 900),
+                onDone: () => done = true,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // 1 frame duy nhất — duration = 0 nên animation hoàn tất ngay, không
+      // cần chờ 900ms.
+      await tester.pump();
+
+      expect(find.text('Combo x3'), findsOneWidget);
+      expect(done, isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

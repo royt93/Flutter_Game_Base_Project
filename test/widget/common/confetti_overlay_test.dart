@@ -134,5 +134,39 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+      'ENH-17: Reduce Motion bật → không burst confetti, onFinished gọi ngay',
+      (tester) async {
+        var finished = false;
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: MaterialApp(
+              home: Material(
+                child: ConfettiOverlay(
+                  particleCount: 10,
+                  duration: const Duration(seconds: 5),
+                  onFinished: () => finished = true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // 1 frame duy nhất — không cần chờ duration (5s) cho ticker chạy.
+        await tester.pump();
+
+        expect(finished, isTrue);
+        // No confetti painter mounted (Material itself renders unrelated
+        // CustomPaint instances for its own decorations, so filter by the
+        // burst's private painter type instead of find.byType(CustomPaint)).
+        final confettiPainters = tester
+            .widgetList<CustomPaint>(find.byType(CustomPaint))
+            .where((w) => w.painter.runtimeType.toString() == '_ConfettiPainter');
+        expect(confettiPainters, isEmpty);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

@@ -94,4 +94,28 @@ void main() {
     expect(find.text('3:00'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'ENH-17: Reduce Motion bật → arc nhảy thẳng tới progress đích, không cần chờ 400ms',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: Center(child: CircularProgressRing(progress: 0.7)),
+            ),
+          ),
+        ),
+      );
+
+      // 1 frame duy nhất — không pumpAndSettle/pump(400ms), vì duration = 0
+      // phải khiến TweenAnimationBuilder nhảy thẳng tới giá trị cuối.
+      await tester.pump();
+
+      final painter = _ringPaint(tester).painter as dynamic;
+      expect(painter.progress, closeTo(0.7, 0.001));
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

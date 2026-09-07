@@ -33,7 +33,23 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: widget.duration,
-  )..repeat();
+  );
+  bool _startedOnce = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MediaQuery can't be read in initState — didChangeDependencies is the
+    // earliest safe place, and runs once before the first build. The sweep
+    // is purely decorative (a static cardAlt block still reads as "loading"
+    // without it), so Reduce Motion just never starts the repeat() loop —
+    // the controller stays at its initial value (0), rendering a static
+    // block instead of trying to "instantly complete" a looping animation
+    // that has no natural end state.
+    if (_startedOnce) return;
+    _startedOnce = true;
+    if (!NeonTheme.reducedMotion(context)) _controller.repeat();
+  }
 
   @override
   void dispose() {

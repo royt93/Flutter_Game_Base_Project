@@ -126,10 +126,11 @@ class ConfettiOverlay extends StatefulWidget {
 
 class _ConfettiOverlayState extends State<ConfettiOverlay>
     with SingleTickerProviderStateMixin {
-  late final Ticker _ticker;
+  Ticker? _ticker;
   late final List<ConfettiParticle> _particles;
   double _elapsedSeconds = 0;
   bool _finished = false;
+  bool _startedOnce = false;
   // Repainting a full-screen particle field every frame is wasteful —
   // throttle actual repaints to ~30fps, same as AuroraBgLayer/NeonAuraLayer
   // (ShaderTickerLayerState); `_elapsedSeconds` still advances every tick
@@ -145,6 +146,26 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
       widget.particleCount,
       widget.colors ?? NeonTheme.gemColors,
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MediaQuery can't be read in initState — didChangeDependencies is the
+    // earliest safe place, and runs once before the first build. A burst of
+    // N particles has no meaningful "static final frame" to fall back to
+    // (unlike a progress bar or fade), so Reduce Motion skips the whole
+    // effect: never start the ticker, call onFinished right away (deferred
+    // to a post-frame callback so it isn't invoked mid-build).
+    if (_startedOnce) return;
+    _startedOnce = true;
+    if (NeonTheme.reducedMotion(context)) {
+      _finished = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onFinished?.call();
+      });
+      return;
+    }
     _ticker = createTicker(_onTick)..start();
   }
 
@@ -153,7 +174,7 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
     if (seconds >= _totalSeconds) {
       _elapsedSeconds = _totalSeconds;
       _finished = true;
-      _ticker.stop();
+      _ticker?.stop();
       setState(() {});
       widget.onFinished?.call();
       return;
@@ -165,7 +186,7 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
 
   @override
   void dispose() {
-    _ticker.dispose();
+    _ticker?.dispose();
     super.dispose();
   }
 

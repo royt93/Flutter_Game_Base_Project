@@ -130,12 +130,15 @@ class NeonDialog {
         )
         .toList();
     dlog('NeonDialog.show CALL title=$title (showGeneralDialog native)');
+    final transitionDuration = NeonTheme.reducedMotion(context)
+        ? Duration.zero
+        : _kDialogDuration;
     return showGeneralDialog<T>(
       context: context,
       barrierDismissible: dismissible,
       barrierColor: Colors.black.withValues(alpha: 0.6),
       barrierLabel: title,
-      transitionDuration: _kDialogDuration,
+      transitionDuration: transitionDuration,
       pageBuilder: (_, _, _) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: EdgeInsets.zero,
@@ -178,15 +181,22 @@ class NeonDialog {
           child: Container(color: Colors.black.withValues(alpha: 0.6)),
         ),
         Center(
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: 1),
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutBack,
-            builder: (_, t, child) => Opacity(
-              opacity: t.clamp(0, 1),
-              child: Transform.scale(scale: 0.85 + 0.15 * t, child: child),
+          // panel()/overlay() are static methods with no ambient
+          // BuildContext of their own — a Builder gets one at the point the
+          // widget tree actually mounts, so reducedMotion can be checked.
+          child: Builder(
+            builder: (context) => TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: 1),
+              duration: NeonTheme.reducedMotion(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 220),
+              curve: Curves.easeOutBack,
+              builder: (_, t, child) => Opacity(
+                opacity: t.clamp(0, 1),
+                child: Transform.scale(scale: 0.85 + 0.15 * t, child: child),
+              ),
+              child: panel,
             ),
-            child: panel,
           ),
         ),
       ],
@@ -212,29 +222,46 @@ class NeonDialog {
   }) {
     return Stack(
       children: [
-        AnimatedOpacity(
-          duration: _kDialogDuration,
-          opacity: panel == null ? 0 : 1,
-          child: IgnorePointer(
-            ignoring: panel == null,
-            child: GestureDetector(
-              onTap: onBarrier,
-              child: Container(color: Colors.black.withValues(alpha: 0.6)),
-            ),
-          ),
+        // overlaySlot() is a static method with no ambient BuildContext of
+        // its own — a Builder gets one at the point each half of the tree
+        // actually mounts, so reducedMotion can be checked.
+        Builder(
+          builder: (context) {
+            final duration = NeonTheme.reducedMotion(context)
+                ? Duration.zero
+                : _kDialogDuration;
+            return AnimatedOpacity(
+              duration: duration,
+              opacity: panel == null ? 0 : 1,
+              child: IgnorePointer(
+                ignoring: panel == null,
+                child: GestureDetector(
+                  onTap: onBarrier,
+                  child: Container(color: Colors.black.withValues(alpha: 0.6)),
+                ),
+              ),
+            );
+          },
         ),
         Center(
-          child: AnimatedSwitcher(
-            duration: _kDialogDuration,
-            switchInCurve: _kDialogCurve,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: ScaleTransition(scale: animation, child: child),
-            ),
-            child: panel == null
-                ? const SizedBox.shrink(key: ValueKey('empty'))
-                : KeyedSubtree(key: ValueKey(panelKey), child: panel),
+          child: Builder(
+            builder: (context) {
+              final duration = NeonTheme.reducedMotion(context)
+                  ? Duration.zero
+                  : _kDialogDuration;
+              return AnimatedSwitcher(
+                duration: duration,
+                switchInCurve: _kDialogCurve,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(scale: animation, child: child),
+                ),
+                child: panel == null
+                    ? const SizedBox.shrink(key: ValueKey('empty'))
+                    : KeyedSubtree(key: ValueKey(panelKey), child: panel),
+              );
+            },
           ),
         ),
       ],

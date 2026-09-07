@@ -193,4 +193,34 @@ void main() {
       expect(find.text('lose'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'ENH-17: Reduce Motion bật → overlay hiện ngay lập tức, không có animation đang chạy',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Stack(
+              children: [
+                NeonDialog.overlay(
+                  panel: NeonDialog.panel(
+                    title: 'Paused',
+                    color: NeonTheme.cyan,
+                    actions: const [],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      // 1 frame duy nhất — không cần chờ 220ms scale+fade entrance.
+      await tester.pump();
+
+      expect(find.text('Paused'), findsOneWidget);
+      expect(tester.binding.transientCallbackCount, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

@@ -35,7 +35,9 @@ class CandyToggleSwitch extends StatelessWidget {
       child: PressableScale(
         onTap: enabled ? () => onChanged!(!value) : null,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: NeonTheme.reducedMotion(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 180),
           curve: Curves.easeOut,
           width: 52,
           height: 30,
@@ -47,7 +49,9 @@ class CandyToggleSwitch extends StatelessWidget {
             boxShadow: enabled ? NeonTheme.drop(y: 2, blur: 4) : null,
           ),
           child: AnimatedAlign(
-            duration: const Duration(milliseconds: 180),
+            duration: NeonTheme.reducedMotion(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 180),
             curve: Curves.easeOut,
             alignment: value ? Alignment.centerRight : Alignment.centerLeft,
             child: Container(
