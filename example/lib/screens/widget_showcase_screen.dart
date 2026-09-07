@@ -806,6 +806,29 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                           ),
                         ),
                         _Demo(
+                          label: 'LeaderboardList',
+                          child: const LeaderboardList(
+                            entries: [
+                              LeaderboardEntry(
+                                rank: 1,
+                                name: 'Alice',
+                                score: '12,340',
+                              ),
+                              LeaderboardEntry(
+                                rank: 2,
+                                name: 'You',
+                                score: '9,870',
+                                highlighted: true,
+                              ),
+                              LeaderboardEntry(
+                                rank: 3,
+                                name: 'Charlie',
+                                score: '8,120',
+                              ),
+                            ],
+                          ),
+                        ),
+                        _Demo(
                           label: 'EmptyStatePlaceholder',
                           child: const EmptyStatePlaceholder(
                             icon: Icons.inbox_outlined,
