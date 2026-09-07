@@ -60,8 +60,8 @@ void main() {
     );
 
     final semantics = tester.getSemantics(find.byType(CandyToggleSwitch));
-    expect(semantics.flagsCollection.isToggled, true);
-    expect(semantics.flagsCollection.isEnabled, true);
+    expect(semantics.flagsCollection.isToggled.toBoolOrNull(), true);
+    expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), true);
   });
 
   testWidgets('CandyToggleSwitch onChanged == null thì bị disable, tap không throw', (
@@ -76,7 +76,7 @@ void main() {
     );
 
     final semantics = tester.getSemantics(find.byType(CandyToggleSwitch));
-    expect(semantics.flagsCollection.isEnabled, false);
+    expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), false);
 
     await tester.tap(find.byType(CandyToggleSwitch));
     await tester.pump();

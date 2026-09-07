@@ -47,8 +47,8 @@ void main() {
 
     final semanticsA = tester.getSemantics(find.text('A'));
     final semanticsB = tester.getSemantics(find.text('B'));
-    expect(semanticsA.flagsCollection.isSelected, false);
-    expect(semanticsB.flagsCollection.isSelected, true);
+    expect(semanticsA.flagsCollection.isSelected.toBoolOrNull(), false);
+    expect(semanticsB.flagsCollection.isSelected.toBoolOrNull(), true);
   });
 
   testWidgets('SegmentedTabBar throw assert khi số lượng label ngoài 2-4', (

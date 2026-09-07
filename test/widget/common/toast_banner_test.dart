@@ -31,7 +31,12 @@ void main() {
       // phải ở trạng thái cuối ngay, không cần chờ 220ms entrance.
       await tester.pump();
       expect(find.text('Saved!'), findsOneWidget);
-      final fade = tester.widget<FadeTransition>(find.byType(FadeTransition));
+      final fade = tester.widget<FadeTransition>(
+        find.ancestor(
+          of: find.text('Saved!'),
+          matching: find.byType(FadeTransition),
+        ),
+      );
       expect(fade.opacity.value, 1.0);
       expect(tester.takeException(), isNull);
 

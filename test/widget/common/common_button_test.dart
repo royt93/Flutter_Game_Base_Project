@@ -76,7 +76,7 @@ void main() {
     );
 
     final semantics = tester.getSemantics(find.byType(CommonButton));
-    expect(semantics.flagsCollection.isEnabled, false);
+    expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), false);
 
     await tester.tap(find.byType(CommonButton));
     await tester.pump();
