@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 /// Why this checks per-word rather than the whole string: `Text` wraps at
 /// whitespace on its own, so a multi-word string always fits. What breaks is
 /// **a single word wider than the container** — that's when Flutter breaks
-/// mid-word. On the German Mode Select screen this produced
-/// "Doppelspiege" + "l" and "Zitronenwüst" + "e", which looks like a display bug.
+/// mid-word, e.g. a long German compound noun like "Doppelspiegel" splitting
+/// into "Doppelspiege" + "l" mid-label, which looks like a display bug.
 ///
 /// Measures each word's WIDTH, not the word with the most characters. The
 /// first version picked a word by `.length` and was wrong: "WWW" has fewer

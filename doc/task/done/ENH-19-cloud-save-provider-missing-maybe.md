@@ -47,6 +47,14 @@ lại mỗi lần). Nếu không có nhu cầu đó, đóng task này (YAGNI) �
 đừng thêm code chết.
 
 ## Acceptance criteria
-- [ ] Xác nhận: có call site thật cần `.maybe` hay không.
+- [x] Xác nhận: có call site thật cần `.maybe` hay không.
 - [ ] Nếu có: thêm `.maybe` theo đúng pattern `CrashReporter`/`AnalyticsProvider`, kèm test.
-- [ ] Nếu không: đóng task, ghi rõ lý do YAGNI trong `## Quyết định`.
+- [x] Nếu không: đóng task, ghi rõ lý do YAGNI trong `## Quyết định`.
+
+## Quyết định
+Đóng, YAGNI. Xác nhận lại bằng `grep -rn "CloudSaveProvider" lib/ example/
+test/` — toàn bộ codebase chỉ có đúng 1 điểm dùng
+(`VersionedJsonStore.syncWith(CloudSaveProvider provider)`, nhận tham số
+trực tiếp) cộng bộ test riêng của `cloud_save_provider.dart`; không có
+`Get.find`/`Get.isRegistered` nào cho class này ở bất kỳ đâu. Không thêm
+`.maybe` cho nhu cầu chưa phát sinh.

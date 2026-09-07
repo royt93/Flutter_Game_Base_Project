@@ -2,16 +2,15 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/utils/label_fit.dart';
 
-/// Nhãn ô trên Mode Select rộng cố định 60px. Chuỗi nhiều từ tự xuống dòng ở
-/// khoảng trắng nên luôn vừa; cái vỡ là **một từ đơn dài hơn 60px** — Flutter
-/// ngắt giữa từ. Tiếng Đức sau đợt dịch cho ra đúng cảnh đó trên máy thật:
-/// "Doppelspiege" + "l", "Zitronenwüst" + "e".
+/// Nhãn ô rộng cố định 60px. Chuỗi nhiều từ tự xuống dòng ở khoảng trắng nên
+/// luôn vừa; cái vỡ là **một từ đơn dài hơn 60px** — Flutter ngắt giữa từ.
+/// Tiếng Đức là ví dụ điển hình: "Doppelspiege" + "l", "Zitronenwüst" + "e".
 ///
 /// **Test không được kỳ vọng con số tuyệt đối.** `flutter test` không nạp
 /// Baloo2 mà dùng font thay thế cỡ chữ ô vuông, nên bề rộng ở đây khác hẳn
-/// trên máy. Bản đầu của file này viết `expect(..., 11)` cho
-/// "Mode na Time Attack" và đỏ vì lý do đó — kỳ vọng sai, không phải hàm sai.
-/// Mọi ca dưới vì thế kiểm **hợp đồng**, đo lại bằng chính `TextPainter`.
+/// trên máy — kỳ vọng một con số cụ thể (vd `expect(..., 11)`) sẽ đỏ vì lý
+/// do đó, không phải vì hàm sai. Mọi ca dưới vì thế kiểm **hợp đồng**, đo
+/// lại bằng chính `TextPainter`.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

@@ -50,3 +50,8 @@ này chỉ xác nhận version hiện tại ĐANG lệch và đã từng gây h�
 ## Acceptance criteria
 - [ ] `ci.yml`'s `flutter-version` khớp (hoặc cấu hình `stable`) với bản Flutter dùng để phát triển/verify thực tế.
 - [ ] Sau khi đổi, CI chạy lại xanh với version mới (không có regression nào khác lộ ra thêm).
+
+## Quyết định
+Đóng, không làm. Chủ dự án từ chối rõ ràng: đổi CI (chạy lại workflow,
+nhất là đổi version rồi phải verify lại) tốn phút GitHub Actions phải trả
+phí. Không đề xuất lại task này nữa.

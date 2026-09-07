@@ -34,5 +34,15 @@ màn hình đã xoá) hay xoá hẳn vì không ai dùng. Không tự xoá code 
 đang pass mà chưa xác nhận ý đồ.
 
 ## Acceptance criteria
-- [ ] Quyết định rõ: giữ (sửa doc) hay xoá (kèm test + mọi tham chiếu).
-- [ ] Nếu giữ: doc comment không còn nhắc tên màn hình/game cụ thể đã không còn tồn tại trong repo.
+- [x] Quyết định rõ: giữ (sửa doc) hay xoá (kèm test + mọi tham chiếu).
+- [x] Nếu giữ: doc comment không còn nhắc tên màn hình/game cụ thể đã không còn tồn tại trong repo.
+
+## Quyết định
+Giữ, cùng lý do `fmtNum`/`fmtDur`: public util hợp lệ cho consumer app tự
+dùng, không cần widget nào trong kit gọi trực tiếp để chứng minh giá trị.
+Sửa doc comment ở cả `lib/core/utils/label_fit.dart` và
+`test/core/utils/label_fit_test.dart` — bỏ nhắc "Mode Select"/"đợt dịch"
+(màn hình/ngữ cảnh game cũ đã xoá), giữ nguyên ví dụ tiếng Đức
+("Doppelspiegel"/"Zitronenwüste") vì vẫn minh hoạ đúng vấn đề kỹ thuật, chỉ
+không còn gắn với 1 màn hình cụ thể không tồn tại. Không đổi code/test logic.
+Verify: `flutter analyze` sạch, `flutter test test/core/utils/label_fit_test.dart` 14/14 pass.
