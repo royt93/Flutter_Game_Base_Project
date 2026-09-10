@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -110,6 +111,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _dotsPageController.dispose();
     _screenShakeController.dispose();
     _tutorialSequenceController.dispose();
+    _wheelController.dispose();
     super.dispose();
   }
 
@@ -142,6 +144,22 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   void _claimDailyLogin() => setState(() => _dailyLogin.claimToday());
 
   void _consumeEnergy() => setState(() => _energy.consumeEnergy());
+
+  // IDEA-13: WheelSpinner demo — the wheel never picks its own result, so
+  // the demo's own RNG decides which index to spin to.
+  static final _wheelSegments = [
+    WheelSegment(label: '10', color: NeonTheme.cyan),
+    WheelSegment(label: '50', color: NeonTheme.magenta),
+    WheelSegment(label: '100', color: NeonTheme.lime),
+    WheelSegment(label: 'Jackpot', color: NeonTheme.gold),
+    WheelSegment(label: '20', color: NeonTheme.purple),
+    WheelSegment(label: '5', color: NeonTheme.red),
+  ];
+  final _wheelController = WheelSpinnerController();
+  final _wheelRng = math.Random();
+
+  void _spinWheel() =>
+      _wheelController.spin(_wheelRng.nextInt(_wheelSegments.length));
 
   void _bumpCoins() => setState(() => _coins += 25);
 
@@ -799,6 +817,28 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               CommonButton(
                                 label: 'Consume 1 energy',
                                 onTap: _consumeEnergy,
+                              ),
+                            ],
+                          ),
+                        ),
+                        _Demo(
+                          label: 'WheelSpinner',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              WheelSpinner(
+                                segments: _wheelSegments,
+                                controller: _wheelController,
+                                onSpinEnd: (segment) => ToastBanner.show(
+                                  context,
+                                  message: 'Landed on ${segment.label}!',
+                                  color: NeonTheme.gold,
+                                ),
+                              ),
+                              const SizedBox(height: NeonTheme.s16),
+                              CommonButton(
+                                label: 'Spin',
+                                onTap: _spinWheel,
                               ),
                             ],
                           ),

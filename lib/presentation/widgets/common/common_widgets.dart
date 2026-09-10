@@ -40,6 +40,7 @@ export 'paginated_dots_indicator.dart';
 export 'coin_fly_overlay.dart';
 export 'daily_login_calendar.dart';
 export 'energy_bar.dart';
+export 'wheel_spinner.dart';
 
 // Layout & Cards
 export 'panel_card.dart';
