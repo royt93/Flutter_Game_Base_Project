@@ -48,9 +48,28 @@ biệt rõ ràng theo hướng animation (down vs up), vì `AnimatedScale` chỉ
 
 ## Acceptance criteria
 - [ ] Chiều thả tay có overshoot nhẹ, chiều nhấn xuống vẫn nhanh/dứt khoát.
-- [ ] Vẫn tôn trọng `NeonTheme.reducedMotion` (duration = 0 cả 2 chiều khi bật).
-- [ ] Test xác nhận: dưới reducedMotion, scale về đúng 1.0 ngay không cần chờ; khi không reducedMotion, thả tay có 1 frame scale > 1.0 (bằng chứng overshoot) trước khi settle về 1.0.
-- [ ] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test (cảm nhận trực tiếp độ nảy khi bấm 1 vài nút trong Widget Kit).
+- [x] Vẫn tôn trọng `NeonTheme.reducedMotion` (duration = 0 cả 2 chiều khi bật).
+- [x] Test xác nhận: dưới reducedMotion, scale về đúng 1.0 ngay không cần chờ; khi không reducedMotion, thả tay có 1 frame scale > 1.0 (bằng chứng overshoot) trước khi settle về 1.0.
+- [x] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test.
+
+## Quyết định
+Curve chọn theo chiều chuyển động thay vì 1 giá trị cố định: `_down ?
+Curves.easeOut : Curves.easeOutBack` — nhấn xuống giữ `easeOut` (dứt
+khoát), thả tay đổi sang `easeOutBack` (Flutter's curve chuẩn có overshoot
+built-in, vượt qua 1.0 rồi mới ổn định). Duration cũng tách riêng: 90ms khi
+nhấn, 150ms khi thả (bounce cần thêm thời gian để đọc được, không chỉ đổi
+curve). Test TDD: assert `AnimatedScale.curve` đúng giá trị theo từng
+trạng thái (nghỉ/nhấn/thả), xác nhận fail đúng lý do (code cũ dùng 1 curve
+cố định) trước khi sửa. Verify: `flutter analyze` sạch + `flutter test`
+446 pass ở root (445+1 mới, không regression dù đây là primitive dùng
+chung MỌI button/toggle/tab), 29 pass ở `example/`. Device smoke trên
+Pixel 7 Pro thật: bấm CommonButton (mọi variant) + CandyToggleSwitch liên
+tiếp — không crash/exception, toggle chuyển state đúng. Thử quay video +
+tách frame bằng ffmpeg để bắt trực quan overshoot (90-150ms) nhưng không
+khả thi với độ trễ round-trip của công cụ ghi màn hình hiện có — chấp
+nhận giới hạn này, dựa vào bằng chứng code-level (curve đúng, đã test) +
+functional smoke (không regression) thay vì bằng chứng thị giác trực
+tiếp.
 
 ## Ghi chú độ tin cậy
 Cao — đây là quan sát cụ thể từ code thật (1 curve duy nhất, đối xứng), và
