@@ -50,6 +50,41 @@ void main() {
   });
 
   testWidgets(
+    'ENH-22: nhấn xuống dùng easeOut, thả tay dùng easeOutBack (nảy nhẹ)',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: PressableScale(onTap: () {}, child: const Text('X')),
+          ),
+        ),
+      );
+
+      // Chưa nhấn (trạng thái nghỉ) khớp curve của chiều "thả tay".
+      expect(
+        tester.widget<AnimatedScale>(find.byType(AnimatedScale)).curve,
+        Curves.easeOutBack,
+      );
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(PressableScale)),
+      );
+      await tester.pump();
+      expect(
+        tester.widget<AnimatedScale>(find.byType(AnimatedScale)).curve,
+        Curves.easeOut,
+      );
+
+      await gesture.up();
+      await tester.pump();
+      expect(
+        tester.widget<AnimatedScale>(find.byType(AnimatedScale)).curve,
+        Curves.easeOutBack,
+      );
+    },
+  );
+
+  testWidgets(
     'FEAT-17: Reduce Motion bật → chuyển scale tức thời (duration = 0)',
     (tester) async {
       await tester.pumpWidget(

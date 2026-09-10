@@ -40,8 +40,11 @@ class _PressableScaleState extends State<PressableScale> {
         scale: _down ? widget.scale : 1.0,
         duration: NeonTheme.reducedMotion(context)
             ? Duration.zero
-            : const Duration(milliseconds: 90),
-        curve: Curves.easeOut,
+            : Duration(milliseconds: _down ? 90 : 150),
+        // Nhấn xuống: easeOut (nhanh, dứt khoát). Thả tay: easeOutBack
+        // (nảy nhẹ quá 1.0 rồi mới ổn định) — cùng "ngôn ngữ chuyển động"
+        // đã dùng ở RewardPopup/NeonDialog's entrance animation.
+        curve: _down ? Curves.easeOut : Curves.easeOutBack,
         child: widget.child,
       ),
     );
