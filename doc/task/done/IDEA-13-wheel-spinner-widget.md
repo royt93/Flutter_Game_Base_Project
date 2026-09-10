@@ -32,10 +32,28 @@ tham số `resultIndex`, không phải widget tự random) — giữ đúng nguy
 `VictoryCardTemplate`/`LeaderboardList`.
 
 ## Acceptance criteria
-- [ ] Widget mới `lib/presentation/widgets/common/wheel_spinner.dart` + `WheelSegment` data class, export qua `common_widgets.dart`.
-- [ ] Test TDD: render đủ segment, gọi `spin(resultIndex)` rồi settle animation → `onSpinEnd` nhận đúng segment, reducedMotion → animation collapse nhưng callback vẫn fire.
-- [ ] Demo trong `WidgetShowcaseScreen`.
-- [ ] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test (animation quay + haptic khi dừng, nếu có).
+- [x] Widget mới `lib/presentation/widgets/common/wheel_spinner.dart` + `WheelSegment` data class, export qua `common_widgets.dart`.
+- [x] Test TDD: render đủ segment, gọi `spin(resultIndex)` rồi settle animation → `onSpinEnd` nhận đúng segment, reducedMotion → animation collapse nhưng callback vẫn fire.
+- [x] Demo trong `WidgetShowcaseScreen`.
+- [x] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test.
+
+## Quyết định
+`WheelSpinnerController extends ChangeNotifier` (caller sở hữu, đúng pattern
+`ScreenShakeController`), `spin(resultIndex)` — index do CALLER quyết định
+(RNG/loot table riêng), widget không tự random. Vẽ bằng `CustomPainter`
+thuần (arc pie + label xoay theo bán kính, kỹ thuật chuẩn cho "wheel of
+fortune"), rotation áp dụng qua `Transform.rotate` bọc ngoài
+`CustomPaint` (không cần repaint painter mỗi frame, chỉ transform).
+Guard double-spin bằng token tăng dần — spin thứ 2 gọi trước khi spin thứ
+nhất xong thì chỉ kết quả mới nhất fire `onSpinEnd`. TDD: viết test trước
+(5 case: render segment, spin+settle, reducedMotion fire ngay, double-spin
+race, assert <2 segment), xác nhận fail đúng lý do trước khi code. Phát
+hiện phụ khi verify: thêm demo làm tràn viewport test cố định
+(`Size(1080, 8000)` trong `widget_showcase_screen_test.dart`), sửa lên
+`8500`. Verify: `flutter analyze` sạch + `flutter test` 445 pass ở root
+(440+5 mới), 29 pass ở `example/`. Device smoke trên Pixel 7 Pro thật —
+vẽ 6 slice đúng màu/label, bấm Spin quay + settle đúng vị trí, không
+exception.
 
 ## Ghi chú độ tin cậy
 Trung bình — hữu ích rõ ràng nhưng effort lớn hơn hẳn các widget khác trong
