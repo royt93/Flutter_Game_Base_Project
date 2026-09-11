@@ -81,6 +81,9 @@ class _SpotlightOverlayState extends State<SpotlightOverlay> {
   Widget build(BuildContext context) {
     final rect = _targetRect;
     final screenSize = MediaQuery.of(context).size;
+    final entranceDuration = NeonTheme.reducedMotion(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 250);
     return Stack(
       children: [
         Positioned.fill(
@@ -89,15 +92,26 @@ class _SpotlightOverlayState extends State<SpotlightOverlay> {
           // `NeonDialog.overlay`'s barrier.
           child: GestureDetector(
             onTap: widget.onDismiss,
-            child: CustomPaint(
-              key: const Key('spotlightOverlayPainter'),
-              painter: SpotlightHolePainter(
-                hole: rect,
-                radius: widget.holeRadius,
-                dimColor:
-                    widget.dimColor ?? Colors.black.withValues(alpha: 0.72),
+            // Plain fade (no bounce — a bounce on a full-screen dim would
+            // look off) so the very first appearance isn't a hard snap,
+            // matching every other overlay in the kit
+            // (NeonDialog/ToastBanner/RewardPopup all animate in).
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: 1),
+              duration: entranceDuration,
+              curve: Curves.easeOut,
+              builder: (context, t, child) =>
+                  Opacity(opacity: t.clamp(0.0, 1.0), child: child),
+              child: CustomPaint(
+                key: const Key('spotlightOverlayPainter'),
+                painter: SpotlightHolePainter(
+                  hole: rect,
+                  radius: widget.holeRadius,
+                  dimColor:
+                      widget.dimColor ?? Colors.black.withValues(alpha: 0.72),
+                ),
+                child: const SizedBox.expand(),
               ),
-              child: const SizedBox.expand(),
             ),
           ),
         ),
@@ -110,6 +124,7 @@ class _SpotlightOverlayState extends State<SpotlightOverlay> {
             buttonLabel: widget.buttonLabel,
             color: widget.color ?? NeonTheme.purple,
             onDismiss: widget.onDismiss,
+            entranceDuration: entranceDuration,
           ),
       ],
     );
@@ -167,6 +182,7 @@ class _Callout extends StatelessWidget {
     required this.buttonLabel,
     required this.color,
     required this.onDismiss,
+    required this.entranceDuration,
   });
 
   final Rect rect;
@@ -176,6 +192,7 @@ class _Callout extends StatelessWidget {
   final String buttonLabel;
   final Color color;
   final VoidCallback onDismiss;
+  final Duration entranceDuration;
 
   @override
   Widget build(BuildContext context) {
@@ -186,47 +203,56 @@ class _Callout extends StatelessWidget {
       right: NeonTheme.s24,
       top: placeBelow ? rect.bottom + NeonTheme.s16 : null,
       bottom: placeBelow ? null : screenSize.height - rect.top + NeonTheme.s16,
-      child: PanelCard(
-        borderColor: color,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (title != null) ...[
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: 1),
+        duration: entranceDuration,
+        curve: Curves.easeOutBack,
+        builder: (context, t, child) => Opacity(
+          opacity: t.clamp(0.0, 1.0),
+          child: Transform.scale(scale: 0.85 + 0.15 * t, child: child),
+        ),
+        child: PanelCard(
+          borderColor: color,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (title != null) ...[
+                Text(
+                  title!,
+                  style: TextStyle(
+                    color: NeonTheme.ink,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: NeonTheme.s8),
+              ],
               Text(
-                title!,
+                message,
                 style: TextStyle(
-                  color: NeonTheme.ink,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
+                  color: NeonTheme.inkSoft,
+                  fontSize: 14,
+                  height: 1.4,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: NeonTheme.s8),
-            ],
-            Text(
-              message,
-              style: TextStyle(
-                color: NeonTheme.inkSoft,
-                fontSize: 14,
-                height: 1.4,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: NeonTheme.s16),
-            Align(
-              alignment: Alignment.centerRight,
-              child: SizedBox(
-                width: 120,
-                child: NeonDialogButton(
-                  action: NeonDialogAction(
-                    label: buttonLabel,
-                    color: color,
-                    onTap: onDismiss,
+              const SizedBox(height: NeonTheme.s16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: SizedBox(
+                  width: 120,
+                  child: NeonDialogButton(
+                    action: NeonDialogAction(
+                      label: buttonLabel,
+                      color: color,
+                      onTap: onDismiss,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

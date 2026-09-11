@@ -79,7 +79,17 @@ class ToastBanner extends StatelessWidget {
     final slide = Tween<Offset>(
       begin: const Offset(0, -0.3),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOutBack));
+    ).animate(
+      CurvedAnimation(
+        parent: controller,
+        curve: Curves.easeOutBack,
+        // Không dùng lại easeOutBack cho chiều đóng — overshoot của nó rơi
+        // ngay lúc bắt đầu reverse(), làm toast "nảy ngược" một nhịp trước
+        // khi trượt lên. Cùng quy ước `neon_dialog.dart`'s
+        // `_kDialogCurve`/`Curves.easeIn`: vào bouncy, ra êm.
+        reverseCurve: Curves.easeIn,
+      ),
+    );
 
     Future<void> remove() async {
       if (!entry.mounted) return;

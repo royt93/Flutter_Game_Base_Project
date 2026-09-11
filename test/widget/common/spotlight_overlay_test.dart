@@ -105,4 +105,56 @@ void main() {
     expect(painter.hole, isNull);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'ENH-27: callout có entrance animation (scale+fade, easeOutBack, 250ms)',
+    (tester) async {
+      final targetKey = GlobalKey();
+      await tester.pumpWidget(harness(targetKey));
+      await tester.pump();
+
+      final builders = tester.widgetList<TweenAnimationBuilder<double>>(
+        find.byType(TweenAnimationBuilder<double>),
+      );
+      final calloutBuilder = builders.firstWhere(
+        (b) => b.curve == Curves.easeOutBack,
+      );
+      expect(calloutBuilder.duration, const Duration(milliseconds: 250));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'ENH-27: scrim có fade-in riêng (AnimatedOpacity/TweenAnimationBuilder), không throw',
+    (tester) async {
+      final targetKey = GlobalKey();
+      await tester.pumpWidget(harness(targetKey));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byKey(const Key('spotlightOverlayPainter')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'ENH-27: Reduce Motion bật → entrance collapse (duration = 0), UI vẫn hiện đúng',
+    (tester) async {
+      final targetKey = GlobalKey();
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: harness(targetKey),
+        ),
+      );
+      await tester.pump();
+
+      final builders = tester.widgetList<TweenAnimationBuilder<double>>(
+        find.byType(TweenAnimationBuilder<double>),
+      );
+      expect(builders.every((b) => b.duration == Duration.zero), isTrue);
+      expect(find.text('Bước 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

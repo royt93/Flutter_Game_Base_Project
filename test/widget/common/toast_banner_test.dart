@@ -90,6 +90,60 @@ void main() {
     },
   );
 
+  testWidgets(
+    'ENH-26: đóng (reverse) không overshoot ngược — offset.dy không vượt quá 0 lúc bắt đầu đóng',
+    (tester) async {
+      late BuildContext ctx;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              ctx = context;
+              return const Scaffold(body: SizedBox());
+            },
+          ),
+        ),
+      );
+
+      ToastBanner.show(
+        ctx,
+        message: 'Saved!',
+        duration: const Duration(milliseconds: 500),
+      );
+
+      // Vào hẳn trạng thái mở, chưa hết duration (giống timing test dưới
+      // đã proven ổn định), rồi băng qua mốc 500ms bằng bước nhỏ để rơi
+      // đúng vào những frame đầu của reverse (180ms).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 250));
+      // reverse() vừa được kích hoạt bởi timer trong pump ở trên nhưng
+      // ticker chưa kịp tiến (elapsed ~0) — cần thêm 1 pump nhỏ để nó thực
+      // sự chạy vài ms đầu.
+      await tester.pump(const Duration(milliseconds: 20));
+
+      // Lấy mẫu ngay khi vừa qua mốc (~50ms đầu của reverse) — với curve cũ
+      // (easeOutBack dùng chung cho cả 2 chiều, không có reverseCurve), đây
+      // là lúc offset.dy > 0 rõ nhất (banner nảy NGƯỢC xuống dưới vị trí
+      // nghỉ). Sau fix (reverseCurve: easeIn), dy phải <= 0 luôn.
+      final slideTransition = tester.widget<SlideTransition>(
+        find.ancestor(
+          of: find.text('Saved!'),
+          matching: find.byType(SlideTransition),
+        ),
+      );
+      expect(
+        slideTransition.position.value.dy,
+        lessThanOrEqualTo(0.001),
+      );
+
+      // Dọn hết timer/ticker còn lại trước khi test kết thúc, tránh leak
+      // sang test sau.
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('ToastBanner (widget trần) render đúng message truyền vào', (
     tester,
   ) async {
