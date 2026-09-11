@@ -6,7 +6,13 @@ import '../../../core/neon_theme.dart';
 /// a marker the fill has passed lights up (filled), otherwise it stays a
 /// dim outline. Used for world progress / event tracks like "reach
 /// 33%/66%/100% to unlock a star".
-class ProgressBarStars extends StatelessWidget {
+///
+/// A marker pops (scale bounce) the moment [progress] crosses its
+/// threshold — same "earned a star" moment `StarRating` already animates —
+/// but never on initial mount even if that threshold is already met (a
+/// `StatefulWidget` starting all its markers at rest avoids every
+/// already-earned star popping in unison on first build).
+class ProgressBarStars extends StatefulWidget {
   const ProgressBarStars({
     super.key,
     required this.progress,
@@ -26,25 +32,63 @@ class ProgressBarStars extends StatelessWidget {
   final Color? trackColor;
 
   @override
+  State<ProgressBarStars> createState() => _ProgressBarStarsState();
+}
+
+class _ProgressBarStarsState extends State<ProgressBarStars>
+    with TickerProviderStateMixin {
+  final Map<double, AnimationController> _controllers = {};
+
+  AnimationController _controllerFor(double t) {
+    return _controllers.putIfAbsent(
+      t,
+      () => AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 300),
+        value: 1.0,
+      ),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant ProgressBarStars old) {
+    super.didUpdateWidget(old);
+    if (NeonTheme.reducedMotion(context)) return;
+    final p = widget.progress.clamp(0.0, 1.0);
+    final oldP = old.progress.clamp(0.0, 1.0);
+    for (final t in widget.starThresholds) {
+      if (oldP < t && p >= t) _controllerFor(t).forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final p = progress.clamp(0.0, 1.0);
-    final fill = fillColor ?? NeonTheme.lime;
-    final track = trackColor ?? NeonTheme.cardAlt;
+    final p = widget.progress.clamp(0.0, 1.0);
+    final fill = widget.fillColor ?? NeonTheme.lime;
+    final track = widget.trackColor ?? NeonTheme.cardAlt;
     return LayoutBuilder(
       builder: (context, constraints) {
         final w = constraints.maxWidth;
         return SizedBox(
-          height: height + 10,
+          height: widget.height + 10,
           child: Stack(
             clipBehavior: Clip.none,
             alignment: Alignment.bottomLeft,
             children: [
               Container(
                 width: w,
-                height: height,
+                height: widget.height,
                 decoration: BoxDecoration(
                   color: track,
-                  borderRadius: BorderRadius.circular(height),
+                  borderRadius: BorderRadius.circular(widget.height),
                   border: Border.all(color: NeonTheme.muted, width: 2),
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -59,10 +103,10 @@ class ProgressBarStars extends StatelessWidget {
                     builder: (context, t, _) => FractionallySizedBox(
                       widthFactor: t,
                       child: Container(
-                        height: height,
+                        height: widget.height,
                         decoration: BoxDecoration(
                           color: fill,
-                          borderRadius: BorderRadius.circular(height),
+                          borderRadius: BorderRadius.circular(widget.height),
                           boxShadow: NeonTheme.glow(
                             fill,
                             blur: 10,
@@ -74,17 +118,29 @@ class ProgressBarStars extends StatelessWidget {
                   ),
                 ),
               ),
-              for (final t in starThresholds)
+              for (final t in widget.starThresholds)
                 Positioned(
                   left: (w * t.clamp(0.0, 1.0) - 12).clamp(0.0, w - 24),
-                  bottom: height - 6,
-                  child: Icon(
-                    p >= t ? Icons.star_rounded : Icons.star_outline_rounded,
-                    size: 24,
-                    color: p >= t ? NeonTheme.gold : NeonTheme.muted,
-                    shadows: p >= t
-                        ? [Shadow(color: NeonTheme.gold, blurRadius: 8)]
-                        : null,
+                  bottom: widget.height - 6,
+                  child: AnimatedBuilder(
+                    animation: _controllerFor(t),
+                    builder: (context, child) {
+                      final scale = Tween<double>(begin: 0.6, end: 1.0)
+                          .transform(
+                            Curves.easeOutBack.transform(
+                              _controllerFor(t).value,
+                            ),
+                          );
+                      return Transform.scale(scale: scale, child: child);
+                    },
+                    child: Icon(
+                      p >= t ? Icons.star_rounded : Icons.star_outline_rounded,
+                      size: 24,
+                      color: p >= t ? NeonTheme.gold : NeonTheme.muted,
+                      shadows: p >= t
+                          ? [Shadow(color: NeonTheme.gold, blurRadius: 8)]
+                          : null,
+                    ),
                   ),
                 ),
             ],

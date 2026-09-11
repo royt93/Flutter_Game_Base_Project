@@ -123,4 +123,116 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  // x-scale (m11) của ma trận — không dùng `getMaxScaleOnAxis()` (đã verify
+  // qua debug script: trả sai giá trị cho ma trận scale thuần trong bản
+  // Flutter này), đọc trực tiếp phần tử ma trận thay thế.
+  double starScaleOf(WidgetTester tester, IconData icon) {
+    final transform = tester.widget<Transform>(
+      find.ancestor(
+        of: find.byIcon(icon).first,
+        matching: find.byType(Transform),
+      ),
+    );
+    return transform.transform.storage[0];
+  }
+
+  testWidgets(
+    'ENH-32: mount lần đầu đã đạt sẵn 1 sao → không pop (scale = 1.0 ngay)',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Center(
+              child: SizedBox(width: 300, child: ProgressBarStars(progress: 0.5)),
+            ),
+          ),
+        ),
+      );
+
+      expect(starScaleOf(tester, Icons.star_rounded), 1.0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'ENH-32: vượt ngưỡng mới (progress tăng qua 1 threshold) → sao đó pop',
+    (tester) async {
+      var progress = 0.5; // đã qua 0.33, chưa qua 0.66
+      late StateSetter setProgress;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Center(
+              child: SizedBox(
+                width: 300,
+                child: StatefulBuilder(
+                  builder: (context, setState) {
+                    setProgress = setState;
+                    return ProgressBarStars(progress: progress);
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      setProgress(() => progress = 0.7); // vượt ngưỡng 0.66
+      await tester.pump();
+
+      expect(find.byIcon(Icons.star_rounded), findsNWidgets(2));
+      // Sao vừa đạt (ngưỡng 0.66) đang giữa chừng pop — không phải cả 2 sao
+      // đều ở scale 1.0 cùng lúc.
+      final scales = tester
+          .widgetList<Transform>(
+            find.ancestor(
+              of: find.byIcon(Icons.star_rounded),
+              matching: find.byType(Transform),
+            ),
+          )
+          .map((t) => t.transform.storage[0])
+          .toList();
+      expect(scales.any((s) => s != 1.0), isTrue);
+
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'ENH-32: Reduce Motion bật → không animate khi vượt ngưỡng',
+    (tester) async {
+      var progress = 0.5;
+      late StateSetter setProgress;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: Center(
+                child: SizedBox(
+                  width: 300,
+                  child: StatefulBuilder(
+                    builder: (context, setState) {
+                      setProgress = setState;
+                      return ProgressBarStars(progress: progress);
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      setProgress(() => progress = 0.7);
+      await tester.pump();
+
+      expect(find.byIcon(Icons.star_rounded), findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
