@@ -59,59 +59,70 @@ class GameOverCardTemplate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = accentColor ?? NeonTheme.muted;
-    return PanelCard(
-      borderColor: accent,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, color: accent, size: 48),
-            const SizedBox(height: NeonTheme.s16),
-          ],
-          StrokeText(title, fontSize: 22, color: accent),
-          if (message != null) ...[
-            const SizedBox(height: NeonTheme.s8),
-            Text(
-              message!,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: NeonTheme.inkSoft,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-          if (statLines.isNotEmpty) const SizedBox(height: NeonTheme.s16),
-          for (final line in statLines)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Text(
-                line,
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: NeonTheme.reducedMotion(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 320),
+      curve: Curves.easeOutBack,
+      builder: (context, t, child) => Opacity(
+        opacity: t.clamp(0.0, 1.0),
+        child: Transform.scale(scale: 0.85 + 0.15 * t, child: child),
+      ),
+      child: PanelCard(
+        borderColor: accent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: accent, size: 48),
+              const SizedBox(height: NeonTheme.s16),
+            ],
+            StrokeText(title, fontSize: 22, color: accent),
+            if (message != null) ...[
+              const SizedBox(height: NeonTheme.s8),
+              Text(
+                message!,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: NeonTheme.ink,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+                  color: NeonTheme.inkSoft,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
-          const SizedBox(height: NeonTheme.s16),
-          CommonButton(
-            label: primaryActionLabel,
-            color: accent,
-            onTap: onPrimaryAction,
-          ),
-          if (secondaryActionLabel != null) ...[
-            const SizedBox(height: NeonTheme.s8),
+            ],
+            if (statLines.isNotEmpty) const SizedBox(height: NeonTheme.s16),
+            for (final line in statLines)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text(
+                  line,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: NeonTheme.ink,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            const SizedBox(height: NeonTheme.s16),
             CommonButton(
-              label: secondaryActionLabel,
-              variant: CommonButtonVariant.secondary,
+              label: primaryActionLabel,
               color: accent,
-              onTap: onSecondaryAction,
+              onTap: onPrimaryAction,
             ),
+            if (secondaryActionLabel != null) ...[
+              const SizedBox(height: NeonTheme.s8),
+              CommonButton(
+                label: secondaryActionLabel,
+                variant: CommonButtonVariant.secondary,
+                color: accent,
+                onTap: onSecondaryAction,
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

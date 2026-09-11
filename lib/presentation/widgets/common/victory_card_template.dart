@@ -73,45 +73,56 @@ class VictoryCardTemplate extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = accentColor ?? NeonTheme.gold;
     final hasQr = qrData != null && qrData!.isNotEmpty;
-    return PanelCard(
-      borderColor: accent,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          if (avatar != null) ...[
-            AvatarFrame(color: accent, size: 88, child: avatar!),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: NeonTheme.reducedMotion(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 320),
+      curve: Curves.easeOutBack,
+      builder: (context, t, child) => Opacity(
+        opacity: t.clamp(0.0, 1.0),
+        child: Transform.scale(scale: 0.85 + 0.15 * t, child: child),
+      ),
+      child: PanelCard(
+        borderColor: accent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (avatar != null) ...[
+              AvatarFrame(color: accent, size: 88, child: avatar!),
+              const SizedBox(height: NeonTheme.s16),
+            ],
+            StrokeText(title, fontSize: 22, color: accent),
             const SizedBox(height: NeonTheme.s16),
-          ],
-          StrokeText(title, fontSize: 22, color: accent),
-          const SizedBox(height: NeonTheme.s16),
-          for (final line in statLines)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Text(
-                line,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: NeonTheme.ink,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+            for (final line in statLines)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text(
+                  line,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: NeonTheme.ink,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
-          if (hasQr) ...[
-            const SizedBox(height: NeonTheme.s16),
-            QrImageView(data: qrData!, size: 96),
-            const SizedBox(height: NeonTheme.s8),
-            Text(
-              'Scan to play',
-              style: TextStyle(
-                color: NeonTheme.inkSoft,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            if (hasQr) ...[
+              const SizedBox(height: NeonTheme.s16),
+              QrImageView(data: qrData!, size: 96),
+              const SizedBox(height: NeonTheme.s8),
+              Text(
+                'Scan to play',
+                style: TextStyle(
+                  color: NeonTheme.inkSoft,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

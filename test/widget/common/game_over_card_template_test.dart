@@ -101,5 +101,51 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+      'ENH-34: có entrance animation (scale+fade, easeOutBack, 320ms)',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            GameOverCardTemplate(
+              title: 'Out of moves!',
+              primaryActionLabel: 'Retry',
+              onPrimaryAction: () {},
+            ),
+          ),
+        );
+
+        final builder = tester.widget<TweenAnimationBuilder<double>>(
+          find.byType(TweenAnimationBuilder<double>),
+        );
+        expect(builder.duration, const Duration(milliseconds: 320));
+        expect(builder.curve, Curves.easeOutBack);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'ENH-34: Reduce Motion bật → entrance animation collapse (duration = 0)',
+      (tester) async {
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: _wrap(
+              GameOverCardTemplate(
+                title: 'Out of moves!',
+                primaryActionLabel: 'Retry',
+                onPrimaryAction: () {},
+              ),
+            ),
+          ),
+        );
+
+        final builder = tester.widget<TweenAnimationBuilder<double>>(
+          find.byType(TweenAnimationBuilder<double>),
+        );
+        expect(builder.duration, Duration.zero);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

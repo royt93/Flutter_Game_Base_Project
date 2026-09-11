@@ -100,4 +100,52 @@ void main() {
     expect(find.byType(QrImageView), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'ENH-34: có entrance animation (scale+fade, easeOutBack, 320ms)',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: VictoryCardTemplate(
+              title: 'Level 1 Complete!',
+              statLines: ['Score: 100'],
+            ),
+          ),
+        ),
+      );
+
+      final builder = tester.widget<TweenAnimationBuilder<double>>(
+        find.byType(TweenAnimationBuilder<double>),
+      );
+      expect(builder.duration, const Duration(milliseconds: 320));
+      expect(builder.curve, Curves.easeOutBack);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'ENH-34: Reduce Motion bật → entrance animation collapse (duration = 0)',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: const MaterialApp(
+            home: Material(
+              child: VictoryCardTemplate(
+                title: 'Level 1 Complete!',
+                statLines: ['Score: 100'],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final builder = tester.widget<TweenAnimationBuilder<double>>(
+        find.byType(TweenAnimationBuilder<double>),
+      );
+      expect(builder.duration, Duration.zero);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
