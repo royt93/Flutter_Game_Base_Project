@@ -33,6 +33,21 @@ fade, `Curves.easeOutBack`, ~320ms), tôn trọng `NeonTheme.reducedMotion`
 (duration → `Duration.zero` khi bật, đúng pattern đã áp dụng toàn kit).
 
 ## Acceptance criteria
-- [ ] Cả 2 widget có entrance scale+fade khớp `RewardPopup`'s hiệu ứng.
-- [ ] `NeonTheme.reducedMotion` → animation collapse, không throw.
-- [ ] Test xác nhận animation chạy + reducedMotion path.
+- [x] Cả 2 widget có entrance scale+fade khớp `RewardPopup`'s hiệu ứng.
+- [x] `NeonTheme.reducedMotion` → animation collapse, không throw.
+- [x] Test xác nhận animation chạy + reducedMotion path.
+
+## Quyết định
+Bọc y hệt `RewardPopup`'s pattern: `TweenAnimationBuilder<double>(tween:
+Tween(0,1), curve: easeOutBack, 320ms)` → `Opacity(t.clamp(0,1))` +
+`Transform.scale(0.85+0.15*t)`, bọc quanh `PanelCard(...)` return sẵn có
+của cả 2 widget (chỉ thêm layer bọc ngoài, không đổi nội dung bên trong).
+Test: assert `TweenAnimationBuilder<double>`'s `duration`/`curve` đúng giá
+trị, và `duration = Duration.zero` khi `reducedMotion` bật. Verify:
+`flutter analyze` sạch + `flutter test` 457 pass ở root (453+4 mới), 29
+pass ở `example/` (bao gồm test `VictoryCardTemplate` dùng
+`RepaintBoundary`+`share_helper` — vẫn pass, xác nhận layer bọc mới không
+phá luồng share). Device smoke Pixel 7 Pro thật: cả 2 template render
+đúng, settled state (opacity=1, scale=1) không méo, không exception —
+không chụp được khoảnh khắc entrance vì widget mount ngay lúc load
+màn hình (trước khi cuộn tới), animation đã xong từ trước.
