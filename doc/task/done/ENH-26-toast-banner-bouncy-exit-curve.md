@@ -50,5 +50,19 @@ Thêm `reverseCurve: Curves.easeIn` (khớp `_kDialogCurve`/`Curves.easeIn`
 pattern của `neon_dialog.dart`) vào `CurvedAnimation` của `slide`.
 
 ## Acceptance criteria
-- [ ] `ToastBanner`'s `CurvedAnimation` có `reverseCurve` riêng (không bouncy) cho chiều đóng.
-- [ ] Test xác nhận `reverseCurve` được set đúng (hoặc test hành vi: giá trị animation không vượt quá [0,1] theo hướng ngược trong vài frame đầu của `reverse()`).
+- [x] `ToastBanner`'s `CurvedAnimation` có `reverseCurve` riêng (không bouncy) cho chiều đóng.
+- [x] Test xác nhận `reverseCurve` được set đúng (hoặc test hành vi: giá trị animation không vượt quá [0,1] theo hướng ngược trong vài frame đầu của `reverse()`).
+
+## Quyết định
+Thêm đúng `reverseCurve: Curves.easeIn` như đề xuất. Test theo hướng hành
+vi (không đọc trực tiếp field vì `slide` là biến cục bộ trong static
+method, không expose ra ngoài): dựng toast thật, băng qua mốc `duration`
+bằng đúng timing pattern đã proven ổn định ở test khác trong file (pump
+300ms rồi 250ms), sau đó pump thêm 20ms để ticker của `reverse()` (vừa
+được kích hoạt bởi timer) có thời gian chạy, rồi đọc trực tiếp
+`SlideTransition.position.value.dy` — xác nhận fail đúng lý do trước khi
+sửa (đo được dy tăng dần tới ~0.026, chứng minh overshoot ngược có thật),
+pass sau khi thêm `reverseCurve`. Verify: `flutter analyze` sạch +
+`flutter test` 461 pass ở root (457+4, gộp chung ENH-26+27), 29 pass ở
+`example/`. Device smoke Pixel 7 Pro thật: bấm Show toast, toast hiện
+đúng, không exception.

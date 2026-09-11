@@ -45,7 +45,25 @@ tôn trọng `NeonTheme.reducedMotion(context)` (đã có tiền lệ ENH-17/ENH
 — animation collapse còn UI vẫn hiện đúng ngay lập tức.
 
 ## Acceptance criteria
-- [ ] Scrim + `_Callout` có entrance animation (không còn xuất hiện tức thì) khi `SpotlightOverlay` mount.
-- [ ] `NeonTheme.reducedMotion(context)` bật → animation collapse về `Duration.zero`, UI vẫn hiện đúng.
-- [ ] `TutorialSequence`'s demo (đã có, compose `SpotlightOverlay`) hưởng animation này mà không cần sửa gì thêm ở `tutorial_sequence.dart`.
-- [ ] Test mới xác nhận animation chạy đúng + reducedMotion collapse đúng.
+- [x] Scrim + `_Callout` có entrance animation (không còn xuất hiện tức thì) khi `SpotlightOverlay` mount.
+- [x] `NeonTheme.reducedMotion(context)` bật → animation collapse về `Duration.zero`, UI vẫn hiện đúng.
+- [x] `TutorialSequence`'s demo (đã có, compose `SpotlightOverlay`) hưởng animation này mà không cần sửa gì thêm ở `tutorial_sequence.dart`.
+- [x] Test mới xác nhận animation chạy đúng + reducedMotion collapse đúng.
+
+## Quyết định
+Scrim: bọc `CustomPaint` trong `TweenAnimationBuilder<double>` (0→1,
+`Curves.easeOut`, 250ms) áp `Opacity` — fade thuần, không bounce (bounce
+trên dim toàn màn hình sẽ trông lạ). Callout: thêm `entranceDuration`
+param cho `_Callout`, bọc `PanelCard` (child của `Positioned`, KHÔNG bọc
+`Positioned` từ ngoài — `Positioned` bắt buộc phải là con trực tiếp của
+`Stack`, bọc `_Callout` bằng `TweenAnimationBuilder` từ Stack gây lỗi
+"Incorrect use of ParentDataWidget", phát hiện qua test fail thật) trong
+`TweenAnimationBuilder<double>` cùng pattern `RewardPopup`
+(scale 0.85→1.0 + fade, `easeOutBack`, 250ms). `TutorialSequence` không
+cần sửa gì (compose `SpotlightOverlay` nguyên trạng, hưởng animation tự
+động). Verify: `flutter analyze` sạch + `flutter test` 461 pass ở root, 29
+pass ở `example/` (gồm test `SpotlightOverlay` demo hiện có — không
+regression). Device smoke Pixel 7 Pro thật: bấm Start tutorial, scrim
+hiện đúng (settled state, không exception) — target ngoài màn hình lúc đó
+nên không chụp được khoảnh khắc entrance chính xác, cùng hạn chế đã ghi
+nhận ở IDEA-14/TutorialSequence.
