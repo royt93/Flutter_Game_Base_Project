@@ -46,6 +46,17 @@ xe — có thể lấy màu segment đang thắng hoặc 1 màu cố định nh�
 `ProgressBarStars`' marker).
 
 ## Acceptance criteria
-- [ ] Rim của `WheelSpinner` có glow, nhất quán với `RewardPopup`/`ProgressBarStars`.
-- [ ] Pointer icon có glow/shadow.
-- [ ] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test.
+- [x] Rim của `WheelSpinner` có glow, nhất quán với `RewardPopup`/`ProgressBarStars`.
+- [x] Pointer icon có glow/shadow.
+- [x] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test.
+
+## Quyết định
+Rim: thêm 1 `drawCircle` glow (stroke rộng 10px, màu gold alpha 0.5,
+`MaskFilter.blur`) vẽ trước rim chính, cùng kỹ thuật ENH-30. Pointer: bọc
+`Icon` trong `Container(decoration: BoxDecoration(shape: circle, boxShadow:
+NeonTheme.glow(NeonTheme.gold, blur: 10)))` — dùng `boxShadow` được vì đây
+là widget thường (`Container`), không phải canvas. Test: `painter.paint()`
+qua `PictureRecorder` không throw + assert `Container` bọc pointer có
+`boxShadow` non-null. Verify: `flutter analyze` sạch + `flutter test` 453
+pass ở root, 29 pass ở `example/`. Device smoke Pixel 7 Pro thật: rim +
+pointer đều có quầng vàng rõ ràng, đúng "candy" style.

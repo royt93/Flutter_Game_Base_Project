@@ -27,8 +27,20 @@ phong cách khác nhau.
 - `ShopItemCard`: bọc `Icon` trong 1 `Container` tròn nhỏ (giống `EmptyStatePlaceholder`) kèm glow nhẹ, thay vì icon nổi trần trên card.
 
 ## Acceptance criteria
-- [ ] Cả 2 widget có glow/backdrop nhất quán với `AvatarFrame`'s treatment.
-- [ ] Golden test (nếu có) cập nhật khớp thay đổi.
+- [x] Cả 2 widget có glow/backdrop nhất quán với `AvatarFrame`'s treatment.
+- [x] Golden test (nếu có) cập nhật khớp thay đổi.
+
+## Quyết định
+`EmptyStatePlaceholder`: thêm `boxShadow: NeonTheme.glow(color, blur: 10,
+intensity: 0.4)` vào `Container` bọc icon sẵn có (nhẹ hơn `AvatarFrame` vì
+đây là trạng thái "rỗng"). `ShopItemCard`: bọc `Icon` trần trong 1
+`Container` tròn mới (padding + cùng glow treatment) thay vì để nổi trần
+trên card — golden `shop_item_card_basic.png`/`shop_item_card_ribbon.png`
+đã update qua `--update-goldens` do đổi visual thật. Verify: `flutter
+analyze` sạch + `flutter test` 453 pass ở root, 29 pass ở `example/`.
+Device smoke Pixel 7 Pro thật: cả 2 icon đều có quầng sáng nhẹ, đọc "cùng 1
+hệ thống thiết kế" với `AvatarFrame` — xác nhận trực tiếp không quá nổi
+bật/rối.
 
 ## Ghi chú độ tin cậy
 Thấp — thuần cải thiện thẩm mỹ chủ quan, không sai gì hiện tại. Nên xem

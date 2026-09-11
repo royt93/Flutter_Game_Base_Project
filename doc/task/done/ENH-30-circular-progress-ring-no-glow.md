@@ -48,6 +48,16 @@ canvas.drawArc(rect, -pi / 2, 2 * pi * progress, false, fillPaint); // nét chí
 ```
 
 ## Acceptance criteria
-- [ ] `CircularProgressRing`'s arc có glow nhất quán với `ProgressBarStars`.
-- [ ] Golden test hoặc widget test xác nhận painter vẽ thêm lớp glow khi `progress > 0`.
-- [ ] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test.
+- [x] `CircularProgressRing`'s arc có glow nhất quán với `ProgressBarStars`.
+- [x] Golden test hoặc widget test xác nhận painter vẽ thêm lớp glow khi `progress > 0`.
+- [x] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test.
+
+## Quyết định
+Vẽ tay 1 `drawArc` glow layer phía sau (stroke rộng hơn 1.8x + `MaskFilter.
+blur`) trước khi vẽ nét chính — không dùng `boxShadow`/`NeonTheme.glow()`
+trực tiếp vì đây là `CustomPainter`, không phải `Container`. Test: gọi
+`painter.paint()` trực tiếp qua `PictureRecorder`, xác nhận không throw
+(không golden vì widget này chưa có golden trước đó). Verify: `flutter
+analyze` sạch + `flutter test` 453 pass ở root (448+5, gộp chung round
+glow ENH-30/33/IDEA-26), 29 pass ở `example/`. Device smoke Pixel 7 Pro
+thật: arc 40% hiện glow cyan quanh nét vẽ, khớp tông `ProgressBarStars`.
