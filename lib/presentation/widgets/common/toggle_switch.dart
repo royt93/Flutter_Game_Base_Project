@@ -51,8 +51,10 @@ class CandyToggleSwitch extends StatelessWidget {
           child: AnimatedAlign(
             duration: NeonTheme.reducedMotion(context)
                 ? Duration.zero
-                : const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
+                : const Duration(milliseconds: 220),
+            // Chỉ thumb (vị trí) nảy — track (màu) giữ easeOut phẳng ở trên,
+            // vì đổi màu không có khái niệm "overshoot" hợp lý.
+            curve: Curves.easeOutBack,
             alignment: value ? Alignment.centerRight : Alignment.centerLeft,
             child: Container(
               width: 20,

@@ -84,6 +84,28 @@ void main() {
   });
 
   testWidgets(
+    'ENH-23: thumb (AnimatedAlign) dùng easeOutBack (nảy), track (AnimatedContainer) vẫn easeOut',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: CandyToggleSwitch(value: false, onChanged: (_) {}),
+          ),
+        ),
+      );
+
+      expect(
+        tester.widget<AnimatedAlign>(find.byType(AnimatedAlign)).curve,
+        Curves.easeOutBack,
+      );
+      expect(
+        tester.widget<AnimatedContainer>(find.byType(AnimatedContainer)).curve,
+        Curves.easeOut,
+      );
+    },
+  );
+
+  testWidgets(
     'ENH-17: Reduce Motion bật → AnimatedContainer/AnimatedAlign duration = 0',
     (tester) async {
       await tester.pumpWidget(

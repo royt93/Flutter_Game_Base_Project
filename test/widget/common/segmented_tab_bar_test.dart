@@ -64,6 +64,27 @@ void main() {
     );
   });
 
+  testWidgets('ENH-24: pill indicator (AnimatedAlign) dùng easeOutBack (nảy)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: SegmentedTabBar(
+            labels: const ['A', 'B'],
+            selectedIndex: 0,
+            onChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.widget<AnimatedAlign>(find.byType(AnimatedAlign)).curve,
+      Curves.easeOutBack,
+    );
+  });
+
   testWidgets(
     'ENH-20: Reduce Motion bật → AnimatedAlign duration = 0 (không tween)',
     (tester) async {
