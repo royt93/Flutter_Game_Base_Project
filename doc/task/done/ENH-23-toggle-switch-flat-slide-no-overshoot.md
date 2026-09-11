@@ -36,8 +36,16 @@ cho color tween) — chỉ đổi curve của phần chuyển động vị trí 
 ## Acceptance criteria
 - [ ] `AnimatedAlign`'s curve đổi sang có overshoot, track color giữ nguyên `easeOut`.
 - [ ] Vẫn tôn trọng `NeonTheme.reducedMotion` (đã có sẵn, không đổi).
-- [ ] Test xác nhận thumb animation dùng đúng curve mới, reducedMotion vẫn duration = 0.
-- [ ] Device smoke test: bật/tắt toggle vài lần trên máy thật, xác nhận thumb có cảm giác "nảy" nhẹ chứ không máy móc.
+- [x] Test xác nhận thumb animation dùng đúng curve mới, reducedMotion vẫn duration = 0.
+- [x] Device smoke test: bật/tắt toggle vài lần trên máy thật, xác nhận thumb có cảm giác "nảy" nhẹ chứ không máy móc.
+
+## Quyết định
+Chỉ đổi `AnimatedAlign` (vị trí thumb) sang `Curves.easeOutBack` + tăng
+duration 180ms → 220ms cho bounce đọc được; `AnimatedContainer` (màu track)
+giữ nguyên `Curves.easeOut` — đổi màu không có khái niệm overshoot hợp lý.
+Cùng pattern ENH-22. Verify: `flutter analyze` sạch + `flutter test` 448
+pass ở root (446+2 mới, gộp chung với ENH-24), 29 pass ở `example/`. Device
+smoke Pixel 7 Pro thật: bật/tắt toggle nhiều lần, không crash/exception.
 
 ## Ghi chú độ tin cậy
 Trung bình-cao — nhận định "phẳng, không overshoot" là khách quan (đọc
