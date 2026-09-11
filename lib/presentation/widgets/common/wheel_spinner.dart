@@ -167,10 +167,16 @@ class _WheelSpinnerState extends State<WheelSpinner>
           ),
           Positioned(
             top: -12,
-            child: Icon(
-              Icons.arrow_drop_down_rounded,
-              size: 44,
-              color: NeonTheme.ink,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: NeonTheme.glow(NeonTheme.gold, blur: 10),
+              ),
+              child: Icon(
+                Icons.arrow_drop_down_rounded,
+                size: 44,
+                color: NeonTheme.ink,
+              ),
             ),
           ),
         ],
@@ -230,6 +236,18 @@ class WheelSpinnerPainter extends CustomPainter {
       canvas.restore();
     }
 
+    // Glow behind the rim (same "wider blurred stroke" technique as
+    // CircularProgressRing/ENH-30) so the wheel reads as a "reward moment"
+    // like RewardPopup/ProgressBarStars rather than a plain flat circle.
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 10
+        ..color = NeonTheme.gold.withValues(alpha: 0.5)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+    );
     canvas.drawCircle(
       center,
       radius,

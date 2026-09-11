@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/wheel_spinner.dart';
@@ -124,6 +126,56 @@ void main() {
         ),
         throwsAssertionError,
       );
+    });
+
+    testWidgets('ENH-33: rim vẽ glow layer phía sau, không throw', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          WheelSpinner(
+            segments: segments,
+            controller: WheelSpinnerController(),
+            onSpinEnd: (_) {},
+          ),
+        ),
+      );
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final painter =
+          tester
+                  .widget<CustomPaint>(
+                    find.byKey(const Key('wheelSpinnerPainter')),
+                  )
+                  .painter
+              as CustomPainter;
+      painter.paint(canvas, const Size(260, 260));
+      recorder.endRecording().dispose();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ENH-33: pointer có glow backdrop', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          WheelSpinner(
+            segments: segments,
+            controller: WheelSpinnerController(),
+            onSpinEnd: (_) {},
+          ),
+        ),
+      );
+
+      final container = tester.widget<Container>(
+        find.ancestor(
+          of: find.byIcon(Icons.arrow_drop_down_rounded),
+          matching: find.byType(Container),
+        ),
+      );
+      final decoration = container.decoration as BoxDecoration?;
+      expect(decoration?.boxShadow, isNotNull);
+      expect(decoration!.boxShadow!.isNotEmpty, true);
     });
   });
 }

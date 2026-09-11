@@ -94,13 +94,27 @@ class _RingPainter extends CustomPainter {
     canvas.drawCircle(center, radius, trackPaint);
 
     if (progress <= 0) return;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    final sweep = 2 * pi * progress;
+
+    // Candy-kit glow, same "wider blurred stroke behind the crisp one"
+    // technique used everywhere else in the kit via NeonTheme.glow — done
+    // by hand here (rather than a BoxShadow) since this is a CustomPainter
+    // arc, not a Container.
+    final glowPaint = Paint()
+      ..color = color.withValues(alpha: 0.55)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth * 1.8
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    canvas.drawArc(rect, -pi / 2, sweep, false, glowPaint);
+
     final fillPaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawArc(rect, -pi / 2, 2 * pi * progress, false, fillPaint);
+    canvas.drawArc(rect, -pi / 2, sweep, false, fillPaint);
   }
 
   @override

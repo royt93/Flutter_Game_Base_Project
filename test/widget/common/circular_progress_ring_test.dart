@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/circular_progress_ring.dart';
@@ -115,6 +117,31 @@ void main() {
 
       final painter = _ringPaint(tester).painter as dynamic;
       expect(painter.progress, closeTo(0.7, 0.001));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'ENH-30: vẽ glow layer phía sau arc khi progress > 0, không throw',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: Center(child: CircularProgressRing(progress: 0.5)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Golden-free: dựng lên 1 recorder thật và gọi paint() trực tiếp để
+      // xác nhận không throw khi có glow layer (MaskFilter.blur) — cùng mức
+      // rigor các test khác trong file này (kiểm hợp đồng, không pixel).
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final painter = _ringPaint(tester).painter as CustomPainter;
+      painter.paint(canvas, const Size(72, 72));
+      recorder.endRecording().dispose();
+
       expect(tester.takeException(), isNull);
     },
   );

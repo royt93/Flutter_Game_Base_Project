@@ -31,6 +31,9 @@ class EmptyStatePlaceholder extends StatelessWidget {
           decoration: BoxDecoration(
             color: NeonTheme.cardAlt,
             shape: BoxShape.circle,
+            // Nhẹ hơn AvatarFrame's glow vì đây là trạng thái "rỗng", không
+            // nên quá nổi bật — chỉ đủ để nhất quán "ngôn ngữ glow" của kit.
+            boxShadow: NeonTheme.glow(color, blur: 10, intensity: 0.4),
           ),
           child: Icon(icon, color: color, size: 40),
         ),

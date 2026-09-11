@@ -53,7 +53,18 @@ class ShopItemCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 40, color: iconColor ?? NeonTheme.purple),
+            Container(
+              padding: const EdgeInsets.all(NeonTheme.s8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: NeonTheme.glow(
+                  iconColor ?? NeonTheme.purple,
+                  blur: 10,
+                  intensity: 0.4,
+                ),
+              ),
+              child: Icon(icon, size: 40, color: iconColor ?? NeonTheme.purple),
+            ),
             const SizedBox(height: NeonTheme.s8),
             Text(
               title,

@@ -93,4 +93,33 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('IDEA-26: icon có glow backdrop nhất quán với AvatarFrame', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: ShopItemCard(
+            icon: Icons.diamond_rounded,
+            title: '100 Gems',
+            priceLabel: r'$0.99',
+            onBuy: () {},
+          ),
+        ),
+      ),
+    );
+
+    final container = tester.widget<Container>(
+      find
+          .ancestor(
+            of: find.byIcon(Icons.diamond_rounded),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    final decoration = container.decoration as BoxDecoration?;
+    expect(decoration?.boxShadow, isNotNull);
+    expect(decoration!.boxShadow!.isNotEmpty, true);
+  });
 }
