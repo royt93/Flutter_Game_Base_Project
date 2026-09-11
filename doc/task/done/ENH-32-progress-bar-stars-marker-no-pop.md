@@ -42,7 +42,19 @@ Khi `p` vượt qua 1 ngưỡng `t` (chuyển từ chưa đạt → đạt), ch�
 `TweenAnimationBuilder` riêng theo dõi việc "vừa đạt mốc".
 
 ## Acceptance criteria
-- [ ] Marker sao pop nhẹ (scale bounce) đúng lúc `progress` vượt ngưỡng, không pop khi mount lần đầu đã đạt sẵn (tránh pop tất cả sao cùng lúc lúc khởi tạo).
-- [ ] `reducedMotion` bật → không animation.
-- [ ] Test xác nhận marker chuyển trạng thái đúng, có/không animation theo `reducedMotion`.
-- [ ] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test.
+- [x] Marker sao pop nhẹ (scale bounce) đúng lúc `progress` vượt ngưỡng, không pop khi mount lần đầu đã đạt sẵn (tránh pop tất cả sao cùng lúc lúc khởi tạo).
+- [x] `reducedMotion` bật → không animation.
+- [x] Test xác nhận marker chuyển trạng thái đúng, có/không animation theo `reducedMotion`.
+- [x] `flutter analyze`/`flutter test` sạch ở root + `example/`, device smoke test.
+
+## Quyết định
+Chuyển `ProgressBarStars` sang `StatefulWidget`, 1 `AnimationController`
+riêng mỗi threshold (`Map<double, AnimationController>`, tạo lười qua
+`putIfAbsent`, value mặc định 1.0 — không pop lúc mount dù ngưỡng đã đạt
+sẵn). `didUpdateWidget` so `oldP`/`p` (đã clamp) với từng threshold, gọi
+`forward(from: 0.0)` đúng cho threshold VỪA vượt qua. Cùng pattern
+`AnimationController` tường minh đã dùng ở ENH-31 (không dùng
+`TweenAnimationBuilder` + key trick). Verify: `flutter analyze` sạch +
+`flutter test` 466 pass ở root, 29 pass ở `example/`. Device smoke Pixel 7
+Pro thật: không crash/exception khi bấm "+20% progress" nhiều lần liên
+tiếp (vượt qua cả 3 ngưỡng sao).
