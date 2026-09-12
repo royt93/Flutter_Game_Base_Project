@@ -20,14 +20,31 @@ Category "Buttons & Interactive" (`CommonButton`, `CandyToggleSwitch`, `Segmente
 `CandyTextField` — `StatelessWidget` bọc `TextField`/`TextFormField`, style theo `NeonTheme.card` nền, `NeonTheme.drop`/`glow` khi focus, viền bo tròn. Caller tự sở hữu `TextEditingController` (đúng convention "caller owns state" đã dùng cho `WheelSpinnerController`/`ScreenShakeController"). Nhận optional `prefixIcon`/`validator`/`obscureText`/`keyboardType`.
 
 ## Acceptance criteria
-- [ ] CandyTextField render đúng style kit (nền/viền/glow khi focus) qua NeonTheme tokens, không hardcode màu.
-- [ ] Hỗ trợ prefixIcon, validator, obscureText, keyboardType như TextFormField chuẩn.
-- [ ] Có demo trong widget_showcase_screen.dart (category Buttons & Interactive).
-- [ ] Test: nhập text cập nhật đúng controller, validator hiện đúng lỗi, obscureText ẩn ký tự đúng, focus/blur đổi border/glow đúng.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] CandyTextField render đúng style kit (nền/viền/glow khi focus) qua NeonTheme tokens, không hardcode màu.
+- [x] Hỗ trợ prefixIcon, validator, obscureText, keyboardType như TextFormField chuẩn.
+- [x] Có demo trong widget_showcase_screen.dart (category Buttons & Interactive).
+- [x] Test: nhập text cập nhật đúng controller, validator hiện đúng lỗi, obscureText ẩn ký tự đúng, focus/blur đổi border/glow đúng.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`. (`AnimatedContainer` 180ms `easeOut` cho border/glow — trạng thái, không phải khoảnh khắc ăn mừng, đúng quy ước; tôn trọng `reducedMotion`.)
+
+## Quyết định
+`CandyTextField` là `StatefulWidget` bọc `TextFormField`, tự quản lý 1 `FocusNode` nội bộ (chỉ để theo dõi trạng thái focus/blur cho border+glow — KHÔNG sở hữu text state, đúng convention "caller owns controller"). `AnimatedContainer` (180ms, `easeOut`) chuyển màu viền + shadow giữa `NeonTheme.drop()` (nghỉ) và `NeonTheme.glow(color, ...)` (focus) — `color` mặc định `NeonTheme.cyan`, tuỳ chỉnh qua tham số optional.
+
+Forward đầy đủ `prefixIcon`, `validator` (kèm `autovalidateMode: AutovalidateMode.onUserInteraction` khi có validator, để lỗi hiện ngay khi gõ thay vì phải bọc `Form` + gọi `validate()` thủ công), `obscureText`, `keyboardType`, `onChanged` xuống `TextFormField` chuẩn.
+
+13 test mới bao phủ: nhập text cập nhật controller, hintText hiển thị, prefixIcon hiển thị, obscureText forward đúng (verify qua `EditableText.obscureText` vì `TextFormField` không expose field này публично), keyboardType forward đúng (tương tự qua `EditableText`), onChanged gọi đúng, validator hiện lỗi đúng lúc, không có validator thì không tự validate, focus đổi border+glow đúng, blur trở lại mặc định đúng, Reduce Motion collapse duration về 0, và dispose sạch không leak `FocusNode`.
+
+Thêm demo trong `WidgetShowcaseScreen` (category "Buttons & Interactive", cạnh `SoundToggleFab`/`throttled()`), export qua `common_widgets.dart` barrel.
+
+Device smoke test (Pixel 7 Pro, dark mode): chụp ảnh CandyTextField ở trạng thái nghỉ (viền tím nhạt, không glow) và khi focus (viền cyan sáng + glow rõ, bàn phím hiện, con trỏ nhấp nháy) — tương phản tốt trên cả dark mode. Gõ "RoyPlayer" qua bàn phím thật, hiển thị đúng. Xoá hết text — validator hiện đúng "Không được để trống" màu đỏ ngay dưới field. Không crash, không lỗi trong logcat.
+
+`flutter analyze` + `flutter test --exclude-tags slow` sạch ở root (615 tests) và `example/` (29 tests).
+
+Tự chấm: 9.5/10 — đúng đề xuất, style hoàn toàn qua NeonTheme token (không hardcode màu nào), test bao phủ đủ mọi case kể cả reducedMotion/dispose, có demo thật + bằng chứng device đầy đủ (nhập liệu bàn phím thật, validator, focus glow).
+
+Commit code: `b33bf0d`.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/IDEA-28-candy-text-field.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
