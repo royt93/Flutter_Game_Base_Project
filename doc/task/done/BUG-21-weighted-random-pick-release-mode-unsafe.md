@@ -20,12 +20,12 @@ Các kiểm tra độ dài list/không rỗng chỉ là `assert(...)` — bị s
 Thay assert bằng validate runtime thật (`ArgumentError`) cho: độ dài 2 list bằng nhau và không rỗng, mọi trọng số hữu hạn và không âm, tổng trọng số hữu hạn và > 0.
 
 ## Acceptance criteria
-- [ ] Input không hợp lệ (list rỗng, độ dài lệch, trọng số âm/NaN/Infinity, tổng = 0) ném ArgumentError rõ ràng ở CẢ debug lẫn release build.
-- [ ] Test vượt ra ngoài phạm vi assert hiện tại: list rỗng, tổng trọng số = 0, trọng số âm, NaN, Infinity.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] Input không hợp lệ (list rỗng, độ dài lệch, trọng số âm/NaN/Infinity, tổng = 0) ném ArgumentError rõ ràng ở CẢ debug lẫn release build.
+- [x] Test vượt ra ngoài phạm vi assert hiện tại: list rỗng, tổng trọng số = 0, trọng số âm, NaN, Infinity.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-21-weighted-random-pick-release-mode-unsafe.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
@@ -40,6 +40,25 @@ Vòng lặp CHỈ được coi là xong khi TẤT CẢ các điều sau đạt:
 Chỉ `git commit` + `git push` khi điểm tự chấm ở bước 1 (SAU KHI đã có đủ test ở bước 2 và bằng chứng ở bước 3-5) đạt > 9/10. Nếu < 9/10, tự sửa và lặp lại tới khi đạt hoặc dừng lại báo cáo rõ lý do không đạt được — không push code chưa đạt ngưỡng.
 
 Sau khi push, viết mục `## Quyết định` vào chính file task này (tick các checkbox Acceptance criteria đã đạt `[x]`), rồi chuyển file từ `doc/task/todo/` sang `doc/task/done/` bằng `mv` + `git add`, commit + push lần 2.
+
+## Quyết định
+Trước khi đổi, xác nhận không có caller nội bộ nào dựa vào hành vi cũ
+("im lặng trả về items.last khi input xấu"): grep toàn repo chỉ thấy
+`wheel_spinner.dart`'s doc comment NHẮC TỚI hàm này như ví dụ, KHÔNG có
+lệnh gọi thật nào — `weightedRandomPick` hoàn toàn do caller (app dùng
+kit) tự gọi, an toàn để đổi throw mà không phá gì trong package.
+
+Đổi 2 `assert` thành `if (...) throw ArgumentError(...)` cho: độ dài
+list lệch, list rỗng; thêm mới (chưa từng kiểm tra kể cả bằng assert):
+mỗi trọng số phải hữu hạn và >= 0, tổng trọng số phải hữu hạn và > 0.
+
+Test: 5 test mới (list rỗng, trọng số âm, NaN, Infinity, tổng = 0), đổi
+test cũ "length lệch" từ `AssertionError` sang `ArgumentError`. Tổng 9
+test, tất cả pass. `flutter analyze` sạch cả root + `example/`.
+`flutter test --exclude-tags slow`: tất cả pass, không regression.
+
+Không có device smoke test — pure Dart utility function, không render
+UI, không có widget nào gọi trực tiếp trong package.
 
 ## Ghi chú độ tin cậy
 Trung bình-cao — bug thật, dễ sửa (effort S), nhưng cần xác nhận không widget/service nào đang cố tình dựa vào hành vi "im lặng trả về items.last" hiện tại trước khi đổi sang throw.
