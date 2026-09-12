@@ -88,6 +88,27 @@ class _CountdownChipState extends State<CountdownChip> {
     widget.onDone?.call();
   }
 
+  // BUG-30: without this, changing `widget.target` on the same instance
+  // (e.g. the player buys a "shorten cooldown" boost) is silently ignored —
+  // the countdown keeps ticking toward the stale target until the whole
+  // widget gets rebuilt from scratch via a new key.
+  @override
+  void didUpdateWidget(covariant CountdownChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.target == widget.target) return;
+
+    _timer?.cancel();
+    _fired = false;
+    _remaining = _initialRemaining();
+    if (_remaining == Duration.zero) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _notifyDone();
+      });
+    } else {
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
