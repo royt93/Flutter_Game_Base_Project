@@ -41,10 +41,49 @@ void main() {
     expect(ratio, lessThan(0.13));
   });
 
-  test('items.length != weights.length → assert lỗi rõ ràng ở debug', () {
+  test(
+    'BUG-21: items.length != weights.length → ArgumentError (không phải '
+    'chỉ assert — vẫn throw ở release build)',
+    () {
+      expect(
+        () => weightedRandomPick(['a', 'b'], [1.0]),
+        throwsArgumentError,
+      );
+    },
+  );
+
+  test('BUG-21: items rỗng → ArgumentError', () {
     expect(
-      () => weightedRandomPick(['a', 'b'], [1.0]),
-      throwsA(isA<AssertionError>()),
+      () => weightedRandomPick<String>([], []),
+      throwsArgumentError,
+    );
+  });
+
+  test('BUG-21: trọng số âm → ArgumentError', () {
+    expect(
+      () => weightedRandomPick(['a', 'b'], [1.0, -1.0]),
+      throwsArgumentError,
+    );
+  });
+
+  test('BUG-21: trọng số NaN → ArgumentError', () {
+    expect(
+      () => weightedRandomPick(['a', 'b'], [1.0, double.nan]),
+      throwsArgumentError,
+    );
+  });
+
+  test('BUG-21: trọng số Infinity → ArgumentError', () {
+    expect(
+      () => weightedRandomPick(['a', 'b'], [1.0, double.infinity]),
+      throwsArgumentError,
+    );
+  });
+
+  test('BUG-21: tổng trọng số = 0 (mọi trọng số đều 0) → ArgumentError', () {
+    expect(
+      () => weightedRandomPick(['a', 'b'], [0.0, 0.0]),
+      throwsArgumentError,
     );
   });
 }
