@@ -87,22 +87,45 @@ class StorageService extends GetxService {
   /// Pushes every buffered value down to disk. Call this at safe
   /// checkpoints: level end, app going to background, controller disposal,
   /// and before any transaction that grants a reward.
+  ///
+  /// Writes go straight to `_prefs`/`_fallback` here — **never** through the
+  /// public `setInt`/`setString`/... setters, which unconditionally clear
+  /// `_buffer[key]` as their first step (correct for a real direct write,
+  /// which must always win over a stale buffered value). If flush's own
+  /// write for key A used those setters, and a NEW `setXBuffered` call for a
+  /// later key B in this same batch lands while A's disk write is still
+  /// awaiting, the loop would reach B's `setX` call, unconditionally wipe
+  /// that brand-new buffered value from `_buffer`, then persist the STALE
+  /// snapshot taken before this flush started — silently losing the update.
+  /// Writing directly here means `_buffer` (already cleared above) is never
+  /// touched again mid-flush, so any value buffered during a flush simply
+  /// survives untouched for the next flush to pick up.
   Future<void> flush() async {
     if (_buffer.isEmpty) return;
     final pending = Map<String, Object>.from(_buffer);
     _buffer.clear();
     for (final entry in pending.entries) {
-      final value = entry.value;
-      if (value is int) {
-        await setInt(entry.key, value);
-      } else if (value is String) {
-        await setString(entry.key, value);
-      } else if (value is bool) {
-        await setBool(entry.key, value);
-      } else if (value is double) {
-        await setDouble(entry.key, value);
-      }
+      await _writeDirect(entry.key, entry.value);
     }
+  }
+
+  Future<void> _writeDirect(String key, Object value) async {
+    platformWrites++;
+    final prefs = _prefs;
+    if (prefs != null) {
+      switch (value) {
+        case int v:
+          await prefs.setInt(key, v);
+        case String v:
+          await prefs.setString(key, v);
+        case bool v:
+          await prefs.setBool(key, v);
+        case double v:
+          await prefs.setDouble(key, v);
+      }
+      return;
+    }
+    _fallback[key] = value;
   }
 
   /// Reads the raw value then **checks its type**, instead of casting directly.

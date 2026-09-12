@@ -138,5 +138,84 @@ void main() {
       expect(fresh.getBool(StorageKeys.audioMuted), true);
       expect(fresh.getBool(StorageKeys.themeDark), true);
     });
+
+    group('setIntBuffered/setStringBuffered/flush (BUG-16)', () {
+      test('buffered read ưu tiên hơn giá trị đã ghi disk', () async {
+        await store.setIntBuffered('k_int', 1);
+        expect(store.getInt('k_int'), 1);
+        expect(store.getInt('k_int', def: 99), 1);
+      });
+
+      test('flush() ghi đúng giá trị buffered xuống disk và xoá khỏi buffer', () async {
+        await store.setIntBuffered('k_int', 5);
+        await store.setStringBuffered('k_str', 'hi');
+
+        await store.flush();
+
+        expect(store.getInt('k_int'), 5);
+        expect(store.getString('k_str'), 'hi');
+        // Sau flush, đọc lại không còn phụ thuộc buffer (export chỉ có nguồn
+        // duy nhất là disk cho các key này) — kiểm tra qua exportAll để chắc
+        // chắn giá trị nằm trên disk thật, không phải còn kẹt ở _buffer.
+        expect(store.exportAll()['k_int'], 5);
+        expect(store.exportAll()['k_str'], 'hi');
+      });
+
+      test('flush() trên buffer rỗng không làm gì, không throw', () async {
+        await store.flush();
+        expect(store.exportAll(), isEmpty);
+      });
+
+      test(
+        'BUG-16: giá trị buffered mới cho key B (chưa được flush xử lý) '
+        'không bị mất khi key A (xử lý trước B) vẫn đang ghi đĩa',
+        () async {
+          // 2 key trong cùng 1 batch flush — 'a' đứng trước 'b' theo thứ tự
+          // insertion (Map giữ thứ tự chèn), nên flush() xử lý 'a' trước.
+          await store.setIntBuffered('a', 100);
+          await store.setIntBuffered('b', 1);
+
+          // Bắt đầu flush nhưng KHÔNG await ngay — flush() chạy đồng bộ tới
+          // khi gặp await đầu tiên (bên trong _writeDirect cho key 'a') rồi
+          // treo lại ở đó, trả quyền điều khiển về đây.
+          final flushFuture = store.flush();
+
+          // Ngay lúc key 'a' đang "chờ ghi đĩa" (theo đúng nghĩa async, dù
+          // mock SharedPreferences resolve rất nhanh) và vòng lặp CHƯA xử lý
+          // tới key 'b', 1 giá trị buffered MỚI cho 'b' được set. Đây chính
+          // là race BUG-16 mô tả: nếu flush() dùng lại `setInt` công khai
+          // (tự ý xoá `_buffer[key]` trước khi ghi), giá trị mới này sẽ bị
+          // xoá nhầm khi loop xử lý tới 'b' bằng snapshot CŨ.
+          await store.setIntBuffered('b', 2);
+
+          await flushFuture;
+
+          expect(
+            store.getInt('b'),
+            2,
+            reason:
+                'Giá trị buffered mới (2) phải thắng — không bị flush() ghi '
+                'đè bằng snapshot cũ (1) đã chụp trước khi giá trị mới tới.',
+          );
+          expect(store.getInt('a'), 100);
+        },
+      );
+
+      test(
+        'BUG-16: nếu không có write mới xen vào, flush() vẫn xoá đúng buffer '
+        'cho mọi key trong batch (không để sót giá trị cũ mãi mãi trong buffer)',
+        () async {
+          await store.setIntBuffered('a', 1);
+          await store.setIntBuffered('b', 2);
+
+          await store.flush();
+
+          // Đọc trực tiếp exportAll (nguồn disk) khớp đúng — không còn phụ
+          // thuộc buffer sau khi đã flush xong hoàn toàn.
+          expect(store.exportAll()['a'], 1);
+          expect(store.exportAll()['b'], 2);
+        },
+      );
+    });
   });
 }
