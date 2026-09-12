@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -134,6 +136,28 @@ void main() {
       expect(events, [RoyLifecycleEvent.background, RoyLifecycleEvent.resumed]);
     },
   );
+
+  testWidgets('FEAT-34: consumer double-submit is single-flight on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    final guard = AsyncActionGuard();
+    var calls = 0;
+    final gate = Completer<void>();
+    final first = guard.runSingleFlight('purchase', () async {
+      calls++;
+      await gate.future;
+    });
+    final second = guard.runSingleFlight('purchase', () async {
+      calls++;
+    });
+    expect(calls, 1);
+    gate.complete();
+    await Future.wait([first, second]);
+    expect(guard.pendingCount, 0);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('IDEA-38: color-blind-safe setting changes palette on device', (
     tester,
