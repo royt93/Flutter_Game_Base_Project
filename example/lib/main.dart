@@ -66,6 +66,7 @@ Future<void> app({bool withAudio = !isE2eTest}) async {
   final modules = {
     RoyCasualKitModule.storage,
     RoyCasualKitModule.locale,
+    RoyCasualKitModule.lifecycle,
     RoyCasualKitModule.reminders,
     if (withAudio) RoyCasualKitModule.audio,
   };

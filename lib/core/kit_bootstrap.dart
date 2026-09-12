@@ -4,13 +4,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'audio_manager.dart';
 import 'locale_service.dart';
+import 'lifecycle_coordinator.dart';
 import 'neon_theme.dart';
 import 'performance_tier_service.dart';
 import 'reminder_service.dart';
 import 'storage_service.dart';
 
 /// Optional modules that [RoyCasualKit.initialize] can register.
-enum RoyCasualKitModule { storage, locale, audio, reminders, performance }
+enum RoyCasualKitModule {
+  storage,
+  locale,
+  audio,
+  reminders,
+  performance,
+  lifecycle,
+}
 
 /// Immutable SDK bootstrap configuration.
 class RoyCasualKitConfig {
@@ -18,6 +26,7 @@ class RoyCasualKitConfig {
     this.modules = const {
       RoyCasualKitModule.storage,
       RoyCasualKitModule.locale,
+      RoyCasualKitModule.lifecycle,
     },
     this.preferences,
     this.storageOverride,
@@ -132,6 +141,15 @@ class RoyCasualKit {
               _owned.add(() async {
                 if (Get.isRegistered<PerformanceTierService>()) {
                   await Get.delete<PerformanceTierService>(force: true);
+                }
+              });
+            }
+          case RoyCasualKitModule.lifecycle:
+            if (!Get.isRegistered<RoyLifecycleCoordinator>()) {
+              Get.put(RoyLifecycleCoordinator(), permanent: config.permanent);
+              _owned.add(() async {
+                if (Get.isRegistered<RoyLifecycleCoordinator>()) {
+                  await Get.delete<RoyLifecycleCoordinator>(force: true);
                 }
               });
             }

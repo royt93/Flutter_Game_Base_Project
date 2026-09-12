@@ -116,6 +116,25 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'FEAT-33: lifecycle coordinator dispatches background and resume',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 2));
+      final coordinator = Get.find<RoyLifecycleCoordinator>();
+      final events = <RoyLifecycleEvent>[];
+      coordinator.registerHook(
+        'device-smoke',
+        (event) async => events.add(event),
+      );
+      coordinator.didChangeAppLifecycleState(AppLifecycleState.paused);
+      await tester.pump(const Duration(milliseconds: 100));
+      coordinator.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(events, [RoyLifecycleEvent.background, RoyLifecycleEvent.resumed]);
+    },
+  );
+
   testWidgets('IDEA-38: color-blind-safe setting changes palette on device', (
     tester,
   ) async {
