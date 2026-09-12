@@ -11,6 +11,8 @@ class EmptyStatePlaceholder extends StatelessWidget {
     required this.icon,
     required this.message,
     this.color,
+    this.title,
+    this.action,
   });
 
   final IconData icon;
@@ -19,6 +21,15 @@ class EmptyStatePlaceholder extends StatelessWidget {
   /// Defaults to [NeonTheme.purple] — nullable because a `NeonTheme` color
   /// field is no longer a compile-time constant.
   final Color? color;
+
+  /// Optional headline shown above [message] (e.g. "No Friends Yet") —
+  /// bolder/larger than [message], which then reads as the supporting
+  /// detail line.
+  final String? title;
+
+  /// Optional call-to-action shown below [message] (e.g. a `CommonButton`
+  /// for "Retry"/"Find Friends").
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +49,18 @@ class EmptyStatePlaceholder extends StatelessWidget {
           child: Icon(icon, color: color, size: 40),
         ),
         const SizedBox(height: NeonTheme.s16),
+        if (title != null) ...[
+          Text(
+            title!,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: NeonTheme.ink,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: NeonTheme.s8),
+        ],
         Text(
           message,
           textAlign: TextAlign.center,
@@ -48,6 +71,10 @@ class EmptyStatePlaceholder extends StatelessWidget {
             height: 1.4,
           ),
         ),
+        if (action != null) ...[
+          const SizedBox(height: NeonTheme.s16),
+          action!,
+        ],
       ],
     );
   }

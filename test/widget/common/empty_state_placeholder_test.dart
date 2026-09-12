@@ -69,4 +69,73 @@ void main() {
     expect(decoration?.boxShadow, isNotNull);
     expect(decoration!.boxShadow!.isNotEmpty, true);
   });
+
+  group('ENH-43: title/action slot', () {
+    testWidgets('title/action null (mặc định) → không hiển thị gì thêm, layout như cũ', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: EmptyStatePlaceholder(
+              icon: Icons.emoji_events_outlined,
+              message: 'No achievements yet',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(ElevatedButton), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('title + action khi truyền hiển thị đúng cùng icon/message', (
+      tester,
+    ) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: EmptyStatePlaceholder(
+              icon: Icons.people_outline,
+              title: 'No Friends Yet',
+              message: 'Invite someone to see them here.',
+              action: ElevatedButton(
+                onPressed: () => tapped = true,
+                child: const Text('Find Friends'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('No Friends Yet'), findsOneWidget);
+      expect(find.text('Invite someone to see them here.'), findsOneWidget);
+      expect(find.byIcon(Icons.people_outline), findsOneWidget);
+      expect(find.text('Find Friends'), findsOneWidget);
+
+      await tester.tap(find.text('Find Friends'));
+      expect(tapped, isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('chỉ truyền title, không action — vẫn hiển thị đúng, không lỗi', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: EmptyStatePlaceholder(
+              icon: Icons.inbox_outlined,
+              title: 'Nothing here',
+              message: 'Come back later.',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Nothing here'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
