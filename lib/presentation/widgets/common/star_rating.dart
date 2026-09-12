@@ -27,9 +27,15 @@ class StarRating extends StatefulWidget {
 }
 
 class _StarRatingState extends State<StarRating>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   AnimationController? _c;
   bool _startedOnce = false;
+
+  // BUG-31: a star newly earned AFTER mount (no unmount/remount — e.g. the
+  // player scores another star in the same level-complete screen) gets its
+  // own independent pop-in controller here, separate from [_c] (which only
+  // ever plays once, at mount, for whatever was already earned then).
+  final Map<int, AnimationController> _perStar = {};
 
   @override
   void didChangeDependencies() {
@@ -47,8 +53,26 @@ class _StarRatingState extends State<StarRating>
   }
 
   @override
+  void didUpdateWidget(covariant StarRating oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.earned <= oldWidget.earned) return;
+    if (NeonTheme.reducedMotion(context)) return;
+    for (var i = oldWidget.earned; i < widget.earned; i++) {
+      (_perStar[i] ??= AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 300),
+      ))
+        ..value = 0.0
+        ..forward();
+    }
+  }
+
+  @override
   void dispose() {
     _c?.dispose();
+    for (final c in _perStar.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -64,6 +88,11 @@ class _StarRatingState extends State<StarRating>
             ? [Shadow(color: NeonTheme.gold, blurRadius: widget.size * 0.3)]
             : null,
       );
+      final perStar = _perStar[i];
+      if (perStar != null) {
+        final anim = CurvedAnimation(parent: perStar, curve: Curves.easeOutBack);
+        return ScaleTransition(scale: anim, child: star);
+      }
       if (_c == null) return star;
       final start = i / widget.total;
       final anim = CurvedAnimation(
