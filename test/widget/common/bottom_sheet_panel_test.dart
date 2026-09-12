@@ -60,4 +60,105 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('ENH-47: modal config params', () {
+    testWidgets(
+      'isDismissible: false → tap ra ngoài (barrier) không đóng sheet',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () => showCommonBottomSheet<void>(
+                      context,
+                      isDismissible: false,
+                      child: const Text('Sheet body'),
+                    ),
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+        expect(find.text('Sheet body'), findsOneWidget);
+
+        // Tap vào barrier (góc trên màn hình, ngoài vùng sheet).
+        await tester.tapAt(const Offset(20, 20));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Sheet body'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'mặc định (isDismissible: true) → tap ra ngoài đóng sheet như hành vi cũ',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () => showCommonBottomSheet<void>(
+                      context,
+                      child: const Text('Sheet body'),
+                    ),
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+        expect(find.text('Sheet body'), findsOneWidget);
+
+        await tester.tapAt(const Offset(20, 20));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Sheet body'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('barrierColor tuỳ chỉnh forward đúng xuống showModalBottomSheet', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showCommonBottomSheet<void>(
+                    context,
+                    barrierColor: Colors.red,
+                    child: const Text('Sheet body'),
+                  ),
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      final modalBarrier = tester.widgetList<ModalBarrier>(
+        find.byType(ModalBarrier),
+      );
+      expect(modalBarrier.any((b) => b.color == Colors.red), isTrue);
+    });
+  });
 }

@@ -73,11 +73,19 @@ Future<T?> showCommonBottomSheet<T>(
   BuildContext context, {
   required Widget child,
   Color? color,
+  bool isDismissible = true,
+  bool enableDrag = true,
+  bool useRootNavigator = false,
+  Color? barrierColor,
 }) {
   return showModalBottomSheet<T>(
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
+    isDismissible: isDismissible,
+    enableDrag: enableDrag,
+    useRootNavigator: useRootNavigator,
+    barrierColor: barrierColor,
     builder: (_) => SafeArea(
       child: BottomSheetPanel(color: color, child: child),
     ),
