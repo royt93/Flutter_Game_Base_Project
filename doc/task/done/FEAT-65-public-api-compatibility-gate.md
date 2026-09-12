@@ -33,7 +33,7 @@ CI phát hiện breaking change trên public exports, yêu cầu semver và chan
 - Public API documentation in README states the supported entrypoint and migration policy for deep imports.
 - Root and `example/` passed `flutter analyze` and `flutter test --exclude-tags slow` (root: 640 tests; example: 31 tests).
 - `dart pub publish --dry-run` completed; existing package layout warnings are documented separately and do not affect gate behavior.
-- Device smoke `app boots to HomeScreen` passed on Samsung SM S928B (`R5CX613VZBR`, Android 16/API 36) with the migrated public bootstrap.
+- Device smoke `app boots to HomeScreen` passed on Samsung SM S928B (`R5CX613VZBR`, Android 16/API 36) with the migrated public bootstrap; raw output is stored at `doc/task/evidence/FEAT-65-device-smoke.log`.
 
 ## Quyết định
 
