@@ -159,6 +159,41 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-37: legacy save upgrades through registry on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    final storage = StorageService.to;
+    await storage.setString('feat37_save', '{"schemaVersion":1,"coins":2}');
+    final registry = SaveMigrationRegistry(
+      currentVersion: 3,
+      steps: [
+        SaveMigrationStep(
+          fromVersion: 1,
+          toVersion: 2,
+          migrate: (json) => {...json, 'coins': 3},
+        ),
+        SaveMigrationStep(
+          fromVersion: 2,
+          toVersion: 3,
+          migrate: (json) => {...json, 'coins': (json['coins'] as int) + 1},
+        ),
+      ],
+    );
+    final store = VersionedJsonStore<Map<String, Object?>>(
+      storage: storage,
+      key: 'feat37_save',
+      schemaVersion: 3,
+      toJson: (value) => value,
+      fromJson: (json) => json,
+      migrate: (_, json) => json,
+      migrationRegistry: registry,
+    );
+    expect(store.load()?['coins'], 4);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('IDEA-38: color-blind-safe setting changes palette on device', (
     tester,
   ) async {

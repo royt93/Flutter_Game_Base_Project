@@ -1,5 +1,6 @@
 ## 0.2.0
 
+- Added `SaveMigrationRegistry` for validated multi-hop save upgrades with copy-on-write migration.
 - Added `AsyncActionGuard` for keyed single-flight and ordered exclusive actions.
 - Added the GetX lifecycle coordinator for ordered, isolated background/resume hooks with storage flush and audio handling.
 - Added a deterministic consumer contract-test fixture and bootstrap verification harness through the public package entrypoint.

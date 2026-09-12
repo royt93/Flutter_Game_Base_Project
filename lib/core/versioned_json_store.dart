@@ -4,6 +4,7 @@ import 'cloud_save_provider.dart';
 import 'storage_service.dart';
 import 'utils/clamped_clock.dart';
 import 'utils/safe_json.dart';
+import 'utils/save_migration_registry.dart';
 
 /// A thin, versioned JSON object store on top of [StorageService]'s plain
 /// key-value strings — for save data with actual shape (player profile,
@@ -31,6 +32,7 @@ class VersionedJsonStore<T> {
     required this.toJson,
     required this.fromJson,
     required this.migrate,
+    this.migrationRegistry,
   });
 
   final StorageService storage;
@@ -47,6 +49,7 @@ class VersionedJsonStore<T> {
     Map<String, Object?> json,
   )
   migrate;
+  final SaveMigrationRegistry? migrationRegistry;
 
   Future<void> save(T value) async {
     final json = {
@@ -84,7 +87,11 @@ class VersionedJsonStore<T> {
     } catch (_) {
       return null;
     }
-    return _validate(decoded);
+    try {
+      return _validate(decoded);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Applies this store's schema policy to an already-decoded envelope —
@@ -104,7 +111,10 @@ class VersionedJsonStore<T> {
     final storedVersion = asIntOr(decoded['schemaVersion'], 0);
     if (storedVersion > schemaVersion) return null;
     if (storedVersion < schemaVersion) {
-      return migrate(storedVersion, decoded);
+      final registry = migrationRegistry;
+      return registry == null
+          ? migrate(storedVersion, decoded)
+          : registry.migrate(storedVersion, decoded);
     }
     return decoded;
   }
