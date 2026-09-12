@@ -80,9 +80,12 @@ void main() {
       );
 
       // 1 frame để OverlayEntry được insert + controller đầu tiên forward().
+      // Chỉ coin 0 (stagger start = 0) đang trong khung [startAt, endAt] —
+      // coin 1/2 CHƯA tới lượt nên không được render (BUG-32), khác hành vi
+      // cũ (cả 3 coin đứng chồng ở from khi chưa tới lượt).
       await tester.pump();
       expect(find.byType(CoinFlyOverlay), findsOneWidget);
-      expect(find.byIcon(Icons.monetization_on), findsNWidgets(3));
+      expect(find.byIcon(Icons.monetization_on), findsNWidgets(1));
       expect(arrivedCount, 0);
 
       // Timeline dùng chung: duration=200ms + stagger*2=100ms → tổng
@@ -295,4 +298,122 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('BUG-32', () {
+    testWidgets(
+      'coin chỉ hiển thị trong đúng khung [startAt, endAt] của nó — không '
+      'đứng chồng ở from (chưa tới lượt) hay chồng ở to (đã tới đích)',
+      (tester) async {
+        // Timeline dùng chung: duration=200ms + stagger*2=100ms → 300ms.
+        // Khung mỗi coin (ms trên timeline chung): coin0 [0,200],
+        // coin1 [50,250], coin2 [100,300].
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: CoinFlyOverlay(
+                from: const Offset(0, 0),
+                to: const Offset(200, 200),
+                coinCount: 3,
+                duration: const Duration(milliseconds: 200),
+                stagger: const Duration(milliseconds: 50),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        expect(
+          find.byIcon(Icons.monetization_on),
+          findsNWidgets(1),
+          reason: 't=0: chỉ coin0 đang trong khung, coin1/coin2 chưa tới lượt',
+        );
+
+        // t=210ms: coin0 đã qua endAt (200ms) → hết hiển thị; coin1 (khung
+        // [50,250]) và coin2 (khung [100,300]) vẫn đang bay.
+        await tester.pump(const Duration(milliseconds: 210));
+        expect(
+          find.byIcon(Icons.monetization_on),
+          findsNWidgets(2),
+          reason: 'coin0 đã đến đích phải biến mất, không đứng chồng ở to',
+        );
+
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'onDone của CoinFlyOverlay.show có guard entry.mounted — gọi remove() '
+      'trần trên entry đã bị unmount ném AssertionError, còn guard thì không',
+      (tester) async {
+        late BuildContext ctx;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                ctx = context;
+                return const Scaffold(body: SizedBox());
+              },
+            ),
+          ),
+        );
+
+        final overlay = Overlay.of(ctx, rootOverlay: true);
+        late OverlayEntry entry;
+        entry = OverlayEntry(builder: (_) => const SizedBox());
+        overlay.insert(entry);
+        await tester.pump();
+
+        // Mô phỏng "nơi khác" (ví dụ Navigator dismiss) đã remove entry này
+        // trước khi CoinFlyOverlay's onDone kịp tự gọi remove().
+        entry.remove();
+        await tester.pump();
+        expect(entry.mounted, isFalse);
+
+        // Đúng pattern fix của BUG-32 (giống FloatingComboText.show): không
+        // throw khi gọi lại.
+        expect(() {
+          if (entry.mounted) entry.remove();
+        }, returnsNormally);
+
+        // Đối chứng: gọi remove() trần (hành vi CŨ trước khi fix) thật sự
+        // throw AssertionError — chứng minh guard là cần thiết, không thừa.
+        expect(() => entry.remove(), throwsA(isA<AssertionError>()));
+      },
+    );
+
+    testWidgets(
+      'CoinFlyOverlay.show: animation hoàn tất tự nhiên vẫn tự remove khỏi '
+      'tree bình thường (guard không phá happy path)',
+      (tester) async {
+        final targetKey = GlobalKey();
+        late BuildContext ctx;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                ctx = context;
+                return Scaffold(
+                  body: SizedBox(key: targetKey, width: 10, height: 10),
+                );
+              },
+            ),
+          ),
+        );
+
+        CoinFlyOverlay.show(
+          ctx,
+          from: Offset.zero,
+          targetKey: targetKey,
+          coinCount: 1,
+          duration: const Duration(milliseconds: 50),
+        );
+        await tester.pump();
+        expect(find.byType(CoinFlyOverlay), findsOneWidget);
+
+        await tester.pump(const Duration(milliseconds: 60));
+        expect(find.byType(CoinFlyOverlay), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }

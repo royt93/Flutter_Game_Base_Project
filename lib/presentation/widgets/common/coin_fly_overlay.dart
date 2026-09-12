@@ -135,7 +135,13 @@ class CoinFlyOverlay extends StatefulWidget {
         duration: duration,
         stagger: stagger,
         onArrive: onArrive,
-        onDone: entry.remove,
+        // BUG-32: a bare tear-off crashes (AssertionError: "An OverlayEntry
+        // should be removed only once") if something else already removed
+        // this entry while the coins were still in flight — same guard
+        // FloatingComboText.show already uses.
+        onDone: () {
+          if (entry.mounted) entry.remove();
+        },
       ),
     );
     overlay.insert(entry);
@@ -235,6 +241,16 @@ class _CoinFlyOverlayState extends State<CoinFlyOverlay>
             for (var i = 0; i < widget.coinCount; i++)
               Builder(
                 builder: (context) {
+                  // BUG-32: without this, a coin not yet at its turn sits
+                  // drawn at `from` (every not-yet-started coin stacked
+                  // there), and a coin that already arrived stays drawn at
+                  // `to` for the rest of the shared timeline (every already-
+                  // arrived coin stacked there) — only render it during its
+                  // own `[startAt, endAt]` window.
+                  final v = _controller.value;
+                  if (v < _startAt[i] || v > _endAt[i]) {
+                    return const SizedBox.shrink();
+                  }
                   final t = Curves.easeInOut.transform(_coinProgress(i));
                   final pos = _reducedMotion
                       ? Offset.lerp(widget.from, widget.to, t)!
