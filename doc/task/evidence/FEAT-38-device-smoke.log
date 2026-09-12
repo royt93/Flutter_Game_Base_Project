@@ -1,0 +1,13 @@
+00:00 +0: loading /Users/LoiTP/StudioProjects/roy/Flutter_Game_Base_Project/example/integration_test/app_boot_test.dart
+Running Gradle task 'assembleDebug'...                             15.7s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...           3.8s
+00:00 +0: FEAT-38: typed storage result is safe on device
+roy93~ app: ensureInitialized
+roy93~ app: loadAppVersion start
+roy93~ app: loadAppVersion done
+roy93~ app: bootstrap start
+roy93~ app: bootstrap done
+roy93~ app: runApp done
+00:02 +1: (tearDownAll)
+00:03 +1: All tests passed!
