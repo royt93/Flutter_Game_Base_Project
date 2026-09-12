@@ -36,7 +36,14 @@ Color levelStateBorderColor(LevelState state) => switch (state) {
 /// One round level node — the world-map/level-select building block. Shows
 /// the level number, or a lock glyph (and blocks tap) when [state] is
 /// `locked`, plus a mini [StarRating] badge underneath once `completed`.
-class LevelNodeButton extends StatelessWidget {
+///
+/// [pulse] draws the eye to "the next level to play" — a gentle, continuous
+/// glow breathing (~1.8s cycle) around the node. The caller decides which
+/// single node gets it (see [LevelSelectGrid], which only pulses the FIRST
+/// `unlocked` node — running a ticker per grid cell would be wasteful on a
+/// large grid). Has no effect unless [state] is `unlocked`. Respects
+/// [NeonTheme.reducedMotion] (no ticker at all when it's on).
+class LevelNodeButton extends StatefulWidget {
   const LevelNodeButton({
     super.key,
     required this.levelNumber,
@@ -44,6 +51,7 @@ class LevelNodeButton extends StatelessWidget {
     this.starsEarned = 0,
     this.onTap,
     this.size = 64,
+    this.pulse = false,
   });
 
   final int levelNumber;
@@ -53,9 +61,62 @@ class LevelNodeButton extends StatelessWidget {
   final int starsEarned;
   final VoidCallback? onTap;
   final double size;
+  final bool pulse;
+
+  @override
+  State<LevelNodeButton> createState() => _LevelNodeButtonState();
+}
+
+class _LevelNodeButtonState extends State<LevelNodeButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+  late final Animation<double> _glowIntensity = Tween<double>(
+    begin: 0.35,
+    end: 1.0,
+  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+  bool get _shouldPulse =>
+      widget.pulse && widget.state == LevelState.unlocked;
+
+  bool _reducedMotion = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MediaQuery không đọc được trong initState — didChangeDependencies là
+    // nơi an toàn sớm nhất (cùng convention đã dùng ở ConfettiOverlay/
+    // RibbonBadge trong session này).
+    _reducedMotion = NeonTheme.reducedMotion(context);
+    _syncTicker();
+  }
+
+  @override
+  void didUpdateWidget(covariant LevelNodeButton old) {
+    super.didUpdateWidget(old);
+    _syncTicker();
+  }
+
+  void _syncTicker() {
+    if (_shouldPulse && !_reducedMotion) {
+      if (!_controller.isAnimating) _controller.repeat(reverse: true);
+    } else {
+      if (_controller.isAnimating) _controller.stop();
+      _controller.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final state = widget.state;
     final icon = levelStateIcon(state);
     final textColor = switch (state) {
       LevelState.completed => Colors.white,
@@ -82,29 +143,50 @@ class LevelNodeButton extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           PressableScale(
-            onTap: levelStateTappable(state) ? onTap : null,
-            child: Container(
-              width: size,
-              height: size,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: levelStateFillColor(state),
-                border: Border.all(
-                  color: levelStateBorderColor(state),
-                  width: 3,
-                ),
-                boxShadow: state == LevelState.locked
-                    ? null
-                    : NeonTheme.drop(y: 3, blur: 8),
-              ),
+            onTap: levelStateTappable(state) ? widget.onTap : null,
+            child: AnimatedBuilder(
+              animation: _glowIntensity,
+              builder: (context, child) {
+                final List<BoxShadow>? boxShadow = switch (state) {
+                  LevelState.locked => null,
+                  LevelState.completed => [
+                    ...NeonTheme.drop(y: 3, blur: 8),
+                    ...NeonTheme.glow(NeonTheme.gold, blur: 14),
+                  ],
+                  LevelState.unlocked => _shouldPulse && !_reducedMotion
+                      ? [
+                          ...NeonTheme.drop(y: 3, blur: 8),
+                          ...NeonTheme.glow(
+                            NeonTheme.cyan,
+                            blur: 16,
+                            intensity: _glowIntensity.value,
+                          ),
+                        ]
+                      : NeonTheme.drop(y: 3, blur: 8),
+                };
+                return Container(
+                  width: widget.size,
+                  height: widget.size,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: levelStateFillColor(state),
+                    border: Border.all(
+                      color: levelStateBorderColor(state),
+                      width: 3,
+                    ),
+                    boxShadow: boxShadow,
+                  ),
+                  child: child,
+                );
+              },
               child: icon != null
-                  ? Icon(icon, color: textColor, size: size * 0.4)
+                  ? Icon(icon, color: textColor, size: widget.size * 0.4)
                   : Text(
-                      '$levelNumber',
+                      '${widget.levelNumber}',
                       style: TextStyle(
                         color: textColor,
-                        fontSize: size * 0.32,
+                        fontSize: widget.size * 0.32,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -112,7 +194,7 @@ class LevelNodeButton extends StatelessWidget {
           ),
           if (state == LevelState.completed) ...[
             const SizedBox(height: 4),
-            StarRating(earned: starsEarned, size: size * 0.18),
+            StarRating(earned: widget.starsEarned, size: widget.size * 0.18),
           ],
         ],
       ),
@@ -147,6 +229,10 @@ class LevelSelectGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Chỉ pulse node unlocked ĐẦU TIÊN (level tiếp theo thật sự sẽ chơi) —
+    // chạy ticker cho MỌI node unlocked trên 1 lưới nhiều ô sẽ tốn hiệu
+    // năng hơn hẳn so với 1 node đơn lẻ (xem Ghi chú độ tin cậy, IDEA-25).
+    final firstUnlockedIndex = states.indexOf(LevelState.unlocked);
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -164,6 +250,7 @@ class LevelSelectGrid extends StatelessWidget {
           state: states[index],
           starsEarned: starsEarnedByLevel[levelNumber] ?? 0,
           size: nodeSize,
+          pulse: index == firstUnlockedIndex,
           onTap: onLevelTap == null ? null : () => onLevelTap!(levelNumber),
         );
       },

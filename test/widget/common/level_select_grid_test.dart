@@ -94,6 +94,136 @@ void main() {
       final stars = tester.widget<StarRating>(find.byType(StarRating));
       expect(stars.earned, 2);
     });
+
+    List<BoxShadow>? shadowOf(WidgetTester tester) {
+      final container = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byType(LevelNodeButton),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      return (container.decoration as BoxDecoration).boxShadow;
+    }
+
+    testWidgets(
+      'IDEA-25: completed dùng glow (gold) cộng thêm drop shadow',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: LevelNodeButton(
+                levelNumber: 2,
+                state: LevelState.completed,
+                starsEarned: 2,
+              ),
+            ),
+          ),
+        );
+
+        final shadow = shadowOf(tester)!;
+        // drop() trả 1 layer, glow() trả 3 layer → tổng 4.
+        expect(shadow.length, 4);
+        expect(shadow.any((s) => (s.color.toARGB32() & 0x00FFFFFF) == (NeonTheme.gold.toARGB32() & 0x00FFFFFF)), isTrue);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'IDEA-25: unlocked KHÔNG pulse → chỉ có drop shadow, không glow, không đổi theo thời gian',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: LevelNodeButton(
+                levelNumber: 5,
+                state: LevelState.unlocked,
+              ),
+            ),
+          ),
+        );
+
+        expect(shadowOf(tester)!.length, 1);
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(shadowOf(tester)!.length, 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'IDEA-25: unlocked + pulse=true → glow (cyan) liên tục dao động theo thời gian',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: LevelNodeButton(
+                levelNumber: 5,
+                state: LevelState.unlocked,
+                pulse: true,
+              ),
+            ),
+          ),
+        );
+
+        final shadow0 = shadowOf(tester)!;
+        expect(shadow0.length, 4); // drop (1) + glow (3)
+
+        await tester.pump(const Duration(milliseconds: 450));
+        final shadow1 = shadowOf(tester)!;
+        // Cùng số layer, nhưng alpha (intensity) phải khác — animation đang
+        // chạy, không đứng yên.
+        expect(shadow1.length, 4);
+        expect(shadow0.last.color.a, isNot(shadow1.last.color.a));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'IDEA-25: pulse=true nhưng state=completed → bỏ qua pulse, vẫn dùng shadow của completed',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: LevelNodeButton(
+                levelNumber: 5,
+                state: LevelState.completed,
+                pulse: true,
+              ),
+            ),
+          ),
+        );
+
+        final shadow = shadowOf(tester)!;
+        expect(shadow.any((s) => (s.color.toARGB32() & 0x00FFFFFF) == (NeonTheme.gold.toARGB32() & 0x00FFFFFF)), isTrue);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'IDEA-25: Reduce Motion bật → pulse tắt hẳn, chỉ còn drop shadow tĩnh',
+      (tester) async {
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: const MaterialApp(
+              home: Material(
+                child: LevelNodeButton(
+                  levelNumber: 5,
+                  state: LevelState.unlocked,
+                  pulse: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(shadowOf(tester)!.length, 1);
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(shadowOf(tester)!.length, 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('LevelSelectGrid', () {
