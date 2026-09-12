@@ -20,12 +20,25 @@ Thiếu nhất quán cảm giác chạm giữa các control tương tác trong c
 Đổi `GestureDetector(onTap: onTap, child: slot)` thành `PressableScale(onTap: onTap, child: slot)`.
 
 ## Acceptance criteria
-- [ ] Ô ngày hiện tại (tappable) có phản hồi scale nhấn giống mọi nút khác trong kit.
-- [ ] Test: xác nhận PressableScale bọc đúng slot khi onTap != null, và tap vẫn gọi đúng callback như trước.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] Ô ngày hiện tại (tappable) có phản hồi scale nhấn giống mọi nút khác trong kit.
+- [x] Test: xác nhận PressableScale bọc đúng slot khi onTap != null, và tap vẫn gọi đúng callback như trước.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`. (Dùng đúng `PressableScale` có sẵn — cùng micro-bounce mọi nút khác, tôn trọng `reducedMotion` sẵn có trong chính `PressableScale`.)
+
+## Quyết định
+Đổi `GestureDetector(onTap: onTap, child: slot)` → `PressableScale(onTap: onTap, child: slot)` trong `_DaySlot.build()` — 1 dòng, đúng y hệt gợi ý trong Đề xuất.
+
+2 test mới trong `group('ENH-52: ...')`: xác nhận ô ngày hiện tại (tappable) có `PressableScale` làm ancestor và tap vẫn gọi đúng `onClaim`; ô ngày KHÔNG phải hiện tại không có `PressableScale` ancestor nào (giữ nguyên "không tappable" như cũ). Trong lúc viết test, phát hiện công thức xác định "ngày hiện tại" là `highlightDay = (currentStreakDay % cycleLength) + 1` (không đơn giản là `day == currentStreakDay` như tôi giả định ban đầu) — sửa lại test cho đúng dựa theo 1 test khác đã có sẵn trong cùng file ghi rõ công thức này trong comment.
+
+Device smoke test (Pixel 7 Pro, cài đặt mới để `canClaimToday` = true): chụp ảnh ô ngày 1 (đang là ngày hiện tại, viền cyan glow) trước và sau khi tap — tap qua đúng `PressableScale` claim thành công (chuyển sang dấu tick vàng, nút "Claim" chuyển disabled), không crash, không lỗi trong logcat. Không chụp được rõ khung hình scale-down transient (biên độ mặc định `PressableScale` chỉ 0.94, quá nhỏ để phân biệt bằng mắt qua ảnh chụp tĩnh, và các lần thử `swipe` mô phỏng giữ nhấn không bắt trúng khung hình giữa lúc nhấn) — dựa vào cơ chế `PressableScale` đã được kiểm chứng kỹ qua rất nhiều widget khác trong chính session này (CommonButton, IconBadgeButton, LeaderboardEntry/AvatarFrame ở ENH-46, ...) làm bằng chứng gián tiếp đủ tin cậy cho chính cơ chế animation dùng lại y hệt.
+
+`flutter analyze` + `flutter test --exclude-tags slow` sạch ở root (603 tests) và `example/` (29 tests).
+
+Tự chấm: 9/10 — đúng 1-dòng-fix theo đề xuất, test phát hiện và sửa đúng 1 giả định sai (công thức highlightDay) thay vì đoán mò, có bằng chứng device thật cho hành vi chức năng (tap→claim); trừ điểm nhẹ vì không chụp được khung hình scale transient cụ thể (biên độ quá nhỏ để phân biệt qua ảnh tĩnh).
+
+Commit code: `49c3a12`.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/ENH-52-daily-login-day-slot-pressable-scale-consistency.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
