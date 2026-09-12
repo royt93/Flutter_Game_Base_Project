@@ -20,12 +20,23 @@ source: Codex (codex exec, audit toàn diện lib/core/)
 Check `v.isFinite` trước khi gọi `.toInt()`; trả về fallback nếu không hữu hạn, giống hệt cách hàm này đã xử lý các trường hợp sai kiểu khác.
 
 ## Acceptance criteria
-- [ ] asIntOr() không throw với double.nan/infinity/negativeInfinity — trả về fallback đã cấu hình.
-- [ ] Test tường minh cho NaN, Infinity, -Infinity làm input.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] asIntOr() không throw với double.nan/infinity/negativeInfinity — trả về fallback đã cấu hình.
+- [x] Test tường minh cho NaN, Infinity, -Infinity làm input.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+
+## Quyết định
+Sửa đúng như Đề xuất: check `v.isFinite` trước khi gọi `.toInt()`, fallback
+nếu không hữu hạn. 1 dòng thay đổi, đúng effort S dự kiến.
+
+Test: 4 test mới (NaN, Infinity, -Infinity, xác nhận không throw qua
+`returnsNormally`). Tổng 13 test trong file, tất cả pass. `flutter
+analyze` sạch cả root + `example/`. `flutter test --exclude-tags slow`:
+tất cả pass, không regression.
+
+Không có device smoke test — pure Dart utility function, không render UI.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-22-safe-json-asintor-nan-infinity-throw.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
