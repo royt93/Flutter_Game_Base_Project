@@ -20,8 +20,15 @@ class StorageKeys {
   static const String maxMsSeen = 'max_ms_seen';
 
   // lib/core/energy_service.dart reads/writes these directly.
+  //
+  // energyCount/energyLastMs are the LEGACY (pre-BUG-19) two-key format —
+  // kept only so EnergyService can migrate an old save on first read. New
+  // writes go to energyStateV1 (one JSON blob, one write — see BUG-19: two
+  // separate fire-and-forget writes for count/lastMs could leave a mixed
+  // checkpoint if the app died between them).
   static const String energyCount = 'energy_count';
   static const String energyLastMs = 'energy_last_ms';
+  static const String energyStateV1 = 'energy_state_v1';
   static const String energyInfiniteUntilMs = 'energy_infinite_until_ms';
 
   // lib/core/offline_progression_service.dart reads/writes this directly.
