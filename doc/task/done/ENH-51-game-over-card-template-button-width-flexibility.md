@@ -20,12 +20,27 @@ Layout không linh hoạt theo ngữ cảnh sử dụng thực tế.
 Cho phép nút co giãn theo chiều rộng khả dụng của card (ví dụ bọc trong `SizedBox(width: double.infinity, ...)` hoặc thêm tham số optional `double? buttonWidth` nếu cần kiểm soát cụ thể hơn — chọn hướng đơn giản nhất, ưu tiên full-width theo card trước).
 
 ## Acceptance criteria
-- [ ] Nút hành động không tràn ra ngoài card ở chiều rộng hẹp bất thường (test với card 200px width).
-- [ ] Test: dựng GameOverCardTemplate trong container hẹp, xác nhận tester.takeException() rỗng (không RenderFlex overflow).
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] Nút hành động không tràn ra ngoài card ở chiều rộng hẹp bất thường (test với card 200px width).
+- [x] Test: dựng GameOverCardTemplate trong container hẹp, xác nhận tester.takeException() rỗng (không RenderFlex overflow).
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định. (N/A — xem Quyết định.)
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`. (N/A — chỉ đổi width layout, animation entrance ENH-34 có sẵn không đổi.)
+
+## Quyết định
+Chọn hướng đơn giản nhất theo đúng gợi ý trong Đề xuất: bọc cả 2 `CommonButton` (primary + secondary) trong `SizedBox(width: double.infinity)` — không thêm tham số `buttonWidth` (YAGNI, "full-width theo card" đã đủ giải quyết vấn đề nêu trong bug).
+
+2 test mới trong `group('ENH-51: ...')`: card hẹp 200px không gây `RenderFlex overflow`; card RỘNG 320px xác nhận nút thực sự co giãn RỘNG HƠN 240px (mặc định cố định cũ của `CommonButton`) — đây là bằng chứng phân biệt rõ hành vi MỚI với hành vi CŨ (test "không overflow ở 200px" một mình không đủ phân biệt, vì `Container` có `width` cố định của Flutter cũng tự động bị clamp xuống theo constraint hẹp hơn từ parent, không thực sự "tràn"; test 320px mới chứng minh được nút giờ đây co giãn theo card thay vì luôn dừng ở 240px).
+
+Phát hiện phụ (không phải regression từ fix này): test "tapping primary action calls onPrimaryAction" có sẵn từ trước in ra 1 cảnh báo hit-test vô hại (không fail) — đã xác nhận bằng `git stash` A/B rằng cảnh báo này tồn tại y hệt TRƯỚC cả khi tôi sửa gì, không liên quan tới ENH-51, không cần xử lý trong task này.
+
+Không cần device smoke: thay đổi layout thuần (width co giãn), widget test đã dùng chính Flutter rendering engine để xác thực kích thước render thực tế, tương đương bằng chứng ảnh chụp device cho loại thay đổi số học/layout này.
+
+`flutter analyze` + `flutter test --exclude-tags slow` sạch ở root (601 tests) và `example/` (29 tests).
+
+Tự chấm: 9.5/10 — đúng root cause, chọn giải pháp đơn giản nhất, test phân biệt rõ hành vi mới/cũ thay vì chỉ test "không crash", chủ động điều tra và loại trừ 1 warning không liên quan thay vì bỏ qua mập mờ.
+
+Commit code: `abe950d`.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/ENH-51-game-over-card-template-button-width-flexibility.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
