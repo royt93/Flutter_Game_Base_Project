@@ -32,13 +32,13 @@ Future<Map<String, Object>> collectApiSnapshot() async {
   for (final relative in exports) {
     final source = await File('lib/$relative').readAsString();
     for (final match in RegExp(
-      r'^\s*(?:abstract\s+)?(?:class|enum|mixin|typedef|extension)\s+([A-Za-z_]\w*)',
+      r'^(?:abstract\s+)?(?:class|enum|mixin|typedef|extension)\s+([A-Za-z_]\w*)',
       multiLine: true,
     ).allMatches(source)) {
       symbols.add('$relative:${match.group(1)}');
     }
     for (final match in RegExp(
-      r'^\s*(?:const|final)\s+([A-Za-z_]\w*)\s*=|^\s*([A-Za-z_]\w*)\s*\([^;]*\)\s*\{',
+      r'^(?:const|final)\s+([A-Za-z_]\w*)\s*=|^([A-Za-z_]\w*)\s*\([^;]*\)\s*\{',
       multiLine: true,
     ).allMatches(source)) {
       symbols.add('$relative:${match.group(1) ?? match.group(2)}');

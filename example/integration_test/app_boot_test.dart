@@ -2,12 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:roy_casual_kit/core/audio_manager.dart';
-import 'package:roy_casual_kit/core/achievement_service.dart';
-import 'package:roy_casual_kit/core/daily_login_service.dart';
-import 'package:roy_casual_kit/core/neon_theme.dart';
-import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
-import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
+import 'package:roy_casual_kit/roy_casual_kit.dart';
 import 'package:roy_casual_kit_example/main.dart' as app;
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
 import 'package:roy_casual_kit_example/screens/settings_screen.dart';
@@ -102,6 +97,22 @@ void main() {
 
     expect(result.streakDay, inInclusiveRange(1, 7));
     expect(daily.claimedDaysInCycle, contains(result.streakDay));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('FEAT-64: consumer contract fixture passes on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+
+    final fixture = RoyCasualKitTestFixture();
+    final report = await RoyCasualKitContractTestKit.verifyBootstrap(
+      initialize: () => RoyCasualKit.initialize(config: fixture.config),
+      expectedModules: fixture.modules,
+    );
+
+    expect(report.passed, isTrue, reason: report.failures.join(', '));
     expect(tester.takeException(), isNull);
   });
 

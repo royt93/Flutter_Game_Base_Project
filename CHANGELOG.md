@@ -1,5 +1,6 @@
 ## 0.2.0
 
+- Added a deterministic consumer contract-test fixture and bootstrap verification harness through the public package entrypoint.
 - Core services: `ClampedClock`-backed cheat-proof offline earnings (`OfflineProgressionService`), `VersionedJsonStore`, `PerformanceTierService`, `DailyLoginService`, `EnergyService`, `CrashReporter` seam, plus reduced-motion support (`NeonTheme.reducedMotion`) applied across every animated widget in the kit.
 - Widget kit grown from 21 to 40 widgets: new progress/reward widgets (`CountdownChip`, `PaginatedDotsIndicator`, `CoinFlyOverlay`, `DailyLoginCalendarWidget`, `EnergyBar`), new layout/card widgets (`RibbonBadge`, `ShopItemCard`, `VictoryCardTemplate`, `LeaderboardList`), new feedback/overlay widgets (`ConfettiOverlay`, `FloatingComboText`, `NetworkStatusBanner`, `ShimmerPlaceholder`, `SpotlightOverlay`), a game-specific `LevelSelectGrid`, and a game-feel/juice set (`SquashStretch`, `ScreenShake`, `ComboHeatBackground`).
 - New Flame starter template (`RoyGame`) and `FlameTrackedOverlay` for pinning Flutter widgets to in-game world positions.

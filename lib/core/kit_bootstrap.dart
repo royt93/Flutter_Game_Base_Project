@@ -20,11 +20,13 @@ class RoyCasualKitConfig {
       RoyCasualKitModule.locale,
     },
     this.preferences,
+    this.storageOverride,
     this.permanent = true,
   });
 
   final Set<RoyCasualKitModule> modules;
   final SharedPreferences? preferences;
+  final StorageService? storageOverride;
   final bool permanent;
 }
 
@@ -82,9 +84,12 @@ class RoyCasualKit {
         switch (module) {
           case RoyCasualKitModule.storage:
             if (!Get.isRegistered<StorageService>()) {
-              final prefs =
-                  config.preferences ?? await SharedPreferences.getInstance();
-              Get.put(StorageService(prefs), permanent: config.permanent);
+              final storage =
+                  config.storageOverride ??
+                  StorageService(
+                    config.preferences ?? await SharedPreferences.getInstance(),
+                  );
+              Get.put(storage, permanent: config.permanent);
               _owned.add(() async {
                 if (Get.isRegistered<StorageService>()) {
                   await Get.delete<StorageService>(force: true);

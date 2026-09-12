@@ -97,6 +97,11 @@ the complete widget kit. Existing deep imports under `core/` and
 `presentation/` remain available for advanced use, but new consumer code
 should migrate to the entrypoint so the supported API surface is explicit.
 
+For consumer tests, `RoyCasualKitTestFixture` provides deterministic in-memory
+storage and `RoyCasualKitContractTestKit.verifyBootstrap` checks module
+registration, error-free initialization and idempotent repeated setup without
+network or vendor SDK dependencies.
+
 ## See it live
 
 `example/` is a separate Flutter app (its own `pubspec.yaml`, `android/`,
