@@ -78,6 +78,7 @@ class _FloatingComboTextState extends State<FloatingComboText>
   late final AnimationController _controller;
   late final Animation<double> _rise;
   late final Animation<double> _opacity;
+  late final Animation<double> _scale;
   bool _startedOnce = false;
 
   @override
@@ -105,6 +106,14 @@ class _FloatingComboTextState extends State<FloatingComboText>
         curve: const Interval(0.4, 1.0, curve: Curves.easeIn),
       ),
     );
+    // Pop-in trong 30% đầu animation, cùng "juice" convention với
+    // RewardPopup/NeonDialog's entrance (scale từ nhỏ hơn 1, overshoot nhẹ).
+    _scale = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.3, curve: Curves.easeOutBack),
+      ),
+    );
   }
 
   @override
@@ -119,7 +128,14 @@ class _FloatingComboTextState extends State<FloatingComboText>
       animation: _controller,
       builder: (context, child) => Transform.translate(
         offset: Offset(0, _rise.value),
-        child: Opacity(opacity: _opacity.value, child: child),
+        child: Opacity(
+          opacity: _opacity.value,
+          child: Transform.scale(
+            key: const Key('floatingComboTextScale'),
+            scale: _scale.value,
+            child: child,
+          ),
+        ),
       ),
       child: Text(
         widget.text,

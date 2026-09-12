@@ -127,6 +127,58 @@ void main() {
     },
   );
 
+  double comboScaleOf(WidgetTester tester) => tester
+      .widget<Transform>(find.byKey(const Key('floatingComboTextScale')))
+      .transform
+      .storage[0];
+
+  testWidgets(
+    'IDEA-19: pop-in — scale < 1 ngay lúc spawn, đạt 1.0 khi animation xong',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: FloatingComboText(
+              text: '+10',
+              duration: Duration(milliseconds: 300),
+            ),
+          ),
+        ),
+      );
+
+      // Ngay frame đầu (t=0) — scale ở giá trị begin, nhỏ hơn 1.
+      expect(comboScaleOf(tester), lessThan(1.0));
+
+      await tester.pump(const Duration(milliseconds: 300));
+      // Sau khi animation hoàn tất — scale đã ổn định ở 1.0.
+      expect(comboScaleOf(tester), 1.0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'IDEA-19: Reduce Motion bật → scale = 1.0 ngay, không kẹt ở giá trị pop giữa chừng',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: const MaterialApp(
+            home: Material(
+              child: FloatingComboText(
+                text: '+10',
+                duration: Duration(milliseconds: 300),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      expect(comboScaleOf(tester), 1.0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'ENH-17: Reduce Motion bật → rise+fade hoàn tất ngay, onDone gọi ngay',
     (tester) async {

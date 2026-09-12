@@ -5,6 +5,9 @@ import 'package:flutter/scheduler.dart';
 
 import '../../../core/neon_theme.dart';
 
+/// Confetti piece shape — mixed randomly so a burst isn't visually uniform.
+enum ConfettiShape { rect, circle }
+
 /// One confetti piece's fixed randomized traits, generated once at spawn.
 /// Motion at any time [t] is a pure function of these traits (see
 /// [confettiOffsetAt]/[confettiRotationAt]/[confettiOpacityAt]) so the
@@ -20,6 +23,7 @@ class ConfettiParticle {
     required this.swayAmplitude,
     required this.swayFrequency,
     required this.color,
+    this.shape = ConfettiShape.rect,
   });
 
   /// Horizontal spawn position, 0.0 (left edge) - 1.0 (right edge).
@@ -41,6 +45,10 @@ class ConfettiParticle {
   /// Sway speed (radians/sec) fed into a sine wave.
   final double swayFrequency;
   final Color color;
+
+  /// Rect or circle — mixed randomly per particle by
+  /// [generateConfettiParticles] so a burst isn't visually uniform.
+  final ConfettiShape shape;
 }
 
 /// Offset from its spawn point at [t] seconds since the burst started:
@@ -88,6 +96,7 @@ List<ConfettiParticle> generateConfettiParticles(
       swayAmplitude: 16 + rng.nextDouble() * 28,
       swayFrequency: 1 + rng.nextDouble() * 2,
       color: colors[rng.nextInt(colors.length)],
+      shape: rng.nextBool() ? ConfettiShape.rect : ConfettiShape.circle,
     );
   });
 }
@@ -230,17 +239,29 @@ class _ConfettiPainter extends CustomPainter {
       canvas.save();
       canvas.translate(pos.dx, pos.dy);
       canvas.rotate(confettiRotationAt(p, elapsedSeconds));
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
+      final paint = Paint()..color = p.color.withValues(alpha: opacity);
+      if (p.shape == ConfettiShape.circle) {
+        canvas.drawOval(
           Rect.fromCenter(
             center: Offset.zero,
             width: p.size,
             height: p.size * 0.6,
           ),
-          const Radius.circular(2),
-        ),
-        Paint()..color = p.color.withValues(alpha: opacity),
-      );
+          paint,
+        );
+      } else {
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(
+              center: Offset.zero,
+              width: p.size,
+              height: p.size * 0.6,
+            ),
+            const Radius.circular(2),
+          ),
+          paint,
+        );
+      }
       canvas.restore();
     }
   }

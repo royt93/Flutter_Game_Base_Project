@@ -60,6 +60,29 @@ void main() {
         }
       },
     );
+
+    test('ConfettiParticle: shape defaults to rect when omitted', () {
+      expect(particle.shape, ConfettiShape.rect);
+    });
+
+    test(
+      'IDEA-20: generateConfettiParticles mixes rect and circle shapes',
+      () {
+        final particles = generateConfettiParticles(
+          40,
+          const [Colors.red],
+          random: Random(1),
+        );
+        expect(
+          particles.any((p) => p.shape == ConfettiShape.rect),
+          isTrue,
+        );
+        expect(
+          particles.any((p) => p.shape == ConfettiShape.circle),
+          isTrue,
+        );
+      },
+    );
   });
 
   group('ConfettiOverlay widget', () {
