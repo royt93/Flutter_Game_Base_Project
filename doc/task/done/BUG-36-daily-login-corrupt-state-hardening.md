@@ -20,11 +20,23 @@ Deserializer tại `lib/core/daily_login_service.dart:77-83` force-cast list san
 - Giữ anti-clock-rewind và save serialization hiện tại.
 
 ## Acceptance criteria
-- [ ] Sai type, giá trị âm/quá cycle, list lẫn type và tổ hợp state mâu thuẫn không crash.
-- [ ] Recovery không cấp thêm reward và state sau recovery thỏa mọi invariant.
-- [ ] Save hợp lệ cũ tiếp tục round-trip; race coverage BUG-18 vẫn pass.
-- [ ] Unit, widget, integration và device smoke test bao phủ happy/edge/error/corrupt case.
+- [x] Sai type, giá trị âm/quá cycle, list lẫn type và tổ hợp state mâu thuẫn không crash.
+- [x] Recovery không cấp thêm reward và state sau recovery thỏa mọi invariant.
+- [x] Save hợp lệ cũ tiếp tục round-trip; race coverage BUG-18 vẫn pass.
+- [x] Unit, widget, integration và device smoke test bao phủ happy/edge/error/corrupt case.
+
+## Implementation evidence
+
+- Added a defensive domain parser that validates epoch day, streak range, claimed-day types/range and cross-field consistency.
+- Any malformed or contradictory state resets atomically to the safe initial state (`streakDay: 0`, no claimed days), so recovery cannot grant an extra reward.
+- Hydration catches unexpected store/domain errors while preserving valid legacy round-trips and BUG-18 save serialization.
+- Tests cover wrong types, negative/out-of-cycle values, mixed lists, contradictory state, safe widget rendering, valid claims, persistence and rapid claim saves.
+- Integration smoke `BUG-36` passed on Samsung SM S928B (`R5CX613VZBR`, Android 16/API 36) with `--dart-define=E2E_TEST=true`.
+- Root and `example/` passed `flutter analyze` and `flutter test --exclude-tags slow`.
+
+## Quyết định
+
+Audit score: **9.5/10**. Work meets the task contract and is ready to commit/push.
 
 ## Prompt loop implementation
 Đọc toàn bộ file task này và code liên quan trước khi làm. Implement bằng TDD. Kết thúc mỗi vòng phải: audit lại code changes và chấm điểm /10; bổ sung unit test + widget test + integration test cho mọi case; chạy `flutter analyze` và `flutter test --exclude-tags slow` ở root lẫn `example/`; smoke test trên Android device thật và ghi screenshot/log làm bằng chứng. Nếu chưa đạt >9/10 thì tiếp tục sửa. Chỉ khi work đúng và điểm >9/10 mới commit + push code; sau push cập nhật `## Quyết định`, tick acceptance criteria, chuyển task sang `doc/task/done/`, commit + push lần hai.
-

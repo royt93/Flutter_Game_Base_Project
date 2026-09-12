@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/achievement_service.dart';
+import 'package:roy_casual_kit/core/daily_login_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
@@ -88,6 +89,19 @@ void main() {
     await achievements.debugPendingSaves;
 
     expect(achievements.isCompleted('device_smoke'), isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('BUG-36: daily login survives real app storage', (tester) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+
+    final daily = DailyLoginService();
+    final result = daily.claimToday();
+    await daily.debugPendingSaves;
+
+    expect(result.streakDay, inInclusiveRange(1, 7));
+    expect(daily.claimedDaysInCycle, contains(result.streakDay));
     expect(tester.takeException(), isNull);
   });
 

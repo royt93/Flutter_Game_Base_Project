@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -25,9 +28,60 @@ void main() {
     Get.put(store, permanent: true);
   });
 
-  Future<void> setDay(int day) => store.setInt(StorageKeys.maxEpochDaySeen, day);
+  Future<void> setDay(int day) =>
+      store.setInt(StorageKeys.maxEpochDaySeen, day);
 
   group('DailyLoginService', () {
+    test('corrupt domain fields recover to safe initial state', () async {
+      await store.setString(
+        'daily_login_state_v1',
+        jsonEncode({
+          'lastClaimedEpochDay': _realDay,
+          'streakDay': 99,
+          'claimedDaysInCycle': [1, 2, 'bad'],
+          'schemaVersion': 1,
+        }),
+      );
+      final service = DailyLoginService();
+
+      expect(service.currentStreakDay, 0);
+      expect(service.claimedDaysInCycle, isEmpty);
+      expect(service.canClaimToday(), isTrue);
+    });
+
+    test('mismatched state resets without granting a claimed day', () async {
+      await store.setString(
+        'daily_login_state_v1',
+        jsonEncode({
+          'lastClaimedEpochDay': _realDay,
+          'streakDay': 2,
+          'claimedDaysInCycle': [1],
+          'schemaVersion': 1,
+        }),
+      );
+      final service = DailyLoginService();
+
+      expect(service.currentStreakDay, 0);
+      expect(service.claimedDaysInCycle, isEmpty);
+      expect(service.claimToday().streakDay, 1);
+    });
+
+    testWidgets('widget renders safely after corrupt-state recovery', (
+      tester,
+    ) async {
+      await store.setString(
+        'daily_login_state_v1',
+        '{"lastClaimedEpochDay":-2,"streakDay":0,"claimedDaysInCycle":[],"schemaVersion":1}',
+      );
+      final service = DailyLoginService();
+
+      await tester.pumpWidget(
+        MaterialApp(home: Text('day:${service.currentStreakDay}')),
+      );
+
+      expect(find.text('day:0'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
     test('maybe trả về null khi chưa Get.put', () {
       expect(DailyLoginService.maybe, isNull);
     });
@@ -58,26 +112,32 @@ void main() {
       expect(service.claimedDaysInCycle, {1});
     });
 
-    test('claim 2 lần trong cùng 1 ngày → lần 2 không đổi gì (đã claim)', () async {
-      await setDay(_realDay);
-      final service = DailyLoginService();
+    test(
+      'claim 2 lần trong cùng 1 ngày → lần 2 không đổi gì (đã claim)',
+      () async {
+        await setDay(_realDay);
+        final service = DailyLoginService();
 
-      service.claimToday();
-      final second = service.claimToday();
+        service.claimToday();
+        final second = service.claimToday();
 
-      expect(second.streakDay, 1);
-      expect(second.streakWasReset, isFalse);
-      expect(service.currentStreakDay, 1);
-    });
+        expect(second.streakDay, 1);
+        expect(second.streakWasReset, isFalse);
+        expect(service.currentStreakDay, 1);
+      },
+    );
 
-    test('claim rồi → canClaimToday() trả về false trong cùng ngày đó', () async {
-      await setDay(_realDay);
-      final service = DailyLoginService();
+    test(
+      'claim rồi → canClaimToday() trả về false trong cùng ngày đó',
+      () async {
+        await setDay(_realDay);
+        final service = DailyLoginService();
 
-      service.claimToday();
+        service.claimToday();
 
-      expect(service.canClaimToday(), isFalse);
-    });
+        expect(service.canClaimToday(), isFalse);
+      },
+    );
 
     test('claim 3 ngày liên tiếp → streak tăng dần 1, 2, 3', () async {
       final service = DailyLoginService();
@@ -109,27 +169,34 @@ void main() {
       final result = service.claimToday();
 
       expect(result.streakDay, 1);
-      expect(result.streakWasReset, isFalse, reason: 'quay vòng đủ chu kỳ, không phải bỏ lỡ ngày');
+      expect(
+        result.streakWasReset,
+        isFalse,
+        reason: 'quay vòng đủ chu kỳ, không phải bỏ lỡ ngày',
+      );
       expect(service.claimedDaysInCycle, {1});
     });
 
-    test('bỏ lỡ 1 ngày (claim cách nhau 2 ngày) → streak reset về ngày 1', () async {
-      final service = DailyLoginService();
+    test(
+      'bỏ lỡ 1 ngày (claim cách nhau 2 ngày) → streak reset về ngày 1',
+      () async {
+        final service = DailyLoginService();
 
-      await setDay(_realDay);
-      service.claimToday();
-      await setDay(_realDay + 1);
-      service.claimToday();
-      expect(service.currentStreakDay, 2);
+        await setDay(_realDay);
+        service.claimToday();
+        await setDay(_realDay + 1);
+        service.claimToday();
+        expect(service.currentStreakDay, 2);
 
-      // Bỏ lỡ ngày _realDay + 2, claim tiếp ở _realDay + 3.
-      await setDay(_realDay + 3);
-      final result = service.claimToday();
+        // Bỏ lỡ ngày _realDay + 2, claim tiếp ở _realDay + 3.
+        await setDay(_realDay + 3);
+        final result = service.claimToday();
 
-      expect(result.streakDay, 1);
-      expect(result.streakWasReset, isTrue);
-      expect(service.claimedDaysInCycle, {1});
-    });
+        expect(result.streakDay, 1);
+        expect(result.streakWasReset, isTrue);
+        expect(service.claimedDaysInCycle, {1});
+      },
+    );
 
     test(
       'chỉnh lùi giờ máy: mốc ClampedClock đã ghi ngày tương lai thì gọi lại '
@@ -154,45 +221,45 @@ void main() {
       },
     );
 
-    test('persist qua "restart": tạo service mới đọc lại đúng streak đã lưu', () async {
-      final service = DailyLoginService();
-      await setDay(_realDay);
-      service.claimToday();
-      await setDay(_realDay + 1);
-      service.claimToday();
+    test(
+      'persist qua "restart": tạo service mới đọc lại đúng streak đã lưu',
+      () async {
+        final service = DailyLoginService();
+        await setDay(_realDay);
+        service.claimToday();
+        await setDay(_realDay + 1);
+        service.claimToday();
 
-      final restarted = DailyLoginService();
-      expect(restarted.currentStreakDay, 2);
-      expect(restarted.claimedDaysInCycle, {1, 2});
-      expect(restarted.canClaimToday(), isFalse);
-    });
+        final restarted = DailyLoginService();
+        expect(restarted.currentStreakDay, 2);
+        expect(restarted.claimedDaysInCycle, {1, 2});
+        expect(restarted.canClaimToday(), isFalse);
+      },
+    );
 
     group('BUG-18: save race khi claimToday() gọi rất nhanh liên tiếp', () {
-      test(
-        'nhiều ngày claim liên tiếp không chờ save trước hoàn tất → sau khi '
-        'mọi save settle, streak persist đúng qua instance mới (không bị 1 '
-        'write cũ ghi đè bằng snapshot lỗi thời)',
-        () async {
-          final service = DailyLoginService();
+      test('nhiều ngày claim liên tiếp không chờ save trước hoàn tất → sau khi '
+          'mọi save settle, streak persist đúng qua instance mới (không bị 1 '
+          'write cũ ghi đè bằng snapshot lỗi thời)', () async {
+        final service = DailyLoginService();
 
-          // Khác các test khác ở trên (luôn có `await setDay(...)` xen giữa,
-          // đủ thời gian cho save trước settle) — ở đây đổi ngày và claim
-          // LIÊN TIẾP không await gì cả, đúng kịch bản "nhiều claim dồn dập"
-          // mô tả trong Hiện trạng.
-          await setDay(_realDay);
-          service.claimToday();
-          unawaited(setDay(_realDay + 1));
-          service.claimToday();
-          unawaited(setDay(_realDay + 2));
-          service.claimToday();
+        // Khác các test khác ở trên (luôn có `await setDay(...)` xen giữa,
+        // đủ thời gian cho save trước settle) — ở đây đổi ngày và claim
+        // LIÊN TIẾP không await gì cả, đúng kịch bản "nhiều claim dồn dập"
+        // mô tả trong Hiện trạng.
+        await setDay(_realDay);
+        service.claimToday();
+        unawaited(setDay(_realDay + 1));
+        service.claimToday();
+        unawaited(setDay(_realDay + 2));
+        service.claimToday();
 
-          await service.debugPendingSaves;
+        await service.debugPendingSaves;
 
-          final restarted = DailyLoginService();
-          expect(restarted.currentStreakDay, 3);
-          expect(restarted.claimedDaysInCycle, {1, 2, 3});
-        },
-      );
+        final restarted = DailyLoginService();
+        expect(restarted.currentStreakDay, 3);
+        expect(restarted.claimedDaysInCycle, {1, 2, 3});
+      });
     });
   });
 }
