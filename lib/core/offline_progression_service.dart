@@ -46,7 +46,29 @@ class OfflineProgressionService extends GetxService {
     return saved > 0 ? saved : now;
   }
 
+  /// Validates BOTH inputs before any calculation or state change (BUG-27):
+  /// a negative [maxOfflineCap] makes `.clamp(0, negativeUpperBound)` throw
+  /// a confusing internal error instead of this documented one, and a
+  /// negative/non-finite [productionRatePerSecond] would otherwise return
+  /// negative/NaN/infinite "earnings". Throwing here — before [claim]'s
+  /// caller reaches its `setInt` — also means an invalid call never
+  /// advances `offlineLastClaimedMs`.
   double _earningsAt(int now, double productionRatePerSecond) {
+    if (maxOfflineCap.isNegative) {
+      throw ArgumentError.value(
+        maxOfflineCap,
+        'maxOfflineCap',
+        'must be >= Duration.zero',
+      );
+    }
+    if (!productionRatePerSecond.isFinite || productionRatePerSecond < 0) {
+      throw ArgumentError.value(
+        productionRatePerSecond,
+        'productionRatePerSecond',
+        'must be finite and >= 0',
+      );
+    }
+
     final elapsedMs = (now - _lastClaimedMsOr(now)).clamp(
       0,
       maxOfflineCap.inMilliseconds,

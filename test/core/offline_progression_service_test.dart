@@ -159,5 +159,52 @@ void main() {
       final earned = service.pendingEarnings(1);
       expect(earned, service.maxOfflineCap.inSeconds * 1);
     });
+
+    group('BUG-27: validate tham số kinh tế không hợp lệ', () {
+      test('maxOfflineCap âm → ArgumentError thay vì throw mơ hồ từ clamp', () {
+        final service = OfflineProgressionService(
+          maxOfflineCap: const Duration(seconds: -1),
+        );
+        Get.put(service, permanent: true);
+
+        expect(() => service.pendingEarnings(1), throwsArgumentError);
+      });
+
+      test('productionRatePerSecond âm → ArgumentError', () {
+        final service = OfflineProgressionService();
+        Get.put(service, permanent: true);
+
+        expect(() => service.pendingEarnings(-1), throwsArgumentError);
+      });
+
+      test('productionRatePerSecond NaN/Infinity → ArgumentError', () {
+        final service = OfflineProgressionService();
+        Get.put(service, permanent: true);
+
+        expect(() => service.pendingEarnings(double.nan), throwsArgumentError);
+        expect(
+          () => service.pendingEarnings(double.infinity),
+          throwsArgumentError,
+        );
+      });
+
+      test(
+        'claim() với tham số không hợp lệ ném lỗi trước, KHÔNG advance '
+        'offlineLastClaimedMs',
+        () async {
+          final service = OfflineProgressionService();
+          Get.put(service, permanent: true);
+          await service.claim(1);
+          final before = store.getInt(StorageKeys.offlineLastClaimedMs);
+
+          await expectLater(
+            service.claim(-5),
+            throwsArgumentError,
+          );
+
+          expect(store.getInt(StorageKeys.offlineLastClaimedMs), before);
+        },
+      );
+    });
   });
 }
