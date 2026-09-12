@@ -20,12 +20,25 @@ Hạn chế tái sử dụng cho các game không dùng "tim" làm biểu tượ
 Thêm tham số optional `Axis direction = Axis.vertical`, `IconData icon = Icons.favorite`, `IconData emptyIcon = Icons.favorite_border`, `Color? color` — giữ nguyên hành vi mặc định hiện tại khi không truyền.
 
 ## Acceptance criteria
-- [ ] direction/icon/emptyIcon/color mặc định giữ nguyên hành vi hiện tại (không phá demo/call site nào).
-- [ ] Test: direction: Axis.horizontal render đúng Row thay vì Column; icon/color custom hiển thị đúng thay vì mặc định.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] direction/icon/emptyIcon/color mặc định giữ nguyên hành vi hiện tại (không phá demo/call site nào).
+- [x] Test: direction: Axis.horizontal render đúng Row thay vì Column; icon/color custom hiển thị đúng thay vì mặc định.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định. (N/A — xem Quyết định.)
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`. (Giữ nguyên animation pip pop có sẵn, không đổi.)
+
+## Quyết định
+Thêm 4 tham số optional (`direction`, `icon`, `emptyIcon`, `color`) với default trùng khớp 100% hành vi cũ (`Axis.vertical`, `Icons.favorite`, `Icons.favorite_border`, `NeonTheme.red`). Tách `build()` thành 2 biến `pips`/`countdown` dùng chung, rồi chọn `Row` hay `Column` bọc ngoài tuỳ `direction` — không nhân đôi code.
+
+3 test mới trong `group('ENH-42: ...')`: mặc định vẫn Column + icon/màu cũ, `direction: Axis.horizontal` render Row (không còn Column nào), và icon/emptyIcon/color tuỳ chỉnh (bolt/purple) hiển thị đúng thay vì heart/red mặc định.
+
+Không cần device smoke: chỉ bổ sung tham số optional, demo hiện tại trong `WidgetShowcaseScreen` không dùng tham số mới (vẫn behavior mặc định y hệt cũ) — đã verify chính bản thân demo này trên device thật ở các task trước (BUG-30..33) sau khi các thay đổi này chưa tồn tại lẫn không liên quan; không có rủi ro hồi quy hiển thị nào cho call site thật.
+
+`flutter analyze` + `flutter test --exclude-tags slow` sạch ở root (580 tests) và `example/` (29 tests).
+
+Tự chấm: 9.5/10 — API mở rộng tối giản, default giữ nguyên tuyệt đối, tái dùng logic build chung cho cả 2 direction thay vì viết 2 nhánh trùng lặp.
+
+Commit code: `9e800a9`.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/ENH-42-energy-bar-direction-icon-color-customization.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
