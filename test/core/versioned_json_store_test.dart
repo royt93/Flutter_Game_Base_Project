@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/core/cloud_save_provider.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/versioned_json_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +10,19 @@ class _Profile {
   const _Profile({required this.name, required this.level});
   final String name;
   final int level;
+}
+
+class _FakeCloudSaveProvider implements CloudSaveProvider {
+  Map<String, Object?>? cloudData;
+
+  @override
+  Future<void> signIn() async {}
+
+  @override
+  Future<Map<String, Object?>?> download() async => cloudData;
+
+  @override
+  Future<void> upload(Map<String, Object?> data) async => cloudData = data;
 }
 
 void main() {
@@ -119,4 +133,178 @@ void main() {
       );
     },
   );
+
+  group('BUG-20: local save không phải nguồn tin cậy — không throw, có policy rõ ràng', () {
+    test('JSON hỏng (không parse được) → load() trả về null, không throw', () async {
+      await store.setString('profile', 'not valid json{{{');
+      expect(makeStore().load(), isNull);
+    });
+
+    test('JSON là 1 list thay vì object → load() trả về null, không throw', () async {
+      await store.setString('profile', '["a", "b"]');
+      expect(makeStore().load(), isNull);
+    });
+
+    test('JSON là 1 số/chuỗi trần (không phải object) → load() trả về null', () async {
+      await store.setString('profile', '42');
+      expect(makeStore().load(), isNull);
+    });
+
+    test(
+      'schemaVersion sai kiểu (chuỗi thay vì số) → coi như version 0, vẫn '
+      'chạy migrate an toàn (không throw)',
+      () async {
+        await store.setString(
+          'profile',
+          '{"schemaVersion":"not-a-number","name":"X","level":1}',
+        );
+        final s = makeStore(
+          schemaVersion: 2,
+          migrate: (fromVersion, json) {
+            expect(fromVersion, 0);
+            return {...json, 'level': 9};
+          },
+        );
+        final loaded = s.load();
+        expect(loaded!.name, 'X');
+        expect(loaded.level, 9);
+      },
+    );
+
+    test(
+      'schemaVersion CAO HƠN hiện tại (app bị hạ version) → load() trả về '
+      'null, KHÔNG đưa thẳng vào fromJson/migrate hiện tại',
+      () async {
+        await store.setString(
+          'profile',
+          '{"schemaVersion":99,"name":"FromFuture","level":1}',
+        );
+        final s = makeStore(
+          schemaVersion: 2,
+          migrate: (fromVersion, json) =>
+              throw StateError('migrate không nên được gọi cho version tương lai'),
+        );
+        expect(s.load(), isNull);
+      },
+    );
+
+    test(
+      'schemaVersion đúng bằng hiện tại nhưng thiếu field bắt buộc → '
+      'fromJson tự throw như bình thường (KHÔNG phải trách nhiệm của '
+      '_readLocalJson bọc lỗi field cụ thể — chỉ bọc lỗi decode/envelope)',
+      () async {
+        await store.setString('profile', '{"schemaVersion":2,"name":"NoLevel"}');
+        final s = makeStore(schemaVersion: 2);
+        expect(() => s.load(), throwsA(isA<TypeError>()));
+      },
+    );
+  });
+
+  group('BUG-20: syncWith áp dụng cùng policy cho cloud payload', () {
+    test(
+      'cloud schemaVersion sai kiểu NHƯNG field khác cũng hỏng → chấp nhận '
+      'coi như version 0 (giống hệt policy local), rồi fromJson tự chặn vì '
+      'field thật sự không đọc được — local vẫn giữ nguyên',
+      () async {
+        final s = makeStore(schemaVersion: 2);
+        await s.save(const _Profile(name: 'LocalSafe', level: 5));
+
+        final provider = _FakeCloudSaveProvider()
+          ..cloudData = {
+            'schemaVersion': 'garbage',
+            'name': 'FromCloud',
+            'level': 'also-garbage', // fromJson cast 'level' as int sẽ throw
+            'syncedAtMs': DateTime.now().millisecondsSinceEpoch + 100000,
+          };
+        await s.syncWith(provider);
+
+        final loaded = s.load();
+        expect(loaded!.name, 'LocalSafe');
+      },
+    );
+
+    test(
+      'cloud schemaVersion CAO HƠN hiện tại → bị từ chối, local giữ nguyên '
+      'dù cloud "mới hơn" theo timestamp',
+      () async {
+        final s = makeStore(schemaVersion: 2);
+        await s.save(const _Profile(name: 'LocalSafe', level: 5));
+
+        final provider = _FakeCloudSaveProvider()
+          ..cloudData = {
+            'schemaVersion': 99,
+            'name': 'FromFuture',
+            'level': 1,
+            'syncedAtMs': DateTime.now().millisecondsSinceEpoch + 100000,
+          };
+        await s.syncWith(provider);
+
+        expect(s.load()!.name, 'LocalSafe');
+      },
+    );
+
+    test(
+      'cloud schemaVersion CŨ HƠN, mới hơn theo timestamp → migrate đúng '
+      'trước khi ghi đè local',
+      () async {
+        final s = makeStore(
+          schemaVersion: 2,
+          migrate: (fromVersion, json) => {...json, 'level': 7},
+        );
+        await s.save(const _Profile(name: 'Local', level: 5));
+
+        final provider = _FakeCloudSaveProvider()
+          ..cloudData = {
+            'schemaVersion': 1,
+            'name': 'FromCloudOldSchema',
+            'syncedAtMs': DateTime.now().millisecondsSinceEpoch + 100000,
+          };
+        await s.syncWith(provider);
+
+        final loaded = s.load();
+        expect(loaded!.name, 'FromCloudOldSchema');
+        expect(loaded.level, 7);
+      },
+    );
+
+    test(
+      'cloud có field sai kiểu khiến fromJson thật sự throw → không ghi đè '
+      'local (kiểm tra fromJson trước khi trust)',
+      () async {
+        final s = makeStore(schemaVersion: 2);
+        await s.save(const _Profile(name: 'LocalSafe', level: 5));
+
+        final provider = _FakeCloudSaveProvider()
+          ..cloudData = {
+            'schemaVersion': 2,
+            'name': 'FromCloud',
+            'level': 'not-an-int', // fromJson cast 'level' as int sẽ throw
+            'syncedAtMs': DateTime.now().millisecondsSinceEpoch + 100000,
+          };
+        await s.syncWith(provider);
+
+        expect(s.load()!.name, 'LocalSafe');
+      },
+    );
+
+    test(
+      'cloud timestamp sai kiểu (chuỗi thay vì số) → coi như -1 (cũ nhất), '
+      'không ghi đè local có timestamp thật',
+      () async {
+        final s = makeStore(schemaVersion: 2);
+        await s.save(const _Profile(name: 'LocalSafe', level: 5));
+
+        final provider = _FakeCloudSaveProvider()
+          ..cloudData = {
+            'schemaVersion': 2,
+            'name': 'FromCloud',
+            'level': 1,
+            'syncedAtMs': 'not-a-number',
+          };
+        await s.syncWith(provider);
+
+        expect(s.load()!.name, 'LocalSafe');
+      },
+    );
+  });
 }
