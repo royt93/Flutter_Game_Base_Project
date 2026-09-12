@@ -15,9 +15,30 @@ class ReminderService extends GetxService {
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
 
-  Future<void> _ensureInit() async {
-    if (_initialized) return;
+  // ENH-36: memoizes the in-flight init Future so 2 concurrent callers (e.g.
+  // scheduleNext() and cancel() both racing in before either has finished)
+  // await the SAME init instead of each independently re-running
+  // FlutterLocalNotificationsPlugin.initialize() — previously nothing
+  // guarded against `_initialized` still being false for both callers.
+  Future<void>? _initFuture;
+
+  Future<void> _ensureInit() {
+    if (_initialized) return Future.value();
+    return _initFuture ??= _doInit();
+  }
+
+  Future<void> _doInit() async {
     tzdata.initializeTimeZones();
+    // ENH-36: without this, `tz.local` (a `late` field the `timezone`
+    // package never sets on its own) throws LateInitializationError on
+    // every single scheduleNext()/cancel() call — silently swallowed by
+    // their try/catch as a "failed" dlog, so reminders never actually
+    // fired on a real device despite no test ever catching it. UTC (not
+    // the device's real zone) is fine here: this service only ever
+    // schedules a relative delay from "now", never an absolute local
+    // wall-clock time, so the zone used for that arithmetic doesn't
+    // change the resulting absolute moment.
+    tz.setLocalLocation(tz.UTC);
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings();
     await _plugin.initialize(
