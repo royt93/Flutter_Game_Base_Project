@@ -35,6 +35,13 @@ class WheelSpinnerController extends ChangeNotifier {
 
   /// Requests a spin that lands on `segments[resultIndex]`.
   void spin(int resultIndex) {
+    if (resultIndex < 0) {
+      throw RangeError.value(
+        resultIndex,
+        'resultIndex',
+        'must be non-negative',
+      );
+    }
     _resultIndex = resultIndex;
     notifyListeners();
   }
@@ -65,6 +72,44 @@ class WheelSpinner extends StatefulWidget {
   /// Extra full rotations before landing, purely for visual effect.
   final int extraTurns;
 
+  /// Validates inputs at runtime so release builds keep the same contract as
+  /// debug builds (where constructor assertions are enabled).
+  static void validateConfiguration({
+    required List<WheelSegment> segments,
+    required double size,
+    required Duration spinDuration,
+    required int extraTurns,
+  }) {
+    if (segments.length < 2) {
+      throw ArgumentError.value(
+        segments.length,
+        'segments',
+        'must contain at least 2 segments',
+      );
+    }
+    if (!size.isFinite || size <= 0) {
+      throw ArgumentError.value(
+        size,
+        'size',
+        'must be finite and greater than 0',
+      );
+    }
+    if (spinDuration.isNegative) {
+      throw ArgumentError.value(
+        spinDuration,
+        'spinDuration',
+        'must not be negative',
+      );
+    }
+    if (extraTurns < 0) {
+      throw ArgumentError.value(
+        extraTurns,
+        'extraTurns',
+        'must be non-negative',
+      );
+    }
+  }
+
   @override
   State<WheelSpinner> createState() => _WheelSpinnerState();
 }
@@ -88,6 +133,12 @@ class _WheelSpinnerState extends State<WheelSpinner>
   @override
   void initState() {
     super.initState();
+    WheelSpinner.validateConfiguration(
+      segments: widget.segments,
+      size: widget.size,
+      spinDuration: widget.spinDuration,
+      extraTurns: widget.extraTurns,
+    );
     widget.controller.addListener(_onSpinRequested);
     _controller.addListener(() {
       setState(() {
@@ -99,6 +150,12 @@ class _WheelSpinnerState extends State<WheelSpinner>
   @override
   void didUpdateWidget(covariant WheelSpinner oldWidget) {
     super.didUpdateWidget(oldWidget);
+    WheelSpinner.validateConfiguration(
+      segments: widget.segments,
+      size: widget.size,
+      spinDuration: widget.spinDuration,
+      extraTurns: widget.extraTurns,
+    );
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_onSpinRequested);
       widget.controller.addListener(_onSpinRequested);
@@ -114,6 +171,9 @@ class _WheelSpinnerState extends State<WheelSpinner>
 
   void _onSpinRequested() {
     final resultIndex = widget.controller.resultIndex;
+    if (resultIndex >= widget.segments.length) {
+      throw RangeError.index(resultIndex, widget.segments, 'resultIndex');
+    }
     final segmentAngle = 2 * math.pi / widget.segments.length;
     // Painter draws segment 0 starting at the top (-pi/2, see
     // WheelSpinnerPainter). The fixed pointer also sits at the top, so

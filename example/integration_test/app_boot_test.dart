@@ -73,6 +73,22 @@ void main() {
     expect(find.byType(HomeScreen), findsOneWidget);
   });
 
+  testWidgets('BUG-34: WheelSpinner accepts a valid result on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final spin = find.widgetWithText(CommonButton, 'Spin').hitTestable();
+    await _scrollUntilVisible(tester, spin);
+    await tester.tap(spin.last);
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(WheelSpinner), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   // FEAT-28: swipe a real PageView on-device, verify PaginatedDotsIndicator
   // follows the current page.
   //

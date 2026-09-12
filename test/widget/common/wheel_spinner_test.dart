@@ -6,7 +6,9 @@ import 'package:roy_casual_kit/presentation/widgets/common/wheel_spinner.dart';
 
 Widget _wrap(Widget child, {bool reducedMotion = false}) => MediaQuery(
   data: MediaQueryData(disableAnimations: reducedMotion),
-  child: MaterialApp(home: Material(child: Center(child: child))),
+  child: MaterialApp(
+    home: Material(child: Center(child: child)),
+  ),
 );
 
 void main() {
@@ -17,6 +19,77 @@ void main() {
       WheelSegment(label: '100 coins', color: Colors.green, value: 100),
       WheelSegment(label: 'Jackpot', color: Colors.amber, value: 1000),
     ];
+
+    test(
+      'controller rejects negative resultIndex before notifying listeners',
+      () {
+        final controller = WheelSpinnerController();
+        var notified = false;
+        controller.addListener(() => notified = true);
+
+        expect(() => controller.spin(-1), throwsRangeError);
+        expect(controller.resultIndex, 0);
+        expect(notified, isFalse);
+      },
+    );
+
+    test('runtime configuration validation names every invalid parameter', () {
+      void expectInvalid({
+        List<WheelSegment>? segmentOverride,
+        double size = 260,
+        Duration spinDuration = const Duration(seconds: 3),
+        int extraTurns = 4,
+        required String parameter,
+      }) {
+        expect(
+          () => WheelSpinner.validateConfiguration(
+            segments: segmentOverride ?? segments,
+            size: size,
+            spinDuration: spinDuration,
+            extraTurns: extraTurns,
+          ),
+          throwsA(
+            isA<ArgumentError>().having(
+              (error) => error.name,
+              'name',
+              parameter,
+            ),
+          ),
+        );
+      }
+
+      expectInvalid(
+        segmentOverride: const [WheelSegment(label: 'Only', color: Colors.red)],
+        parameter: 'segments',
+      );
+      expectInvalid(size: 0, parameter: 'size');
+      expectInvalid(size: double.nan, parameter: 'size');
+      expectInvalid(
+        spinDuration: const Duration(seconds: -1),
+        parameter: 'spinDuration',
+      );
+      expectInvalid(extraTurns: -1, parameter: 'extraTurns');
+    });
+
+    testWidgets('out-of-range resultIndex fails before list access', (
+      tester,
+    ) async {
+      final controller = WheelSpinnerController();
+      await tester.pumpWidget(
+        _wrap(
+          WheelSpinner(
+            segments: segments,
+            controller: controller,
+            onSpinEnd: (_) {},
+          ),
+        ),
+      );
+
+      controller.spin(segments.length);
+      await tester.pump();
+
+      expect(tester.takeException(), isA<RangeError>());
+    });
 
     testWidgets('renders exactly the segments passed in', (tester) async {
       final controller = WheelSpinnerController();
