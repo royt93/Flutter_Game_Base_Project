@@ -20,13 +20,35 @@ source: Codex (codex exec, audit toàn diện lib/core/)
 Validate `windowSize > 0` và threshold hữu hạn + downgrade < upgrade trong constructor (ném `ArgumentError` nếu sai — đây là lỗi cấu hình lập trình viên, không phải input runtime thật). Bỏ qua (không đưa vào rolling window) mẫu frame duration không hữu hạn/âm thay vì để nó đầu độc trung bình.
 
 ## Acceptance criteria
-- [ ] Constructor throw rõ ràng với windowSize <= 0 hoặc threshold không hữu hạn/sai thứ tự.
-- [ ] Mẫu frame duration NaN/Infinity/âm bị bỏ qua, không ảnh hưởng tới rolling average.
-- [ ] Test: windowSize 0/âm, threshold NaN/Infinity/đảo ngược, mẫu frame duration âm/NaN/Infinity liên tiếp.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] Constructor throw rõ ràng với windowSize <= 0 hoặc threshold không hữu hạn/sai thứ tự.
+- [x] Mẫu frame duration NaN/Infinity/âm bị bỏ qua, không ảnh hưởng tới rolling average.
+- [x] Test: windowSize 0/âm, threshold NaN/Infinity/đảo ngược, mẫu frame duration âm/NaN/Infinity liên tiếp.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+
+## Quyết định
+Làm đúng như Đề xuất, không thêm gì khác: constructor validate 4 điều
+kiện (windowSize > 0; downgrade hữu hạn + >= 0; upgrade hữu hạn + >= 0;
+downgrade < upgrade — điều kiện cuối đảm bảo tier luôn có khả năng hồi
+phục, không kẹt vĩnh viễn ở low nếu 2 threshold trùng/đảo ngược).
+`recordFrameMs()` bỏ qua (không thêm vào `_window`) mẫu không hữu hạn
+hoặc âm, trả về `false` (không đổi tier) cho mẫu bị từ chối.
+
+Xác nhận không có caller nào trong repo tự truyền `FrameBudgetTracker(...)`
+với tham số tuỳ chỉnh (chỉ `PerformanceTierService` tự tạo bằng default),
+nên đổi sang throw không phá call site nào.
+
+Test: 9 test mới — windowSize 0/âm, downgrade NaN/âm, upgrade
+Infinity/âm, downgrade==upgrade/downgrade>upgrade, và mẫu
+NaN/Infinity/âm liên tiếp không đầu độc rolling average (verify bằng 3
+mẫu hợp lệ tiếp theo vẫn tính đúng, tier vẫn high). Tổng 20 test, tất cả
+pass. `flutter analyze` sạch cả root + `example/`. `flutter test
+--exclude-tags slow`: tất cả pass, không regression.
+
+Không có device smoke test — pure logic tracker (không phụ thuộc
+SchedulerBinding thật theo CLAUDE.md), không render UI trực tiếp.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-23-performance-tier-service-config-poisoning.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
