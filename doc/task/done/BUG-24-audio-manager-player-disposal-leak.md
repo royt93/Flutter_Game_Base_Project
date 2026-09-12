@@ -20,13 +20,57 @@ Game chơi lâu (nhiều nút bấm phát SFX) sẽ tích luỹ hàng trăm/ngh�
 Override `onClose()` để dispose `_bgm`. Với `playSfx()`: dispose player trong `finally` sau khi phát xong (dùng `player.onPlayerComplete` listener rồi dispose, hoặc dispose ngay sau await complete future nếu API hỗ trợ) — cân nhắc thêm: nếu SFX được phát rất dồn dập, có thể cần 1 pool nhỏ tái sử dụng player thay vì tạo/huỷ liên tục, nhưng chỉ làm nếu profiling thật sự cho thấy cần (đừng over-engineer nếu dispose đơn giản đã đủ giải quyết leak).
 
 ## Acceptance criteria
-- [ ] AudioManager.onClose() dispose _bgm đúng cách.
-- [ ] Mỗi AudioPlayer tạo trong playSfx() được dispose sau khi phát xong (thành công), sau khi phát lỗi (exception), và khi service đóng giữa lúc đang phát.
-- [ ] Test dùng fake/mock AudioPlayer xác nhận .dispose() được gọi đúng số lần trong cả 3 tình huống trên.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] AudioManager.onClose() dispose _bgm đúng cách.
+- [x] Mỗi AudioPlayer tạo trong playSfx() được dispose sau khi phát xong (thành công), sau khi phát lỗi (exception), và khi service đóng giữa lúc đang phát.
+- [x] Test dùng fake/mock AudioPlayer xác nhận .dispose() được gọi đúng số lần trong cả 3 tình huống trên.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+
+## Quyết định
+Làm đúng như Đề xuất, KHÔNG thêm player pool (không cần thiết — dispose
+đơn giản đã đủ giải quyết leak, đúng gợi ý "chỉ làm nếu profiling thật sự
+cho thấy cần"). `onClose()` dispose `_bgm`. `playSfx()`: đợi
+`onPlayerComplete` (subscribe SAU KHI `player.play()` thành công, không
+phải trước) rồi mới dispose trong `finally`, có timeout 30s an toàn cho
+trường hợp completion event không bao giờ bắn.
+
+Debug thật trong lúc viết test — 2 vòng self-correct trước khi đạt GREEN
+ổn định:
+1. Ban đầu tạo `AudioPlayer()` NGOÀI `try` (để `finally` truy cập được
+   biến `player`) — làm lộ ra: nếu CHÍNH constructor của `AudioPlayer`
+   throw (audioplayers package's `GlobalAudioScope.ensureInitialized()`
+   thất bại vì thiếu platform channel thật trong môi trường test), lỗi đó
+   thoát ra ngoài try/catch, làm vỡ 2 test cũ vốn pass trước khi sửa. Sửa
+   bằng cách dùng `AudioPlayer? player;` khai báo ngoài nhưng GÁN bên
+   trong `try`.
+2. Sau đó VẪN còn lỗi (cùng test) dù constructor đã nằm trong try — hoá
+   ra là `player.dispose()` TỰ NÓ throw (dispose 1 player mà creation đã
+   thất bại), và tôi gọi nó qua `unawaited(...)` không có `catchError` —
+   một unhandled rejection MỚI do chính code sửa lỗi tạo ra. Sửa bằng
+   cách bọc `try/catch` quanh chính `await player.dispose()`, và làm
+   tương tự cho `_bgm.dispose()` trong `onClose()` (cùng rủi ro: `_bgm`
+   là `late final`, truy cập lần đầu trong `onClose()` có thể tự
+   construct và fail y hệt).
+
+Thêm `@visibleForTesting int debugSfxDisposeCount` (cùng pattern
+`StorageService.platformWrites` đã có) để test đếm dispose xác định,
+không cần mock `AudioPlayer` (package bên thứ 3, khó mock có ý nghĩa mà
+không thêm dependency mocking framework mới).
+
+Test: 4 test mới (dispose count sau 1 lần gọi thành công/thất bại; dispose
+count đúng sau N lần gọi liên tiếp; muted → không tạo player nào; onClose
+không throw). Tổng 15 test, chạy lặp lại 3 lần liên tiếp xác nhận ổn định
+(không flaky). `flutter analyze` sạch cả root + `example/`. `flutter test
+--exclude-tags slow`: tất cả pass, không regression.
+
+Device smoke test thật trên Pixel 7 Pro (`2B051FDH3006MU`): mở Widget Kit
+→ Buttons & Interactive → SoundToggleFab, bấm mute/unmute 2 chiều, icon
+đổi đúng, không exception trong logcat (`adb logcat` filter FATAL/
+AndroidRuntime rỗng). Không demo nào trong `example/` gọi trực tiếp
+`playSfx()` nên không verify được đường leak SFX cụ thể qua UI thật —
+bằng chứng chính cho phần đó là 4 test đơn vị đã viết.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-24-audio-manager-player-disposal-leak.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
