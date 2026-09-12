@@ -5,7 +5,7 @@ type: idea
 priority: exclusive-medium
 effort: L
 source: Codex product/architecture synthesis
-depends_on: [ENH-56]
+depends_on: [ENH-56, FEAT-45]
 ---
 
 ## Cơ hội
@@ -25,4 +25,3 @@ Kit đã có weighted RNG seam, analytics/crash seam, versioned JSON, integrity 
 
 ## Prompt loop implementation
 Đọc toàn bộ file task này và code liên quan. Viết RFC ngắn về determinism/privacy trước, sau đó implement vertical slice bằng TDD. Mỗi vòng phải audit code, chấm /10, unit + widget + integration test mọi case, analyze/test root + example, smoke Android device thật có replay proof. Lặp đến >9/10 rồi mới commit + push; sau push cập nhật Quyết định, chuyển done, commit + push lần hai.
-

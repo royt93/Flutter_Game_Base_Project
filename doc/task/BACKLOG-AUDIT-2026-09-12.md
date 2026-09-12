@@ -25,6 +25,20 @@
 
 Khuyến nghị Option A vì repo đã có nhiều tính năng nhưng chưa có root entrypoint và còn ba đường crash/corrupt cụ thể; ổn định nền trước giúp mọi feature sau có API/test/release gate đáng tin hơn.
 
+## SDK expansion đã được owner chấp nhận
+
+Đã rã thêm 32 task riêng từ `FEAT-32` đến `FEAT-63`; GetX + Flame được xem là dependency chính thức.
+
+| Wave | Task | Outcome |
+|---|---|---|
+| 1 — SDK foundation | FEAT-32, 34, 37, 38, 40 | Bootstrap, concurrency guard, migration, lỗi typed, secure-storage seam |
+| 2 — Runtime | FEAT-33, 35, 39, 41, 46, 49 | Lifecycle, retry, diagnostics, session, checkpoint và game time |
+| 3 — Economy/gameplay | FEAT-31, 42-45, 47-48 | Wallet, reward transaction, progression, inventory, seeded RNG, preload và pooling |
+| 4 — Widget | FEAT-50-58 | Async/confirm buttons, HUD, pause/level-up/reward/inventory/error/scene UI |
+| 5 — App helpers | FEAT-59-63 | Version gate, deep link, consent, connectivity và session tracking |
+
+Các dependency được định hướng theo kiến trúc: repository/service là SSOT, controller chỉ orchestration, widget nhận immutable state và phát command lên trên. Không task widget nào được phép tự ghi storage hoặc tự grant reward.
+
 ## Definition of Done dùng chung
 
 Mỗi task là một file riêng. Loop chỉ kết thúc khi agent tự audit changes và đạt >9/10, có unit + widget + integration test cho mọi case, analyze/test root và example sạch, smoke test trên Android device thật có bằng chứng, rồi mới commit + push. Sau push phải cập nhật quyết định/checkbox, chuyển file sang `done`, commit + push lần hai.
