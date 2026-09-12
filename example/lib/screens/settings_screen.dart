@@ -82,6 +82,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         },
                       ),
                     ),
+                    CommonListTile(
+                      title: 'color_blind_safe'.tr,
+                      trailing: CandyToggleSwitch(
+                        value: NeonTheme.colorBlindSafe,
+                        onChanged: (v) {
+                          StorageService.maybe?.setBool(
+                            StorageKeys.colorBlindSafe,
+                            v,
+                          );
+                          setState(() => NeonTheme.colorBlindSafe = v);
+                        },
+                      ),
+                    ),
                   ],
                 ),
               ),

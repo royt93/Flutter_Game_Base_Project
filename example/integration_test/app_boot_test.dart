@@ -3,10 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
 import 'package:roy_casual_kit_example/main.dart' as app;
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
+import 'package:roy_casual_kit_example/screens/settings_screen.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
 
 /// Navigates fresh to [WidgetShowcaseScreen] from [HomeScreen]. GetX's
@@ -71,6 +73,29 @@ void main() {
     await app.app();
     await tester.pump(const Duration(seconds: 4));
     expect(find.byType(HomeScreen), findsOneWidget);
+  });
+
+  testWidgets('IDEA-38: color-blind-safe setting changes palette on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await tester.tap(find.byType(NeonButton).first);
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    // The device may retain Vietnamese locale; the accessibility row remains
+    // the last CommonListTile regardless of translation.
+    final row = find.byType(CommonListTile).last;
+    final toggle = find.descendant(
+      of: row,
+      matching: find.byType(CandyToggleSwitch),
+    );
+    await tester.tap(toggle);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(NeonTheme.colorBlindSafe, isTrue);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('BUG-34: WheelSpinner accepts a valid result on device', (

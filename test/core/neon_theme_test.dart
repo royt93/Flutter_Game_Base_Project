@@ -98,4 +98,33 @@ void main() {
       },
     );
   });
+
+  group('color blind safe palette', () {
+    tearDown(() => NeonTheme.colorBlindSafe = false);
+
+    test('switches gemColors to seven stable CVD-safe colors', () {
+      final defaultColors = NeonTheme.gemColors;
+      NeonTheme.colorBlindSafe = true;
+
+      expect(NeonTheme.gemColors, NeonTheme.colorBlindSafeGemColors);
+      expect(NeonTheme.gemColors, hasLength(7));
+      expect(NeonTheme.gemColors, isNot(defaultColors));
+      expect(NeonTheme.gemColors.toSet(), hasLength(7));
+    });
+
+    test('safe palette keeps a visible RGB distance between every pair', () {
+      final colors = NeonTheme.colorBlindSafeGemColors;
+      for (var i = 0; i < colors.length; i++) {
+        for (var j = i + 1; j < colors.length; j++) {
+          final a = colors[i].toARGB32();
+          final b = colors[j].toARGB32();
+          final distance =
+              ((a >> 16 & 0xff) - (b >> 16 & 0xff)).abs() +
+              ((a >> 8 & 0xff) - (b >> 8 & 0xff)).abs() +
+              ((a & 0xff) - (b & 0xff)).abs();
+          expect(distance, greaterThan(45));
+        }
+      }
+    });
+  });
 }

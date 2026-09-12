@@ -15,6 +15,28 @@ class NeonTheme {
   /// true = original neon-dark palette, false (default) = current bright-casual look.
   static bool dark = false;
 
+  /// true = [gemColors] returns a color-vision-deficiency-safe 7-color set
+  /// (Okabe-Ito-derived) instead of the default candy palette. Same "flip a
+  /// mutable flag, every call site updates automatically" mechanism as
+  /// [dark] — a match-3-style game reading [gemColors] to tint gems/tiles
+  /// needs no code changes, it just gets the safer colors once this flag
+  /// (persisted by the app the same way [dark] is, via
+  /// `StorageKeys.colorBlindSafe`) is on.
+  static bool colorBlindSafe = false;
+
+  /// Okabe-Ito-inspired colors with strong separability for common
+  /// red/green color-vision deficiencies. The list keeps seven slots so
+  /// callers can switch palettes without changing their color indexes.
+  static const List<Color> colorBlindSafeGemColors = [
+    Color(0xFF0072B2), // blue
+    Color(0xFFCC79A7), // reddish purple
+    Color(0xFF009E73), // bluish green
+    Color(0xFFF0E442), // yellow
+    Color(0xFFE69F00), // orange
+    Color(0xFF56B4E9), // sky blue
+    Color(0xFFD55E00), // vermillion
+  ];
+
   /// Whether the OS "Reduce Motion" accessibility flag is on — check this
   /// before running a purely decorative animation (shader background,
   /// pop-in, scale-on-press...) and skip/shorten it for motion-sensitive
@@ -113,17 +135,19 @@ class NeonTheme {
   static Color lockedBorder = const Color(0xFFBFC7D6);
   static Color lockedFill = const Color(0xFFEDEAF5);
 
-  static List<Color> get gemColors => [
-    cyan,
-    magenta,
-    lime,
-    yellow,
-    orange,
-    purple,
-    red, // 7th color — without it, a caller needing colorIndex 6 aliases
-    // back to cyan via modulo, and two different-color groups would render
-    // identically.
-  ];
+  static List<Color> get gemColors => colorBlindSafe
+      ? colorBlindSafeGemColors
+      : [
+          cyan,
+          magenta,
+          lime,
+          yellow,
+          orange,
+          purple,
+          red, // 7th color — without it, a caller needing colorIndex 6 aliases
+          // back to cyan via modulo, and two different-color groups would render
+          // identically.
+        ];
 
   /// Every color field above as `#RRGGBB` hex strings, keyed by field name
   /// (private `_xxxLight`/`_xxxDark` fields are exposed without their

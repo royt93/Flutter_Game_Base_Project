@@ -74,6 +74,7 @@ Future<void> app({bool withAudio = !isE2eTest}) async {
   final store = Get.put(StorageService(await _loadPrefs()), permanent: true);
   dlog('app: prefs done');
   NeonTheme.dark = store.getBool(StorageKeys.themeDark);
+  NeonTheme.colorBlindSafe = store.getBool(StorageKeys.colorBlindSafe);
   final locale = Get.put(LocaleService(store), permanent: true);
   Get.put(ReminderService(), permanent: true);
   // GetMaterialApp's `locale:` param chỉ áp dụng lúc build lần đầu; nếu

@@ -34,6 +34,7 @@ void main() {
   tearDown(() {
     Get.reset();
     NeonTheme.dark = false;
+    NeonTheme.colorBlindSafe = false;
   });
 
   group('HomeScreen', () {
@@ -61,9 +62,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(tester.takeException(), isNull);
-      // Only the dark-mode switch shows when AudioManager isn't registered
-      // (no audio switch without it).
-      expect(find.byType(CandyToggleSwitch), findsOneWidget);
+      // Dark-mode and accessibility switches remain available without audio.
+      expect(find.byType(CandyToggleSwitch), findsNWidgets(2));
       expect(find.widgetWithText(CommonListTile, 'Dark Mode'), findsOneWidget);
       // Language picker still renders fine on its own.
       expect(find.text('Language'), findsOneWidget);
@@ -121,5 +121,29 @@ void main() {
         expect(tester.widget<CandyToggleSwitch>(darkSwitch).value, isTrue);
       },
     );
+  });
+
+  group('SettingsScreen color blind safe toggle', () {
+    testWidgets('toggling persists and updates the gem palette', (
+      tester,
+    ) async {
+      final store = await _boot();
+      expect(NeonTheme.colorBlindSafe, isFalse);
+
+      await tester.pumpWidget(_wrap(const SettingsScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final row = find.widgetWithText(CommonListTile, 'Color-blind Safe');
+      final toggle = find.descendant(
+        of: row,
+        matching: find.byType(CandyToggleSwitch),
+      );
+      await tester.tap(toggle);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(NeonTheme.colorBlindSafe, isTrue);
+      expect(store.getBool(StorageKeys.colorBlindSafe), isTrue);
+      expect(NeonTheme.gemColors, NeonTheme.colorBlindSafeGemColors);
+    });
   });
 }
