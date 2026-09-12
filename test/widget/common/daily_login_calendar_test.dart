@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/daily_login_calendar.dart';
+import 'package:roy_casual_kit/presentation/widgets/pressable_scale.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: Material(child: child));
 
@@ -220,4 +221,72 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('ENH-52: ô ngày hiện tại dùng PressableScale thay vì GestureDetector trần', () {
+    testWidgets(
+      'ô ngày hiện tại (tappable) bọc trong PressableScale, tap gọi đúng onClaim',
+      (tester) async {
+        var claimed = false;
+        await tester.pumpWidget(
+          _wrap(
+            DailyLoginCalendarWidget(
+              currentStreakDay: 3,
+              claimedDaysInCycle: const {1, 2},
+              canClaimToday: true,
+              onClaim: () => claimed = true,
+              cycleLength: 5,
+            ),
+          ),
+        );
+
+        // currentStreakDay=3, cycleLength=5 -> highlight day = 3 % 5 + 1 = 4
+        // (cùng công thức đã dùng ở test "current day is highlighted..." có
+        // sẵn trong file này). Chỉ check ancestor cụ thể của ô ngày 4, không
+        // đếm tổng số PressableScale trong tree (CommonButton "Claim" cũng
+        // tự dùng PressableScale riêng).
+        expect(
+          find.ancestor(
+            of: find.text('4'),
+            matching: find.byType(PressableScale),
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('4'));
+        await tester.pump();
+
+        expect(claimed, isTrue);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'ngày KHÔNG phải hiện tại → không có PressableScale ancestor (không tappable, giữ nguyên hành vi cũ)',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            DailyLoginCalendarWidget(
+              currentStreakDay: 3,
+              claimedDaysInCycle: const {1, 2},
+              canClaimToday: true,
+              onClaim: () {},
+              cycleLength: 5,
+            ),
+          ),
+        );
+
+        // currentStreakDay=3, cycleLength=5 -> highlight day = 4 (xem test
+        // phía trên). Ngày 5 (chưa claim, không phải ngày hiện tại) không
+        // tappable — không có PressableScale nào bọc nó.
+        expect(
+          find.ancestor(
+            of: find.text('5'),
+            matching: find.byType(PressableScale),
+          ),
+          findsNothing,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/daily_login_service.dart' show kDailyLoginCycleLength;
 import '../../../core/neon_theme.dart';
+import '../pressable_scale.dart';
 import 'common_button.dart';
 
 /// Read-only 7-day (configurable via [cycleLength]) login-streak calendar —
@@ -177,6 +178,6 @@ class _DaySlotState extends State<_DaySlot>
               ),
       ),
     );
-    return onTap == null ? slot : GestureDetector(onTap: onTap, child: slot);
+    return onTap == null ? slot : PressableScale(onTap: onTap, child: slot);
   }
 }
