@@ -5,6 +5,7 @@ import 'storage_service.dart';
 import 'utils/clamped_clock.dart';
 import 'utils/safe_json.dart';
 import 'utils/save_migration_registry.dart';
+import 'utils/sdk_result.dart';
 
 /// A thin, versioned JSON object store on top of [StorageService]'s plain
 /// key-value strings — for save data with actual shape (player profile,
@@ -71,6 +72,26 @@ class VersionedJsonStore<T> {
     final json = _readLocalJson();
     if (json == null) return null;
     return fromJson(json);
+  }
+
+  SdkResult<T> loadResult() {
+    try {
+      final value = load();
+      return value == null
+          ? const SdkFailure(
+              kind: SdkErrorKind.storage,
+              message: 'Save data unavailable',
+              retryable: false,
+            )
+          : SdkSuccess(value);
+    } catch (error, stack) {
+      return SdkFailure(
+        kind: SdkErrorKind.storage,
+        message: 'Save data could not be read',
+        cause: error,
+        stackTrace: stack,
+      );
+    }
   }
 
   /// Decodes the raw string from [storage], migrating an older

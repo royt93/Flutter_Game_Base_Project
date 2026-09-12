@@ -35,6 +35,7 @@ export 'core/versioned_json_store.dart';
 export 'core/utils/clamped_clock.dart';
 export 'core/utils/async_action_guard.dart';
 export 'core/utils/save_migration_registry.dart';
+export 'core/utils/sdk_result.dart';
 export 'core/utils/format.dart';
 export 'core/utils/label_fit.dart';
 export 'core/utils/safe_json.dart';

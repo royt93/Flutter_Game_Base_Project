@@ -194,6 +194,25 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-38: typed storage result is safe on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    final store = VersionedJsonStore<int>(
+      storage: StorageService.to,
+      key: 'feat38_missing',
+      schemaVersion: 1,
+      toJson: (_) => {},
+      fromJson: (_) => 1,
+      migrate: (_, json) => json,
+    );
+    final result = store.loadResult();
+    expect(result, isA<SdkFailure<int>>());
+    expect((result as SdkFailure<int>).message, 'Save data unavailable');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('IDEA-38: color-blind-safe setting changes palette on device', (
     tester,
   ) async {

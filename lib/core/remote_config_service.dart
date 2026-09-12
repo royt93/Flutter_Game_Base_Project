@@ -4,6 +4,7 @@ import 'package:flutter/services.dart' show AssetBundle, rootBundle;
 import 'package:get/get.dart';
 
 import 'utils/safe_json.dart';
+import 'utils/sdk_result.dart';
 
 /// Remote config / feature-flag seam. The package pulls in no HTTP/Firebase
 /// SDK — a consuming app injects its own network call via [fetchRemote]
@@ -30,7 +31,9 @@ class RemoteConfigService extends GetxService {
   /// Null-safe accessor for call sites that may run before/without this
   /// service registered (mirrors [AudioManager.maybe]).
   static RemoteConfigService? get maybe =>
-      Get.isRegistered<RemoteConfigService>() ? Get.find<RemoteConfigService>() : null;
+      Get.isRegistered<RemoteConfigService>()
+      ? Get.find<RemoteConfigService>()
+      : null;
 
   Future<void> init() async {
     try {
@@ -53,11 +56,29 @@ class RemoteConfigService extends GetxService {
     }
   }
 
-  String getString(String key, {String fallback = ''}) => asStringOr(_config[key], fallback);
+  Future<SdkResult<void>> initResult() async {
+    try {
+      await init();
+      return const SdkSuccess(null);
+    } catch (error, stack) {
+      return SdkFailure(
+        kind: SdkErrorKind.network,
+        message: 'Remote configuration unavailable',
+        retryable: true,
+        cause: error,
+        stackTrace: stack,
+      );
+    }
+  }
+
+  String getString(String key, {String fallback = ''}) =>
+      asStringOr(_config[key], fallback);
 
   int getInt(String key, {int fallback = 0}) => asIntOr(_config[key], fallback);
 
-  double getDouble(String key, {double fallback = 0}) => asDoubleOr(_config[key], fallback);
+  double getDouble(String key, {double fallback = 0}) =>
+      asDoubleOr(_config[key], fallback);
 
-  bool getBool(String key, {bool fallback = false}) => asBoolOr(_config[key], fallback);
+  bool getBool(String key, {bool fallback = false}) =>
+      asBoolOr(_config[key], fallback);
 }
