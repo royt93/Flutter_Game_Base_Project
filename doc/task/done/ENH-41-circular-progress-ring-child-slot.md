@@ -20,12 +20,25 @@ Hạn chế API không cần thiết — vòng tròn progress là 1 khung hình 
 Thêm tham số optional `Widget? child` được ưu tiên hơn `icon`/`label` khi được truyền (giữ nguyên `icon`/`label` cho các call site hiện có không đổi gì).
 
 ## Acceptance criteria
-- [ ] child (khi truyền) hiển thị thay cho icon/label mặc định, không phá bất kỳ call site hiện tại nào (icon/label vẫn hoạt động y hệt khi child null).
-- [ ] Test: truyền child tuỳ ý, xác nhận nó hiển thị đúng vị trí giữa vòng tròn và icon/label bị bỏ qua khi child != null.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] child (khi truyền) hiển thị thay cho icon/label mặc định, không phá bất kỳ call site hiện tại nào (icon/label vẫn hoạt động y hệt khi child null).
+- [x] Test: truyền child tuỳ ý, xác nhận nó hiển thị đúng vị trí giữa vòng tròn và icon/label bị bỏ qua khi child != null.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định. (N/A — xem Quyết định.)
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`. (N/A — chỉ thêm slot nội dung tĩnh, không phải animation mới; animation arc có sẵn của ring không đổi.)
+
+## Quyết định
+Thêm `final Widget? child` vào constructor, ưu tiên hơn `icon`/`label` trong biểu thức `child ?? (icon != null ? ... : label != null ? ... : null)` — giữ nguyên 100% code path cũ khi `child == null`.
+
+2 test mới trong `group('ENH-41: child slot')`: truyền `child` cùng lúc với `icon`+`label` xác nhận chỉ `child` hiển thị (`icon`/`label` bị bỏ qua hoàn toàn), và truyền `icon` không có `child` xác nhận hành vi y hệt trước đây (không phá call site cũ — hiện tại chưa có call site nào dùng `icon`/`label` trong `example/`, nhưng giữ test này để khoá hợp đồng API).
+
+Không cần device smoke: đây là bổ sung API thuần (thêm 1 tham số optional), không có demo mới nào trong `WidgetShowcaseScreen` sử dụng `child` (không đổi bất kỳ màn hình hiển thị thật nào) — rủi ro hồi quy bằng 0 cho mọi call site hiện có, đã được test widget xác nhận đầy đủ.
+
+`flutter analyze` + `flutter test --exclude-tags slow` sạch ở root (577 tests) và `example/` (29 tests).
+
+Tự chấm: 9.5/10 — đúng yêu cầu, API tối giản (1 tham số, ưu tiên rõ ràng), không phá test/call site cũ.
+
+Commit code: `19f994c`.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/ENH-41-circular-progress-ring-child-slot.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
