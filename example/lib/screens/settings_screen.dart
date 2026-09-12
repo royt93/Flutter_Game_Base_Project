@@ -8,6 +8,7 @@ import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/bottom_sheet_panel.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/list_tile_row.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/toggle_switch.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_app_bar.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_bg.dart';
 
@@ -56,26 +57,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     // "improper use of a GetX".
                     if (audio != null)
                       Obx(
-                        () => SwitchListTile(
-                          title: Text('sound'.tr),
-                          value: !audio.muted.value,
-                          onChanged: (_) => audio.toggleMute(),
+                        () => CommonListTile(
+                          title: 'sound'.tr,
+                          trailing: CandyToggleSwitch(
+                            value: !audio.muted.value,
+                            onChanged: (_) => audio.toggleMute(),
+                          ),
                         ),
                       ),
-                    SwitchListTile(
-                      title: Text('dark_mode'.tr),
-                      value: NeonTheme.dark,
-                      onChanged: (v) {
-                        StorageService.maybe?.setBool(
-                          StorageKeys.themeDark,
-                          v,
-                        );
-                        // NeonTheme.dark is a plain static, not observable —
-                        // setState re-renders this screen with the new
-                        // palette immediately; other already-mounted screens
-                        // pick it up next time they rebuild/navigate.
-                        setState(() => NeonTheme.dark = v);
-                      },
+                    CommonListTile(
+                      title: 'dark_mode'.tr,
+                      trailing: CandyToggleSwitch(
+                        value: NeonTheme.dark,
+                        onChanged: (v) {
+                          StorageService.maybe?.setBool(
+                            StorageKeys.themeDark,
+                            v,
+                          );
+                          // NeonTheme.dark is a plain static, not observable —
+                          // setState re-renders this screen with the new
+                          // palette immediately; other already-mounted screens
+                          // pick it up next time they rebuild/navigate.
+                          setState(() => NeonTheme.dark = v);
+                        },
+                      ),
                     ),
                   ],
                 ),
