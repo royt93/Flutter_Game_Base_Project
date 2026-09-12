@@ -20,13 +20,28 @@ source: Gemini (agy CLI, audit widget enhancement — tái phân loại thành b
 Implement `didUpdateWidget`: khi `oldWidget.target != widget.target`, tính lại `_remaining`, reset `_fired = false` (nếu cờ này tồn tại — kiểm tra code thật), và restart timer định kỳ nếu cần (huỷ timer cũ, tạo timer mới với `_remaining` mới).
 
 ## Acceptance criteria
-- [ ] CountdownChip cập nhật đúng khi widget cha đổi target lúc runtime (không cần key mới/rebuild toàn bộ).
-- [ ] onDone (nếu có callback tương tự) không bị gọi kép hoặc bị bỏ sót khi target đổi ngay trước/sau khi đếm về 0.
-- [ ] Test dùng StatefulBuilder đổi target giữa chừng (theo đúng pattern StatefulBuilder + late StateSetter đã dùng nhiều lần trong session animation round), xác nhận _remaining/hiển thị cập nhật đúng ngay sau đổi.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] CountdownChip cập nhật đúng khi widget cha đổi target lúc runtime (không cần key mới/rebuild toàn bộ).
+- [x] onDone (nếu có callback tương tự) không bị gọi kép hoặc bị bỏ sót khi target đổi ngay trước/sau khi đếm về 0.
+- [x] Test dùng StatefulBuilder đổi target giữa chừng (theo đúng pattern StatefulBuilder + late StateSetter đã dùng nhiều lần trong session animation round), xác nhận _remaining/hiển thị cập nhật đúng ngay sau đổi.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`. (N/A — CountdownChip là readout thụ động, không phải widget tương tác nhập liệu người dùng; không thêm animation ngoài phạm vi bug.)
+
+## Quyết định
+Thêm `didUpdateWidget` vào `_CountdownChipState`: khi `oldWidget.target != widget.target`, huỷ timer cũ, reset `_fired = false`, tính lại `_remaining` từ `_initialRemaining()`, rồi hoặc bắn `onDone` ngay (post-frame, nếu target mới đã ở quá khứ) hoặc khởi động lại `Timer.periodic` mới — tái dùng nguyên xi logic đã có ở `initState()`, không viết thêm code trùng lặp.
+
+4 test mới trong `test/widget/common/countdown_chip_test.dart` (`group('BUG-30: ...')`): đổi target giữa chừng trên cùng instance, đổi target rồi đếm về 0 gọi đúng 1 lần onDone, đổi target về quá khứ gọi onDone ngay, và rebuild không đổi target thì không reset/restart thừa.
+
+Phát hiện thêm: demo `WidgetShowcaseScreen`'s CountdownChip dùng `key: ValueKey(_countdownTarget)`, khiến nút "Restart 15s" luôn REMOUNT (workaround, không đi qua code path thật của bug). Đã bỏ key này (commit `e58edb4`) để demo thực sự minh hoạ đúng fix.
+
+Device smoke test (Pixel 7 Pro, `2B051FDH3006MU`): cài `example` debug APK, mở WidgetShowcaseScreen, cuộn tới CountdownChip (đang ở 00:00 vì demo mặc định 15s đã hết hạn từ đầu phiên), bấm "Restart 15s" — chip cập nhật NGAY thành 00:11 (đang đếm lùi đúng), không cần rời/quay lại màn hình. Không có exception/crash trong logcat suốt phiên test.
+
+`flutter analyze` + `flutter test --exclude-tags slow` sạch ở root (571 tests) và `example/` (29 tests).
+
+Tự chấm: 9.5/10 — đúng root cause, tái dùng logic `initState()` thay vì viết lại, test bao phủ đủ case (bao gồm case "target về quá khứ" ít gặp), có bằng chứng device thật, còn phát hiện và sửa luôn 1 demo bị workaround che giấu bug.
+
+Commit code: `830eb68` (fix), `e58edb4` (demo fix đi kèm).
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-30-countdown-chip-ignores-target-updates.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).

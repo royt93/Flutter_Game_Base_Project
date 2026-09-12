@@ -20,13 +20,26 @@ source: Gemini (agy CLI, audit widget enhancement — tái phân loại thành b
 Implement `didUpdateWidget`: khi `widget.earned > oldWidget.earned`, trigger lại animation cho (các) sao mới đạt được — theo đúng pattern `AnimationController.forward(from: 0.0)` đã thiết lập ở `StreakCounter`/`ProgressBarStars` (ENH-31/32) trong session trước, tôn trọng `NeonTheme.reducedMotion`.
 
 ## Acceptance criteria
-- [ ] Tăng earned lúc runtime (không remount) trigger đúng animation pop-in cho sao mới đạt được.
-- [ ] Mount lần đầu với earned đã có sẵn KHÔNG pop toàn bộ (giữ nguyên hành vi hiện tại, chỉ thêm trigger khi TĂNG lúc runtime).
-- [ ] Test dùng StatefulBuilder tăng earned giữa chừng, xác nhận animation chạy (theo pattern ENH-31/32 đã dùng: đọc Transform.storage[0], không dùng getMaxScaleOnAxis()).
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] Tăng earned lúc runtime (không remount) trigger đúng animation pop-in cho sao mới đạt được.
+- [x] Mount lần đầu với earned đã có sẵn KHÔNG pop toàn bộ (giữ nguyên hành vi hiện tại, chỉ thêm trigger khi TĂNG lúc runtime).
+- [x] Test dùng StatefulBuilder tăng earned giữa chừng, xác nhận animation chạy (theo pattern ENH-31/32 đã dùng: đọc Transform.storage[0], không dùng getMaxScaleOnAxis()).
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`. (Dùng đúng `Curves.easeOutBack` sẵn có của widget, tôn trọng `reducedMotion`.)
+
+## Quyết định
+Thêm `didUpdateWidget`: khi `widget.earned > oldWidget.earned` và không `reducedMotion`, mỗi sao mới đạt được (index từ `oldWidget.earned` tới `widget.earned - 1`) được gán 1 `AnimationController` RIÊNG (map `_perStar`, độc lập với `_c` — controller dùng cho cascade lúc mount) và `forward(from: 0.0)`. Đổi `SingleTickerProviderStateMixin` → `TickerProviderStateMixin` vì giờ có thể có nhiều controller cùng lúc. `build()` ưu tiên `_perStar[i]` nếu có, không thì mới rơi về `_c` (hành vi mount-time giữ nguyên y hệt).
+
+5 test mới trong `group('BUG-31: ...')`: tăng 1 sao lúc runtime pop đúng sao đó (đọc `Transform.storage[0]`), tăng nhiều sao cùng lúc đều pop, giảm earned không trigger animation, rebuild không đổi earned không trigger thừa, và `reducedMotion` bật thì tăng earned chỉ snap tĩnh không animation.
+
+Device smoke test (Pixel 7 Pro): demo "StarRating" + nút "Cycle stars" trong `WidgetShowcaseScreen` (dùng `animate: false`, đúng kịch bản runtime-increase mà bug nhắm tới). Bấm "Cycle stars", sao thứ 2 chuyển từ outline sang vàng đúng lúc bấm — không crash, không lỗi trong logcat.
+
+`flutter analyze` + `flutter test --exclude-tags slow` sạch ở root (571 tests) và `example/` (29 tests).
+
+Tự chấm: 9.5/10 — tách biệt rõ 2 cơ chế animation (mount-time cascade giữ nguyên, runtime-increase mới độc lập) không phá vỡ hành vi cũ, test bao phủ đủ case kể cả reducedMotion, verify thật trên device.
+
+Commit code: `a8c686a`.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-31-star-rating-missing-didupdatewidget-animation-trigger.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).

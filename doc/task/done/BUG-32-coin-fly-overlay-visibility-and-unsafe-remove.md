@@ -20,13 +20,26 @@ Coin "đóng cục" ở điểm đầu/cuối làm hiệu ứng bay tiền trôn
 Chỉ render (hoặc set opacity 0) coin `i` khi `_controller.value` nằm trong `[_startAt[i], _endAt[i])` — ẩn hẳn trước khi tới lượt và sau khi đã đến đích. Đổi `onDone: entry.remove` thành `onDone: () { if (entry.mounted) entry.remove(); }`, đúng pattern đã có ở `FloatingComboText.show`.
 
 ## Acceptance criteria
-- [ ] Coin chưa tới lượt bay hoặc đã tới đích không còn hiển thị chồng lên nhau ở 2 đầu quỹ đạo.
-- [ ] entry.remove chỉ gọi khi entry.mounted, không crash khi overlay bị unmount giữa lúc animation đang chạy.
-- [ ] Test widget: xác nhận số coin visible tại 1 thời điểm giữa animation khớp đúng với số coin đang trong khung [startAt, endAt) của chúng; test unmount CoinFlyOverlay giữa chừng animation không throw.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] Coin chưa tới lượt bay hoặc đã tới đích không còn hiển thị chồng lên nhau ở 2 đầu quỹ đạo.
+- [x] entry.remove chỉ gọi khi entry.mounted, không crash khi overlay bị unmount giữa lúc animation đang chạy.
+- [x] Test widget: xác nhận số coin visible tại 1 thời điểm giữa animation khớp đúng với số coin đang trong khung [startAt, endAt) của chúng; test unmount CoinFlyOverlay giữa chừng animation không throw.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`. (Animation arc+scale IDEA-22 sẵn có không đổi, chỉ sửa visibility window.)
+
+## Quyết định
+2 fix độc lập trong `lib/presentation/widgets/common/coin_fly_overlay.dart`: (1) mỗi coin `i` trong `build()` giờ check `_controller.value` nằm trong `[_startAt[i], _endAt[i]]` (inclusive 2 đầu — khác literal `[start, end)` đề xuất ban đầu vì cần giữ tương thích với case Reduce Motion, nơi mọi coin có `end = 1.0` và controller hoàn tất giá trị `1.0` NGAY trong cùng frame mount; dùng nửa-mở sẽ làm mất toàn bộ coin đúng khung hình đó, phá vỡ test ENH-17/IDEA-22 Reduce Motion đã có từ trước) — trả `SizedBox.shrink()` (pattern đã dùng ở `confetti_overlay.dart`/`sound_toggle_fab.dart`) khi ngoài khung. (2) `CoinFlyOverlay.show`'s `onDone: entry.remove` đổi thành `onDone: () { if (entry.mounted) entry.remove(); }`, đúng pattern đã có ở `FloatingComboText.show`.
+
+3 test mới trong `group('BUG-32')`: coin chỉ hiện đúng khung thời gian bay (verify tại t=0 và t=210ms với 3 coin stagger), guard `entry.mounted` chứng minh bằng đối chứng trực tiếp (gọi `entry.remove()` trần trên entry đã unmount → `AssertionError`; gọi qua guard → không throw), và happy-path tự remove khi hoàn tất bình thường không bị guard làm hỏng.
+
+Device smoke test (Pixel 7 Pro): demo "CurrencyCounter" + nút "Fly +25" (`CoinFlyOverlay` 5 coin bay từ nút tới counter). Bắt được đúng khung hình giữa chừng: chỉ 2 coin đang bay hiển thị (không phải cả 5 đứng chồng ở nút hay ở đích), currency counter cập nhật đúng 100→125→150, không coin nào còn sót lại ở đích sau khi hoàn tất. Không lỗi trong logcat.
+
+`flutter analyze` + `flutter test --exclude-tags slow` sạch ở root (571 tests) và `example/` (29 tests).
+
+Tự chấm: 9.5/10 — đúng root cause cả 2 vấn đề, quyết định dùng inclusive-both-ends (thay vì literal đề xuất) có lý do rõ ràng (tương thích ngược với Reduce Motion), có bằng chứng device thật bắt được đúng khoảnh khắc giữa animation.
+
+Commit code: `12bffde`.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-32-coin-fly-overlay-visibility-and-unsafe-remove.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
