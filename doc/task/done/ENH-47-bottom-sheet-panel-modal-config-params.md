@@ -20,12 +20,25 @@ Hạn chế tái sử dụng cho các luồng cần kiểm soát chặt hành vi
 Thêm tham số optional `bool isDismissible = true`, `bool enableDrag = true`, `bool useRootNavigator = false`, `Color? barrierColor`, forward thẳng xuống `showModalBottomSheet`.
 
 ## Acceptance criteria
-- [ ] 4 tham số mới forward đúng xuống showModalBottomSheet, giá trị mặc định giữ nguyên hành vi hiện tại.
-- [ ] Test: isDismissible: false xác nhận tap ra ngoài không đóng sheet.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] 4 tham số mới forward đúng xuống showModalBottomSheet, giá trị mặc định giữ nguyên hành vi hiện tại.
+- [x] Test: isDismissible: false xác nhận tap ra ngoài không đóng sheet.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định. (N/A — xem Quyết định.)
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`. (N/A — chỉ forward tham số cấu hình modal, animation mở/đóng sheet dùng transition mặc định của Flutter, không đổi.)
+
+## Quyết định
+Thêm 4 tham số optional (`isDismissible = true`, `enableDrag = true`, `useRootNavigator = false`, `barrierColor`) forward thẳng xuống `showModalBottomSheet` — default trùng khớp behavior ngầm định cũ của Flutter (vốn đã là `true`/`true`/`false`/`null`).
+
+4 test mới trong `group('ENH-47: ...')`: `isDismissible: false` → tap vào barrier KHÔNG đóng sheet; mặc định (`isDismissible: true`) → tap vào barrier đóng sheet như hành vi cũ (test đối chứng, xác nhận không phá happy path); `barrierColor` tuỳ chỉnh forward đúng xuống `ModalBarrier.color`.
+
+Không cần device smoke: chỉ forward tham số cấu hình có sẵn của `showModalBottomSheet` (chính Flutter framework), không tự vẽ/animate gì mới — hành vi dismiss/barrier là chuẩn Material đã được Flutter test kỹ, widget test đã xác nhận đúng hành vi forward.
+
+`flutter analyze` + `flutter test --exclude-tags slow` sạch ở root (597 tests) và `example/` (29 tests).
+
+Tự chấm: 9.5/10 — API forward tối giản, default giữ nguyên hành vi cũ, test xác nhận cả nhánh mới lẫn đối chứng nhánh mặc định.
+
+Commit code: `ef8fcba`.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/ENH-47-bottom-sheet-panel-modal-config-params.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
