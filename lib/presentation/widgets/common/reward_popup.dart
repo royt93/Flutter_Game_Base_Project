@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
+import 'common_button.dart';
 
 /// Celebration popup (level-up, reward unlocked, ...) — a panel layout like
 /// `NeonDialog.panel` (rounded `NeonTheme.card` card, colored border,
@@ -19,6 +20,8 @@ class RewardPopup extends StatefulWidget {
     this.color,
     this.content,
     this.enableParticles = true,
+    this.onDismiss,
+    this.dismissLabel = 'Claim',
   });
 
   final String title;
@@ -26,6 +29,16 @@ class RewardPopup extends StatefulWidget {
   final IconData? icon;
   final Color? color;
   final Widget? content;
+
+  /// Shows a [CommonButton] below [content] when non-null — consistent
+  /// with `SpotlightOverlay`'s onDismiss/buttonLabel, the simpler of the
+  /// 2 patterns already used by this kit's other popup-style widgets
+  /// (vs. `NeonDialog.panel`'s `List<NeonDialogAction>`, which supports
+  /// multiple actions this single-button reward moment doesn't need).
+  final VoidCallback? onDismiss;
+
+  /// Button label, only shown when [onDismiss] is set.
+  final String dismissLabel;
 
   /// Disables the confetti burst (e.g. the user enabled reduced motion, or
   /// this is a test).
@@ -167,6 +180,10 @@ class _RewardPopupState extends State<RewardPopup>
           if (widget.content != null) ...[
             const SizedBox(height: NeonTheme.s16),
             widget.content!,
+          ],
+          if (widget.onDismiss != null) ...[
+            const SizedBox(height: NeonTheme.s16),
+            CommonButton(label: widget.dismissLabel, onTap: widget.onDismiss),
           ],
         ],
       ),
