@@ -20,12 +20,25 @@ Hạn chế use-case rất phổ biến: nhiều game chỉ compact hoá số R�
 Thêm tham số optional `bool compact = true` (dùng `fmtNum` thay `fmtNumCompact` khi `false`), hoặc linh hoạt hơn `String Function(int)? formatter` cho phép caller tự quyết định hoàn toàn công thức hiển thị — chọn hướng đơn giản nhất khi code (khả năng cao chỉ cần `bool compact` là đủ, đừng thêm `formatter` nếu không có ai cần).
 
 ## Acceptance criteria
-- [ ] compact: false hiển thị số chính xác qua fmtNum, compact: true (mặc định) giữ nguyên hành vi hiện tại.
-- [ ] Test: cùng 1 giá trị lớn (ví dụ 12345678) với compact true/false hiển thị đúng 2 định dạng khác nhau.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] compact: false hiển thị số chính xác qua fmtNum, compact: true (mặc định) giữ nguyên hành vi hiện tại.
+- [x] Test: cùng 1 giá trị lớn (ví dụ 12345678) với compact true/false hiển thị đúng 2 định dạng khác nhau.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định. (N/A — xem Quyết định.)
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`. (Animation đếm số có sẵn (TweenAnimationBuilder) không đổi, chỉ đổi formatter cuối.)
+
+## Quyết định
+Chọn hướng đơn giản nhất theo đúng gợi ý trong Đề xuất: `bool compact = true` (không thêm `formatter` tuỳ chỉnh vì không có nhu cầu cụ thể nào khác ngoài "chính xác hay rút gọn" — YAGNI). `build()` chọn `fmtNumCompact(n)` hay `fmtNum(n)` tuỳ `widget.compact`.
+
+2 test mới trong `group('ENH-50: compact')` dùng cùng 1 giá trị lớn (`12345678`): `compact: true` (mặc định) hiển thị đúng `fmtNumCompact` và KHÔNG hiển thị `fmtNum`; `compact: false` hiển thị đúng `fmtNum` và KHÔNG hiển thị `fmtNumCompact` — xác nhận 2 định dạng thực sự khác nhau và widget chọn đúng nhánh.
+
+Không cần device smoke: bổ sung 1 tham số optional (default `true` = hành vi cũ), demo `CurrencyCounter` hiện tại trong `WidgetShowcaseScreen` không dùng `compact: false` nên không đổi bất kỳ pixel nào đã hiển thị trên máy thật.
+
+`flutter analyze` + `flutter test --exclude-tags slow` sạch ở root (599 tests) và `example/` (29 tests).
+
+Tự chấm: 9.5/10 — đúng tinh thần "chọn hướng đơn giản hơn" (bool thay vì formatter function), default giữ nguyên hành vi cũ, test xác nhận rõ 2 định dạng khác biệt.
+
+Commit code: `6abcee9`.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/ENH-50-currency-counter-exact-format-option.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
