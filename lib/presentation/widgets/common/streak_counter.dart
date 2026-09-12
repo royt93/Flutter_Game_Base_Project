@@ -69,12 +69,21 @@ class _StreakCounterState extends State<StreakCounter>
         children: [
           Icon(widget.icon, color: c, size: widget.fontSize + 6),
           const SizedBox(width: 4),
-          Text(
-            '${widget.days}',
-            style: TextStyle(
-              color: NeonTheme.ink,
-              fontSize: widget.fontSize,
-              fontWeight: FontWeight.w800,
+          // ENH-40: same Flexible+FittedBox pattern as CurrencyCounter —
+          // a large day count at a high textScaleFactor shrinks to fit
+          // instead of overflowing past this Row's parent constraints.
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '${widget.days}',
+                style: TextStyle(
+                  color: NeonTheme.ink,
+                  fontSize: widget.fontSize,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ),
         ],

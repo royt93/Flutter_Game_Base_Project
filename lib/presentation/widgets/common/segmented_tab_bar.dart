@@ -73,17 +73,24 @@ class SegmentedTabBar extends StatelessWidget {
                         child: SizedBox(
                           height: 36,
                           child: Center(
-                            child: Text(
-                              labels[i],
-                              style: TextStyle(
-                                fontFamily: NeonTheme.fontFamily,
-                                fontWeight: active
-                                    ? FontWeight.w800
-                                    : FontWeight.w700,
-                                color: active
-                                    ? Colors.white
-                                    : NeonTheme.inkSoft,
-                                fontSize: 14,
+                            // ENH-40: at a large textScaleFactor or a very
+                            // narrow segment, an unbounded Text here
+                            // overflows past the fixed 36px-tall pill —
+                            // FittedBox shrinks it to fit instead.
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                labels[i],
+                                style: TextStyle(
+                                  fontFamily: NeonTheme.fontFamily,
+                                  fontWeight: active
+                                      ? FontWeight.w800
+                                      : FontWeight.w700,
+                                  color: active
+                                      ? Colors.white
+                                      : NeonTheme.inkSoft,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           ),

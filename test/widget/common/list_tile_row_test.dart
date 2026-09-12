@@ -61,4 +61,31 @@ void main() {
     await tester.tap(find.text('Row'));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'ENH-40: title/subtitle rất dài trong hàng hẹp bị ellipsis, không RenderFlex overflow',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: SizedBox(
+              width: 150,
+              child: CommonListTile(
+                title: 'A very extremely long title that should never fit',
+                subtitle:
+                    'An equally long subtitle that also should never fit here',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final titleText = tester.widget<Text>(
+        find.textContaining('A very extremely long title'),
+      );
+      expect(titleText.overflow, TextOverflow.ellipsis);
+      expect(titleText.maxLines, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

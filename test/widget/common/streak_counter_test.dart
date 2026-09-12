@@ -121,4 +121,26 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'ENH-40: textScaleFactor lớn + số ngày dài không gây RenderFlex overflow',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(3.0)),
+          child: MaterialApp(
+            home: Material(
+              child: SizedBox(
+                width: 80,
+                child: StreakCounter(days: 999999),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(FittedBox), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

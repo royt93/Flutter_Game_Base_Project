@@ -108,4 +108,51 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'ENH-40: textScaleFactor lớn không gây RenderFlex overflow (label bọc FittedBox)',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(3.0)),
+          child: MaterialApp(
+            home: Material(
+              child: SizedBox(
+                width: 200,
+                child: SegmentedTabBar(
+                  labels: const ['Normal', 'Hard'],
+                  selectedIndex: 0,
+                  onChanged: (_) {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(FittedBox), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('ENH-40: segment cực hẹp (label dài, width nhỏ) không overflow', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: SizedBox(
+            width: 100,
+            child: SegmentedTabBar(
+              labels: const ['Extremely Long Label', 'B'],
+              selectedIndex: 0,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+  });
 }

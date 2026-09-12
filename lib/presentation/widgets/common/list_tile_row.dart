@@ -53,6 +53,8 @@ class CommonListTile extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: NeonTheme.ink,
                     fontSize: 16,
@@ -63,6 +65,8 @@ class CommonListTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: NeonTheme.inkSoft,
                       fontSize: 13,
