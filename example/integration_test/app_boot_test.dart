@@ -237,6 +237,34 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-31: wallet rejects duplicate spend on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    final wallet = EconomyWallet(storage: StorageService.to);
+    await wallet.earn(
+      currency: 'coin',
+      amount: 10,
+      transactionId: 'device-seed',
+    );
+    final results = await Future.wait([
+      wallet.trySpend(
+        currency: 'coin',
+        amount: 7,
+        transactionId: 'device-spend-a',
+      ),
+      wallet.trySpend(
+        currency: 'coin',
+        amount: 7,
+        transactionId: 'device-spend-b',
+      ),
+    ]);
+    expect(wallet.balanceOf('coin'), 3);
+    expect(results.where((result) => result.isSuccess), hasLength(1));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('IDEA-38: color-blind-safe setting changes palette on device', (
     tester,
   ) async {

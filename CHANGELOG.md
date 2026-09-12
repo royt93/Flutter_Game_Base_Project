@@ -1,5 +1,6 @@
 ## 0.2.0
 
+- Added reactive `EconomyWallet` with atomic earn/spend and transaction idempotency.
 - Added `GameSessionController` for typed game session state, nested pause reasons and lifecycle bridging.
 - Added typed `SdkResult` success/failure contracts for public service APIs.
 - Added `SaveMigrationRegistry` for validated multi-hop save upgrades with copy-on-write migration.
