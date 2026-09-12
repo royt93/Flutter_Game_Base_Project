@@ -20,12 +20,38 @@ Nếu 1 lần gọi review API thất bại do lỗi tạm thời (platform glit
 Gọi `showReview()` trước, chỉ lưu `reviewLastAskedMs` SAU KHI thành công; hoặc bọc trong try/catch và khôi phục lại timestamp cũ nếu `showReview()` throw.
 
 ## Acceptance criteria
-- [ ] 1 lệnh showReview() throw không tiêu cooldown — lần gọi hợp lệ tiếp theo vẫn được phép (nếu điều kiện khác đủ).
-- [ ] Test: callback throw, xác nhận reviewLastAskedMs không đổi và lần gọi kế tiếp vẫn eligible.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] 1 lệnh showReview() throw không tiêu cooldown — lần gọi hợp lệ tiếp theo vẫn được phép (nếu điều kiện khác đủ).
+- [x] Test: callback throw, xác nhận reviewLastAskedMs không đổi và lần gọi kế tiếp vẫn eligible.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+
+## Quyết định
+Chọn đúng hướng 1 trong Đề xuất (gọi `showReview()` trước, chỉ persist
+sau khi thành công) — đơn giản hơn hướng try/catch-khôi-phục, và tận
+dụng đúng ngữ nghĩa hiện có: doc comment của hàm ghi rõ "Returns whether
+[showReview] was actually invoked" (không phải "đã thành công") — nghĩa
+là khi `showReview()` throw, đúng hành vi mong đợi là exception LAN RA
+NGOÀI cho caller (không nuốt), không phải trả về `false`. Đổi thứ tự 2
+dòng là đủ: nếu `showReview()` throw, dòng `setInt(reviewLastAskedMs,
+...)` không bao giờ chạy tới → cooldown không bị tiêu, bất kể exception
+có được caller bắt hay không.
+
+Test ban đầu viết sai kỳ vọng (mong `maybeRequestReview` trả về `false`
+khi showReview throw) — phát hiện qua đọc lại đúng doc comment của hàm,
+sửa lại thành `expect(..., throwsStateError)` cho đúng contract "trả về
+đã GỌI hay chưa", rồi verify lần gọi tiếp theo (cùng mốc thời gian) vẫn
+eligible — đúng phần quan trọng nhất của bug fix (không tiêu cooldown).
+
+Test: 1 test mới. Tổng 9 test, tất cả pass. `flutter analyze` sạch cả
+root + `example/`. `flutter test --exclude-tags slow`: tất cả pass,
+không regression.
+
+Không có device smoke test — pure Dart decision-logic helper, không
+render UI, không widget nào trong `example/` gọi trực tiếp
+`maybeRequestReview` (đúng thiết kế "app tự quyết định khi nào gọi", kit
+không tự ý hiện review prompt).
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-25-in-app-review-helper-consumes-cooldown-on-failure.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
