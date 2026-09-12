@@ -147,5 +147,73 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    group('ENH-51: button width tracks the card, not a fixed 240px', () {
+      testWidgets(
+        'card hẹp bất thường (200px) → không RenderFlex overflow',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Material(
+                child: Center(
+                  child: SizedBox(
+                    width: 200,
+                    child: GameOverCardTemplate(
+                      title: 'Out of moves!',
+                      primaryActionLabel: 'Retry',
+                      onPrimaryAction: () {},
+                      secondaryActionLabel: 'Home',
+                      onSecondaryAction: () {},
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'card RỘNG hơn 240px → nút co giãn lấp đầy, không còn dừng ở '
+        'mặc định cố định 240px của CommonButton',
+        (tester) async {
+          const cardWidth = 320.0;
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Material(
+                child: Center(
+                  child: SizedBox(
+                    width: cardWidth,
+                    child: GameOverCardTemplate(
+                      title: 'Out of moves!',
+                      primaryActionLabel: 'Retry',
+                      onPrimaryAction: () {},
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          final buttonBox = tester.renderObject<RenderBox>(
+            find
+                .ancestor(
+                  of: find.text('Retry').first,
+                  matching: find.byType(SizedBox),
+                )
+                .first,
+          );
+          expect(
+            buttonBox.size.width,
+            greaterThan(240),
+            reason: 'phải rộng hơn mặc định cố định 240px của CommonButton, '
+                'lấp đầy chiều rộng card $cardWidth px (trừ padding)',
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
+    });
   });
 }

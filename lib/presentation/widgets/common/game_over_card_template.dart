@@ -107,18 +107,27 @@ class GameOverCardTemplate extends StatelessWidget {
                 ),
               ),
             const SizedBox(height: NeonTheme.s16),
-            CommonButton(
-              label: primaryActionLabel,
-              color: accent,
-              onTap: onPrimaryAction,
+            // ENH-51: full width of the card instead of CommonButton's
+            // fixed 240px default — a narrower card (e.g. inside a small
+            // dialog) no longer overflows or looks disproportionate.
+            SizedBox(
+              width: double.infinity,
+              child: CommonButton(
+                label: primaryActionLabel,
+                color: accent,
+                onTap: onPrimaryAction,
+              ),
             ),
             if (secondaryActionLabel != null) ...[
               const SizedBox(height: NeonTheme.s8),
-              CommonButton(
-                label: secondaryActionLabel,
-                variant: CommonButtonVariant.secondary,
-                color: accent,
-                onTap: onSecondaryAction,
+              SizedBox(
+                width: double.infinity,
+                child: CommonButton(
+                  label: secondaryActionLabel,
+                  variant: CommonButtonVariant.secondary,
+                  color: accent,
+                  onTap: onSecondaryAction,
+                ),
               ),
             ],
           ],
