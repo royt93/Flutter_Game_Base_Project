@@ -732,8 +732,12 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // No key here (BUG-30 fix demo): tapping
+                              // "Restart 15s" changes `target` on this SAME
+                              // CountdownChip instance — didUpdateWidget
+                              // must pick up the new target and restart the
+                              // ticking, not require a remount to notice it.
                               CountdownChip(
-                                key: ValueKey(_countdownTarget),
                                 target: _countdownTarget,
                                 onDone: () => ToastBanner.show(
                                   context,
