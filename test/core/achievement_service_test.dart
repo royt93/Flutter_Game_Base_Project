@@ -8,10 +8,12 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   tearDown(Get.reset);
 
+  late StorageService storage;
+
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    final store = StorageService(await SharedPreferences.getInstance());
-    Get.put(store, permanent: true);
+    storage = StorageService(await SharedPreferences.getInstance());
+    Get.put(storage, permanent: true);
   });
 
   group('AchievementService', () {
@@ -102,6 +104,63 @@ void main() {
       expect(service2.isCompleted('first_win'), false);
       service2.incrementProgress('first_win', 1);
       expect(service2.isCompleted('first_win'), true);
+    });
+
+    group('BUG-17: save race khi nhiều incrementProgress gọi rất nhanh', () {
+      test(
+        'N lần incrementProgress liên tiếp không await → sau khi mọi save '
+        'settle, tổng persist đúng qua instance mới (không bị 1 write cũ '
+        'ghi đè bằng snapshot lỗi thời)',
+        () async {
+          final service = AchievementService();
+          service.register('combo', 100);
+
+          // 10 lần gọi LIÊN TIẾP không await gì giữa các lần — đúng kịch bản
+          // "combo nhiều event cùng lúc" mô tả trong Hiện trạng. Trước khi
+          // sửa, các lệnh save() (unawaited) chạy song song và có thể hoàn
+          // tất sai thứ tự; sau khi sửa, _saveChain đảm bảo mỗi save chỉ bắt
+          // đầu khi save trước đã xong, nên write SAU CÙNG luôn hoàn tất
+          // SAU CÙNG bất kể tốc độ I/O thật.
+          for (var i = 0; i < 10; i++) {
+            service.incrementProgress('combo', 1);
+          }
+
+          await service.debugPendingSaves;
+
+          final reloaded = AchievementService();
+          reloaded.register('combo', 100);
+          expect(reloaded.isCompleted('combo'), isFalse);
+          // isCompleted không lộ ra tổng thật — đọc trực tiếp qua storage để
+          // xác nhận đúng 10, không phải 1 giá trị trung gian nào bị kẹt lại.
+          expect(
+            storage.getString('achievement_progress_v1'),
+            contains('"combo":10'),
+          );
+        },
+      );
+
+      test(
+        'mỗi incrementProgress trong burst đều thực sự ghi xuống disk — '
+        'không bị âm thầm rớt/gộp lại (đếm qua StorageService.platformWrites)',
+        () async {
+          final service = AchievementService();
+          service.register('combo', 100);
+
+          final writesBefore = storage.platformWrites;
+          for (var i = 0; i < 5; i++) {
+            service.incrementProgress('combo', 1);
+          }
+          await service.debugPendingSaves;
+
+          // >= 5 (không phải == 5): mỗi save() còn gọi nowMsClamped(), có
+          // thể tự thêm 1 write phụ (StorageKeys.maxMsSeen) lần đầu tiên
+          // watermark đó được nâng lên trong test — không liên quan tới
+          // đúng/sai của serialization đang test ở đây. Điều thực sự cần
+          // đảm bảo: không có save nào trong 5 lần bị rớt/gộp mất, tức tổng
+          // write phải đạt ÍT NHẤT 5.
+          expect(storage.platformWrites - writesBefore, greaterThanOrEqualTo(5));
+        },
+      );
     });
   });
 }
