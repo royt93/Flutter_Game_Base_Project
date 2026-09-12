@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/panel_card.dart';
@@ -121,5 +122,108 @@ void main() {
     final decoration = container.decoration as BoxDecoration?;
     expect(decoration?.boxShadow, isNotNull);
     expect(decoration!.boxShadow!.isNotEmpty, true);
+  });
+
+  group('ENH-44: buttonColor/buttonVariant + merged semantics', () {
+    testWidgets('mặc định (không truyền) → CommonButton vẫn primary, màu mặc định', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: ShopItemCard(
+              icon: Icons.diamond_rounded,
+              title: '100 Gems',
+              priceLabel: r'$0.99',
+              onBuy: () {},
+            ),
+          ),
+        ),
+      );
+
+      final button = tester.widget<CommonButton>(find.byType(CommonButton));
+      expect(button.variant, CommonButtonVariant.primary);
+      expect(button.color, isNull);
+    });
+
+    testWidgets('buttonColor/buttonVariant truyền vào áp dụng đúng cho CommonButton', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: ShopItemCard(
+              icon: Icons.diamond_rounded,
+              title: 'Best Value',
+              priceLabel: r'$9.99',
+              onBuy: () {},
+              buttonColor: Colors.amber,
+              buttonVariant: CommonButtonVariant.secondary,
+            ),
+          ),
+        ),
+      );
+
+      final button = tester.widget<CommonButton>(find.byType(CommonButton));
+      expect(button.variant, CommonButtonVariant.secondary);
+      expect(button.color, Colors.amber);
+    });
+
+    testWidgets(
+      'Semantics gộp title + priceLabel + ribbonText vào 1 node duy nhất '
+      '(MergeSemantics), vẫn giữ được vai trò button/tap',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: ShopItemCard(
+                icon: Icons.diamond_rounded,
+                title: 'Mega Pack',
+                priceLabel: r'$4.99',
+                ribbonText: 'BEST VALUE',
+                onBuy: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Toàn bộ card giờ chỉ có ĐÚNG 1 semantics node duy nhất chứa
+        // action "tap" (thay vì rải rác nhiều node con) — MergeSemantics
+        // đã gộp title/price/ribbon/button vào node này.
+        final data = tester.getSemantics(find.byType(ShopItemCard));
+        expect(data.label, contains('Mega Pack'));
+        expect(data.label, contains(r'$4.99'));
+        expect(data.label, contains('BEST VALUE'));
+        expect(data.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+        handle.dispose();
+      },
+    );
+
+    testWidgets('Semantics không có ribbonText vẫn gộp title + priceLabel', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: ShopItemCard(
+              icon: Icons.diamond_rounded,
+              title: '100 Gems',
+              priceLabel: r'$0.99',
+              onBuy: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final data = tester.getSemantics(find.byType(ShopItemCard));
+      expect(data.label, contains('100 Gems'));
+      expect(data.label, contains(r'$0.99'));
+      expect(data.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      handle.dispose();
+    });
   });
 }

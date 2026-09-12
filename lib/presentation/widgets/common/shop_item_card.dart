@@ -22,6 +22,8 @@ class ShopItemCard extends StatelessWidget {
     this.ribbonColor,
     this.iconColor,
     this.width = 160,
+    this.buttonColor,
+    this.buttonVariant = CommonButtonVariant.primary,
   });
 
   final IconData icon;
@@ -44,6 +46,14 @@ class ShopItemCard extends StatelessWidget {
 
   /// Card width — also sizes the buy button to fit inside it.
   final double width;
+
+  /// Buy button color — e.g. a "best value" item wanting a more prominent
+  /// color than the default. Passed straight through to [CommonButton].
+  final Color? buttonColor;
+
+  /// Buy button variant — defaults to [CommonButtonVariant.primary],
+  /// matching the prior hardcoded behavior.
+  final CommonButtonVariant buttonVariant;
 
   @override
   Widget build(BuildContext context) {
@@ -82,12 +92,22 @@ class ShopItemCard extends StatelessWidget {
               label: priceLabel,
               onTap: onBuy,
               width: width - NeonTheme.s16 * 2,
+              variant: buttonVariant,
+              color: buttonColor,
             ),
           ],
         ),
       ),
     );
-    if (ribbonText == null) return card;
-    return RibbonBadge(text: ribbonText!, color: ribbonColor, child: card);
+    final withRibbon = ribbonText == null
+        ? card
+        : RibbonBadge(text: ribbonText!, color: ribbonColor, child: card);
+    // ENH-44: merges every descendant semantics node (title text, buy
+    // button, ribbon text if any) into ONE node instead of 3+ separate
+    // ones a screen reader would announce individually — a shop grid item
+    // is conceptually a single unit. MergeSemantics (unlike a plain
+    // Semantics(label: ...)) also preserves the button role/tap action
+    // from CommonButton on the merged node, so it stays activatable.
+    return MergeSemantics(child: withRibbon);
   }
 }
