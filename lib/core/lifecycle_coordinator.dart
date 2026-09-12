@@ -38,6 +38,10 @@ class RoyLifecycleCoordinator extends GetxService with WidgetsBindingObserver {
     _hooks.add((name: name, callback: callback));
   }
 
+  void removeHook(String name) {
+    _hooks.removeWhere((hook) => hook.name == name);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final next = switch (state) {

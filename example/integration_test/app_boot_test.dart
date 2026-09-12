@@ -213,6 +213,30 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-41: game session pauses and resumes with lifecycle', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    final session = GameSessionController(
+      lifecycle: Get.find<RoyLifecycleCoordinator>(),
+    )..onInit();
+    session.markReady();
+    session.start();
+    Get.find<RoyLifecycleCoordinator>().didChangeAppLifecycleState(
+      AppLifecycleState.paused,
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(session.snapshot.value.phase, GameSessionPhase.paused);
+    Get.find<RoyLifecycleCoordinator>().didChangeAppLifecycleState(
+      AppLifecycleState.resumed,
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(session.snapshot.value.phase, GameSessionPhase.playing);
+    session.onClose();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('IDEA-38: color-blind-safe setting changes palette on device', (
     tester,
   ) async {
