@@ -7,9 +7,14 @@ library;
 /// Reads [v] as an `int`. `dart:convert` decodes a whole-number JSON value
 /// as `int` but a value with `.0` may come back as `double` (or vice versa
 /// depending on the source) — both are accepted here.
+///
+/// A non-finite double (NaN/Infinity/-Infinity) — e.g. from a hand-crafted
+/// payload or a remote adapter that isn't strict JSON — falls back instead
+/// of throwing (BUG-22): `.toInt()` throws `UnsupportedError` for those,
+/// which would otherwise violate this whole file's "never throw" contract.
 int asIntOr(Object? v, int fallback) {
   if (v is int) return v;
-  if (v is double) return v.toInt();
+  if (v is double) return v.isFinite ? v.toInt() : fallback;
   return fallback;
 }
 
