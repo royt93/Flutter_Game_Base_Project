@@ -42,11 +42,38 @@ Thêm `_scale = Tween<double>(begin: 0.6, end: 1.0).animate(CurvedAnimation(pare
 tại) — bọc thêm `Transform.scale(scale: _scale.value, ...)` trong builder.
 
 ## Acceptance criteria
-- [ ] `FloatingComboText` có scale pop-in ở đầu animation, không ảnh hưởng timing rise/fade hiện tại.
-- [ ] `reducedMotion` vẫn hoạt động đúng (duration đã collapse về 0 theo code hiện tại — scale mới cũng phải tôn trọng điều đó, không snap về giá trị scale giữa chừng).
-- [ ] Test mới xác nhận scale bắt đầu < 1 và kết thúc = 1.
+- [x] `FloatingComboText` có scale pop-in ở đầu animation, không ảnh hưởng timing rise/fade hiện tại.
+- [x] `reducedMotion` vẫn hoạt động đúng (duration đã collapse về 0 theo code hiện tại — scale mới cũng phải tôn trọng điều đó, không snap về giá trị scale giữa chừng).
+- [x] Test mới xác nhận scale bắt đầu < 1 và kết thúc = 1.
 
 ## Ghi chú độ tin cậy
 Thấp-trung bình — thuần thẩm mỹ ("would look better"), không sửa bug, hiệu
 ứng hiện tại vẫn hoạt động tốt. Cân nhắc theo mức độ ưu tiên polish của dự
 án.
+
+## Quyết định
+Làm đúng như đề xuất: thêm `_scale = Tween<double>(begin: 0.6, end:
+1.0).animate(CurvedAnimation(parent: _controller, curve: Interval(0.0,
+0.3, curve: Curves.easeOutBack)))`, bọc `Transform.scale(key:
+Key('floatingComboTextScale'), scale: _scale.value, child: ...)` vào giữa
+`Transform.translate` và `Opacity` hiện có. `reducedMotion` không cần xử
+lý riêng — `_controller` đã collapse `duration` về 0 sẵn từ trước, nên
+`Interval` evaluate tại t=1.0 trả về scale=1.0 ngay lập tức, không có giá
+trị pop giữa chừng bị kẹt lại.
+
+Test đọc scale qua `Transform.scale`'s `key` riêng (không dùng
+`find.ancestor` + `getMaxScaleOnAxis()`, theo đúng bug đã phát hiện ở
+ENH-31/32 trong session này).
+
+Test: 2 test mới — scale < 1 lúc spawn rồi đạt 1.0 sau khi animation xong,
+và reducedMotion → scale = 1.0 ngay không kẹt giữa chừng. `flutter
+analyze` sạch cả root + `example/`. `flutter test --exclude-tags slow`:
+tất cả pass, không regression.
+
+Device smoke test thật trên Pixel 7 Pro (`2B051FDH3006MU`): mở Widget Kit
+→ Progress & Reward → bấm "Spam combo x5" (FloatingComboText) nhiều lần
+liên tiếp, không exception trong logcat. Không capture được frame giữa
+pop-in qua screenshot (animation quá ngắn so với round-trip latency, giới
+hạn đã ghi nhận nhiều lần trong session này) — bằng chứng chính là test
+đơn vị xác nhận đúng curve/scale range, device smoke chỉ xác nhận
+zero-crash khi dùng lặp lại (spam).
