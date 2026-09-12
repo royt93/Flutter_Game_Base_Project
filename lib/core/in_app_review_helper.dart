@@ -40,7 +40,12 @@ Future<bool> maybeRequestReview({
     return false;
   }
 
-  await StorageService.to.setInt(StorageKeys.reviewLastAskedMs, now);
+  // BUG-25: call showReview() FIRST, persist the timestamp only after it
+  // succeeds. Persisting first (the old order) meant a throwing/failed
+  // platform call still burned the entire cooldown — every retry for the
+  // next `cooldown` duration was blocked despite never having actually
+  // shown a prompt.
   await showReview();
+  await StorageService.to.setInt(StorageKeys.reviewLastAskedMs, now);
   return true;
 }

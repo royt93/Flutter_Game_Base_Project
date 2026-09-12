@@ -167,5 +167,33 @@ void main() {
         expect(callCount, 1);
       },
     );
+
+    test(
+      'BUG-25: showReview() throw → lỗi lan ra ngoài (đúng theo doc "trả '
+      'về đã GỌI hay chưa", không phải đã thành công), nhưng KHÔNG tiêu '
+      'cooldown — lần gọi hợp lệ tiếp theo vẫn eligible',
+      () async {
+        await setNowMs(_realMs);
+
+        await expectLater(
+          maybeRequestReview(
+            recentWinStreak: 5,
+            showReview: () async => throw StateError('platform lỗi tạm thời'),
+          ),
+          throwsStateError,
+        );
+
+        // Vẫn cùng thời điểm — nếu cooldown đã bị tiêu (bug), lần gọi này
+        // sẽ bị chặn dù chưa hề hỏi thành công lần nào.
+        var called = false;
+        final asked2 = await maybeRequestReview(
+          recentWinStreak: 5,
+          showReview: () async => called = true,
+        );
+
+        expect(asked2, isTrue);
+        expect(called, isTrue);
+      },
+    );
   });
 }
