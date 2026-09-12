@@ -123,4 +123,26 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'IDEA-21: dùng curve tường minh (easeOut), không phải Curves.linear mặc định',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: NetworkStatusBanner(connected: false)),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        tester.widget<AnimatedSize>(find.byType(AnimatedSize)).curve,
+        Curves.easeOut,
+      );
+      expect(
+        tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity)).curve,
+        Curves.easeOut,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

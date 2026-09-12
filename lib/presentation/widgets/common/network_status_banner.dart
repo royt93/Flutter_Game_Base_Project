@@ -56,9 +56,15 @@ class NetworkStatusBanner extends StatelessWidget {
         : duration;
     return AnimatedSize(
       duration: effectiveDuration,
+      // Flat/status curve (IDEA-21, NeonTheme.reducedMotion's doc) — no
+      // overshoot, this is a warning banner, not a celebration moment.
+      // Explicit rather than relying on the implicit default of
+      // Curves.linear.
+      curve: Curves.easeOut,
       alignment: Alignment.topCenter,
       child: AnimatedOpacity(
         duration: effectiveDuration,
+        curve: Curves.easeOut,
         opacity: show ? 1 : 0,
         child: !show
             ? const SizedBox(width: double.infinity)

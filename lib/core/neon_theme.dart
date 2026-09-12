@@ -23,6 +23,29 @@ class NeonTheme {
   static bool reducedMotion(BuildContext context) =>
       MediaQuery.of(context).disableAnimations;
 
+  /// Motion-language convention for ephemeral/entrance animations (IDEA-21)
+  /// — pick the curve by what KIND of moment it is, not by habit:
+  /// - **Celebration/reward** (confetti trigger, combo/score text, a won
+  ///   dialog, a reward popup, "this thing you did was great") — an
+  ///   overshoot curve (`Curves.easeOutBack` or similar), 150-320ms. Reads
+  ///   as playful/bouncy. Examples already following this:
+  ///   `RewardPopup`/`NeonDialog`'s entrance, `FloatingComboText`'s
+  ///   scale pop-in (IDEA-19), `ToastBanner`'s slide-in, `RibbonBadge`'s
+  ///   pop-in (IDEA-27), `StreakCounter`/`ProgressBarStars`/
+  ///   `IconBadgeButton`'s "just earned/changed" pop (ENH-31/32/IDEA-16).
+  /// - **Status/warning** (a network/offline banner, a system-level
+  ///   notice — "pay attention, something changed, not a reward") — a
+  ///   flat curve (`Curves.easeOut`/`easeInOut`, no overshoot). Reads as
+  ///   serious/neutral. Example: `NetworkStatusBanner`.
+  /// - **Physics-driven motion** (confetti fall/spin, a coin's flight arc)
+  ///   is exempt — it's a simulated trajectory, not an "entrance curve" in
+  ///   the UI sense above.
+  ///
+  /// Every entrance/implicit animation should set an EXPLICIT `curve:` —
+  /// never rely on an implicit widget's default (`Curves.linear`), even
+  /// for the flat/status case, so the choice reads as deliberate in the
+  /// code rather than "nobody set one".
+
   /// App-wide font — Baloo2 (full Vietnamese glyph coverage + a friendly rounded look).
   static const String fontFamily = 'Baloo2';
 
