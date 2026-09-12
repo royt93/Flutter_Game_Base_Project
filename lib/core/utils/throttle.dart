@@ -4,12 +4,20 @@ import 'package:flutter/foundation.dart';
 /// are dropped — guards a button/action callback against rage-tap causing
 /// a double purchase, double navigation, double submit. Only blocks
 /// double-firing; a throw from [fn] still propagates (never swallowed).
+///
+/// Measures elapsed time with a single [Stopwatch] started on first call
+/// (BUG-28) rather than `DateTime.now()` — a monotonic clock can't be
+/// rewound by a system-clock change, so it can't get stuck dropping every
+/// call indefinitely the way a wall-clock diff would if the clock jumped
+/// backward mid-session.
 VoidCallback throttled(VoidCallback fn, {Duration window = const Duration(milliseconds: 600)}) {
-  DateTime? lastRun;
+  final stopwatch = Stopwatch();
+  Duration? lastRunAt;
   return () {
-    final now = DateTime.now();
-    if (lastRun != null && now.difference(lastRun!) < window) return;
-    lastRun = now;
+    if (!stopwatch.isRunning) stopwatch.start();
+    final now = stopwatch.elapsed;
+    if (lastRunAt != null && now - lastRunAt! < window) return;
+    lastRunAt = now;
     fn();
   };
 }
