@@ -89,5 +89,61 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+
+    group('ENH-46: onTap', () {
+      testWidgets('onTap null (mặc định) → tap không throw, không có Semantics button', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          _wrap(
+            const LeaderboardList(
+              entries: [LeaderboardEntry(rank: 1, name: 'Alice', score: '9,000')],
+            ),
+          ),
+        );
+
+        await tester.tap(find.byKey(const ValueKey('leaderboardRow_1')));
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        final data = tester.getSemantics(
+          find.byKey(const ValueKey('leaderboardRow_1')),
+        );
+        expect(data.getSemanticsData().flagsCollection.isButton, isFalse);
+        handle.dispose();
+      });
+
+      testWidgets('onTap truyền vào → tap gọi đúng callback, có Semantics button', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        var tapped = false;
+        await tester.pumpWidget(
+          _wrap(
+            LeaderboardList(
+              entries: [
+                LeaderboardEntry(
+                  rank: 1,
+                  name: 'Alice',
+                  score: '9,000',
+                  onTap: () => tapped = true,
+                ),
+              ],
+            ),
+          ),
+        );
+
+        await tester.tap(find.byKey(const ValueKey('leaderboardRow_1')));
+        await tester.pump();
+
+        expect(tapped, isTrue);
+        final data = tester.getSemantics(
+          find.byKey(const ValueKey('leaderboardRow_1')),
+        );
+        expect(data.getSemanticsData().flagsCollection.isButton, isTrue);
+        handle.dispose();
+      });
+    });
   });
 }

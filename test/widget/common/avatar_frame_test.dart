@@ -49,4 +49,50 @@ void main() {
     final decoration = container.decoration as BoxDecoration;
     expect(decoration.border, Border.all(color: NeonTheme.red, width: 6));
   });
+
+  group('ENH-46: onTap', () {
+    testWidgets('onTap null (mặc định) → tap không throw, không có Semantics button', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(child: AvatarFrame(child: const Text('AB'))),
+        ),
+      );
+
+      await tester.tap(find.byType(AvatarFrame));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      final data = tester.getSemantics(find.byType(AvatarFrame));
+      expect(data.getSemanticsData().flagsCollection.isButton, isFalse);
+      handle.dispose();
+    });
+
+    testWidgets('onTap truyền vào → tap gọi đúng callback, có Semantics button', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      var tapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: AvatarFrame(
+              onTap: () => tapped = true,
+              child: const Text('AB'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(AvatarFrame));
+      await tester.pump();
+
+      expect(tapped, isTrue);
+      final data = tester.getSemantics(find.byType(AvatarFrame));
+      expect(data.getSemanticsData().flagsCollection.isButton, isTrue);
+      handle.dispose();
+    });
+  });
 }

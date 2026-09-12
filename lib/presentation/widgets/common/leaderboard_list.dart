@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
+import '../pressable_scale.dart';
 import 'avatar_frame.dart';
 
 /// One caller-supplied leaderboard row — rank, name and score are already
@@ -13,6 +14,7 @@ class LeaderboardEntry {
     required this.score,
     this.avatar,
     this.highlighted = false,
+    this.onTap,
   });
 
   final int rank;
@@ -26,6 +28,10 @@ class LeaderboardEntry {
   /// True for the row representing the current player — renders with an
   /// accent border so it stands out among opponents.
   final bool highlighted;
+
+  /// Called when this row is tapped (e.g. to view that player's profile).
+  /// When null, the row stays purely display-only (no press feedback).
+  final VoidCallback? onTap;
 }
 
 /// Pure, data-driven leaderboard display (rank + name + score + optional
@@ -58,6 +64,19 @@ class _LeaderboardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final row = _row(context);
+    // ENH-46: always wrap in PressableScale — with onTap null it's a no-op
+    // (GestureDetector's callbacks stay null, AnimatedScale stays at 1.0),
+    // identical to the prior display-only behavior. Semantics(button:
+    // true) only added when actually tappable, so a screen reader doesn't
+    // announce a non-interactive row as a button.
+    final pressable = PressableScale(onTap: entry.onTap, child: row);
+    return entry.onTap == null
+        ? pressable
+        : Semantics(button: true, child: pressable);
+  }
+
+  Widget _row(BuildContext context) {
     return Container(
       key: ValueKey('leaderboardRow_${entry.rank}'),
       padding: const EdgeInsets.symmetric(
