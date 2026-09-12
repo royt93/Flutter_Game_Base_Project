@@ -36,6 +36,13 @@ class AudioManager extends GetxService {
   bool _bgmPlaying = false;
   bool _ready = false;
 
+  /// Count of SFX `AudioPlayer`s actually disposed — BUG-24's regression
+  /// guard, same pattern as `StorageService.platformWrites`: deterministic
+  /// proof `playSfx()` doesn't leak a player, without needing to mock
+  /// `AudioPlayer` itself.
+  @visibleForTesting
+  int debugSfxDisposeCount = 0;
+
   /// Gets the instance if already registered (safe to call from game/widget tests).
   static AudioManager? get maybe =>
       Get.isRegistered<AudioManager>() ? Get.find<AudioManager>() : null;
@@ -99,12 +106,48 @@ class AudioManager extends GetxService {
   /// other off.
   Future<void> playSfx(String fileName, {double volume = 1.0}) async {
     if (muted.value) return;
+    // Constructed INSIDE the try (not before it) — the AudioPlayer
+    // constructor itself can throw/reject (e.g. no audio plugin available
+    // in a test), and that must be caught same as a play() failure. Stays
+    // in scope for `finally` via this nullable local so a failed
+    // construction (player still null) has nothing to dispose.
+    AudioPlayer? player;
     try {
-      final player = AudioPlayer()..audioCache = _sfxCache;
+      player = AudioPlayer()..audioCache = _sfxCache;
       await player.play(AssetSource(fileName), volume: volume);
+      // Wait for the SFX to actually finish before disposing (BUG-24) —
+      // dispose()ing right after play() returns would cut the sound off,
+      // since play() resolves once playback STARTS, not once it ends.
+      // Subscribed only AFTER play() succeeds (not before): AudioPlayer's
+      // own internal creation can fail (e.g. no audio plugin available, as
+      // in a plain unit test), and subscribing to onPlayerComplete first
+      // observably interferes with that failure reaching this catch block
+      // — confirmed by reverting just this ordering and watching the same
+      // existing test throw uncaught. A timeout is a safety net for a
+      // platform that never fires onPlayerComplete (or a hung/looping
+      // asset) — better to leak this one wait than never dispose at all.
+      await player.onPlayerComplete.first.timeout(const Duration(seconds: 30));
     } catch (e) {
-      // no audio backend (tests) or missing asset → swallow, don't crash
+      // no audio backend (tests), missing asset, or the completion timeout
+      // above → swallow, don't crash
       dlog('playSfx failed for $fileName: $e');
+    } finally {
+      if (player != null) {
+        // Awaited (not unawaited/fire-and-forget) — a caller that awaits
+        // playSfx() should be able to rely on the player being fully gone
+        // once it returns, and debugSfxDisposeCount being deterministically
+        // testable. dispose() itself can throw (e.g. the player's own
+        // creation never actually finished successfully) — must not let
+        // THAT become a second unhandled rejection on top of whatever
+        // playSfx already caught above.
+        try {
+          await player.dispose();
+        } catch (_) {
+          // ignore — best-effort cleanup of an already-broken player.
+        } finally {
+          debugSfxDisposeCount++;
+        }
+      }
     }
   }
 
@@ -128,5 +171,19 @@ class AudioManager extends GetxService {
   // a transient audio failure never crashes a fire-and-forget call site.
   void _ignoreAudio(Future<void> op) {
     unawaited(op.catchError((_) {}));
+  }
+
+  // BUG-24: Bgm.dispose() releases its AudioPlayer AND unregisters the
+  // WidgetsBindingObserver it installed in its constructor — without this,
+  // a non-permanent AudioManager (Get.delete'd, e.g. a test tearing down a
+  // registered service) leaks both.
+  @override
+  void onClose() {
+    // .catchError: _bgm.dispose() itself can throw the same way an SFX
+    // player's dispose can (see playSfx) — e.g. onClose() running before
+    // `_bgm` was ever successfully used lazily constructs it here for the
+    // first time, with no guarantee its own creation succeeded.
+    unawaited(_bgm.dispose().catchError((_) {}));
+    super.onClose();
   }
 }

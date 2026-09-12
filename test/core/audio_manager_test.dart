@@ -129,5 +129,63 @@ void main() {
         completes,
       );
     });
+
+    group('BUG-24: AudioPlayer disposal', () {
+      test(
+        'mỗi playSfx() (kể cả khi thất bại vì thiếu audio backend) đều '
+        'dispose đúng player của nó — debugSfxDisposeCount tăng đúng 1',
+        () async {
+          final manager = AudioManager();
+          manager.muted.value = false;
+
+          final before = manager.debugSfxDisposeCount;
+          await manager.playSfx('tap.mp3').timeout(const Duration(seconds: 2));
+
+          expect(manager.debugSfxDisposeCount - before, 1);
+        },
+      );
+
+      test(
+        'playSfx() liên tiếp — mỗi lần gọi đều dispose đúng player riêng '
+        'của nó, không bị bỏ sót',
+        () async {
+          final manager = AudioManager();
+          manager.muted.value = false;
+
+          final before = manager.debugSfxDisposeCount;
+          await Future.wait([
+            manager.playSfx('tap.mp3'),
+            manager.playSfx('tap.mp3'),
+            manager.playSfx('tap.mp3'),
+          ]).timeout(const Duration(seconds: 2));
+
+          expect(manager.debugSfxDisposeCount - before, 3);
+        },
+      );
+
+      test(
+        'muted.value == true (no-op, không tạo player nào) → '
+        'debugSfxDisposeCount không đổi',
+        () async {
+          final manager = AudioManager();
+          manager.muted.value = true;
+
+          final before = manager.debugSfxDisposeCount;
+          await manager.playSfx('tap.mp3').timeout(const Duration(seconds: 2));
+
+          expect(manager.debugSfxDisposeCount, before);
+        },
+      );
+
+      test(
+        'onClose() dispose _bgm, không throw kể cả khi chưa init()',
+        () {
+          final manager = AudioManager();
+          Get.put(manager, permanent: true);
+
+          expect(() => Get.delete<AudioManager>(force: true), returnsNormally);
+        },
+      );
+    });
   });
 }
