@@ -32,6 +32,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   bool _toggleOn = false;
   int _tabIndex = 0;
   int _coins = 100;
+  int _mailBadgeCount = 12;
   final GlobalKey _coinCounterKey = GlobalKey();
   final GlobalKey _victoryCardKey = GlobalKey();
   int _plainTapCount = 0;
@@ -362,8 +363,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               IconBadgeButton(
                                 icon: Icons.mail_rounded,
                                 semanticLabel: 'Mail',
-                                badgeCount: 12,
-                                onTap: () {},
+                                badgeCount: _mailBadgeCount,
+                                onTap: () =>
+                                    setState(() => _mailBadgeCount++),
                               ),
                             ],
                           ),

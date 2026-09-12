@@ -6,7 +6,12 @@ import '../pressable_scale.dart';
 /// Round icon button (e.g. settings/shop) that can carry a small badge in
 /// its corner — a plain notification dot (`showBadge`), or a count
 /// (`badgeCount`) when a number is needed.
-class IconBadgeButton extends StatelessWidget {
+///
+/// The badge pops (scale bounce) the moment it newly appears or its count
+/// changes — same "something just happened" moment `StreakCounter`/
+/// `ProgressBarStars` already animate — but never on initial mount even if
+/// the badge is already showing.
+class IconBadgeButton extends StatefulWidget {
   const IconBadgeButton({
     super.key,
     required this.icon,
@@ -44,25 +49,70 @@ class IconBadgeButton extends StatelessWidget {
   bool get _badgeVisible => showBadge || _hasCount;
 
   @override
+  State<IconBadgeButton> createState() => _IconBadgeButtonState();
+}
+
+class _IconBadgeButtonState extends State<IconBadgeButton>
+    with SingleTickerProviderStateMixin {
+  // Bắt đầu đã settled (value 1.0) — không pop lúc mount dù badge hiện sẵn
+  // đang bật. Chỉ forward(from: 0.0) khi badge thực sự vừa xuất hiện hoặc
+  // đổi số, theo đúng convention của StreakCounter/ProgressBarStars.
+  //
+  // Khởi tạo trong initState (không dùng `late final` lazy-init) — nếu
+  // badge chưa hiện lúc mount, build() không bao giờ đọc `_controller`, để
+  // nó lazy-init thì lần đọc đầu tiên lại xảy ra trong dispose(), lúc
+  // element đã deactivate — gây lỗi.
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+      value: 1.0,
+    );
+    _scale = CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
+  }
+
+  @override
+  void didUpdateWidget(covariant IconBadgeButton old) {
+    super.didUpdateWidget(old);
+    final justAppeared = !old._badgeVisible && widget._badgeVisible;
+    final countChanged =
+        widget._badgeVisible && old.badgeCount != widget.badgeCount;
+    if ((justAppeared || countChanged) && !NeonTheme.reducedMotion(context)) {
+      _controller.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final enabled = onTap != null;
-    final c = enabled ? (color ?? NeonTheme.purple) : NeonTheme.muted;
+    final enabled = widget.onTap != null;
+    final c = enabled ? (widget.color ?? NeonTheme.purple) : NeonTheme.muted;
     final darker = Color.lerp(c, Colors.black, 0.22)!;
     return Semantics(
       button: true,
       enabled: enabled,
-      label: semanticLabel ?? icon.toString(),
+      label: widget.semanticLabel ?? widget.icon.toString(),
       child: PressableScale(
-        onTap: onTap,
+        onTap: widget.onTap,
         child: SizedBox(
-          width: size,
-          height: size,
+          width: widget.size,
+          height: widget.size,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
               Container(
-                width: size,
-                height: size,
+                width: widget.size,
+                height: widget.size,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
@@ -73,13 +123,23 @@ class IconBadgeButton extends StatelessWidget {
                   border: Border.all(color: darker, width: 3),
                   boxShadow: enabled ? NeonTheme.drop(y: 4, blur: 8) : null,
                 ),
-                child: Icon(icon, color: Colors.white, size: size * 0.5),
+                child: Icon(widget.icon, color: Colors.white, size: widget.size * 0.5),
               ),
-              if (_badgeVisible)
+              if (widget._badgeVisible)
                 Positioned(
                   right: -2,
                   top: -2,
-                  child: _hasCount ? _buildCountBadge() : _buildDotBadge(),
+                  child: AnimatedBuilder(
+                    animation: _scale,
+                    builder: (context, child) => Transform.scale(
+                      key: const Key('iconBadgeButtonBadgeScale'),
+                      scale: _scale.value,
+                      child: child,
+                    ),
+                    child: widget._hasCount
+                        ? _buildCountBadge()
+                        : _buildDotBadge(),
+                  ),
                 ),
             ],
           ),
@@ -93,7 +153,7 @@ class IconBadgeButton extends StatelessWidget {
       width: 12,
       height: 12,
       decoration: BoxDecoration(
-        color: badgeColor ?? NeonTheme.red,
+        color: widget.badgeColor ?? NeonTheme.red,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 1.5),
       ),
@@ -101,12 +161,12 @@ class IconBadgeButton extends StatelessWidget {
   }
 
   Widget _buildCountBadge() {
-    final text = badgeCount! > 99 ? '99+' : '$badgeCount';
+    final text = widget.badgeCount! > 99 ? '99+' : '${widget.badgeCount}';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
       decoration: BoxDecoration(
-        color: badgeColor ?? NeonTheme.red,
+        color: widget.badgeColor ?? NeonTheme.red,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.white, width: 1.5),
       ),

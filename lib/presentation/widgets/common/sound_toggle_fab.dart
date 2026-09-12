@@ -48,10 +48,20 @@ class SoundToggleFab extends StatelessWidget {
               ),
               boxShadow: NeonTheme.drop(y: 4, blur: 8),
             ),
-            child: Icon(
-              muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-              color: Colors.white,
-              size: size * 0.5,
+            child: AnimatedSwitcher(
+              duration: NeonTheme.reducedMotion(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 150),
+              transitionBuilder: (child, animation) => ScaleTransition(
+                scale: animation,
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+              child: Icon(
+                muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                key: ValueKey(muted),
+                color: Colors.white,
+                size: size * 0.5,
+              ),
             ),
           ),
         ),
