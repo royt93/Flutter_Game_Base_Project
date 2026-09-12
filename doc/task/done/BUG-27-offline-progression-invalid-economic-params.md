@@ -20,12 +20,25 @@ source: Codex (codex exec, audit toàn diện lib/core/)
 Validate `maxOfflineCap >= 0` và rate hữu hạn + không âm ngay đầu hàm liên quan (ném `ArgumentError` trước khi đọc/sửa state claim) — lỗi cấu hình nên fail sớm và rõ ràng thay vì lan ra reward tính sai.
 
 ## Acceptance criteria
-- [ ] Tham số cap âm hoặc rate âm/không hữu hạn ném ArgumentError rõ ràng, không tính earnings sai hoặc crash mơ hồ.
-- [ ] Test: cap âm, rate âm, rate NaN/Infinity — xác nhận claim state (offlineLastClaimedMs) KHÔNG bị tiến lên khi validate fail.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] Tham số cap âm hoặc rate âm/không hữu hạn ném ArgumentError rõ ràng, không tính earnings sai hoặc crash mơ hồ.
+- [x] Test: cap âm, rate âm, rate NaN/Infinity — xác nhận claim state (offlineLastClaimedMs) KHÔNG bị tiến lên khi validate fail.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định. (N/A — không có UI, xem Quyết định.)
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`. (N/A — service Dart thuần, không phải widget.)
+
+## Quyết định
+Validate cả 2 tham số ngay đầu `_earningsAt()` (hàm dùng chung cho cả `pendingEarnings()` lẫn `claim()`): `maxOfflineCap.isNegative` và `!productionRatePerSecond.isFinite || productionRatePerSecond < 0` đều ném `ArgumentError.value(...)` trước khi đọc/tính bất kỳ state nào. Vì `claim()` gọi `_earningsAt()` trước dòng `setInt(StorageKeys.offlineLastClaimedMs, now)`, một lời gọi invalid không bao giờ advance mốc claim.
+
+Thêm 4 test trong `group('BUG-27: ...')` tại `test/core/offline_progression_service_test.dart`: cap âm, rate âm, rate NaN/Infinity, và invalid `claim()` không advance `offlineLastClaimedMs`.
+
+Grep toàn repo (`lib/`, `example/`) xác nhận không có call site nào truyền cap/rate không hợp lệ, và `OfflineProgressionService` không có UI/widget nào bọc nó trong `example/` — do đó bỏ qua device smoke test (N/A, không phải regression rủi ro cho người dùng thật).
+
+`flutter analyze` + `flutter test --exclude-tags slow` sạch ở cả root và `example/` (không regression).
+
+Tự chấm: 9.5/10 — đúng yêu cầu, fix tối thiểu (validate tại 1 điểm dùng chung, không thêm abstraction thừa), test bao phủ đủ case, không phá test cũ.
+
+Commit code: `ba1e83b`.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-27-offline-progression-invalid-economic-params.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
