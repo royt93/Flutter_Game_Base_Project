@@ -10,7 +10,10 @@ import '../../../core/neon_theme.dart';
 /// (avoids the caller-owned-`Stack` coupling problem noted for
 /// [LoadingOverlay]/ENH-03 — just wrap: `RibbonBadge(text: 'SALE',
 /// child: myCard)`).
-class RibbonBadge extends StatelessWidget {
+///
+/// Pops in (scale 0.8→1.0, `Curves.easeOutBack`) on mount — a label meant
+/// to grab attention shouldn't just appear flat alongside its child.
+class RibbonBadge extends StatefulWidget {
   const RibbonBadge({
     super.key,
     required this.child,
@@ -27,33 +30,91 @@ class RibbonBadge extends StatelessWidget {
   final Color? color;
 
   @override
+  State<RibbonBadge> createState() => _RibbonBadgeState();
+}
+
+class _RibbonBadgeState extends State<RibbonBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+  bool _startedOnce = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _scale = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MediaQuery không đọc được trong initState — didChangeDependencies là
+    // nơi an toàn sớm nhất, chạy 1 lần trước build đầu tiên (cùng convention
+    // đã dùng ở ConfettiOverlay).
+    if (_startedOnce) return;
+    _startedOnce = true;
+    if (NeonTheme.reducedMotion(context)) {
+      _controller.value = 1.0;
+      return;
+    }
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final c = color ?? NeonTheme.red;
+    final c = widget.color ?? NeonTheme.red;
     return ClipRect(
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          child,
+          widget.child,
           Positioned(
             top: 14,
             right: -34,
             child: Transform.rotate(
               angle: math.pi / 4,
-              child: Container(
-                width: 130,
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                alignment: Alignment.center,
-                color: c,
-                child: Text(
-                  text,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
+              child: AnimatedBuilder(
+                animation: _scale,
+                builder: (context, child) => Transform.scale(
+                  key: const Key('ribbonBadgeScale'),
+                  scale: _scale.value,
+                  child: child,
+                ),
+                child: Container(
+                  width: 130,
+                  padding: const EdgeInsets.symmetric(vertical: 5),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [c, c.withValues(alpha: 0.85)],
+                    ),
+                  ),
+                  child: Text(
+                    widget.text,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ),

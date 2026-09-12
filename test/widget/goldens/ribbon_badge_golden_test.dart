@@ -20,7 +20,10 @@ void main() {
     await tester.pumpWidget(
       _wrap(const RibbonBadge(text: 'SALE', child: SizedBox.expand())),
     );
-    await tester.pump();
+    // Chờ entrance pop-in (200ms, ENH-27/IDEA-27) hoàn tất trước khi chụp —
+    // golden phải phản ánh trạng thái đã settle (scale = 1.0), không phải
+    // giữa chừng pop.
+    await tester.pumpAndSettle();
     await expectLater(
       find.byType(RibbonBadge),
       matchesGoldenFile('ribbon_badge_default.png'),
@@ -37,7 +40,10 @@ void main() {
         ),
       ),
     );
-    await tester.pump();
+    // Chờ entrance pop-in (200ms, ENH-27/IDEA-27) hoàn tất trước khi chụp —
+    // golden phải phản ánh trạng thái đã settle (scale = 1.0), không phải
+    // giữa chừng pop.
+    await tester.pumpAndSettle();
     await expectLater(
       find.byType(RibbonBadge),
       matchesGoldenFile('ribbon_badge_custom_color.png'),
@@ -54,7 +60,10 @@ void main() {
         ),
       ),
     );
-    await tester.pump();
+    // Chờ entrance pop-in (200ms, ENH-27/IDEA-27) hoàn tất trước khi chụp —
+    // golden phải phản ánh trạng thái đã settle (scale = 1.0), không phải
+    // giữa chừng pop.
+    await tester.pumpAndSettle();
     await expectLater(
       find.byType(RibbonBadge),
       matchesGoldenFile('ribbon_badge_long_text.png'),

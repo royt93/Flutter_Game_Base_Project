@@ -10,7 +10,7 @@ import '../../../core/neon_theme.dart';
 /// mechanics.
 ///
 /// No GLSL shader here on purpose — a smoothly `AnimatedContainer`-lerped
-/// solid color already reads as "heat" and is a much smaller/safer bet than
+/// gradient already reads as "heat" and is a much smaller/safer bet than
 /// authoring a fragment shader for this.
 class ComboHeatBackground extends StatelessWidget {
   const ComboHeatBackground({
@@ -42,7 +42,13 @@ class ComboHeatBackground extends StatelessWidget {
           ? Duration.zero
           : const Duration(milliseconds: 300),
       curve: Curves.easeOut,
-      color: color,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color.lerp(color, Colors.white, 0.18)!, color],
+        ),
+      ),
       child: child,
     );
   }

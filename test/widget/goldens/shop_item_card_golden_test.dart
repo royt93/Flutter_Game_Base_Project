@@ -39,7 +39,9 @@ void main() {
         ),
       ),
     );
-    await tester.pump();
+    // Chờ RibbonBadge's entrance pop-in (200ms, IDEA-27) settle trước khi
+    // chụp golden.
+    await tester.pumpAndSettle();
     await expectLater(
       find.byType(ShopItemCard),
       matchesGoldenFile('shop_item_card_ribbon.png'),

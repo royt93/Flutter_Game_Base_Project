@@ -5,6 +5,9 @@ import 'package:roy_casual_kit/presentation/widgets/common/combo_heat_background
 const _cool = Color(0xFF0000FF);
 const _hot = Color(0xFFFF0000);
 
+// Gradient là [lighter, color] (xem ENH-35) — phần tử cuối luôn chính là
+// giá trị lerp(cool, hot, heat) không pha trắng, dùng để so sánh chính xác
+// với _cool/_hot như trước khi có gradient.
 Color _renderedColor(WidgetTester tester) {
   final box = tester.widget<DecoratedBox>(
     find
@@ -14,7 +17,7 @@ Color _renderedColor(WidgetTester tester) {
         )
         .first,
   );
-  return (box.decoration as BoxDecoration).color!;
+  return (box.decoration as BoxDecoration).gradient!.colors.last;
 }
 
 Widget _wrap(double heat) => MaterialApp(
@@ -29,6 +32,27 @@ Widget _wrap(double heat) => MaterialApp(
 );
 
 void main() {
+  testWidgets(
+    'ENH-35: render bằng gradient (>=2 màu khác nhau), không phải màu phẳng',
+    (tester) async {
+      await tester.pumpWidget(_wrap(0.5));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final box = tester.widget<DecoratedBox>(
+        find
+            .descendant(
+              of: find.byType(ComboHeatBackground),
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      final gradient = (box.decoration as BoxDecoration).gradient;
+      expect(gradient, isNotNull);
+      expect(gradient!.colors.length, greaterThanOrEqualTo(2));
+      expect(gradient.colors.toSet().length, greaterThan(1));
+    },
+  );
+
   testWidgets('heat 0.0 renders coolColor', (tester) async {
     await tester.pumpWidget(_wrap(0.0));
     await tester.pump(const Duration(milliseconds: 400));

@@ -1,0 +1,78 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/ribbon_badge.dart';
+
+void main() {
+  // x-scale (m11) của ma trận — không dùng `getMaxScaleOnAxis()` (đã verify
+  // qua debug script ở ENH-31/32 trong session này: trả sai giá trị cho ma
+  // trận scale thuần), đọc trực tiếp phần tử ma trận thay thế.
+  double ribbonScaleOf(WidgetTester tester) => tester
+      .widget<Transform>(find.byKey(const Key('ribbonBadgeScale')))
+      .transform
+      .storage[0];
+
+  testWidgets(
+    'IDEA-27: pop-in — scale < 1 ngay lúc mount, đạt 1.0 khi settle',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: RibbonBadge(text: 'SALE', child: Container()),
+          ),
+        ),
+      );
+
+      expect(ribbonScaleOf(tester), lessThan(1.0));
+
+      await tester.pumpAndSettle();
+      expect(ribbonScaleOf(tester), 1.0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'IDEA-27: dùng gradient thay vì màu phẳng',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: RibbonBadge(text: 'SALE', child: Container()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final container = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byType(RibbonBadge),
+              matching: find.byType(Container),
+            )
+            .last,
+      );
+      final decoration = container.decoration as BoxDecoration;
+      expect(decoration.gradient, isNotNull);
+      expect(decoration.gradient!.colors.length, greaterThanOrEqualTo(2));
+    },
+  );
+
+  testWidgets(
+    'IDEA-27: Reduce Motion bật → không pop, scale = 1.0 ngay',
+    (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: RibbonBadge(text: 'SALE', child: Container()),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(ribbonScaleOf(tester), 1.0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+}
