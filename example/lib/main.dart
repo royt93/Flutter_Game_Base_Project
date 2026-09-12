@@ -8,16 +8,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
-import 'package:roy_casual_kit/core/app_info.dart';
-import 'package:roy_casual_kit/core/app_translations.dart';
-import 'package:roy_casual_kit/core/audio_manager.dart';
-import 'package:roy_casual_kit/core/crash_reporter.dart';
+import 'package:roy_casual_kit/roy_casual_kit.dart';
 import 'package:roy_casual_kit/core/debug_log.dart';
-import 'package:roy_casual_kit/core/locale_service.dart';
-import 'package:roy_casual_kit/core/neon_theme.dart';
-import 'package:roy_casual_kit/core/reminder_service.dart';
-import 'package:roy_casual_kit/core/runtime_flags.dart';
-import 'package:roy_casual_kit/core/storage_service.dart';
 
 import 'screens/home_screen.dart';
 
@@ -70,22 +62,29 @@ Future<void> app({bool withAudio = !isE2eTest}) async {
   await loadAppVersion();
   dlog('app: loadAppVersion done');
 
-  dlog('app: prefs start');
-  final store = Get.put(StorageService(await _loadPrefs()), permanent: true);
-  dlog('app: prefs done');
+  dlog('app: bootstrap start');
+  final modules = {
+    RoyCasualKitModule.storage,
+    RoyCasualKitModule.locale,
+    RoyCasualKitModule.reminders,
+    if (withAudio) RoyCasualKitModule.audio,
+  };
+  await RoyCasualKit.initialize(
+    config: RoyCasualKitConfig(
+      modules: modules,
+      preferences: await _loadPrefs(),
+    ),
+  );
+  final store = StorageService.to;
+  dlog('app: bootstrap done');
   NeonTheme.dark = store.getBool(StorageKeys.themeDark);
   NeonTheme.colorBlindSafe = store.getBool(StorageKeys.colorBlindSafe);
-  final locale = Get.put(LocaleService(store), permanent: true);
-  Get.put(ReminderService(), permanent: true);
+  final locale = LocaleService.maybe!;
   // GetMaterialApp's `locale:` param chỉ áp dụng lúc build lần đầu; nếu
   // `app()` từng chạy trước đó trong cùng process (vd test gọi lại), GetX
   // vẫn giữ `Get.locale` cũ nên phải chủ động set lại ở đây, không thể chỉ
   // dựa vào tham số constructor.
   Get.updateLocale(locale.current.value);
-
-  if (withAudio) {
-    Get.put(AudioManager(), permanent: true);
-  }
 
   runApp(RoyBaseGameApp(initialLocale: locale.current.value));
   dlog('app: runApp done');
