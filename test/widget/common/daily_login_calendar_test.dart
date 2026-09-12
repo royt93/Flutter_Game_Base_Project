@@ -115,4 +115,109 @@ void main() {
     await tester.pump();
     expect(claimed, isFalse);
   });
+
+  // x-scale (m11) của ma trận — không dùng `getMaxScaleOnAxis()` (đã verify
+  // qua debug script ở ENH-31/32 trong session này: trả sai giá trị cho ma
+  // trận scale thuần), đọc trực tiếp phần tử ma trận thay thế. Mỗi
+  // `_DaySlot` dùng cùng `Key('daySlotScale')` (hợp lệ vì mỗi instance nằm
+  // dưới 1 parent khác nhau) nên cần `.at(index)` để chọn đúng ô ngày.
+  double daySlotScaleAt(WidgetTester tester, int index) => tester
+      .widgetList<Transform>(find.byKey(const Key('daySlotScale')))
+      .elementAt(index)
+      .transform
+      .storage[0];
+
+  testWidgets(
+    'IDEA-23: mount với ngày đã claimed sẵn → không pop (scale = 1.0 ngay)',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          DailyLoginCalendarWidget(
+            currentStreakDay: 2,
+            claimedDaysInCycle: const {1, 2},
+            canClaimToday: true,
+            onClaim: () {},
+            cycleLength: 5,
+          ),
+        ),
+      );
+
+      // Day 1 và 2 đã claimed sẵn lúc mount — cả 2 phải ổn định = 1.0.
+      expect(daySlotScaleAt(tester, 0), 1.0);
+      expect(daySlotScaleAt(tester, 1), 1.0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'IDEA-23: ngày vừa chuyển sang claimed → pop (scale bounce)',
+    (tester) async {
+      var claimedDays = <int>{1, 2};
+      late StateSetter setDays;
+      await tester.pumpWidget(
+        _wrap(
+          StatefulBuilder(
+            builder: (context, setState) {
+              setDays = setState;
+              return DailyLoginCalendarWidget(
+                currentStreakDay: 2,
+                claimedDaysInCycle: claimedDays,
+                canClaimToday: true,
+                onClaim: () {},
+                cycleLength: 5,
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      setDays(() => claimedDays = {1, 2, 3});
+      await tester.pump();
+
+      // Day 3 (index 2) vừa chuyển sang claimed — giữa chừng pop, scale
+      // khác 1.0. Day 1/2 (đã claimed từ trước) vẫn ổn định = 1.0.
+      expect(daySlotScaleAt(tester, 0), 1.0);
+      expect(daySlotScaleAt(tester, 1), 1.0);
+      expect(daySlotScaleAt(tester, 2), isNot(1.0));
+
+      await tester.pumpAndSettle();
+      expect(daySlotScaleAt(tester, 2), 1.0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'IDEA-23: Reduce Motion bật → không pop khi chuyển sang claimed',
+    (tester) async {
+      var claimedDays = <int>{1, 2};
+      late StateSetter setDays;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: _wrap(
+            StatefulBuilder(
+              builder: (context, setState) {
+                setDays = setState;
+                return DailyLoginCalendarWidget(
+                  currentStreakDay: 2,
+                  claimedDaysInCycle: claimedDays,
+                  canClaimToday: true,
+                  onClaim: () {},
+                  cycleLength: 5,
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      setDays(() => claimedDays = {1, 2, 3});
+      await tester.pump();
+
+      expect(daySlotScaleAt(tester, 2), 1.0);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

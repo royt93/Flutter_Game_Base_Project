@@ -70,7 +70,7 @@ class DailyLoginCalendarWidget extends StatelessWidget {
   }
 }
 
-class _DaySlot extends StatelessWidget {
+class _DaySlot extends StatefulWidget {
   const _DaySlot({
     required this.day,
     required this.claimed,
@@ -84,7 +84,53 @@ class _DaySlot extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<_DaySlot> createState() => _DaySlotState();
+}
+
+class _DaySlotState extends State<_DaySlot>
+    with SingleTickerProviderStateMixin {
+  // Bắt đầu đã settled (value 1.0) — không pop lúc mount dù ô đã claimed
+  // sẵn. Chỉ forward(from: 0.0) khi thực sự vừa chuyển sang claimed, cùng
+  // convention đã dùng ở StreakCounter (ENH-31)/IconBadgeButton (IDEA-16).
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      value: 1.0,
+    );
+    _scale = Tween<double>(
+      begin: 0.6,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+  }
+
+  @override
+  void didUpdateWidget(covariant _DaySlot old) {
+    super.didUpdateWidget(old);
+    if (!old.claimed &&
+        widget.claimed &&
+        !NeonTheme.reducedMotion(context)) {
+      _controller.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final day = widget.day;
+    final claimed = widget.claimed;
+    final current = widget.current;
+    final onTap = widget.onTap;
     final Color fill;
     final Color border;
     final Color textColor;
@@ -102,26 +148,34 @@ class _DaySlot extends StatelessWidget {
       textColor = NeonTheme.inkSoft;
     }
 
-    final slot = Container(
-      width: 40,
-      height: 48,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: fill,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: border, width: current ? 3 : 2),
-        boxShadow: current ? NeonTheme.glow(border) : null,
+    final slot = AnimatedBuilder(
+      animation: _scale,
+      builder: (context, child) => Transform.scale(
+        key: const Key('daySlotScale'),
+        scale: _scale.value,
+        child: child,
       ),
-      child: claimed
-          ? Icon(Icons.check_rounded, color: textColor, size: 20)
-          : Text(
-              '$day',
-              style: TextStyle(
-                color: textColor,
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
+      child: Container(
+        width: 40,
+        height: 48,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: fill,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: border, width: current ? 3 : 2),
+          boxShadow: current ? NeonTheme.glow(border) : null,
+        ),
+        child: claimed
+            ? Icon(Icons.check_rounded, color: textColor, size: 20)
+            : Text(
+                '$day',
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                ),
               ),
-            ),
+      ),
     );
     return onTap == null ? slot : GestureDetector(onTap: onTap, child: slot);
   }
