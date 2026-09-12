@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import 'storage_service.dart';
@@ -87,6 +88,38 @@ class DailyLoginService extends GetxService {
 
   _DailyLoginState get _state => _cached ??= _store.load() ?? _DailyLoginState.initial;
 
+  // Serializes every save behind the currently in-flight one (BUG-18, same
+  // root cause/fix as AchievementService's BUG-17) — fire-and-forget writes
+  // for the same key can otherwise complete out of order, letting an older,
+  // already-superseded streak snapshot land on disk LAST and roll the
+  // streak back (or re-open an already-claimed day) on next restart.
+  //
+  // `_saving` lets the FIRST save of a burst still start synchronously
+  // (existing tests read `_state` back on a fresh `DailyLoginService()`
+  // right after a `claimToday()` call with no await in between, relying on
+  // that immediate-start behavior) — only a save arriving while another is
+  // still in flight gets queued behind `_saveChain`.
+  bool _saving = false;
+  Future<void> _saveChain = Future.value();
+
+  Future<void> _runSave() async {
+    _saving = true;
+    try {
+      await _store.save(_cached!);
+    } catch (_) {
+      // Swallow — a transient save failure must not wedge every
+      // subsequent claim's save behind a permanently-rejected chain.
+    } finally {
+      _saving = false;
+    }
+  }
+
+  /// Awaits every save queued so far — lets a test deterministically wait
+  /// for a burst of rapid `claimToday` calls to fully settle instead of
+  /// guessing a delay.
+  @visibleForTesting
+  Future<void> get debugPendingSaves => _saveChain;
+
   /// Gets the instance if already registered (safe to call from widget tests).
   static DailyLoginService? get maybe =>
       Get.isRegistered<DailyLoginService>() ? Get.find<DailyLoginService>() : null;
@@ -128,7 +161,7 @@ class DailyLoginService extends GetxService {
       streakDay: nextStreakDay,
       claimedDaysInCycle: nextClaimed,
     );
-    unawaited(_store.save(_cached!));
+    _saveChain = _saving ? _saveChain.then((_) => _runSave()) : _runSave();
 
     return DailyLoginClaimResult(streakDay: nextStreakDay, streakWasReset: streakWasReset);
   }

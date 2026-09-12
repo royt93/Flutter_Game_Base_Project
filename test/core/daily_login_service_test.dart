@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/daily_login_service.dart';
@@ -163,6 +165,34 @@ void main() {
       expect(restarted.currentStreakDay, 2);
       expect(restarted.claimedDaysInCycle, {1, 2});
       expect(restarted.canClaimToday(), isFalse);
+    });
+
+    group('BUG-18: save race khi claimToday() gọi rất nhanh liên tiếp', () {
+      test(
+        'nhiều ngày claim liên tiếp không chờ save trước hoàn tất → sau khi '
+        'mọi save settle, streak persist đúng qua instance mới (không bị 1 '
+        'write cũ ghi đè bằng snapshot lỗi thời)',
+        () async {
+          final service = DailyLoginService();
+
+          // Khác các test khác ở trên (luôn có `await setDay(...)` xen giữa,
+          // đủ thời gian cho save trước settle) — ở đây đổi ngày và claim
+          // LIÊN TIẾP không await gì cả, đúng kịch bản "nhiều claim dồn dập"
+          // mô tả trong Hiện trạng.
+          await setDay(_realDay);
+          service.claimToday();
+          unawaited(setDay(_realDay + 1));
+          service.claimToday();
+          unawaited(setDay(_realDay + 2));
+          service.claimToday();
+
+          await service.debugPendingSaves;
+
+          final restarted = DailyLoginService();
+          expect(restarted.currentStreakDay, 3);
+          expect(restarted.claimedDaysInCycle, {1, 2, 3});
+        },
+      );
     });
   });
 }
