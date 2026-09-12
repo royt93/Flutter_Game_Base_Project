@@ -18,7 +18,36 @@ class FrameBudgetTracker {
     this.windowSize = 60,
     this.downgradeFpsThreshold = 40,
     this.upgradeFpsThreshold = 55,
-  });
+  }) {
+    // BUG-23: a misconfigured tracker (windowSize <= 0 leaves _window
+    // permanently empty, so `_window.reduce(...)` below would throw once a
+    // caller expects it to have filled) or threshold nonsense (NaN/negative,
+    // or downgrade >= upgrade so tier could never recover) must fail loudly
+    // at construction, not produce a tracker that's subtly broken forever.
+    if (windowSize <= 0) {
+      throw ArgumentError.value(windowSize, 'windowSize', 'must be > 0');
+    }
+    if (!downgradeFpsThreshold.isFinite || downgradeFpsThreshold < 0) {
+      throw ArgumentError.value(
+        downgradeFpsThreshold,
+        'downgradeFpsThreshold',
+        'must be finite and >= 0',
+      );
+    }
+    if (!upgradeFpsThreshold.isFinite || upgradeFpsThreshold < 0) {
+      throw ArgumentError.value(
+        upgradeFpsThreshold,
+        'upgradeFpsThreshold',
+        'must be finite and >= 0',
+      );
+    }
+    if (downgradeFpsThreshold >= upgradeFpsThreshold) {
+      throw ArgumentError(
+        'downgradeFpsThreshold ($downgradeFpsThreshold) must be < '
+        'upgradeFpsThreshold ($upgradeFpsThreshold)',
+      );
+    }
+  }
 
   final int windowSize;
   final double downgradeFpsThreshold;
@@ -32,7 +61,16 @@ class FrameBudgetTracker {
   /// Appends [frameDurationMs] to the rolling window. Once the window has
   /// [windowSize] samples, recomputes the average FPS and applies
   /// hysteresis. Returns true only when this call actually flipped [tier].
+  ///
+  /// A non-finite or negative [frameDurationMs] is discarded (BUG-23) — it
+  /// never joins the window, so it can't poison the rolling average.
   bool recordFrameMs(double frameDurationMs) {
+    // BUG-23: a single non-finite/negative sample (a platform glitch, a
+    // bogus timestamp) would otherwise poison the rolling average forever
+    // (NaN propagates through every future avgMs; a negative value skews
+    // it wrong) — skip it instead of ever adding it to the window.
+    if (!frameDurationMs.isFinite || frameDurationMs < 0) return false;
+
     _window.add(frameDurationMs);
     if (_window.length > windowSize) _window.removeAt(0);
     if (_window.length < windowSize) return false;
