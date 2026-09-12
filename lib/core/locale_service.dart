@@ -33,12 +33,37 @@ class LocaleService extends GetxService {
     return AppTranslations.fallback;
   }
 
+  /// Throws [ArgumentError] (BUG-26) for a [locale] not in
+  /// [AppTranslations.supported] — accepting it anyway would run the
+  /// CURRENT session untranslated (fallback text everywhere), then have
+  /// [_loadInitial] reject that same persisted code on the next launch and
+  /// silently revert, an inconsistent before/after-restart experience.
+  ///
+  /// Matches by `languageCode` only (same as [_loadInitial]'s device-locale
+  /// matching) — a country-code variant of an already-supported language
+  /// (e.g. `en_GB` when only `en` is declared) is accepted and normalized
+  /// to the exact [AppTranslations.supported] entry, not rejected.
   Future<void> change(Locale locale) async {
-    current.value = locale;
-    Get.updateLocale(locale);
+    Locale? supported;
+    for (final l in AppTranslations.supported) {
+      if (l.languageCode == locale.languageCode) {
+        supported = l;
+        break;
+      }
+    }
+    if (supported == null) {
+      throw ArgumentError.value(
+        locale,
+        'locale',
+        'not in AppTranslations.supported',
+      );
+    }
+
+    current.value = supported;
+    Get.updateLocale(supported);
     await _store.setString(
       StorageKeys.localeCode,
-      AppTranslations.codeOf(locale),
+      AppTranslations.codeOf(supported),
     );
   }
 
