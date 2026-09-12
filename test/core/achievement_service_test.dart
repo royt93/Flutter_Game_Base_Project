@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/achievement_service.dart';
@@ -17,6 +18,77 @@ void main() {
   });
 
   group('AchievementService', () {
+    test('rejects invalid registration before mutation', () {
+      final service = AchievementService();
+
+      expect(() => service.register('', 1), throwsArgumentError);
+      expect(() => service.register('empty', 0), throwsArgumentError);
+      expect(() => service.register('negative', -1), throwsArgumentError);
+      expect(service.isCompleted('empty'), isFalse);
+    });
+
+    test('rejects invalid increments before mutation/write', () {
+      final service = AchievementService();
+      service.register('wins', 10);
+
+      expect(() => service.incrementProgress('', 1), throwsArgumentError);
+      expect(() => service.incrementProgress('wins', 0), throwsArgumentError);
+      expect(() => service.incrementProgress('wins', -1), throwsArgumentError);
+      expect(service.isCompleted('wins'), isFalse);
+    });
+
+    test(
+      'drops corrupt progress entries instead of crashing hydration',
+      () async {
+        await storage.setString(
+          'achievement_progress_v1',
+          '{"good":2,"wrongType":"3","negative":-4,"":9,"schemaVersion":1}',
+        );
+        final service = AchievementService();
+        service.register('good', 3);
+        service.register('wrongType', 3);
+        service.register('negative', 1);
+
+        expect(service.isCompleted('good'), isFalse);
+        expect(service.isCompleted('wrongType'), isFalse);
+        expect(service.isCompleted('negative'), isFalse);
+        expect(() => service.isCompleted('missing'), returnsNormally);
+      },
+    );
+
+    test('rejects integer overflow without changing progress', () {
+      final service = AchievementService();
+      service.register('wins', 10);
+      service.incrementProgress('wins', 1);
+
+      expect(
+        () => service.incrementProgress('wins', 9223372036854775807),
+        throwsRangeError,
+      );
+      expect(service.isCompleted('wins'), isFalse);
+    });
+
+    testWidgets('widget can render safely after corrupt progress recovery', (
+      tester,
+    ) async {
+      await storage.setString(
+        'achievement_progress_v1',
+        '{"broken":"yes","schemaVersion":1}',
+      );
+      final service = AchievementService()..register('wins', 1);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (_) =>
+                Text(service.isCompleted('wins') ? 'done' : 'safe'),
+          ),
+        ),
+      );
+
+      expect(find.text('safe'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
     test('maybe trả về null khi chưa Get.put', () {
       expect(AchievementService.maybe, isNull);
     });
@@ -56,17 +128,26 @@ void main() {
 
         // Gọi thêm nhiều lần sau khi đã hoàn thành — không được throw,
         // isCompleted phải giữ nguyên true.
-        expect(() => service.incrementProgress('first_win', 5), returnsNormally);
-        expect(() => service.incrementProgress('first_win', 100), returnsNormally);
+        expect(
+          () => service.incrementProgress('first_win', 5),
+          returnsNormally,
+        );
+        expect(
+          () => service.incrementProgress('first_win', 100),
+          returnsNormally,
+        );
         expect(service.isCompleted('first_win'), true);
       },
     );
 
-    test('achievement chưa register thì isCompleted trả về false, không throw', () {
-      final service = AchievementService();
-      expect(() => service.isCompleted('unknown'), returnsNormally);
-      expect(service.isCompleted('unknown'), false);
-    });
+    test(
+      'achievement chưa register thì isCompleted trả về false, không throw',
+      () {
+        final service = AchievementService();
+        expect(() => service.isCompleted('unknown'), returnsNormally);
+        expect(service.isCompleted('unknown'), false);
+      },
+    );
 
     test('incrementProgress cộng dồn đúng qua nhiều lần gọi', () {
       final service = AchievementService();
@@ -80,17 +161,20 @@ void main() {
       expect(service.isCompleted('collect_10'), true);
     });
 
-    test('progress persist qua restart (instance mới đọc lại từ StorageService)', () {
-      final service1 = AchievementService();
-      service1.register('first_win', 3);
-      service1.incrementProgress('first_win', 3);
-      expect(service1.isCompleted('first_win'), true);
+    test(
+      'progress persist qua restart (instance mới đọc lại từ StorageService)',
+      () {
+        final service1 = AchievementService();
+        service1.register('first_win', 3);
+        service1.incrementProgress('first_win', 3);
+        expect(service1.isCompleted('first_win'), true);
 
-      // "Restart": instance mới, cùng StorageService đã Get.put ở setUp.
-      final service2 = AchievementService();
-      service2.register('first_win', 3);
-      expect(service2.isCompleted('first_win'), true);
-    });
+        // "Restart": instance mới, cùng StorageService đã Get.put ở setUp.
+        final service2 = AchievementService();
+        service2.register('first_win', 3);
+        expect(service2.isCompleted('first_win'), true);
+      },
+    );
 
     test('progress chưa đủ ngưỡng cũng persist đúng qua restart', () {
       final service1 = AchievementService();
@@ -107,37 +191,34 @@ void main() {
     });
 
     group('BUG-17: save race khi nhiều incrementProgress gọi rất nhanh', () {
-      test(
-        'N lần incrementProgress liên tiếp không await → sau khi mọi save '
-        'settle, tổng persist đúng qua instance mới (không bị 1 write cũ '
-        'ghi đè bằng snapshot lỗi thời)',
-        () async {
-          final service = AchievementService();
-          service.register('combo', 100);
+      test('N lần incrementProgress liên tiếp không await → sau khi mọi save '
+          'settle, tổng persist đúng qua instance mới (không bị 1 write cũ '
+          'ghi đè bằng snapshot lỗi thời)', () async {
+        final service = AchievementService();
+        service.register('combo', 100);
 
-          // 10 lần gọi LIÊN TIẾP không await gì giữa các lần — đúng kịch bản
-          // "combo nhiều event cùng lúc" mô tả trong Hiện trạng. Trước khi
-          // sửa, các lệnh save() (unawaited) chạy song song và có thể hoàn
-          // tất sai thứ tự; sau khi sửa, _saveChain đảm bảo mỗi save chỉ bắt
-          // đầu khi save trước đã xong, nên write SAU CÙNG luôn hoàn tất
-          // SAU CÙNG bất kể tốc độ I/O thật.
-          for (var i = 0; i < 10; i++) {
-            service.incrementProgress('combo', 1);
-          }
+        // 10 lần gọi LIÊN TIẾP không await gì giữa các lần — đúng kịch bản
+        // "combo nhiều event cùng lúc" mô tả trong Hiện trạng. Trước khi
+        // sửa, các lệnh save() (unawaited) chạy song song và có thể hoàn
+        // tất sai thứ tự; sau khi sửa, _saveChain đảm bảo mỗi save chỉ bắt
+        // đầu khi save trước đã xong, nên write SAU CÙNG luôn hoàn tất
+        // SAU CÙNG bất kể tốc độ I/O thật.
+        for (var i = 0; i < 10; i++) {
+          service.incrementProgress('combo', 1);
+        }
 
-          await service.debugPendingSaves;
+        await service.debugPendingSaves;
 
-          final reloaded = AchievementService();
-          reloaded.register('combo', 100);
-          expect(reloaded.isCompleted('combo'), isFalse);
-          // isCompleted không lộ ra tổng thật — đọc trực tiếp qua storage để
-          // xác nhận đúng 10, không phải 1 giá trị trung gian nào bị kẹt lại.
-          expect(
-            storage.getString('achievement_progress_v1'),
-            contains('"combo":10'),
-          );
-        },
-      );
+        final reloaded = AchievementService();
+        reloaded.register('combo', 100);
+        expect(reloaded.isCompleted('combo'), isFalse);
+        // isCompleted không lộ ra tổng thật — đọc trực tiếp qua storage để
+        // xác nhận đúng 10, không phải 1 giá trị trung gian nào bị kẹt lại.
+        expect(
+          storage.getString('achievement_progress_v1'),
+          contains('"combo":10'),
+        );
+      });
 
       test(
         'mỗi incrementProgress trong burst đều thực sự ghi xuống disk — '
@@ -158,7 +239,10 @@ void main() {
           // đúng/sai của serialization đang test ở đây. Điều thực sự cần
           // đảm bảo: không có save nào trong 5 lần bị rớt/gộp mất, tức tổng
           // write phải đạt ÍT NHẤT 5.
-          expect(storage.platformWrites - writesBefore, greaterThanOrEqualTo(5));
+          expect(
+            storage.platformWrites - writesBefore,
+            greaterThanOrEqualTo(5),
+          );
         },
       );
     });

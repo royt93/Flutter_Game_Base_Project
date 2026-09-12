@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
+import 'package:roy_casual_kit/core/achievement_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
@@ -73,6 +74,21 @@ void main() {
     await app.app();
     await tester.pump(const Duration(seconds: 4));
     expect(find.byType(HomeScreen), findsOneWidget);
+  });
+
+  testWidgets('BUG-35: achievement service survives real app storage', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+
+    final achievements = AchievementService();
+    achievements.register('device_smoke', 1);
+    achievements.incrementProgress('device_smoke', 1);
+    await achievements.debugPendingSaves;
+
+    expect(achievements.isCompleted('device_smoke'), isTrue);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('IDEA-38: color-blind-safe setting changes palette on device', (

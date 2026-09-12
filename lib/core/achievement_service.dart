@@ -32,10 +32,9 @@ class AchievementService extends GetxService {
 
   /// Gets the instance if already registered (safe to call from
   /// game/widget tests).
-  static AchievementService? get maybe =>
-      Get.isRegistered<AchievementService>()
-          ? Get.find<AchievementService>()
-          : null;
+  static AchievementService? get maybe => Get.isRegistered<AchievementService>()
+      ? Get.find<AchievementService>()
+      : null;
 
   VersionedJsonStore<Map<String, int>> get _store =>
       VersionedJsonStore<Map<String, int>>(
@@ -43,14 +42,35 @@ class AchievementService extends GetxService {
         key: _storageKey,
         schemaVersion: 1,
         toJson: (value) => value,
-        fromJson: (json) => json.map((k, v) => MapEntry(k, v as int)),
+        fromJson: _parseProgress,
         migrate: (fromVersion, json) => json,
       );
 
   // Lazily hydrated on first touch, not in a constructor/onInit — avoids
   // depending on StorageService already being Get.put'd before this
   // service is constructed.
-  Map<String, int> get _progressMap => _progress ??= _store.load() ?? {};
+  Map<String, int> get _progressMap {
+    if (_progress != null) return _progress!;
+    try {
+      _progress = _store.load() ?? <String, int>{};
+    } catch (_) {
+      // Domain fields are untrusted even after the envelope is valid. A
+      // corrupt achievement entry must never prevent the app from booting.
+      _progress = <String, int>{};
+    }
+    return _progress!;
+  }
+
+  Map<String, int> _parseProgress(Map<String, Object?> json) {
+    final result = <String, int>{};
+    for (final entry in json.entries) {
+      final id = entry.key.trim();
+      final value = entry.value;
+      if (id.isEmpty || value is! int || value < 0) continue;
+      result[id] = value;
+    }
+    return result;
+  }
 
   // Serializes every save behind the currently in-flight one (BUG-17) —
   // fire-and-forget writes for the SAME key can otherwise complete out of
@@ -93,6 +113,14 @@ class AchievementService extends GetxService {
   /// for the same id (e.g. re-declared every app boot) — only updates the
   /// threshold, never touches stored progress.
   void register(String achievementId, int threshold) {
+    _validateId(achievementId);
+    if (threshold <= 0) {
+      throw ArgumentError.value(
+        threshold,
+        'threshold',
+        'must be greater than 0',
+      );
+    }
     _thresholds[achievementId] = threshold;
   }
 
@@ -100,7 +128,15 @@ class AchievementService extends GetxService {
   /// achievement is already completed: progress keeps accumulating,
   /// [isCompleted] stays `true`, never throws or "re-unlocks".
   void incrementProgress(String achievementId, int amount) {
-    _progressMap[achievementId] = (_progressMap[achievementId] ?? 0) + amount;
+    _validateId(achievementId);
+    if (amount <= 0) {
+      throw ArgumentError.value(amount, 'amount', 'must be greater than 0');
+    }
+    final current = _progressMap[achievementId] ?? 0;
+    if (amount > _maxInt - current) {
+      throw RangeError('progress overflow for $achievementId');
+    }
+    _progressMap[achievementId] = current + amount;
     final store = _store;
     _saveChain = _saving
         ? _saveChain.then((_) => _runSave(store))
@@ -113,5 +149,17 @@ class AchievementService extends GetxService {
     final threshold = _thresholds[achievementId];
     if (threshold == null) return false;
     return (_progressMap[achievementId] ?? 0) >= threshold;
+  }
+
+  static final int _maxInt = 0x7FFFFFFFFFFFFFFF;
+
+  void _validateId(String achievementId) {
+    if (achievementId.trim().isEmpty) {
+      throw ArgumentError.value(
+        achievementId,
+        'achievementId',
+        'must not be empty',
+      );
+    }
   }
 }
