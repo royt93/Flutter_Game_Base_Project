@@ -26,12 +26,31 @@ class EnergyBar extends StatefulWidget {
     required this.maxEnergy,
     required this.timeUntilNextEnergy,
     this.hasInfiniteLives = false,
+    this.direction = Axis.vertical,
+    this.icon = Icons.favorite,
+    this.emptyIcon = Icons.favorite_border,
+    this.color,
   });
 
   final int currentEnergy;
   final int maxEnergy;
   final Duration timeUntilNextEnergy;
   final bool hasInfiniteLives;
+
+  /// `Axis.vertical` (default) stacks the pips above the countdown, e.g.
+  /// for a standalone panel. `Axis.horizontal` lays them out side by side
+  /// instead, for a compact app-bar-style placement.
+  final Axis direction;
+
+  /// Pip icon for a filled slot — swap for a different energy theme
+  /// (bolt, shield, stamina, ...) instead of the default heart.
+  final IconData icon;
+
+  /// Pip icon for a dimmed/empty slot.
+  final IconData emptyIcon;
+
+  /// Filled pip color — defaults to [NeonTheme.red].
+  final Color? color;
 
   @override
   State<EnergyBar> createState() => _EnergyBarState();
@@ -89,48 +108,62 @@ class _EnergyBarState extends State<EnergyBar> {
     }
 
     final reducedMotion = NeonTheme.reducedMotion(context);
+    final fillColor = widget.color ?? NeonTheme.red;
+    final pips = Wrap(
+      spacing: 4,
+      children: List.generate(widget.maxEnergy, (i) {
+        final filled = i < widget.currentEnergy;
+        final icon = Icon(
+          filled ? widget.icon : widget.emptyIcon,
+          color: filled ? fillColor : NeonTheme.muted,
+          size: 24,
+        );
+        // Decorative pop only for the pip that just changed state —
+        // skipped entirely under Reduce Motion.
+        return reducedMotion
+            ? icon
+            : AnimatedScale(
+                scale: filled ? 1.0 : 0.9,
+                duration: const Duration(milliseconds: 150),
+                child: icon,
+              );
+      }),
+    );
+    final showCountdown = widget.currentEnergy < widget.maxEnergy;
+    final countdown = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.timer_outlined, color: NeonTheme.inkSoft, size: 16),
+        const SizedBox(width: 4),
+        Text(
+          fmtDur(_remaining),
+          style: TextStyle(
+            color: NeonTheme.inkSoft,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+
+    // ENH-42: horizontal lays pips + countdown side by side (compact
+    // app-bar placement); vertical (default) keeps the original stacked
+    // layout unchanged.
+    if (widget.direction == Axis.horizontal) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          pips,
+          if (showCountdown) ...[const SizedBox(width: NeonTheme.s8), countdown],
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Wrap(
-          spacing: 4,
-          children: List.generate(widget.maxEnergy, (i) {
-            final filled = i < widget.currentEnergy;
-            final icon = Icon(
-              filled ? Icons.favorite : Icons.favorite_border,
-              color: filled ? NeonTheme.red : NeonTheme.muted,
-              size: 24,
-            );
-            // Decorative pop only for the pip that just changed state —
-            // skipped entirely under Reduce Motion.
-            return reducedMotion
-                ? icon
-                : AnimatedScale(
-                    scale: filled ? 1.0 : 0.9,
-                    duration: const Duration(milliseconds: 150),
-                    child: icon,
-                  );
-          }),
-        ),
-        if (widget.currentEnergy < widget.maxEnergy) ...[
-          const SizedBox(height: NeonTheme.s8),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.timer_outlined, color: NeonTheme.inkSoft, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                fmtDur(_remaining),
-                style: TextStyle(
-                  color: NeonTheme.inkSoft,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ],
+        pips,
+        if (showCountdown) ...[const SizedBox(height: NeonTheme.s8), countdown],
       ],
     );
   }

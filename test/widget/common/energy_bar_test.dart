@@ -88,4 +88,67 @@ void main() {
 
     expect(find.text('00:42'), findsOneWidget);
   });
+
+  group('ENH-42: direction/icon/color customization', () {
+    testWidgets('mặc định (không truyền gì mới) vẫn Column, icon/màu như cũ', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const EnergyBar(
+            currentEnergy: 2,
+            maxEnergy: 3,
+            timeUntilNextEnergy: Duration(seconds: 30),
+          ),
+        ),
+      );
+
+      expect(find.byType(Column), findsOneWidget);
+      expect(find.byIcon(Icons.favorite), findsNWidgets(2));
+      expect(find.byIcon(Icons.favorite_border), findsNWidgets(1));
+    });
+
+    testWidgets('direction: Axis.horizontal render Row thay vì Column', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const EnergyBar(
+            currentEnergy: 2,
+            maxEnergy: 3,
+            timeUntilNextEnergy: Duration(seconds: 30),
+            direction: Axis.horizontal,
+          ),
+        ),
+      );
+
+      expect(find.byType(Row), findsWidgets);
+      expect(find.byType(Column), findsNothing);
+    });
+
+    testWidgets('icon/emptyIcon/color tuỳ chỉnh hiển thị đúng thay vì mặc định', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const EnergyBar(
+            currentEnergy: 1,
+            maxEnergy: 2,
+            timeUntilNextEnergy: Duration.zero,
+            icon: Icons.bolt,
+            emptyIcon: Icons.bolt_outlined,
+            color: Colors.purple,
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.bolt), findsOneWidget);
+      expect(find.byIcon(Icons.bolt_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.favorite), findsNothing);
+      expect(find.byIcon(Icons.favorite_border), findsNothing);
+
+      final filledIcon = tester.widget<Icon>(find.byIcon(Icons.bolt));
+      expect(filledIcon.color, Colors.purple);
+    });
+  });
 }
