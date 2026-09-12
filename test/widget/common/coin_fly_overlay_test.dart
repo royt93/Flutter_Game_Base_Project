@@ -3,6 +3,49 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/coin_fly_overlay.dart';
 
 void main() {
+  group('pure trajectory/scale math (no widget involved)', () {
+    test('coinArcOffsetAt: t=0 is exactly from, t=1 is exactly to', () {
+      const from = Offset(10, 500);
+      const to = Offset(300, 50);
+      expect(coinArcOffsetAt(from, to, 0, arcHeight: 80), from);
+      expect(coinArcOffsetAt(from, to, 1, arcHeight: 80), to);
+    });
+
+    test(
+      'IDEA-22: coinArcOffsetAt: quỹ đạo cong lên trên so với đường thẳng '
+      'Offset.lerp thuần (arcHeight > 0)',
+      () {
+        const from = Offset(10, 500);
+        const to = Offset(300, 50);
+        final straight = Offset.lerp(from, to, 0.5)!;
+        final arced = coinArcOffsetAt(from, to, 0.5, arcHeight: 80);
+
+        expect(arced, isNot(straight));
+        // dy nhỏ hơn (cong lên trên, trục y hướng xuống trong Flutter).
+        expect(arced.dy, lessThan(straight.dy));
+      },
+    );
+
+    test('coinArcOffsetAt: arcHeight = 0 trùng với đường thẳng Offset.lerp', () {
+      const from = Offset(10, 500);
+      const to = Offset(300, 50);
+      final straight = Offset.lerp(from, to, 0.5)!;
+      final arced = coinArcOffsetAt(from, to, 0.5, arcHeight: 0);
+      expect(arced.dx, closeTo(straight.dx, 0.001));
+      expect(arced.dy, closeTo(straight.dy, 0.001));
+    });
+
+    test(
+      'IDEA-22: coinScaleAt: bắt đầu 1.0, đỉnh pop 1.2 giữa hành trình, '
+      'squash 0.9 lúc đáp',
+      () {
+        expect(coinScaleAt(0), 1.0);
+        expect(coinScaleAt(0.5), closeTo(1.2, 0.001));
+        expect(coinScaleAt(1), closeTo(0.9, 0.001));
+      },
+    );
+  });
+
   testWidgets(
     'CoinFlyOverlay.show flies coinCount coins to the target, calling '
     'onArrive once per coin, then self-removes',
@@ -172,6 +215,83 @@ void main() {
 
       expect(arrivedCount, 4);
       expect(doneCount, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'IDEA-22: giữa hành trình, coin có scale pop (khác 1.0) và vị trí lệch '
+    'khỏi đường thẳng Offset.lerp thuần',
+    (tester) async {
+      const from = Offset(0, 400);
+      const to = Offset(300, 0);
+      const coinSize = 22.0; // giá trị mặc định của CoinFlyOverlay.coinSize.
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: CoinFlyOverlay(
+              from: from,
+              to: to,
+              coinCount: 1,
+              duration: const Duration(milliseconds: 300),
+              stagger: Duration.zero,
+            ),
+          ),
+        ),
+      );
+
+      // ~ giữa hành trình.
+      await tester.pump(const Duration(milliseconds: 150));
+
+      final scale = tester
+          .widget<Transform>(find.byType(Transform))
+          .transform
+          .storage[0];
+      expect(scale, isNot(1.0));
+
+      // dx của bezier trùng đường thẳng khi control point nằm đúng giữa
+      // theo trục x (chỉ lệch theo y, arcHeight kéo control point lên) —
+      // nên chỉ `top` (dy) mới thực sự chứng minh quỹ đạo cong.
+      final positioned = tester.widget<Positioned>(find.byType(Positioned));
+      final straightMidTop = Offset.lerp(from, to, 0.5)!.dy - coinSize / 2;
+      expect(positioned.top, isNot(closeTo(straightMidTop, 0.01)));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'IDEA-22: Reduce Motion bật → bỏ qua quỹ đạo cong và scale pop giữa chừng',
+    (tester) async {
+      const from = Offset(0, 400);
+      const to = Offset(300, 0);
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: CoinFlyOverlay(
+                from: from,
+                to: to,
+                coinCount: 4,
+                duration: const Duration(milliseconds: 300),
+                stagger: const Duration(milliseconds: 40),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // reducedMotion collapse toàn bộ timeline về 1 frame — không có
+      // "giữa chừng" để kiểm tra scale/cong, chỉ cần đảm bảo build() không
+      // ném lỗi khi _reducedMotion bỏ qua nhánh coinArcOffsetAt/coinScaleAt.
+      await tester.pump();
+
+      final scale = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .first
+          .transform
+          .storage[0];
+      expect(scale, 1.0);
       expect(tester.takeException(), isNull);
     },
   );

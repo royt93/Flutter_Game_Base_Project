@@ -2,6 +2,37 @@ import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
 
+/// Position along a quadratic Bézier arc from [from] to [to] at progress
+/// [t] (0..1) — IDEA-22, replaces a straight-line `Offset.lerp` so a coin
+/// visibly arcs up then down instead of sliding on a dead-straight line.
+/// The control point sits above the midpoint by [arcHeight] pixels. Pure
+/// function (no widget involved) so the curve shape is unit-testable on
+/// its own.
+Offset coinArcOffsetAt(
+  Offset from,
+  Offset to,
+  double t, {
+  required double arcHeight,
+}) {
+  final control = Offset.lerp(from, to, 0.5)! - Offset(0, arcHeight);
+  final u = 1 - t;
+  return Offset(
+    u * u * from.dx + 2 * u * t * control.dx + t * t * to.dx,
+    u * u * from.dy + 2 * u * t * control.dy + t * t * to.dy,
+  );
+}
+
+/// Scale at progress [t] (0..1): pops up to 1.2x over the first half of the
+/// flight, then eases down to a 0.9x "squash" by the time it lands —
+/// IDEA-22, replaces a constant 1.0 scale for the whole flight.
+double coinScaleAt(double t) {
+  double lerp(double a, double b, double x) => a + (b - a) * x;
+  if (t <= 0.5) {
+    return lerp(1.0, 1.2, Curves.easeOut.transform(t / 0.5));
+  }
+  return lerp(1.2, 0.9, Curves.easeIn.transform((t - 0.5) / 0.5));
+}
+
 /// N icon "coins" fly from a source point to a target's current on-screen
 /// position — read from a [GlobalKey] via `RenderBox.localToGlobal`, the
 /// same technique used elsewhere in Flutter for this — staggered slightly
@@ -121,6 +152,7 @@ class _CoinFlyOverlayState extends State<CoinFlyOverlay>
   late final List<bool> _arrived;
   bool _done = false;
   bool _startedOnce = false;
+  bool _reducedMotion = false;
 
   @override
   void didChangeDependencies() {
@@ -136,6 +168,7 @@ class _CoinFlyOverlayState extends State<CoinFlyOverlay>
     if (_startedOnce) return;
     _startedOnce = true;
     final reduced = NeonTheme.reducedMotion(context);
+    _reducedMotion = reduced;
     final totalUs = reduced
         ? 0
         : widget.duration.inMicroseconds +
@@ -203,14 +236,25 @@ class _CoinFlyOverlayState extends State<CoinFlyOverlay>
               Builder(
                 builder: (context) {
                   final t = Curves.easeInOut.transform(_coinProgress(i));
-                  final pos = Offset.lerp(widget.from, widget.to, t)!;
+                  final pos = _reducedMotion
+                      ? Offset.lerp(widget.from, widget.to, t)!
+                      : coinArcOffsetAt(
+                          widget.from,
+                          widget.to,
+                          t,
+                          arcHeight: (widget.to - widget.from).distance * 0.3,
+                        );
+                  final scale = _reducedMotion ? 1.0 : coinScaleAt(t);
                   return Positioned(
                     left: pos.dx - widget.coinSize / 2,
                     top: pos.dy - widget.coinSize / 2,
-                    child: Icon(
-                      widget.icon,
-                      color: color,
-                      size: widget.coinSize,
+                    child: Transform.scale(
+                      scale: scale,
+                      child: Icon(
+                        widget.icon,
+                        color: color,
+                        size: widget.coinSize,
+                      ),
                     ),
                   );
                 },
