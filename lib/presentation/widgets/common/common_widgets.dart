@@ -13,6 +13,7 @@ export 'toggle_switch.dart';
 export 'segmented_tab_bar.dart';
 export 'icon_badge_button.dart';
 export 'sound_toggle_fab.dart';
+export 'candy_text_field.dart';
 
 // Feedback & Overlay
 export 'loading_overlay.dart';

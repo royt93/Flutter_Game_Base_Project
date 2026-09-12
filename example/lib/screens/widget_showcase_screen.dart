@@ -51,6 +51,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   late DateTime _countdownTarget = DateTime.now().add(
     const Duration(seconds: 15),
   );
+  final _candyTextFieldController = TextEditingController();
 
   // FEAT-11: SpotlightOverlay demo — highlights the "Primary" CommonButton
   // from the Buttons & Interactive section above.
@@ -113,6 +114,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _screenShakeController.dispose();
     _tutorialSequenceController.dispose();
     _wheelController.dispose();
+    _candyTextFieldController.dispose();
     super.dispose();
   }
 
@@ -407,6 +409,17 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                        _Demo(
+                          label: 'CandyTextField',
+                          child: CandyTextField(
+                            controller: _candyTextFieldController,
+                            hintText: 'Player name',
+                            prefixIcon: Icons.person_outline,
+                            validator: (v) => (v == null || v.isEmpty)
+                                ? 'Không được để trống'
+                                : null,
                           ),
                         ),
 
