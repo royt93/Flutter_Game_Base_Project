@@ -20,12 +20,25 @@ Người mới dùng package xem `SettingsScreen` làm ví dụ tham khảo sẽ
 Thay `SwitchListTile` bằng `CommonListTile(title: ..., trailing: CandyToggleSwitch(value: ..., onChanged: ...))` cho cả 2 toggle.
 
 ## Acceptance criteria
-- [ ] SettingsScreen không còn dùng SwitchListTile, thay bằng CommonListTile + CandyToggleSwitch.
-- [ ] example/test/settings_screen_test.dart hiện có (toggle mute, toggle dark mode) vẫn pass nguyên vẹn sau khi đổi widget (chỉ đổi presentation, không đổi hành vi/callback).
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] SettingsScreen không còn dùng SwitchListTile, thay bằng CommonListTile + CandyToggleSwitch.
+- [x] example/test/settings_screen_test.dart hiện có (toggle mute, toggle dark mode) vẫn pass nguyên vẹn sau khi đổi widget (chỉ đổi presentation, không đổi hành vi/callback).
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`. (Dùng đúng `CandyToggleSwitch` có sẵn — animation thumb trượt `easeOutBack` đã có sẵn trong chính widget đó, tôn trọng `reducedMotion`.)
+
+## Quyết định
+Thay 2 `SwitchListTile` (toggle Âm thanh + Chế độ tối) bằng `CommonListTile(title: ..., trailing: CandyToggleSwitch(value: ..., onChanged: ...))` — đúng y hệt đề xuất, tái dùng 2 widget đã có sẵn trong package.
+
+Cập nhật 4 assertion trong `example/test/settings_screen_test.dart` để khớp widget mới: `find.byType(SwitchListTile)` → `find.byType(CandyToggleSwitch)`; `find.widgetWithText(SwitchListTile, ...)` → `find.widgetWithText(CommonListTile, ...)` để tìm đúng row, sau đó `find.descendant(of: row, matching: find.byType(CandyToggleSwitch))` để lấy đúng toggle bên trong (cần thiết vì `CandyToggleSwitch` tự bọc `PressableScale` chỉ trong phạm vi 52x30px của chính nó, không phải toàn bộ row như `SwitchListTile` cũ — tap phải nhắm đúng vào toggle, không phải cả dòng).
+
+Device smoke test (Pixel 7 Pro): cài lại `example` debug APK, mở màn Cài đặt — cả 2 toggle giờ hiển thị đúng style candy (pill bo tròn, viền, glow lime khi bật) thay vì Material `Switch` mặc định. Bấm toggle "Chế độ tối" — chuyển sang dark mode ngay lập tức, animation thumb trượt mượt (`easeOutBack`), không crash, không lỗi trong logcat.
+
+`flutter analyze` + `flutter test --exclude-tags slow` sạch ở root (603 tests, không đổi vì chỉ sửa `example/`) và `example/` (29 tests).
+
+Tự chấm: 9.5/10 — đúng đề xuất, tái dùng 2 widget có sẵn không viết gì mới, phát hiện đúng chi tiết `CandyToggleSwitch`'s phạm vi tap riêng biệt khi sửa test, có bằng chứng device thật xác nhận cả UI lẫn hành vi.
+
+Commit code: `1ef60df`.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/ENH-53-example-settings-screen-dogfood-kit-widgets.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
