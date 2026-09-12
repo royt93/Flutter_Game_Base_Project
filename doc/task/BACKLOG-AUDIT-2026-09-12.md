@@ -39,6 +39,16 @@ Khuyến nghị Option A vì repo đã có nhiều tính năng nhưng chưa có 
 
 Các dependency được định hướng theo kiến trúc: repository/service là SSOT, controller chỉ orchestration, widget nhận immutable state và phát command lên trên. Không task widget nào được phép tự ghi storage hoặc tự grant reward.
 
+## SDK hardening và vận hành production
+
+Đã rã thêm 22 task `FEAT-64` đến `FEAT-85` từ vòng đề xuất mở rộng SDK:
+
+- `FEAT-64`–`FEAT-71`: consumer contract tests, API compatibility, adapter conformance, offline outbox/conflict, contrast, golden matrix, diagnostics bundle và platform capabilities.
+- `FEAT-72`–`FEAT-77`: asset license, app generator, lifecycle watchdog, remote kill switch, accessibility CLI và event schema registry.
+- `FEAT-78`–`FEAT-85`: SBOM/security, pseudo-locale, performance budgets, remote schema compiler, focus navigation, privacy sampling, disaster recovery và deprecation manager.
+
+Đây là wave sau khi SDK foundation ổn định: release/tooling gate chạy trước các tính năng live-ops; mọi task có prompt loop, test matrix và điều kiện smoke device giống backlog hiện hữu.
+
 ## Definition of Done dùng chung
 
 Mỗi task là một file riêng. Loop chỉ kết thúc khi agent tự audit changes và đạt >9/10, có unit + widget + integration test cho mọi case, analyze/test root và example sạch, smoke test trên Android device thật có bằng chứng, rồi mới commit + push. Sau push phải cập nhật quyết định/checkbox, chuyển file sang `done`, commit + push lần hai.
