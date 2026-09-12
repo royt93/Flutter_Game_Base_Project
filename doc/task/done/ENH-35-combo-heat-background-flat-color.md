@@ -42,12 +42,39 @@ tra `AnimatedContainer` animate `BoxDecoration` mượt mà không cần
 đổi cách render nội bộ.
 
 ## Acceptance criteria
-- [ ] Nền render bằng gradient thay vì màu phẳng, vẫn lerp mượt theo `heat`.
-- [ ] Test xác nhận decoration/gradient thay đổi đúng theo `heat` tại các mốc 0.0/0.5/1.0.
-- [ ] `NeonTheme.reducedMotion` vẫn hoạt động đúng (duration zero).
+- [x] Nền render bằng gradient thay vì màu phẳng, vẫn lerp mượt theo `heat`.
+- [x] Test xác nhận decoration/gradient thay đổi đúng theo `heat` tại các mốc 0.0/0.5/1.0.
+- [x] `NeonTheme.reducedMotion` vẫn hoạt động đúng (duration zero).
 
 ## Ghi chú độ tin cậy
 Trung bình — cải thiện thẩm mỹ chủ quan, không phải bug. Cần xác nhận
 `AnimatedContainer` animate `BoxDecoration` (gradient) mượt như animate
 `color` trước khi làm — nếu không mượt bằng, có thể cần
 `TweenAnimationBuilder<Color?>` riêng cho từng stop màu gradient.
+
+## Quyết định
+Xác nhận `AnimatedContainer` animate `decoration:` (BoxDecoration chứa
+`LinearGradient`) mượt như animate `color:` — không cần
+`TweenAnimationBuilder` riêng (nghi ngờ trong Ghi chú độ tin cậy không xảy
+ra, `Gradient.lerp` nội bộ của Flutter xử lý đúng vì 2 decoration trước/sau
+cùng runtimeType gradient, cùng số color stop). Đổi `color: color` thành
+`decoration: BoxDecoration(gradient: LinearGradient(begin: topCenter, end:
+bottomCenter, colors: [Color.lerp(color, Colors.white, 0.18)!, color]))` —
+tái dùng ĐÚNG công thức gradient đã dùng ở `IconBadgeButton`/
+`SoundToggleFab`/mọi button khác trong kit (lighter top, base color
+bottom), thay vì phát minh công thức riêng — nhất quán với phần còn lại
+của kit.
+
+Test cũ đổi cách đọc từ `.color!` sang `.gradient!.colors.last` (phần tử
+cuối của mảng `[lighter, color]` luôn chính là giá trị lerp(cool, hot,
+heat) không pha trắng, nên assertion `expect(_renderedColor(tester),
+_cool)` giữ nguyên không đổi). Thêm 1 test mới xác nhận gradient có ≥2 màu
+khác nhau (không phải màu phẳng nguỵ trang thành gradient 1 màu).
+
+Test: 1 test mới (root). `flutter analyze` sạch cả root + `example/`.
+`flutter test --exclude-tags slow`: tất cả pass, không regression.
+
+Device smoke test thật trên Pixel 7 Pro (`2B051FDH3006MU`): mở Widget Kit
+→ Game Feel → bấm "Bump heat" 4 lần liên tiếp (0%→25%→...→100%), gradient
+top-sáng/bottom-đậm hiện rõ qua screenshot ở mốc 25% và 100%, không
+exception trong logcat.
