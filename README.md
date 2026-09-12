@@ -76,7 +76,7 @@ dependencies:
 
 ```dart
 import 'package:flutter/material.dart';
-import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
+import 'package:roy_casual_kit/roy_casual_kit.dart';
 
 class MyScreen extends StatelessWidget {
   const MyScreen({super.key});
@@ -92,9 +92,10 @@ class MyScreen extends StatelessWidget {
 }
 ```
 
-Core services follow the same import pattern, e.g.
-`package:roy_casual_kit/core/storage_service.dart` for `StorageService.to`,
-or `package:roy_casual_kit/core/neon_theme.dart` for `NeonTheme` tokens.
+The same entrypoint exposes supported core services, Flame starter APIs and
+the complete widget kit. Existing deep imports under `core/` and
+`presentation/` remain available for advanced use, but new consumer code
+should migrate to the entrypoint so the supported API surface is explicit.
 
 ## See it live
 

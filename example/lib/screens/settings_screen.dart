@@ -1,16 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'package:roy_casual_kit/core/app_translations.dart';
-import 'package:roy_casual_kit/core/audio_manager.dart';
-import 'package:roy_casual_kit/core/locale_service.dart';
-import 'package:roy_casual_kit/core/neon_theme.dart';
-import 'package:roy_casual_kit/core/storage_service.dart';
-import 'package:roy_casual_kit/presentation/widgets/common/bottom_sheet_panel.dart';
-import 'package:roy_casual_kit/presentation/widgets/common/list_tile_row.dart';
-import 'package:roy_casual_kit/presentation/widgets/common/toggle_switch.dart';
-import 'package:roy_casual_kit/presentation/widgets/neon_app_bar.dart';
-import 'package:roy_casual_kit/presentation/widgets/neon_bg.dart';
+import 'package:roy_casual_kit/roy_casual_kit.dart';
 
 /// Minimal settings screen: locale picker + audio mute toggle. Exercises the
 /// 3 kept StorageKeys end to end; extend per-project.

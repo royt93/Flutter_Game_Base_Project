@@ -2,12 +2,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'package:roy_casual_kit/core/neon_theme.dart';
-import 'package:roy_casual_kit/presentation/game/roy_game.dart';
-import 'package:roy_casual_kit/presentation/widgets/flame_tracked_overlay.dart';
-import 'package:roy_casual_kit/presentation/widgets/neon_app_bar.dart';
-import 'package:roy_casual_kit/presentation/widgets/neon_dialog.dart';
-import 'package:roy_casual_kit/presentation/widgets/stroke_text.dart';
+import 'package:roy_casual_kit/roy_casual_kit.dart';
 
 /// Demo screen for the Flame starter template (FEAT-14). Also the one place
 /// in this example app that shows `NeonDialog.overlay` doing the job its
