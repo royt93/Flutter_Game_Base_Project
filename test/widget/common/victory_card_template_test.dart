@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/victory_card_template.dart';
 
 void main() {
+  // NeonTheme.dark là 1 static field toàn cục — reset lại sau mỗi test để
+  // không rò rỉ giá trị sang các test file khác chạy cùng process.
+  tearDown(() => NeonTheme.dark = false);
+
   testWidgets('renders title, stat lines and avatar when provided', (
     tester,
   ) async {
@@ -148,4 +153,78 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('BUG-33: QR luôn có nền trắng cố định bất kể NeonTheme.dark', () {
+    Container qrBackgroundContainer(WidgetTester tester) {
+      return tester.widget<Container>(
+        find.ancestor(
+          of: find.byType(QrImageView),
+          matching: find.byType(Container),
+        ).first,
+      );
+    }
+
+    testWidgets('NeonTheme.dark = false (mặc định) → nền QR vẫn trắng', (
+      tester,
+    ) async {
+      NeonTheme.dark = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: VictoryCardTemplate(
+              title: 'Level 1 Complete!',
+              statLines: const ['Score: 100'],
+              qrData: 'https://example.com/invite/abc123',
+            ),
+          ),
+        ),
+      );
+
+      final decoration = qrBackgroundContainer(tester).decoration as BoxDecoration;
+      expect(decoration.color, Colors.white);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'NeonTheme.dark = true → nền QR VẪN trắng, không đổi theo theme tối '
+      '(đây là yêu cầu kỹ thuật của QR, không phải lựa chọn thẩm mỹ)',
+      (tester) async {
+        NeonTheme.dark = true;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: VictoryCardTemplate(
+                title: 'Level 1 Complete!',
+                statLines: const ['Score: 100'],
+                qrData: 'https://example.com/invite/abc123',
+              ),
+            ),
+          ),
+        );
+
+        final decoration = qrBackgroundContainer(tester).decoration as BoxDecoration;
+        expect(decoration.color, Colors.white);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('qrData null → không có Container nền trắng thừa (không render QR)', (
+      tester,
+    ) async {
+      NeonTheme.dark = true;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: VictoryCardTemplate(
+              title: 'Level 1 Complete!',
+              statLines: const ['Score: 100'],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(QrImageView), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

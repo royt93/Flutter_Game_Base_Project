@@ -110,7 +110,21 @@ class VictoryCardTemplate extends StatelessWidget {
               ),
             if (hasQr) ...[
               const SizedBox(height: NeonTheme.s16),
-              QrImageView(data: qrData!, size: 96),
+              // BUG-33: a QR code needs high contrast against ITS OWN
+              // background as a scanning requirement, not a theme choice —
+              // QrImageView draws black modules on a transparent background
+              // by default, which becomes unreadable (near-invisible) once
+              // NeonTheme.dark makes the card's own background dark. Fixed
+              // white, regardless of NeonTheme.dark, with enough padding to
+              // keep the QR spec's "quiet zone" margin around the modules.
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: QrImageView(data: qrData!, size: 96),
+              ),
               const SizedBox(height: NeonTheme.s8),
               Text(
                 'Scan to play',
