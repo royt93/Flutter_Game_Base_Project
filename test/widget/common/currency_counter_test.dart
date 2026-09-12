@@ -68,4 +68,36 @@ void main() {
       expect(find.text(fmtNum(10)), findsNothing);
     },
   );
+
+  group('ENH-50: compact', () {
+    const value = 12345678;
+
+    testWidgets('compact: true (mặc định) → hiển thị qua fmtNumCompact', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: CurrencyCounter(value: value)),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text(fmtNumCompact(value)), findsOneWidget);
+      expect(find.text(fmtNum(value)), findsNothing);
+    });
+
+    testWidgets('compact: false → hiển thị số chính xác qua fmtNum', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: CurrencyCounter(value: value, compact: false)),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text(fmtNum(value)), findsOneWidget);
+      expect(find.text(fmtNumCompact(value)), findsNothing);
+    });
+  });
 }

@@ -14,12 +14,19 @@ class CurrencyCounter extends StatefulWidget {
     this.icon = Icons.monetization_on,
     this.color,
     this.fontSize = 18,
+    this.compact = true,
   });
 
   final int value;
   final IconData icon;
   final Color? color;
   final double fontSize;
+
+  /// `true` (default) formats via [fmtNumCompact] (e.g. `1500` → `"1.5K"`).
+  /// `false` shows the exact value via [fmtNum] (locale-aware thousands
+  /// separator, e.g. `"1,500"`) — for games that only want to compact
+  /// truly large numbers, not every currency display.
+  final bool compact;
 
   @override
   State<CurrencyCounter> createState() => _CurrencyCounterState();
@@ -64,7 +71,7 @@ class _CurrencyCounterState extends State<CurrencyCounter> {
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: Text(
-                fmtNumCompact(n),
+                widget.compact ? fmtNumCompact(n) : fmtNum(n),
                 style: TextStyle(
                   color: NeonTheme.ink,
                   fontSize: widget.fontSize,
