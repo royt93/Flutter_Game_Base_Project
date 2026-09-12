@@ -26,13 +26,27 @@ Future<Uint8List?> captureBoardPng(
 }) async {
   final ctx = boundaryKey.currentContext;
   if (ctx == null) return null;
-  final boundary = ctx.findRenderObject() as RenderRepaintBoundary;
-  final board = await boundary.toImage(pixelRatio: pixelRatio);
-  final image = (overlayText == null || overlayText.isEmpty)
-      ? board
-      : await _withTextOverlay(board, overlayText, pixelRatio);
-  final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-  return bytes?.buffer.asUint8List();
+  // BUG-29: type-check instead of force-casting — a key mismatched to a
+  // non-RepaintBoundary widget (caller integration bug) now returns the
+  // already-documented "no capture" result instead of an unhandled crash.
+  final renderObject = ctx.findRenderObject();
+  if (renderObject is! RenderRepaintBoundary) return null;
+
+  final board = await renderObject.toImage(pixelRatio: pixelRatio);
+  // BUG-29: both `board` and (when an overlay is drawn) the new composited
+  // image hold native pixel buffers that leak unless disposed — every
+  // share (score card, journey card) previously leaked at least one.
+  ui.Image? overlayImage;
+  try {
+    final image = (overlayText == null || overlayText.isEmpty)
+        ? board
+        : (overlayImage = await _withTextOverlay(board, overlayText, pixelRatio));
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    return bytes?.buffer.asUint8List();
+  } finally {
+    board.dispose();
+    overlayImage?.dispose();
+  }
 }
 
 /// Draws [board] plus a translucent bar + white [text] at the bottom of the
