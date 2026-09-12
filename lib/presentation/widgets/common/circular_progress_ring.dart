@@ -18,6 +18,7 @@ class CircularProgressRing extends StatelessWidget {
     this.trackColor,
     this.icon,
     this.label,
+    this.child,
   });
 
   /// 0.0-1.0.
@@ -28,6 +29,11 @@ class CircularProgressRing extends StatelessWidget {
   final Color? trackColor;
   final IconData? icon;
   final String? label;
+
+  /// Arbitrary widget centered inside the ring — takes priority over [icon]
+  /// and [label] when non-null (both are ignored), so existing call sites
+  /// using [icon]/[label] keep working unchanged.
+  final Widget? child;
 
   @override
   Widget build(BuildContext context) {
@@ -50,18 +56,19 @@ class CircularProgressRing extends StatelessWidget {
           width: size,
           height: size,
           child: Center(
-            child: icon != null
-                ? Icon(icon, color: ringColor, size: size * 0.36)
-                : label != null
-                ? Text(
-                    label!,
-                    style: TextStyle(
-                      color: NeonTheme.ink,
-                      fontWeight: FontWeight.w900,
-                      fontSize: size * 0.24,
-                    ),
-                  )
-                : null,
+            child: child ??
+                (icon != null
+                    ? Icon(icon, color: ringColor, size: size * 0.36)
+                    : label != null
+                    ? Text(
+                        label!,
+                        style: TextStyle(
+                          color: NeonTheme.ink,
+                          fontWeight: FontWeight.w900,
+                          fontSize: size * 0.24,
+                        ),
+                      )
+                    : null),
           ),
         ),
       ),

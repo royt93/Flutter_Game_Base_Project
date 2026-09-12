@@ -145,4 +145,52 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('ENH-41: child slot', () {
+    testWidgets('child truyền vào được render, ưu tiên hơn icon/label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: Center(
+              child: CircularProgressRing(
+                progress: 0.5,
+                icon: Icons.timer_rounded,
+                label: '3:00',
+                child: Text('custom'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('custom'), findsOneWidget);
+      expect(find.byIcon(Icons.timer_rounded), findsNothing);
+      expect(find.text('3:00'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('child null → icon/label vẫn hoạt động y hệt như trước (không phá call site cũ)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: Center(
+              child: CircularProgressRing(
+                progress: 0.5,
+                icon: Icons.timer_rounded,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.timer_rounded), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
