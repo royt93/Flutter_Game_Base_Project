@@ -29,6 +29,7 @@ export 'core/economy_wallet.dart';
 export 'core/neon_theme.dart';
 export 'core/offline_progression_service.dart';
 export 'core/performance_tier_service.dart';
+export 'core/purchase_ledger_service.dart';
 export 'core/purchase_seam.dart';
 export 'core/reminder_service.dart';
 export 'core/remote_config_service.dart';

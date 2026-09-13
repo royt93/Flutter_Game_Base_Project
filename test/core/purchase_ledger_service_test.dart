@@ -1,0 +1,190 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
+import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  tearDown(Get.reset);
+
+  late StorageService storage;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    storage = StorageService(await SharedPreferences.getInstance());
+    Get.put(storage, permanent: true);
+  });
+
+  group('PurchaseLedgerService: consumable validation', () {
+    test('grantConsumable với sku rỗng/blank throw ArgumentError', () {
+      final service = PurchaseLedgerService();
+
+      expect(() => service.grantConsumable('', 1), throwsArgumentError);
+      expect(() => service.grantConsumable('   ', 1), throwsArgumentError);
+    });
+
+    test('grantConsumable với amount <= 0 throw ArgumentError', () {
+      final service = PurchaseLedgerService();
+
+      expect(() => service.grantConsumable('hints', 0), throwsArgumentError);
+      expect(() => service.grantConsumable('hints', -1), throwsArgumentError);
+    });
+
+    test('consume với sku rỗng/amount <= 0 throw ArgumentError', () {
+      final service = PurchaseLedgerService();
+
+      expect(() => service.consume('', 1), throwsArgumentError);
+      expect(() => service.consume('hints', 0), throwsArgumentError);
+      expect(() => service.consume('hints', -1), throwsArgumentError);
+    });
+  });
+
+  group('PurchaseLedgerService: consumable balance', () {
+    test('balanceOf trả về 0 cho sku chưa từng grant, không throw', () {
+      final service = PurchaseLedgerService();
+
+      expect(() => service.balanceOf('unknown'), returnsNormally);
+      expect(service.balanceOf('unknown'), 0);
+    });
+
+    test('grantConsumable cộng dồn đúng qua nhiều lần gọi', () {
+      final service = PurchaseLedgerService();
+
+      service.grantConsumable('hints', 3);
+      service.grantConsumable('hints', 2);
+
+      expect(service.balanceOf('hints'), 5);
+    });
+
+    test('consume đủ số dư trừ đúng và trả về true', () {
+      final service = PurchaseLedgerService();
+      service.grantConsumable('hints', 5);
+
+      final result = service.consume('hints', 3);
+
+      expect(result, isTrue);
+      expect(service.balanceOf('hints'), 2);
+    });
+
+    test('consume đúng bằng toàn bộ số dư về 0 vẫn hợp lệ', () {
+      final service = PurchaseLedgerService();
+      service.grantConsumable('hints', 5);
+
+      expect(service.consume('hints', 5), isTrue);
+      expect(service.balanceOf('hints'), 0);
+    });
+
+    test(
+      'consume vượt quá số dư hiện có bị từ chối (false), số dư KHÔNG đổi — không bao giờ âm',
+      () {
+        final service = PurchaseLedgerService();
+        service.grantConsumable('hints', 3);
+
+        final result = service.consume('hints', 4);
+
+        expect(result, isFalse);
+        expect(service.balanceOf('hints'), 3);
+      },
+    );
+
+    test('consume trên sku chưa từng grant (số dư 0) bị từ chối, không throw', () {
+      final service = PurchaseLedgerService();
+
+      expect(service.consume('never_granted', 1), isFalse);
+      expect(service.balanceOf('never_granted'), 0);
+    });
+
+    test('nhiều sku consumable độc lập nhau', () {
+      final service = PurchaseLedgerService();
+      service.grantConsumable('hints', 5);
+      service.grantConsumable('lives', 2);
+
+      service.consume('hints', 5);
+
+      expect(service.balanceOf('hints'), 0);
+      expect(service.balanceOf('lives'), 2);
+    });
+  });
+
+  group('PurchaseLedgerService: permanent', () {
+    test('grantPermanent với sku rỗng/blank throw ArgumentError', () {
+      final service = PurchaseLedgerService();
+
+      expect(() => service.grantPermanent(''), throwsArgumentError);
+      expect(() => service.grantPermanent('   '), throwsArgumentError);
+    });
+
+    test('owns() trả về false cho sku chưa từng grant, không throw', () {
+      final service = PurchaseLedgerService();
+
+      expect(() => service.owns('unknown'), returnsNormally);
+      expect(service.owns('unknown'), isFalse);
+    });
+
+    test('grantPermanent rồi owns() trả về true', () {
+      final service = PurchaseLedgerService();
+
+      service.grantPermanent('remove_ads');
+
+      expect(service.owns('remove_ads'), isTrue);
+    });
+
+    test('grantPermanent gọi lại nhiều lần vẫn idempotent, không lỗi', () {
+      final service = PurchaseLedgerService();
+
+      service.grantPermanent('remove_ads');
+      expect(() => service.grantPermanent('remove_ads'), returnsNormally);
+
+      expect(service.owns('remove_ads'), isTrue);
+    });
+  });
+
+  group('PurchaseLedgerService: persist/corrupt', () {
+    test(
+      'grantPermanent + owns() bền vững qua "restart" (instance mới đọc lại đúng)',
+      () async {
+        final service = PurchaseLedgerService();
+        service.grantPermanent('remove_ads');
+        service.grantConsumable('hints', 7);
+
+        await service.debugPendingSaves;
+
+        final reloaded = PurchaseLedgerService();
+        expect(reloaded.owns('remove_ads'), isTrue);
+        expect(reloaded.balanceOf('hints'), 7);
+      },
+    );
+
+    test('drops corrupt entries instead of crashing hydration', () async {
+      await storage.setString(
+        'purchase_ledger_v1',
+        '{"consumables":{"good":3,"negative":-1,"wrongType":"3","":9},'
+        '"permanents":["good_perm","",42],'
+        '"schemaVersion":1}',
+      );
+      final service = PurchaseLedgerService();
+
+      expect(service.balanceOf('good'), 3);
+      expect(service.balanceOf('negative'), 0);
+      expect(service.balanceOf('wrongType'), 0);
+      expect(service.owns('good_perm'), isTrue);
+    });
+
+    test(
+      'burst nhiều grantConsumable/consume liên tiếp không await giữa các lần vẫn ghi đúng xuống disk',
+      () async {
+        final service = PurchaseLedgerService();
+
+        for (var i = 0; i < 10; i++) {
+          service.grantConsumable('gems', 1);
+        }
+        service.consume('gems', 4);
+
+        await service.debugPendingSaves;
+
+        final reloaded = PurchaseLedgerService();
+        expect(reloaded.balanceOf('gems'), 6);
+      },
+    );
+  });
+}

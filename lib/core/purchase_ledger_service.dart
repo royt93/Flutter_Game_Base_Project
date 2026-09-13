@@ -1,0 +1,183 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
+
+import 'storage_service.dart';
+import 'versioned_json_store.dart';
+
+class _LedgerState {
+  _LedgerState({required this.consumables, required this.permanents});
+
+  // A fresh, mutable empty state — NOT a `static const` — every call.
+  // `grantConsumable`/`grantPermanent` mutate these collections in place,
+  // and a `const {}`/`const {}` literal would be an unmodifiable
+  // singleton shared across every instance that never had a prior save.
+  static _LedgerState initial() =>
+      _LedgerState(consumables: {}, permanents: {});
+
+  final Map<String, int> consumables;
+  final Set<String> permanents;
+}
+
+/// Thin local cache on top of `PurchaseSeam` for the 2 purchase shapes
+/// almost every game needs and would otherwise re-implement per project:
+/// a consumable with a remaining balance ("5 hint tokens left") and a
+/// permanent one-time unlock ("remove ads", "premium skin pack").
+///
+/// **This is NOT a receipt-validation layer.** It trusts whatever it's
+/// told — [grantConsumable]/[grantPermanent] are meant to be called by the
+/// app's own `PurchaseSeam` adapter, and ONLY after that adapter has
+/// already verified the purchase through the real store/server. This
+/// service persists the resulting balance/ownership locally; it has no
+/// way to detect a fabricated grant call, same trust-boundary framing as
+/// `save_integrity.dart`'s "best-effort local cache, not a substitute for
+/// server-side validation" doc.
+class PurchaseLedgerService extends GetxService {
+  static const _storageKey = 'purchase_ledger_v1';
+  static final int _maxInt = 0x7FFFFFFFFFFFFFFF;
+
+  _LedgerState? _cached;
+
+  /// Gets the instance if already registered (safe to call from
+  /// game/widget tests).
+  static PurchaseLedgerService? get maybe =>
+      Get.isRegistered<PurchaseLedgerService>()
+      ? Get.find<PurchaseLedgerService>()
+      : null;
+
+  VersionedJsonStore<_LedgerState> get _store => VersionedJsonStore<_LedgerState>(
+    storage: StorageService.to,
+    key: _storageKey,
+    schemaVersion: 1,
+    toJson: (value) => {
+      'consumables': value.consumables,
+      'permanents': value.permanents.toList(),
+    },
+    fromJson: _parseState,
+    migrate: (fromVersion, json) => json,
+  );
+
+  static _LedgerState _parseState(Map<String, Object?> json) {
+    final consumablesRaw = json['consumables'];
+    final permanentsRaw = json['permanents'];
+    if (consumablesRaw is! Map || permanentsRaw is! List) {
+      return _LedgerState.initial();
+    }
+
+    final consumables = <String, int>{};
+    for (final entry in consumablesRaw.entries) {
+      final sku = entry.key;
+      final balance = entry.value;
+      if (sku is! String || sku.trim().isEmpty) continue;
+      if (balance is! int || balance < 0) continue;
+      consumables[sku] = balance;
+    }
+
+    final permanents = <String>{};
+    for (final sku in permanentsRaw) {
+      if (sku is! String || sku.trim().isEmpty) continue;
+      permanents.add(sku);
+    }
+
+    return _LedgerState(consumables: consumables, permanents: permanents);
+  }
+
+  // Lazily hydrated on first touch — same reasoning as
+  // AchievementService/DailyQuestService: avoids depending on
+  // StorageService already being Get.put'd before this service is
+  // constructed.
+  _LedgerState get _state {
+    if (_cached != null) return _cached!;
+    try {
+      _cached = _store.load() ?? _LedgerState.initial();
+    } catch (_) {
+      _cached = _LedgerState.initial();
+    }
+    return _cached!;
+  }
+
+  // Same save-serialization pattern as every other ledger-shaped service
+  // in this package (BUG-17): a burst of rapid grant/consume calls
+  // without awaiting in between must still land on disk in the order
+  // they were made.
+  bool _saving = false;
+  Future<void> _saveChain = Future.value();
+
+  Future<void> _runSave() async {
+    _saving = true;
+    try {
+      await _store.save(_state);
+    } catch (_) {
+      // Swallow — a transient save failure must not wedge every
+      // subsequent grant/consume's save behind a permanently-rejected
+      // chain.
+    } finally {
+      _saving = false;
+    }
+  }
+
+  void _scheduleSave() {
+    _saveChain = _saving ? _saveChain.then((_) => _runSave()) : _runSave();
+  }
+
+  /// Awaits every save queued so far — lets a test deterministically wait
+  /// for a burst of rapid calls to fully settle instead of guessing a
+  /// delay.
+  @visibleForTesting
+  Future<void> get debugPendingSaves => _saveChain;
+
+  void _validateSku(String sku) {
+    if (sku.trim().isEmpty) {
+      throw ArgumentError.value(sku, 'sku', 'must not be empty');
+    }
+  }
+
+  void _validateAmount(int amount) {
+    if (amount <= 0) {
+      throw ArgumentError.value(amount, 'amount', 'must be greater than 0');
+    }
+  }
+
+  /// Adds [amount] to [sku]'s consumable balance.
+  void grantConsumable(String sku, int amount) {
+    _validateSku(sku);
+    _validateAmount(amount);
+    final current = _state.consumables[sku] ?? 0;
+    if (amount > _maxInt - current) {
+      throw RangeError('balance overflow for $sku');
+    }
+    _state.consumables[sku] = current + amount;
+    _scheduleSave();
+  }
+
+  /// Spends [amount] from [sku]'s consumable balance. Returns `true` if
+  /// the balance covered it (and was deducted); `false` (never throws,
+  /// balance left untouched) if [sku] has fewer than [amount] remaining —
+  /// this is the guard against the balance ever going negative.
+  bool consume(String sku, int amount) {
+    _validateSku(sku);
+    _validateAmount(amount);
+    final current = _state.consumables[sku] ?? 0;
+    if (amount > current) return false;
+    _state.consumables[sku] = current - amount;
+    _scheduleSave();
+    return true;
+  }
+
+  /// [sku]'s current consumable balance, `0` if never granted (never
+  /// throws).
+  int balanceOf(String sku) => _state.consumables[sku] ?? 0;
+
+  /// Marks [sku] as permanently owned. Safe to call again for an
+  /// already-owned [sku] — stays owned, no error.
+  void grantPermanent(String sku) {
+    _validateSku(sku);
+    _state.permanents.add(sku);
+    _scheduleSave();
+  }
+
+  /// `true` once [sku] has been [grantPermanent]ed, `false` (never
+  /// throws) otherwise.
+  bool owns(String sku) => _state.permanents.contains(sku);
+}
