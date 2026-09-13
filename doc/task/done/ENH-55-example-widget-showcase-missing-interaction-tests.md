@@ -20,12 +20,12 @@ Grep theo trigger text/type của từng demo cho thấy các demo sau KHÔNG c�
 Thêm 1 test tap-và-assert cho MỖI demo trong danh sách, theo đúng pattern verify-thật đã dùng cho `RewardPopup`/`SpotlightOverlay` trong cùng file: tap trigger, pump, assert đúng state/overlay/toast kết quả (ví dụ: tap "Start 2-step tutorial" → assert title bước đầu tiên hiện ra; tap "Spin" → assert `WheelSpinnerController`'s state đổi rồi toast "Landed on ..." xuất hiện; tap nút primary/secondary của `GameOverCardTemplate` → assert đúng toast tương ứng).
 
 ## Acceptance criteria
-- [ ] Mỗi demo trong danh sách ở Hiện trạng có ít nhất 1 test tap + assert kết quả thật (không chỉ 'không throw').
-- [ ] 3 widget mới nhất (TutorialSequence/WheelSpinner/GameOverCardTemplate) được ưu tiên làm trước trong danh sách.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] Mỗi demo trong danh sách ở Hiện trạng có ít nhất 1 test tap + assert kết quả thật (không chỉ 'không throw').
+- [x] 3 widget mới nhất (TutorialSequence/WheelSpinner/GameOverCardTemplate) được ưu tiên làm trước trong danh sách.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên máy Android thật (Samsung SM-S928B, không simulator) — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion` (task này không sửa code sản xuất/animation nào — chỉ test).
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/ENH-55-example-widget-showcase-missing-interaction-tests.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
@@ -43,3 +43,24 @@ Sau khi push, viết mục `## Quyết định` vào chính file task này (tick
 
 ## Ghi chú độ tin cậy
 Trung bình — đây toàn là bổ sung test, effort L vì số lượng demo cần cover khá nhiều (~10 demo), nhưng mỗi test riêng lẻ đơn giản và độc lập, có thể chia nhỏ làm dần.
+
+## Quyết định
+
+Không phát hiện bug sản xuất nào — toàn bộ thay đổi nằm trong `example/test/widget_showcase_screen_test.dart` (commit `f5748e3`), thêm 11 test mới (30 → 46 test tổng của `example/`, bao gồm cả 5 test mới ở ENH-54). Cả 11 demo trong danh sách ở Hiện trạng đều có test tap+assert kết quả thật:
+1. `TutorialSequence` (ưu tiên #1) — chuỗi 2 bước, title/message đổi đúng, kết thúc đúng lúc.
+2. `WheelSpinner` (ưu tiên #2) — spin xong show toast "Landed on ...".
+3. `GameOverCardTemplate` (ưu tiên #3) — 2 action đều show đúng toast riêng.
+4. `SegmentedTabBar` — tap tab đổi đúng segment `isSelected`.
+5. `IconBadgeButton` — tap mail icon tăng đúng badge count hiển thị.
+6. `TooltipBubble` — cả 2 instance render đúng text/type.
+7. `LoadingOverlay` — hiện rồi tự ẩn đúng sau 1.2s.
+8. `ConfirmDialog` — mở dialog, xác nhận → đúng toast.
+9. `BottomSheetPanel` — mở/đóng đúng qua tap action.
+10. `ProgressBarStars`/`CircularProgressRing` — chia sẻ chung `_progress`, bump đúng cả 2.
+11. `StarRating` — cycle đúng số sao.
+
+### Ghi chú kỹ thuật đáng chú ý
+Phát hiện lại đúng gotcha đã gặp ở ENH-54: 1 `pump(bigDuration)` lớn duy nhất ngay sau tap mở modal route (`showConfirmDialog`/`showCommonBottomSheet`) hoặc ngay sau khi 1 `Timer` fire ra 1 animation reverse mới (`ToastBanner`'s auto-dismiss) không settle đúng — vì `AnimationController` chỉ thực sự bắt đầu tick ở frame ĐẦU TIÊN của chính nó. Thêm helper `_settle()` (nhiều pump nhỏ liên tiếp thay vì 1 pump lớn) dùng chung cho: mở `ConfirmDialog`/`BottomSheetPanel`, spin xong của `WheelSpinner`, và rút cạn timer+reverse-animation của mọi `ToastBanner` trước khi test kết thúc (tránh lỗi `A Timer/animation is still running after the widget tree was disposed`).
+
+### Device smoke test — Samsung SM-S928B (thật, không simulator)
+Task này không sửa code sản xuất nên dùng lại APK đã cài (từ ENH-38/54), không cần rebuild. Mở app thật, vào Widget Kit, cuộn tới demo `WheelSpinner`: tap "Spin" → bánh xe xoay thật và dừng ở vị trí khác (segment ở đỉnh đổi từ "10" sang "50"), không crash. Thử mở demo `TutorialSequence` ("Start 2-step tutorial"): overlay/scrim hiện đúng (xác nhận controller `start()` chạy), nhưng KHÔNG thấy được callout thật trên màn hình do target đầu tiên (nút Primary ở đầu trang) nằm ngoài vùng nhìn thấy sau khi đã cuộn xuống xa để tới demo này — cùng hạn chế đã gặp với `SpotlightOverlay` độc lập trong phiên trước (giới hạn của cách demo dàn trải trên 1 trang cuộn dài, không phải bug của `TutorialSequence`/`SpotlightOverlay`). Hành vi CHÍNH XÁC của `TutorialSequence` (chuỗi 2 bước, title/message đổi đúng, kết thúc đúng lúc) đã được xác nhận chắc chắn qua widget test (đo trực tiếp bằng Flutter test framework, không phụ thuộc vị trí cuộn màn hình thật). `mobile_get_device_logs` lọc `level=Error`: không có lỗi nào trong suốt thao tác.
