@@ -26,34 +26,49 @@ class LoadingOverlay extends StatelessWidget {
       'Stack(children: [..., if (isLoading) const LoadingOverlay()]).',
     );
     return Positioned.fill(
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.45),
-        alignment: Alignment.center,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 56,
-              height: 56,
-              child: CircularProgressIndicator(
-                strokeWidth: 5,
-                valueColor: AlwaysStoppedAnimation(NeonTheme.magenta),
-                backgroundColor: NeonTheme.purple.withValues(alpha: 0.3),
-              ),
-            ),
-            if (message != null) ...[
-              const SizedBox(height: NeonTheme.s16),
-              Text(
-                message!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+      // ENH-37: this Flutter SDK's Semantics widget has no `modal` param
+      // (confirmed in framework source — only the lower-level
+      // SemanticsConfiguration has one, not exposed here), and this overlay
+      // deliberately isn't a real Navigator route either (see class doc —
+      // that's the whole reason it exists instead of showDialog), so
+      // scopesRoute wouldn't be accurate. liveRegion announces the barrier
+      // the moment it appears (same reasoning as ToastBanner/
+      // NetworkStatusBanner), and container groups it as 1 node instead of
+      // leaking the spinner + message as 2 separate ones.
+      child: Semantics(
+        label: message ?? 'Loading',
+        liveRegion: true,
+        container: true,
+        excludeSemantics: true,
+        child: Container(
+          color: Colors.black.withValues(alpha: 0.45),
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 56,
+                height: 56,
+                child: CircularProgressIndicator(
+                  strokeWidth: 5,
+                  valueColor: AlwaysStoppedAnimation(NeonTheme.magenta),
+                  backgroundColor: NeonTheme.purple.withValues(alpha: 0.3),
                 ),
               ),
+              if (message != null) ...[
+                const SizedBox(height: NeonTheme.s16),
+                Text(
+                  message!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

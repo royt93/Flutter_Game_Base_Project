@@ -60,4 +60,39 @@ void main() {
       );
     },
   );
+
+  group('ENH-37: Semantics', () {
+    testWidgets('message truyền vào → label khớp đúng, liveRegion bật', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: Stack(children: [LoadingOverlay(message: 'Đang tải...')]),
+          ),
+        ),
+      );
+
+      final labelFinder = find.bySemanticsLabel('Đang tải...');
+      expect(labelFinder, findsOneWidget);
+      final data = tester.getSemantics(labelFinder);
+      expect(data.getSemanticsData().flagsCollection.isLiveRegion, isTrue);
+      handle.dispose();
+    });
+
+    testWidgets('message == null → fallback label mặc định "Loading"', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: Stack(children: [LoadingOverlay()])),
+        ),
+      );
+
+      expect(find.bySemanticsLabel('Loading'), findsOneWidget);
+      handle.dispose();
+    });
+  });
 }

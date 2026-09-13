@@ -12,11 +12,7 @@ import '../../../core/neon_theme.dart';
 /// above whatever is on screen (game or normal route) and self-removes
 /// after [duration]. No `Scaffold`/`ScaffoldMessenger` dependency at all.
 class ToastBanner extends StatelessWidget {
-  const ToastBanner({
-    super.key,
-    required this.message,
-    this.color,
-  });
+  const ToastBanner({super.key, required this.message, this.color});
 
   final String message;
 
@@ -27,30 +23,43 @@ class ToastBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = this.color ?? NeonTheme.purple;
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: NeonTheme.s24),
-        padding: const EdgeInsets.symmetric(
-          horizontal: NeonTheme.s16,
-          vertical: NeonTheme.s16,
-        ),
-        decoration: BoxDecoration(
-          color: NeonTheme.card,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: color, width: 3),
-          boxShadow: [
-            ...NeonTheme.glow(color, blur: 16, spread: 1),
-            ...NeonTheme.drop(y: 4, blur: 12),
-          ],
-        ),
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: NeonTheme.ink,
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
+    // ENH-37: liveRegion so a screen reader announces the toast the moment
+    // it appears, without the user needing to manually move focus to it —
+    // the whole point of a toast is a message nobody explicitly navigated
+    // to. `message` itself is already the ideal label; no separate
+    // semanticLabel override needed for a widget whose only content IS
+    // that string.
+    return Semantics(
+      liveRegion: true,
+      label: message,
+      // The child Text's own automatic semantics label would otherwise
+      // merge with (duplicate) the explicit label above.
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: NeonTheme.s24),
+          padding: const EdgeInsets.symmetric(
+            horizontal: NeonTheme.s16,
+            vertical: NeonTheme.s16,
+          ),
+          decoration: BoxDecoration(
+            color: NeonTheme.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: color, width: 3),
+            boxShadow: [
+              ...NeonTheme.glow(color, blur: 16, spread: 1),
+              ...NeonTheme.drop(y: 4, blur: 12),
+            ],
+          ),
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: NeonTheme.ink,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ),
@@ -76,20 +85,18 @@ class ToastBanner extends StatelessWidget {
           ? Duration.zero
           : const Duration(milliseconds: 180),
     );
-    final slide = Tween<Offset>(
-      begin: const Offset(0, -0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: controller,
-        curve: Curves.easeOutBack,
-        // Không dùng lại easeOutBack cho chiều đóng — overshoot của nó rơi
-        // ngay lúc bắt đầu reverse(), làm toast "nảy ngược" một nhịp trước
-        // khi trượt lên. Cùng quy ước `neon_dialog.dart`'s
-        // `_kDialogCurve`/`Curves.easeIn`: vào bouncy, ra êm.
-        reverseCurve: Curves.easeIn,
-      ),
-    );
+    final slide = Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: controller,
+            curve: Curves.easeOutBack,
+            // Không dùng lại easeOutBack cho chiều đóng — overshoot của nó rơi
+            // ngay lúc bắt đầu reverse(), làm toast "nảy ngược" một nhịp trước
+            // khi trượt lên. Cùng quy ước `neon_dialog.dart`'s
+            // `_kDialogCurve`/`Curves.easeIn`: vào bouncy, ra êm.
+            reverseCurve: Curves.easeIn,
+          ),
+        );
 
     Future<void> remove() async {
       if (!entry.mounted) return;

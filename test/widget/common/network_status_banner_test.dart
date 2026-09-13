@@ -145,4 +145,49 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('ENH-37: Semantics', () {
+    testWidgets('connected: false → liveRegion + label khớp offlineMessage', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: NetworkStatusBanner(
+              connected: false,
+              offlineMessage: 'Mất kết nối mạng',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final labelFinder = find.bySemanticsLabel('Mất kết nối mạng');
+      expect(labelFinder, findsOneWidget);
+      final data = tester.getSemantics(labelFinder);
+      expect(data.getSemanticsData().flagsCollection.isLiveRegion, isTrue);
+      handle.dispose();
+    });
+
+    testWidgets('connected: true → không hiển thị banner/label nào (đã ẩn)', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: NetworkStatusBanner(
+              connected: true,
+              offlineMessage: 'Mất kết nối mạng',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.bySemanticsLabel('Mất kết nối mạng'), findsNothing);
+      handle.dispose();
+    });
+  });
 }

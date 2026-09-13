@@ -156,4 +156,42 @@ void main() {
     expect(find.text('Hi'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  group('ENH-37: Semantics', () {
+    testWidgets('liveRegion + label khớp đúng message truyền vào', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: Center(child: ToastBanner(message: 'Hi'))),
+        ),
+      );
+
+      final data = tester.getSemantics(find.byType(ToastBanner));
+      expect(data.label, 'Hi');
+      expect(
+        data.getSemanticsData().flagsCollection.isLiveRegion,
+        isTrue,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('label đổi đúng theo message khi message khác nhau', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: Center(child: ToastBanner(message: 'Level up!')),
+          ),
+        ),
+      );
+
+      final data = tester.getSemantics(find.byType(ToastBanner));
+      expect(data.label, 'Level up!');
+      handle.dispose();
+    });
+  });
 }

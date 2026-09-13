@@ -68,23 +68,31 @@ class NetworkStatusBanner extends StatelessWidget {
         opacity: show ? 1 : 0,
         child: !show
             ? const SizedBox(width: double.infinity)
-            : Container(
-                width: double.infinity,
-                color: NeonTheme.red,
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: NeonTheme.s8,
-                      horizontal: NeonTheme.s16,
-                    ),
-                    child: Text(
-                      offlineMessage,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13,
+            // ENH-37: liveRegion announces the banner the instant it
+            // appears — a connectivity drop isn't something the user
+            // navigated to, same reasoning as ToastBanner.
+            : Semantics(
+                liveRegion: true,
+                label: offlineMessage,
+                excludeSemantics: true,
+                child: Container(
+                  width: double.infinity,
+                  color: NeonTheme.red,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: NeonTheme.s8,
+                        horizontal: NeonTheme.s16,
+                      ),
+                      child: Text(
+                        offlineMessage,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ),
