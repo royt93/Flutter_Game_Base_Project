@@ -35,6 +35,24 @@ Future<void> _pumpShowcase(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 100));
 }
 
+/// A single big `pump(bigDuration)` right after a tap that opens a modal
+/// route (dialog/bottom sheet) leaves its entrance transition unsettled —
+/// its `AnimationController` only actually starts ticking on its own first
+/// frame, so one big jump measures barely any elapsed transition time
+/// relative to that (verified empirically against `showConfirmDialog`/
+/// `showCommonBottomSheet`, see settings_screen_test.dart's identical
+/// gotcha for `_pickLanguage`'s sheet). Several smaller pumps let it
+/// converge to its settled, tappable position instead.
+Future<void> _settle(
+  WidgetTester tester, {
+  int steps = 8,
+  int stepMs = 80,
+}) async {
+  for (var i = 0; i < steps; i++) {
+    await tester.pump(Duration(milliseconds: stepMs));
+  }
+}
+
 void main() {
   tearDown(Get.reset);
 
@@ -529,4 +547,266 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('ENH-55: previously-untested demo interactions', () {
+    // The 3 newest widgets (per Đề xuất's priority) first.
+    testWidgets(
+      'TutorialSequence: "Start 2-step tutorial" chains both steps then ends',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        expect(find.text('Step 1 of 2'), findsNothing);
+
+        await tester.tap(find.text('Start 2-step tutorial').last);
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.text('Step 1 of 2'), findsOneWidget);
+        expect(find.textContaining('Primary button'), findsOneWidget);
+
+        await tester.tap(find.text('Got it'));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.text('Step 1 of 2'), findsNothing);
+        expect(find.text('Step 2 of 2'), findsOneWidget);
+        expect(find.textContaining('coin balance'), findsOneWidget);
+
+        await tester.tap(find.text('Got it'));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.text('Step 2 of 2'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('WheelSpinner: "Spin" ends with a "Landed on ..." toast', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      expect(find.textContaining('Landed on'), findsNothing);
+
+      await tester.tap(find.text('Spin').last);
+      // Default spinDuration is 3s — several smaller pumps (not one big
+      // jump) let the AnimationController's whenComplete() actually fire.
+      await _settle(tester, steps: 20, stepMs: 200);
+
+      expect(find.textContaining('Landed on'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      // Drain the toast's own auto-dismiss timer + reverse animation
+      // before the test ends.
+      await _settle(tester, steps: 30, stepMs: 100);
+    });
+
+    testWidgets(
+      'GameOverCardTemplate: primary/secondary actions each show the matching toast',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        // StrokeText renders a stroke Text + a fill Text stacked.
+        expect(find.text('Out of moves!'), findsWidgets);
+
+        await tester.tap(find.text('Retry').last);
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.text('Retry tapped'), findsOneWidget);
+
+        // Let the toast's own timer + reverse animation finish before the
+        // next tap — incremental pumps, not 1 big jump, so the reverse
+        // Ticker started mid-elapse actually gets driven to completion
+        // instead of outliving the test (same class of gotcha as _settle).
+        await _settle(tester, steps: 30, stepMs: 100);
+
+        await tester.tap(find.text('Home').last);
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.text('Home tapped'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        // Drain this toast's own auto-dismiss timer too, same reason.
+        await _settle(tester, steps: 30, stepMs: 100);
+      },
+    );
+
+    testWidgets(
+      'SegmentedTabBar: tapping a tab actually changes which one is selected',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        expect(
+          tester
+              .getSemantics(find.text('Easy'))
+              .flagsCollection
+              .isSelected
+              .toBoolOrNull(),
+          true,
+        );
+        expect(
+          tester
+              .getSemantics(find.text('Hard'))
+              .flagsCollection
+              .isSelected
+              .toBoolOrNull(),
+          false,
+        );
+
+        await tester.tap(find.text('Hard'));
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(
+          tester
+              .getSemantics(find.text('Easy'))
+              .flagsCollection
+              .isSelected
+              .toBoolOrNull(),
+          false,
+        );
+        expect(
+          tester
+              .getSemantics(find.text('Hard'))
+              .flagsCollection
+              .isSelected
+              .toBoolOrNull(),
+          true,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'IconBadgeButton: tapping the mail icon bumps its displayed unread count',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        expect(find.text('12'), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.mail_rounded));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.text('12'), findsNothing);
+        expect(find.text('13'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'TooltipBubble: both demo instances actually render with their given text',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        expect(find.text('Tap to pop!'), findsOneWidget);
+        expect(find.text('Combo x3'), findsOneWidget);
+        expect(find.byType(TooltipBubble), findsNWidgets(2));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'LoadingOverlay: "Show for 1.2s" shows it then auto-hides after the delay',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        expect(find.text('Loading...'), findsNothing);
+
+        await tester.tap(find.text('Show for 1.2s').last);
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.text('Loading...'), findsOneWidget);
+
+        await tester.pump(const Duration(milliseconds: 1200));
+        expect(find.text('Loading...'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'ConfirmDialog: "Delete..." opens the dialog, confirming shows the matching toast',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(find.text('Delete...').last);
+        await _settle(tester);
+
+        expect(find.text('Delete save?'), findsOneWidget);
+
+        await tester.tap(find.text('OK'));
+        await _settle(tester);
+
+        expect(find.text('Delete save?'), findsNothing);
+        expect(find.text('Confirmed'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        // Drain the toast's own auto-dismiss timer + reverse animation
+        // before the test ends (incremental pumps, see _settle's comment).
+        await _settle(tester, steps: 30, stepMs: 100);
+      },
+    );
+
+    testWidgets(
+      'BottomSheetPanel: "Open sheet" shows the quick-actions list, tapping an action closes it',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        expect(find.text('Quick actions'), findsNothing);
+
+        await tester.tap(find.text('Open sheet').last);
+        await _settle(tester);
+
+        expect(find.text('Quick actions'), findsOneWidget);
+        expect(find.text('Restart level'), findsOneWidget);
+
+        await tester.tap(find.text('Restart level'));
+        await _settle(tester);
+
+        expect(find.text('Quick actions'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'ProgressBarStars/CircularProgressRing: "+20% progress" bumps the shared progress value',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        expect(find.text('40%'), findsOneWidget);
+
+        await tester.tap(find.text('+20% progress').last);
+        await tester.pump(const Duration(milliseconds: 500));
+
+        expect(find.text('40%'), findsNothing);
+        expect(find.text('60%'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'StarRating: "Cycle stars" advances the earned-star count (wraps back after 3)',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        final starRow = find
+            .ancestor(
+              of: find.text('Cycle stars'),
+              matching: find.byType(Column),
+            )
+            .first;
+        expect(
+          find.descendant(
+            of: starRow,
+            matching: find.byIcon(Icons.star_rounded),
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Cycle stars').last);
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(
+          find.descendant(
+            of: starRow,
+            matching: find.byIcon(Icons.star_rounded),
+          ),
+          findsNWidgets(2),
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }
