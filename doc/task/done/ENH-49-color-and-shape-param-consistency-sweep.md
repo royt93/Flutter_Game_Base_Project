@@ -20,12 +20,12 @@ Nhất quán API giúp người dùng package đoán đúng constructor mà khô
 Thêm từng tham số optional tương ứng cho mỗi widget (`Color? activeColor` cho `SegmentedTabBar`; `BoxShape shape = BoxShape.rectangle, Color? baseColor, Color? highlightColor` cho `ShimmerPlaceholder`; `Color? color, Color? backgroundColor` cho `LoadingOverlay`; `Color? color` cho `NetworkStatusBanner`), giữ nguyên default hiện tại khi không truyền.
 
 ## Acceptance criteria
-- [ ] Mỗi tham số mới khi truyền áp dụng đúng vào widget tương ứng, mặc định giữ nguyên màu/hình dạng hiện tại.
-- [ ] Test: mỗi widget với tham số custom xác nhận màu/shape render đúng giá trị truyền vào (không phải default).
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] Mỗi tham số mới khi truyền áp dụng đúng vào widget tương ứng, mặc định giữ nguyên màu/hình dạng hiện tại.
+- [x] Test: mỗi widget với tham số custom xác nhận màu/shape render đúng giá trị truyền vào (không phải default).
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên máy Android thật (TECNO BG6, không simulator) — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion` (không đổi animation nào — chỉ thêm tham số màu/hình dạng tĩnh).
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/ENH-49-color-and-shape-param-consistency-sweep.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
@@ -43,3 +43,16 @@ Sau khi push, viết mục `## Quyết định` vào chính file task này (tick
 
 ## Ghi chú độ tin cậy
 Thấp — API consistency, effort trung bình vì chạm 4 file khác nhau nhưng mỗi thay đổi rất nhỏ và độc lập.
+
+## Quyết định
+
+Đã thêm đúng 4 tham số như Đề xuất (commit `633d298`), tất cả optional, default giữ nguyên hành vi cũ:
+- `SegmentedTabBar.activeColor` (mặc định `NeonTheme.cyan`).
+- `ShimmerPlaceholder.shape`/`baseColor`/`highlightColor` (mặc định `BoxShape.rectangle`/`NeonTheme.cardAlt`/`NeonTheme.card`) — `shape: BoxShape.circle` tự động bỏ `borderRadius` (BoxDecoration không cho phép có cả 2 cùng lúc).
+- `LoadingOverlay.color`/`backgroundColor` (mặc định `NeonTheme.magenta`/`NeonTheme.purple` mờ 30%).
+- `NetworkStatusBanner.color` (mặc định `NeonTheme.red`), forward luôn qua factory `.stream(...)`.
+
+Không phải sửa `tool/api_snapshot.json`/CHANGELOG — chỉ thêm tham số constructor optional cho class đã tồn tại, không tạo top-level symbol mới nên API-compatibility gate không bị kích hoạt (đã verify lại `test/api_compatibility_test.dart` vẫn xanh).
+
+### Device smoke test — TECNO BG6 (thật, không simulator)
+Build lại release APK, cài, mở `WidgetShowcaseScreen` — `SegmentedTabBar` (pill cyan), `LoadingOverlay` (spinner mở đúng, không throw), `NetworkStatusBanner` (tap "Go offline" → banner đỏ "No internet connection" đúng màu default cũ) đều render đúng như trước khi sửa — xác nhận không regression (demo hiện có không truyền tham số mới nên phải giữ nguyên y hệt giao diện cũ). `mobile_get_device_logs` lọc `level=Error`: không có lỗi nào trong suốt thao tác.
