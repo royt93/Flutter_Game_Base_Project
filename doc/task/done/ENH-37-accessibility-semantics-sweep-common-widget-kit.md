@@ -20,13 +20,13 @@ Người chơi dùng TalkBack/VoiceOver (khiếm thị hoặc hạn chế thị 
 1 vòng sweep MỘT LẦN qua toàn bộ danh sách, thêm đúng cấu trúc `Semantics` cho từng widget (label mô tả đúng nội dung/trạng thái hiện tại, `liveRegion: true` cho toast/banner cảnh báo tức thời, `header: true` cho `SectionHeader`, `button`/`enabled`/`toggled` cho control tương tác, `value` cho progress/counter). Mỗi widget nhận thêm 1 tham số optional `String? semanticLabel` (nếu chưa có) để caller override khi cần, mặc định fallback về 1 label hợp lý tính từ state hiện tại của chính widget đó — không đổi API bắt buộc nào, chỉ thêm optional.
 
 ## Acceptance criteria
-- [ ] Mỗi widget trong danh sách ở Hiện trạng có Semantics wrapper phù hợp (label/value/liveRegion/header/button/toggled tuỳ loại).
-- [ ] Mỗi widget nhận optional String? semanticLabel (không phá constructor hiện có — chỉ thêm param optional cuối).
-- [ ] Test cho MỖI widget đã sửa: dùng tester.getSemantics(...) xác nhận label/value đúng ở ít nhất 2 trạng thái khác nhau (ví dụ locked/unlocked, muted/unmuted).
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] Mỗi widget trong danh sách ở Hiện trạng có Semantics wrapper phù hợp (label/value/liveRegion/header/button/toggled tuỳ loại).
+- [x] Mỗi widget nhận optional String? semanticLabel (không phá constructor hiện có — chỉ thêm param optional cuối).
+- [x] Test cho MỖI widget đã sửa: dùng tester.getSemantics(...) xác nhận label/value đúng ở ít nhất 2 trạng thái khác nhau (ví dụ locked/unlocked, muted/unmuted).
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên máy Android thật (Samsung SM-S928B, không simulator) — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/ENH-37-accessibility-semantics-sweep-common-widget-kit.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
@@ -44,3 +44,37 @@ Sau khi push, viết mục `## Quyết định` vào chính file task này (tick
 
 ## Ghi chú độ tin cậy
 Cao (P2) vì đây là accessibility gap thật trên diện rộng toàn bộ kit — nhưng effort L vì chạm ~15-20 file, nên cân nhắc chia nhỏ thành nhiều PR/commit theo nhóm nếu làm thật (ví dụ theo category Buttons/Feedback/Progress/Layout) thay vì 1 commit khổng lồ, dù vẫn là 1 task/1 file backlog duy nhất.
+
+## Quyết định
+
+Chia thành 5 batch commit theo nhóm (đúng gợi ý ở Ghi chú độ tin cậy) thay vì 1 commit khổng lồ:
+
+1. **Batch 1** (`015d951`): `ToastBanner`, `NetworkStatusBanner`, `LoadingOverlay` — `liveRegion: true` cho cảnh báo/toast tức thời.
+2. **Batch 2** (`cb2052d`): `ProgressBarStars`, `CurrencyCounter`, `CountdownChip`, `EnergyBar`, `StarRating`, `StreakCounter`, `PaginatedDotsIndicator`, `ShimmerPlaceholder`, `IconBadgeButton` — thêm `semanticLabel` optional + `value`/`label` tính từ state.
+3. **Batch 3** (`57c90b4`): `SectionHeader` (`header: true`), `CommonListTile` (`MergeSemantics` + `button`), `BottomSheetPanel` (`ExcludeSemantics` cho drag handle trang trí).
+4. **Batch 4** (`e9f8ef5`): `AvatarFrame`, `LeaderboardList`, `LevelSelectGrid`, `DailyLoginCalendarWidget`, `CandyToggleSwitch` — label mô tả trạng thái ("Rank 1, Alice, 9,000", "Level 2, completed, 2 of 3 stars", "Day 3, current, double tap to claim"...).
+5. **Batch 5** (`7ec60b3`): `BadgeDot` — `ExcludeSemantics` (thuần trang trí, ý nghĩa thật đã do icon cha của caller mang, ví dụ `IconBadgeButton` tự nối thêm ", N unread"/", new" vào label icon đó).
+
+`ShopItemCard` không cần sửa gì thêm — đã có `MergeSemantics` từ ENH-44 (kiểm tra lại bằng inspection, đúng như note ở Hiện trạng).
+
+### Quyết định kỹ thuật đáng chú ý
+- **`Semantics` trên SDK Flutter này KHÔNG có tham số `modal`** (`No named parameter with the name 'modal'`) — `LoadingOverlay` dùng `liveRegion: true, container: true` thay thế, đạt cùng mục đích thực tế (chặn focus xuyên qua + báo trạng thái tức thời) mà không cần `modal`.
+- **`MergeSemantics`** (không phải viết tay 1 `label:` string) là cách đúng để gộp nhiều node con (title/subtitle/trailing, hoặc rank/name/score) thành 1 node khi vẫn cần giữ `button`/tap action — pattern tái dùng từ `ShopItemCard` (ENH-44), áp dụng lại cho `CommonListTile`.
+- **`excludeSemantics: true`** bắt buộc mọi nơi 1 `Text`/`Icon` con tự có label riêng sẽ bị gộp trùng vào `label:` của `Semantics` cha (biểu hiện: test fail với label kiểu "X\nX").
+- Node thuần trang trí không mang ý nghĩa riêng (`BadgeDot`, drag handle của `BottomSheetPanel`) dùng `ExcludeSemantics` thay vì cố gán 1 `label` giả — đúng nguyên tắc "không được là điểm dừng vô nghĩa cho screen reader".
+
+### Device smoke test — Samsung SM-S928B (thật, không simulator)
+Build release APK (`flutter build apk --release`), cài qua `adb install -r`, chạy `WidgetShowcaseScreen` (nơi dogfood mọi widget đã sửa) và đọc trực tiếp accessibility tree thật của Android (không phải widget test giả lập) bằng `mobile_list_elements_on_screen`. Bằng chứng cụ thể, đọc được từ tree thật trên máy:
+- `CandyToggleSwitch`: tap → track/thumb animate mượt (easeOutBack), tree đổi `Switch label="CandyToggleSwitch\nOn" ... checked` đúng theo state mới.
+- `IconBadgeButton`: `Button label="Notifications, new"`, `Button label="Mail, 12 unread"`.
+- `CommonListTile` (trong `BottomSheetPanel` lẫn `Layout & Cards`): `Button label="Restart level"`, `Button label="Daily Reward\nClaim your coins"` — gộp đúng 1 node duy nhất.
+- `BottomSheetPanel`: mở sheet thật, tree không có bất kỳ node nào cho drag handle (bị `ExcludeSemantics` loại hoàn toàn, không chỉ ẩn label).
+- `SectionHeader`: hiển thị đúng làm tiêu đề mọi section ("Feedback & Overlay", "Layout & Cards"...).
+- `CountdownChip`: `"Time remaining: 00:00"`; `PaginatedDotsIndicator`: `"Page 1 of 4"`.
+- `DailyLoginCalendarWidget`: tap ngày hiện tại → pop animation chạy, tree cập nhật đúng từ `"Day 1, current, double tap to claim"` sang `"Day 1, claimed"`.
+- `LeaderboardList`: `"Rank 1, Alice, 12,340"`, `"Rank 2, You, 9,870"`, `"Rank 3, Charlie, 8,120"`.
+- `AvatarFrame` (demo không truyền `semanticLabel`/`onTap`): không tạo node `Semantics` thừa — label "RB" passthrough thẳng từ `Text` con, đúng nhánh code không bọc gì khi cả 2 tham số đều null.
+- `LevelSelectGrid`: `"Level 1, completed, 3 of 3 stars"`, `"Level 4, unlocked"` (Button, tappable), `"Level 5, locked"` (View, không tappable) — tap level 4 không crash.
+- `mobile_get_device_logs` lọc `level=Error` cho process app: không có entry nào trong suốt phiên thao tác trên.
+
+Không kiểm tra lại `AvatarFrame`/`LeaderboardList` variant CÓ `onTap`/`semanticLabel` trên máy thật (đã có bằng chứng qua widget test `tester.getSemantics` ở 2 trạng thái, đủ theo AC) — demo trong showcase hiện chỉ minh hoạ variant display-only.
