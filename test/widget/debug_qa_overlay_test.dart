@@ -50,6 +50,35 @@ void main() {
   );
 
   testWidgets(
+    'IDEA-40: panel hiện đúng TrustedClock now + judgement khi StorageService đã đăng ký',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      Get.put(StorageService(await SharedPreferences.getInstance()));
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: DebugQaOverlay(child: Material(child: Text('app content'))),
+        ),
+      );
+
+      await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+      await tester.pump();
+
+      expect(find.textContaining('TrustedClock now:'), findsOneWidget);
+      expect(
+        find.textContaining('TrustedClock now: not registered'),
+        findsNothing,
+      );
+      // Lần sample đầu tiên chưa có gì để so sánh -> "n/a (first sample)".
+      expect(
+        find.text('TrustedClock judgement: n/a (first sample)'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'no StorageService/AudioManager/LocaleService registered -> opens without crashing',
     (tester) async {
       expect(Get.isRegistered<StorageService>(), isFalse);

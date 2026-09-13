@@ -7,6 +7,7 @@ import '../../core/audio_manager.dart';
 import '../../core/locale_service.dart';
 import '../../core/storage_service.dart';
 import '../../core/utils/clamped_clock.dart';
+import '../../core/utils/trusted_clock.dart';
 
 /// Hidden debug/QA overlay — a small long-press trigger in a screen corner
 /// that opens a read-only panel dumping live internal package state
@@ -91,6 +92,18 @@ class _Panel extends StatelessWidget {
     final storage = StorageService.maybe?.exportAll() ?? const {};
     final audioMuted = AudioManager.maybe?.muted.value;
     final locale = LocaleService.maybe?.current.value;
+    // IDEA-40: sampled fresh every panel rebuild (same 500ms auto-refresh
+    // as the rest of this panel) — this is what a device smoke test
+    // changing the REAL system clock via `adb shell date` watches change
+    // live, since every other test of this class injects a fake sample
+    // instead of touching the actual OS clock.
+    int? trustedNowMs;
+    ClockJudgement? trustedJudgement;
+    if (StorageService.maybe != null) {
+      final trustedClock = TrustedClockService();
+      trustedNowMs = trustedClock.nowMsTrusted();
+      trustedJudgement = trustedClock.lastJudgement;
+    }
 
     return Positioned.fill(
       child: GestureDetector(
@@ -146,6 +159,14 @@ class _Panel extends StatelessWidget {
                             ),
                             Text(
                               'Clock rewind blocked: $clockRewindBlockedCount',
+                            ),
+                            Text(
+                              'TrustedClock now: '
+                              '${trustedNowMs?.toString() ?? "not registered"}',
+                            ),
+                            Text(
+                              'TrustedClock judgement: '
+                              '${trustedJudgement?.name ?? "n/a (first sample)"}',
                             ),
                             const Divider(),
                             for (final entry in storage.entries)

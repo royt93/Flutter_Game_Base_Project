@@ -40,6 +40,12 @@ class StorageKeys {
 
   // lib/core/experiment_bucketing_service.dart reads/writes this directly.
   static const String experimentAnonId = 'experiment_anon_id';
+
+  // lib/core/utils/trusted_clock.dart reads/writes these directly.
+  static const String trustedClockBaselineMs = 'trusted_clock_baseline_ms';
+  static const String trustedClockPrevWallMs = 'trusted_clock_prev_wall_ms';
+  static const String trustedClockPrevMonotonicMs =
+      'trusted_clock_prev_monotonic_ms';
 }
 
 /// Shared local storage service (wraps SharedPreferences).

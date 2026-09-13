@@ -10,6 +10,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'package:roy_casual_kit/roy_casual_kit.dart';
 import 'package:roy_casual_kit/core/debug_log.dart';
+import 'package:roy_casual_kit/presentation/widgets/debug_qa_overlay.dart';
 
 import 'screens/home_screen.dart';
 
@@ -234,6 +235,10 @@ class _RoyBaseGameAppState extends State<RoyBaseGameApp>
             ).textTheme.apply(fontFamilyFallback: const ['sans-serif']),
           ),
       home: const HomeScreen(),
+      // Long-press the top-right corner anywhere in the app to open a
+      // read-only debug/QA panel (kDebugMode||kProfileMode only — a
+      // release build never builds this at all).
+      builder: (context, child) => DebugQaOverlay(child: child!),
     );
   }
 }

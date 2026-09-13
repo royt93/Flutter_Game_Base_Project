@@ -42,6 +42,7 @@ export 'core/storage_service.dart';
 export 'core/versioned_json_store.dart';
 export 'core/utils/clamped_clock.dart';
 export 'core/utils/economy_math.dart';
+export 'core/utils/trusted_clock.dart';
 export 'core/utils/async_action_guard.dart';
 export 'core/utils/save_migration_registry.dart';
 export 'core/utils/sdk_result.dart';
