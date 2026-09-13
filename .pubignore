@@ -1,0 +1,63 @@
+# ENH-57: pub uses THIS file INSTEAD OF .gitignore once it exists (not in
+# addition to it — see dart.dev/go/pubignore), so it must repeat every
+# .gitignore pattern that still matters for a published archive, plus the
+# extra exclusions below for content a consumer of this package doesn't
+# need. Keep in sync with .gitignore if that file changes.
+
+# --- mirrored from .gitignore ---
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+*.iml
+*.ipr
+*.iws
+.idea/
+
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+.codebase-memory/
+
+app.*.symbols
+app.*.map.json
+
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+/example/android/gradle.properties
+/example/android/app.properties
+/example/android/keystore.jks
+
+**/local.properties
+
+/example/build/
+
+# --- ENH-57: additional exclusions, not needed by a consumer ---
+
+# Internal backlog/task-tracking (doc/task/{todo,inprogress,done}), audit
+# findings, and device-smoke evidence logs — this repo's own project
+# management, not package documentation.
+doc/
+
+# Internal planning docs (e.g. skill-authored implementation plans) —
+# historical working notes, not consumer-facing.
+docs/
+
+# Editor/assistant-local settings.
+.claude/

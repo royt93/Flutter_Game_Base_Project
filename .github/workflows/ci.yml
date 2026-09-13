@@ -30,6 +30,8 @@ jobs:
         run: flutter analyze
       - name: Test host (loại nhóm slow cần device)
         run: flutter test --exclude-tags slow
+      - name: Publish artifact hygiene gate (ENH-57, 0 warning bắt buộc)
+        run: dart pub publish --dry-run
       - run: flutter pub get
         working-directory: example
       - name: Analyze example (0 issue bắt buộc)

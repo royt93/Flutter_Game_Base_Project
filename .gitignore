@@ -1,6 +1,12 @@
 # Miscellaneous
 *.class
 *.log
+# ENH-57: these are intentionally checked in (device smoke-test evidence),
+# not accidentally-ignored — un-ignoring them here so `dart pub publish
+# --dry-run` stops flagging a checked-in/gitignore-status mismatch. They're
+# still excluded from the actual published archive via .pubignore's doc/
+# rule.
+!doc/task/evidence/*.log
 *.pyc
 *.swp
 .DS_Store
