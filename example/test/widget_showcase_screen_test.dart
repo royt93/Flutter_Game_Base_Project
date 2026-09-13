@@ -64,12 +64,31 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Taps: 1'), findsOneWidget);
 
-    // ScreenShake demo: tapping "Shake!" starts a decaying shake — just
-    // prove it doesn't throw and eventually settles back down (bounded
-    // pump, not pumpAndSettle, per CLAUDE.md's NeonBg ticker gotcha).
+    // ScreenShake demo: tapping "Shake!" starts a decaying shake — verify
+    // the actual rendered displacement (ScreenShake's own
+    // Transform.translate), not just "no exception": non-zero right after
+    // the shake starts, back to Offset.zero once it's fully decayed
+    // (bounded pump, not pumpAndSettle, per CLAUDE.md's NeonBg ticker
+    // gotcha).
+    Offset shakeOffset() {
+      final translation = tester
+          .widget<Transform>(
+            find.descendant(
+              of: find.byType(ScreenShake),
+              matching: find.byType(Transform),
+            ),
+          )
+          .transform
+          .getTranslation();
+      return Offset(translation.x, translation.y);
+    }
+
     await tester.tap(find.text('Shake!').last);
     await tester.pump(const Duration(milliseconds: 50));
+    expect(shakeOffset(), isNot(Offset.zero));
+
     await tester.pump(const Duration(milliseconds: 500));
+    expect(shakeOffset(), Offset.zero);
     expect(tester.takeException(), isNull);
 
     // ComboHeatBackground demo: tapping "Bump heat" cycles the displayed
@@ -231,6 +250,10 @@ void main() {
     await tester.tapAt(const Offset(10, 10));
     await tester.pump(const Duration(milliseconds: 300));
 
+    // ENH-54: confirm the popup ACTUALLY closed, not just "no exception" —
+    // a regression that stops the barrier tap from dismissing it would
+    // otherwise pass this test silently.
+    expect(find.text('Level Complete!'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

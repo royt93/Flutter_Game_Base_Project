@@ -8,8 +8,11 @@ import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/list_tile_row.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/toggle_switch.dart';
+import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
+import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
 import 'package:roy_casual_kit_example/screens/settings_screen.dart';
+import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Regression net for the base project's two screens. `NeonBg` (used by both)
@@ -49,6 +52,63 @@ void main() {
       expect(find.text('Roy Casual Kit Example'), findsWidgets);
       expect(find.text('Settings'), findsWidgets);
       expect(tester.takeException(), isNull);
+    });
+
+    group('ENH-54: navigation', () {
+      testWidgets('tap "Settings" → điều hướng thật sang SettingsScreen', (
+        tester,
+      ) async {
+        await _boot();
+
+        await tester.pumpWidget(_wrap(const HomeScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.tap(find.widgetWithText(NeonButton, 'Settings').first);
+        for (var i = 0; i < 3; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        // Get.to() pushes SettingsScreen on top — HomeScreen stays mounted
+        // underneath (standard Navigator back-stack behavior, not a bug),
+        // so this only asserts the NEW screen actually arrived.
+        expect(find.byType(SettingsScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets(
+        'tap "Widget Kit" → điều hướng thật sang WidgetShowcaseScreen',
+        (tester) async {
+          await _boot();
+
+          await tester.pumpWidget(_wrap(const HomeScreen()));
+          await tester.pump(const Duration(milliseconds: 100));
+
+          await tester.tap(find.widgetWithText(NeonButton, 'Widget Kit').first);
+          for (var i = 0; i < 3; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+
+          expect(find.byType(WidgetShowcaseScreen), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets('tap "Flame Demo" → điều hướng thật sang GameDemoScreen', (
+        tester,
+      ) async {
+        await _boot();
+
+        await tester.pumpWidget(_wrap(const HomeScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.tap(find.widgetWithText(NeonButton, 'Flame Demo').first);
+        for (var i = 0; i < 3; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(find.byType(GameDemoScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
     });
   });
 
@@ -119,6 +179,82 @@ void main() {
         expect(NeonTheme.dark, isTrue);
         expect(store.getBool(StorageKeys.themeDark, def: false), isTrue);
         expect(tester.widget<CandyToggleSwitch>(darkSwitch).value, isTrue);
+      },
+    );
+  });
+
+  group('ENH-54: _pickLanguage', () {
+    // The sheet's slide-up entrance animation lands its rows far enough
+    // down that a real screen tap can't reliably land on them within a
+    // bounded pump (verified empirically — its AnimationController only
+    // starts ticking on its own first frame, so timing it exactly via
+    // pump(duration) races with NeonBg's already-running permanent Ticker
+    // on the screen underneath). Invoking the row's own `onTap` directly
+    // exercises the exact same production callback `_pickLanguage` wires
+    // up, without depending on the sheet's transition having visually
+    // settled at a precise pixel position.
+    Future<void> tapLocaleRow(WidgetTester tester, String languageCode) async {
+      final tile = tester.widget<CommonListTile>(
+        find.widgetWithText(CommonListTile, languageCode).last,
+      );
+      tile.onTap!();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets(
+      'tap Language row mở bottom sheet, chọn locale khác → LocaleService.current đổi đúng và subtitle cập nhật',
+      (tester) async {
+        final store = await _boot();
+        final localeService = Get.find<LocaleService>();
+        expect(localeService.current.value.languageCode, 'en');
+
+        await tester.pumpWidget(_wrap(const SettingsScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.text('EN'), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(CommonListTile, 'Language'));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Bottom sheet lists 1 CommonListTile per supported locale (EN, VI)
+        // — the current one (EN) is checked, VI isn't yet.
+        expect(find.widgetWithText(CommonListTile, 'VI'), findsOneWidget);
+
+        await tapLocaleRow(tester, 'VI');
+
+        expect(localeService.current.value.languageCode, 'vi');
+        expect(
+          store.getString(StorageKeys.localeCode),
+          AppTranslations.codeOf(const Locale('vi')),
+        );
+        // Sheet closed, subtitle back on SettingsScreen now reads VI.
+        expect(find.byType(SettingsScreen), findsOneWidget);
+        expect(find.text('VI'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'chọn lại đúng locale hiện tại (EN) → không đổi gì, sheet vẫn đóng bình thường',
+      (tester) async {
+        final store = await _boot();
+        final localeService = Get.find<LocaleService>();
+
+        await tester.pumpWidget(_wrap(const SettingsScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.tap(find.widgetWithText(CommonListTile, 'Language'));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tapLocaleRow(tester, 'EN');
+
+        expect(localeService.current.value.languageCode, 'en');
+        expect(
+          store.getString(StorageKeys.localeCode),
+          AppTranslations.codeOf(const Locale('en')),
+        );
+        expect(find.byType(SettingsScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
       },
     );
   });
