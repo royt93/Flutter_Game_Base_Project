@@ -126,29 +126,104 @@ void main() {
       expect(find.byType(Column), findsNothing);
     });
 
-    testWidgets('icon/emptyIcon/color tuỳ chỉnh hiển thị đúng thay vì mặc định', (
+    testWidgets(
+      'icon/emptyIcon/color tuỳ chỉnh hiển thị đúng thay vì mặc định',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            const EnergyBar(
+              currentEnergy: 1,
+              maxEnergy: 2,
+              timeUntilNextEnergy: Duration.zero,
+              icon: Icons.bolt,
+              emptyIcon: Icons.bolt_outlined,
+              color: Colors.purple,
+            ),
+          ),
+        );
+
+        expect(find.byIcon(Icons.bolt), findsOneWidget);
+        expect(find.byIcon(Icons.bolt_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.favorite), findsNothing);
+        expect(find.byIcon(Icons.favorite_border), findsNothing);
+
+        final filledIcon = tester.widget<Icon>(find.byIcon(Icons.bolt));
+        expect(filledIcon.color, Colors.purple);
+      },
+    );
+  });
+
+  group('ENH-37: Semantics', () {
+    testWidgets('label khớp đúng "Energy: N/M" ở 2 trạng thái khác nhau', (
       tester,
     ) async {
+      final handle = tester.ensureSemantics();
       await tester.pumpWidget(
         _wrap(
           const EnergyBar(
-            currentEnergy: 1,
-            maxEnergy: 2,
-            timeUntilNextEnergy: Duration.zero,
-            icon: Icons.bolt,
-            emptyIcon: Icons.bolt_outlined,
-            color: Colors.purple,
+            currentEnergy: 3,
+            maxEnergy: 5,
+            timeUntilNextEnergy: Duration(seconds: 30),
           ),
         ),
       );
 
-      expect(find.byIcon(Icons.bolt), findsOneWidget);
-      expect(find.byIcon(Icons.bolt_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.favorite), findsNothing);
-      expect(find.byIcon(Icons.favorite_border), findsNothing);
+      expect(
+        tester.getSemantics(find.byType(EnergyBar)).label,
+        contains('Energy: 3/5'),
+      );
 
-      final filledIcon = tester.widget<Icon>(find.byIcon(Icons.bolt));
-      expect(filledIcon.color, Colors.purple);
+      await tester.pumpWidget(
+        _wrap(
+          const EnergyBar(
+            currentEnergy: 5,
+            maxEnergy: 5,
+            timeUntilNextEnergy: Duration.zero,
+          ),
+        ),
+      );
+
+      expect(tester.getSemantics(find.byType(EnergyBar)).label, 'Energy: 5/5');
+      handle.dispose();
+    });
+
+    testWidgets('hasInfiniteLives → label "Energy: infinite"', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _wrap(
+          const EnergyBar(
+            currentEnergy: 5,
+            maxEnergy: 5,
+            timeUntilNextEnergy: Duration.zero,
+            hasInfiniteLives: true,
+          ),
+        ),
+      );
+
+      expect(
+        tester.getSemantics(find.byType(EnergyBar)).label,
+        'Energy: infinite',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('semanticLabel tuỳ chỉnh ghi đè đúng label mặc định', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _wrap(
+          const EnergyBar(
+            currentEnergy: 3,
+            maxEnergy: 5,
+            timeUntilNextEnergy: Duration(seconds: 30),
+            semanticLabel: 'Lives: 3',
+          ),
+        ),
+      );
+
+      expect(tester.getSemantics(find.byType(EnergyBar)).label, 'Lives: 3');
+      handle.dispose();
     });
   });
 }

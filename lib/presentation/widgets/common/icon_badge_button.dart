@@ -98,10 +98,23 @@ class _IconBadgeButtonState extends State<IconBadgeButton>
     final enabled = widget.onTap != null;
     final c = enabled ? (widget.color ?? NeonTheme.purple) : NeonTheme.muted;
     final darker = Color.lerp(c, Colors.black, 0.22)!;
+    // ENH-37: appends the badge state so a screen reader hears e.g.
+    // "Notifications, new notification" or "Mail, 12 unread" instead of
+    // just the bare icon label — the badge dot itself is a decorative
+    // colored circle with no meaning to announce on its own.
+    final baseLabel = widget.semanticLabel ?? widget.icon.toString();
+    final label = widget._hasCount
+        ? '$baseLabel, ${widget.badgeCount} unread'
+        : widget.showBadge
+        ? '$baseLabel, new'
+        : baseLabel;
     return Semantics(
       button: true,
       enabled: enabled,
-      label: widget.semanticLabel ?? widget.icon.toString(),
+      label: label,
+      // The count badge's own Text (e.g. "12") would otherwise duplicate
+      // into the merged label alongside the explicit ", N unread" suffix.
+      excludeSemantics: true,
       child: PressableScale(
         onTap: widget.onTap,
         child: SizedBox(
@@ -123,7 +136,11 @@ class _IconBadgeButtonState extends State<IconBadgeButton>
                   border: Border.all(color: darker, width: 3),
                   boxShadow: enabled ? NeonTheme.drop(y: 4, blur: 8) : null,
                 ),
-                child: Icon(widget.icon, color: Colors.white, size: widget.size * 0.5),
+                child: Icon(
+                  widget.icon,
+                  color: Colors.white,
+                  size: widget.size * 0.5,
+                ),
               ),
               if (widget._badgeVisible)
                 Positioned(

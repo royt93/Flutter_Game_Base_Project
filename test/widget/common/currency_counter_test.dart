@@ -4,21 +4,20 @@ import 'package:roy_casual_kit/core/utils/format.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/currency_counter.dart';
 
 void main() {
-  testWidgets(
-    'CurrencyCounter số nhỏ hiển thị qua fmtNum (có dấu phân cách)',
-    (tester) async {
-      const value = 500;
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Material(child: CurrencyCounter(value: value)),
-        ),
-      );
+  testWidgets('CurrencyCounter số nhỏ hiển thị qua fmtNum (có dấu phân cách)', (
+    tester,
+  ) async {
+    const value = 500;
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Material(child: CurrencyCounter(value: value)),
+      ),
+    );
 
-      await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text(fmtNum(value)), findsOneWidget);
-    },
-  );
+    expect(find.text(fmtNum(value)), findsOneWidget);
+  });
 
   testWidgets(
     'CurrencyCounter số lớn (idle-game scale) rút gọn qua fmtNumCompact',
@@ -98,6 +97,57 @@ void main() {
 
       expect(find.text(fmtNum(value)), findsOneWidget);
       expect(find.text(fmtNumCompact(value)), findsNothing);
+    });
+  });
+
+  group('ENH-37: Semantics', () {
+    testWidgets(
+      'label luôn đọc số chính xác (fmtNum) bất kể compact, ở 2 giá trị khác nhau',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(child: CurrencyCounter(value: 1500)),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+
+        expect(
+          tester.getSemantics(find.byType(CurrencyCounter)).label,
+          fmtNum(1500),
+        );
+
+        await tester.pumpWidget(
+          const MaterialApp(home: Material(child: CurrencyCounter(value: 250))),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+
+        expect(
+          tester.getSemantics(find.byType(CurrencyCounter)).label,
+          fmtNum(250),
+        );
+        handle.dispose();
+      },
+    );
+
+    testWidgets('semanticLabel tuỳ chỉnh ghi đè đúng label mặc định', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: CurrencyCounter(value: 100, semanticLabel: 'Gems: 100'),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        tester.getSemantics(find.byType(CurrencyCounter)).label,
+        'Gems: 100',
+      );
+      handle.dispose();
     });
   });
 }

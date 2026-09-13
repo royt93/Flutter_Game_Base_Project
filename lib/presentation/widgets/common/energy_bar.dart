@@ -30,6 +30,7 @@ class EnergyBar extends StatefulWidget {
     this.icon = Icons.favorite,
     this.emptyIcon = Icons.favorite_border,
     this.color,
+    this.semanticLabel,
   });
 
   final int currentEnergy;
@@ -51,6 +52,10 @@ class EnergyBar extends StatefulWidget {
 
   /// Filled pip color — defaults to [NeonTheme.red].
   final Color? color;
+
+  /// Overrides the default "Energy: N/M" (or "Energy: infinite") Semantics
+  /// label (ENH-37).
+  final String? semanticLabel;
 
   @override
   State<EnergyBar> createState() => _EnergyBarState();
@@ -96,6 +101,20 @@ class _EnergyBarState extends State<EnergyBar> {
 
   @override
   Widget build(BuildContext context) {
+    final label =
+        widget.semanticLabel ??
+        (widget.hasInfiniteLives
+            ? 'Energy: infinite'
+            : 'Energy: ${widget.currentEnergy}/${widget.maxEnergy}'
+                  '${widget.currentEnergy < widget.maxEnergy ? ', next in ${fmtDur(_remaining)}' : ''}');
+    return Semantics(
+      label: label,
+      excludeSemantics: true,
+      child: _buildContent(context),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     if (widget.hasInfiniteLives) {
       return Text(
         '∞',
@@ -154,7 +173,10 @@ class _EnergyBarState extends State<EnergyBar> {
         mainAxisSize: MainAxisSize.min,
         children: [
           pips,
-          if (showCountdown) ...[const SizedBox(width: NeonTheme.s8), countdown],
+          if (showCountdown) ...[
+            const SizedBox(width: NeonTheme.s8),
+            countdown,
+          ],
         ],
       );
     }

@@ -13,12 +13,16 @@ class StreakCounter extends StatefulWidget {
     this.icon = Icons.local_fire_department,
     this.color,
     this.fontSize = 18,
+    this.semanticLabel,
   });
 
   final int days;
   final IconData icon;
   final Color? color;
   final double fontSize;
+
+  /// Overrides the default "N day streak" Semantics label (ENH-37).
+  final String? semanticLabel;
 
   @override
   State<StreakCounter> createState() => _StreakCounterState();
@@ -60,33 +64,37 @@ class _StreakCounterState extends State<StreakCounter>
   @override
   Widget build(BuildContext context) {
     final c = widget.color ?? NeonTheme.orange;
-    return AnimatedBuilder(
-      animation: _scale,
-      builder: (context, child) =>
-          Transform.scale(scale: _scale.value, child: child),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(widget.icon, color: c, size: widget.fontSize + 6),
-          const SizedBox(width: 4),
-          // ENH-40: same Flexible+FittedBox pattern as CurrencyCounter —
-          // a large day count at a high textScaleFactor shrinks to fit
-          // instead of overflowing past this Row's parent constraints.
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '${widget.days}',
-                style: TextStyle(
-                  color: NeonTheme.ink,
-                  fontSize: widget.fontSize,
-                  fontWeight: FontWeight.w800,
+    return Semantics(
+      label: widget.semanticLabel ?? '${widget.days} day streak',
+      excludeSemantics: true,
+      child: AnimatedBuilder(
+        animation: _scale,
+        builder: (context, child) =>
+            Transform.scale(scale: _scale.value, child: child),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(widget.icon, color: c, size: widget.fontSize + 6),
+            const SizedBox(width: 4),
+            // ENH-40: same Flexible+FittedBox pattern as CurrencyCounter —
+            // a large day count at a high textScaleFactor shrinks to fit
+            // instead of overflowing past this Row's parent constraints.
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '${widget.days}',
+                  style: TextStyle(
+                    color: NeonTheme.ink,
+                    fontSize: widget.fontSize,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

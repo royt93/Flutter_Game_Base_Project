@@ -15,6 +15,7 @@ class StarRating extends StatefulWidget {
     this.total = 3,
     this.size = 40,
     this.animate = false,
+    this.semanticLabel,
   });
 
   final int earned;
@@ -22,12 +23,14 @@ class StarRating extends StatefulWidget {
   final double size;
   final bool animate;
 
+  /// Overrides the default "N of M stars" Semantics label (ENH-37).
+  final String? semanticLabel;
+
   @override
   State<StarRating> createState() => _StarRatingState();
 }
 
-class _StarRatingState extends State<StarRating>
-    with TickerProviderStateMixin {
+class _StarRatingState extends State<StarRating> with TickerProviderStateMixin {
   AnimationController? _c;
   bool _startedOnce = false;
 
@@ -59,9 +62,9 @@ class _StarRatingState extends State<StarRating>
     if (NeonTheme.reducedMotion(context)) return;
     for (var i = oldWidget.earned; i < widget.earned; i++) {
       (_perStar[i] ??= AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 300),
-      ))
+          vsync: this,
+          duration: const Duration(milliseconds: 300),
+        ))
         ..value = 0.0
         ..forward();
     }
@@ -90,7 +93,10 @@ class _StarRatingState extends State<StarRating>
       );
       final perStar = _perStar[i];
       if (perStar != null) {
-        final anim = CurvedAnimation(parent: perStar, curve: Curves.easeOutBack);
+        final anim = CurvedAnimation(
+          parent: perStar,
+          curve: Curves.easeOutBack,
+        );
         return ScaleTransition(scale: anim, child: star);
       }
       if (_c == null) return star;
@@ -101,14 +107,19 @@ class _StarRatingState extends State<StarRating>
       );
       return ScaleTransition(scale: anim, child: star);
     });
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final s in stars) ...[
-          s,
-          if (s != stars.last) const SizedBox(width: 4),
+    return Semantics(
+      label:
+          widget.semanticLabel ?? '${widget.earned} of ${widget.total} stars',
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final s in stars) ...[
+            s,
+            if (s != stars.last) const SizedBox(width: 4),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

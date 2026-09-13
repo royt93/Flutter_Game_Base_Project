@@ -37,10 +37,7 @@ void main() {
       MaterialApp(
         home: Material(
           child: Center(
-            child: SizedBox(
-              width: 300,
-              child: ProgressBarStars(progress: 1.0),
-            ),
+            child: SizedBox(width: 300, child: ProgressBarStars(progress: 1.0)),
           ),
         ),
       ),
@@ -57,10 +54,7 @@ void main() {
       MaterialApp(
         home: Material(
           child: Center(
-            child: SizedBox(
-              width: 300,
-              child: ProgressBarStars(progress: 0.0),
-            ),
+            child: SizedBox(width: 300, child: ProgressBarStars(progress: 0.0)),
           ),
         ),
       ),
@@ -79,10 +73,7 @@ void main() {
       MaterialApp(
         home: Material(
           child: Center(
-            child: SizedBox(
-              width: 300,
-              child: ProgressBarStars(progress: 0.4),
-            ),
+            child: SizedBox(width: 300, child: ProgressBarStars(progress: 0.4)),
           ),
         ),
       ),
@@ -144,7 +135,10 @@ void main() {
         MaterialApp(
           home: Material(
             child: Center(
-              child: SizedBox(width: 300, child: ProgressBarStars(progress: 0.5)),
+              child: SizedBox(
+                width: 300,
+                child: ProgressBarStars(progress: 0.5),
+              ),
             ),
           ),
         ),
@@ -201,26 +195,85 @@ void main() {
     },
   );
 
-  testWidgets(
-    'ENH-32: Reduce Motion bật → không animate khi vượt ngưỡng',
-    (tester) async {
-      var progress = 0.5;
-      late StateSetter setProgress;
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(disableAnimations: true),
-          child: MaterialApp(
-            home: Material(
-              child: Center(
-                child: SizedBox(
-                  width: 300,
-                  child: StatefulBuilder(
-                    builder: (context, setState) {
-                      setProgress = setState;
-                      return ProgressBarStars(progress: progress);
-                    },
-                  ),
+  testWidgets('ENH-32: Reduce Motion bật → không animate khi vượt ngưỡng', (
+    tester,
+  ) async {
+    var progress = 0.5;
+    late StateSetter setProgress;
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(disableAnimations: true),
+        child: MaterialApp(
+          home: Material(
+            child: Center(
+              child: SizedBox(
+                width: 300,
+                child: StatefulBuilder(
+                  builder: (context, setState) {
+                    setProgress = setState;
+                    return ProgressBarStars(progress: progress);
+                  },
                 ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    setProgress(() => progress = 0.7);
+    await tester.pump();
+
+    expect(find.byIcon(Icons.star_rounded), findsNWidgets(2));
+    expect(tester.takeException(), isNull);
+  });
+
+  group('ENH-37: Semantics', () {
+    testWidgets('label/value phản ánh đúng progress ở 2 mốc khác nhau', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: SizedBox(width: 300, child: ProgressBarStars(progress: 0.3)),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      var data = tester.getSemantics(find.byType(ProgressBarStars));
+      expect(data.label, 'Progress: 30%');
+      expect(data.value, '30%');
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: SizedBox(width: 300, child: ProgressBarStars(progress: 0.9)),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      data = tester.getSemantics(find.byType(ProgressBarStars));
+      expect(data.label, 'Progress: 90%');
+      expect(data.value, '90%');
+      handle.dispose();
+    });
+
+    testWidgets('semanticLabel tuỳ chỉnh ghi đè đúng label mặc định', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: SizedBox(
+              width: 300,
+              child: ProgressBarStars(
+                progress: 0.5,
+                semanticLabel: 'World progress',
               ),
             ),
           ),
@@ -228,11 +281,11 @@ void main() {
       );
       await tester.pump();
 
-      setProgress(() => progress = 0.7);
-      await tester.pump();
-
-      expect(find.byIcon(Icons.star_rounded), findsNWidgets(2));
-      expect(tester.takeException(), isNull);
-    },
-  );
+      expect(
+        tester.getSemantics(find.byType(ProgressBarStars)).label,
+        'World progress',
+      );
+      handle.dispose();
+    });
+  });
 }

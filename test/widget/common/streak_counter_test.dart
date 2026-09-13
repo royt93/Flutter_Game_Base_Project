@@ -14,9 +14,7 @@ void main() {
     expect(find.text('7'), findsOneWidget);
     expect(find.byIcon(Icons.local_fire_department), findsOneWidget);
 
-    final icon = tester.widget<Icon>(
-      find.byIcon(Icons.local_fire_department),
-    );
+    final icon = tester.widget<Icon>(find.byIcon(Icons.local_fire_department));
     expect(icon.color, NeonTheme.orange);
 
     expect(tester.takeException(), isNull);
@@ -46,10 +44,7 @@ void main() {
   });
 
   Transform scaleTransformOf(WidgetTester tester) => tester.widget<Transform>(
-    find.ancestor(
-      of: find.byType(Row),
-      matching: find.byType(Transform),
-    ),
+    find.ancestor(of: find.byType(Row), matching: find.byType(Transform)),
   );
 
   // `Matrix4.getMaxScaleOnAxis()` không phản ánh đúng hệ số scale thuần
@@ -130,10 +125,7 @@ void main() {
           data: const MediaQueryData(textScaler: TextScaler.linear(3.0)),
           child: MaterialApp(
             home: Material(
-              child: SizedBox(
-                width: 80,
-                child: StreakCounter(days: 999999),
-              ),
+              child: SizedBox(width: 80, child: StreakCounter(days: 999999)),
             ),
           ),
         ),
@@ -143,4 +135,49 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('ENH-37: Semantics', () {
+    testWidgets('label khớp đúng "N day streak" ở 2 giá trị days khác nhau', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(home: Material(child: StreakCounter(days: 1))),
+      );
+
+      expect(
+        tester.getSemantics(find.byType(StreakCounter)).label,
+        '1 day streak',
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(home: Material(child: StreakCounter(days: 7))),
+      );
+
+      expect(
+        tester.getSemantics(find.byType(StreakCounter)).label,
+        '7 day streak',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('semanticLabel tuỳ chỉnh ghi đè đúng label mặc định', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: StreakCounter(days: 5, semanticLabel: 'Hot streak: 5'),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getSemantics(find.byType(StreakCounter)).label,
+        'Hot streak: 5',
+      );
+      handle.dispose();
+    });
+  });
 }

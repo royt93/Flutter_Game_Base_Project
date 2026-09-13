@@ -151,4 +151,50 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('ENH-37: Semantics đọc đúng trạng thái badge', () {
+    testWidgets('showBadge: true → label thêm ", new"', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: IconBadgeButton(
+              icon: Icons.notifications,
+              semanticLabel: 'Notifications',
+              showBadge: true,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getSemantics(find.byType(IconBadgeButton)).label,
+        'Notifications, new',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('badgeCount: 12 → label thêm ", 12 unread"', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: IconBadgeButton(
+              icon: Icons.mail,
+              semanticLabel: 'Mail',
+              badgeCount: 12,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getSemantics(find.byType(IconBadgeButton)).label,
+        'Mail, 12 unread',
+      );
+      handle.dispose();
+    });
+  });
 }

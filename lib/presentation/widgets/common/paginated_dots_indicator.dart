@@ -15,6 +15,7 @@ class PaginatedDotsIndicator extends StatelessWidget {
     this.dotSize = 8,
     this.activeDotSize = 12,
     this.spacing = 8,
+    this.semanticLabel,
   }) : assert(count > 0, 'count must be positive');
 
   final int count;
@@ -24,29 +25,36 @@ class PaginatedDotsIndicator extends StatelessWidget {
   final double activeDotSize;
   final double spacing;
 
+  /// Overrides the default "Page N of M" Semantics label (ENH-37).
+  final String? semanticLabel;
+
   @override
   Widget build(BuildContext context) {
     final c = color ?? NeonTheme.purple;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < count; i++)
-          Padding(
-            padding: EdgeInsets.only(right: i == count - 1 ? 0 : spacing),
-            child: AnimatedContainer(
-              duration: NeonTheme.reducedMotion(context)
-                  ? Duration.zero
-                  : const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              width: i == currentIndex ? activeDotSize : dotSize,
-              height: i == currentIndex ? activeDotSize : dotSize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: i == currentIndex ? c : c.withValues(alpha: 0.35),
+    return Semantics(
+      label: semanticLabel ?? 'Page ${currentIndex + 1} of $count',
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < count; i++)
+            Padding(
+              padding: EdgeInsets.only(right: i == count - 1 ? 0 : spacing),
+              child: AnimatedContainer(
+                duration: NeonTheme.reducedMotion(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                width: i == currentIndex ? activeDotSize : dotSize,
+                height: i == currentIndex ? activeDotSize : dotSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i == currentIndex ? c : c.withValues(alpha: 0.35),
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

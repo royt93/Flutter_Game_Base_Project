@@ -4,12 +4,12 @@ import 'package:roy_casual_kit/core/utils/format.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/countdown_chip.dart';
 
 void main() {
-  testWidgets('counts down every second, formatted via fmtDur', (
-    tester,
-  ) async {
+  testWidgets('counts down every second, formatted via fmtDur', (tester) async {
     final target = DateTime.now().add(const Duration(seconds: 3));
     await tester.pumpWidget(
-      MaterialApp(home: Material(child: CountdownChip(target: target))),
+      MaterialApp(
+        home: Material(child: CountdownChip(target: target)),
+      ),
     );
 
     expect(find.text(fmtDur(const Duration(seconds: 3))), findsOneWidget);
@@ -54,7 +54,9 @@ void main() {
   ) async {
     final target = DateTime.now().add(const Duration(seconds: 5));
     await tester.pumpWidget(
-      MaterialApp(home: Material(child: CountdownChip(target: target))),
+      MaterialApp(
+        home: Material(child: CountdownChip(target: target)),
+      ),
     );
     await tester.pump(const Duration(seconds: 1));
 
@@ -105,7 +107,8 @@ void main() {
         expect(
           find.text(fmtDur(const Duration(seconds: 3))),
           findsOneWidget,
-          reason: 'phải nhận target mới ngay lập tức, không đợi rebuild toàn bộ',
+          reason:
+              'phải nhận target mới ngay lập tức, không đợi rebuild toàn bộ',
         );
 
         await tester.pump(const Duration(seconds: 1));
@@ -193,34 +196,87 @@ void main() {
       },
     );
 
-    testWidgets('setState của cha không đổi target → không reset/restart timer thừa', (
+    testWidgets(
+      'setState của cha không đổi target → không reset/restart timer thừa',
+      (tester) async {
+        final target = DateTime.now().add(const Duration(seconds: 5));
+        var unrelated = 0.0;
+        late StateSetter setLocalState;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  setLocalState = setState;
+                  return CountdownChip(
+                    target: target,
+                    fontSize: 14 + unrelated,
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump(const Duration(seconds: 2));
+        expect(find.text(fmtDur(const Duration(seconds: 3))), findsOneWidget);
+
+        setLocalState(() => unrelated = 1);
+        await tester.pump();
+
+        // Cùng target → didUpdateWidget phải no-op, không nhảy lại về 5s.
+        expect(find.text(fmtDur(const Duration(seconds: 3))), findsOneWidget);
+      },
+    );
+  });
+
+  group('ENH-37: Semantics', () {
+    testWidgets(
+      'label phản ánh đúng thời gian còn lại ở 2 mốc khác nhau, không phải liveRegion',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        final target = DateTime.now().add(const Duration(seconds: 10));
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(child: CountdownChip(target: target)),
+          ),
+        );
+        await tester.pump();
+
+        var data = tester.getSemantics(find.byType(CountdownChip));
+        expect(data.label, contains(fmtDur(const Duration(seconds: 10))));
+        expect(data.getSemanticsData().flagsCollection.isLiveRegion, isFalse);
+
+        await tester.pump(const Duration(seconds: 4));
+        data = tester.getSemantics(find.byType(CountdownChip));
+        expect(data.label, contains(fmtDur(const Duration(seconds: 6))));
+        handle.dispose();
+      },
+    );
+
+    testWidgets('semanticLabel tuỳ chỉnh ghi đè đúng label mặc định', (
       tester,
     ) async {
-      final target = DateTime.now().add(const Duration(seconds: 5));
-      var unrelated = 0.0;
-      late StateSetter setLocalState;
-
+      final handle = tester.ensureSemantics();
+      final target = DateTime.now().add(const Duration(seconds: 10));
       await tester.pumpWidget(
         MaterialApp(
           home: Material(
-            child: StatefulBuilder(
-              builder: (context, setState) {
-                setLocalState = setState;
-                return CountdownChip(target: target, fontSize: 14 + unrelated);
-              },
+            child: CountdownChip(
+              target: target,
+              semanticLabel: 'Sale ends soon',
             ),
           ),
         ),
       );
-
-      await tester.pump(const Duration(seconds: 2));
-      expect(find.text(fmtDur(const Duration(seconds: 3))), findsOneWidget);
-
-      setLocalState(() => unrelated = 1);
       await tester.pump();
 
-      // Cùng target → didUpdateWidget phải no-op, không nhảy lại về 5s.
-      expect(find.text(fmtDur(const Duration(seconds: 3))), findsOneWidget);
+      expect(
+        tester.getSemantics(find.byType(CountdownChip)).label,
+        'Sale ends soon',
+      );
+      handle.dispose();
     });
   });
 }

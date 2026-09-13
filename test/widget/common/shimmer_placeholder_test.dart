@@ -96,4 +96,16 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('ENH-37: có Semantics label "Loading", excludeSemantics', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      const MaterialApp(home: Material(child: ShimmerPlaceholder())),
+    );
+
+    expect(find.bySemanticsLabel('Loading'), findsOneWidget);
+    handle.dispose();
+  });
 }

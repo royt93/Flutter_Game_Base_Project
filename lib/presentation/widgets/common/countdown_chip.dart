@@ -18,6 +18,7 @@ class CountdownChip extends StatefulWidget {
     this.icon = Icons.timer_outlined,
     this.color,
     this.fontSize = 14,
+    this.semanticLabel,
   });
 
   /// The moment the countdown reaches zero.
@@ -29,6 +30,12 @@ class CountdownChip extends StatefulWidget {
   final IconData icon;
   final Color? color;
   final double fontSize;
+
+  /// Overrides the default "Time remaining: mm:ss" Semantics label
+  /// (ENH-37). Deliberately NOT a liveRegion — this ticks every second, and
+  /// a liveRegion would re-announce it once per second, which is spam, not
+  /// help — a screen reader user reads it on demand like any other label.
+  final String? semanticLabel;
 
   @override
   State<CountdownChip> createState() => _CountdownChipState();
@@ -118,27 +125,31 @@ class _CountdownChipState extends State<CountdownChip> {
   @override
   Widget build(BuildContext context) {
     final c = widget.color ?? NeonTheme.red;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: NeonTheme.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: c, width: 2),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(widget.icon, color: c, size: widget.fontSize + 4),
-          const SizedBox(width: 4),
-          Text(
-            fmtDur(_remaining),
-            style: TextStyle(
-              color: NeonTheme.ink,
-              fontSize: widget.fontSize,
-              fontWeight: FontWeight.w800,
+    return Semantics(
+      label: widget.semanticLabel ?? 'Time remaining: ${fmtDur(_remaining)}',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: NeonTheme.card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: c, width: 2),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(widget.icon, color: c, size: widget.fontSize + 4),
+            const SizedBox(width: 4),
+            Text(
+              fmtDur(_remaining),
+              style: TextStyle(
+                color: NeonTheme.ink,
+                fontSize: widget.fontSize,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

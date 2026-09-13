@@ -15,6 +15,7 @@ class CurrencyCounter extends StatefulWidget {
     this.color,
     this.fontSize = 18,
     this.compact = true,
+    this.semanticLabel,
   });
 
   final int value;
@@ -27,6 +28,11 @@ class CurrencyCounter extends StatefulWidget {
   /// separator, e.g. `"1,500"`) — for games that only want to compact
   /// truly large numbers, not every currency display.
   final bool compact;
+
+  /// Overrides the default Semantics label (ENH-37), which otherwise reads
+  /// the exact (never-compacted) value via [fmtNum] regardless of
+  /// [compact] — a screen reader should always hear the precise amount.
+  final String? semanticLabel;
 
   @override
   State<CurrencyCounter> createState() => _CurrencyCounterState();
@@ -55,33 +61,38 @@ class _CurrencyCounterState extends State<CurrencyCounter> {
   @override
   Widget build(BuildContext context) {
     final c = widget.color ?? NeonTheme.gold;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(widget.icon, color: c, size: widget.fontSize + 6),
-        const SizedBox(width: 4),
-        Flexible(
-          child: TweenAnimationBuilder<int>(
-            tween: IntTween(begin: _from, end: _to),
-            duration: NeonTheme.reducedMotion(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 500),
-            curve: Curves.easeOut,
-            builder: (context, n, _) => FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                widget.compact ? fmtNumCompact(n) : fmtNum(n),
-                style: TextStyle(
-                  color: NeonTheme.ink,
-                  fontSize: widget.fontSize,
-                  fontWeight: FontWeight.w800,
+    return Semantics(
+      label: widget.semanticLabel ?? fmtNum(widget.value),
+      liveRegion: true,
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(widget.icon, color: c, size: widget.fontSize + 6),
+          const SizedBox(width: 4),
+          Flexible(
+            child: TweenAnimationBuilder<int>(
+              tween: IntTween(begin: _from, end: _to),
+              duration: NeonTheme.reducedMotion(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 500),
+              curve: Curves.easeOut,
+              builder: (context, n, _) => FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  widget.compact ? fmtNumCompact(n) : fmtNum(n),
+                  style: TextStyle(
+                    color: NeonTheme.ink,
+                    fontSize: widget.fontSize,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

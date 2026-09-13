@@ -132,10 +132,7 @@ void main() {
           matching: find.byType(SlideTransition),
         ),
       );
-      expect(
-        slideTransition.position.value.dy,
-        lessThanOrEqualTo(0.001),
-      );
+      expect(slideTransition.position.value.dy, lessThanOrEqualTo(0.001));
 
       // Dọn hết timer/ticker còn lại trước khi test kết thúc, tránh leak
       // sang test sau.
@@ -149,7 +146,9 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Material(child: Center(child: ToastBanner(message: 'Hi'))),
+        home: Material(
+          child: Center(child: ToastBanner(message: 'Hi')),
+        ),
       ),
     );
 
@@ -164,16 +163,15 @@ void main() {
       final handle = tester.ensureSemantics();
       await tester.pumpWidget(
         const MaterialApp(
-          home: Material(child: Center(child: ToastBanner(message: 'Hi'))),
+          home: Material(
+            child: Center(child: ToastBanner(message: 'Hi')),
+          ),
         ),
       );
 
       final data = tester.getSemantics(find.byType(ToastBanner));
       expect(data.label, 'Hi');
-      expect(
-        data.getSemanticsData().flagsCollection.isLiveRegion,
-        isTrue,
-      );
+      expect(data.getSemanticsData().flagsCollection.isLiveRegion, isTrue);
       handle.dispose();
     });
 

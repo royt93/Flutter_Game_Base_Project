@@ -8,9 +8,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Material(child: StarRating(earned: 2, total: 3)),
-      ),
+      const MaterialApp(home: Material(child: StarRating(earned: 2, total: 3))),
     );
 
     expect(find.byIcon(Icons.star_rounded), findsNWidgets(2));
@@ -37,9 +35,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Material(
-          child: StarRating(earned: 3, total: 3, animate: true),
-        ),
+        home: Material(child: StarRating(earned: 3, total: 3, animate: true)),
       ),
     );
 
@@ -81,9 +77,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Material(child: StarRating(earned: 0, total: 3)),
-      ),
+      const MaterialApp(home: Material(child: StarRating(earned: 0, total: 3))),
     );
 
     expect(find.byIcon(Icons.star_rounded), findsNothing);
@@ -135,7 +129,10 @@ void main() {
         expect(scaleOfNthIcon(tester, Icons.star_rounded, 1), 0.0);
 
         await tester.pump(const Duration(milliseconds: 300));
-        expect(scaleOfNthIcon(tester, Icons.star_rounded, 1), closeTo(1.0, 0.001));
+        expect(
+          scaleOfNthIcon(tester, Icons.star_rounded, 1),
+          closeTo(1.0, 0.001),
+        );
         expect(tester.takeException(), isNull);
       },
     );
@@ -169,63 +166,72 @@ void main() {
 
         await tester.pump(const Duration(milliseconds: 300));
         for (var i = 0; i < 3; i++) {
-          expect(scaleOfNthIcon(tester, Icons.star_rounded, i), closeTo(1.0, 0.001));
+          expect(
+            scaleOfNthIcon(tester, Icons.star_rounded, i),
+            closeTo(1.0, 0.001),
+          );
         }
         expect(tester.takeException(), isNull);
       },
     );
 
-    testWidgets('earned GIẢM lúc runtime → không trigger pop-in nào (chỉ snap)', (
-      tester,
-    ) async {
-      var earned = 2;
-      late StateSetter setLocalState;
+    testWidgets(
+      'earned GIẢM lúc runtime → không trigger pop-in nào (chỉ snap)',
+      (tester) async {
+        var earned = 2;
+        late StateSetter setLocalState;
 
-      await tester.pumpWidget(
-        StatefulBuilder(
-          builder: (context, setState) {
-            setLocalState = setState;
-            return MaterialApp(
-              home: Material(child: StarRating(earned: earned, total: 3)),
-            );
-          },
-        ),
-      );
+        await tester.pumpWidget(
+          StatefulBuilder(
+            builder: (context, setState) {
+              setLocalState = setState;
+              return MaterialApp(
+                home: Material(child: StarRating(earned: earned, total: 3)),
+              );
+            },
+          ),
+        );
 
-      setLocalState(() => earned = 0);
-      await tester.pump();
+        setLocalState(() => earned = 0);
+        await tester.pump();
 
-      expect(find.byType(ScaleTransition), findsNothing);
-      expect(find.byIcon(Icons.star_rounded), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.byType(ScaleTransition), findsNothing);
+        expect(find.byIcon(Icons.star_rounded), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('earned không đổi (rebuild vì lý do khác) → không trigger pop-in thừa', (
-      tester,
-    ) async {
-      const earned = 2;
-      var unrelated = 0.0;
-      late StateSetter setLocalState;
+    testWidgets(
+      'earned không đổi (rebuild vì lý do khác) → không trigger pop-in thừa',
+      (tester) async {
+        const earned = 2;
+        var unrelated = 0.0;
+        late StateSetter setLocalState;
 
-      await tester.pumpWidget(
-        StatefulBuilder(
-          builder: (context, setState) {
-            setLocalState = setState;
-            return MaterialApp(
-              home: Material(
-                child: StarRating(earned: earned, total: 3, size: 40 + unrelated),
-              ),
-            );
-          },
-        ),
-      );
+        await tester.pumpWidget(
+          StatefulBuilder(
+            builder: (context, setState) {
+              setLocalState = setState;
+              return MaterialApp(
+                home: Material(
+                  child: StarRating(
+                    earned: earned,
+                    total: 3,
+                    size: 40 + unrelated,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
 
-      setLocalState(() => unrelated = 1);
-      await tester.pump();
+        setLocalState(() => unrelated = 1);
+        await tester.pump();
 
-      expect(find.byType(ScaleTransition), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.byType(ScaleTransition), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets(
       'Reduce Motion bật → earned tăng lúc runtime KHÔNG pop-in, chỉ snap tĩnh',
@@ -255,5 +261,51 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+  });
+
+  group('ENH-37: Semantics', () {
+    testWidgets('label khớp đúng "N of M stars" ở 2 giá trị earned khác nhau', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: StarRating(earned: 1, total: 3)),
+        ),
+      );
+
+      expect(
+        tester.getSemantics(find.byType(StarRating)).label,
+        '1 of 3 stars',
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: StarRating(earned: 3, total: 3)),
+        ),
+      );
+
+      expect(
+        tester.getSemantics(find.byType(StarRating)).label,
+        '3 of 3 stars',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('semanticLabel tuỳ chỉnh ghi đè đúng label mặc định', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: StarRating(earned: 2, total: 3, semanticLabel: 'Great job!'),
+          ),
+        ),
+      );
+
+      expect(tester.getSemantics(find.byType(StarRating)).label, 'Great job!');
+      handle.dispose();
+    });
   });
 }

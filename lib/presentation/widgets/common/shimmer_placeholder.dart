@@ -67,17 +67,24 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
         // t sweeps the highlight band from fully off-left to fully off-right
         // of the box, then loops.
         final t = _controller.value;
-        return Container(
-          width: widget.width,
-          height: widget.height,
-          decoration: BoxDecoration(
-            color: base,
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            gradient: LinearGradient(
-              begin: Alignment(-3 + 6 * t, 0),
-              end: Alignment(-1 + 6 * t, 0),
-              colors: [base, highlight, base],
-              stops: const [0.0, 0.5, 1.0],
+        // ENH-37: a single "Loading" node per placeholder instead of
+        // silence — excludeSemantics since the block itself carries no
+        // real content/descendants worth exposing individually.
+        return Semantics(
+          label: 'Loading',
+          excludeSemantics: true,
+          child: Container(
+            width: widget.width,
+            height: widget.height,
+            decoration: BoxDecoration(
+              color: base,
+              borderRadius: BorderRadius.circular(widget.borderRadius),
+              gradient: LinearGradient(
+                begin: Alignment(-3 + 6 * t, 0),
+                end: Alignment(-1 + 6 * t, 0),
+                colors: [base, highlight, base],
+                stops: const [0.0, 0.5, 1.0],
+              ),
             ),
           ),
         );
