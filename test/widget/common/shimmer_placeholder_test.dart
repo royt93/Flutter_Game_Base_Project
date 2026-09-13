@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/shimmer_placeholder.dart';
 
 BoxDecoration _decorationOf(WidgetTester tester) {
@@ -107,5 +108,66 @@ void main() {
 
     expect(find.bySemanticsLabel('Loading'), findsOneWidget);
     handle.dispose();
+  });
+
+  group('ENH-49: shape/baseColor/highlightColor', () {
+    testWidgets(
+      'không truyền → giữ nguyên default cũ (rectangle, borderRadius, cardAlt/card)',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(home: Material(child: ShimmerPlaceholder())),
+        );
+
+        final decoration = _decorationOf(tester);
+        expect(decoration.shape, BoxShape.rectangle);
+        expect(decoration.borderRadius, BorderRadius.circular(8));
+        expect(decoration.color, NeonTheme.cardAlt);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'shape: BoxShape.circle → decoration là hình tròn, KHÔNG có borderRadius (tránh assertion lỗi)',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: ShimmerPlaceholder(
+                width: 48,
+                height: 48,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        );
+
+        final decoration = _decorationOf(tester);
+        expect(decoration.shape, BoxShape.circle);
+        expect(decoration.borderRadius, isNull);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'baseColor/highlightColor tuỳ chỉnh → áp dụng đúng vào color/gradient',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: ShimmerPlaceholder(
+                baseColor: Colors.indigo,
+                highlightColor: Colors.amber,
+              ),
+            ),
+          ),
+        );
+
+        final decoration = _decorationOf(tester);
+        expect(decoration.color, Colors.indigo);
+        final gradient = decoration.gradient! as LinearGradient;
+        expect(gradient.colors, [Colors.indigo, Colors.amber, Colors.indigo]);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

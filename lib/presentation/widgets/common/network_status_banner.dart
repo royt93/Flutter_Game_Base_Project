@@ -22,11 +22,15 @@ class NetworkStatusBanner extends StatelessWidget {
     required this.connected,
     this.offlineMessage = 'No internet connection',
     this.duration = const Duration(milliseconds: 250),
+    this.color,
   });
 
   final bool connected;
   final String offlineMessage;
   final Duration duration;
+
+  /// Banner background color. Defaults to [NeonTheme.red] (ENH-49).
+  final Color? color;
 
   /// Same widget, driven by a `Stream<bool>` instead of a plain bool.
   static Widget stream({
@@ -35,6 +39,7 @@ class NetworkStatusBanner extends StatelessWidget {
     bool initialConnected = true,
     String offlineMessage = 'No internet connection',
     Duration duration = const Duration(milliseconds: 250),
+    Color? color,
   }) {
     return StreamBuilder<bool>(
       initialData: initialConnected,
@@ -44,6 +49,7 @@ class NetworkStatusBanner extends StatelessWidget {
         connected: snapshot.data ?? initialConnected,
         offlineMessage: offlineMessage,
         duration: duration,
+        color: color,
       ),
     );
   }
@@ -77,7 +83,7 @@ class NetworkStatusBanner extends StatelessWidget {
                 excludeSemantics: true,
                 child: Container(
                   width: double.infinity,
-                  color: NeonTheme.red,
+                  color: color ?? NeonTheme.red,
                   child: SafeArea(
                     bottom: false,
                     child: Padding(

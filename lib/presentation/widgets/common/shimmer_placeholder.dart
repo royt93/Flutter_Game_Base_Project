@@ -17,12 +17,28 @@ class ShimmerPlaceholder extends StatefulWidget {
     this.height = 16,
     this.borderRadius = 8,
     this.duration = const Duration(milliseconds: 1200),
+    this.shape = BoxShape.rectangle,
+    this.baseColor,
+    this.highlightColor,
   });
 
   final double? width;
   final double height;
+
+  /// Ignored when [shape] is [BoxShape.circle] — `BoxDecoration` doesn't
+  /// allow both a shape and a corner radius at once.
   final double borderRadius;
   final Duration duration;
+
+  /// Defaults to [BoxShape.rectangle] (the original look). [BoxShape.circle]
+  /// is handy for an avatar-shaped skeleton (ENH-49).
+  final BoxShape shape;
+
+  /// Base (resting) block color. Defaults to [NeonTheme.cardAlt].
+  final Color? baseColor;
+
+  /// Color of the sweeping highlight band. Defaults to [NeonTheme.card].
+  final Color? highlightColor;
 
   @override
   State<ShimmerPlaceholder> createState() => _ShimmerPlaceholderState();
@@ -59,8 +75,8 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
 
   @override
   Widget build(BuildContext context) {
-    final base = NeonTheme.cardAlt;
-    final highlight = NeonTheme.card;
+    final base = widget.baseColor ?? NeonTheme.cardAlt;
+    final highlight = widget.highlightColor ?? NeonTheme.card;
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
@@ -78,7 +94,12 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
             height: widget.height,
             decoration: BoxDecoration(
               color: base,
-              borderRadius: BorderRadius.circular(widget.borderRadius),
+              shape: widget.shape,
+              // BoxDecoration forbids setting both `shape` and
+              // `borderRadius` — a circle has no independent corner radius.
+              borderRadius: widget.shape == BoxShape.circle
+                  ? null
+                  : BorderRadius.circular(widget.borderRadius),
               gradient: LinearGradient(
                 begin: Alignment(-3 + 6 * t, 0),
                 end: Alignment(-1 + 6 * t, 0),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/network_status_banner.dart';
 
 void main() {
@@ -189,5 +190,67 @@ void main() {
       expect(find.bySemanticsLabel('Mất kết nối mạng'), findsNothing);
       handle.dispose();
     });
+  });
+
+  group('ENH-49: color', () {
+    Container bannerContainer(WidgetTester tester) => tester.widget<Container>(
+      find.ancestor(
+        of: find.text('No internet connection'),
+        matching: find.byType(Container),
+      ),
+    );
+
+    testWidgets('không truyền → giữ nguyên default cũ NeonTheme.red', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: NetworkStatusBanner(connected: false)),
+        ),
+      );
+      await tester.pump();
+
+      expect(bannerContainer(tester).color, NeonTheme.red);
+    });
+
+    testWidgets('truyền color tuỳ chỉnh → banner dùng đúng màu đó', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: NetworkStatusBanner(connected: false, color: Colors.teal),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(bannerContainer(tester).color, Colors.teal);
+      expect(bannerContainer(tester).color, isNot(NeonTheme.red));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'NetworkStatusBanner.stream cũng forward đúng color xuống banner',
+      (tester) async {
+        final controller = StreamController<bool>();
+        addTearDown(controller.close);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: NetworkStatusBanner.stream(
+                connected: controller.stream,
+                initialConnected: false,
+                color: Colors.deepOrange,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(bannerContainer(tester).color, Colors.deepOrange);
+      },
+    );
   });
 }

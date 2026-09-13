@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/loading_overlay.dart';
 
 void main() {
@@ -94,5 +95,56 @@ void main() {
       expect(find.bySemanticsLabel('Loading'), findsOneWidget);
       handle.dispose();
     });
+  });
+
+  group('ENH-49: color/backgroundColor', () {
+    testWidgets('không truyền → giữ nguyên default cũ (magenta/purple mờ)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: Stack(children: [LoadingOverlay()])),
+        ),
+      );
+
+      final spinner = tester.widget<CircularProgressIndicator>(
+        find.byType(CircularProgressIndicator),
+      );
+      expect(
+        (spinner.valueColor! as AlwaysStoppedAnimation<Color?>).value,
+        NeonTheme.magenta,
+      );
+      expect(spinner.backgroundColor, NeonTheme.purple.withValues(alpha: 0.3));
+    });
+
+    testWidgets(
+      'truyền color/backgroundColor tuỳ chỉnh → spinner dùng đúng 2 màu đó',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: Stack(
+                children: [
+                  LoadingOverlay(
+                    color: Colors.teal,
+                    backgroundColor: Colors.brown,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        final spinner = tester.widget<CircularProgressIndicator>(
+          find.byType(CircularProgressIndicator),
+        );
+        expect(
+          (spinner.valueColor! as AlwaysStoppedAnimation<Color?>).value,
+          Colors.teal,
+        );
+        expect(spinner.backgroundColor, Colors.brown);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

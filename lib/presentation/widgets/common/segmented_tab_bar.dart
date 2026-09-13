@@ -12,6 +12,7 @@ class SegmentedTabBar extends StatelessWidget {
     required this.labels,
     required this.selectedIndex,
     required this.onChanged,
+    this.activeColor,
   }) : assert(
          labels.length >= 2 && labels.length <= 4,
          'SegmentedTabBar supports 2-4 segments',
@@ -21,8 +22,15 @@ class SegmentedTabBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
 
+  /// Color of the sliding active-segment pill. Defaults to [NeonTheme.cyan]
+  /// — nullable for the same reason as the rest of the kit's color params
+  /// (a `NeonTheme` color field is no longer a compile-time constant, so it
+  /// can't be a `const` constructor default value) (ENH-49).
+  final Color? activeColor;
+
   @override
   Widget build(BuildContext context) {
+    final activeColor = this.activeColor ?? NeonTheme.cyan;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -54,10 +62,10 @@ class SegmentedTabBar extends StatelessWidget {
                   width: segW,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: NeonTheme.cyan,
+                    color: activeColor,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: NeonTheme.glow(
-                      NeonTheme.cyan,
+                      activeColor,
                       blur: 10,
                       spread: 0.5,
                       intensity: 0.5,

@@ -1,34 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/segmented_tab_bar.dart';
 
 void main() {
-  testWidgets('SegmentedTabBar hiển thị đủ label và bấm vào tab gọi onChanged đúng index', (
-    tester,
-  ) async {
-    var selected = 0;
+  testWidgets(
+    'SegmentedTabBar hiển thị đủ label và bấm vào tab gọi onChanged đúng index',
+    (tester) async {
+      var selected = 0;
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Material(
-          child: SegmentedTabBar(
-            labels: const ['Easy', 'Medium', 'Hard'],
-            selectedIndex: selected,
-            onChanged: (i) => selected = i,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: SegmentedTabBar(
+              labels: const ['Easy', 'Medium', 'Hard'],
+              selectedIndex: selected,
+              onChanged: (i) => selected = i,
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    expect(find.text('Easy'), findsOneWidget);
-    expect(find.text('Medium'), findsOneWidget);
-    expect(find.text('Hard'), findsOneWidget);
+      expect(find.text('Easy'), findsOneWidget);
+      expect(find.text('Medium'), findsOneWidget);
+      expect(find.text('Hard'), findsOneWidget);
 
-    await tester.tap(find.text('Hard'));
-    await tester.pump();
+      await tester.tap(find.text('Hard'));
+      await tester.pump();
 
-    expect(selected, 2);
-  });
+      expect(selected, 2);
+    },
+  );
 
   testWidgets('SegmentedTabBar đánh dấu đúng segment đang chọn qua Semantics', (
     tester,
@@ -164,28 +166,27 @@ void main() {
       ),
     );
 
-    testWidgets(
-      'LTR: selectedIndex đầu tiên → pill nằm sát bên trái',
-      (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Material(
-              child: SizedBox(
-                width: 300,
-                child: SegmentedTabBar(
-                  labels: const ['A', 'B', 'C'],
-                  selectedIndex: 0,
-                  onChanged: (_) {},
-                ),
+    testWidgets('LTR: selectedIndex đầu tiên → pill nằm sát bên trái', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: SizedBox(
+              width: 300,
+              child: SegmentedTabBar(
+                labels: const ['A', 'B', 'C'],
+                selectedIndex: 0,
+                onChanged: (_) {},
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        final barRect = tester.getRect(find.byType(SegmentedTabBar));
-        expect(pillRect(tester).left - barRect.left, lessThan(10));
-      },
-    );
+      final barRect = tester.getRect(find.byType(SegmentedTabBar));
+      expect(pillRect(tester).left - barRect.left, lessThan(10));
+    });
 
     testWidgets(
       'RTL: cùng selectedIndex đầu tiên → pill nằm sát bên phải (đảo ngược so với LTR)',
@@ -213,5 +214,60 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+  });
+
+  group('ENH-49: activeColor', () {
+    testWidgets('không truyền → pill dùng màu mặc định NeonTheme.cyan', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: SegmentedTabBar(
+              labels: const ['A', 'B'],
+              selectedIndex: 0,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      final pill = tester.widget<Container>(
+        find.descendant(
+          of: find.byType(AnimatedAlign),
+          matching: find.byType(Container),
+        ),
+      );
+      final decoration = pill.decoration as BoxDecoration;
+      expect(decoration.color, NeonTheme.cyan);
+    });
+
+    testWidgets('truyền activeColor tuỳ chỉnh → pill dùng đúng màu đó', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: SegmentedTabBar(
+              labels: const ['A', 'B'],
+              selectedIndex: 0,
+              onChanged: (_) {},
+              activeColor: NeonTheme.lime,
+            ),
+          ),
+        ),
+      );
+
+      final pill = tester.widget<Container>(
+        find.descendant(
+          of: find.byType(AnimatedAlign),
+          matching: find.byType(Container),
+        ),
+      );
+      final decoration = pill.decoration as BoxDecoration;
+      expect(decoration.color, NeonTheme.lime);
+      expect(decoration.color, isNot(NeonTheme.cyan));
+      expect(tester.takeException(), isNull);
+    });
   });
 }

@@ -12,10 +12,22 @@ import '../../../core/neon_theme.dart';
 /// global overlay slot to manage, the caller's own reactive flag already is
 /// the show/hide switch.
 class LoadingOverlay extends StatelessWidget {
-  const LoadingOverlay({super.key, this.message});
+  const LoadingOverlay({
+    super.key,
+    this.message,
+    this.color,
+    this.backgroundColor,
+  });
 
   /// Optional short label shown below the spinner (e.g. "Loading...").
   final String? message;
+
+  /// Spinner's active arc color. Defaults to [NeonTheme.magenta] (ENH-49).
+  final Color? color;
+
+  /// Spinner's track (resting) color. Defaults to a translucent
+  /// [NeonTheme.purple] (ENH-49).
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -51,8 +63,12 @@ class LoadingOverlay extends StatelessWidget {
                 height: 56,
                 child: CircularProgressIndicator(
                   strokeWidth: 5,
-                  valueColor: AlwaysStoppedAnimation(NeonTheme.magenta),
-                  backgroundColor: NeonTheme.purple.withValues(alpha: 0.3),
+                  valueColor: AlwaysStoppedAnimation(
+                    color ?? NeonTheme.magenta,
+                  ),
+                  backgroundColor:
+                      backgroundColor ??
+                      NeonTheme.purple.withValues(alpha: 0.3),
                 ),
               ),
               if (message != null) ...[
