@@ -11,10 +11,26 @@ import '../pressable_scale.dart';
 /// hasn't been registered instead of throwing, so a gameplay screen can drop
 /// this in unconditionally.
 class SoundToggleFab extends StatelessWidget {
-  const SoundToggleFab({super.key, this.color, this.size = 52});
+  const SoundToggleFab({
+    super.key,
+    this.color,
+    this.size = 52,
+    this.mutedLabel,
+    this.unmutedLabel,
+  });
 
   final Color? color;
   final double size;
+
+  /// Accessibility label when currently muted (tap unmutes). Defaults to
+  /// the hardcoded English 'Unmute' — this package doesn't own app-facing
+  /// translation keys for generic app copy like this, so a localized app
+  /// passes its own translated string here instead (ENH-39).
+  final String? mutedLabel;
+
+  /// Accessibility label when currently unmuted (tap mutes). Defaults to
+  /// the hardcoded English 'Mute' — same reasoning as [mutedLabel].
+  final String? unmutedLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +45,7 @@ class SoundToggleFab extends StatelessWidget {
       final muted = audio.muted.value;
       return Semantics(
         button: true,
-        label: muted ? 'Unmute' : 'Mute',
+        label: muted ? (mutedLabel ?? 'Unmute') : (unmutedLabel ?? 'Mute'),
         child: PressableScale(
           onTap: audio.toggleMute,
           child: Container(

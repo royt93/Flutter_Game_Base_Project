@@ -47,9 +47,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('QrImageView absent when qrData is empty string', (
-    tester,
-  ) async {
+  testWidgets('QrImageView absent when qrData is empty string', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Material(
@@ -157,10 +155,12 @@ void main() {
   group('BUG-33: QR luôn có nền trắng cố định bất kể NeonTheme.dark', () {
     Container qrBackgroundContainer(WidgetTester tester) {
       return tester.widget<Container>(
-        find.ancestor(
-          of: find.byType(QrImageView),
-          matching: find.byType(Container),
-        ).first,
+        find
+            .ancestor(
+              of: find.byType(QrImageView),
+              matching: find.byType(Container),
+            )
+            .first,
       );
     }
 
@@ -180,7 +180,8 @@ void main() {
         ),
       );
 
-      final decoration = qrBackgroundContainer(tester).decoration as BoxDecoration;
+      final decoration =
+          qrBackgroundContainer(tester).decoration as BoxDecoration;
       expect(decoration.color, Colors.white);
       expect(tester.takeException(), isNull);
     });
@@ -202,29 +203,92 @@ void main() {
           ),
         );
 
-        final decoration = qrBackgroundContainer(tester).decoration as BoxDecoration;
+        final decoration =
+            qrBackgroundContainer(tester).decoration as BoxDecoration;
         expect(decoration.color, Colors.white);
         expect(tester.takeException(), isNull);
       },
     );
 
-    testWidgets('qrData null → không có Container nền trắng thừa (không render QR)', (
+    testWidgets(
+      'qrData null → không có Container nền trắng thừa (không render QR)',
+      (tester) async {
+        NeonTheme.dark = true;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: VictoryCardTemplate(
+                title: 'Level 1 Complete!',
+                statLines: const ['Score: 100'],
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byType(QrImageView), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('ENH-39: qrCaption override', () {
+    testWidgets('không truyền → giữ nguyên default cũ (Scan to play)', (
       tester,
     ) async {
-      NeonTheme.dark = true;
       await tester.pumpWidget(
         MaterialApp(
           home: Material(
             child: VictoryCardTemplate(
               title: 'Level 1 Complete!',
               statLines: const ['Score: 100'],
+              qrData: 'https://example.com/invite/abc123',
             ),
           ),
         ),
       );
 
-      expect(find.byType(QrImageView), findsNothing);
-      expect(tester.takeException(), isNull);
+      expect(find.text('Scan to play'), findsOneWidget);
     });
+
+    testWidgets(
+      'truyền qrCaption tuỳ chỉnh → hiện đúng chuỗi đó thay vì default',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: VictoryCardTemplate(
+                title: 'Level 1 Complete!',
+                statLines: const ['Score: 100'],
+                qrData: 'https://example.com/invite/abc123',
+                qrCaption: 'Quét để chơi',
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Scan to play'), findsNothing);
+        expect(find.text('Quét để chơi'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'qrData null → qrCaption không render (không có QR thì không có caption)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: VictoryCardTemplate(
+                title: 'Level 1 Complete!',
+                statLines: const ['Score: 100'],
+                qrCaption: 'Quét để chơi',
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Quét để chơi'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

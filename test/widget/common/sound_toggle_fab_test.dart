@@ -41,53 +41,112 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('ENH-17/IDEA-17: icon đổi qua AnimatedSwitcher crossfade, giữa chừng cả 2 icon cùng tồn tại', (
-      tester,
-    ) async {
-      SharedPreferences.setMockInitialValues({});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
-      final audio = Get.put(AudioManager(), permanent: true);
+    testWidgets(
+      'ENH-17/IDEA-17: icon đổi qua AnimatedSwitcher crossfade, giữa chừng cả 2 icon cùng tồn tại',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        Get.put(StorageService(await SharedPreferences.getInstance()));
+        final audio = Get.put(AudioManager(), permanent: true);
 
-      await tester.pumpWidget(
-        const MaterialApp(home: Material(child: SoundToggleFab())),
-      );
+        await tester.pumpWidget(
+          const MaterialApp(home: Material(child: SoundToggleFab())),
+        );
 
-      await tester.tap(find.byType(SoundToggleFab));
-      await tester.pump();
-      // Giữa chừng crossfade (150ms), icon cũ đang fade out, icon mới đang
-      // fade in — cả 2 cùng tồn tại trong tree một lúc.
-      expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
+        await tester.tap(find.byType(SoundToggleFab));
+        await tester.pump();
+        // Giữa chừng crossfade (150ms), icon cũ đang fade out, icon mới đang
+        // fade in — cả 2 cùng tồn tại trong tree một lúc.
+        expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
 
-      await tester.pumpAndSettle();
-      expect(audio.muted.value, isTrue);
-      expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.volume_up_rounded), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+        await tester.pumpAndSettle();
+        expect(audio.muted.value, isTrue);
+        expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.volume_up_rounded), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('IDEA-17: Reduce Motion bật → đổi icon tức thời (duration = 0)', (
-      tester,
-    ) async {
-      SharedPreferences.setMockInitialValues({});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
-      final audio = Get.put(AudioManager(), permanent: true);
+    testWidgets(
+      'IDEA-17: Reduce Motion bật → đổi icon tức thời (duration = 0)',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        Get.put(StorageService(await SharedPreferences.getInstance()));
+        final audio = Get.put(AudioManager(), permanent: true);
 
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(disableAnimations: true),
-          child: const MaterialApp(home: Material(child: SoundToggleFab())),
-        ),
-      );
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: const MaterialApp(home: Material(child: SoundToggleFab())),
+          ),
+        );
 
-      await tester.tap(find.byType(SoundToggleFab));
-      await tester.pump();
+        await tester.tap(find.byType(SoundToggleFab));
+        await tester.pump();
 
-      expect(audio.muted.value, isTrue);
-      expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.volume_up_rounded), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+        expect(audio.muted.value, isTrue);
+        expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.volume_up_rounded), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('ENH-39: mutedLabel/unmutedLabel override', () {
+    testWidgets(
+      'không truyền → giữ nguyên default cũ (Mute/Unmute tiếng Anh)',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        SharedPreferences.setMockInitialValues({});
+        Get.put(StorageService(await SharedPreferences.getInstance()));
+        Get.put(AudioManager(), permanent: true);
+
+        await tester.pumpWidget(
+          const MaterialApp(home: Material(child: SoundToggleFab())),
+        );
+
+        var data = tester.getSemantics(find.byType(SoundToggleFab));
+        expect(data.label, 'Mute');
+
+        await tester.tap(find.byType(SoundToggleFab));
+        await tester.pumpAndSettle();
+
+        data = tester.getSemantics(find.byType(SoundToggleFab));
+        expect(data.label, 'Unmute');
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'truyền mutedLabel/unmutedLabel tuỳ chỉnh → dùng đúng chuỗi truyền vào ở mỗi trạng thái',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        SharedPreferences.setMockInitialValues({});
+        Get.put(StorageService(await SharedPreferences.getInstance()));
+        Get.put(AudioManager(), permanent: true);
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: SoundToggleFab(
+                mutedLabel: 'Bật tiếng',
+                unmutedLabel: 'Tắt tiếng',
+              ),
+            ),
+          ),
+        );
+
+        var data = tester.getSemantics(find.byType(SoundToggleFab));
+        expect(data.label, 'Tắt tiếng');
+
+        await tester.tap(find.byType(SoundToggleFab));
+        await tester.pumpAndSettle();
+
+        data = tester.getSemantics(find.byType(SoundToggleFab));
+        expect(data.label, 'Bật tiếng');
+        handle.dispose();
+      },
+    );
   });
 
   group('AudioManager not registered', () {

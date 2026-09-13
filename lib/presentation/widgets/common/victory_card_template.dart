@@ -45,6 +45,7 @@ class VictoryCardTemplate extends StatelessWidget {
     this.avatar,
     this.qrData,
     this.accentColor,
+    this.qrCaption = 'Scan to play',
   });
 
   /// Caller-supplied headline, e.g. "Level 50 Complete!" — no i18n baked in.
@@ -68,6 +69,12 @@ class VictoryCardTemplate extends StatelessWidget {
   /// Defaults to [NeonTheme.gold] — nullable because a `NeonTheme` color
   /// field is no longer a compile-time constant.
   final Color? accentColor;
+
+  /// Caption shown under the QR code (only when [qrData] is given). Defaults
+  /// to the hardcoded English 'Scan to play' — the caller's own localized
+  /// copy overrides it (ENH-39; this package doesn't own app-facing
+  /// translation keys for game-specific copy like this).
+  final String qrCaption;
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +134,7 @@ class VictoryCardTemplate extends StatelessWidget {
               ),
               const SizedBox(height: NeonTheme.s8),
               Text(
-                'Scan to play',
+                qrCaption,
                 style: TextStyle(
                   color: NeonTheme.inkSoft,
                   fontSize: 12,

@@ -78,6 +78,50 @@ void main() {
     },
   );
 
+  testWidgets(
+    'ENH-39: buttonLabel tuỳ chỉnh → hiện đúng chuỗi đó thay vì default "Got it"',
+    (tester) async {
+      final targetKey = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 200, left: 40),
+                    child: SizedBox(
+                      key: targetKey,
+                      width: 120,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        child: const Text('Target'),
+                      ),
+                    ),
+                  ),
+                ),
+                SpotlightOverlay(
+                  targetKey: targetKey,
+                  message: 'Nhấn vào đây để bắt đầu',
+                  title: 'Bước 1',
+                  buttonLabel: 'Đã hiểu',
+                  onDismiss: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Got it'), findsNothing);
+      expect(find.text('Đã hiểu'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('SpotlightOverlay không crash khi targetKey chưa được mount', (
     tester,
   ) async {

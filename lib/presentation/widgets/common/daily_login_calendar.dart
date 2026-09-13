@@ -27,6 +27,7 @@ class DailyLoginCalendarWidget extends StatelessWidget {
     required this.canClaimToday,
     required this.onClaim,
     this.cycleLength = kDailyLoginCycleLength,
+    this.claimLabel = 'Claim',
   });
 
   /// Current streak position, 1..[cycleLength]; 0 before the first claim.
@@ -42,6 +43,12 @@ class DailyLoginCalendarWidget extends StatelessWidget {
   final VoidCallback onClaim;
 
   final int cycleLength;
+
+  /// Label for the bottom Claim button. Defaults to the hardcoded English
+  /// 'Claim' — the caller's own localized copy overrides it (ENH-39; this
+  /// package doesn't own app-facing translation keys for game-specific copy
+  /// like this).
+  final String claimLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +72,7 @@ class DailyLoginCalendarWidget extends StatelessWidget {
           }),
         ),
         const SizedBox(height: NeonTheme.s16),
-        CommonButton(label: 'Claim', onTap: canClaimToday ? onClaim : null),
+        CommonButton(label: claimLabel, onTap: canClaimToday ? onClaim : null),
       ],
     );
   }

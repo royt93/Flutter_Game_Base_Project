@@ -95,6 +95,50 @@ void main() {
     expect(claimed, isFalse);
   });
 
+  group('ENH-39: claimLabel override', () {
+    testWidgets('không truyền → giữ nguyên default cũ (Claim)', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          DailyLoginCalendarWidget(
+            currentStreakDay: 2,
+            claimedDaysInCycle: const {1, 2},
+            canClaimToday: true,
+            onClaim: () {},
+            cycleLength: 7,
+          ),
+        ),
+      );
+
+      expect(find.text('Claim'), findsWidgets);
+    });
+
+    testWidgets(
+      'truyền claimLabel tuỳ chỉnh → hiện đúng chuỗi đó thay vì default',
+      (tester) async {
+        var claimed = false;
+        await tester.pumpWidget(
+          _wrap(
+            DailyLoginCalendarWidget(
+              currentStreakDay: 2,
+              claimedDaysInCycle: const {1, 2},
+              canClaimToday: true,
+              onClaim: () => claimed = true,
+              cycleLength: 7,
+              claimLabel: 'Nhận thưởng',
+            ),
+          ),
+        );
+
+        expect(find.text('Claim'), findsNothing);
+        expect(find.text('Nhận thưởng'), findsWidgets);
+
+        await tester.tap(find.text('Nhận thưởng').last);
+        await tester.pump();
+        expect(claimed, isTrue);
+      },
+    );
+  });
+
   testWidgets("future days beyond currentStreakDay don't fire onClaim even if "
       'somehow tapped', (tester) async {
     var claimed = false;

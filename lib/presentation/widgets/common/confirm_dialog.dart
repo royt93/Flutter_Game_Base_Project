@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../core/neon_theme.dart';
 import '../neon_dialog.dart';
@@ -21,12 +22,18 @@ Future<bool> showConfirmDialog(
   BuildContext context, {
   required String title,
   String? message,
-  String confirmLabel = 'OK',
-  String cancelLabel = 'Cancel',
+  String? confirmLabel,
+  String? cancelLabel,
   Color? color,
   IconData? icon,
 }) {
   color ??= NeonTheme.purple;
+  // ENH-39: default labels go through AppTranslations (already has 'ok'/
+  // 'cancel' keys) so this common confirm dialog respects the current
+  // locale instead of always showing English — caller-supplied labels
+  // (game-specific copy) still take priority when given.
+  confirmLabel ??= 'ok'.tr;
+  cancelLabel ??= 'cancel'.tr;
   final completer = Completer<bool>();
   NeonDialog.show<void>(
     context: context,
