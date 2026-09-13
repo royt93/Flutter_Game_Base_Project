@@ -15,13 +15,19 @@ class SectionHeader extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            title,
-            style: TextStyle(
-              color: NeonTheme.ink,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
+          // ENH-37: header: true lets a screen reader jump between
+          // sections (TalkBack's "headings" navigation gesture), same as
+          // an <h2> would for sighted structure.
+          child: Semantics(
+            header: true,
+            child: Text(
+              title,
+              style: TextStyle(
+                color: NeonTheme.ink,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
         ),

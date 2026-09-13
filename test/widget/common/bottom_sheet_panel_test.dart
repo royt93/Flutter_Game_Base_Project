@@ -8,9 +8,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Material(
-          child: BottomSheetPanel(child: Text('Panel content')),
-        ),
+        home: Material(child: BottomSheetPanel(child: Text('Panel content'))),
       ),
     );
 
@@ -37,11 +35,10 @@ void main() {
             builder: (context) => Scaffold(
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () =>
-                      showCommonBottomSheet<void>(
-                        context,
-                        child: const Text('Sheet body'),
-                      ),
+                  onPressed: () => showCommonBottomSheet<void>(
+                    context,
+                    child: const Text('Sheet body'),
+                  ),
                   child: const Text('Open'),
                 ),
               ),
@@ -130,35 +127,79 @@ void main() {
       },
     );
 
-    testWidgets('barrierColor tuỳ chỉnh forward đúng xuống showModalBottomSheet', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: Center(
-                child: ElevatedButton(
-                  onPressed: () => showCommonBottomSheet<void>(
-                    context,
-                    barrierColor: Colors.red,
-                    child: const Text('Sheet body'),
+    testWidgets(
+      'barrierColor tuỳ chỉnh forward đúng xuống showModalBottomSheet',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () => showCommonBottomSheet<void>(
+                      context,
+                      barrierColor: Colors.red,
+                      child: const Text('Sheet body'),
+                    ),
+                    child: const Text('Open'),
                   ),
-                  child: const Text('Open'),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
 
-      final modalBarrier = tester.widgetList<ModalBarrier>(
-        find.byType(ModalBarrier),
-      );
-      expect(modalBarrier.any((b) => b.color == Colors.red), isTrue);
-    });
+        final modalBarrier = tester.widgetList<ModalBarrier>(
+          find.byType(ModalBarrier),
+        );
+        expect(modalBarrier.any((b) => b.color == Colors.red), isTrue);
+      },
+    );
+  });
+
+  group('ENH-37: Semantics', () {
+    testWidgets(
+      'drag handle bị ExcludeSemantics — không tạo semantics node riêng',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: BottomSheetPanel(child: Text('Panel content')),
+            ),
+          ),
+        );
+
+        expect(find.byType(ExcludeSemantics), findsWidgets);
+        // Node cha (root) chỉ chứa label của child, không lẫn label rác của
+        // drag handle (Container không có Text/label nên vốn không tạo
+        // label, nhưng ExcludeSemantics còn chặn cả future descendant nào
+        // lỡ có semantics — assert bằng cách merge toàn cây và soát label).
+        final data = tester.getSemantics(find.byType(BottomSheetPanel));
+        expect(data.label, isNot(contains('null')));
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'không có ExcludeSemantics thì child vẫn expose bình thường (label passthrough)',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: BottomSheetPanel(child: Text('Panel content')),
+            ),
+          ),
+        );
+
+        expect(find.text('Panel content'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        handle.dispose();
+      },
+    );
   });
 }

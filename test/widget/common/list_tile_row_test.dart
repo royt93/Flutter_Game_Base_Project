@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/list_tile_row.dart';
@@ -55,7 +57,9 @@ void main() {
 
   testWidgets('không có onTap: tap không throw', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: Material(child: CommonListTile(title: 'Row'))),
+      MaterialApp(
+        home: Material(child: CommonListTile(title: 'Row')),
+      ),
     );
 
     await tester.tap(find.text('Row'));
@@ -88,4 +92,47 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('ENH-37: Semantics', () {
+    testWidgets(
+      'có onTap: merge thành 1 node, button: true, label gộp title+subtitle',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: CommonListTile(
+                title: 'Sound',
+                subtitle: 'Music & SFX',
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+
+        final data = tester.getSemantics(find.byType(CommonListTile));
+        expect(data.label, contains('Sound'));
+        expect(data.label, contains('Music & SFX'));
+        expect(data.getSemanticsData().flagsCollection.isButton, isTrue);
+        expect(data.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+        handle.dispose();
+      },
+    );
+
+    testWidgets('không có onTap: button: false, không có tap action', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(child: CommonListTile(title: 'Language')),
+        ),
+      );
+
+      final data = tester.getSemantics(find.byType(CommonListTile));
+      expect(data.label, contains('Language'));
+      expect(data.getSemanticsData().flagsCollection.isButton, isFalse);
+      handle.dispose();
+    });
+  });
 }

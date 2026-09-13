@@ -39,14 +39,19 @@ class BottomSheetPanel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Container(
-              width: 44,
-              height: 5,
-              margin: const EdgeInsets.only(bottom: NeonTheme.s16),
-              decoration: BoxDecoration(
-                color: NeonTheme.inkSoft.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(3),
+          // ENH-37: purely decorative (a drag affordance, no text/meaning
+          // of its own) — excluded so it isn't a wasted stop for a screen
+          // reader swiping through the sheet's content.
+          ExcludeSemantics(
+            child: Center(
+              child: Container(
+                width: 44,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: NeonTheme.s16),
+                decoration: BoxDecoration(
+                  color: NeonTheme.inkSoft.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(3),
+                ),
               ),
             ),
           ),

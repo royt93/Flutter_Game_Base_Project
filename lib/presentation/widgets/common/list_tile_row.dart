@@ -84,6 +84,15 @@ class CommonListTile extends StatelessWidget {
         ],
       ),
     );
-    return onTap == null ? row : PressableScale(onTap: onTap, child: row);
+    final wrapped = onTap == null
+        ? row
+        : PressableScale(onTap: onTap, child: row);
+    // ENH-37: merges title/subtitle/trailing into 1 semantics node instead
+    // of 2-3 separate ones (same MergeSemantics pattern as ShopItemCard,
+    // ENH-44) — a screen reader reads the whole row as 1 coherent item.
+    // The explicit button flag (only when tappable) survives the merge.
+    return MergeSemantics(
+      child: Semantics(button: onTap != null, child: wrapped),
+    );
   }
 }
