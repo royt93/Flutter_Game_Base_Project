@@ -87,6 +87,30 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     ]);
   }
 
+  // IDEA-35: same 2-step tour, but authored as JSON instead of hardcoded
+  // TutorialStep objects — this is what a designer editing
+  // RemoteConfigService's `onboarding_flow_v1` string would produce.
+  static const _jsonTutorialFlow = '''
+  [
+    {"id": "primary_button", "targetKey": "primary", "title": "Step 1 of 2",
+     "message": "This is the Primary button (JSON-authored step)."},
+    {"id": "coin_counter", "targetKey": "coins", "title": "Step 2 of 2",
+     "message": "Your coin balance (JSON-authored step)."}
+  ]
+  ''';
+
+  void _startTutorialSequenceFromJson() {
+    _tutorialSequenceController.start(
+      TutorialStep.listFromJson(
+        _jsonTutorialFlow,
+        keyRegistry: {
+          'primary': _spotlightTargetKey,
+          'coins': _coinCounterKey,
+        },
+      ),
+    );
+  }
+
   // IDEA-08: Game Feel demo state — SquashStretch tap count, a
   // ScreenShakeController the caller owns/disposes, and a cycling combo
   // heat value.
@@ -717,9 +741,20 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                         ),
                         _Demo(
                           label: 'TutorialSequence',
-                          child: CommonButton(
-                            label: 'Start 2-step tutorial',
-                            onTap: _startTutorialSequence,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              CommonButton(
+                                label: 'Start 2-step tutorial',
+                                onTap: _startTutorialSequence,
+                              ),
+                              const SizedBox(height: NeonTheme.s8),
+                              CommonButton(
+                                label: 'Start from JSON (IDEA-35)',
+                                variant: CommonButtonVariant.secondary,
+                                onTap: _startTutorialSequenceFromJson,
+                              ),
+                            ],
                           ),
                         ),
                         _Demo(

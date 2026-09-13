@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
+import '../../../core/analytics_provider.dart';
 import '../../../core/neon_theme.dart';
 import 'spotlight_overlay.dart';
 
@@ -13,6 +16,7 @@ class TutorialStep {
     this.title,
     this.buttonLabel = 'Got it',
     this.color,
+    this.id,
   });
 
   final GlobalKey targetKey;
@@ -20,6 +24,74 @@ class TutorialStep {
   final String? title;
   final String buttonLabel;
   final Color? color;
+
+  /// Stable id for this step, used to key its shown/dismissed
+  /// `AnalyticsProvider` events (IDEA-35). `null` (the default, e.g. for
+  /// a step authored the imperative way, directly in code) means "don't
+  /// log analytics for this step" — the sequence never emits events an
+  /// existing imperative call site didn't ask for.
+  final String? id;
+
+  /// Parses a data-driven step list (IDEA-35) — the typical caller reads
+  /// this JSON from `RemoteConfigService.getString('onboarding_flow_v1')`
+  /// (this method itself has no dependency on `RemoteConfigService`; it
+  /// only ever sees the already-fetched JSON string, keeping this widget
+  /// layer decoupled from any specific remote-config key name), so a
+  /// designer can reorder/reword/A-B-test onboarding without a rebuild.
+  ///
+  /// [json] must decode to an array of objects, each shaped:
+  /// ```json
+  /// {"id": "step1", "targetKey": "primary_button", "message": "...",
+  ///  "title": "...", "buttonLabel": "..."}
+  /// ```
+  /// `title`/`buttonLabel` are optional (same defaults as the constructor).
+  /// [keyRegistry] maps a step's `targetKey` name to the actual
+  /// [GlobalKey] the caller's screen tagged that widget with.
+  ///
+  /// Never throws: [json] that isn't a valid JSON array, and any
+  /// individual step entry that's malformed OR whose `targetKey` name
+  /// isn't in [keyRegistry], is simply skipped — a data-authored tutorial
+  /// degrading to fewer steps (or none) is far better than crashing the
+  /// screen it's attached to.
+  static List<TutorialStep> listFromJson(
+    String json, {
+    required Map<String, GlobalKey> keyRegistry,
+  }) {
+    Object? decoded;
+    try {
+      decoded = jsonDecode(json);
+    } catch (_) {
+      return const [];
+    }
+    if (decoded is! List) return const [];
+
+    final steps = <TutorialStep>[];
+    for (final entry in decoded) {
+      if (entry is! Map) continue;
+      final id = entry['id'];
+      final targetKeyName = entry['targetKey'];
+      final message = entry['message'];
+      final title = entry['title'];
+      final buttonLabel = entry['buttonLabel'];
+      if (id is! String || id.trim().isEmpty) continue;
+      if (targetKeyName is! String || message is! String) continue;
+      final targetKey = keyRegistry[targetKeyName];
+      if (targetKey == null) continue;
+      if (title != null && title is! String) continue;
+      if (buttonLabel != null && buttonLabel is! String) continue;
+
+      steps.add(
+        TutorialStep(
+          id: id,
+          targetKey: targetKey,
+          message: message,
+          title: title as String?,
+          buttonLabel: (buttonLabel as String?) ?? 'Got it',
+        ),
+      );
+    }
+    return steps;
+  }
 }
 
 /// Plain `ChangeNotifier` the caller creates and owns (like a
@@ -51,26 +123,56 @@ class TutorialSequenceController extends ChangeNotifier {
     _steps = steps;
     _index = 0;
     notifyListeners();
+    _logShown();
   }
 
   /// Advances to the next step, or ends the sequence if the current step
   /// was the last one.
   void next() {
     if (!isActive) return;
+    _logDismissed();
     if (_index + 1 >= _steps.length) {
-      skip();
+      _endSequence();
       return;
     }
     _index++;
     notifyListeners();
+    _logShown();
   }
 
   /// Ends the sequence immediately, regardless of which step it's on.
   void skip() {
     if (_index < 0) return;
+    _logDismissed();
+    _endSequence();
+  }
+
+  void _endSequence() {
     _index = -1;
     _steps = const [];
     notifyListeners();
+  }
+
+  // IDEA-35: funnel-analysis logging for a data-driven (JSON-authored)
+  // step — see TutorialStep.id's doc for why a null id (an imperative,
+  // hardcoded-in-code step) is silently skipped here rather than logged
+  // under some synthesized id.
+  void _logShown() {
+    final id = currentStep?.id;
+    if (id != null) {
+      AnalyticsProvider.maybe?.logEvent('tutorial_step_shown', {
+        'stepId': id,
+      });
+    }
+  }
+
+  void _logDismissed() {
+    final id = currentStep?.id;
+    if (id != null) {
+      AnalyticsProvider.maybe?.logEvent('tutorial_step_dismissed', {
+        'stepId': id,
+      });
+    }
   }
 }
 
