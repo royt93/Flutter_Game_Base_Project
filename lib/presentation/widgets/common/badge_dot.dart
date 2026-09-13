@@ -15,14 +15,21 @@ class BadgeDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = color ?? NeonTheme.red;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: c,
-        shape: BoxShape.circle,
-        border: Border.all(color: NeonTheme.card, width: 1.5),
-        boxShadow: NeonTheme.glow(c, blur: 6, spread: 0.3),
+    // ENH-37: purely decorative (no text/number of its own — the caller's
+    // icon it's positioned over carries the actual meaning, e.g.
+    // IconBadgeButton appends its own "N unread"/"new" to that icon's
+    // label). Excluded so it's never an accidental blank-labeled stop for
+    // a screen reader when composed into someone else's Semantics tree.
+    return ExcludeSemantics(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: c,
+          shape: BoxShape.circle,
+          border: Border.all(color: NeonTheme.card, width: 1.5),
+          boxShadow: NeonTheme.glow(c, blur: 6, spread: 0.3),
+        ),
       ),
     );
   }

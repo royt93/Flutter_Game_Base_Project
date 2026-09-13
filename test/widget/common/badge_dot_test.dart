@@ -39,4 +39,43 @@ void main() {
     final decoration = container.decoration as BoxDecoration;
     expect(decoration.color, customColor);
   });
+
+  group('ENH-37: Semantics', () {
+    testWidgets(
+      'decorative — bị ExcludeSemantics, không tạo semantics node/label riêng',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          const MaterialApp(home: Material(child: BadgeDot())),
+        );
+
+        expect(find.byType(ExcludeSemantics), findsWidgets);
+        expect(tester.takeException(), isNull);
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'khi lồng trong Stack cùng icon của caller, icon vẫn giữ label riêng, dot không thêm label rác',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Stack(
+                children: [
+                  Semantics(label: 'Mail', child: const Icon(Icons.mail)),
+                  const Positioned(top: -2, right: -2, child: BadgeDot()),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        final data = tester.getSemantics(find.bySemanticsLabel('Mail'));
+        expect(data.label, 'Mail');
+        handle.dispose();
+      },
+    );
+  });
 }
