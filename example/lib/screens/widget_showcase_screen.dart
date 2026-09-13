@@ -43,6 +43,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _starsEarned = 1;
   double _progress = 0.4;
   bool _showLoadingOverlay = false;
+  // BackupRestorePanel demo: no real file/QR picker wired here — this just
+  // simulates "export, then restore that same backup" round-tripping
+  // through the panel's onExport/onImport seam.
+  String? _lastBackup;
   bool _rewardPopupOpen = false;
   bool _confettiActive = false;
   int _confettiTrigger = 0;
@@ -986,6 +990,16 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               message: 'Home tapped',
                               color: NeonTheme.muted,
                             ),
+                          ),
+                        ),
+                        _Demo(
+                          label: 'BackupRestorePanel',
+                          child: BackupRestorePanel(
+                            secret: 'showcase-demo-secret',
+                            onExport: (json) async {
+                              _lastBackup = json;
+                            },
+                            onImport: () async => _lastBackup,
                           ),
                         ),
 
