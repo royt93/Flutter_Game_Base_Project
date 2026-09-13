@@ -37,6 +37,9 @@ class StorageKeys {
 
   // lib/core/in_app_review_helper.dart reads/writes this directly.
   static const String reviewLastAskedMs = 'review_last_asked_ms';
+
+  // lib/core/experiment_bucketing_service.dart reads/writes this directly.
+  static const String experimentAnonId = 'experiment_anon_id';
 }
 
 /// Shared local storage service (wraps SharedPreferences).
