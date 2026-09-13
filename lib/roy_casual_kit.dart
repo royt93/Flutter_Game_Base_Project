@@ -20,6 +20,7 @@ export 'core/energy_service.dart';
 export 'core/haptics.dart';
 export 'core/in_app_review_helper.dart';
 export 'core/kit_bootstrap.dart';
+export 'core/local_scoreboard_service.dart';
 export 'core/locale_service.dart';
 export 'core/lifecycle_coordinator.dart';
 export 'core/game_session_controller.dart';
