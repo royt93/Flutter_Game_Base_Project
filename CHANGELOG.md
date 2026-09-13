@@ -1,5 +1,6 @@
 ## 0.2.0
 
+- `RemoteConfigService` (ENH-58): partial remote responses now merge key-by-key on top of asset defaults instead of replacing the whole config (a response missing/omitting a key no longer wipes its asset fallback); added a read-only `snapshot` getter and a `source` getter (`RemoteConfigSource`: `assetOnly`/`remoteMerged`/`remoteFailed`) to inspect where the current config came from.
 - Added reactive `EconomyWallet` with atomic earn/spend and transaction idempotency.
 - Added `GameSessionController` for typed game session state, nested pause reasons and lifecycle bridging.
 - Added typed `SdkResult` success/failure contracts for public service APIs.

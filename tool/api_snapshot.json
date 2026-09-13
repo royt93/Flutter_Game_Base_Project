@@ -93,6 +93,7 @@
     "core/purchase_seam.dart:PurchaseSeam",
     "core/reminder_service.dart:ReminderService",
     "core/remote_config_service.dart:RemoteConfigService",
+    "core/remote_config_service.dart:RemoteConfigSource",
     "core/runtime_flags.dart:isE2eTest",
     "core/storage_service.dart:StorageKeys",
     "core/storage_service.dart:StorageService",
