@@ -151,6 +151,60 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     setState(() => _achievementTaps++);
   }
 
+  // IDEA-44: QuestBoardPanel demo — a fixed 2-quest list this screen owns
+  // locally (no DailyQuestService wiring here; the panel is deliberately
+  // decoupled from any specific service, see the widget's own doc comment).
+  var _questWinMatches = const QuestViewModel(
+    id: 'win_3',
+    label: 'Thắng 3 trận',
+    progress: 2,
+    target: 3,
+    claimed: false,
+  );
+  var _questUseBooster = const QuestViewModel(
+    id: 'use_booster',
+    label: 'Dùng 1 booster',
+    progress: 1,
+    target: 1,
+    claimed: false,
+  );
+
+  void _bumpQuestProgress() {
+    setState(() {
+      if (_questWinMatches.progress < _questWinMatches.target) {
+        _questWinMatches = QuestViewModel(
+          id: _questWinMatches.id,
+          label: _questWinMatches.label,
+          progress: _questWinMatches.progress + 1,
+          target: _questWinMatches.target,
+          claimed: _questWinMatches.claimed,
+        );
+      }
+    });
+  }
+
+  void _claimQuest(String questId) {
+    setState(() {
+      if (questId == _questWinMatches.id) {
+        _questWinMatches = QuestViewModel(
+          id: _questWinMatches.id,
+          label: _questWinMatches.label,
+          progress: _questWinMatches.progress,
+          target: _questWinMatches.target,
+          claimed: true,
+        );
+      } else if (questId == _questUseBooster.id) {
+        _questUseBooster = QuestViewModel(
+          id: _questUseBooster.id,
+          label: _questUseBooster.label,
+          progress: _questUseBooster.progress,
+          target: _questUseBooster.target,
+          claimed: true,
+        );
+      }
+    });
+  }
+
   void _cycleComboHeat() => setState(
     () => _comboHeat = (_comboHeat + 0.25) > 1 ? 0 : _comboHeat + 0.25,
   );
@@ -1003,6 +1057,23 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   rank: 3,
                                   name: 'Charlie',
                                   score: '8,120',
+                                ),
+                              ],
+                            ),
+                          ),
+                          _Demo(
+                            label: 'QuestBoardPanel (IDEA-44)',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                QuestBoardPanel(
+                                  quests: [_questWinMatches, _questUseBooster],
+                                  onClaim: _claimQuest,
+                                ),
+                                const SizedBox(height: NeonTheme.s16),
+                                CommonButton(
+                                  label: 'Thắng 1 trận',
+                                  onTap: _bumpQuestProgress,
                                 ),
                               ],
                             ),

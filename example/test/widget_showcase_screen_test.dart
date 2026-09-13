@@ -26,7 +26,7 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  tester.view.physicalSize = const Size(1080, 9000);
+  tester.view.physicalSize = const Size(1080, 9600);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);

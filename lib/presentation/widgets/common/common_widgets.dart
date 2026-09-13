@@ -8,7 +8,6 @@
 library;
 
 // Buttons & Interactive
-export 'achievement_unlock_listener.dart';
 export 'common_button.dart';
 export 'toggle_switch.dart';
 export 'segmented_tab_bar.dart';
@@ -17,6 +16,7 @@ export 'sound_toggle_fab.dart';
 export 'candy_text_field.dart';
 
 // Feedback & Overlay
+export 'achievement_unlock_listener.dart';
 export 'loading_overlay.dart';
 export 'toast_banner.dart';
 export 'tooltip_bubble.dart';
@@ -54,6 +54,7 @@ export 'ribbon_badge.dart';
 export 'shop_item_card.dart';
 export 'victory_card_template.dart';
 export 'leaderboard_list.dart';
+export 'quest_board_panel.dart';
 export 'game_over_card_template.dart';
 export 'backup_restore_panel.dart';
 
