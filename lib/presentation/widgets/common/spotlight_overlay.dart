@@ -239,7 +239,9 @@ class _Callout extends StatelessWidget {
               ),
               const SizedBox(height: NeonTheme.s16),
               Align(
-                alignment: Alignment.centerRight,
+                // ENH-38: centerEnd resolves against ambient Directionality
+                // (physical right in LTR, physical left in RTL).
+                alignment: AlignmentDirectional.centerEnd,
                 child: SizedBox(
                   width: 120,
                   child: NeonDialogButton(

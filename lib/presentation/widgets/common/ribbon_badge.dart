@@ -76,16 +76,22 @@ class _RibbonBadgeState extends State<RibbonBadge>
   @override
   Widget build(BuildContext context) {
     final c = widget.color ?? NeonTheme.red;
+    // ENH-38: anchors to the "end" corner (physical top-right in LTR,
+    // top-left in RTL) instead of always the physical top-right — the
+    // rotation direction mirrors too, so the ribbon still reads as
+    // "draped over that corner" rather than tilting the wrong way once
+    // it's on the other side.
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
     return ClipRect(
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           widget.child,
-          Positioned(
+          PositionedDirectional(
             top: 14,
-            right: -34,
+            end: -34,
             child: Transform.rotate(
-              angle: math.pi / 4,
+              angle: isRtl ? -math.pi / 4 : math.pi / 4,
               child: AnimatedBuilder(
                 animation: _scale,
                 builder: (context, child) => Transform.scale(

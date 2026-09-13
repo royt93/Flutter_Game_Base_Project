@@ -150,4 +150,43 @@ void main() {
       handle.dispose();
     });
   });
+
+  group('ENH-38: RTL', () {
+    testWidgets(
+      'FittedBox dùng AlignmentDirectional.centerStart (không phải Alignment.centerLeft vật lý)',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(child: CurrencyCounter(value: 100)),
+          ),
+        );
+
+        final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
+        expect(fittedBox.alignment, AlignmentDirectional.centerStart);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'RTL: số bị co lại (scaleDown) vẫn neo bên trong khung, không throw',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: SizedBox(
+                  width: 40,
+                  child: CurrencyCounter(value: 999999999),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }

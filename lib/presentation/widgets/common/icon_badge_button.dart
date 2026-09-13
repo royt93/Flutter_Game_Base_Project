@@ -143,8 +143,11 @@ class _IconBadgeButtonState extends State<IconBadgeButton>
                 ),
               ),
               if (widget._badgeVisible)
-                Positioned(
-                  right: -2,
+                // ENH-38: anchors to the "end" corner (physical top-right
+                // in LTR, top-left in RTL) instead of always physical
+                // top-right.
+                PositionedDirectional(
+                  end: -2,
                   top: -2,
                   child: AnimatedBuilder(
                     animation: _scale,

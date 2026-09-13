@@ -75,4 +75,60 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('ENH-38: RTL', () {
+    testWidgets(
+      'LTR: ribbon nằm ở nửa bên phải của child, góc xoay dương (pi/4)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: SizedBox(
+                width: 200,
+                height: 100,
+                child: RibbonBadge(text: 'SALE', child: Container()),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final badgeRect = tester.getRect(find.byType(RibbonBadge));
+        final textRect = tester.getRect(find.text('SALE'));
+        expect(textRect.center.dx, greaterThan(badgeRect.center.dx));
+
+        final rotate = tester.widgetList<Transform>(find.byType(Transform)).first;
+        expect(rotate.transform.getRotation().entry(1, 0), greaterThan(0));
+      },
+    );
+
+    testWidgets(
+      'RTL: ribbon nằm ở nửa bên TRÁI (đảo ngược so với LTR), góc xoay đảo dấu',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: SizedBox(
+                  width: 200,
+                  height: 100,
+                  child: RibbonBadge(text: 'SALE', child: Container()),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final badgeRect = tester.getRect(find.byType(RibbonBadge));
+        final textRect = tester.getRect(find.text('SALE'));
+        expect(textRect.center.dx, lessThan(badgeRect.center.dx));
+
+        final rotate = tester.widgetList<Transform>(find.byType(Transform)).first;
+        expect(rotate.transform.getRotation().entry(1, 0), lessThan(0));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }

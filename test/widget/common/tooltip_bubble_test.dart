@@ -58,4 +58,68 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('ENH-38: RTL', () {
+    // _BubblePainter is private — its `nubAlign` field (no leading
+    // underscore) is still reachable via dynamic dispatch across the
+    // library boundary, so no need to expose the type publicly just to
+    // assert on the physical value the painter actually receives.
+    double physicalNubAlign(WidgetTester tester) {
+      final customPaint = tester.widget<CustomPaint>(
+        find.descendant(
+          of: find.byType(TooltipBubble),
+          matching: find.byType(CustomPaint),
+        ),
+      );
+      final painter = customPaint.painter as dynamic;
+      return painter.nubAlign as double;
+    }
+
+    testWidgets(
+      'LTR: nubAlign=0 (reading-start) → painter nhận physical 0 (không đổi)',
+      (tester) async {
+        await tester.pumpWidget(_wrap(TooltipBubble.text('Hi', nubAlign: 0)));
+        expect(physicalNubAlign(tester), 0);
+      },
+    );
+
+    testWidgets(
+      'RTL: nubAlign=0 (reading-start) → painter nhận physical 1 (đảo ngược, vì start = phải trong RTL)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Center(
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: TooltipBubble.text('Hi', nubAlign: 0),
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(physicalNubAlign(tester), 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'RTL: nubAlign=0.25 → painter nhận physical 0.75 (1 - nubAlign)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Center(
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: TooltipBubble.text('Hi', nubAlign: 0.25),
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(physicalNubAlign(tester), closeTo(0.75, 0.0001));
+      },
+    );
+  });
 }

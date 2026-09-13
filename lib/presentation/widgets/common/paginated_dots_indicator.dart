@@ -39,7 +39,14 @@ class PaginatedDotsIndicator extends StatelessWidget {
         children: [
           for (var i = 0; i < count; i++)
             Padding(
-              padding: EdgeInsets.only(right: i == count - 1 ? 0 : spacing),
+              // ENH-38: EdgeInsetsDirectional's "end" is physical right in
+              // LTR, physical left in RTL — Row already reverses child
+              // paint order under RTL, so the gap needs to trail each dot
+              // in READING order (not always physical-right) to land in
+              // the same visual spot between dots either way.
+              padding: EdgeInsetsDirectional.only(
+                end: i == count - 1 ? 0 : spacing,
+              ),
               child: AnimatedContainer(
                 duration: NeonTheme.reducedMotion(context)
                     ? Duration.zero

@@ -41,7 +41,12 @@ class SegmentedTabBar extends StatelessWidget {
                     ? Duration.zero
                     : const Duration(milliseconds: 220),
                 curve: Curves.easeOutBack,
-                alignment: Alignment(
+                // ENH-38: AlignmentDirectional's x is "start" (physical
+                // left in LTR, physical right in RTL) — resolved against
+                // ambient Directionality automatically, so the sliding pill
+                // follows the same reading direction as the Row of labels
+                // below it instead of always sliding left-to-right.
+                alignment: AlignmentDirectional(
                   n == 1 ? 0 : -1 + 2 * selectedIndex / (n - 1),
                   0,
                 ),

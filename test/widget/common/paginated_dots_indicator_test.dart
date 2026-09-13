@@ -120,4 +120,56 @@ void main() {
       handle.dispose();
     });
   });
+
+  group('ENH-38: RTL', () {
+    List<Rect> dotRectsSortedByX(WidgetTester tester) {
+      final rects = tester
+          .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+          .map((c) => tester.getRect(find.byWidget(c)))
+          .toList();
+      rects.sort((a, b) => a.left.compareTo(b.left));
+      return rects;
+    }
+
+    testWidgets(
+      'LTR: khoảng cách giữa các dot liền kề đúng bằng spacing mặc định (8), không chồng/hở sai chỗ',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(const PaginatedDotsIndicator(count: 4, currentIndex: 1)),
+        );
+
+        final rects = dotRectsSortedByX(tester);
+        for (var i = 0; i < rects.length - 1; i++) {
+          expect(rects[i + 1].left - rects[i].right, closeTo(8, 0.5));
+        }
+      },
+    );
+
+    testWidgets(
+      'RTL: khoảng cách giữa các dot liền kề vẫn đúng bằng spacing (không co lại về 0 hay gấp đôi ở 1 phía)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Center(
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: const PaginatedDotsIndicator(
+                    count: 4,
+                    currentIndex: 1,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final rects = dotRectsSortedByX(tester);
+        for (var i = 0; i < rects.length - 1; i++) {
+          expect(rects[i + 1].left - rects[i].right, closeTo(8, 0.5));
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }

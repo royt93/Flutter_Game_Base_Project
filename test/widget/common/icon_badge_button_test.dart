@@ -197,4 +197,56 @@ void main() {
       handle.dispose();
     });
   });
+
+  group('ENH-38: RTL', () {
+    testWidgets(
+      'LTR: badge nằm gần góc trên-PHẢI của icon (nửa bên phải)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: IconBadgeButton(
+                icon: Icons.mail,
+                showBadge: true,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+
+        final buttonRect = tester.getRect(find.byType(IconBadgeButton));
+        final badgeRect = tester.getRect(
+          find.byKey(const Key('iconBadgeButtonBadgeScale')),
+        );
+        expect(badgeRect.center.dx, greaterThan(buttonRect.center.dx));
+      },
+    );
+
+    testWidgets(
+      'RTL: cùng cấu hình → badge nằm gần góc trên-TRÁI của icon (đảo ngược so với LTR)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: IconBadgeButton(
+                  icon: Icons.mail,
+                  showBadge: true,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final buttonRect = tester.getRect(find.byType(IconBadgeButton));
+        final badgeRect = tester.getRect(
+          find.byKey(const Key('iconBadgeButtonBadgeScale')),
+        );
+        expect(badgeRect.center.dx, lessThan(buttonRect.center.dx));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }

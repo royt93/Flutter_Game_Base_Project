@@ -79,7 +79,11 @@ class _CurrencyCounterState extends State<CurrencyCounter> {
               curve: Curves.easeOut,
               builder: (context, n, _) => FittedBox(
                 fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
+                // ENH-38: centerStart resolves against ambient
+                // Directionality (physical left in LTR, right in RTL) so a
+                // shrunk-to-fit number stays anchored to the reading start
+                // instead of always the physical left.
+                alignment: AlignmentDirectional.centerStart,
                 child: Text(
                   widget.compact ? fmtNumCompact(n) : fmtNum(n),
                   style: TextStyle(

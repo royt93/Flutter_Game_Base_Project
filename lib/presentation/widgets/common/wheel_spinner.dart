@@ -222,7 +222,10 @@ class _WheelSpinnerState extends State<WheelSpinner>
             child: CustomPaint(
               key: const Key('wheelSpinnerPainter'),
               size: Size.square(widget.size),
-              painter: WheelSpinnerPainter(segments: widget.segments),
+              painter: WheelSpinnerPainter(
+                segments: widget.segments,
+                textDirection: Directionality.of(context),
+              ),
             ),
           ),
           Positioned(
@@ -250,9 +253,18 @@ class _WheelSpinnerState extends State<WheelSpinner>
 /// mounted [CustomPaint] — same testability reason as
 /// `SpotlightOverlay`'s `SpotlightHolePainter`.
 class WheelSpinnerPainter extends CustomPainter {
-  const WheelSpinnerPainter({required this.segments});
+  const WheelSpinnerPainter({
+    required this.segments,
+    this.textDirection = TextDirection.ltr,
+  });
 
   final List<WheelSegment> segments;
+
+  /// Passed down from the ambient `Directionality` (ENH-38) instead of a
+  /// hardcoded `TextDirection.ltr` — a `Canvas` has no directionality
+  /// concept of its own, so an RTL-script segment label (Arabic/Hebrew)
+  /// needs this to shape its glyphs correctly.
+  final TextDirection textDirection;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -280,7 +292,7 @@ class WheelSpinnerPainter extends CustomPainter {
             fontWeight: FontWeight.w800,
           ),
         ),
-        textDirection: TextDirection.ltr,
+        textDirection: textDirection,
       )..layout(maxWidth: radius * 0.8);
 
       // Rotate into the slice's radial direction, paint the label along it
@@ -320,5 +332,6 @@ class WheelSpinnerPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant WheelSpinnerPainter oldDelegate) =>
-      oldDelegate.segments != segments;
+      oldDelegate.segments != segments ||
+      oldDelegate.textDirection != textDirection;
 }

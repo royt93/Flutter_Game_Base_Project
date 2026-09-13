@@ -56,8 +56,11 @@ class TooltipBubble extends StatelessWidget {
   final Color? color;
   final TooltipPointerDirection direction;
 
-  /// Horizontal position of the nub, 0 (left) .. 1 (right) of the bubble
-  /// width. Clamped away from the rounded corners inside the painter.
+  /// Horizontal position of the nub, 0 (reading-start) .. 1 (reading-end)
+  /// of the bubble width — physical left..right in LTR, physical
+  /// right..left in RTL (ENH-38), so a caller says "near the start of the
+  /// thing it's pointing at" without caring which locale is active.
+  /// Clamped away from the rounded corners inside the painter.
   final double nubAlign;
   final EdgeInsetsGeometry padding;
 
@@ -86,7 +89,12 @@ class TooltipBubble extends StatelessWidget {
         painter: _BubblePainter(
           color: color,
           direction: direction,
-          nubAlign: nubAlign,
+          // Canvas coordinates are always physical (Directionality-blind),
+          // so the reading-direction-relative nubAlign is flipped here
+          // once, up front, into a physical fraction for the painter.
+          nubAlign: Directionality.of(context) == TextDirection.rtl
+              ? 1 - nubAlign
+              : nubAlign,
         ),
         child: Padding(
           padding: nubPadding,

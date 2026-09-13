@@ -181,6 +181,70 @@ void main() {
     },
   );
 
+  group('ENH-38: RTL', () {
+    Widget harness(GlobalKey targetKey, TextDirection dir) {
+      return MaterialApp(
+        home: Scaffold(
+          body: Directionality(
+            textDirection: dir,
+            child: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 200, left: 40),
+                    child: SizedBox(
+                      key: targetKey,
+                      width: 120,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        child: const Text('Target'),
+                      ),
+                    ),
+                  ),
+                ),
+                SpotlightOverlay(
+                  targetKey: targetKey,
+                  message: 'Nhấn vào đây để bắt đầu',
+                  title: 'Bước 1',
+                  holePadding: 12,
+                  onDismiss: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('LTR: nút dismiss nằm ở nửa bên phải của callout', (
+      tester,
+    ) async {
+      final targetKey = GlobalKey();
+      await tester.pumpWidget(harness(targetKey, TextDirection.ltr));
+      await tester.pump();
+
+      final calloutRect = tester.getRect(find.text('Bước 1'));
+      final buttonRect = tester.getRect(find.text('Got it'));
+      expect(buttonRect.center.dx, greaterThan(calloutRect.center.dx));
+    });
+
+    testWidgets(
+      'RTL: cùng layout → nút dismiss nằm ở nửa bên TRÁI của callout (đảo ngược so với LTR)',
+      (tester) async {
+        final targetKey = GlobalKey();
+        await tester.pumpWidget(harness(targetKey, TextDirection.rtl));
+        await tester.pump();
+
+        final calloutRect = tester.getRect(find.text('Bước 1'));
+        final buttonRect = tester.getRect(find.text('Got it'));
+        expect(buttonRect.center.dx, lessThan(calloutRect.center.dx));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
   testWidgets(
     'ENH-27: Reduce Motion bật → entrance collapse (duration = 0), UI vẫn hiện đúng',
     (tester) async {

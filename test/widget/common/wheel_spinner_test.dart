@@ -250,5 +250,57 @@ void main() {
       expect(decoration?.boxShadow, isNotNull);
       expect(decoration!.boxShadow!.isNotEmpty, true);
     });
+
+    group('ENH-38: RTL', () {
+      WheelSpinnerPainter painterOf(WidgetTester tester) =>
+          tester
+                  .widget<CustomPaint>(
+                    find.byKey(const Key('wheelSpinnerPainter')),
+                  )
+                  .painter
+              as WheelSpinnerPainter;
+
+      testWidgets('LTR (mặc định): painter nhận textDirection.ltr', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            WheelSpinner(
+              segments: segments,
+              controller: WheelSpinnerController(),
+              onSpinEnd: (_) {},
+            ),
+          ),
+        );
+
+        expect(painterOf(tester).textDirection, TextDirection.ltr);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets(
+        'RTL: painter nhận đúng textDirection.rtl từ Directionality ambient (không hardcode ltr nữa)',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Material(
+                child: Center(
+                  child: Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: WheelSpinner(
+                      segments: segments,
+                      controller: WheelSpinnerController(),
+                      onSpinEnd: (_) {},
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(painterOf(tester).textDirection, TextDirection.rtl);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    });
   });
 }

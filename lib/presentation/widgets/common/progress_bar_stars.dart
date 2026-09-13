@@ -84,11 +84,15 @@ class _ProgressBarStarsState extends State<ProgressBarStars>
       child: LayoutBuilder(
         builder: (context, constraints) {
           final w = constraints.maxWidth;
+          // ENH-38: bottomStart/centerStart resolve against ambient
+          // Directionality, so the fill grows from the natural reading
+          // start (physical left in LTR, physical right in RTL) instead of
+          // always growing from the physical left.
           return SizedBox(
             height: widget.height + 10,
             child: Stack(
               clipBehavior: Clip.none,
-              alignment: Alignment.bottomLeft,
+              alignment: AlignmentDirectional.bottomStart,
               children: [
                 Container(
                   width: w,
@@ -100,7 +104,7 @@ class _ProgressBarStarsState extends State<ProgressBarStars>
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: AlignmentDirectional.centerStart,
                     child: TweenAnimationBuilder<double>(
                       tween: Tween(begin: 0, end: p),
                       duration: NeonTheme.reducedMotion(context)
@@ -126,8 +130,9 @@ class _ProgressBarStarsState extends State<ProgressBarStars>
                   ),
                 ),
                 for (final t in widget.starThresholds)
-                  Positioned(
-                    left: (w * t.clamp(0.0, 1.0) - 12).clamp(0.0, w - 24),
+                  Positioned.directional(
+                    textDirection: Directionality.of(context),
+                    start: (w * t.clamp(0.0, 1.0) - 12).clamp(0.0, w - 24),
                     bottom: widget.height - 6,
                     child: AnimatedBuilder(
                       animation: _controllerFor(t),

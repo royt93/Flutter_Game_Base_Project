@@ -288,4 +288,84 @@ void main() {
       handle.dispose();
     });
   });
+
+  group('ENH-38: RTL', () {
+    testWidgets(
+      'LTR: sao ở threshold 0.2 nằm gần mép trái của thanh',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: SizedBox(
+                width: 300,
+                child: ProgressBarStars(
+                  progress: 1.0,
+                  starThresholds: const [0.2],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final barRect = tester.getRect(find.byType(ProgressBarStars));
+        final starRect = tester.getRect(find.byIcon(Icons.star_rounded));
+        expect(starRect.center.dx - barRect.left, lessThan(barRect.width / 2));
+      },
+    );
+
+    testWidgets(
+      'RTL: cùng threshold 0.2 → sao nằm gần mép PHẢI (đảo ngược so với LTR)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: SizedBox(
+                  width: 300,
+                  child: ProgressBarStars(
+                    progress: 1.0,
+                    starThresholds: const [0.2],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final barRect = tester.getRect(find.byType(ProgressBarStars));
+        final starRect = tester.getRect(find.byIcon(Icons.star_rounded));
+        expect(barRect.right - starRect.center.dx, lessThan(barRect.width / 2));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'RTL: fill vẫn tô đúng widthFactor=progress, chỉ đổi hướng phát triển (từ phải sang trái)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: SizedBox(
+                  width: 300,
+                  child: ProgressBarStars(progress: 0.5),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final fittedBox = tester.widget<FractionallySizedBox>(
+          find.byType(FractionallySizedBox),
+        );
+        expect(fittedBox.widthFactor, 0.5);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }

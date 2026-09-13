@@ -155,4 +155,63 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  group('ENH-38: RTL', () {
+    Rect pillRect(WidgetTester tester) => tester.getRect(
+      find.descendant(
+        of: find.byType(AnimatedAlign),
+        matching: find.byType(Container),
+      ),
+    );
+
+    testWidgets(
+      'LTR: selectedIndex đầu tiên → pill nằm sát bên trái',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: SizedBox(
+                width: 300,
+                child: SegmentedTabBar(
+                  labels: const ['A', 'B', 'C'],
+                  selectedIndex: 0,
+                  onChanged: (_) {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final barRect = tester.getRect(find.byType(SegmentedTabBar));
+        expect(pillRect(tester).left - barRect.left, lessThan(10));
+      },
+    );
+
+    testWidgets(
+      'RTL: cùng selectedIndex đầu tiên → pill nằm sát bên phải (đảo ngược so với LTR)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: SizedBox(
+                  width: 300,
+                  child: SegmentedTabBar(
+                    labels: const ['A', 'B', 'C'],
+                    selectedIndex: 0,
+                    onChanged: (_) {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final barRect = tester.getRect(find.byType(SegmentedTabBar));
+        expect(barRect.right - pillRect(tester).right, lessThan(10));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }
