@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/toggle_switch.dart';
@@ -25,28 +27,27 @@ void main() {
     expect(changedTo, true);
   });
 
-  testWidgets(
-    'CandyToggleSwitch value=true thì tap gọi onChanged với false',
-    (tester) async {
-      bool? changedTo;
+  testWidgets('CandyToggleSwitch value=true thì tap gọi onChanged với false', (
+    tester,
+  ) async {
+    bool? changedTo;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: CandyToggleSwitch(
-              value: true,
-              onChanged: (v) => changedTo = v,
-            ),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: CandyToggleSwitch(
+            value: true,
+            onChanged: (v) => changedTo = v,
           ),
         ),
-      );
+      ),
+    );
 
-      await tester.tap(find.byType(CandyToggleSwitch));
-      await tester.pump();
+    await tester.tap(find.byType(CandyToggleSwitch));
+    await tester.pump();
 
-      expect(changedTo, false);
-    },
-  );
+    expect(changedTo, false);
+  });
 
   testWidgets('CandyToggleSwitch phản ánh đúng state qua Semantics', (
     tester,
@@ -64,24 +65,25 @@ void main() {
     expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), true);
   });
 
-  testWidgets('CandyToggleSwitch onChanged == null thì bị disable, tap không throw', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Material(
-          child: CandyToggleSwitch(value: false, onChanged: null),
+  testWidgets(
+    'CandyToggleSwitch onChanged == null thì bị disable, tap không throw',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: CandyToggleSwitch(value: false, onChanged: null),
+          ),
         ),
-      ),
-    );
+      );
 
-    final semantics = tester.getSemantics(find.byType(CandyToggleSwitch));
-    expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), false);
+      final semantics = tester.getSemantics(find.byType(CandyToggleSwitch));
+      expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), false);
 
-    await tester.tap(find.byType(CandyToggleSwitch));
-    await tester.pump();
-    expect(tester.takeException(), isNull);
-  });
+      await tester.tap(find.byType(CandyToggleSwitch));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'ENH-23: thumb (AnimatedAlign) dùng easeOutBack (nảy), track (AnimatedContainer) vẫn easeOut',
@@ -120,7 +122,9 @@ void main() {
       );
 
       expect(
-        tester.widget<AnimatedContainer>(find.byType(AnimatedContainer)).duration,
+        tester
+            .widget<AnimatedContainer>(find.byType(AnimatedContainer))
+            .duration,
         Duration.zero,
       );
       expect(
@@ -130,4 +134,55 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('ENH-37: Semantics', () {
+    testWidgets(
+      'semanticLabel truyền vào → label khớp, toggled đúng theo value',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: CandyToggleSwitch(
+                value: true,
+                onChanged: (_) {},
+                semanticLabel: 'Haptics',
+              ),
+            ),
+          ),
+        );
+
+        final data = tester.getSemantics(find.byType(CandyToggleSwitch));
+        expect(data.label, 'Haptics');
+        expect(
+          data.getSemanticsData().flagsCollection.isToggled,
+          Tristate.isTrue,
+        );
+        handle.dispose();
+      },
+    );
+
+    testWidgets('value false → toggled: false', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: CandyToggleSwitch(
+              value: false,
+              onChanged: (_) {},
+              semanticLabel: 'Dark mode',
+            ),
+          ),
+        ),
+      );
+
+      final data = tester.getSemantics(find.byType(CandyToggleSwitch));
+      expect(data.label, 'Dark mode');
+      expect(
+        data.getSemanticsData().flagsCollection.isToggled,
+        Tristate.isFalse,
+      );
+      handle.dispose();
+    });
+  });
 }

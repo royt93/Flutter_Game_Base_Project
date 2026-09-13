@@ -14,6 +14,7 @@ class AvatarFrame extends StatelessWidget {
     this.size = 64,
     this.ringWidth = 3,
     this.onTap,
+    this.semanticLabel,
   });
 
   final Widget child;
@@ -29,6 +30,12 @@ class AvatarFrame extends StatelessWidget {
   /// frame stays purely display-only (no press feedback).
   final VoidCallback? onTap;
 
+  /// Describes whose/what avatar this is (e.g. "Alice's avatar", "Change
+  /// avatar") — [child] is caller-supplied (image/icon/initials) and can't
+  /// describe itself, so without this a screen reader announces nothing
+  /// meaningful for the frame.
+  final String? semanticLabel;
+
   @override
   Widget build(BuildContext context) {
     final color = this.color ?? NeonTheme.cyan;
@@ -41,12 +48,19 @@ class AvatarFrame extends StatelessWidget {
         boxShadow: NeonTheme.glow(color, blur: 12),
       ),
       padding: EdgeInsets.all(ringWidth),
-      child: ClipOval(child: child),
+      child: ClipOval(
+        child: semanticLabel == null ? child : ExcludeSemantics(child: child),
+      ),
     );
     // ENH-46: always wrap in PressableScale — with onTap null it's a no-op
     // (identical to the prior display-only behavior). Semantics(button:
     // true) only added when actually tappable.
     final pressable = PressableScale(onTap: onTap, child: frame);
-    return onTap == null ? pressable : Semantics(button: true, child: pressable);
+    if (onTap == null && semanticLabel == null) return pressable;
+    return Semantics(
+      button: onTap != null,
+      label: semanticLabel,
+      child: pressable,
+    );
   }
 }

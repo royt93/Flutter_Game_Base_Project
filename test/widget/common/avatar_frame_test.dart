@@ -51,48 +51,89 @@ void main() {
   });
 
   group('ENH-46: onTap', () {
-    testWidgets('onTap null (mặc định) → tap không throw, không có Semantics button', (
-      tester,
-    ) async {
-      final handle = tester.ensureSemantics();
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(child: AvatarFrame(child: const Text('AB'))),
-        ),
-      );
+    testWidgets(
+      'onTap null (mặc định) → tap không throw, không có Semantics button',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(child: AvatarFrame(child: const Text('AB'))),
+          ),
+        );
 
-      await tester.tap(find.byType(AvatarFrame));
-      await tester.pump();
+        await tester.tap(find.byType(AvatarFrame));
+        await tester.pump();
 
-      expect(tester.takeException(), isNull);
-      final data = tester.getSemantics(find.byType(AvatarFrame));
-      expect(data.getSemanticsData().flagsCollection.isButton, isFalse);
-      handle.dispose();
-    });
+        expect(tester.takeException(), isNull);
+        final data = tester.getSemantics(find.byType(AvatarFrame));
+        expect(data.getSemanticsData().flagsCollection.isButton, isFalse);
+        handle.dispose();
+      },
+    );
 
-    testWidgets('onTap truyền vào → tap gọi đúng callback, có Semantics button', (
-      tester,
-    ) async {
-      final handle = tester.ensureSemantics();
-      var tapped = false;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: AvatarFrame(
-              onTap: () => tapped = true,
-              child: const Text('AB'),
+    testWidgets(
+      'onTap truyền vào → tap gọi đúng callback, có Semantics button',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        var tapped = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: AvatarFrame(
+                onTap: () => tapped = true,
+                child: const Text('AB'),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.byType(AvatarFrame));
-      await tester.pump();
+        await tester.tap(find.byType(AvatarFrame));
+        await tester.pump();
 
-      expect(tapped, isTrue);
-      final data = tester.getSemantics(find.byType(AvatarFrame));
-      expect(data.getSemanticsData().flagsCollection.isButton, isTrue);
-      handle.dispose();
-    });
+        expect(tapped, isTrue);
+        final data = tester.getSemantics(find.byType(AvatarFrame));
+        expect(data.getSemanticsData().flagsCollection.isButton, isTrue);
+        handle.dispose();
+      },
+    );
+  });
+
+  group('ENH-37: semanticLabel', () {
+    testWidgets(
+      'semanticLabel truyền vào → label khớp, child (initials Text) bị exclude',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: AvatarFrame(
+                semanticLabel: "Alice's avatar",
+                child: const Text('AB'),
+              ),
+            ),
+          ),
+        );
+
+        final data = tester.getSemantics(find.byType(AvatarFrame));
+        expect(data.label, "Alice's avatar");
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'không truyền semanticLabel và không có onTap → không có Semantics node riêng thừa',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(child: AvatarFrame(child: const Text('AB'))),
+          ),
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('AB'), findsOneWidget);
+        handle.dispose();
+      },
+    );
   });
 }

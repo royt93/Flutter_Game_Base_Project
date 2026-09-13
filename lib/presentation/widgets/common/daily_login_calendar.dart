@@ -113,9 +113,7 @@ class _DaySlotState extends State<_DaySlot>
   @override
   void didUpdateWidget(covariant _DaySlot old) {
     super.didUpdateWidget(old);
-    if (!old.claimed &&
-        widget.claimed &&
-        !NeonTheme.reducedMotion(context)) {
+    if (!old.claimed && widget.claimed && !NeonTheme.reducedMotion(context)) {
       _controller.forward(from: 0.0);
     }
   }
@@ -178,6 +176,22 @@ class _DaySlotState extends State<_DaySlot>
               ),
       ),
     );
-    return onTap == null ? slot : PressableScale(onTap: onTap, child: slot);
+    final pressable = onTap == null
+        ? slot
+        : PressableScale(onTap: onTap, child: slot);
+    // ENH-37: "Day 3, claimed" / "Day 4, current, double tap to claim" /
+    // "Day 5, upcoming" — the slot's own Icon/Text (a checkmark or bare
+    // number) says nothing about WHY it looks that way.
+    final status = claimed
+        ? 'claimed'
+        : current
+        ? 'current, double tap to claim'
+        : 'upcoming';
+    return Semantics(
+      button: onTap != null,
+      label: 'Day $day, $status',
+      excludeSemantics: true,
+      child: pressable,
+    );
   }
 }

@@ -150,43 +150,42 @@ void main() {
     },
   );
 
-  testWidgets(
-    'IDEA-23: ngày vừa chuyển sang claimed → pop (scale bounce)',
-    (tester) async {
-      var claimedDays = <int>{1, 2};
-      late StateSetter setDays;
-      await tester.pumpWidget(
-        _wrap(
-          StatefulBuilder(
-            builder: (context, setState) {
-              setDays = setState;
-              return DailyLoginCalendarWidget(
-                currentStreakDay: 2,
-                claimedDaysInCycle: claimedDays,
-                canClaimToday: true,
-                onClaim: () {},
-                cycleLength: 5,
-              );
-            },
-          ),
+  testWidgets('IDEA-23: ngày vừa chuyển sang claimed → pop (scale bounce)', (
+    tester,
+  ) async {
+    var claimedDays = <int>{1, 2};
+    late StateSetter setDays;
+    await tester.pumpWidget(
+      _wrap(
+        StatefulBuilder(
+          builder: (context, setState) {
+            setDays = setState;
+            return DailyLoginCalendarWidget(
+              currentStreakDay: 2,
+              claimedDaysInCycle: claimedDays,
+              canClaimToday: true,
+              onClaim: () {},
+              cycleLength: 5,
+            );
+          },
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      setDays(() => claimedDays = {1, 2, 3});
-      await tester.pump();
+    setDays(() => claimedDays = {1, 2, 3});
+    await tester.pump();
 
-      // Day 3 (index 2) vừa chuyển sang claimed — giữa chừng pop, scale
-      // khác 1.0. Day 1/2 (đã claimed từ trước) vẫn ổn định = 1.0.
-      expect(daySlotScaleAt(tester, 0), 1.0);
-      expect(daySlotScaleAt(tester, 1), 1.0);
-      expect(daySlotScaleAt(tester, 2), isNot(1.0));
+    // Day 3 (index 2) vừa chuyển sang claimed — giữa chừng pop, scale
+    // khác 1.0. Day 1/2 (đã claimed từ trước) vẫn ổn định = 1.0.
+    expect(daySlotScaleAt(tester, 0), 1.0);
+    expect(daySlotScaleAt(tester, 1), 1.0);
+    expect(daySlotScaleAt(tester, 2), isNot(1.0));
 
-      await tester.pumpAndSettle();
-      expect(daySlotScaleAt(tester, 2), 1.0);
-      expect(tester.takeException(), isNull);
-    },
-  );
+    await tester.pumpAndSettle();
+    expect(daySlotScaleAt(tester, 2), 1.0);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'IDEA-23: Reduce Motion bật → không pop khi chuyển sang claimed',
@@ -222,47 +221,82 @@ void main() {
     },
   );
 
-  group('ENH-52: ô ngày hiện tại dùng PressableScale thay vì GestureDetector trần', () {
-    testWidgets(
-      'ô ngày hiện tại (tappable) bọc trong PressableScale, tap gọi đúng onClaim',
-      (tester) async {
-        var claimed = false;
-        await tester.pumpWidget(
-          _wrap(
-            DailyLoginCalendarWidget(
-              currentStreakDay: 3,
-              claimedDaysInCycle: const {1, 2},
-              canClaimToday: true,
-              onClaim: () => claimed = true,
-              cycleLength: 5,
+  group(
+    'ENH-52: ô ngày hiện tại dùng PressableScale thay vì GestureDetector trần',
+    () {
+      testWidgets(
+        'ô ngày hiện tại (tappable) bọc trong PressableScale, tap gọi đúng onClaim',
+        (tester) async {
+          var claimed = false;
+          await tester.pumpWidget(
+            _wrap(
+              DailyLoginCalendarWidget(
+                currentStreakDay: 3,
+                claimedDaysInCycle: const {1, 2},
+                canClaimToday: true,
+                onClaim: () => claimed = true,
+                cycleLength: 5,
+              ),
             ),
-          ),
-        );
+          );
 
-        // currentStreakDay=3, cycleLength=5 -> highlight day = 3 % 5 + 1 = 4
-        // (cùng công thức đã dùng ở test "current day is highlighted..." có
-        // sẵn trong file này). Chỉ check ancestor cụ thể của ô ngày 4, không
-        // đếm tổng số PressableScale trong tree (CommonButton "Claim" cũng
-        // tự dùng PressableScale riêng).
-        expect(
-          find.ancestor(
-            of: find.text('4'),
-            matching: find.byType(PressableScale),
-          ),
-          findsOneWidget,
-        );
+          // currentStreakDay=3, cycleLength=5 -> highlight day = 3 % 5 + 1 = 4
+          // (cùng công thức đã dùng ở test "current day is highlighted..." có
+          // sẵn trong file này). Chỉ check ancestor cụ thể của ô ngày 4, không
+          // đếm tổng số PressableScale trong tree (CommonButton "Claim" cũng
+          // tự dùng PressableScale riêng).
+          expect(
+            find.ancestor(
+              of: find.text('4'),
+              matching: find.byType(PressableScale),
+            ),
+            findsOneWidget,
+          );
 
-        await tester.tap(find.text('4'));
-        await tester.pump();
+          await tester.tap(find.text('4'));
+          await tester.pump();
 
-        expect(claimed, isTrue);
-        expect(tester.takeException(), isNull);
-      },
-    );
+          expect(claimed, isTrue);
+          expect(tester.takeException(), isNull);
+        },
+      );
 
+      testWidgets(
+        'ngày KHÔNG phải hiện tại → không có PressableScale ancestor (không tappable, giữ nguyên hành vi cũ)',
+        (tester) async {
+          await tester.pumpWidget(
+            _wrap(
+              DailyLoginCalendarWidget(
+                currentStreakDay: 3,
+                claimedDaysInCycle: const {1, 2},
+                canClaimToday: true,
+                onClaim: () {},
+                cycleLength: 5,
+              ),
+            ),
+          );
+
+          // currentStreakDay=3, cycleLength=5 -> highlight day = 4 (xem test
+          // phía trên). Ngày 5 (chưa claim, không phải ngày hiện tại) không
+          // tappable — không có PressableScale nào bọc nó.
+          expect(
+            find.ancestor(
+              of: find.text('5'),
+              matching: find.byType(PressableScale),
+            ),
+            findsNothing,
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
+    },
+  );
+
+  group('ENH-37: Semantics', () {
     testWidgets(
-      'ngày KHÔNG phải hiện tại → không có PressableScale ancestor (không tappable, giữ nguyên hành vi cũ)',
+      'ngày đã claimed → label "Day N, claimed", không có button flag',
       (tester) async {
+        final handle = tester.ensureSemantics();
         await tester.pumpWidget(
           _wrap(
             DailyLoginCalendarWidget(
@@ -275,17 +309,35 @@ void main() {
           ),
         );
 
-        // currentStreakDay=3, cycleLength=5 -> highlight day = 4 (xem test
-        // phía trên). Ngày 5 (chưa claim, không phải ngày hiện tại) không
-        // tappable — không có PressableScale nào bọc nó.
-        expect(
-          find.ancestor(
-            of: find.text('5'),
-            matching: find.byType(PressableScale),
-          ),
-          findsNothing,
+        final data = tester.getSemantics(
+          find.bySemanticsLabel('Day 1, claimed'),
         );
-        expect(tester.takeException(), isNull);
+        expect(data.getSemanticsData().flagsCollection.isButton, isFalse);
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'ngày hiện tại (tappable) → label "Day N, current, double tap to claim", có button flag',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          _wrap(
+            DailyLoginCalendarWidget(
+              currentStreakDay: 3,
+              claimedDaysInCycle: const {1, 2},
+              canClaimToday: true,
+              onClaim: () {},
+              cycleLength: 5,
+            ),
+          ),
+        );
+
+        final data = tester.getSemantics(
+          find.bySemanticsLabel('Day 4, current, double tap to claim'),
+        );
+        expect(data.getSemanticsData().flagsCollection.isButton, isTrue);
+        handle.dispose();
       },
     );
   });

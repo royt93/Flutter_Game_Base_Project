@@ -71,9 +71,17 @@ class _LeaderboardRow extends StatelessWidget {
     // true) only added when actually tappable, so a screen reader doesn't
     // announce a non-interactive row as a button.
     final pressable = PressableScale(onTap: entry.onTap, child: row);
-    return entry.onTap == null
-        ? pressable
-        : Semantics(button: true, child: pressable);
+    // ENH-37: rank/name/score are 3 separate Text nodes that would
+    // otherwise read as 3 disjoint stops — 1 descriptive label instead
+    // ("Rank 1, Alice, 9000 points") so a screen reader reads the whole
+    // row as 1 coherent item; excludeSemantics stops the descendant Text
+    // nodes from also contributing their own (now-duplicate) labels.
+    return Semantics(
+      button: entry.onTap != null,
+      label: 'Rank ${entry.rank}, ${entry.name}, ${entry.score}',
+      excludeSemantics: true,
+      child: pressable,
+    );
   }
 
   Widget _row(BuildContext context) {

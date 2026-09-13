@@ -6,11 +6,14 @@ import 'package:roy_casual_kit/presentation/widgets/common/star_rating.dart';
 
 void main() {
   group('pure state logic (no widget involved)', () {
-    test('levelStateTappable: locked is false, unlocked/completed are true', () {
-      expect(levelStateTappable(LevelState.locked), isFalse);
-      expect(levelStateTappable(LevelState.unlocked), isTrue);
-      expect(levelStateTappable(LevelState.completed), isTrue);
-    });
+    test(
+      'levelStateTappable: locked is false, unlocked/completed are true',
+      () {
+        expect(levelStateTappable(LevelState.locked), isFalse);
+        expect(levelStateTappable(LevelState.unlocked), isTrue);
+        expect(levelStateTappable(LevelState.completed), isTrue);
+      },
+    );
 
     test('levelStateIcon: only locked gets a lock glyph', () {
       expect(levelStateIcon(LevelState.locked), Icons.lock_rounded);
@@ -107,28 +110,34 @@ void main() {
       return (container.decoration as BoxDecoration).boxShadow;
     }
 
-    testWidgets(
-      'IDEA-25: completed dùng glow (gold) cộng thêm drop shadow',
-      (tester) async {
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: Material(
-              child: LevelNodeButton(
-                levelNumber: 2,
-                state: LevelState.completed,
-                starsEarned: 2,
-              ),
+    testWidgets('IDEA-25: completed dùng glow (gold) cộng thêm drop shadow', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: LevelNodeButton(
+              levelNumber: 2,
+              state: LevelState.completed,
+              starsEarned: 2,
             ),
           ),
-        );
+        ),
+      );
 
-        final shadow = shadowOf(tester)!;
-        // drop() trả 1 layer, glow() trả 3 layer → tổng 4.
-        expect(shadow.length, 4);
-        expect(shadow.any((s) => (s.color.toARGB32() & 0x00FFFFFF) == (NeonTheme.gold.toARGB32() & 0x00FFFFFF)), isTrue);
-        expect(tester.takeException(), isNull);
-      },
-    );
+      final shadow = shadowOf(tester)!;
+      // drop() trả 1 layer, glow() trả 3 layer → tổng 4.
+      expect(shadow.length, 4);
+      expect(
+        shadow.any(
+          (s) =>
+              (s.color.toARGB32() & 0x00FFFFFF) ==
+              (NeonTheme.gold.toARGB32() & 0x00FFFFFF),
+        ),
+        isTrue,
+      );
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets(
       'IDEA-25: unlocked KHÔNG pulse → chỉ có drop shadow, không glow, không đổi theo thời gian',
@@ -195,7 +204,14 @@ void main() {
         );
 
         final shadow = shadowOf(tester)!;
-        expect(shadow.any((s) => (s.color.toARGB32() & 0x00FFFFFF) == (NeonTheme.gold.toARGB32() & 0x00FFFFFF)), isTrue);
+        expect(
+          shadow.any(
+            (s) =>
+                (s.color.toARGB32() & 0x00FFFFFF) ==
+                (NeonTheme.gold.toARGB32() & 0x00FFFFFF),
+          ),
+          isTrue,
+        );
         expect(tester.takeException(), isNull);
       },
     );
@@ -309,6 +325,49 @@ void main() {
 
         expect(find.byType(LevelNodeButton), findsNWidgets(4));
         expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('LevelNodeButton (ENH-37: Semantics)', () {
+    testWidgets('locked → label "Level N, locked", không có button flag', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: LevelNodeButton(levelNumber: 3, state: LevelState.locked),
+          ),
+        ),
+      );
+
+      final data = tester.getSemantics(find.byType(LevelNodeButton));
+      expect(data.label, 'Level 3, locked');
+      expect(data.getSemanticsData().flagsCollection.isButton, isFalse);
+      handle.dispose();
+    });
+
+    testWidgets(
+      'completed → label "Level N, completed, X of 3 stars", có button flag',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: LevelNodeButton(
+                levelNumber: 2,
+                state: LevelState.completed,
+                starsEarned: 2,
+              ),
+            ),
+          ),
+        );
+
+        final data = tester.getSemantics(find.byType(LevelNodeButton));
+        expect(data.label, 'Level 2, completed, 2 of 3 stars');
+        expect(data.getSemanticsData().flagsCollection.isButton, isTrue);
+        handle.dispose();
       },
     );
   });

@@ -12,6 +12,7 @@ class CandyToggleSwitch extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.activeColor,
+    this.semanticLabel,
   });
 
   final bool value;
@@ -19,6 +20,11 @@ class CandyToggleSwitch extends StatelessWidget {
 
   /// Track color when on. Default: lime.
   final Color? activeColor;
+
+  /// Describes what this switch controls (e.g. "Haptics", "Dark mode") —
+  /// paired with the [Semantics.toggled] state so a screen reader announces
+  /// e.g. "Haptics, on" instead of just "on".
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +38,7 @@ class CandyToggleSwitch extends StatelessWidget {
       button: true,
       toggled: value,
       enabled: enabled,
+      label: semanticLabel,
       child: PressableScale(
         onTap: enabled ? () => onChanged!(!value) : null,
         child: AnimatedContainer(

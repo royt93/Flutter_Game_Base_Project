@@ -78,8 +78,7 @@ class _LevelNodeButtonState extends State<LevelNodeButton>
     end: 1.0,
   ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
-  bool get _shouldPulse =>
-      widget.pulse && widget.state == LevelState.unlocked;
+  bool get _shouldPulse => widget.pulse && widget.state == LevelState.unlocked;
 
   bool _reducedMotion = false;
 
@@ -114,6 +113,19 @@ class _LevelNodeButtonState extends State<LevelNodeButton>
     super.dispose();
   }
 
+  /// "Level 3, locked" / "Level 2, unlocked" / "Level 1, completed, 2 of 3
+  /// stars" — the node's own Text/Icon give no such context on their own
+  /// (just a bare number or a lock glyph).
+  String _semanticLabel(LevelState state) {
+    final base = 'Level ${widget.levelNumber}';
+    return switch (state) {
+      LevelState.locked => '$base, locked',
+      LevelState.unlocked => '$base, unlocked',
+      LevelState.completed =>
+        '$base, completed, ${widget.starsEarned} of 3 stars',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
@@ -137,66 +149,72 @@ class _LevelNodeButtonState extends State<LevelNodeButton>
     // so wrapping in one — Flutter's own suggested remedy for exactly
     // this class of issue — makes the sub-pixel mismatch a non-issue
     // instead of merely hiding its visual symptom.
-    return SingleChildScrollView(
-      physics: const NeverScrollableScrollPhysics(),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          PressableScale(
-            onTap: levelStateTappable(state) ? widget.onTap : null,
-            child: AnimatedBuilder(
-              animation: _glowIntensity,
-              builder: (context, child) {
-                final List<BoxShadow>? boxShadow = switch (state) {
-                  LevelState.locked => null,
-                  LevelState.completed => [
-                    ...NeonTheme.drop(y: 3, blur: 8),
-                    ...NeonTheme.glow(NeonTheme.gold, blur: 14),
-                  ],
-                  LevelState.unlocked => _shouldPulse && !_reducedMotion
-                      ? [
-                          ...NeonTheme.drop(y: 3, blur: 8),
-                          ...NeonTheme.glow(
-                            NeonTheme.cyan,
-                            blur: 16,
-                            intensity: _glowIntensity.value,
-                          ),
-                        ]
-                      : NeonTheme.drop(y: 3, blur: 8),
-                };
-                return Container(
-                  width: widget.size,
-                  height: widget.size,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: levelStateFillColor(state),
-                    border: Border.all(
-                      color: levelStateBorderColor(state),
-                      width: 3,
-                    ),
-                    boxShadow: boxShadow,
-                  ),
-                  child: child,
-                );
-              },
-              child: icon != null
-                  ? Icon(icon, color: textColor, size: widget.size * 0.4)
-                  : Text(
-                      '${widget.levelNumber}',
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: widget.size * 0.32,
-                        fontWeight: FontWeight.w900,
+    return Semantics(
+      button: levelStateTappable(state),
+      label: _semanticLabel(state),
+      excludeSemantics: true,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PressableScale(
+              onTap: levelStateTappable(state) ? widget.onTap : null,
+              child: AnimatedBuilder(
+                animation: _glowIntensity,
+                builder: (context, child) {
+                  final List<BoxShadow>? boxShadow = switch (state) {
+                    LevelState.locked => null,
+                    LevelState.completed => [
+                      ...NeonTheme.drop(y: 3, blur: 8),
+                      ...NeonTheme.glow(NeonTheme.gold, blur: 14),
+                    ],
+                    LevelState.unlocked =>
+                      _shouldPulse && !_reducedMotion
+                          ? [
+                              ...NeonTheme.drop(y: 3, blur: 8),
+                              ...NeonTheme.glow(
+                                NeonTheme.cyan,
+                                blur: 16,
+                                intensity: _glowIntensity.value,
+                              ),
+                            ]
+                          : NeonTheme.drop(y: 3, blur: 8),
+                  };
+                  return Container(
+                    width: widget.size,
+                    height: widget.size,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: levelStateFillColor(state),
+                      border: Border.all(
+                        color: levelStateBorderColor(state),
+                        width: 3,
                       ),
+                      boxShadow: boxShadow,
                     ),
+                    child: child,
+                  );
+                },
+                child: icon != null
+                    ? Icon(icon, color: textColor, size: widget.size * 0.4)
+                    : Text(
+                        '${widget.levelNumber}',
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: widget.size * 0.32,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+              ),
             ),
-          ),
-          if (state == LevelState.completed) ...[
-            const SizedBox(height: 4),
-            StarRating(earned: widget.starsEarned, size: widget.size * 0.18),
+            if (state == LevelState.completed) ...[
+              const SizedBox(height: 4),
+              StarRating(earned: widget.starsEarned, size: widget.size * 0.18),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

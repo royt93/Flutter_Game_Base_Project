@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/leaderboard_list.dart';
 
-Widget _wrap(Widget child) =>
-    MaterialApp(home: Material(child: Center(child: child)));
+Widget _wrap(Widget child) => MaterialApp(
+  home: Material(child: Center(child: child)),
+);
 
 void main() {
   group('LeaderboardList', () {
-    testWidgets('renders rank, name and score for each entry', (
-      tester,
-    ) async {
+    testWidgets('renders rank, name and score for each entry', (tester) async {
       await tester.pumpWidget(
         _wrap(
           const LeaderboardList(
@@ -91,57 +90,109 @@ void main() {
     });
 
     group('ENH-46: onTap', () {
-      testWidgets('onTap null (mặc định) → tap không throw, không có Semantics button', (
-        tester,
-      ) async {
-        final handle = tester.ensureSemantics();
-        await tester.pumpWidget(
-          _wrap(
-            const LeaderboardList(
-              entries: [LeaderboardEntry(rank: 1, name: 'Alice', score: '9,000')],
+      testWidgets(
+        'onTap null (mặc định) → tap không throw, không có Semantics button',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(
+            _wrap(
+              const LeaderboardList(
+                entries: [
+                  LeaderboardEntry(rank: 1, name: 'Alice', score: '9,000'),
+                ],
+              ),
             ),
-          ),
-        );
+          );
 
-        await tester.tap(find.byKey(const ValueKey('leaderboardRow_1')));
-        await tester.pump();
+          await tester.tap(find.byKey(const ValueKey('leaderboardRow_1')));
+          await tester.pump();
 
-        expect(tester.takeException(), isNull);
-        final data = tester.getSemantics(
-          find.byKey(const ValueKey('leaderboardRow_1')),
-        );
-        expect(data.getSemanticsData().flagsCollection.isButton, isFalse);
-        handle.dispose();
-      });
+          expect(tester.takeException(), isNull);
+          final data = tester.getSemantics(
+            find.byKey(const ValueKey('leaderboardRow_1')),
+          );
+          expect(data.getSemanticsData().flagsCollection.isButton, isFalse);
+          handle.dispose();
+        },
+      );
 
-      testWidgets('onTap truyền vào → tap gọi đúng callback, có Semantics button', (
-        tester,
-      ) async {
-        final handle = tester.ensureSemantics();
-        var tapped = false;
-        await tester.pumpWidget(
-          _wrap(
-            LeaderboardList(
-              entries: [
-                LeaderboardEntry(
-                  rank: 1,
-                  name: 'Alice',
-                  score: '9,000',
-                  onTap: () => tapped = true,
+      testWidgets(
+        'onTap truyền vào → tap gọi đúng callback, có Semantics button',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          var tapped = false;
+          await tester.pumpWidget(
+            _wrap(
+              LeaderboardList(
+                entries: [
+                  LeaderboardEntry(
+                    rank: 1,
+                    name: 'Alice',
+                    score: '9,000',
+                    onTap: () => tapped = true,
+                  ),
+                ],
+              ),
+            ),
+          );
+
+          await tester.tap(find.byKey(const ValueKey('leaderboardRow_1')));
+          await tester.pump();
+
+          expect(tapped, isTrue);
+          final data = tester.getSemantics(
+            find.byKey(const ValueKey('leaderboardRow_1')),
+          );
+          expect(data.getSemanticsData().flagsCollection.isButton, isTrue);
+          handle.dispose();
+        },
+      );
+    });
+
+    group('ENH-37: Semantics', () {
+      testWidgets(
+        'label gộp rank/name/score thành 1 câu, rank/name/score Text bị exclude',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Material(
+                child: LeaderboardList(
+                  entries: const [
+                    LeaderboardEntry(rank: 1, name: 'Alice', score: '9,000'),
+                  ],
                 ),
-              ],
+              ),
+            ),
+          );
+
+          final data = tester.getSemantics(
+            find.byKey(const ValueKey('leaderboardRow_1')),
+          );
+          expect(data.label, 'Rank 1, Alice, 9,000');
+          expect(data.getSemanticsData().flagsCollection.isButton, isFalse);
+          handle.dispose();
+        },
+      );
+
+      testWidgets('rank khác nhau → label đổi đúng theo rank', (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: LeaderboardList(
+                entries: const [
+                  LeaderboardEntry(rank: 2, name: 'Bob', score: '4,200'),
+                ],
+              ),
             ),
           ),
         );
 
-        await tester.tap(find.byKey(const ValueKey('leaderboardRow_1')));
-        await tester.pump();
-
-        expect(tapped, isTrue);
         final data = tester.getSemantics(
-          find.byKey(const ValueKey('leaderboardRow_1')),
+          find.byKey(const ValueKey('leaderboardRow_2')),
         );
-        expect(data.getSemanticsData().flagsCollection.isButton, isTrue);
+        expect(data.label, 'Rank 2, Bob, 4,200');
         handle.dispose();
       });
     });
