@@ -29,6 +29,21 @@ class AchievementService extends GetxService {
 
   final Map<String, int> _thresholds = {};
   Map<String, int>? _progress;
+  final StreamController<String> _unlockController =
+      StreamController<String>.broadcast();
+
+  /// Fires exactly once per achievement id, the moment [incrementProgress]
+  /// pushes it from not-completed to completed (IDEA-43). Never fires from
+  /// [register] alone — even if a newly-declared threshold is already
+  /// retroactively met by existing progress — and never fires again from
+  /// further increments once already completed.
+  Stream<String> get onUnlock => _unlockController.stream;
+
+  @override
+  void onClose() {
+    _unlockController.close();
+    super.onClose();
+  }
 
   /// Gets the instance if already registered (safe to call from
   /// game/widget tests).
@@ -136,7 +151,11 @@ class AchievementService extends GetxService {
     if (amount > _maxInt - current) {
       throw RangeError('progress overflow for $achievementId');
     }
+    final wasCompleted = isCompleted(achievementId);
     _progressMap[achievementId] = current + amount;
+    if (!wasCompleted && isCompleted(achievementId)) {
+      _unlockController.add(achievementId);
+    }
     final store = _store;
     _saveChain = _saving
         ? _saveChain.then((_) => _runSave(store))

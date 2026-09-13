@@ -246,5 +246,102 @@ void main() {
         },
       );
     });
+
+    group('IDEA-43: onUnlock stream', () {
+      test('phát đúng 1 lần khi progress chạm ngưỡng lần đầu', () async {
+        final service = AchievementService();
+        service.register('wins', 3);
+        final events = <String>[];
+        service.onUnlock.listen(events.add);
+
+        service.incrementProgress('wins', 1);
+        service.incrementProgress('wins', 1);
+        await pumpEventQueue();
+        expect(events, isEmpty);
+
+        service.incrementProgress('wins', 1);
+        await pumpEventQueue();
+        expect(events, ['wins']);
+      });
+
+      test(
+        'không phát lại khi tiếp tục incrementProgress sau khi đã unlock',
+        () async {
+          final service = AchievementService();
+          service.register('wins', 1);
+          final events = <String>[];
+          service.onUnlock.listen(events.add);
+
+          service.incrementProgress('wins', 1);
+          service.incrementProgress('wins', 5);
+          service.incrementProgress('wins', 10);
+          await pumpEventQueue();
+
+          expect(events, ['wins']);
+        },
+      );
+
+      test(
+        '1 lần incrementProgress nhảy thẳng qua ngưỡng (amount lớn) vẫn phát đúng 1 lần',
+        () async {
+          final service = AchievementService();
+          service.register('wins', 10);
+          final events = <String>[];
+          service.onUnlock.listen(events.add);
+
+          service.incrementProgress('wins', 999);
+          await pumpEventQueue();
+
+          expect(events, ['wins']);
+        },
+      );
+
+      test('register() không bao giờ tự phát unlock dù threshold đã đạt sẵn', () async {
+        final service = AchievementService();
+        service.register('wins', 100);
+        service.incrementProgress('wins', 100);
+        await pumpEventQueue();
+
+        final events = <String>[];
+        // Đăng ký lại với threshold thấp hơn giá trị progress đã có sẵn —
+        // register() tự nó không được phép phát unlock, chỉ incrementProgress
+        // mới là điểm kích hoạt sự kiện.
+        service.register('wins', 1);
+        service.onUnlock.listen(events.add);
+        await pumpEventQueue();
+
+        expect(events, isEmpty);
+      });
+
+      test('nhiều achievement id khác nhau phát đúng, độc lập với nhau', () async {
+        final service = AchievementService();
+        service.register('a', 1);
+        service.register('b', 1);
+        final events = <String>[];
+        service.onUnlock.listen(events.add);
+
+        service.incrementProgress('a', 1);
+        service.incrementProgress('b', 1);
+        await pumpEventQueue();
+
+        expect(events, containsAll(['a', 'b']));
+        expect(events.length, 2);
+      });
+
+      test('onUnlock là broadcast stream — nhiều listener cùng nhận được sự kiện', () async {
+        final service = AchievementService();
+        service.register('wins', 1);
+        final eventsA = <String>[];
+        final eventsB = <String>[];
+        service.onUnlock.listen(eventsA.add);
+        service.onUnlock.listen(eventsB.add);
+
+        service.incrementProgress('wins', 1);
+        await pumpEventQueue();
+
+        expect(eventsA, ['wins']);
+        expect(eventsB, ['wins']);
+      });
+    });
   });
 }

@@ -8,6 +8,7 @@
 library;
 
 // Buttons & Interactive
+export 'achievement_unlock_listener.dart';
 export 'common_button.dart';
 export 'toggle_switch.dart';
 export 'segmented_tab_bar.dart';
