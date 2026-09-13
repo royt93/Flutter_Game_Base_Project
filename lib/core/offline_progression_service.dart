@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import 'storage_service.dart';
 import 'utils/clamped_clock.dart';
+import 'utils/economy_math.dart';
 
 /// Calculates idle/offline earnings accrued while the player was away:
 /// `earnings = min(elapsed, maxOfflineCap) * productionRatePerSecond`, where
@@ -53,27 +54,20 @@ class OfflineProgressionService extends GetxService {
   /// negative/NaN/infinite "earnings". Throwing here — before [claim]'s
   /// caller reaches its `setInt` — also means an invalid call never
   /// advances `offlineLastClaimedMs`.
+  ///
+  /// Delegates the actual earnings math to [offlineEarnings] (IDEA-36) —
+  /// the same pure function `tool/economy_sim.dart`'s headless balancing
+  /// simulator calls, so the two can never drift apart into 2 subtly
+  /// different formulas. (Its own validation covers the same 2 checks
+  /// this doc describes — kept here too since the doc is the more
+  /// discoverable place for a caller to learn about them.)
   double _earningsAt(int now, double productionRatePerSecond) {
-    if (maxOfflineCap.isNegative) {
-      throw ArgumentError.value(
-        maxOfflineCap,
-        'maxOfflineCap',
-        'must be >= Duration.zero',
-      );
-    }
-    if (!productionRatePerSecond.isFinite || productionRatePerSecond < 0) {
-      throw ArgumentError.value(
-        productionRatePerSecond,
-        'productionRatePerSecond',
-        'must be finite and >= 0',
-      );
-    }
-
-    final elapsedMs = (now - _lastClaimedMsOr(now)).clamp(
-      0,
-      maxOfflineCap.inMilliseconds,
+    return offlineEarnings(
+      lastClaimedMs: _lastClaimedMsOr(now),
+      nowMs: now,
+      maxOfflineCapMs: maxOfflineCap.inMilliseconds,
+      productionRatePerSecond: productionRatePerSecond,
     );
-    return elapsedMs / 1000 * productionRatePerSecond;
   }
 
   /// Pure calculation given the current config — does not mutate anything

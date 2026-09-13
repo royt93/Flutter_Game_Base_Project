@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 
 import 'storage_service.dart';
 import 'utils/clamped_clock.dart';
+import 'utils/economy_math.dart';
 
 /// Energy/lives system that refills over time (Candy Crush-style "hearts").
 ///
@@ -124,22 +125,25 @@ class EnergyService extends GetxService {
   /// any leftover (sub-tick) progress toward the next point intact instead
   /// of resetting it, so reading [currentEnergy] repeatedly never costs
   /// partial progress.
+  ///
+  /// Delegates the actual tick math to [regenEnergy] (IDEA-36) — the same
+  /// pure function `tool/economy_sim.dart`'s headless balancing simulator
+  /// calls, so the two can never drift apart into 2 subtly different
+  /// formulas.
   void _regen() {
     final state = _readState();
-    if (state.count >= maxEnergy) return;
+    final result = regenEnergy(
+      count: state.count,
+      maxEnergy: maxEnergy,
+      lastMs: state.lastMs,
+      nowMs: nowMsClamped(),
+      intervalMs: refillInterval.inMilliseconds,
+    );
+    if (result.count == state.count && result.lastMs == state.lastMs) return;
 
-    final intervalMs = refillInterval.inMilliseconds;
-    final now = nowMsClamped();
-    final ticks = (now - state.lastMs) ~/ intervalMs;
-    if (ticks <= 0) return;
-
-    var newEnergy = state.count + ticks;
-    if (newEnergy > maxEnergy) newEnergy = maxEnergy;
-    final newLastMs = newEnergy >= maxEnergy
-        ? now
-        : state.lastMs + ticks * intervalMs;
-
-    unawaited(_writeState(_EnergyState(count: newEnergy, lastMs: newLastMs)));
+    unawaited(
+      _writeState(_EnergyState(count: result.count, lastMs: result.lastMs)),
+    );
   }
 
   /// Reads the persisted `{count, lastMs}` checkpoint, clamping `count`
