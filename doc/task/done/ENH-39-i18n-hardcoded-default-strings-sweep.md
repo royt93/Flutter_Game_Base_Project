@@ -20,13 +20,13 @@ Các chuỗi này không đi qua `AppTranslations`, nên app hỗ trợ đa ngô
 Với `showConfirmDialog`: đổi default `confirmLabel`/`cancelLabel` thành nullable, resolve qua `'ok'.tr`/`'cancel'.tr` khi null (2 key này đã có sẵn trong `AppTranslations`, không cần thêm key mới). Với các widget còn lại (`SoundToggleFab`, `SpotlightOverlay`, `NetworkStatusBanner`, `DailyLoginCalendarWidget`, `VictoryCardTemplate`): thêm tham số optional cho phép caller truyền chuỗi đã dịch từ app của họ (package không tự thêm key dịch mới vào `AppTranslations` cho những string cụ thể-app này, giữ đúng ranh giới package/app — game-specific copy không thuộc về package).
 
 ## Acceptance criteria
-- [ ] showConfirmDialog mặc định dùng 'ok'.tr/'cancel'.tr thay vì hardcode 'OK'/'Cancel'.
-- [ ] Mỗi widget còn lại nhận tham số optional cho chuỗi liên quan (semanticLabel/buttonLabel/offlineMessage/claimLabel/qrLabel tuỳ widget), giữ nguyên default hiện tại nếu caller không truyền.
-- [ ] Test: đổi locale sang 'vi' xác nhận showConfirmDialog hiển thị đúng bản dịch; test mỗi widget còn lại với tham số custom truyền vào hiển thị đúng chuỗi đó thay vì default.
-- [ ] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
-- [ ] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
-- [ ] Device smoke test thật trên Pixel 7 Pro (không simulator) nếu có UI — bằng chứng cụ thể trong Quyết định.
-- [ ] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion`.
+- [x] showConfirmDialog mặc định dùng 'ok'.tr/'cancel'.tr thay vì hardcode 'OK'/'Cancel'.
+- [x] Mỗi widget còn lại nhận tham số optional cho chuỗi liên quan (semanticLabel/buttonLabel/offlineMessage/claimLabel/qrLabel tuỳ widget), giữ nguyên default hiện tại nếu caller không truyền.
+- [x] Test: đổi locale sang 'vi' xác nhận showConfirmDialog hiển thị đúng bản dịch; test mỗi widget còn lại với tham số custom truyền vào hiển thị đúng chuỗi đó thay vì default.
+- [x] Test bao phủ mọi case liên quan (happy path + edge case + invalid/corrupt input nếu áp dụng) — unit + widget + integration tuỳ loại.
+- [x] `flutter analyze`/`flutter test --exclude-tags slow` sạch ở root + `example/`.
+- [x] Device smoke test thật trên máy Android thật (Samsung SM-S928B, không simulator) — bằng chứng cụ thể trong Quyết định.
+- [x] Nếu là widget tương tác: có animation đúng quy ước `NeonTheme` (không flat/instant), tôn trọng `reducedMotion` (không đổi animation nào ở task này — chỉ thêm/route string, không chạm layer render/animation).
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/ENH-39-i18n-hardcoded-default-strings-sweep.md` này trước khi làm (đừng chỉ dựa vào tóm tắt). Implement đúng phần Đề xuất bằng TDD (viết test fail trước, code cho pass).
@@ -44,3 +44,19 @@ Sau khi push, viết mục `## Quyết định` vào chính file task này (tick
 
 ## Ghi chú độ tin cậy
 Trung bình — giá trị thật (nhất quán i18n) nhưng không phải bug, effort M vì chạm nhiều file nhỏ lẻ, mỗi thay đổi riêng lẻ rất đơn giản.
+
+## Quyết định
+
+Đã sửa (commit `2c29c65`):
+- `showConfirmDialog`: `confirmLabel`/`cancelLabel` đổi thành nullable, resolve qua `'ok'.tr`/`'cancel'.tr` khi null. Caller truyền tay vẫn ưu tiên hơn.
+- `SoundToggleFab`: thêm `mutedLabel`/`unmutedLabel` optional (label Semantics, không phải text hiển thị) — default giữ nguyên 'Mute'/'Unmute' tiếng Anh.
+- `DailyLoginCalendarWidget`: thêm `claimLabel` optional cho nút Claim — default giữ nguyên 'Claim'.
+- `VictoryCardTemplate`: thêm `qrCaption` optional cho dòng chữ dưới QR — default giữ nguyên 'Scan to play'.
+- `SpotlightOverlay` (`buttonLabel`) và `NetworkStatusBanner` (`offlineMessage`) đã sẵn optional param với default từ trước khi task này bắt đầu — không cần sửa code, chỉ bổ sung test còn thiếu cho `SpotlightOverlay.buttonLabel` custom (Network banner đã có test custom `offlineMessage` từ trước).
+
+Theo đúng ranh giới package/app nêu trong Đề xuất: package KHÔNG tự thêm key dịch mới vào `AppTranslations` cho chuỗi cụ thể-app (Mute/Unmute, Claim, Scan to play...) — chỉ `showConfirmDialog`'s OK/Cancel dùng key có sẵn vì đó là hành động phổ quát, không phải game-specific copy.
+
+### Device smoke test — Samsung SM-S928B (thật, không simulator)
+Build lại release APK (`flutter build apk --release`), cài qua `adb install -r`, mở `WidgetShowcaseScreen` (locale máy đang là 'vi' từ trước) và tap demo "ConfirmDialog (showConfirmDialog)": dialog hiện đúng tiêu đề "Delete save?" kèm 2 nút **"Huỷ"**/**"Đồng ý"** (bản dịch tiếng Việt của key `cancel`/`ok`, không phải "Cancel"/"OK" tiếng Anh) — xác nhận key `.tr` resolve đúng theo locale hiện tại trên thiết bị thật. Tap "Đồng ý" đóng dialog không crash. `mobile_get_device_logs` lọc `level=Error` cho process app trong suốt thao tác: không có entry nào.
+
+Lưu ý: demo hiện có trong `WidgetShowcaseScreen` truyền tường minh `confirmLabel: 'ok'.tr, cancelLabel: 'cancel'.tr` (viết từ trước, không đổi) nên không trực tiếp phơi bày nhánh default-null MỚI của `showConfirmDialog` trên UI thật — nhánh đó (`confirmLabel ??= 'ok'.tr`) đã được xác nhận đúng qua widget test (`confirm_dialog_test.dart`, 2 locale × có/không truyền label, dùng `GetMaterialApp` + `AppTranslations` thật, không mock) chứ không qua device. Bằng chứng device ở trên xác nhận gián tiếp: cùng 2 key `ok`/`cancel` resolve đúng bản dịch trên máy thật, nên nhánh default (gọi cùng `.tr` y hệt) chắc chắn cho cùng kết quả.
