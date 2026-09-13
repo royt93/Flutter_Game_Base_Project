@@ -15,6 +15,7 @@ export 'core/cloud_save_provider.dart';
 export 'core/consumer_contract_test_kit.dart';
 export 'core/crash_reporter.dart';
 export 'core/daily_login_service.dart';
+export 'core/daily_quest_service.dart';
 export 'core/energy_service.dart';
 export 'core/haptics.dart';
 export 'core/in_app_review_helper.dart';

@@ -1,5 +1,6 @@
 ## 0.2.0
 
+- Added `DailyQuestService` (IDEA-29): a caller-declared daily/weekly quest tracker — the third reset-cadence mechanism alongside the permanent `AchievementService` and the fixed-calendar `DailyLoginService`. `register(id, targetCount, {period})` declares a quest once; `incrementProgress`/`isCompleted`/`claim` track it per `QuestPeriod` (`daily`/`weekly`), resetting automatically on the `ClampedClock`-backed period boundary so winding the device clock back can't re-claim an already-claimed quest.
 - `RemoteConfigService` (ENH-58): partial remote responses now merge key-by-key on top of asset defaults instead of replacing the whole config (a response missing/omitting a key no longer wipes its asset fallback); added a read-only `snapshot` getter and a `source` getter (`RemoteConfigSource`: `assetOnly`/`remoteMerged`/`remoteFailed`) to inspect where the current config came from.
 - Added reactive `EconomyWallet` with atomic earn/spend and transaction idempotency.
 - Added `GameSessionController` for typed game session state, nested pause reasons and lifecycle bridging.
