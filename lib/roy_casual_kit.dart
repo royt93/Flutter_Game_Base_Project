@@ -35,6 +35,7 @@ export 'core/reminder_service.dart';
 export 'core/remote_config_service.dart';
 export 'core/runtime_flags.dart';
 export 'core/save_integrity.dart';
+export 'core/season_event_service.dart';
 export 'core/share_helper.dart';
 export 'core/storage_service.dart';
 export 'core/versioned_json_store.dart';
