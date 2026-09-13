@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:roy_casual_kit/core/achievement_service.dart';
+import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/daily_login_service.dart';
 import 'package:roy_casual_kit/core/energy_service.dart';
 import 'package:roy_casual_kit/core/haptic_choreographer.dart';
@@ -181,6 +182,22 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
         );
       }
     });
+  }
+
+  // IDEA-45: audio ducking demo — mirrors AudioManager.duckCount on
+  // screen (real device smoke-test evidence: a debug-print based check
+  // turned out unobservable via logcat on this device/build, see the
+  // task's own Quyết định for why this on-screen indicator is used
+  // instead).
+  int _duckDemoCount = 0;
+
+  Future<void> _playDuckDemo() async {
+    final manager = AudioManager.maybe;
+    if (manager == null) return;
+    final future = manager.playSfx('audio/demo_sfx.mp3', duck: true);
+    setState(() => _duckDemoCount = manager.duckCount);
+    await future;
+    if (mounted) setState(() => _duckDemoCount = manager.duckCount);
   }
 
   void _claimQuest(String questId) {
@@ -506,6 +523,37 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                           const _Demo(
                             label: 'SoundToggleFab',
                             child: SoundToggleFab(),
+                          ),
+                          _Demo(
+                            label: 'AudioManager audio ducking (IDEA-45)',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Bấm để phát 1 SFX ngắn — bgm tự giảm '
+                                  'volume trong lúc SFX phát, tự trả về sau '
+                                  'khi xong. Nghe thật trên máy để cảm nhận.',
+                                  style: TextStyle(
+                                    color: NeonTheme.inkSoft,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(height: NeonTheme.s8),
+                                Text(
+                                  'duckCount: $_duckDemoCount'
+                                  '${_duckDemoCount > 0 ? ' (bgm ducked)' : ''}',
+                                  style: TextStyle(
+                                    color: NeonTheme.ink,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: NeonTheme.s8),
+                                CommonButton(
+                                  label: 'Play SFX (duck bgm)',
+                                  onTap: _playDuckDemo,
+                                ),
+                              ],
+                            ),
                           ),
                           _Demo(
                             label:

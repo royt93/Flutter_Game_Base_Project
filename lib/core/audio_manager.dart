@@ -20,6 +20,15 @@ class AudioManager extends GetxService {
   static const _bgmTrack = 'bkg.ogg';
   static const _prefix = 'packages/roy_casual_kit/asset/audio/';
 
+  /// Normal bgm volume — also what a duck (see [playSfx]'s `duck` param)
+  /// restores to once every ducked SFX has finished.
+  static const _bgmVolume = 0.35;
+
+  /// Bgm volume while at least one ducked SFX is playing (IDEA-45) —
+  /// quieter, not silent, so the SFX reads as more important without the
+  /// music fully cutting out.
+  static const _bgmDuckedVolume = 0.08;
+
   final AudioCache _cache = AudioCache(prefix: _prefix);
   late final Bgm _bgm = Bgm(audioCache: _cache);
 
@@ -42,6 +51,17 @@ class AudioManager extends GetxService {
   /// `AudioPlayer` itself.
   @visibleForTesting
   int debugSfxDisposeCount = 0;
+
+  // IDEA-45: number of currently-playing ducked SFX. Bgm volume only drops
+  // on the FIRST concurrent duck and only restores once the LAST one ends —
+  // a counter (not a bool) so overlapping ducked SFX never leave bgm stuck
+  // quiet after the first one finishes while others are still playing.
+  int _duckCount = 0;
+
+  /// Number of currently-playing ducked SFX (0 when bgm is at its normal
+  /// volume) — public (not test-only) since a caller's own UI may want to
+  /// show a small indicator while bgm is ducked.
+  int get duckCount => _duckCount;
 
   /// Gets the instance if already registered (safe to call from game/widget tests).
   static AudioManager? get maybe =>
@@ -73,7 +93,7 @@ class AudioManager extends GetxService {
 
   void startBgm() {
     if (!_ready || muted.value || _bgmPlaying) return;
-    _ignoreAudio(_bgm.play(_bgmTrack, volume: 0.35));
+    _ignoreAudio(_bgm.play(_bgmTrack, volume: _bgmVolume));
     _bgmPlaying = true;
   }
 
@@ -98,14 +118,48 @@ class AudioManager extends GetxService {
     _ignoreAudio(_bgm.resume());
   }
 
+  // IDEA-45: drops bgm volume on the first concurrent duck, restores it
+  // once the last one ends (see _duckCount's doc comment). No-ops if bgm
+  // isn't actually playing — nothing to duck.
+  void _duckBgm() {
+    if (_duckCount == 0 && _bgmPlaying) {
+      dlog('audio ducking: bgm volume -> $_bgmDuckedVolume');
+      _ignoreAudio(_bgm.audioPlayer.setVolume(_bgmDuckedVolume));
+    }
+    _duckCount++;
+  }
+
+  // Not gated on `muted` (unlike startBgm/pauseBgm/resumeBgm): setting
+  // volume while muted/paused is harmless, and gating it would leave bgm
+  // stuck at the ducked volume forever if the user muted mid-duck and later
+  // unmuted, since that later resume has no other trigger to restore it.
+  void _unduckBgm() {
+    if (_duckCount > 0) _duckCount--;
+    if (_duckCount == 0 && _bgmPlaying) {
+      dlog('audio ducking: bgm volume -> $_bgmVolume (restored)');
+      _ignoreAudio(_bgm.audioPlayer.setVolume(_bgmVolume));
+    }
+  }
+
   /// Plays a one-shot SFX from a CONSUMING app's own assets (e.g.
   /// `assets/audio/tap.mp3`), respecting the same [muted] state as the bgm
   /// track. No-ops immediately when muted — doesn't even touch the audio
   /// cache. A fresh [AudioPlayer] is used per call (via [_sfxCache]) so
   /// rapid overlapping taps each play independently instead of cutting each
   /// other off.
-  Future<void> playSfx(String fileName, {double volume = 1.0}) async {
+  ///
+  /// [duck] = true (IDEA-45) temporarily lowers the bgm volume for the
+  /// duration of this SFX (e.g. a win/lose stinger that should read as more
+  /// important than the music) — restored once this SFX finishes, or once
+  /// every OTHER concurrently-playing ducked SFX also finishes, whichever is
+  /// later.
+  Future<void> playSfx(
+    String fileName, {
+    double volume = 1.0,
+    bool duck = false,
+  }) async {
     if (muted.value) return;
+    if (duck) _duckBgm();
     // Constructed INSIDE the try (not before it) — the AudioPlayer
     // constructor itself can throw/reject (e.g. no audio plugin available
     // in a test), and that must be caught same as a play() failure. Stays
@@ -132,6 +186,7 @@ class AudioManager extends GetxService {
       // above → swallow, don't crash
       dlog('playSfx failed for $fileName: $e');
     } finally {
+      if (duck) _unduckBgm();
       if (player != null) {
         // Awaited (not unawaited/fire-and-forget) — a caller that awaits
         // playSfx() should be able to rely on the player being fully gone

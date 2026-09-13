@@ -31,6 +31,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/audio/
 
 icons_launcher:
   image_path: "asset/icon/ic_launcher.png"

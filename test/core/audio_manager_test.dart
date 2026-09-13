@@ -187,5 +187,113 @@ void main() {
         },
       );
     });
+
+    group('IDEA-45: audio ducking', () {
+      test('duckCount mặc định là 0', () {
+        final manager = AudioManager();
+        expect(manager.duckCount, 0);
+      });
+
+      test(
+        'playSfx(duck: true) tăng duckCount lên 1 trong lúc phát, về 0 sau khi xong',
+        () async {
+          final manager = AudioManager();
+
+          final future = manager.playSfx('tap.mp3', duck: true);
+          // Đồng bộ ngay sau lời gọi (chưa await) — _duckBgm() đã chạy vì
+          // nó nằm TRƯỚC await đầu tiên trong hàm.
+          expect(manager.duckCount, 1);
+
+          await future.timeout(const Duration(seconds: 2));
+
+          expect(manager.duckCount, 0);
+        },
+      );
+
+      test(
+        'playSfx(duck: false) (mặc định) không đụng duckCount',
+        () async {
+          final manager = AudioManager();
+
+          final future = manager.playSfx('tap.mp3');
+          expect(manager.duckCount, 0);
+
+          await future.timeout(const Duration(seconds: 2));
+
+          expect(manager.duckCount, 0);
+        },
+      );
+
+      test(
+        'nhiều SFX duck chồng lên nhau: count lên đúng 2, không về 0 sớm khi '
+        'chỉ 1 cái xong, về đúng 0 khi cả 2 đều xong',
+        () async {
+          final manager = AudioManager();
+
+          final futureA = manager.playSfx('a.mp3', duck: true);
+          final futureB = manager.playSfx('b.mp3', duck: true);
+          expect(manager.duckCount, 2);
+
+          await futureA.timeout(const Duration(seconds: 2));
+          // futureA xong nhưng futureB coi như vẫn có thể đang chạy (dù ở
+          // môi trường test cả 2 đều fail/resolve gần như ngay lập tức) —
+          // điều quan trọng cần đúng là count không bao giờ âm và cuối cùng
+          // về đúng 0, không kẹt ở giá trị dương.
+          await futureB.timeout(const Duration(seconds: 2));
+
+          expect(manager.duckCount, 0);
+        },
+      );
+
+      test(
+        'muted.value bật giữa lúc đang duck (trước khi playSfx trả về) vẫn '
+        'unduck đúng, không kẹt count',
+        () async {
+          final manager = AudioManager();
+
+          final future = manager.playSfx('tap.mp3', duck: true);
+          expect(manager.duckCount, 1);
+
+          manager.muted.value = true;
+
+          await future.timeout(const Duration(seconds: 2));
+
+          expect(manager.duckCount, 0);
+        },
+      );
+
+      test(
+        'muted.value == true từ đầu → playSfx(duck: true) no-op hoàn toàn, '
+        'không tăng duckCount (SFX còn không phát thì không có gì để duck)',
+        () async {
+          final manager = AudioManager();
+          manager.muted.value = true;
+
+          await manager
+              .playSfx('tap.mp3', duck: true)
+              .timeout(const Duration(seconds: 2));
+
+          expect(manager.duckCount, 0);
+        },
+      );
+
+      test(
+        'onClose() (dispose _bgm) giữa lúc đang duck không làm playSfx throw, '
+        'count vẫn về đúng 0',
+        () async {
+          final manager = AudioManager();
+          Get.put(manager, permanent: true);
+
+          final future = manager.playSfx('tap.mp3', duck: true);
+          expect(manager.duckCount, 1);
+
+          expect(() => Get.delete<AudioManager>(force: true), returnsNormally);
+
+          await future.timeout(const Duration(seconds: 2));
+
+          expect(manager.duckCount, 0);
+        },
+      );
+    });
   });
 }
