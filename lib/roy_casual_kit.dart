@@ -18,6 +18,7 @@ export 'core/daily_login_service.dart';
 export 'core/daily_quest_service.dart';
 export 'core/energy_service.dart';
 export 'core/experiment_bucketing_service.dart';
+export 'core/haptic_choreographer.dart';
 export 'core/haptics.dart';
 export 'core/in_app_review_helper.dart';
 export 'core/kit_bootstrap.dart';

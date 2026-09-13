@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 
 import 'package:roy_casual_kit/core/daily_login_service.dart';
 import 'package:roy_casual_kit/core/energy_service.dart';
+import 'package:roy_casual_kit/core/haptic_choreographer.dart';
+import 'package:roy_casual_kit/core/haptics.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/share_helper.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
@@ -47,6 +49,25 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // simulates "export, then restore that same backup" round-tripping
   // through the panel's onExport/onImport seam.
   String? _lastBackup;
+
+  // IDEA-41: HapticChoreographer demo — `_haptics` logs each pulse it
+  // actually fires (not just "played") to `_hapticLog`, on-screen proof of
+  // the pulse order/timing this task's device smoke test asserts.
+  late final _haptics = HapticChoreographer(
+    fire: (level) {
+      fireHaptic(level);
+      setState(() {
+        final prefix = (_hapticLog?.isEmpty ?? true) ? '' : '${_hapticLog!} → ';
+        _hapticLog = '$prefix${level.name}';
+      });
+    },
+  );
+  String? _hapticLog;
+
+  void _playHaptic(HapticPattern pattern) {
+    setState(() => _hapticLog = '');
+    _haptics.play(pattern);
+  }
   bool _rewardPopupOpen = false;
   bool _confettiActive = false;
   int _confettiTrigger = 0;
@@ -143,6 +164,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _tutorialSequenceController.dispose();
     _wheelController.dispose();
     _candyTextFieldController.dispose();
+    _haptics.cancel();
     super.dispose();
   }
 
@@ -1201,6 +1223,51 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               CommonButton(
                                 label: 'Bump heat',
                                 onTap: _cycleComboHeat,
+                              ),
+                            ],
+                          ),
+                        ),
+                        _Demo(
+                          label: 'HapticChoreographer (IDEA-41)',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: CommonButton(
+                                      label: 'Reward',
+                                      onTap: () =>
+                                          _playHaptic(HapticPattern.reward),
+                                    ),
+                                  ),
+                                  const SizedBox(width: NeonTheme.s8),
+                                  Expanded(
+                                    child: CommonButton(
+                                      label: 'Combo',
+                                      variant: CommonButtonVariant.secondary,
+                                      onTap: () =>
+                                          _playHaptic(HapticPattern.combo),
+                                    ),
+                                  ),
+                                  const SizedBox(width: NeonTheme.s8),
+                                  Expanded(
+                                    child: CommonButton(
+                                      label: 'Error',
+                                      variant: CommonButtonVariant.danger,
+                                      onTap: () =>
+                                          _playHaptic(HapticPattern.error),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: NeonTheme.s8),
+                              Text(
+                                'Pulses fired: ${_hapticLog?.isEmpty ?? true ? '(none yet)' : _hapticLog}',
+                                style: TextStyle(
+                                  color: NeonTheme.inkSoft,
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           ),
