@@ -27,6 +27,9 @@ class SpotlightOverlay extends StatefulWidget {
     this.holeRadius = 16,
     this.holePadding = 8,
     this.dimColor,
+    this.stepIndicator,
+    this.onSkip,
+    this.skipLabel = 'Skip',
   });
 
   /// The already-mounted target widget to highlight.
@@ -35,6 +38,20 @@ class SpotlightOverlay extends StatefulWidget {
   final String? title;
   final String buttonLabel;
   final VoidCallback onDismiss;
+
+  /// Small progress caption shown above [title]/[message] (e.g. "Step
+  /// 1/3") — null (the default) renders nothing, so a plain 1-off spotlight
+  /// (not part of a [TutorialSequence]) is unaffected (ENH-48).
+  final String? stepIndicator;
+
+  /// When non-null, shows a secondary "skip" action next to [buttonLabel]
+  /// that calls this instead of [onDismiss] — lets the player back out of
+  /// a multi-step sequence early instead of only ever advancing one step
+  /// at a time (ENH-48). Null (the default) hides it entirely.
+  final VoidCallback? onSkip;
+
+  /// Label for the [onSkip] action, only shown when [onSkip] is non-null.
+  final String skipLabel;
 
   /// Defaults to [NeonTheme.purple] — nullable because a `NeonTheme` color
   /// field is no longer a compile-time constant.
@@ -125,6 +142,9 @@ class _SpotlightOverlayState extends State<SpotlightOverlay> {
             color: widget.color ?? NeonTheme.purple,
             onDismiss: widget.onDismiss,
             entranceDuration: entranceDuration,
+            stepIndicator: widget.stepIndicator,
+            onSkip: widget.onSkip,
+            skipLabel: widget.skipLabel,
           ),
       ],
     );
@@ -183,6 +203,9 @@ class _Callout extends StatelessWidget {
     required this.color,
     required this.onDismiss,
     required this.entranceDuration,
+    this.stepIndicator,
+    this.onSkip,
+    this.skipLabel = 'Skip',
   });
 
   final Rect rect;
@@ -193,6 +216,9 @@ class _Callout extends StatelessWidget {
   final Color color;
   final VoidCallback onDismiss;
   final Duration entranceDuration;
+  final String? stepIndicator;
+  final VoidCallback? onSkip;
+  final String skipLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +243,18 @@ class _Callout extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (stepIndicator != null) ...[
+                Text(
+                  stepIndicator!,
+                  style: TextStyle(
+                    color: NeonTheme.inkSoft,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: NeonTheme.s8),
+              ],
               if (title != null) ...[
                 Text(
                   title!,
@@ -238,20 +276,36 @@ class _Callout extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: NeonTheme.s16),
-              Align(
-                // ENH-38: centerEnd resolves against ambient Directionality
-                // (physical right in LTR, physical left in RTL).
-                alignment: AlignmentDirectional.centerEnd,
-                child: SizedBox(
-                  width: 120,
-                  child: NeonDialogButton(
-                    action: NeonDialogAction(
-                      label: buttonLabel,
-                      color: color,
-                      onTap: onDismiss,
+              Row(
+                mainAxisAlignment: onSkip == null
+                    ? MainAxisAlignment.end
+                    : MainAxisAlignment.spaceBetween,
+                children: [
+                  if (onSkip != null)
+                    GestureDetector(
+                      onTap: onSkip,
+                      child: Text(
+                        skipLabel,
+                        style: TextStyle(
+                          color: NeonTheme.inkSoft,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          decoration: TextDecoration.underline,
+                          decorationColor: NeonTheme.inkSoft,
+                        ),
+                      ),
+                    ),
+                  SizedBox(
+                    width: 120,
+                    child: NeonDialogButton(
+                      action: NeonDialogAction(
+                        label: buttonLabel,
+                        color: color,
+                        onTap: onDismiss,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             ],
           ),

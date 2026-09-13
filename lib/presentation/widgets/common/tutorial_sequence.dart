@@ -37,6 +37,13 @@ class TutorialSequenceController extends ChangeNotifier {
 
   bool get isActive => _index >= 0 && _index < _steps.length;
 
+  /// 0-based index of [currentStep] within the running sequence. Only
+  /// meaningful while [isActive] (ENH-48, drives the "Step X/Y" indicator).
+  int get currentIndex => _index;
+
+  /// Total steps in the running sequence. Only meaningful while [isActive].
+  int get stepCount => _steps.length;
+
   /// Starts a new sequence at its first step. A call with an empty [steps]
   /// list is a no-op (nothing to show).
   void start(List<TutorialStep> steps) {
@@ -81,6 +88,8 @@ class TutorialSequence extends StatefulWidget {
     required this.controller,
     required this.child,
     this.onComplete,
+    this.showSkip = true,
+    this.skipLabel = 'Skip',
   });
 
   final TutorialSequenceController controller;
@@ -90,6 +99,14 @@ class TutorialSequence extends StatefulWidget {
   /// or [TutorialSequenceController.skip] called) — a good place to
   /// persist "tutorial seen" so it doesn't show again.
   final VoidCallback? onComplete;
+
+  /// Shows a "Skip" action in every step's overlay that ends the whole
+  /// sequence immediately via [TutorialSequenceController.skip] (ENH-48).
+  /// Set false to force the player through every step one at a time.
+  final bool showSkip;
+
+  /// Label for the skip action, only shown when [showSkip] is true.
+  final String skipLabel;
 
   @override
   State<TutorialSequence> createState() => _TutorialSequenceState();
@@ -137,6 +154,14 @@ class _TutorialSequenceState extends State<TutorialSequence> {
             buttonLabel: step.buttonLabel,
             color: step.color ?? NeonTheme.purple,
             onDismiss: widget.controller.next,
+            // ENH-48: "Step X/Y" so the player knows how much is left, and
+            // an optional early-exit Skip action (the controller already
+            // had skip() — this just wires a button to it).
+            stepIndicator:
+                'Step ${widget.controller.currentIndex + 1}/'
+                '${widget.controller.stepCount}',
+            onSkip: widget.showSkip ? widget.controller.skip : null,
+            skipLabel: widget.skipLabel,
           ),
       ],
     );

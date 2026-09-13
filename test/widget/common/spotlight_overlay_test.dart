@@ -265,4 +265,154 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('ENH-48: stepIndicator/onSkip', () {
+    testWidgets(
+      'không truyền stepIndicator/onSkip (dùng độc lập, không qua TutorialSequence) → không hiện gì thêm',
+      (tester) async {
+        final targetKey = GlobalKey();
+        await tester.pumpWidget(harness(targetKey));
+        await tester.pump();
+
+        expect(find.textContaining('Step'), findsNothing);
+        expect(find.text('Skip'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('truyền stepIndicator → hiện đúng caption đó phía trên title', (
+      tester,
+    ) async {
+      final targetKey = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 200, left: 40),
+                    child: SizedBox(
+                      key: targetKey,
+                      width: 120,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        child: const Text('Target'),
+                      ),
+                    ),
+                  ),
+                ),
+                SpotlightOverlay(
+                  targetKey: targetKey,
+                  message: 'Nhấn vào đây để bắt đầu',
+                  title: 'Bước 1',
+                  stepIndicator: 'Step 1/3',
+                  onDismiss: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Step 1/3'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'truyền onSkip → hiện nút Skip, tap gọi đúng callback (không phải onDismiss)',
+      (tester) async {
+        final targetKey = GlobalKey();
+        var dismissed = false;
+        var skipped = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Stack(
+                children: [
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 200, left: 40),
+                      child: SizedBox(
+                        key: targetKey,
+                        width: 120,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () {},
+                          child: const Text('Target'),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SpotlightOverlay(
+                    targetKey: targetKey,
+                    message: 'Nhấn vào đây để bắt đầu',
+                    title: 'Bước 1',
+                    onDismiss: () => dismissed = true,
+                    onSkip: () => skipped = true,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Skip'), findsOneWidget);
+
+        await tester.tap(find.text('Skip'));
+        await tester.pump();
+
+        expect(skipped, isTrue);
+        expect(dismissed, isFalse);
+      },
+    );
+
+    testWidgets('skipLabel tuỳ chỉnh → hiện đúng chuỗi đó thay vì "Skip"', (
+      tester,
+    ) async {
+      final targetKey = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 200, left: 40),
+                    child: SizedBox(
+                      key: targetKey,
+                      width: 120,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        child: const Text('Target'),
+                      ),
+                    ),
+                  ),
+                ),
+                SpotlightOverlay(
+                  targetKey: targetKey,
+                  message: 'Nhấn vào đây để bắt đầu',
+                  onDismiss: () {},
+                  onSkip: () {},
+                  skipLabel: 'Bỏ qua',
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Skip'), findsNothing);
+      expect(find.text('Bỏ qua'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
