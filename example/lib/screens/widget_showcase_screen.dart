@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -12,6 +11,7 @@ import 'package:roy_casual_kit/core/haptic_choreographer.dart';
 import 'package:roy_casual_kit/core/haptics.dart';
 import 'package:roy_casual_kit/core/local_scoreboard_service.dart';
 import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
+import 'package:roy_casual_kit/core/utils/seeded_random.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/share_helper.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
@@ -35,6 +35,12 @@ class WidgetShowcaseScreen extends StatefulWidget {
 }
 
 class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
+  // FEAT-45: sample gameplay migrated off unseeded dart:math Random() — a
+  // fresh root seed per app session, 2 independent namespaced streams so
+  // spinning the wheel never shifts the leaderboard demo's own sequence
+  // (or vice versa).
+  final _rng = SeededRandomService(DateTime.now().millisecondsSinceEpoch);
+
   bool _toggleOn = false;
   int _tabIndex = 0;
   int _coins = 100;
@@ -302,7 +308,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
 
   void _submitRandomScore() {
     setState(() {
-      _scoreboard.submitScore('You', 1000 + math.Random().nextInt(15000));
+      _scoreboard.submitScore(
+        'You',
+        1000 + _rng.stream('leaderboard_demo').nextInt(15000),
+      );
     });
   }
 
@@ -321,10 +330,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     WheelSegment(label: '5', color: NeonTheme.red),
   ];
   final _wheelController = WheelSpinnerController();
-  final _wheelRng = math.Random();
 
-  void _spinWheel() =>
-      _wheelController.spin(_wheelRng.nextInt(_wheelSegments.length));
+  void _spinWheel() => _wheelController.spin(
+    _rng.stream('wheel_spin').nextInt(_wheelSegments.length),
+  );
 
   void _bumpCoins() => setState(() => _coins += 25);
 

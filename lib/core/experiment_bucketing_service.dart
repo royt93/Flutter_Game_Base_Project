@@ -1,9 +1,9 @@
-import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:get/get.dart';
 
 import 'storage_service.dart';
+import 'utils/fnv1a.dart';
 
 /// Stable A/B-test variant assignment on top of `RemoteConfigService`'s
 /// flat key/value remote config — that service has no notion of "always
@@ -82,23 +82,7 @@ class ExperimentBucketingService extends GetxService {
     String anonymousId,
     String experimentKey,
     int variantCount,
-  ) => _fnv1a('$anonymousId:$experimentKey') % variantCount;
-
-  // FNV-1a, 32-bit — a small, dependency-free string hash. Deterministic
-  // by construction (no reliance on Dart's `String.hashCode`, which is
-  // explicitly NOT guaranteed stable across Dart versions/runs), which
-  // matters here: an experiment's bucket assignment must never shift
-  // under a player just because the app was rebuilt with a newer Dart SDK.
-  static int _fnv1a(String input) {
-    const prime = 16777619;
-    const mask32 = 0xFFFFFFFF;
-    var hash = 2166136261;
-    for (final byte in utf8.encode(input)) {
-      hash = (hash ^ byte) & mask32;
-      hash = (hash * prime) & mask32;
-    }
-    return hash;
-  }
+  ) => fnv1aHash('$anonymousId:$experimentKey') % variantCount;
 
   static String _generateAnonymousId() {
     final random = math.Random.secure();
