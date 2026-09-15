@@ -193,4 +193,116 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('ENH-59: Semantics', () {
+    testWidgets('mặc định hiện đúng "Progress: N%" + value', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: Center(child: CircularProgressRing(progress: 0.4)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final semantics = tester.getSemantics(find.byType(CircularProgressRing));
+      expect(semantics.label, 'Progress: 40%');
+      expect(semantics.value, '40%');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('progress đổi lúc runtime → Semantics cập nhật đúng %', (
+      tester,
+    ) async {
+      var progress = 0.2;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Center(
+              child: CircularProgressRing(progress: progress),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      progress = 0.9;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Center(
+              child: CircularProgressRing(progress: progress),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final semantics = tester.getSemantics(find.byType(CircularProgressRing));
+      expect(semantics.label, 'Progress: 90%');
+      expect(semantics.value, '90%');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('progress > 1.0 clamp về 100% trong Semantics', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: Center(child: CircularProgressRing(progress: 1.5)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final semantics = tester.getSemantics(find.byType(CircularProgressRing));
+      expect(semantics.value, '100%');
+    });
+
+    testWidgets('semanticLabel tuỳ biến ghi đè đúng label mặc định', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: Center(
+              child: CircularProgressRing(
+                progress: 0.5,
+                semanticLabel: 'Daily quest progress',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final semantics = tester.getSemantics(find.byType(CircularProgressRing));
+      expect(semantics.label, 'Daily quest progress');
+    });
+
+    testWidgets(
+      'label center KHÔNG bị lặp lại 2 lần trong semantics tree (excludeSemantics)',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: Center(
+                child: CircularProgressRing(progress: 0.4, label: '40%'),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final semantics = tester.getSemantics(
+          find.byType(CircularProgressRing),
+        );
+        // Chỉ 1 node semantics duy nhất phát ra cho toàn bộ widget — nếu
+        // excludeSemantics bị bỏ, label Text '40%' bên trong sẽ tạo thêm
+        // 1 node semantics con, merge label thành "Progress: 40% 40%".
+        expect(semantics.label, 'Progress: 40%');
+      },
+    );
+  });
 }

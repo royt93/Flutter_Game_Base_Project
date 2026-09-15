@@ -169,6 +169,30 @@ class _WheelSpinnerState extends State<WheelSpinner>
     return a;
   }
 
+  // ENH-59: inverse of _onSpinRequested's targetMod math — given the
+  // current _rotation, which segment's center currently sits under the
+  // fixed top pointer. Used for Semantics only (never for game logic),
+  // so an off-by-a-hair float result rounding to the wrong neighbor at
+  // the exact instant of a landing is harmless.
+  int _currentSegmentIndex() {
+    final n = widget.segments.length;
+    final segmentAngle = 2 * math.pi / n;
+    // The tiny epsilon breaks the exact-tie case at the pristine
+    // rotation == 0 (never spun) state, which sits precisely on a
+    // round-half boundary (-0.5) and would otherwise round to n-1
+    // instead of the 0th segment actually under the pointer at rest.
+    // A real landed spin's rotation is never that exact half-boundary,
+    // so this nudge doesn't affect it. Dart's `%` on int always returns
+    // a non-negative result for a positive divisor, so this needs no
+    // extra clamping even though `.round()` above can be negative.
+    return (-_rotation / segmentAngle - 0.5 + 1e-9).round() % n;
+  }
+
+  String _semanticsLabel() {
+    if (_controller.isAnimating) return 'Spinning';
+    return 'Stopped on ${widget.segments[_currentSegmentIndex()].label}';
+  }
+
   void _onSpinRequested() {
     final resultIndex = widget.controller.resultIndex;
     if (resultIndex >= widget.segments.length) {
@@ -210,39 +234,46 @@ class _WheelSpinnerState extends State<WheelSpinner>
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: widget.size,
-      height: widget.size,
-      child: Stack(
-        alignment: Alignment.topCenter,
-        clipBehavior: Clip.none,
-        children: [
-          Transform.rotate(
-            angle: _rotation,
-            child: CustomPaint(
-              key: const Key('wheelSpinnerPainter'),
-              size: Size.square(widget.size),
-              painter: WheelSpinnerPainter(
-                segments: widget.segments,
-                textDirection: Directionality.of(context),
+    // liveRegion: true (ENH-59) so a screen reader announces the landed
+    // segment as soon as the spin settles, without the user needing to
+    // move focus back to this widget — same convention as ToastBanner.
+    return Semantics(
+      label: _semanticsLabel(),
+      liveRegion: true,
+      child: SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: Stack(
+          alignment: Alignment.topCenter,
+          clipBehavior: Clip.none,
+          children: [
+            Transform.rotate(
+              angle: _rotation,
+              child: CustomPaint(
+                key: const Key('wheelSpinnerPainter'),
+                size: Size.square(widget.size),
+                painter: WheelSpinnerPainter(
+                  segments: widget.segments,
+                  textDirection: Directionality.of(context),
+                ),
               ),
             ),
-          ),
-          Positioned(
-            top: -12,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: NeonTheme.glow(NeonTheme.gold, blur: 10),
-              ),
-              child: Icon(
-                Icons.arrow_drop_down_rounded,
-                size: 44,
-                color: NeonTheme.ink,
+            Positioned(
+              top: -12,
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: NeonTheme.glow(NeonTheme.gold, blur: 10),
+                ),
+                child: Icon(
+                  Icons.arrow_drop_down_rounded,
+                  size: 44,
+                  color: NeonTheme.ink,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

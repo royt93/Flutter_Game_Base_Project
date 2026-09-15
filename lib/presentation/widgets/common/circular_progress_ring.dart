@@ -19,6 +19,7 @@ class CircularProgressRing extends StatelessWidget {
     this.icon,
     this.label,
     this.child,
+    this.semanticLabel,
   });
 
   /// 0.0-1.0.
@@ -30,6 +31,13 @@ class CircularProgressRing extends StatelessWidget {
   final IconData? icon;
   final String? label;
 
+  /// Overrides the default "Progress: N%" Semantics label (ENH-59) — the
+  /// ring itself is drawn entirely via [CustomPaint], so without this a
+  /// screen reader gets nothing for it (a [label]/[icon]/[child] centered
+  /// inside, if any, would still get its own automatic semantics, but that
+  /// doesn't convey "this is a progress indicator" or its percentage).
+  final String? semanticLabel;
+
   /// Arbitrary widget centered inside the ring — takes priority over [icon]
   /// and [label] when non-null (both are ignored), so existing call sites
   /// using [icon]/[label] keep working unchanged.
@@ -38,37 +46,49 @@ class CircularProgressRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ringColor = color ?? NeonTheme.cyan;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
-      duration: NeonTheme.reducedMotion(context)
-          ? Duration.zero
-          : const Duration(milliseconds: 400),
-      curve: Curves.easeOut,
-      builder: (context, t, _) => CustomPaint(
-        size: Size.square(size),
-        painter: _RingPainter(
-          progress: t,
-          color: ringColor,
-          trackColor: trackColor ?? NeonTheme.cardAlt,
-          strokeWidth: strokeWidth,
-        ),
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Center(
-            child: child ??
-                (icon != null
-                    ? Icon(icon, color: ringColor, size: size * 0.36)
-                    : label != null
-                    ? Text(
-                        label!,
-                        style: TextStyle(
-                          color: NeonTheme.ink,
-                          fontWeight: FontWeight.w900,
-                          fontSize: size * 0.24,
-                        ),
-                      )
-                    : null),
+    final percent = (progress.clamp(0.0, 1.0) * 100).round();
+    // Semantics wraps the animated builder (not built fresh inside it) so
+    // the announced value is the settled target percentage, not every
+    // transient in-between frame of the fill-in animation. excludeSemantics
+    // suppresses whatever automatic semantics `label`/`icon`/`child` would
+    // otherwise add on their own (e.g. a `label` Text repeating the same
+    // percentage) so a screen reader hears this node's value exactly once.
+    return Semantics(
+      label: semanticLabel ?? 'Progress: $percent%',
+      value: '$percent%',
+      excludeSemantics: true,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
+        duration: NeonTheme.reducedMotion(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 400),
+        curve: Curves.easeOut,
+        builder: (context, t, _) => CustomPaint(
+          size: Size.square(size),
+          painter: _RingPainter(
+            progress: t,
+            color: ringColor,
+            trackColor: trackColor ?? NeonTheme.cardAlt,
+            strokeWidth: strokeWidth,
+          ),
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Center(
+              child: child ??
+                  (icon != null
+                      ? Icon(icon, color: ringColor, size: size * 0.36)
+                      : label != null
+                      ? Text(
+                          label!,
+                          style: TextStyle(
+                            color: NeonTheme.ink,
+                            fontWeight: FontWeight.w900,
+                            fontSize: size * 0.24,
+                          ),
+                        )
+                      : null),
+            ),
           ),
         ),
       ),

@@ -302,5 +302,106 @@ void main() {
         },
       );
     });
+
+    group('ENH-59: Semantics', () {
+      testWidgets(
+        'mới mount, chưa spin lần nào → Semantics phản ánh đúng segment 0 đang ở dưới con trỏ',
+        (tester) async {
+          await tester.pumpWidget(
+            _wrap(
+              WheelSpinner(
+                segments: segments,
+                controller: WheelSpinnerController(),
+                onSpinEnd: (_) {},
+              ),
+            ),
+          );
+
+          final semantics = tester.getSemantics(find.byType(WheelSpinner));
+          expect(semantics.label, 'Stopped on ${segments[0].label}');
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'đang quay: Semantics báo "Spinning"',
+        (tester) async {
+          final controller = WheelSpinnerController();
+          await tester.pumpWidget(
+            _wrap(
+              WheelSpinner(
+                segments: segments,
+                controller: controller,
+                onSpinEnd: (_) {},
+                spinDuration: const Duration(milliseconds: 300),
+              ),
+            ),
+          );
+
+          controller.spin(2);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          final semantics = tester.getSemantics(find.byType(WheelSpinner));
+          expect(semantics.label, 'Spinning');
+          expect(tester.takeException(), isNull);
+
+          await tester.pumpAndSettle();
+        },
+      );
+
+      for (final target in [0, 1, 2, 3]) {
+        testWidgets(
+          'spin($target) rồi settle → Semantics báo đúng "Stopped on ${segments[target].label}"',
+          (tester) async {
+            final controller = WheelSpinnerController();
+            WheelSegment? landed;
+            await tester.pumpWidget(
+              _wrap(
+                WheelSpinner(
+                  segments: segments,
+                  controller: controller,
+                  onSpinEnd: (s) => landed = s,
+                  spinDuration: const Duration(milliseconds: 300),
+                ),
+              ),
+            );
+
+            controller.spin(target);
+            await tester.pumpAndSettle();
+
+            expect(landed, segments[target]);
+            final semantics = tester.getSemantics(find.byType(WheelSpinner));
+            expect(semantics.label, 'Stopped on ${segments[target].label}');
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
+
+      testWidgets(
+        'Reduce Motion bật: settle ngay, Semantics vẫn đúng segment đã landed',
+        (tester) async {
+          final controller = WheelSpinnerController();
+          await tester.pumpWidget(
+            _wrap(
+              WheelSpinner(
+                segments: segments,
+                controller: controller,
+                onSpinEnd: (_) {},
+                spinDuration: const Duration(seconds: 5),
+              ),
+              reducedMotion: true,
+            ),
+          );
+
+          controller.spin(1);
+          await tester.pump();
+
+          final semantics = tester.getSemantics(find.byType(WheelSpinner));
+          expect(semantics.label, 'Stopped on ${segments[1].label}');
+          expect(tester.takeException(), isNull);
+        },
+      );
+    });
   });
 }
