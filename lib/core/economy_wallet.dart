@@ -15,6 +15,11 @@ class EconomyWallet extends GetxService {
   final _transactions = <String>{};
   static const _key = 'economy_wallet_v1';
 
+  /// Gets the instance if already registered (safe to call from
+  /// game/widget tests).
+  static EconomyWallet? get maybe =>
+      Get.isRegistered<EconomyWallet>() ? Get.find<EconomyWallet>() : null;
+
   @override
   void onInit() {
     super.onInit();

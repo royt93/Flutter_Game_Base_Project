@@ -28,6 +28,13 @@ class RoyLifecycleCoordinator extends GetxService with WidgetsBindingObserver {
   final _hooks = <({String name, RoyLifecycleHook callback})>[];
   RoyLifecycleState? _lastDispatched;
 
+  /// Gets the instance if already registered (safe to call from
+  /// game/widget tests).
+  static RoyLifecycleCoordinator? get maybe =>
+      Get.isRegistered<RoyLifecycleCoordinator>()
+      ? Get.find<RoyLifecycleCoordinator>()
+      : null;
+
   @override
   void onInit() {
     super.onInit();

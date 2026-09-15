@@ -6,6 +6,20 @@ import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/currency_counter.dart';
 
 void main() {
+  tearDown(Get.reset);
+
+  group('ENH-60: .maybe', () {
+    test('trả về null khi chưa Get.put', () {
+      expect(EconomyWallet.maybe, isNull);
+    });
+
+    test('trả về đúng instance khi đã đăng ký', () {
+      final wallet = EconomyWallet(storage: StorageService(null));
+      Get.put(wallet, permanent: true);
+      expect(EconomyWallet.maybe, same(wallet));
+    });
+  });
+
   test(
     'earn/spend are atomic and idempotent under concurrent callbacks',
     () async {

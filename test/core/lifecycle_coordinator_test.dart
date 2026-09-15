@@ -6,6 +6,18 @@ import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
 void main() {
   tearDown(() => Get.reset());
 
+  group('ENH-60: .maybe', () {
+    test('trả về null khi chưa Get.put', () {
+      expect(RoyLifecycleCoordinator.maybe, isNull);
+    });
+
+    test('trả về đúng instance khi đã đăng ký', () {
+      final coordinator = RoyLifecycleCoordinator();
+      Get.put(coordinator);
+      expect(RoyLifecycleCoordinator.maybe, same(coordinator));
+    });
+  });
+
   test('dispatches each transition once, in hook order', () async {
     final coordinator = RoyLifecycleCoordinator();
     Get.put(coordinator);
