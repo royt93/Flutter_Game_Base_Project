@@ -809,4 +809,22 @@ void main() {
       },
     );
   });
+
+  testWidgets(
+    'IDEA-46: LeaderboardList demo hiển thị đúng LocalScoreboardService thật, '
+    'submit random score cập nhật bảng',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      expect(find.text('Alice'), findsOneWidget);
+      expect(find.text('Charlie'), findsOneWidget);
+      expect(find.text('You'), findsNothing);
+
+      await tester.tap(find.text('Submit random score').last);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('You'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

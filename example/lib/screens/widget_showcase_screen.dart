@@ -10,6 +10,7 @@ import 'package:roy_casual_kit/core/daily_login_service.dart';
 import 'package:roy_casual_kit/core/energy_service.dart';
 import 'package:roy_casual_kit/core/haptic_choreographer.dart';
 import 'package:roy_casual_kit/core/haptics.dart';
+import 'package:roy_casual_kit/core/local_scoreboard_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/share_helper.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
@@ -243,6 +244,17 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
         AchievementService.maybe ??
         Get.put(AchievementService(), permanent: true);
     _achievements.register('widget_kit_explorer', 3);
+    // IDEA-46: demo scoreboard — seed 2 rivals only on the very first boot
+    // (an empty board) so relaunching the app doesn't keep re-adding
+    // duplicate Alice/Charlie rows on top of whatever "You" has submitted
+    // since.
+    _scoreboard =
+        LocalScoreboardService.maybe ??
+        Get.put(LocalScoreboardService(), permanent: true);
+    if (_scoreboard.topN(1).isEmpty) {
+      _scoreboard.submitScore('Alice', 12340);
+      _scoreboard.submitScore('Charlie', 8120);
+    }
   }
 
   @override
@@ -282,6 +294,13 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   late final DailyLoginService _dailyLogin;
   late final EnergyService _energy;
   late final AchievementService _achievements;
+  late final LocalScoreboardService _scoreboard;
+
+  void _submitRandomScore() {
+    setState(() {
+      _scoreboard.submitScore('You', 1000 + math.Random().nextInt(15000));
+    });
+  }
 
   void _claimDailyLogin() => setState(() => _dailyLogin.claimToday());
 
@@ -1087,24 +1106,26 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                             ),
                           ),
                           _Demo(
-                            label: 'LeaderboardList',
-                            child: const LeaderboardList(
-                              entries: [
-                                LeaderboardEntry(
-                                  rank: 1,
-                                  name: 'Alice',
-                                  score: '12,340',
+                            label:
+                                'LeaderboardList (IDEA-46: LocalScoreboardService)',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                LeaderboardList(
+                                  entries: [
+                                    for (final entry in _scoreboard.topN(3))
+                                      LeaderboardEntry(
+                                        rank: entry.rank,
+                                        name: entry.name,
+                                        score: entry.score,
+                                        highlighted: entry.name == 'You',
+                                      ),
+                                  ],
                                 ),
-                                LeaderboardEntry(
-                                  rank: 2,
-                                  name: 'You',
-                                  score: '9,870',
-                                  highlighted: true,
-                                ),
-                                LeaderboardEntry(
-                                  rank: 3,
-                                  name: 'Charlie',
-                                  score: '8,120',
+                                const SizedBox(height: NeonTheme.s16),
+                                CommonButton(
+                                  label: 'Submit random score',
+                                  onTap: _submitRandomScore,
                                 ),
                               ],
                             ),
