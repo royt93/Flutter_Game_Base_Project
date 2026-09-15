@@ -133,6 +133,49 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
   });
 
+  testWidgets(
+    'IDEA-47: mua gems cộng dồn đúng qua PurchaseLedgerService, hiển thị đúng số dư',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      expect(find.text('Gems: 0'), findsOneWidget);
+
+      await tester.tap(find.text(r'$0.99').last);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Gems: 100'), findsOneWidget);
+      // Let this toast's full lifecycle (2s hold + reverse animation)
+      // finish before triggering another — 2 concurrent ToastBanner
+      // AnimationControllers under fake-async triggers an unrelated
+      // Flutter framework assertion, not a bug in this demo's own code.
+      await tester.pump(const Duration(seconds: 3));
+
+      await tester.tap(find.text(r'$4.99').last);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Gems: 600'), findsOneWidget);
+
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(seconds: 3));
+    },
+  );
+
+  testWidgets(
+    'IDEA-47: mua Remove Ads chuyển sang "Owned", disable nút, mua lại không lỗi',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      expect(find.text(r'$2.99'), findsWidgets);
+      expect(find.text('Owned'), findsNothing);
+
+      await tester.tap(find.text(r'$2.99').last);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Owned'), findsWidgets);
+      expect(find.text(r'$2.99'), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(seconds: 3));
+    },
+  );
+
   testWidgets('interactive demos update local state on tap', (tester) async {
     await _pumpShowcase(tester);
 

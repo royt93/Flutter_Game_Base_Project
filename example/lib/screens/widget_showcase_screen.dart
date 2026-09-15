@@ -11,6 +11,7 @@ import 'package:roy_casual_kit/core/energy_service.dart';
 import 'package:roy_casual_kit/core/haptic_choreographer.dart';
 import 'package:roy_casual_kit/core/haptics.dart';
 import 'package:roy_casual_kit/core/local_scoreboard_service.dart';
+import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/share_helper.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
@@ -255,6 +256,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       _scoreboard.submitScore('Alice', 12340);
       _scoreboard.submitScore('Charlie', 8120);
     }
+    _purchases =
+        PurchaseLedgerService.maybe ??
+        Get.put(PurchaseLedgerService(), permanent: true);
   }
 
   @override
@@ -425,6 +429,25 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
 
   void _showBoughtToast() {
     ToastBanner.show(context, message: 'Purchased!', color: NeonTheme.lime);
+  }
+
+  // IDEA-47: ShopItemCard demo — simulates "IAP already verified by the
+  // store/server" (no real in_app_purchase backend here) then calls
+  // straight into PurchaseLedgerService, same as a real PurchaseSeam
+  // adapter would after a real receipt check.
+  late final PurchaseLedgerService _purchases;
+
+  static const _removeAdsSku = 'remove_ads';
+  static const _gemsSku = 'gems';
+
+  void _buyGems(int amount) {
+    setState(() => _purchases.grantConsumable(_gemsSku, amount));
+    _showBoughtToast();
+  }
+
+  void _buyRemoveAds() {
+    setState(() => _purchases.grantPermanent(_removeAdsSku));
+    _showBoughtToast();
   }
 
   void _openRewardPopup() => setState(() => _rewardPopupOpen = true);
@@ -1283,33 +1306,51 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                             ),
                           ),
                           _Demo(
-                            label: 'ShopItemCard',
-                            child: Wrap(
-                              spacing: NeonTheme.s16,
-                              runSpacing: NeonTheme.s16,
+                            label:
+                                'ShopItemCard (IDEA-47: PurchaseLedgerService)',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                ShopItemCard(
-                                  icon: Icons.diamond_rounded,
-                                  title: '100 Gems',
-                                  priceLabel: r'$0.99',
-                                  onBuy: _showBoughtToast,
+                                Text(
+                                  'Gems: ${_purchases.balanceOf(_gemsSku)}',
+                                  style: TextStyle(
+                                    color: NeonTheme.ink,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
-                                ShopItemCard(
-                                  icon: Icons.diamond_rounded,
-                                  title: 'Mega Gem Pack',
-                                  priceLabel: r'$4.99',
-                                  ribbonText: 'BEST VALUE',
-                                  ribbonColor: NeonTheme.gold,
-                                  iconColor: NeonTheme.gold,
-                                  onBuy: _showBoughtToast,
-                                ),
-                                ShopItemCard(
-                                  icon: Icons.block_rounded,
-                                  title: 'Remove Ads',
-                                  priceLabel: r'$2.99',
-                                  ribbonText: 'NEW',
-                                  ribbonColor: NeonTheme.lime,
-                                  onBuy: null,
+                                const SizedBox(height: NeonTheme.s8),
+                                Wrap(
+                                  spacing: NeonTheme.s16,
+                                  runSpacing: NeonTheme.s16,
+                                  children: [
+                                    ShopItemCard(
+                                      icon: Icons.diamond_rounded,
+                                      title: '100 Gems',
+                                      priceLabel: r'$0.99',
+                                      onBuy: () => _buyGems(100),
+                                    ),
+                                    ShopItemCard(
+                                      icon: Icons.diamond_rounded,
+                                      title: 'Mega Gem Pack',
+                                      priceLabel: r'$4.99',
+                                      ribbonText: 'BEST VALUE',
+                                      ribbonColor: NeonTheme.gold,
+                                      iconColor: NeonTheme.gold,
+                                      onBuy: () => _buyGems(500),
+                                    ),
+                                    ShopItemCard(
+                                      icon: Icons.block_rounded,
+                                      title: 'Remove Ads',
+                                      priceLabel: _purchases.owns(_removeAdsSku)
+                                          ? 'Owned'
+                                          : r'$2.99',
+                                      ribbonText: 'NEW',
+                                      ribbonColor: NeonTheme.lime,
+                                      onBuy: _purchases.owns(_removeAdsSku)
+                                          ? null
+                                          : _buyRemoveAds,
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
