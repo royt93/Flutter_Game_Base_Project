@@ -187,4 +187,78 @@ void main() {
       },
     );
   });
+
+  group('IDEA-50: revokePermanent/revokeConsumable', () {
+    test('revokePermanent gỡ đúng quyền sở hữu, owns() trả về false sau đó', () {
+      final service = PurchaseLedgerService();
+      service.grantPermanent('remove_ads');
+      expect(service.owns('remove_ads'), isTrue);
+
+      service.revokePermanent('remove_ads');
+
+      expect(service.owns('remove_ads'), isFalse);
+    });
+
+    test('revokePermanent với sku chưa từng sở hữu: no-op, không throw', () {
+      final service = PurchaseLedgerService();
+      expect(() => service.revokePermanent('never_granted'), returnsNormally);
+      expect(service.owns('never_granted'), isFalse);
+    });
+
+    test('revokeConsumable trừ đúng số dư khi đủ', () {
+      final service = PurchaseLedgerService();
+      service.grantConsumable('gems', 10);
+
+      service.revokeConsumable('gems', 4);
+
+      expect(service.balanceOf('gems'), 6);
+    });
+
+    test('revokeConsumable với amount lớn hơn số dư hiện có: clamp về 0, không throw', () {
+      final service = PurchaseLedgerService();
+      service.grantConsumable('gems', 3);
+
+      expect(() => service.revokeConsumable('gems', 100), returnsNormally);
+
+      expect(service.balanceOf('gems'), 0);
+    });
+
+    test('revokeConsumable trên sku chưa từng grant: clamp về 0, không throw', () {
+      final service = PurchaseLedgerService();
+      expect(() => service.revokeConsumable('never_granted', 5), returnsNormally);
+      expect(service.balanceOf('never_granted'), 0);
+    });
+
+    test('revokePermanent/revokeConsumable với sku rỗng/blank throw ArgumentError', () {
+      final service = PurchaseLedgerService();
+      expect(() => service.revokePermanent(''), throwsArgumentError);
+      expect(() => service.revokePermanent('   '), throwsArgumentError);
+      expect(() => service.revokeConsumable('', 1), throwsArgumentError);
+      expect(() => service.revokeConsumable('   ', 1), throwsArgumentError);
+    });
+
+    test('revokeConsumable với amount <= 0 throw ArgumentError', () {
+      final service = PurchaseLedgerService();
+      expect(() => service.revokeConsumable('gems', 0), throwsArgumentError);
+      expect(() => service.revokeConsumable('gems', -1), throwsArgumentError);
+    });
+
+    test(
+      'revokePermanent/revokeConsumable bền vững qua "restart" (instance mới đọc lại đúng)',
+      () async {
+        final service = PurchaseLedgerService();
+        service.grantPermanent('remove_ads');
+        service.grantConsumable('gems', 10);
+        await service.debugPendingSaves;
+
+        service.revokePermanent('remove_ads');
+        service.revokeConsumable('gems', 4);
+        await service.debugPendingSaves;
+
+        final reloaded = PurchaseLedgerService();
+        expect(reloaded.owns('remove_ads'), isFalse);
+        expect(reloaded.balanceOf('gems'), 6);
+      },
+    );
+  });
 }

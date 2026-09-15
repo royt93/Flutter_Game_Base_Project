@@ -180,4 +180,27 @@ class PurchaseLedgerService extends GetxService {
   /// `true` once [sku] has been [grantPermanent]ed, `false` (never
   /// throws) otherwise.
   bool owns(String sku) => _state.permanents.contains(sku);
+
+  /// Reverses a [grantConsumable] — subtracts [amount] from [sku]'s
+  /// balance for a store refund/chargeback arriving after the original
+  /// grant. Clamped at `0` (never throws `RangeError`) rather than going
+  /// negative: the player may have already spent some of that balance by
+  /// the time the refund lands, and a negative "debt" balance has no
+  /// meaningful interpretation here.
+  void revokeConsumable(String sku, int amount) {
+    _validateSku(sku);
+    _validateAmount(amount);
+    final current = _state.consumables[sku] ?? 0;
+    _state.consumables[sku] = amount >= current ? 0 : current - amount;
+    _scheduleSave();
+  }
+
+  /// Reverses a [grantPermanent] — for a store refund/chargeback. Safe to
+  /// call for a [sku] never granted (no-op, mirrors [grantPermanent]'s own
+  /// "safe to call again" symmetry).
+  void revokePermanent(String sku) {
+    _validateSku(sku);
+    _state.permanents.remove(sku);
+    _scheduleSave();
+  }
 }
