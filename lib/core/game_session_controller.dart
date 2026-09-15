@@ -83,7 +83,11 @@ class GameSessionController extends GetxController {
 
   SdkResult<GameSessionSnapshot> restart() {
     snapshot.value = const GameSessionSnapshot(GameSessionPhase.loading);
-    events.add(GameSessionPhase.loading);
+    // Resets, not appends — `events` is this session's history, and a
+    // restart starts a NEW session; keeping every prior session's history
+    // here would grow unboundedly across many restarts (e.g. an
+    // endless-runner replayed hundreds of times in one long app run).
+    events.assignAll([GameSessionPhase.loading]);
     return SdkSuccess(snapshot.value);
   }
 

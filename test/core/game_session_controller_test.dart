@@ -57,4 +57,52 @@ void main() {
     await tester.pump();
     expect(find.text('ready'), findsOneWidget);
   });
+
+  group('ENH-61: restart() resets events instead of appending forever', () {
+    test('restart() resets events to just [loading], không giữ lịch sử cũ', () {
+      final c = GameSessionController();
+      c.markReady();
+      c.start();
+      c.win();
+      expect(c.events, [GameSessionPhase.ready, GameSessionPhase.playing, GameSessionPhase.won]);
+
+      c.restart();
+
+      expect(c.events, [GameSessionPhase.loading]);
+    });
+
+    test('restart() reset đúng snapshot', () {
+      final c = GameSessionController();
+      c.markReady();
+      c.start();
+      c.restart();
+      expect(c.snapshot.value.phase, GameSessionPhase.loading);
+    });
+
+    test('100 lần restart() liên tiếp: events không phình to theo số lần gọi', () {
+      final c = GameSessionController();
+      for (var i = 0; i < 100; i++) {
+        c.restart();
+      }
+      expect(c.events.length, 1);
+      expect(c.events, [GameSessionPhase.loading]);
+    });
+
+    test('hành vi các transition khác không đổi sau khi restart()', () {
+      final c = GameSessionController();
+      c.markReady();
+      c.start();
+      c.restart();
+
+      expect(c.markReady().isSuccess, isTrue);
+      expect(c.start().isSuccess, isTrue);
+      expect(c.win().isSuccess, isTrue);
+      expect(c.events, [
+        GameSessionPhase.loading,
+        GameSessionPhase.ready,
+        GameSessionPhase.playing,
+        GameSessionPhase.won,
+      ]);
+    });
+  });
 }
