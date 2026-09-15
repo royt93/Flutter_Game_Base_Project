@@ -35,6 +35,7 @@ export 'core/purchase_seam.dart';
 export 'core/reminder_service.dart';
 export 'core/remote_config_service.dart';
 export 'core/remote_content_pack.dart';
+export 'core/replay_recorder.dart';
 export 'core/runtime_flags.dart';
 export 'core/save_integrity.dart';
 export 'core/season_event_service.dart';

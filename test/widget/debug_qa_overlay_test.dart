@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/core/replay_recorder.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/debug_qa_overlay.dart';
@@ -223,5 +224,110 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+  });
+
+  group('IDEA-42: Replay tab', () {
+    Future<void> openReplayTab(WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      Get.put(StorageService(await SharedPreferences.getInstance()));
+      Get.put(ReplayRecorder(), permanent: true);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: DebugQaOverlay(child: Material(child: Text('app content'))),
+        ),
+      );
+      await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+      await tester.pump();
+      await tester.tap(find.text('Replay'));
+      await tester.pump();
+    }
+
+    testWidgets(
+      'ReplayRecorder chưa Get.put: tab Replay báo rõ thay vì crash',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        Get.put(StorageService(await SharedPreferences.getInstance()));
+        // Cố ý KHÔNG Get.put ReplayRecorder.
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: DebugQaOverlay(child: Material(child: Text('app content'))),
+          ),
+        );
+        await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+        await tester.pump();
+        await tester.tap(find.text('Replay'));
+        await tester.pump();
+
+        expect(find.textContaining('chưa được đăng ký'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('mặc định: chưa ghi, 0 sự kiện, nút Stop/Export disabled', (
+      tester,
+    ) async {
+      await openReplayTab(tester);
+
+      expect(find.textContaining('Không ghi — 0 sự kiện'), findsOneWidget);
+      final stopButton = tester.widget<CommonButton>(
+        find.byKey(const Key('debugQaReplayStop')),
+      );
+      final exportButton = tester.widget<CommonButton>(
+        find.byKey(const Key('debugQaReplayExport')),
+      );
+      expect(stopButton.onTap, isNull);
+      expect(exportButton.onTap, isNull);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('bấm Start: chuyển sang trạng thái đang ghi', (tester) async {
+      await openReplayTab(tester);
+
+      await tester.tap(find.byKey(const Key('debugQaReplayStart')));
+      await tester.pump();
+
+      expect(find.textContaining('Đang ghi'), findsOneWidget);
+      expect(ReplayRecorder.maybe!.isRecording, isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'bấm Start rồi record thủ công rồi Export: hiện đúng JSON chứa event vừa ghi',
+      (tester) async {
+        await openReplayTab(tester);
+
+        await tester.tap(find.byKey(const Key('debugQaReplayStart')));
+        await tester.pump();
+        ReplayRecorder.maybe!.record('tap', {'x': 1});
+        // Panel State.eventCount snapshot chỉ cập nhật qua auto-refresh
+        // 500ms timer sẵn có của DebugQaOverlay (record() tự nó không gọi
+        // setState) — chờ 1 tick timer để panel thấy đúng eventCount mới.
+        await tester.pump(const Duration(milliseconds: 600));
+
+        await tester.tap(find.byKey(const Key('debugQaReplayExport')));
+        await tester.pump();
+
+        final output = find.byKey(const Key('debugQaReplayExportOutput'));
+        expect(output, findsOneWidget);
+        final text = tester.widget<SelectableText>(output).data!;
+        expect(text, contains('"type": "tap"'));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('bấm Stop: quay về trạng thái không ghi', (tester) async {
+      await openReplayTab(tester);
+
+      await tester.tap(find.byKey(const Key('debugQaReplayStart')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('debugQaReplayStop')));
+      await tester.pump();
+
+      expect(find.textContaining('Không ghi'), findsOneWidget);
+      expect(ReplayRecorder.maybe!.isRecording, isFalse);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

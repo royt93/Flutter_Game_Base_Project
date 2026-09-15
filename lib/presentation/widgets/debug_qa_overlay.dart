@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/app_info.dart';
 import '../../core/audio_manager.dart';
 import '../../core/locale_service.dart';
 import '../../core/neon_theme.dart';
+import '../../core/replay_recorder.dart';
 import '../../core/storage_service.dart';
 import '../../core/utils/clamped_clock.dart';
 import '../../core/utils/trusted_clock.dart';
@@ -50,6 +53,26 @@ class _DebugQaOverlayState extends State<DebugQaOverlay> {
   late final TextEditingController _playgroundLabelController =
       TextEditingController(text: 'Preview');
 
+  // IDEA-42: Replay tab state — the exported capsule JSON, shown until
+  // overwritten by the next export or the panel closes.
+  String? _replayExport;
+
+  void _startReplay() =>
+      setState(() => ReplayRecorder.maybe?.start(seed: DateTime.now().millisecondsSinceEpoch));
+
+  void _stopReplay() => setState(() => ReplayRecorder.maybe?.stop());
+
+  void _exportReplay() {
+    final recorder = ReplayRecorder.maybe;
+    if (recorder == null) return;
+    final capsule = recorder.buildCapsule(appVersion: kAppVersion);
+    setState(
+      () => _replayExport = const JsonEncoder.withIndent(
+        '  ',
+      ).convert(capsule.toJson()),
+    );
+  }
+
   void _toggle() {
     setState(() => _open = !_open);
     _refreshTimer?.cancel();
@@ -93,6 +116,10 @@ class _DebugQaOverlayState extends State<DebugQaOverlay> {
             playgroundLabelController: _playgroundLabelController,
             onPlaygroundVariantChanged: _setPlaygroundVariant,
             onPlaygroundColorChanged: _setPlaygroundColor,
+            replayExport: _replayExport,
+            onStartReplay: _startReplay,
+            onStopReplay: _stopReplay,
+            onExportReplay: _exportReplay,
           ),
         // Kept on top of the panel (rather than under it) so long-pressing
         // the corner again always closes the panel too, not just tapping
@@ -124,6 +151,10 @@ class _Panel extends StatelessWidget {
     required this.playgroundLabelController,
     required this.onPlaygroundVariantChanged,
     required this.onPlaygroundColorChanged,
+    required this.replayExport,
+    required this.onStartReplay,
+    required this.onStopReplay,
+    required this.onExportReplay,
   });
 
   final VoidCallback onClose;
@@ -134,6 +165,10 @@ class _Panel extends StatelessWidget {
   final TextEditingController playgroundLabelController;
   final ValueChanged<CommonButtonVariant> onPlaygroundVariantChanged;
   final ValueChanged<Color> onPlaygroundColorChanged;
+  final String? replayExport;
+  final VoidCallback onStartReplay;
+  final VoidCallback onStopReplay;
+  final VoidCallback onExportReplay;
 
   @override
   Widget build(BuildContext context) {
@@ -195,19 +230,33 @@ class _Panel extends StatelessWidget {
                               onTap: () => onTabChanged(1),
                             ),
                           ),
+                          Expanded(
+                            child: _TabButton(
+                              label: 'Replay',
+                              selected: tab == 2,
+                              onTap: () => onTabChanged(2),
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Flexible(
-                        child: tab == 0
-                            ? const _StateTab()
-                            : _PlaygroundTab(
-                                variant: playgroundVariant,
-                                color: playgroundColor,
-                                labelController: playgroundLabelController,
-                                onVariantChanged: onPlaygroundVariantChanged,
-                                onColorChanged: onPlaygroundColorChanged,
-                              ),
+                        child: switch (tab) {
+                          0 => const _StateTab(),
+                          1 => _PlaygroundTab(
+                              variant: playgroundVariant,
+                              color: playgroundColor,
+                              labelController: playgroundLabelController,
+                              onVariantChanged: onPlaygroundVariantChanged,
+                              onColorChanged: onPlaygroundColorChanged,
+                            ),
+                          _ => _ReplayTab(
+                              export: replayExport,
+                              onStart: onStartReplay,
+                              onStop: onStopReplay,
+                              onExport: onExportReplay,
+                            ),
+                        },
                       ),
                     ],
                   ),
@@ -430,6 +479,79 @@ class _PlaygroundTab extends StatelessWidget {
                 ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// IDEA-42: start/stop/export controls for [ReplayRecorder] — lets a QA
+/// tester capture a bounded window of gameplay events and hand the
+/// resulting JSON capsule to a developer, instead of a screen recording
+/// that can't be fed back into the game to reproduce a bug.
+class _ReplayTab extends StatelessWidget {
+  const _ReplayTab({
+    required this.export,
+    required this.onStart,
+    required this.onStop,
+    required this.onExport,
+  });
+
+  final String? export;
+  final VoidCallback onStart;
+  final VoidCallback onStop;
+  final VoidCallback onExport;
+
+  @override
+  Widget build(BuildContext context) {
+    final recorder = ReplayRecorder.maybe;
+    if (recorder == null) {
+      return const Text(
+        'ReplayRecorder chưa được đăng ký (Get.put) trong app này.',
+      );
+    }
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            recorder.isRecording
+                ? 'Đang ghi — ${recorder.eventCount} sự kiện'
+                : 'Không ghi — ${recorder.eventCount} sự kiện trong buffer',
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              CommonButton(
+                key: const Key('debugQaReplayStart'),
+                label: 'Start',
+                onTap: recorder.isRecording ? null : onStart,
+              ),
+              CommonButton(
+                key: const Key('debugQaReplayStop'),
+                label: 'Stop',
+                variant: CommonButtonVariant.secondary,
+                onTap: recorder.isRecording ? onStop : null,
+              ),
+              CommonButton(
+                key: const Key('debugQaReplayExport'),
+                label: 'Export',
+                variant: CommonButtonVariant.secondary,
+                onTap: recorder.eventCount == 0 ? null : onExport,
+              ),
+            ],
+          ),
+          if (export != null) ...[
+            const SizedBox(height: 8),
+            const Divider(),
+            SelectableText(
+              export!,
+              key: const Key('debugQaReplayExportOutput'),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+            ),
+          ],
         ],
       ),
     );

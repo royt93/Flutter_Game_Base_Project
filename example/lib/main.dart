@@ -79,6 +79,11 @@ Future<void> app({bool withAudio = !isE2eTest}) async {
   );
   final store = StorageService.to;
   dlog('app: bootstrap done');
+  // IDEA-42: registered unconditionally (not gated by `withAudio`/module
+  // flags) — this is a pure in-memory debug aid, no platform channel, so
+  // it's safe under E2E test too and the Replay tab in DebugQaOverlay
+  // needs it to not just show "chưa được đăng ký".
+  Get.put(ReplayRecorder(), permanent: true);
   NeonTheme.dark = store.getBool(StorageKeys.themeDark);
   NeonTheme.colorBlindSafe = store.getBool(StorageKeys.colorBlindSafe);
   final locale = LocaleService.maybe!;

@@ -11,6 +11,7 @@ import 'package:roy_casual_kit/core/haptic_choreographer.dart';
 import 'package:roy_casual_kit/core/haptics.dart';
 import 'package:roy_casual_kit/core/local_scoreboard_service.dart';
 import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
+import 'package:roy_casual_kit/core/replay_recorder.dart';
 import 'package:roy_casual_kit/core/utils/seeded_random.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/share_helper.dart';
@@ -307,12 +308,11 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   late final LocalScoreboardService _scoreboard;
 
   void _submitRandomScore() {
-    setState(() {
-      _scoreboard.submitScore(
-        'You',
-        1000 + _rng.stream('leaderboard_demo').nextInt(15000),
-      );
+    final score = 1000 + _rng.stream('leaderboard_demo').nextInt(15000);
+    ReplayRecorder.maybe?.record('leaderboard_submit', {
+      'expectedOutcome': score,
     });
+    setState(() => _scoreboard.submitScore('You', score));
   }
 
   void _claimDailyLogin() => setState(() => _dailyLogin.claimToday());
@@ -331,9 +331,15 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   ];
   final _wheelController = WheelSpinnerController();
 
-  void _spinWheel() => _wheelController.spin(
-    _rng.stream('wheel_spin').nextInt(_wheelSegments.length),
-  );
+  void _spinWheel() {
+    final segment = _rng.stream('wheel_spin').nextInt(_wheelSegments.length);
+    // IDEA-42: recorded (no-op if ReplayRecorder.start() was never called)
+    // so a QA session capturing this demo can later replay the exact same
+    // spins via `replayCapsule` — 'expectedOutcome' is that helper's own
+    // divergence-check convention.
+    ReplayRecorder.maybe?.record('wheel_spin', {'expectedOutcome': segment});
+    _wheelController.spin(segment);
+  }
 
   void _bumpCoins() => setState(() => _coins += 25);
 
