@@ -12,7 +12,14 @@ class EconomyWallet extends GetxService {
   final StorageService storage;
   final AsyncActionGuard _guard;
   final balances = <String, int>{}.obs;
-  final _transactions = <String>{};
+  // Bounded FIFO of recently-processed transaction ids — a plain List (not
+  // a fancier LRU) is the simplest structure that satisfies "don't grow
+  // unboundedly", same posture as ReplayRecorder's ring buffer (IDEA-42).
+  // Persisted alongside `balances` (see `_hydrate`/`_apply`) so idempotency
+  // survives a restart: without this, a store replaying an already-applied
+  // receipt after the app was killed would double-apply it.
+  final _transactions = <String>[];
+  static const _transactionsCapacity = 200;
   static const _key = 'economy_wallet_v1';
 
   /// Gets the instance if already registered (safe to call from
@@ -32,15 +39,36 @@ class EconomyWallet extends GetxService {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is! Map) return;
-      final next = <String, int>{};
-      for (final entry in decoded.entries) {
-        if (entry.key is String &&
-            entry.value is int &&
-            (entry.value as int) >= 0) {
-          next[entry.key as String] = entry.value as int;
+
+      // ENH-62: the new format wraps balances under a 'balances' key; the
+      // OLD format (before this change) WAS the balances map itself, so
+      // whether that key is present is exactly how the two are told apart
+      // — a save from before this change has no 'balances' key at all.
+      final rawBalances = decoded.containsKey('balances')
+          ? decoded['balances']
+          : decoded;
+      if (rawBalances is Map) {
+        final next = <String, int>{};
+        for (final entry in rawBalances.entries) {
+          if (entry.key is String &&
+              entry.value is int &&
+              (entry.value as int) >= 0) {
+            next[entry.key as String] = entry.value as int;
+          }
         }
+        balances.assignAll(next);
       }
-      balances.assignAll(next);
+
+      // A missing key (old format) or a wrong-typed value (corrupt) both
+      // fall back to "no transactions known" rather than throwing — worst
+      // case a single already-applied transaction gets re-applied once
+      // right after this migration, never a crash or a lost balance read.
+      final rawTransactions = decoded['transactions'];
+      if (rawTransactions is List) {
+        _transactions
+          ..clear()
+          ..addAll(rawTransactions.whereType<String>());
+      }
     } catch (_) {
       balances.clear();
     }
@@ -83,10 +111,22 @@ class EconomyWallet extends GetxService {
       );
     }
     final snapshot = {...balances, currency: next};
+    final nextTransactions = [..._transactions, transactionId];
+    if (nextTransactions.length > _transactionsCapacity) {
+      nextTransactions.removeRange(
+        0,
+        nextTransactions.length - _transactionsCapacity,
+      );
+    }
     try {
-      await storage.setString(_key, jsonEncode(snapshot));
+      await storage.setString(
+        _key,
+        jsonEncode({'balances': snapshot, 'transactions': nextTransactions}),
+      );
       balances.assignAll(snapshot);
-      _transactions.add(transactionId);
+      _transactions
+        ..clear()
+        ..addAll(nextTransactions);
       return SdkSuccess(next);
     } catch (error, stack) {
       return SdkFailure(
