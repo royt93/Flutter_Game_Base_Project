@@ -170,6 +170,24 @@ class AchievementService extends GetxService {
     return (_progressMap[achievementId] ?? 0) >= threshold;
   }
 
+  /// Current progress for [achievementId] — `0` (never throws) for an id
+  /// with no progress yet, whether or not it was ever [register]ed. Keeps
+  /// reflecting the true accumulated value even past the threshold (an
+  /// already-completed achievement isn't "capped" at its threshold here).
+  int progressOf(String achievementId) {
+    _validateId(achievementId);
+    return _progressMap[achievementId] ?? 0;
+  }
+
+  /// The threshold declared via [register] for [achievementId], or `null`
+  /// if it was never registered — distinct from [isCompleted]'s treatment
+  /// of "never registered" as `false`, since a progress-bar UI needs to
+  /// tell "no achievement declared" apart from "declared, not yet met".
+  int? thresholdOf(String achievementId) {
+    _validateId(achievementId);
+    return _thresholds[achievementId];
+  }
+
   static final int _maxInt = 0x7FFFFFFFFFFFFFFF;
 
   void _validateId(String achievementId) {

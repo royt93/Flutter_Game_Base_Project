@@ -343,5 +343,52 @@ void main() {
         expect(eventsB, ['wins']);
       });
     });
+
+    group('IDEA-51: progressOf/thresholdOf', () {
+      test('progressOf trả về 0 cho achievement chưa từng có progress, không throw', () {
+        final service = AchievementService();
+        expect(service.progressOf('never_touched'), 0);
+      });
+
+      test('progressOf khớp đúng với những gì incrementProgress đã cộng dồn', () {
+        final service = AchievementService();
+        service.register('wins', 10);
+        service.incrementProgress('wins', 3);
+        service.incrementProgress('wins', 4);
+        expect(service.progressOf('wins'), 7);
+      });
+
+      test(
+        'progressOf vẫn tiếp tục phản ánh đúng sau khi đã hoàn thành achievement, không bị khoá ở đúng threshold',
+        () {
+          final service = AchievementService();
+          service.register('wins', 5);
+          service.incrementProgress('wins', 5);
+          expect(service.isCompleted('wins'), isTrue);
+
+          service.incrementProgress('wins', 3);
+          expect(service.progressOf('wins'), 8); // vượt threshold, không kẹt ở 5
+        },
+      );
+
+      test('thresholdOf trả về null cho id chưa từng register', () {
+        final service = AchievementService();
+        expect(service.thresholdOf('never_registered'), isNull);
+      });
+
+      test('thresholdOf trả về đúng ngưỡng đã register', () {
+        final service = AchievementService();
+        service.register('wins', 10);
+        expect(service.thresholdOf('wins'), 10);
+      });
+
+      test('progressOf/thresholdOf với achievementId rỗng/blank throw ArgumentError', () {
+        final service = AchievementService();
+        expect(() => service.progressOf(''), throwsArgumentError);
+        expect(() => service.progressOf('   '), throwsArgumentError);
+        expect(() => service.thresholdOf(''), throwsArgumentError);
+        expect(() => service.thresholdOf('   '), throwsArgumentError);
+      });
+    });
   });
 }
