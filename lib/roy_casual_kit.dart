@@ -29,6 +29,7 @@ export 'core/game_session_controller.dart';
 export 'core/economy_wallet.dart';
 export 'core/neon_theme.dart';
 export 'core/offline_progression_service.dart';
+export 'core/onboarding_coordinator_service.dart';
 export 'core/performance_tier_service.dart';
 export 'core/purchase_ledger_service.dart';
 export 'core/purchase_seam.dart';

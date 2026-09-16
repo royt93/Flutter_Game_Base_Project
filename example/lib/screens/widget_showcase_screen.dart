@@ -10,6 +10,7 @@ import 'package:roy_casual_kit/core/energy_service.dart';
 import 'package:roy_casual_kit/core/haptic_choreographer.dart';
 import 'package:roy_casual_kit/core/haptics.dart';
 import 'package:roy_casual_kit/core/local_scoreboard_service.dart';
+import 'package:roy_casual_kit/core/onboarding_coordinator_service.dart';
 import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
 import 'package:roy_casual_kit/core/replay_recorder.dart';
 import 'package:roy_casual_kit/core/utils/seeded_random.dart';
@@ -150,6 +151,35 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     );
   }
 
+  // IDEA-54: runs whichever flow OnboardingCoordinatorService says is next
+  // (by priority: 'widget_kit_intro' first, then 'shop_tip') through the
+  // ACTUAL TutorialSequence widget above — the coordinator itself never
+  // touches TutorialSequenceController; this is the "caller" that does.
+  // Marks the flow seen once TutorialSequenceController reports it's no
+  // longer active, so a 2nd tap always advances to the next flow (or
+  // shows nothing once both are seen) instead of repeating the same one.
+  late final OnboardingCoordinatorService _onboarding;
+
+  void _runNextOnboardingFlow() {
+    final flowId = _onboarding.nextEligibleFlow();
+    if (flowId == null) return;
+
+    void onSequenceChanged() {
+      if (!_tutorialSequenceController.isActive) {
+        _tutorialSequenceController.removeListener(onSequenceChanged);
+        _onboarding.markFlowSeen(flowId);
+        if (mounted) setState(() {});
+      }
+    }
+
+    _tutorialSequenceController.addListener(onSequenceChanged);
+    if (flowId == 'widget_kit_intro') {
+      _startTutorialSequence();
+    } else {
+      _startTutorialSequenceFromJson();
+    }
+  }
+
   // IDEA-08: Game Feel demo state — SquashStretch tap count, a
   // ScreenShakeController the caller owns/disposes, and a cycling combo
   // heat value.
@@ -275,6 +305,15 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _purchases =
         PurchaseLedgerService.maybe ??
         Get.put(PurchaseLedgerService(), permanent: true);
+    // IDEA-54: 2 sample flows — 'widget_kit_intro' (the existing 2-step
+    // TutorialSequence demo above) outranks 'shop_tip' (the JSON-authored
+    // one), so the FIRST call to _runNextOnboardingFlow always starts the
+    // intro, never the shop tip, until the intro is marked seen.
+    _onboarding =
+        OnboardingCoordinatorService.maybe ??
+        Get.put(OnboardingCoordinatorService(), permanent: true);
+    _onboarding.registerFlow('widget_kit_intro', priority: 10);
+    _onboarding.registerFlow('shop_tip', priority: 0);
   }
 
   @override
@@ -984,6 +1023,25 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   label: 'Start from JSON (IDEA-35)',
                                   variant: CommonButtonVariant.secondary,
                                   onTap: _startTutorialSequenceFromJson,
+                                ),
+                              ],
+                            ),
+                          ),
+                          _Demo(
+                            label: 'OnboardingCoordinatorService (IDEA-54)',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Next eligible flow: '
+                                  '${_onboarding.nextEligibleFlow() ?? "(none — all seen)"}',
+                                ),
+                                const SizedBox(height: NeonTheme.s8),
+                                CommonButton(
+                                  label: 'Run next onboarding flow',
+                                  onTap: _onboarding.nextEligibleFlow() == null
+                                      ? null
+                                      : _runNextOnboardingFlow,
                                 ),
                               ],
                             ),

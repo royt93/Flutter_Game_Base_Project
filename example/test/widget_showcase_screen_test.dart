@@ -940,4 +940,47 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'IDEA-54: OnboardingCoordinatorService chạy đúng thứ tự ưu tiên qua TutorialSequence thật, không lặp lại sau khi đã xem',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      // 'widget_kit_intro' (priority 10) phải chạy TRƯỚC 'shop_tip' (priority 0).
+      expect(find.text('Next eligible flow: widget_kit_intro'), findsOneWidget);
+
+      await tester.tap(find.text('Run next onboarding flow').last);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Step 1 of 2'), findsOneWidget);
+      await tester.tap(find.text('Got it'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(find.text('Got it'));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Flow đầu tiên đã xong — coordinator phải chuyển sang flow tiếp theo,
+      // không lặp lại chính flow vừa chạy.
+      expect(find.text('Next eligible flow: shop_tip'), findsOneWidget);
+
+      await tester.tap(find.text('Run next onboarding flow').last);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(find.text('Got it'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(find.text('Got it'));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Cả 2 flow đã xem — không còn flow nào eligible, nút tự disable.
+      expect(
+        find.text('Next eligible flow: (none — all seen)'),
+        findsOneWidget,
+      );
+      final button = tester
+          .widgetList<CommonButton>(
+            find.widgetWithText(CommonButton, 'Run next onboarding flow'),
+          )
+          .first;
+      expect(button.onTap, isNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
