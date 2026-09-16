@@ -127,7 +127,13 @@ class RemoteContentPack<T> {
     if (decoded is! Map) return null;
     final json = decoded.cast<String, Object?>();
 
-    final storedVersion = asIntOr(json['schemaVersion'], schemaVersion);
+    // BUG-37: default 0 for a missing field — matching VersionedJsonStore's
+    // own trust-boundary convention exactly. An asset author easily forgets
+    // to add schemaVersion on a first-ever authored file; treating "absent"
+    // as "already current" (the old default here) would skip migrate
+    // entirely and hand fromJson a possibly-stale shape with no signal
+    // anything went wrong.
+    final storedVersion = asIntOr(json['schemaVersion'], 0);
     if (storedVersion > schemaVersion) return null;
     if (storedVersion < schemaVersion) {
       final migrateFn = migrate;

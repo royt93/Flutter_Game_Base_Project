@@ -244,4 +244,124 @@ void main() {
     expect(level, isNull);
     expect(pack.current, isNull);
   });
+
+  group('BUG-37: schemaVersion vắng mặt — default phải khớp VersionedJsonStore (0, không phải "current")', () {
+    test(
+      'asset thiếu schemaVersion, pack có schemaVersion > 0 VÀ có migrate: chạy qua migrate(0, json) đúng',
+      () async {
+        var migrateCalledWithVersion = -1;
+        final pack = RemoteContentPack<_Level>(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          migrate: (fromVersion, json) {
+            migrateCalledWithVersion = fromVersion;
+            return {...json, 'schemaVersion': 1};
+          },
+          bundle: _FakeAssetBundle({
+            // Không có 'schemaVersion' — mô phỏng asset author quên thêm field.
+            _assetPath: jsonEncode({'id': 9, 'name': 'No Version Level'}),
+          }),
+        );
+
+        final level = await pack.load();
+
+        expect(migrateCalledWithVersion, 0);
+        expect(level!.name, 'No Version Level');
+      },
+    );
+
+    test(
+      'asset thiếu schemaVersion, pack có schemaVersion > 0 NHƯNG không có migrate: bị từ chối an toàn, không throw',
+      () async {
+        final pack = RemoteContentPack<_Level>(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          bundle: _FakeAssetBundle({
+            _assetPath: jsonEncode({'id': 9, 'name': 'No Version Level'}),
+          }),
+        );
+
+        final level = await pack.load();
+
+        expect(level, isNull);
+        expect(pack.current, isNull);
+      },
+    );
+
+    test(
+      'asset thiếu schemaVersion, pack có schemaVersion == 0 (mặc định): vẫn được chấp nhận bình thường',
+      () async {
+        final pack = RemoteContentPack<_Level>(
+          assetPath: _assetPath,
+          schemaVersion: 0,
+          fromJson: _Level.fromJson,
+          bundle: _FakeAssetBundle({
+            _assetPath: jsonEncode({'id': 9, 'name': 'No Version Level'}),
+          }),
+        );
+
+        final level = await pack.load();
+
+        expect(level!.name, 'No Version Level');
+      },
+    );
+
+    test(
+      'fetchRemote thiếu schemaVersion, có migrate: chạy qua migrate(0, json) đúng (network path, giống asset path)',
+      () async {
+        final envelope = signExport(
+          {'id': 10, 'label': 'Legacy Remote Level'},
+          _secret,
+        );
+        var migrateCalledWithVersion = -1;
+        final pack = RemoteContentPack<_Level>(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          contentSecret: _secret,
+          migrate: (fromVersion, json) {
+            migrateCalledWithVersion = fromVersion;
+            return {...json, 'name': json['label'], 'schemaVersion': 1};
+          },
+          bundle: _FakeAssetBundle({
+            _assetPath: jsonEncode({'id': 1, 'name': 'Asset Level', 'schemaVersion': 1}),
+          }),
+          fetchRemote: () async => envelope,
+        );
+
+        await pack.load();
+        await pack.refreshed;
+
+        expect(migrateCalledWithVersion, 0);
+        expect(pack.current!.name, 'Legacy Remote Level');
+      },
+    );
+
+    test(
+      'fetchRemote thiếu schemaVersion, không có migrate: bị từ chối an toàn, giữ nguyên nội dung asset cũ',
+      () async {
+        final envelope = signExport(
+          {'id': 10, 'name': 'Legacy Remote Level'},
+          _secret,
+        );
+        final pack = RemoteContentPack<_Level>(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          contentSecret: _secret,
+          bundle: _FakeAssetBundle({
+            _assetPath: jsonEncode({'id': 1, 'name': 'Asset Level', 'schemaVersion': 1}),
+          }),
+          fetchRemote: () async => envelope,
+        );
+
+        await pack.load();
+        await pack.refreshed;
+
+        expect(pack.current!.name, 'Asset Level'); // giữ nguyên, không nhận nội dung thiếu version
+      },
+    );
+  });
 }
