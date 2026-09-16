@@ -2,7 +2,7 @@
 
 A Flutter package bundling the core services and casual-game widget kit
 behind a Candy-Crush-style puzzle game: local storage, i18n, audio, haptics,
-local reminders, and theme tokens, plus a 40-widget UI kit (buttons,
+local reminders, and theme tokens, plus a 47-widget UI kit (buttons,
 overlays, progress/reward, layout & cards, game-specific, and game-feel/juice)
 built on GetX and styled with a bright candy palette.
 
