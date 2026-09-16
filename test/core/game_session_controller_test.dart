@@ -105,4 +105,16 @@ void main() {
       ]);
     });
   });
+
+  group('ENH-65: .maybe', () {
+    test('trả về null khi chưa Get.put', () {
+      expect(GameSessionController.maybe, isNull);
+    });
+
+    test('trả về đúng instance khi đã đăng ký', () {
+      final c = GameSessionController();
+      Get.put(c);
+      expect(GameSessionController.maybe, same(c));
+    });
+  });
 }

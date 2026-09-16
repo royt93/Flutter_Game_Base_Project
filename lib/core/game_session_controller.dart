@@ -29,6 +29,13 @@ class GameSessionController extends GetxController {
   final snapshot = const GameSessionSnapshot(GameSessionPhase.loading).obs;
   final events = <GameSessionPhase>[].obs;
 
+  /// Gets the instance if already registered (safe to call from
+  /// game/widget tests).
+  static GameSessionController? get maybe =>
+      Get.isRegistered<GameSessionController>()
+      ? Get.find<GameSessionController>()
+      : null;
+
   @override
   void onInit() {
     super.onInit();
