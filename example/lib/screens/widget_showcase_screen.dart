@@ -56,6 +56,15 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _starsEarned = 1;
   double _progress = 0.4;
   bool _showLoadingOverlay = false;
+  // IDEA-53: demos CommonButton's loading state via a fake 1.5s async
+  // action — the same shape a real "Buy"/save/cloud-sync button would use.
+  bool _commonButtonLoading = false;
+
+  Future<void> _simulateAsyncButton() async {
+    setState(() => _commonButtonLoading = true);
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    if (mounted) setState(() => _commonButtonLoading = false);
+  }
   // BackupRestorePanel demo: no real file/QR picker wired here — this just
   // simulates "export, then restore that same backup" round-tripping
   // through the panel's onExport/onImport seam.
@@ -530,6 +539,14 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   icon: Icons.settings_rounded,
                                   variant: CommonButtonVariant.icon,
                                   onTap: () {},
+                                ),
+                                // IDEA-53: loading state — blocks re-tap and
+                                // shows a spinner for a fake 1.5s async call.
+                                CommonButton(
+                                  label: 'Simulate async',
+                                  width: 180,
+                                  loading: _commonButtonLoading,
+                                  onTap: _simulateAsyncButton,
                                 ),
                               ],
                             ),

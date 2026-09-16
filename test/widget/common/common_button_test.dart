@@ -153,4 +153,163 @@ void main() {
       handle.dispose();
     },
   );
+
+  group('IDEA-53: loading state', () {
+    testWidgets('loading: true chặn tap, onTap không được gọi', (
+      tester,
+    ) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: CommonButton(
+              label: 'Buy',
+              loading: true,
+              onTap: () => tapped = true,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(CommonButton));
+      await tester.pump();
+
+      expect(tapped, isFalse);
+    });
+
+    testWidgets('loading: true hiện CircularProgressIndicator', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: CommonButton(label: 'Buy', loading: true, onTap: () {}),
+          ),
+        ),
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets(
+      'loading: true, variant icon vẫn hiện CircularProgressIndicator, giữ nguyên kích thước nút',
+      (tester) async {
+        Future<Size> sizeOf(bool loading) async {
+          final key = GlobalKey();
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Material(
+                child: Center(
+                  child: KeyedSubtree(
+                    key: key,
+                    child: CommonButton(
+                      icon: Icons.settings,
+                      variant: CommonButtonVariant.icon,
+                      loading: loading,
+                      onTap: () {},
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          if (loading) {
+            expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          }
+          return tester.getSize(find.byKey(key));
+        }
+
+        final normalSize = await sizeOf(false);
+        final loadingSize = await sizeOf(true);
+        expect(loadingSize, normalSize);
+      },
+    );
+
+    testWidgets(
+      'loading: true không làm đổi kích thước tổng thể của pill so với loading: false',
+      (tester) async {
+        Future<Size> sizeOf(bool loading) async {
+          final key = GlobalKey();
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Material(
+                child: Center(
+                  child: KeyedSubtree(
+                    key: key,
+                    child: CommonButton(
+                      label: 'Buy the whole shop',
+                      loading: loading,
+                      onTap: () {},
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          return tester.getSize(find.byKey(key));
+        }
+
+        final normalSize = await sizeOf(false);
+        final loadingSize = await sizeOf(true);
+        // Dung sai 1 logical pixel: nội dung pill vẫn được layout nguyên
+        // vẹn (chỉ ẩn qua Opacity) ở cả 2 trạng thái, nên kích thước thực
+        // tế ổn định — chênh lệch dưới 1px là làm tròn sub-pixel của
+        // TextPainter/Stack, không phải nút đổi kích thước thấy được.
+        expect(loadingSize.width, closeTo(normalSize.width, 1.0));
+        expect(loadingSize.height, closeTo(normalSize.height, 1.0));
+      },
+    );
+
+    testWidgets('loading: false (mặc định) hành vi y hệt trước đây, không hiện spinner', (
+      tester,
+    ) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: CommonButton(label: 'Play', onTap: () => tapped = true),
+          ),
+        ),
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      await tester.tap(find.byType(CommonButton));
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('Semantics: enabled == false khi loading dù onTap khác null', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: CommonButton(label: 'Buy', loading: true, onTap: () {}),
+          ),
+        ),
+      );
+
+      final semantics = tester.getSemantics(find.byType(CommonButton));
+      expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), isFalse);
+      handle.dispose();
+    });
+
+    testWidgets('Semantics: label vẫn giữ ý nghĩa, không rỗng, khi loading', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: CommonButton(label: 'Buy', loading: true, onTap: () {}),
+          ),
+        ),
+      );
+
+      final label = tester.getSemantics(find.byType(CommonButton)).label;
+      expect(label, isNotEmpty);
+      expect(label, contains('Buy'));
+      handle.dispose();
+    });
+  });
 }

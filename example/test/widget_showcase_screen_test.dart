@@ -915,4 +915,29 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'IDEA-53: nút "Simulate async" hiện spinner, chặn double-tap, rồi tự tắt sau 1.5s',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      await tester.tap(find.text('Simulate async').last);
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // Tap lại trong lúc đang loading không được kích hoạt thêm 1 lần
+      // đếm ngược mới (không throw, không đổi hành vi).
+      await tester.tap(find.byType(CommonButton).last, warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 1100));
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('Simulate async'), findsWidgets); // StrokeText renders 2 stacked Text nodes
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

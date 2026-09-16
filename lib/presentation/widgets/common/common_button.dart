@@ -22,6 +22,7 @@ class CommonButton extends StatelessWidget {
     this.color,
     this.width,
     this.semanticLabel,
+    this.loading = false,
   }) : assert(
          variant == CommonButtonVariant.icon ? icon != null : label != null,
          'label required for text variants, icon required for icon variant',
@@ -40,7 +41,21 @@ class CommonButton extends StatelessWidget {
   final double? width;
   final String? semanticLabel;
 
+  /// IDEA-53: shows a spinner in place of the label/icon and blocks taps
+  /// (even though [onTap] is non-null) while an async action this button
+  /// triggered — a purchase, a save, a cloud sync — is still in flight.
+  /// Deliberately keeps the button's accent color/shadow (see [_enabled]
+  /// vs [_tappable] below): visually this is "busy", not "unavailable",
+  /// so it shouldn't look the same as a genuinely disabled button.
+  final bool loading;
+
+  /// Drives color/shadow — a loading button keeps its normal accent color,
+  /// only a truly disabled one (`onTap == null`) goes muted.
   bool get _enabled => onTap != null;
+
+  /// Drives Semantics/actual tap handling — `false` while [loading], even
+  /// though [_enabled] (and thus the button's color) stays true.
+  bool get _tappable => onTap != null && !loading;
 
   Color get _baseColor {
     if (color != null) return color!;
@@ -52,12 +67,13 @@ class CommonButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = _enabled ? _baseColor : NeonTheme.muted;
+    final baseLabel = semanticLabel ?? label ?? icon?.toString();
     return Semantics(
       button: true,
-      enabled: _enabled,
-      label: semanticLabel ?? label ?? icon?.toString(),
+      enabled: _tappable,
+      label: loading && baseLabel != null ? '$baseLabel, loading' : baseLabel,
       child: PressableScale(
-        onTap: onTap,
+        onTap: _tappable ? onTap : null,
         child: variant == CommonButtonVariant.icon
             ? _buildIcon(c)
             : _buildPill(c),
@@ -86,38 +102,59 @@ class CommonButton extends StatelessWidget {
             : Border(bottom: BorderSide(color: darker, width: 4)),
         boxShadow: _enabled ? NeonTheme.drop(y: 5, blur: 12) : null,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
+      // IDEA-53: the normal content stays laid out (just invisible) while
+      // loading, rather than being swapped out — that's what keeps the
+      // button's width/height exactly stable instead of shrinking to fit
+      // a lone spinner.
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          if (icon != null) ...[
-            Icon(icon, color: outlined ? c : Colors.white, size: 22),
-            const SizedBox(width: NeonTheme.s8),
-          ],
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: outlined
-                  ? Text(
-                      label!,
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.0,
-                        color: c,
-                      ),
-                    )
-                  : StrokeText(
-                      label!,
-                      fontSize: 19,
-                      color: Colors.white,
-                      stroke: darker,
-                      strokeWidth: 3.5,
-                      weight: FontWeight.w800,
-                      letterSpacing: 1.2,
-                    ),
+          Opacity(
+            opacity: loading ? 0 : 1,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, color: outlined ? c : Colors.white, size: 22),
+                  const SizedBox(width: NeonTheme.s8),
+                ],
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: outlined
+                        ? Text(
+                            label!,
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.0,
+                              color: c,
+                            ),
+                          )
+                        : StrokeText(
+                            label!,
+                            fontSize: 19,
+                            color: Colors.white,
+                            stroke: darker,
+                            strokeWidth: 3.5,
+                            weight: FontWeight.w800,
+                            letterSpacing: 1.2,
+                          ),
+                  ),
+                ),
+              ],
             ),
           ),
+          if (loading)
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation(outlined ? c : Colors.white),
+              ),
+            ),
         ],
       ),
     );
@@ -139,7 +176,16 @@ class CommonButton extends StatelessWidget {
         border: Border.all(color: darker, width: 3),
         boxShadow: _enabled ? NeonTheme.drop(y: 4, blur: 10) : null,
       ),
-      child: Icon(icon, color: Colors.white, size: d * 0.46),
+      child: loading
+          ? SizedBox(
+              width: d * 0.46,
+              height: d * 0.46,
+              child: const CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation(Colors.white),
+              ),
+            )
+          : Icon(icon, color: Colors.white, size: d * 0.46),
     );
   }
 }
