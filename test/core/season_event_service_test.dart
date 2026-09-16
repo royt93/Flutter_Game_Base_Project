@@ -278,4 +278,108 @@ void main() {
       expect(window.start.millisecondsSinceEpoch, goodAnchor);
     });
   });
+
+  group('IDEA-52: isActive', () {
+    test('isActive == true khi now nằm trong [start, end) (đang trong phần length)', () async {
+      await setNowMs(_realMs);
+      final service = SeasonEventService();
+      final window = service.currentWindow(
+        'e',
+        length: length,
+        cooldown: cooldown,
+      );
+      expect(window.isActive, isTrue);
+    });
+
+    test(
+      'isActive == false khi now nằm sau end nhưng trước chu kỳ tiếp theo (đang cooldown)',
+      () async {
+        await setNowMs(_realMs);
+        final service = SeasonEventService();
+        // Thiết lập anchor TRƯỚC (lần gọi đầu tiên) — nếu không, lần gọi
+        // sau sẽ tự coi thời điểm đó là anchor MỚI (luôn active tại
+        // chính anchor của nó), không kiểm tra đúng ý "đang ở cooldown
+        // của 1 anchor đã có từ trước".
+        service.currentWindow('e', length: length, cooldown: cooldown);
+        // Ngay sau khi length kết thúc, vẫn trong cooldown (chưa hết
+        // length+cooldown).
+        await setNowMs(_realMs + length.inMilliseconds + 1000);
+        final window = service.currentWindow(
+          'e',
+          length: length,
+          cooldown: cooldown,
+        );
+        expect(window.isActive, isFalse);
+      },
+    );
+
+    test(
+      'gọi lại currentWindow nhiều lần trong CÙNG 1 khoảnh khắc active: isActive nhất quán true, start/end không đổi',
+      () async {
+        await setNowMs(_realMs);
+        final service = SeasonEventService();
+        final first = service.currentWindow(
+          'e',
+          length: length,
+          cooldown: cooldown,
+        );
+        final second = service.currentWindow(
+          'e',
+          length: length,
+          cooldown: cooldown,
+        );
+        expect(first.isActive, isTrue);
+        expect(second.isActive, isTrue);
+        expect(second.start, first.start);
+        expect(second.end, first.end);
+      },
+    );
+
+    test('cooldown == Duration.zero (active liên tục): isActive luôn true', () async {
+      await setNowMs(_realMs);
+      final service = SeasonEventService();
+      // Nhảy xa nhiều chu kỳ — vẫn phải luôn active vì không có cooldown.
+      await setNowMs(_realMs + length.inMilliseconds * 10 + 12345);
+      final window = service.currentWindow(
+        'e',
+        length: length,
+        cooldown: Duration.zero,
+      );
+      expect(window.isActive, isTrue);
+    });
+
+    test('isActive == true ngay tại thời điểm start (biên dưới, inclusive)', () async {
+      await setNowMs(_realMs);
+      final service = SeasonEventService();
+      final window = service.currentWindow(
+        'e',
+        length: length,
+        cooldown: cooldown,
+      );
+      await setNowMs(window.start.millisecondsSinceEpoch);
+      final atStart = service.currentWindow(
+        'e',
+        length: length,
+        cooldown: cooldown,
+      );
+      expect(atStart.isActive, isTrue);
+    });
+
+    test('isActive == false ngay tại thời điểm end (biên trên, exclusive)', () async {
+      await setNowMs(_realMs);
+      final service = SeasonEventService();
+      final window = service.currentWindow(
+        'e',
+        length: length,
+        cooldown: cooldown,
+      );
+      await setNowMs(window.end.millisecondsSinceEpoch);
+      final atEnd = service.currentWindow(
+        'e',
+        length: length,
+        cooldown: cooldown,
+      );
+      expect(atEnd.isActive, isFalse);
+    });
+  });
 }

@@ -10,13 +10,25 @@ import 'versioned_json_store.dart';
 /// One event's active window, as returned by
 /// [SeasonEventService.currentWindow].
 class SeasonEventWindow {
-  const SeasonEventWindow({required this.start, required this.end});
+  const SeasonEventWindow({
+    required this.start,
+    required this.end,
+    required this.isActive,
+  });
 
   /// Window start, inclusive.
   final DateTime start;
 
   /// Window end, exclusive.
   final DateTime end;
+
+  /// IDEA-52: `true` if the moment [SeasonEventService.currentWindow] was
+  /// called falls inside `[start, end)` (the event's "length" portion of
+  /// the cycle); `false` if it falls in the "cooldown" portion instead —
+  /// computed from that SAME instant, so a caller never needs to read the
+  /// clock a second time (and risk using `DateTime.now()` instead of
+  /// `nowMsClamped()`) just to know whether the event is live right now.
+  final bool isActive;
 }
 
 /// Repeating, has-a-time-window event/season schedule — the piece
@@ -146,6 +158,10 @@ class SeasonEventService extends GetxService {
         startMs + length.inMilliseconds,
         isUtc: true,
       ),
+      // Computed from the SAME `now`/`startMs` already read above — never
+      // re-reads the clock, so this can't disagree with `start`/`end`
+      // even in theory.
+      isActive: now - startMs < length.inMilliseconds,
     );
   }
 }
