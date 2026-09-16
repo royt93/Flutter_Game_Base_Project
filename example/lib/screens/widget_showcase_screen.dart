@@ -306,6 +306,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   late final EnergyService _energy;
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
+  // IDEA-48: toggles the demo between topN(3) (always the leaders) and
+  // entriesAround('You', radius: 1) (the classic "you're #N" window) — the
+  // 2 API are genuinely different results once 'You' isn't in the top 3.
+  bool _showRankAround = false;
 
   void _submitRandomScore() {
     final score = 1000 + _rng.stream('leaderboard_demo').nextInt(15000);
@@ -1064,12 +1068,26 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
 
                           _Demo(
                             label: 'DailyLoginCalendarWidget',
-                            child: DailyLoginCalendarWidget(
-                              currentStreakDay: _dailyLogin.currentStreakDay,
-                              claimedDaysInCycle:
-                                  _dailyLogin.claimedDaysInCycle,
-                              canClaimToday: _dailyLogin.canClaimToday(),
-                              onClaim: _claimDailyLogin,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                DailyLoginCalendarWidget(
+                                  currentStreakDay:
+                                      _dailyLogin.currentStreakDay,
+                                  claimedDaysInCycle:
+                                      _dailyLogin.claimedDaysInCycle,
+                                  canClaimToday: _dailyLogin.canClaimToday(),
+                                  onClaim: _claimDailyLogin,
+                                ),
+                                const SizedBox(height: NeonTheme.s8),
+                                // IDEA-49: longestStreakEver keeps counting
+                                // past the 7-day calendar cycle and never
+                                // resets, unlike currentStreakDay above.
+                                Text(
+                                  'Longest streak ever: '
+                                  '${_dailyLogin.longestStreakEver}',
+                                ),
+                              ],
                             ),
                           ),
                           _Demo(
@@ -1151,7 +1169,12 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               children: [
                                 LeaderboardList(
                                   entries: [
-                                    for (final entry in _scoreboard.topN(3))
+                                    for (final entry in _showRankAround
+                                        ? _scoreboard.entriesAround(
+                                            'You',
+                                            radius: 1,
+                                          )
+                                        : _scoreboard.topN(3))
                                       LeaderboardEntry(
                                         rank: entry.rank,
                                         name: entry.name,
@@ -1164,6 +1187,16 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 CommonButton(
                                   label: 'Submit random score',
                                   onTap: _submitRandomScore,
+                                ),
+                                const SizedBox(height: NeonTheme.s8),
+                                CommonButton(
+                                  label: _showRankAround
+                                      ? 'Show top 3'
+                                      : 'Show rank around me (IDEA-48)',
+                                  variant: CommonButtonVariant.secondary,
+                                  onTap: () => setState(
+                                    () => _showRankAround = !_showRankAround,
+                                  ),
                                 ),
                               ],
                             ),

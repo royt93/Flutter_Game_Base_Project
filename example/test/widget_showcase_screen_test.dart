@@ -558,6 +558,24 @@ void main() {
   );
 
   testWidgets(
+    'IDEA-49: "Longest streak ever" text hiển thị đúng longestStreakEver, '
+    'cập nhật sau khi claim',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      expect(find.text('Longest streak ever: 0'), findsOneWidget);
+
+      final calendar = find.byType(DailyLoginCalendarWidget);
+      final day1 = find.descendant(of: calendar, matching: find.text('1'));
+      await tester.tap(day1);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Longest streak ever: 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'EnergyBar demo: consuming energy updates the displayed pips and shows '
     'a countdown',
     (tester) async {
@@ -867,6 +885,33 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('You'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'IDEA-48: nút "Show rank around me" chuyển đúng giữa topN(3) và '
+    'entriesAround(\'You\'), không crash',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      await tester.tap(find.text('Submit random score').last);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('You'), findsOneWidget);
+
+      await tester.tap(find.text('Show rank around me (IDEA-48)').last);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Show top 3'), findsOneWidget);
+      // 'You' vừa submit chắc chắn nằm trong cửa sổ entriesAround('You') vì
+      // đó chính là dòng được center.
+      expect(find.text('You'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.text('Show top 3').last);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Show rank around me (IDEA-48)'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

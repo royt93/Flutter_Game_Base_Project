@@ -180,4 +180,89 @@ void main() {
       },
     );
   });
+
+  group('IDEA-48: entriesAround', () {
+    LocalScoreboardService seeded() {
+      final service = LocalScoreboardService();
+      // 10 người chơi, điểm giảm dần: P0=100 (hạng 1) ... P9=10 (hạng 10).
+      for (var i = 0; i < 10; i++) {
+        service.submitScore('P$i', 100 - i * 10);
+      }
+      return service;
+    }
+
+    test('trả về đúng radius dòng mỗi bên + dòng của người chơi, đúng thứ tự rank', () {
+      final service = seeded();
+      // P5 ở hạng 6 (điểm 50). radius=2 -> hạng 4..8 (P3..P7).
+      final around = service.entriesAround('P5', radius: 2);
+      expect(around.map((e) => e.name).toList(), [
+        'P3', 'P4', 'P5', 'P6', 'P7',
+      ]);
+      expect(around.map((e) => e.rank).toList(), [4, 5, 6, 7, 8]);
+    });
+
+    test('dòng của playerLabel highlighted: true, các dòng khác false', () {
+      final service = seeded();
+      final around = service.entriesAround('P5', radius: 2);
+      for (final entry in around) {
+        expect(entry.highlighted, entry.name == 'P5');
+      }
+    });
+
+    test('người chơi ở hạng 1: không đủ dòng phía trên, không throw, trả về ít hơn 2*radius+1', () {
+      final service = seeded();
+      final around = service.entriesAround('P0', radius: 2);
+      expect(around.map((e) => e.name).toList(), ['P0', 'P1', 'P2']);
+      expect(around.first.rank, 1);
+    });
+
+    test('người chơi ở hạng cuối: không đủ dòng phía dưới, không throw', () {
+      final service = seeded();
+      final around = service.entriesAround('P9', radius: 2);
+      expect(around.map((e) => e.name).toList(), ['P7', 'P8', 'P9']);
+      expect(around.last.rank, 10);
+    });
+
+    test('playerLabel không tồn tại: trả về danh sách rỗng, không throw', () {
+      final service = seeded();
+      expect(() => service.entriesAround('Ghost'), returnsNormally);
+      expect(service.entriesAround('Ghost'), isEmpty);
+    });
+
+    test(
+      'nhiều dòng cùng tên playerLabel: dùng đúng dòng có sequence lớn nhất (lần submit gần nhất)',
+      () {
+        final service = LocalScoreboardService();
+        service.submitScore('Roy', 10); // sequence 0, hạng thấp
+        service.submitScore('Other', 50); // sequence 1
+        service.submitScore('Roy', 90); // sequence 2, hạng cao — lần gần nhất
+
+        final around = service.entriesAround('Roy', radius: 1);
+        // Dòng "Roy" được chọn phải là hạng 1 (điểm 90), không phải hạng 3 (điểm 10).
+        final royEntry = around.firstWhere((e) => e.highlighted);
+        expect(royEntry.score, '90');
+        expect(royEntry.rank, 1);
+      },
+    );
+
+    test('radius == 0: trả về đúng 1 dòng của chính người chơi', () {
+      final service = seeded();
+      final around = service.entriesAround('P5', radius: 0);
+      expect(around, hasLength(1));
+      expect(around.single.name, 'P5');
+      expect(around.single.highlighted, isTrue);
+    });
+
+    test('radius âm: xử lý như 0, không throw, không index out of range', () {
+      final service = seeded();
+      expect(() => service.entriesAround('P5', radius: -3), returnsNormally);
+      expect(service.entriesAround('P5', radius: -3), hasLength(1));
+    });
+
+    test('bảng rỗng (chưa submit gì): trả về danh sách rỗng, không throw', () {
+      final service = LocalScoreboardService();
+      expect(() => service.entriesAround('Anyone'), returnsNormally);
+      expect(service.entriesAround('Anyone'), isEmpty);
+    });
+  });
 }

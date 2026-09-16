@@ -198,4 +198,44 @@ class LocalScoreboardService extends GetxService {
         ),
     ];
   }
+
+  /// A rank-around window for [playerLabel] — up to [radius] rows above,
+  /// [playerLabel]'s own row (highlighted), and up to [radius] rows below,
+  /// in current rank order. The classic "you're #47" leaderboard UX for a
+  /// player who isn't in [topN]'s top slice.
+  ///
+  /// If [playerLabel] submitted more than once, the row used is the one
+  /// with the highest [_ScoreEntry.sequence] — the most recent submission
+  /// — not necessarily the highest-scoring one, since that's the row a
+  /// player expects to see representing "where I am right now".
+  ///
+  /// Returns an empty list if [playerLabel] never submitted a score.
+  /// [radius] `<= 0` is treated as `0` (just the player's own row) —
+  /// never throws for either input.
+  List<LeaderboardEntry> entriesAround(String playerLabel, {int radius = 2}) {
+    final entries = _entries;
+    var playerIndex = -1;
+    var bestSequence = -1;
+    for (var i = 0; i < entries.length; i++) {
+      final entry = entries[i];
+      if (entry.playerLabel == playerLabel && entry.sequence > bestSequence) {
+        playerIndex = i;
+        bestSequence = entry.sequence;
+      }
+    }
+    if (playerIndex == -1) return const <LeaderboardEntry>[];
+
+    final safeRadius = radius < 0 ? 0 : radius;
+    final start = (playerIndex - safeRadius).clamp(0, entries.length - 1);
+    final end = (playerIndex + safeRadius).clamp(0, entries.length - 1);
+    return [
+      for (var i = start; i <= end; i++)
+        LeaderboardEntry(
+          rank: i + 1,
+          name: entries[i].playerLabel,
+          score: fmtNum(entries[i].score),
+          highlighted: i == playerIndex,
+        ),
+    ];
+  }
 }

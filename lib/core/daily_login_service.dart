@@ -32,12 +32,16 @@ class _DailyLoginState {
     required this.lastClaimedEpochDay,
     required this.streakDay,
     required this.claimedDaysInCycle,
+    required this.currentRunLength,
+    required this.longestStreakEver,
   });
 
   static const initial = _DailyLoginState(
     lastClaimedEpochDay: -1,
     streakDay: 0,
     claimedDaysInCycle: {},
+    currentRunLength: 0,
+    longestStreakEver: 0,
   );
 
   /// Epoch day (from `todayEpochDayClamped()`) of the last successful
@@ -51,6 +55,18 @@ class _DailyLoginState {
   /// Which cycle days (1..[kDailyLoginCycleLength]) have been claimed since
   /// the last reset/wrap — for a 7-day login-streak calendar UI.
   final Set<int> claimedDaysInCycle;
+
+  /// IDEA-49: TRUE number of consecutive claimed days, unbounded by
+  /// [kDailyLoginCycleLength] — unlike [streakDay] (which wraps back to 1
+  /// every 7 days purely for the calendar UI), this keeps counting past 7
+  /// for as long as the streak isn't broken. Resets to 1 on the same claim
+  /// that resets [streakDay].
+  final int currentRunLength;
+
+  /// IDEA-49: highest [currentRunLength] ever reached — a permanent
+  /// record that survives a streak reset (unlike [currentRunLength]
+  /// itself, which resets to 1 the moment a day is skipped).
+  final int longestStreakEver;
 }
 
 /// Tracks the daily-login streak: last claimed day, current position
@@ -73,6 +89,8 @@ class DailyLoginService extends GetxService {
           'lastClaimedEpochDay': s.lastClaimedEpochDay,
           'streakDay': s.streakDay,
           'claimedDaysInCycle': s.claimedDaysInCycle.toList(),
+          'currentRunLength': s.currentRunLength,
+          'longestStreakEver': s.longestStreakEver,
         },
         fromJson: _parseState,
         migrate: (fromVersion, json) => json,
@@ -117,10 +135,45 @@ class DailyLoginService extends GetxService {
     if (last >= 0 && (streak == 0 || !days.contains(streak))) {
       return _DailyLoginState.initial;
     }
+
+    // IDEA-49: added after `currentRunLength`/`longestStreakEver` already
+    // existed on disk for some saves — a JSON written before this field
+    // existed simply omits the key (not "present but wrong type"), so that
+    // case migrates gracefully (best-effort: `streak`, the only signal an
+    // old save has about an active run) rather than being treated as
+    // corrupt. A key that IS present but wrong-typed is genuine corruption
+    // and still falls back to `initial`, same as every other field here.
+    final hasRun = json.containsKey('currentRunLength');
+    final hasLongest = json.containsKey('longestStreakEver');
+    if (hasRun && json['currentRunLength'] is! int) {
+      return _DailyLoginState.initial;
+    }
+    if (hasLongest && json['longestStreakEver'] is! int) {
+      return _DailyLoginState.initial;
+    }
+    final currentRunLength = hasRun
+        ? json['currentRunLength']! as int
+        : streak;
+    final longestStreakEver = hasLongest
+        ? json['longestStreakEver']! as int
+        : currentRunLength;
+
+    if (currentRunLength < 0 || longestStreakEver < currentRunLength) {
+      return _DailyLoginState.initial;
+    }
+    if (last == -1 && currentRunLength != 0) {
+      return _DailyLoginState.initial;
+    }
+    if (last >= 0 && currentRunLength < 1) {
+      return _DailyLoginState.initial;
+    }
+
     return _DailyLoginState(
       lastClaimedEpochDay: last,
       streakDay: streak,
       claimedDaysInCycle: days,
+      currentRunLength: currentRunLength,
+      longestStreakEver: longestStreakEver,
     );
   }
 
@@ -165,6 +218,12 @@ class DailyLoginService extends GetxService {
   /// very first claim.
   int get currentStreakDay => _state.streakDay;
 
+  /// IDEA-49: highest number of TRUE consecutive claimed days ever
+  /// reached — unlike [currentStreakDay] (which wraps 1..7 purely for the
+  /// calendar UI), this counts past 7 and never resets when a streak
+  /// breaks; it only ever grows. Starts at `0` before any claim.
+  int get longestStreakEver => _state.longestStreakEver;
+
   /// Which cycle days (1..[kDailyLoginCycleLength]) have been claimed since
   /// the last reset/wrap.
   Set<int> get claimedDaysInCycle =>
@@ -199,10 +258,17 @@ class DailyLoginService extends GetxService {
         ? <int>{1}
         : {...state.claimedDaysInCycle, nextStreakDay};
 
+    final nextRunLength = streakWasReset ? 1 : state.currentRunLength + 1;
+    final nextLongest = nextRunLength > state.longestStreakEver
+        ? nextRunLength
+        : state.longestStreakEver;
+
     _cached = _DailyLoginState(
       lastClaimedEpochDay: today,
       streakDay: nextStreakDay,
       claimedDaysInCycle: nextClaimed,
+      currentRunLength: nextRunLength,
+      longestStreakEver: nextLongest,
     );
     _saveChain = _saving ? _saveChain.then((_) => _runSave()) : _runSave();
 

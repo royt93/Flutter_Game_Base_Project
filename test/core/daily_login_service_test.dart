@@ -261,5 +261,153 @@ void main() {
         expect(restarted.claimedDaysInCycle, {1, 2, 3});
       });
     });
+
+    group('IDEA-49: longestStreakEver', () {
+      test('bắt đầu ở 0 trước khi claim lần nào', () {
+        final service = DailyLoginService();
+        expect(service.longestStreakEver, 0);
+      });
+
+      test(
+        'tăng đúng theo số ngày liên tục THẬT, vượt qua mốc 7 ngày của chu kỳ '
+        '(ngày liên tục thứ 10 vẫn ghi nhận kỷ lục 10, dù vị trí chu kỳ lúc '
+        'đó chỉ là 3)',
+        () async {
+          final service = DailyLoginService();
+          for (var i = 0; i < 10; i++) {
+            await setDay(_realDay + i);
+            service.claimToday();
+          }
+          expect(service.currentStreakDay, 3); // vị trí chu kỳ: ((10-1)%7)+1
+          expect(service.longestStreakEver, 10); // số ngày liên tục thật
+        },
+      );
+
+      test('streak reset (bỏ lỡ 1 ngày): longestStreakEver GIỮ NGUYÊN kỷ lục cũ', () async {
+        final service = DailyLoginService();
+        for (var i = 0; i < 5; i++) {
+          await setDay(_realDay + i);
+          service.claimToday();
+        }
+        expect(service.longestStreakEver, 5);
+
+        // Bỏ lỡ 1 ngày -> streak reset.
+        await setDay(_realDay + 7);
+        final result = service.claimToday();
+
+        expect(result.streakWasReset, isTrue);
+        expect(service.currentStreakDay, 1);
+        expect(service.longestStreakEver, 5); // kỷ lục cũ vẫn giữ nguyên
+      });
+
+      test('claim cùng ngày nhiều lần (no-op): không tăng longestStreakEver sai', () async {
+        final service = DailyLoginService();
+        await setDay(_realDay);
+        service.claimToday();
+        expect(service.longestStreakEver, 1);
+
+        service.claimToday(); // no-op, cùng ngày
+        service.claimToday();
+
+        expect(service.longestStreakEver, 1);
+      });
+
+      test(
+        'run mới sau reset vượt qua kỷ lục cũ: longestStreakEver cập nhật đúng',
+        () async {
+          final service = DailyLoginService();
+          await setDay(_realDay);
+          service.claimToday();
+          await setDay(_realDay + 1);
+          service.claimToday();
+          expect(service.longestStreakEver, 2);
+
+          // Bỏ lỡ, bắt đầu run mới, chạy dài hơn run cũ.
+          await setDay(_realDay + 10);
+          for (var i = 0; i < 5; i++) {
+            await setDay(_realDay + 10 + i);
+            service.claimToday();
+          }
+          expect(service.currentStreakDay, greaterThan(0));
+          expect(service.longestStreakEver, 5);
+        },
+      );
+
+      test(
+        'JSON cũ (trước khi có currentRunLength/longestStreakEver) load được, '
+        'không throw, longestStreakEver có giá trị hợp lý',
+        () async {
+          await store.setString(
+            'daily_login_state_v1',
+            jsonEncode({
+              'lastClaimedEpochDay': _realDay,
+              'streakDay': 3,
+              'claimedDaysInCycle': [1, 2, 3],
+              'schemaVersion': 1,
+            }),
+          );
+          final service = DailyLoginService();
+
+          expect(() => service.longestStreakEver, returnsNormally);
+          expect(service.longestStreakEver, greaterThanOrEqualTo(0));
+          expect(service.currentStreakDay, 3); // state cũ không bị phá
+        },
+      );
+
+      test(
+        'JSON hỏng (currentRunLength sai kiểu) rơi về initial an toàn, không throw',
+        () async {
+          await store.setString(
+            'daily_login_state_v1',
+            jsonEncode({
+              'lastClaimedEpochDay': _realDay,
+              'streakDay': 3,
+              'claimedDaysInCycle': [1, 2, 3],
+              'currentRunLength': 'not an int',
+              'longestStreakEver': 3,
+              'schemaVersion': 1,
+            }),
+          );
+          final service = DailyLoginService();
+
+          expect(service.currentStreakDay, 0);
+          expect(service.longestStreakEver, 0);
+          expect(service.canClaimToday(), isTrue);
+        },
+      );
+
+      test(
+        'JSON hỏng (longestStreakEver nhỏ hơn currentRunLength — vô lý) rơi về initial an toàn',
+        () async {
+          await store.setString(
+            'daily_login_state_v1',
+            jsonEncode({
+              'lastClaimedEpochDay': _realDay,
+              'streakDay': 3,
+              'claimedDaysInCycle': [1, 2, 3],
+              'currentRunLength': 10,
+              'longestStreakEver': 2,
+              'schemaVersion': 1,
+            }),
+          );
+          final service = DailyLoginService();
+
+          expect(service.currentStreakDay, 0);
+          expect(service.longestStreakEver, 0);
+        },
+      );
+
+      test('persist đúng qua "restart" (instance mới đọc lại đúng kỷ lục)', () async {
+        final service = DailyLoginService();
+        for (var i = 0; i < 9; i++) {
+          await setDay(_realDay + i);
+          service.claimToday();
+        }
+        await service.debugPendingSaves;
+
+        final restarted = DailyLoginService();
+        expect(restarted.longestStreakEver, 9);
+      });
+    });
   });
 }
