@@ -320,6 +320,16 @@ class StorageService extends GetxService {
     }
   }
 
+  /// Wipes every key currently in storage — the classic "Reset progress"
+  /// Settings action. A thin, self-explanatory name over what
+  /// `importAll(const {})` already did silently: [importAll] REPLACES the
+  /// whole profile (see [_replaceAll]), so an empty map means "keep
+  /// nothing" — but a consumer app had to know that trick rather than see
+  /// an API that says what it does. Same rollback-on-error guarantee as
+  /// [importAll]: a failure partway through leaves storage exactly as it
+  /// was before this call, never half-erased.
+  Future<void> eraseAll() => importAll(const {});
+
   Future<void> _replaceAll(Map<String, Object> data) async {
     final prefs = _prefs;
     if (prefs != null) {

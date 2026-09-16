@@ -223,5 +223,48 @@ void main() {
         },
       );
     });
+
+    group('IDEA-55: eraseAll', () {
+      test('xoá sạch mọi key hiện có — exportAll() trả về map rỗng sau đó', () async {
+        await store.setString(StorageKeys.localeCode, 'vi');
+        await store.setBool(StorageKeys.audioMuted, true);
+        await store.setInt(StorageKeys.energyCount, 5);
+        expect(store.exportAll(), isNotEmpty);
+
+        await store.eraseAll();
+
+        expect(store.exportAll(), isEmpty);
+      });
+
+      test('sau eraseAll(), đọc lại bất kỳ key nào đều trả về mặc định, không throw', () async {
+        await store.setString(StorageKeys.localeCode, 'vi');
+        await store.setBool(StorageKeys.audioMuted, true);
+        await store.setInt(StorageKeys.energyCount, 5);
+
+        await store.eraseAll();
+
+        expect(store.getString(StorageKeys.localeCode), isNull);
+        expect(store.getBool(StorageKeys.audioMuted), false);
+        expect(store.getInt(StorageKeys.energyCount, def: 3), 3);
+      });
+
+      test('xoá cả key đang buffer chưa flush', () async {
+        await store.setIntBuffered('buffered_key', 42);
+        expect(store.getInt('buffered_key'), 42);
+
+        await store.eraseAll();
+
+        expect(store.getInt('buffered_key'), 0);
+        expect(store.exportAll(), isEmpty);
+      });
+
+      test('không đổi hành vi importAll/exportAll hiện có', () async {
+        await store.setString('k', 'v');
+        await store.importAll({'k2': 'v2'});
+        expect(store.getString('k'), isNull); // importAll vẫn ghi đè như cũ
+        expect(store.getString('k2'), 'v2');
+        expect(store.exportAll(), {'k2': 'v2'});
+      });
+    });
   });
 }
