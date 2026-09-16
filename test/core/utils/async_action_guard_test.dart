@@ -106,4 +106,123 @@ void main() {
     await tester.pump(const Duration(milliseconds: 30));
     expect(guard.pendingCount, 0);
   });
+
+  group('ENH-63: maxQueueWait', () {
+    testWidgets(
+      'lệnh gọi chờ hàng đợi lâu hơn maxQueueWait nhận đúng TimeoutException, không treo vô hạn',
+      (tester) async {
+        final guard = AsyncActionGuard(
+          maxQueueWait: const Duration(milliseconds: 50),
+        );
+        final blocker = Completer<void>();
+        // Chiếm key 'k' bằng 1 action không bao giờ tự hoàn thành (mô
+        // phỏng "kẹt") — đúng kịch bản maxQueueWait được thiết kế để xử lý.
+        final first = guard.runExclusive('k', () => blocker.future);
+
+        Object? caught;
+        final second = guard
+            .runExclusive('k', () async => 2)
+            .catchError((Object e) {
+              caught = e;
+              return -1;
+            });
+
+        await tester.pump(const Duration(milliseconds: 60));
+        await second;
+
+        expect(caught, isA<TimeoutException>());
+
+        blocker.complete();
+        await first;
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'sau 1 lệnh gọi timeout, runExclusive MỚI cho ĐÚNG key vẫn chạy được, không bị kẹt bởi hàng đợi cũ đã timeout',
+      (tester) async {
+        final guard = AsyncActionGuard(
+          maxQueueWait: const Duration(milliseconds: 50),
+        );
+        final blocker = Completer<void>();
+        final order = <String>[];
+        final first = guard.runExclusive('k', () => blocker.future);
+        final second = guard
+            .runExclusive('k', () async => 2)
+            .catchError((Object _) => -1);
+
+        await tester.pump(const Duration(milliseconds: 60));
+        await second; // second đã timeout và tự dọn dẹp xong
+
+        // 'third' KHÔNG liên quan gì tới 'first'/'second' — theo đúng thiết
+        // kế của maxQueueWait, không được chờ 'first' (vốn vẫn đang treo)
+        // mới chạy được.
+        final third = guard.runExclusive('k', () async {
+          order.add('third:ran');
+          return 3;
+        });
+        await tester.pump();
+
+        expect(order, ['third:ran']);
+        expect(await third, 3);
+
+        blocker.complete();
+        await first;
+        await tester.pump();
+      },
+    );
+
+    testWidgets('pendingCount không bị rò rỉ/sai lệch sau khi có lệnh gọi timeout', (
+      tester,
+    ) async {
+      final guard = AsyncActionGuard(
+        maxQueueWait: const Duration(milliseconds: 50),
+      );
+      final blocker = Completer<void>();
+      final first = guard.runExclusive('k', () => blocker.future);
+      expect(guard.pendingCount, 1);
+
+      final second = guard
+          .runExclusive('k', () async => 2)
+          .catchError((Object _) => -1);
+      expect(guard.pendingCount, 1); // second thay thế chỗ của first trong map
+
+      await tester.pump(const Duration(milliseconds: 60));
+      await second;
+      expect(guard.pendingCount, 0); // second timeout, tự dọn dẹp, không rò rỉ
+
+      blocker.complete();
+      await first;
+      await tester.pump();
+      expect(guard.pendingCount, 0);
+    });
+
+    testWidgets(
+      'maxQueueWait == null (mặc định): vẫn chờ vô thời hạn như cũ, không throw (hồi quy)',
+      (tester) async {
+        final guard = AsyncActionGuard(); // maxQueueWait mặc định null
+        final order = <String>[];
+        final first = guard.runExclusive('k', () async {
+          order.add('first:start');
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          order.add('first:end');
+          return 1;
+        });
+        final second = guard.runExclusive('k', () async {
+          order.add('second:ran');
+          return 2;
+        });
+
+        // Vượt xa khoảng thời gian đã dùng làm maxQueueWait ở các test
+        // trên (50ms) — nếu implementation lỡ áp dụng 1 timeout ngầm nào
+        // đó dù maxQueueWait là null, test này sẽ bắt được ngay.
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(await first, 1);
+        expect(await second, 2);
+        expect(order, ['first:start', 'first:end', 'second:ran']);
+        expect(guard.pendingCount, 0);
+      },
+    );
+  });
 }
