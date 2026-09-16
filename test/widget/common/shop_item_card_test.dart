@@ -226,4 +226,103 @@ void main() {
       handle.dispose();
     });
   });
+
+  group('ENH-66: loading', () {
+    testWidgets('loading: true truyền đúng xuống CommonButton, hiện spinner', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: ShopItemCard(
+              icon: Icons.diamond_rounded,
+              title: '100 Gems',
+              priceLabel: r'$0.99',
+              loading: true,
+              onBuy: () {},
+            ),
+          ),
+        ),
+      );
+
+      final button = tester.widget<CommonButton>(find.byType(CommonButton));
+      expect(button.loading, isTrue);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('loading: true chặn onBuy (double-tap trong lúc chờ async)', (
+      tester,
+    ) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: ShopItemCard(
+              icon: Icons.diamond_rounded,
+              title: '100 Gems',
+              priceLabel: r'$0.99',
+              loading: true,
+              onBuy: () => tapped = true,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(CommonButton));
+      await tester.pump();
+
+      expect(tapped, isFalse);
+    });
+
+    testWidgets('loading: false (mặc định) hành vi y hệt trước đây', (
+      tester,
+    ) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: ShopItemCard(
+              icon: Icons.diamond_rounded,
+              title: '100 Gems',
+              priceLabel: r'$0.99',
+              onBuy: () => tapped = true,
+            ),
+          ),
+        ),
+      );
+
+      final button = tester.widget<CommonButton>(find.byType(CommonButton));
+      expect(button.loading, isFalse);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      await tester.tap(find.byType(CommonButton));
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('MergeSemantics label vẫn phản ánh đúng trạng thái loading', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: ShopItemCard(
+              icon: Icons.diamond_rounded,
+              title: '100 Gems',
+              priceLabel: r'$0.99',
+              loading: true,
+              onBuy: () {},
+            ),
+          ),
+        ),
+      );
+      // Không pumpAndSettle() — CircularProgressIndicator's animation chạy
+      // vô thời hạn khi loading, sẽ không bao giờ settle.
+      await tester.pump();
+
+      final data = tester.getSemantics(find.byType(ShopItemCard));
+      expect(data.label, contains('loading'));
+      handle.dispose();
+    });
+  });
 }

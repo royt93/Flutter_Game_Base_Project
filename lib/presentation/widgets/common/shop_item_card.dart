@@ -24,6 +24,7 @@ class ShopItemCard extends StatelessWidget {
     this.width = 160,
     this.buttonColor,
     this.buttonVariant = CommonButtonVariant.primary,
+    this.loading = false,
   });
 
   final IconData icon;
@@ -54,6 +55,12 @@ class ShopItemCard extends StatelessWidget {
   /// Buy button variant — defaults to [CommonButtonVariant.primary],
   /// matching the prior hardcoded behavior.
   final CommonButtonVariant buttonVariant;
+
+  /// IDEA-53/ENH-66: forwarded straight to the "Buy" [CommonButton] —
+  /// shows a spinner and blocks double-tap while an in-flight purchase
+  /// (a real IAP call to the store, which can take a few seconds) is
+  /// pending. `false` (default) keeps the exact prior behavior.
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +101,7 @@ class ShopItemCard extends StatelessWidget {
               width: width - NeonTheme.s16 * 2,
               variant: buttonVariant,
               color: buttonColor,
+              loading: loading,
             ),
           ],
         ),
