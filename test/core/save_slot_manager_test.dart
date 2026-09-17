@@ -236,4 +236,52 @@ void main() {
       },
     );
   });
+
+  group('ENH-68: maxSlots', () {
+    test('không truyền maxSlots: tạo vô hạn slot, không throw', () {
+      final manager = SaveSlotManager();
+      for (var i = 0; i < 10; i++) {
+        manager.createSlot('Slot $i');
+      }
+      expect(manager.listSlots(), hasLength(10));
+    });
+
+    test('maxSlots: N — tạo slot thứ N+1 throw StateError, không tạo thêm', () {
+      final manager = SaveSlotManager(maxSlots: 3);
+      manager.createSlot('A');
+      manager.createSlot('B');
+      manager.createSlot('C');
+
+      expect(() => manager.createSlot('D'), throwsStateError);
+      expect(manager.listSlots(), hasLength(3));
+      expect(manager.listSlots().map((s) => s.displayName), ['A', 'B', 'C']);
+    });
+
+    test('xoá 1 slot khi đã đạt maxSlots rồi tạo lại: thành công bình thường', () async {
+      final manager = SaveSlotManager(maxSlots: 2);
+      final a = manager.createSlot('A');
+      manager.createSlot('B');
+      expect(() => manager.createSlot('C'), throwsStateError);
+
+      await manager.deleteSlot(a.id);
+      final c = manager.createSlot('C');
+
+      expect(manager.listSlots(), hasLength(2));
+      expect(c.displayName, 'C');
+    });
+
+    test('maxSlots <= 0 throw ArgumentError ngay tại constructor', () {
+      expect(() => SaveSlotManager(maxSlots: 0), throwsArgumentError);
+      expect(() => SaveSlotManager(maxSlots: -1), throwsArgumentError);
+    });
+
+    test('không đổi hành vi listSlots/renameSlot/touchSlot khi maxSlots được set nhưng chưa đạt giới hạn', () {
+      final manager = SaveSlotManager(maxSlots: 5);
+      final slot = manager.createSlot('A');
+      manager.renameSlot(slot.id, 'A renamed');
+      manager.touchSlot(slot.id);
+
+      expect(manager.listSlots().single.displayName, 'A renamed');
+    });
+  });
 }

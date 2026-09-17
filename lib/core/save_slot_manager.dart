@@ -45,8 +45,20 @@ class SaveSlotMeta {
 /// different, and this doesn't replace `VersionedJsonStore` (FEAT-05), it
 /// composes with it.
 class SaveSlotManager extends GetxService {
+  SaveSlotManager({this.maxSlots}) {
+    if (maxSlots != null && maxSlots! <= 0) {
+      throw ArgumentError.value(maxSlots, 'maxSlots', 'must be greater than 0');
+    }
+  }
+
   static const _metaStorageKey = 'save_slot_meta_v1';
   static const _activeSlotStorageKey = 'save_slot_active_id_v1';
+
+  /// ENH-68: caps how many slots [createSlot] will allow — `null` (default)
+  /// means unlimited, unchanged from before this existed. Deliberately not
+  /// defaulted to a specific number (3? 5?): how many save slots a game
+  /// offers is a product decision for the consumer app, not this package.
+  final int? maxSlots;
 
   List<SaveSlotMeta>? _slots;
 
@@ -174,6 +186,10 @@ class SaveSlotManager extends GetxService {
         'displayName',
         'must not be empty',
       );
+    }
+    final limit = maxSlots;
+    if (limit != null && _slotList.length >= limit) {
+      throw StateError('SaveSlotManager already has the max $limit slot(s)');
     }
     final now = nowMsClamped();
     final id = _generateUniqueId(now);
