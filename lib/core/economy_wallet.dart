@@ -7,8 +7,12 @@ import 'utils/async_action_guard.dart';
 import 'utils/sdk_result.dart';
 
 class EconomyWallet extends GetxService {
-  EconomyWallet({required this.storage, AsyncActionGuard? guard})
-    : _guard = guard ?? AsyncActionGuard();
+  EconomyWallet({
+    required this.storage,
+    AsyncActionGuard? guard,
+    String? storageKey,
+  }) : _guard = guard ?? AsyncActionGuard(),
+       _key = storageKey ?? 'economy_wallet_v1';
   final StorageService storage;
   final AsyncActionGuard _guard;
   final balances = <String, int>{}.obs;
@@ -20,7 +24,14 @@ class EconomyWallet extends GetxService {
   // receipt after the app was killed would double-apply it.
   final _transactions = <String>[];
   static const _transactionsCapacity = 200;
-  static const _key = 'economy_wallet_v1';
+
+  // ENH-73: instance field (was `static const`) so 2 instances can point
+  // at 2 independent wallets — e.g. 1 per SaveSlotManager slot via its
+  // `keyFor(slotId, suffix)` (same pattern ENH-69/71 used for the other 7
+  // per-player services). Defaulting to the same literal every prior
+  // release used keeps an existing consumer app's save reading exactly the
+  // same table it always did.
+  final String _key;
 
   /// Gets the instance if already registered (safe to call from
   /// game/widget tests).

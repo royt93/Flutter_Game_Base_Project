@@ -168,6 +168,47 @@ void main() {
     });
   });
 
+  group('ENH-73: storageKey tuỳ chỉnh', () {
+    test('không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ', () async {
+      final storage = StorageService(null);
+      final wallet = EconomyWallet(storage: storage)..onInit();
+      await wallet.earn(currency: 'coin', amount: 5, transactionId: 'a');
+
+      expect(storage.getString('economy_wallet_v1'), isNotNull);
+    });
+
+    test('2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau', () async {
+      final storage = StorageService(null);
+      final a = EconomyWallet(storage: storage, storageKey: 'wallet_a')..onInit();
+      final b = EconomyWallet(storage: storage, storageKey: 'wallet_b')..onInit();
+
+      await a.earn(currency: 'coin', amount: 10, transactionId: 'a1');
+      await b.earn(currency: 'coin', amount: 20, transactionId: 'b1');
+
+      expect(a.balanceOf('coin'), 10);
+      expect(b.balanceOf('coin'), 20);
+    });
+
+    test('storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới cùng key đọc lại đúng)', () async {
+      final storage = StorageService(null);
+      final wallet = EconomyWallet(storage: storage, storageKey: 'wallet_custom')..onInit();
+      await wallet.earn(currency: 'coin', amount: 7, transactionId: 'a');
+
+      final restarted = EconomyWallet(storage: storage, storageKey: 'wallet_custom')..onInit();
+      expect(restarted.balanceOf('coin'), 7);
+    });
+
+    test('không đổi hành vi earn/trySpend/balanceOf hiện có khi dùng storageKey tuỳ chỉnh', () async {
+      final wallet = EconomyWallet(storage: StorageService(null), storageKey: 'k')..onInit();
+
+      await wallet.earn(currency: 'coin', amount: 10, transactionId: 'a');
+      final spend = await wallet.trySpend(currency: 'coin', amount: 4, transactionId: 'b');
+
+      expect(spend.isSuccess, isTrue);
+      expect(wallet.balanceOf('coin'), 6);
+    });
+  });
+
   testWidgets('wallet balance renders through animated CurrencyCounter', (
     tester,
   ) async {
