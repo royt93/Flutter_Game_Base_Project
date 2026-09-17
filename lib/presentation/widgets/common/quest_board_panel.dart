@@ -17,6 +17,7 @@ class QuestViewModel {
     required this.progress,
     required this.target,
     required this.claimed,
+    this.claiming = false,
   });
 
   final String id;
@@ -24,6 +25,15 @@ class QuestViewModel {
   final int progress;
   final int target;
   final bool claimed;
+
+  /// ENH-70: forwarded to this quest's own Claim `CommonButton.loading` —
+  /// spinner + blocks double-tap while a caller-owned async claim (e.g. a
+  /// server-validated claim) for THIS quest is in flight. `false` (default)
+  /// unchanged from before this existed. Only the quest with `claiming:
+  /// true` shows a spinner; every other quest in the same `QuestBoardPanel`
+  /// is unaffected, since this lives on each quest's own view model rather
+  /// than a single flag on the whole panel.
+  final bool claiming;
 
   bool get isCompleted => progress >= target;
 
@@ -119,6 +129,7 @@ class _QuestRowState extends State<_QuestRow>
 
     Widget claimButton = CommonButton(
       label: quest.claimed ? 'Đã nhận' : 'Nhận thưởng',
+      loading: quest.claiming,
       onTap: quest.isClaimable ? widget.onClaim : null,
       color: quest.isClaimable ? NeonTheme.gold : null,
     );

@@ -301,4 +301,123 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('ENH-70: claiming', () {
+    testWidgets(
+      'quest.claiming: true truyền đúng xuống CommonButton của quest đó, hiện spinner',
+      (tester) async {
+        await tester.pumpWidget(
+          host(
+            QuestBoardPanel(
+              quests: const [
+                QuestViewModel(
+                  id: 'win_3',
+                  label: 'Thắng 3 trận',
+                  progress: 3,
+                  target: 3,
+                  claimed: false,
+                  claiming: true,
+                ),
+              ],
+              onClaim: (_) {},
+            ),
+          ),
+        );
+
+        final button = tester.widget<CommonButton>(find.byType(CommonButton));
+        expect(button.loading, isTrue);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'chỉ đúng quest đang claiming hiện spinner, quest khác trong cùng panel không bị ảnh hưởng',
+      (tester) async {
+        await tester.pumpWidget(
+          host(
+            QuestBoardPanel(
+              quests: const [
+                QuestViewModel(
+                  id: 'a',
+                  label: 'Quest A',
+                  progress: 3,
+                  target: 3,
+                  claimed: false,
+                  claiming: true,
+                ),
+                QuestViewModel(
+                  id: 'b',
+                  label: 'Quest B',
+                  progress: 3,
+                  target: 3,
+                  claimed: false,
+                  claiming: false,
+                ),
+              ],
+              onClaim: (_) {},
+            ),
+          ),
+        );
+
+        final buttons = tester.widgetList<CommonButton>(
+          find.byType(CommonButton),
+        );
+        expect(buttons.where((b) => b.loading).length, 1);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      },
+    );
+
+    testWidgets('claiming: true chặn onClaim của đúng quest đó', (
+      tester,
+    ) async {
+      var claimedId = '';
+      await tester.pumpWidget(
+        host(
+          QuestBoardPanel(
+            quests: const [
+              QuestViewModel(
+                id: 'win_3',
+                label: 'Thắng 3 trận',
+                progress: 3,
+                target: 3,
+                claimed: false,
+                claiming: true,
+              ),
+            ],
+            onClaim: (id) => claimedId = id,
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(CommonButton));
+      await tester.pump();
+
+      expect(claimedId, isEmpty);
+    });
+
+    testWidgets('claiming: false (mặc định) hành vi y hệt trước đây', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        host(
+          QuestBoardPanel(
+            quests: const [
+              QuestViewModel(
+                id: 'win_3',
+                label: 'Thắng 3 trận',
+                progress: 3,
+                target: 3,
+                claimed: false,
+              ),
+            ],
+            onClaim: (_) {},
+          ),
+        ),
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      final button = tester.widget<CommonButton>(find.byType(CommonButton));
+      expect(button.loading, isFalse);
+    });
+  });
 }

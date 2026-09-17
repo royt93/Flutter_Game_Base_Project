@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/daily_login_calendar.dart';
 import 'package:roy_casual_kit/presentation/widgets/pressable_scale.dart';
 
@@ -384,5 +385,73 @@ void main() {
         handle.dispose();
       },
     );
+  });
+
+  group('ENH-70: claiming', () {
+    testWidgets('claiming: true truyền đúng xuống CommonButton, hiện spinner', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          DailyLoginCalendarWidget(
+            currentStreakDay: 0,
+            claimedDaysInCycle: const {},
+            canClaimToday: true,
+            onClaim: () {},
+            claiming: true,
+          ),
+        ),
+      );
+
+      final button = tester.widget<CommonButton>(find.byType(CommonButton));
+      expect(button.loading, isTrue);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('claiming: true chặn onClaim ở cả nút Claim lẫn ô ngày current', (
+      tester,
+    ) async {
+      var tapped = 0;
+      await tester.pumpWidget(
+        _wrap(
+          DailyLoginCalendarWidget(
+            currentStreakDay: 0,
+            claimedDaysInCycle: const {},
+            canClaimToday: true,
+            onClaim: () => tapped++,
+            claiming: true,
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(CommonButton));
+      await tester.tap(
+        find.bySemanticsLabel('Day 1, current, double tap to claim'),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+
+      expect(tapped, 0);
+    });
+
+    testWidgets('claiming: false (mặc định) hành vi y hệt trước đây', (
+      tester,
+    ) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        _wrap(
+          DailyLoginCalendarWidget(
+            currentStreakDay: 0,
+            claimedDaysInCycle: const {},
+            canClaimToday: true,
+            onClaim: () => tapped = true,
+          ),
+        ),
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      await tester.tap(find.byType(CommonButton));
+      expect(tapped, isTrue);
+    });
   });
 }

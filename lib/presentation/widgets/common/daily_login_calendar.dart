@@ -28,6 +28,7 @@ class DailyLoginCalendarWidget extends StatelessWidget {
     required this.onClaim,
     this.cycleLength = kDailyLoginCycleLength,
     this.claimLabel = 'Claim',
+    this.claiming = false,
   });
 
   /// Current streak position, 1..[cycleLength]; 0 before the first claim.
@@ -50,6 +51,14 @@ class DailyLoginCalendarWidget extends StatelessWidget {
   /// like this).
   final String claimLabel;
 
+  /// ENH-70: forwarded to the Claim button's `CommonButton.loading` (spinner
+  /// + blocks double-tap) while a caller-owned async claim (e.g. a
+  /// server-validated claim) is in flight. `false` (default) is unchanged
+  /// from before this existed. This widget stays pure/data-driven — it
+  /// never tracks this itself, the caller sets it before/after the async
+  /// call, same convention as `QuestViewModel.claiming`.
+  final bool claiming;
+
   @override
   Widget build(BuildContext context) {
     final highlightDay = (currentStreakDay % cycleLength) + 1;
@@ -67,12 +76,16 @@ class DailyLoginCalendarWidget extends StatelessWidget {
               day: day,
               claimed: claimedDaysInCycle.contains(day),
               current: isCurrent,
-              onTap: isCurrent ? onClaim : null,
+              onTap: (isCurrent && !claiming) ? onClaim : null,
             );
           }),
         ),
         const SizedBox(height: NeonTheme.s16),
-        CommonButton(label: claimLabel, onTap: canClaimToday ? onClaim : null),
+        CommonButton(
+          label: claimLabel,
+          loading: claiming,
+          onTap: canClaimToday ? onClaim : null,
+        ),
       ],
     );
   }
