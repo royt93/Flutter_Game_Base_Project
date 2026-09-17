@@ -12,6 +12,7 @@ import 'package:roy_casual_kit/core/haptics.dart';
 import 'package:roy_casual_kit/core/local_scoreboard_service.dart';
 import 'package:roy_casual_kit/core/onboarding_coordinator_service.dart';
 import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
+import 'package:roy_casual_kit/core/save_slot_manager.dart';
 import 'package:roy_casual_kit/core/replay_recorder.dart';
 import 'package:roy_casual_kit/core/utils/seeded_random.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
@@ -180,6 +181,47 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     }
   }
 
+  // IDEA-56: demo state for SaveSlotManager — a per-slot "demo score" int
+  // stored via `_saveSlots.keyFor(slotId, 'demo_score')`, proving 2 slots
+  // never share data (each key is namespaced to its own slot id).
+  late final SaveSlotManager _saveSlots;
+
+  int _demoScoreFor(String slotId) =>
+      StorageService.to.getInt(_saveSlots.keyFor(slotId, 'demo_score'));
+
+  void _createSaveSlot() {
+    final slot = _saveSlots.createSlot(
+      'Player ${_saveSlots.listSlots().length + 1}',
+    );
+    unawaited(_saveSlots.setActiveSlot(slot.id));
+    setState(() {});
+  }
+
+  void _setActiveSaveSlot(String id) {
+    unawaited(_saveSlots.setActiveSlot(id));
+    setState(() {});
+  }
+
+  void _addDemoScoreToActiveSlot() {
+    final activeId = _saveSlots.activeSlotId;
+    if (activeId == null) return;
+    final key = _saveSlots.keyFor(activeId, 'demo_score');
+    unawaited(StorageService.to.setInt(key, StorageService.to.getInt(key) + 10));
+    setState(() {});
+  }
+
+  Future<void> _deleteSaveSlot(String id, String displayName) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Delete "$displayName"?',
+      message: 'This removes the slot and all of its data. This cannot be undone.',
+      color: NeonTheme.red,
+    );
+    if (!confirmed) return;
+    await _saveSlots.deleteSlot(id);
+    if (mounted) setState(() {});
+  }
+
   // IDEA-08: Game Feel demo state — SquashStretch tap count, a
   // ScreenShakeController the caller owns/disposes, and a cycling combo
   // heat value.
@@ -314,6 +356,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
         Get.put(OnboardingCoordinatorService(), permanent: true);
     _onboarding.registerFlow('widget_kit_intro', priority: 10);
     _onboarding.registerFlow('shop_tip', priority: 0);
+    _saveSlots =
+        SaveSlotManager.maybe ?? Get.put(SaveSlotManager(), permanent: true);
   }
 
   @override
@@ -1374,6 +1418,64 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 _lastBackup = json;
                               },
                               onImport: () async => _lastBackup,
+                            ),
+                          ),
+                          _Demo(
+                            label: 'SaveSlotManager (IDEA-56)',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (final slot in _saveSlots.listSlots())
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      bottom: NeonTheme.s8,
+                                    ),
+                                    child: CommonListTile(
+                                      title: slot.displayName,
+                                      subtitle:
+                                          'Demo score: ${_demoScoreFor(slot.id)}'
+                                          '${slot.id == _saveSlots.activeSlotId ? " • Active" : ""}',
+                                      trailing: IconButton(
+                                        icon: Icon(
+                                          Icons.delete_outline_rounded,
+                                          color: NeonTheme.red,
+                                        ),
+                                        onPressed: () => _deleteSaveSlot(
+                                          slot.id,
+                                          slot.displayName,
+                                        ),
+                                      ),
+                                      onTap: () => _setActiveSaveSlot(slot.id),
+                                    ),
+                                  ),
+                                if (_saveSlots.listSlots().isEmpty)
+                                  const Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom: NeonTheme.s8,
+                                    ),
+                                    child: Text('No slots yet.'),
+                                  ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: CommonButton(
+                                        label: 'Create slot',
+                                        onTap: _createSaveSlot,
+                                      ),
+                                    ),
+                                    const SizedBox(width: NeonTheme.s8),
+                                    Expanded(
+                                      child: CommonButton(
+                                        label: '+10 score',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: _saveSlots.activeSlotId == null
+                                            ? null
+                                            : _addDemoScoreToActiveSlot,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
 

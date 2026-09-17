@@ -26,7 +26,7 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  tester.view.physicalSize = const Size(1080, 9600);
+  tester.view.physicalSize = const Size(1080, 10200);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -980,6 +980,63 @@ void main() {
           )
           .first;
       expect(button.onTap, isNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'IDEA-56: SaveSlotManager tạo/chuyển/xoá slot đúng, mỗi slot giữ dữ liệu riêng qua keyFor',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      expect(find.text('No slots yet.'), findsOneWidget);
+
+      await tester.tap(find.text('Create slot').last);
+      await tester.pump();
+
+      expect(find.text('Player 1'), findsOneWidget);
+      expect(find.textContaining('Active'), findsOneWidget);
+
+      await tester.tap(find.text('+10 score').last);
+      await tester.pump();
+      expect(find.textContaining('Demo score: 10'), findsOneWidget);
+
+      // Slot thứ 2 độc lập — score của nó phải là 0, không kế thừa từ slot 1.
+      await tester.tap(find.text('Create slot').last);
+      await tester.pump();
+
+      expect(find.text('Player 2'), findsOneWidget);
+      expect(find.textContaining('Demo score: 10'), findsOneWidget); // slot 1 vẫn giữ
+      expect(find.textContaining('Demo score: 0'), findsOneWidget); // slot 2 mới, độc lập
+
+      // Xoá slot 1 (có ConfirmDialog xác nhận trước, vì đây là hành động
+      // phá huỷ dữ liệu).
+      await tester.tap(
+        find
+            .ancestor(
+              of: find.text('Player 1'),
+              matching: find.byType(CommonListTile),
+            )
+            .first,
+      );
+      await tester.pump(); // set active slot 1 trước để test rõ ràng hơn
+
+      final deleteIcon = find.descendant(
+        of: find
+            .ancestor(
+              of: find.text('Player 1'),
+              matching: find.byType(CommonListTile),
+            )
+            .first,
+        matching: find.byIcon(Icons.delete_outline_rounded),
+      );
+      await tester.tap(deleteIcon);
+      await _settle(tester);
+      await tester.tap(find.text('OK'));
+      await _settle(tester);
+
+      expect(find.text('Player 1'), findsNothing);
+      expect(find.text('Player 2'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

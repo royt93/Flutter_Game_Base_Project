@@ -330,6 +330,28 @@ class StorageService extends GetxService {
   /// was before this call, never half-erased.
   Future<void> eraseAll() => importAll(const {});
 
+  /// Removes every key currently in storage that starts with [prefix] —
+  /// e.g. deleting one save slot's namespaced keys (IDEA-56) without
+  /// touching any other slot's. Built on the exact same
+  /// [_replaceAll]/rollback-on-error path as [importAll]/[eraseAll] (the
+  /// desired end-state is just "current data minus the matching keys"),
+  /// so a failure partway through leaves storage exactly as it was before
+  /// this call — no new persistence mechanism invented for this.
+  ///
+  /// [prefix] must not be empty — an empty prefix would match every key,
+  /// silently behaving like [eraseAll] under a name that doesn't say so;
+  /// callers that actually want that should call [eraseAll] explicitly.
+  Future<void> removeAllWithPrefix(String prefix) {
+    if (prefix.isEmpty) {
+      throw ArgumentError.value(prefix, 'prefix', 'must not be empty');
+    }
+    final remaining = <String, Object>{
+      for (final entry in exportAll().entries)
+        if (!entry.key.startsWith(prefix)) entry.key: entry.value,
+    };
+    return importAll(remaining);
+  }
+
   Future<void> _replaceAll(Map<String, Object> data) async {
     final prefs = _prefs;
     if (prefs != null) {

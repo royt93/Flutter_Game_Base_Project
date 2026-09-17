@@ -266,5 +266,36 @@ void main() {
         expect(store.exportAll(), {'k2': 'v2'});
       });
     });
+
+    group('IDEA-56: removeAllWithPrefix', () {
+      test('xoá đúng mọi key có prefix, không đụng key khác không có prefix đó', () async {
+        await store.setString('slot_a_name', 'Alice');
+        await store.setInt('slot_a_score', 100);
+        await store.setString('slot_b_name', 'Bob');
+        await store.setString('unrelated', 'keep me');
+
+        await store.removeAllWithPrefix('slot_a_');
+
+        expect(store.getString('slot_a_name'), isNull);
+        expect(store.getInt('slot_a_score', def: -1), -1);
+        expect(store.getString('slot_b_name'), 'Bob'); // slot khác không bị đụng
+        expect(store.getString('unrelated'), 'keep me');
+      });
+
+      test('prefix rỗng throw ArgumentError, không âm thầm xoá sạch toàn bộ storage', () async {
+        await store.setString('k', 'v');
+
+        expect(() => store.removeAllWithPrefix(''), throwsArgumentError);
+        expect(store.getString('k'), 'v'); // không bị xoá
+      });
+
+      test('prefix không khớp key nào: no-op an toàn, không throw', () async {
+        await store.setString('k', 'v');
+
+        await store.removeAllWithPrefix('no_such_prefix_');
+
+        expect(store.getString('k'), 'v');
+      });
+    });
   });
 }
