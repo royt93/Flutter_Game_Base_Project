@@ -284,4 +284,44 @@ void main() {
       expect(manager.listSlots().single.displayName, 'A renamed');
     });
   });
+
+  group('ENH-72: canCreateSlot', () {
+    test('maxSlots == null (không giới hạn): luôn true bất kể đã có bao nhiêu slot', () {
+      final manager = SaveSlotManager();
+      expect(manager.canCreateSlot, isTrue);
+
+      for (var i = 0; i < 20; i++) {
+        manager.createSlot('Slot $i');
+      }
+      expect(manager.canCreateSlot, isTrue);
+    });
+
+    test('số slot hiện có < maxSlots: true; đúng bằng maxSlots: false', () {
+      final manager = SaveSlotManager(maxSlots: 2);
+      expect(manager.canCreateSlot, isTrue);
+
+      manager.createSlot('A');
+      expect(manager.canCreateSlot, isTrue);
+
+      manager.createSlot('B');
+      expect(manager.canCreateSlot, isFalse);
+    });
+
+    test('sau deleteSlot làm số slot giảm xuống dưới maxSlots: canCreateSlot trở về true', () async {
+      final manager = SaveSlotManager(maxSlots: 1);
+      final slot = manager.createSlot('A');
+      expect(manager.canCreateSlot, isFalse);
+
+      await manager.deleteSlot(slot.id);
+      expect(manager.canCreateSlot, isTrue);
+    });
+
+    test('canCreateSlot đúng khớp với việc createSlot có throw hay không', () {
+      final manager = SaveSlotManager(maxSlots: 1);
+      manager.createSlot('A');
+
+      expect(manager.canCreateSlot, isFalse);
+      expect(() => manager.createSlot('B'), throwsStateError);
+    });
+  });
 }

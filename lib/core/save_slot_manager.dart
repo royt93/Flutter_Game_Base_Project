@@ -167,6 +167,12 @@ class SaveSlotManager extends GetxService {
   @visibleForTesting
   Future<void> get debugPendingSaves => _saveChain;
 
+  /// `true` if [createSlot] can be called right now without throwing —
+  /// always `true` when [maxSlots] is `null` (unlimited). A UI checks this
+  /// to decide whether to disable a "Create slot" button, rather than
+  /// re-deriving the same `maxSlots == null || ...` null-check itself.
+  bool get canCreateSlot => maxSlots == null || _slotList.length < maxSlots!;
+
   /// Every slot, most-recently-played first — the classic "Continue" UX.
   List<SaveSlotMeta> listSlots() {
     final slots = [..._slotList]
