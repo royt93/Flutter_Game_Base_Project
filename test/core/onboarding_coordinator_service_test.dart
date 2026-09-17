@@ -192,4 +192,45 @@ void main() {
       },
     );
   });
+
+  group('ENH-71: storageKey tuỳ chỉnh', () {
+    test('không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ', () async {
+      final service = OnboardingCoordinatorService();
+      service.markFlowSeen('intro');
+      await service.debugPendingSaves;
+
+      expect(storage.getString('onboarding_seen_v1'), isNotNull);
+    });
+
+    test('2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau', () async {
+      final a = OnboardingCoordinatorService(storageKey: 'onboard_a');
+      final b = OnboardingCoordinatorService(storageKey: 'onboard_b');
+
+      a.markFlowSeen('intro');
+      await a.debugPendingSaves;
+      await b.debugPendingSaves;
+
+      expect(a.isFlowSeen('intro'), isTrue);
+      expect(b.isFlowSeen('intro'), isFalse);
+    });
+
+    test('storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)', () async {
+      final service = OnboardingCoordinatorService(storageKey: 'onboard_custom');
+      service.markFlowSeen('intro');
+      await service.debugPendingSaves;
+
+      final restarted = OnboardingCoordinatorService(storageKey: 'onboard_custom');
+      expect(restarted.isFlowSeen('intro'), isTrue);
+    });
+
+    test('không đổi hành vi markFlowSeen/isFlowSeen/nextEligibleFlow hiện có khi dùng storageKey tuỳ chỉnh', () {
+      final service = OnboardingCoordinatorService(storageKey: 'k');
+      service.registerFlow('intro');
+      expect(service.nextEligibleFlow(), 'intro');
+
+      service.markFlowSeen('intro');
+      expect(service.isFlowSeen('intro'), isTrue);
+      expect(service.nextEligibleFlow(), isNull);
+    });
+  });
 }

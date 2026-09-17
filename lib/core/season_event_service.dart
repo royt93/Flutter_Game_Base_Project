@@ -44,7 +44,16 @@ class SeasonEventWindow {
 /// an earlier, already-elapsed cycle, since the clamp never lets the
 /// clock this service reads go backward.
 class SeasonEventService extends GetxService {
-  static const _storageKey = 'season_event_anchors_v1';
+  SeasonEventService({String? storageKey})
+    : _storageKey = storageKey ?? 'season_event_anchors_v1';
+
+  // ENH-71: instance field (was `static const`) so 2 instances can point
+  // at 2 independent anchor tables — e.g. 1 per SaveSlotManager slot via
+  // its `keyFor(slotId, suffix)` (same pattern ENH-69 used for
+  // LocalScoreboardService). Defaulting to the same literal every prior
+  // release used keeps an existing consumer app's save reading exactly the
+  // same table it always did.
+  final String _storageKey;
 
   Map<String, int>? _cached;
 

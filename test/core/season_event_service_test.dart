@@ -382,4 +382,52 @@ void main() {
       expect(atEnd.isActive, isFalse);
     });
   });
+
+  group('ENH-71: storageKey tuỳ chỉnh', () {
+    test('không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ', () async {
+      final service = SeasonEventService();
+      await setNowMs(_realMs);
+      service.currentWindow('e', length: length, cooldown: cooldown);
+      await service.debugPendingSaves;
+
+      expect(storage.getString('season_event_anchors_v1'), isNotNull);
+    });
+
+    test('2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau', () async {
+      final a = SeasonEventService(storageKey: 'season_a');
+      final b = SeasonEventService(storageKey: 'season_b');
+      await setNowMs(_realMs);
+
+      final windowA = a.currentWindow('e', length: length, cooldown: cooldown);
+      await setNowMs(_realMs + 999999);
+      final windowB = b.currentWindow('e', length: length, cooldown: cooldown);
+      await a.debugPendingSaves;
+      await b.debugPendingSaves;
+
+      // Anchor của b được lập từ mốc thời gian khác hẳn a (do gọi lần
+      // đầu ở thời điểm khác) — nếu chung key, b sẽ đọc lại đúng anchor
+      // của a thay vì tự lập anchor riêng.
+      expect(windowA.start.millisecondsSinceEpoch, _realMs);
+      expect(windowB.start.millisecondsSinceEpoch, _realMs + 999999);
+    });
+
+    test('storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng anchor)', () async {
+      final service = SeasonEventService(storageKey: 'season_custom');
+      await setNowMs(_realMs);
+      final window = service.currentWindow('e', length: length, cooldown: cooldown);
+      await service.debugPendingSaves;
+
+      final restarted = SeasonEventService(storageKey: 'season_custom');
+      final reloaded = restarted.currentWindow('e', length: length, cooldown: cooldown);
+      expect(reloaded.start, window.start);
+    });
+
+    test('không đổi hành vi currentWindow hiện có khi dùng storageKey tuỳ chỉnh', () async {
+      final service = SeasonEventService(storageKey: 'k');
+      await setNowMs(_realMs);
+      final window = service.currentWindow('e', length: length, cooldown: cooldown);
+
+      expect(window.isActive, isTrue);
+    });
+  });
 }

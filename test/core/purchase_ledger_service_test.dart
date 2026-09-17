@@ -260,5 +260,47 @@ void main() {
         expect(reloaded.balanceOf('gems'), 6);
       },
     );
+
+    group('ENH-71: storageKey tuỳ chỉnh', () {
+      test('không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ', () async {
+        final service = PurchaseLedgerService();
+        service.grantConsumable('gems', 10);
+        await service.debugPendingSaves;
+
+        expect(storage.getString('purchase_ledger_v1'), isNotNull);
+      });
+
+      test('2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau', () async {
+        final a = PurchaseLedgerService(storageKey: 'ledger_a');
+        final b = PurchaseLedgerService(storageKey: 'ledger_b');
+
+        a.grantConsumable('gems', 10);
+        b.grantConsumable('gems', 20);
+        await a.debugPendingSaves;
+        await b.debugPendingSaves;
+
+        expect(a.balanceOf('gems'), 10);
+        expect(b.balanceOf('gems'), 20);
+      });
+
+      test('storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)', () async {
+        final service = PurchaseLedgerService(storageKey: 'ledger_custom');
+        service.grantPermanent('remove_ads');
+        await service.debugPendingSaves;
+
+        final restarted = PurchaseLedgerService(storageKey: 'ledger_custom');
+        expect(restarted.owns('remove_ads'), isTrue);
+      });
+
+      test('không đổi hành vi grantConsumable/consume/grantPermanent/owns hiện có khi dùng storageKey tuỳ chỉnh', () {
+        final service = PurchaseLedgerService(storageKey: 'k');
+        service.grantConsumable('gems', 10);
+        expect(service.consume('gems', 4), isTrue);
+        expect(service.balanceOf('gems'), 6);
+
+        service.grantPermanent('remove_ads');
+        expect(service.owns('remove_ads'), isTrue);
+      });
+    });
   });
 }

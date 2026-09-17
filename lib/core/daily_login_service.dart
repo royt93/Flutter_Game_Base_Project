@@ -78,7 +78,16 @@ class _DailyLoginState {
 /// directly, so winding the device clock back can't be used to claim the
 /// same day twice or dodge the streak-reset penalty for a skipped day.
 class DailyLoginService extends GetxService {
-  static const String _storageKey = 'daily_login_state_v1';
+  DailyLoginService({String? storageKey})
+    : _storageKey = storageKey ?? 'daily_login_state_v1';
+
+  // ENH-71: instance field (was `static const`) so 2 instances can point
+  // at 2 independent streak states — e.g. 1 per SaveSlotManager slot via
+  // its `keyFor(slotId, suffix)` (same pattern ENH-69 used for
+  // LocalScoreboardService). Defaulting to the same literal every prior
+  // release used keeps an existing consumer app's save reading exactly the
+  // same table it always did.
+  final String _storageKey;
 
   late final VersionedJsonStore<_DailyLoginState> _store =
       VersionedJsonStore<_DailyLoginState>(

@@ -22,7 +22,16 @@ import 'versioned_json_store.dart';
 /// racing to show at once, or a flow the caller forgot to mark seen
 /// replays every session.
 class OnboardingCoordinatorService extends GetxService {
-  static const _storageKey = 'onboarding_seen_v1';
+  OnboardingCoordinatorService({String? storageKey})
+    : _storageKey = storageKey ?? 'onboarding_seen_v1';
+
+  // ENH-71: instance field (was `static const`) so 2 instances can point
+  // at 2 independent "seen" tables — e.g. 1 per SaveSlotManager slot via
+  // its `keyFor(slotId, suffix)` (same pattern ENH-69 used for
+  // LocalScoreboardService). Defaulting to the same literal every prior
+  // release used keeps an existing consumer app's save reading exactly the
+  // same table it always did.
+  final String _storageKey;
 
   /// In-memory only, re-declared every app boot via [registerFlow] — same
   /// convention as `AchievementService._thresholds`: cheap caller-supplied

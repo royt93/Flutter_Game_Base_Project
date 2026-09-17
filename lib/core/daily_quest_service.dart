@@ -58,7 +58,16 @@ class _QuestRecord {
 /// `utils/clamped_clock.dart`) so winding the device clock back can't be
 /// used to re-claim an already-claimed quest early.
 class DailyQuestService extends GetxService {
-  static const _storageKey = 'daily_quest_progress_v1';
+  DailyQuestService({String? storageKey})
+    : _storageKey = storageKey ?? 'daily_quest_progress_v1';
+
+  // ENH-71: instance field (was `static const`) so 2 instances can point
+  // at 2 independent quest-progress tables — e.g. 1 per SaveSlotManager
+  // slot via its `keyFor(slotId, suffix)` (same pattern ENH-69 used for
+  // LocalScoreboardService). Defaulting to the same literal every prior
+  // release used keeps an existing consumer app's save reading exactly the
+  // same table it always did.
+  final String _storageKey;
   static final int _maxInt = 0x7FFFFFFFFFFFFFFF;
 
   final Map<String, _QuestDef> _defs = {};

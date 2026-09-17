@@ -34,7 +34,16 @@ class _LedgerState {
 /// `save_integrity.dart`'s "best-effort local cache, not a substitute for
 /// server-side validation" doc.
 class PurchaseLedgerService extends GetxService {
-  static const _storageKey = 'purchase_ledger_v1';
+  PurchaseLedgerService({String? storageKey})
+    : _storageKey = storageKey ?? 'purchase_ledger_v1';
+
+  // ENH-71: instance field (was `static const`) so 2 instances can point
+  // at 2 independent ledgers — e.g. 1 per SaveSlotManager slot via its
+  // `keyFor(slotId, suffix)` (same pattern ENH-69 used for
+  // LocalScoreboardService). Defaulting to the same literal every prior
+  // release used keeps an existing consumer app's save reading exactly the
+  // same table it always did.
+  final String _storageKey;
   static final int _maxInt = 0x7FFFFFFFFFFFFFFF;
 
   _LedgerState? _cached;

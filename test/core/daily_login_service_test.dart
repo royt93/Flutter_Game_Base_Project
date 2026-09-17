@@ -409,5 +409,53 @@ void main() {
         expect(restarted.longestStreakEver, 9);
       });
     });
+
+    group('ENH-71: storageKey tuỳ chỉnh', () {
+      test('không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ', () async {
+        final service = DailyLoginService();
+        await setDay(_realDay);
+        service.claimToday();
+        await service.debugPendingSaves;
+
+        expect(store.getString('daily_login_state_v1'), isNotNull);
+      });
+
+      test('2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau', () async {
+        final a = DailyLoginService(storageKey: 'login_a');
+        final b = DailyLoginService(storageKey: 'login_b');
+        await setDay(_realDay);
+
+        a.claimToday();
+        await setDay(_realDay + 1);
+        b.claimToday();
+        await a.debugPendingSaves;
+        await b.debugPendingSaves;
+
+        expect(a.currentStreakDay, 1);
+        expect(b.currentStreakDay, 1);
+        // Mỗi instance chỉ thấy đúng 1 lần claim của chính nó, không thấy
+        // của instance kia — nếu chung key, b sẽ thấy streak 2.
+      });
+
+      test('storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)', () async {
+        final service = DailyLoginService(storageKey: 'login_custom');
+        await setDay(_realDay);
+        service.claimToday();
+        await service.debugPendingSaves;
+
+        final restarted = DailyLoginService(storageKey: 'login_custom');
+        expect(restarted.currentStreakDay, 1);
+        expect(restarted.canClaimToday(), isFalse);
+      });
+
+      test('không đổi hành vi claimToday/currentStreakDay hiện có khi dùng storageKey tuỳ chỉnh', () async {
+        final service = DailyLoginService(storageKey: 'k');
+        await setDay(_realDay);
+        final result = service.claimToday();
+
+        expect(result.streakDay, 1);
+        expect(service.currentStreakDay, 1);
+      });
+    });
   });
 }

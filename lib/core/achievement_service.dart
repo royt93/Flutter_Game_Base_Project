@@ -25,7 +25,16 @@ import 'versioned_json_store.dart';
 /// persisted — they're cheap in-memory data the caller re-declares every
 /// run via [register], same as the rest of the game's achievement list.
 class AchievementService extends GetxService {
-  static const _storageKey = 'achievement_progress_v1';
+  AchievementService({String? storageKey})
+    : _storageKey = storageKey ?? 'achievement_progress_v1';
+
+  // ENH-71: instance field (was `static const`) so 2 instances can point
+  // at 2 independent progress tables — e.g. 1 per SaveSlotManager slot via
+  // its `keyFor(slotId, suffix)` (same pattern ENH-69 used for
+  // LocalScoreboardService). Defaulting to the same literal every prior
+  // release used keeps an existing consumer app's save reading exactly the
+  // same table it always did.
+  final String _storageKey;
 
   final Map<String, int> _thresholds = {};
   Map<String, int>? _progress;

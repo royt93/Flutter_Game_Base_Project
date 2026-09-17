@@ -390,5 +390,49 @@ void main() {
         expect(() => service.thresholdOf('   '), throwsArgumentError);
       });
     });
+
+    group('ENH-71: storageKey tuỳ chỉnh', () {
+      test('không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ', () async {
+        final service = AchievementService();
+        service.register('wins', 10);
+        service.incrementProgress('wins', 3);
+        await service.debugPendingSaves;
+
+        expect(storage.getString('achievement_progress_v1'), isNotNull);
+      });
+
+      test('2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau', () async {
+        final a = AchievementService(storageKey: 'ach_a');
+        final b = AchievementService(storageKey: 'ach_b');
+        a.register('wins', 10);
+        b.register('wins', 10);
+
+        a.incrementProgress('wins', 3);
+        b.incrementProgress('wins', 7);
+        await a.debugPendingSaves;
+        await b.debugPendingSaves;
+
+        expect(a.progressOf('wins'), 3);
+        expect(b.progressOf('wins'), 7);
+      });
+
+      test('storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)', () async {
+        final service = AchievementService(storageKey: 'ach_custom');
+        service.register('wins', 10);
+        service.incrementProgress('wins', 5);
+        await service.debugPendingSaves;
+
+        final restarted = AchievementService(storageKey: 'ach_custom');
+        expect(restarted.progressOf('wins'), 5);
+      });
+
+      test('không đổi hành vi register/incrementProgress/isCompleted hiện có khi dùng storageKey tuỳ chỉnh', () {
+        final service = AchievementService(storageKey: 'k');
+        service.register('wins', 3);
+        service.incrementProgress('wins', 3);
+
+        expect(service.isCompleted('wins'), isTrue);
+      });
+    });
   });
 }

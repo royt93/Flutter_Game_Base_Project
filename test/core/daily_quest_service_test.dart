@@ -307,5 +307,52 @@ void main() {
         expect(reloaded.progressOf('combo'), 10);
       },
     );
+
+    group('ENH-71: storageKey tuỳ chỉnh', () {
+      test('không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ', () async {
+        final service = DailyQuestService();
+        service.register('wins', 3);
+        service.incrementProgress('wins', 1);
+        await service.debugPendingSaves;
+
+        expect(storage.getString('daily_quest_progress_v1'), isNotNull);
+      });
+
+      test('2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau', () async {
+        final a = DailyQuestService(storageKey: 'quest_a');
+        final b = DailyQuestService(storageKey: 'quest_b');
+        a.register('wins', 3);
+        b.register('wins', 3);
+
+        a.incrementProgress('wins', 1);
+        b.incrementProgress('wins', 2);
+        await a.debugPendingSaves;
+        await b.debugPendingSaves;
+
+        expect(a.progressOf('wins'), 1);
+        expect(b.progressOf('wins'), 2);
+      });
+
+      test('storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)', () async {
+        final service = DailyQuestService(storageKey: 'quest_custom');
+        service.register('wins', 3);
+        service.incrementProgress('wins', 2);
+        await service.debugPendingSaves;
+
+        final restarted = DailyQuestService(storageKey: 'quest_custom');
+        restarted.register('wins', 3);
+        expect(restarted.progressOf('wins'), 2);
+      });
+
+      test('không đổi hành vi register/incrementProgress/claim hiện có khi dùng storageKey tuỳ chỉnh', () {
+        final service = DailyQuestService(storageKey: 'k');
+        service.register('wins', 1);
+        service.incrementProgress('wins', 1);
+
+        expect(service.isCompleted('wins'), isTrue);
+        expect(service.claim('wins'), isTrue);
+        expect(service.isClaimed('wins'), isTrue);
+      });
+    });
   });
 }
