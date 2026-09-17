@@ -355,4 +355,39 @@ void main() {
       });
     });
   });
+
+  group('ENH-76: progressRatio', () {
+    test('chưa từng register: trả 0.0, không throw', () {
+      final service = DailyQuestService();
+      expect(() => service.progressRatio('unknown'), returnsNormally);
+      expect(service.progressRatio('unknown'), 0.0);
+    });
+
+    test('đã register nhưng chưa incrementProgress: trả 0.0', () {
+      final service = DailyQuestService();
+      service.register('wins', 10);
+      expect(service.progressRatio('wins'), 0.0);
+    });
+
+    test('progress ở giữa target: trả đúng tỉ lệ', () {
+      final service = DailyQuestService();
+      service.register('wins', 10);
+      service.incrementProgress('wins', 3);
+      expect(service.progressRatio('wins'), 0.3);
+    });
+
+    test('progress vượt target: clamp đúng 1.0, không vượt quá', () {
+      final service = DailyQuestService();
+      service.register('wins', 10);
+      service.incrementProgress('wins', 15);
+      expect(service.progressRatio('wins'), 1.0);
+    });
+
+    test('progress đúng bằng target: trả đúng 1.0', () {
+      final service = DailyQuestService();
+      service.register('wins', 10);
+      service.incrementProgress('wins', 10);
+      expect(service.progressRatio('wins'), 1.0);
+    });
+  });
 }

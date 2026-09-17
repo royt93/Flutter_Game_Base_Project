@@ -208,6 +208,16 @@ class DailyQuestService extends GetxService {
   /// [questId]'s registered target count, or `null` if never registered.
   int? targetOf(String questId) => _defs[questId]?.targetCount;
 
+  /// `progressOf(id) / targetOf(id)` clamped to `[0.0, 1.0]` — `0.0`
+  /// (never throws) if [questId] was never [register]ed or has no
+  /// progress yet. Same pattern as `AchievementService.progressRatio`
+  /// (ENH-74).
+  double progressRatio(String questId) {
+    final target = targetOf(questId);
+    if (target == null || target <= 0) return 0.0;
+    return (progressOf(questId) / target).clamp(0.0, 1.0);
+  }
+
   /// `true` once [progressOf] reaches the registered target for the
   /// current period. `false` (never throws) for an id that was never
   /// [register]ed.
