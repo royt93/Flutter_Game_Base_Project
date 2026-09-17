@@ -11,6 +11,13 @@ import 'panel_card.dart';
 
 enum _Status { idle, working, success, error }
 
+/// ENH-67: which action [_Status.working] is currently for — lets each
+/// [CommonButton] show `loading: true` for only its OWN action instead of
+/// both buttons appearing busy at once (they're still both disabled via
+/// [_BackupRestorePanelState._busy], since export and import can't run
+/// concurrently — this only controls which one shows the spinner).
+enum _Action { none, export, import }
+
 /// UI for the save-backup flow `StorageService.exportAll()`/`importAll()`
 /// and `save_integrity.dart`'s HMAC sign/verify already support at the
 /// core layer but have no widget to drive them from.
@@ -76,6 +83,10 @@ class BackupRestorePanel extends StatefulWidget {
 
 class _BackupRestorePanelState extends State<BackupRestorePanel> {
   _Status _status = _Status.idle;
+  // ENH-67: which action is running — only meaningful while _busy. Lets
+  // Export/Import each show their OWN CommonButton.loading instead of a
+  // single shared "something is working" flag that couldn't tell them apart.
+  _Action _activeAction = _Action.none;
   String? _message;
 
   StorageService get _storage => widget.storage ?? StorageService.to;
@@ -85,6 +96,7 @@ class _BackupRestorePanelState extends State<BackupRestorePanel> {
   Future<void> _handleExport() async {
     setState(() {
       _status = _Status.working;
+      _activeAction = _Action.export;
       _message = null;
     });
     try {
@@ -93,12 +105,14 @@ class _BackupRestorePanelState extends State<BackupRestorePanel> {
       if (!mounted) return;
       setState(() {
         _status = _Status.success;
+        _activeAction = _Action.none;
         _message = widget.exportSuccessMessage;
       });
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _status = _Status.error;
+        _activeAction = _Action.none;
         _message = 'Export failed: $error';
       });
     }
@@ -115,13 +129,17 @@ class _BackupRestorePanelState extends State<BackupRestorePanel> {
 
     setState(() {
       _status = _Status.working;
+      _activeAction = _Action.import;
       _message = null;
     });
     try {
       final raw = await widget.onImport();
       if (raw == null) {
         if (!mounted) return;
-        setState(() => _status = _Status.idle);
+        setState(() {
+          _status = _Status.idle;
+          _activeAction = _Action.none;
+        });
         return;
       }
       final decoded = jsonDecode(raw);
@@ -133,18 +151,21 @@ class _BackupRestorePanelState extends State<BackupRestorePanel> {
       if (!mounted) return;
       setState(() {
         _status = _Status.success;
+        _activeAction = _Action.none;
         _message = widget.importSuccessMessage;
       });
     } on FormatException catch (error) {
       if (!mounted) return;
       setState(() {
         _status = _Status.error;
+        _activeAction = _Action.none;
         _message = error.message;
       });
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _status = _Status.error;
+        _activeAction = _Action.none;
         _message = 'Restore failed: $error';
       });
     }
@@ -173,6 +194,7 @@ class _BackupRestorePanelState extends State<BackupRestorePanel> {
                 child: CommonButton(
                   label: widget.exportLabel,
                   variant: CommonButtonVariant.secondary,
+                  loading: _activeAction == _Action.export,
                   onTap: _busy ? null : _handleExport,
                 ),
               ),
@@ -180,6 +202,7 @@ class _BackupRestorePanelState extends State<BackupRestorePanel> {
               Expanded(
                 child: CommonButton(
                   label: widget.importLabel,
+                  loading: _activeAction == _Action.import,
                   onTap: _busy ? null : _handleImport,
                 ),
               ),
@@ -195,41 +218,44 @@ class _BackupRestorePanelState extends State<BackupRestorePanel> {
                 : const Duration(milliseconds: 200),
             curve: Curves.easeOut,
             alignment: Alignment.topCenter,
-            child: _status == _Status.idle
+            // ENH-67: the working state no longer renders a visible
+            // spinner+"Working…" row here — each CommonButton above shows
+            // its OWN spinner now (loading: _activeAction == ...), so a
+            // second, detached spinner would just be a redundant, confusing
+            // "which button is this for?" signal. The liveRegion
+            // announcement is kept (invisible SizedBox) so a screen reader
+            // still gets told work is in progress — only the VISUAL
+            // duplicate was removed, not the accessibility signal.
+            child: _busy
+                ? Semantics(
+                    liveRegion: true,
+                    label: 'Working…',
+                    excludeSemantics: true,
+                    child: const SizedBox(width: double.infinity),
+                  )
+                : _status == _Status.idle
                 ? const SizedBox(width: double.infinity)
                 : Padding(
                     padding: const EdgeInsets.only(top: NeonTheme.s16),
                     child: Semantics(
                       liveRegion: true,
-                      label: _busy ? 'Working…' : _message,
+                      label: _message,
                       excludeSemantics: true,
                       child: Row(
                         children: [
-                          if (_busy)
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color?>(
-                                  NeonTheme.cyan,
-                                ),
-                              ),
-                            )
-                          else
-                            Icon(
-                              _status == _Status.error
-                                  ? Icons.error
-                                  : Icons.check_circle,
-                              color: _status == _Status.error
-                                  ? NeonTheme.red
-                                  : NeonTheme.lime,
-                              size: 18,
-                            ),
+                          Icon(
+                            _status == _Status.error
+                                ? Icons.error
+                                : Icons.check_circle,
+                            color: _status == _Status.error
+                                ? NeonTheme.red
+                                : NeonTheme.lime,
+                            size: 18,
+                          ),
                           const SizedBox(width: NeonTheme.s8),
                           Expanded(
                             child: Text(
-                              _busy ? 'Working…' : (_message ?? ''),
+                              _message ?? '',
                               style: TextStyle(
                                 color: _status == _Status.error
                                     ? NeonTheme.red

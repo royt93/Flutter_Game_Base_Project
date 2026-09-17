@@ -365,6 +365,142 @@ void main() {
     );
   });
 
+  group('ENH-67: đúng nút hiện loading, không phải cả 2 cùng lúc', () {
+    testWidgets(
+      'đang export: CHỈ nút Export loading, nút Import không loading (nhưng vẫn bị disable)',
+      (tester) async {
+        final completer = Completer<void>();
+
+        await tester.pumpWidget(
+          _wrap(
+            BackupRestorePanel(
+              secret: _secret,
+              storage: storage,
+              onExport: (_) => completer.future,
+              onImport: () async => null,
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Export save').last);
+        await tester.pump();
+
+        final exportButton = tester.widget<CommonButton>(
+          find.widgetWithText(CommonButton, 'Export save').first,
+        );
+        final importButton = tester.widget<CommonButton>(
+          find.widgetWithText(CommonButton, 'Restore save').first,
+        );
+        expect(exportButton.loading, isTrue);
+        expect(importButton.loading, isFalse);
+        expect(importButton.onTap, isNull); // vẫn bị disable, chỉ không hiện spinner riêng
+
+        completer.complete();
+        await tester.pump();
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'đang import: CHỈ nút Import loading, nút Export không loading',
+      (tester) async {
+        final completer = Completer<String?>();
+
+        await tester.pumpWidget(
+          _wrap(
+            BackupRestorePanel(
+              secret: _secret,
+              storage: storage,
+              onExport: (_) async {},
+              onImport: () => completer.future,
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Restore save').last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('OK'));
+        await tester.pump();
+        await tester.pump();
+
+        final exportButton = tester.widget<CommonButton>(
+          find.widgetWithText(CommonButton, 'Export save').first,
+        );
+        final importButton = tester.widget<CommonButton>(
+          find.widgetWithText(CommonButton, 'Restore save').first,
+        );
+        expect(importButton.loading, isTrue);
+        expect(exportButton.loading, isFalse);
+
+        completer.complete(null);
+        await tester.pump();
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'bấm Export nhiều lần trong lúc đang export: onExport chỉ chạy đúng 1 lần (không double-tap)',
+      (tester) async {
+        var callCount = 0;
+        final completer = Completer<void>();
+
+        await tester.pumpWidget(
+          _wrap(
+            BackupRestorePanel(
+              secret: _secret,
+              storage: storage,
+              onExport: (_) {
+                callCount++;
+                return completer.future;
+              },
+              onImport: () async => null,
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Export save').last);
+        await tester.pump();
+        await tester.tap(find.text('Export save').last, warnIfMissed: false);
+        await tester.pump();
+
+        expect(callCount, 1);
+
+        completer.complete();
+        await tester.pump();
+        await tester.pump();
+      },
+    );
+
+    testWidgets('sau khi export xong (success), spinner tắt trên cả 2 nút', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          BackupRestorePanel(
+            secret: _secret,
+            storage: storage,
+            onExport: (_) async {},
+            onImport: () async => null,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Export save').last);
+      await tester.pump();
+      await tester.pump();
+
+      final exportButton = tester.widget<CommonButton>(
+        find.widgetWithText(CommonButton, 'Export save').first,
+      );
+      final importButton = tester.widget<CommonButton>(
+        find.widgetWithText(CommonButton, 'Restore save').first,
+      );
+      expect(exportButton.loading, isFalse);
+      expect(importButton.loading, isFalse);
+      expect(find.text('Save exported.'), findsOneWidget);
+    });
+  });
+
   group('BackupRestorePanel: reducedMotion', () {
     testWidgets(
       'ENH-20 style: reducedMotion bật → AnimatedSize duration = 0',
