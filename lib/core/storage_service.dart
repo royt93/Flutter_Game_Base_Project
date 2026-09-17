@@ -352,6 +352,48 @@ class StorageService extends GetxService {
     return importAll(remaining);
   }
 
+  /// Every key currently in storage that starts with [prefix] — e.g.
+  /// backing up/cloud-syncing just one save slot's namespaced keys
+  /// (IDEA-56) without capturing any other slot's. [prefix] must not be
+  /// empty — same reasoning as [removeAllWithPrefix]: an empty prefix
+  /// would just be [exportAll] under a name that doesn't say so.
+  Map<String, Object> exportWithPrefix(String prefix) {
+    if (prefix.isEmpty) {
+      throw ArgumentError.value(prefix, 'prefix', 'must not be empty');
+    }
+    return {
+      for (final entry in exportAll().entries)
+        if (entry.key.startsWith(prefix)) entry.key: entry.value,
+    };
+  }
+
+  /// Restores [data] as the complete set of keys under [prefix], leaving
+  /// every OTHER key untouched — the write-side counterpart of
+  /// [exportWithPrefix]. A key already under [prefix] but missing from
+  /// [data] is removed (mirrors [importAll] REPLACING a profile, scoped
+  /// to just this prefix). Every key in [data] must start with [prefix]
+  /// — guards against a caller accidentally restoring another slot's
+  /// backup into this one. Built on [importAll], so the same
+  /// rollback-on-error guarantee applies.
+  Future<void> importWithPrefix(String prefix, Map<String, Object?> data) {
+    if (prefix.isEmpty) {
+      throw ArgumentError.value(prefix, 'prefix', 'must not be empty');
+    }
+    if (data.keys.any((key) => !key.startsWith(prefix))) {
+      throw ArgumentError.value(
+        data,
+        'data',
+        'every key must start with $prefix',
+      );
+    }
+    final merged = <String, Object?>{
+      for (final entry in exportAll().entries)
+        if (!entry.key.startsWith(prefix)) entry.key: entry.value,
+      ...data,
+    };
+    return importAll(merged);
+  }
+
   Future<void> _replaceAll(Map<String, Object> data) async {
     final prefs = _prefs;
     if (prefs != null) {

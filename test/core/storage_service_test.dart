@@ -297,5 +297,96 @@ void main() {
         expect(store.getString('k'), 'v');
       });
     });
+
+    group('ENH-77: exportWithPrefix/importWithPrefix', () {
+      test('exportWithPrefix trả đúng chỉ key có prefix, không lẫn key khác', () async {
+        await store.setString('slot_a_name', 'Alice');
+        await store.setInt('slot_a_score', 100);
+        await store.setString('slot_b_name', 'Bob');
+        await store.setString('unrelated', 'keep me');
+
+        final dump = store.exportWithPrefix('slot_a_');
+
+        expect(dump, {'slot_a_name': 'Alice', 'slot_a_score': 100});
+      });
+
+      test('exportWithPrefix rỗng throw ArgumentError', () {
+        expect(() => store.exportWithPrefix(''), throwsArgumentError);
+      });
+
+      test('importWithPrefix rỗng throw ArgumentError, không ghi gì', () async {
+        await store.setString('k', 'v');
+
+        expect(
+          () => store.importWithPrefix('', {'k': 'v2'}),
+          throwsArgumentError,
+        );
+        expect(store.getString('k'), 'v');
+      });
+
+      test(
+        'importWithPrefix với data có key không thuộc prefix throw ArgumentError, không ghi gì',
+        () async {
+          await store.setString('slot_a_name', 'Alice');
+
+          expect(
+            () => store.importWithPrefix('slot_a_', {'other_key': 'x'}),
+            throwsArgumentError,
+          );
+          expect(store.getString('slot_a_name'), 'Alice');
+          expect(store.getString('other_key'), isNull);
+        },
+      );
+
+      test(
+        'importWithPrefix hợp lệ: thay đúng key trong prefix, giữ nguyên key ngoài prefix, xoá key cũ trong prefix không còn trong data mới',
+        () async {
+          await store.setString('slot_a_name', 'Alice');
+          await store.setInt('slot_a_score', 100);
+          await store.setString('unrelated', 'keep me');
+
+          await store.importWithPrefix('slot_a_', {
+            'slot_a_name': 'Alice renamed',
+          });
+
+          expect(store.getString('slot_a_name'), 'Alice renamed');
+          expect(store.getInt('slot_a_score', def: -1), -1); // đã bị xoá
+          expect(store.getString('unrelated'), 'keep me');
+        },
+      );
+
+      test('exportWithPrefix rồi importWithPrefix cùng prefix khôi phục đúng y hệt', () async {
+        await store.setString('slot_a_name', 'Alice');
+        await store.setInt('slot_a_score', 100);
+        final dump = store.exportWithPrefix('slot_a_');
+
+        await store.removeAllWithPrefix('slot_a_');
+        expect(store.getString('slot_a_name'), isNull);
+
+        await store.importWithPrefix('slot_a_', dump);
+
+        expect(store.getString('slot_a_name'), 'Alice');
+        expect(store.getInt('slot_a_score', def: -1), 100);
+      });
+
+      test(
+        'lỗi giữa chừng (value không hỗ trợ) rollback đúng, không half-restore',
+        () async {
+          await store.setString('slot_a_name', 'Alice');
+          await store.setString('unrelated', 'keep me');
+
+          await expectLater(
+            store.importWithPrefix('slot_a_', {
+              'slot_a_bad': <Object>[1, 2],
+            }),
+            throwsA(isA<FormatException>()),
+          );
+
+          expect(store.getString('slot_a_name'), 'Alice');
+          expect(store.getString('unrelated'), 'keep me');
+          expect(store.getString('slot_a_bad'), isNull);
+        },
+      );
+    });
   });
 }
