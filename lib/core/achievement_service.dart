@@ -197,6 +197,17 @@ class AchievementService extends GetxService {
     return _thresholds[achievementId];
   }
 
+  /// `progressOf(id) / thresholdOf(id)` clamped to `[0.0, 1.0]` — `0.0`
+  /// (never throws) if [achievementId] was never [register]ed or has no
+  /// progress yet. Ready to feed straight into a progress-bar-shaped widget
+  /// (`ProgressBarStars`, `CircularProgressRing`) without the caller having
+  /// to null-check [thresholdOf] or clamp [progressOf]'s uncapped value.
+  double progressRatio(String achievementId) {
+    final threshold = thresholdOf(achievementId);
+    if (threshold == null || threshold <= 0) return 0.0;
+    return (progressOf(achievementId) / threshold).clamp(0.0, 1.0);
+  }
+
   static final int _maxInt = 0x7FFFFFFFFFFFFFFF;
 
   void _validateId(String achievementId) {

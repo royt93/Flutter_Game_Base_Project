@@ -435,4 +435,39 @@ void main() {
       });
     });
   });
+
+  group('ENH-74: progressRatio', () {
+    test('chưa từng register: trả 0.0, không throw', () {
+      final service = AchievementService();
+      expect(() => service.progressRatio('unknown'), returnsNormally);
+      expect(service.progressRatio('unknown'), 0.0);
+    });
+
+    test('đã register nhưng chưa incrementProgress: trả 0.0', () {
+      final service = AchievementService();
+      service.register('wins', 10);
+      expect(service.progressRatio('wins'), 0.0);
+    });
+
+    test('progress ở giữa threshold: trả đúng tỉ lệ', () {
+      final service = AchievementService();
+      service.register('wins', 10);
+      service.incrementProgress('wins', 3);
+      expect(service.progressRatio('wins'), 0.3);
+    });
+
+    test('progress vượt threshold: clamp đúng 1.0, không vượt quá', () {
+      final service = AchievementService();
+      service.register('wins', 10);
+      service.incrementProgress('wins', 15);
+      expect(service.progressRatio('wins'), 1.0);
+    });
+
+    test('progress đúng bằng threshold: trả đúng 1.0', () {
+      final service = AchievementService();
+      service.register('wins', 10);
+      service.incrementProgress('wins', 10);
+      expect(service.progressRatio('wins'), 1.0);
+    });
+  });
 }
