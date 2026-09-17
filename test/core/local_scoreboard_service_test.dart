@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/local_scoreboard_service.dart';
+import 'package:roy_casual_kit/core/save_slot_manager.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -263,6 +264,65 @@ void main() {
       final service = LocalScoreboardService();
       expect(() => service.entriesAround('Anyone'), returnsNormally);
       expect(service.entriesAround('Anyone'), isEmpty);
+    });
+  });
+
+  group('ENH-69: storageKey tuỳ chỉnh', () {
+    test('không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ', () async {
+      final service = LocalScoreboardService();
+      service.submitScore('Roy', 100);
+      await service.debugPendingSaves;
+
+      expect(storage.getString('local_scoreboard_v1'), isNotNull);
+    });
+
+    test('2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau', () async {
+      final a = LocalScoreboardService(storageKey: 'board_a');
+      final b = LocalScoreboardService(storageKey: 'board_b');
+
+      a.submitScore('Alice', 100);
+      b.submitScore('Bob', 200);
+      await a.debugPendingSaves;
+      await b.debugPendingSaves;
+
+      expect(a.topN(10).map((e) => e.name), ['Alice']);
+      expect(b.topN(10).map((e) => e.name), ['Bob']);
+    });
+
+    test('storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)', () async {
+      final service = LocalScoreboardService(storageKey: 'board_custom');
+      service.submitScore('Roy', 100);
+      await service.debugPendingSaves;
+
+      final restarted = LocalScoreboardService(storageKey: 'board_custom');
+      expect(restarted.topN(10).map((e) => e.name), ['Roy']);
+    });
+
+    test('không đổi hành vi submitScore/topN/entriesAround/capacity hiện có khi dùng storageKey tuỳ chỉnh', () {
+      final service = LocalScoreboardService(capacity: 2, storageKey: 'k');
+      service.submitScore('A', 10);
+      service.submitScore('B', 20);
+      service.submitScore('C', 5); // dưới capacity, không lọt top 2
+
+      expect(service.topN(10).map((e) => e.name), ['B', 'A']);
+    });
+
+    test('use-case thật: dùng SaveSlotManager.keyFor làm storageKey — mỗi slot có bảng riêng', () {
+      final saveSlots = SaveSlotManager();
+      final slotA = saveSlots.createSlot('Player A');
+      final slotB = saveSlots.createSlot('Player B');
+
+      final boardA = LocalScoreboardService(
+        storageKey: saveSlots.keyFor(slotA.id, 'scoreboard'),
+      );
+      final boardB = LocalScoreboardService(
+        storageKey: saveSlots.keyFor(slotB.id, 'scoreboard'),
+      );
+
+      boardA.submitScore('Solo', 999);
+
+      expect(boardA.topN(10), isNotEmpty);
+      expect(boardB.topN(10), isEmpty); // slot B chưa submit gì, độc lập với A
     });
   });
 }

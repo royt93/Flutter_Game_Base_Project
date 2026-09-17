@@ -42,10 +42,16 @@ class _ScoreEntry {
 /// position, `score` formatted via [fmtNum] — so a caller can feed it
 /// straight into [LeaderboardList] with no further transform.
 class LocalScoreboardService extends GetxService {
-  LocalScoreboardService({this.capacity = 50})
-    : assert(capacity > 0, 'capacity must be greater than 0');
+  LocalScoreboardService({this.capacity = 50, String? storageKey})
+    : assert(capacity > 0, 'capacity must be greater than 0'),
+      _storageKey = storageKey ?? 'local_scoreboard_v1';
 
-  static const _storageKey = 'local_scoreboard_v1';
+  // ENH-69: instance field (was `static const`) so 2 instances can point at
+  // 2 independent tables — e.g. 1 per SaveSlotManager slot via its
+  // `keyFor(slotId, suffix)`. Defaulting to the same literal every prior
+  // release used keeps an existing consumer app's save reading exactly the
+  // same table it always did.
+  final String _storageKey;
 
   /// Max rows kept on disk. Submissions beyond this are dropped, lowest
   /// score first, the moment they'd rank last.
