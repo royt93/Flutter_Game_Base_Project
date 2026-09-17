@@ -58,6 +58,10 @@ class QuestBoardPanel extends StatelessWidget {
     super.key,
     required this.quests,
     required this.onClaim,
+    this.emptyMessage = 'Không có nhiệm vụ nào hôm nay.',
+    this.claimLabel = 'Nhận thưởng',
+    this.claimedLabel = 'Đã nhận',
+    this.progressSemanticLabel,
   });
 
   final List<QuestViewModel> quests;
@@ -66,19 +70,38 @@ class QuestBoardPanel extends StatelessWidget {
   /// tapped. Only reachable while that quest [QuestViewModel.isClaimable].
   final void Function(String questId) onClaim;
 
+  /// ENH-75: the caller's own localized copy overrides these — the
+  /// widget never does i18n itself, same "caller owns copy" convention
+  /// as `DailyLoginCalendarWidget.claimLabel` (ENH-39). Defaults are the
+  /// exact literals used before this param existed.
+  final String emptyMessage;
+  final String claimLabel;
+  final String claimedLabel;
+
+  /// Overrides the default `'${quest.label}: ${quest.progress} of
+  /// ${quest.target}'` semantic label (ENH-75) — same reasoning as
+  /// [claimLabel].
+  final String Function(QuestViewModel quest)? progressSemanticLabel;
+
   @override
   Widget build(BuildContext context) {
     if (quests.isEmpty) {
-      return const EmptyStatePlaceholder(
+      return EmptyStatePlaceholder(
         icon: Icons.assignment_turned_in_outlined,
-        message: 'Không có nhiệm vụ nào hôm nay.',
+        message: emptyMessage,
       );
     }
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         for (final quest in quests) ...[
-          _QuestRow(quest: quest, onClaim: () => onClaim(quest.id)),
+          _QuestRow(
+            quest: quest,
+            onClaim: () => onClaim(quest.id),
+            claimLabel: claimLabel,
+            claimedLabel: claimedLabel,
+            progressSemanticLabel: progressSemanticLabel,
+          ),
           if (quest != quests.last) const SizedBox(height: NeonTheme.s8),
         ],
       ],
@@ -87,10 +110,19 @@ class QuestBoardPanel extends StatelessWidget {
 }
 
 class _QuestRow extends StatefulWidget {
-  const _QuestRow({required this.quest, required this.onClaim});
+  const _QuestRow({
+    required this.quest,
+    required this.onClaim,
+    required this.claimLabel,
+    required this.claimedLabel,
+    required this.progressSemanticLabel,
+  });
 
   final QuestViewModel quest;
   final VoidCallback onClaim;
+  final String claimLabel;
+  final String claimedLabel;
+  final String Function(QuestViewModel quest)? progressSemanticLabel;
 
   @override
   State<_QuestRow> createState() => _QuestRowState();
@@ -128,7 +160,7 @@ class _QuestRowState extends State<_QuestRow>
         : (quest.progress / quest.target).clamp(0.0, 1.0);
 
     Widget claimButton = CommonButton(
-      label: quest.claimed ? 'Đã nhận' : 'Nhận thưởng',
+      label: quest.claimed ? widget.claimedLabel : widget.claimLabel,
       loading: quest.claiming,
       onTap: quest.isClaimable ? widget.onClaim : null,
       color: quest.isClaimable ? NeonTheme.gold : null,
@@ -165,8 +197,9 @@ class _QuestRowState extends State<_QuestRow>
           ProgressBarStars(
             progress: fraction,
             starThresholds: const [],
-            semanticLabel:
-                '${quest.label}: ${quest.progress} of ${quest.target}',
+            semanticLabel: widget.progressSemanticLabel != null
+                ? widget.progressSemanticLabel!(quest)
+                : '${quest.label}: ${quest.progress} of ${quest.target}',
           ),
           const SizedBox(height: NeonTheme.s16),
           claimButton,

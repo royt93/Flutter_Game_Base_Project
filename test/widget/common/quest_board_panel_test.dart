@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/progress_bar_stars.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/quest_board_panel.dart';
 
 void main() {
@@ -419,5 +420,111 @@ void main() {
       final button = tester.widget<CommonButton>(find.byType(CommonButton));
       expect(button.loading, isFalse);
     });
+  });
+
+  group('ENH-75: caller-overridable copy', () {
+    testWidgets('không truyền param mới: hiển thị y hệt hiện tại', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        host(QuestBoardPanel(quests: const [], onClaim: (_) {})),
+      );
+
+      expect(find.text('Không có nhiệm vụ nào hôm nay.'), findsOneWidget);
+    });
+
+    testWidgets('emptyMessage tuỳ chỉnh hiển thị đúng khi danh sách rỗng', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        host(
+          QuestBoardPanel(
+            quests: const [],
+            onClaim: (_) {},
+            emptyMessage: 'Custom empty',
+          ),
+        ),
+      );
+
+      expect(find.text('Custom empty'), findsOneWidget);
+      expect(find.text('Không có nhiệm vụ nào hôm nay.'), findsNothing);
+    });
+
+    testWidgets('claimLabel/claimedLabel tuỳ chỉnh đổi đúng label nút theo claimed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        host(
+          QuestBoardPanel(
+            quests: const [
+              QuestViewModel(
+                id: 'a',
+                label: 'Quest A',
+                progress: 3,
+                target: 3,
+                claimed: false,
+              ),
+            ],
+            onClaim: (_) {},
+            claimLabel: 'Claim',
+            claimedLabel: 'Claimed',
+          ),
+        ),
+      );
+
+      var button = tester.widget<CommonButton>(find.byType(CommonButton));
+      expect(button.label, 'Claim');
+
+      await tester.pumpWidget(
+        host(
+          QuestBoardPanel(
+            quests: const [
+              QuestViewModel(
+                id: 'a',
+                label: 'Quest A',
+                progress: 3,
+                target: 3,
+                claimed: true,
+              ),
+            ],
+            onClaim: (_) {},
+            claimLabel: 'Claim',
+            claimedLabel: 'Claimed',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      button = tester.widget<CommonButton>(find.byType(CommonButton));
+      expect(button.label, 'Claimed');
+    });
+
+    testWidgets(
+      'progressSemanticLabel tuỳ chỉnh dùng đúng kết quả callback thay vì chuỗi mặc định',
+      (tester) async {
+        await tester.pumpWidget(
+          host(
+            QuestBoardPanel(
+              quests: const [
+                QuestViewModel(
+                  id: 'a',
+                  label: 'Quest A',
+                  progress: 1,
+                  target: 3,
+                  claimed: false,
+                ),
+              ],
+              onClaim: (_) {},
+              progressSemanticLabel: (q) => 'Custom: ${q.progress}/${q.target}',
+            ),
+          ),
+        );
+
+        final bar = tester.widget<ProgressBarStars>(
+          find.byType(ProgressBarStars),
+        );
+        expect(bar.semanticLabel, 'Custom: 1/3');
+      },
+    );
   });
 }
