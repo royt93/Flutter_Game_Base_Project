@@ -26,10 +26,11 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  // FEAT-57: +RetryErrorState demo section đẩy list dài hơn — tăng chiều
-  // cao viewport ảo để mọi widget phía sau vẫn nằm trong vùng tap được mà
-  // không cần scroll (đúng lý do file này dùng physicalSize cố định).
-  tester.view.physicalSize = const Size(1080, 10600);
+  // FEAT-57/FEAT-51: +RetryErrorState, +HoldToConfirmButton demo section đẩy
+  // list dài hơn — tăng chiều cao viewport ảo để mọi widget phía sau vẫn
+  // nằm trong vùng tap được mà không cần scroll (đúng lý do file này dùng
+  // physicalSize cố định).
+  tester.view.physicalSize = const Size(1080, 10900);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -924,21 +925,24 @@ void main() {
     (tester) async {
       await _pumpShowcase(tester);
 
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      // FEAT-51: HoldToConfirmButton's radial demo always renders its own
+      // (idle) CircularProgressIndicator elsewhere on this screen, so
+      // "none yet" is baseline + 0, not a bare findsNothing.
+      final baseline = find.byType(CircularProgressIndicator).evaluate().length;
 
       await tester.tap(find.text('Simulate async').last);
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNWidgets(baseline + 1));
 
       // Tap lại trong lúc đang loading không được kích hoạt thêm 1 lần
       // đếm ngược mới (không throw, không đổi hành vi).
       await tester.tap(find.byType(CommonButton).last, warnIfMissed: false);
       await tester.pump(const Duration(milliseconds: 500));
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNWidgets(baseline + 1));
 
       await tester.pump(const Duration(milliseconds: 1100));
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNWidgets(baseline));
       expect(find.text('Simulate async'), findsWidgets); // StrokeText renders 2 stacked Text nodes
       expect(tester.takeException(), isNull);
     },

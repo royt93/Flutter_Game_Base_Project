@@ -10,6 +10,7 @@ library;
 // Buttons & Interactive
 export 'async_common_button.dart';
 export 'common_button.dart';
+export 'hold_to_confirm_button.dart';
 export 'pause_overlay.dart';
 export 'retry_error_state.dart';
 export 'toggle_switch.dart';

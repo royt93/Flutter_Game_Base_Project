@@ -64,6 +64,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // action — the same shape a real "Buy"/save/cloud-sync button would use.
   bool _commonButtonLoading = false;
 
+  // FEAT-51: demo counter — bumped once per successful hold-to-confirm,
+  // proving onConfirm actually fired (not just that the widget renders).
+  int _holdToConfirmCount = 0;
+
   Future<void> _simulateAsyncButton() async {
     setState(() => _commonButtonLoading = true);
     await Future<void>.delayed(const Duration(milliseconds: 1500));
@@ -684,6 +688,29 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                                 const SizedBox(width: NeonTheme.s16),
                                 Text(_toggleOn ? 'On' : 'Off'),
+                              ],
+                            ),
+                          ),
+                          _Demo(
+                            label: 'HoldToConfirmButton',
+                            child: Wrap(
+                              spacing: NeonTheme.s16,
+                              runSpacing: NeonTheme.s16,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                HoldToConfirmButton(
+                                  label: 'Delete',
+                                  onConfirm: () =>
+                                      setState(() => _holdToConfirmCount++),
+                                ),
+                                HoldToConfirmButton(
+                                  label: 'Reset',
+                                  shape: HoldToConfirmShape.linear,
+                                  width: 180,
+                                  onConfirm: () =>
+                                      setState(() => _holdToConfirmCount++),
+                                ),
+                                Text('Confirmed: $_holdToConfirmCount'),
                               ],
                             ),
                           ),
