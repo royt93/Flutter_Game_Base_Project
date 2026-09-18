@@ -646,6 +646,33 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                             ),
                           ),
                           _Demo(
+                            label: 'AsyncCommonButton',
+                            child: Wrap(
+                              spacing: NeonTheme.s16,
+                              runSpacing: NeonTheme.s16,
+                              children: [
+                                // FEAT-50: self-managed loading→success, no
+                                // manual bool needed like the demo above.
+                                AsyncCommonButton(
+                                  label: 'Save',
+                                  width: 160,
+                                  onPressed: () => Future<void>.delayed(
+                                    const Duration(milliseconds: 1200),
+                                  ),
+                                ),
+                                AsyncCommonButton(
+                                  label: 'Fails',
+                                  width: 160,
+                                  variant: CommonButtonVariant.danger,
+                                  onPressed: () => Future<void>.delayed(
+                                    const Duration(milliseconds: 800),
+                                    () => throw Exception('demo error'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _Demo(
                             label: 'CandyToggleSwitch',
                             child: Row(
                               children: [
