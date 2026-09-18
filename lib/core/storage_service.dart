@@ -46,6 +46,9 @@ class StorageKeys {
   static const String trustedClockPrevWallMs = 'trusted_clock_prev_wall_ms';
   static const String trustedClockPrevMonotonicMs =
       'trusted_clock_prev_monotonic_ms';
+
+  // lib/core/persistent_cooldown_service.dart reads/writes this directly.
+  static const String cooldownStateV1 = 'cooldown_state_v1';
 }
 
 /// Shared local storage service (wraps SharedPreferences).

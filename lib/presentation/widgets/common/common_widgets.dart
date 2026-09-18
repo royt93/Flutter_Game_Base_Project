@@ -42,6 +42,7 @@ export 'currency_counter.dart';
 export 'reward_popup.dart';
 export 'badge_dot.dart';
 export 'streak_counter.dart';
+export 'cooldown_countdown_chip.dart';
 export 'countdown_chip.dart';
 export 'paginated_dots_indicator.dart';
 export 'coin_fly_overlay.dart';

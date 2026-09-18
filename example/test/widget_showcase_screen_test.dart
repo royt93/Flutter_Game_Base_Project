@@ -26,11 +26,11 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  // FEAT-57/FEAT-51: +RetryErrorState, +HoldToConfirmButton demo section đẩy
-  // list dài hơn — tăng chiều cao viewport ảo để mọi widget phía sau vẫn
-  // nằm trong vùng tap được mà không cần scroll (đúng lý do file này dùng
-  // physicalSize cố định).
-  tester.view.physicalSize = const Size(1080, 10900);
+  // FEAT-57/FEAT-51/FEAT-36: mỗi demo section mới đẩy list dài hơn — tăng
+  // chiều cao viewport ảo để mọi widget phía sau vẫn nằm trong vùng tap
+  // được mà không cần scroll (đúng lý do file này dùng physicalSize cố
+  // định).
+  tester.view.physicalSize = const Size(1080, 11200);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -1077,4 +1077,58 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('FEAT-36: PersistentCooldownService demo', () {
+    testWidgets(
+      'chưa start: không có countdown 00:12 nào hiện (giá trị riêng của demo này)',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        expect(find.text(fmtDur(const Duration(seconds: 12))), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '"Start 12s cooldown": hiện countdown đúng ~12s, đếm lùi thật',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(find.text('Start 12s cooldown').last);
+        await tester.pump();
+
+        expect(find.text(fmtDur(const Duration(seconds: 12))), findsOneWidget);
+
+        await tester.pump(const Duration(seconds: 3));
+        expect(find.text(fmtDur(const Duration(seconds: 9))), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'bấm Start lần nữa khi đang chạy: reset lại đúng 12s (restart policy)',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(find.text('Start 12s cooldown').last);
+        await tester.pump();
+        expect(find.text(fmtDur(const Duration(seconds: 12))), findsOneWidget);
+
+        // Mô phỏng đã trôi qua 8s THẬT ở tầng service (nowMsClamped() đọc
+        // đồng hồ thật, không bị FakeAsync của tester.pump() chi phối —
+        // cùng kỹ thuật với test/core/persistent_cooldown_service_test.dart).
+        final realMs = DateTime.now().toUtc().millisecondsSinceEpoch;
+        StorageService.to.setInt(StorageKeys.maxMsSeen, realMs + 8000);
+
+        await tester.tap(find.text('Start 12s cooldown').last);
+        await tester.pump();
+
+        expect(
+          find.text(fmtDur(const Duration(seconds: 12))),
+          findsOneWidget,
+          reason: 'restart phải nạp lại đúng full duration mới, không cộng dồn phần đã trôi',
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }

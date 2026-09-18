@@ -12,6 +12,7 @@ import 'package:roy_casual_kit/core/haptic_choreographer.dart';
 import 'package:roy_casual_kit/core/haptics.dart';
 import 'package:roy_casual_kit/core/local_scoreboard_service.dart';
 import 'package:roy_casual_kit/core/onboarding_coordinator_service.dart';
+import 'package:roy_casual_kit/core/persistent_cooldown_service.dart';
 import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
 import 'package:roy_casual_kit/core/save_slot_manager.dart';
 import 'package:roy_casual_kit/core/replay_recorder.dart';
@@ -74,6 +75,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     await Future<void>.delayed(const Duration(milliseconds: 1500));
     if (mounted) setState(() => _commonButtonLoading = false);
   }
+
   // BackupRestorePanel demo: no real file/QR picker wired here — this just
   // simulates "export, then restore that same backup" round-tripping
   // through the panel's onExport/onImport seam.
@@ -220,7 +222,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     final activeId = _saveSlots.activeSlotId;
     if (activeId == null) return;
     final key = _saveSlots.keyFor(activeId, 'demo_score');
-    unawaited(StorageService.to.setInt(key, StorageService.to.getInt(key) + 10));
+    unawaited(
+      StorageService.to.setInt(key, StorageService.to.getInt(key) + 10),
+    );
     setState(() {});
   }
 
@@ -228,7 +232,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     final confirmed = await showConfirmDialog(
       context,
       title: 'Delete "$displayName"?',
-      message: 'This removes the slot and all of its data. This cannot be undone.',
+      message:
+          'This removes the slot and all of its data. This cannot be undone.',
       color: NeonTheme.red,
     );
     if (!confirmed) return;
@@ -340,6 +345,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
         DailyLoginService.maybe ??
         Get.put(DailyLoginService(), permanent: true);
     _energy = EnergyService.maybe ?? Get.put(EnergyService(), permanent: true);
+    _cooldown =
+        PersistentCooldownService.maybe ??
+        Get.put(PersistentCooldownService(), permanent: true);
     // IDEA-43: demo achievement — 3 taps to unlock, so AchievementUnlockToast
     // (via AchievementUnlockListener wrapping this screen below) has
     // something to show without waiting on real game progress.
@@ -439,6 +447,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // `SharedPreferences.getInstance()` fails at boot.
   late final DailyLoginService _dailyLogin;
   late final EnergyService _energy;
+  late final PersistentCooldownService _cooldown;
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
   // IDEA-48: toggles the demo between topN(3) (always the leaders) and
@@ -1236,6 +1245,41 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                             ),
                           ),
                           _Demo(
+                            label:
+                                'PersistentCooldownService + CooldownCountdownChip',
+                            child: Obx(() {
+                              // Obx tracks whichever .obs .value getters
+                              // run inside this closure — reading
+                              // revision.value here is what makes it
+                              // rebuild on start/cancel; remainingOf()
+                              // itself touches no Rx value.
+                              _cooldown.revision.value;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CooldownCountdownChip(
+                                    remaining: _cooldown.remainingOf(
+                                      'demo_booster',
+                                    ),
+                                    onDone: () => ToastBanner.show(
+                                      context,
+                                      message: 'Booster cooldown ready!',
+                                      color: NeonTheme.cyan,
+                                    ),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: 'Start 12s cooldown',
+                                    onTap: () => _cooldown.start(
+                                      'demo_booster',
+                                      const Duration(seconds: 12),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                          _Demo(
                             label: 'Page Dots',
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1381,12 +1425,13 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               children: [
                                 LeaderboardList(
                                   entries: [
-                                    for (final entry in _showRankAround
-                                        ? _scoreboard.entriesAround(
-                                            'You',
-                                            radius: 1,
-                                          )
-                                        : _scoreboard.topN(3))
+                                    for (final entry
+                                        in _showRankAround
+                                            ? _scoreboard.entriesAround(
+                                                'You',
+                                                radius: 1,
+                                              )
+                                            : _scoreboard.topN(3))
                                       LeaderboardEntry(
                                         rank: entry.rank,
                                         name: entry.name,
