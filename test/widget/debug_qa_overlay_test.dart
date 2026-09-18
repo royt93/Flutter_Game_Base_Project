@@ -330,4 +330,30 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('FEAT-39: Health tab', () {
+    testWidgets('bấm Generate report: hiện đúng JSON report', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: DebugQaOverlay(child: Material(child: Text('app content'))),
+        ),
+      );
+      await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+      await tester.pump();
+      await tester.tap(find.text('Health'));
+      await tester.pump();
+
+      expect(find.byKey(const Key('debugQaHealthOutput')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('debugQaHealthGenerate')));
+      await tester.pump();
+
+      final output = tester.widget<SelectableText>(
+        find.byKey(const Key('debugQaHealthOutput')),
+      );
+      expect(output.data, contains('schemaVersion'));
+      expect(output.data, contains('"audio"'));
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

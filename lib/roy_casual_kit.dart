@@ -45,6 +45,7 @@ export 'core/save_integrity.dart';
 export 'core/save_slot_manager.dart';
 export 'core/secure_storage_adapter.dart';
 export 'core/season_event_service.dart';
+export 'core/sdk_health_report.dart';
 export 'core/share_helper.dart';
 export 'core/storage_service.dart';
 export 'core/versioned_json_store.dart';

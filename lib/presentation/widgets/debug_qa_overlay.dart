@@ -9,6 +9,7 @@ import '../../core/audio_manager.dart';
 import '../../core/locale_service.dart';
 import '../../core/neon_theme.dart';
 import '../../core/replay_recorder.dart';
+import '../../core/sdk_health_report.dart';
 import '../../core/storage_service.dart';
 import '../../core/utils/clamped_clock.dart';
 import '../../core/utils/trusted_clock.dart';
@@ -237,6 +238,13 @@ class _Panel extends StatelessWidget {
                               onTap: () => onTabChanged(2),
                             ),
                           ),
+                          Expanded(
+                            child: _TabButton(
+                              label: 'Health',
+                              selected: tab == 3,
+                              onTap: () => onTabChanged(3),
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -250,12 +258,13 @@ class _Panel extends StatelessWidget {
                               onVariantChanged: onPlaygroundVariantChanged,
                               onColorChanged: onPlaygroundColorChanged,
                             ),
-                          _ => _ReplayTab(
+                          2 => _ReplayTab(
                               export: replayExport,
                               onStart: onStartReplay,
                               onStop: onStopReplay,
                               onExport: onExportReplay,
                             ),
+                          _ => const _HealthTab(),
                         },
                       ),
                     ],
@@ -549,6 +558,60 @@ class _ReplayTab extends StatelessWidget {
             SelectableText(
               export!,
               key: const Key('debugQaReplayExportOutput'),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// FEAT-39: generates an [SdkHealthReport] on demand — a support/QA person
+/// can paste the resulting JSON straight into a ticket, since every
+/// section is already redacted to its own allowlist (see
+/// `sdk_health_report.dart`). Self-contained (no state threaded through
+/// [_Panel]) since generating a report needs nothing from the rest of this
+/// overlay.
+class _HealthTab extends StatefulWidget {
+  const _HealthTab();
+
+  @override
+  State<_HealthTab> createState() => _HealthTabState();
+}
+
+class _HealthTabState extends State<_HealthTab> {
+  String? _report;
+  bool _loading = false;
+
+  Future<void> _generate() async {
+    setState(() => _loading = true);
+    final report = SdkHealthReport()..registerAll(defaultHealthCollectors());
+    final json = await report.collectJson();
+    if (!mounted) return;
+    setState(() {
+      _report = json;
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CommonButton(
+            key: const Key('debugQaHealthGenerate'),
+            label: _loading ? 'Generating…' : 'Generate report',
+            onTap: _loading ? null : _generate,
+          ),
+          if (_report != null) ...[
+            const SizedBox(height: 8),
+            const Divider(),
+            SelectableText(
+              _report!,
+              key: const Key('debugQaHealthOutput'),
               style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
             ),
           ],
