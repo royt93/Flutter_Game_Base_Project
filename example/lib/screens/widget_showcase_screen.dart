@@ -7,6 +7,7 @@ import 'package:roy_casual_kit/core/achievement_service.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/daily_login_service.dart';
 import 'package:roy_casual_kit/core/energy_service.dart';
+import 'package:roy_casual_kit/core/experiment_bucketing_service.dart';
 import 'package:roy_casual_kit/core/haptic_choreographer.dart';
 import 'package:roy_casual_kit/core/haptics.dart';
 import 'package:roy_casual_kit/core/local_scoreboard_service.dart';
@@ -186,6 +187,13 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // never share data (each key is namespaced to its own slot id).
   late final SaveSlotManager _saveSlots;
 
+  // IDEA-57: demo experiment key — the assigned variant is stable per
+  // device (derived from `_experiments.anonymousId`), so this demo never
+  // needs a "re-roll" control to prove the point.
+  static const _demoExperimentKey = 'cta_color_test';
+  static const _demoExperimentVariants = ['control', 'blue', 'gold'];
+  late final ExperimentBucketingService _experiments;
+
   int _demoScoreFor(String slotId) =>
       StorageService.to.getInt(_saveSlots.keyFor(slotId, 'demo_score'));
 
@@ -358,6 +366,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _onboarding.registerFlow('shop_tip', priority: 0);
     _saveSlots =
         SaveSlotManager.maybe ?? Get.put(SaveSlotManager(), permanent: true);
+    _experiments =
+        ExperimentBucketingService.maybe ??
+        Get.put(ExperimentBucketingService(), permanent: true);
   }
 
   @override
@@ -1474,6 +1485,24 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       ),
                                     ),
                                   ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          _Demo(
+                            label: 'ExperimentBucketingService (IDEA-57)',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Experiment "$_demoExperimentKey" → '
+                                  '${_experiments.variantFor(_demoExperimentKey, _demoExperimentVariants)}',
+                                ),
+                                const SizedBox(height: NeonTheme.s8),
+                                Text(
+                                  'Device id: '
+                                  '${_experiments.anonymousId.substring(0, 8)}…',
+                                  style: TextStyle(color: NeonTheme.muted),
                                 ),
                               ],
                             ),

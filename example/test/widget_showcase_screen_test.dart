@@ -1040,4 +1040,34 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'IDEA-57: ExperimentBucketingService gán đúng 1 variant ổn định, không throw',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      expect(
+        find.textContaining('Experiment "cta_color_test" →'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Device id:'), findsOneWidget);
+
+      final before = tester
+          .widgetList<Text>(find.textContaining('Experiment "cta_color_test" →'))
+          .single
+          .data;
+
+      // Rebuild lại (setState bất kỳ nơi khác trong màn hình) không được
+      // làm variant đổi — đúng tính ổn định của service.
+      await tester.tap(find.text('Create slot').last);
+      await tester.pump();
+
+      final after = tester
+          .widgetList<Text>(find.textContaining('Experiment "cta_color_test" →'))
+          .single
+          .data;
+      expect(after, before);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
