@@ -13,6 +13,7 @@ export 'core/app_translations.dart';
 export 'core/audio_manager.dart';
 export 'core/checkpoint_coordinator.dart';
 export 'core/cloud_save_provider.dart';
+export 'core/connectivity_coordinator.dart';
 export 'core/consent_gated_analytics_provider.dart';
 export 'core/consent_state_service.dart';
 export 'core/consumer_contract_test_kit.dart';

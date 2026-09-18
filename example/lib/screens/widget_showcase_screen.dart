@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/achievement_service.dart';
 import 'package:roy_casual_kit/core/analytics_provider.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
+import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/consent_gated_analytics_provider.dart';
 import 'package:roy_casual_kit/core/consent_state_service.dart';
 import 'package:roy_casual_kit/core/daily_login_service.dart';
@@ -357,6 +358,18 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _gatedAnalytics = ConsentGatedAnalyticsProvider(
       _DemoAnalyticsProvider(() => setState(() => _demoAnalyticsEventCount++)),
     );
+    _connectivitySignal = FakeConnectivitySignal();
+    _connectivity =
+        ConnectivityCoordinator.maybe ??
+        Get.put(
+          ConnectivityCoordinator(
+            signal: _connectivitySignal,
+            probe: () async => _demoProbeSucceeds,
+            debounceWindow: const Duration(milliseconds: 100),
+            probeInterval: const Duration(seconds: 5),
+          ),
+          permanent: true,
+        );
     // IDEA-43: demo achievement — 3 taps to unlock, so AchievementUnlockToast
     // (via AchievementUnlockListener wrapping this screen below) has
     // something to show without waiting on real game progress.
@@ -458,6 +471,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   late final EnergyService _energy;
   late final PersistentCooldownService _cooldown;
   late final ConsentStateService _consent;
+  late final FakeConnectivitySignal _connectivitySignal;
+  late final ConnectivityCoordinator _connectivity;
+  bool _demoProbeSucceeds = true;
+  int _demoQueueRanCount = 0;
   late final ConsentGatedAnalyticsProvider _gatedAnalytics;
   int _demoAnalyticsEventCount = 0;
   late final AchievementService _achievements;
@@ -961,6 +978,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
                                   child: NetworkStatusBanner(
+                                    key: const Key('networkBannerDemo'),
                                     connected: _networkConnected,
                                   ),
                                 ),
@@ -978,6 +996,83 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+                          _Demo(
+                            label: 'ConnectivityCoordinator (FEAT-62)',
+                            child: StreamBuilder<ConnectivityState>(
+                              stream: _connectivity.stateStream,
+                              initialData: _connectivity.state,
+                              builder: (context, snapshot) {
+                                final state =
+                                    snapshot.data ?? _connectivity.state;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: NetworkStatusBanner.stream(
+                                        key: const Key(
+                                          'connectivityCoordinatorBanner',
+                                        ),
+                                        connected:
+                                            _connectivity.connectedStream,
+                                        initialConnected: false,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text('State: ${state.name}'),
+                                    const SizedBox(height: NeonTheme.s16),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          label: 'Interface up',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => _connectivitySignal
+                                              .setHasInterface(true),
+                                        ),
+                                        CommonButton(
+                                          label: 'Interface down',
+                                          variant: CommonButtonVariant.danger,
+                                          onTap: () => _connectivitySignal
+                                              .setHasInterface(false),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    CommonButton(
+                                      label: _demoProbeSucceeds
+                                          ? 'Probe: OK (tap to break it)'
+                                          : 'Probe: FAILING (tap to fix it)',
+                                      onTap: () => setState(
+                                        () => _demoProbeSucceeds =
+                                            !_demoProbeSucceeds,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s16),
+                                    Text(
+                                      'Queue: ${_connectivity.queueLength} pending, '
+                                      '$_demoQueueRanCount đã chạy',
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    CommonButton(
+                                      label: 'Enqueue demo sync task',
+                                      onTap: () => setState(
+                                        () => _connectivity.enqueue(
+                                          QueuedTask(
+                                            idempotencyKey: 'demo_sync',
+                                            run: () async => setState(
+                                              () => _demoQueueRanCount++,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
                           ),
                           _Demo(

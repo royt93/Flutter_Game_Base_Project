@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
+import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/format.dart';
@@ -34,6 +35,11 @@ Future<void> _pumpShowcase(WidgetTester tester) async {
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+  // FEAT-62: ConnectivityCoordinator runs a real self-rescheduling periodic
+  // Timer while "online" — a permanent GetxService isn't disposed by
+  // Get.reset(), so its Timer must be cancelled explicitly here, via
+  // addTearDown (runs before flutter_test's "no pending timer" check),
+  // or it trips that check on the next test.
 
   await tester.pumpWidget(_wrap(const WidgetShowcaseScreen()));
   await tester.pump(const Duration(milliseconds: 100));
@@ -375,17 +381,27 @@ void main() {
 
   testWidgets('Network Banner demo toggles offline/online', (tester) async {
     await _pumpShowcase(tester);
+    final banner = find.byKey(const Key('networkBannerDemo'));
 
-    expect(find.byType(NetworkStatusBanner), findsOneWidget);
-    expect(find.text('No internet connection'), findsNothing);
+    expect(banner, findsOneWidget);
+    expect(
+      find.descendant(of: banner, matching: find.text('No internet connection')),
+      findsNothing,
+    );
 
     await tester.tap(find.text('Go offline').last);
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('No internet connection'), findsOneWidget);
+    expect(
+      find.descendant(of: banner, matching: find.text('No internet connection')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Go online').last);
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('No internet connection'), findsNothing);
+    expect(
+      find.descendant(of: banner, matching: find.text('No internet connection')),
+      findsNothing,
+    );
 
     expect(tester.takeException(), isNull);
   });
@@ -1216,6 +1232,71 @@ void main() {
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('FEAT-62: ConnectivityCoordinator demo', () {
+    testWidgets('mặc định offline (chưa có interface nào)', (tester) async {
+      await _pumpShowcase(tester);
+
+      expect(find.text('State: offline'), findsOneWidget);
+    });
+
+    testWidgets('bấm Interface up với probe OK: chuyển sang online', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      await tester.tap(find.text('Interface up').last);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('State: online'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      // ConnectivityCoordinator's periodic re-probe Timer keeps
+      // rescheduling itself forever while online — must cancel it before
+      // this test ends or flutter_test's "no pending timer" invariant
+      // trips (Get.reset() in tearDown doesn't call onClose() on a
+      // permanent GetxService).
+      ConnectivityCoordinator.maybe?.onClose();
+    });
+
+    testWidgets(
+      'probe FAILING: interface up không bao giờ báo online giả',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(find.text('Probe: OK (tap to break it)').last);
+        await tester.pump();
+        await tester.tap(find.text('Interface up').last);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.text('State: online'), findsNothing);
+        expect(tester.takeException(), isNull);
+        ConnectivityCoordinator.maybe?.onClose();
+      },
+    );
+
+    testWidgets(
+      'enqueue task khi offline rồi lên online: queue tự drain, task chạy đúng 1 lần',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(find.text('Enqueue demo sync task').last);
+        await tester.pump();
+        expect(find.textContaining('Queue: 1 pending'), findsOneWidget);
+
+        await tester.tap(find.text('Interface up').last);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump();
+
+        expect(find.textContaining('Queue: 0 pending, 1 đã chạy'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        ConnectivityCoordinator.maybe?.onClose();
       },
     );
   });
