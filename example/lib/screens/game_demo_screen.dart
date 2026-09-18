@@ -10,7 +10,9 @@ import 'package:roy_casual_kit/roy_casual_kit.dart';
 /// dialog rendered ON TOP of a real full-screen `GameWidget`, where
 /// `Get.dialog`/`showDialog` would be a no-op there (nothing to push a route
 /// over a full-screen Flame game). Also demos `FlameTrackedOverlay` (IDEA-07):
-/// a floating pill label glued to the `TappableCircle`'s world position.
+/// a floating pill label glued to the `TappableCircle`'s world position, and
+/// `PauseOverlay` (FEAT-53) — the pause FAB pauses `_session`, which is the
+/// same in-tree-overlay-over-Flame pattern the info dialog above uses.
 class GameDemoScreen extends StatefulWidget {
   const GameDemoScreen({super.key});
 
@@ -22,6 +24,15 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
   final _game = RoyGame();
   final _gameWidgetKey = GlobalKey();
   bool _showInfo = false;
+  final _session = GameSessionController()
+    ..markReady()
+    ..start();
+
+  @override
+  void dispose() {
+    _session.onClose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,12 +82,26 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
               Positioned(
                 right: NeonTheme.s16,
                 bottom: NeonTheme.s16,
-                child: FloatingActionButton(
-                  onPressed: () => setState(() => _showInfo = true),
-                  backgroundColor: NeonTheme.purple,
-                  child: const Icon(Icons.info_outline, color: Colors.white),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FloatingActionButton(
+                      heroTag: 'pause',
+                      onPressed: () => _session.pause(GamePauseReason.user),
+                      backgroundColor: NeonTheme.cyan,
+                      child: const Icon(Icons.pause, color: Colors.white),
+                    ),
+                    const SizedBox(height: NeonTheme.s16),
+                    FloatingActionButton(
+                      heroTag: 'info',
+                      onPressed: () => setState(() => _showInfo = true),
+                      backgroundColor: NeonTheme.purple,
+                      child: const Icon(Icons.info_outline, color: Colors.white),
+                    ),
+                  ],
                 ),
               ),
+              PauseOverlay(session: _session, onQuit: Get.back),
               if (_showInfo)
                 Positioned.fill(
                   child: NeonDialog.overlay(

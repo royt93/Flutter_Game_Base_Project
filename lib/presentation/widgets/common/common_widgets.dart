@@ -10,6 +10,7 @@ library;
 // Buttons & Interactive
 export 'async_common_button.dart';
 export 'common_button.dart';
+export 'pause_overlay.dart';
 export 'toggle_switch.dart';
 export 'segmented_tab_bar.dart';
 export 'icon_badge_button.dart';

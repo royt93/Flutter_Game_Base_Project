@@ -4,8 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/presentation/game/roy_game.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/flame_tracked_overlay.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
+
+// CommonButton vẽ label qua StrokeText (2 lớp Text chồng nhau) — dùng finder
+// theo CommonButton thay vì find.text trực tiếp (cùng lý do
+// common_button_test.dart / pause_overlay_test.dart).
+Finder _button(String label) => find.widgetWithText(CommonButton, label);
 
 /// GameDemoScreen doesn't use NeonBg, but the FlameGame it hosts runs its own
 /// permanent game-loop Ticker (same class of issue — see CLAUDE.md's NeonBg
@@ -45,15 +51,43 @@ void main() {
       await tester.pumpWidget(_wrap(const GameDemoScreen()));
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(FloatingActionButton), findsOneWidget);
+      // FEAT-53: 2 FAB giờ (pause + info) — nhắm đúng info bằng icon.
+      expect(find.byIcon(Icons.info_outline), findsOneWidget);
 
-      await tester.tap(find.byType(FloatingActionButton));
+      await tester.tap(find.byIcon(Icons.info_outline));
       await tester.pump(const Duration(milliseconds: 300));
 
       // The dialog panel renders the same title text as the app bar, so at
       // least 2 matches once the overlay is up (StrokeText also stacks a
       // stroke + fill Text for each render).
       expect(find.text('game_demo'.tr), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'FEAT-53: pause FAB shows PauseOverlay above the GameWidget, Resume hides it',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const GameDemoScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byIcon(Icons.pause), findsOneWidget);
+      expect(_button('Resume'), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.pause));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      expect(_button('Resume'), findsWidgets);
+      expect(_button('Restart'), findsWidgets);
+
+      await tester.tap(_button('Resume').first);
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      expect(_button('Resume'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
