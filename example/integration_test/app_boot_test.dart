@@ -265,6 +265,32 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'FEAT-42: reward pipeline double callback does not double grant on device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 2));
+      final wallet = EconomyWallet(storage: StorageService.to);
+      final pipeline = RewardTransactionPipeline(wallet: wallet);
+      final results = await Future.wait([
+        pipeline.grant(
+          source: RewardSource.ad,
+          transactionId: 'device-ad-reward',
+          lines: const [RewardLine(currency: 'gem', amount: 50)],
+        ),
+        pipeline.grant(
+          source: RewardSource.ad,
+          transactionId: 'device-ad-reward',
+          lines: const [RewardLine(currency: 'gem', amount: 50)],
+        ),
+      ]);
+      expect(results.every((result) => result.isSuccess), isTrue);
+      expect(wallet.balanceOf('gem'), 50);
+      expect(pipeline.auditTrail, hasLength(1));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('IDEA-38: color-blind-safe setting changes palette on device', (
     tester,
   ) async {
