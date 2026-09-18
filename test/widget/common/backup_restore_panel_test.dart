@@ -527,4 +527,61 @@ void main() {
       },
     );
   });
+
+  group('ENH-78: workingAnnouncement', () {
+    Semantics liveRegion(WidgetTester tester) => tester.widget<Semantics>(
+      find.byWidgetPredicate(
+        (w) => w is Semantics && w.properties.liveRegion == true,
+      ),
+    );
+
+    testWidgets('không truyền workingAnnouncement: announcement y hệt hiện tại "Working…"', (
+      tester,
+    ) async {
+      final completer = Completer<void>();
+
+      await tester.pumpWidget(
+        _wrap(
+          BackupRestorePanel(
+            secret: _secret,
+            storage: storage,
+            onExport: (_) => completer.future,
+            onImport: () async => null,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Export save').last);
+      await tester.pump();
+
+      expect(liveRegion(tester).properties.label, 'Working…');
+      completer.complete();
+      await tester.pump();
+    });
+
+    testWidgets('truyền workingAnnouncement tuỳ chỉnh: Semantics.label dùng đúng chuỗi mới', (
+      tester,
+    ) async {
+      final completer = Completer<void>();
+
+      await tester.pumpWidget(
+        _wrap(
+          BackupRestorePanel(
+            secret: _secret,
+            storage: storage,
+            onExport: (_) => completer.future,
+            onImport: () async => null,
+            workingAnnouncement: 'Đang xử lý…',
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Export save').last);
+      await tester.pump();
+
+      expect(liveRegion(tester).properties.label, 'Đang xử lý…');
+      completer.complete();
+      await tester.pump();
+    });
+  });
 }

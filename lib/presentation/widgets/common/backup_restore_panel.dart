@@ -53,6 +53,7 @@ class BackupRestorePanel extends StatefulWidget {
         'cannot be undone.',
     this.exportSuccessMessage = 'Save exported.',
     this.importSuccessMessage = 'Save restored.',
+    this.workingAnnouncement = 'Working…',
     @visibleForTesting this.storage,
   });
 
@@ -73,6 +74,10 @@ class BackupRestorePanel extends StatefulWidget {
   final String confirmImportMessage;
   final String exportSuccessMessage;
   final String importSuccessMessage;
+
+  /// ENH-78: screen-reader-only announcement shown while busy — same
+  /// "caller owns copy" convention as the other `String` params above.
+  final String workingAnnouncement;
 
   /// Overrides the ambient [StorageService.to] singleton — test-only seam.
   final StorageService? storage;
@@ -229,7 +234,7 @@ class _BackupRestorePanelState extends State<BackupRestorePanel> {
             child: _busy
                 ? Semantics(
                     liveRegion: true,
-                    label: 'Working…',
+                    label: widget.workingAnnouncement,
                     excludeSemantics: true,
                     child: const SizedBox(width: double.infinity),
                   )
