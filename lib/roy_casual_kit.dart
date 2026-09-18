@@ -20,6 +20,7 @@ export 'core/consumer_contract_test_kit.dart';
 export 'core/crash_reporter.dart';
 export 'core/daily_login_service.dart';
 export 'core/daily_quest_service.dart';
+export 'core/deep_link_command_router.dart';
 export 'core/energy_service.dart';
 export 'core/experiment_bucketing_service.dart';
 export 'core/haptic_choreographer.dart';

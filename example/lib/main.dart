@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -84,6 +85,34 @@ Future<void> app({bool withAudio = !isE2eTest}) async {
   // it's safe under E2E test too and the Replay tab in DebugQaOverlay
   // needs it to not just show "chưa được đăng ký".
   Get.put(ReplayRecorder(), permanent: true);
+  final DeepLinkCommandRouter deepLinkRouter =
+      DeepLinkCommandRouter.maybe ??
+      Get.put(
+        DeepLinkCommandRouter(
+          routes: const [
+            DeepLinkRoute(
+              commandType: 'level',
+              scheme: 'roycasualkit',
+              host: 'open',
+              pathSegments: ['level', ':id'],
+            ),
+            DeepLinkRoute(
+              commandType: 'shop',
+              scheme: 'roycasualkit',
+              host: 'open',
+              pathSegments: ['shop'],
+            ),
+          ],
+        ),
+        permanent: true,
+      );
+  // FEAT-60: real OS deep links, gated off under E2E test the same way
+  // audio is (a platform-channel stream listener isn't needed for the
+  // automated boot smoke test and would just be one more thing that could
+  // flake there).
+  if (!isE2eTest) {
+    AppLinks().uriLinkStream.listen(deepLinkRouter.handleUri);
+  }
   NeonTheme.dark = store.getBool(StorageKeys.themeDark);
   NeonTheme.colorBlindSafe = store.getBool(StorageKeys.colorBlindSafe);
   final locale = LocaleService.maybe!;
@@ -106,6 +135,12 @@ Future<void> app({bool withAudio = !isE2eTest}) async {
   // nuốt bên trong scheduleNext(), không cần gate theo withAudio).
   WidgetsBinding.instance.addPostFrameCallback((_) {
     ReminderService.maybe?.scheduleNext();
+  });
+  // FEAT-60: mark ready right after the first frame — any deep link that
+  // arrived during boot (cold-start via the launcher intent) was queued by
+  // DeepLinkCommandRouter and drains here, exactly once.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    DeepLinkCommandRouter.maybe?.markReady();
   });
 }
 

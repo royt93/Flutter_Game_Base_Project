@@ -10,6 +10,7 @@ import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/consent_gated_analytics_provider.dart';
 import 'package:roy_casual_kit/core/consent_state_service.dart';
 import 'package:roy_casual_kit/core/daily_login_service.dart';
+import 'package:roy_casual_kit/core/deep_link_command_router.dart';
 import 'package:roy_casual_kit/core/energy_service.dart';
 import 'package:roy_casual_kit/core/experiment_bucketing_service.dart';
 import 'package:roy_casual_kit/core/haptic_choreographer.dart';
@@ -370,6 +371,38 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
           ),
           permanent: true,
         );
+    _deepLinks =
+        DeepLinkCommandRouter.maybe ??
+              Get.put(
+                DeepLinkCommandRouter(
+                  routes: const [
+                    DeepLinkRoute(
+                      commandType: 'level',
+                      scheme: 'roycasualkit',
+                      host: 'open',
+                      pathSegments: ['level', ':id'],
+                    ),
+                    DeepLinkRoute(
+                      commandType: 'shop',
+                      scheme: 'roycasualkit',
+                      host: 'open',
+                      pathSegments: ['shop'],
+                    ),
+                  ],
+                ),
+                permanent: true,
+              )
+          ..markReady();
+    _deepLinks.registerHandler(
+      'level',
+      (command) => setState(
+        () => _deepLinkLog = 'level: mở level ${command.params['id']}',
+      ),
+    );
+    _deepLinks.registerHandler(
+      'shop',
+      (command) => setState(() => _deepLinkLog = 'shop: mở cửa hàng'),
+    );
     // IDEA-43: demo achievement — 3 taps to unlock, so AchievementUnlockToast
     // (via AchievementUnlockListener wrapping this screen below) has
     // something to show without waiting on real game progress.
@@ -414,6 +447,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _tutorialSequenceController.dispose();
     _wheelController.dispose();
     _candyTextFieldController.dispose();
+    _deepLinkController.dispose();
     _haptics.cancel();
     super.dispose();
   }
@@ -477,6 +511,11 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoQueueRanCount = 0;
   late final ConsentGatedAnalyticsProvider _gatedAnalytics;
   int _demoAnalyticsEventCount = 0;
+  late final DeepLinkCommandRouter _deepLinks;
+  final _deepLinkController = TextEditingController(
+    text: 'roycasualkit://open/level/5',
+  );
+  String _deepLinkLog = 'Chưa có deep link nào.';
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
   // IDEA-48: toggles the demo between topN(3) (always the leaders) and
@@ -1073,6 +1112,73 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   ],
                                 );
                               },
+                            ),
+                          ),
+                          _Demo(
+                            label: 'DeepLinkCommandRouter (FEAT-60)',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CandyTextField(
+                                  key: const Key('deepLinkUriField'),
+                                  controller: _deepLinkController,
+                                  hintText: 'Deep link URI',
+                                ),
+                                const SizedBox(height: NeonTheme.s16),
+                                Wrap(
+                                  spacing: NeonTheme.s8,
+                                  children: [
+                                    CommonButton(
+                                      label: 'Simulate link',
+                                      onTap: () async {
+                                        final uri = Uri.tryParse(
+                                          _deepLinkController.text,
+                                        );
+                                        if (uri == null) {
+                                          setState(
+                                            () => _deepLinkLog =
+                                                'URI không hợp lệ.',
+                                          );
+                                          return;
+                                        }
+                                        final result = await _deepLinks
+                                            .handleUri(uri);
+                                        setState(
+                                          () => _deepLinkLog =
+                                              'outcome: ${result.outcome.name}',
+                                        );
+                                      },
+                                    ),
+                                    CommonButton(
+                                      label: 'Simulate lại (duplicate)',
+                                      variant: CommonButtonVariant.secondary,
+                                      onTap: () async {
+                                        final uri = Uri.tryParse(
+                                          _deepLinkController.text,
+                                        );
+                                        if (uri == null) return;
+                                        final result = await _deepLinks
+                                            .handleUri(uri);
+                                        setState(
+                                          () => _deepLinkLog =
+                                              'outcome: ${result.outcome.name}',
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: NeonTheme.s16),
+                                Text(_deepLinkLog),
+                                const SizedBox(height: NeonTheme.s8),
+                                Text(
+                                  'Thật: adb shell am start -a android.intent.action.VIEW '
+                                  '-d "roycasualkit://open/level/5"',
+                                  style: TextStyle(
+                                    color: NeonTheme.muted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           _Demo(

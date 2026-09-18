@@ -27,11 +27,11 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  // FEAT-57/FEAT-51/FEAT-36/FEAT-61: mỗi demo section mới đẩy list dài hơn — tăng
+  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60: mỗi demo section mới đẩy list dài hơn — tăng
   // chiều cao viewport ảo để mọi widget phía sau vẫn nằm trong vùng tap
   // được mà không cần scroll (đúng lý do file này dùng physicalSize cố
   // định).
-  tester.view.physicalSize = const Size(1080, 11800);
+  tester.view.physicalSize = const Size(1080, 12400);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -1299,5 +1299,51 @@ void main() {
         ConnectivityCoordinator.maybe?.onClose();
       },
     );
+  });
+
+  group('FEAT-60: DeepLinkCommandRouter demo', () {
+    testWidgets('link hợp lệ: hiện đúng outcome dispatched', (tester) async {
+      await _pumpShowcase(tester);
+
+      await tester.tap(find.text('Simulate link').last);
+      await tester.pump();
+
+      expect(find.text('outcome: dispatched'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'bấm "Simulate lại (duplicate)" ngay sau: bị dedupe',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(find.text('Simulate link').last);
+        await tester.pump();
+        await tester.tap(find.text('Simulate lại (duplicate)').last);
+        await tester.pump();
+
+        expect(find.text('outcome: duplicateIgnored'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('link không khớp route nào: outcome rejected, không throw', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const Key('deepLinkUriField')),
+          matching: find.byType(TextField),
+        ),
+        'roycasualkit://open/unknown/path',
+      );
+      await tester.tap(find.text('Simulate link').last);
+      await tester.pump();
+
+      expect(find.text('outcome: rejected'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }
