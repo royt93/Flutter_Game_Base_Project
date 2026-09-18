@@ -55,6 +55,7 @@ export 'core/utils/seeded_random.dart';
 export 'core/utils/trusted_clock.dart';
 export 'core/utils/async_action_guard.dart';
 export 'core/utils/save_migration_registry.dart';
+export 'core/utils/retry_policy.dart';
 export 'core/utils/sdk_result.dart';
 export 'core/utils/format.dart';
 export 'core/utils/label_fit.dart';

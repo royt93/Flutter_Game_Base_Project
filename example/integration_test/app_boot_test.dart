@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:roy_casual_kit/roy_casual_kit.dart';
+import 'package:roy_casual_kit/core/debug_log.dart';
 import 'package:roy_casual_kit_example/main.dart' as app;
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
 import 'package:roy_casual_kit_example/screens/settings_screen.dart';
@@ -384,6 +385,40 @@ void main() {
       expect(StorageService.to.exportAll(), before);
 
       await Get.delete<SecureStorageAdapter>(force: true);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'FEAT-35: RetryPolicy recovers a service call after transient failures on device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 2));
+
+      var callCount = 0;
+      final attempts = <int>[];
+      final executor = RetryExecutor();
+      final result = await executor.run(
+        () async {
+          callCount++;
+          dlog('FEAT-35 device attempt $callCount');
+          // Giả lập 1 network call chập chờn (2 lần lỗi transient rồi ổn
+          // định) — cùng hình dạng 1 RemoteConfigService/CloudSaveProvider
+          // thật sẽ retry qua policy này.
+          if (callCount < 3) throw Exception('transient network error');
+          return 'remote-config-value';
+        },
+        policy: const RetryPolicy(
+          maxAttempts: 3,
+          baseDelay: Duration(milliseconds: 50),
+        ),
+        onAttempt: (event) => attempts.add(event.attemptNumber),
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(result.value, 'remote-config-value');
+      expect(callCount, 3);
+      expect(attempts, [1, 2, 3]);
       expect(tester.takeException(), isNull);
     },
   );
