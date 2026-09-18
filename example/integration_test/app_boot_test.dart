@@ -357,6 +357,37 @@ void main() {
     },
   );
 
+  testWidgets(
+    'FEAT-40: secure storage never falls back to real StorageService on device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 2));
+      final before = StorageService.to.exportAll();
+
+      final missingAdapterResult = await SecureStorage.write(
+        'api_token',
+        'super-secret-value',
+      );
+      expect(missingAdapterResult.isSuccess, isFalse);
+      // Không có adapter đăng ký -> KHÔNG bao giờ lọt vào StorageService.
+      expect(StorageService.to.exportAll(), before);
+
+      Get.put<SecureStorageAdapter>(FakeSecureStorageAdapter());
+      final writeResult = await SecureStorage.write(
+        'api_token',
+        'super-secret-value',
+      );
+      final readResult = await SecureStorage.read('api_token');
+      expect(writeResult.isSuccess, isTrue);
+      expect(readResult.value, 'super-secret-value');
+      // Có adapter thật (fake) vẫn KHÔNG lọt vào StorageService thường.
+      expect(StorageService.to.exportAll(), before);
+
+      await Get.delete<SecureStorageAdapter>(force: true);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('IDEA-38: color-blind-safe setting changes palette on device', (
     tester,
   ) async {
