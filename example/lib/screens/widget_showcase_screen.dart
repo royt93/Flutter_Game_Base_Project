@@ -19,6 +19,7 @@ import 'package:roy_casual_kit/core/utils/seeded_random.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/share_helper.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:roy_casual_kit/core/utils/throttle.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_app_bar.dart';
@@ -1380,6 +1381,19 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                             child: const EmptyStatePlaceholder(
                               icon: Icons.inbox_outlined,
                               message: 'Nothing here yet.',
+                            ),
+                          ),
+                          _Demo(
+                            label: 'RetryErrorState',
+                            child: RetryErrorState.fromSdkFailure(
+                              const SdkFailure(
+                                kind: SdkErrorKind.network,
+                                message: 'Could not reach the server.',
+                              ),
+                              compact: true,
+                              onRetry: () => Future<void>.delayed(
+                                const Duration(milliseconds: 800),
+                              ),
                             ),
                           ),
                           _Demo(

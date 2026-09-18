@@ -26,7 +26,10 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  tester.view.physicalSize = const Size(1080, 10200);
+  // FEAT-57: +RetryErrorState demo section đẩy list dài hơn — tăng chiều
+  // cao viewport ảo để mọi widget phía sau vẫn nằm trong vùng tap được mà
+  // không cần scroll (đúng lý do file này dùng physicalSize cố định).
+  tester.view.physicalSize = const Size(1080, 10600);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);

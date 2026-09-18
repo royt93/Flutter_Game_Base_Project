@@ -11,6 +11,7 @@ library;
 export 'async_common_button.dart';
 export 'common_button.dart';
 export 'pause_overlay.dart';
+export 'retry_error_state.dart';
 export 'toggle_switch.dart';
 export 'segmented_tab_bar.dart';
 export 'icon_badge_button.dart';
