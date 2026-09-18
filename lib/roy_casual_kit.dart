@@ -27,6 +27,7 @@ export 'core/local_scoreboard_service.dart';
 export 'core/locale_service.dart';
 export 'core/lifecycle_coordinator.dart';
 export 'core/game_session_controller.dart';
+export 'core/game_time_controller.dart';
 export 'core/economy_wallet.dart';
 export 'core/neon_theme.dart';
 export 'core/offline_progression_service.dart';

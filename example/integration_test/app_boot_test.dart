@@ -237,6 +237,43 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'FEAT-49: game time freezes on background, resumes without catch-up',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 2));
+      final session = GameSessionController(
+        lifecycle: Get.find<RoyLifecycleCoordinator>(),
+      )..onInit();
+      session.markReady();
+      session.start();
+      final gameTime = GameTimeController(
+        session: session,
+        maxDeltaPerTick: const Duration(seconds: 5),
+      );
+
+      gameTime.tick(0.5);
+      expect(gameTime.elapsed.value, const Duration(milliseconds: 500));
+
+      Get.find<RoyLifecycleCoordinator>().didChangeAppLifecycleState(
+        AppLifecycleState.paused,
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      gameTime.tick(2); // giả lập thời gian trôi trong lúc app ở nền
+      expect(gameTime.elapsed.value, const Duration(milliseconds: 500));
+
+      Get.find<RoyLifecycleCoordinator>().didChangeAppLifecycleState(
+        AppLifecycleState.resumed,
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      gameTime.tick(0.25);
+      expect(gameTime.elapsed.value, const Duration(milliseconds: 750));
+
+      session.onClose();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('FEAT-31: wallet rejects duplicate spend on device', (
     tester,
   ) async {
