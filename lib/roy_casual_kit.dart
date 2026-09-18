@@ -11,6 +11,7 @@ export 'core/analytics_provider.dart';
 export 'core/app_info.dart';
 export 'core/app_translations.dart';
 export 'core/audio_manager.dart';
+export 'core/checkpoint_coordinator.dart';
 export 'core/cloud_save_provider.dart';
 export 'core/consumer_contract_test_kit.dart';
 export 'core/crash_reporter.dart';

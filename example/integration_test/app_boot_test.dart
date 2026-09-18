@@ -291,6 +291,35 @@ void main() {
     },
   );
 
+  testWidgets(
+    'FEAT-46: checkpoint survives real app storage and restores on device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 2));
+      final coordinator = CheckpointCoordinator(storage: StorageService.to);
+      coordinator.registerParticipant(
+        'player',
+        snapshot: () => {'hp': 42},
+        restore: (_) {},
+      );
+      final flushResult = await coordinator.requestCheckpoint(critical: true);
+      expect(flushResult.isSuccess, isTrue);
+
+      Object? restored;
+      final reloaded = CheckpointCoordinator(storage: StorageService.to);
+      reloaded.registerParticipant(
+        'player',
+        snapshot: () => {'hp': 42},
+        restore: (data) => restored = data,
+      );
+      final restoreResult = reloaded.restoreLatest();
+
+      expect(restoreResult.isSuccess, isTrue);
+      expect((restored as Map)['hp'], 42);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('IDEA-38: color-blind-safe setting changes palette on device', (
     tester,
   ) async {
