@@ -15,6 +15,11 @@ enum AsyncButtonStatus { idle, loading, success, error }
 /// not [AsyncButtonStatus.idle] (a rapid double-tap can't start a second
 /// [onPressed] call, and a tap during the success/error cooldown is ignored
 /// too, not queued).
+///
+/// [onPressed] left `null` disables the button (mirrors [CommonButton]'s
+/// own `onTap: null` convention) — for a business-rule gate (e.g. "select
+/// at least one option first"), not for hiding that async work is in
+/// flight (that's what [AsyncButtonStatus.loading] is for).
 class AsyncCommonButton extends StatefulWidget {
   const AsyncCommonButton({
     super.key,
@@ -38,7 +43,7 @@ class AsyncCommonButton extends StatefulWidget {
   final String? label;
   final IconData? icon;
   final CommonButtonVariant variant;
-  final Future<void> Function() onPressed;
+  final Future<void> Function()? onPressed;
   final Color? color;
   final double? width;
   final String? semanticLabel;
@@ -75,14 +80,14 @@ class _AsyncCommonButtonState extends State<AsyncCommonButton> {
   }
 
   void _handleTap() {
-    if (_status != AsyncButtonStatus.idle) return;
+    if (_status != AsyncButtonStatus.idle || widget.onPressed == null) return;
     setState(() => _status = AsyncButtonStatus.loading);
     _run();
   }
 
   Future<void> _run() async {
     try {
-      final future = widget.onPressed();
+      final future = widget.onPressed!();
       final timeout = widget.timeout;
       await (timeout == null ? future : future.timeout(timeout));
       if (!mounted) return;
@@ -131,7 +136,9 @@ class _AsyncCommonButtonState extends State<AsyncCommonButton> {
             width: widget.width,
             semanticLabel: widget.semanticLabel,
             loading: _status == AsyncButtonStatus.loading,
-            onTap: _status == AsyncButtonStatus.idle ? _handleTap : null,
+            onTap: (_status == AsyncButtonStatus.idle && widget.onPressed != null)
+                ? _handleTap
+                : null,
           ),
         ),
         if (announcement != null)

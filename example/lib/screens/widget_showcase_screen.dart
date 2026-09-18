@@ -18,6 +18,7 @@ import 'package:roy_casual_kit/core/replay_recorder.dart';
 import 'package:roy_casual_kit/core/utils/seeded_random.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/share_helper.dart';
+import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:roy_casual_kit/core/utils/throttle.dart';
@@ -401,6 +402,32 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     LevelState.locked,
   ];
   final Map<int, int> _levelStars = const {1: 3, 2: 2, 3: 1};
+
+  // FEAT-55: RewardChoicePanel demo — panel itself never grants anything,
+  // this is where the "grant nằm trong RewardTransactionPipeline" callback
+  // would actually call it in a real game; here just a toast.
+  final List<RewardChoiceOption> _rewardChoices = const [
+    RewardChoiceOption(
+      id: 'coin_pack',
+      label: 'Coin pack',
+      icon: Icons.monetization_on,
+      lines: [RewardLine(currency: 'coin', amount: 100)],
+    ),
+    RewardChoiceOption(
+      id: 'gem_pack',
+      label: 'Gem pack',
+      icon: Icons.diamond,
+      lines: [RewardLine(currency: 'gem', amount: 10)],
+    ),
+    RewardChoiceOption(
+      id: 'skin',
+      label: 'Exclusive skin',
+      icon: Icons.palette,
+      locked: true,
+      lockedReason: 'Reach level 10',
+    ),
+  ];
+
   bool _networkConnected = true;
   bool _showShimmer = true;
 
@@ -1589,6 +1616,28 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 message: 'Level $level tapped',
                                 color: NeonTheme.cyan,
                               ),
+                            ),
+                          ),
+
+                          const SizedBox(height: NeonTheme.s24),
+                          const SectionHeader(title: 'Reward Choice'),
+                          const SizedBox(height: NeonTheme.s16),
+                          _Demo(
+                            label: 'RewardChoicePanel',
+                            child: RewardChoicePanel(
+                              options: _rewardChoices,
+                              onConfirm: (ids) async {
+                                await Future<void>.delayed(
+                                  const Duration(milliseconds: 500),
+                                );
+                                if (context.mounted) {
+                                  ToastBanner.show(
+                                    context,
+                                    message: 'Granted: ${ids.join(', ')}',
+                                    color: NeonTheme.cyan,
+                                  );
+                                }
+                              },
                             ),
                           ),
 

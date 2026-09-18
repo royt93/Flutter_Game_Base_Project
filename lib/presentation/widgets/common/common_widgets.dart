@@ -13,6 +13,7 @@ export 'common_button.dart';
 export 'hold_to_confirm_button.dart';
 export 'pause_overlay.dart';
 export 'retry_error_state.dart';
+export 'reward_choice_panel.dart';
 export 'toggle_switch.dart';
 export 'segmented_tab_bar.dart';
 export 'icon_badge_button.dart';
