@@ -49,6 +49,9 @@ class StorageKeys {
 
   // lib/core/persistent_cooldown_service.dart reads/writes this directly.
   static const String cooldownStateV1 = 'cooldown_state_v1';
+
+  // lib/core/consent_state_service.dart reads/writes this directly.
+  static const String consentStateV1 = 'consent_state_v1';
 }
 
 /// Shared local storage service (wraps SharedPreferences).

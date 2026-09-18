@@ -26,11 +26,11 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  // FEAT-57/FEAT-51/FEAT-36: mỗi demo section mới đẩy list dài hơn — tăng
+  // FEAT-57/FEAT-51/FEAT-36/FEAT-61: mỗi demo section mới đẩy list dài hơn — tăng
   // chiều cao viewport ảo để mọi widget phía sau vẫn nằm trong vùng tap
   // được mà không cần scroll (đúng lý do file này dùng physicalSize cố
   // định).
-  tester.view.physicalSize = const Size(1080, 11200);
+  tester.view.physicalSize = const Size(1080, 11800);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -1126,6 +1126,94 @@ void main() {
           find.text(fmtDur(const Duration(seconds: 12))),
           findsOneWidget,
           reason: 'restart phải nạp lại đúng full duration mới, không cộng dồn phần đã trôi',
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('FEAT-61: ConsentStateService demo', () {
+    testWidgets('mặc định chưa quyết định: unknown cho cả 2 category', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      expect(find.text('Analytics: unknown'), findsOneWidget);
+      expect(find.text('Personalization: unknown'), findsOneWidget);
+    });
+
+    testWidgets(
+      'chưa grant analytics: bấm "Log demo event" không tăng event count',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        expect(find.text('Demo events actually logged: 0'), findsOneWidget);
+        await tester.tap(find.text('Log demo event (gated)').last);
+        await tester.pump();
+
+        expect(find.text('Demo events actually logged: 0'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'bấm Grant analytics rồi Log demo event: event count tăng đúng',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(find.text('Grant analytics').last);
+        await tester.pump();
+        expect(find.text('Analytics: granted'), findsOneWidget);
+
+        await tester.tap(find.text('Log demo event (gated)').last);
+        await tester.pump();
+
+        expect(find.text('Demo events actually logged: 1'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'bấm Deny analytics sau khi đã Grant: Log demo event không còn tăng nữa',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(find.text('Grant analytics').last);
+        await tester.pump();
+        await tester.tap(find.text('Log demo event (gated)').last);
+        await tester.pump();
+        expect(find.text('Demo events actually logged: 1'), findsOneWidget);
+
+        await tester.tap(find.text('Deny analytics').last);
+        await tester.pump();
+        await tester.tap(find.text('Log demo event (gated)').last);
+        await tester.pump();
+
+        expect(find.text('Demo events actually logged: 1'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'Grant personalization: ExperimentBucketingService demo hiện đúng variant thay vì blocked',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        expect(
+          find.textContaining('blocked (no personalization consent)'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Grant personalization').last);
+        await tester.pump();
+
+        expect(
+          find.textContaining('blocked (no personalization consent)'),
+          findsNothing,
+        );
+        expect(
+          find.textContaining('Experiment "cta_color_test" →'),
+          findsOneWidget,
         );
         expect(tester.takeException(), isNull);
       },

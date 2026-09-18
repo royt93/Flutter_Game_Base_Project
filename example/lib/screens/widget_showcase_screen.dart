@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:roy_casual_kit/core/achievement_service.dart';
+import 'package:roy_casual_kit/core/analytics_provider.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
+import 'package:roy_casual_kit/core/consent_gated_analytics_provider.dart';
+import 'package:roy_casual_kit/core/consent_state_service.dart';
 import 'package:roy_casual_kit/core/daily_login_service.dart';
 import 'package:roy_casual_kit/core/energy_service.dart';
 import 'package:roy_casual_kit/core/experiment_bucketing_service.dart';
@@ -348,6 +351,12 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _cooldown =
         PersistentCooldownService.maybe ??
         Get.put(PersistentCooldownService(), permanent: true);
+    _consent =
+        ConsentStateService.maybe ??
+        Get.put(ConsentStateService(policyVersion: 1), permanent: true);
+    _gatedAnalytics = ConsentGatedAnalyticsProvider(
+      _DemoAnalyticsProvider(() => setState(() => _demoAnalyticsEventCount++)),
+    );
     // IDEA-43: demo achievement — 3 taps to unlock, so AchievementUnlockToast
     // (via AchievementUnlockListener wrapping this screen below) has
     // something to show without waiting on real game progress.
@@ -448,6 +457,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   late final DailyLoginService _dailyLogin;
   late final EnergyService _energy;
   late final PersistentCooldownService _cooldown;
+  late final ConsentStateService _consent;
+  late final ConsentGatedAnalyticsProvider _gatedAnalytics;
+  int _demoAnalyticsEventCount = 0;
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
   // IDEA-48: toggles the demo between topN(3) (always the leaders) and
@@ -1630,22 +1642,102 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                             ),
                           ),
                           _Demo(
+                            label: 'ConsentStateService (FEAT-61)',
+                            child: Obx(() {
+                              // Obx tracks whichever .obs .value getters run
+                              // inside this closure — reading revision.value
+                              // is what makes it rebuild on grant/deny/reset.
+                              _consent.revision.value;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Analytics: ${_consent.statusOf(ConsentCategory.analytics).name}',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Wrap(
+                                    spacing: NeonTheme.s8,
+                                    children: [
+                                      CommonButton(
+                                        label: 'Grant analytics',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: () => _consent.grant(
+                                          ConsentCategory.analytics,
+                                        ),
+                                      ),
+                                      CommonButton(
+                                        label: 'Deny analytics',
+                                        variant: CommonButtonVariant.danger,
+                                        onTap: () => _consent.deny(
+                                          ConsentCategory.analytics,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  Text(
+                                    'Personalization: ${_consent.statusOf(ConsentCategory.personalization).name}',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Wrap(
+                                    spacing: NeonTheme.s8,
+                                    children: [
+                                      CommonButton(
+                                        label: 'Grant personalization',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: () => _consent.grant(
+                                          ConsentCategory.personalization,
+                                        ),
+                                      ),
+                                      CommonButton(
+                                        label: 'Deny personalization',
+                                        variant: CommonButtonVariant.danger,
+                                        onTap: () => _consent.deny(
+                                          ConsentCategory.personalization,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  Text(
+                                    'Demo events actually logged: $_demoAnalyticsEventCount',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  CommonButton(
+                                    label: 'Log demo event (gated)',
+                                    onTap: () =>
+                                        _gatedAnalytics.logEvent('demo_event'),
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                          _Demo(
                             label: 'ExperimentBucketingService (IDEA-57)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Experiment "$_demoExperimentKey" → '
-                                  '${_experiments.variantFor(_demoExperimentKey, _demoExperimentVariants)}',
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                Text(
-                                  'Device id: '
-                                  '${_experiments.anonymousId.substring(0, 8)}…',
-                                  style: TextStyle(color: NeonTheme.muted),
-                                ),
-                              ],
-                            ),
+                            child: Obx(() {
+                              _consent.revision.value;
+                              final personalizationGranted = _consent.isGranted(
+                                ConsentCategory.personalization,
+                              );
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    personalizationGranted
+                                        ? 'Experiment "$_demoExperimentKey" → '
+                                              '${_experiments.variantFor(_demoExperimentKey, _demoExperimentVariants)}'
+                                        : 'Experiment "$_demoExperimentKey" → '
+                                              'blocked (no personalization consent)',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Text(
+                                    'Device id: '
+                                    '${_experiments.anonymousId.substring(0, 8)}…',
+                                    style: TextStyle(color: NeonTheme.muted),
+                                  ),
+                                ],
+                              );
+                            }),
                           ),
 
                           const SizedBox(height: NeonTheme.s24),
@@ -1967,6 +2059,18 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       ),
     );
   }
+}
+
+/// FEAT-61: fake "real" analytics provider for the ConsentStateService
+/// demo — just counts events it actually received, so the demo can prove
+/// ConsentGatedAnalyticsProvider really did (or didn't) forward the call.
+class _DemoAnalyticsProvider implements AnalyticsProvider {
+  _DemoAnalyticsProvider(this.onEvent);
+
+  final VoidCallback onEvent;
+
+  @override
+  void logEvent(String name, [Map<String, Object?>? params]) => onEvent();
 }
 
 /// One example: a small caption naming the widget under demo (so the source
