@@ -10,6 +10,7 @@ export 'core/achievement_service.dart';
 export 'core/analytics_provider.dart';
 export 'core/app_info.dart';
 export 'core/app_translations.dart';
+export 'core/app_session_tracker.dart';
 export 'core/app_version_gate.dart';
 export 'core/audio_manager.dart';
 export 'core/checkpoint_coordinator.dart';

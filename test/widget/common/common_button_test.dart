@@ -42,6 +42,32 @@ void main() {
     },
   );
 
+  testWidgets(
+    'CommonButton pill có padding ngang thật (label không dí sát viền bo tròn)',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: CommonButton(label: 'Scenario: force', onTap: () {}),
+          ),
+        ),
+      );
+
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: find.byType(CommonButton),
+          matching: find.byType(Container),
+        ),
+      );
+      final padding = container.padding as EdgeInsets;
+      expect(
+        padding.horizontal,
+        greaterThan(0),
+        reason: 'thiếu padding ngang khiến label dí sát/tràn ra mép nút',
+      );
+    },
+  );
+
   for (final variant in CommonButtonVariant.values) {
     testWidgets('CommonButton render variant $variant không throw', (
       tester,
@@ -237,7 +263,11 @@ void main() {
                   child: KeyedSubtree(
                     key: key,
                     child: CommonButton(
-                      label: 'Buy the whole shop',
+                      // Label ngắn, không cần FittedBox scale-down ở width
+                      // mặc định — test này verify loading không đổi kích
+                      // thước OUTER pill, không phải hành vi scale-down
+                      // (nhạy với padding ngang của Container).
+                      label: 'Buy',
                       loading: loading,
                       onTap: () {},
                     ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -6,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/achievement_service.dart';
 import 'package:roy_casual_kit/core/analytics_provider.dart';
 import 'package:roy_casual_kit/core/app_info.dart';
+import 'package:roy_casual_kit/core/app_session_tracker.dart';
 import 'package:roy_casual_kit/core/app_version_gate.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/remote_config_service.dart';
@@ -24,6 +26,7 @@ import 'package:roy_casual_kit/core/persistent_cooldown_service.dart';
 import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
 import 'package:roy_casual_kit/core/save_slot_manager.dart';
 import 'package:roy_casual_kit/core/replay_recorder.dart';
+import 'package:roy_casual_kit/core/utils/format.dart';
 import 'package:roy_casual_kit/core/utils/seeded_random.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/share_helper.dart';
@@ -428,6 +431,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _versionGate = AppVersionGateController(
       remoteConfig: _versionGateRemoteConfig,
     );
+    _sessionTracker =
+        AppSessionTracker.maybe ??
+        Get.put(AppSessionTracker(), permanent: true);
     // IDEA-43: demo achievement — 3 taps to unlock, so AchievementUnlockToast
     // (via AchievementUnlockListener wrapping this screen below) has
     // something to show without waiting on real game progress.
@@ -544,6 +550,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   late RemoteConfigService _versionGateRemoteConfig;
   late AppVersionGateController _versionGate;
   String _versionGateScenario = 'ok';
+  late final AppSessionTracker _sessionTracker;
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
   // IDEA-48: toggles the demo between topN(3) (always the leaders) and
@@ -2064,6 +2071,43 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     'Device id: '
                                     '${_experiments.anonymousId.substring(0, 8)}…',
                                     style: TextStyle(color: NeonTheme.muted),
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                          _Demo(
+                            label: 'AppSessionTracker (FEAT-63)',
+                            child: Obx(() {
+                              // Obx tracks _consent.revision.value để rebuild
+                              // đúng lúc consent analytics đổi (ảnh hưởng
+                              // analyticsContext() bên dưới).
+                              _consent.revision.value;
+                              final context = _sessionTracker
+                                  .analyticsContext();
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Session #${_sessionTracker.current.sequence} '
+                                    '(id: ${_sessionTracker.current.sessionId.substring(0, 8)}…)',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Text(
+                                    'Foreground: '
+                                    '${fmtDur(_sessionTracker.foregroundDuration)}',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: 'Refresh',
+                                    variant: CommonButtonVariant.secondary,
+                                    onTap: () => setState(() {}),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  Text(
+                                    context.isEmpty
+                                        ? 'Analytics context: {} (chưa có analytics consent)'
+                                        : 'Analytics context: ${jsonEncode(context)}',
                                   ),
                                 ],
                               );

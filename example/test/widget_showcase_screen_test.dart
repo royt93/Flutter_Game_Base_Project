@@ -31,7 +31,7 @@ Future<void> _pumpShowcase(WidgetTester tester) async {
   // chiều cao viewport ảo để mọi widget phía sau vẫn nằm trong vùng tap
   // được mà không cần scroll (đúng lý do file này dùng physicalSize cố
   // định).
-  tester.view.physicalSize = const Size(1080, 12400);
+  tester.view.physicalSize = const Size(1080, 12700);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -1384,5 +1384,34 @@ void main() {
     // error đã có ở test/widget/common/app_version_gate_overlay_test.dart
     // (8 case) — file này chỉ cần chứng minh demo wiring cơ bản hoạt động
     // (2 test trên: mặc định ok, và 1 lần cycle sang soft + dismiss).
+  });
+
+  group('FEAT-63: AppSessionTracker demo', () {
+    testWidgets('hiện đúng session #1 và analytics context rỗng khi chưa consent', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      expect(find.textContaining('Session #1'), findsOneWidget);
+      expect(
+        find.text('Analytics context: {} (chưa có analytics consent)'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'grant analytics consent (FEAT-61): analytics context hiện đúng field',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(find.text('Grant analytics').last);
+        await tester.pump();
+
+        expect(find.textContaining('"sessionId"'), findsOneWidget);
+        expect(find.textContaining('"sessionSequence":1'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }
