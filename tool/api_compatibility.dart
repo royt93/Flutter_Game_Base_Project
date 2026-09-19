@@ -101,7 +101,7 @@ bool _isMajor(String version) => int.parse(version.split('.').first) > 0;
 
 String _currentChangelogSection(String changelog, String version) {
   final match = RegExp(
-    '^## \\$version\\n(.*?)(?=^## |\\Z)',
+    '^## $version\\n(.*?)(?=^## |\\Z)',
     multiLine: true,
     dotAll: true,
   ).firstMatch(changelog);

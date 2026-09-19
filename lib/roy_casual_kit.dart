@@ -77,9 +77,11 @@ export 'core/utils/label_fit.dart';
 export 'core/utils/safe_json.dart';
 export 'core/utils/throttle.dart';
 export 'core/utils/weighted_random_pick.dart';
+export 'core/utils/object_pool.dart';
 
 // Flame starter game and top-level presentation widgets.
 export 'presentation/game/roy_game.dart';
+export 'presentation/game/pooled_component.dart';
 export 'presentation/widgets/aurora_bg_layer.dart';
 export 'presentation/widgets/flame_tracked_overlay.dart';
 export 'presentation/widgets/neon_app_bar.dart';
