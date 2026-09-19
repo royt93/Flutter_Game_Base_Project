@@ -27,11 +27,11 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47: mỗi demo section mới đẩy list dài hơn — tăng
+  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58: mỗi demo section mới đẩy list dài hơn — tăng
   // chiều cao viewport ảo để mọi widget phía sau vẫn nằm trong vùng tap
   // được mà không cần scroll (đúng lý do file này dùng physicalSize cố
   // định).
-  tester.view.physicalSize = const Size(1080, 13200);
+  tester.view.physicalSize = const Size(1080, 13600);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -1528,6 +1528,70 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('Đã unload scene'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('FEAT-58: SceneTransitionOverlay demo', () {
+    testWidgets(
+      'bấm "Chuyển scene (OK)": phase quay lại idle, Scene revision tăng',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        expect(find.text('Scene #1'), findsOneWidget);
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Chuyển scene (OK)').first,
+        );
+        // covering(260ms) + loading(delay 300ms trong load) + revealing(220ms).
+        await tester.pump(const Duration(milliseconds: 900));
+
+        expect(find.text('Phase: idle'), findsOneWidget);
+        expect(find.text('Scene #2'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'bấm "Chuyển scene (lỗi)": phase error hiện RetryErrorState, không tăng revision',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Chuyển scene (lỗi)').first,
+        );
+        await tester.pump(const Duration(milliseconds: 900));
+
+        expect(find.text('Phase: error'), findsOneWidget);
+        expect(find.text('Scene #1'), findsOneWidget);
+        expect(
+          find.textContaining('Không tải được scene mới'),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('bấm "Cancel" giữa chừng: phase về idle ngay, không throw', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      await tester.tap(find.widgetWithText(CommonButton, 'Chuyển scene (OK)').first);
+      // covering kéo dài 260ms — pump qua khỏi mốc đó để vào loading nhưng
+      // chưa hết 300ms delay của load() bên trong.
+      await tester.pump(const Duration(milliseconds: 280));
+      expect(find.text('Phase: loading'), findsOneWidget);
+
+      await tester.tap(
+        find.widgetWithText(CommonButton, 'Cancel transition').first,
+      );
+      await tester.pump(const Duration(milliseconds: 1));
+
+      expect(find.text('Phase: idle'), findsOneWidget);
+      // Load cũ (300ms delay + revealing) hoàn tất muộn — không được kéo
+      // phase ra khỏi idle nữa.
+      await tester.pump(const Duration(milliseconds: 900));
+      expect(find.text('Phase: idle'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

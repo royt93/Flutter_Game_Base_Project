@@ -442,6 +442,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
         Get.put(PlatformCapabilityRegistry(), permanent: true);
     _assetPreload = AssetPreloadCoordinator(loader: _assetDemoLoader);
     _assetSession = GameSessionController();
+    _sceneTransition = SceneTransitionController(
+      coverDuration: const Duration(milliseconds: 260),
+      revealDuration: const Duration(milliseconds: 220),
+    );
     // IDEA-43: demo achievement — 3 taps to unlock, so AchievementUnlockToast
     // (via AchievementUnlockListener wrapping this screen below) has
     // something to show without waiting on real game progress.
@@ -489,7 +493,23 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _deepLinkController.dispose();
     _haptics.cancel();
     _assetSession.onClose();
+    _sceneTransition.dispose();
     super.dispose();
+  }
+
+  Future<SdkResult<void>> _sceneDemoLoad(
+    void Function(double) onProgress,
+  ) async {
+    onProgress(0.4);
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (_sceneDemoForceFail) {
+      return const SdkFailure(
+        kind: SdkErrorKind.network,
+        message: 'Không tải được scene mới (demo lỗi giả lập).',
+      );
+    }
+    onProgress(1.0);
+    return const SdkSuccess(null);
   }
 
   // FEAT-47: manifest demo — 'atlas' phải load trước 'player_sprite'
@@ -625,6 +645,12 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   late final GameSessionController _assetSession;
   String _assetDemoScenario = 'ok';
   String _assetDemoStatus = 'Chưa preload.';
+  // FEAT-58: instance riêng, KHÔNG dùng chung _assetPreload/_assetSession ở
+  // trên — 2 demo minh hoạ 2 khía cạnh khác nhau (preload thuần vs
+  // transition state machine), dùng chung sẽ làm rối UX của cả 2.
+  late final SceneTransitionController _sceneTransition;
+  int _sceneRevision = 1;
+  bool _sceneDemoForceFail = false;
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
   // IDEA-48: toggles the demo between topN(3) (always the leaders) and
@@ -2308,6 +2334,78 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                                 'Đã unload scene.',
                                           );
                                         },
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                          _Demo(
+                            label: 'SceneTransitionOverlay (FEAT-58)',
+                            child: Obx(() {
+                              final phase = _sceneTransition.phase.value;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    height: 320,
+                                    child: SceneTransitionOverlay(
+                                      controller: _sceneTransition,
+                                      onRetry: () => _sceneTransition.retry(
+                                        _sceneDemoLoad,
+                                      ),
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: NeonTheme.cardAlt,
+                                          borderRadius: BorderRadius.circular(
+                                            NeonTheme.s16,
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'Scene #$_sceneRevision',
+                                            style: TextStyle(
+                                              color: NeonTheme.ink,
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Text('Phase: ${phase.name}'),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  Wrap(
+                                    spacing: NeonTheme.s8,
+                                    runSpacing: NeonTheme.s8,
+                                    children: [
+                                      CommonButton(
+                                        label: 'Chuyển scene (OK)',
+                                        onTap: () async {
+                                          _sceneDemoForceFail = false;
+                                          final result = await _sceneTransition
+                                              .run(_sceneDemoLoad);
+                                          if (!mounted) return;
+                                          if (result is SdkSuccess<void>) {
+                                            setState(() => _sceneRevision++);
+                                          }
+                                        },
+                                      ),
+                                      CommonButton(
+                                        label: 'Chuyển scene (lỗi)',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: () {
+                                          _sceneDemoForceFail = true;
+                                          _sceneTransition.run(_sceneDemoLoad);
+                                        },
+                                      ),
+                                      CommonButton(
+                                        label: 'Cancel transition',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: _sceneTransition.cancel,
                                       ),
                                     ],
                                   ),
