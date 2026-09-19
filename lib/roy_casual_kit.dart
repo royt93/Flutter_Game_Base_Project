@@ -40,6 +40,7 @@ export 'core/neon_theme.dart';
 export 'core/offline_progression_service.dart';
 export 'core/onboarding_coordinator_service.dart';
 export 'core/performance_tier_service.dart';
+export 'core/player_progression_service.dart';
 export 'core/platform_capability_registry.dart';
 export 'core/plugin_adapter_conformance_suite.dart';
 export 'core/persistent_cooldown_service.dart';

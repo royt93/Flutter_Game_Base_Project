@@ -12,6 +12,8 @@ import 'package:roy_casual_kit/core/app_version_gate.dart';
 import 'package:roy_casual_kit/core/asset_preload_coordinator.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/game_session_controller.dart';
+import 'package:roy_casual_kit/core/economy_wallet.dart';
+import 'package:roy_casual_kit/core/player_progression_service.dart';
 import 'package:roy_casual_kit/core/remote_config_service.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/consent_gated_analytics_provider.dart';
@@ -446,6 +448,25 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       coverDuration: const Duration(milliseconds: 260),
       revealDuration: const Duration(milliseconds: 220),
     );
+    _progressionWallet =
+        EconomyWallet.maybe ??
+        Get.put(EconomyWallet(storage: StorageService.to), permanent: true);
+    _progressionPipeline =
+        RewardTransactionPipeline.maybe ??
+        Get.put(
+          RewardTransactionPipeline(wallet: _progressionWallet),
+          permanent: true,
+        );
+    _progression =
+        PlayerProgressionService.maybe ??
+        Get.put(
+          PlayerProgressionService(
+            storage: StorageService.to,
+            levelCurve: _progressionCurve,
+            pipeline: _progressionPipeline,
+          ),
+          permanent: true,
+        );
     // IDEA-43: demo achievement — 3 taps to unlock, so AchievementUnlockToast
     // (via AchievementUnlockListener wrapping this screen below) has
     // something to show without waiting on real game progress.
@@ -550,6 +571,22 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     }
   }
 
+  Future<void> _grantProgressionXp(BuildContext context, int amount) async {
+    final beforeLevel = _progression.snapshot.value.level;
+    await _progression.grantXp(
+      amount: amount,
+      transactionId: 'demo_grant_${DateTime.now().microsecondsSinceEpoch}',
+    );
+    final afterLevel = _progression.snapshot.value.level;
+    if (afterLevel > beforeLevel && context.mounted) {
+      ToastBanner.show(
+        context,
+        message: 'Level up! $beforeLevel → $afterLevel',
+        color: NeonTheme.purple,
+      );
+    }
+  }
+
   Future<void> _runAssetDemoPreload(String scenario) async {
     setState(() {
       _assetDemoScenario = scenario;
@@ -651,6 +688,20 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   late final SceneTransitionController _sceneTransition;
   int _sceneRevision = 1;
   bool _sceneDemoForceFail = false;
+  // FEAT-43: curve riêng cho demo — max level 3, level 3 mở khoá 50 gem qua
+  // RewardTransactionPipeline thật (không giả lập).
+  static const _progressionCurve = [
+    LevelDefinition(level: 1, xpToNext: 100),
+    LevelDefinition(level: 2, xpToNext: 200),
+    LevelDefinition(
+      level: 3,
+      xpToNext: 0,
+      unlockRewardLines: [RewardLine(currency: 'gem', amount: 50)],
+    ),
+  ];
+  late final EconomyWallet _progressionWallet;
+  late final RewardTransactionPipeline _progressionPipeline;
+  late final PlayerProgressionService _progression;
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
   // IDEA-48: toggles the demo between topN(3) (always the leaders) and
@@ -2406,6 +2457,55 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                         label: 'Cancel transition',
                                         variant: CommonButtonVariant.secondary,
                                         onTap: _sceneTransition.cancel,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                          _Demo(
+                            label: 'PlayerProgressionService (FEAT-43)',
+                            child: Obx(() {
+                              final snap = _progression.snapshot.value;
+                              final progress = snap.isMaxLevel
+                                  ? 1.0
+                                  : snap.xpIntoLevel / snap.xpToNextLevel;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Level ${snap.level}'
+                                    '${snap.isMaxLevel ? ' (MAX)' : ''}',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  LinearProgressIndicator(value: progress),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Text(
+                                    snap.isMaxLevel
+                                        ? 'Total XP: ${snap.totalXpEarned}'
+                                        : 'XP: ${snap.xpIntoLevel}/${snap.xpToNextLevel}'
+                                              ' (total: ${snap.totalXpEarned})',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Text(
+                                    'Unlock gems: ${_progressionWallet.balanceOf('gem')}',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  Wrap(
+                                    spacing: NeonTheme.s8,
+                                    runSpacing: NeonTheme.s8,
+                                    children: [
+                                      CommonButton(
+                                        label: 'Grant 50 XP',
+                                        onTap: () =>
+                                            _grantProgressionXp(context, 50),
+                                      ),
+                                      CommonButton(
+                                        label: 'Grant 300 XP (multi-level)',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: () =>
+                                            _grantProgressionXp(context, 300),
                                       ),
                                     ],
                                   ),

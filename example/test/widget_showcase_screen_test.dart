@@ -27,11 +27,11 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58: mỗi demo section mới đẩy list dài hơn — tăng
+  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58/FEAT-43: mỗi demo section mới đẩy list dài hơn — tăng
   // chiều cao viewport ảo để mọi widget phía sau vẫn nằm trong vùng tap
   // được mà không cần scroll (đúng lý do file này dùng physicalSize cố
   // định).
-  tester.view.physicalSize = const Size(1080, 13600);
+  tester.view.physicalSize = const Size(1080, 14100);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -1594,5 +1594,43 @@ void main() {
       expect(find.text('Phase: idle'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+  });
+
+  group('FEAT-43: PlayerProgressionService demo', () {
+    testWidgets('bấm "Grant 50 XP": vẫn Level 1, XP tăng đúng', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      expect(find.text('Level 1'), findsOneWidget);
+      await tester.tap(find.widgetWithText(CommonButton, 'Grant 50 XP').first);
+      await tester.pump();
+
+      expect(find.text('Level 1'), findsOneWidget);
+      expect(find.text('XP: 50/100 (total: 50)'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'bấm "Grant 300 XP (multi-level)": nhảy thẳng lên Level 3 (MAX), '
+      'unlock gems tăng đúng, hiện toast level up',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Grant 300 XP (multi-level)').first,
+        );
+        await tester.pump();
+
+        expect(find.text('Level 3 (MAX)'), findsOneWidget);
+        expect(find.text('Total XP: 300'), findsOneWidget);
+        expect(find.text('Unlock gems: 50'), findsOneWidget);
+        expect(find.textContaining('Level up! 1 → 3'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        // Toast auto-dismiss (~2.4s) trước khi test kết thúc.
+        await tester.pump(const Duration(seconds: 3));
+      },
+    );
   });
 }
