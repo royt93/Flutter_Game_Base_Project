@@ -9,7 +9,9 @@ import 'package:roy_casual_kit/core/analytics_provider.dart';
 import 'package:roy_casual_kit/core/app_info.dart';
 import 'package:roy_casual_kit/core/app_session_tracker.dart';
 import 'package:roy_casual_kit/core/app_version_gate.dart';
+import 'package:roy_casual_kit/core/asset_preload_coordinator.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
+import 'package:roy_casual_kit/core/game_session_controller.dart';
 import 'package:roy_casual_kit/core/remote_config_service.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/consent_gated_analytics_provider.dart';
@@ -438,6 +440,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _platformCapabilities =
         PlatformCapabilityRegistry.maybe ??
         Get.put(PlatformCapabilityRegistry(), permanent: true);
+    _assetPreload = AssetPreloadCoordinator(loader: _assetDemoLoader);
+    _assetSession = GameSessionController();
     // IDEA-43: demo achievement — 3 taps to unlock, so AchievementUnlockToast
     // (via AchievementUnlockListener wrapping this screen below) has
     // something to show without waiting on real game progress.
@@ -484,7 +488,64 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _candyTextFieldController.dispose();
     _deepLinkController.dispose();
     _haptics.cancel();
+    _assetSession.onClose();
     super.dispose();
+  }
+
+  // FEAT-47: manifest demo — 'atlas' phải load trước 'player_sprite'
+  // (dependency), 'bg_music' là optional nên fail của nó không chặn scene.
+  List<AssetManifestItem> get _assetDemoManifest => const [
+    AssetManifestItem(
+      id: 'atlas',
+      kind: AssetKind.image,
+      path: 'atlas.png',
+      weight: 2,
+    ),
+    AssetManifestItem(
+      id: 'player_sprite',
+      kind: AssetKind.image,
+      path: 'player_sprite.png',
+      dependsOn: ['atlas'],
+      weight: 2,
+    ),
+    AssetManifestItem(
+      id: 'bg_music',
+      kind: AssetKind.audio,
+      path: 'bg_music.mp3',
+      required: false,
+      weight: 1,
+    ),
+  ];
+
+  // Không có asset thật để load trong RoyGame template (xem roy_game.dart) —
+  // loader giả lập độ trễ + 2 kịch bản lỗi chọn qua nút bấm demo, để chứng
+  // minh hành vi required-fail-chặn-scene vs optional-fail-không-chặn.
+  Future<void> _assetDemoLoader(AssetManifestItem item) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (item.id == 'bg_music' && _assetDemoScenario == 'optionalFail') {
+      throw Exception('demo: bg_music lỗi (optional, không chặn scene)');
+    }
+    if (item.id == 'atlas' && _assetDemoScenario == 'requiredFail') {
+      throw Exception('demo: atlas lỗi (required, chặn scene)');
+    }
+  }
+
+  Future<void> _runAssetDemoPreload(String scenario) async {
+    setState(() {
+      _assetDemoScenario = scenario;
+      _assetDemoStatus = 'Đang preload...';
+    });
+    final result = await _assetPreload.preload(_assetDemoManifest);
+    if (!mounted) return;
+    setState(() {
+      if (result is SdkSuccess<void>) {
+        _assetSession.markReady();
+        _assetSession.start();
+        _assetDemoStatus = 'Preload OK — scene sẵn sàng (phase: playing).';
+      } else if (result is SdkFailure<void>) {
+        _assetDemoStatus = 'Preload fail: ${result.message}';
+      }
+    });
   }
 
   // Sample world map: 3 completed (with stars), 1 unlocked, 4 locked —
@@ -556,6 +617,14 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   String _versionGateScenario = 'ok';
   late final AppSessionTracker _sessionTracker;
   late final PlatformCapabilityRegistry _platformCapabilities;
+  // FEAT-47: coordinator instance riêng cho demo, KHÔNG dùng chung với
+  // GameDemoScreen's real Flame session — kịch bản lỗi ở đây cố tình giả
+  // lập (không có asset thật để load trong template RoyGame), nên tách
+  // biệt để không ảnh hưởng session thật của game demo.
+  late final AssetPreloadCoordinator _assetPreload;
+  late final GameSessionController _assetSession;
+  String _assetDemoScenario = 'ok';
+  String _assetDemoStatus = 'Chưa preload.';
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
   // IDEA-48: toggles the demo between topN(3) (always the leaders) and
@@ -2162,6 +2231,89 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ],
                             ),
+                          ),
+                          _Demo(
+                            label: 'AssetPreloadCoordinator (FEAT-47)',
+                            child: Obx(() {
+                              final progress = _assetPreload.progress.value;
+                              final phase = _assetSession.snapshot.value.phase;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  LinearProgressIndicator(value: progress),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Text(
+                                    'Progress: ${(progress * 100).toStringAsFixed(0)}%  '
+                                    '· Session phase: ${phase.name}',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Text(_assetDemoStatus),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  Wrap(
+                                    spacing: NeonTheme.s8,
+                                    runSpacing: NeonTheme.s8,
+                                    children: [
+                                      CommonButton(
+                                        label: 'Preload OK',
+                                        onTap: () => _runAssetDemoPreload('ok'),
+                                      ),
+                                      CommonButton(
+                                        label: 'Preload (optional fail)',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: () => _runAssetDemoPreload(
+                                          'optionalFail',
+                                        ),
+                                      ),
+                                      CommonButton(
+                                        label: 'Preload (required fail)',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: () => _runAssetDemoPreload(
+                                          'requiredFail',
+                                        ),
+                                      ),
+                                      CommonButton(
+                                        label: 'Cancel',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: _assetPreload.cancel,
+                                      ),
+                                      CommonButton(
+                                        label: 'Retry failed',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: () async {
+                                          final result = await _assetPreload
+                                              .retryFailed();
+                                          if (!mounted) return;
+                                          setState(() {
+                                            if (result is SdkSuccess<void>) {
+                                              _assetSession.markReady();
+                                              _assetSession.start();
+                                              _assetDemoStatus =
+                                                  'Retry OK — scene sẵn sàng.';
+                                            } else if (result
+                                                is SdkFailure<void>) {
+                                              _assetDemoStatus =
+                                                  'Retry vẫn fail: ${result.message}';
+                                            }
+                                          });
+                                        },
+                                      ),
+                                      CommonButton(
+                                        label: 'Unload scene',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: () {
+                                          _assetPreload.unloadScene();
+                                          _assetSession.restart();
+                                          setState(
+                                            () => _assetDemoStatus =
+                                                'Đã unload scene.',
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            }),
                           ),
 
                           const SizedBox(height: NeonTheme.s24),

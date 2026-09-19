@@ -27,11 +27,11 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60: mỗi demo section mới đẩy list dài hơn — tăng
+  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47: mỗi demo section mới đẩy list dài hơn — tăng
   // chiều cao viewport ảo để mọi widget phía sau vẫn nằm trong vùng tap
   // được mà không cần scroll (đúng lý do file này dùng physicalSize cố
   // định).
-  tester.view.physicalSize = const Size(1080, 12700);
+  tester.view.physicalSize = const Size(1080, 13200);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -1448,6 +1448,87 @@ void main() {
       // entrance+hold+exit) phải chạy hết trước khi test kết thúc, không
       // sẽ rò Ticker sang test kế tiếp trong cùng file.
       await tester.pump(const Duration(seconds: 3));
+    });
+  });
+
+  group('FEAT-47: AssetPreloadCoordinator demo', () {
+    testWidgets(
+      'bấm "Preload OK": progress đạt 100%, session phase chuyển playing',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(find.widgetWithText(CommonButton, 'Preload OK').first);
+        // 3 item, mỗi loader delay 300ms, atlas → player_sprite tuần tự +
+        // bg_music song song → đợi dư thời gian cho toàn bộ preload xong.
+        await tester.pump(const Duration(milliseconds: 800));
+
+        expect(
+          find.text('Progress: 100%  · Session phase: playing'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('Preload OK — scene sẵn sàng'),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'bấm "Preload (optional fail)": vẫn success, progress vẫn 100%',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Preload (optional fail)').first,
+        );
+        await tester.pump(const Duration(milliseconds: 800));
+
+        expect(find.textContaining('Progress: 100%'), findsOneWidget);
+        expect(
+          find.textContaining('Preload OK — scene sẵn sàng'),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'bấm "Preload (required fail)": fail hẳn, progress không đạt 100%, sau đó Retry OK',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Preload (required fail)').first,
+        );
+        await tester.pump(const Duration(milliseconds: 800));
+
+        expect(find.textContaining('Preload fail'), findsOneWidget);
+        expect(find.textContaining('Progress: 100%'), findsNothing);
+
+        // Chuyển sang kịch bản 'ok' rồi Retry — atlas load lại thành công.
+        await tester.tap(find.widgetWithText(CommonButton, 'Preload OK').first);
+        await tester.pump(const Duration(milliseconds: 800));
+        await tester.tap(find.widgetWithText(CommonButton, 'Retry failed').first);
+        await tester.pump(const Duration(milliseconds: 800));
+
+        expect(find.textContaining('Progress: 100%'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('bấm "Unload scene": trạng thái báo đã unload, không throw', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      await tester.tap(find.widgetWithText(CommonButton, 'Preload OK').first);
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.tap(find.widgetWithText(CommonButton, 'Unload scene').first);
+      await tester.pump();
+
+      expect(find.textContaining('Đã unload scene'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

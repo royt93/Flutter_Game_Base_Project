@@ -12,6 +12,7 @@ export 'core/app_info.dart';
 export 'core/app_translations.dart';
 export 'core/app_session_tracker.dart';
 export 'core/app_version_gate.dart';
+export 'core/asset_preload_coordinator.dart';
 export 'core/audio_manager.dart';
 export 'core/checkpoint_coordinator.dart';
 export 'core/cloud_save_provider.dart';
