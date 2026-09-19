@@ -1414,4 +1414,40 @@ void main() {
       },
     );
   });
+
+  group('FEAT-71: PlatformCapabilityRegistry demo', () {
+    testWidgets('hiện đúng platform + 4 capability của môi trường test (android)', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      expect(find.text('Platform: android'), findsOneWidget);
+      expect(
+        find.text('Haptics: true  · Shaders: true'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Notifications: true  · Background audio: true'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('bấm "Fire haptic": supportsHaptics=true nên chạy nhánh ifSupported', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      await tester.tap(find.text('Fire haptic (with fallback)').last);
+      await tester.pump();
+
+      expect(find.text('Haptic fired'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      // ToastBanner's OverlayEntry/AnimationController lifecycle (~2.4s
+      // entrance+hold+exit) phải chạy hết trước khi test kết thúc, không
+      // sẽ rò Ticker sang test kế tiếp trong cùng file.
+      await tester.pump(const Duration(seconds: 3));
+    });
+  });
 }

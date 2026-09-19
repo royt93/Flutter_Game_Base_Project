@@ -23,6 +23,7 @@ import 'package:roy_casual_kit/core/haptics.dart';
 import 'package:roy_casual_kit/core/local_scoreboard_service.dart';
 import 'package:roy_casual_kit/core/onboarding_coordinator_service.dart';
 import 'package:roy_casual_kit/core/persistent_cooldown_service.dart';
+import 'package:roy_casual_kit/core/platform_capability_registry.dart';
 import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
 import 'package:roy_casual_kit/core/save_slot_manager.dart';
 import 'package:roy_casual_kit/core/replay_recorder.dart';
@@ -434,6 +435,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _sessionTracker =
         AppSessionTracker.maybe ??
         Get.put(AppSessionTracker(), permanent: true);
+    _platformCapabilities =
+        PlatformCapabilityRegistry.maybe ??
+        Get.put(PlatformCapabilityRegistry(), permanent: true);
     // IDEA-43: demo achievement — 3 taps to unlock, so AchievementUnlockToast
     // (via AchievementUnlockListener wrapping this screen below) has
     // something to show without waiting on real game progress.
@@ -551,6 +555,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   late AppVersionGateController _versionGate;
   String _versionGateScenario = 'ok';
   late final AppSessionTracker _sessionTracker;
+  late final PlatformCapabilityRegistry _platformCapabilities;
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
   // IDEA-48: toggles the demo between topN(3) (always the leaders) and
@@ -2112,6 +2117,51 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ],
                               );
                             }),
+                          ),
+                          _Demo(
+                            label: 'PlatformCapabilityRegistry (FEAT-71)',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Platform: ${_platformCapabilities.snapshot.platformKind.name}',
+                                ),
+                                const SizedBox(height: NeonTheme.s8),
+                                Text(
+                                  'Haptics: ${_platformCapabilities.snapshot.supportsHaptics}  '
+                                  '· Shaders: ${_platformCapabilities.snapshot.supportsShaders}',
+                                ),
+                                const SizedBox(height: NeonTheme.s8),
+                                Text(
+                                  'Notifications: ${_platformCapabilities.snapshot.supportsNotifications}  '
+                                  '· Background audio: ${_platformCapabilities.snapshot.supportsBackgroundAudio}',
+                                ),
+                                const SizedBox(height: NeonTheme.s16),
+                                CommonButton(
+                                  label: 'Fire haptic (with fallback)',
+                                  onTap: () =>
+                                      _platformCapabilities.withFallback<void>(
+                                        supported: _platformCapabilities
+                                            .snapshot
+                                            .supportsHaptics,
+                                        ifSupported: () {
+                                          fireHaptic(HapticLevel.light);
+                                          ToastBanner.show(
+                                            context,
+                                            message: 'Haptic fired',
+                                            color: NeonTheme.cyan,
+                                          );
+                                        },
+                                        fallback: () => ToastBanner.show(
+                                          context,
+                                          message:
+                                              'Haptics not supported here — fallback: no-op',
+                                          color: NeonTheme.muted,
+                                        ),
+                                      ),
+                                ),
+                              ],
+                            ),
                           ),
 
                           const SizedBox(height: NeonTheme.s24),
