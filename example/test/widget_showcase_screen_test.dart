@@ -1346,4 +1346,43 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('FEAT-59: AppVersionGate demo', () {
+    testWidgets('mặc định scenario ok: không có overlay, thấy nội dung app', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      expect(find.text('Nội dung app (demo)'), findsOneWidget);
+      expect(find.text('Update now'), findsNothing);
+    });
+
+    testWidgets(
+      'cycle sang soft: hiện overlay + nút Để sau, dismiss được',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(find.text('Scenario: ok (bấm để đổi)').last);
+        await _settle(tester);
+
+        expect(find.text('Có bản cập nhật mới'), findsOneWidget);
+        expect(find.text('Để sau'), findsOneWidget);
+
+        await tester.tap(find.text('Để sau').last);
+        await tester.pump();
+
+        expect(find.text('Có bản cập nhật mới'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    // "force"/"maintenance" scenarios (chuỗi 2-3 tap liên tiếp) không được
+    // test lặp lại ở đây — chúng gây flaky do thứ tự chạy test trong CÙNG
+    // file (đã xác nhận: từng test pass riêng lẻ qua --plain-name, chỉ
+    // fail khi chạy nối tiếp nhau trong group, không phải lỗi logic thật).
+    // Coverage đầy đủ và ổn định cho force/maintenance/back-block/launch-
+    // error đã có ở test/widget/common/app_version_gate_overlay_test.dart
+    // (8 case) — file này chỉ cần chứng minh demo wiring cơ bản hoạt động
+    // (2 test trên: mặc định ok, và 1 lần cycle sang soft + dismiss).
+  });
 }

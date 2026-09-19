@@ -52,6 +52,9 @@ class StorageKeys {
 
   // lib/core/consent_state_service.dart reads/writes this directly.
   static const String consentStateV1 = 'consent_state_v1';
+
+  // lib/core/app_version_gate.dart reads/writes this directly.
+  static const String appVersionSoftPromptLastMs = 'app_version_soft_prompt_last_ms';
 }
 
 /// Shared local storage service (wraps SharedPreferences).

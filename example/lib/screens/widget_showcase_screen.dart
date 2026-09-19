@@ -5,7 +5,10 @@ import 'package:get/get.dart';
 
 import 'package:roy_casual_kit/core/achievement_service.dart';
 import 'package:roy_casual_kit/core/analytics_provider.dart';
+import 'package:roy_casual_kit/core/app_info.dart';
+import 'package:roy_casual_kit/core/app_version_gate.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
+import 'package:roy_casual_kit/core/remote_config_service.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/consent_gated_analytics_provider.dart';
 import 'package:roy_casual_kit/core/consent_state_service.dart';
@@ -403,6 +406,28 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       'shop',
       (command) => setState(() => _deepLinkLog = 'shop: mở cửa hàng'),
     );
+    _versionGateRemoteConfig = RemoteConfigService(
+      assetPath: 'assets/nonexistent_app_version_gate.json',
+      fetchRemote: () async {
+        switch (_versionGateScenario) {
+          case 'soft':
+            return {'appVersionRecommended': '9999.0.0'};
+          case 'force':
+            return {'appVersionMinimum': '9999.0.0'};
+          case 'maintenance':
+            return {
+              'appVersionMaintenanceActive': true,
+              'appVersionMaintenanceMessage':
+                  'Đang bảo trì demo, quay lại sau nhé.',
+            };
+          default:
+            return {};
+        }
+      },
+    );
+    _versionGate = AppVersionGateController(
+      remoteConfig: _versionGateRemoteConfig,
+    );
     // IDEA-43: demo achievement — 3 taps to unlock, so AchievementUnlockToast
     // (via AchievementUnlockListener wrapping this screen below) has
     // something to show without waiting on real game progress.
@@ -516,6 +541,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     text: 'roycasualkit://open/level/5',
   );
   String _deepLinkLog = 'Chưa có deep link nào.';
+  late RemoteConfigService _versionGateRemoteConfig;
+  late AppVersionGateController _versionGate;
+  String _versionGateScenario = 'ok';
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
   // IDEA-48: toggles the demo between topN(3) (always the leaders) and
@@ -1176,6 +1204,107 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   style: TextStyle(
                                     color: NeonTheme.muted,
                                     fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _Demo(
+                            label: 'AppVersionGate (FEAT-59)',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CommonButton(
+                                  label:
+                                      'Scenario: $_versionGateScenario (bấm để đổi)',
+                                  onTap: () async {
+                                    const order = [
+                                      'ok',
+                                      'soft',
+                                      'force',
+                                      'maintenance',
+                                    ];
+                                    final next =
+                                        order[(order.indexOf(
+                                                  _versionGateScenario,
+                                                ) +
+                                                1) %
+                                            order.length];
+                                    // Instance MỚI mỗi lần đổi scenario —
+                                    // RemoteConfigService.init() không reset
+                                    // _config khi load asset lỗi (giữ config
+                                    // cũ làm fallback, đúng ý ENH-58), nên
+                                    // gọi lại init() nhiều lần trên CÙNG 1
+                                    // instance sẽ TÍCH LUỸ key cũ thay vì
+                                    // thay hẳn — không đúng ý demo "đổi hẳn
+                                    // sang scenario khác".
+                                    final remoteConfig = RemoteConfigService(
+                                      assetPath:
+                                          'assets/nonexistent_app_version_gate.json',
+                                      fetchRemote: () async {
+                                        switch (next) {
+                                          case 'soft':
+                                            return {
+                                              'appVersionRecommended':
+                                                  '9999.0.0',
+                                            };
+                                          case 'force':
+                                            return {
+                                              'appVersionMinimum': '9999.0.0',
+                                            };
+                                          case 'maintenance':
+                                            return {
+                                              'appVersionMaintenanceActive':
+                                                  true,
+                                              'appVersionMaintenanceMessage':
+                                                  'Đang bảo trì demo, quay lại sau nhé.',
+                                            };
+                                          default:
+                                            return {};
+                                        }
+                                      },
+                                    );
+                                    await remoteConfig.init();
+                                    if (!mounted) return;
+                                    setState(() {
+                                      _versionGateScenario = next;
+                                      _versionGateRemoteConfig = remoteConfig;
+                                      _versionGate = AppVersionGateController(
+                                        remoteConfig: remoteConfig,
+                                      );
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: NeonTheme.s16),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: SizedBox(
+                                    height: 320,
+                                    child: AppVersionGateOverlay(
+                                      decision: _versionGate.decisionFor(
+                                        kAppVersion,
+                                      ),
+                                      config: _versionGate.config,
+                                      launchStore: (url) async {
+                                        ToastBanner.show(
+                                          context,
+                                          message: 'Mở store: $url',
+                                          color: NeonTheme.cyan,
+                                        );
+                                        return true;
+                                      },
+                                      onSoftDismiss: () => setState(
+                                        () => _versionGate
+                                            .recordSoftPromptDismissed(),
+                                      ),
+                                      child: Container(
+                                        color: NeonTheme.card,
+                                        alignment: Alignment.center,
+                                        child: const Text(
+                                          'Nội dung app (demo)',
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],

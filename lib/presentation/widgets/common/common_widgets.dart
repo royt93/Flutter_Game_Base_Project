@@ -8,6 +8,7 @@
 library;
 
 // Buttons & Interactive
+export 'app_version_gate_overlay.dart';
 export 'async_common_button.dart';
 export 'common_button.dart';
 export 'hold_to_confirm_button.dart';
