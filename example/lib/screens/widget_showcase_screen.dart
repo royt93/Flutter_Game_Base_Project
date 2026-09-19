@@ -15,6 +15,7 @@ import 'package:roy_casual_kit/core/game_session_controller.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/player_progression_service.dart';
 import 'package:roy_casual_kit/core/inventory_service.dart';
+import 'package:roy_casual_kit/core/offline_outbox_service.dart';
 import 'package:roy_casual_kit/core/remote_config_service.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/consent_gated_analytics_provider.dart';
@@ -478,6 +479,17 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
           ),
           permanent: true,
         );
+    _outbox =
+        OfflineOutboxService.maybe ??
+        Get.put(
+          OfflineOutboxService(
+            storage: StorageService.to,
+            uploader: _outboxUploader,
+            connectivity: _connectivity,
+            conflictPolicy: ConflictPolicy.manual,
+          ),
+          permanent: true,
+        );
     // IDEA-43: demo achievement — 3 taps to unlock, so AchievementUnlockToast
     // (via AchievementUnlockListener wrapping this screen below) has
     // something to show without waiting on real game progress.
@@ -596,6 +608,22 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
         color: NeonTheme.purple,
       );
     }
+  }
+
+  // FEAT-67: uploader giả lập — item có payload['forceConflict']==true luôn
+  // báo conflict (mô phỏng server có giá trị khác), còn lại ack thành công.
+  Future<SyncOutcome> _outboxUploader(
+    Map<String, Object?> payload,
+    String idempotencyKey,
+  ) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    if (payload['forceConflict'] == true) {
+      return const SyncConflict({
+        'score': 999,
+        'reason': 'server có giá trị khác',
+      });
+    }
+    return const SyncAck();
   }
 
   Future<void> _inventoryGrant(String itemId, int quantity) async {
@@ -745,6 +773,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   };
   late final InventoryService _inventory;
   String _inventoryStatus = '';
+  late final OfflineOutboxService _outbox;
+  int _outboxCounter = 0;
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
   // IDEA-48: toggles the demo between topN(3) (always the leaders) and
@@ -2608,6 +2638,117 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                             equipped: !swordSlot.equipped,
                                           );
                                         },
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                          _Demo(
+                            label: 'OfflineOutboxService (FEAT-67)',
+                            child: Obx(() {
+                              final pending = _outbox.items
+                                  .where((i) => !i.manualReview)
+                                  .toList();
+                              final manual = _outbox.manualReviewItems;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Pending: ${pending.length}  · '
+                                    'Manual review: ${manual.length}',
+                                  ),
+                                  for (final item in pending)
+                                    Text(
+                                      '${item.idempotencyKey}: '
+                                      '${item.payload['score']}',
+                                    ),
+                                  for (final item in manual)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: NeonTheme.s8,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Conflict ${item.idempotencyKey}: '
+                                            'local ${item.payload['score']} '
+                                            'vs server ${item.remotePayload?['score']}',
+                                          ),
+                                          Wrap(
+                                            spacing: NeonTheme.s8,
+                                            children: [
+                                              CommonButton(
+                                                label: 'Keep local',
+                                                variant: CommonButtonVariant
+                                                    .secondary,
+                                                onTap: () =>
+                                                    _outbox.resolveManual(
+                                                      idempotencyKey:
+                                                          item.idempotencyKey,
+                                                      resolution:
+                                                          ManualResolution
+                                                              .keepLocal,
+                                                    ),
+                                              ),
+                                              CommonButton(
+                                                label: 'Accept remote',
+                                                variant: CommonButtonVariant
+                                                    .secondary,
+                                                onTap: () =>
+                                                    _outbox.resolveManual(
+                                                      idempotencyKey:
+                                                          item.idempotencyKey,
+                                                      resolution:
+                                                          ManualResolution
+                                                              .acceptRemote,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  Wrap(
+                                    spacing: NeonTheme.s8,
+                                    runSpacing: NeonTheme.s8,
+                                    children: [
+                                      CommonButton(
+                                        label: 'Enqueue OK',
+                                        onTap: () {
+                                          _outboxCounter++;
+                                          _outbox.enqueue(
+                                            idempotencyKey:
+                                                'score_$_outboxCounter',
+                                            payload: {
+                                              'score': _outboxCounter * 10,
+                                            },
+                                          );
+                                        },
+                                      ),
+                                      CommonButton(
+                                        label: 'Enqueue (conflict)',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: () {
+                                          _outboxCounter++;
+                                          _outbox.enqueue(
+                                            idempotencyKey:
+                                                'score_$_outboxCounter',
+                                            payload: {
+                                              'score': _outboxCounter * 10,
+                                              'forceConflict': true,
+                                            },
+                                          );
+                                        },
+                                      ),
+                                      CommonButton(
+                                        label: 'Drain now',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: _outbox.drain,
                                       ),
                                     ],
                                   ),

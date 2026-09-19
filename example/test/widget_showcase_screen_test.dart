@@ -1689,4 +1689,71 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('FEAT-67: OfflineOutboxService demo', () {
+    testWidgets(
+      'bấm "Enqueue OK" rồi "Drain now": item biến mất khỏi pending',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        expect(find.text('Pending: 0  · Manual review: 0'), findsOneWidget);
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Enqueue OK').first,
+        );
+        await tester.pump();
+        expect(find.text('Pending: 1  · Manual review: 0'), findsOneWidget);
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Drain now').first,
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Pending: 0  · Manual review: 0'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'bấm "Enqueue (conflict)" rồi Drain: item chuyển sang manual review',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Enqueue (conflict)').first,
+        );
+        await tester.pump();
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Drain now').first,
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Pending: 0  · Manual review: 1'), findsOneWidget);
+        expect(find.textContaining('Conflict score_'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'manual review: bấm "Accept remote" xoá item khỏi outbox hẳn',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Enqueue (conflict)').first,
+        );
+        await tester.pump();
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Drain now').first,
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Pending: 0  · Manual review: 1'), findsOneWidget);
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Accept remote').first,
+        );
+        await tester.pump();
+        expect(find.text('Pending: 0  · Manual review: 0'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }
