@@ -14,6 +14,7 @@ import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/game_session_controller.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/player_progression_service.dart';
+import 'package:roy_casual_kit/core/inventory_service.dart';
 import 'package:roy_casual_kit/core/remote_config_service.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/consent_gated_analytics_provider.dart';
@@ -467,6 +468,16 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
           ),
           permanent: true,
         );
+    _inventory =
+        InventoryService.maybe ??
+        Get.put(
+          InventoryService(
+            storage: StorageService.to,
+            itemCatalog: _inventoryCatalog,
+            capacity: 4,
+          ),
+          permanent: true,
+        );
     // IDEA-43: demo achievement — 3 taps to unlock, so AchievementUnlockToast
     // (via AchievementUnlockListener wrapping this screen below) has
     // something to show without waiting on real game progress.
@@ -587,6 +598,30 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     }
   }
 
+  Future<void> _inventoryGrant(String itemId, int quantity) async {
+    final result = await _inventory.grant(
+      lines: [InventoryLine(itemId: itemId, quantity: quantity)],
+      transactionId: 'demo_grant_${DateTime.now().microsecondsSinceEpoch}',
+    );
+    setState(() {
+      _inventoryStatus = result is SdkFailure<InventorySnapshot>
+          ? 'Grant fail: ${result.message}'
+          : 'Granted $quantity x $itemId';
+    });
+  }
+
+  Future<void> _inventoryConsume(String itemId, int quantity) async {
+    final result = await _inventory.consume(
+      lines: [InventoryLine(itemId: itemId, quantity: quantity)],
+      transactionId: 'demo_consume_${DateTime.now().microsecondsSinceEpoch}',
+    );
+    setState(() {
+      _inventoryStatus = result is SdkFailure<InventorySnapshot>
+          ? 'Consume fail: ${result.message}'
+          : 'Consumed $quantity x $itemId';
+    });
+  }
+
   Future<void> _runAssetDemoPreload(String scenario) async {
     setState(() {
       _assetDemoScenario = scenario;
@@ -702,6 +737,14 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   late final EconomyWallet _progressionWallet;
   late final RewardTransactionPipeline _progressionPipeline;
   late final PlayerProgressionService _progression;
+  // FEAT-44: catalog riêng cho demo — potion stack tới 10, sword không
+  // stack nhưng equip được.
+  static const _inventoryCatalog = {
+    'potion': ItemDefinition(id: 'potion', maxStack: 10),
+    'sword': ItemDefinition(id: 'sword', equippable: true),
+  };
+  late final InventoryService _inventory;
+  String _inventoryStatus = '';
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
   // IDEA-48: toggles the demo between topN(3) (always the leaders) and
@@ -2506,6 +2549,65 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                         variant: CommonButtonVariant.secondary,
                                         onTap: () =>
                                             _grantProgressionXp(context, 300),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                          _Demo(
+                            label: 'InventoryService (FEAT-44)',
+                            child: Obx(() {
+                              final snap = _inventory.snapshot.value;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Slots: ${snap.slots.length}/${snap.capacity}',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  for (final slot in snap.slots)
+                                    Text(
+                                      '${slot.itemId} x${slot.quantity}'
+                                      '${slot.equipped ? ' (equipped)' : ''}',
+                                    ),
+                                  if (snap.slots.isEmpty) const Text('(rỗng)'),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Text(_inventoryStatus),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  Wrap(
+                                    spacing: NeonTheme.s8,
+                                    runSpacing: NeonTheme.s8,
+                                    children: [
+                                      CommonButton(
+                                        label: 'Grant potion x3',
+                                        onTap: () =>
+                                            _inventoryGrant('potion', 3),
+                                      ),
+                                      CommonButton(
+                                        label: 'Consume potion x2',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: () =>
+                                            _inventoryConsume('potion', 2),
+                                      ),
+                                      CommonButton(
+                                        label: 'Grant sword',
+                                        onTap: () =>
+                                            _inventoryGrant('sword', 1),
+                                      ),
+                                      CommonButton(
+                                        label: 'Equip sword',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: () {
+                                          final swords = snap.slotsFor('sword');
+                                          if (swords.isEmpty) return;
+                                          final swordSlot = swords.first;
+                                          _inventory.setEquipped(
+                                            slotId: swordSlot.slotId,
+                                            equipped: !swordSlot.equipped,
+                                          );
+                                        },
                                       ),
                                     ],
                                   ),

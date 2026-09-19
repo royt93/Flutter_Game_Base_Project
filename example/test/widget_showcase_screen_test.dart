@@ -1633,4 +1633,60 @@ void main() {
       },
     );
   });
+
+  group('FEAT-44: InventoryService demo', () {
+    testWidgets('bấm "Grant potion x3": hiện đúng slot potion x3', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      expect(find.text('(rỗng)'), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(CommonButton, 'Grant potion x3').first,
+      );
+      await tester.pump();
+
+      expect(find.text('potion x3'), findsOneWidget);
+      expect(find.textContaining('Granted 3 x potion'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'grant rồi consume: quantity giảm đúng, hết hàng thì slot biến mất',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Grant potion x3').first,
+        );
+        await tester.pump();
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Consume potion x2').first,
+        );
+        await tester.pump();
+
+        expect(find.text('potion x1'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('grant sword rồi Equip sword: hiện đúng trạng thái equipped', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      await tester.tap(find.widgetWithText(CommonButton, 'Grant sword').first);
+      await tester.pump();
+      expect(find.text('sword x1'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(CommonButton, 'Equip sword').first);
+      await tester.pump();
+      expect(find.text('sword x1 (equipped)'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(CommonButton, 'Equip sword').first);
+      await tester.pump();
+      expect(find.text('sword x1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
