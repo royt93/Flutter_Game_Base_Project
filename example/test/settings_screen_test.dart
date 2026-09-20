@@ -6,6 +6,7 @@ import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/locale_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/pseudo_locale.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/list_tile_row.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/toggle_switch.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
@@ -122,8 +123,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(tester.takeException(), isNull);
-      // Dark-mode and accessibility switches remain available without audio.
-      expect(find.byType(CandyToggleSwitch), findsNWidgets(2));
+      // Dark-mode, accessibility, and pseudo-locale (FEAT-79, always
+      // visible under kDebugMode which flutter test always runs as)
+      // switches remain available without audio.
+      expect(find.byType(CandyToggleSwitch), findsNWidgets(3));
       expect(find.widgetWithText(CommonListTile, 'Dark Mode'), findsOneWidget);
       // Language picker still renders fine on its own.
       expect(find.text('Language'), findsOneWidget);
@@ -281,5 +284,46 @@ void main() {
       expect(store.getBool(StorageKeys.colorBlindSafe), isTrue);
       expect(NeonTheme.gemColors, NeonTheme.colorBlindSafeGemColors);
     });
+  });
+
+  group('FEAT-79: Pseudo-locale (QA) toggle', () {
+    testWidgets(
+      'bật toggle -> title đổi sang bản pseudo-localize; tắt lại -> về tiếng Anh gốc',
+      (tester) async {
+        await _boot();
+        await tester.pumpWidget(_wrap(const SettingsScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // NeonAppBar's title renders via StrokeText — a stroke layer +
+        // fill layer, each its own Text widget with identical text, so
+        // any assertion here uses findsWidgets (>=1) not findsOneWidget.
+        expect(find.text('Settings'), findsWidgets);
+
+        final row = find.widgetWithText(CommonListTile, 'Pseudo-locale (QA)');
+        expect(row, findsOneWidget);
+        // Invoking onChanged directly (not tester.tap) — same workaround
+        // as `tapLocaleRow` above: Get.updateLocale ultimately calls
+        // GetX's forceAppUpdate/performReassemble, which conflicts with
+        // Flutter test's scheduler-phase assertion when triggered from
+        // inside a real simulated gesture's frame.
+        CandyToggleSwitch toggleWidget() =>
+            tester.widget<CandyToggleSwitch>(
+              find.descendant(of: row, matching: find.byType(CandyToggleSwitch)),
+            );
+
+        toggleWidget().onChanged!(true);
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.text(pseudoLocalize('Settings')), findsWidgets);
+        expect(find.text('Settings'), findsNothing);
+        expect(tester.takeException(), isNull);
+
+        toggleWidget().onChanged!(false);
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.text('Settings'), findsWidgets);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

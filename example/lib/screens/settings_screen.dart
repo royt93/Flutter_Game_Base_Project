@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -16,6 +17,26 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  // FEAT-79: debug-only QA toggle — never shown outside kDebugMode, so it
+  // can never leak into a release build's UI (see
+  // PseudoLocaleTranslations's own doc comment for the same discipline at
+  // the translations-data level).
+  bool _pseudoLocaleEnabled = false;
+  Locale? _localeBeforePseudo;
+
+  void _togglePseudoLocale(bool enabled, LocaleService locale) {
+    if (enabled) {
+      _localeBeforePseudo = locale.current.value;
+      Get.addTranslations(
+        PseudoLocaleTranslations(baseKeys: AppTranslations().keys['en']!).keys,
+      );
+      Get.updateLocale(PseudoLocaleTranslations.defaultLocale);
+    } else {
+      Get.updateLocale(_localeBeforePseudo ?? AppTranslations.fallback);
+    }
+    setState(() => _pseudoLocaleEnabled = enabled);
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = Get.find<LocaleService>();
@@ -86,6 +107,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         },
                       ),
                     ),
+                    // FEAT-79: QA-only, never shown in a release build —
+                    // catches hardcoded strings (stay plain ASCII while
+                    // everything real turns accented) and overflow
+                    // (pseudo-localized text runs ~40% longer) before a
+                    // real translator ever touches a key.
+                    if (kDebugMode)
+                      CommonListTile(
+                        title: 'Pseudo-locale (QA)',
+                        subtitle: 'Debug only — bắt hardcode/overflow',
+                        trailing: CandyToggleSwitch(
+                          value: _pseudoLocaleEnabled,
+                          onChanged: (v) => _togglePseudoLocale(v, locale),
+                        ),
+                      ),
                   ],
                 ),
               ),
