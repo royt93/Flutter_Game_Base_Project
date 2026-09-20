@@ -27,11 +27,11 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58/FEAT-43/FEAT-52: mỗi demo section mới đẩy list dài hơn —
-  // tăng chiều cao viewport ảo để mọi widget phía sau vẫn nằm trong vùng
-  // tap được mà không cần scroll (đúng lý do file này dùng physicalSize
-  // cố định).
-  tester.view.physicalSize = const Size(1080, 14600);
+  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58/FEAT-43/FEAT-52/FEAT-56: mỗi demo section mới đẩy list
+  // dài hơn — tăng chiều cao viewport ảo để mọi widget phía sau vẫn nằm
+  // trong vùng tap được mà không cần scroll (đúng lý do file này dùng
+  // physicalSize cố định).
+  tester.view.physicalSize = const Size(1080, 15000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -1692,6 +1692,65 @@ void main() {
       await tester.tap(find.widgetWithText(CommonButton, 'Equip sword').first);
       await tester.pump();
       expect(find.text('sword x1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('FEAT-56: InventoryGrid demo', () {
+    testWidgets('hiện đúng tile item + tile locked, tap chọn/bỏ chọn đúng', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      await tester.tap(find.widgetWithText(CommonButton, 'Grant potion x3').first);
+      await tester.pump();
+
+      expect(find.text('potion'), findsOneWidget);
+      expect(find.text('x3'), findsOneWidget);
+      // capacity 4, unlockedCapacity 3 -> đúng 1 ô locked.
+      // Scope vào InventoryGrid vì RewardChoicePanel/LevelSelectGrid demo
+      // khác trong cùng screen cũng dùng Icons.lock_rounded.
+      expect(
+        find.descendant(
+          of: find.byType(InventoryGrid),
+          matching: find.byIcon(Icons.lock_rounded),
+        ),
+        findsOneWidget,
+      );
+
+      final tileFinder = find.byKey(const ValueKey('inv_grid_tile_1'));
+      var tile = tester.widget<DecoratedBox>(tileFinder);
+      var border = (tile.decoration as BoxDecoration).border as Border;
+      expect(border.top.color, NeonTheme.inkSoft); // common rarity, chưa chọn
+
+      await tester.tap(find.text('potion'));
+      await tester.pump();
+
+      tile = tester.widget<DecoratedBox>(tileFinder);
+      border = (tile.decoration as BoxDecoration).border as Border;
+      expect(border.top.color, NeonTheme.gold); // đã chọn
+
+      await tester.tap(find.text('potion'));
+      await tester.pump();
+
+      tile = tester.widget<DecoratedBox>(tileFinder);
+      border = (tile.decoration as BoxDecoration).border as Border;
+      expect(border.top.color, NeonTheme.inkSoft); // bỏ chọn lại
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('grant sword rồi equip: InventoryGrid hiện đúng badge equipped', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      await tester.tap(find.widgetWithText(CommonButton, 'Grant sword').first);
+      await tester.pump();
+      await tester.tap(find.widgetWithText(CommonButton, 'Equip sword').first);
+      await tester.pump();
+
+      expect(find.text('sword'), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

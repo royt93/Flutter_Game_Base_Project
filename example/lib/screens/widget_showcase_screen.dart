@@ -781,10 +781,17 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // stack nhưng equip được.
   static const _inventoryCatalog = {
     'potion': ItemDefinition(id: 'potion', maxStack: 10),
-    'sword': ItemDefinition(id: 'sword', equippable: true),
+    'sword': ItemDefinition(
+      id: 'sword',
+      equippable: true,
+      rarity: ItemRarity.rare,
+    ),
   };
   late final InventoryService _inventory;
   String _inventoryStatus = '';
+  // FEAT-56: InventoryGrid demo's own selection — the grid never tracks
+  // this itself (see class doc), a caller re-passes it after onSlotTap.
+  int? _selectedInventorySlotId;
   late final OfflineOutboxService _outbox;
   int _outboxCounter = 0;
   late final AchievementService _achievements;
@@ -2696,6 +2703,95 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       ],
                                     ),
                                   ],
+                                );
+                              }),
+                            ),
+                            _Demo(
+                              label: 'InventoryGrid (FEAT-56)',
+                              child: Obx(() {
+                                final snap = _inventory.snapshot.value;
+                                return SizedBox(
+                                  height: 200,
+                                  child: InventoryGrid(
+                                    snapshot: snap,
+                                    unlockedCapacity: 3,
+                                    crossAxisCount: 4,
+                                    selectedSlotId: _selectedInventorySlotId,
+                                    onSlotTap: (slot) => setState(
+                                      () => _selectedInventorySlotId =
+                                          _selectedInventorySlotId ==
+                                              slot.slotId
+                                          ? null
+                                          : slot.slotId,
+                                    ),
+                                    onReorder: (from, to) =>
+                                        _inventory.moveSlot(
+                                          fromSlotId: from,
+                                          toSlotId: to,
+                                        ),
+                                    itemBuilder: (context, slot, isSelected) {
+                                      final def =
+                                          _inventoryCatalog[slot.itemId];
+                                      final rarityColor = switch (def?.rarity) {
+                                        ItemRarity.rare => NeonTheme.cyan,
+                                        ItemRarity.epic => NeonTheme.purple,
+                                        ItemRarity.legendary => NeonTheme.gold,
+                                        _ => NeonTheme.inkSoft,
+                                      };
+                                      return DecoratedBox(
+                                        key: ValueKey(
+                                          'inv_grid_tile_${slot.slotId}',
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: NeonTheme.card,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? NeonTheme.gold
+                                                : rarityColor,
+                                            width: isSelected ? 3 : 2,
+                                          ),
+                                        ),
+                                        child: Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            Text(
+                                              slot.itemId,
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: NeonTheme.ink,
+                                              ),
+                                            ),
+                                            if (slot.quantity > 1)
+                                              Positioned(
+                                                right: 2,
+                                                bottom: 2,
+                                                child: Text(
+                                                  'x${slot.quantity}',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: NeonTheme.ink,
+                                                  ),
+                                                ),
+                                              ),
+                                            if (slot.equipped)
+                                              const Positioned(
+                                                left: 2,
+                                                top: 2,
+                                                child: Icon(
+                                                  Icons.check_circle,
+                                                  size: 12,
+                                                  color: Colors.green,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 );
                               }),
                             ),
