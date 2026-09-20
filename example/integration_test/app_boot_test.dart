@@ -432,18 +432,35 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.byType(SettingsScreen), findsOneWidget);
-    // The device may retain Vietnamese locale; the accessibility row remains
-    // the last CommonListTile regardless of translation.
-    final row = find.byType(CommonListTile).last;
+    // BUG-38: used to target `find.byType(CommonListTile).last`, assuming
+    // the accessibility row stayed last — FEAT-79's "Pseudo-locale (QA)"
+    // row (kDebugMode-only, always visible under `flutter test`) was added
+    // AFTER it, silently making that assumption false and this test tap
+    // the wrong toggle. Target the accessibility row by its own
+    // (locale-aware) title text instead of positional order.
+    final row = find.widgetWithText(CommonListTile, 'color_blind_safe'.tr);
     final toggle = find.descendant(
       of: row,
       matching: find.byType(CandyToggleSwitch),
     );
+
+    // BUG-38: StorageService persists real SharedPreferences on a real
+    // device across separate `flutter test` runs (no fresh state per run
+    // like a CI emulator) — an earlier smoke-test session may have already
+    // left this flag `true`, so asserting a hardcoded `isTrue` after one
+    // tap is not idempotent. Read the actual starting value, assert the
+    // tap flips it, then flip it back so a repeated run on the same
+    // device stays stable either way.
+    final before = NeonTheme.colorBlindSafe;
     await tester.tap(toggle);
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(NeonTheme.colorBlindSafe, isTrue);
+    expect(NeonTheme.colorBlindSafe, !before);
     expect(tester.takeException(), isNull);
+
+    await tester.tap(toggle);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(NeonTheme.colorBlindSafe, before);
   });
 
   testWidgets('BUG-34: WheelSpinner accepts a valid result on device', (
