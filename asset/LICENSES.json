@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "path": "asset/audio/bkg.ogg",
+      "owner": "royt93",
+      "license": "MIT",
+      "source": "original composition, written for this project",
+      "attributionRequired": false,
+      "distributable": true
+    },
+    {
+      "path": "asset/fonts/Baloo2.ttf",
+      "owner": "Google Fonts (Baloo2 contributors)",
+      "license": "OFL-1.1",
+      "source": "https://fonts.google.com/specimen/Baloo+2",
+      "attributionRequired": false,
+      "distributable": true
+    },
+    {
+      "path": "shaders/neon_glow.frag",
+      "owner": "royt93",
+      "license": "MIT",
+      "source": "original work, written for this project",
+      "attributionRequired": false,
+      "distributable": true
+    },
+    {
+      "path": "shaders/aurora_bg.frag",
+      "owner": "royt93",
+      "license": "MIT",
+      "source": "original work, written for this project",
+      "attributionRequired": false,
+      "distributable": true
+    }
+  ]
+}
