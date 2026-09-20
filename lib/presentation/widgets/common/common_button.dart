@@ -86,6 +86,10 @@ class CommonButton extends StatelessWidget {
     final outlined = variant == CommonButtonVariant.secondary;
     return Container(
       width: width ?? 240,
+      // FEAT-69: golden matrix runner caught this at 47.0 (1px under
+      // Android's 48dp minimum tap target — a real, if tiny, accessibility
+      // miss content-driven height had never happened to clear).
+      constraints: const BoxConstraints(minHeight: 48),
       padding: const EdgeInsets.symmetric(
         vertical: NeonTheme.s8,
         horizontal: NeonTheme.s16,
