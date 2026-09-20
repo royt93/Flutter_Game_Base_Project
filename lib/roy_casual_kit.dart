@@ -94,6 +94,7 @@ export 'presentation/game/roy_game.dart';
 export 'presentation/game/pooled_component.dart';
 export 'presentation/widgets/aurora_bg_layer.dart';
 export 'presentation/widgets/flame_tracked_overlay.dart';
+export 'presentation/widgets/focus_trap_scope.dart';
 export 'presentation/widgets/neon_app_bar.dart';
 export 'presentation/widgets/neon_aura_layer.dart';
 export 'presentation/widgets/neon_bg.dart';

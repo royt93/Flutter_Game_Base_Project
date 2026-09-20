@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../core/game_session_controller.dart';
 import '../../../core/neon_theme.dart';
+import '../focus_trap_scope.dart';
 import '../neon_dialog.dart';
 import 'common_button.dart';
 
@@ -30,13 +31,15 @@ import 'common_button.dart';
 ///   doesn't know a game's settings screen or what "quit" means for it) —
 ///   leaving either `null` hides that one button instead of wiring a no-op.
 ///
-/// Focus: the panel is its own [FocusScope] and requests focus as soon as
-/// it becomes visible, so a keyboard/TV-remote/screen-reader user lands on
-/// the pause menu rather than whatever was focused behind it. This traps
-/// *focus-scope ownership*, not per-button Tab activation — `CommonButton`
-/// (like the rest of this kit's buttons) is gesture-only today with no
-/// keyboard-activation wiring of its own; giving every button real keyboard
-/// support is a separate, kit-wide change out of this widget's scope.
+/// Focus: the panel is wrapped in [FocusTrapScope] (FEAT-82), which
+/// autofocuses into the panel as soon as it becomes visible AND restores
+/// focus to whatever had it right before, the moment the panel is
+/// dismissed — a keyboard/TV-remote/gamepad/screen-reader user lands on
+/// the pause menu and gets their exact place back afterward, not
+/// wherever [FocusManager] happens to fall back to. Every button inside
+/// (via `CommonButton`'s own `PressableScale`) is real-keyboard-
+/// activatable (Enter/Space/gamepad A), not gesture-only — closes the gap
+/// this doc comment used to flag as out of scope for FEAT-53.
 ///
 /// Game-time coordination is automatic and needs no wiring here: a
 /// `GameTimeController` built with `session:` this same [session] already
@@ -121,8 +124,7 @@ class PauseOverlay extends StatelessWidget {
 
   Widget _buildPanel(BuildContext context) {
     final c = color ?? NeonTheme.cyan;
-    return FocusScope(
-      autofocus: true,
+    return FocusTrapScope(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 360),
         margin: const EdgeInsets.symmetric(horizontal: NeonTheme.s24),

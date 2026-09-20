@@ -221,4 +221,48 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  group('FEAT-82: focus trap/release qua đúng modal lifecycle', () {
+    testWidgets(
+      'pause khi 1 nút game đang focus -> panel giành focus; resume -> focus trả lại đúng nút đó',
+      (tester) async {
+        final session = _playingSession();
+        final gameButtonFocus = FocusNode(debugLabel: 'gameButton');
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Stack(
+                children: [
+                  Center(
+                    child: ElevatedButton(
+                      focusNode: gameButtonFocus,
+                      onPressed: () {},
+                      child: const Text('game action'),
+                    ),
+                  ),
+                  PauseOverlay(session: session),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        gameButtonFocus.requestFocus();
+        await tester.pump();
+        expect(gameButtonFocus.hasFocus, isTrue);
+
+        session.pause(GamePauseReason.user);
+        await tester.pumpAndSettle();
+
+        expect(gameButtonFocus.hasFocus, isFalse);
+
+        await tester.tap(_button('Resume').first);
+        await tester.pumpAndSettle();
+        await tester.pump();
+
+        expect(gameButtonFocus.hasFocus, isTrue);
+        gameButtonFocus.dispose();
+      },
+    );
+  });
 }
