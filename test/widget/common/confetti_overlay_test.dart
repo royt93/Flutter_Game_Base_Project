@@ -44,45 +44,31 @@ void main() {
       expect(confettiOpacityAt(0, 0), 0.0);
     });
 
-    test(
-      'generateConfettiParticles: exactly [count] particles, colors drawn '
-      'from the given palette',
-      () {
-        const palette = [Colors.red, Colors.blue];
-        final particles = generateConfettiParticles(
-          12,
-          palette,
-          random: Random(1),
-        );
-        expect(particles.length, 12);
-        for (final p in particles) {
-          expect(palette, contains(p.color));
-        }
-      },
-    );
+    test('generateConfettiParticles: exactly [count] particles, colors drawn '
+        'from the given palette', () {
+      const palette = [Colors.red, Colors.blue];
+      final particles = generateConfettiParticles(
+        12,
+        palette,
+        random: Random(1),
+      );
+      expect(particles.length, 12);
+      for (final p in particles) {
+        expect(palette, contains(p.color));
+      }
+    });
 
     test('ConfettiParticle: shape defaults to rect when omitted', () {
       expect(particle.shape, ConfettiShape.rect);
     });
 
-    test(
-      'IDEA-20: generateConfettiParticles mixes rect and circle shapes',
-      () {
-        final particles = generateConfettiParticles(
-          40,
-          const [Colors.red],
-          random: Random(1),
-        );
-        expect(
-          particles.any((p) => p.shape == ConfettiShape.rect),
-          isTrue,
-        );
-        expect(
-          particles.any((p) => p.shape == ConfettiShape.circle),
-          isTrue,
-        );
-      },
-    );
+    test('IDEA-20: generateConfettiParticles mixes rect and circle shapes', () {
+      final particles = generateConfettiParticles(40, const [
+        Colors.red,
+      ], random: Random(1));
+      expect(particles.any((p) => p.shape == ConfettiShape.rect), isTrue);
+      expect(particles.any((p) => p.shape == ConfettiShape.circle), isTrue);
+    });
   });
 
   group('ConfettiOverlay widget', () {
@@ -186,7 +172,9 @@ void main() {
         // burst's private painter type instead of find.byType(CustomPaint)).
         final confettiPainters = tester
             .widgetList<CustomPaint>(find.byType(CustomPaint))
-            .where((w) => w.painter.runtimeType.toString() == '_ConfettiPainter');
+            .where(
+              (w) => w.painter.runtimeType.toString() == '_ConfettiPainter',
+            );
         expect(confettiPainters, isEmpty);
         expect(tester.takeException(), isNull);
       },

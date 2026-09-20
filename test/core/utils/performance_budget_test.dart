@@ -99,41 +99,41 @@ void main() {
       );
     });
 
-    test('regression: tệ hơn baseline quá tolerance dù vẫn trong budget cứng', () {
-      final result = checkPerformanceBudgets(
-        measurements: [_metric(value: 90)],
-        baseline: [_metric(value: 50)],
-        policies: [
-          _policy(limit: 100, regressionTolerancePercent: 20),
-        ],
-      );
-      expect(result.passed, isFalse);
-      expect(
-        result.violations.single.kind,
-        PerformanceBudgetViolationKind.regression,
-      );
-    });
+    test(
+      'regression: tệ hơn baseline quá tolerance dù vẫn trong budget cứng',
+      () {
+        final result = checkPerformanceBudgets(
+          measurements: [_metric(value: 90)],
+          baseline: [_metric(value: 50)],
+          policies: [_policy(limit: 100, regressionTolerancePercent: 20)],
+        );
+        expect(result.passed, isFalse);
+        expect(
+          result.violations.single.kind,
+          PerformanceBudgetViolationKind.regression,
+        );
+      },
+    );
 
     test('trong tolerance so với baseline -> không phải regression', () {
       final result = checkPerformanceBudgets(
         measurements: [_metric(value: 55)],
         baseline: [_metric(value: 50)],
-        policies: [
-          _policy(limit: 100, regressionTolerancePercent: 20),
-        ],
+        policies: [_policy(limit: 100, regressionTolerancePercent: 20)],
       );
       expect(result.passed, isTrue);
     });
 
-    test('không có baseline -> bỏ qua regression check, chỉ xét budget cứng', () {
-      final result = checkPerformanceBudgets(
-        measurements: [_metric(value: 90)],
-        policies: [
-          _policy(limit: 100, regressionTolerancePercent: 20),
-        ],
-      );
-      expect(result.passed, isTrue);
-    });
+    test(
+      'không có baseline -> bỏ qua regression check, chỉ xét budget cứng',
+      () {
+        final result = checkPerformanceBudgets(
+          measurements: [_metric(value: 90)],
+          policies: [_policy(limit: 100, regressionTolerancePercent: 20)],
+        );
+        expect(result.passed, isTrue);
+      },
+    );
 
     test('measurement quá cũ so với maxAgeMs -> staleMeasurement', () {
       final result = checkPerformanceBudgets(
@@ -157,13 +157,16 @@ void main() {
       expect(result.passed, isTrue);
     });
 
-    test('maxAgeMs đặt nhưng thiếu nowMs hoặc recordedAtMs -> bỏ qua stale check, không throw', () {
-      final result = checkPerformanceBudgets(
-        measurements: [_metric(value: 10)],
-        policies: [_policy(limit: 100, maxAgeMs: 500)],
-      );
-      expect(result.passed, isTrue);
-    });
+    test(
+      'maxAgeMs đặt nhưng thiếu nowMs hoặc recordedAtMs -> bỏ qua stale check, không throw',
+      () {
+        final result = checkPerformanceBudgets(
+          measurements: [_metric(value: 10)],
+          policies: [_policy(limit: 100, maxAgeMs: 500)],
+        );
+        expect(result.passed, isTrue);
+      },
+    );
 
     test('nhiều policy độc lập -> gom đủ mọi violation', () {
       final result = checkPerformanceBudgets(

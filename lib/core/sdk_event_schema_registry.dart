@@ -21,7 +21,11 @@ enum UnknownFieldPolicy {
 /// stop, independent of [required]/[type] (see [EventSchema]'s
 /// constructor for why a param can never be both `required` and `pii`).
 class EventParamSchema {
-  const EventParamSchema({required this.type, this.required = false, this.pii = false});
+  const EventParamSchema({
+    required this.type,
+    this.required = false,
+    this.pii = false,
+  });
 
   final EventParamType type;
   final bool required;
@@ -153,7 +157,8 @@ class SdkEventSchemaRegistry {
       );
     }
 
-    final raw = schema.migrate?.call(params ?? const {}) ?? (params ?? const {});
+    final raw =
+        schema.migrate?.call(params ?? const {}) ?? (params ?? const {});
     final sanitized = <String, Object?>{};
     final violations = <String>[];
     var reject = false;
@@ -191,7 +196,9 @@ class SdkEventSchemaRegistry {
     for (final key in raw.keys) {
       if (schema.params.containsKey(key)) continue;
       if (schema.unknownFieldPolicy == UnknownFieldPolicy.reject) {
-        violations.add('param lạ "$key" không có trong schema (policy: reject)');
+        violations.add(
+          'param lạ "$key" không có trong schema (policy: reject)',
+        );
         reject = true;
       }
     }
@@ -261,17 +268,20 @@ class SchemaValidatedAnalyticsProvider implements AnalyticsProvider {
 /// `memoryWatchdogHealthCollector` (FEAT-74) isn't part of
 /// `defaultHealthCollectors()`: it needs a specific [registry] instance,
 /// not a module a consumer either has or hasn't registered.
-HealthCollectorSpec eventSchemaAuditHealthCollector(SdkEventSchemaRegistry registry) =>
-    HealthCollectorSpec(
-      name: 'eventSchemaAudit',
-      allowedKeys: const {'totalEvents', 'rejectedCount', 'lastRejectedReasons'},
-      collect: () {
-        final log = registry.auditLog;
-        final rejected = log.where((r) => !r.accepted).toList();
-        return {
-          'totalEvents': log.length,
-          'rejectedCount': rejected.length,
-          'lastRejectedReasons': rejected.isEmpty ? const <String>[] : rejected.last.violations,
-        };
-      },
-    );
+HealthCollectorSpec eventSchemaAuditHealthCollector(
+  SdkEventSchemaRegistry registry,
+) => HealthCollectorSpec(
+  name: 'eventSchemaAudit',
+  allowedKeys: const {'totalEvents', 'rejectedCount', 'lastRejectedReasons'},
+  collect: () {
+    final log = registry.auditLog;
+    final rejected = log.where((r) => !r.accepted).toList();
+    return {
+      'totalEvents': log.length,
+      'rejectedCount': rejected.length,
+      'lastRejectedReasons': rejected.isEmpty
+          ? const <String>[]
+          : rejected.last.violations,
+    };
+  },
+);

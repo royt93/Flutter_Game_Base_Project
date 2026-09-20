@@ -5,38 +5,40 @@ import 'package:roy_casual_kit/presentation/widgets/common/cooldown_countdown_ch
 import 'package:roy_casual_kit/presentation/widgets/common/countdown_chip.dart';
 
 void main() {
-  testWidgets('remaining = Duration.zero: không hiện gì (ready, không có gì đếm)', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Material(
-          child: CooldownCountdownChip(remaining: Duration.zero),
+  testWidgets(
+    'remaining = Duration.zero: không hiện gì (ready, không có gì đếm)',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: CooldownCountdownChip(remaining: Duration.zero),
+          ),
         ),
-      ),
-    );
+      );
 
-    expect(find.byType(CountdownChip), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.byType(CountdownChip), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('remaining > 0: render CountdownChip đúng giá trị ban đầu và đếm lùi', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Material(
-          child: CooldownCountdownChip(remaining: Duration(seconds: 10)),
+  testWidgets(
+    'remaining > 0: render CountdownChip đúng giá trị ban đầu và đếm lùi',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: CooldownCountdownChip(remaining: Duration(seconds: 10)),
+          ),
         ),
-      ),
-    );
+      );
 
-    expect(find.text(fmtDur(const Duration(seconds: 10))), findsOneWidget);
+      expect(find.text(fmtDur(const Duration(seconds: 10))), findsOneWidget);
 
-    await tester.pump(const Duration(seconds: 3));
-    expect(find.text(fmtDur(const Duration(seconds: 7))), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.text(fmtDur(const Duration(seconds: 7))), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('onDone forward đúng xuống CountdownChip khi đếm về 0', (
     tester,

@@ -78,8 +78,7 @@ class DeprecationRegistry {
         .toList();
   }
 
-  List<DeprecationCheckResult> pastGraceOnly(String currentVersion) =>
-      checkAll(
-        currentVersion,
-      ).where((r) => r.status == DeprecationStatus.pastGrace).toList();
+  List<DeprecationCheckResult> pastGraceOnly(String currentVersion) => checkAll(
+    currentVersion,
+  ).where((r) => r.status == DeprecationStatus.pastGrace).toList();
 }

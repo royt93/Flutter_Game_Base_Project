@@ -7,28 +7,25 @@ import 'package:roy_casual_kit/presentation/widgets/common/pause_overlay.dart';
 // CommonButton vẽ label qua StrokeText (2 lớp Text chồng nhau: stroke +
 // fill) — _button('Resume') sẽ ambiguous. Dùng finder theo CommonButton
 // thay vì text trực tiếp cho mọi nút (cùng lý do common_button_test.dart).
-Finder _button(String label) =>
-    find.widgetWithText(CommonButton, label);
+Finder _button(String label) => find.widgetWithText(CommonButton, label);
 
-Widget _wrap(GameSessionController session, {bool showForSystemPause = false}) =>
-    MaterialApp(
-      home: Material(
-        child: Stack(
-          children: [
-            const Center(child: Text('game content')),
-            PauseOverlay(
-              session: session,
-              showForSystemPause: showForSystemPause,
-            ),
-          ],
-        ),
-      ),
-    );
+Widget _wrap(
+  GameSessionController session, {
+  bool showForSystemPause = false,
+}) => MaterialApp(
+  home: Material(
+    child: Stack(
+      children: [
+        const Center(child: Text('game content')),
+        PauseOverlay(session: session, showForSystemPause: showForSystemPause),
+      ],
+    ),
+  ),
+);
 
-GameSessionController _playingSession() =>
-    GameSessionController()
-      ..markReady()
-      ..start();
+GameSessionController _playingSession() => GameSessionController()
+  ..markReady()
+  ..start();
 
 void main() {
   testWidgets('không hiện khi session đang playing', (tester) async {
@@ -60,7 +57,9 @@ void main() {
     },
   );
 
-  testWidgets('hiện cho system pause khi showForSystemPause=true', (tester) async {
+  testWidgets('hiện cho system pause khi showForSystemPause=true', (
+    tester,
+  ) async {
     final session = _playingSession()..pause(GamePauseReason.system);
     await tester.pumpWidget(_wrap(session, showForSystemPause: true));
     await tester.pumpAndSettle();
@@ -91,7 +90,9 @@ void main() {
     expect(session.snapshot.value.phase, GameSessionPhase.loading);
   });
 
-  testWidgets('onResume/onRestart override thay hành vi mặc định', (tester) async {
+  testWidgets('onResume/onRestart override thay hành vi mặc định', (
+    tester,
+  ) async {
     final session = _playingSession()..pause(GamePauseReason.user);
     var resumed = false;
     var restarted = false;
@@ -115,14 +116,19 @@ void main() {
     await tester.tap(_button('Resume').first);
     await tester.pump();
     expect(resumed, isTrue);
-    expect(session.snapshot.value.phase, GameSessionPhase.paused); // override, KHÔNG tự resume
+    expect(
+      session.snapshot.value.phase,
+      GameSessionPhase.paused,
+    ); // override, KHÔNG tự resume
 
     await tester.tap(_button('Restart').first);
     await tester.pump();
     expect(restarted, isTrue);
   });
 
-  testWidgets('Settings/Quit ẩn khi không truyền callback, hiện khi có', (tester) async {
+  testWidgets('Settings/Quit ẩn khi không truyền callback, hiện khi có', (
+    tester,
+  ) async {
     final session = _playingSession()..pause(GamePauseReason.user);
     await tester.pumpWidget(_wrap(session));
     await tester.pumpAndSettle();
@@ -170,39 +176,48 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(session.snapshot.value.phase, GameSessionPhase.playing);
-    expect(find.text('game content'), findsOneWidget); // route vẫn còn, không bị pop
+    expect(
+      find.text('game content'),
+      findsOneWidget,
+    ); // route vẫn còn, không bị pop
   });
 
-  testWidgets('back button lúc overlay ẩn: không làm gì đặc biệt (canPop giữ nguyên)', (
-    tester,
-  ) async {
-    final session = _playingSession();
-    await tester.pumpWidget(_wrap(session));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'back button lúc overlay ẩn: không làm gì đặc biệt (canPop giữ nguyên)',
+    (tester) async {
+      final session = _playingSession();
+      await tester.pumpWidget(_wrap(session));
+      await tester.pumpAndSettle();
 
-    await tester.binding.handlePopRoute();
-    await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
 
-    expect(tester.takeException(), isNull);
-  });
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('reduced motion: dùng AnimatedSwitcher/AnimatedOpacity duration 0', (
-    tester,
-  ) async {
-    final session = _playingSession()..pause(GamePauseReason.user);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: MediaQuery(
-          data: const MediaQueryData(disableAnimations: true),
-          child: Material(child: Stack(children: [PauseOverlay(session: session)])),
+  testWidgets(
+    'reduced motion: dùng AnimatedSwitcher/AnimatedOpacity duration 0',
+    (tester) async {
+      final session = _playingSession()..pause(GamePauseReason.user);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: Material(
+              child: Stack(children: [PauseOverlay(session: session)]),
+            ),
+          ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    final switcher = tester.widget<AnimatedSwitcher>(find.byType(AnimatedSwitcher));
-    expect(switcher.duration, Duration.zero);
-  });
+      final switcher = tester.widget<AnimatedSwitcher>(
+        find.byType(AnimatedSwitcher),
+      );
+      expect(switcher.duration, Duration.zero);
+    },
+  );
 
   testWidgets('RTL + text scale lớn không throw', (tester) async {
     final session = _playingSession()..pause(GamePauseReason.user);
@@ -212,7 +227,9 @@ void main() {
           textDirection: TextDirection.rtl,
           child: MediaQuery(
             data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
-            child: Material(child: Stack(children: [PauseOverlay(session: session)])),
+            child: Material(
+              child: Stack(children: [PauseOverlay(session: session)]),
+            ),
           ),
         ),
       ),

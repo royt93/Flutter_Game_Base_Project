@@ -12,9 +12,7 @@ Widget _wrap(Widget child) => MaterialApp(
 void main() {
   testWidgets('NeonIcon plain', (tester) async {
     await tester.pumpWidget(
-      _wrap(
-        NeonIcon(Icons.star_rounded, color: NeonTheme.gold, size: 40),
-      ),
+      _wrap(NeonIcon(Icons.star_rounded, color: NeonTheme.gold, size: 40)),
     );
     await tester.pump();
     await expectLater(

@@ -75,7 +75,8 @@ class CircularProgressRing extends StatelessWidget {
             width: size,
             height: size,
             child: Center(
-              child: child ??
+              child:
+                  child ??
                   (icon != null
                       ? Icon(icon, color: ringColor, size: size * 0.36)
                       : label != null

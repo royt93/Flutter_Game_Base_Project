@@ -92,7 +92,9 @@ void main() {
           size: const Size(400, 800),
         );
 
-        final bottomLeft = tester.getBottomLeft(find.byKey(const Key('bottom')));
+        final bottomLeft = tester.getBottomLeft(
+          find.byKey(const Key('bottom')),
+        );
         expect(800 - bottomLeft.dy, greaterThanOrEqualTo(34));
         expect(tester.takeException(), isNull);
       },
@@ -100,45 +102,48 @@ void main() {
   });
 
   group('AdaptiveGameHud: keyboard inset', () {
-    testWidgets('bottom di chuyển lên khi bàn phím mở (viewInsets.bottom > 0)', (
-      tester,
-    ) async {
-      await _pump(
-        tester,
-        const AdaptiveGameHud(
-          slots: {
-            HudSlot.bottom: SizedBox(
-              key: Key('bottom'),
-              width: 100,
-              height: 20,
-            ),
-          },
-        ),
-        size: const Size(400, 800),
-      );
-      final withoutKeyboard = tester.getBottomLeft(
-        find.byKey(const Key('bottom')),
-      );
+    testWidgets(
+      'bottom di chuyển lên khi bàn phím mở (viewInsets.bottom > 0)',
+      (tester) async {
+        await _pump(
+          tester,
+          const AdaptiveGameHud(
+            slots: {
+              HudSlot.bottom: SizedBox(
+                key: Key('bottom'),
+                width: 100,
+                height: 20,
+              ),
+            },
+          ),
+          size: const Size(400, 800),
+        );
+        final withoutKeyboard = tester.getBottomLeft(
+          find.byKey(const Key('bottom')),
+        );
 
-      await _pump(
-        tester,
-        const AdaptiveGameHud(
-          slots: {
-            HudSlot.bottom: SizedBox(
-              key: Key('bottom'),
-              width: 100,
-              height: 20,
-            ),
-          },
-        ),
-        viewInsets: const EdgeInsets.only(bottom: 300),
-        size: const Size(400, 800),
-      );
-      final withKeyboard = tester.getBottomLeft(find.byKey(const Key('bottom')));
+        await _pump(
+          tester,
+          const AdaptiveGameHud(
+            slots: {
+              HudSlot.bottom: SizedBox(
+                key: Key('bottom'),
+                width: 100,
+                height: 20,
+              ),
+            },
+          ),
+          viewInsets: const EdgeInsets.only(bottom: 300),
+          size: const Size(400, 800),
+        );
+        final withKeyboard = tester.getBottomLeft(
+          find.byKey(const Key('bottom')),
+        );
 
-      expect(withKeyboard.dy, lessThan(withoutKeyboard.dy));
-      expect(800 - withKeyboard.dy, greaterThanOrEqualTo(300));
-    });
+        expect(withKeyboard.dy, lessThan(withoutKeyboard.dy));
+        expect(800 - withKeyboard.dy, greaterThanOrEqualTo(300));
+      },
+    );
   });
 
   group('AdaptiveGameHud: breakpoint compact/expanded', () {
@@ -240,11 +245,7 @@ void main() {
               width: 40,
               height: 20,
             ),
-            HudSlot.topEnd: SizedBox(
-              key: Key('topEnd'),
-              width: 40,
-              height: 20,
-            ),
+            HudSlot.topEnd: SizedBox(key: Key('topEnd'), width: 40, height: 20),
           },
         ),
         size: const Size(400, 800),
@@ -262,11 +263,7 @@ void main() {
               width: 40,
               height: 20,
             ),
-            HudSlot.topEnd: SizedBox(
-              key: Key('topEnd'),
-              width: 40,
-              height: 20,
-            ),
+            HudSlot.topEnd: SizedBox(key: Key('topEnd'), width: 40, height: 20),
           },
         ),
         textDirection: TextDirection.rtl,
@@ -311,29 +308,30 @@ void main() {
   });
 
   group('AdaptiveGameHud: text scale không overflow', () {
-    testWidgets('textScaleFactor lớn (2.0) với text dài trong slot: không overflow/throw', (
-      tester,
-    ) async {
-      await _pump(
-        tester,
-        const AdaptiveGameHud(
-          slots: {
-            HudSlot.topCenter: SizedBox(
-              width: 200,
-              child: Text(
-                'Điểm số rất dài để kiểm tra overflow',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+    testWidgets(
+      'textScaleFactor lớn (2.0) với text dài trong slot: không overflow/throw',
+      (tester) async {
+        await _pump(
+          tester,
+          const AdaptiveGameHud(
+            slots: {
+              HudSlot.topCenter: SizedBox(
+                width: 200,
+                child: Text(
+                  'Điểm số rất dài để kiểm tra overflow',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-          },
-        ),
-        textScaleFactor: 2.0,
-        size: const Size(400, 800),
-      );
+            },
+          ),
+          textScaleFactor: 2.0,
+          size: const Size(400, 800),
+        );
 
-      expect(tester.takeException(), isNull);
-    });
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('AdaptiveGameHud: overlay', () {
@@ -355,14 +353,19 @@ void main() {
       expect(size, const Size(400, 800));
     });
 
-    testWidgets('không có overlay: không dựng widget overlay nào (tránh chặn input)', (
-      tester,
-    ) async {
-      await _pump(tester, const AdaptiveGameHud(), size: const Size(400, 800));
+    testWidgets(
+      'không có overlay: không dựng widget overlay nào (tránh chặn input)',
+      (tester) async {
+        await _pump(
+          tester,
+          const AdaptiveGameHud(),
+          size: const Size(400, 800),
+        );
 
-      expect(find.byType(ColoredBox), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.byType(ColoredBox), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('AdaptiveGameHud: debugShowBounds', () {
@@ -387,25 +390,26 @@ void main() {
       expect(find.byType(DecoratedBox), findsWidgets);
     });
 
-    testWidgets('debugShowBounds=false (mặc định): không có DecoratedBox nào được thêm', (
-      tester,
-    ) async {
-      await _pump(
-        tester,
-        const AdaptiveGameHud(
-          slots: {
-            HudSlot.topCenter: SizedBox(
-              key: Key('content'),
-              width: 40,
-              height: 20,
-            ),
-          },
-        ),
-        size: const Size(400, 800),
-      );
+    testWidgets(
+      'debugShowBounds=false (mặc định): không có DecoratedBox nào được thêm',
+      (tester) async {
+        await _pump(
+          tester,
+          const AdaptiveGameHud(
+            slots: {
+              HudSlot.topCenter: SizedBox(
+                key: Key('content'),
+                width: 40,
+                height: 20,
+              ),
+            },
+          ),
+          size: const Size(400, 800),
+        );
 
-      expect(find.byType(DecoratedBox), findsNothing);
-    });
+        expect(find.byType(DecoratedBox), findsNothing);
+      },
+    );
   });
 
   group('AdaptiveGameHud: Flame viewport bounds', () {
@@ -460,7 +464,10 @@ void main() {
         );
 
         final topPos = tester.getTopLeft(find.byKey(const Key('top')));
-        expect(topPos.dy, 8); // chỉ _edgeGap, không có safe padding lẫn viewport
+        expect(
+          topPos.dy,
+          8,
+        ); // chỉ _edgeGap, không có safe padding lẫn viewport
       },
     );
   });

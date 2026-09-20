@@ -22,7 +22,8 @@ class AuroraBgLayer extends StatefulWidget {
 
 class _AuroraBgLayerState extends ShaderTickerLayerState<AuroraBgLayer> {
   @override
-  String get shaderAssetPath => 'packages/roy_casual_kit/shaders/aurora_bg.frag';
+  String get shaderAssetPath =>
+      'packages/roy_casual_kit/shaders/aurora_bg.frag';
 
   @override
   String get debugLabel => 'AuroraBgLayer';

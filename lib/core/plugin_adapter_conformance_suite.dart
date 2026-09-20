@@ -87,19 +87,32 @@ class PluginAdapterConformanceSuite {
   }) async {
     final checks = <String, bool>{
       'recordError does not throw for a normal error': await _noThrow(
-        () async =>
-            adapter.recordError(StateError('conformance test'), StackTrace.current),
+        () async => adapter.recordError(
+          StateError('conformance test'),
+          StackTrace.current,
+        ),
         timeout,
       ),
       'recordError completes within timeout': await _completesWithin(
-        () async =>
-            adapter.recordError(StateError('conformance timeout'), StackTrace.current),
+        () async => adapter.recordError(
+          StateError('conformance timeout'),
+          StackTrace.current,
+        ),
         timeout,
       ),
-      'recordError tolerates repeated/duplicate calls': await _noThrow(() async {
-        adapter.recordError(StateError('conformance dup'), StackTrace.current);
-        adapter.recordError(StateError('conformance dup'), StackTrace.current);
-      }, timeout),
+      'recordError tolerates repeated/duplicate calls': await _noThrow(
+        () async {
+          adapter.recordError(
+            StateError('conformance dup'),
+            StackTrace.current,
+          );
+          adapter.recordError(
+            StateError('conformance dup'),
+            StackTrace.current,
+          );
+        },
+        timeout,
+      ),
       'recordError tolerates a null reason': await _noThrow(
         () async => adapter.recordError(
           StateError('conformance test'),
@@ -108,7 +121,8 @@ class PluginAdapterConformanceSuite {
         timeout,
       ),
       'recordError tolerates a non-Exception/Error object': await _noThrow(
-        () async => adapter.recordError('a plain string error', StackTrace.current),
+        () async =>
+            adapter.recordError('a plain string error', StackTrace.current),
         timeout,
       ),
     };
@@ -140,7 +154,8 @@ class PluginAdapterConformanceSuite {
       'upload+download round-trips correctly': await _check(() async {
         await adapter.upload({'conformance_key': 'conformance_value'});
         final result = await adapter.download();
-        return result != null && result['conformance_key'] == 'conformance_value';
+        return result != null &&
+            result['conformance_key'] == 'conformance_value';
       }, timeout),
       'upload tolerates repeated/retry calls': await _noThrow(() async {
         await adapter.upload({'conformance_key': 'v1'});
@@ -168,24 +183,32 @@ class PluginAdapterConformanceSuite {
         () async => await adapter.read('conformance_never_written_key') == null,
         timeout,
       ),
-      'delete actually removes the value (privacy: no residual read)': await _check(() async {
-        await adapter.write(key, 'to-be-deleted');
-        await adapter.delete(key);
-        return await adapter.read(key) == null;
-      }, timeout),
-      'clear wipes every previously-written key (privacy: no residual data)': await _check(() async {
-        await adapter.write('conformance_k1', 'v1');
-        await adapter.write('conformance_k2', 'v2');
-        await adapter.clear();
-        return await adapter.read('conformance_k1') == null &&
-            await adapter.read('conformance_k2') == null;
-      }, timeout),
-      'write tolerates overwrite (retry) of the same key': await _noThrow(() async {
-        await adapter.write(key, 'first');
-        await adapter.write(key, 'second');
-      }, timeout),
+      'delete actually removes the value (privacy: no residual read)':
+          await _check(() async {
+            await adapter.write(key, 'to-be-deleted');
+            await adapter.delete(key);
+            return await adapter.read(key) == null;
+          }, timeout),
+      'clear wipes every previously-written key (privacy: no residual data)':
+          await _check(() async {
+            await adapter.write('conformance_k1', 'v1');
+            await adapter.write('conformance_k2', 'v2');
+            await adapter.clear();
+            return await adapter.read('conformance_k1') == null &&
+                await adapter.read('conformance_k2') == null;
+          }, timeout),
+      'write tolerates overwrite (retry) of the same key': await _noThrow(
+        () async {
+          await adapter.write(key, 'first');
+          await adapter.write(key, 'second');
+        },
+        timeout,
+      ),
     };
-    return ConformanceReport(adapterName: 'SecureStorageAdapter', checks: checks);
+    return ConformanceReport(
+      adapterName: 'SecureStorageAdapter',
+      checks: checks,
+    );
   }
 
   static Future<ConformanceReport> verifyPurchaseSeam(
@@ -196,7 +219,8 @@ class PluginAdapterConformanceSuite {
     final checks = <String, bool>{
       'isOwned returns false for a never-bought product (no entitlement leak)':
           await _check(
-            () async => adapter.isOwned('conformance_never_bought_product') == false,
+            () async =>
+                adapter.isOwned('conformance_never_bought_product') == false,
             timeout,
           ),
       'buy completes within timeout': await _completesWithin(
@@ -211,10 +235,13 @@ class PluginAdapterConformanceSuite {
         () => adapter.restorePurchases(),
         timeout,
       ),
-      'buy tolerates repeated/duplicate calls without throwing': await _noThrow(() async {
-        await adapter.buy(testProductId);
-        await adapter.buy(testProductId);
-      }, timeout),
+      'buy tolerates repeated/duplicate calls without throwing': await _noThrow(
+        () async {
+          await adapter.buy(testProductId);
+          await adapter.buy(testProductId);
+        },
+        timeout,
+      ),
     };
     return ConformanceReport(adapterName: 'PurchaseSeam', checks: checks);
   }

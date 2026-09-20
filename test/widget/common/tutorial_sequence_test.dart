@@ -367,27 +367,30 @@ void main() {
       );
     });
 
-    test('bỏ qua từng bước thiếu field bắt buộc hoặc sai kiểu, giữ lại bước hợp lệ', () {
-      final keyA = GlobalKey();
+    test(
+      'bỏ qua từng bước thiếu field bắt buộc hoặc sai kiểu, giữ lại bước hợp lệ',
+      () {
+        final keyA = GlobalKey();
 
-      final steps = TutorialStep.listFromJson(
-        '['
-        '{"targetKey":"a","message":"missing id"},'
-        '{"id":"","targetKey":"a","message":"blank id"},'
-        '{"id":"s3","message":"missing targetKey"},'
-        '{"id":"s4","targetKey":"a","message":123},'
-        '{"id":"s5","targetKey":123,"message":"wrong targetKey type"},'
-        '{"id":"s6","targetKey":"a","message":"wrong title type","title":42},'
-        '{"id":"s7","targetKey":"a","message":"wrong buttonLabel type","buttonLabel":42},'
-        '"not a map",'
-        '{"id":"good","targetKey":"a","message":"OK"}'
-        ']',
-        keyRegistry: {'a': keyA},
-      );
+        final steps = TutorialStep.listFromJson(
+          '['
+          '{"targetKey":"a","message":"missing id"},'
+          '{"id":"","targetKey":"a","message":"blank id"},'
+          '{"id":"s3","message":"missing targetKey"},'
+          '{"id":"s4","targetKey":"a","message":123},'
+          '{"id":"s5","targetKey":123,"message":"wrong targetKey type"},'
+          '{"id":"s6","targetKey":"a","message":"wrong title type","title":42},'
+          '{"id":"s7","targetKey":"a","message":"wrong buttonLabel type","buttonLabel":42},'
+          '"not a map",'
+          '{"id":"good","targetKey":"a","message":"OK"}'
+          ']',
+          keyRegistry: {'a': keyA},
+        );
 
-      expect(steps, hasLength(1));
-      expect(steps.single.id, 'good');
-    });
+        expect(steps, hasLength(1));
+        expect(steps.single.id, 'good');
+      },
+    );
 
     test('danh sách rỗng ([]) trả về danh sách rỗng, không throw', () {
       expect(TutorialStep.listFromJson('[]', keyRegistry: {}), isEmpty);
@@ -410,9 +413,7 @@ void main() {
         TutorialStep(id: 'step1', targetKey: key, message: 'Msg'),
       ]);
 
-      expect(analytics.events, [
-        ('tutorial_step_shown', 'step1'),
-      ]);
+      expect(analytics.events, [('tutorial_step_shown', 'step1')]);
     });
 
     test('next() log "dismissed" cho step cũ rồi "shown" cho step mới', () {
@@ -434,22 +435,23 @@ void main() {
       ]);
     });
 
-    test('next() ở bước cuối chỉ log "dismissed" đúng 1 lần, không log "shown" thừa', () {
-      final controller = TutorialSequenceController();
-      final key = GlobalKey();
+    test(
+      'next() ở bước cuối chỉ log "dismissed" đúng 1 lần, không log "shown" thừa',
+      () {
+        final controller = TutorialSequenceController();
+        final key = GlobalKey();
 
-      controller.start([
-        TutorialStep(id: 'only', targetKey: key, message: 'Msg'),
-      ]);
-      analytics.events.clear();
+        controller.start([
+          TutorialStep(id: 'only', targetKey: key, message: 'Msg'),
+        ]);
+        analytics.events.clear();
 
-      controller.next();
+        controller.next();
 
-      expect(analytics.events, [
-        ('tutorial_step_dismissed', 'only'),
-      ]);
-      expect(controller.isActive, isFalse);
-    });
+        expect(analytics.events, [('tutorial_step_dismissed', 'only')]);
+        expect(controller.isActive, isFalse);
+      },
+    );
 
     test('skip() log đúng "dismissed" cho step đang hiện tại', () {
       final controller = TutorialSequenceController();
@@ -464,9 +466,7 @@ void main() {
 
       controller.skip();
 
-      expect(analytics.events, [
-        ('tutorial_step_dismissed', 'step1'),
-      ]);
+      expect(analytics.events, [('tutorial_step_dismissed', 'step1')]);
     });
 
     test(

@@ -24,25 +24,28 @@ void main() {
   });
 
   group('simulateEconomy: unit', () {
-    test('ngày 1, chưa qua session nào vượt tick: energy giảm đúng, currency = 0 ở session đầu', () {
-      final snapshots = simulateEconomy(
-        const EconomyScenario(
-          days: 1,
-          sessionsPerDay: 1,
-          energyPerSession: 2,
-          maxEnergy: 5,
-          refillIntervalMs: 1000000,
-          sessionSpacingMs: 100,
-          maxOfflineCapMs: 100000,
-          productionRatePerSecond: 1.0,
-        ),
-      );
+    test(
+      'ngày 1, chưa qua session nào vượt tick: energy giảm đúng, currency = 0 ở session đầu',
+      () {
+        final snapshots = simulateEconomy(
+          const EconomyScenario(
+            days: 1,
+            sessionsPerDay: 1,
+            energyPerSession: 2,
+            maxEnergy: 5,
+            refillIntervalMs: 1000000,
+            sessionSpacingMs: 100,
+            maxOfflineCapMs: 100000,
+            productionRatePerSecond: 1.0,
+          ),
+        );
 
-      expect(snapshots, hasLength(1));
-      // Session duy nhất chạy tại nowMs=0 == lastClaimedMs=0 ban đầu -> 0 earnings.
-      expect(snapshots.single.cumulativeCurrency, 0);
-      expect(snapshots.single.endEnergyCount, 3); // 5 - 2
-    });
+        expect(snapshots, hasLength(1));
+        // Session duy nhất chạy tại nowMs=0 == lastClaimedMs=0 ban đầu -> 0 earnings.
+        expect(snapshots.single.cumulativeCurrency, 0);
+        expect(snapshots.single.endEnergyCount, 3); // 5 - 2
+      },
+    );
 
     test('không đủ năng lượng cho session: không trừ (giữ nguyên, không âm)', () {
       final snapshots = simulateEconomy(
@@ -77,7 +80,10 @@ void main() {
       );
 
       expect(snapshots, hasLength(7));
-      expect(snapshots.map((s) => s.day).toList(), List.generate(7, (i) => i + 1));
+      expect(
+        snapshots.map((s) => s.day).toList(),
+        List.generate(7, (i) => i + 1),
+      );
     });
 
     test('currency tích luỹ đơn điệu tăng qua các ngày (không giảm)', () {
@@ -110,19 +116,22 @@ void main() {
       expect(options['productionRatePerSecond'], 0.01);
     });
 
-    test('ghi đè đúng key hợp lệ, bỏ qua key không tồn tại và giá trị hỏng', () {
-      final options = parseArgs(const [
-        '--days=10',
-        '--productionRatePerSecond=0.5',
-        '--unknownKey=999',
-        '--maxEnergy=notAnInt',
-      ]);
+    test(
+      'ghi đè đúng key hợp lệ, bỏ qua key không tồn tại và giá trị hỏng',
+      () {
+        final options = parseArgs(const [
+          '--days=10',
+          '--productionRatePerSecond=0.5',
+          '--unknownKey=999',
+          '--maxEnergy=notAnInt',
+        ]);
 
-      expect(options['days'], 10);
-      expect(options['productionRatePerSecond'], 0.5);
-      expect(options.containsKey('unknownKey'), isFalse);
-      expect(options['maxEnergy'], 5); // giữ default vì "notAnInt" parse lỗi
-    });
+        expect(options['days'], 10);
+        expect(options['productionRatePerSecond'], 0.5);
+        expect(options.containsKey('unknownKey'), isFalse);
+        expect(options['maxEnergy'], 5); // giữ default vì "notAnInt" parse lỗi
+      },
+    );
   });
 
   group('cross-check: simulateEconomy khớp đúng với service thật', () {
@@ -189,7 +198,11 @@ void main() {
           '--days=2',
         ]);
 
-        expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+        expect(
+          result.exitCode,
+          0,
+          reason: '${result.stdout}\n${result.stderr}',
+        );
         final output = result.stdout as String;
         expect(output, contains('day'));
         expect(output, contains('endEnergy'));

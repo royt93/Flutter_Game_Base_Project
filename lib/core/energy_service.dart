@@ -164,7 +164,10 @@ class EnergyService extends GetxService {
           final count = json['count'];
           final lastMs = json['lastMs'];
           if (count is int && lastMs is int) {
-            return _EnergyState(count: count.clamp(0, maxEnergy), lastMs: lastMs);
+            return _EnergyState(
+              count: count.clamp(0, maxEnergy),
+              lastMs: lastMs,
+            );
           }
         }
       } catch (_) {
@@ -181,7 +184,10 @@ class EnergyService extends GetxService {
       StorageKeys.energyLastMs,
       def: nowMsClamped(),
     );
-    return _EnergyState(count: legacyCount.clamp(0, maxEnergy), lastMs: legacyLastMs);
+    return _EnergyState(
+      count: legacyCount.clamp(0, maxEnergy),
+      lastMs: legacyLastMs,
+    );
   }
 
   Future<void> _writeState(_EnergyState state) => StorageService.to.setString(

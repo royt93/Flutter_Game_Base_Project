@@ -40,33 +40,30 @@ void main() {
       expect(File('${result.path}/lib/main.dart').existsSync(), isTrue);
       expect(File('${result.path}/.roy_template_version').existsSync(), isTrue);
 
-      final pubGet = await Process.run(
-        'flutter',
-        ['pub', 'get'],
-        workingDirectory: result.path,
-      );
+      final pubGet = await Process.run('flutter', [
+        'pub',
+        'get',
+      ], workingDirectory: result.path);
       expect(pubGet.exitCode, 0, reason: '${pubGet.stdout}\n${pubGet.stderr}');
 
-      final analyze = await Process.run(
-        'flutter',
-        ['analyze'],
-        workingDirectory: result.path,
-      );
+      final analyze = await Process.run('flutter', [
+        'analyze',
+      ], workingDirectory: result.path);
       expect(
         analyze.exitCode,
         0,
-        reason: 'flutter analyze phải sạch NGAY sau generate:\n${analyze.stdout}\n${analyze.stderr}',
+        reason:
+            'flutter analyze phải sạch NGAY sau generate:\n${analyze.stdout}\n${analyze.stderr}',
       );
 
-      final test = await Process.run(
-        'flutter',
-        ['test'],
-        workingDirectory: result.path,
-      );
+      final test = await Process.run('flutter', [
+        'test',
+      ], workingDirectory: result.path);
       expect(
         test.exitCode,
         0,
-        reason: 'flutter test phải pass NGAY sau generate:\n${test.stdout}\n${test.stderr}',
+        reason:
+            'flutter test phải pass NGAY sau generate:\n${test.stdout}\n${test.stderr}',
       );
 
       expect(readTemplateVersion(result.path), templateSchemaVersion);
@@ -74,16 +71,23 @@ void main() {
     timeout: const Timeout(Duration(minutes: 5)),
   );
 
-  test('generate() từ chối ghi đè thư mục đã tồn tại và không rỗng', () async {
-    final existing = Directory('${workDir.path}/taken');
-    existing.createSync(recursive: true);
-    File('${existing.path}/marker.txt').writeAsStringSync('do not touch');
+  test(
+    'generate() từ chối ghi đè thư mục đã tồn tại và không rỗng',
+    () async {
+      final existing = Directory('${workDir.path}/taken');
+      existing.createSync(recursive: true);
+      File('${existing.path}/marker.txt').writeAsStringSync('do not touch');
 
-    await expectLater(
-      generate(name: 'taken', outputDir: workDir.path),
-      throwsStateError,
-    );
-    // File gốc phải còn nguyên — generator không được đụng vào.
-    expect(File('${existing.path}/marker.txt').readAsStringSync(), 'do not touch');
-  }, timeout: const Timeout(Duration(seconds: 30)));
+      await expectLater(
+        generate(name: 'taken', outputDir: workDir.path),
+        throwsStateError,
+      );
+      // File gốc phải còn nguyên — generator không được đụng vào.
+      expect(
+        File('${existing.path}/marker.txt').readAsStringSync(),
+        'do not touch',
+      );
+    },
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
 }

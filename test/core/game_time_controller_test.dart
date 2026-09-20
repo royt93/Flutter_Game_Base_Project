@@ -45,11 +45,16 @@ void main() {
       expect(clock.elapsed, const Duration(milliseconds: 100));
     });
 
-    test('delta khổng lồ (app từ background quay lại) bị clamp maxDeltaPerTick', () {
-      final clock = GameClock(maxDeltaPerTick: const Duration(milliseconds: 250));
-      clock.advance(const Duration(minutes: 5));
-      expect(clock.elapsed, const Duration(milliseconds: 250));
-    });
+    test(
+      'delta khổng lồ (app từ background quay lại) bị clamp maxDeltaPerTick',
+      () {
+        final clock = GameClock(
+          maxDeltaPerTick: const Duration(milliseconds: 250),
+        );
+        clock.advance(const Duration(minutes: 5));
+        expect(clock.elapsed, const Duration(milliseconds: 250));
+      },
+    );
 
     test('setScale từ chối NaN/Infinity/0/âm, giữ nguyên scale cũ', () {
       final clock = GameClock();
@@ -62,40 +67,49 @@ void main() {
       expect(clock.elapsed, const Duration(milliseconds: 100)); // scale vẫn 1.0
     });
 
-    test('fixed-step: chỉ advance đúng bội số fixedStep, phần dư giữ lại cho lần sau', () {
-      final clock = GameClock(fixedStep: const Duration(milliseconds: 20));
-      final steps1 = clock.advance(const Duration(milliseconds: 45));
-      expect(steps1, 2); // 40ms trong 45ms -> 2 step, dư 5ms
-      expect(clock.elapsed, const Duration(milliseconds: 40));
-
-      final steps2 = clock.advance(const Duration(milliseconds: 16));
-      // dư 5ms + 16ms = 21ms -> thêm đúng 1 step (20ms), dư 1ms
-      expect(steps2, 1);
-      expect(clock.elapsed, const Duration(milliseconds: 60));
-    });
-
-    test('deterministic: cùng chuỗi advance() luôn ra cùng elapsed/step count', () {
-      List<int> run() {
+    test(
+      'fixed-step: chỉ advance đúng bội số fixedStep, phần dư giữ lại cho lần sau',
+      () {
         final clock = GameClock(fixedStep: const Duration(milliseconds: 20));
-        final steps = <int>[];
-        for (final ms in [45, 16, 33, 7, 100]) {
-          steps.add(clock.advance(Duration(milliseconds: ms)));
-        }
-        steps.add(clock.elapsed.inMilliseconds);
-        return steps;
-      }
+        final steps1 = clock.advance(const Duration(milliseconds: 45));
+        expect(steps1, 2); // 40ms trong 45ms -> 2 step, dư 5ms
+        expect(clock.elapsed, const Duration(milliseconds: 40));
 
-      expect(run(), run());
-    });
+        final steps2 = clock.advance(const Duration(milliseconds: 16));
+        // dư 5ms + 16ms = 21ms -> thêm đúng 1 step (20ms), dư 1ms
+        expect(steps2, 1);
+        expect(clock.elapsed, const Duration(milliseconds: 60));
+      },
+    );
+
+    test(
+      'deterministic: cùng chuỗi advance() luôn ra cùng elapsed/step count',
+      () {
+        List<int> run() {
+          final clock = GameClock(fixedStep: const Duration(milliseconds: 20));
+          final steps = <int>[];
+          for (final ms in [45, 16, 33, 7, 100]) {
+            steps.add(clock.advance(Duration(milliseconds: ms)));
+          }
+          steps.add(clock.elapsed.inMilliseconds);
+          return steps;
+        }
+
+        expect(run(), run());
+      },
+    );
   });
 
   group('GameTimeController: bridge Flame/Flutter, pause ownership', () {
-    test('tick(dt) (giây, kiểu Flame) cộng đúng elapsed quan sát được qua Rx', () {
-      final controller = GameTimeController();
-      controller.tick(0.1);
-      controller.tick(0.05);
-      expect(controller.elapsed.value, const Duration(milliseconds: 150));
-    });
+    test(
+      'tick(dt) (giây, kiểu Flame) cộng đúng elapsed quan sát được qua Rx',
+      () {
+        final controller = GameTimeController();
+        controller.tick(0.1);
+        controller.tick(0.05);
+        expect(controller.elapsed.value, const Duration(milliseconds: 150));
+      },
+    );
 
     test('setScale hợp lệ/không hợp lệ trả SdkResult đúng', () {
       final controller = GameTimeController();
@@ -110,33 +124,30 @@ void main() {
       expect(controller.elapsed.value, Duration.zero);
     });
 
-    test(
-      'có wire GameSessionController: pause qua session là NGUỒN DUY NHẤT, '
-      'GameTimeController không tự pause/resume song song',
-      () {
-        final session = GameSessionController()
-          ..markReady()
-          ..start();
-        final controller = GameTimeController(
-          session: session,
-          maxDeltaPerTick: const Duration(seconds: 10),
-        );
+    test('có wire GameSessionController: pause qua session là NGUỒN DUY NHẤT, '
+        'GameTimeController không tự pause/resume song song', () {
+      final session = GameSessionController()
+        ..markReady()
+        ..start();
+      final controller = GameTimeController(
+        session: session,
+        maxDeltaPerTick: const Duration(seconds: 10),
+      );
 
-        controller.tick(0.5);
-        expect(controller.elapsed.value, const Duration(milliseconds: 500));
+      controller.tick(0.5);
+      expect(controller.elapsed.value, const Duration(milliseconds: 500));
 
-        session.pause(GamePauseReason.user);
-        controller.tick(1);
-        expect(
-          controller.elapsed.value,
-          const Duration(milliseconds: 500),
-        ); // đứng yên vì session paused
+      session.pause(GamePauseReason.user);
+      controller.tick(1);
+      expect(
+        controller.elapsed.value,
+        const Duration(milliseconds: 500),
+      ); // đứng yên vì session paused
 
-        session.resume(GamePauseReason.user);
-        controller.tick(0.25);
-        expect(controller.elapsed.value, const Duration(milliseconds: 750));
-      },
-    );
+      session.resume(GamePauseReason.user);
+      controller.tick(0.25);
+      expect(controller.elapsed.value, const Duration(milliseconds: 750));
+    });
 
     test('.maybe: null khi chưa đăng ký', () {
       expect(GameTimeController.maybe, isNull);

@@ -115,8 +115,7 @@ class InventoryGrid extends StatelessWidget {
         return KeyedSubtree(
           key: ValueKey(('empty', index)),
           child:
-              emptyBuilder?.call(context, index) ??
-              const _DefaultPlaceholder(),
+              emptyBuilder?.call(context, index) ?? const _DefaultPlaceholder(),
         );
       }
       return KeyedSubtree(

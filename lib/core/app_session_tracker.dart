@@ -86,8 +86,7 @@ class AppSessionTracker extends GetxService {
   RoyLifecycleCoordinator? _lifecycle;
   static const _hookName = 'app_session_tracker';
 
-  static AppSessionTracker? get maybe =>
-      Get.isRegistered<AppSessionTracker>()
+  static AppSessionTracker? get maybe => Get.isRegistered<AppSessionTracker>()
       ? Get.find<AppSessionTracker>()
       : null;
 
@@ -100,7 +99,9 @@ class AppSessionTracker extends GetxService {
 
   Duration get foregroundDuration =>
       _accumulatedForeground +
-      (_foregroundStopwatch.isRunning ? _foregroundStopwatch.elapsed : Duration.zero);
+      (_foregroundStopwatch.isRunning
+          ? _foregroundStopwatch.elapsed
+          : Duration.zero);
 
   void _startNewSession() {
     _current = SessionInfo(
@@ -172,8 +173,7 @@ class AppSessionTracker extends GetxService {
   /// currently granted (no registered `ConsentStateService` counts as not
   /// granted).
   Map<String, Object?> analyticsContext() =>
-      (ConsentStateService.maybe?.isGranted(ConsentCategory.analytics) ??
-          false)
+      (ConsentStateService.maybe?.isGranted(ConsentCategory.analytics) ?? false)
       ? _rawAnalyticsContext()
       : const {};
 

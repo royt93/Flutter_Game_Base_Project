@@ -80,8 +80,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Builder(
-            builder: (_) =>
-                Text(service.isCompleted('wins') ? 'done' : 'safe'),
+            builder: (_) => Text(service.isCompleted('wins') ? 'done' : 'safe'),
           ),
         ),
       );
@@ -296,67 +295,82 @@ void main() {
         },
       );
 
-      test('register() không bao giờ tự phát unlock dù threshold đã đạt sẵn', () async {
-        final service = AchievementService();
-        service.register('wins', 100);
-        service.incrementProgress('wins', 100);
-        await pumpEventQueue();
+      test(
+        'register() không bao giờ tự phát unlock dù threshold đã đạt sẵn',
+        () async {
+          final service = AchievementService();
+          service.register('wins', 100);
+          service.incrementProgress('wins', 100);
+          await pumpEventQueue();
 
-        final events = <String>[];
-        // Đăng ký lại với threshold thấp hơn giá trị progress đã có sẵn —
-        // register() tự nó không được phép phát unlock, chỉ incrementProgress
-        // mới là điểm kích hoạt sự kiện.
-        service.register('wins', 1);
-        service.onUnlock.listen(events.add);
-        await pumpEventQueue();
+          final events = <String>[];
+          // Đăng ký lại với threshold thấp hơn giá trị progress đã có sẵn —
+          // register() tự nó không được phép phát unlock, chỉ incrementProgress
+          // mới là điểm kích hoạt sự kiện.
+          service.register('wins', 1);
+          service.onUnlock.listen(events.add);
+          await pumpEventQueue();
 
-        expect(events, isEmpty);
-      });
+          expect(events, isEmpty);
+        },
+      );
 
-      test('nhiều achievement id khác nhau phát đúng, độc lập với nhau', () async {
-        final service = AchievementService();
-        service.register('a', 1);
-        service.register('b', 1);
-        final events = <String>[];
-        service.onUnlock.listen(events.add);
+      test(
+        'nhiều achievement id khác nhau phát đúng, độc lập với nhau',
+        () async {
+          final service = AchievementService();
+          service.register('a', 1);
+          service.register('b', 1);
+          final events = <String>[];
+          service.onUnlock.listen(events.add);
 
-        service.incrementProgress('a', 1);
-        service.incrementProgress('b', 1);
-        await pumpEventQueue();
+          service.incrementProgress('a', 1);
+          service.incrementProgress('b', 1);
+          await pumpEventQueue();
 
-        expect(events, containsAll(['a', 'b']));
-        expect(events.length, 2);
-      });
+          expect(events, containsAll(['a', 'b']));
+          expect(events.length, 2);
+        },
+      );
 
-      test('onUnlock là broadcast stream — nhiều listener cùng nhận được sự kiện', () async {
-        final service = AchievementService();
-        service.register('wins', 1);
-        final eventsA = <String>[];
-        final eventsB = <String>[];
-        service.onUnlock.listen(eventsA.add);
-        service.onUnlock.listen(eventsB.add);
+      test(
+        'onUnlock là broadcast stream — nhiều listener cùng nhận được sự kiện',
+        () async {
+          final service = AchievementService();
+          service.register('wins', 1);
+          final eventsA = <String>[];
+          final eventsB = <String>[];
+          service.onUnlock.listen(eventsA.add);
+          service.onUnlock.listen(eventsB.add);
 
-        service.incrementProgress('wins', 1);
-        await pumpEventQueue();
+          service.incrementProgress('wins', 1);
+          await pumpEventQueue();
 
-        expect(eventsA, ['wins']);
-        expect(eventsB, ['wins']);
-      });
+          expect(eventsA, ['wins']);
+          expect(eventsB, ['wins']);
+        },
+      );
     });
 
     group('IDEA-51: progressOf/thresholdOf', () {
-      test('progressOf trả về 0 cho achievement chưa từng có progress, không throw', () {
-        final service = AchievementService();
-        expect(service.progressOf('never_touched'), 0);
-      });
+      test(
+        'progressOf trả về 0 cho achievement chưa từng có progress, không throw',
+        () {
+          final service = AchievementService();
+          expect(service.progressOf('never_touched'), 0);
+        },
+      );
 
-      test('progressOf khớp đúng với những gì incrementProgress đã cộng dồn', () {
-        final service = AchievementService();
-        service.register('wins', 10);
-        service.incrementProgress('wins', 3);
-        service.incrementProgress('wins', 4);
-        expect(service.progressOf('wins'), 7);
-      });
+      test(
+        'progressOf khớp đúng với những gì incrementProgress đã cộng dồn',
+        () {
+          final service = AchievementService();
+          service.register('wins', 10);
+          service.incrementProgress('wins', 3);
+          service.incrementProgress('wins', 4);
+          expect(service.progressOf('wins'), 7);
+        },
+      );
 
       test(
         'progressOf vẫn tiếp tục phản ánh đúng sau khi đã hoàn thành achievement, không bị khoá ở đúng threshold',
@@ -367,7 +381,10 @@ void main() {
           expect(service.isCompleted('wins'), isTrue);
 
           service.incrementProgress('wins', 3);
-          expect(service.progressOf('wins'), 8); // vượt threshold, không kẹt ở 5
+          expect(
+            service.progressOf('wins'),
+            8,
+          ); // vượt threshold, không kẹt ở 5
         },
       );
 
@@ -382,57 +399,72 @@ void main() {
         expect(service.thresholdOf('wins'), 10);
       });
 
-      test('progressOf/thresholdOf với achievementId rỗng/blank throw ArgumentError', () {
-        final service = AchievementService();
-        expect(() => service.progressOf(''), throwsArgumentError);
-        expect(() => service.progressOf('   '), throwsArgumentError);
-        expect(() => service.thresholdOf(''), throwsArgumentError);
-        expect(() => service.thresholdOf('   '), throwsArgumentError);
-      });
+      test(
+        'progressOf/thresholdOf với achievementId rỗng/blank throw ArgumentError',
+        () {
+          final service = AchievementService();
+          expect(() => service.progressOf(''), throwsArgumentError);
+          expect(() => service.progressOf('   '), throwsArgumentError);
+          expect(() => service.thresholdOf(''), throwsArgumentError);
+          expect(() => service.thresholdOf('   '), throwsArgumentError);
+        },
+      );
     });
 
     group('ENH-71: storageKey tuỳ chỉnh', () {
-      test('không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ', () async {
-        final service = AchievementService();
-        service.register('wins', 10);
-        service.incrementProgress('wins', 3);
-        await service.debugPendingSaves;
+      test(
+        'không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ',
+        () async {
+          final service = AchievementService();
+          service.register('wins', 10);
+          service.incrementProgress('wins', 3);
+          await service.debugPendingSaves;
 
-        expect(storage.getString('achievement_progress_v1'), isNotNull);
-      });
+          expect(storage.getString('achievement_progress_v1'), isNotNull);
+        },
+      );
 
-      test('2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau', () async {
-        final a = AchievementService(storageKey: 'ach_a');
-        final b = AchievementService(storageKey: 'ach_b');
-        a.register('wins', 10);
-        b.register('wins', 10);
+      test(
+        '2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau',
+        () async {
+          final a = AchievementService(storageKey: 'ach_a');
+          final b = AchievementService(storageKey: 'ach_b');
+          a.register('wins', 10);
+          b.register('wins', 10);
 
-        a.incrementProgress('wins', 3);
-        b.incrementProgress('wins', 7);
-        await a.debugPendingSaves;
-        await b.debugPendingSaves;
+          a.incrementProgress('wins', 3);
+          b.incrementProgress('wins', 7);
+          await a.debugPendingSaves;
+          await b.debugPendingSaves;
 
-        expect(a.progressOf('wins'), 3);
-        expect(b.progressOf('wins'), 7);
-      });
+          expect(a.progressOf('wins'), 3);
+          expect(b.progressOf('wins'), 7);
+        },
+      );
 
-      test('storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)', () async {
-        final service = AchievementService(storageKey: 'ach_custom');
-        service.register('wins', 10);
-        service.incrementProgress('wins', 5);
-        await service.debugPendingSaves;
+      test(
+        'storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)',
+        () async {
+          final service = AchievementService(storageKey: 'ach_custom');
+          service.register('wins', 10);
+          service.incrementProgress('wins', 5);
+          await service.debugPendingSaves;
 
-        final restarted = AchievementService(storageKey: 'ach_custom');
-        expect(restarted.progressOf('wins'), 5);
-      });
+          final restarted = AchievementService(storageKey: 'ach_custom');
+          expect(restarted.progressOf('wins'), 5);
+        },
+      );
 
-      test('không đổi hành vi register/incrementProgress/isCompleted hiện có khi dùng storageKey tuỳ chỉnh', () {
-        final service = AchievementService(storageKey: 'k');
-        service.register('wins', 3);
-        service.incrementProgress('wins', 3);
+      test(
+        'không đổi hành vi register/incrementProgress/isCompleted hiện có khi dùng storageKey tuỳ chỉnh',
+        () {
+          final service = AchievementService(storageKey: 'k');
+          service.register('wins', 3);
+          service.incrementProgress('wins', 3);
 
-        expect(service.isCompleted('wins'), isTrue);
-      });
+          expect(service.isCompleted('wins'), isTrue);
+        },
+      );
     });
   });
 

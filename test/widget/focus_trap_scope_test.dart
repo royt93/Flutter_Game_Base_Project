@@ -3,22 +3,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/focus_trap_scope.dart';
 
 void main() {
-  testWidgets('autofocus mặc định true: scope tự nhận primary focus ngay khi mount', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Material(child: FocusTrapScope(child: Text('X'))),
-      ),
-    );
-    await tester.pump();
+  testWidgets(
+    'autofocus mặc định true: scope tự nhận primary focus ngay khi mount',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: FocusTrapScope(child: Text('X'))),
+        ),
+      );
+      await tester.pump();
 
-    expect(FocusManager.instance.primaryFocus, isNotNull);
-    expect(
-      FocusManager.instance.primaryFocus!.debugLabel,
-      'FocusTrapScope',
-    );
-  });
+      expect(FocusManager.instance.primaryFocus, isNotNull);
+      expect(FocusManager.instance.primaryFocus!.debugLabel, 'FocusTrapScope');
+    },
+  );
 
   testWidgets('autofocus: false không tự nhận focus', (tester) async {
     final backgroundNode = FocusNode(debugLabel: 'background');
@@ -56,11 +54,17 @@ void main() {
               builder: (context, setState) {
                 return Column(
                   children: [
-                    Focus(focusNode: backgroundNode, child: const Text('background')),
+                    Focus(
+                      focusNode: backgroundNode,
+                      child: const Text('background'),
+                    ),
                     if (showTrap)
                       FocusTrapScope(
                         child: Focus(
-                          child: ElevatedButton(onPressed: () {}, child: const Text('trapped')),
+                          child: ElevatedButton(
+                            onPressed: () {},
+                            child: const Text('trapped'),
+                          ),
                         ),
                       ),
                     ElevatedButton(
@@ -98,61 +102,69 @@ void main() {
     },
   );
 
-  testWidgets('background node đã bị dispose lúc trap đóng -> không throw, chỉ bỏ qua', (
-    tester,
-  ) async {
-    var showTrap = true;
+  testWidgets(
+    'background node đã bị dispose lúc trap đóng -> không throw, chỉ bỏ qua',
+    (tester) async {
+      var showTrap = true;
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Material(
-          child: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                children: [
-                  if (showTrap)
-                    FocusTrapScope(
-                      child: Focus(
-                        child: ElevatedButton(onPressed: () {}, child: const Text('trapped')),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return Column(
+                  children: [
+                    if (showTrap)
+                      FocusTrapScope(
+                        child: Focus(
+                          child: ElevatedButton(
+                            onPressed: () {},
+                            child: const Text('trapped'),
+                          ),
+                        ),
                       ),
+                    ElevatedButton(
+                      onPressed: () => setState(() => showTrap = false),
+                      child: const Text('close'),
                     ),
-                  ElevatedButton(
-                    onPressed: () => setState(() => showTrap = false),
-                    child: const Text('close'),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    await tester.tap(find.text('close'));
-    await tester.pump();
-    await tester.pump();
+      await tester.tap(find.text('close'));
+      await tester.pump();
+      await tester.pump();
 
-    expect(tester.takeException(), isNull);
-  });
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('touch-only: tap bình thường vào nội dung trap vẫn hoạt động (không đổi hành vi)', (
-    tester,
-  ) async {
-    var tapped = false;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Material(
-          child: FocusTrapScope(
-            child: ElevatedButton(onPressed: () => tapped = true, child: const Text('X')),
+  testWidgets(
+    'touch-only: tap bình thường vào nội dung trap vẫn hoạt động (không đổi hành vi)',
+    (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: FocusTrapScope(
+              child: ElevatedButton(
+                onPressed: () => tapped = true,
+                child: const Text('X'),
+              ),
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    await tester.tap(find.text('X'));
-    expect(tapped, isTrue);
-    expect(tester.takeException(), isNull);
-  });
+      await tester.tap(find.text('X'));
+      expect(tapped, isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

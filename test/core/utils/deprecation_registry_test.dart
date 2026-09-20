@@ -27,17 +27,20 @@ void main() {
       );
     });
 
-    test('removeInVersion <= deprecatedInVersion throw (grace period vô nghĩa)', () {
-      expect(
-        () => DeprecatedApi(
-          name: 'Foo.bar',
-          deprecatedInVersion: '0.4.0',
-          removeInVersion: '0.2.0',
-          migrationHint: 'x',
-        ),
-        throwsArgumentError,
-      );
-    });
+    test(
+      'removeInVersion <= deprecatedInVersion throw (grace period vô nghĩa)',
+      () {
+        expect(
+          () => DeprecatedApi(
+            name: 'Foo.bar',
+            deprecatedInVersion: '0.4.0',
+            removeInVersion: '0.2.0',
+            migrationHint: 'x',
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
   });
 
   group('DeprecationRegistry.checkAll', () {
@@ -59,12 +62,17 @@ void main() {
     test('currentVersion còn trong grace period: status active', () {
       final results = registry.checkAll('0.2.5');
 
-      expect(results.every((r) => r.status == DeprecationStatus.active), isTrue);
+      expect(
+        results.every((r) => r.status == DeprecationStatus.active),
+        isTrue,
+      );
     });
 
     test('currentVersion == removeInVersion: pastGrace (biên inclusive)', () {
       final results = registry.checkAll('0.3.0');
-      final barResult = results.firstWhere((r) => r.api.name == 'Bar.legacyField');
+      final barResult = results.firstWhere(
+        (r) => r.api.name == 'Bar.legacyField',
+      );
 
       expect(barResult.status, DeprecationStatus.pastGrace);
     });
@@ -72,7 +80,10 @@ void main() {
     test('currentVersion vượt xa removeInVersion: pastGrace', () {
       final results = registry.checkAll('1.0.0');
 
-      expect(results.every((r) => r.status == DeprecationStatus.pastGrace), isTrue);
+      expect(
+        results.every((r) => r.status == DeprecationStatus.pastGrace),
+        isTrue,
+      );
     });
 
     test('mỗi entry được đánh giá độc lập theo removeInVersion riêng', () {
@@ -80,8 +91,14 @@ void main() {
       final foo = results.firstWhere((r) => r.api.name == 'Foo.oldMethod');
       final bar = results.firstWhere((r) => r.api.name == 'Bar.legacyField');
 
-      expect(foo.status, DeprecationStatus.active); // removeInVersion 0.4.0 chưa tới
-      expect(bar.status, DeprecationStatus.pastGrace); // removeInVersion 0.3.0 đã qua
+      expect(
+        foo.status,
+        DeprecationStatus.active,
+      ); // removeInVersion 0.4.0 chưa tới
+      expect(
+        bar.status,
+        DeprecationStatus.pastGrace,
+      ); // removeInVersion 0.3.0 đã qua
     });
 
     test('pastGraceOnly() chỉ trả về entry đã quá hạn', () {

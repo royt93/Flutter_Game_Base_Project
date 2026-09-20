@@ -125,49 +125,51 @@ void main() {
   });
 
   group('ENH-44: buttonColor/buttonVariant + merged semantics', () {
-    testWidgets('mặc định (không truyền) → CommonButton vẫn primary, màu mặc định', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: ShopItemCard(
-              icon: Icons.diamond_rounded,
-              title: '100 Gems',
-              priceLabel: r'$0.99',
-              onBuy: () {},
+    testWidgets(
+      'mặc định (không truyền) → CommonButton vẫn primary, màu mặc định',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: ShopItemCard(
+                icon: Icons.diamond_rounded,
+                title: '100 Gems',
+                priceLabel: r'$0.99',
+                onBuy: () {},
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      final button = tester.widget<CommonButton>(find.byType(CommonButton));
-      expect(button.variant, CommonButtonVariant.primary);
-      expect(button.color, isNull);
-    });
+        final button = tester.widget<CommonButton>(find.byType(CommonButton));
+        expect(button.variant, CommonButtonVariant.primary);
+        expect(button.color, isNull);
+      },
+    );
 
-    testWidgets('buttonColor/buttonVariant truyền vào áp dụng đúng cho CommonButton', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: ShopItemCard(
-              icon: Icons.diamond_rounded,
-              title: 'Best Value',
-              priceLabel: r'$9.99',
-              onBuy: () {},
-              buttonColor: Colors.amber,
-              buttonVariant: CommonButtonVariant.secondary,
+    testWidgets(
+      'buttonColor/buttonVariant truyền vào áp dụng đúng cho CommonButton',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: ShopItemCard(
+                icon: Icons.diamond_rounded,
+                title: 'Best Value',
+                priceLabel: r'$9.99',
+                onBuy: () {},
+                buttonColor: Colors.amber,
+                buttonVariant: CommonButtonVariant.secondary,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      final button = tester.widget<CommonButton>(find.byType(CommonButton));
-      expect(button.variant, CommonButtonVariant.secondary);
-      expect(button.color, Colors.amber);
-    });
+        final button = tester.widget<CommonButton>(find.byType(CommonButton));
+        expect(button.variant, CommonButtonVariant.secondary);
+        expect(button.color, Colors.amber);
+      },
+    );
 
     testWidgets(
       'Semantics gộp title + priceLabel + ribbonText vào 1 node duy nhất '

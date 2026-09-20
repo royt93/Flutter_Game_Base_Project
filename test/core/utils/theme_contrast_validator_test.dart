@@ -40,18 +40,21 @@ void main() {
       expect(issues.single.ratio, closeTo(1.0, 0.001));
     });
 
-    test('màu tương phản tốt không bị báo lỗi (false positive được kiểm soát)', () {
-      final issues = validateNeonThemeContrastPairs([
-        const ContrastCheck(
-          token: 'fixture',
-          foreground: Colors.black,
-          background: Colors.white,
-          threshold: 4.5,
-          kind: ContrastCheckKind.text,
-        ),
-      ]);
-      expect(issues, isEmpty);
-    });
+    test(
+      'màu tương phản tốt không bị báo lỗi (false positive được kiểm soát)',
+      () {
+        final issues = validateNeonThemeContrastPairs([
+          const ContrastCheck(
+            token: 'fixture',
+            foreground: Colors.black,
+            background: Colors.white,
+            threshold: 4.5,
+            kind: ContrastCheckKind.text,
+          ),
+        ]);
+        expect(issues, isEmpty);
+      },
+    );
   });
 
   group('validateNeonThemeContrast: NeonTheme thật', () {
@@ -97,7 +100,11 @@ void main() {
         final inkSoftDark = issues.where(
           (i) => i.token.startsWith('inkSoft on') && i.state == 'dark',
         );
-        expect(inkSoftDark, isEmpty, reason: 'dark theme đã đạt AA, chỉ light theme bị');
+        expect(
+          inkSoftDark,
+          isEmpty,
+          reason: 'dark theme đã đạt AA, chỉ light theme bị',
+        );
       },
     );
 
@@ -106,7 +113,9 @@ void main() {
       '3.0 và không có biến thể dark riêng (cùng 1 cặp màu cho cả 2 theme)',
       () {
         final issues = validateNeonThemeContrast();
-        final lockedIssues = issues.where((i) => i.kind == ContrastCheckKind.uiComponent);
+        final lockedIssues = issues.where(
+          (i) => i.kind == ContrastCheckKind.uiComponent,
+        );
         expect(lockedIssues, hasLength(1));
         expect(lockedIssues.single.state, 'constant');
       },
@@ -141,11 +150,16 @@ void main() {
       );
     });
 
-    test('gemColors mặc định phân biệt được theo cặp (heuristic khoảng cách RGB)', () {
-      final issues = validateNeonThemeContrast();
-      final gemErrors = issues.where((i) => i.kind == ContrastCheckKind.gemPalette);
-      expect(gemErrors, isEmpty);
-    });
+    test(
+      'gemColors mặc định phân biệt được theo cặp (heuristic khoảng cách RGB)',
+      () {
+        final issues = validateNeonThemeContrast();
+        final gemErrors = issues.where(
+          (i) => i.kind == ContrastCheckKind.gemPalette,
+        );
+        expect(gemErrors, isEmpty);
+      },
+    );
 
     test('gemColors colorBlindSafe cũng được kiểm tra khi bật cờ', () {
       NeonTheme.colorBlindSafe = true;
@@ -164,10 +178,7 @@ void main() {
         'purple': '#151515',
       });
       final issues = validateNeonThemeContrast();
-      expect(
-        issues.any((i) => i.kind == ContrastCheckKind.gemPalette),
-        isTrue,
-      );
+      expect(issues.any((i) => i.kind == ContrastCheckKind.gemPalette), isTrue);
     });
 
     test('AAA nghiêm hơn AA: cùng palette có thể sạch AA nhưng lỗi AAA', () {
@@ -175,63 +186,77 @@ void main() {
         config: const ThemeContrastConfig(),
       ).where((i) => i.kind == ContrastCheckKind.text);
       final aaa = validateNeonThemeContrast(
-        config: const ThemeContrastConfig(normalTextThreshold: 7.0, uiComponentThreshold: 4.5),
+        config: const ThemeContrastConfig(
+          normalTextThreshold: 7.0,
+          uiComponentThreshold: 4.5,
+        ),
       ).where((i) => i.kind == ContrastCheckKind.text);
       expect(aaa.length, greaterThanOrEqualTo(aa.length));
     });
   });
 
-  group('widget fixture: token khớp đúng màu render thật (chống false positive)', () {
-    testWidgets('Text màu ink trên Container màu card render đúng RGB đã khai báo', (
-      tester,
-    ) async {
-      const inkColor = Color(0xFF3A2E6B);
-      const cardColor = Color(0xFFFFFFFF);
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Container(
-            color: cardColor,
-            child: const Text(
-              'contrast fixture',
-              style: TextStyle(color: inkColor),
+  group(
+    'widget fixture: token khớp đúng màu render thật (chống false positive)',
+    () {
+      testWidgets(
+        'Text màu ink trên Container màu card render đúng RGB đã khai báo',
+        (tester) async {
+          const inkColor = Color(0xFF3A2E6B);
+          const cardColor = Color(0xFFFFFFFF);
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Container(
+                color: cardColor,
+                child: const Text(
+                  'contrast fixture',
+                  style: TextStyle(color: inkColor),
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+
+          final textWidget = tester.widget<Text>(find.text('contrast fixture'));
+          final renderedInk = textWidget.style!.color!;
+          final container = tester.widget<Container>(find.byType(Container));
+          final renderedCard = (container.color)!;
+
+          // Token khai báo ở test phải khớp CHÍNH XÁC màu thật cây widget
+          // render ra — nếu 1 wrapper (Opacity/theme override) âm thầm đổi
+          // màu, ratio tính từ token sẽ sai lệch so với thực tế trên máy.
+          expect(renderedInk, inkColor);
+          expect(renderedCard, cardColor);
+          expect(
+            contrastRatio(renderedInk, renderedCard),
+            greaterThanOrEqualTo(4.5),
+          );
+        },
       );
 
-      final textWidget = tester.widget<Text>(find.text('contrast fixture'));
-      final renderedInk = textWidget.style!.color!;
-      final container = tester.widget<Container>(find.byType(Container));
-      final renderedCard = (container.color)!;
+      testWidgets(
+        'fixture cố tình sai màu bị validator chấm fail đúng, không false-negative',
+        (tester) async {
+          const badInk = Color(0xFFEFEFEF);
+          const badCard = Color(0xFFFFFFFF);
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Container(
+                color: badCard,
+                child: const Text(
+                  'bad fixture',
+                  style: TextStyle(color: badInk),
+                ),
+              ),
+            ),
+          );
 
-      // Token khai báo ở test phải khớp CHÍNH XÁC màu thật cây widget
-      // render ra — nếu 1 wrapper (Opacity/theme override) âm thầm đổi
-      // màu, ratio tính từ token sẽ sai lệch so với thực tế trên máy.
-      expect(renderedInk, inkColor);
-      expect(renderedCard, cardColor);
-      expect(contrastRatio(renderedInk, renderedCard), greaterThanOrEqualTo(4.5));
-    });
+          final textWidget = tester.widget<Text>(find.text('bad fixture'));
+          final renderedInk = textWidget.style!.color!;
+          final container = tester.widget<Container>(find.byType(Container));
+          final renderedCard = (container.color)!;
 
-    testWidgets('fixture cố tình sai màu bị validator chấm fail đúng, không false-negative', (
-      tester,
-    ) async {
-      const badInk = Color(0xFFEFEFEF);
-      const badCard = Color(0xFFFFFFFF);
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Container(
-            color: badCard,
-            child: const Text('bad fixture', style: TextStyle(color: badInk)),
-          ),
-        ),
+          expect(contrastRatio(renderedInk, renderedCard), lessThan(4.5));
+        },
       );
-
-      final textWidget = tester.widget<Text>(find.text('bad fixture'));
-      final renderedInk = textWidget.style!.color!;
-      final container = tester.widget<Container>(find.byType(Container));
-      final renderedCard = (container.color)!;
-
-      expect(contrastRatio(renderedInk, renderedCard), lessThan(4.5));
-    });
-  });
+    },
+  );
 }

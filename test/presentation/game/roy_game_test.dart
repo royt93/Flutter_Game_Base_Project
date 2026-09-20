@@ -14,7 +14,9 @@ void main() {
     final game = RoyGame();
 
     await tester.pumpWidget(
-      MaterialApp(home: Material(child: GameWidget(game: game))),
+      MaterialApp(
+        home: Material(child: GameWidget(game: game)),
+      ),
     );
     await game.toBeLoaded();
     await tester.pump();
@@ -26,7 +28,9 @@ void main() {
     final game = RoyGame();
 
     await tester.pumpWidget(
-      MaterialApp(home: Material(child: GameWidget(game: game))),
+      MaterialApp(
+        home: Material(child: GameWidget(game: game)),
+      ),
     );
     await game.toBeLoaded();
     await tester.pump();
@@ -52,7 +56,9 @@ void main() {
       final game = RoyGame();
 
       await tester.pumpWidget(
-        MaterialApp(home: Material(child: GameWidget(game: game))),
+        MaterialApp(
+          home: Material(child: GameWidget(game: game)),
+        ),
       );
       await game.toBeLoaded();
       await tester.pump();

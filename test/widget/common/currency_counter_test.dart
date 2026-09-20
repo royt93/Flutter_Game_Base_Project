@@ -156,9 +156,7 @@ void main() {
       'FittedBox dùng AlignmentDirectional.centerStart (không phải Alignment.centerLeft vật lý)',
       (tester) async {
         await tester.pumpWidget(
-          const MaterialApp(
-            home: Material(child: CurrencyCounter(value: 100)),
-          ),
+          const MaterialApp(home: Material(child: CurrencyCounter(value: 100))),
         );
 
         final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));

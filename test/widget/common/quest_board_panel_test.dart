@@ -188,12 +188,8 @@ void main() {
 
       await tester.pumpWidget(
         StatefulBuilder(
-          builder: (context, setState) => host(
-            QuestBoardPanel(
-              quests: quests,
-              onClaim: (_) {},
-            ),
-          ),
+          builder: (context, setState) =>
+              host(QuestBoardPanel(quests: quests, onClaim: (_) {})),
         ),
       );
 
@@ -450,54 +446,55 @@ void main() {
       expect(find.text('Không có nhiệm vụ nào hôm nay.'), findsNothing);
     });
 
-    testWidgets('claimLabel/claimedLabel tuỳ chỉnh đổi đúng label nút theo claimed', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        host(
-          QuestBoardPanel(
-            quests: const [
-              QuestViewModel(
-                id: 'a',
-                label: 'Quest A',
-                progress: 3,
-                target: 3,
-                claimed: false,
-              ),
-            ],
-            onClaim: (_) {},
-            claimLabel: 'Claim',
-            claimedLabel: 'Claimed',
+    testWidgets(
+      'claimLabel/claimedLabel tuỳ chỉnh đổi đúng label nút theo claimed',
+      (tester) async {
+        await tester.pumpWidget(
+          host(
+            QuestBoardPanel(
+              quests: const [
+                QuestViewModel(
+                  id: 'a',
+                  label: 'Quest A',
+                  progress: 3,
+                  target: 3,
+                  claimed: false,
+                ),
+              ],
+              onClaim: (_) {},
+              claimLabel: 'Claim',
+              claimedLabel: 'Claimed',
+            ),
           ),
-        ),
-      );
+        );
 
-      var button = tester.widget<CommonButton>(find.byType(CommonButton));
-      expect(button.label, 'Claim');
+        var button = tester.widget<CommonButton>(find.byType(CommonButton));
+        expect(button.label, 'Claim');
 
-      await tester.pumpWidget(
-        host(
-          QuestBoardPanel(
-            quests: const [
-              QuestViewModel(
-                id: 'a',
-                label: 'Quest A',
-                progress: 3,
-                target: 3,
-                claimed: true,
-              ),
-            ],
-            onClaim: (_) {},
-            claimLabel: 'Claim',
-            claimedLabel: 'Claimed',
+        await tester.pumpWidget(
+          host(
+            QuestBoardPanel(
+              quests: const [
+                QuestViewModel(
+                  id: 'a',
+                  label: 'Quest A',
+                  progress: 3,
+                  target: 3,
+                  claimed: true,
+                ),
+              ],
+              onClaim: (_) {},
+              claimLabel: 'Claim',
+              claimedLabel: 'Claimed',
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      button = tester.widget<CommonButton>(find.byType(CommonButton));
-      expect(button.label, 'Claimed');
-    });
+        button = tester.widget<CommonButton>(find.byType(CommonButton));
+        expect(button.label, 'Claimed');
+      },
+    );
 
     testWidgets(
       'progressSemanticLabel tuỳ chỉnh dùng đúng kết quả callback thay vì chuỗi mặc định',

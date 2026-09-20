@@ -11,7 +11,8 @@ Widget _wrap(Widget child) => MaterialApp(home: Material(child: child));
 
 void main() {
   setUp(() {
-    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     String? clipboardText;
     messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
       if (call.method == 'Clipboard.setData') {
@@ -41,15 +42,14 @@ void main() {
     expect(find.text('Kiểm tra kết nối rồi thử lại.'), findsOneWidget);
   });
 
-  testWidgets('không có onRetry: không hiện nút retry nào (không giả tương tác)', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _wrap(const RetryErrorState(message: 'Lỗi.')),
-    );
+  testWidgets(
+    'không có onRetry: không hiện nút retry nào (không giả tương tác)',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const RetryErrorState(message: 'Lỗi.')));
 
-    expect(find.byType(AsyncCommonButton), findsNothing);
-  });
+      expect(find.byType(AsyncCommonButton), findsNothing);
+    },
+  );
 
   testWidgets('có onRetry: bấm gọi đúng 1 lần, rapid tap không chạy trùng', (
     tester,
@@ -183,7 +183,9 @@ void main() {
     });
   });
 
-  testWidgets('compact: không tự bọc Center (caller tự đặt vị trí)', (tester) async {
+  testWidgets('compact: không tự bọc Center (caller tự đặt vị trí)', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _wrap(const RetryErrorState(message: 'Lỗi.', compact: true)),
     );

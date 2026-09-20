@@ -15,7 +15,11 @@ library;
 
 enum AuditSeverity { info, warning, error }
 
-enum AuditRuleId { reducedMotionCoverage, tapTargetSemantics, rtlDirectionalSafety }
+enum AuditRuleId {
+  reducedMotionCoverage,
+  tapTargetSemantics,
+  rtlDirectionalSafety,
+}
 
 /// One heuristic: if [triggerPattern] matches a file's source, the file
 /// is expected to also match [requiredPattern] somewhere — if it
@@ -109,14 +113,19 @@ class AuditViolation {
   final String description;
 
   @override
-  String toString() => '[${severity.name}] $file: ${ruleId.name} — $description';
+  String toString() =>
+      '[${severity.name}] $file: ${ruleId.name} — $description';
 }
 
 /// One pre-approved exception — [reason] must be non-empty (enforced by
 /// [AuditBaseline.fromJson], which silently drops any entry missing one
 /// rather than let a reason-less suppression through).
 class AuditSuppression {
-  const AuditSuppression({required this.file, required this.ruleId, required this.reason});
+  const AuditSuppression({
+    required this.file,
+    required this.ruleId,
+    required this.reason,
+  });
 
   final String file;
   final AuditRuleId ruleId;

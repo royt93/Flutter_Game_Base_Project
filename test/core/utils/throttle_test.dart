@@ -59,21 +59,29 @@ void main() {
 
         await Future.delayed(const Duration(milliseconds: 150));
         fn();
-        expect(calls, 2, reason: 'hết window thật (đo bằng đồng hồ đơn điệu) phải cho gọi tiếp');
+        expect(
+          calls,
+          2,
+          reason:
+              'hết window thật (đo bằng đồng hồ đơn điệu) phải cho gọi tiếp',
+        );
       },
     );
 
-    test('gọi liên tiếp ngay sau lần đầu (chưa hết window) vẫn bị drop đúng như cũ', () {
-      var calls = 0;
-      final fn = throttled(
-        () => calls++,
-        window: const Duration(milliseconds: 500),
-      );
+    test(
+      'gọi liên tiếp ngay sau lần đầu (chưa hết window) vẫn bị drop đúng như cũ',
+      () {
+        var calls = 0;
+        final fn = throttled(
+          () => calls++,
+          window: const Duration(milliseconds: 500),
+        );
 
-      fn();
-      fn();
-      fn();
-      expect(calls, 1);
-    });
+        fn();
+        fn();
+        fn();
+        expect(calls, 1);
+      },
+    );
   });
 }

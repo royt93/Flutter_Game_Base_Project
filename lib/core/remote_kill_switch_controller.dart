@@ -54,7 +54,11 @@ class KillSwitchState {
 }
 
 class _ParsedKillSwitch {
-  const _ParsedKillSwitch({required this.killed, required this.reason, required this.version});
+  const _ParsedKillSwitch({
+    required this.killed,
+    required this.reason,
+    required this.version,
+  });
   final bool killed;
   final String reason;
   final int version;

@@ -7,9 +7,12 @@ void main() {
       expect(asIntOr(5, 0), 5);
     });
 
-    test('JSON decode ra double cho số nguyên (dart:convert không phân biệt) → vẫn ra int đúng', () {
-      expect(asIntOr(5.0, 0), 5);
-    });
+    test(
+      'JSON decode ra double cho số nguyên (dart:convert không phân biệt) → vẫn ra int đúng',
+      () {
+        expect(asIntOr(5.0, 0), 5);
+      },
+    );
 
     test('sai kiểu/null/List/Map → fallback', () {
       expect(asIntOr('5', 9), 9);
@@ -18,16 +21,13 @@ void main() {
       expect(asIntOr({'a': 1}, 9), 9);
     });
 
-    test(
-      'BUG-22: double không hữu hạn (NaN/Infinity/-Infinity) → fallback, '
-      'không throw UnsupportedError',
-      () {
-        expect(asIntOr(double.nan, 9), 9);
-        expect(asIntOr(double.infinity, 9), 9);
-        expect(asIntOr(double.negativeInfinity, 9), 9);
-        expect(() => asIntOr(double.nan, 0), returnsNormally);
-      },
-    );
+    test('BUG-22: double không hữu hạn (NaN/Infinity/-Infinity) → fallback, '
+        'không throw UnsupportedError', () {
+      expect(asIntOr(double.nan, 9), 9);
+      expect(asIntOr(double.infinity, 9), 9);
+      expect(asIntOr(double.negativeInfinity, 9), 9);
+      expect(() => asIntOr(double.nan, 0), returnsNormally);
+    });
   });
 
   group('asStringOr', () {

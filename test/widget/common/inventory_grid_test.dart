@@ -13,17 +13,27 @@ Widget _host(
     data: MediaQueryData(textScaler: TextScaler.linear(textScaleFactor)),
     child: Directionality(
       textDirection: textDirection,
-      child: MaterialApp(home: Scaffold(body: SizedBox.fromSize(size: size, child: grid))),
+      child: MaterialApp(
+        home: Scaffold(
+          body: SizedBox.fromSize(size: size, child: grid),
+        ),
+      ),
     ),
   );
 }
 
-Widget _defaultItemBuilder(BuildContext context, InventorySlot slot, bool isSelected) {
+Widget _defaultItemBuilder(
+  BuildContext context,
+  InventorySlot slot,
+  bool isSelected,
+) {
   return Container(
     key: ValueKey('tile_${slot.slotId}'),
     color: isSelected ? Colors.amber : Colors.blueGrey,
     child: Center(
-      child: Text('${slot.itemId} x${slot.quantity}${slot.equipped ? " (equipped)" : ""}'),
+      child: Text(
+        '${slot.itemId} x${slot.quantity}${slot.equipped ? " (equipped)" : ""}',
+      ),
     ),
   );
 }
@@ -36,7 +46,12 @@ void main() {
       const snapshot = InventorySnapshot(
         slots: [
           InventorySlot(slotId: 1, itemId: 'potion', quantity: 3),
-          InventorySlot(slotId: 2, itemId: 'sword', quantity: 1, equipped: true),
+          InventorySlot(
+            slotId: 2,
+            itemId: 'sword',
+            quantity: 1,
+            equipped: true,
+          ),
         ],
         capacity: 6,
       );
@@ -131,8 +146,12 @@ void main() {
         ),
       );
 
-      final potionTile = tester.widget<Container>(find.byKey(const ValueKey('tile_1')));
-      final swordTile = tester.widget<Container>(find.byKey(const ValueKey('tile_2')));
+      final potionTile = tester.widget<Container>(
+        find.byKey(const ValueKey('tile_1')),
+      );
+      final swordTile = tester.widget<Container>(
+        find.byKey(const ValueKey('tile_2')),
+      );
       expect(potionTile.color, Colors.blueGrey);
       expect(swordTile.color, Colors.amber);
     });
@@ -192,29 +211,30 @@ void main() {
       expect(longPressed?.slotId, 1);
     });
 
-    testWidgets('không truyền onSlotTap/onSlotLongPress: tap không throw, không GestureDetector nào bọc thêm', (
-      tester,
-    ) async {
-      const snapshot = InventorySnapshot(
-        slots: [InventorySlot(slotId: 1, itemId: 'potion', quantity: 1)],
-        capacity: 1,
-      );
+    testWidgets(
+      'không truyền onSlotTap/onSlotLongPress: tap không throw, không GestureDetector nào bọc thêm',
+      (tester) async {
+        const snapshot = InventorySnapshot(
+          slots: [InventorySlot(slotId: 1, itemId: 'potion', quantity: 1)],
+          capacity: 1,
+        );
 
-      await tester.pumpWidget(
-        _host(
-          InventoryGrid(
-            snapshot: snapshot,
-            itemBuilder: _defaultItemBuilder,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
+        await tester.pumpWidget(
+          _host(
+            InventoryGrid(
+              snapshot: snapshot,
+              itemBuilder: _defaultItemBuilder,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.byKey(const ValueKey('tile_1')));
-      await tester.pump();
-      expect(tester.takeException(), isNull);
-    });
+        await tester.tap(find.byKey(const ValueKey('tile_1')));
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('InventoryGrid: stable identity qua reorder/update', () {
@@ -381,7 +401,10 @@ void main() {
 
       final dragHandle = find.byKey(const ValueKey('tile_1'));
       final dropTarget = find.byKey(const ValueKey('tile_2'));
-      await tester.drag(dragHandle, tester.getCenter(dropTarget) - tester.getCenter(dragHandle));
+      await tester.drag(
+        dragHandle,
+        tester.getCenter(dropTarget) - tester.getCenter(dragHandle),
+      );
       await tester.pumpAndSettle();
 
       expect(from, 1);
@@ -468,9 +491,8 @@ void main() {
         _host(
           InventoryGrid(
             snapshot: snapshot,
-            itemBuilder: (context, slot, isSelected) => FittedBox(
-              child: Text('${slot.itemId} x${slot.quantity}'),
-            ),
+            itemBuilder: (context, slot, isSelected) =>
+                FittedBox(child: Text('${slot.itemId} x${slot.quantity}')),
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
           ),

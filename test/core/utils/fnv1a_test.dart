@@ -26,11 +26,14 @@ void main() {
     }
   });
 
-  test('khớp đúng giá trị FNV-1a 32-bit chuẩn cho vài input đã biết trước (golden vector)', () {
-    // Các giá trị này là hằng số FNV-1a 32-bit tiêu chuẩn, có thể tra cứu
-    // độc lập — dùng để bắt lỗi nếu thuật toán vô tình bị đổi khác đi.
-    expect(fnv1aHash(''), 0x811c9dc5);
-    expect(fnv1aHash('a'), 0xe40c292c);
-    expect(fnv1aHash('foobar'), 0xbf9cf968);
-  });
+  test(
+    'khớp đúng giá trị FNV-1a 32-bit chuẩn cho vài input đã biết trước (golden vector)',
+    () {
+      // Các giá trị này là hằng số FNV-1a 32-bit tiêu chuẩn, có thể tra cứu
+      // độc lập — dùng để bắt lỗi nếu thuật toán vô tình bị đổi khác đi.
+      expect(fnv1aHash(''), 0x811c9dc5);
+      expect(fnv1aHash('a'), 0xe40c292c);
+      expect(fnv1aHash('foobar'), 0xbf9cf968);
+    },
+  );
 }

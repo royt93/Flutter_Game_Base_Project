@@ -67,18 +67,15 @@ void main() {
       },
     );
 
-    test(
-      'AudioManager dùng AudioCache riêng, đúng prefix của kit',
-      () async {
-        final manager = AudioManager();
-        await manager.init();
+    test('AudioManager dùng AudioCache riêng, đúng prefix của kit', () async {
+      final manager = AudioManager();
+      await manager.init();
 
-        expect(
-          manager.debugAudioCachePrefix,
-          'packages/roy_casual_kit/asset/audio/',
-        );
-      },
-    );
+      expect(
+        manager.debugAudioCachePrefix,
+        'packages/roy_casual_kit/asset/audio/',
+      );
+    });
 
     test('playSfx không throw và no-op ngay khi muted.value == true', () async {
       final manager = AudioManager();
@@ -103,19 +100,16 @@ void main() {
       },
     );
 
-    test(
-      'playSfx dùng AudioCache riêng biệt, KHÔNG trùng prefix với bgm cache '
-      '(guard chống lại lỗi kiểu BUG-04 cho SFX)',
-      () {
-        final manager = AudioManager();
+    test('playSfx dùng AudioCache riêng biệt, KHÔNG trùng prefix với bgm cache '
+        '(guard chống lại lỗi kiểu BUG-04 cho SFX)', () {
+      final manager = AudioManager();
 
-        expect(manager.debugSfxCachePrefix, 'assets/');
-        expect(
-          manager.debugSfxCachePrefix,
-          isNot(equals(manager.debugAudioCachePrefix)),
-        );
-      },
-    );
+      expect(manager.debugSfxCachePrefix, 'assets/');
+      expect(
+        manager.debugSfxCachePrefix,
+        isNot(equals(manager.debugAudioCachePrefix)),
+      );
+    });
 
     test('playSfx gọi liên tiếp (rapid taps) không throw', () async {
       final manager = AudioManager();
@@ -145,47 +139,38 @@ void main() {
         },
       );
 
-      test(
-        'playSfx() liên tiếp — mỗi lần gọi đều dispose đúng player riêng '
-        'của nó, không bị bỏ sót',
-        () async {
-          final manager = AudioManager();
-          manager.muted.value = false;
+      test('playSfx() liên tiếp — mỗi lần gọi đều dispose đúng player riêng '
+          'của nó, không bị bỏ sót', () async {
+        final manager = AudioManager();
+        manager.muted.value = false;
 
-          final before = manager.debugSfxDisposeCount;
-          await Future.wait([
-            manager.playSfx('tap.mp3'),
-            manager.playSfx('tap.mp3'),
-            manager.playSfx('tap.mp3'),
-          ]).timeout(const Duration(seconds: 2));
+        final before = manager.debugSfxDisposeCount;
+        await Future.wait([
+          manager.playSfx('tap.mp3'),
+          manager.playSfx('tap.mp3'),
+          manager.playSfx('tap.mp3'),
+        ]).timeout(const Duration(seconds: 2));
 
-          expect(manager.debugSfxDisposeCount - before, 3);
-        },
-      );
+        expect(manager.debugSfxDisposeCount - before, 3);
+      });
 
-      test(
-        'muted.value == true (no-op, không tạo player nào) → '
-        'debugSfxDisposeCount không đổi',
-        () async {
-          final manager = AudioManager();
-          manager.muted.value = true;
+      test('muted.value == true (no-op, không tạo player nào) → '
+          'debugSfxDisposeCount không đổi', () async {
+        final manager = AudioManager();
+        manager.muted.value = true;
 
-          final before = manager.debugSfxDisposeCount;
-          await manager.playSfx('tap.mp3').timeout(const Duration(seconds: 2));
+        final before = manager.debugSfxDisposeCount;
+        await manager.playSfx('tap.mp3').timeout(const Duration(seconds: 2));
 
-          expect(manager.debugSfxDisposeCount, before);
-        },
-      );
+        expect(manager.debugSfxDisposeCount, before);
+      });
 
-      test(
-        'onClose() dispose _bgm, không throw kể cả khi chưa init()',
-        () {
-          final manager = AudioManager();
-          Get.put(manager, permanent: true);
+      test('onClose() dispose _bgm, không throw kể cả khi chưa init()', () {
+        final manager = AudioManager();
+        Get.put(manager, permanent: true);
 
-          expect(() => Get.delete<AudioManager>(force: true), returnsNormally);
-        },
-      );
+        expect(() => Get.delete<AudioManager>(force: true), returnsNormally);
+      });
     });
 
     group('IDEA-45: audio ducking', () {
@@ -210,19 +195,16 @@ void main() {
         },
       );
 
-      test(
-        'playSfx(duck: false) (mặc định) không đụng duckCount',
-        () async {
-          final manager = AudioManager();
+      test('playSfx(duck: false) (mặc định) không đụng duckCount', () async {
+        final manager = AudioManager();
 
-          final future = manager.playSfx('tap.mp3');
-          expect(manager.duckCount, 0);
+        final future = manager.playSfx('tap.mp3');
+        expect(manager.duckCount, 0);
 
-          await future.timeout(const Duration(seconds: 2));
+        await future.timeout(const Duration(seconds: 2));
 
-          expect(manager.duckCount, 0);
-        },
-      );
+        expect(manager.duckCount, 0);
+      });
 
       test(
         'nhiều SFX duck chồng lên nhau: count lên đúng 2, không về 0 sớm khi '
@@ -245,22 +227,19 @@ void main() {
         },
       );
 
-      test(
-        'muted.value bật giữa lúc đang duck (trước khi playSfx trả về) vẫn '
-        'unduck đúng, không kẹt count',
-        () async {
-          final manager = AudioManager();
+      test('muted.value bật giữa lúc đang duck (trước khi playSfx trả về) vẫn '
+          'unduck đúng, không kẹt count', () async {
+        final manager = AudioManager();
 
-          final future = manager.playSfx('tap.mp3', duck: true);
-          expect(manager.duckCount, 1);
+        final future = manager.playSfx('tap.mp3', duck: true);
+        expect(manager.duckCount, 1);
 
-          manager.muted.value = true;
+        manager.muted.value = true;
 
-          await future.timeout(const Duration(seconds: 2));
+        await future.timeout(const Duration(seconds: 2));
 
-          expect(manager.duckCount, 0);
-        },
-      );
+        expect(manager.duckCount, 0);
+      });
 
       test(
         'muted.value == true từ đầu → playSfx(duck: true) no-op hoàn toàn, '

@@ -70,15 +70,18 @@ void main() {
       expect(tracker.current.installTimeMs, greaterThan(0));
     });
 
-    test('cold start lần 2 (cùng storage): sequence tăng đúng 1, installTimeMs GIỮ NGUYÊN', () {
-      final first = AppSessionTracker();
-      final installTimeMs = first.current.installTimeMs;
+    test(
+      'cold start lần 2 (cùng storage): sequence tăng đúng 1, installTimeMs GIỮ NGUYÊN',
+      () {
+        final first = AppSessionTracker();
+        final installTimeMs = first.current.installTimeMs;
 
-      final second = AppSessionTracker();
+        final second = AppSessionTracker();
 
-      expect(second.current.sequence, 2);
-      expect(second.current.installTimeMs, installTimeMs);
-    });
+        expect(second.current.sequence, 2);
+        expect(second.current.installTimeMs, installTimeMs);
+      },
+    );
 
     test('2 lần cold start cho 2 sessionId khác nhau', () {
       final first = AppSessionTracker();
@@ -87,13 +90,16 @@ void main() {
       expect(first.current.sessionId, isNot(second.current.sessionId));
     });
 
-    test('sequence persisted âm/hỏng (hand-edited): clamp về 0 trước khi +1, không throw', () async {
-      await store.setInt(StorageKeys.appSessionSequence, -5);
+    test(
+      'sequence persisted âm/hỏng (hand-edited): clamp về 0 trước khi +1, không throw',
+      () async {
+        await store.setInt(StorageKeys.appSessionSequence, -5);
 
-      final tracker = AppSessionTracker();
+        final tracker = AppSessionTracker();
 
-      expect(tracker.current.sequence, 1);
-    });
+        expect(tracker.current.sequence, 1);
+      },
+    );
   });
 
   group('AppSessionTracker: foreground duration', () {
@@ -117,50 +123,59 @@ void main() {
       expect(tracker.foregroundDuration, const Duration(seconds: 3));
     });
 
-    test('resume trong sessionTimeout: tiếp tục CÙNG session, cộng dồn foreground', () {
-      final fake = _FakeStopwatch();
-      final tracker = AppSessionTracker(
-        createStopwatch: () => fake,
-        sessionTimeout: const Duration(minutes: 30),
-      );
-      final originalSessionId = tracker.current.sessionId;
-      fake.advance(const Duration(seconds: 3));
+    test(
+      'resume trong sessionTimeout: tiếp tục CÙNG session, cộng dồn foreground',
+      () {
+        final fake = _FakeStopwatch();
+        final tracker = AppSessionTracker(
+          createStopwatch: () => fake,
+          sessionTimeout: const Duration(minutes: 30),
+        );
+        final originalSessionId = tracker.current.sessionId;
+        fake.advance(const Duration(seconds: 3));
 
-      tracker.handleLifecycleEvent(RoyLifecycleEvent.background);
-      tracker.handleLifecycleEvent(RoyLifecycleEvent.resumed);
-      fake.advance(const Duration(seconds: 2));
+        tracker.handleLifecycleEvent(RoyLifecycleEvent.background);
+        tracker.handleLifecycleEvent(RoyLifecycleEvent.resumed);
+        fake.advance(const Duration(seconds: 2));
 
-      expect(tracker.current.sessionId, originalSessionId);
-      expect(tracker.foregroundDuration, const Duration(seconds: 5));
-    });
+        expect(tracker.current.sessionId, originalSessionId);
+        expect(tracker.foregroundDuration, const Duration(seconds: 5));
+      },
+    );
   });
 
-  group('AppSessionTracker: resume ngoài policy (sessionTimeout) tạo session mới', () {
-    test('background lâu hơn sessionTimeout: resume tạo session mới, reset foreground', () async {
-      final fake = _FakeStopwatch();
-      final tracker = AppSessionTracker(
-        createStopwatch: () => fake,
-        sessionTimeout: const Duration(minutes: 30),
-      );
-      final originalSessionId = tracker.current.sessionId;
-      final originalSequence = tracker.current.sequence;
-      fake.advance(const Duration(seconds: 3));
+  group(
+    'AppSessionTracker: resume ngoài policy (sessionTimeout) tạo session mới',
+    () {
+      test(
+        'background lâu hơn sessionTimeout: resume tạo session mới, reset foreground',
+        () async {
+          final fake = _FakeStopwatch();
+          final tracker = AppSessionTracker(
+            createStopwatch: () => fake,
+            sessionTimeout: const Duration(minutes: 30),
+          );
+          final originalSessionId = tracker.current.sessionId;
+          final originalSequence = tracker.current.sequence;
+          fake.advance(const Duration(seconds: 3));
 
-      tracker.handleLifecycleEvent(RoyLifecycleEvent.background);
-      // Mô phỏng trôi qua 31 phút thật bằng maxMsSeen (nowMsClamped
-      // dùng để tính khoảng cách backgroundedAtMs -> resume).
-      final realMs = DateTime.now().toUtc().millisecondsSinceEpoch;
-      store.setInt(
-        StorageKeys.maxMsSeen,
-        realMs + const Duration(minutes: 31).inMilliseconds,
-      );
-      tracker.handleLifecycleEvent(RoyLifecycleEvent.resumed);
+          tracker.handleLifecycleEvent(RoyLifecycleEvent.background);
+          // Mô phỏng trôi qua 31 phút thật bằng maxMsSeen (nowMsClamped
+          // dùng để tính khoảng cách backgroundedAtMs -> resume).
+          final realMs = DateTime.now().toUtc().millisecondsSinceEpoch;
+          store.setInt(
+            StorageKeys.maxMsSeen,
+            realMs + const Duration(minutes: 31).inMilliseconds,
+          );
+          tracker.handleLifecycleEvent(RoyLifecycleEvent.resumed);
 
-      expect(tracker.current.sessionId, isNot(originalSessionId));
-      expect(tracker.current.sequence, originalSequence + 1);
-      expect(tracker.foregroundDuration, Duration.zero);
-    });
-  });
+          expect(tracker.current.sessionId, isNot(originalSessionId));
+          expect(tracker.current.sequence, originalSequence + 1);
+          expect(tracker.foregroundDuration, Duration.zero);
+        },
+      );
+    },
+  );
 
   group('AppSessionTracker: consent gate cho analytics context', () {
     test('chưa có ConsentStateService: analyticsContext() rỗng', () {
@@ -175,33 +190,42 @@ void main() {
       expect(tracker.analyticsContext(), isEmpty);
     });
 
-    test('consent granted: analyticsContext() có đúng field, không rò field lạ', () {
-      final consent = ConsentStateService(policyVersion: 1);
-      Get.put(consent, permanent: true);
-      consent.grant(ConsentCategory.analytics);
-      final tracker = AppSessionTracker();
+    test(
+      'consent granted: analyticsContext() có đúng field, không rò field lạ',
+      () {
+        final consent = ConsentStateService(policyVersion: 1);
+        Get.put(consent, permanent: true);
+        consent.grant(ConsentCategory.analytics);
+        final tracker = AppSessionTracker();
 
-      final context = tracker.analyticsContext();
+        final context = tracker.analyticsContext();
 
-      expect(context['sessionId'], tracker.current.sessionId);
-      expect(context['sessionSequence'], tracker.current.sequence);
-      expect(context.containsKey('installTimeMs'), isTrue);
-      expect(context.containsKey('foregroundDurationMs'), isTrue);
-    });
+        expect(context['sessionId'], tracker.current.sessionId);
+        expect(context['sessionSequence'], tracker.current.sequence);
+        expect(context.containsKey('installTimeMs'), isTrue);
+        expect(context.containsKey('foregroundDurationMs'), isTrue);
+      },
+    );
   });
 
-  group('AppSessionTracker: lifecycle hook tích hợp RoyLifecycleCoordinator', () {
-    test('đăng ký hook đúng vào RoyLifecycleCoordinator khi có sẵn', () async {
-      final lifecycle = RoyLifecycleCoordinator();
-      Get.put(lifecycle, permanent: true);
-      final fake = _FakeStopwatch();
-      final tracker = AppSessionTracker(createStopwatch: () => fake);
-      fake.advance(const Duration(seconds: 1));
+  group(
+    'AppSessionTracker: lifecycle hook tích hợp RoyLifecycleCoordinator',
+    () {
+      test(
+        'đăng ký hook đúng vào RoyLifecycleCoordinator khi có sẵn',
+        () async {
+          final lifecycle = RoyLifecycleCoordinator();
+          Get.put(lifecycle, permanent: true);
+          final fake = _FakeStopwatch();
+          final tracker = AppSessionTracker(createStopwatch: () => fake);
+          fake.advance(const Duration(seconds: 1));
 
-      lifecycle.didChangeAppLifecycleState(AppLifecycleState.paused);
-      await Future<void>.delayed(Duration.zero);
+          lifecycle.didChangeAppLifecycleState(AppLifecycleState.paused);
+          await Future<void>.delayed(Duration.zero);
 
-      expect(tracker.foregroundDuration, const Duration(seconds: 1));
-    });
-  });
+          expect(tracker.foregroundDuration, const Duration(seconds: 1));
+        },
+      );
+    },
+  );
 }

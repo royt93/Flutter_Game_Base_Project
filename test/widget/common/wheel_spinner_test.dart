@@ -323,32 +323,29 @@ void main() {
         },
       );
 
-      testWidgets(
-        'đang quay: Semantics báo "Spinning"',
-        (tester) async {
-          final controller = WheelSpinnerController();
-          await tester.pumpWidget(
-            _wrap(
-              WheelSpinner(
-                segments: segments,
-                controller: controller,
-                onSpinEnd: (_) {},
-                spinDuration: const Duration(milliseconds: 300),
-              ),
+      testWidgets('đang quay: Semantics báo "Spinning"', (tester) async {
+        final controller = WheelSpinnerController();
+        await tester.pumpWidget(
+          _wrap(
+            WheelSpinner(
+              segments: segments,
+              controller: controller,
+              onSpinEnd: (_) {},
+              spinDuration: const Duration(milliseconds: 300),
             ),
-          );
+          ),
+        );
 
-          controller.spin(2);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 100));
+        controller.spin(2);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-          final semantics = tester.getSemantics(find.byType(WheelSpinner));
-          expect(semantics.label, 'Spinning');
-          expect(tester.takeException(), isNull);
+        final semantics = tester.getSemantics(find.byType(WheelSpinner));
+        expect(semantics.label, 'Spinning');
+        expect(tester.takeException(), isNull);
 
-          await tester.pumpAndSettle();
-        },
-      );
+        await tester.pumpAndSettle();
+      });
 
       for (final target in [0, 1, 2, 3]) {
         testWidgets(

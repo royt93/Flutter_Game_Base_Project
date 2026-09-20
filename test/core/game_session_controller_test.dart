@@ -64,7 +64,11 @@ void main() {
       c.markReady();
       c.start();
       c.win();
-      expect(c.events, [GameSessionPhase.ready, GameSessionPhase.playing, GameSessionPhase.won]);
+      expect(c.events, [
+        GameSessionPhase.ready,
+        GameSessionPhase.playing,
+        GameSessionPhase.won,
+      ]);
 
       c.restart();
 
@@ -79,14 +83,17 @@ void main() {
       expect(c.snapshot.value.phase, GameSessionPhase.loading);
     });
 
-    test('100 lần restart() liên tiếp: events không phình to theo số lần gọi', () {
-      final c = GameSessionController();
-      for (var i = 0; i < 100; i++) {
-        c.restart();
-      }
-      expect(c.events.length, 1);
-      expect(c.events, [GameSessionPhase.loading]);
-    });
+    test(
+      '100 lần restart() liên tiếp: events không phình to theo số lần gọi',
+      () {
+        final c = GameSessionController();
+        for (var i = 0; i < 100; i++) {
+          c.restart();
+        }
+        expect(c.events.length, 1);
+        expect(c.events, [GameSessionPhase.loading]);
+      },
+    );
 
     test('hành vi các transition khác không đổi sau khi restart()', () {
       final c = GameSessionController();

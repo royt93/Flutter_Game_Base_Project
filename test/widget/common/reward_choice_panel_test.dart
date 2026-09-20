@@ -159,45 +159,47 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('confirm thành công: panel chuyển claimed, không chọn/confirm lại được', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _wrap(
-        RewardChoicePanel(options: _options, onConfirm: (_) async {}),
-      ),
-    );
+  testWidgets(
+    'confirm thành công: panel chuyển claimed, không chọn/confirm lại được',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(RewardChoicePanel(options: _options, onConfirm: (_) async {})),
+      );
 
-    await tester.tap(find.text('Coin pack'));
-    await tester.pump();
-    await tester.tap(find.byType(AsyncCommonButton));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 1200)); // qua successDuration
+      await tester.tap(find.text('Coin pack'));
+      await tester.pump();
+      await tester.tap(find.byType(AsyncCommonButton));
+      await tester.pump();
+      await tester.pump(
+        const Duration(milliseconds: 1200),
+      ); // qua successDuration
 
-    expect(find.byType(AsyncCommonButton), findsNothing);
-    expect(find.text('Claimed'), findsWidgets);
-  });
+      expect(find.byType(AsyncCommonButton), findsNothing);
+      expect(find.text('Claimed'), findsWidgets);
+    },
+  );
 
-  testWidgets('claimedIds truyền sẵn: hiện read-only claimed, không có nút confirm', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _wrap(
-        RewardChoicePanel(
-          options: _options,
-          claimedIds: const {'coin'},
-          onConfirm: (_) async {},
+  testWidgets(
+    'claimedIds truyền sẵn: hiện read-only claimed, không có nút confirm',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          RewardChoicePanel(
+            options: _options,
+            claimedIds: const {'coin'},
+            onConfirm: (_) async {},
+          ),
         ),
-      ),
-    );
+      );
 
-    expect(find.byType(AsyncCommonButton), findsNothing);
-    expect(find.text('Claimed'), findsWidgets);
+      expect(find.byType(AsyncCommonButton), findsNothing);
+      expect(find.text('Claimed'), findsWidgets);
 
-    await tester.tap(find.text('Gem pack'));
-    await tester.pump();
-    expect(find.byType(AsyncCommonButton), findsNothing); // vẫn không hiện
-  });
+      await tester.tap(find.text('Gem pack'));
+      await tester.pump();
+      expect(find.byType(AsyncCommonButton), findsNothing); // vẫn không hiện
+    },
+  );
 
   testWidgets('options rỗng: hiện empty state, không throw', (tester) async {
     await tester.pumpWidget(

@@ -4,7 +4,9 @@ import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/candy_text_field.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
-  home: Material(child: Padding(padding: const EdgeInsets.all(16), child: child)),
+  home: Material(
+    child: Padding(padding: const EdgeInsets.all(16), child: child),
+  ),
 );
 
 BoxDecoration _boxDecorationOf(WidgetTester tester) =>
@@ -113,9 +115,7 @@ void main() {
   });
 
   group('focus/blur đổi border + glow', () {
-    testWidgets('focus → border đổi màu color, có glow shadow', (
-      tester,
-    ) async {
+    testWidgets('focus → border đổi màu color, có glow shadow', (tester) async {
       final controller = TextEditingController();
       await tester.pumpWidget(
         _wrap(
@@ -138,7 +138,10 @@ void main() {
       final focusedDecoration = _boxDecorationOf(tester);
       expect((focusedDecoration.border as Border).top.color, NeonTheme.red);
       expect(focusedDecoration.boxShadow, isNotNull);
-      expect(focusedDecoration.boxShadow!.length, 3); // NeonTheme.glow's 3 layers
+      expect(
+        focusedDecoration.boxShadow!.length,
+        3,
+      ); // NeonTheme.glow's 3 layers
     });
 
     testWidgets('blur (mất focus) → border/glow trở lại trạng thái mặc định', (
@@ -168,7 +171,10 @@ void main() {
 
       final blurredDecoration = _boxDecorationOf(tester);
       expect((blurredDecoration.border as Border).top.color, NeonTheme.muted);
-      expect(blurredDecoration.boxShadow!.length, 1); // NeonTheme.drop's 1 layer
+      expect(
+        blurredDecoration.boxShadow!.length,
+        1,
+      ); // NeonTheme.drop's 1 layer
     });
   });
 
@@ -189,9 +195,7 @@ void main() {
     expect(container.duration, Duration.zero);
   });
 
-  testWidgets('dispose sạch, không leak FocusNode khi unmount', (
-    tester,
-  ) async {
+  testWidgets('dispose sạch, không leak FocusNode khi unmount', (tester) async {
     final controller = TextEditingController();
     await tester.pumpWidget(_wrap(CandyTextField(controller: controller)));
 

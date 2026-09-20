@@ -30,51 +30,47 @@ void main() {
     },
   );
 
-  testWidgets(
-    'IDEA-27: dùng gradient thay vì màu phẳng',
-    (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
+  testWidgets('IDEA-27: dùng gradient thay vì màu phẳng', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: RibbonBadge(text: 'SALE', child: Container()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final container = tester.widget<Container>(
+      find
+          .descendant(
+            of: find.byType(RibbonBadge),
+            matching: find.byType(Container),
+          )
+          .last,
+    );
+    final decoration = container.decoration as BoxDecoration;
+    expect(decoration.gradient, isNotNull);
+    expect(decoration.gradient!.colors.length, greaterThanOrEqualTo(2));
+  });
+
+  testWidgets('IDEA-27: Reduce Motion bật → không pop, scale = 1.0 ngay', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(disableAnimations: true),
+        child: MaterialApp(
           home: Material(
             child: RibbonBadge(text: 'SALE', child: Container()),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pump();
 
-      final container = tester.widget<Container>(
-        find
-            .descendant(
-              of: find.byType(RibbonBadge),
-              matching: find.byType(Container),
-            )
-            .last,
-      );
-      final decoration = container.decoration as BoxDecoration;
-      expect(decoration.gradient, isNotNull);
-      expect(decoration.gradient!.colors.length, greaterThanOrEqualTo(2));
-    },
-  );
-
-  testWidgets(
-    'IDEA-27: Reduce Motion bật → không pop, scale = 1.0 ngay',
-    (tester) async {
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(disableAnimations: true),
-          child: MaterialApp(
-            home: Material(
-              child: RibbonBadge(text: 'SALE', child: Container()),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(ribbonScaleOf(tester), 1.0);
-      expect(tester.takeException(), isNull);
-    },
-  );
+    expect(ribbonScaleOf(tester), 1.0);
+    expect(tester.takeException(), isNull);
+  });
 
   group('ENH-38: RTL', () {
     testWidgets(
@@ -97,7 +93,9 @@ void main() {
         final textRect = tester.getRect(find.text('SALE'));
         expect(textRect.center.dx, greaterThan(badgeRect.center.dx));
 
-        final rotate = tester.widgetList<Transform>(find.byType(Transform)).first;
+        final rotate = tester
+            .widgetList<Transform>(find.byType(Transform))
+            .first;
         expect(rotate.transform.getRotation().entry(1, 0), greaterThan(0));
       },
     );
@@ -125,7 +123,9 @@ void main() {
         final textRect = tester.getRect(find.text('SALE'));
         expect(textRect.center.dx, lessThan(badgeRect.center.dx));
 
-        final rotate = tester.widgetList<Transform>(find.byType(Transform)).first;
+        final rotate = tester
+            .widgetList<Transform>(find.byType(Transform))
+            .first;
         expect(rotate.transform.getRotation().entry(1, 0), lessThan(0));
         expect(tester.takeException(), isNull);
       },

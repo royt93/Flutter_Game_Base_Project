@@ -87,12 +87,15 @@ void main() {
       },
     );
 
-    test('consume trên sku chưa từng grant (số dư 0) bị từ chối, không throw', () {
-      final service = PurchaseLedgerService();
+    test(
+      'consume trên sku chưa từng grant (số dư 0) bị từ chối, không throw',
+      () {
+        final service = PurchaseLedgerService();
 
-      expect(service.consume('never_granted', 1), isFalse);
-      expect(service.balanceOf('never_granted'), 0);
-    });
+        expect(service.consume('never_granted', 1), isFalse);
+        expect(service.balanceOf('never_granted'), 0);
+      },
+    );
 
     test('nhiều sku consumable độc lập nhau', () {
       final service = PurchaseLedgerService();
@@ -159,8 +162,8 @@ void main() {
       await storage.setString(
         'purchase_ledger_v1',
         '{"consumables":{"good":3,"negative":-1,"wrongType":"3","":9},'
-        '"permanents":["good_perm","",42],'
-        '"schemaVersion":1}',
+            '"permanents":["good_perm","",42],'
+            '"schemaVersion":1}',
       );
       final service = PurchaseLedgerService();
 
@@ -189,15 +192,18 @@ void main() {
   });
 
   group('IDEA-50: revokePermanent/revokeConsumable', () {
-    test('revokePermanent gỡ đúng quyền sở hữu, owns() trả về false sau đó', () {
-      final service = PurchaseLedgerService();
-      service.grantPermanent('remove_ads');
-      expect(service.owns('remove_ads'), isTrue);
+    test(
+      'revokePermanent gỡ đúng quyền sở hữu, owns() trả về false sau đó',
+      () {
+        final service = PurchaseLedgerService();
+        service.grantPermanent('remove_ads');
+        expect(service.owns('remove_ads'), isTrue);
 
-      service.revokePermanent('remove_ads');
+        service.revokePermanent('remove_ads');
 
-      expect(service.owns('remove_ads'), isFalse);
-    });
+        expect(service.owns('remove_ads'), isFalse);
+      },
+    );
 
     test('revokePermanent với sku chưa từng sở hữu: no-op, không throw', () {
       final service = PurchaseLedgerService();
@@ -214,28 +220,40 @@ void main() {
       expect(service.balanceOf('gems'), 6);
     });
 
-    test('revokeConsumable với amount lớn hơn số dư hiện có: clamp về 0, không throw', () {
-      final service = PurchaseLedgerService();
-      service.grantConsumable('gems', 3);
+    test(
+      'revokeConsumable với amount lớn hơn số dư hiện có: clamp về 0, không throw',
+      () {
+        final service = PurchaseLedgerService();
+        service.grantConsumable('gems', 3);
 
-      expect(() => service.revokeConsumable('gems', 100), returnsNormally);
+        expect(() => service.revokeConsumable('gems', 100), returnsNormally);
 
-      expect(service.balanceOf('gems'), 0);
-    });
+        expect(service.balanceOf('gems'), 0);
+      },
+    );
 
-    test('revokeConsumable trên sku chưa từng grant: clamp về 0, không throw', () {
-      final service = PurchaseLedgerService();
-      expect(() => service.revokeConsumable('never_granted', 5), returnsNormally);
-      expect(service.balanceOf('never_granted'), 0);
-    });
+    test(
+      'revokeConsumable trên sku chưa từng grant: clamp về 0, không throw',
+      () {
+        final service = PurchaseLedgerService();
+        expect(
+          () => service.revokeConsumable('never_granted', 5),
+          returnsNormally,
+        );
+        expect(service.balanceOf('never_granted'), 0);
+      },
+    );
 
-    test('revokePermanent/revokeConsumable với sku rỗng/blank throw ArgumentError', () {
-      final service = PurchaseLedgerService();
-      expect(() => service.revokePermanent(''), throwsArgumentError);
-      expect(() => service.revokePermanent('   '), throwsArgumentError);
-      expect(() => service.revokeConsumable('', 1), throwsArgumentError);
-      expect(() => service.revokeConsumable('   ', 1), throwsArgumentError);
-    });
+    test(
+      'revokePermanent/revokeConsumable với sku rỗng/blank throw ArgumentError',
+      () {
+        final service = PurchaseLedgerService();
+        expect(() => service.revokePermanent(''), throwsArgumentError);
+        expect(() => service.revokePermanent('   '), throwsArgumentError);
+        expect(() => service.revokeConsumable('', 1), throwsArgumentError);
+        expect(() => service.revokeConsumable('   ', 1), throwsArgumentError);
+      },
+    );
 
     test('revokeConsumable với amount <= 0 throw ArgumentError', () {
       final service = PurchaseLedgerService();
@@ -262,45 +280,57 @@ void main() {
     );
 
     group('ENH-71: storageKey tuỳ chỉnh', () {
-      test('không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ', () async {
-        final service = PurchaseLedgerService();
-        service.grantConsumable('gems', 10);
-        await service.debugPendingSaves;
+      test(
+        'không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ',
+        () async {
+          final service = PurchaseLedgerService();
+          service.grantConsumable('gems', 10);
+          await service.debugPendingSaves;
 
-        expect(storage.getString('purchase_ledger_v1'), isNotNull);
-      });
+          expect(storage.getString('purchase_ledger_v1'), isNotNull);
+        },
+      );
 
-      test('2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau', () async {
-        final a = PurchaseLedgerService(storageKey: 'ledger_a');
-        final b = PurchaseLedgerService(storageKey: 'ledger_b');
+      test(
+        '2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau',
+        () async {
+          final a = PurchaseLedgerService(storageKey: 'ledger_a');
+          final b = PurchaseLedgerService(storageKey: 'ledger_b');
 
-        a.grantConsumable('gems', 10);
-        b.grantConsumable('gems', 20);
-        await a.debugPendingSaves;
-        await b.debugPendingSaves;
+          a.grantConsumable('gems', 10);
+          b.grantConsumable('gems', 20);
+          await a.debugPendingSaves;
+          await b.debugPendingSaves;
 
-        expect(a.balanceOf('gems'), 10);
-        expect(b.balanceOf('gems'), 20);
-      });
+          expect(a.balanceOf('gems'), 10);
+          expect(b.balanceOf('gems'), 20);
+        },
+      );
 
-      test('storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)', () async {
-        final service = PurchaseLedgerService(storageKey: 'ledger_custom');
-        service.grantPermanent('remove_ads');
-        await service.debugPendingSaves;
+      test(
+        'storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)',
+        () async {
+          final service = PurchaseLedgerService(storageKey: 'ledger_custom');
+          service.grantPermanent('remove_ads');
+          await service.debugPendingSaves;
 
-        final restarted = PurchaseLedgerService(storageKey: 'ledger_custom');
-        expect(restarted.owns('remove_ads'), isTrue);
-      });
+          final restarted = PurchaseLedgerService(storageKey: 'ledger_custom');
+          expect(restarted.owns('remove_ads'), isTrue);
+        },
+      );
 
-      test('không đổi hành vi grantConsumable/consume/grantPermanent/owns hiện có khi dùng storageKey tuỳ chỉnh', () {
-        final service = PurchaseLedgerService(storageKey: 'k');
-        service.grantConsumable('gems', 10);
-        expect(service.consume('gems', 4), isTrue);
-        expect(service.balanceOf('gems'), 6);
+      test(
+        'không đổi hành vi grantConsumable/consume/grantPermanent/owns hiện có khi dùng storageKey tuỳ chỉnh',
+        () {
+          final service = PurchaseLedgerService(storageKey: 'k');
+          service.grantConsumable('gems', 10);
+          expect(service.consume('gems', 4), isTrue);
+          expect(service.balanceOf('gems'), 6);
 
-        service.grantPermanent('remove_ads');
-        expect(service.owns('remove_ads'), isTrue);
-      });
+          service.grantPermanent('remove_ads');
+          expect(service.owns('remove_ads'), isTrue);
+        },
+      );
     });
   });
 }

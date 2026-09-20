@@ -189,7 +189,8 @@ class _CoinFlyOverlayState extends State<CoinFlyOverlay>
     });
     _endAt = List.generate(widget.coinCount, (i) {
       if (totalUs <= 0) return 1.0;
-      final endUs = widget.stagger.inMicroseconds * i + widget.duration.inMicroseconds;
+      final endUs =
+          widget.stagger.inMicroseconds * i + widget.duration.inMicroseconds;
       return (endUs / totalUs).clamp(0.0, 1.0);
     });
     _arrived = List.filled(widget.coinCount, false);

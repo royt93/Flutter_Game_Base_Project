@@ -60,12 +60,15 @@ void main() {
       expect(flutter.source, DependencySource.sdk);
     });
 
-    test('kết quả LUÔN sort theo tên -> reproducible bất kể thứ tự trong file', () {
-      final entries = parsePubspecLock(_sampleLock);
-      final names = entries.map((e) => e.name).toList();
-      final sorted = [...names]..sort();
-      expect(names, sorted);
-    });
+    test(
+      'kết quả LUÔN sort theo tên -> reproducible bất kể thứ tự trong file',
+      () {
+        final entries = parsePubspecLock(_sampleLock);
+        final names = entries.map((e) => e.name).toList();
+        final sorted = [...names]..sort();
+        expect(names, sorted);
+      },
+    );
 
     test('sdks: section ở cuối không bị hiểu nhầm thành package mới', () {
       final entries = parsePubspecLock(_sampleLock);
@@ -98,22 +101,41 @@ void main() {
       expect((jsonEntries.first as Map)['name'], 'async');
     });
 
-    test('2 lần build từ CÙNG lock file -> JSON giống hệt nhau (reproducible)', () {
-      final entries1 = parsePubspecLock(_sampleLock);
-      final entries2 = parsePubspecLock(_sampleLock);
-      final doc1 = SbomDocument(packageName: 'x', packageVersion: '1', generatedAtMs: 1, entries: entries1);
-      final doc2 = SbomDocument(packageName: 'x', packageVersion: '1', generatedAtMs: 1, entries: entries2);
-      expect(doc1.toJson(), doc2.toJson());
-    });
+    test(
+      '2 lần build từ CÙNG lock file -> JSON giống hệt nhau (reproducible)',
+      () {
+        final entries1 = parsePubspecLock(_sampleLock);
+        final entries2 = parsePubspecLock(_sampleLock);
+        final doc1 = SbomDocument(
+          packageName: 'x',
+          packageVersion: '1',
+          generatedAtMs: 1,
+          entries: entries1,
+        );
+        final doc2 = SbomDocument(
+          packageName: 'x',
+          packageVersion: '1',
+          generatedAtMs: 1,
+          entries: entries2,
+        );
+        expect(doc1.toJson(), doc2.toJson());
+      },
+    );
   });
 
   group('classifyLicenseText', () {
     test('MIT -> permissive', () {
-      expect(classifyLicenseText('MIT License\n\nCopyright (c) 2024 X'), LicenseCategory.permissive);
+      expect(
+        classifyLicenseText('MIT License\n\nCopyright (c) 2024 X'),
+        LicenseCategory.permissive,
+      );
     });
 
     test('Apache -> permissive', () {
-      expect(classifyLicenseText('Apache License\nVersion 2.0'), LicenseCategory.permissive);
+      expect(
+        classifyLicenseText('Apache License\nVersion 2.0'),
+        LicenseCategory.permissive,
+      );
     });
 
     test('GPL -> copyleft', () {
@@ -123,12 +145,15 @@ void main() {
       );
     });
 
-    test('LGPL -> copyleft (không bị nhầm thành permissive dù có chữ "GPL")', () {
-      expect(
-        classifyLicenseText('GNU LESSER GENERAL PUBLIC LICENSE'),
-        LicenseCategory.copyleft,
-      );
-    });
+    test(
+      'LGPL -> copyleft (không bị nhầm thành permissive dù có chữ "GPL")',
+      () {
+        expect(
+          classifyLicenseText('GNU LESSER GENERAL PUBLIC LICENSE'),
+          LicenseCategory.copyleft,
+        );
+      },
+    );
 
     test(
       'PHÁT HIỆN THẬT: BSD boilerplate của dart.dev/Google (không có chữ "BSD") '
@@ -143,7 +168,10 @@ Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
 met:
 ''';
-        expect(classifyLicenseText(realDartTeamLicense), LicenseCategory.permissive);
+        expect(
+          classifyLicenseText(realDartTeamLicense),
+          LicenseCategory.permissive,
+        );
       },
     );
 
@@ -155,14 +183,18 @@ met:
             'Copyright (c) 2021 Yulian Kuncheff\n\n'
             'Permission is hereby granted, free of charge, to any person '
             'obtaining a copy of this software...';
-        expect(classifyLicenseText(realUuidLicense), LicenseCategory.permissive);
+        expect(
+          classifyLicenseText(realUuidLicense),
+          LicenseCategory.permissive,
+        );
       },
     );
 
     test(
       'MPL-2.0 (vd package dbus) -> unknown (không permissive cũng không GPL-family, cần review tay)',
       () {
-        const realDbusLicense = 'Mozilla Public License Version 2.0\n==================================\n';
+        const realDbusLicense =
+            'Mozilla Public License Version 2.0\n==================================\n';
         expect(classifyLicenseText(realDbusLicense), LicenseCategory.unknown);
       },
     );
@@ -170,16 +202,39 @@ met:
     test('null/rỗng/không nhận diện được -> unknown', () {
       expect(classifyLicenseText(null), LicenseCategory.unknown);
       expect(classifyLicenseText(''), LicenseCategory.unknown);
-      expect(classifyLicenseText('some random proprietary text'), LicenseCategory.unknown);
+      expect(
+        classifyLicenseText('some random proprietary text'),
+        LicenseCategory.unknown,
+      );
     });
   });
 
   group('auditDependencies: license', () {
     final entries = [
-      const DependencyEntry(name: 'good_pkg', version: '1.0.0', type: DependencyType.directMain, source: DependencySource.hosted),
-      const DependencyEntry(name: 'gpl_pkg', version: '1.0.0', type: DependencyType.transitive, source: DependencySource.hosted),
-      const DependencyEntry(name: 'no_license_pkg', version: '1.0.0', type: DependencyType.transitive, source: DependencySource.hosted),
-      const DependencyEntry(name: 'flutter', version: '0.0.0', type: DependencyType.directMain, source: DependencySource.sdk),
+      const DependencyEntry(
+        name: 'good_pkg',
+        version: '1.0.0',
+        type: DependencyType.directMain,
+        source: DependencySource.hosted,
+      ),
+      const DependencyEntry(
+        name: 'gpl_pkg',
+        version: '1.0.0',
+        type: DependencyType.transitive,
+        source: DependencySource.hosted,
+      ),
+      const DependencyEntry(
+        name: 'no_license_pkg',
+        version: '1.0.0',
+        type: DependencyType.transitive,
+        source: DependencySource.hosted,
+      ),
+      const DependencyEntry(
+        name: 'flutter',
+        version: '0.0.0',
+        type: DependencyType.directMain,
+        source: DependencySource.sdk,
+      ),
     ];
     final licenseByPackage = {
       'good_pkg': LicenseCategory.permissive,
@@ -187,33 +242,57 @@ met:
     };
 
     test('package permissive -> không issue', () {
-      final issues = auditDependencies(entries: entries, licenseByPackage: licenseByPackage, nowMs: 0);
+      final issues = auditDependencies(
+        entries: entries,
+        licenseByPackage: licenseByPackage,
+        nowMs: 0,
+      );
       expect(issues.where((i) => i.package == 'good_pkg'), isEmpty);
     });
 
     test('package copyleft -> issue severity high', () {
-      final issues = auditDependencies(entries: entries, licenseByPackage: licenseByPackage, nowMs: 0);
+      final issues = auditDependencies(
+        entries: entries,
+        licenseByPackage: licenseByPackage,
+        nowMs: 0,
+      );
       final issue = issues.singleWhere((i) => i.package == 'gpl_pkg');
       expect(issue.kind, SbomIssueKind.copyleftLicense);
       expect(issue.severity, AdvisorySeverity.high);
     });
 
     test('package không rõ license -> issue severity low', () {
-      final issues = auditDependencies(entries: entries, licenseByPackage: licenseByPackage, nowMs: 0);
+      final issues = auditDependencies(
+        entries: entries,
+        licenseByPackage: licenseByPackage,
+        nowMs: 0,
+      );
       final issue = issues.singleWhere((i) => i.package == 'no_license_pkg');
       expect(issue.kind, SbomIssueKind.unknownLicense);
       expect(issue.severity, AdvisorySeverity.low);
     });
 
-    test('package source=sdk (vd flutter) -> không kiểm tra license, không issue', () {
-      final issues = auditDependencies(entries: entries, licenseByPackage: licenseByPackage, nowMs: 0);
-      expect(issues.where((i) => i.package == 'flutter'), isEmpty);
-    });
+    test(
+      'package source=sdk (vd flutter) -> không kiểm tra license, không issue',
+      () {
+        final issues = auditDependencies(
+          entries: entries,
+          licenseByPackage: licenseByPackage,
+          nowMs: 0,
+        );
+        expect(issues.where((i) => i.package == 'flutter'), isEmpty);
+      },
+    );
   });
 
   group('auditDependencies: vulnerability (cross-check, không tự scan)', () {
     final entries = [
-      const DependencyEntry(name: 'vuln_pkg', version: '1.2.3', type: DependencyType.transitive, source: DependencySource.hosted),
+      const DependencyEntry(
+        name: 'vuln_pkg',
+        version: '1.2.3',
+        type: DependencyType.transitive,
+        source: DependencySource.hosted,
+      ),
     ];
 
     test('advisory khớp đúng package+version -> báo issue', () {
@@ -230,27 +309,35 @@ met:
           ),
         ],
       );
-      final vuln = issues.singleWhere((i) => i.kind == SbomIssueKind.vulnerability);
+      final vuln = issues.singleWhere(
+        (i) => i.kind == SbomIssueKind.vulnerability,
+      );
       expect(vuln.severity, AdvisorySeverity.critical);
       expect(vuln.detail, contains('RCE'));
     });
 
-    test('advisory KHÁC version đang dùng -> không báo (đã fix ở version khác)', () {
-      final issues = auditDependencies(
-        entries: entries,
-        licenseByPackage: const {'vuln_pkg': LicenseCategory.permissive},
-        nowMs: 0,
-        advisories: const [
-          VulnerabilityAdvisory(
-            package: 'vuln_pkg',
-            version: '1.0.0',
-            severity: AdvisorySeverity.critical,
-            description: 'đã fix ở 1.2.3',
-          ),
-        ],
-      );
-      expect(issues.where((i) => i.kind == SbomIssueKind.vulnerability), isEmpty);
-    });
+    test(
+      'advisory KHÁC version đang dùng -> không báo (đã fix ở version khác)',
+      () {
+        final issues = auditDependencies(
+          entries: entries,
+          licenseByPackage: const {'vuln_pkg': LicenseCategory.permissive},
+          nowMs: 0,
+          advisories: const [
+            VulnerabilityAdvisory(
+              package: 'vuln_pkg',
+              version: '1.0.0',
+              severity: AdvisorySeverity.critical,
+              description: 'đã fix ở 1.2.3',
+            ),
+          ],
+        );
+        expect(
+          issues.where((i) => i.kind == SbomIssueKind.vulnerability),
+          isEmpty,
+        );
+      },
+    );
   });
 
   group('auditDependencies: unpinned constraint', () {
@@ -261,7 +348,9 @@ met:
         nowMs: 0,
         unpinnedPackages: const {'wild_pkg'},
       );
-      final issue = issues.singleWhere((i) => i.kind == SbomIssueKind.unpinnedConstraint);
+      final issue = issues.singleWhere(
+        (i) => i.kind == SbomIssueKind.unpinnedConstraint,
+      );
       expect(issue.package, 'wild_pkg');
       expect(issue.severity, AdvisorySeverity.medium);
     });
@@ -269,7 +358,12 @@ met:
 
   group('PHÁT HIỆN THẬT: suppression hết hạn tự động hết hiệu lực', () {
     final entries = [
-      const DependencyEntry(name: 'no_license_pkg', version: '1.0.0', type: DependencyType.transitive, source: DependencySource.hosted),
+      const DependencyEntry(
+        name: 'no_license_pkg',
+        version: '1.0.0',
+        type: DependencyType.transitive,
+        source: DependencySource.hosted,
+      ),
     ];
 
     test('suppression còn hạn -> issue bị ẩn', () {
@@ -290,41 +384,47 @@ met:
       expect(issues, isEmpty);
     });
 
-    test('suppression đã hết hạn -> issue XUẤT HIỆN LẠI, không bị ẩn mãi mãi', () {
-      final issues = auditDependencies(
-        entries: entries,
-        licenseByPackage: const {},
-        nowMs: 5000,
-        suppressions: const [
-          SbomSuppression(
-            package: 'no_license_pkg',
-            kind: SbomIssueKind.unknownLicense,
-            reason: 'đã review tay, an toàn',
-            owner: 'roy',
-            expiresAtMs: 2000,
-          ),
-        ],
-      );
-      expect(issues, hasLength(1));
-      expect(issues.single.package, 'no_license_pkg');
-    });
+    test(
+      'suppression đã hết hạn -> issue XUẤT HIỆN LẠI, không bị ẩn mãi mãi',
+      () {
+        final issues = auditDependencies(
+          entries: entries,
+          licenseByPackage: const {},
+          nowMs: 5000,
+          suppressions: const [
+            SbomSuppression(
+              package: 'no_license_pkg',
+              kind: SbomIssueKind.unknownLicense,
+              reason: 'đã review tay, an toàn',
+              owner: 'roy',
+              expiresAtMs: 2000,
+            ),
+          ],
+        );
+        expect(issues, hasLength(1));
+        expect(issues.single.package, 'no_license_pkg');
+      },
+    );
 
-    test('suppression đúng package nhưng sai kind -> không áp dụng, issue vẫn báo', () {
-      final issues = auditDependencies(
-        entries: entries,
-        licenseByPackage: const {},
-        nowMs: 1000,
-        suppressions: const [
-          SbomSuppression(
-            package: 'no_license_pkg',
-            kind: SbomIssueKind.vulnerability,
-            reason: 'không liên quan',
-            owner: 'roy',
-            expiresAtMs: 9999,
-          ),
-        ],
-      );
-      expect(issues, hasLength(1));
-    });
+    test(
+      'suppression đúng package nhưng sai kind -> không áp dụng, issue vẫn báo',
+      () {
+        final issues = auditDependencies(
+          entries: entries,
+          licenseByPackage: const {},
+          nowMs: 1000,
+          suppressions: const [
+            SbomSuppression(
+              package: 'no_license_pkg',
+              kind: SbomIssueKind.vulnerability,
+              reason: 'không liên quan',
+              owner: 'roy',
+              expiresAtMs: 9999,
+            ),
+          ],
+        );
+        expect(issues, hasLength(1));
+      },
+    );
   });
 }

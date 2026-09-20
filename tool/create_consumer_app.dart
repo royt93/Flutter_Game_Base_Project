@@ -33,11 +33,46 @@ const int templateSchemaVersion = 1;
 const _templateVersionFileName = '.roy_template_version';
 
 const _dartReservedWords = {
-  'assert', 'break', 'case', 'catch', 'class', 'const', 'continue',
-  'default', 'do', 'else', 'enum', 'extends', 'false', 'final', 'finally',
-  'for', 'if', 'in', 'is', 'new', 'null', 'rethrow', 'return', 'super',
-  'switch', 'this', 'throw', 'true', 'try', 'var', 'void', 'while', 'with',
-  'import', 'library', 'part', 'typedef', 'yield', 'async', 'await',
+  'assert',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'default',
+  'do',
+  'else',
+  'enum',
+  'extends',
+  'false',
+  'final',
+  'finally',
+  'for',
+  'if',
+  'in',
+  'is',
+  'new',
+  'null',
+  'rethrow',
+  'return',
+  'super',
+  'switch',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'var',
+  'void',
+  'while',
+  'with',
+  'import',
+  'library',
+  'part',
+  'typedef',
+  'yield',
+  'async',
+  'await',
 };
 
 /// A valid Flutter/Dart package name: lowercase snake_case, must start
@@ -90,11 +125,16 @@ String kitDependencyBlock({String? kitPath, String kitVersion = '^0.2.0'}) {
 /// in [pubspecContent]. Throws [ArgumentError] if no such line exists —
 /// a `pubspec.yaml` `flutter create` itself produced always has one, so
 /// this only trips if something upstream already went wrong.
-String patchPubspecWithDependency(String pubspecContent, String dependencyBlock) {
+String patchPubspecWithDependency(
+  String pubspecContent,
+  String dependencyBlock,
+) {
   final lines = pubspecContent.split('\n');
   final index = lines.indexWhere((l) => l.trim() == 'dependencies:');
   if (index == -1) {
-    throw ArgumentError('pubspec.yaml có không "dependencies:" line để chèn vào');
+    throw ArgumentError(
+      'pubspec.yaml có không "dependencies:" line để chèn vào',
+    );
   }
   lines.insert(index + 1, dependencyBlock.trimRight());
   return lines.join('\n');
@@ -114,7 +154,9 @@ String patchPubspecWithDependency(String pubspecContent, String dependencyBlock)
 /// `flutter create`'s own template (no `targetCompatibility` line to
 /// anchor on).
 String patchAndroidBuildGradleForDesugaring(String buildGradleContent) {
-  final anchor = RegExp(r'( *)targetCompatibility = JavaVersion\.VERSION_\d+\n');
+  final anchor = RegExp(
+    r'( *)targetCompatibility = JavaVersion\.VERSION_\d+\n',
+  );
   final match = anchor.firstMatch(buildGradleContent);
   if (match == null) {
     throw ArgumentError(
@@ -270,7 +312,8 @@ class GameDemoScreen extends StatelessWidget {
 }
 ''';
 
-String smokeTestTemplate({required String appName}) => '''
+String smokeTestTemplate({required String appName}) =>
+    '''
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -365,7 +408,9 @@ Future<GeneratedApp> generate({
     );
   }
   if (!isValidOrg(org)) {
-    throw ArgumentError('Org "$org" không hợp lệ — cần dạng reverse-domain, ví dụ com.example.');
+    throw ArgumentError(
+      'Org "$org" không hợp lệ — cần dạng reverse-domain, ví dụ com.example.',
+    );
   }
 
   final targetDir = Directory('$outputDir/$name');
@@ -378,8 +423,10 @@ Future<GeneratedApp> generate({
 
   final createResult = await Process.run('flutter', [
     'create',
-    '--org', org,
-    '--project-name', name,
+    '--org',
+    org,
+    '--project-name',
+    name,
     targetDir.path,
   ]);
   if (createResult.exitCode != 0) {
@@ -397,7 +444,10 @@ Future<GeneratedApp> generate({
   final appName = name;
   write('lib/main.dart', mainDartTemplate(appName: appName));
   write('lib/screens/home_screen.dart', homeScreenTemplate());
-  write('lib/screens/widget_showcase_screen.dart', widgetShowcaseScreenTemplate());
+  write(
+    'lib/screens/widget_showcase_screen.dart',
+    widgetShowcaseScreenTemplate(),
+  );
   write('lib/screens/game_demo_screen.dart', gameDemoScreenTemplate());
   write('test/widget_test.dart', smokeTestTemplate(appName: appName));
   write('.github/workflows/ci.yml', ciWorkflowTemplate());
@@ -411,11 +461,15 @@ Future<GeneratedApp> generate({
   pubspecFile.writeAsStringSync(patched);
   written.add('pubspec.yaml (patched)');
 
-  final buildGradleFile = File('${targetDir.path}/android/app/build.gradle.kts');
+  final buildGradleFile = File(
+    '${targetDir.path}/android/app/build.gradle.kts',
+  );
   buildGradleFile.writeAsStringSync(
     patchAndroidBuildGradleForDesugaring(buildGradleFile.readAsStringSync()),
   );
-  written.add('android/app/build.gradle.kts (patched: core library desugaring)');
+  written.add(
+    'android/app/build.gradle.kts (patched: core library desugaring)',
+  );
 
   return GeneratedApp(path: targetDir.path, writtenFiles: written);
 }
@@ -449,7 +503,9 @@ Future<void> main(List<String> args) async {
   if (checkVersionDir != null) {
     final version = readTemplateVersion(checkVersionDir);
     if (version == null) {
-      stdout.writeln('Không tìm thấy $_templateVersionFileName — app này không phải do generator này tạo, hoặc marker bị xoá.');
+      stdout.writeln(
+        'Không tìm thấy $_templateVersionFileName — app này không phải do generator này tạo, hoặc marker bị xoá.',
+      );
       exit(1);
     }
     if (version < templateSchemaVersion) {
@@ -482,7 +538,9 @@ Future<void> main(List<String> args) async {
     for (final f in result.writtenFiles) {
       stdout.writeln('  $f');
     }
-    stdout.writeln('\nTiếp theo: cd ${result.path} && flutter pub get && flutter test');
+    stdout.writeln(
+      '\nTiếp theo: cd ${result.path} && flutter pub get && flutter test',
+    );
   } catch (error) {
     stderr.writeln('Generate thất bại: $error');
     exit(1);

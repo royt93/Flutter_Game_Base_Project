@@ -43,8 +43,7 @@ class AchievementUnlockListener extends StatefulWidget {
       _AchievementUnlockListenerState();
 }
 
-class _AchievementUnlockListenerState
-    extends State<AchievementUnlockListener> {
+class _AchievementUnlockListenerState extends State<AchievementUnlockListener> {
   StreamSubscription<String>? _subscription;
 
   @override

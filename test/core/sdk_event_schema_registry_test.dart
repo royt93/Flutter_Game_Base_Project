@@ -20,16 +20,25 @@ class _ThrowingProvider implements AnalyticsProvider {
 
 void main() {
   group('EventSchema: validate cấu hình ngay khi tạo', () {
-    test('param vừa required vừa pii -> throw ArgumentError ngay khi tạo schema', () {
-      expect(
-        () => EventSchema(
-          name: 'x',
-          version: 1,
-          params: {'userId': const EventParamSchema(type: EventParamType.string, required: true, pii: true)},
-        ),
-        throwsArgumentError,
-      );
-    });
+    test(
+      'param vừa required vừa pii -> throw ArgumentError ngay khi tạo schema',
+      () {
+        expect(
+          () => EventSchema(
+            name: 'x',
+            version: 1,
+            params: {
+              'userId': const EventParamSchema(
+                type: EventParamType.string,
+                required: true,
+                pii: true,
+              ),
+            },
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
   });
 
   group('validate: event sai tên', () {
@@ -53,7 +62,10 @@ void main() {
           name: 'level_complete',
           version: 1,
           params: {
-            'level': const EventParamSchema(type: EventParamType.int, required: true),
+            'level': const EventParamSchema(
+              type: EventParamType.int,
+              required: true,
+            ),
             'score': const EventParamSchema(type: EventParamType.int),
           },
         ),
@@ -61,7 +73,10 @@ void main() {
     });
 
     test('đủ field đúng type -> accept, sanitizedParams đúng', () {
-      final result = registry.validate('level_complete', {'level': 3, 'score': 900});
+      final result = registry.validate('level_complete', {
+        'level': 3,
+        'score': 900,
+      });
       expect(result.accepted, isTrue);
       expect(result.sanitizedParams, {'level': 3, 'score': 900});
       expect(result.violations, isEmpty);
@@ -70,17 +85,26 @@ void main() {
     test('thiếu param required -> reject', () {
       final result = registry.validate('level_complete', {'score': 900});
       expect(result.accepted, isFalse);
-      expect(result.violations.single, contains('thiếu param bắt buộc "level"'));
+      expect(
+        result.violations.single,
+        contains('thiếu param bắt buộc "level"'),
+      );
     });
 
     test('required sai type -> reject', () {
-      final result = registry.validate('level_complete', {'level': 'ba', 'score': 900});
+      final result = registry.validate('level_complete', {
+        'level': 'ba',
+        'score': 900,
+      });
       expect(result.accepted, isFalse);
       expect(result.violations.single, contains('level'));
     });
 
     test('optional sai type -> KHÔNG reject cả event, chỉ drop field đó', () {
-      final result = registry.validate('level_complete', {'level': 3, 'score': 'not a number'});
+      final result = registry.validate('level_complete', {
+        'level': 3,
+        'score': 'not a number',
+      });
       expect(result.accepted, isTrue);
       expect(result.sanitizedParams, {'level': 3});
       expect(result.violations.single, contains('score'));
@@ -93,63 +117,95 @@ void main() {
   });
 
   group('PHÁT HIỆN THẬT: PII luôn bị redact bất kể policy field khác', () {
-    test('param pii có mặt -> bị drop khỏi sanitizedParams, event vẫn accept nếu không có lỗi khác', () {
-      final registry = SdkEventSchemaRegistry();
-      registry.register(
-        EventSchema(
-          name: 'purchase',
-          version: 1,
-          params: {
-            'sku': const EventParamSchema(type: EventParamType.string, required: true),
-            'email': const EventParamSchema(type: EventParamType.string, pii: true),
-          },
-        ),
-      );
+    test(
+      'param pii có mặt -> bị drop khỏi sanitizedParams, event vẫn accept nếu không có lỗi khác',
+      () {
+        final registry = SdkEventSchemaRegistry();
+        registry.register(
+          EventSchema(
+            name: 'purchase',
+            version: 1,
+            params: {
+              'sku': const EventParamSchema(
+                type: EventParamType.string,
+                required: true,
+              ),
+              'email': const EventParamSchema(
+                type: EventParamType.string,
+                pii: true,
+              ),
+            },
+          ),
+        );
 
-      final result = registry.validate('purchase', {'sku': 'gem_100', 'email': 'a@b.com'});
+        final result = registry.validate('purchase', {
+          'sku': 'gem_100',
+          'email': 'a@b.com',
+        });
 
-      expect(result.accepted, isTrue);
-      expect(result.sanitizedParams.containsKey('email'), isFalse);
-      expect(result.sanitizedParams['sku'], 'gem_100');
-      expect(result.violations.single, contains('email'));
-      expect(result.violations.single, contains('pii'));
-    });
+        expect(result.accepted, isTrue);
+        expect(result.sanitizedParams.containsKey('email'), isFalse);
+        expect(result.sanitizedParams['sku'], 'gem_100');
+        expect(result.violations.single, contains('email'));
+        expect(result.violations.single, contains('pii'));
+      },
+    );
 
-    test('param pii không có mặt -> không có violation thừa (không báo redact cái không tồn tại)', () {
-      final registry = SdkEventSchemaRegistry();
-      registry.register(
-        EventSchema(
-          name: 'purchase',
-          version: 1,
-          params: {
-            'sku': const EventParamSchema(type: EventParamType.string, required: true),
-            'email': const EventParamSchema(type: EventParamType.string, pii: true),
-          },
-        ),
-      );
+    test(
+      'param pii không có mặt -> không có violation thừa (không báo redact cái không tồn tại)',
+      () {
+        final registry = SdkEventSchemaRegistry();
+        registry.register(
+          EventSchema(
+            name: 'purchase',
+            version: 1,
+            params: {
+              'sku': const EventParamSchema(
+                type: EventParamType.string,
+                required: true,
+              ),
+              'email': const EventParamSchema(
+                type: EventParamType.string,
+                pii: true,
+              ),
+            },
+          ),
+        );
 
-      final result = registry.validate('purchase', {'sku': 'gem_100'});
-      expect(result.accepted, isTrue);
-      expect(result.violations, isEmpty);
-    });
+        final result = registry.validate('purchase', {'sku': 'gem_100'});
+        expect(result.accepted, isTrue);
+        expect(result.violations, isEmpty);
+      },
+    );
   });
 
   group('unknown field policy', () {
-    test('policy drop (mặc định): field lạ bị âm thầm bỏ, event vẫn accept', () {
-      final registry = SdkEventSchemaRegistry();
-      registry.register(
-        EventSchema(
-          name: 'tap',
-          version: 1,
-          params: {'x': const EventParamSchema(type: EventParamType.int)},
-        ),
-      );
+    test(
+      'policy drop (mặc định): field lạ bị âm thầm bỏ, event vẫn accept',
+      () {
+        final registry = SdkEventSchemaRegistry();
+        registry.register(
+          EventSchema(
+            name: 'tap',
+            version: 1,
+            params: {'x': const EventParamSchema(type: EventParamType.int)},
+          ),
+        );
 
-      final result = registry.validate('tap', {'x': 1, 'debugNoise': 'ignore me'});
-      expect(result.accepted, isTrue);
-      expect(result.sanitizedParams.containsKey('debugNoise'), isFalse);
-      expect(result.violations, isEmpty, reason: 'drop policy không cần báo violation cho field bị bỏ có chủ đích');
-    });
+        final result = registry.validate('tap', {
+          'x': 1,
+          'debugNoise': 'ignore me',
+        });
+        expect(result.accepted, isTrue);
+        expect(result.sanitizedParams.containsKey('debugNoise'), isFalse);
+        expect(
+          result.violations,
+          isEmpty,
+          reason:
+              'drop policy không cần báo violation cho field bị bỏ có chủ đích',
+        );
+      },
+    );
 
     test('policy reject: field lạ làm reject toàn bộ event', () {
       final registry = SdkEventSchemaRegistry();
@@ -162,33 +218,44 @@ void main() {
         ),
       );
 
-      final result = registry.validate('strict_event', {'x': 1, 'extra': 'field'});
+      final result = registry.validate('strict_event', {
+        'x': 1,
+        'extra': 'field',
+      });
       expect(result.accepted, isFalse);
       expect(result.violations.single, contains('extra'));
     });
   });
 
   group('migrate: schema version migration cho client cũ', () {
-    test('client cũ gửi key cũ -> migrate đổi sang key mới trước khi validate', () {
-      final registry = SdkEventSchemaRegistry();
-      registry.register(
-        EventSchema(
-          name: 'level_complete',
-          version: 2,
-          params: {'level': const EventParamSchema(type: EventParamType.int, required: true)},
-          migrate: (raw) {
-            if (raw.containsKey('lvl') && !raw.containsKey('level')) {
-              return {...raw, 'level': raw['lvl']}..remove('lvl');
-            }
-            return raw;
-          },
-        ),
-      );
+    test(
+      'client cũ gửi key cũ -> migrate đổi sang key mới trước khi validate',
+      () {
+        final registry = SdkEventSchemaRegistry();
+        registry.register(
+          EventSchema(
+            name: 'level_complete',
+            version: 2,
+            params: {
+              'level': const EventParamSchema(
+                type: EventParamType.int,
+                required: true,
+              ),
+            },
+            migrate: (raw) {
+              if (raw.containsKey('lvl') && !raw.containsKey('level')) {
+                return {...raw, 'level': raw['lvl']}..remove('lvl');
+              }
+              return raw;
+            },
+          ),
+        );
 
-      final result = registry.validate('level_complete', {'lvl': 5});
-      expect(result.accepted, isTrue);
-      expect(result.sanitizedParams, {'level': 5});
-    });
+        final result = registry.validate('level_complete', {'lvl': 5});
+        expect(result.accepted, isTrue);
+        expect(result.sanitizedParams, {'level': 5});
+      },
+    );
 
     test('không có migrate -> dùng nguyên params như cũ', () {
       final registry = SdkEventSchemaRegistry();
@@ -223,26 +290,38 @@ void main() {
   });
 
   group('SchemaValidatedAnalyticsProvider: forward đúng, không crash gameplay', () {
-    test('event hợp lệ -> forward sanitizedParams (không phải raw) tới provider thật', () {
-      final registry = SdkEventSchemaRegistry();
-      registry.register(
-        EventSchema(
-          name: 'purchase',
-          version: 1,
-          params: {
-            'sku': const EventParamSchema(type: EventParamType.string, required: true),
-            'email': const EventParamSchema(type: EventParamType.string, pii: true),
-          },
-        ),
-      );
-      final inner = _RecordingProvider();
-      final provider = SchemaValidatedAnalyticsProvider(inner, registry);
+    test(
+      'event hợp lệ -> forward sanitizedParams (không phải raw) tới provider thật',
+      () {
+        final registry = SdkEventSchemaRegistry();
+        registry.register(
+          EventSchema(
+            name: 'purchase',
+            version: 1,
+            params: {
+              'sku': const EventParamSchema(
+                type: EventParamType.string,
+                required: true,
+              ),
+              'email': const EventParamSchema(
+                type: EventParamType.string,
+                pii: true,
+              ),
+            },
+          ),
+        );
+        final inner = _RecordingProvider();
+        final provider = SchemaValidatedAnalyticsProvider(inner, registry);
 
-      provider.logEvent('purchase', {'sku': 'gem_100', 'email': 'leak@me.com'});
+        provider.logEvent('purchase', {
+          'sku': 'gem_100',
+          'email': 'leak@me.com',
+        });
 
-      expect(inner.calls, hasLength(1));
-      expect(inner.calls.single.$2, {'sku': 'gem_100'});
-    });
+        expect(inner.calls, hasLength(1));
+        expect(inner.calls.single.$2, {'sku': 'gem_100'});
+      },
+    );
 
     test('event bị reject -> KHÔNG forward gì tới provider thật', () {
       final registry = SdkEventSchemaRegistry();
@@ -254,13 +333,21 @@ void main() {
       expect(inner.calls, isEmpty);
     });
 
-    test('PHÁT HIỆN THẬT: provider thật throw -> không văng ra ngoài, gameplay code không crash', () {
-      final registry = SdkEventSchemaRegistry();
-      registry.register(EventSchema(name: 'tap', version: 1, params: const {}));
-      final provider = SchemaValidatedAnalyticsProvider(_ThrowingProvider(), registry);
+    test(
+      'PHÁT HIỆN THẬT: provider thật throw -> không văng ra ngoài, gameplay code không crash',
+      () {
+        final registry = SdkEventSchemaRegistry();
+        registry.register(
+          EventSchema(name: 'tap', version: 1, params: const {}),
+        );
+        final provider = SchemaValidatedAnalyticsProvider(
+          _ThrowingProvider(),
+          registry,
+        );
 
-      expect(() => provider.logEvent('tap', {}), returnsNormally);
-    });
+        expect(() => provider.logEvent('tap', {}), returnsNormally);
+      },
+    );
   });
 
   group('eventSchemaAuditHealthCollector', () {
@@ -272,21 +359,31 @@ void main() {
       expect(result['rejectedCount'], 0);
     });
 
-    test('có event reject -> đúng count và lý do lần reject gần nhất', () async {
-      final registry = SdkEventSchemaRegistry();
-      registry.validate('a', {});
-      registry.validate('b', {});
-      final spec = eventSchemaAuditHealthCollector(registry);
-      final result = await spec.collect();
-      expect(result['totalEvents'], 2);
-      expect(result['rejectedCount'], 2);
-      expect(result['lastRejectedReasons'], isNotEmpty);
-    });
+    test(
+      'có event reject -> đúng count và lý do lần reject gần nhất',
+      () async {
+        final registry = SdkEventSchemaRegistry();
+        registry.validate('a', {});
+        registry.validate('b', {});
+        final spec = eventSchemaAuditHealthCollector(registry);
+        final result = await spec.collect();
+        expect(result['totalEvents'], 2);
+        expect(result['rejectedCount'], 2);
+        expect(result['lastRejectedReasons'], isNotEmpty);
+      },
+    );
 
-    test('allowedKeys chỉ đúng 3 field, không leak nội dung params thô ra ngoài', () {
-      final registry = SdkEventSchemaRegistry();
-      final spec = eventSchemaAuditHealthCollector(registry);
-      expect(spec.allowedKeys, {'totalEvents', 'rejectedCount', 'lastRejectedReasons'});
-    });
+    test(
+      'allowedKeys chỉ đúng 3 field, không leak nội dung params thô ra ngoài',
+      () {
+        final registry = SdkEventSchemaRegistry();
+        final spec = eventSchemaAuditHealthCollector(registry);
+        expect(spec.allowedKeys, {
+          'totalEvents',
+          'rejectedCount',
+          'lastRejectedReasons',
+        });
+      },
+    );
   });
 }

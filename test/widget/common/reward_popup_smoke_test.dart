@@ -71,7 +71,10 @@ void main() {
         MaterialApp(
           home: Material(
             child: Center(
-              child: RewardPopup(title: 'Level Complete!', message: 'Great job'),
+              child: RewardPopup(
+                title: 'Level Complete!',
+                message: 'Great job',
+              ),
             ),
           ),
         ),
@@ -109,26 +112,27 @@ void main() {
       },
     );
 
-    testWidgets('dismissLabel tuỳ chỉnh hiển thị đúng thay vì "Claim" mặc định', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: Center(
-              child: RewardPopup(
-                title: 'Level Complete!',
-                onDismiss: () {},
-                dismissLabel: 'Awesome!',
+    testWidgets(
+      'dismissLabel tuỳ chỉnh hiển thị đúng thay vì "Claim" mặc định',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Center(
+                child: RewardPopup(
+                  title: 'Level Complete!',
+                  onDismiss: () {},
+                  dismissLabel: 'Awesome!',
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 350));
+        );
+        await tester.pump(const Duration(milliseconds: 350));
 
-      final button = tester.widget<CommonButton>(find.byType(CommonButton));
-      expect(button.label, 'Awesome!');
-    });
+        final button = tester.widget<CommonButton>(find.byType(CommonButton));
+        expect(button.label, 'Awesome!');
+      },
+    );
   });
 }

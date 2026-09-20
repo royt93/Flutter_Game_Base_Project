@@ -46,7 +46,10 @@ Widget _host(
 /// late for `pump()` to flush the cancellation) — so every test that
 /// doesn't let its sequence finish naturally must call this before
 /// returning.
-Future<void> _finishOrSkip(WidgetTester tester, LevelUpOverlayController controller) async {
+Future<void> _finishOrSkip(
+  WidgetTester tester,
+  LevelUpOverlayController controller,
+) async {
   controller.skip();
   await tester.pump();
 }
@@ -162,62 +165,67 @@ void main() {
   });
 
   group('LevelUpOverlay: reduced motion', () {
-    testWidgets('reducedMotion=true: mọi animation duration co về 0, vẫn hiện đúng nội dung', (
-      tester,
-    ) async {
-      final controller = LevelUpOverlayController(
-        xpFillDuration: const Duration(milliseconds: 5),
-        levelPopDuration: const Duration(milliseconds: 5),
-        rewardRevealDuration: const Duration(milliseconds: 5),
-      );
-      await tester.pumpWidget(_host(controller, reducedMotion: true));
+    testWidgets(
+      'reducedMotion=true: mọi animation duration co về 0, vẫn hiện đúng nội dung',
+      (tester) async {
+        final controller = LevelUpOverlayController(
+          xpFillDuration: const Duration(milliseconds: 5),
+          levelPopDuration: const Duration(milliseconds: 5),
+          rewardRevealDuration: const Duration(milliseconds: 5),
+        );
+        await tester.pumpWidget(_host(controller, reducedMotion: true));
 
-      unawaited(controller.show([_celebration(7)]));
-      await tester.pump();
+        unawaited(controller.show([_celebration(7)]));
+        await tester.pump();
 
-      final tweenBuilders = tester.widgetList<TweenAnimationBuilder<double>>(
-        find.byType(TweenAnimationBuilder<double>),
-      );
-      for (final builder in tweenBuilders) {
-        expect(builder.duration, Duration.zero);
-      }
-      expect(tester.takeException(), isNull);
+        final tweenBuilders = tester.widgetList<TweenAnimationBuilder<double>>(
+          find.byType(TweenAnimationBuilder<double>),
+        );
+        for (final builder in tweenBuilders) {
+          expect(builder.duration, Duration.zero);
+        }
+        expect(tester.takeException(), isNull);
 
-      await _finishOrSkip(tester, controller);
-    });
+        await _finishOrSkip(tester, controller);
+      },
+    );
   });
 
   group('LevelUpOverlay: text scale/RTL không overflow', () {
-    testWidgets('textScaleFactor lớn (2.5) + reward line dài: không throw overflow', (
-      tester,
-    ) async {
-      final controller = LevelUpOverlayController(
-        xpFillDuration: const Duration(milliseconds: 5),
-        levelPopDuration: const Duration(milliseconds: 5),
-        rewardRevealDuration: const Duration(milliseconds: 200),
-      );
-      await tester.pumpWidget(
-        _host(controller, reducedMotion: true, textScaleFactor: 2.5),
-      );
+    testWidgets(
+      'textScaleFactor lớn (2.5) + reward line dài: không throw overflow',
+      (tester) async {
+        final controller = LevelUpOverlayController(
+          xpFillDuration: const Duration(milliseconds: 5),
+          levelPopDuration: const Duration(milliseconds: 5),
+          rewardRevealDuration: const Duration(milliseconds: 200),
+        );
+        await tester.pumpWidget(
+          _host(controller, reducedMotion: true, textScaleFactor: 2.5),
+        );
 
-      unawaited(
-        controller.show([
-          _celebration(
-            9,
-            rewardLines: const [
-              RewardLine(currency: 'super_rare_legendary_gem_currency', amount: 999999),
-            ],
-          ),
-        ]),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 10));
-      await tester.pump(const Duration(milliseconds: 10));
+        unawaited(
+          controller.show([
+            _celebration(
+              9,
+              rewardLines: const [
+                RewardLine(
+                  currency: 'super_rare_legendary_gem_currency',
+                  amount: 999999,
+                ),
+              ],
+            ),
+          ]),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 10));
+        await tester.pump(const Duration(milliseconds: 10));
 
-      expect(tester.takeException(), isNull);
+        expect(tester.takeException(), isNull);
 
-      await _finishOrSkip(tester, controller);
-    });
+        await _finishOrSkip(tester, controller);
+      },
+    );
 
     testWidgets('RTL: overlay vẫn render đúng, không throw', (tester) async {
       final controller = LevelUpOverlayController(

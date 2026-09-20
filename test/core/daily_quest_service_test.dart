@@ -37,15 +37,18 @@ void main() {
       expect(service.isCompleted('empty'), isFalse);
     });
 
-    test('quest chưa register: mọi getter trả về giá trị rỗng, không throw', () {
-      final service = DailyQuestService();
+    test(
+      'quest chưa register: mọi getter trả về giá trị rỗng, không throw',
+      () {
+        final service = DailyQuestService();
 
-      expect(() => service.isCompleted('unknown'), returnsNormally);
-      expect(service.isCompleted('unknown'), isFalse);
-      expect(service.isClaimed('unknown'), isFalse);
-      expect(service.progressOf('unknown'), 0);
-      expect(service.targetOf('unknown'), isNull);
-    });
+        expect(() => service.isCompleted('unknown'), returnsNormally);
+        expect(service.isCompleted('unknown'), isFalse);
+        expect(service.isClaimed('unknown'), isFalse);
+        expect(service.progressOf('unknown'), 0);
+        expect(service.targetOf('unknown'), isNull);
+      },
+    );
 
     test('register lại cùng id chỉ cập nhật target, không đụng progress', () {
       final service = DailyQuestService();
@@ -73,27 +76,24 @@ void main() {
       final service = DailyQuestService();
       service.register('win_3', 3);
 
-      expect(
-        () => service.incrementProgress('win_3', 0),
-        throwsArgumentError,
-      );
-      expect(
-        () => service.incrementProgress('win_3', -1),
-        throwsArgumentError,
-      );
+      expect(() => service.incrementProgress('win_3', 0), throwsArgumentError);
+      expect(() => service.incrementProgress('win_3', -1), throwsArgumentError);
       expect(service.progressOf('win_3'), 0);
     });
 
-    test('cộng dồn đúng qua nhiều lần gọi, chưa đạt target thì chưa completed', () {
-      final service = DailyQuestService();
-      service.register('win_3', 3);
+    test(
+      'cộng dồn đúng qua nhiều lần gọi, chưa đạt target thì chưa completed',
+      () {
+        final service = DailyQuestService();
+        service.register('win_3', 3);
 
-      service.incrementProgress('win_3', 1);
-      service.incrementProgress('win_3', 1);
+        service.incrementProgress('win_3', 1);
+        service.incrementProgress('win_3', 1);
 
-      expect(service.progressOf('win_3'), 2);
-      expect(service.isCompleted('win_3'), isFalse);
-    });
+        expect(service.progressOf('win_3'), 2);
+        expect(service.isCompleted('win_3'), isFalse);
+      },
+    );
 
     test('đạt đủ target thì isCompleted true, vượt target không lỗi', () {
       final service = DailyQuestService();
@@ -102,10 +102,7 @@ void main() {
       service.incrementProgress('win_3', 3);
       expect(service.isCompleted('win_3'), isTrue);
 
-      expect(
-        () => service.incrementProgress('win_3', 100),
-        returnsNormally,
-      );
+      expect(() => service.incrementProgress('win_3', 100), returnsNormally);
       expect(service.isCompleted('win_3'), isTrue);
     });
 
@@ -136,31 +133,37 @@ void main() {
       expect(service.claim('unknown'), isFalse);
     });
 
-    test('claim quest đã hoàn thành trả về true đúng 1 lần, lần 2 trả false', () {
-      final service = DailyQuestService();
-      service.register('win_3', 3);
-      service.incrementProgress('win_3', 3);
+    test(
+      'claim quest đã hoàn thành trả về true đúng 1 lần, lần 2 trả false',
+      () {
+        final service = DailyQuestService();
+        service.register('win_3', 3);
+        service.incrementProgress('win_3', 3);
 
-      expect(service.claim('win_3'), isTrue);
-      expect(service.isClaimed('win_3'), isTrue);
-      expect(service.claim('win_3'), isFalse);
-    });
+        expect(service.claim('win_3'), isTrue);
+        expect(service.isClaimed('win_3'), isTrue);
+        expect(service.claim('win_3'), isFalse);
+      },
+    );
   });
 
   group('DailyQuestService: reset theo period', () {
-    test('quest daily: sang ngày mới thì progress/claimed reset về 0/false', () async {
-      await setDay(_realDay);
-      final service = DailyQuestService();
-      service.register('win_3', 3, period: QuestPeriod.daily);
-      service.incrementProgress('win_3', 3);
-      expect(service.claim('win_3'), isTrue);
+    test(
+      'quest daily: sang ngày mới thì progress/claimed reset về 0/false',
+      () async {
+        await setDay(_realDay);
+        final service = DailyQuestService();
+        service.register('win_3', 3, period: QuestPeriod.daily);
+        service.incrementProgress('win_3', 3);
+        expect(service.claim('win_3'), isTrue);
 
-      await setDay(_realDay + 1);
+        await setDay(_realDay + 1);
 
-      expect(service.progressOf('win_3'), 0);
-      expect(service.isCompleted('win_3'), isFalse);
-      expect(service.isClaimed('win_3'), isFalse);
-    });
+        expect(service.progressOf('win_3'), 0);
+        expect(service.isCompleted('win_3'), isFalse);
+        expect(service.isClaimed('win_3'), isFalse);
+      },
+    );
 
     test(
       'quest daily: increment sau khi rollover bắt đầu lại từ 0 (không cộng dồn lên số cũ)',
@@ -177,35 +180,41 @@ void main() {
       },
     );
 
-    test('quest weekly: sang ngày kế tiếp trong cùng tuần KHÔNG reset', () async {
-      // Đầu tuần KẾ TIẾP (luôn > _realDay, xem doc `setDay`), để mọi ngày
-      // trong test này đều thoả bất biến "mốc set >= ngày thật".
-      final weekStart = ((_realDay ~/ 7) + 1) * 7;
-      await setDay(weekStart);
-      final service = DailyQuestService();
-      service.register('use_booster', 1, period: QuestPeriod.weekly);
-      service.incrementProgress('use_booster', 1);
-      expect(service.claim('use_booster'), isTrue);
+    test(
+      'quest weekly: sang ngày kế tiếp trong cùng tuần KHÔNG reset',
+      () async {
+        // Đầu tuần KẾ TIẾP (luôn > _realDay, xem doc `setDay`), để mọi ngày
+        // trong test này đều thoả bất biến "mốc set >= ngày thật".
+        final weekStart = ((_realDay ~/ 7) + 1) * 7;
+        await setDay(weekStart);
+        final service = DailyQuestService();
+        service.register('use_booster', 1, period: QuestPeriod.weekly);
+        service.incrementProgress('use_booster', 1);
+        expect(service.claim('use_booster'), isTrue);
 
-      await setDay(weekStart + 1);
+        await setDay(weekStart + 1);
 
-      expect(service.progressOf('use_booster'), 1);
-      expect(service.isClaimed('use_booster'), isTrue);
-    });
+        expect(service.progressOf('use_booster'), 1);
+        expect(service.isClaimed('use_booster'), isTrue);
+      },
+    );
 
-    test('quest weekly: sang tuần kế tiếp thì reset progress/claimed', () async {
-      final weekStart = ((_realDay ~/ 7) + 1) * 7;
-      await setDay(weekStart);
-      final service = DailyQuestService();
-      service.register('use_booster', 1, period: QuestPeriod.weekly);
-      service.incrementProgress('use_booster', 1);
-      expect(service.claim('use_booster'), isTrue);
+    test(
+      'quest weekly: sang tuần kế tiếp thì reset progress/claimed',
+      () async {
+        final weekStart = ((_realDay ~/ 7) + 1) * 7;
+        await setDay(weekStart);
+        final service = DailyQuestService();
+        service.register('use_booster', 1, period: QuestPeriod.weekly);
+        service.incrementProgress('use_booster', 1);
+        expect(service.claim('use_booster'), isTrue);
 
-      await setDay(weekStart + 7);
+        await setDay(weekStart + 7);
 
-      expect(service.progressOf('use_booster'), 0);
-      expect(service.isClaimed('use_booster'), isFalse);
-    });
+        expect(service.progressOf('use_booster'), 0);
+        expect(service.isClaimed('use_booster'), isFalse);
+      },
+    );
 
     test(
       'daily và weekly quest độc lập nhau: reset ngày không đụng weekly chưa hết tuần',
@@ -253,11 +262,11 @@ void main() {
       await storage.setString(
         'daily_quest_progress_v1',
         '{"good":{"periodKey":$_realDay,"progress":2,"claimed":false},'
-        '"wrongShape":"3",'
-        '"negativeProgress":{"periodKey":$_realDay,"progress":-1,"claimed":false},'
-        '"wrongTypes":{"periodKey":"x","progress":1,"claimed":false},'
-        '"":{"periodKey":$_realDay,"progress":1,"claimed":false},'
-        '"schemaVersion":1}',
+            '"wrongShape":"3",'
+            '"negativeProgress":{"periodKey":$_realDay,"progress":-1,"claimed":false},'
+            '"wrongTypes":{"periodKey":"x","progress":1,"claimed":false},'
+            '"":{"periodKey":$_realDay,"progress":1,"claimed":false},'
+            '"schemaVersion":1}',
       );
       final service = DailyQuestService();
       service.register('good', 3);
@@ -309,50 +318,62 @@ void main() {
     );
 
     group('ENH-71: storageKey tuỳ chỉnh', () {
-      test('không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ', () async {
-        final service = DailyQuestService();
-        service.register('wins', 3);
-        service.incrementProgress('wins', 1);
-        await service.debugPendingSaves;
+      test(
+        'không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ',
+        () async {
+          final service = DailyQuestService();
+          service.register('wins', 3);
+          service.incrementProgress('wins', 1);
+          await service.debugPendingSaves;
 
-        expect(storage.getString('daily_quest_progress_v1'), isNotNull);
-      });
+          expect(storage.getString('daily_quest_progress_v1'), isNotNull);
+        },
+      );
 
-      test('2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau', () async {
-        final a = DailyQuestService(storageKey: 'quest_a');
-        final b = DailyQuestService(storageKey: 'quest_b');
-        a.register('wins', 3);
-        b.register('wins', 3);
+      test(
+        '2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau',
+        () async {
+          final a = DailyQuestService(storageKey: 'quest_a');
+          final b = DailyQuestService(storageKey: 'quest_b');
+          a.register('wins', 3);
+          b.register('wins', 3);
 
-        a.incrementProgress('wins', 1);
-        b.incrementProgress('wins', 2);
-        await a.debugPendingSaves;
-        await b.debugPendingSaves;
+          a.incrementProgress('wins', 1);
+          b.incrementProgress('wins', 2);
+          await a.debugPendingSaves;
+          await b.debugPendingSaves;
 
-        expect(a.progressOf('wins'), 1);
-        expect(b.progressOf('wins'), 2);
-      });
+          expect(a.progressOf('wins'), 1);
+          expect(b.progressOf('wins'), 2);
+        },
+      );
 
-      test('storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)', () async {
-        final service = DailyQuestService(storageKey: 'quest_custom');
-        service.register('wins', 3);
-        service.incrementProgress('wins', 2);
-        await service.debugPendingSaves;
+      test(
+        'storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)',
+        () async {
+          final service = DailyQuestService(storageKey: 'quest_custom');
+          service.register('wins', 3);
+          service.incrementProgress('wins', 2);
+          await service.debugPendingSaves;
 
-        final restarted = DailyQuestService(storageKey: 'quest_custom');
-        restarted.register('wins', 3);
-        expect(restarted.progressOf('wins'), 2);
-      });
+          final restarted = DailyQuestService(storageKey: 'quest_custom');
+          restarted.register('wins', 3);
+          expect(restarted.progressOf('wins'), 2);
+        },
+      );
 
-      test('không đổi hành vi register/incrementProgress/claim hiện có khi dùng storageKey tuỳ chỉnh', () {
-        final service = DailyQuestService(storageKey: 'k');
-        service.register('wins', 1);
-        service.incrementProgress('wins', 1);
+      test(
+        'không đổi hành vi register/incrementProgress/claim hiện có khi dùng storageKey tuỳ chỉnh',
+        () {
+          final service = DailyQuestService(storageKey: 'k');
+          service.register('wins', 1);
+          service.incrementProgress('wins', 1);
 
-        expect(service.isCompleted('wins'), isTrue);
-        expect(service.claim('wins'), isTrue);
-        expect(service.isClaimed('wins'), isTrue);
-      });
+          expect(service.isCompleted('wins'), isTrue);
+          expect(service.claim('wins'), isTrue);
+          expect(service.isClaimed('wins'), isTrue);
+        },
+      );
     });
   });
 

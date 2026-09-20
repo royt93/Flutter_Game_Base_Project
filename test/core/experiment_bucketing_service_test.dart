@@ -19,23 +19,14 @@ void main() {
     test('experimentKey rỗng/blank throw ArgumentError', () {
       final service = ExperimentBucketingService();
 
-      expect(
-        () => service.variantFor('', ['a', 'b']),
-        throwsArgumentError,
-      );
-      expect(
-        () => service.variantFor('   ', ['a', 'b']),
-        throwsArgumentError,
-      );
+      expect(() => service.variantFor('', ['a', 'b']), throwsArgumentError);
+      expect(() => service.variantFor('   ', ['a', 'b']), throwsArgumentError);
     });
 
     test('danh sách variants rỗng throw ArgumentError', () {
       final service = ExperimentBucketingService();
 
-      expect(
-        () => service.variantFor('exp_1', const []),
-        throwsArgumentError,
-      );
+      expect(() => service.variantFor('exp_1', const []), throwsArgumentError);
     });
 
     test('variants chỉ 1 phần tử luôn trả về đúng phần tử đó', () {
@@ -46,15 +37,18 @@ void main() {
   });
 
   group('ExperimentBucketingService: anonymousId ổn định', () {
-    test('sinh 1 lần và cache lại — 2 lần đọc trong cùng instance giống nhau', () {
-      final service = ExperimentBucketingService();
+    test(
+      'sinh 1 lần và cache lại — 2 lần đọc trong cùng instance giống nhau',
+      () {
+        final service = ExperimentBucketingService();
 
-      final first = service.anonymousId;
-      final second = service.anonymousId;
+        final first = service.anonymousId;
+        final second = service.anonymousId;
 
-      expect(first, second);
-      expect(first, isNotEmpty);
-    });
+        expect(first, second);
+        expect(first, isNotEmpty);
+      },
+    );
 
     test(
       'instance MỚI đọc lại đúng anonymousId đã lưu (không sinh id khác)',
@@ -114,27 +108,30 @@ void main() {
       },
     );
 
-    test('cùng experimentKey nhưng device khác (anonymousId khác) có thể ra bucket khác', () {
-      final resultA = ExperimentBucketingService.bucketIndex(
-        'device-a',
-        'exp_1',
-        3,
-      );
-      final resultB = ExperimentBucketingService.bucketIndex(
-        'device-b',
-        'exp_1',
-        3,
-      );
+    test(
+      'cùng experimentKey nhưng device khác (anonymousId khác) có thể ra bucket khác',
+      () {
+        final resultA = ExperimentBucketingService.bucketIndex(
+          'device-a',
+          'exp_1',
+          3,
+        );
+        final resultB = ExperimentBucketingService.bucketIndex(
+          'device-b',
+          'exp_1',
+          3,
+        );
 
-      // Không bắt buộc khác nhau, chỉ xác nhận hàm hash thực sự phụ thuộc
-      // vào anonymousId (không bỏ qua tham số này).
-      expect(
-        ExperimentBucketingService.bucketIndex('device-a', 'exp_1', 3),
-        resultA,
-      );
-      expect(resultA, isA<int>());
-      expect(resultB, isA<int>());
-    });
+        // Không bắt buộc khác nhau, chỉ xác nhận hàm hash thực sự phụ thuộc
+        // vào anonymousId (không bỏ qua tham số này).
+        expect(
+          ExperimentBucketingService.bucketIndex('device-a', 'exp_1', 3),
+          resultA,
+        );
+        expect(resultA, isA<int>());
+        expect(resultB, isA<int>());
+      },
+    );
   });
 
   group('ExperimentBucketingService: phân phối', () {

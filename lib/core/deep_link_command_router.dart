@@ -85,7 +85,12 @@ SdkResult<DeepLinkCommand> parseDeepLink(
   );
 }
 
-enum DeepLinkOutcome { dispatched, queuedUntilReady, duplicateIgnored, rejected }
+enum DeepLinkOutcome {
+  dispatched,
+  queuedUntilReady,
+  duplicateIgnored,
+  rejected,
+}
 
 /// One handler's result for a single dispatch — diagnostic only, never
 /// aborts the rest of the dispatch loop.

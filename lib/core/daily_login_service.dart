@@ -160,9 +160,7 @@ class DailyLoginService extends GetxService {
     if (hasLongest && json['longestStreakEver'] is! int) {
       return _DailyLoginState.initial;
     }
-    final currentRunLength = hasRun
-        ? json['currentRunLength']! as int
-        : streak;
+    final currentRunLength = hasRun ? json['currentRunLength']! as int : streak;
     final longestStreakEver = hasLongest
         ? json['longestStreakEver']! as int
         : currentRunLength;

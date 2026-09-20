@@ -168,7 +168,9 @@ void main() {
   ) async {
     final completer = Completer<void>();
     await tester.pumpWidget(
-      _wrap(AsyncCommonButton(label: 'Save', onPressed: () => completer.future)),
+      _wrap(
+        AsyncCommonButton(label: 'Save', onPressed: () => completer.future),
+      ),
     );
 
     await tester.tap(find.byType(AsyncCommonButton));

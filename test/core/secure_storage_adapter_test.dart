@@ -27,15 +27,18 @@ void main() {
       expect((await SecureStorage.clear()).isSuccess, isFalse);
     });
 
-    test('KHÔNG BAO GIỜ fallback ghi secret vào StorageService thường', () async {
-      final storage = StorageService(null);
-      Get.put<StorageService>(storage);
+    test(
+      'KHÔNG BAO GIỜ fallback ghi secret vào StorageService thường',
+      () async {
+        final storage = StorageService(null);
+        Get.put<StorageService>(storage);
 
-      await SecureStorage.write('api_token', 'super-secret-value');
+        await SecureStorage.write('api_token', 'super-secret-value');
 
-      // Không có key nào bị lộ vào storage thường qua bất kỳ đường nào.
-      expect(storage.exportAll(), isEmpty);
-    });
+        // Không có key nào bị lộ vào storage thường qua bất kỳ đường nào.
+        expect(storage.exportAll(), isEmpty);
+      },
+    );
 
     test('isAvailable == false', () {
       expect(SecureStorage.isAvailable, isFalse);
@@ -54,11 +57,14 @@ void main() {
       expect(read.value, 'abc123');
     });
 
-    test('read key chưa từng ghi trả về null (thành công, không lỗi)', () async {
-      final read = await SecureStorage.read('missing');
-      expect(read.isSuccess, isTrue);
-      expect(read.value, isNull);
-    });
+    test(
+      'read key chưa từng ghi trả về null (thành công, không lỗi)',
+      () async {
+        final read = await SecureStorage.read('missing');
+        expect(read.isSuccess, isTrue);
+        expect(read.value, isNull);
+      },
+    );
 
     test('delete xoá đúng key, không đụng key khác', () async {
       await SecureStorage.write('a', '1');
@@ -80,47 +86,59 @@ void main() {
       expect((await SecureStorage.read('b')).value, isNull);
     });
 
-    test('key rỗng bị từ chối TRƯỚC khi chạm tới adapter (validation)', () async {
-      final result = await SecureStorage.write('', 'v');
-      expect(result.isSuccess, isFalse);
-      expect((result as SdkFailure).kind, SdkErrorKind.validation);
-    });
+    test(
+      'key rỗng bị từ chối TRƯỚC khi chạm tới adapter (validation)',
+      () async {
+        final result = await SecureStorage.write('', 'v');
+        expect(result.isSuccess, isFalse);
+        expect((result as SdkFailure).kind, SdkErrorKind.validation);
+      },
+    );
 
     test('isAvailable == true', () {
       expect(SecureStorage.isAvailable, isTrue);
     });
 
-    test('ghi đồng thời 2 key khác nhau đều thành công, không đụng nhau', () async {
-      final results = await Future.wait([
-        SecureStorage.write('x', '1'),
-        SecureStorage.write('y', '2'),
-      ]);
+    test(
+      'ghi đồng thời 2 key khác nhau đều thành công, không đụng nhau',
+      () async {
+        final results = await Future.wait([
+          SecureStorage.write('x', '1'),
+          SecureStorage.write('y', '2'),
+        ]);
 
-      expect(results.every((r) => r.isSuccess), isTrue);
-      expect((await SecureStorage.read('x')).value, '1');
-      expect((await SecureStorage.read('y')).value, '2');
-    });
+        expect(results.every((r) => r.isSuccess), isTrue);
+        expect((await SecureStorage.read('x')).value, '1');
+        expect((await SecureStorage.read('y')).value, '2');
+      },
+    );
 
-    test('Get.delete adapter giữa chừng: lần gọi SAU đó báo lỗi rõ ràng (không cache)', () async {
-      await SecureStorage.write('token', 'abc');
-      await Get.delete<SecureStorageAdapter>(force: true);
+    test(
+      'Get.delete adapter giữa chừng: lần gọi SAU đó báo lỗi rõ ràng (không cache)',
+      () async {
+        await SecureStorage.write('token', 'abc');
+        await Get.delete<SecureStorageAdapter>(force: true);
 
-      final result = await SecureStorage.read('token');
-      expect(result.isSuccess, isFalse);
-    });
+        final result = await SecureStorage.read('token');
+        expect(result.isSuccess, isFalse);
+      },
+    );
   });
 
   group('adapter throw lỗi platform', () {
     setUp(() => Get.put<SecureStorageAdapter>(_ThrowingSecureStorageAdapter()));
 
-    test('lỗi được bọc thành SdkFailure(platform), message KHÔNG lộ value', () async {
-      final result = await SecureStorage.write('token', 'top-secret-value');
+    test(
+      'lỗi được bọc thành SdkFailure(platform), message KHÔNG lộ value',
+      () async {
+        final result = await SecureStorage.write('token', 'top-secret-value');
 
-      expect(result.isSuccess, isFalse);
-      final failure = result as SdkFailure;
-      expect(failure.kind, SdkErrorKind.platform);
-      expect(failure.message, isNot(contains('top-secret-value')));
-    });
+        expect(result.isSuccess, isFalse);
+        final failure = result as SdkFailure;
+        expect(failure.kind, SdkErrorKind.platform);
+        expect(failure.message, isNot(contains('top-secret-value')));
+      },
+    );
   });
 
   group('FakeSecureStorageAdapter', () {

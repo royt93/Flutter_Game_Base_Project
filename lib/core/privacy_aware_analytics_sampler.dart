@@ -6,7 +6,12 @@ import 'sdk_event_schema_registry.dart';
 import 'utils/fnv1a.dart';
 
 /// Why one `logEvent` call never reached the real [AnalyticsProvider].
-enum AnalyticsDropReason { consentNotGranted, sampledOut, schemaRejected, rateLimited }
+enum AnalyticsDropReason {
+  consentNotGranted,
+  sampledOut,
+  schemaRejected,
+  rateLimited,
+}
 
 /// Bounded, always-consistent counters — never resets on its own, so a
 /// health/debug surface can read cumulative drop counts for the process
@@ -70,10 +75,16 @@ class PrivacyAwareAnalyticsSampler implements AnalyticsProvider {
     this.windowSize = const Duration(seconds: 1),
     String Function()? sessionSeed,
     int Function()? nowMs,
-  }) : defaultSamplingRate = _validatedRate(defaultSamplingRate, 'defaultSamplingRate'),
+  }) : defaultSamplingRate = _validatedRate(
+         defaultSamplingRate,
+         'defaultSamplingRate',
+       ),
        samplingRateOverrides = {
          for (final entry in samplingRateOverrides.entries)
-           entry.key: _validatedRate(entry.value, 'samplingRateOverrides["${entry.key}"]'),
+           entry.key: _validatedRate(
+             entry.value,
+             'samplingRateOverrides["${entry.key}"]',
+           ),
        },
        _sessionSeed = sessionSeed ?? _defaultSessionSeed,
        _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch);

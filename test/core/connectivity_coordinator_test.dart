@@ -46,7 +46,10 @@ void main() {
   setUp(() async {
     scheduled = [];
     SharedPreferences.setMockInitialValues({});
-    Get.put(StorageService(await SharedPreferences.getInstance()), permanent: true);
+    Get.put(
+      StorageService(await SharedPreferences.getInstance()),
+      permanent: true,
+    );
   });
 
   group('ConnectivityCoordinator: accessor', () {
@@ -55,211 +58,244 @@ void main() {
     });
   });
 
-  group('ConnectivityCoordinator: interface up nhưng probe fail không báo online giả', () {
-    test('interface up, probe thành công: online', () async {
-      final signal = FakeConnectivitySignal();
-      final coordinator = ConnectivityCoordinator(
-        signal: signal,
-        probe: () async => true,
-        createTimer: fakeCreateTimer,
+  group(
+    'ConnectivityCoordinator: interface up nhưng probe fail không báo online giả',
+    () {
+      test('interface up, probe thành công: online', () async {
+        final signal = FakeConnectivitySignal();
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => true,
+          createTimer: fakeCreateTimer,
+        );
+
+        signal.setHasInterface(true);
+        await fireLatest(); // debounce timer -> _handleInterfaceChange
+        await Future<void>.delayed(Duration.zero); // để probe Future resolve
+
+        expect(coordinator.state, ConnectivityState.online);
+      });
+
+      test(
+        'interface up nhưng probe fail liên tục: KHÔNG BAO GIỜ báo online',
+        () async {
+          final signal = FakeConnectivitySignal();
+          final coordinator = ConnectivityCoordinator(
+            signal: signal,
+            probe: () async => false,
+            createTimer: fakeCreateTimer,
+          );
+
+          signal.setHasInterface(true);
+          await fireLatest();
+          await Future<void>.delayed(Duration.zero);
+
+          expect(coordinator.state, isNot(ConnectivityState.online));
+        },
       );
 
-      signal.setHasInterface(true);
-      await fireLatest(); // debounce timer -> _handleInterfaceChange
-      await Future<void>.delayed(Duration.zero); // để probe Future resolve
+      test('interface xuống: offline ngay, không cần chờ probe', () async {
+        final signal = FakeConnectivitySignal(initialHasInterface: true);
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => true,
+          createTimer: fakeCreateTimer,
+        );
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+        expect(coordinator.state, ConnectivityState.online);
 
-      expect(coordinator.state, ConnectivityState.online);
-    });
+        signal.setHasInterface(false);
+        await fireLatest();
 
-    test('interface up nhưng probe fail liên tục: KHÔNG BAO GIỜ báo online', () async {
-      final signal = FakeConnectivitySignal();
-      final coordinator = ConnectivityCoordinator(
-        signal: signal,
-        probe: () async => false,
-        createTimer: fakeCreateTimer,
-      );
-
-      signal.setHasInterface(true);
-      await fireLatest();
-      await Future<void>.delayed(Duration.zero);
-
-      expect(coordinator.state, isNot(ConnectivityState.online));
-    });
-
-    test('interface xuống: offline ngay, không cần chờ probe', () async {
-      final signal = FakeConnectivitySignal(initialHasInterface: true);
-      final coordinator = ConnectivityCoordinator(
-        signal: signal,
-        probe: () async => true,
-        createTimer: fakeCreateTimer,
-      );
-      await fireLatest();
-      await Future<void>.delayed(Duration.zero);
-      expect(coordinator.state, ConnectivityState.online);
-
-      signal.setHasInterface(false);
-      await fireLatest();
-
-      expect(coordinator.state, ConnectivityState.offline);
-    });
-  });
+        expect(coordinator.state, ConnectivityState.offline);
+      });
+    },
+  );
 
   group('ConnectivityCoordinator: debounce + hysteresis chống flap spam', () {
-    test('flap nhanh (true/false/true) trong debounce window: chỉ đánh giá giá trị cuối', () async {
-      final signal = FakeConnectivitySignal();
-      final coordinator = ConnectivityCoordinator(
-        signal: signal,
-        probe: () async => true,
-        createTimer: fakeCreateTimer,
-      );
+    test(
+      'flap nhanh (true/false/true) trong debounce window: chỉ đánh giá giá trị cuối',
+      () async {
+        final signal = FakeConnectivitySignal();
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => true,
+          createTimer: fakeCreateTimer,
+        );
 
-      signal.setHasInterface(true);
-      signal.setHasInterface(false);
-      signal.setHasInterface(true);
-      // Stream broadcast .add() giao tới listener qua microtask, không
-      // đồng bộ — flush trước khi soi lại danh sách timer đã tạo.
-      await Future<void>.delayed(Duration.zero);
-      // 3 lần set -> 3 timer debounce được tạo, nhưng 2 timer đầu bị cancel
-      // (bị timer mới cancel), chỉ timer CUỐI còn active.
-      expect(scheduled.where((t) => !t.cancelled), hasLength(1));
+        signal.setHasInterface(true);
+        signal.setHasInterface(false);
+        signal.setHasInterface(true);
+        // Stream broadcast .add() giao tới listener qua microtask, không
+        // đồng bộ — flush trước khi soi lại danh sách timer đã tạo.
+        await Future<void>.delayed(Duration.zero);
+        // 3 lần set -> 3 timer debounce được tạo, nhưng 2 timer đầu bị cancel
+        // (bị timer mới cancel), chỉ timer CUỐI còn active.
+        expect(scheduled.where((t) => !t.cancelled), hasLength(1));
 
-      await fireLatest();
-      await Future<void>.delayed(Duration.zero);
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
 
-      expect(coordinator.state, ConnectivityState.online);
-    });
+        expect(coordinator.state, ConnectivityState.online);
+      },
+    );
 
-    test('1 lần probe fail khi đang online: xuống degraded, chưa xuống offline ngay', () async {
-      var shouldSucceed = true;
-      final signal = FakeConnectivitySignal(initialHasInterface: true);
-      final coordinator = ConnectivityCoordinator(
-        signal: signal,
-        probe: () async => shouldSucceed,
-        failuresToGoOffline: 2,
-        createTimer: fakeCreateTimer,
-      );
-      await fireLatest();
-      await Future<void>.delayed(Duration.zero);
-      expect(coordinator.state, ConnectivityState.online);
+    test(
+      '1 lần probe fail khi đang online: xuống degraded, chưa xuống offline ngay',
+      () async {
+        var shouldSucceed = true;
+        final signal = FakeConnectivitySignal(initialHasInterface: true);
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => shouldSucceed,
+          failuresToGoOffline: 2,
+          createTimer: fakeCreateTimer,
+        );
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+        expect(coordinator.state, ConnectivityState.online);
 
-      shouldSucceed = false;
-      // Mô phỏng periodic probe timer nổ (timer thứ 2 được tạo lúc lên
-      // online — probeTimer).
-      await fireLatest();
-      await Future<void>.delayed(Duration.zero);
+        shouldSucceed = false;
+        // Mô phỏng periodic probe timer nổ (timer thứ 2 được tạo lúc lên
+        // online — probeTimer).
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
 
-      expect(coordinator.state, ConnectivityState.degraded);
-    });
+        expect(coordinator.state, ConnectivityState.degraded);
+      },
+    );
 
-    test('đủ failuresToGoOffline lần fail liên tiếp: xuống offline thật sự', () async {
-      var shouldSucceed = true;
-      final signal = FakeConnectivitySignal(initialHasInterface: true);
-      final coordinator = ConnectivityCoordinator(
-        signal: signal,
-        probe: () async => shouldSucceed,
-        failuresToGoOffline: 2,
-        createTimer: fakeCreateTimer,
-      );
-      await fireLatest();
-      await Future<void>.delayed(Duration.zero);
-      shouldSucceed = false;
-      await fireLatest(); // fail #1 -> degraded
-      await Future<void>.delayed(Duration.zero);
-      expect(coordinator.state, ConnectivityState.degraded);
+    test(
+      'đủ failuresToGoOffline lần fail liên tiếp: xuống offline thật sự',
+      () async {
+        var shouldSucceed = true;
+        final signal = FakeConnectivitySignal(initialHasInterface: true);
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => shouldSucceed,
+          failuresToGoOffline: 2,
+          createTimer: fakeCreateTimer,
+        );
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+        shouldSucceed = false;
+        await fireLatest(); // fail #1 -> degraded
+        await Future<void>.delayed(Duration.zero);
+        expect(coordinator.state, ConnectivityState.degraded);
 
-      await fireLatest(); // fail #2 -> offline
-      await Future<void>.delayed(Duration.zero);
+        await fireLatest(); // fail #2 -> offline
+        await Future<void>.delayed(Duration.zero);
 
-      expect(coordinator.state, ConnectivityState.offline);
-    });
+        expect(coordinator.state, ConnectivityState.offline);
+      },
+    );
 
-    test('phục hồi sau degraded: probe thành công lại thì về online, reset bộ đếm fail', () async {
-      var shouldSucceed = true;
-      final signal = FakeConnectivitySignal(initialHasInterface: true);
-      final coordinator = ConnectivityCoordinator(
-        signal: signal,
-        probe: () async => shouldSucceed,
-        failuresToGoOffline: 2,
-        createTimer: fakeCreateTimer,
-      );
-      await fireLatest();
-      await Future<void>.delayed(Duration.zero);
-      shouldSucceed = false;
-      await fireLatest();
-      await Future<void>.delayed(Duration.zero);
-      expect(coordinator.state, ConnectivityState.degraded);
+    test(
+      'phục hồi sau degraded: probe thành công lại thì về online, reset bộ đếm fail',
+      () async {
+        var shouldSucceed = true;
+        final signal = FakeConnectivitySignal(initialHasInterface: true);
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => shouldSucceed,
+          failuresToGoOffline: 2,
+          createTimer: fakeCreateTimer,
+        );
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+        shouldSucceed = false;
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+        expect(coordinator.state, ConnectivityState.degraded);
 
-      shouldSucceed = true;
-      await fireLatest();
-      await Future<void>.delayed(Duration.zero);
+        shouldSucceed = true;
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
 
-      expect(coordinator.state, ConnectivityState.online);
-    });
+        expect(coordinator.state, ConnectivityState.online);
+      },
+    );
   });
 
   group('ConnectivityCoordinator: lifecycle dispose không leak stream/timer', () {
-    test('onClose(): cancel hết debounce/probe timer và stream subscription', () async {
-      final signal = FakeConnectivitySignal(initialHasInterface: true);
-      final coordinator = ConnectivityCoordinator(
-        signal: signal,
-        probe: () async => true,
-        createTimer: fakeCreateTimer,
-      );
-      await fireLatest();
-      await Future<void>.delayed(Duration.zero);
-      expect(coordinator.state, ConnectivityState.online);
+    test(
+      'onClose(): cancel hết debounce/probe timer và stream subscription',
+      () async {
+        final signal = FakeConnectivitySignal(initialHasInterface: true);
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => true,
+          createTimer: fakeCreateTimer,
+        );
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+        expect(coordinator.state, ConnectivityState.online);
 
-      coordinator.onClose();
+        coordinator.onClose();
 
-      expect(scheduled.every((t) => t.cancelled), isTrue);
+        expect(scheduled.every((t) => t.cancelled), isTrue);
 
-      // Sau dispose, signal đổi nữa cũng không còn ảnh hưởng state.
-      signal.setHasInterface(false);
-      await Future<void>.delayed(Duration.zero);
-      expect(coordinator.state, ConnectivityState.online);
-    });
+        // Sau dispose, signal đổi nữa cũng không còn ảnh hưởng state.
+        signal.setHasInterface(false);
+        await Future<void>.delayed(Duration.zero);
+        expect(coordinator.state, ConnectivityState.online);
+      },
+    );
 
-    test('onClose(): đóng stateStream, không throw khi gọi lần nữa từ caller khác', () async {
-      final signal = FakeConnectivitySignal();
-      final coordinator = ConnectivityCoordinator(
-        signal: signal,
-        probe: () async => true,
-        createTimer: fakeCreateTimer,
-      );
+    test(
+      'onClose(): đóng stateStream, không throw khi gọi lần nữa từ caller khác',
+      () async {
+        final signal = FakeConnectivitySignal();
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => true,
+          createTimer: fakeCreateTimer,
+        );
 
-      coordinator.onClose();
+        coordinator.onClose();
 
-      expect(await coordinator.stateStream.isEmpty, isTrue);
-    });
+        expect(await coordinator.stateStream.isEmpty, isTrue);
+      },
+    );
   });
 
   group('ConnectivityCoordinator: queue', () {
-    test('idempotencyKey trùng: thay thế task cũ, không chạy trùng 2 lần', () async {
-      final signal = FakeConnectivitySignal();
-      final coordinator = ConnectivityCoordinator(
-        signal: signal,
-        probe: () async => true,
-        createTimer: fakeCreateTimer,
-      );
-      var oldRan = false;
-      var newRan = false;
-      coordinator.enqueue(
-        QueuedTask(idempotencyKey: 'sync_score', run: () async => oldRan = true),
-      );
-      coordinator.enqueue(
-        QueuedTask(idempotencyKey: 'sync_score', run: () async => newRan = true),
-      );
+    test(
+      'idempotencyKey trùng: thay thế task cũ, không chạy trùng 2 lần',
+      () async {
+        final signal = FakeConnectivitySignal();
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => true,
+          createTimer: fakeCreateTimer,
+        );
+        var oldRan = false;
+        var newRan = false;
+        coordinator.enqueue(
+          QueuedTask(
+            idempotencyKey: 'sync_score',
+            run: () async => oldRan = true,
+          ),
+        );
+        coordinator.enqueue(
+          QueuedTask(
+            idempotencyKey: 'sync_score',
+            run: () async => newRan = true,
+          ),
+        );
 
-      expect(coordinator.queueLength, 1);
+        expect(coordinator.queueLength, 1);
 
-      signal.setHasInterface(true);
-      await fireLatest();
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
+        signal.setHasInterface(true);
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
-      expect(oldRan, isFalse);
-      expect(newRan, isTrue);
-    });
+        expect(oldRan, isFalse);
+        expect(newRan, isTrue);
+      },
+    );
 
     test('vượt maxQueueSize: loại bỏ đúng task priority thấp nhất', () {
       final signal = FakeConnectivitySignal();
@@ -316,10 +352,18 @@ void main() {
       );
       final order = <String>[];
       coordinator.enqueue(
-        QueuedTask(idempotencyKey: 'low', priority: 0, run: () async => order.add('low')),
+        QueuedTask(
+          idempotencyKey: 'low',
+          priority: 0,
+          run: () async => order.add('low'),
+        ),
       );
       coordinator.enqueue(
-        QueuedTask(idempotencyKey: 'high', priority: 10, run: () async => order.add('high')),
+        QueuedTask(
+          idempotencyKey: 'high',
+          priority: 10,
+          run: () async => order.add('high'),
+        ),
       );
 
       signal.setHasInterface(true);
@@ -350,7 +394,11 @@ void main() {
         ),
       );
       coordinator.enqueue(
-        QueuedTask(idempotencyKey: 'ok', priority: 0, run: () async => okRan = true),
+        QueuedTask(
+          idempotencyKey: 'ok',
+          priority: 0,
+          run: () async => okRan = true,
+        ),
       );
 
       signal.setHasInterface(true);
@@ -364,27 +412,30 @@ void main() {
     });
   });
 
-  group('ConnectivityCoordinator: connectedStream bridge cho NetworkStatusBanner', () {
-    test('emit true khi online, false khi offline', () async {
-      final signal = FakeConnectivitySignal();
-      final coordinator = ConnectivityCoordinator(
-        signal: signal,
-        probe: () async => true,
-        createTimer: fakeCreateTimer,
-      );
-      final events = <bool>[];
-      final sub = coordinator.connectedStream.listen(events.add);
+  group(
+    'ConnectivityCoordinator: connectedStream bridge cho NetworkStatusBanner',
+    () {
+      test('emit true khi online, false khi offline', () async {
+        final signal = FakeConnectivitySignal();
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => true,
+          createTimer: fakeCreateTimer,
+        );
+        final events = <bool>[];
+        final sub = coordinator.connectedStream.listen(events.add);
 
-      signal.setHasInterface(true);
-      await fireLatest();
-      await Future<void>.delayed(Duration.zero);
-      signal.setHasInterface(false);
-      await fireLatest();
-      await Future<void>.delayed(Duration.zero);
+        signal.setHasInterface(true);
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+        signal.setHasInterface(false);
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
 
-      // checking (false) -> online (true) -> offline (false).
-      expect(events, [false, true, false]);
-      await sub.cancel();
-    });
-  });
+        // checking (false) -> online (true) -> offline (false).
+        expect(events, [false, true, false]);
+        await sub.cancel();
+      });
+    },
+  );
 }

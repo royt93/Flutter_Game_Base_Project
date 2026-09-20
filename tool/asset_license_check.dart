@@ -64,7 +64,10 @@ void main(List<String> args) {
           entries: [],
         );
 
-  final issues = validateAssetLicenses(assetPaths: assetPaths, manifest: manifest);
+  final issues = validateAssetLicenses(
+    assetPaths: assetPaths,
+    manifest: manifest,
+  );
 
   stdout.writeln(
     'Asset license check — ${assetPaths.length} asset runtime, '

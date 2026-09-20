@@ -20,7 +20,8 @@ class _FakeAssetBundle extends AssetBundle {
 }
 
 const _assetPath = 'assets/shop_catalog_fallback.json';
-const _fixtureJson = '{"title":"Sword","price":100,"onSale":true,"schemaVersion":1}';
+const _fixtureJson =
+    '{"title":"Sword","price":100,"onSale":true,"schemaVersion":1}';
 
 void main() {
   // FEAT-81: cùng 1 fixture, đi qua đường "asset fallback" (RemoteContentPack

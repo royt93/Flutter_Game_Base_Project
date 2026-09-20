@@ -49,7 +49,9 @@ PlatformCapabilitySnapshot detectPlatformCapabilities({
   TargetPlatform? targetPlatform,
 }) {
   final web = isWeb ?? kIsWeb;
-  final kind = web ? PlatformKind.web : _kindOf(targetPlatform ?? defaultTargetPlatform);
+  final kind = web
+      ? PlatformKind.web
+      : _kindOf(targetPlatform ?? defaultTargetPlatform);
   final isDesktop =
       kind == PlatformKind.windows ||
       kind == PlatformKind.macos ||

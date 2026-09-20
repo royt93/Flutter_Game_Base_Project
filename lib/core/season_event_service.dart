@@ -151,9 +151,7 @@ class SeasonEventService extends GetxService {
     if (anchorMs == null) {
       anchorMs = now;
       anchors[eventId] = anchorMs;
-      _saveChain = _saving
-          ? _saveChain.then((_) => _runSave())
-          : _runSave();
+      _saveChain = _saving ? _saveChain.then((_) => _runSave()) : _runSave();
     }
 
     final cycleMs = length.inMilliseconds + cooldown.inMilliseconds;

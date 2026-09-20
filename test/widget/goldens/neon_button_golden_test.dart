@@ -23,9 +23,7 @@ void main() {
 
   testWidgets('NeonButton disabled', (tester) async {
     await tester.pumpWidget(
-      _wrap(
-        NeonButton(label: 'PLAY', color: NeonTheme.lime, onTap: null),
-      ),
+      _wrap(NeonButton(label: 'PLAY', color: NeonTheme.lime, onTap: null)),
     );
     await tester.pumpAndSettle();
     await expectLater(

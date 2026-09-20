@@ -26,8 +26,8 @@ class OfflineProgressionService extends GetxService {
   /// registered (e.g. widget tests).
   static OfflineProgressionService? get maybe =>
       Get.isRegistered<OfflineProgressionService>()
-          ? Get.find<OfflineProgressionService>()
-          : null;
+      ? Get.find<OfflineProgressionService>()
+      : null;
 
   /// Falls back to [now] (never persisted) when nothing has been claimed
   /// yet, so a fresh install doesn't hand out a free `maxOfflineCap` of

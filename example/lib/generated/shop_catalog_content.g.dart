@@ -12,11 +12,12 @@ class ShopCatalogContent {
   final int price;
   final bool onSale;
 
-  factory ShopCatalogContent.fromJson(Map<String, Object?> json) => ShopCatalogContent(
-    title: _asString(json['title']),
-    price: _asInt(json['price']),
-    onSale: _asBool(json['onSale']),
-  );
+  factory ShopCatalogContent.fromJson(Map<String, Object?> json) =>
+      ShopCatalogContent(
+        title: _asString(json['title']),
+        price: _asInt(json['price']),
+        onSale: _asBool(json['onSale']),
+      );
 
   Map<String, Object?> toJson() => {
     'title': title,
@@ -26,18 +27,19 @@ class ShopCatalogContent {
 
   @override
   bool operator ==(Object other) =>
-    other is ShopCatalogContent &&
-    other.title == title &&
-    other.price == price &&
-    other.onSale == onSale;
+      other is ShopCatalogContent &&
+      other.title == title &&
+      other.price == price &&
+      other.onSale == onSale;
 
   @override
-  int get hashCode => Object.hashAll([
-    title, price, onSale
-  ]);
+  int get hashCode => Object.hashAll([title, price, onSale]);
 
   @override
-  String toString() => 'ShopCatalogContent(' 'title: $title, price: $price, onSale: $onSale' ')';
+  String toString() =>
+      'ShopCatalogContent('
+      'title: $title, price: $price, onSale: $onSale'
+      ')';
 }
 
 String _asString(Object? v) => v is String ? v : '';

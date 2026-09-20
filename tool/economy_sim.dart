@@ -166,7 +166,8 @@ void main(List<String> args) {
   final scenario = scenarioFrom(parseArgs(args));
   final snapshots = simulateEconomy(scenario);
 
-  final header = '${'day'.padRight(6)}${'endEnergy'.padRight(12)}cumulativeCurrency';
+  final header =
+      '${'day'.padRight(6)}${'endEnergy'.padRight(12)}cumulativeCurrency';
   stdout.writeln(header);
   for (final snapshot in snapshots) {
     final dayCol = '${snapshot.day}'.padRight(6);

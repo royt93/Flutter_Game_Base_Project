@@ -160,9 +160,7 @@ class TutorialSequenceController extends ChangeNotifier {
   void _logShown() {
     final id = currentStep?.id;
     if (id != null) {
-      AnalyticsProvider.maybe?.logEvent('tutorial_step_shown', {
-        'stepId': id,
-      });
+      AnalyticsProvider.maybe?.logEvent('tutorial_step_shown', {'stepId': id});
     }
   }
 

@@ -71,10 +71,7 @@ class EmptyStatePlaceholder extends StatelessWidget {
             height: 1.4,
           ),
         ),
-        if (action != null) ...[
-          const SizedBox(height: NeonTheme.s16),
-          action!,
-        ],
+        if (action != null) ...[const SizedBox(height: NeonTheme.s16), action!],
       ],
     );
   }

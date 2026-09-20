@@ -11,39 +11,36 @@ void main() {
       expect(coinArcOffsetAt(from, to, 1, arcHeight: 80), to);
     });
 
+    test('IDEA-22: coinArcOffsetAt: quỹ đạo cong lên trên so với đường thẳng '
+        'Offset.lerp thuần (arcHeight > 0)', () {
+      const from = Offset(10, 500);
+      const to = Offset(300, 50);
+      final straight = Offset.lerp(from, to, 0.5)!;
+      final arced = coinArcOffsetAt(from, to, 0.5, arcHeight: 80);
+
+      expect(arced, isNot(straight));
+      // dy nhỏ hơn (cong lên trên, trục y hướng xuống trong Flutter).
+      expect(arced.dy, lessThan(straight.dy));
+    });
+
     test(
-      'IDEA-22: coinArcOffsetAt: quỹ đạo cong lên trên so với đường thẳng '
-      'Offset.lerp thuần (arcHeight > 0)',
+      'coinArcOffsetAt: arcHeight = 0 trùng với đường thẳng Offset.lerp',
       () {
         const from = Offset(10, 500);
         const to = Offset(300, 50);
         final straight = Offset.lerp(from, to, 0.5)!;
-        final arced = coinArcOffsetAt(from, to, 0.5, arcHeight: 80);
-
-        expect(arced, isNot(straight));
-        // dy nhỏ hơn (cong lên trên, trục y hướng xuống trong Flutter).
-        expect(arced.dy, lessThan(straight.dy));
+        final arced = coinArcOffsetAt(from, to, 0.5, arcHeight: 0);
+        expect(arced.dx, closeTo(straight.dx, 0.001));
+        expect(arced.dy, closeTo(straight.dy, 0.001));
       },
     );
 
-    test('coinArcOffsetAt: arcHeight = 0 trùng với đường thẳng Offset.lerp', () {
-      const from = Offset(10, 500);
-      const to = Offset(300, 50);
-      final straight = Offset.lerp(from, to, 0.5)!;
-      final arced = coinArcOffsetAt(from, to, 0.5, arcHeight: 0);
-      expect(arced.dx, closeTo(straight.dx, 0.001));
-      expect(arced.dy, closeTo(straight.dy, 0.001));
+    test('IDEA-22: coinScaleAt: bắt đầu 1.0, đỉnh pop 1.2 giữa hành trình, '
+        'squash 0.9 lúc đáp', () {
+      expect(coinScaleAt(0), 1.0);
+      expect(coinScaleAt(0.5), closeTo(1.2, 0.001));
+      expect(coinScaleAt(1), closeTo(0.9, 0.001));
     });
-
-    test(
-      'IDEA-22: coinScaleAt: bắt đầu 1.0, đỉnh pop 1.2 giữa hành trình, '
-      'squash 0.9 lúc đáp',
-      () {
-        expect(coinScaleAt(0), 1.0);
-        expect(coinScaleAt(0.5), closeTo(1.2, 0.001));
-        expect(coinScaleAt(1), closeTo(0.9, 0.001));
-      },
-    );
   });
 
   testWidgets(
@@ -137,33 +134,30 @@ void main() {
     },
   );
 
-  testWidgets(
-    'Unmount CoinFlyOverlay giữa chừng animation không leak '
-    'AnimationController',
-    (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: CoinFlyOverlay(
-              from: const Offset(0, 0),
-              to: const Offset(200, 200),
-              coinCount: 5,
-              duration: const Duration(milliseconds: 500),
-              stagger: const Duration(milliseconds: 60),
-            ),
+  testWidgets('Unmount CoinFlyOverlay giữa chừng animation không leak '
+      'AnimationController', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: CoinFlyOverlay(
+            from: const Offset(0, 0),
+            to: const Offset(200, 200),
+            coinCount: 5,
+            duration: const Duration(milliseconds: 500),
+            stagger: const Duration(milliseconds: 60),
           ),
         ),
-      );
+      ),
+    );
 
-      await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 100));
 
-      // Unmount giữa chừng (chưa hết duration, vài coin còn chưa start
-      // forward()) — dispose() phải chạy sạch cho mọi controller kể cả cái
-      // chưa từng forward().
-      await tester.pumpWidget(const SizedBox());
-      expect(tester.takeException(), isNull);
-    },
-  );
+    // Unmount giữa chừng (chưa hết duration, vài coin còn chưa start
+    // forward()) — dispose() phải chạy sạch cho mọi controller kể cả cái
+    // chưa từng forward().
+    await tester.pumpWidget(const SizedBox());
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'CoinFlyOverlay.show no-ops khi targetKey chưa attach vào render object',

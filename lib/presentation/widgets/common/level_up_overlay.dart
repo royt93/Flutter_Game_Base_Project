@@ -270,7 +270,9 @@ class LevelUpOverlay extends StatelessWidget {
                           !reduced &&
                           phase == LevelUpPhase.rewardReveal)
                         ConfettiOverlay(
-                          key: ValueKey('level_up_confetti_${celebration.event.level}'),
+                          key: ValueKey(
+                            'level_up_confetti_${celebration.event.level}',
+                          ),
                         ),
                       Center(
                         child: _LevelUpPanel(
@@ -383,10 +385,7 @@ class _LevelUpPanelState extends State<_LevelUpPanel> {
           ),
           const SizedBox(height: NeonTheme.s16),
           TweenAnimationBuilder<double>(
-            tween: Tween(
-              begin: widget.celebration.startFraction,
-              end: 1.0,
-            ),
+            tween: Tween(begin: widget.celebration.startFraction, end: 1.0),
             duration: widget.reducedMotion
                 ? Duration.zero
                 : widget.xpFillDuration,

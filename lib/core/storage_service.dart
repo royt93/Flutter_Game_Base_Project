@@ -54,7 +54,8 @@ class StorageKeys {
   static const String consentStateV1 = 'consent_state_v1';
 
   // lib/core/app_version_gate.dart reads/writes this directly.
-  static const String appVersionSoftPromptLastMs = 'app_version_soft_prompt_last_ms';
+  static const String appVersionSoftPromptLastMs =
+      'app_version_soft_prompt_last_ms';
 
   // lib/core/app_session_tracker.dart reads/writes these directly.
   static const String appSessionInstallTimeMs = 'app_session_install_time_ms';

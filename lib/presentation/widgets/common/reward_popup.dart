@@ -86,7 +86,8 @@ class _RewardPopupState extends State<RewardPopup>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
-    _showParticles = widget.enableParticles && !NeonTheme.reducedMotion(context);
+    _showParticles =
+        widget.enableParticles && !NeonTheme.reducedMotion(context);
     if (_showParticles) _burst.forward();
   }
 

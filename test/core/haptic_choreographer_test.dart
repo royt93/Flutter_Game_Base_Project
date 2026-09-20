@@ -64,7 +64,9 @@ void main() {
         () => HapticPattern([
           HapticPulse(
             level: HapticLevel.light,
-            delayAfter: HapticPattern.maxDelayPerPulse + const Duration(milliseconds: 1),
+            delayAfter:
+                HapticPattern.maxDelayPerPulse +
+                const Duration(milliseconds: 1),
           ),
         ]),
         throwsArgumentError,
@@ -98,13 +100,16 @@ void main() {
       expect(HapticPattern.error.pulses, isNotEmpty);
     });
 
-    test('error preset là 2 pulse heavy tách biệt bằng khoảng nghỉ rõ ràng', () {
-      final pulses = HapticPattern.error.pulses;
-      expect(pulses, hasLength(2));
-      expect(pulses[0].level, HapticLevel.heavy);
-      expect(pulses[1].level, HapticLevel.heavy);
-      expect(pulses[0].delayAfter, greaterThan(Duration.zero));
-    });
+    test(
+      'error preset là 2 pulse heavy tách biệt bằng khoảng nghỉ rõ ràng',
+      () {
+        final pulses = HapticPattern.error.pulses;
+        expect(pulses, hasLength(2));
+        expect(pulses[0].level, HapticLevel.heavy);
+        expect(pulses[1].level, HapticLevel.heavy);
+        expect(pulses[0].delayAfter, greaterThan(Duration.zero));
+      },
+    );
   });
 
   group('HapticChoreographer: playback xác định', () {
@@ -133,13 +138,16 @@ void main() {
       expect(fired, [HapticLevel.medium]);
     });
 
-    test('pattern 1 pulse không schedule timer nào (không có pulse kế tiếp)', () {
-      choreographer.play(
-        HapticPattern([const HapticPulse(level: HapticLevel.light)]),
-      );
+    test(
+      'pattern 1 pulse không schedule timer nào (không có pulse kế tiếp)',
+      () {
+        choreographer.play(
+          HapticPattern([const HapticPulse(level: HapticLevel.light)]),
+        );
 
-      expect(scheduled, isEmpty);
-    });
+        expect(scheduled, isEmpty);
+      },
+    );
 
     test('pattern nhiều pulse: đúng thứ tự, đúng số timer được schedule', () {
       choreographer.play(
@@ -224,37 +232,43 @@ void main() {
       },
     );
 
-    test('cùng 1 pattern chạy lại nhiều lần cho kết quả xác định giống hệt nhau', () {
-      final pattern = HapticPattern([
-        const HapticPulse(
-          level: HapticLevel.light,
-          delayAfter: Duration(milliseconds: 10),
-        ),
-        const HapticPulse(level: HapticLevel.heavy),
-      ]);
+    test(
+      'cùng 1 pattern chạy lại nhiều lần cho kết quả xác định giống hệt nhau',
+      () {
+        final pattern = HapticPattern([
+          const HapticPulse(
+            level: HapticLevel.light,
+            delayAfter: Duration(milliseconds: 10),
+          ),
+          const HapticPulse(level: HapticLevel.heavy),
+        ]);
 
-      choreographer.play(pattern);
-      scheduled.single.callback();
-      final firstRun = List.of(fired);
+        choreographer.play(pattern);
+        scheduled.single.callback();
+        final firstRun = List.of(fired);
 
-      fired.clear();
-      scheduled.clear();
-      choreographer.play(pattern);
-      scheduled.single.callback();
+        fired.clear();
+        scheduled.clear();
+        choreographer.play(pattern);
+        scheduled.single.callback();
 
-      expect(fired, firstRun);
-    });
+        expect(fired, firstRun);
+      },
+    );
 
     test('cancel() khi chưa play() gì là no-op an toàn, không throw', () {
       expect(() => choreographer.cancel(), returnsNormally);
     });
 
-    test('cancel() sau khi pattern đã chạy xong hoàn toàn là no-op an toàn', () {
-      choreographer.play(
-        HapticPattern([const HapticPulse(level: HapticLevel.light)]),
-      );
-      expect(() => choreographer.cancel(), returnsNormally);
-    });
+    test(
+      'cancel() sau khi pattern đã chạy xong hoàn toàn là no-op an toàn',
+      () {
+        choreographer.play(
+          HapticPattern([const HapticPulse(level: HapticLevel.light)]),
+        );
+        expect(() => choreographer.cancel(), returnsNormally);
+      },
+    );
   });
 
   group('HapticChoreographer: tích hợp với fireHaptic thật (mặc định)', () {
@@ -279,25 +293,31 @@ void main() {
           .setMockMethodCallHandler(SystemChannels.platform, null);
     });
 
-    test('mặc định play() gọi thẳng fireHaptic thật, tôn trọng hapticsEnabled=false', () async {
-      await store.setBool(StorageKeys.hapticsEnabled, false);
-      final choreographer = HapticChoreographer();
+    test(
+      'mặc định play() gọi thẳng fireHaptic thật, tôn trọng hapticsEnabled=false',
+      () async {
+        await store.setBool(StorageKeys.hapticsEnabled, false);
+        final choreographer = HapticChoreographer();
 
-      choreographer.play(HapticPattern.reward);
-      await Future<void>.delayed(Duration.zero);
+        choreographer.play(HapticPattern.reward);
+        await Future<void>.delayed(Duration.zero);
 
-      expect(calls, isEmpty);
-    });
+        expect(calls, isEmpty);
+      },
+    );
 
-    test('mặc định play() gọi platform method khi haptics bật (mặc định)', () async {
-      final choreographer = HapticChoreographer();
+    test(
+      'mặc định play() gọi platform method khi haptics bật (mặc định)',
+      () async {
+        final choreographer = HapticChoreographer();
 
-      choreographer.play(
-        HapticPattern([const HapticPulse(level: HapticLevel.heavy)]),
-      );
-      await Future<void>.delayed(Duration.zero);
+        choreographer.play(
+          HapticPattern([const HapticPulse(level: HapticLevel.heavy)]),
+        );
+        await Future<void>.delayed(Duration.zero);
 
-      expect(calls, isNotEmpty);
-    });
+        expect(calls, isNotEmpty);
+      },
+    );
   });
 }

@@ -138,7 +138,9 @@ List<SbomSuppression> _loadSuppressions(String? path) {
 void main(List<String> args) {
   var lockfilePath = 'pubspec.lock';
   var pubspecPath = 'pubspec.yaml';
-  var pubCacheDir = Platform.environment['PUB_CACHE'] ?? '${Platform.environment['HOME']}/.pub-cache';
+  var pubCacheDir =
+      Platform.environment['PUB_CACHE'] ??
+      '${Platform.environment['HOME']}/.pub-cache';
   String? advisoriesPath;
   String? suppressionsPath;
   String? outPath;
@@ -184,18 +186,24 @@ void main(List<String> args) {
     multiLine: true,
   ).firstMatch(pubspecContent);
   final packageVersion = versionMatch?.group(1) ?? 'unknown';
-  final nameMatch = RegExp(r'^name:\s*(\S+)', multiLine: true).firstMatch(pubspecContent);
+  final nameMatch = RegExp(
+    r'^name:\s*(\S+)',
+    multiLine: true,
+  ).firstMatch(pubspecContent);
   final packageName = nameMatch?.group(1) ?? 'unknown';
 
   final sbom = SbomDocument(
     packageName: packageName,
     packageVersion: packageVersion,
-    generatedAtMs: 0, // fixed: keeps the SBOM byte-reproducible across runs of the same lock file
+    generatedAtMs:
+        0, // fixed: keeps the SBOM byte-reproducible across runs of the same lock file
     entries: entries,
   );
 
   if (outPath != null) {
-    File(outPath).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(sbom.toJson()));
+    File(outPath).writeAsStringSync(
+      const JsonEncoder.withIndent('  ').convert(sbom.toJson()),
+    );
   }
 
   final advisories = _loadAdvisories(advisoriesPath);

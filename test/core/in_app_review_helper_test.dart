@@ -66,17 +66,26 @@ void main() {
       expect(called, isFalse);
     });
 
-    test('gọi lại ngay sau khi vừa hỏi (còn trong cooldown) → không hỏi lại', () async {
-      await setNowMs(_realMs);
-      var callCount = 0;
+    test(
+      'gọi lại ngay sau khi vừa hỏi (còn trong cooldown) → không hỏi lại',
+      () async {
+        await setNowMs(_realMs);
+        var callCount = 0;
 
-      await maybeRequestReview(recentWinStreak: 5, showReview: () async => callCount++);
-      // Gọi lại ngay lập tức, streak vẫn đủ điều kiện.
-      final asked = await maybeRequestReview(recentWinStreak: 5, showReview: () async => callCount++);
+        await maybeRequestReview(
+          recentWinStreak: 5,
+          showReview: () async => callCount++,
+        );
+        // Gọi lại ngay lập tức, streak vẫn đủ điều kiện.
+        final asked = await maybeRequestReview(
+          recentWinStreak: 5,
+          showReview: () async => callCount++,
+        );
 
-      expect(asked, isFalse);
-      expect(callCount, 1);
-    });
+        expect(asked, isFalse);
+        expect(callCount, 1);
+      },
+    );
 
     test('sau khi cooldown đã qua → hỏi lại được', () async {
       await setNowMs(_realMs);
@@ -131,69 +140,72 @@ void main() {
       expect(callCount, 2);
     });
 
-    test('minWinStreak tuỳ chỉnh: ngưỡng cao hơn thì streak thấp không kích hoạt', () async {
-      await setNowMs(_realMs);
-      var called = false;
-
-      final asked = await maybeRequestReview(
-        recentWinStreak: 4,
-        minWinStreak: 5,
-        showReview: () async => called = true,
-      );
-
-      expect(asked, isFalse);
-      expect(called, isFalse);
-    });
-
     test(
-      'đồng hồ hệ thống thực tế "chậm hơn" mốc đã ghi vẫn không hỏi lại sớm '
-      '(dựa vào nowMsClamped chống lùi giờ)',
-      () async {
-        // Đặt mốc đã ghi vào tương lai xa — đồng hồ thật (DateTime.now())
-        // trong lúc test chạy luôn nhỏ hơn mốc này, mô phỏng đúng tình huống
-        // "đã từng chỉnh đồng hồ tiến rồi chỉnh lùi lại": nowMsClamped()
-        // không dùng DateTime.now() trực tiếp nên vẫn trả về >= mốc đã ghi.
-        final future = _realMs + const Duration(days: 60).inMilliseconds;
-        await setNowMs(future);
-        var callCount = 0;
-
-        await maybeRequestReview(recentWinStreak: 5, showReview: () async => callCount++);
-        // Gọi lại mà không set thêm mốc mới — nếu helper lỡ dùng
-        // DateTime.now() trực tiếp thay vì nowMsClamped(), cooldown sẽ (sai)
-        // tưởng đã qua vì "hiện tại" nhỏ hơn nhiều so với last-asked (future).
-        final asked = await maybeRequestReview(recentWinStreak: 5, showReview: () async => callCount++);
-
-        expect(asked, isFalse);
-        expect(callCount, 1);
-      },
-    );
-
-    test(
-      'BUG-25: showReview() throw → lỗi lan ra ngoài (đúng theo doc "trả '
-      'về đã GỌI hay chưa", không phải đã thành công), nhưng KHÔNG tiêu '
-      'cooldown — lần gọi hợp lệ tiếp theo vẫn eligible',
+      'minWinStreak tuỳ chỉnh: ngưỡng cao hơn thì streak thấp không kích hoạt',
       () async {
         await setNowMs(_realMs);
-
-        await expectLater(
-          maybeRequestReview(
-            recentWinStreak: 5,
-            showReview: () async => throw StateError('platform lỗi tạm thời'),
-          ),
-          throwsStateError,
-        );
-
-        // Vẫn cùng thời điểm — nếu cooldown đã bị tiêu (bug), lần gọi này
-        // sẽ bị chặn dù chưa hề hỏi thành công lần nào.
         var called = false;
-        final asked2 = await maybeRequestReview(
-          recentWinStreak: 5,
+
+        final asked = await maybeRequestReview(
+          recentWinStreak: 4,
+          minWinStreak: 5,
           showReview: () async => called = true,
         );
 
-        expect(asked2, isTrue);
-        expect(called, isTrue);
+        expect(asked, isFalse);
+        expect(called, isFalse);
       },
     );
+
+    test('đồng hồ hệ thống thực tế "chậm hơn" mốc đã ghi vẫn không hỏi lại sớm '
+        '(dựa vào nowMsClamped chống lùi giờ)', () async {
+      // Đặt mốc đã ghi vào tương lai xa — đồng hồ thật (DateTime.now())
+      // trong lúc test chạy luôn nhỏ hơn mốc này, mô phỏng đúng tình huống
+      // "đã từng chỉnh đồng hồ tiến rồi chỉnh lùi lại": nowMsClamped()
+      // không dùng DateTime.now() trực tiếp nên vẫn trả về >= mốc đã ghi.
+      final future = _realMs + const Duration(days: 60).inMilliseconds;
+      await setNowMs(future);
+      var callCount = 0;
+
+      await maybeRequestReview(
+        recentWinStreak: 5,
+        showReview: () async => callCount++,
+      );
+      // Gọi lại mà không set thêm mốc mới — nếu helper lỡ dùng
+      // DateTime.now() trực tiếp thay vì nowMsClamped(), cooldown sẽ (sai)
+      // tưởng đã qua vì "hiện tại" nhỏ hơn nhiều so với last-asked (future).
+      final asked = await maybeRequestReview(
+        recentWinStreak: 5,
+        showReview: () async => callCount++,
+      );
+
+      expect(asked, isFalse);
+      expect(callCount, 1);
+    });
+
+    test('BUG-25: showReview() throw → lỗi lan ra ngoài (đúng theo doc "trả '
+        'về đã GỌI hay chưa", không phải đã thành công), nhưng KHÔNG tiêu '
+        'cooldown — lần gọi hợp lệ tiếp theo vẫn eligible', () async {
+      await setNowMs(_realMs);
+
+      await expectLater(
+        maybeRequestReview(
+          recentWinStreak: 5,
+          showReview: () async => throw StateError('platform lỗi tạm thời'),
+        ),
+        throwsStateError,
+      );
+
+      // Vẫn cùng thời điểm — nếu cooldown đã bị tiêu (bug), lần gọi này
+      // sẽ bị chặn dù chưa hề hỏi thành công lần nào.
+      var called = false;
+      final asked2 = await maybeRequestReview(
+        recentWinStreak: 5,
+        showReview: () async => called = true,
+      );
+
+      expect(asked2, isTrue);
+      expect(called, isTrue);
+    });
   });
 }

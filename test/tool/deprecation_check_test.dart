@@ -12,7 +12,11 @@ void main() {
           'tool/deprecation_check.dart',
         ]);
 
-        expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+        expect(
+          result.exitCode,
+          0,
+          reason: '${result.stdout}\n${result.stderr}',
+        );
         expect(
           result.stdout as String,
           contains('No deprecated API past its removal version.'),

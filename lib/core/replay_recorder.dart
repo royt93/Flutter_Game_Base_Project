@@ -231,7 +231,11 @@ class ReplayRecorder extends GetxService {
         events.add(_buffer[(_writeIndex + i) % capacity]!);
       }
     }
-    return ReplayCapsule(seed: _seed ?? 0, appVersion: appVersion, events: events);
+    return ReplayCapsule(
+      seed: _seed ?? 0,
+      appVersion: appVersion,
+      events: events,
+    );
   }
 }
 

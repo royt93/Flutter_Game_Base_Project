@@ -193,102 +193,90 @@ void main() {
         );
       });
 
-      test('consumeEnergy(0) throw ArgumentError, không âm thầm "thành công"', () {
-        final service = EnergyService(maxEnergy: 5);
-        expect(() => service.consumeEnergy(0), throwsArgumentError);
-        // Không có gì bị trừ.
-        expect(service.currentEnergy, 5);
-      });
-
-      test('consumeEnergy(số âm) throw ArgumentError, không cộng nhầm năng lượng', () {
-        final service = EnergyService(maxEnergy: 5);
-        expect(() => service.consumeEnergy(-2), throwsArgumentError);
-        expect(service.currentEnergy, 5);
-      });
-
       test(
-        'giá trị energy lưu trữ bị hỏng (âm hoặc vượt maxEnergy) được clamp '
-        'lại đúng khi đọc, không tin tưởng nguyên vẹn',
-        () async {
-          // Mô phỏng save bị chỉnh tay/import lỗi: count vượt maxEnergy.
-          await store.setString(
-            StorageKeys.energyStateV1,
-            '{"count": 999, "lastMs": $_realMs}',
-          );
+        'consumeEnergy(0) throw ArgumentError, không âm thầm "thành công"',
+        () {
           final service = EnergyService(maxEnergy: 5);
+          expect(() => service.consumeEnergy(0), throwsArgumentError);
+          // Không có gì bị trừ.
           expect(service.currentEnergy, 5);
         },
       );
 
       test(
-        'giá trị energy âm trong storage được clamp về 0 khi đọc',
-        () async {
-          await store.setString(
-            StorageKeys.energyStateV1,
-            '{"count": -7, "lastMs": $_realMs}',
-          );
+        'consumeEnergy(số âm) throw ArgumentError, không cộng nhầm năng lượng',
+        () {
           final service = EnergyService(maxEnergy: 5);
-          expect(service.currentEnergy, 0);
-        },
-      );
-
-      test(
-        'save cũ theo format 2-key (trước BUG-19) vẫn đọc được đúng — '
-        'migrate ngầm, không reset về đầy tim',
-        () async {
-          // Format cũ: 2 key riêng, chưa có energyStateV1.
-          await store.setInt(StorageKeys.energyCount, 3);
-          await store.setInt(StorageKeys.energyLastMs, _realMs);
-
-          final service = EnergyService(maxEnergy: 5);
-          expect(service.currentEnergy, 3);
-        },
-      );
-
-      test(
-        'JSON hỏng trong energyStateV1 không crash, fallback về format cũ '
-        'hoặc mặc định đầy tim',
-        () async {
-          await store.setString(StorageKeys.energyStateV1, 'not valid json{{{');
-          final service = EnergyService(maxEnergy: 5);
+          expect(() => service.consumeEnergy(-2), throwsArgumentError);
           expect(service.currentEnergy, 5);
-          expect(() => service.currentEnergy, returnsNormally);
         },
       );
 
-      test(
-        'consumeEnergy() ghi count + lastMs bằng đúng 1 lần write (atomic) '
-        'thay vì 2 write rời rạc',
-        () {
-          final service = EnergyService(maxEnergy: 5);
-          // "Làm nóng" watermark của nowMsClamped() trước — lần đầu tiên nó
-          // được gọi trong 1 test luôn tự thêm 1 write phụ (nâng
-          // StorageKeys.maxMsSeen), không liên quan tới tính atomic đang
-          // test ở đây. Đọc currentEnergy 1 lần để watermark đã ổn định.
-          service.currentEnergy;
-          final writesBefore = store.platformWrites;
+      test('giá trị energy lưu trữ bị hỏng (âm hoặc vượt maxEnergy) được clamp '
+          'lại đúng khi đọc, không tin tưởng nguyên vẹn', () async {
+        // Mô phỏng save bị chỉnh tay/import lỗi: count vượt maxEnergy.
+        await store.setString(
+          StorageKeys.energyStateV1,
+          '{"count": 999, "lastMs": $_realMs}',
+        );
+        final service = EnergyService(maxEnergy: 5);
+        expect(service.currentEnergy, 5);
+      });
 
-          service.consumeEnergy(1);
+      test('giá trị energy âm trong storage được clamp về 0 khi đọc', () async {
+        await store.setString(
+          StorageKeys.energyStateV1,
+          '{"count": -7, "lastMs": $_realMs}',
+        );
+        final service = EnergyService(maxEnergy: 5);
+        expect(service.currentEnergy, 0);
+      });
 
-          // Trước BUG-19: 2 write rời (energyCount + energyLastMs). Sau
-          // fix: 1 write duy nhất (energyStateV1, 1 chuỗi JSON gộp cả 2).
-          expect(store.platformWrites - writesBefore, 1);
-        },
-      );
+      test('save cũ theo format 2-key (trước BUG-19) vẫn đọc được đúng — '
+          'migrate ngầm, không reset về đầy tim', () async {
+        // Format cũ: 2 key riêng, chưa có energyStateV1.
+        await store.setInt(StorageKeys.energyCount, 3);
+        await store.setInt(StorageKeys.energyLastMs, _realMs);
 
-      test(
-        'sau khi ghi atomic, đọc lại qua instance mới vẫn đúng cả count lẫn '
-        'baseline thời gian',
-        () {
-          final service1 = EnergyService(maxEnergy: 5);
-          service1.consumeEnergy(2);
-          final baselineAfterSpend = service1.debugLastRegenMs;
+        final service = EnergyService(maxEnergy: 5);
+        expect(service.currentEnergy, 3);
+      });
 
-          final service2 = EnergyService(maxEnergy: 5);
-          expect(service2.currentEnergy, 3);
-          expect(service2.debugLastRegenMs, baselineAfterSpend);
-        },
-      );
+      test('JSON hỏng trong energyStateV1 không crash, fallback về format cũ '
+          'hoặc mặc định đầy tim', () async {
+        await store.setString(StorageKeys.energyStateV1, 'not valid json{{{');
+        final service = EnergyService(maxEnergy: 5);
+        expect(service.currentEnergy, 5);
+        expect(() => service.currentEnergy, returnsNormally);
+      });
+
+      test('consumeEnergy() ghi count + lastMs bằng đúng 1 lần write (atomic) '
+          'thay vì 2 write rời rạc', () {
+        final service = EnergyService(maxEnergy: 5);
+        // "Làm nóng" watermark của nowMsClamped() trước — lần đầu tiên nó
+        // được gọi trong 1 test luôn tự thêm 1 write phụ (nâng
+        // StorageKeys.maxMsSeen), không liên quan tới tính atomic đang
+        // test ở đây. Đọc currentEnergy 1 lần để watermark đã ổn định.
+        service.currentEnergy;
+        final writesBefore = store.platformWrites;
+
+        service.consumeEnergy(1);
+
+        // Trước BUG-19: 2 write rời (energyCount + energyLastMs). Sau
+        // fix: 1 write duy nhất (energyStateV1, 1 chuỗi JSON gộp cả 2).
+        expect(store.platformWrites - writesBefore, 1);
+      });
+
+      test('sau khi ghi atomic, đọc lại qua instance mới vẫn đúng cả count lẫn '
+          'baseline thời gian', () {
+        final service1 = EnergyService(maxEnergy: 5);
+        service1.consumeEnergy(2);
+        final baselineAfterSpend = service1.debugLastRegenMs;
+
+        final service2 = EnergyService(maxEnergy: 5);
+        expect(service2.currentEnergy, 3);
+        expect(service2.debugLastRegenMs, baselineAfterSpend);
+      });
     });
   });
 }

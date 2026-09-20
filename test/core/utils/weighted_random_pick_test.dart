@@ -41,22 +41,13 @@ void main() {
     expect(ratio, lessThan(0.13));
   });
 
-  test(
-    'BUG-21: items.length != weights.length → ArgumentError (không phải '
-    'chỉ assert — vẫn throw ở release build)',
-    () {
-      expect(
-        () => weightedRandomPick(['a', 'b'], [1.0]),
-        throwsArgumentError,
-      );
-    },
-  );
+  test('BUG-21: items.length != weights.length → ArgumentError (không phải '
+      'chỉ assert — vẫn throw ở release build)', () {
+    expect(() => weightedRandomPick(['a', 'b'], [1.0]), throwsArgumentError);
+  });
 
   test('BUG-21: items rỗng → ArgumentError', () {
-    expect(
-      () => weightedRandomPick<String>([], []),
-      throwsArgumentError,
-    );
+    expect(() => weightedRandomPick<String>([], []), throwsArgumentError);
   });
 
   test('BUG-21: trọng số âm → ArgumentError', () {

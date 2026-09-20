@@ -20,9 +20,7 @@ void main() {
     expect(find.byIcon(Icons.emoji_events_outlined), findsOneWidget);
     expect(find.text('No achievements yet'), findsOneWidget);
 
-    final icon = tester.widget<Icon>(
-      find.byIcon(Icons.emoji_events_outlined),
-    );
+    final icon = tester.widget<Icon>(find.byIcon(Icons.emoji_events_outlined));
     expect(icon.color, NeonTheme.purple);
   });
 
@@ -39,9 +37,7 @@ void main() {
       ),
     );
 
-    final icon = tester.widget<Icon>(
-      find.byIcon(Icons.leaderboard_outlined),
-    );
+    final icon = tester.widget<Icon>(find.byIcon(Icons.leaderboard_outlined));
     expect(icon.color, NeonTheme.cyan);
   });
 
@@ -71,23 +67,24 @@ void main() {
   });
 
   group('ENH-43: title/action slot', () {
-    testWidgets('title/action null (mặc định) → không hiển thị gì thêm, layout như cũ', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: EmptyStatePlaceholder(
-              icon: Icons.emoji_events_outlined,
-              message: 'No achievements yet',
+    testWidgets(
+      'title/action null (mặc định) → không hiển thị gì thêm, layout như cũ',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: EmptyStatePlaceholder(
+                icon: Icons.emoji_events_outlined,
+                message: 'No achievements yet',
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(ElevatedButton), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.byType(ElevatedButton), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('title + action khi truyền hiển thị đúng cùng icon/message', (
       tester,
@@ -119,23 +116,24 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('chỉ truyền title, không action — vẫn hiển thị đúng, không lỗi', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: EmptyStatePlaceholder(
-              icon: Icons.inbox_outlined,
-              title: 'Nothing here',
-              message: 'Come back later.',
+    testWidgets(
+      'chỉ truyền title, không action — vẫn hiển thị đúng, không lỗi',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: EmptyStatePlaceholder(
+                icon: Icons.inbox_outlined,
+                title: 'Nothing here',
+                message: 'Come back later.',
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Nothing here'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.text('Nothing here'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

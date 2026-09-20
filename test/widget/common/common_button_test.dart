@@ -29,7 +29,9 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Material(
-            child: Center(child: CommonButton(label: 'Play', onTap: () {})),
+            child: Center(
+              child: CommonButton(label: 'Play', onTap: () {}),
+            ),
           ),
         ),
       );
@@ -77,9 +79,7 @@ void main() {
           home: Material(
             child: CommonButton(
               label: variant == CommonButtonVariant.icon ? null : 'Label',
-              icon: variant == CommonButtonVariant.icon
-                  ? Icons.settings
-                  : null,
+              icon: variant == CommonButtonVariant.icon ? Icons.settings : null,
               variant: variant,
               onTap: () {},
             ),
@@ -136,27 +136,26 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets(
-    'CommonButton không có semanticLabel thì fallback dùng label',
-    (tester) async {
-      final handle = tester.ensureSemantics();
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: CommonButton(
-              label: 'Play',
-              variant: CommonButtonVariant.secondary,
-              onTap: () {},
-            ),
+  testWidgets('CommonButton không có semanticLabel thì fallback dùng label', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: CommonButton(
+            label: 'Play',
+            variant: CommonButtonVariant.secondary,
+            onTap: () {},
           ),
         ),
-      );
+      ),
+    );
 
-      final label = tester.getSemantics(find.byType(CommonButton)).label;
-      expect(label.split('\n').first, 'Play');
-      handle.dispose();
-    },
-  );
+    final label = tester.getSemantics(find.byType(CommonButton)).label;
+    expect(label.split('\n').first, 'Play');
+    handle.dispose();
+  });
 
   testWidgets(
     'CommonButton icon variant, không label/semanticLabel thì fallback dùng icon.toString()',
@@ -181,9 +180,7 @@ void main() {
   );
 
   group('IDEA-53: loading state', () {
-    testWidgets('loading: true chặn tap, onTap không được gọi', (
-      tester,
-    ) async {
+    testWidgets('loading: true chặn tap, onTap không được gọi', (tester) async {
       var tapped = false;
       await tester.pumpWidget(
         MaterialApp(
@@ -203,9 +200,7 @@ void main() {
       expect(tapped, isFalse);
     });
 
-    testWidgets('loading: true hiện CircularProgressIndicator', (
-      tester,
-    ) async {
+    testWidgets('loading: true hiện CircularProgressIndicator', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Material(
@@ -290,22 +285,23 @@ void main() {
       },
     );
 
-    testWidgets('loading: false (mặc định) hành vi y hệt trước đây, không hiện spinner', (
-      tester,
-    ) async {
-      var tapped = false;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: CommonButton(label: 'Play', onTap: () => tapped = true),
+    testWidgets(
+      'loading: false (mặc định) hành vi y hệt trước đây, không hiện spinner',
+      (tester) async {
+        var tapped = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: CommonButton(label: 'Play', onTap: () => tapped = true),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(CircularProgressIndicator), findsNothing);
-      await tester.tap(find.byType(CommonButton));
-      expect(tapped, isTrue);
-    });
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        await tester.tap(find.byType(CommonButton));
+        expect(tapped, isTrue);
+      },
+    );
 
     testWidgets('Semantics: enabled == false khi loading dù onTap khác null', (
       tester,

@@ -61,7 +61,10 @@ class AssetLicenseEntry {
     final owner = json['owner'];
     final license = json['license'];
     final source = json['source'];
-    if (path is! String || owner is! String || license is! String || source is! String) {
+    if (path is! String ||
+        owner is! String ||
+        license is! String ||
+        source is! String) {
       return null;
     }
     return AssetLicenseEntry(
@@ -137,7 +140,11 @@ enum AssetLicenseIssueKind {
 }
 
 class AssetLicenseIssue {
-  const AssetLicenseIssue({required this.kind, required this.path, required this.detail});
+  const AssetLicenseIssue({
+    required this.kind,
+    required this.path,
+    required this.detail,
+  });
 
   final AssetLicenseIssueKind kind;
   final String path;
@@ -207,7 +214,8 @@ List<AssetLicenseIssue> validateAssetLicenses({
         AssetLicenseIssue(
           kind: AssetLicenseIssueKind.disallowedLicense,
           path: path,
-          detail: 'license "${entry.license}" nằm trong denylist, cấm phân phối',
+          detail:
+              'license "${entry.license}" nằm trong denylist, cấm phân phối',
         ),
       );
     }
@@ -219,7 +227,8 @@ List<AssetLicenseIssue> validateAssetLicenses({
         AssetLicenseIssue(
           kind: AssetLicenseIssueKind.stale,
           path: entry.path,
-          detail: 'có entry manifest nhưng không còn asset runtime nào ở path này',
+          detail:
+              'có entry manifest nhưng không còn asset runtime nào ở path này',
         ),
       );
     }

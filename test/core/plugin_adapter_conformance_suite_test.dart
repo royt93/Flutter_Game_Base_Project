@@ -27,7 +27,8 @@ class _ThrowingCloudSaveProvider implements CloudSaveProvider {
   @override
   Future<void> signIn() async => throw StateError('boom');
   @override
-  Future<void> upload(Map<String, Object?> data) async => throw StateError('boom');
+  Future<void> upload(Map<String, Object?> data) async =>
+      throw StateError('boom');
   @override
   Future<Map<String, Object?>?> download() async => throw StateError('boom');
 }
@@ -65,18 +66,23 @@ class _ThrowingCrashReporter implements CrashReporter {
 
 void main() {
   group('PluginAdapterConformanceSuite: AnalyticsProvider', () {
-    test('NoopAnalyticsProvider (fake reference) pass toàn bộ checklist', () async {
-      final report = await PluginAdapterConformanceSuite.verifyAnalyticsProvider(
-        NoopAnalyticsProvider(),
-      );
+    test(
+      'NoopAnalyticsProvider (fake reference) pass toàn bộ checklist',
+      () async {
+        final report =
+            await PluginAdapterConformanceSuite.verifyAnalyticsProvider(
+              NoopAnalyticsProvider(),
+            );
 
-      expect(report.passed, isTrue, reason: report.failures.join(', '));
-    });
+        expect(report.passed, isTrue, reason: report.failures.join(', '));
+      },
+    );
 
     test('adapter throw ở logEvent: suite bắt được, không tự crash', () async {
-      final report = await PluginAdapterConformanceSuite.verifyAnalyticsProvider(
-        _ThrowingAnalyticsProvider(),
-      );
+      final report =
+          await PluginAdapterConformanceSuite.verifyAnalyticsProvider(
+            _ThrowingAnalyticsProvider(),
+          );
 
       expect(report.passed, isFalse);
       expect(
@@ -109,64 +115,88 @@ void main() {
   });
 
   group('PluginAdapterConformanceSuite: CloudSaveProvider', () {
-    test('FakeCloudSaveProvider (fake reference) pass toàn bộ checklist', () async {
-      final report = await PluginAdapterConformanceSuite.verifyCloudSaveProvider(
-        FakeCloudSaveProvider(),
-      );
+    test(
+      'FakeCloudSaveProvider (fake reference) pass toàn bộ checklist',
+      () async {
+        final report =
+            await PluginAdapterConformanceSuite.verifyCloudSaveProvider(
+              FakeCloudSaveProvider(),
+            );
 
-      expect(report.passed, isTrue, reason: report.failures.join(', '));
-    });
+        expect(report.passed, isTrue, reason: report.failures.join(', '));
+      },
+    );
 
-    test('adapter throw ở mọi method: suite bắt được nhiều check fail', () async {
-      final report = await PluginAdapterConformanceSuite.verifyCloudSaveProvider(
-        _ThrowingCloudSaveProvider(),
-      );
+    test(
+      'adapter throw ở mọi method: suite bắt được nhiều check fail',
+      () async {
+        final report =
+            await PluginAdapterConformanceSuite.verifyCloudSaveProvider(
+              _ThrowingCloudSaveProvider(),
+            );
 
-      expect(report.passed, isFalse);
-      expect(report.failures, contains('signIn does not throw'));
-      expect(
-        report.failures,
-        contains('upload does not throw for a normal payload'),
-      );
-    });
+        expect(report.passed, isFalse);
+        expect(report.failures, contains('signIn does not throw'));
+        expect(
+          report.failures,
+          contains('upload does not throw for a normal payload'),
+        );
+      },
+    );
 
-    test('adapter treo mãi ở signIn: check timeout fail đúng, không hang cả suite', () async {
-      final report = await PluginAdapterConformanceSuite.verifyCloudSaveProvider(
-        _HangingCloudSaveProvider(),
-        timeout: const Duration(milliseconds: 100),
-      );
+    test(
+      'adapter treo mãi ở signIn: check timeout fail đúng, không hang cả suite',
+      () async {
+        final report =
+            await PluginAdapterConformanceSuite.verifyCloudSaveProvider(
+              _HangingCloudSaveProvider(),
+              timeout: const Duration(milliseconds: 100),
+            );
 
-      expect(report.checks['signIn completes within timeout'], isFalse);
-    });
+        expect(report.checks['signIn completes within timeout'], isFalse);
+      },
+    );
   });
 
   group('PluginAdapterConformanceSuite: SecureStorageAdapter', () {
-    test('FakeSecureStorageAdapter (fake reference) pass toàn bộ checklist', () async {
-      final report = await PluginAdapterConformanceSuite.verifySecureStorageAdapter(
-        FakeSecureStorageAdapter(),
-      );
+    test(
+      'FakeSecureStorageAdapter (fake reference) pass toàn bộ checklist',
+      () async {
+        final report =
+            await PluginAdapterConformanceSuite.verifySecureStorageAdapter(
+              FakeSecureStorageAdapter(),
+            );
 
-      expect(report.passed, isTrue, reason: report.failures.join(', '));
-    });
+        expect(report.passed, isTrue, reason: report.failures.join(', '));
+      },
+    );
 
-    test('adapter KHÔNG xoá thật khi delete/clear: privacy check fail đúng chỗ', () async {
-      final report = await PluginAdapterConformanceSuite.verifySecureStorageAdapter(
-        _LeakySecureStorageAdapter(),
-      );
+    test(
+      'adapter KHÔNG xoá thật khi delete/clear: privacy check fail đúng chỗ',
+      () async {
+        final report =
+            await PluginAdapterConformanceSuite.verifySecureStorageAdapter(
+              _LeakySecureStorageAdapter(),
+            );
 
-      expect(report.passed, isFalse);
-      expect(
-        report.failures,
-        contains('delete actually removes the value (privacy: no residual read)'),
-      );
-      expect(
-        report.failures,
-        contains('clear wipes every previously-written key (privacy: no residual data)'),
-      );
-      // Các check KHÁC (không liên quan bug này) vẫn phải pass — chứng
-      // minh suite cô lập đúng từng check, không fail dây chuyền.
-      expect(report.checks['write+read round-trips correctly'], isTrue);
-    });
+        expect(report.passed, isFalse);
+        expect(
+          report.failures,
+          contains(
+            'delete actually removes the value (privacy: no residual read)',
+          ),
+        );
+        expect(
+          report.failures,
+          contains(
+            'clear wipes every previously-written key (privacy: no residual data)',
+          ),
+        );
+        // Các check KHÁC (không liên quan bug này) vẫn phải pass — chứng
+        // minh suite cô lập đúng từng check, không fail dây chuyền.
+        expect(report.checks['write+read round-trips correctly'], isTrue);
+      },
+    );
   });
 
   group('PluginAdapterConformanceSuite: PurchaseSeam', () {
@@ -178,19 +208,22 @@ void main() {
       expect(report.passed, isTrue, reason: report.failures.join(', '));
     });
 
-    test('adapter báo đã sở hữu sản phẩm chưa từng mua: entitlement-leak check fail', () async {
-      final report = await PluginAdapterConformanceSuite.verifyPurchaseSeam(
-        _EntitlementLeakPurchaseSeam(),
-      );
+    test(
+      'adapter báo đã sở hữu sản phẩm chưa từng mua: entitlement-leak check fail',
+      () async {
+        final report = await PluginAdapterConformanceSuite.verifyPurchaseSeam(
+          _EntitlementLeakPurchaseSeam(),
+        );
 
-      expect(report.passed, isFalse);
-      expect(
-        report.failures,
-        contains(
-          'isOwned returns false for a never-bought product (no entitlement leak)',
-        ),
-      );
-    });
+        expect(report.passed, isFalse);
+        expect(
+          report.failures,
+          contains(
+            'isOwned returns false for a never-bought product (no entitlement leak)',
+          ),
+        );
+      },
+    );
   });
 
   group('ConformanceReport', () {
@@ -203,13 +236,16 @@ void main() {
       expect(report.failures, isEmpty);
     });
 
-    test('passed = false khi có ít nhất 1 check false; failures liệt kê đúng', () {
-      const report = ConformanceReport(
-        adapterName: 'x',
-        checks: {'a': true, 'b': false},
-      );
-      expect(report.passed, isFalse);
-      expect(report.failures, ['b']);
-    });
+    test(
+      'passed = false khi có ít nhất 1 check false; failures liệt kê đúng',
+      () {
+        const report = ConformanceReport(
+          adapterName: 'x',
+          checks: {'a': true, 'b': false},
+        );
+        expect(report.passed, isFalse);
+        expect(report.failures, ['b']);
+      },
+    );
   });
 }

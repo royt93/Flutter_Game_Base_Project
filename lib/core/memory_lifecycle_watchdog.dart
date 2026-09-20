@@ -6,7 +6,14 @@ import 'sdk_health_report.dart';
 /// categories this task's own user story names (ticker/controller/
 /// overlay/subscription/Flame component); `custom` covers anything else
 /// a consumer app wants to track through the same mechanism.
-enum WatchdogKind { ticker, controller, overlay, subscription, flameComponent, custom }
+enum WatchdogKind {
+  ticker,
+  controller,
+  overlay,
+  subscription,
+  flameComponent,
+  custom,
+}
 
 /// One still-live tracked resource — [owner] is free text (typically a
 /// `runtimeType.toString()` or a widget's debug label), not a live
@@ -39,7 +46,10 @@ class WatchdogEntry {
 /// separate from [MemoryWatchdog.orphans], which only ever looks at
 /// still-live entries.
 class DisposedWatchdogEntry {
-  const DisposedWatchdogEntry({required this.entry, required this.disposedAtMs});
+  const DisposedWatchdogEntry({
+    required this.entry,
+    required this.disposedAtMs,
+  });
 
   final WatchdogEntry entry;
   final int disposedAtMs;
@@ -123,7 +133,9 @@ class MemoryWatchdog {
     if (!kDebugMode) return;
     final entry = _live.remove(id);
     if (entry == null) return;
-    _recentlyDisposed.add(DisposedWatchdogEntry(entry: entry, disposedAtMs: nowMs()));
+    _recentlyDisposed.add(
+      DisposedWatchdogEntry(entry: entry, disposedAtMs: nowMs()),
+    );
     while (_recentlyDisposed.length > _disposedHistoryCapacity) {
       _recentlyDisposed.removeAt(0);
     }

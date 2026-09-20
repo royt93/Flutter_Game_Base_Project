@@ -55,42 +55,25 @@ void main() {
       expect(calls, isEmpty);
     });
 
-    test('hapticsEnabled chưa từng set (mặc định true) → vẫn gọi platform method', () async {
-      fireHaptic(HapticLevel.light);
-      await Future<void>.delayed(Duration.zero);
-
-      expect(calls, hasLength(1));
-      expect(calls.single.method, 'HapticFeedback.vibrate');
-    });
-
-    test('mỗi HapticLevel map đúng platform method ở chế độ thường (không soft mode)', () async {
-      await store.setBool(StorageKeys.hapticsEnabled, true);
-      const expected = {
-        HapticLevel.light: 'HapticFeedbackType.lightImpact',
-        HapticLevel.medium: 'HapticFeedbackType.mediumImpact',
-        HapticLevel.heavy: 'HapticFeedbackType.heavyImpact',
-      };
-
-      for (final entry in expected.entries) {
-        calls.clear();
-        fireHaptic(entry.key);
+    test(
+      'hapticsEnabled chưa từng set (mặc định true) → vẫn gọi platform method',
+      () async {
+        fireHaptic(HapticLevel.light);
         await Future<void>.delayed(Duration.zero);
 
-        expect(calls, hasLength(1), reason: '${entry.key}');
-        expect(calls.single.arguments, entry.value);
-      }
-    });
+        expect(calls, hasLength(1));
+        expect(calls.single.method, 'HapticFeedback.vibrate');
+      },
+    );
 
     test(
-      'soft mode bật → downgrade đúng 1 bậc trước khi map '
-      '(heavy→medium, medium→light, light→light giữ nguyên)',
+      'mỗi HapticLevel map đúng platform method ở chế độ thường (không soft mode)',
       () async {
         await store.setBool(StorageKeys.hapticsEnabled, true);
-        await store.setBool(StorageKeys.hapticSoftMode, true);
         const expected = {
-          HapticLevel.heavy: 'HapticFeedbackType.mediumImpact',
-          HapticLevel.medium: 'HapticFeedbackType.lightImpact',
           HapticLevel.light: 'HapticFeedbackType.lightImpact',
+          HapticLevel.medium: 'HapticFeedbackType.mediumImpact',
+          HapticLevel.heavy: 'HapticFeedbackType.heavyImpact',
         };
 
         for (final entry in expected.entries) {
@@ -98,9 +81,29 @@ void main() {
           fireHaptic(entry.key);
           await Future<void>.delayed(Duration.zero);
 
-          expect(calls.single.arguments, entry.value, reason: '${entry.key}');
+          expect(calls, hasLength(1), reason: '${entry.key}');
+          expect(calls.single.arguments, entry.value);
         }
       },
     );
+
+    test('soft mode bật → downgrade đúng 1 bậc trước khi map '
+        '(heavy→medium, medium→light, light→light giữ nguyên)', () async {
+      await store.setBool(StorageKeys.hapticsEnabled, true);
+      await store.setBool(StorageKeys.hapticSoftMode, true);
+      const expected = {
+        HapticLevel.heavy: 'HapticFeedbackType.mediumImpact',
+        HapticLevel.medium: 'HapticFeedbackType.lightImpact',
+        HapticLevel.light: 'HapticFeedbackType.lightImpact',
+      };
+
+      for (final entry in expected.entries) {
+        calls.clear();
+        fireHaptic(entry.key);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(calls.single.arguments, entry.value, reason: '${entry.key}');
+      }
+    });
   });
 }

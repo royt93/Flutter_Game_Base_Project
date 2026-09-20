@@ -9,9 +9,9 @@ import 'package:roy_casual_kit/presentation/widgets/common/circular_progress_rin
 // runtimeType.toString() để lấy đúng painter và đọc field `progress` qua
 // so sánh shouldRepaint/toString là quá phức tạp, nên thay vào đó ta kiểm
 // tra qua CustomPaint mà painter's runtimeType chứa "_RingPainter".
-CustomPaint _ringPaint(WidgetTester tester) => tester.widgetList<CustomPaint>(
-  find.byType(CustomPaint),
-).firstWhere((w) => w.painter.runtimeType.toString() == '_RingPainter');
+CustomPaint _ringPaint(WidgetTester tester) => tester
+    .widgetList<CustomPaint>(find.byType(CustomPaint))
+    .firstWhere((w) => w.painter.runtimeType.toString() == '_RingPainter');
 
 void main() {
   testWidgets(
@@ -79,9 +79,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('label truyền vào được render khi không có icon', (
-    tester,
-  ) async {
+  testWidgets('label truyền vào được render khi không có icon', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Material(
@@ -172,26 +170,27 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('child null → icon/label vẫn hoạt động y hệt như trước (không phá call site cũ)', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Material(
-            child: Center(
-              child: CircularProgressRing(
-                progress: 0.5,
-                icon: Icons.timer_rounded,
+    testWidgets(
+      'child null → icon/label vẫn hoạt động y hệt như trước (không phá call site cũ)',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: Center(
+                child: CircularProgressRing(
+                  progress: 0.5,
+                  icon: Icons.timer_rounded,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.timer_rounded), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.byIcon(Icons.timer_rounded), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('ENH-59: Semantics', () {
@@ -218,9 +217,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Material(
-            child: Center(
-              child: CircularProgressRing(progress: progress),
-            ),
+            child: Center(child: CircularProgressRing(progress: progress)),
           ),
         ),
       );
@@ -230,9 +227,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Material(
-            child: Center(
-              child: CircularProgressRing(progress: progress),
-            ),
+            child: Center(child: CircularProgressRing(progress: progress)),
           ),
         ),
       );
@@ -244,9 +239,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('progress > 1.0 clamp về 100% trong Semantics', (
-      tester,
-    ) async {
+    testWidgets('progress > 1.0 clamp về 100% trong Semantics', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Material(

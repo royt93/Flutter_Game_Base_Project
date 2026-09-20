@@ -56,18 +56,21 @@ void main() {
       expect(result.lastMs, 1300);
     });
 
-    test('số tick vượt quá phần còn thiếu: cap đúng ở maxEnergy, lastMs = nowMs', () {
-      final result = regenEnergy(
-        count: 3,
-        maxEnergy: 5,
-        lastMs: 1000,
-        nowMs: 10000,
-        intervalMs: 100,
-      );
+    test(
+      'số tick vượt quá phần còn thiếu: cap đúng ở maxEnergy, lastMs = nowMs',
+      () {
+        final result = regenEnergy(
+          count: 3,
+          maxEnergy: 5,
+          lastMs: 1000,
+          nowMs: 10000,
+          intervalMs: 100,
+        );
 
-      expect(result.count, 5);
-      expect(result.lastMs, 10000);
-    });
+        expect(result.count, 5);
+        expect(result.lastMs, 10000);
+      },
+    );
 
     test('nowMs lùi lại trước lastMs (giả lập vặn đồng hồ): không tick âm', () {
       final result = regenEnergy(
@@ -160,15 +163,18 @@ void main() {
       );
     });
 
-    test('nowMs lùi lại trước lastClaimedMs (vặn đồng hồ): earnings = 0, không âm', () {
-      final earnings = offlineEarnings(
-        lastClaimedMs: 5000,
-        nowMs: 1000,
-        maxOfflineCapMs: 100000,
-        productionRatePerSecond: 1.0,
-      );
+    test(
+      'nowMs lùi lại trước lastClaimedMs (vặn đồng hồ): earnings = 0, không âm',
+      () {
+        final earnings = offlineEarnings(
+          lastClaimedMs: 5000,
+          nowMs: 1000,
+          maxOfflineCapMs: 100000,
+          productionRatePerSecond: 1.0,
+        );
 
-      expect(earnings, 0);
-    });
+        expect(earnings, 0);
+      },
+    );
   });
 }

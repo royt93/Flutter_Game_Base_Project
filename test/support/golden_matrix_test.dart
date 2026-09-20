@@ -6,31 +6,38 @@ import 'golden_matrix.dart';
 
 void main() {
   group('defaultGoldenMatrix', () {
-    test('7 case cố định: baseline + 1 biến thể mỗi trục (bounded runtime)', () {
-      final matrix = defaultGoldenMatrix();
-      expect(matrix, hasLength(7));
-      expect(matrix.map((c) => c.name).toList(), [
-        'baseline',
-        'dark',
-        'locale-vi',
-        'rtl',
-        'textScale-1.3',
-        'textScale-2.0',
-        'reducedMotion',
-      ]);
-      // Đúng 1 trục lệch baseline mỗi case (trừ baseline chính nó).
-      final baseline = matrix.first;
-      for (final c in matrix.skip(1)) {
-        final diffs = [
-          c.dark != baseline.dark,
-          c.locale != baseline.locale,
-          c.rtl != baseline.rtl,
-          c.textScale != baseline.textScale,
-          c.reducedMotion != baseline.reducedMotion,
-        ].where((d) => d).length;
-        expect(diffs, 1, reason: '${c.name} phải chỉ lệch baseline đúng 1 trục');
-      }
-    });
+    test(
+      '7 case cố định: baseline + 1 biến thể mỗi trục (bounded runtime)',
+      () {
+        final matrix = defaultGoldenMatrix();
+        expect(matrix, hasLength(7));
+        expect(matrix.map((c) => c.name).toList(), [
+          'baseline',
+          'dark',
+          'locale-vi',
+          'rtl',
+          'textScale-1.3',
+          'textScale-2.0',
+          'reducedMotion',
+        ]);
+        // Đúng 1 trục lệch baseline mỗi case (trừ baseline chính nó).
+        final baseline = matrix.first;
+        for (final c in matrix.skip(1)) {
+          final diffs = [
+            c.dark != baseline.dark,
+            c.locale != baseline.locale,
+            c.rtl != baseline.rtl,
+            c.textScale != baseline.textScale,
+            c.reducedMotion != baseline.reducedMotion,
+          ].where((d) => d).length;
+          expect(
+            diffs,
+            1,
+            reason: '${c.name} phải chỉ lệch baseline đúng 1 trục',
+          );
+        }
+      },
+    );
 
     test('textScales tuỳ biến được, số case thay đổi tương ứng', () {
       final matrix = defaultGoldenMatrix(textScales: [1.5]);
@@ -69,52 +76,56 @@ void main() {
       }
     });
 
-    testWidgets('không mutate NeonTheme.dark sau khi chạy xong dù case cuối là dark', (
-      tester,
-    ) async {
-      NeonTheme.dark = false;
-      await runGoldenMatrix(
-        tester,
-        (context) => const SizedBox(width: 10, height: 10),
-        guidelines: const [],
-        matrix: const [
-          GoldenMatrixCase(name: 'a', dark: true),
-          GoldenMatrixCase(name: 'b', dark: true),
-        ],
-      );
-      expect(NeonTheme.dark, isFalse);
-    });
+    testWidgets(
+      'không mutate NeonTheme.dark sau khi chạy xong dù case cuối là dark',
+      (tester) async {
+        NeonTheme.dark = false;
+        await runGoldenMatrix(
+          tester,
+          (context) => const SizedBox(width: 10, height: 10),
+          guidelines: const [],
+          matrix: const [
+            GoldenMatrixCase(name: 'a', dark: true),
+            GoldenMatrixCase(name: 'b', dark: true),
+          ],
+        );
+        expect(NeonTheme.dark, isFalse);
+      },
+    );
   });
 
   group('runGoldenMatrix: fixture bắt lỗi thật (chống false negative)', () {
-    testWidgets('báo đúng tên case khi widget overflow, dừng ngay không im lặng bỏ qua', (
+    testWidgets(
+      'báo đúng tên case khi widget overflow, dừng ngay không im lặng bỏ qua',
+      (tester) async {
+        Object? caught;
+        try {
+          await runGoldenMatrix(
+            tester,
+            (context) => const SizedBox(
+              width: 40,
+              height: 20,
+              child: Row(
+                children: [
+                  SizedBox(width: 30, height: 10),
+                  SizedBox(width: 30, height: 10),
+                ],
+              ),
+            ),
+            guidelines: const [],
+            matrix: const [GoldenMatrixCase(name: 'always-overflows')],
+          );
+        } catch (e) {
+          caught = e;
+        }
+        expect(caught, isA<TestFailure>());
+        expect(caught.toString(), contains('always-overflows'));
+      },
+    );
+
+    testWidgets('widget không overflow đi qua sạch, không false positive', (
       tester,
     ) async {
-      Object? caught;
-      try {
-        await runGoldenMatrix(
-          tester,
-          (context) => const SizedBox(
-            width: 40,
-            height: 20,
-            child: Row(
-              children: [
-                SizedBox(width: 30, height: 10),
-                SizedBox(width: 30, height: 10),
-              ],
-            ),
-          ),
-          guidelines: const [],
-          matrix: const [GoldenMatrixCase(name: 'always-overflows')],
-        );
-      } catch (e) {
-        caught = e;
-      }
-      expect(caught, isA<TestFailure>());
-      expect(caught.toString(), contains('always-overflows'));
-    });
-
-    testWidgets('widget không overflow đi qua sạch, không false positive', (tester) async {
       await runGoldenMatrix(
         tester,
         (context) => const SizedBox(width: 100, height: 40),
@@ -124,7 +135,9 @@ void main() {
       // Không throw tức là pass — assertion thật sự của test này.
     });
 
-    testWidgets('báo lỗi tap target quá nhỏ theo androidTapTargetGuideline', (tester) async {
+    testWidgets('báo lỗi tap target quá nhỏ theo androidTapTargetGuideline', (
+      tester,
+    ) async {
       Object? caught;
       try {
         await runGoldenMatrix(
@@ -145,26 +158,29 @@ void main() {
       expect(caught, isNotNull);
     });
 
-    testWidgets('tap target đủ lớn (48x48) đi qua sạch androidTapTargetGuideline', (
-      tester,
-    ) async {
-      await runGoldenMatrix(
-        tester,
-        (context) => Semantics(
-          button: true,
-          label: 'ok button',
-          child: GestureDetector(
-            onTap: () {},
-            child: Container(width: 48, height: 48, color: Colors.red),
+    testWidgets(
+      'tap target đủ lớn (48x48) đi qua sạch androidTapTargetGuideline',
+      (tester) async {
+        await runGoldenMatrix(
+          tester,
+          (context) => Semantics(
+            button: true,
+            label: 'ok button',
+            child: GestureDetector(
+              onTap: () {},
+              child: Container(width: 48, height: 48, color: Colors.red),
+            ),
           ),
-        ),
-        matrix: const [GoldenMatrixCase(name: 'ok-tap-target')],
-      );
-    });
+          matrix: const [GoldenMatrixCase(name: 'ok-tap-target')],
+        );
+      },
+    );
   });
 
   group('runGoldenMatrix: golden file naming ổn định', () {
-    testWidgets('so khớp đúng goldens/<base>_<case>.png cho từng case', (tester) async {
+    testWidgets('so khớp đúng goldens/<base>_<case>.png cho từng case', (
+      tester,
+    ) async {
       await runGoldenMatrix(
         tester,
         (context) => Container(width: 40, height: 40, color: NeonTheme.cyan),

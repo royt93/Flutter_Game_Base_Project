@@ -15,7 +15,10 @@ void main() {
   tearDown(Get.reset);
 
   test('NoopAnalyticsProvider.logEvent không throw khi không có params', () {
-    expect(() => NoopAnalyticsProvider().logEvent('level_start'), returnsNormally);
+    expect(
+      () => NoopAnalyticsProvider().logEvent('level_start'),
+      returnsNormally,
+    );
   });
 
   test('NoopAnalyticsProvider.logEvent không throw khi có params', () {

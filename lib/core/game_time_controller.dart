@@ -92,18 +92,20 @@ class GameClock {
 /// competing pause flag in that case. Without a [session], [setPaused] is
 /// the fallback for a standalone timer that has no game session at all.
 class GameTimeController extends GetxService {
-  GameTimeController({this.session, Duration? maxDeltaPerTick, Duration? fixedStep})
-    : _clock = GameClock(
-        maxDeltaPerTick: maxDeltaPerTick ?? const Duration(milliseconds: 250),
-        fixedStep: fixedStep,
-      );
+  GameTimeController({
+    this.session,
+    Duration? maxDeltaPerTick,
+    Duration? fixedStep,
+  }) : _clock = GameClock(
+         maxDeltaPerTick: maxDeltaPerTick ?? const Duration(milliseconds: 250),
+         fixedStep: fixedStep,
+       );
 
   final GameSessionController? session;
   final GameClock _clock;
   final elapsed = Duration.zero.obs;
 
-  static GameTimeController? get maybe =>
-      Get.isRegistered<GameTimeController>()
+  static GameTimeController? get maybe => Get.isRegistered<GameTimeController>()
       ? Get.find<GameTimeController>()
       : null;
 
@@ -123,7 +125,9 @@ class GameTimeController extends GetxService {
           owningSession.snapshot.value.phase == GameSessionPhase.paused;
     }
     final steps = _clock.advance(
-      Duration(microseconds: (dtSeconds * Duration.microsecondsPerSecond).round()),
+      Duration(
+        microseconds: (dtSeconds * Duration.microsecondsPerSecond).round(),
+      ),
     );
     elapsed.value = _clock.elapsed;
     return steps;

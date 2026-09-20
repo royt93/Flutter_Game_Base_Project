@@ -70,11 +70,10 @@ class SecureStorage {
         return true;
       });
 
-  static Future<SdkResult<bool>> clear() =>
-      _run(null, (adapter) async {
-        await adapter.clear();
-        return true;
-      });
+  static Future<SdkResult<bool>> clear() => _run(null, (adapter) async {
+    await adapter.clear();
+    return true;
+  });
 
   static Future<SdkResult<T>> _run<T>(
     String? key,

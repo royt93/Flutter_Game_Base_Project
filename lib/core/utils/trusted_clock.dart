@@ -252,16 +252,16 @@ class TrustedClockService {
     // by design, see `nowMsTrusted`'s doc) and could re-quarantine a
     // perfectly normal follow-up sample.
     final monotonicNow = _sampleNow().monotonicMs;
-    _persist(ClockSample(wallMs: confirmedMs, monotonicMs: monotonicNow), confirmedMs);
+    _persist(
+      ClockSample(wallMs: confirmedMs, monotonicMs: monotonicNow),
+      confirmedMs,
+    );
   }
 
   void _persist(ClockSample sample, int baseline) {
     final storage = StorageService.to;
     storage.setInt(StorageKeys.trustedClockPrevWallMs, sample.wallMs);
-    storage.setInt(
-      StorageKeys.trustedClockPrevMonotonicMs,
-      sample.monotonicMs,
-    );
+    storage.setInt(StorageKeys.trustedClockPrevMonotonicMs, sample.monotonicMs);
     storage.setInt(StorageKeys.trustedClockBaselineMs, baseline);
   }
 }

@@ -14,11 +14,7 @@ import 'dart:math';
 /// [items].last) for: mismatched lengths, an empty [items], any weight
 /// that's negative or not finite (NaN/Infinity), or a total that isn't
 /// finite and strictly positive.
-T weightedRandomPick<T>(
-  List<T> items,
-  List<double> weights, {
-  Random? random,
-}) {
+T weightedRandomPick<T>(List<T> items, List<double> weights, {Random? random}) {
   if (items.length != weights.length) {
     throw ArgumentError(
       'weightedRandomPick: items (${items.length}) and weights '

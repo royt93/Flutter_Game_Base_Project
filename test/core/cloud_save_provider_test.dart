@@ -45,13 +45,16 @@ void main() {
     );
   });
 
-  test('không có local lẫn cloud → syncWith không crash, không upload', () async {
-    final provider = _FakeCloudSaveProvider();
-    await jsonStore.syncWith(provider);
+  test(
+    'không có local lẫn cloud → syncWith không crash, không upload',
+    () async {
+      final provider = _FakeCloudSaveProvider();
+      await jsonStore.syncWith(provider);
 
-    expect(jsonStore.load(), isNull);
-    expect(provider.uploadCount, 0);
-  });
+      expect(jsonStore.load(), isNull);
+      expect(provider.uploadCount, 0);
+    },
+  );
 
   test('có local, chưa có cloud → sync upload local lên cloud', () async {
     await jsonStore.save(const _Profile(name: 'Alice', coins: 100));
@@ -82,21 +85,24 @@ void main() {
     expect(provider.uploadCount, 0);
   });
 
-  test('local mới hơn cloud → cloud được cập nhật bằng dữ liệu local', () async {
-    final provider = _FakeCloudSaveProvider()
-      ..cloudData = {
-        'schemaVersion': 1,
-        'name': 'Old',
-        'coins': 1,
-        'syncedAtMs': 0,
-      };
-    await jsonStore.save(const _Profile(name: 'Alice', coins: 100));
+  test(
+    'local mới hơn cloud → cloud được cập nhật bằng dữ liệu local',
+    () async {
+      final provider = _FakeCloudSaveProvider()
+        ..cloudData = {
+          'schemaVersion': 1,
+          'name': 'Old',
+          'coins': 1,
+          'syncedAtMs': 0,
+        };
+      await jsonStore.save(const _Profile(name: 'Alice', coins: 100));
 
-    await jsonStore.syncWith(provider);
+      await jsonStore.syncWith(provider);
 
-    expect(provider.uploadCount, 1);
-    expect(provider.cloudData!['name'], 'Alice');
-    final loaded = jsonStore.load();
-    expect(loaded!.name, 'Alice');
-  });
+      expect(provider.uploadCount, 1);
+      expect(provider.cloudData!['name'], 'Alice');
+      final loaded = jsonStore.load();
+      expect(loaded!.name, 'Alice');
+    },
+  );
 }

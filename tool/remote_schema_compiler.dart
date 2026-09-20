@@ -46,19 +46,27 @@ RemoteSchemaDef _parseSchema(Map<String, Object?> json) {
   }
   final versions = rawVersions.map((rawVersion) {
     if (rawVersion is! Map) {
-      throw const RemoteSchemaCompilerException('each version must be an object');
+      throw const RemoteSchemaCompilerException(
+        'each version must be an object',
+      );
     }
     final version = rawVersion['version'];
     if (version is! int) {
-      throw const RemoteSchemaCompilerException('each version needs an int "version"');
+      throw const RemoteSchemaCompilerException(
+        'each version needs an int "version"',
+      );
     }
     final rawFields = rawVersion['fields'];
     if (rawFields is! List) {
-      throw const RemoteSchemaCompilerException('each version needs a "fields" list');
+      throw const RemoteSchemaCompilerException(
+        'each version needs a "fields" list',
+      );
     }
     final fields = rawFields.map((rawField) {
       if (rawField is! Map) {
-        throw const RemoteSchemaCompilerException('each field must be an object');
+        throw const RemoteSchemaCompilerException(
+          'each field must be an object',
+        );
       }
       final name = rawField['name'];
       final type = rawField['type'];
@@ -121,15 +129,20 @@ Future<void> main(List<String> args) async {
       exitCode = 1;
       return;
     }
-    stdout.writeln('Fixture verified OK against schema v${schema.current.version}.');
+    stdout.writeln(
+      'Fixture verified OK against schema v${schema.current.version}.',
+    );
   }
 
   final source = generateModelSource(schema);
-  final className = '${schema.packName[0].toUpperCase()}${schema.packName.substring(1)}Content';
+  final className =
+      '${schema.packName[0].toUpperCase()}${schema.packName.substring(1)}Content';
   final outPath = '$outDir/${_snakeCase(schema.packName)}_content.g.dart';
   Directory(outDir).createSync(recursive: true);
   File(outPath).writeAsStringSync(source);
-  stdout.writeln('Wrote $outPath ($className, schema v${schema.current.version}).');
+  stdout.writeln(
+    'Wrote $outPath ($className, schema v${schema.current.version}).',
+  );
 }
 
 String _snakeCase(String input) => input.replaceAllMapped(

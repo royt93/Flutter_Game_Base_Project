@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/game_over_card_template.dart';
 
-Widget _wrap(Widget child) =>
-    MaterialApp(home: Material(child: Center(child: child)));
+Widget _wrap(Widget child) => MaterialApp(
+  home: Material(child: Center(child: child)),
+);
 
 void main() {
   group('GameOverCardTemplate', () {
@@ -26,9 +27,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('tapping primary action calls onPrimaryAction', (
-      tester,
-    ) async {
+    testWidgets('tapping primary action calls onPrimaryAction', (tester) async {
       var tapped = false;
       await tester.pumpWidget(
         _wrap(
@@ -45,23 +44,22 @@ void main() {
       expect(tapped, true);
     });
 
-    testWidgets(
-      'secondaryActionLabel null → no second button, không throw',
-      (tester) async {
-        await tester.pumpWidget(
-          _wrap(
-            GameOverCardTemplate(
-              title: 'Out of moves!',
-              primaryActionLabel: 'Retry',
-              onPrimaryAction: () {},
-            ),
+    testWidgets('secondaryActionLabel null → no second button, không throw', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          GameOverCardTemplate(
+            title: 'Out of moves!',
+            primaryActionLabel: 'Retry',
+            onPrimaryAction: () {},
           ),
-        );
+        ),
+      );
 
-        expect(find.text('Home'), findsNothing);
-        expect(tester.takeException(), isNull);
-      },
-    );
+      expect(find.text('Home'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets(
       'secondaryActionLabel truyền vào → render nút thứ 2, tap gọi đúng callback',
@@ -149,71 +147,68 @@ void main() {
     );
 
     group('ENH-51: button width tracks the card, not a fixed 240px', () {
-      testWidgets(
-        'card hẹp bất thường (200px) → không RenderFlex overflow',
-        (tester) async {
-          await tester.pumpWidget(
-            MaterialApp(
-              home: Material(
-                child: Center(
-                  child: SizedBox(
-                    width: 200,
-                    child: GameOverCardTemplate(
-                      title: 'Out of moves!',
-                      primaryActionLabel: 'Retry',
-                      onPrimaryAction: () {},
-                      secondaryActionLabel: 'Home',
-                      onSecondaryAction: () {},
-                    ),
+      testWidgets('card hẹp bất thường (200px) → không RenderFlex overflow', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Center(
+                child: SizedBox(
+                  width: 200,
+                  child: GameOverCardTemplate(
+                    title: 'Out of moves!',
+                    primaryActionLabel: 'Retry',
+                    onPrimaryAction: () {},
+                    secondaryActionLabel: 'Home',
+                    onSecondaryAction: () {},
                   ),
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          expect(tester.takeException(), isNull);
-        },
-      );
+        expect(tester.takeException(), isNull);
+      });
 
-      testWidgets(
-        'card RỘNG hơn 240px → nút co giãn lấp đầy, không còn dừng ở '
-        'mặc định cố định 240px của CommonButton',
-        (tester) async {
-          const cardWidth = 320.0;
-          await tester.pumpWidget(
-            MaterialApp(
-              home: Material(
-                child: Center(
-                  child: SizedBox(
-                    width: cardWidth,
-                    child: GameOverCardTemplate(
-                      title: 'Out of moves!',
-                      primaryActionLabel: 'Retry',
-                      onPrimaryAction: () {},
-                    ),
+      testWidgets('card RỘNG hơn 240px → nút co giãn lấp đầy, không còn dừng ở '
+          'mặc định cố định 240px của CommonButton', (tester) async {
+        const cardWidth = 320.0;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Center(
+                child: SizedBox(
+                  width: cardWidth,
+                  child: GameOverCardTemplate(
+                    title: 'Out of moves!',
+                    primaryActionLabel: 'Retry',
+                    onPrimaryAction: () {},
                   ),
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          final buttonBox = tester.renderObject<RenderBox>(
-            find
-                .ancestor(
-                  of: find.text('Retry').first,
-                  matching: find.byType(SizedBox),
-                )
-                .first,
-          );
-          expect(
-            buttonBox.size.width,
-            greaterThan(240),
-            reason: 'phải rộng hơn mặc định cố định 240px của CommonButton, '
-                'lấp đầy chiều rộng card $cardWidth px (trừ padding)',
-          );
-          expect(tester.takeException(), isNull);
-        },
-      );
+        final buttonBox = tester.renderObject<RenderBox>(
+          find
+              .ancestor(
+                of: find.text('Retry').first,
+                matching: find.byType(SizedBox),
+              )
+              .first,
+        );
+        expect(
+          buttonBox.size.width,
+          greaterThan(240),
+          reason:
+              'phải rộng hơn mặc định cố định 240px của CommonButton, '
+              'lấp đầy chiều rộng card $cardWidth px (trừ padding)',
+        );
+        expect(tester.takeException(), isNull);
+      });
     });
   });
 }

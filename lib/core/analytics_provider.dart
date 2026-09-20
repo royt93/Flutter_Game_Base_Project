@@ -9,8 +9,9 @@ abstract class AnalyticsProvider {
 
   /// Null-safe accessor for call sites that may run before/without a
   /// provider registered (mirrors [CrashReporter.maybe]).
-  static AnalyticsProvider? get maybe =>
-      Get.isRegistered<AnalyticsProvider>() ? Get.find<AnalyticsProvider>() : null;
+  static AnalyticsProvider? get maybe => Get.isRegistered<AnalyticsProvider>()
+      ? Get.find<AnalyticsProvider>()
+      : null;
 }
 
 /// Default no-op implementation so a consuming app doesn't have to wire a

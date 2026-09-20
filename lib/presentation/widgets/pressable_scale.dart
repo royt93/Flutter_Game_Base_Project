@@ -57,7 +57,8 @@ class _PressableScaleState extends State<PressableScale> {
   bool _focused = false;
   FocusNode? _internalFocusNode;
 
-  FocusNode get _focusNode => widget.focusNode ?? (_internalFocusNode ??= FocusNode());
+  FocusNode get _focusNode =>
+      widget.focusNode ?? (_internalFocusNode ??= FocusNode());
 
   void _setDown(bool v) {
     if (_down != v) setState(() => _down = v);
@@ -119,8 +120,10 @@ class _PressableScaleState extends State<PressableScale> {
         onFocusChange: _setFocused,
         child: Builder(
           builder: (context) {
-            final showFocusRing = _focused &&
-                FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
+            final showFocusRing =
+                _focused &&
+                FocusManager.instance.highlightMode ==
+                    FocusHighlightMode.traditional;
             return DecoratedBox(
               decoration: BoxDecoration(
                 border: showFocusRing

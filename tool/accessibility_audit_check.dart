@@ -53,13 +53,18 @@ void main(List<String> args) {
 
   final baselineFile = File(baselinePath);
   final baseline = baselineFile.existsSync()
-      ? AuditBaseline.fromJson(jsonDecode(baselineFile.readAsStringSync()) as List<Object?>)
+      ? AuditBaseline.fromJson(
+          jsonDecode(baselineFile.readAsStringSync()) as List<Object?>,
+        )
       : AuditBaseline.empty;
 
   final files = _walkDartFiles(root);
   final fileContents = {for (final f in files) f: File(f).readAsStringSync()};
 
-  final violations = scanAccessibility(fileContents: fileContents, baseline: baseline);
+  final violations = scanAccessibility(
+    fileContents: fileContents,
+    baseline: baseline,
+  );
 
   stdout.writeln(
     'Accessibility audit — ${files.length} file quét, '

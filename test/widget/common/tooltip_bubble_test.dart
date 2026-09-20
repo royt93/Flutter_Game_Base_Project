@@ -3,8 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/tooltip_bubble.dart';
 
-Widget _wrap(Widget child) =>
-    MaterialApp(home: Material(child: Center(child: child)));
+Widget _wrap(Widget child) => MaterialApp(
+  home: Material(child: Center(child: child)),
+);
 
 void main() {
   group('TooltipBubble', () {

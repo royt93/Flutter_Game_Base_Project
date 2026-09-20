@@ -36,50 +36,57 @@ void main() {
     expect(section.containsKey('token'), isFalse);
   });
 
-  test('1 collector throw: section đó báo lỗi, các collector khác vẫn chạy đủ', () async {
-    final report = SdkHealthReport(nowMs: () => 0)
-      ..register(
-        HealthCollectorSpec(
-          name: 'broken',
-          allowedKeys: const {},
-          collect: () => throw Exception('boom'),
-        ),
-      )
-      ..register(
-        HealthCollectorSpec(
-          name: 'ok',
-          allowedKeys: const {'value'},
-          collect: () => {'value': 42},
-        ),
-      );
+  test(
+    '1 collector throw: section đó báo lỗi, các collector khác vẫn chạy đủ',
+    () async {
+      final report = SdkHealthReport(nowMs: () => 0)
+        ..register(
+          HealthCollectorSpec(
+            name: 'broken',
+            allowedKeys: const {},
+            collect: () => throw Exception('boom'),
+          ),
+        )
+        ..register(
+          HealthCollectorSpec(
+            name: 'ok',
+            allowedKeys: const {'value'},
+            collect: () => {'value': 42},
+          ),
+        );
 
-    final result = await report.collect();
-    final sections = result['sections'] as Map;
+      final result = await report.collect();
+      final sections = result['sections'] as Map;
 
-    expect((sections['broken'] as Map).containsKey('_error'), isTrue);
-    expect((sections['ok'] as Map)['value'], 42);
-  });
+      expect((sections['broken'] as Map).containsKey('_error'), isTrue);
+      expect((sections['ok'] as Map)['value'], 42);
+    },
+  );
 
-  test('collector quá timeout: bị cô lập thành lỗi, không treo cả report', () async {
-    final report = SdkHealthReport(
-      nowMs: () => 0,
-      timeout: const Duration(milliseconds: 10),
-    )..register(
-        HealthCollectorSpec(
-          name: 'slow',
-          allowedKeys: const {'x'},
-          collect: () async {
-            await Future<void>.delayed(const Duration(seconds: 5));
-            return {'x': 1};
-          },
-        ),
-      );
+  test(
+    'collector quá timeout: bị cô lập thành lỗi, không treo cả report',
+    () async {
+      final report =
+          SdkHealthReport(
+            nowMs: () => 0,
+            timeout: const Duration(milliseconds: 10),
+          )..register(
+            HealthCollectorSpec(
+              name: 'slow',
+              allowedKeys: const {'x'},
+              collect: () async {
+                await Future<void>.delayed(const Duration(seconds: 5));
+                return {'x': 1};
+              },
+            ),
+          );
 
-    final result = await report.collect();
-    final section = (result['sections'] as Map)['slow'] as Map;
+      final result = await report.collect();
+      final section = (result['sections'] as Map)['slow'] as Map;
 
-    expect(section.containsKey('_error'), isTrue);
-  });
+      expect(section.containsKey('_error'), isTrue);
+    },
+  );
 
   test('string dài bị cắt, không phình report vô hạn', () async {
     final report = SdkHealthReport(nowMs: () => 0, maxStringLength: 10)
@@ -145,33 +152,39 @@ void main() {
   });
 
   group('defaultHealthCollectors', () {
-    test('không service nào đăng ký: mọi section báo registered=false, không crash', () async {
-      final report = SdkHealthReport(nowMs: () => 0)
-        ..registerAll(defaultHealthCollectors());
+    test(
+      'không service nào đăng ký: mọi section báo registered=false, không crash',
+      () async {
+        final report = SdkHealthReport(nowMs: () => 0)
+          ..registerAll(defaultHealthCollectors());
 
-      final result = await report.collect();
-      final sections = result['sections'] as Map;
+        final result = await report.collect();
+        final sections = result['sections'] as Map;
 
-      expect((sections['audio'] as Map)['registered'], isFalse);
-      expect((sections['replayBuffer'] as Map)['registered'], isFalse);
-    });
+        expect((sections['audio'] as Map)['registered'], isFalse);
+        expect((sections['replayBuffer'] as Map)['registered'], isFalse);
+      },
+    );
 
-    test('có AudioManager/ReplayRecorder đăng ký: phản ánh đúng state thật', () async {
-      Get.put<StorageService>(StorageService(null));
-      final audio = AudioManager()..muted.value = true;
-      Get.put<AudioManager>(audio);
-      final recorder = ReplayRecorder()..start(seed: 1);
-      Get.put<ReplayRecorder>(recorder);
+    test(
+      'có AudioManager/ReplayRecorder đăng ký: phản ánh đúng state thật',
+      () async {
+        Get.put<StorageService>(StorageService(null));
+        final audio = AudioManager()..muted.value = true;
+        Get.put<AudioManager>(audio);
+        final recorder = ReplayRecorder()..start(seed: 1);
+        Get.put<ReplayRecorder>(recorder);
 
-      final report = SdkHealthReport(nowMs: () => 0)
-        ..registerAll(defaultHealthCollectors());
-      final result = await report.collect();
-      final sections = result['sections'] as Map;
+        final report = SdkHealthReport(nowMs: () => 0)
+          ..registerAll(defaultHealthCollectors());
+        final result = await report.collect();
+        final sections = result['sections'] as Map;
 
-      expect((sections['audio'] as Map)['registered'], isTrue);
-      expect((sections['audio'] as Map)['muted'], isTrue);
-      expect((sections['replayBuffer'] as Map)['registered'], isTrue);
-      expect((sections['replayBuffer'] as Map)['isRecording'], isTrue);
-    });
+        expect((sections['audio'] as Map)['registered'], isTrue);
+        expect((sections['audio'] as Map)['muted'], isTrue);
+        expect((sections['replayBuffer'] as Map)['registered'], isTrue);
+        expect((sections['replayBuffer'] as Map)['isRecording'], isTrue);
+      },
+    );
   });
 }

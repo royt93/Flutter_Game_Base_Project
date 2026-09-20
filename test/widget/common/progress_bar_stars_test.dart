@@ -290,29 +290,28 @@ void main() {
   });
 
   group('ENH-38: RTL', () {
-    testWidgets(
-      'LTR: sao ở threshold 0.2 nằm gần mép trái của thanh',
-      (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Material(
-              child: SizedBox(
-                width: 300,
-                child: ProgressBarStars(
-                  progress: 1.0,
-                  starThresholds: const [0.2],
-                ),
+    testWidgets('LTR: sao ở threshold 0.2 nằm gần mép trái của thanh', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: SizedBox(
+              width: 300,
+              child: ProgressBarStars(
+                progress: 1.0,
+                starThresholds: const [0.2],
               ),
             ),
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        final barRect = tester.getRect(find.byType(ProgressBarStars));
-        final starRect = tester.getRect(find.byIcon(Icons.star_rounded));
-        expect(starRect.center.dx - barRect.left, lessThan(barRect.width / 2));
-      },
-    );
+      final barRect = tester.getRect(find.byType(ProgressBarStars));
+      final starRect = tester.getRect(find.byIcon(Icons.star_rounded));
+      expect(starRect.center.dx - barRect.left, lessThan(barRect.width / 2));
+    });
 
     testWidgets(
       'RTL: cùng threshold 0.2 → sao nằm gần mép PHẢI (đảo ngược so với LTR)',

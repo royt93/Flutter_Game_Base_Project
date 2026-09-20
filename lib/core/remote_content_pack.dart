@@ -44,7 +44,10 @@ class RemoteContentPack<T> {
   /// Upgrades a JSON map saved under an older [fromVersion] to a shape
   /// [fromJson] can read. Defaults to identity (no-op) — a pack that
   /// never changes shape doesn't need to supply one.
-  final Map<String, Object?> Function(int fromVersion, Map<String, Object?> json)?
+  final Map<String, Object?> Function(
+    int fromVersion,
+    Map<String, Object?> json,
+  )?
   migrate;
 
   /// Shared secret used to verify a fetched envelope's `_checksum` (see

@@ -90,16 +90,19 @@ void main() {
       expect(decision, isNot(GateDecision.forceUpdate));
     });
 
-    test('currentVersion invalid: không force/soft, trả ok (an toàn tuyệt đối)', () {
-      final decision = evaluateVersionGate(
-        currentVersion: 'garbage',
-        config: const AppVersionGateConfig(
-          minimumVersion: '5.0.0',
-          recommendedVersion: '9.0.0',
-        ),
-      );
-      expect(decision, GateDecision.ok);
-    });
+    test(
+      'currentVersion invalid: không force/soft, trả ok (an toàn tuyệt đối)',
+      () {
+        final decision = evaluateVersionGate(
+          currentVersion: 'garbage',
+          config: const AppVersionGateConfig(
+            minimumVersion: '5.0.0',
+            recommendedVersion: '9.0.0',
+          ),
+        );
+        expect(decision, GateDecision.ok);
+      },
+    );
 
     test('config rỗng hoàn toàn: ok', () {
       final decision = evaluateVersionGate(
@@ -118,13 +121,16 @@ void main() {
       Get.put(store, permanent: true);
     });
 
-    test('RemoteConfigService rỗng (chưa init/asset rỗng): decision ok', () async {
-      final remoteConfig = RemoteConfigService(assetPath: 'nonexistent.json');
-      await remoteConfig.init();
-      final controller = AppVersionGateController(remoteConfig: remoteConfig);
+    test(
+      'RemoteConfigService rỗng (chưa init/asset rỗng): decision ok',
+      () async {
+        final remoteConfig = RemoteConfigService(assetPath: 'nonexistent.json');
+        await remoteConfig.init();
+        final controller = AppVersionGateController(remoteConfig: remoteConfig);
 
-      expect(controller.decisionFor('1.0.0'), GateDecision.ok);
-    });
+        expect(controller.decisionFor('1.0.0'), GateDecision.ok);
+      },
+    );
 
     test('config từ RemoteConfigService map đúng vào GateDecision', () async {
       final remoteConfig = RemoteConfigService(
@@ -142,20 +148,23 @@ void main() {
       expect(controller.decisionFor('3.0.0'), GateDecision.ok);
     });
 
-    test('maintenanceActive từ remote: map đúng maintenance + message', () async {
-      final remoteConfig = RemoteConfigService(
-        assetPath: 'nonexistent.json',
-        fetchRemote: () async => {
-          'appVersionMaintenanceActive': true,
-          'appVersionMaintenanceMessage': 'Bảo trì 2h',
-        },
-      );
-      await remoteConfig.init();
-      final controller = AppVersionGateController(remoteConfig: remoteConfig);
+    test(
+      'maintenanceActive từ remote: map đúng maintenance + message',
+      () async {
+        final remoteConfig = RemoteConfigService(
+          assetPath: 'nonexistent.json',
+          fetchRemote: () async => {
+            'appVersionMaintenanceActive': true,
+            'appVersionMaintenanceMessage': 'Bảo trì 2h',
+          },
+        );
+        await remoteConfig.init();
+        final controller = AppVersionGateController(remoteConfig: remoteConfig);
 
-      expect(controller.decisionFor('9.9.9'), GateDecision.maintenance);
-      expect(controller.config.maintenanceMessage, 'Bảo trì 2h');
-    });
+        expect(controller.decisionFor('9.9.9'), GateDecision.maintenance);
+        expect(controller.config.maintenanceMessage, 'Bảo trì 2h');
+      },
+    );
 
     test(
       'recordSoftPromptDismissed() thật sự trả void ở runtime, không phải Future — '

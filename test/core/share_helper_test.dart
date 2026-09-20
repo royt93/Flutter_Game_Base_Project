@@ -78,24 +78,29 @@ void main() {
       ui.Image.onDispose = prevOnDispose;
     });
 
-    testWidgets('không overlay: image được tạo cũng được dispose (không leak)', (
-      tester,
-    ) async {
-      final key = GlobalKey();
-      await tester.pumpWidget(
-        MaterialApp(
-          home: RepaintBoundary(
-            key: key,
-            child: Container(color: Colors.red, width: 50, height: 50),
+    testWidgets(
+      'không overlay: image được tạo cũng được dispose (không leak)',
+      (tester) async {
+        final key = GlobalKey();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: RepaintBoundary(
+              key: key,
+              child: Container(color: Colors.red, width: 50, height: 50),
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.runAsync(() => captureBoardPng(key));
+        await tester.runAsync(() => captureBoardPng(key));
 
-      expect(created, greaterThan(0));
-      expect(disposed, created, reason: 'mọi image tạo ra trong 1 lần capture phải được dispose');
-    });
+        expect(created, greaterThan(0));
+        expect(
+          disposed,
+          created,
+          reason: 'mọi image tạo ra trong 1 lần capture phải được dispose',
+        );
+      },
+    );
 
     testWidgets(
       'có overlayText (tạo 2 image: board gốc + composited): cả 2 đều '
@@ -116,7 +121,11 @@ void main() {
         );
 
         expect(created, greaterThanOrEqualTo(2));
-        expect(disposed, created, reason: 'board gốc VÀ image overlay đều phải được dispose');
+        expect(
+          disposed,
+          created,
+          reason: 'board gốc VÀ image overlay đều phải được dispose',
+        );
       },
     );
 
@@ -150,7 +159,9 @@ void main() {
       (tester) async {
         final key = GlobalKey();
         await tester.pumpWidget(
-          MaterialApp(home: Container(key: key, color: Colors.red, width: 50, height: 50)),
+          MaterialApp(
+            home: Container(key: key, color: Colors.red, width: 50, height: 50),
+          ),
         );
 
         final png = await tester.runAsync(() => captureBoardPng(key));

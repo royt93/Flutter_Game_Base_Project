@@ -21,7 +21,11 @@ void main() {
 
     test('fromJson với dữ liệu hỏng throw FormatException', () {
       expect(
-        () => ReplayEvent.fromJson({'offsetMs': 'not an int', 'type': 'tap', 'payload': {}}),
+        () => ReplayEvent.fromJson({
+          'offsetMs': 'not an int',
+          'type': 'tap',
+          'payload': {},
+        }),
         throwsFormatException,
       );
       expect(
@@ -29,7 +33,11 @@ void main() {
         throwsFormatException,
       );
       expect(
-        () => ReplayEvent.fromJson({'offsetMs': 1, 'type': 'tap', 'payload': 'not a map'}),
+        () => ReplayEvent.fromJson({
+          'offsetMs': 1,
+          'type': 'tap',
+          'payload': 'not a map',
+        }),
         throwsFormatException,
       );
     });
@@ -55,33 +63,39 @@ void main() {
       expect(restored.events[1].payload, {'id': 2});
     });
 
-    test('fromJsonUnsigned: schemaVersion khác bị từ chối an toàn (trả null, không throw)', () {
-      final json = sample().toJson();
-      json['schemaVersion'] = 999;
-      expect(ReplayCapsule.fromJsonUnsigned(json), isNull);
-    });
+    test(
+      'fromJsonUnsigned: schemaVersion khác bị từ chối an toàn (trả null, không throw)',
+      () {
+        final json = sample().toJson();
+        json['schemaVersion'] = 999;
+        expect(ReplayCapsule.fromJsonUnsigned(json), isNull);
+      },
+    );
 
-    test('fromJsonUnsigned: field thiếu/sai kiểu bị từ chối an toàn (trả null)', () {
-      expect(ReplayCapsule.fromJsonUnsigned({}), isNull);
-      expect(
-        ReplayCapsule.fromJsonUnsigned({
-          'schemaVersion': ReplayCapsule.schemaVersion,
-          'seed': 'not an int',
-          'appVersion': '1.0.0',
-          'events': [],
-        }),
-        isNull,
-      );
-      expect(
-        ReplayCapsule.fromJsonUnsigned({
-          'schemaVersion': ReplayCapsule.schemaVersion,
-          'seed': 1,
-          'appVersion': '1.0.0',
-          'events': 'not a list',
-        }),
-        isNull,
-      );
-    });
+    test(
+      'fromJsonUnsigned: field thiếu/sai kiểu bị từ chối an toàn (trả null)',
+      () {
+        expect(ReplayCapsule.fromJsonUnsigned({}), isNull);
+        expect(
+          ReplayCapsule.fromJsonUnsigned({
+            'schemaVersion': ReplayCapsule.schemaVersion,
+            'seed': 'not an int',
+            'appVersion': '1.0.0',
+            'events': [],
+          }),
+          isNull,
+        );
+        expect(
+          ReplayCapsule.fromJsonUnsigned({
+            'schemaVersion': ReplayCapsule.schemaVersion,
+            'seed': 1,
+            'appVersion': '1.0.0',
+            'events': 'not a list',
+          }),
+          isNull,
+        );
+      },
+    );
 
     test('exportSigned/importSigned round-trip đúng với đúng secret', () {
       final capsule = sample();
@@ -92,25 +106,34 @@ void main() {
       expect(restored.events.length, 2);
     });
 
-    test('importSigned: sai secret bị từ chối an toàn (trả null, không throw)', () {
-      final signed = sample().exportSigned('s3cr3t');
-      expect(
-        () => ReplayCapsule.importSigned(signed, 'wrong-secret'),
-        returnsNormally,
-      );
-      expect(ReplayCapsule.importSigned(signed, 'wrong-secret'), isNull);
-    });
+    test(
+      'importSigned: sai secret bị từ chối an toàn (trả null, không throw)',
+      () {
+        final signed = sample().exportSigned('s3cr3t');
+        expect(
+          () => ReplayCapsule.importSigned(signed, 'wrong-secret'),
+          returnsNormally,
+        );
+        expect(ReplayCapsule.importSigned(signed, 'wrong-secret'), isNull);
+      },
+    );
 
-    test('importSigned: dữ liệu bị chỉnh sửa (tamper) sau khi ký bị từ chối', () {
-      final signed = sample().exportSigned('s3cr3t');
-      final tampered = {...signed, 'seed': 999999};
-      expect(ReplayCapsule.importSigned(tampered, 's3cr3t'), isNull);
-    });
+    test(
+      'importSigned: dữ liệu bị chỉnh sửa (tamper) sau khi ký bị từ chối',
+      () {
+        final signed = sample().exportSigned('s3cr3t');
+        final tampered = {...signed, 'seed': 999999};
+        expect(ReplayCapsule.importSigned(tampered, 's3cr3t'), isNull);
+      },
+    );
 
-    test('importSigned: JSON thiếu checksum (chưa từng được ký) bị từ chối', () {
-      final json = sample().toJson();
-      expect(ReplayCapsule.importSigned(json, 's3cr3t'), isNull);
-    });
+    test(
+      'importSigned: JSON thiếu checksum (chưa từng được ký) bị từ chối',
+      () {
+        final json = sample().toJson();
+        expect(ReplayCapsule.importSigned(json, 's3cr3t'), isNull);
+      },
+    );
   });
 
   group('ReplayRecorder: bounded ring buffer', () {
@@ -124,12 +147,15 @@ void main() {
       expect(ReplayRecorder.maybe, same(recorder));
     });
 
-    test('chưa start() thì isRecording false, record() không throw (no-op)', () {
-      final recorder = ReplayRecorder();
-      expect(recorder.isRecording, isFalse);
-      expect(() => recorder.record('tap', {'x': 1}), returnsNormally);
-      expect(recorder.eventCount, 0);
-    });
+    test(
+      'chưa start() thì isRecording false, record() không throw (no-op)',
+      () {
+        final recorder = ReplayRecorder();
+        expect(recorder.isRecording, isFalse);
+        expect(() => recorder.record('tap', {'x': 1}), returnsNormally);
+        expect(recorder.eventCount, 0);
+      },
+    );
 
     test('start() rồi record() đúng số lượng event, đúng thứ tự', () {
       final recorder = ReplayRecorder(capacity: 10);
@@ -166,10 +192,11 @@ void main() {
         expect(recorder.eventCount, 3);
         final capsule = recorder.buildCapsule(appVersion: '1.0.0');
         // Chỉ giữ 3 cái cuối: event4, event5, event6.
-        expect(
-          capsule.events.map((e) => e.type).toList(),
-          ['event4', 'event5', 'event6'],
-        );
+        expect(capsule.events.map((e) => e.type).toList(), [
+          'event4',
+          'event5',
+          'event6',
+        ]);
       },
     );
 
@@ -185,18 +212,21 @@ void main() {
       expect(capsule.events.map((e) => e.type).toList(), ['new']);
     });
 
-    test('offsetMs của mỗi event không giảm qua thời gian (đơn điệu tăng)', () async {
-      final recorder = ReplayRecorder(capacity: 10);
-      recorder.start(seed: 1);
-      recorder.record('a', {});
-      await Future<void>.delayed(const Duration(milliseconds: 5));
-      recorder.record('b', {});
-      final capsule = recorder.buildCapsule(appVersion: '1.0.0');
-      expect(
-        capsule.events[1].offsetMs,
-        greaterThanOrEqualTo(capsule.events[0].offsetMs),
-      );
-    });
+    test(
+      'offsetMs của mỗi event không giảm qua thời gian (đơn điệu tăng)',
+      () async {
+        final recorder = ReplayRecorder(capacity: 10);
+        recorder.start(seed: 1);
+        recorder.record('a', {});
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        recorder.record('b', {});
+        final capsule = recorder.buildCapsule(appVersion: '1.0.0');
+        expect(
+          capsule.events[1].offsetMs,
+          greaterThanOrEqualTo(capsule.events[0].offsetMs),
+        );
+      },
+    );
   });
 
   group('findFirstDivergence', () {
@@ -212,13 +242,16 @@ void main() {
       expect(d.actual, 'X');
     });
 
-    test('độ dài khác nhau (actual ngắn hơn) → báo đúng vị trí đầu tiên bị thiếu', () {
-      final d = findFirstDivergence(['a', 'b', 'c'], ['a', 'b']);
-      expect(d, isNotNull);
-      expect(d!.index, 2);
-      expect(d.expected, 'c');
-      expect(d.actual, isNull);
-    });
+    test(
+      'độ dài khác nhau (actual ngắn hơn) → báo đúng vị trí đầu tiên bị thiếu',
+      () {
+        final d = findFirstDivergence(['a', 'b', 'c'], ['a', 'b']);
+        expect(d, isNotNull);
+        expect(d!.index, 2);
+        expect(d.expected, 'c');
+        expect(d.actual, isNull);
+      },
+    );
 
     test('danh sách rỗng cả 2 bên → null', () {
       expect(findFirstDivergence(<Object?>[], <Object?>[]), isNull);

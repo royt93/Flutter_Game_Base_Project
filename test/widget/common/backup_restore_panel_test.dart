@@ -285,10 +285,7 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(
-          find.textContaining('checksum không khớp'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('checksum không khớp'), findsOneWidget);
         expect(find.byIcon(Icons.error), findsOneWidget);
         // Dữ liệu gốc không bị ghi đè bởi bản đã chỉnh sửa.
         expect(storage.getInt('coins'), 42);
@@ -393,7 +390,10 @@ void main() {
         );
         expect(exportButton.loading, isTrue);
         expect(importButton.loading, isFalse);
-        expect(importButton.onTap, isNull); // vẫn bị disable, chỉ không hiện spinner riêng
+        expect(
+          importButton.onTap,
+          isNull,
+        ); // vẫn bị disable, chỉ không hiện spinner riêng
 
         completer.complete();
         await tester.pump();
@@ -502,30 +502,29 @@ void main() {
   });
 
   group('BackupRestorePanel: reducedMotion', () {
-    testWidgets(
-      'ENH-20 style: reducedMotion bật → AnimatedSize duration = 0',
-      (tester) async {
-        await tester.pumpWidget(
-          MediaQuery(
-            data: const MediaQueryData(disableAnimations: true),
-            child: _wrap(
-              BackupRestorePanel(
-                secret: _secret,
-                storage: storage,
-                onExport: (_) async {},
-                onImport: () async => null,
-              ),
+    testWidgets('ENH-20 style: reducedMotion bật → AnimatedSize duration = 0', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: _wrap(
+            BackupRestorePanel(
+              secret: _secret,
+              storage: storage,
+              onExport: (_) async {},
+              onImport: () async => null,
             ),
           ),
-        );
+        ),
+      );
 
-        final animatedSize = tester.widget<AnimatedSize>(
-          find.byType(AnimatedSize),
-        );
-        expect(animatedSize.duration, Duration.zero);
-        expect(tester.takeException(), isNull);
-      },
-    );
+      final animatedSize = tester.widget<AnimatedSize>(
+        find.byType(AnimatedSize),
+      );
+      expect(animatedSize.duration, Duration.zero);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('ENH-78: workingAnnouncement', () {
@@ -535,53 +534,55 @@ void main() {
       ),
     );
 
-    testWidgets('không truyền workingAnnouncement: announcement y hệt hiện tại "Working…"', (
-      tester,
-    ) async {
-      final completer = Completer<void>();
+    testWidgets(
+      'không truyền workingAnnouncement: announcement y hệt hiện tại "Working…"',
+      (tester) async {
+        final completer = Completer<void>();
 
-      await tester.pumpWidget(
-        _wrap(
-          BackupRestorePanel(
-            secret: _secret,
-            storage: storage,
-            onExport: (_) => completer.future,
-            onImport: () async => null,
+        await tester.pumpWidget(
+          _wrap(
+            BackupRestorePanel(
+              secret: _secret,
+              storage: storage,
+              onExport: (_) => completer.future,
+              onImport: () async => null,
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Export save').last);
-      await tester.pump();
+        await tester.tap(find.text('Export save').last);
+        await tester.pump();
 
-      expect(liveRegion(tester).properties.label, 'Working…');
-      completer.complete();
-      await tester.pump();
-    });
+        expect(liveRegion(tester).properties.label, 'Working…');
+        completer.complete();
+        await tester.pump();
+      },
+    );
 
-    testWidgets('truyền workingAnnouncement tuỳ chỉnh: Semantics.label dùng đúng chuỗi mới', (
-      tester,
-    ) async {
-      final completer = Completer<void>();
+    testWidgets(
+      'truyền workingAnnouncement tuỳ chỉnh: Semantics.label dùng đúng chuỗi mới',
+      (tester) async {
+        final completer = Completer<void>();
 
-      await tester.pumpWidget(
-        _wrap(
-          BackupRestorePanel(
-            secret: _secret,
-            storage: storage,
-            onExport: (_) => completer.future,
-            onImport: () async => null,
-            workingAnnouncement: 'Đang xử lý…',
+        await tester.pumpWidget(
+          _wrap(
+            BackupRestorePanel(
+              secret: _secret,
+              storage: storage,
+              onExport: (_) => completer.future,
+              onImport: () async => null,
+              workingAnnouncement: 'Đang xử lý…',
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Export save').last);
-      await tester.pump();
+        await tester.tap(find.text('Export save').last);
+        await tester.pump();
 
-      expect(liveRegion(tester).properties.label, 'Đang xử lý…');
-      completer.complete();
-      await tester.pump();
-    });
+        expect(liveRegion(tester).properties.label, 'Đang xử lý…');
+        completer.complete();
+        await tester.pump();
+      },
+    );
   });
 }

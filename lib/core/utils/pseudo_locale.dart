@@ -51,7 +51,10 @@ String pseudoLocalize(String value) {
 /// never leaks into a normal build" discipline `runtime_flags.isE2eTest`
 /// already establishes for a different debug-only concern.
 class PseudoLocaleTranslations extends Translations {
-  PseudoLocaleTranslations({this.locale = defaultLocale, required this.baseKeys});
+  PseudoLocaleTranslations({
+    this.locale = defaultLocale,
+    required this.baseKeys,
+  });
 
   /// `qps`/`PLOC` — same synthetic-locale convention Android's own
   /// pseudolocalization tooling uses, chosen specifically so it can never
@@ -66,7 +69,8 @@ class PseudoLocaleTranslations extends Translations {
   @override
   Map<String, Map<String, String>> get keys => {
     localeKey: {
-      for (final entry in baseKeys.entries) entry.key: pseudoLocalize(entry.value),
+      for (final entry in baseKeys.entries)
+        entry.key: pseudoLocalize(entry.value),
     },
   };
 }

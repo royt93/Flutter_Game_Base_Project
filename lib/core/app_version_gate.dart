@@ -38,7 +38,12 @@ class _Semver {
     final patch = int.tryParse(core[2]);
     if (major == null || minor == null || patch == null) return null;
     final prerelease = parts.length > 1 ? parts.sublist(1).join('-') : null;
-    return _Semver(major: major, minor: minor, patch: patch, prerelease: prerelease);
+    return _Semver(
+      major: major,
+      minor: minor,
+      patch: patch,
+      prerelease: prerelease,
+    );
   }
 }
 
@@ -175,6 +180,9 @@ class AppVersionGateController extends GetxService {
   /// wrapping this in `setState(() => controller.recordSoftPromptDismissed())`
   /// (exactly how `AppVersionGateOverlay.onSoftDismiss` is typically used).
   void recordSoftPromptDismissed() {
-    StorageService.to.setInt(StorageKeys.appVersionSoftPromptLastMs, nowMsClamped());
+    StorageService.to.setInt(
+      StorageKeys.appVersionSoftPromptLastMs,
+      nowMsClamped(),
+    );
   }
 }

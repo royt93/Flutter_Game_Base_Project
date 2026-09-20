@@ -23,16 +23,19 @@ void main() {
       expect(manager.listSlots(), isEmpty);
     });
 
-    test('createSlot tạo đúng slot, sinh id/createdAtMs/lastPlayedAtMs hợp lệ', () {
-      final manager = SaveSlotManager();
-      final slot = manager.createSlot('Alice');
+    test(
+      'createSlot tạo đúng slot, sinh id/createdAtMs/lastPlayedAtMs hợp lệ',
+      () {
+        final manager = SaveSlotManager();
+        final slot = manager.createSlot('Alice');
 
-      expect(slot.displayName, 'Alice');
-      expect(slot.id, isNotEmpty);
-      expect(slot.createdAtMs, greaterThan(0));
-      expect(slot.lastPlayedAtMs, slot.createdAtMs);
-      expect(manager.listSlots(), hasLength(1));
-    });
+        expect(slot.displayName, 'Alice');
+        expect(slot.id, isNotEmpty);
+        expect(slot.createdAtMs, greaterThan(0));
+        expect(slot.lastPlayedAtMs, slot.createdAtMs);
+        expect(manager.listSlots(), hasLength(1));
+      },
+    );
 
     test('createSlot với displayName rỗng/blank throw ArgumentError', () {
       final manager = SaveSlotManager();
@@ -40,11 +43,16 @@ void main() {
       expect(() => manager.createSlot('   '), throwsArgumentError);
     });
 
-    test('createSlot sinh id không trùng, kể cả gọi liên tiếp nhiều lần nhanh', () {
-      final manager = SaveSlotManager();
-      final ids = [for (var i = 0; i < 20; i++) manager.createSlot('Slot $i').id];
-      expect(ids.toSet(), hasLength(20)); // toàn bộ 20 id phải khác nhau
-    });
+    test(
+      'createSlot sinh id không trùng, kể cả gọi liên tiếp nhiều lần nhanh',
+      () {
+        final manager = SaveSlotManager();
+        final ids = [
+          for (var i = 0; i < 20; i++) manager.createSlot('Slot $i').id,
+        ];
+        expect(ids.toSet(), hasLength(20)); // toàn bộ 20 id phải khác nhau
+      },
+    );
 
     test('listSlots() sắp xếp đúng theo lastPlayedAtMs giảm dần', () async {
       final manager = SaveSlotManager();
@@ -93,15 +101,21 @@ void main() {
       expect(() => manager.touchSlot('ghost'), throwsArgumentError);
     });
 
-    test('persist qua "restart": instance mới đọc lại đúng danh sách slot', () async {
-      final manager = SaveSlotManager();
-      manager.createSlot('Alice');
-      manager.createSlot('Bob');
-      await manager.debugPendingSaves;
+    test(
+      'persist qua "restart": instance mới đọc lại đúng danh sách slot',
+      () async {
+        final manager = SaveSlotManager();
+        manager.createSlot('Alice');
+        manager.createSlot('Bob');
+        await manager.debugPendingSaves;
 
-      final restarted = SaveSlotManager();
-      expect(restarted.listSlots().map((s) => s.displayName), ['Alice', 'Bob']);
-    });
+        final restarted = SaveSlotManager();
+        expect(restarted.listSlots().map((s) => s.displayName), [
+          'Alice',
+          'Bob',
+        ]);
+      },
+    );
   });
 
   group('Slice 2: active slot & key namespacing', () {
@@ -110,30 +124,39 @@ void main() {
       expect(manager.activeSlotId, isNull);
     });
 
-    test('setActiveSlot rồi activeSlotId trả đúng id, persist qua restart', () async {
-      final manager = SaveSlotManager();
-      final slot = manager.createSlot('Alice');
-      await manager.setActiveSlot(slot.id);
+    test(
+      'setActiveSlot rồi activeSlotId trả đúng id, persist qua restart',
+      () async {
+        final manager = SaveSlotManager();
+        final slot = manager.createSlot('Alice');
+        await manager.setActiveSlot(slot.id);
 
-      expect(manager.activeSlotId, slot.id);
+        expect(manager.activeSlotId, slot.id);
 
-      final restarted = SaveSlotManager();
-      expect(restarted.activeSlotId, slot.id);
-    });
+        final restarted = SaveSlotManager();
+        expect(restarted.activeSlotId, slot.id);
+      },
+    );
 
-    test('setActiveSlot với id không tồn tại throw ArgumentError, không đổi activeSlotId hiện tại', () async {
-      final manager = SaveSlotManager();
-      final slot = manager.createSlot('Alice');
-      await manager.setActiveSlot(slot.id);
+    test(
+      'setActiveSlot với id không tồn tại throw ArgumentError, không đổi activeSlotId hiện tại',
+      () async {
+        final manager = SaveSlotManager();
+        final slot = manager.createSlot('Alice');
+        await manager.setActiveSlot(slot.id);
 
-      expect(() => manager.setActiveSlot('ghost'), throwsArgumentError);
-      expect(manager.activeSlotId, slot.id); // không bị đổi
-    });
+        expect(() => manager.setActiveSlot('ghost'), throwsArgumentError);
+        expect(manager.activeSlotId, slot.id); // không bị đổi
+      },
+    );
 
-    test('keyFor sinh key ổn định, xác định (cùng input luôn ra cùng output)', () {
-      final manager = SaveSlotManager();
-      expect(manager.keyFor('a', 'profile'), manager.keyFor('a', 'profile'));
-    });
+    test(
+      'keyFor sinh key ổn định, xác định (cùng input luôn ra cùng output)',
+      () {
+        final manager = SaveSlotManager();
+        expect(manager.keyFor('a', 'profile'), manager.keyFor('a', 'profile'));
+      },
+    );
 
     test('keyFor: 2 slotId/suffix khác nhau không bao giờ đụng key nhau', () {
       final manager = SaveSlotManager();
@@ -148,73 +171,87 @@ void main() {
   });
 
   group('Slice 3: xoá slot đúng, không sót rác', () {
-    test('deleteSlot xoá đúng metadata VÀ mọi key con của slot đó, không đụng slot khác', () async {
-      final manager = SaveSlotManager();
-      final a = manager.createSlot('Alice');
-      final b = manager.createSlot('Bob');
+    test(
+      'deleteSlot xoá đúng metadata VÀ mọi key con của slot đó, không đụng slot khác',
+      () async {
+        final manager = SaveSlotManager();
+        final a = manager.createSlot('Alice');
+        final b = manager.createSlot('Bob');
 
-      await storage.setString(manager.keyFor(a.id, 'profile'), 'alice-data');
-      await storage.setInt(manager.keyFor(a.id, 'score'), 100);
-      await storage.setString(manager.keyFor(b.id, 'profile'), 'bob-data');
+        await storage.setString(manager.keyFor(a.id, 'profile'), 'alice-data');
+        await storage.setInt(manager.keyFor(a.id, 'score'), 100);
+        await storage.setString(manager.keyFor(b.id, 'profile'), 'bob-data');
 
-      await manager.deleteSlot(a.id);
+        await manager.deleteSlot(a.id);
 
-      expect(
-        manager.listSlots().map((s) => s.id),
-        [b.id],
-      ); // metadata của a đã bị xoá
-      expect(
-        storage.exportAll().keys.where((k) => k.startsWith('slot_${a.id}_')),
-        isEmpty,
-      );
-      expect(storage.getString(manager.keyFor(b.id, 'profile')), 'bob-data');
-    });
+        expect(manager.listSlots().map((s) => s.id), [
+          b.id,
+        ]); // metadata của a đã bị xoá
+        expect(
+          storage.exportAll().keys.where((k) => k.startsWith('slot_${a.id}_')),
+          isEmpty,
+        );
+        expect(storage.getString(manager.keyFor(b.id, 'profile')), 'bob-data');
+      },
+    );
 
-    test('deleteSlot đúng activeSlotId hiện tại → activeSlotId trở thành null sau đó', () async {
-      final manager = SaveSlotManager();
-      final slot = manager.createSlot('Alice');
-      await manager.setActiveSlot(slot.id);
+    test(
+      'deleteSlot đúng activeSlotId hiện tại → activeSlotId trở thành null sau đó',
+      () async {
+        final manager = SaveSlotManager();
+        final slot = manager.createSlot('Alice');
+        await manager.setActiveSlot(slot.id);
 
-      await manager.deleteSlot(slot.id);
+        await manager.deleteSlot(slot.id);
 
-      expect(manager.activeSlotId, isNull);
-    });
+        expect(manager.activeSlotId, isNull);
+      },
+    );
 
-    test('deleteSlot 1 slot KHÔNG phải activeSlotId hiện tại: activeSlotId không đổi', () async {
-      final manager = SaveSlotManager();
-      final a = manager.createSlot('Alice');
-      final b = manager.createSlot('Bob');
-      await manager.setActiveSlot(a.id);
+    test(
+      'deleteSlot 1 slot KHÔNG phải activeSlotId hiện tại: activeSlotId không đổi',
+      () async {
+        final manager = SaveSlotManager();
+        final a = manager.createSlot('Alice');
+        final b = manager.createSlot('Bob');
+        await manager.setActiveSlot(a.id);
 
-      await manager.deleteSlot(b.id);
+        await manager.deleteSlot(b.id);
 
-      expect(manager.activeSlotId, a.id);
-    });
+        expect(manager.activeSlotId, a.id);
+      },
+    );
 
     test('deleteSlot với id không tồn tại throw ArgumentError', () async {
       final manager = SaveSlotManager();
       await expectLater(manager.deleteSlot('ghost'), throwsArgumentError);
     });
 
-    test('JSON metadata cũ/thiếu/hỏng: rơi về danh sách slot rỗng an toàn, không throw', () async {
-      await storage.setString(
-        'save_slot_meta_v1',
-        '{"slots": [1, 2, {"id": "", "displayName": "x", "createdAtMs": 1, "lastPlayedAtMs": 1}, {"id": "ok", "displayName": "OK", "createdAtMs": 1, "lastPlayedAtMs": 1}, {"id": "bad", "displayName": "Bad", "createdAtMs": -1, "lastPlayedAtMs": 1}], "schemaVersion": 1}',
-      );
-      final manager = SaveSlotManager();
+    test(
+      'JSON metadata cũ/thiếu/hỏng: rơi về danh sách slot rỗng an toàn, không throw',
+      () async {
+        await storage.setString(
+          'save_slot_meta_v1',
+          '{"slots": [1, 2, {"id": "", "displayName": "x", "createdAtMs": 1, "lastPlayedAtMs": 1}, {"id": "ok", "displayName": "OK", "createdAtMs": 1, "lastPlayedAtMs": 1}, {"id": "bad", "displayName": "Bad", "createdAtMs": -1, "lastPlayedAtMs": 1}], "schemaVersion": 1}',
+        );
+        final manager = SaveSlotManager();
 
-      expect(() => manager.listSlots(), returnsNormally);
-      expect(manager.listSlots().map((s) => s.id), ['ok']);
-    });
+        expect(() => manager.listSlots(), returnsNormally);
+        expect(manager.listSlots().map((s) => s.id), ['ok']);
+      },
+    );
 
-    test('JSON hoàn toàn hỏng (không phải object hợp lệ): rơi về danh sách rỗng an toàn', () async {
-      await storage.setString('save_slot_meta_v1', 'not even json{{{');
-      final manager = SaveSlotManager();
+    test(
+      'JSON hoàn toàn hỏng (không phải object hợp lệ): rơi về danh sách rỗng an toàn',
+      () async {
+        await storage.setString('save_slot_meta_v1', 'not even json{{{');
+        final manager = SaveSlotManager();
 
-      expect(() => manager.listSlots(), returnsNormally);
-      expect(manager.listSlots(), isEmpty);
-      expect(() => manager.createSlot('Alice'), returnsNormally);
-    });
+        expect(() => manager.listSlots(), returnsNormally);
+        expect(manager.listSlots(), isEmpty);
+        expect(() => manager.createSlot('Alice'), returnsNormally);
+      },
+    );
 
     test(
       'race: nhiều createSlot/touchSlot/deleteSlot liên tiếp không await giữa các lần vẫn ghi đúng qua "restart"',
@@ -257,44 +294,53 @@ void main() {
       expect(manager.listSlots().map((s) => s.displayName), ['A', 'B', 'C']);
     });
 
-    test('xoá 1 slot khi đã đạt maxSlots rồi tạo lại: thành công bình thường', () async {
-      final manager = SaveSlotManager(maxSlots: 2);
-      final a = manager.createSlot('A');
-      manager.createSlot('B');
-      expect(() => manager.createSlot('C'), throwsStateError);
+    test(
+      'xoá 1 slot khi đã đạt maxSlots rồi tạo lại: thành công bình thường',
+      () async {
+        final manager = SaveSlotManager(maxSlots: 2);
+        final a = manager.createSlot('A');
+        manager.createSlot('B');
+        expect(() => manager.createSlot('C'), throwsStateError);
 
-      await manager.deleteSlot(a.id);
-      final c = manager.createSlot('C');
+        await manager.deleteSlot(a.id);
+        final c = manager.createSlot('C');
 
-      expect(manager.listSlots(), hasLength(2));
-      expect(c.displayName, 'C');
-    });
+        expect(manager.listSlots(), hasLength(2));
+        expect(c.displayName, 'C');
+      },
+    );
 
     test('maxSlots <= 0 throw ArgumentError ngay tại constructor', () {
       expect(() => SaveSlotManager(maxSlots: 0), throwsArgumentError);
       expect(() => SaveSlotManager(maxSlots: -1), throwsArgumentError);
     });
 
-    test('không đổi hành vi listSlots/renameSlot/touchSlot khi maxSlots được set nhưng chưa đạt giới hạn', () {
-      final manager = SaveSlotManager(maxSlots: 5);
-      final slot = manager.createSlot('A');
-      manager.renameSlot(slot.id, 'A renamed');
-      manager.touchSlot(slot.id);
+    test(
+      'không đổi hành vi listSlots/renameSlot/touchSlot khi maxSlots được set nhưng chưa đạt giới hạn',
+      () {
+        final manager = SaveSlotManager(maxSlots: 5);
+        final slot = manager.createSlot('A');
+        manager.renameSlot(slot.id, 'A renamed');
+        manager.touchSlot(slot.id);
 
-      expect(manager.listSlots().single.displayName, 'A renamed');
-    });
+        expect(manager.listSlots().single.displayName, 'A renamed');
+      },
+    );
   });
 
   group('ENH-72: canCreateSlot', () {
-    test('maxSlots == null (không giới hạn): luôn true bất kể đã có bao nhiêu slot', () {
-      final manager = SaveSlotManager();
-      expect(manager.canCreateSlot, isTrue);
+    test(
+      'maxSlots == null (không giới hạn): luôn true bất kể đã có bao nhiêu slot',
+      () {
+        final manager = SaveSlotManager();
+        expect(manager.canCreateSlot, isTrue);
 
-      for (var i = 0; i < 20; i++) {
-        manager.createSlot('Slot $i');
-      }
-      expect(manager.canCreateSlot, isTrue);
-    });
+        for (var i = 0; i < 20; i++) {
+          manager.createSlot('Slot $i');
+        }
+        expect(manager.canCreateSlot, isTrue);
+      },
+    );
 
     test('số slot hiện có < maxSlots: true; đúng bằng maxSlots: false', () {
       final manager = SaveSlotManager(maxSlots: 2);
@@ -307,14 +353,17 @@ void main() {
       expect(manager.canCreateSlot, isFalse);
     });
 
-    test('sau deleteSlot làm số slot giảm xuống dưới maxSlots: canCreateSlot trở về true', () async {
-      final manager = SaveSlotManager(maxSlots: 1);
-      final slot = manager.createSlot('A');
-      expect(manager.canCreateSlot, isFalse);
+    test(
+      'sau deleteSlot làm số slot giảm xuống dưới maxSlots: canCreateSlot trở về true',
+      () async {
+        final manager = SaveSlotManager(maxSlots: 1);
+        final slot = manager.createSlot('A');
+        expect(manager.canCreateSlot, isFalse);
 
-      await manager.deleteSlot(slot.id);
-      expect(manager.canCreateSlot, isTrue);
-    });
+        await manager.deleteSlot(slot.id);
+        expect(manager.canCreateSlot, isTrue);
+      },
+    );
 
     test('canCreateSlot đúng khớp với việc createSlot có throw hay không', () {
       final manager = SaveSlotManager(maxSlots: 1);

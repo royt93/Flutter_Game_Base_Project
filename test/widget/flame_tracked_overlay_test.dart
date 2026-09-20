@@ -10,37 +10,40 @@ import 'package:roy_casual_kit/presentation/widgets/flame_tracked_overlay.dart';
 /// — bounded `pump(duration)`, never `pumpAndSettle()`.
 void main() {
   group('worldToScreenOffset', () {
-    testWidgets(
-      'identity: topLeft-anchored, unzoomed, unpanned camera at zero '
-      'gameWidgetTopLeft maps world position straight to screen position',
-      (tester) async {
-        final game = RoyGame();
-        await tester.pumpWidget(
-          MaterialApp(home: Material(child: GameWidget(game: game))),
-        );
-        await game.toBeLoaded();
-        await tester.pump();
+    testWidgets('identity: topLeft-anchored, unzoomed, unpanned camera at zero '
+        'gameWidgetTopLeft maps world position straight to screen position', (
+      tester,
+    ) async {
+      final game = RoyGame();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(child: GameWidget(game: game)),
+        ),
+      );
+      await game.toBeLoaded();
+      await tester.pump();
 
-        game.camera.viewfinder.anchor = Anchor.topLeft;
-        game.camera.viewfinder.position = Vector2.zero();
-        game.camera.viewfinder.zoom = 1;
+      game.camera.viewfinder.anchor = Anchor.topLeft;
+      game.camera.viewfinder.position = Vector2.zero();
+      game.camera.viewfinder.zoom = 1;
 
-        final result = worldToScreenOffset(
-          camera: game.camera,
-          worldPosition: Vector2(10, 20),
-          gameWidgetTopLeft: Offset.zero,
-        );
+      final result = worldToScreenOffset(
+        camera: game.camera,
+        worldPosition: Vector2(10, 20),
+        gameWidgetTopLeft: Offset.zero,
+      );
 
-        expect(result, const Offset(10, 20));
-      },
-    );
+      expect(result, const Offset(10, 20));
+    });
 
     testWidgets(
       'a non-zero gameWidgetTopLeft shifts the result by exactly that amount',
       (tester) async {
         final game = RoyGame();
         await tester.pumpWidget(
-          MaterialApp(home: Material(child: GameWidget(game: game))),
+          MaterialApp(
+            home: Material(child: GameWidget(game: game)),
+          ),
         );
         await game.toBeLoaded();
         await tester.pump();
@@ -73,7 +76,9 @@ void main() {
             home: Material(
               child: Stack(
                 children: [
-                  Positioned.fill(child: GameWidget(key: gameKey, game: game)),
+                  Positioned.fill(
+                    child: GameWidget(key: gameKey, game: game),
+                  ),
                   FlameTrackedOverlay(
                     game: game,
                     gameWidgetKey: gameKey,
@@ -121,7 +126,9 @@ void main() {
             home: Material(
               child: Stack(
                 children: [
-                  Positioned.fill(child: GameWidget(key: gameKey, game: game)),
+                  Positioned.fill(
+                    child: GameWidget(key: gameKey, game: game),
+                  ),
                   FlameTrackedOverlay(
                     game: game,
                     gameWidgetKey: gameKey,

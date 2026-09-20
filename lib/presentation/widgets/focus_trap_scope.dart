@@ -38,7 +38,9 @@ class FocusTrapScope extends StatefulWidget {
 }
 
 class _FocusTrapScopeState extends State<FocusTrapScope> {
-  final FocusScopeNode _scopeNode = FocusScopeNode(debugLabel: 'FocusTrapScope');
+  final FocusScopeNode _scopeNode = FocusScopeNode(
+    debugLabel: 'FocusTrapScope',
+  );
   FocusNode? _previouslyFocused;
 
   @override

@@ -59,49 +59,49 @@ void main() {
     },
   );
 
-  testWidgets('labelFor cung cấp → hiện đúng label tuỳ chỉnh, không phải id thô', (
-    tester,
-  ) async {
-    final service = AchievementService()..register('first_win', 1);
-    Get.put(service, permanent: true);
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: AchievementUnlockListener(
-          labelFor: (id) => id == 'first_win' ? 'First Victory!' : id,
-          child: const Text('game content'),
-        ),
-      ),
-    );
-
-    service.incrementProgress('first_win', 1);
-    await tester.pump();
-
-    expect(find.text('First Victory!'), findsOneWidget);
-    expect(find.text('first_win'), findsNothing);
-    await settleToast(tester);
-  });
-
   testWidgets(
-    'màu mặc định là NeonTheme.gold khi không truyền color',
+    'labelFor cung cấp → hiện đúng label tuỳ chỉnh, không phải id thô',
     (tester) async {
       final service = AchievementService()..register('first_win', 1);
       Get.put(service, permanent: true);
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: AchievementUnlockListener(child: Text('game content')),
+        MaterialApp(
+          home: AchievementUnlockListener(
+            labelFor: (id) => id == 'first_win' ? 'First Victory!' : id,
+            child: const Text('game content'),
+          ),
         ),
       );
 
       service.incrementProgress('first_win', 1);
       await tester.pump();
 
-      final banner = tester.widget<ToastBanner>(find.byType(ToastBanner));
-      expect(banner.color, NeonTheme.gold);
+      expect(find.text('First Victory!'), findsOneWidget);
+      expect(find.text('first_win'), findsNothing);
       await settleToast(tester);
     },
   );
+
+  testWidgets('màu mặc định là NeonTheme.gold khi không truyền color', (
+    tester,
+  ) async {
+    final service = AchievementService()..register('first_win', 1);
+    Get.put(service, permanent: true);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: AchievementUnlockListener(child: Text('game content')),
+      ),
+    );
+
+    service.incrementProgress('first_win', 1);
+    await tester.pump();
+
+    final banner = tester.widget<ToastBanner>(find.byType(ToastBanner));
+    expect(banner.color, NeonTheme.gold);
+    await settleToast(tester);
+  });
 
   testWidgets('color tuỳ chỉnh được truyền đúng xuống ToastBanner', (
     tester,
@@ -171,22 +171,23 @@ void main() {
     expect(find.text('first_win'), findsNothing);
   });
 
-  testWidgets('AchievementService bị dispose (onClose) không làm listener crash', (
-    tester,
-  ) async {
-    final service = AchievementService()..register('first_win', 1);
-    Get.put(service, permanent: true);
+  testWidgets(
+    'AchievementService bị dispose (onClose) không làm listener crash',
+    (tester) async {
+      final service = AchievementService()..register('first_win', 1);
+      Get.put(service, permanent: true);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: AchievementUnlockListener(child: Text('game content')),
-      ),
-    );
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AchievementUnlockListener(child: Text('game content')),
+        ),
+      );
 
-    await Get.delete<AchievementService>(force: true);
-    await tester.pump();
+      await Get.delete<AchievementService>(force: true);
+      await tester.pump();
 
-    expect(tester.takeException(), isNull);
-    expect(find.text('game content'), findsOneWidget);
-  });
+      expect(tester.takeException(), isNull);
+      expect(find.text('game content'), findsOneWidget);
+    },
+  );
 }

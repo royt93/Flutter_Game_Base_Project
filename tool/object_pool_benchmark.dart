@@ -36,7 +36,10 @@ class _Particle {
 /// allocated (`create()` calls, for the pooled run; every spawn, for the
 /// unpooled one) and how long the loop took.
 class BenchmarkResult {
-  const BenchmarkResult({required this.totalAllocations, required this.elapsed});
+  const BenchmarkResult({
+    required this.totalAllocations,
+    required this.elapsed,
+  });
 
   final int totalAllocations;
   final Duration elapsed;
@@ -100,7 +103,10 @@ BenchmarkResult runUnpooled({
     });
   }
   stopwatch.stop();
-  return BenchmarkResult(totalAllocations: totalAllocations, elapsed: stopwatch.elapsed);
+  return BenchmarkResult(
+    totalAllocations: totalAllocations,
+    elapsed: stopwatch.elapsed,
+  );
 }
 
 int _intArg(Map<String, String> options, String key, int fallback) =>

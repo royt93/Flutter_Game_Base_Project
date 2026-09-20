@@ -385,21 +385,30 @@ void main() {
 
     expect(banner, findsOneWidget);
     expect(
-      find.descendant(of: banner, matching: find.text('No internet connection')),
+      find.descendant(
+        of: banner,
+        matching: find.text('No internet connection'),
+      ),
       findsNothing,
     );
 
     await tester.tap(find.text('Go offline').last);
     await tester.pump(const Duration(milliseconds: 300));
     expect(
-      find.descendant(of: banner, matching: find.text('No internet connection')),
+      find.descendant(
+        of: banner,
+        matching: find.text('No internet connection'),
+      ),
       findsOneWidget,
     );
 
     await tester.tap(find.text('Go online').last);
     await tester.pump(const Duration(milliseconds: 300));
     expect(
-      find.descendant(of: banner, matching: find.text('No internet connection')),
+      find.descendant(
+        of: banner,
+        matching: find.text('No internet connection'),
+      ),
       findsNothing,
     );
 
@@ -909,32 +918,29 @@ void main() {
     },
   );
 
-  testWidgets(
-    'IDEA-48: nút "Show rank around me" chuyển đúng giữa topN(3) và '
-    'entriesAround(\'You\'), không crash',
-    (tester) async {
-      await _pumpShowcase(tester);
+  testWidgets('IDEA-48: nút "Show rank around me" chuyển đúng giữa topN(3) và '
+      'entriesAround(\'You\'), không crash', (tester) async {
+    await _pumpShowcase(tester);
 
-      await tester.tap(find.text('Submit random score').last);
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('You'), findsOneWidget);
+    await tester.tap(find.text('Submit random score').last);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('You'), findsOneWidget);
 
-      await tester.tap(find.text('Show rank around me (IDEA-48)').last);
-      await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.text('Show rank around me (IDEA-48)').last);
+    await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Show top 3'), findsOneWidget);
-      // 'You' vừa submit chắc chắn nằm trong cửa sổ entriesAround('You') vì
-      // đó chính là dòng được center.
-      expect(find.text('You'), findsOneWidget);
-      expect(tester.takeException(), isNull);
+    expect(find.text('Show top 3'), findsOneWidget);
+    // 'You' vừa submit chắc chắn nằm trong cửa sổ entriesAround('You') vì
+    // đó chính là dòng được center.
+    expect(find.text('You'), findsOneWidget);
+    expect(tester.takeException(), isNull);
 
-      await tester.tap(find.text('Show top 3').last);
-      await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.text('Show top 3').last);
+    await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Show rank around me (IDEA-48)'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
+    expect(find.text('Show rank around me (IDEA-48)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'IDEA-53: nút "Simulate async" hiện spinner, chặn double-tap, rồi tự tắt sau 1.5s',
@@ -949,17 +955,26 @@ void main() {
       await tester.tap(find.text('Simulate async').last);
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsNWidgets(baseline + 1));
+      expect(
+        find.byType(CircularProgressIndicator),
+        findsNWidgets(baseline + 1),
+      );
 
       // Tap lại trong lúc đang loading không được kích hoạt thêm 1 lần
       // đếm ngược mới (không throw, không đổi hành vi).
       await tester.tap(find.byType(CommonButton).last, warnIfMissed: false);
       await tester.pump(const Duration(milliseconds: 500));
-      expect(find.byType(CircularProgressIndicator), findsNWidgets(baseline + 1));
+      expect(
+        find.byType(CircularProgressIndicator),
+        findsNWidgets(baseline + 1),
+      );
 
       await tester.pump(const Duration(milliseconds: 1100));
       expect(find.byType(CircularProgressIndicator), findsNWidgets(baseline));
-      expect(find.text('Simulate async'), findsWidgets); // StrokeText renders 2 stacked Text nodes
+      expect(
+        find.text('Simulate async'),
+        findsWidgets,
+      ); // StrokeText renders 2 stacked Text nodes
       expect(tester.takeException(), isNull);
     },
   );
@@ -1029,8 +1044,14 @@ void main() {
       await tester.pump();
 
       expect(find.text('Player 2'), findsOneWidget);
-      expect(find.textContaining('Demo score: 10'), findsOneWidget); // slot 1 vẫn giữ
-      expect(find.textContaining('Demo score: 0'), findsOneWidget); // slot 2 mới, độc lập
+      expect(
+        find.textContaining('Demo score: 10'),
+        findsOneWidget,
+      ); // slot 1 vẫn giữ
+      expect(
+        find.textContaining('Demo score: 0'),
+        findsOneWidget,
+      ); // slot 2 mới, độc lập
 
       // Xoá slot 1 (có ConfirmDialog xác nhận trước, vì đây là hành động
       // phá huỷ dữ liệu).
@@ -1076,7 +1097,9 @@ void main() {
       expect(find.textContaining('Device id:'), findsOneWidget);
 
       final before = tester
-          .widgetList<Text>(find.textContaining('Experiment "cta_color_test" →'))
+          .widgetList<Text>(
+            find.textContaining('Experiment "cta_color_test" →'),
+          )
           .single
           .data;
 
@@ -1086,7 +1109,9 @@ void main() {
       await tester.pump();
 
       final after = tester
-          .widgetList<Text>(find.textContaining('Experiment "cta_color_test" →'))
+          .widgetList<Text>(
+            find.textContaining('Experiment "cta_color_test" →'),
+          )
           .single
           .data;
       expect(after, before);
@@ -1141,7 +1166,8 @@ void main() {
         expect(
           find.text(fmtDur(const Duration(seconds: 12))),
           findsOneWidget,
-          reason: 'restart phải nạp lại đúng full duration mới, không cộng dồn phần đã trôi',
+          reason:
+              'restart phải nạp lại đúng full duration mới, không cộng dồn phần đã trôi',
         );
         expect(tester.takeException(), isNull);
       },
@@ -1263,22 +1289,21 @@ void main() {
       ConnectivityCoordinator.maybe?.onClose();
     });
 
-    testWidgets(
-      'probe FAILING: interface up không bao giờ báo online giả',
-      (tester) async {
-        await _pumpShowcase(tester);
+    testWidgets('probe FAILING: interface up không bao giờ báo online giả', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
 
-        await tester.tap(find.text('Probe: OK (tap to break it)').last);
-        await tester.pump();
-        await tester.tap(find.text('Interface up').last);
-        await tester.pump(const Duration(milliseconds: 200));
-        await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(find.text('Probe: OK (tap to break it)').last);
+      await tester.pump();
+      await tester.tap(find.text('Interface up').last);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 50));
 
-        expect(find.text('State: online'), findsNothing);
-        expect(tester.takeException(), isNull);
-        ConnectivityCoordinator.maybe?.onClose();
-      },
-    );
+      expect(find.text('State: online'), findsNothing);
+      expect(tester.takeException(), isNull);
+      ConnectivityCoordinator.maybe?.onClose();
+    });
 
     testWidgets(
       'enqueue task khi offline rồi lên online: queue tự drain, task chạy đúng 1 lần',
@@ -1294,7 +1319,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
         await tester.pump();
 
-        expect(find.textContaining('Queue: 0 pending, 1 đã chạy'), findsOneWidget);
+        expect(
+          find.textContaining('Queue: 0 pending, 1 đã chạy'),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
         ConnectivityCoordinator.maybe?.onClose();
       },
@@ -1312,20 +1340,19 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets(
-      'bấm "Simulate lại (duplicate)" ngay sau: bị dedupe',
-      (tester) async {
-        await _pumpShowcase(tester);
+    testWidgets('bấm "Simulate lại (duplicate)" ngay sau: bị dedupe', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
 
-        await tester.tap(find.text('Simulate link').last);
-        await tester.pump();
-        await tester.tap(find.text('Simulate lại (duplicate)').last);
-        await tester.pump();
+      await tester.tap(find.text('Simulate link').last);
+      await tester.pump();
+      await tester.tap(find.text('Simulate lại (duplicate)').last);
+      await tester.pump();
 
-        expect(find.text('outcome: duplicateIgnored'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      },
-    );
+      expect(find.text('outcome: duplicateIgnored'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets('link không khớp route nào: outcome rejected, không throw', (
       tester,
@@ -1357,24 +1384,23 @@ void main() {
       expect(find.text('Update now'), findsNothing);
     });
 
-    testWidgets(
-      'cycle sang soft: hiện overlay + nút Để sau, dismiss được',
-      (tester) async {
-        await _pumpShowcase(tester);
+    testWidgets('cycle sang soft: hiện overlay + nút Để sau, dismiss được', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
 
-        await tester.tap(find.text('Scenario: ok (bấm để đổi)').last);
-        await _settle(tester);
+      await tester.tap(find.text('Scenario: ok (bấm để đổi)').last);
+      await _settle(tester);
 
-        expect(find.text('Có bản cập nhật mới'), findsOneWidget);
-        expect(find.text('Để sau'), findsOneWidget);
+      expect(find.text('Có bản cập nhật mới'), findsOneWidget);
+      expect(find.text('Để sau'), findsOneWidget);
 
-        await tester.tap(find.text('Để sau').last);
-        await tester.pump();
+      await tester.tap(find.text('Để sau').last);
+      await tester.pump();
 
-        expect(find.text('Có bản cập nhật mới'), findsNothing);
-        expect(tester.takeException(), isNull);
-      },
-    );
+      expect(find.text('Có bản cập nhật mới'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
 
     // "force"/"maintenance" scenarios (chuỗi 2-3 tap liên tiếp) không được
     // test lặp lại ở đây — chúng gây flaky do thứ tự chạy test trong CÙNG
@@ -1387,18 +1413,19 @@ void main() {
   });
 
   group('FEAT-63: AppSessionTracker demo', () {
-    testWidgets('hiện đúng session #1 và analytics context rỗng khi chưa consent', (
-      tester,
-    ) async {
-      await _pumpShowcase(tester);
+    testWidgets(
+      'hiện đúng session #1 và analytics context rỗng khi chưa consent',
+      (tester) async {
+        await _pumpShowcase(tester);
 
-      expect(find.textContaining('Session #1'), findsOneWidget);
-      expect(
-        find.text('Analytics context: {} (chưa có analytics consent)'),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.textContaining('Session #1'), findsOneWidget);
+        expect(
+          find.text('Analytics context: {} (chưa có analytics consent)'),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets(
       'grant analytics consent (FEAT-61): analytics context hiện đúng field',
@@ -1416,39 +1443,38 @@ void main() {
   });
 
   group('FEAT-71: PlatformCapabilityRegistry demo', () {
-    testWidgets('hiện đúng platform + 4 capability của môi trường test (android)', (
-      tester,
-    ) async {
-      await _pumpShowcase(tester);
+    testWidgets(
+      'hiện đúng platform + 4 capability của môi trường test (android)',
+      (tester) async {
+        await _pumpShowcase(tester);
 
-      expect(find.text('Platform: android'), findsOneWidget);
-      expect(
-        find.text('Haptics: true  · Shaders: true'),
-        findsOneWidget,
-      );
-      expect(
-        find.text('Notifications: true  · Background audio: true'),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.text('Platform: android'), findsOneWidget);
+        expect(find.text('Haptics: true  · Shaders: true'), findsOneWidget);
+        expect(
+          find.text('Notifications: true  · Background audio: true'),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('bấm "Fire haptic": supportsHaptics=true nên chạy nhánh ifSupported', (
-      tester,
-    ) async {
-      await _pumpShowcase(tester);
+    testWidgets(
+      'bấm "Fire haptic": supportsHaptics=true nên chạy nhánh ifSupported',
+      (tester) async {
+        await _pumpShowcase(tester);
 
-      await tester.tap(find.text('Fire haptic (with fallback)').last);
-      await tester.pump();
+        await tester.tap(find.text('Fire haptic (with fallback)').last);
+        await tester.pump();
 
-      expect(find.text('Haptic fired'), findsOneWidget);
-      expect(tester.takeException(), isNull);
+        expect(find.text('Haptic fired'), findsOneWidget);
+        expect(tester.takeException(), isNull);
 
-      // ToastBanner's OverlayEntry/AnimationController lifecycle (~2.4s
-      // entrance+hold+exit) phải chạy hết trước khi test kết thúc, không
-      // sẽ rò Ticker sang test kế tiếp trong cùng file.
-      await tester.pump(const Duration(seconds: 3));
-    });
+        // ToastBanner's OverlayEntry/AnimationController lifecycle (~2.4s
+        // entrance+hold+exit) phải chạy hết trước khi test kết thúc, không
+        // sẽ rò Ticker sang test kế tiếp trong cùng file.
+        await tester.pump(const Duration(seconds: 3));
+      },
+    );
   });
 
   group('FEAT-47: AssetPreloadCoordinator demo', () {
@@ -1509,7 +1535,9 @@ void main() {
         // Chuyển sang kịch bản 'ok' rồi Retry — atlas load lại thành công.
         await tester.tap(find.widgetWithText(CommonButton, 'Preload OK').first);
         await tester.pump(const Duration(milliseconds: 800));
-        await tester.tap(find.widgetWithText(CommonButton, 'Retry failed').first);
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Retry failed').first,
+        );
         await tester.pump(const Duration(milliseconds: 800));
 
         expect(find.textContaining('Progress: 100%'), findsOneWidget);
@@ -1563,10 +1591,7 @@ void main() {
 
         expect(find.text('Phase: error'), findsOneWidget);
         expect(find.text('Scene #1'), findsOneWidget);
-        expect(
-          find.textContaining('Không tải được scene mới'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('Không tải được scene mới'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -1576,7 +1601,9 @@ void main() {
     ) async {
       await _pumpShowcase(tester);
 
-      await tester.tap(find.widgetWithText(CommonButton, 'Chuyển scene (OK)').first);
+      await tester.tap(
+        find.widgetWithText(CommonButton, 'Chuyển scene (OK)').first,
+      );
       // covering kéo dài 260ms — pump qua khỏi mốc đó để vào loading nhưng
       // chưa hết 300ms delay của load() bên trong.
       await tester.pump(const Duration(milliseconds: 280));
@@ -1597,9 +1624,7 @@ void main() {
   });
 
   group('FEAT-43: PlayerProgressionService demo', () {
-    testWidgets('bấm "Grant 50 XP": vẫn Level 1, XP tăng đúng', (
-      tester,
-    ) async {
+    testWidgets('bấm "Grant 50 XP": vẫn Level 1, XP tăng đúng', (tester) async {
       await _pumpShowcase(tester);
 
       expect(find.text('Level 1'), findsOneWidget);
@@ -1702,7 +1727,9 @@ void main() {
     ) async {
       await _pumpShowcase(tester);
 
-      await tester.tap(find.widgetWithText(CommonButton, 'Grant potion x3').first);
+      await tester.tap(
+        find.widgetWithText(CommonButton, 'Grant potion x3').first,
+      );
       await tester.pump();
 
       expect(find.text('potion'), findsOneWidget);
@@ -1739,20 +1766,25 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('grant sword rồi equip: InventoryGrid hiện đúng badge equipped', (
-      tester,
-    ) async {
-      await _pumpShowcase(tester);
+    testWidgets(
+      'grant sword rồi equip: InventoryGrid hiện đúng badge equipped',
+      (tester) async {
+        await _pumpShowcase(tester);
 
-      await tester.tap(find.widgetWithText(CommonButton, 'Grant sword').first);
-      await tester.pump();
-      await tester.tap(find.widgetWithText(CommonButton, 'Equip sword').first);
-      await tester.pump();
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Grant sword').first,
+        );
+        await tester.pump();
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Equip sword').first,
+        );
+        await tester.pump();
 
-      expect(find.text('sword'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.text('sword'), findsOneWidget);
+        expect(find.byIcon(Icons.check_circle), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('FEAT-67: OfflineOutboxService demo', () {
@@ -1762,15 +1794,11 @@ void main() {
         await _pumpShowcase(tester);
 
         expect(find.text('Pending: 0  · Manual review: 0'), findsOneWidget);
-        await tester.tap(
-          find.widgetWithText(CommonButton, 'Enqueue OK').first,
-        );
+        await tester.tap(find.widgetWithText(CommonButton, 'Enqueue OK').first);
         await tester.pump();
         expect(find.text('Pending: 1  · Manual review: 0'), findsOneWidget);
 
-        await tester.tap(
-          find.widgetWithText(CommonButton, 'Drain now').first,
-        );
+        await tester.tap(find.widgetWithText(CommonButton, 'Drain now').first);
         await tester.pump(const Duration(milliseconds: 300));
         expect(find.text('Pending: 0  · Manual review: 0'), findsOneWidget);
         expect(tester.takeException(), isNull);
@@ -1786,9 +1814,7 @@ void main() {
           find.widgetWithText(CommonButton, 'Enqueue (conflict)').first,
         );
         await tester.pump();
-        await tester.tap(
-          find.widgetWithText(CommonButton, 'Drain now').first,
-        );
+        await tester.tap(find.widgetWithText(CommonButton, 'Drain now').first);
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Pending: 0  · Manual review: 1'), findsOneWidget);
@@ -1797,29 +1823,26 @@ void main() {
       },
     );
 
-    testWidgets(
-      'manual review: bấm "Accept remote" xoá item khỏi outbox hẳn',
-      (tester) async {
-        await _pumpShowcase(tester);
+    testWidgets('manual review: bấm "Accept remote" xoá item khỏi outbox hẳn', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
 
-        await tester.tap(
-          find.widgetWithText(CommonButton, 'Enqueue (conflict)').first,
-        );
-        await tester.pump();
-        await tester.tap(
-          find.widgetWithText(CommonButton, 'Drain now').first,
-        );
-        await tester.pump(const Duration(milliseconds: 300));
-        expect(find.text('Pending: 0  · Manual review: 1'), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(CommonButton, 'Enqueue (conflict)').first,
+      );
+      await tester.pump();
+      await tester.tap(find.widgetWithText(CommonButton, 'Drain now').first);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Pending: 0  · Manual review: 1'), findsOneWidget);
 
-        await tester.tap(
-          find.widgetWithText(CommonButton, 'Accept remote').first,
-        );
-        await tester.pump();
-        expect(find.text('Pending: 0  · Manual review: 0'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      },
-    );
+      await tester.tap(
+        find.widgetWithText(CommonButton, 'Accept remote').first,
+      );
+      await tester.pump();
+      expect(find.text('Pending: 0  · Manual review: 0'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('FEAT-52: AdaptiveGameHud demo', () {

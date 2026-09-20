@@ -22,17 +22,20 @@ void main() {
       expect(result, ClockJudgement.normal);
     });
 
-    test('elapsed dài (offline 3 ngày) nhưng cả 2 delta khớp nhau -> normal', () {
-      const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
-      final result = classifyClockSample(
-        previous: const ClockSample(wallMs: 0, monotonicMs: 0),
-        current: const ClockSample(
-          wallMs: threeDaysMs,
-          monotonicMs: threeDaysMs,
-        ),
-      );
-      expect(result, ClockJudgement.normal);
-    });
+    test(
+      'elapsed dài (offline 3 ngày) nhưng cả 2 delta khớp nhau -> normal',
+      () {
+        const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+        final result = classifyClockSample(
+          previous: const ClockSample(wallMs: 0, monotonicMs: 0),
+          current: const ClockSample(
+            wallMs: threeDaysMs,
+            monotonicMs: threeDaysMs,
+          ),
+        );
+        expect(result, ClockJudgement.normal);
+      },
+    );
 
     test('wall lùi lại rõ rệt (vượt tolerance) -> rewind', () {
       final result = classifyClockSample(
@@ -51,42 +54,54 @@ void main() {
       expect(result, ClockJudgement.normal);
     });
 
-    test('wall nhảy vọt tới tương lai trong khi monotonic gần như không đổi -> suspiciousForwardJump', () {
-      const oneYearMs = 365 * 24 * 60 * 60 * 1000;
-      final result = classifyClockSample(
-        previous: const ClockSample(wallMs: 0, monotonicMs: 0),
-        current: const ClockSample(wallMs: oneYearMs, monotonicMs: 500),
-      );
-      expect(result, ClockJudgement.suspiciousForwardJump);
-    });
+    test(
+      'wall nhảy vọt tới tương lai trong khi monotonic gần như không đổi -> suspiciousForwardJump',
+      () {
+        const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+        final result = classifyClockSample(
+          previous: const ClockSample(wallMs: 0, monotonicMs: 0),
+          current: const ClockSample(wallMs: oneYearMs, monotonicMs: 500),
+        );
+        expect(result, ClockJudgement.suspiciousForwardJump);
+      },
+    );
 
-    test('drift đúng bằng ngưỡng thì vẫn normal, vượt ngưỡng 1ms mới suspicious', () {
-      const threshold = Duration(hours: 1);
-      final atThreshold = classifyClockSample(
-        previous: const ClockSample(wallMs: 0, monotonicMs: 0),
-        current: ClockSample(wallMs: threshold.inMilliseconds, monotonicMs: 0),
-        suspiciousJumpThreshold: threshold,
-      );
-      expect(atThreshold, ClockJudgement.normal);
+    test(
+      'drift đúng bằng ngưỡng thì vẫn normal, vượt ngưỡng 1ms mới suspicious',
+      () {
+        const threshold = Duration(hours: 1);
+        final atThreshold = classifyClockSample(
+          previous: const ClockSample(wallMs: 0, monotonicMs: 0),
+          current: ClockSample(
+            wallMs: threshold.inMilliseconds,
+            monotonicMs: 0,
+          ),
+          suspiciousJumpThreshold: threshold,
+        );
+        expect(atThreshold, ClockJudgement.normal);
 
-      final overThreshold = classifyClockSample(
-        previous: const ClockSample(wallMs: 0, monotonicMs: 0),
-        current: ClockSample(
-          wallMs: threshold.inMilliseconds + 1,
-          monotonicMs: 0,
-        ),
-        suspiciousJumpThreshold: threshold,
-      );
-      expect(overThreshold, ClockJudgement.suspiciousForwardJump);
-    });
+        final overThreshold = classifyClockSample(
+          previous: const ClockSample(wallMs: 0, monotonicMs: 0),
+          current: ClockSample(
+            wallMs: threshold.inMilliseconds + 1,
+            monotonicMs: 0,
+          ),
+          suspiciousJumpThreshold: threshold,
+        );
+        expect(overThreshold, ClockJudgement.suspiciousForwardJump);
+      },
+    );
 
-    test('monotonic lùi lại (process mới khởi động) -> reboot, bất kể wall delta', () {
-      final result = classifyClockSample(
-        previous: const ClockSample(wallMs: 999999, monotonicMs: 500000),
-        current: const ClockSample(wallMs: 1000000, monotonicMs: 10),
-      );
-      expect(result, ClockJudgement.reboot);
-    });
+    test(
+      'monotonic lùi lại (process mới khởi động) -> reboot, bất kể wall delta',
+      () {
+        final result = classifyClockSample(
+          previous: const ClockSample(wallMs: 999999, monotonicMs: 500000),
+          current: const ClockSample(wallMs: 1000000, monotonicMs: 10),
+        );
+        expect(result, ClockJudgement.reboot);
+      },
+    );
   });
 
   group('TrustedClockService: hydrate/migrate lần đầu', () {
@@ -97,13 +112,16 @@ void main() {
     });
     tearDown(Get.reset);
 
-    test('chưa từng có gì lưu trước đó: baseline = wall time của sample đầu', () {
-      final service = TrustedClockService(
-        sampleNow: () => const ClockSample(wallMs: 5000, monotonicMs: 0),
-      );
+    test(
+      'chưa từng có gì lưu trước đó: baseline = wall time của sample đầu',
+      () {
+        final service = TrustedClockService(
+          sampleNow: () => const ClockSample(wallMs: 5000, monotonicMs: 0),
+        );
 
-      expect(service.nowMsTrusted(), 5000);
-    });
+        expect(service.nowMsTrusted(), 5000);
+      },
+    );
 
     test(
       'migrate từ legacy StorageKeys.maxMsSeen khi nó CAO HƠN wall time hiện tại',
@@ -169,159 +187,170 @@ void main() {
     });
   });
 
-  group('TrustedClockService: recoverable forward-jump fix (điểm mấu chốt IDEA-40)', () {
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({});
-      final storage = StorageService(await SharedPreferences.getInstance());
-      Get.put(storage, permanent: true);
-    });
-    tearDown(Get.reset);
+  group(
+    'TrustedClockService: recoverable forward-jump fix (điểm mấu chốt IDEA-40)',
+    () {
+      setUp(() async {
+        SharedPreferences.setMockInitialValues({});
+        final storage = StorageService(await SharedPreferences.getInstance());
+        Get.put(storage, permanent: true);
+      });
+      tearDown(Get.reset);
 
-    test(
-      'nhảy đồng hồ 1 năm trong khi app vẫn đang chạy: baseline KHÔNG bị đẩy lên tận 1 năm sau',
-      () {
-        var wallMs = 0;
-        var monotonicMs = 0;
-        final service = TrustedClockService(
-          sampleNow: () =>
-              ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
-        );
-        expect(service.nowMsTrusted(), 0);
-
-        // Nhảy 1 năm nhưng chỉ 500ms xử lý thật trôi qua (monotonic).
-        const oneYearMs = 365 * 24 * 60 * 60 * 1000;
-        wallMs = oneYearMs;
-        monotonicMs = 500;
-
-        expect(service.nowMsTrusted(), 0); // KHÔNG phải oneYearMs
-        expect(service.lastJudgement, ClockJudgement.suspiciousForwardJump);
-      },
-    );
-
-    test(
-      'SAU KHI quarantine cú nhảy 1 năm: đồng hồ tiếp tục trôi bình thường từ mốc TRƯỚC cú nhảy (không bị khoá nhiều năm)',
-      () {
-        var wallMs = 0;
-        var monotonicMs = 0;
-        final service = TrustedClockService(
-          sampleNow: () =>
-              ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
-        );
-        service.nowMsTrusted(); // baseline = 0
-
-        const oneYearMs = 365 * 24 * 60 * 60 * 1000;
-        wallMs = oneYearMs;
-        monotonicMs = 500;
-        expect(service.nowMsTrusted(), 0); // bị quarantine
-
-        // Người dùng tự sửa lại đồng hồ về đúng thực tế — chỉ vài giây
-        // sau (theo mốc TRƯỚC cú nhảy), không phải hàng năm.
-        wallMs = 5000;
-        monotonicMs = 5500; // ~5s trôi qua thật (monotonic) kể từ mốc trước
-        expect(service.nowMsTrusted(), 5000);
-        expect(service.lastJudgement, ClockJudgement.normal);
-      },
-    );
-
-    test(
-      'nhiều cú nhảy nghi vấn liên tiếp đều bị quarantine như nhau, không cộng dồn sai',
-      () {
-        var wallMs = 0;
-        var monotonicMs = 0;
-        final service = TrustedClockService(
-          sampleNow: () =>
-              ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
-        );
-        service.nowMsTrusted();
-
-        for (var i = 1; i <= 3; i++) {
-          wallMs = 365 * 24 * 60 * 60 * 1000 * i;
-          monotonicMs = 500 * i;
+      test(
+        'nhảy đồng hồ 1 năm trong khi app vẫn đang chạy: baseline KHÔNG bị đẩy lên tận 1 năm sau',
+        () {
+          var wallMs = 0;
+          var monotonicMs = 0;
+          final service = TrustedClockService(
+            sampleNow: () =>
+                ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+          );
           expect(service.nowMsTrusted(), 0);
+
+          // Nhảy 1 năm nhưng chỉ 500ms xử lý thật trôi qua (monotonic).
+          const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+          wallMs = oneYearMs;
+          monotonicMs = 500;
+
+          expect(service.nowMsTrusted(), 0); // KHÔNG phải oneYearMs
           expect(service.lastJudgement, ClockJudgement.suspiciousForwardJump);
-        }
-      },
-    );
-  });
-
-  group('TrustedClockService: reboot (giới hạn đã biết, không phải regression mới)', () {
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({});
-      final storage = StorageService(await SharedPreferences.getInstance());
-      Get.put(storage, permanent: true);
-    });
-    tearDown(Get.reset);
-
-    test('reboot với wall time tăng hợp lý: baseline tiến lên bình thường', () {
-      var wallMs = 1000;
-      var monotonicMs = 500000; // "process cũ" đã chạy lâu
-      final service = TrustedClockService(
-        sampleNow: () => ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+        },
       );
-      service.nowMsTrusted();
 
-      // "Process mới" — monotonic reset về nhỏ (Stopwatch mới).
-      wallMs = 2000;
-      monotonicMs = 10;
-      final reloaded = TrustedClockService(
-        sampleNow: () => ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+      test(
+        'SAU KHI quarantine cú nhảy 1 năm: đồng hồ tiếp tục trôi bình thường từ mốc TRƯỚC cú nhảy (không bị khoá nhiều năm)',
+        () {
+          var wallMs = 0;
+          var monotonicMs = 0;
+          final service = TrustedClockService(
+            sampleNow: () =>
+                ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+          );
+          service.nowMsTrusted(); // baseline = 0
+
+          const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+          wallMs = oneYearMs;
+          monotonicMs = 500;
+          expect(service.nowMsTrusted(), 0); // bị quarantine
+
+          // Người dùng tự sửa lại đồng hồ về đúng thực tế — chỉ vài giây
+          // sau (theo mốc TRƯỚC cú nhảy), không phải hàng năm.
+          wallMs = 5000;
+          monotonicMs = 5500; // ~5s trôi qua thật (monotonic) kể từ mốc trước
+          expect(service.nowMsTrusted(), 5000);
+          expect(service.lastJudgement, ClockJudgement.normal);
+        },
       );
-      expect(reloaded.nowMsTrusted(), 2000);
-      expect(reloaded.lastJudgement, ClockJudgement.reboot);
-    });
 
-    test(
-      'reboot với wall time lùi so với baseline đã lưu: vẫn giữ nguyên baseline cũ (không regression)',
-      () {
-        var wallMs = 100000;
-        var monotonicMs = 500000;
-        final service = TrustedClockService(
-          sampleNow: () =>
-              ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
-        );
-        service.nowMsTrusted();
+      test(
+        'nhiều cú nhảy nghi vấn liên tiếp đều bị quarantine như nhau, không cộng dồn sai',
+        () {
+          var wallMs = 0;
+          var monotonicMs = 0;
+          final service = TrustedClockService(
+            sampleNow: () =>
+                ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+          );
+          service.nowMsTrusted();
 
-        wallMs = 1000; // "process mới" nhưng wall time thấp hơn baseline cũ
-        monotonicMs = 10;
-        final reloaded = TrustedClockService(
-          sampleNow: () =>
-              ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
-        );
-        expect(reloaded.nowMsTrusted(), 100000);
-      },
-    );
+          for (var i = 1; i <= 3; i++) {
+            wallMs = 365 * 24 * 60 * 60 * 1000 * i;
+            monotonicMs = 500 * i;
+            expect(service.nowMsTrusted(), 0);
+            expect(service.lastJudgement, ClockJudgement.suspiciousForwardJump);
+          }
+        },
+      );
+    },
+  );
 
-    test(
-      'GIỚI HẠN ĐÃ BIẾT (không phải bug mới): kill app rồi vặn đồng hồ rồi mở lại VẪN qua được — giống hệt hạn chế đã ghi trong clamped_clock.dart',
-      () {
-        // monotonicMs=500000 mô phỏng "process cũ đã chạy 1 khoảng lâu"
-        // trước khi bị kill — cần thiết để lần đọc kế tiếp (process MỚI,
-        // Stopwatch reset về nhỏ) thực sự bị chấm "reboot" (monotonic đi
-        // lùi), đúng bản chất phép thử này muốn mô phỏng.
-        var wallMs = 0;
-        var monotonicMs = 500000;
-        final service = TrustedClockService(
-          sampleNow: () =>
-              ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
-        );
-        service.nowMsTrusted();
+  group(
+    'TrustedClockService: reboot (giới hạn đã biết, không phải regression mới)',
+    () {
+      setUp(() async {
+        SharedPreferences.setMockInitialValues({});
+        final storage = StorageService(await SharedPreferences.getInstance());
+        Get.put(storage, permanent: true);
+      });
+      tearDown(Get.reset);
 
-        // Kill app (mô phỏng bằng instance MỚI, monotonic reset) SAU KHI
-        // đã vặn đồng hồ xa — không có mốc monotonic nào trong process
-        // mới để phát hiện đây là cú nhảy đáng ngờ.
-        const oneYearMs = 365 * 24 * 60 * 60 * 1000;
-        wallMs = oneYearMs;
-        monotonicMs = 10;
-        final reloaded = TrustedClockService(
-          sampleNow: () =>
-              ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
-        );
+      test(
+        'reboot với wall time tăng hợp lý: baseline tiến lên bình thường',
+        () {
+          var wallMs = 1000;
+          var monotonicMs = 500000; // "process cũ" đã chạy lâu
+          final service = TrustedClockService(
+            sampleNow: () =>
+                ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+          );
+          service.nowMsTrusted();
 
-        expect(reloaded.nowMsTrusted(), oneYearMs);
-        expect(reloaded.lastJudgement, ClockJudgement.reboot);
-      },
-    );
-  });
+          // "Process mới" — monotonic reset về nhỏ (Stopwatch mới).
+          wallMs = 2000;
+          monotonicMs = 10;
+          final reloaded = TrustedClockService(
+            sampleNow: () =>
+                ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+          );
+          expect(reloaded.nowMsTrusted(), 2000);
+          expect(reloaded.lastJudgement, ClockJudgement.reboot);
+        },
+      );
+
+      test(
+        'reboot với wall time lùi so với baseline đã lưu: vẫn giữ nguyên baseline cũ (không regression)',
+        () {
+          var wallMs = 100000;
+          var monotonicMs = 500000;
+          final service = TrustedClockService(
+            sampleNow: () =>
+                ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+          );
+          service.nowMsTrusted();
+
+          wallMs = 1000; // "process mới" nhưng wall time thấp hơn baseline cũ
+          monotonicMs = 10;
+          final reloaded = TrustedClockService(
+            sampleNow: () =>
+                ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+          );
+          expect(reloaded.nowMsTrusted(), 100000);
+        },
+      );
+
+      test(
+        'GIỚI HẠN ĐÃ BIẾT (không phải bug mới): kill app rồi vặn đồng hồ rồi mở lại VẪN qua được — giống hệt hạn chế đã ghi trong clamped_clock.dart',
+        () {
+          // monotonicMs=500000 mô phỏng "process cũ đã chạy 1 khoảng lâu"
+          // trước khi bị kill — cần thiết để lần đọc kế tiếp (process MỚI,
+          // Stopwatch reset về nhỏ) thực sự bị chấm "reboot" (monotonic đi
+          // lùi), đúng bản chất phép thử này muốn mô phỏng.
+          var wallMs = 0;
+          var monotonicMs = 500000;
+          final service = TrustedClockService(
+            sampleNow: () =>
+                ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+          );
+          service.nowMsTrusted();
+
+          // Kill app (mô phỏng bằng instance MỚI, monotonic reset) SAU KHI
+          // đã vặn đồng hồ xa — không có mốc monotonic nào trong process
+          // mới để phát hiện đây là cú nhảy đáng ngờ.
+          const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+          wallMs = oneYearMs;
+          monotonicMs = 10;
+          final reloaded = TrustedClockService(
+            sampleNow: () =>
+                ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+          );
+
+          expect(reloaded.nowMsTrusted(), oneYearMs);
+          expect(reloaded.lastJudgement, ClockJudgement.reboot);
+        },
+      );
+    },
+  );
 
   group('TrustedClockService: lastJudgement', () {
     setUp(() async {
@@ -353,22 +382,22 @@ void main() {
       );
       service.nowMsTrusted();
 
-      await expectLater(
-        service.reconcileWithTrustedSource(),
-        completes,
-      );
+      await expectLater(service.reconcileWithTrustedSource(), completes);
     });
 
-    test('trustedTimeSource trả về null (offline): no-op, không throw', () async {
-      final service = TrustedClockService(
-        sampleNow: () => const ClockSample(wallMs: 0, monotonicMs: 0),
-        trustedTimeSource: _FakeTrustedTimeSource(null),
-      );
-      service.nowMsTrusted();
+    test(
+      'trustedTimeSource trả về null (offline): no-op, không throw',
+      () async {
+        final service = TrustedClockService(
+          sampleNow: () => const ClockSample(wallMs: 0, monotonicMs: 0),
+          trustedTimeSource: _FakeTrustedTimeSource(null),
+        );
+        service.nowMsTrusted();
 
-      await service.reconcileWithTrustedSource();
-      expect(service.nowMsTrusted(), 0);
-    });
+        await service.reconcileWithTrustedSource();
+        expect(service.nowMsTrusted(), 0);
+      },
+    );
 
     test(
       'trustedTimeSource xác nhận mốc CAO HƠN baseline đang bị quarantine: tái neo ngay lập tức',
@@ -399,21 +428,25 @@ void main() {
       },
     );
 
-    test('trustedTimeSource trả về mốc THẤP HƠN baseline: không lùi (no-op)', () async {
-      var wallMs = 100000;
-      var monotonicMs = 0;
-      final service = TrustedClockService(
-        sampleNow: () => ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
-        trustedTimeSource: _FakeTrustedTimeSource(50),
-      );
-      service.nowMsTrusted();
+    test(
+      'trustedTimeSource trả về mốc THẤP HƠN baseline: không lùi (no-op)',
+      () async {
+        var wallMs = 100000;
+        var monotonicMs = 0;
+        final service = TrustedClockService(
+          sampleNow: () =>
+              ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+          trustedTimeSource: _FakeTrustedTimeSource(50),
+        );
+        service.nowMsTrusted();
 
-      await service.reconcileWithTrustedSource();
+        await service.reconcileWithTrustedSource();
 
-      wallMs = 100001;
-      monotonicMs = 1;
-      expect(service.nowMsTrusted(), 100001);
-    });
+        wallMs = 100001;
+        monotonicMs = 1;
+        expect(service.nowMsTrusted(), 100001);
+      },
+    );
   });
 
   group('TrustedClockService: static monotonic reference dùng chung process', () {

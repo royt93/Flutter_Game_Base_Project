@@ -152,9 +152,7 @@ class DailyQuestService extends GetxService {
   }
 
   void _scheduleSave() {
-    _saveChain = _saving
-        ? _saveChain.then((_) => _runSave())
-        : _runSave();
+    _saveChain = _saving ? _saveChain.then((_) => _runSave()) : _runSave();
   }
 
   /// Awaits every save queued so far — lets a test deterministically wait

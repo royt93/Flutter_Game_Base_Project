@@ -196,7 +196,8 @@ PerformanceBudgetResult checkPerformanceBudgets({
           PerformanceBudgetViolation(
             metricName: policy.metricName,
             kind: PerformanceBudgetViolationKind.staleMeasurement,
-            detail: 'measurement is ${age}ms old, max allowed ${policy.maxAgeMs}ms',
+            detail:
+                'measurement is ${age}ms old, max allowed ${policy.maxAgeMs}ms',
           ),
         );
         continue;

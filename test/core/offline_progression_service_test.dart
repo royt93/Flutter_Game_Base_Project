@@ -71,90 +71,111 @@ void main() {
       },
     );
 
-    test('round-trip: đặt tốc độ, giả lập thời gian trôi, verify đúng số', () async {
-      final service = OfflineProgressionService(
-        maxOfflineCap: const Duration(hours: 8),
-      );
-      Get.put(service, permanent: true);
+    test(
+      'round-trip: đặt tốc độ, giả lập thời gian trôi, verify đúng số',
+      () async {
+        final service = OfflineProgressionService(
+          maxOfflineCap: const Duration(hours: 8),
+        );
+        Get.put(service, permanent: true);
 
-      // Baseline: claim ngay để chốt mốc "lần cuối claim" = bây giờ.
-      final first = await service.claim(5);
-      expect(first, 0.0);
+        // Baseline: claim ngay để chốt mốc "lần cuối claim" = bây giờ.
+        final first = await service.claim(5);
+        expect(first, 0.0);
 
-      // Giả lập đi vắng 2 giờ, tốc độ 5/giây.
-      await advanceHours(2);
-      final earned = service.pendingEarnings(5);
-      expect(earned, 2 * 3600 * 5);
-    });
+        // Giả lập đi vắng 2 giờ, tốc độ 5/giây.
+        await advanceHours(2);
+        final earned = service.pendingEarnings(5);
+        expect(earned, 2 * 3600 * 5);
+      },
+    );
 
-    test('vượt maxOfflineCap -> thu nhập bị giới hạn đúng cap, không tính vượt', () async {
-      final service = OfflineProgressionService(
-        maxOfflineCap: const Duration(hours: 8),
-      );
-      Get.put(service, permanent: true);
+    test(
+      'vượt maxOfflineCap -> thu nhập bị giới hạn đúng cap, không tính vượt',
+      () async {
+        final service = OfflineProgressionService(
+          maxOfflineCap: const Duration(hours: 8),
+        );
+        Get.put(service, permanent: true);
 
-      await service.claim(2); // chốt mốc
+        await service.claim(2); // chốt mốc
 
-      // Đi vắng 3 ngày (72 giờ) — vượt xa cap 8 giờ.
-      await advanceHours(72);
-      final earned = service.pendingEarnings(2);
+        // Đi vắng 3 ngày (72 giờ) — vượt xa cap 8 giờ.
+        await advanceHours(72);
+        final earned = service.pendingEarnings(2);
 
-      expect(earned, 8 * 3600 * 2, reason: 'chỉ tính tối đa 8 giờ, không tính 72 giờ thật');
-    });
+        expect(
+          earned,
+          8 * 3600 * 2,
+          reason: 'chỉ tính tối đa 8 giờ, không tính 72 giờ thật',
+        );
+      },
+    );
 
-    test('pendingEarnings không mutate trạng thái (gọi nhiều lần ra cùng kết quả)', () async {
-      final service = OfflineProgressionService();
-      Get.put(service, permanent: true);
+    test(
+      'pendingEarnings không mutate trạng thái (gọi nhiều lần ra cùng kết quả)',
+      () async {
+        final service = OfflineProgressionService();
+        Get.put(service, permanent: true);
 
-      await service.claim(3);
-      await advanceHours(1);
+        await service.claim(3);
+        await advanceHours(1);
 
-      final a = service.pendingEarnings(3);
-      final b = service.pendingEarnings(3);
-      expect(a, b);
-    });
+        final a = service.pendingEarnings(3);
+        final b = service.pendingEarnings(3);
+        expect(a, b);
+      },
+    );
 
-    test('claim() trả về đúng số đã tích luỹ VÀ reset mốc lastClaimed về hiện tại', () async {
-      final service = OfflineProgressionService();
-      Get.put(service, permanent: true);
+    test(
+      'claim() trả về đúng số đã tích luỹ VÀ reset mốc lastClaimed về hiện tại',
+      () async {
+        final service = OfflineProgressionService();
+        Get.put(service, permanent: true);
 
-      await service.claim(4); // chốt mốc ban đầu
-      await advanceHours(1);
+        await service.claim(4); // chốt mốc ban đầu
+        await advanceHours(1);
 
-      final earned = await service.claim(4);
-      expect(earned, 1 * 3600 * 4);
+        final earned = await service.claim(4);
+        expect(earned, 1 * 3600 * 4);
 
-      // Ngay sau khi claim, gần như không còn gì để nhận nữa — không đúng
-      // 0.0 tuyệt đối vì thời gian thực vẫn trôi 1 chút giữa claim() và
-      // pendingEarnings() (2 lệnh gọi async riêng biệt), nhưng phải rất nhỏ.
-      expect(service.pendingEarnings(4), closeTo(0.0, 0.5));
-    });
+        // Ngay sau khi claim, gần như không còn gì để nhận nữa — không đúng
+        // 0.0 tuyệt đối vì thời gian thực vẫn trôi 1 chút giữa claim() và
+        // pendingEarnings() (2 lệnh gọi async riêng biệt), nhưng phải rất nhỏ.
+        expect(service.pendingEarnings(4), closeTo(0.0, 0.5));
+      },
+    );
 
-    test('claim() persist mốc lastClaimed qua StorageKeys (sống sót qua restart)', () async {
-      final service = OfflineProgressionService();
-      Get.put(service, permanent: true);
+    test(
+      'claim() persist mốc lastClaimed qua StorageKeys (sống sót qua restart)',
+      () async {
+        final service = OfflineProgressionService();
+        Get.put(service, permanent: true);
 
-      await advanceHours(1);
-      final before = nowMsClamped();
-      await service.claim(1);
+        await advanceHours(1);
+        final before = nowMsClamped();
+        await service.claim(1);
 
-      // "Restart": tạo instance service mới, đọc lại từ storage.
-      final restarted = OfflineProgressionService();
-      // Không đúng 0.0 tuyệt đối — cùng lý do ở test claim() ngay phía
-      // trên: thời gian thực trôi 1 chút giữa claim() và pendingEarnings().
-      expect(restarted.pendingEarnings(1), closeTo(0.0, 0.5));
-      expect(
-        store.getInt(StorageKeys.offlineLastClaimedMs),
-        greaterThanOrEqualTo(before),
-      );
-    });
+        // "Restart": tạo instance service mới, đọc lại từ storage.
+        final restarted = OfflineProgressionService();
+        // Không đúng 0.0 tuyệt đối — cùng lý do ở test claim() ngay phía
+        // trên: thời gian thực trôi 1 chút giữa claim() và pendingEarnings().
+        expect(restarted.pendingEarnings(1), closeTo(0.0, 0.5));
+        expect(
+          store.getInt(StorageKeys.offlineLastClaimedMs),
+          greaterThanOrEqualTo(before),
+        );
+      },
+    );
 
     test('cap mặc định khi không truyền vào constructor', () async {
       final service = OfflineProgressionService();
       Get.put(service, permanent: true);
 
       await service.claim(1);
-      await advanceHours(1000); // rất xa, chắc chắn vượt bất kỳ cap mặc định nào
+      await advanceHours(
+        1000,
+      ); // rất xa, chắc chắn vượt bất kỳ cap mặc định nào
 
       final earned = service.pendingEarnings(1);
       expect(earned, service.maxOfflineCap.inSeconds * 1);
@@ -188,23 +209,17 @@ void main() {
         );
       });
 
-      test(
-        'claim() với tham số không hợp lệ ném lỗi trước, KHÔNG advance '
-        'offlineLastClaimedMs',
-        () async {
-          final service = OfflineProgressionService();
-          Get.put(service, permanent: true);
-          await service.claim(1);
-          final before = store.getInt(StorageKeys.offlineLastClaimedMs);
+      test('claim() với tham số không hợp lệ ném lỗi trước, KHÔNG advance '
+          'offlineLastClaimedMs', () async {
+        final service = OfflineProgressionService();
+        Get.put(service, permanent: true);
+        await service.claim(1);
+        final before = store.getInt(StorageKeys.offlineLastClaimedMs);
 
-          await expectLater(
-            service.claim(-5),
-            throwsArgumentError,
-          );
+        await expectLater(service.claim(-5), throwsArgumentError);
 
-          expect(store.getInt(StorageKeys.offlineLastClaimedMs), before);
-        },
-      );
+        expect(store.getInt(StorageKeys.offlineLastClaimedMs), before);
+      });
     });
   });
 }

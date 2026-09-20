@@ -89,8 +89,7 @@ class _FlameTrackedOverlayState extends State<FlameTrackedOverlay>
   Offset? _computeScreenOffset() {
     try {
       final renderBox =
-          widget.gameWidgetKey.currentContext?.findRenderObject()
-              as RenderBox?;
+          widget.gameWidgetKey.currentContext?.findRenderObject() as RenderBox?;
       if (renderBox == null || !renderBox.attached || !renderBox.hasSize) {
         return null;
       }

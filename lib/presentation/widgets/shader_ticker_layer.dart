@@ -14,8 +14,8 @@ import '../../core/performance_tier_service.dart';
 ///
 /// Subclass chỉ còn phần riêng: asset path, tốc độ theo `variant`, và
 /// painter/uniform-setting logic của chính nó trong `build()`.
-abstract class ShaderTickerLayerState<T extends StatefulWidget>
-    extends State<T> with SingleTickerProviderStateMixin {
+abstract class ShaderTickerLayerState<T extends StatefulWidget> extends State<T>
+    with SingleTickerProviderStateMixin {
   ui.FragmentShader? _shader;
   Ticker? _ticker;
   double time = 0;

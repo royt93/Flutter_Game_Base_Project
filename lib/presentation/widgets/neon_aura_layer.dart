@@ -21,7 +21,8 @@ class NeonAuraLayer extends StatefulWidget {
 
 class _NeonAuraLayerState extends ShaderTickerLayerState<NeonAuraLayer> {
   @override
-  String get shaderAssetPath => 'packages/roy_casual_kit/shaders/neon_glow.frag';
+  String get shaderAssetPath =>
+      'packages/roy_casual_kit/shaders/neon_glow.frag';
 
   @override
   String get debugLabel => 'NeonAuraLayer';
@@ -45,7 +46,11 @@ class _NeonAuraLayerState extends ShaderTickerLayerState<NeonAuraLayer> {
     return IgnorePointer(
       child: RepaintBoundary(
         child: CustomPaint(
-          painter: _AuraPainter(shader: shader, time: time, color: widget.color),
+          painter: _AuraPainter(
+            shader: shader,
+            time: time,
+            color: widget.color,
+          ),
           size: Size.infinite,
         ),
       ),

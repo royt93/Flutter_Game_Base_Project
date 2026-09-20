@@ -182,9 +182,7 @@ class LocalScoreboardService extends GetxService {
       ),
     );
     _sortAndTrim();
-    _saveChain = _saving
-        ? _saveChain.then((_) => _runSave())
-        : _runSave();
+    _saveChain = _saving ? _saveChain.then((_) => _runSave()) : _runSave();
   }
 
   /// The top [n] scores, highest first, ready to pass straight to

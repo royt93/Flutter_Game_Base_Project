@@ -31,7 +31,10 @@ void main() {
   group('ConsentStateService: default-deny khi chưa quyết định', () {
     test('category chưa từng grant/deny: status unknown, isGranted false', () {
       final service = ConsentStateService(policyVersion: 1);
-      expect(service.statusOf(ConsentCategory.analytics), ConsentStatus.unknown);
+      expect(
+        service.statusOf(ConsentCategory.analytics),
+        ConsentStatus.unknown,
+      );
       expect(service.isGranted(ConsentCategory.analytics), isFalse);
     });
   });
@@ -41,7 +44,10 @@ void main() {
       final service = ConsentStateService(policyVersion: 1);
       service.grant(ConsentCategory.analytics);
 
-      expect(service.statusOf(ConsentCategory.analytics), ConsentStatus.granted);
+      expect(
+        service.statusOf(ConsentCategory.analytics),
+        ConsentStatus.granted,
+      );
       expect(service.isGranted(ConsentCategory.analytics), isTrue);
     });
 
@@ -59,7 +65,10 @@ void main() {
       service.grant(ConsentCategory.analytics);
       service.reset(ConsentCategory.analytics);
 
-      expect(service.statusOf(ConsentCategory.analytics), ConsentStatus.unknown);
+      expect(
+        service.statusOf(ConsentCategory.analytics),
+        ConsentStatus.unknown,
+      );
     });
 
     test('2 category độc lập nhau, không đụng lẫn nhau', () {
@@ -71,18 +80,21 @@ void main() {
       expect(service.isGranted(ConsentCategory.personalization), isFalse);
     });
 
-    test('revoke có hiệu lực tức thì trong cùng instance (không cần đọc lại)', () {
-      final service = ConsentStateService(policyVersion: 1);
-      service.grant(ConsentCategory.analytics);
-      expect(service.isGranted(ConsentCategory.analytics), isTrue);
+    test(
+      'revoke có hiệu lực tức thì trong cùng instance (không cần đọc lại)',
+      () {
+        final service = ConsentStateService(policyVersion: 1);
+        service.grant(ConsentCategory.analytics);
+        expect(service.isGranted(ConsentCategory.analytics), isTrue);
 
-      service.deny(ConsentCategory.analytics);
-      expect(
-        service.isGranted(ConsentCategory.analytics),
-        isFalse,
-        reason: 'revoke phải có hiệu lực ngay, không cần chờ gì thêm',
-      );
-    });
+        service.deny(ConsentCategory.analytics);
+        expect(
+          service.isGranted(ConsentCategory.analytics),
+          isFalse,
+          reason: 'revoke phải có hiệu lực ngay, không cần chờ gì thêm',
+        );
+      },
+    );
 
     test('grant rồi deny liên tiếp (đồng bộ): kết quả cuối cùng là denied', () {
       final service = ConsentStateService(policyVersion: 1);
@@ -96,21 +108,25 @@ void main() {
   });
 
   group('ConsentStateService: policy version bump bắt review lại', () {
-    test('bump policyVersion: category đã granted ở version cũ trở về unknown', () {
-      final v1 = ConsentStateService(policyVersion: 1);
-      v1.grant(ConsentCategory.analytics);
-      expect(v1.isGranted(ConsentCategory.analytics), isTrue);
+    test(
+      'bump policyVersion: category đã granted ở version cũ trở về unknown',
+      () {
+        final v1 = ConsentStateService(policyVersion: 1);
+        v1.grant(ConsentCategory.analytics);
+        expect(v1.isGranted(ConsentCategory.analytics), isTrue);
 
-      // Version mới hơn — mô phỏng app update policy, dùng LẠI cùng
-      // storage (persist qua "restart" với version mới).
-      final v2 = ConsentStateService(policyVersion: 2);
-      expect(
-        v2.statusOf(ConsentCategory.analytics),
-        ConsentStatus.unknown,
-        reason: 'policy version tăng phải bắt review lại, không giữ granted cũ',
-      );
-      expect(v2.isGranted(ConsentCategory.analytics), isFalse);
-    });
+        // Version mới hơn — mô phỏng app update policy, dùng LẠI cùng
+        // storage (persist qua "restart" với version mới).
+        final v2 = ConsentStateService(policyVersion: 2);
+        expect(
+          v2.statusOf(ConsentCategory.analytics),
+          ConsentStatus.unknown,
+          reason:
+              'policy version tăng phải bắt review lại, không giữ granted cũ',
+        );
+        expect(v2.isGranted(ConsentCategory.analytics), isFalse);
+      },
+    );
 
     test('grant lại sau khi bump version: ổn định, không bị coi stale nữa', () {
       final v1 = ConsentStateService(policyVersion: 1);
@@ -125,13 +141,16 @@ void main() {
       expect(v2Again.isGranted(ConsentCategory.analytics), isTrue);
     });
 
-    test('cùng policyVersion (không bump): granted cũ vẫn giữ nguyên qua "restart"', () {
-      final v1 = ConsentStateService(policyVersion: 1);
-      v1.grant(ConsentCategory.analytics);
+    test(
+      'cùng policyVersion (không bump): granted cũ vẫn giữ nguyên qua "restart"',
+      () {
+        final v1 = ConsentStateService(policyVersion: 1);
+        v1.grant(ConsentCategory.analytics);
 
-      final v1Again = ConsentStateService(policyVersion: 1);
-      expect(v1Again.isGranted(ConsentCategory.analytics), isTrue);
-    });
+        final v1Again = ConsentStateService(policyVersion: 1);
+        expect(v1Again.isGranted(ConsentCategory.analytics), isTrue);
+      },
+    );
   });
 
   group('ConsentStateService: sống qua "restart" app', () {
@@ -140,32 +159,45 @@ void main() {
       service1.deny(ConsentCategory.personalization);
 
       final service2 = ConsentStateService(policyVersion: 1);
-      expect(service2.statusOf(ConsentCategory.personalization), ConsentStatus.denied);
+      expect(
+        service2.statusOf(ConsentCategory.personalization),
+        ConsentStatus.denied,
+      );
     });
   });
 
   group('ConsentStateService: corrupt save không biến thành granted', () {
-    test('JSON hỏng hoàn toàn ở top-level: mọi category coi như unknown, không crash', () async {
-      await store.setString(StorageKeys.consentStateV1, 'not valid json {{{');
-      final service = ConsentStateService(policyVersion: 1);
+    test(
+      'JSON hỏng hoàn toàn ở top-level: mọi category coi như unknown, không crash',
+      () async {
+        await store.setString(StorageKeys.consentStateV1, 'not valid json {{{');
+        final service = ConsentStateService(policyVersion: 1);
 
-      expect(service.statusOf(ConsentCategory.analytics), ConsentStatus.unknown);
-      expect(() => service.grant(ConsentCategory.analytics), returnsNormally);
-    });
+        expect(
+          service.statusOf(ConsentCategory.analytics),
+          ConsentStatus.unknown,
+        );
+        expect(() => service.grant(ConsentCategory.analytics), returnsNormally);
+      },
+    );
 
-    test('1 entry sai kiểu/giá trị status lạ: coi như unknown, không phải granted', () async {
-      await store.setString(
-        StorageKeys.consentStateV1,
-        '{"analytics":{"status":"totally_granted_trust_me","source":"user","policyVersion":1,"updatedAtMs":0}}',
-      );
-      final service = ConsentStateService(policyVersion: 1);
+    test(
+      '1 entry sai kiểu/giá trị status lạ: coi như unknown, không phải granted',
+      () async {
+        await store.setString(
+          StorageKeys.consentStateV1,
+          '{"analytics":{"status":"totally_granted_trust_me","source":"user","policyVersion":1,"updatedAtMs":0}}',
+        );
+        final service = ConsentStateService(policyVersion: 1);
 
-      expect(
-        service.statusOf(ConsentCategory.analytics),
-        ConsentStatus.unknown,
-        reason: 'giá trị status không khớp enum hợp lệ nào tuyệt đối không được coi là granted',
-      );
-    });
+        expect(
+          service.statusOf(ConsentCategory.analytics),
+          ConsentStatus.unknown,
+          reason:
+              'giá trị status không khớp enum hợp lệ nào tuyệt đối không được coi là granted',
+        );
+      },
+    );
   });
 
   group('ConsentStateService: reactive revision', () {

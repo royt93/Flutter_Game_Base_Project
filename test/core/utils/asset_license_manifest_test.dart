@@ -27,23 +27,34 @@ void main() {
       expect(AssetLicenseEntry.fromJson({}), isNull);
     });
 
-    test('distributable/attributionRequired mặc định đúng khi JSON không có field đó', () {
-      final parsed = AssetLicenseEntry.fromJson({
-        'path': 'a',
-        'owner': 'b',
-        'license': 'c',
-        'source': 'd',
-      });
-      expect(parsed!.attributionRequired, isFalse);
-      expect(parsed.distributable, isTrue);
-    });
+    test(
+      'distributable/attributionRequired mặc định đúng khi JSON không có field đó',
+      () {
+        final parsed = AssetLicenseEntry.fromJson({
+          'path': 'a',
+          'owner': 'b',
+          'license': 'c',
+          'source': 'd',
+        });
+        expect(parsed!.attributionRequired, isFalse);
+        expect(parsed.distributable, isTrue);
+      },
+    );
   });
 
   group('AssetLicenseManifest: JSON round-trip', () {
     test('manifest rỗng/rác -> entries rỗng, không throw', () {
       expect(AssetLicenseManifest.fromJson({}).entries, isEmpty);
-      expect(AssetLicenseManifest.fromJson({'entries': 'not a list'}).entries, isEmpty);
-      expect(AssetLicenseManifest.fromJson({'entries': [1, 2, 3]}).entries, isEmpty);
+      expect(
+        AssetLicenseManifest.fromJson({'entries': 'not a list'}).entries,
+        isEmpty,
+      );
+      expect(
+        AssetLicenseManifest.fromJson({
+          'entries': [1, 2, 3],
+        }).entries,
+        isEmpty,
+      );
     });
 
     test('1 entry rác lẫn trong list không làm hỏng các entry tốt khác', () {
@@ -69,7 +80,10 @@ void main() {
     test('entry có nhưng asset đã xoá -> issue kind=stale', () {
       final issues = validateAssetLicenses(
         assetPaths: const [],
-        manifest: const AssetLicenseManifest(schemaVersion: 1, entries: [goodEntry]),
+        manifest: const AssetLicenseManifest(
+          schemaVersion: 1,
+          entries: [goodEntry],
+        ),
       );
       expect(issues, hasLength(1));
       expect(issues.single.kind, AssetLicenseIssueKind.stale);
@@ -78,7 +92,10 @@ void main() {
     test('asset + entry khớp nhau hoàn toàn -> sạch, không issue', () {
       final issues = validateAssetLicenses(
         assetPaths: const ['asset/audio/bkg.ogg'],
-        manifest: const AssetLicenseManifest(schemaVersion: 1, entries: [goodEntry]),
+        manifest: const AssetLicenseManifest(
+          schemaVersion: 1,
+          entries: [goodEntry],
+        ),
       );
       expect(issues, isEmpty);
     });
@@ -94,9 +111,15 @@ void main() {
       );
       final issues = validateAssetLicenses(
         assetPaths: const ['asset/x.png'],
-        manifest: const AssetLicenseManifest(schemaVersion: 1, entries: [incomplete]),
+        manifest: const AssetLicenseManifest(
+          schemaVersion: 1,
+          entries: [incomplete],
+        ),
       );
-      expect(issues.any((i) => i.kind == AssetLicenseIssueKind.incomplete), isTrue);
+      expect(
+        issues.any((i) => i.kind == AssetLicenseIssueKind.incomplete),
+        isTrue,
+      );
     });
   });
 
@@ -121,13 +144,24 @@ void main() {
       });
     }
 
-    test('license không nằm trong denylist -> không bị chặn vì lý do license', () {
-      final issues = validateAssetLicenses(
-        assetPaths: const ['asset/audio/bkg.ogg'],
-        manifest: const AssetLicenseManifest(schemaVersion: 1, entries: [goodEntry]),
-      );
-      expect(issues.where((i) => i.kind == AssetLicenseIssueKind.disallowedLicense), isEmpty);
-    });
+    test(
+      'license không nằm trong denylist -> không bị chặn vì lý do license',
+      () {
+        final issues = validateAssetLicenses(
+          assetPaths: const ['asset/audio/bkg.ogg'],
+          manifest: const AssetLicenseManifest(
+            schemaVersion: 1,
+            entries: [goodEntry],
+          ),
+        );
+        expect(
+          issues.where(
+            (i) => i.kind == AssetLicenseIssueKind.disallowedLicense,
+          ),
+          isEmpty,
+        );
+      },
+    );
 
     test('distributable: false -> bị chặn dù license hợp lệ', () {
       const notDistributable = AssetLicenseEntry(
@@ -139,7 +173,10 @@ void main() {
       );
       final issues = validateAssetLicenses(
         assetPaths: const ['asset/x.png'],
-        manifest: const AssetLicenseManifest(schemaVersion: 1, entries: [notDistributable]),
+        manifest: const AssetLicenseManifest(
+          schemaVersion: 1,
+          entries: [notDistributable],
+        ),
       );
       expect(issues.single.kind, AssetLicenseIssueKind.disallowedLicense);
     });
@@ -153,7 +190,10 @@ void main() {
       );
       final issues = validateAssetLicenses(
         assetPaths: const ['asset/x.png'],
-        manifest: const AssetLicenseManifest(schemaVersion: 1, entries: [entry]),
+        manifest: const AssetLicenseManifest(
+          schemaVersion: 1,
+          entries: [entry],
+        ),
         disallowedLicenses: const {'weird-custom-license'},
       );
       expect(issues.single.kind, AssetLicenseIssueKind.disallowedLicense);
@@ -161,21 +201,30 @@ void main() {
   });
 
   group('validateAssetLicenses: nhiều issue cùng lúc trên 1 entry', () {
-    test('1 entry vừa incomplete vừa disallowed -> báo cả 2 issue, không chỉ 1', () {
-      const bad = AssetLicenseEntry(
-        path: 'asset/x.png',
-        owner: '',
-        license: 'unknown',
-        source: 'a',
-      );
-      final issues = validateAssetLicenses(
-        assetPaths: const ['asset/x.png'],
-        manifest: const AssetLicenseManifest(schemaVersion: 1, entries: [bad]),
-      );
-      expect(issues.map((i) => i.kind), containsAll([
-        AssetLicenseIssueKind.incomplete,
-        AssetLicenseIssueKind.disallowedLicense,
-      ]));
-    });
+    test(
+      '1 entry vừa incomplete vừa disallowed -> báo cả 2 issue, không chỉ 1',
+      () {
+        const bad = AssetLicenseEntry(
+          path: 'asset/x.png',
+          owner: '',
+          license: 'unknown',
+          source: 'a',
+        );
+        final issues = validateAssetLicenses(
+          assetPaths: const ['asset/x.png'],
+          manifest: const AssetLicenseManifest(
+            schemaVersion: 1,
+            entries: [bad],
+          ),
+        );
+        expect(
+          issues.map((i) => i.kind),
+          containsAll([
+            AssetLicenseIssueKind.incomplete,
+            AssetLicenseIssueKind.disallowedLicense,
+          ]),
+        );
+      },
+    );
   });
 }

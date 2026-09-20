@@ -29,8 +29,10 @@ import 'utils/safe_json.dart';
 /// partially-dropped export is always still valid, parseable JSON with
 /// whatever sections survived — never an all-or-nothing failure.
 class DiagnosticsExportBundle {
-  DiagnosticsExportBundle({this.maxBytes = defaultMaxBytes, int Function()? nowMs})
-    : _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch);
+  DiagnosticsExportBundle({
+    this.maxBytes = defaultMaxBytes,
+    int Function()? nowMs,
+  }) : _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch);
 
   static const int schemaVersion = 1;
 
@@ -116,7 +118,8 @@ class DiagnosticsExportBundle {
     }
     if (_byteSize(sections, errors) > maxBytes) {
       truncated = true;
-      errors['bundle'] = 'still exceeds size cap after dropping every optional section';
+      errors['bundle'] =
+          'still exceeds size cap after dropping every optional section';
     }
 
     return {

@@ -40,11 +40,12 @@ class DependencyEntry {
   };
 }
 
-DependencyType _parseDependencyType(String raw) => switch (raw.replaceAll('"', '')) {
-  'direct main' => DependencyType.directMain,
-  'direct dev' => DependencyType.directDev,
-  _ => DependencyType.transitive,
-};
+DependencyType _parseDependencyType(String raw) =>
+    switch (raw.replaceAll('"', '')) {
+      'direct main' => DependencyType.directMain,
+      'direct dev' => DependencyType.directDev,
+      _ => DependencyType.transitive,
+    };
 
 DependencySource _parseSource(String raw) => switch (raw) {
   'hosted' => DependencySource.hosted,
@@ -180,7 +181,11 @@ const _permissiveMarkers = [
   'ISC License',
   'zlib License',
 ];
-const _copyleftMarkers = ['GNU GENERAL PUBLIC LICENSE', 'GNU LESSER GENERAL PUBLIC LICENSE', 'GNU AFFERO GENERAL PUBLIC LICENSE'];
+const _copyleftMarkers = [
+  'GNU GENERAL PUBLIC LICENSE',
+  'GNU LESSER GENERAL PUBLIC LICENSE',
+  'GNU AFFERO GENERAL PUBLIC LICENSE',
+];
 
 /// Classifies a `LICENSE` file's raw text by matching well-known license
 /// header text — case-sensitive on purpose (a license file's own actual
@@ -241,7 +246,12 @@ class SbomSuppression {
   final int expiresAtMs;
 }
 
-enum SbomIssueKind { unknownLicense, copyleftLicense, vulnerability, unpinnedConstraint }
+enum SbomIssueKind {
+  unknownLicense,
+  copyleftLicense,
+  vulnerability,
+  unpinnedConstraint,
+}
 
 class SbomIssue {
   const SbomIssue({
@@ -285,29 +295,35 @@ List<SbomIssue> auditDependencies({
   for (final entry in entries) {
     if (entry.source != DependencySource.hosted) continue;
     final category = licenseByPackage[entry.name] ?? LicenseCategory.unknown;
-    if (category == LicenseCategory.copyleft && !suppressed(entry.name, SbomIssueKind.copyleftLicense)) {
+    if (category == LicenseCategory.copyleft &&
+        !suppressed(entry.name, SbomIssueKind.copyleftLicense)) {
       issues.add(
         SbomIssue(
           package: entry.name,
           kind: SbomIssueKind.copyleftLicense,
           severity: AdvisorySeverity.high,
-          detail: 'license copyleft (GPL/LGPL/AGPL họ) — cần review pháp lý trước khi publish',
+          detail:
+              'license copyleft (GPL/LGPL/AGPL họ) — cần review pháp lý trước khi publish',
         ),
       );
-    } else if (category == LicenseCategory.unknown && !suppressed(entry.name, SbomIssueKind.unknownLicense)) {
+    } else if (category == LicenseCategory.unknown &&
+        !suppressed(entry.name, SbomIssueKind.unknownLicense)) {
       issues.add(
         SbomIssue(
           package: entry.name,
           kind: SbomIssueKind.unknownLicense,
           severity: AdvisorySeverity.low,
-          detail: 'không xác định được license (thiếu LICENSE file hoặc không khớp header đã biết)',
+          detail:
+              'không xác định được license (thiếu LICENSE file hoặc không khớp header đã biết)',
         ),
       );
     }
   }
 
   for (final advisory in advisories) {
-    final match = entries.any((e) => e.name == advisory.package && e.version == advisory.version);
+    final match = entries.any(
+      (e) => e.name == advisory.package && e.version == advisory.version,
+    );
     if (match && !suppressed(advisory.package, SbomIssueKind.vulnerability)) {
       issues.add(
         SbomIssue(
@@ -327,7 +343,8 @@ List<SbomIssue> auditDependencies({
           package: package,
           kind: SbomIssueKind.unpinnedConstraint,
           severity: AdvisorySeverity.medium,
-          detail: 'pubspec.yaml không giới hạn version (any) — có thể resolve bất kỳ bản nào kể cả bản hỏng/độc hại',
+          detail:
+              'pubspec.yaml không giới hạn version (any) — có thể resolve bất kỳ bản nào kể cả bản hỏng/độc hại',
         ),
       );
     }

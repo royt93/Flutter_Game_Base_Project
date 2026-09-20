@@ -10,7 +10,10 @@ import 'package:flutter/foundation.dart';
 /// rewound by a system-clock change, so it can't get stuck dropping every
 /// call indefinitely the way a wall-clock diff would if the clock jumped
 /// backward mid-session.
-VoidCallback throttled(VoidCallback fn, {Duration window = const Duration(milliseconds: 600)}) {
+VoidCallback throttled(
+  VoidCallback fn, {
+  Duration window = const Duration(milliseconds: 600),
+}) {
   final stopwatch = Stopwatch();
   Duration? lastRunAt;
   return () {

@@ -66,38 +66,38 @@ void main() {
         // Sau warm-up (~lifetimeFrames đầu), pool chỉ tạo thêm object khi
         // thật sự cần — tổng allocation dừng lại gần working set, không
         // tăng tuyến tính theo frames như unpooled.
-        expect(pooled.totalAllocations, lessThan(unpooled.totalAllocations ~/ 10));
+        expect(
+          pooled.totalAllocations,
+          lessThan(unpooled.totalAllocations ~/ 10),
+        );
       },
     );
 
-    test(
-      'capacity NHỎ HƠN working set (spawnPerFrame * lifetimeFrames): '
-      'không tái sử dụng được — đúng hành vi ObjectPool, không phải bug',
-      () {
-        const frames = 600;
-        const spawnPerFrame = 20;
-        const lifetimeFrames = 30; // working set = 600
+    test('capacity NHỎ HƠN working set (spawnPerFrame * lifetimeFrames): '
+        'không tái sử dụng được — đúng hành vi ObjectPool, không phải bug', () {
+      const frames = 600;
+      const spawnPerFrame = 20;
+      const lifetimeFrames = 30; // working set = 600
 
-        final pooled = runPooled(
-          frames: frames,
-          spawnPerFrame: spawnPerFrame,
-          lifetimeFrames: lifetimeFrames,
-          capacity: 200, // < working set 600
-        );
-        final unpooled = runUnpooled(
-          frames: frames,
-          spawnPerFrame: spawnPerFrame,
-          lifetimeFrames: lifetimeFrames,
-        );
+      final pooled = runPooled(
+        frames: frames,
+        spawnPerFrame: spawnPerFrame,
+        lifetimeFrames: lifetimeFrames,
+        capacity: 200, // < working set 600
+      );
+      final unpooled = runUnpooled(
+        frames: frames,
+        spawnPerFrame: spawnPerFrame,
+        lifetimeFrames: lifetimeFrames,
+      );
 
-        // Capacity đếm cả free lẫn active — khi số particle đang sống đồng
-        // thời đã vượt capacity, mọi release() đều rơi vào nhánh dispose
-        // thay vì giữ lại, nên pool không có gì để tái sử dụng và khớp
-        // đúng y hệt unpooled. Test này khoá lại hành vi đó để tránh
-        // tưởng nhầm là bug nếu ai đó chọn capacity quá nhỏ.
-        expect(pooled.totalAllocations, unpooled.totalAllocations);
-      },
-    );
+      // Capacity đếm cả free lẫn active — khi số particle đang sống đồng
+      // thời đã vượt capacity, mọi release() đều rơi vào nhánh dispose
+      // thay vì giữ lại, nên pool không có gì để tái sử dụng và khớp
+      // đúng y hệt unpooled. Test này khoá lại hành vi đó để tránh
+      // tưởng nhầm là bug nếu ai đó chọn capacity quá nhỏ.
+      expect(pooled.totalAllocations, unpooled.totalAllocations);
+    });
 
     test('capacity <= 0: ObjectPool tự validate, throw AssertionError', () {
       expect(
@@ -125,7 +125,11 @@ void main() {
           '--capacity=150', // > working set (10*10=100): benefit thật sự hiện ra
         ]);
 
-        expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+        expect(
+          result.exitCode,
+          0,
+          reason: '${result.stdout}\n${result.stderr}',
+        );
         final output = result.stdout as String;
         expect(output, contains('pooled:'));
         expect(output, contains('unpooled:'));

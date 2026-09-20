@@ -40,9 +40,15 @@ void main() {
   group('buildExport', () {
     test('slotId không tồn tại -> SdkFailure validation', () async {
       await boot();
-      final export = DisasterRecoverySaveExport(storage: storage, slotManager: slotManager);
+      final export = DisasterRecoverySaveExport(
+        storage: storage,
+        slotManager: slotManager,
+      );
 
-      final result = export.buildExport(slotIds: ['slot_999'], appVersion: '1.0');
+      final result = export.buildExport(
+        slotIds: ['slot_999'],
+        appVersion: '1.0',
+      );
 
       expect(result, isA<SdkFailure<Map<String, Object?>>>());
       expect((result as SdkFailure).kind, SdkErrorKind.validation);
@@ -53,7 +59,10 @@ void main() {
       final slot = slotManager.createSlot('Alice');
       await storage.setString(slotManager.keyFor(slot.id, 'coins'), '100');
 
-      final export = DisasterRecoverySaveExport(storage: storage, slotManager: slotManager);
+      final export = DisasterRecoverySaveExport(
+        storage: storage,
+        slotManager: slotManager,
+      );
       final result = export.buildExport(slotIds: [slot.id], appVersion: '1.0');
 
       expect(result, isA<SdkSuccess<Map<String, Object?>>>());
@@ -64,21 +73,30 @@ void main() {
       expect(data[slotManager.keyFor(slot.id, 'coins')], '100');
     });
 
-    test('vượt maxBytes -> SdkFailure validation, không export 1 phần', () async {
-      await boot();
-      final slot = slotManager.createSlot('Alice');
-      await storage.setString(slotManager.keyFor(slot.id, 'blob'), 'x' * 1000);
+    test(
+      'vượt maxBytes -> SdkFailure validation, không export 1 phần',
+      () async {
+        await boot();
+        final slot = slotManager.createSlot('Alice');
+        await storage.setString(
+          slotManager.keyFor(slot.id, 'blob'),
+          'x' * 1000,
+        );
 
-      final export = DisasterRecoverySaveExport(
-        storage: storage,
-        slotManager: slotManager,
-        maxBytes: 50,
-      );
-      final result = export.buildExport(slotIds: [slot.id], appVersion: '1.0');
+        final export = DisasterRecoverySaveExport(
+          storage: storage,
+          slotManager: slotManager,
+          maxBytes: 50,
+        );
+        final result = export.buildExport(
+          slotIds: [slot.id],
+          appVersion: '1.0',
+        );
 
-      expect(result, isA<SdkFailure<Map<String, Object?>>>());
-      expect((result as SdkFailure).kind, SdkErrorKind.validation);
-    });
+        expect(result, isA<SdkFailure<Map<String, Object?>>>());
+        expect((result as SdkFailure).kind, SdkErrorKind.validation);
+      },
+    );
   });
 
   group('sign + previewRestore: round trip và validate không mutate storage', () {
@@ -87,8 +105,14 @@ void main() {
       final slot = slotManager.createSlot('Alice');
       await storage.setString(slotManager.keyFor(slot.id, 'coins'), '100');
 
-      final export = DisasterRecoverySaveExport(storage: storage, slotManager: slotManager);
-      final built = (export.buildExport(slotIds: [slot.id], appVersion: '1.0') as SdkSuccess).value;
+      final export = DisasterRecoverySaveExport(
+        storage: storage,
+        slotManager: slotManager,
+      );
+      final built =
+          (export.buildExport(slotIds: [slot.id], appVersion: '1.0')
+                  as SdkSuccess)
+              .value;
       final signed = export.sign(built, 'secret');
 
       final preview = export.previewRestore(signed, 'secret');
@@ -100,8 +124,13 @@ void main() {
 
     test('sai secret -> SdkFailure validation, không throw ra ngoài', () async {
       await boot();
-      final export = DisasterRecoverySaveExport(storage: storage, slotManager: slotManager);
-      final built = (export.buildExport(slotIds: [], appVersion: '1.0') as SdkSuccess).value;
+      final export = DisasterRecoverySaveExport(
+        storage: storage,
+        slotManager: slotManager,
+      );
+      final built =
+          (export.buildExport(slotIds: [], appVersion: '1.0') as SdkSuccess)
+              .value;
       final signed = export.sign(built, 'right-secret');
 
       final result = export.previewRestore(signed, 'wrong-secret');
@@ -109,36 +138,56 @@ void main() {
       expect((result as SdkFailure).kind, SdkErrorKind.validation);
     });
 
-    test('bundle bị tamper sau khi ký -> SdkFailure validation (checksum sai)', () async {
-      await boot();
-      final slot = slotManager.createSlot('Alice');
-      final export = DisasterRecoverySaveExport(storage: storage, slotManager: slotManager);
-      final built = (export.buildExport(slotIds: [slot.id], appVersion: '1.0') as SdkSuccess).value;
-      final signed = Map<String, Object?>.from(export.sign(built, 'secret'));
-      signed['appVersion'] = '9.9.9-tampered';
+    test(
+      'bundle bị tamper sau khi ký -> SdkFailure validation (checksum sai)',
+      () async {
+        await boot();
+        final slot = slotManager.createSlot('Alice');
+        final export = DisasterRecoverySaveExport(
+          storage: storage,
+          slotManager: slotManager,
+        );
+        final built =
+            (export.buildExport(slotIds: [slot.id], appVersion: '1.0')
+                    as SdkSuccess)
+                .value;
+        final signed = Map<String, Object?>.from(export.sign(built, 'secret'));
+        signed['appVersion'] = '9.9.9-tampered';
 
-      final result = export.previewRestore(signed, 'secret');
-      expect(result, isA<SdkFailure<RestorePreview>>());
-    });
+        final result = export.previewRestore(signed, 'secret');
+        expect(result, isA<SdkFailure<RestorePreview>>());
+      },
+    );
 
-    test('schemaVersion tương lai (chưa hỗ trợ) -> SdkFailure validation', () async {
-      await boot();
-      final export = DisasterRecoverySaveExport(storage: storage, slotManager: slotManager);
-      final built = Map<String, Object?>.from(
-        (export.buildExport(slotIds: [], appVersion: '1.0') as SdkSuccess).value,
-      );
-      built['schemaVersion'] = 999;
-      final signed = export.sign(built, 'secret');
+    test(
+      'schemaVersion tương lai (chưa hỗ trợ) -> SdkFailure validation',
+      () async {
+        await boot();
+        final export = DisasterRecoverySaveExport(
+          storage: storage,
+          slotManager: slotManager,
+        );
+        final built = Map<String, Object?>.from(
+          (export.buildExport(slotIds: [], appVersion: '1.0') as SdkSuccess)
+              .value,
+        );
+        built['schemaVersion'] = 999;
+        final signed = export.sign(built, 'secret');
 
-      final result = export.previewRestore(signed, 'secret');
-      expect(result, isA<SdkFailure<RestorePreview>>());
-    });
+        final result = export.previewRestore(signed, 'secret');
+        expect(result, isA<SdkFailure<RestorePreview>>());
+      },
+    );
 
     test('"slots" thiếu hoặc sai type -> SdkFailure validation', () async {
       await boot();
-      final export = DisasterRecoverySaveExport(storage: storage, slotManager: slotManager);
+      final export = DisasterRecoverySaveExport(
+        storage: storage,
+        slotManager: slotManager,
+      );
       final built = Map<String, Object?>.from(
-        (export.buildExport(slotIds: [], appVersion: '1.0') as SdkSuccess).value,
+        (export.buildExport(slotIds: [], appVersion: '1.0') as SdkSuccess)
+            .value,
       );
       built['slots'] = 'not a list';
       final signed = export.sign(built, 'secret');
@@ -154,8 +203,14 @@ void main() {
         final slot = slotManager.createSlot('Alice');
         await storage.setString(slotManager.keyFor(slot.id, 'coins'), '100');
 
-        final export = DisasterRecoverySaveExport(storage: storage, slotManager: slotManager);
-        final built = (export.buildExport(slotIds: [slot.id], appVersion: '1.0') as SdkSuccess).value;
+        final export = DisasterRecoverySaveExport(
+          storage: storage,
+          slotManager: slotManager,
+        );
+        final built =
+            (export.buildExport(slotIds: [slot.id], appVersion: '1.0')
+                    as SdkSuccess)
+                .value;
         final signed = export.sign(built, 'secret');
 
         // Đổi coins thành giá trị KHÁC sau khi export, rồi preview lại
@@ -177,14 +232,21 @@ void main() {
       final slot = slotManager.createSlot('Alice');
       await storage.setString(slotManager.keyFor(slot.id, 'coins'), '100');
 
-      final export = DisasterRecoverySaveExport(storage: storage, slotManager: slotManager);
-      final built = (export.buildExport(slotIds: [slot.id], appVersion: '1.0') as SdkSuccess).value;
+      final export = DisasterRecoverySaveExport(
+        storage: storage,
+        slotManager: slotManager,
+      );
+      final built =
+          (export.buildExport(slotIds: [slot.id], appVersion: '1.0')
+                  as SdkSuccess)
+              .value;
       final signed = export.sign(built, 'secret');
 
       // Mô phỏng mất dữ liệu cục bộ.
       await storage.setString(slotManager.keyFor(slot.id, 'coins'), '0');
 
-      final preview = (export.previewRestore(signed, 'secret') as SdkSuccess).value;
+      final preview =
+          (export.previewRestore(signed, 'secret') as SdkSuccess).value;
       final result = await export.applyRestore(preview);
 
       expect(result, isA<SdkSuccess<void>>());
@@ -194,9 +256,17 @@ void main() {
     test('ghi đúng recoveryLog khi thành công', () async {
       await boot();
       final slot = slotManager.createSlot('Alice');
-      final export = DisasterRecoverySaveExport(storage: storage, slotManager: slotManager);
-      final built = (export.buildExport(slotIds: [slot.id], appVersion: '1.0') as SdkSuccess).value;
-      final preview = (export.previewRestore(export.sign(built, 's'), 's') as SdkSuccess).value;
+      final export = DisasterRecoverySaveExport(
+        storage: storage,
+        slotManager: slotManager,
+      );
+      final built =
+          (export.buildExport(slotIds: [slot.id], appVersion: '1.0')
+                  as SdkSuccess)
+              .value;
+      final preview =
+          (export.previewRestore(export.sign(built, 's'), 's') as SdkSuccess)
+              .value;
 
       await export.applyRestore(preview);
 
@@ -218,39 +288,64 @@ void main() {
         final manager = SaveSlotManager();
         final slotA = manager.createSlot('Alice');
         final slotB = manager.createSlot('Bob');
-        await slotManagerStorage.setString(manager.keyFor(slotA.id, 'coins'), '111');
-        await slotManagerStorage.setString(manager.keyFor(slotB.id, 'coins'), '222');
+        await slotManagerStorage.setString(
+          manager.keyFor(slotA.id, 'coins'),
+          '111',
+        );
+        await slotManagerStorage.setString(
+          manager.keyFor(slotB.id, 'coins'),
+          '222',
+        );
 
         final exportBuilder = DisasterRecoverySaveExport(
           storage: slotManagerStorage,
           slotManager: manager,
         );
-        final built = (exportBuilder.buildExport(
-          slotIds: [slotA.id, slotB.id],
-          appVersion: '1.0',
-        ) as SdkSuccess).value;
+        final built =
+            (exportBuilder.buildExport(
+                      slotIds: [slotA.id, slotB.id],
+                      appVersion: '1.0',
+                    )
+                    as SdkSuccess)
+                .value;
         final signed = exportBuilder.sign(built, 's');
 
         // Mô phỏng save cục bộ đã đổi (khác bundle) trước khi restore.
-        await slotManagerStorage.setString(manager.keyFor(slotA.id, 'coins'), '999');
-        await slotManagerStorage.setString(manager.keyFor(slotB.id, 'coins'), '888');
+        await slotManagerStorage.setString(
+          manager.keyFor(slotA.id, 'coins'),
+          '999',
+        );
+        await slotManagerStorage.setString(
+          manager.keyFor(slotB.id, 'coins'),
+          '888',
+        );
 
         // Dùng storage THROW đúng lúc restore slot B để mô phỏng crash.
-        final throwingStorage = _ThrowingStorageService(prefs, manager.keyFor(slotB.id, ''));
+        final throwingStorage = _ThrowingStorageService(
+          prefs,
+          manager.keyFor(slotB.id, ''),
+        );
         final crashExport = DisasterRecoverySaveExport(
           storage: throwingStorage,
           slotManager: manager,
         );
-        final preview = (crashExport.previewRestore(signed, 's') as SdkSuccess).value;
+        final preview =
+            (crashExport.previewRestore(signed, 's') as SdkSuccess).value;
 
         final result = await crashExport.applyRestore(preview);
 
         expect(result, isA<SdkFailure<void>>());
         // Slot A restore trước B trong list -> đã áp dụng thành công.
-        expect(throwingStorage.getString(manager.keyFor(slotA.id, 'coins')), '111');
+        expect(
+          throwingStorage.getString(manager.keyFor(slotA.id, 'coins')),
+          '111',
+        );
         // Slot B thất bại giữa chừng -> giữ nguyên giá trị CŨ (888), không
         // phải giá trị mới (222) và không phải trạng thái dở dang nào khác.
-        expect(throwingStorage.getString(manager.keyFor(slotB.id, 'coins')), '888');
+        expect(
+          throwingStorage.getString(manager.keyFor(slotB.id, 'coins')),
+          '888',
+        );
 
         expect(crashExport.recoveryLog, hasLength(2));
         expect(crashExport.recoveryLog[0].succeeded, isTrue);
@@ -260,17 +355,28 @@ void main() {
       },
     );
 
-    test('recoveryLog cộng dồn qua nhiều lần applyRestore, không reset', () async {
-      await boot();
-      final slot = slotManager.createSlot('Alice');
-      final export = DisasterRecoverySaveExport(storage: storage, slotManager: slotManager);
-      final built = (export.buildExport(slotIds: [slot.id], appVersion: '1.0') as SdkSuccess).value;
-      final preview = (export.previewRestore(export.sign(built, 's'), 's') as SdkSuccess).value;
+    test(
+      'recoveryLog cộng dồn qua nhiều lần applyRestore, không reset',
+      () async {
+        await boot();
+        final slot = slotManager.createSlot('Alice');
+        final export = DisasterRecoverySaveExport(
+          storage: storage,
+          slotManager: slotManager,
+        );
+        final built =
+            (export.buildExport(slotIds: [slot.id], appVersion: '1.0')
+                    as SdkSuccess)
+                .value;
+        final preview =
+            (export.previewRestore(export.sign(built, 's'), 's') as SdkSuccess)
+                .value;
 
-      await export.applyRestore(preview);
-      await export.applyRestore(preview);
+        await export.applyRestore(preview);
+        await export.applyRestore(preview);
 
-      expect(export.recoveryLog, hasLength(2));
-    });
+        expect(export.recoveryLog, hasLength(2));
+      },
+    );
   });
 }

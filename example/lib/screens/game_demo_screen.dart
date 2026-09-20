@@ -96,7 +96,10 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                       heroTag: 'info',
                       onPressed: () => setState(() => _showInfo = true),
                       backgroundColor: NeonTheme.purple,
-                      child: const Icon(Icons.info_outline, color: Colors.white),
+                      child: const Icon(
+                        Icons.info_outline,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),

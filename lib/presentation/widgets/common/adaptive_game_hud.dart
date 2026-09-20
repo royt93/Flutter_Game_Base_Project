@@ -3,14 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 
 /// Named regions [AdaptiveGameHud] arranges HUD content into (FEAT-52).
-enum HudSlot {
-  topStart,
-  topCenter,
-  topEnd,
-  bottom,
-  side,
-  overlay,
-}
+enum HudSlot { topStart, topCenter, topEnd, bottom, side, overlay }
 
 /// Coarse layout mode [AdaptiveGameHud] switches between — [compact] hides
 /// [HudSlot.side] (no room for it), [expanded] shows every slot. Driven by

@@ -84,7 +84,8 @@ void main() {
     'BUG: tier=low ngay lúc mount (ticker chưa từng tạo) → sau đó phục hồi '
     'high vẫn phải chạy ticker (không được kẹt tắt vĩnh viễn)',
     (tester) async {
-      final service = PerformanceTierService()..tier.value = PerformanceTier.low;
+      final service = PerformanceTierService()
+        ..tier.value = PerformanceTier.low;
       Get.put(service);
 
       await tester.pumpWidget(
@@ -101,30 +102,29 @@ void main() {
     },
   );
 
-  testWidgets(
-    'Reduce Motion vẫn thắng dù PerformanceTierService báo high',
-    (tester) async {
-      final service = PerformanceTierService();
-      Get.put(service);
+  testWidgets('Reduce Motion vẫn thắng dù PerformanceTierService báo high', (
+    tester,
+  ) async {
+    final service = PerformanceTierService();
+    Get.put(service);
 
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(disableAnimations: true),
-          child: MaterialApp(home: AuroraBgLayer(color: NeonTheme.indigo)),
-        ),
-      );
-      await tester.pump();
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(disableAnimations: true),
+        child: MaterialApp(home: AuroraBgLayer(color: NeonTheme.indigo)),
+      ),
+    );
+    await tester.pump();
 
-      expect(SchedulerBinding.instance.transientCallbackCount, 0);
+    expect(SchedulerBinding.instance.transientCallbackCount, 0);
 
-      // Đổi tier khi Reduce Motion đang bật không được bật lại ticker.
-      service.tier.value = PerformanceTier.low;
-      await tester.pump();
-      service.tier.value = PerformanceTier.high;
-      await tester.pump();
+    // Đổi tier khi Reduce Motion đang bật không được bật lại ticker.
+    service.tier.value = PerformanceTier.low;
+    await tester.pump();
+    service.tier.value = PerformanceTier.high;
+    await tester.pump();
 
-      expect(SchedulerBinding.instance.transientCallbackCount, 0);
-      expect(tester.takeException(), isNull);
-    },
-  );
+    expect(SchedulerBinding.instance.transientCallbackCount, 0);
+    expect(tester.takeException(), isNull);
+  });
 }

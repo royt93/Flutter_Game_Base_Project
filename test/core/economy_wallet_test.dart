@@ -83,21 +83,24 @@ void main() {
       },
     );
 
-    test('id mới vẫn được chống trùng đúng sau restart (không mất khả năng)', () async {
-      final storage = StorageService(null);
-      final wallet = EconomyWallet(storage: storage)..onInit();
-      await wallet.earn(currency: 'coin', amount: 10, transactionId: 'a');
+    test(
+      'id mới vẫn được chống trùng đúng sau restart (không mất khả năng)',
+      () async {
+        final storage = StorageService(null);
+        final wallet = EconomyWallet(storage: storage)..onInit();
+        await wallet.earn(currency: 'coin', amount: 10, transactionId: 'a');
 
-      final restarted = EconomyWallet(storage: storage)..onInit();
-      await restarted.earn(currency: 'coin', amount: 5, transactionId: 'b');
-      expect(restarted.balanceOf('coin'), 15);
+        final restarted = EconomyWallet(storage: storage)..onInit();
+        await restarted.earn(currency: 'coin', amount: 5, transactionId: 'b');
+        expect(restarted.balanceOf('coin'), 15);
 
-      // Gọi lại 'b' (xử lý sau restart, trong CÙNG instance) vẫn phải
-      // no-op — xác nhận restart không làm hỏng luôn khả năng chống trùng
-      // cho các giao dịch MỚI xử lý sau đó.
-      await restarted.earn(currency: 'coin', amount: 5, transactionId: 'b');
-      expect(restarted.balanceOf('coin'), 15);
-    });
+        // Gọi lại 'b' (xử lý sau restart, trong CÙNG instance) vẫn phải
+        // no-op — xác nhận restart không làm hỏng luôn khả năng chống trùng
+        // cho các giao dịch MỚI xử lý sau đó.
+        await restarted.earn(currency: 'coin', amount: 5, transactionId: 'b');
+        expect(restarted.balanceOf('coin'), 15);
+      },
+    );
 
     test(
       'danh sách transaction id không phình vô hạn — vượt giới hạn thì id CŨ NHẤT bị loại, id MỚI vẫn chống trùng đúng',
@@ -113,7 +116,11 @@ void main() {
 
         // id MỚI NHẤT (tx249) vẫn phải được chống trùng đúng.
         final restarted = EconomyWallet(storage: storage)..onInit();
-        await restarted.earn(currency: 'coin', amount: 1, transactionId: 'tx249');
+        await restarted.earn(
+          currency: 'coin',
+          amount: 1,
+          transactionId: 'tx249',
+        );
         expect(restarted.balanceOf('coin'), 250); // không tăng thêm
       },
     );
@@ -152,61 +159,94 @@ void main() {
           transactionId: 'anything',
         );
         expect(result.isSuccess, isTrue);
-        expect(wallet.balanceOf('coin'), 10); // áp dụng bình thường, không throw
+        expect(
+          wallet.balanceOf('coin'),
+          10,
+        ); // áp dụng bình thường, không throw
       },
     );
 
-    test('không phá hành vi atomic/idempotent hiện có trong cùng 1 instance', () async {
-      final wallet = EconomyWallet(storage: StorageService(null));
-      await wallet.earn(currency: 'coin', amount: 10, transactionId: 'seed');
-      final results = await Future.wait([
-        wallet.trySpend(currency: 'coin', amount: 7, transactionId: 'a'),
-        wallet.trySpend(currency: 'coin', amount: 7, transactionId: 'b'),
-      ]);
-      expect(wallet.balanceOf('coin'), 3);
-      expect(results.where((r) => r.isSuccess).length, 1);
-    });
+    test(
+      'không phá hành vi atomic/idempotent hiện có trong cùng 1 instance',
+      () async {
+        final wallet = EconomyWallet(storage: StorageService(null));
+        await wallet.earn(currency: 'coin', amount: 10, transactionId: 'seed');
+        final results = await Future.wait([
+          wallet.trySpend(currency: 'coin', amount: 7, transactionId: 'a'),
+          wallet.trySpend(currency: 'coin', amount: 7, transactionId: 'b'),
+        ]);
+        expect(wallet.balanceOf('coin'), 3);
+        expect(results.where((r) => r.isSuccess).length, 1);
+      },
+    );
   });
 
   group('ENH-73: storageKey tuỳ chỉnh', () {
-    test('không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ', () async {
-      final storage = StorageService(null);
-      final wallet = EconomyWallet(storage: storage)..onInit();
-      await wallet.earn(currency: 'coin', amount: 5, transactionId: 'a');
+    test(
+      'không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ',
+      () async {
+        final storage = StorageService(null);
+        final wallet = EconomyWallet(storage: storage)..onInit();
+        await wallet.earn(currency: 'coin', amount: 5, transactionId: 'a');
 
-      expect(storage.getString('economy_wallet_v1'), isNotNull);
-    });
+        expect(storage.getString('economy_wallet_v1'), isNotNull);
+      },
+    );
 
-    test('2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau', () async {
-      final storage = StorageService(null);
-      final a = EconomyWallet(storage: storage, storageKey: 'wallet_a')..onInit();
-      final b = EconomyWallet(storage: storage, storageKey: 'wallet_b')..onInit();
+    test(
+      '2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau',
+      () async {
+        final storage = StorageService(null);
+        final a = EconomyWallet(storage: storage, storageKey: 'wallet_a')
+          ..onInit();
+        final b = EconomyWallet(storage: storage, storageKey: 'wallet_b')
+          ..onInit();
 
-      await a.earn(currency: 'coin', amount: 10, transactionId: 'a1');
-      await b.earn(currency: 'coin', amount: 20, transactionId: 'b1');
+        await a.earn(currency: 'coin', amount: 10, transactionId: 'a1');
+        await b.earn(currency: 'coin', amount: 20, transactionId: 'b1');
 
-      expect(a.balanceOf('coin'), 10);
-      expect(b.balanceOf('coin'), 20);
-    });
+        expect(a.balanceOf('coin'), 10);
+        expect(b.balanceOf('coin'), 20);
+      },
+    );
 
-    test('storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới cùng key đọc lại đúng)', () async {
-      final storage = StorageService(null);
-      final wallet = EconomyWallet(storage: storage, storageKey: 'wallet_custom')..onInit();
-      await wallet.earn(currency: 'coin', amount: 7, transactionId: 'a');
+    test(
+      'storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới cùng key đọc lại đúng)',
+      () async {
+        final storage = StorageService(null);
+        final wallet = EconomyWallet(
+          storage: storage,
+          storageKey: 'wallet_custom',
+        )..onInit();
+        await wallet.earn(currency: 'coin', amount: 7, transactionId: 'a');
 
-      final restarted = EconomyWallet(storage: storage, storageKey: 'wallet_custom')..onInit();
-      expect(restarted.balanceOf('coin'), 7);
-    });
+        final restarted = EconomyWallet(
+          storage: storage,
+          storageKey: 'wallet_custom',
+        )..onInit();
+        expect(restarted.balanceOf('coin'), 7);
+      },
+    );
 
-    test('không đổi hành vi earn/trySpend/balanceOf hiện có khi dùng storageKey tuỳ chỉnh', () async {
-      final wallet = EconomyWallet(storage: StorageService(null), storageKey: 'k')..onInit();
+    test(
+      'không đổi hành vi earn/trySpend/balanceOf hiện có khi dùng storageKey tuỳ chỉnh',
+      () async {
+        final wallet = EconomyWallet(
+          storage: StorageService(null),
+          storageKey: 'k',
+        )..onInit();
 
-      await wallet.earn(currency: 'coin', amount: 10, transactionId: 'a');
-      final spend = await wallet.trySpend(currency: 'coin', amount: 4, transactionId: 'b');
+        await wallet.earn(currency: 'coin', amount: 10, transactionId: 'a');
+        final spend = await wallet.trySpend(
+          currency: 'coin',
+          amount: 4,
+          transactionId: 'b',
+        );
 
-      expect(spend.isSuccess, isTrue);
-      expect(wallet.balanceOf('coin'), 6);
-    });
+        expect(spend.isSuccess, isTrue);
+        expect(wallet.balanceOf('coin'), 6);
+      },
+    );
   });
 
   testWidgets('wallet balance renders through animated CurrencyCounter', (

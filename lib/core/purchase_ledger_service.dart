@@ -55,17 +55,18 @@ class PurchaseLedgerService extends GetxService {
       ? Get.find<PurchaseLedgerService>()
       : null;
 
-  VersionedJsonStore<_LedgerState> get _store => VersionedJsonStore<_LedgerState>(
-    storage: StorageService.to,
-    key: _storageKey,
-    schemaVersion: 1,
-    toJson: (value) => {
-      'consumables': value.consumables,
-      'permanents': value.permanents.toList(),
-    },
-    fromJson: _parseState,
-    migrate: (fromVersion, json) => json,
-  );
+  VersionedJsonStore<_LedgerState> get _store =>
+      VersionedJsonStore<_LedgerState>(
+        storage: StorageService.to,
+        key: _storageKey,
+        schemaVersion: 1,
+        toJson: (value) => {
+          'consumables': value.consumables,
+          'permanents': value.permanents.toList(),
+        },
+        fromJson: _parseState,
+        migrate: (fromVersion, json) => json,
+      );
 
   static _LedgerState _parseState(Map<String, Object?> json) {
     final consumablesRaw = json['consumables'];

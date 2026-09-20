@@ -63,41 +63,35 @@ void main() {
       );
     });
 
-    test(
-      'BUG-26: change() với locale không nằm trong supported → '
-      'ArgumentError, current/storage giữ nguyên',
-      () async {
-        final service = LocaleService(store);
-        final before = service.current.value;
+    test('BUG-26: change() với locale không nằm trong supported → '
+        'ArgumentError, current/storage giữ nguyên', () async {
+      final service = LocaleService(store);
+      final before = service.current.value;
 
-        await expectLater(
-          service.change(const Locale('xx')),
-          throwsArgumentError,
-        );
+      await expectLater(
+        service.change(const Locale('xx')),
+        throwsArgumentError,
+      );
 
-        expect(service.current.value, before);
-        expect(store.getString(StorageKeys.localeCode), isNull);
-      },
-    );
+      expect(service.current.value, before);
+      expect(store.getString(StorageKeys.localeCode), isNull);
+    });
 
-    test(
-      'BUG-26: change() với locale cùng languageCode đã supported nhưng '
-      'khác country code → được chấp nhận, chuẩn hoá về đúng entry trong '
-      'AppTranslations.supported',
-      () async {
-        final service = LocaleService(store);
-        final supportedEn = AppTranslations.supported.firstWhere(
-          (l) => l.languageCode == 'en',
-        );
+    test('BUG-26: change() với locale cùng languageCode đã supported nhưng '
+        'khác country code → được chấp nhận, chuẩn hoá về đúng entry trong '
+        'AppTranslations.supported', () async {
+      final service = LocaleService(store);
+      final supportedEn = AppTranslations.supported.firstWhere(
+        (l) => l.languageCode == 'en',
+      );
 
-        await service.change(const Locale('en', 'GB'));
+      await service.change(const Locale('en', 'GB'));
 
-        expect(service.current.value, supportedEn);
-        expect(
-          store.getString(StorageKeys.localeCode),
-          AppTranslations.codeOf(supportedEn),
-        );
-      },
-    );
+      expect(service.current.value, supportedEn);
+      expect(
+        store.getString(StorageKeys.localeCode),
+        AppTranslations.codeOf(supportedEn),
+      );
+    });
   });
 }

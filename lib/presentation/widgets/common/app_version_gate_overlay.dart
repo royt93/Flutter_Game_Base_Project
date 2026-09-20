@@ -94,10 +94,7 @@ class _AppVersionGateOverlayState extends State<AppVersionGateOverlay> {
         _dismissSoft();
       },
       child: Stack(
-        children: [
-          widget.child,
-          if (showOverlay) _buildOverlay(context),
-        ],
+        children: [widget.child, if (showOverlay) _buildOverlay(context)],
       ),
     );
   }
@@ -124,7 +121,13 @@ class _AppVersionGateOverlayState extends State<AppVersionGateOverlay> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                  ),
+                ),
                 const SizedBox(height: NeonTheme.s8),
                 Text(message),
                 if (_launchFailed) ...[

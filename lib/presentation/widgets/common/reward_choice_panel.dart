@@ -87,8 +87,9 @@ class _RewardChoicePanelState extends State<RewardChoicePanel> {
   final _selected = <String>{};
   Set<String>? _justClaimed;
 
-  Set<String> get _effectiveClaimed =>
-      widget.claimedIds.isNotEmpty ? widget.claimedIds : (_justClaimed ?? const {});
+  Set<String> get _effectiveClaimed => widget.claimedIds.isNotEmpty
+      ? widget.claimedIds
+      : (_justClaimed ?? const {});
 
   bool get _isClaimed => _effectiveClaimed.isNotEmpty;
 
@@ -123,8 +124,7 @@ class _RewardChoicePanelState extends State<RewardChoicePanel> {
         message: 'No rewards to choose from.',
       );
     }
-    final canConfirm =
-        !_isClaimed && _selected.length >= widget.minSelectable;
+    final canConfirm = !_isClaimed && _selected.length >= widget.minSelectable;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -225,12 +225,18 @@ class _OptionCard extends StatelessWidget {
                         option.lines
                             .map((l) => '+${l.amount} ${l.currency}')
                             .join(', '),
-                        style: TextStyle(color: NeonTheme.inkSoft, fontSize: 12),
+                        style: TextStyle(
+                          color: NeonTheme.inkSoft,
+                          fontSize: 12,
+                        ),
                       ),
                     if (locked && option.lockedReason != null)
                       Text(
                         option.lockedReason!,
-                        style: TextStyle(color: NeonTheme.inkSoft, fontSize: 12),
+                        style: TextStyle(
+                          color: NeonTheme.inkSoft,
+                          fontSize: 12,
+                        ),
                       ),
                   ],
                 ),

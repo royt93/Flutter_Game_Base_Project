@@ -91,8 +91,7 @@ class RestoreLogEntry {
   final String detail;
 
   @override
-  String toString() =>
-      '[${succeeded ? 'ok' : 'FAILED'}] $slotId: $detail';
+  String toString() => '[${succeeded ? 'ok' : 'FAILED'}] $slotId: $detail';
 }
 
 /// Multi-slot disaster-recovery export/restore, composing 3 already-
@@ -177,7 +176,8 @@ class DisasterRecoverySaveExport {
     if (size > maxBytes) {
       return SdkFailure(
         kind: SdkErrorKind.validation,
-        message: 'Export vượt size cap ($size > $maxBytes byte) — giảm số slot chọn export',
+        message:
+            'Export vượt size cap ($size > $maxBytes byte) — giảm số slot chọn export',
       );
     }
     return SdkSuccess(bundle);

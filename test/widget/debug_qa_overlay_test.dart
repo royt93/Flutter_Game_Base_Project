@@ -135,9 +135,7 @@ void main() {
 
         expect(find.byType(CommonButton), findsOneWidget);
         expect(find.text('Preview'), findsWidgets);
-        final button = tester.widget<CommonButton>(
-          find.byType(CommonButton),
-        );
+        final button = tester.widget<CommonButton>(find.byType(CommonButton));
         expect(button.variant, CommonButtonVariant.primary);
         expect(button.color, NeonTheme.cyan);
         expect(tester.takeException(), isNull);
@@ -187,7 +185,9 @@ void main() {
       await tester.pump();
 
       await tester.tap(
-        find.byKey(Key('debugQaPlaygroundColor_${NeonTheme.magenta.toARGB32()}')),
+        find.byKey(
+          Key('debugQaPlaygroundColor_${NeonTheme.magenta.toARGB32()}'),
+        ),
       );
       await tester.pump();
 

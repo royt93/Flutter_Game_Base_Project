@@ -225,28 +225,34 @@ void main() {
     });
 
     group('IDEA-55: eraseAll', () {
-      test('xoá sạch mọi key hiện có — exportAll() trả về map rỗng sau đó', () async {
-        await store.setString(StorageKeys.localeCode, 'vi');
-        await store.setBool(StorageKeys.audioMuted, true);
-        await store.setInt(StorageKeys.energyCount, 5);
-        expect(store.exportAll(), isNotEmpty);
+      test(
+        'xoá sạch mọi key hiện có — exportAll() trả về map rỗng sau đó',
+        () async {
+          await store.setString(StorageKeys.localeCode, 'vi');
+          await store.setBool(StorageKeys.audioMuted, true);
+          await store.setInt(StorageKeys.energyCount, 5);
+          expect(store.exportAll(), isNotEmpty);
 
-        await store.eraseAll();
+          await store.eraseAll();
 
-        expect(store.exportAll(), isEmpty);
-      });
+          expect(store.exportAll(), isEmpty);
+        },
+      );
 
-      test('sau eraseAll(), đọc lại bất kỳ key nào đều trả về mặc định, không throw', () async {
-        await store.setString(StorageKeys.localeCode, 'vi');
-        await store.setBool(StorageKeys.audioMuted, true);
-        await store.setInt(StorageKeys.energyCount, 5);
+      test(
+        'sau eraseAll(), đọc lại bất kỳ key nào đều trả về mặc định, không throw',
+        () async {
+          await store.setString(StorageKeys.localeCode, 'vi');
+          await store.setBool(StorageKeys.audioMuted, true);
+          await store.setInt(StorageKeys.energyCount, 5);
 
-        await store.eraseAll();
+          await store.eraseAll();
 
-        expect(store.getString(StorageKeys.localeCode), isNull);
-        expect(store.getBool(StorageKeys.audioMuted), false);
-        expect(store.getInt(StorageKeys.energyCount, def: 3), 3);
-      });
+          expect(store.getString(StorageKeys.localeCode), isNull);
+          expect(store.getBool(StorageKeys.audioMuted), false);
+          expect(store.getInt(StorageKeys.energyCount, def: 3), 3);
+        },
+      );
 
       test('xoá cả key đang buffer chưa flush', () async {
         await store.setIntBuffered('buffered_key', 42);
@@ -268,26 +274,35 @@ void main() {
     });
 
     group('IDEA-56: removeAllWithPrefix', () {
-      test('xoá đúng mọi key có prefix, không đụng key khác không có prefix đó', () async {
-        await store.setString('slot_a_name', 'Alice');
-        await store.setInt('slot_a_score', 100);
-        await store.setString('slot_b_name', 'Bob');
-        await store.setString('unrelated', 'keep me');
+      test(
+        'xoá đúng mọi key có prefix, không đụng key khác không có prefix đó',
+        () async {
+          await store.setString('slot_a_name', 'Alice');
+          await store.setInt('slot_a_score', 100);
+          await store.setString('slot_b_name', 'Bob');
+          await store.setString('unrelated', 'keep me');
 
-        await store.removeAllWithPrefix('slot_a_');
+          await store.removeAllWithPrefix('slot_a_');
 
-        expect(store.getString('slot_a_name'), isNull);
-        expect(store.getInt('slot_a_score', def: -1), -1);
-        expect(store.getString('slot_b_name'), 'Bob'); // slot khác không bị đụng
-        expect(store.getString('unrelated'), 'keep me');
-      });
+          expect(store.getString('slot_a_name'), isNull);
+          expect(store.getInt('slot_a_score', def: -1), -1);
+          expect(
+            store.getString('slot_b_name'),
+            'Bob',
+          ); // slot khác không bị đụng
+          expect(store.getString('unrelated'), 'keep me');
+        },
+      );
 
-      test('prefix rỗng throw ArgumentError, không âm thầm xoá sạch toàn bộ storage', () async {
-        await store.setString('k', 'v');
+      test(
+        'prefix rỗng throw ArgumentError, không âm thầm xoá sạch toàn bộ storage',
+        () async {
+          await store.setString('k', 'v');
 
-        expect(() => store.removeAllWithPrefix(''), throwsArgumentError);
-        expect(store.getString('k'), 'v'); // không bị xoá
-      });
+          expect(() => store.removeAllWithPrefix(''), throwsArgumentError);
+          expect(store.getString('k'), 'v'); // không bị xoá
+        },
+      );
 
       test('prefix không khớp key nào: no-op an toàn, không throw', () async {
         await store.setString('k', 'v');
@@ -299,16 +314,19 @@ void main() {
     });
 
     group('ENH-77: exportWithPrefix/importWithPrefix', () {
-      test('exportWithPrefix trả đúng chỉ key có prefix, không lẫn key khác', () async {
-        await store.setString('slot_a_name', 'Alice');
-        await store.setInt('slot_a_score', 100);
-        await store.setString('slot_b_name', 'Bob');
-        await store.setString('unrelated', 'keep me');
+      test(
+        'exportWithPrefix trả đúng chỉ key có prefix, không lẫn key khác',
+        () async {
+          await store.setString('slot_a_name', 'Alice');
+          await store.setInt('slot_a_score', 100);
+          await store.setString('slot_b_name', 'Bob');
+          await store.setString('unrelated', 'keep me');
 
-        final dump = store.exportWithPrefix('slot_a_');
+          final dump = store.exportWithPrefix('slot_a_');
 
-        expect(dump, {'slot_a_name': 'Alice', 'slot_a_score': 100});
-      });
+          expect(dump, {'slot_a_name': 'Alice', 'slot_a_score': 100});
+        },
+      );
 
       test('exportWithPrefix rỗng throw ArgumentError', () {
         expect(() => store.exportWithPrefix(''), throwsArgumentError);
@@ -355,19 +373,22 @@ void main() {
         },
       );
 
-      test('exportWithPrefix rồi importWithPrefix cùng prefix khôi phục đúng y hệt', () async {
-        await store.setString('slot_a_name', 'Alice');
-        await store.setInt('slot_a_score', 100);
-        final dump = store.exportWithPrefix('slot_a_');
+      test(
+        'exportWithPrefix rồi importWithPrefix cùng prefix khôi phục đúng y hệt',
+        () async {
+          await store.setString('slot_a_name', 'Alice');
+          await store.setInt('slot_a_score', 100);
+          final dump = store.exportWithPrefix('slot_a_');
 
-        await store.removeAllWithPrefix('slot_a_');
-        expect(store.getString('slot_a_name'), isNull);
+          await store.removeAllWithPrefix('slot_a_');
+          expect(store.getString('slot_a_name'), isNull);
 
-        await store.importWithPrefix('slot_a_', dump);
+          await store.importWithPrefix('slot_a_', dump);
 
-        expect(store.getString('slot_a_name'), 'Alice');
-        expect(store.getInt('slot_a_score', def: -1), 100);
-      });
+          expect(store.getString('slot_a_name'), 'Alice');
+          expect(store.getInt('slot_a_score', def: -1), 100);
+        },
+      );
 
       test(
         'lỗi giữa chừng (value không hỗ trợ) rollback đúng, không half-restore',

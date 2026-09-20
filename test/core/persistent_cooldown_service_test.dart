@@ -66,17 +66,20 @@ void main() {
       expect(remaining.inMilliseconds, lessThanOrEqualTo(10000));
     });
 
-    test('mô phỏng trôi qua 5s (chưa hết cooldown 10s): còn ~5s, vẫn running', () {
-      final service = PersistentCooldownService();
-      service.start('booster', const Duration(seconds: 10));
+    test(
+      'mô phỏng trôi qua 5s (chưa hết cooldown 10s): còn ~5s, vẫn running',
+      () {
+        final service = PersistentCooldownService();
+        service.start('booster', const Duration(seconds: 10));
 
-      store.setInt(StorageKeys.maxMsSeen, _realMs + 5000);
+        store.setInt(StorageKeys.maxMsSeen, _realMs + 5000);
 
-      expect(service.statusOf('booster'), CooldownStatus.running);
-      final remaining = service.remainingOf('booster');
-      expect(remaining.inMilliseconds, greaterThan(4900));
-      expect(remaining.inMilliseconds, lessThanOrEqualTo(5000));
-    });
+        expect(service.statusOf('booster'), CooldownStatus.running);
+        final remaining = service.remainingOf('booster');
+        expect(remaining.inMilliseconds, greaterThan(4900));
+        expect(remaining.inMilliseconds, lessThanOrEqualTo(5000));
+      },
+    );
 
     test('mô phỏng trôi qua đủ 10s: ready, remaining = 0', () {
       final service = PersistentCooldownService();
@@ -127,78 +130,100 @@ void main() {
   });
 
   group('PersistentCooldownService: sống qua "restart" app', () {
-    test('instance mới đọc từ cùng SharedPreferences vẫn thấy đúng state', () async {
-      final service1 = PersistentCooldownService();
-      service1.start('booster', const Duration(seconds: 10));
+    test(
+      'instance mới đọc từ cùng SharedPreferences vẫn thấy đúng state',
+      () async {
+        final service1 = PersistentCooldownService();
+        service1.start('booster', const Duration(seconds: 10));
 
-      final service2 = PersistentCooldownService();
-      expect(service2.statusOf('booster'), CooldownStatus.running);
-      final remaining = service2.remainingOf('booster');
-      expect(remaining.inMilliseconds, greaterThan(9000));
-    });
+        final service2 = PersistentCooldownService();
+        expect(service2.statusOf('booster'), CooldownStatus.running);
+        final remaining = service2.remainingOf('booster');
+        expect(remaining.inMilliseconds, greaterThan(9000));
+      },
+    );
   });
 
   group('PersistentCooldownService: corrupt save không mở khóa sớm', () {
-    test('JSON hỏng hoàn toàn ở top-level: coi như rỗng, mọi key đều ready', () async {
-      await store.setString(StorageKeys.cooldownStateV1, 'not valid json {{{');
-      final service = PersistentCooldownService();
+    test(
+      'JSON hỏng hoàn toàn ở top-level: coi như rỗng, mọi key đều ready',
+      () async {
+        await store.setString(
+          StorageKeys.cooldownStateV1,
+          'not valid json {{{',
+        );
+        final service = PersistentCooldownService();
 
-      expect(service.statusOf('anything'), CooldownStatus.ready);
-      expect(() => service.start('anything', const Duration(seconds: 5)), returnsNormally);
-    });
+        expect(service.statusOf('anything'), CooldownStatus.ready);
+        expect(
+          () => service.start('anything', const Duration(seconds: 5)),
+          returnsNormally,
+        );
+      },
+    );
 
-    test('1 entry sai kiểu dữ liệu bị bỏ qua, các key hợp lệ khác không bị ảnh hưởng', () async {
-      final service = PersistentCooldownService();
-      service.start('valid', const Duration(seconds: 10));
+    test(
+      '1 entry sai kiểu dữ liệu bị bỏ qua, các key hợp lệ khác không bị ảnh hưởng',
+      () async {
+        final service = PersistentCooldownService();
+        service.start('valid', const Duration(seconds: 10));
 
-      // Cố tình chèn thêm 1 entry sai kiểu (value là String thay vì int)
-      // thẳng vào blob đã lưu, mô phỏng save bị hỏng/tay chỉnh.
-      final raw = store.getString(StorageKeys.cooldownStateV1)!;
-      final patched = '${raw.substring(0, raw.length - 1)},"corrupt":"abc"}';
-      await store.setString(StorageKeys.cooldownStateV1, patched);
+        // Cố tình chèn thêm 1 entry sai kiểu (value là String thay vì int)
+        // thẳng vào blob đã lưu, mô phỏng save bị hỏng/tay chỉnh.
+        final raw = store.getString(StorageKeys.cooldownStateV1)!;
+        final patched = '${raw.substring(0, raw.length - 1)},"corrupt":"abc"}';
+        await store.setString(StorageKeys.cooldownStateV1, patched);
 
-      final service2 = PersistentCooldownService();
-      expect(service2.statusOf('valid'), CooldownStatus.running);
-      expect(
-        service2.statusOf('corrupt'),
-        CooldownStatus.ready,
-        reason: 'entry sai kiểu bị bỏ qua, không được coi là running lẫn unlock sớm nghĩa khác',
-      );
-    });
+        final service2 = PersistentCooldownService();
+        expect(service2.statusOf('valid'), CooldownStatus.running);
+        expect(
+          service2.statusOf('corrupt'),
+          CooldownStatus.ready,
+          reason:
+              'entry sai kiểu bị bỏ qua, không được coi là running lẫn unlock sớm nghĩa khác',
+        );
+      },
+    );
   });
 
   group('PersistentCooldownService: cleanup expired entries', () {
-    test('entry đã hết hạn bị dọn khỏi storage sau lần start/cancel kế tiếp', () async {
-      final service = PersistentCooldownService();
-      service.start('expired', const Duration(seconds: 5));
-      store.setInt(StorageKeys.maxMsSeen, _realMs + 5000);
+    test(
+      'entry đã hết hạn bị dọn khỏi storage sau lần start/cancel kế tiếp',
+      () async {
+        final service = PersistentCooldownService();
+        service.start('expired', const Duration(seconds: 5));
+        store.setInt(StorageKeys.maxMsSeen, _realMs + 5000);
 
-      service.start('other', const Duration(seconds: 10));
+        service.start('other', const Duration(seconds: 10));
 
-      final raw = store.getString(StorageKeys.cooldownStateV1)!;
-      expect(raw, isNot(contains('expired')));
-      expect(raw, contains('other'));
-    });
+        final raw = store.getString(StorageKeys.cooldownStateV1)!;
+        expect(raw, isNot(contains('expired')));
+        expect(raw, contains('other'));
+      },
+    );
   });
 
   group('PersistentCooldownService: reactive revision', () {
-    test('revision tăng khi start/cancel, không tự tăng theo thời gian trôi qua', () {
-      final service = PersistentCooldownService();
-      final before = service.revision.value;
+    test(
+      'revision tăng khi start/cancel, không tự tăng theo thời gian trôi qua',
+      () {
+        final service = PersistentCooldownService();
+        final before = service.revision.value;
 
-      service.start('booster', const Duration(seconds: 10));
-      expect(service.revision.value, greaterThan(before));
+        service.start('booster', const Duration(seconds: 10));
+        expect(service.revision.value, greaterThan(before));
 
-      final afterStart = service.revision.value;
-      store.setInt(StorageKeys.maxMsSeen, _realMs + 5000);
-      expect(
-        service.revision.value,
-        afterStart,
-        reason: 'không có timer nào tự bump revision theo thời gian',
-      );
+        final afterStart = service.revision.value;
+        store.setInt(StorageKeys.maxMsSeen, _realMs + 5000);
+        expect(
+          service.revision.value,
+          afterStart,
+          reason: 'không có timer nào tự bump revision theo thời gian',
+        );
 
-      service.cancel('booster');
-      expect(service.revision.value, greaterThan(afterStart));
-    });
+        service.cancel('booster');
+        expect(service.revision.value, greaterThan(afterStart));
+      },
+    );
   });
 }

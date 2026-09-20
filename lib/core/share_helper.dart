@@ -40,7 +40,11 @@ Future<Uint8List?> captureBoardPng(
   try {
     final image = (overlayText == null || overlayText.isEmpty)
         ? board
-        : (overlayImage = await _withTextOverlay(board, overlayText, pixelRatio));
+        : (overlayImage = await _withTextOverlay(
+            board,
+            overlayText,
+            pixelRatio,
+          ));
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     return bytes?.buffer.asUint8List();
   } finally {

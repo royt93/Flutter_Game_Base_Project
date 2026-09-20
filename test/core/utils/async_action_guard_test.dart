@@ -120,12 +120,12 @@ void main() {
         final first = guard.runExclusive('k', () => blocker.future);
 
         Object? caught;
-        final second = guard
-            .runExclusive('k', () async => 2)
-            .catchError((Object e) {
-              caught = e;
-              return -1;
-            });
+        final second = guard.runExclusive('k', () async => 2).catchError((
+          Object e,
+        ) {
+          caught = e;
+          return -1;
+        });
 
         await tester.pump(const Duration(milliseconds: 60));
         await second;
@@ -172,30 +172,37 @@ void main() {
       },
     );
 
-    testWidgets('pendingCount không bị rò rỉ/sai lệch sau khi có lệnh gọi timeout', (
-      tester,
-    ) async {
-      final guard = AsyncActionGuard(
-        maxQueueWait: const Duration(milliseconds: 50),
-      );
-      final blocker = Completer<void>();
-      final first = guard.runExclusive('k', () => blocker.future);
-      expect(guard.pendingCount, 1);
+    testWidgets(
+      'pendingCount không bị rò rỉ/sai lệch sau khi có lệnh gọi timeout',
+      (tester) async {
+        final guard = AsyncActionGuard(
+          maxQueueWait: const Duration(milliseconds: 50),
+        );
+        final blocker = Completer<void>();
+        final first = guard.runExclusive('k', () => blocker.future);
+        expect(guard.pendingCount, 1);
 
-      final second = guard
-          .runExclusive('k', () async => 2)
-          .catchError((Object _) => -1);
-      expect(guard.pendingCount, 1); // second thay thế chỗ của first trong map
+        final second = guard
+            .runExclusive('k', () async => 2)
+            .catchError((Object _) => -1);
+        expect(
+          guard.pendingCount,
+          1,
+        ); // second thay thế chỗ của first trong map
 
-      await tester.pump(const Duration(milliseconds: 60));
-      await second;
-      expect(guard.pendingCount, 0); // second timeout, tự dọn dẹp, không rò rỉ
+        await tester.pump(const Duration(milliseconds: 60));
+        await second;
+        expect(
+          guard.pendingCount,
+          0,
+        ); // second timeout, tự dọn dẹp, không rò rỉ
 
-      blocker.complete();
-      await first;
-      await tester.pump();
-      expect(guard.pendingCount, 0);
-    });
+        blocker.complete();
+        await first;
+        await tester.pump();
+        expect(guard.pendingCount, 0);
+      },
+    );
 
     testWidgets(
       'maxQueueWait == null (mặc định): vẫn chờ vô thời hạn như cũ, không throw (hồi quy)',

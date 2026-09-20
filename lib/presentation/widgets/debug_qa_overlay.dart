@@ -58,8 +58,11 @@ class _DebugQaOverlayState extends State<DebugQaOverlay> {
   // overwritten by the next export or the panel closes.
   String? _replayExport;
 
-  void _startReplay() =>
-      setState(() => ReplayRecorder.maybe?.start(seed: DateTime.now().millisecondsSinceEpoch));
+  void _startReplay() => setState(
+    () => ReplayRecorder.maybe?.start(
+      seed: DateTime.now().millisecondsSinceEpoch,
+    ),
+  );
 
   void _stopReplay() => setState(() => ReplayRecorder.maybe?.stop());
 
@@ -252,18 +255,18 @@ class _Panel extends StatelessWidget {
                         child: switch (tab) {
                           0 => const _StateTab(),
                           1 => _PlaygroundTab(
-                              variant: playgroundVariant,
-                              color: playgroundColor,
-                              labelController: playgroundLabelController,
-                              onVariantChanged: onPlaygroundVariantChanged,
-                              onColorChanged: onPlaygroundColorChanged,
-                            ),
+                            variant: playgroundVariant,
+                            color: playgroundColor,
+                            labelController: playgroundLabelController,
+                            onVariantChanged: onPlaygroundVariantChanged,
+                            onColorChanged: onPlaygroundColorChanged,
+                          ),
                           2 => _ReplayTab(
-                              export: replayExport,
-                              onStart: onStartReplay,
-                              onStop: onStopReplay,
-                              onExport: onExportReplay,
-                            ),
+                            export: replayExport,
+                            onStart: onStartReplay,
+                            onStop: onStopReplay,
+                            onExport: onExportReplay,
+                          ),
                           _ => const _HealthTab(),
                         },
                       ),

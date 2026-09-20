@@ -408,31 +408,32 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('claiming: true chặn onClaim ở cả nút Claim lẫn ô ngày current', (
-      tester,
-    ) async {
-      var tapped = 0;
-      await tester.pumpWidget(
-        _wrap(
-          DailyLoginCalendarWidget(
-            currentStreakDay: 0,
-            claimedDaysInCycle: const {},
-            canClaimToday: true,
-            onClaim: () => tapped++,
-            claiming: true,
+    testWidgets(
+      'claiming: true chặn onClaim ở cả nút Claim lẫn ô ngày current',
+      (tester) async {
+        var tapped = 0;
+        await tester.pumpWidget(
+          _wrap(
+            DailyLoginCalendarWidget(
+              currentStreakDay: 0,
+              claimedDaysInCycle: const {},
+              canClaimToday: true,
+              onClaim: () => tapped++,
+              claiming: true,
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.byType(CommonButton));
-      await tester.tap(
-        find.bySemanticsLabel('Day 1, current, double tap to claim'),
-        warnIfMissed: false,
-      );
-      await tester.pump();
+        await tester.tap(find.byType(CommonButton));
+        await tester.tap(
+          find.bySemanticsLabel('Day 1, current, double tap to claim'),
+          warnIfMissed: false,
+        );
+        await tester.pump();
 
-      expect(tapped, 0);
-    });
+        expect(tapped, 0);
+      },
+    );
 
     testWidgets('claiming: false (mặc định) hành vi y hệt trước đây', (
       tester,

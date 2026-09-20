@@ -20,12 +20,15 @@ void main() {
       expect(result, isNot(contains('O]')));
     });
 
-    test('chuỗi hardcode (không qua pseudoLocalize) vẫn giữ nguyên ASCII, dễ phân biệt', () {
-      const hardcoded = 'OK';
-      final translated = pseudoLocalize('OK');
-      expect(hardcoded, isNot(equals(translated)));
-      expect(hardcoded, 'OK');
-    });
+    test(
+      'chuỗi hardcode (không qua pseudoLocalize) vẫn giữ nguyên ASCII, dễ phân biệt',
+      () {
+        const hardcoded = 'OK';
+        final translated = pseudoLocalize('OK');
+        expect(hardcoded, isNot(equals(translated)));
+        expect(hardcoded, 'OK');
+      },
+    );
 
     test('độ dài tăng ~40% (stress-test overflow)', () {
       final result = pseudoLocalize('Settings');
@@ -38,10 +41,13 @@ void main() {
       expect(result, endsWith(']]'));
     });
 
-    test('ký tự không phải vowel latin (vd tiếng Việt có dấu sẵn) giữ nguyên', () {
-      final result = pseudoLocalize('Cài đặt');
-      expect(result, contains('đ'));
-    });
+    test(
+      'ký tự không phải vowel latin (vd tiếng Việt có dấu sẵn) giữ nguyên',
+      () {
+        final result = pseudoLocalize('Cài đặt');
+        expect(result, contains('đ'));
+      },
+    );
   });
 
   group('PseudoLocaleTranslations', () {
@@ -52,37 +58,47 @@ void main() {
       expect(localeMap.keys.toSet(), base.keys.toSet());
     });
 
-    test('mọi value đều đã qua pseudoLocalize (không phải copy nguyên văn)', () {
-      const base = {'ok': 'OK', 'cancel': 'Cancel'};
-      final translations = PseudoLocaleTranslations(baseKeys: base);
-      final localeMap = translations.keys[translations.localeKey]!;
-      for (final entry in base.entries) {
-        expect(localeMap[entry.key], pseudoLocalize(entry.value));
-        expect(localeMap[entry.key], isNot(entry.value));
-      }
-    });
+    test(
+      'mọi value đều đã qua pseudoLocalize (không phải copy nguyên văn)',
+      () {
+        const base = {'ok': 'OK', 'cancel': 'Cancel'};
+        final translations = PseudoLocaleTranslations(baseKeys: base);
+        final localeMap = translations.keys[translations.localeKey]!;
+        for (final entry in base.entries) {
+          expect(localeMap[entry.key], pseudoLocalize(entry.value));
+          expect(localeMap[entry.key], isNot(entry.value));
+        }
+      },
+    );
 
     test('locale mặc định là qps_PLOC, không trùng locale thật nào', () {
       expect(PseudoLocaleTranslations.defaultLocale.languageCode, 'qps');
       expect(PseudoLocaleTranslations.defaultLocale.countryCode, 'PLOC');
     });
 
-    test('phủ toàn bộ key thật của AppTranslations (en) — không bỏ sót key production nào', () {
-      final baseKeys = AppTranslations().keys['en']!;
-      final translations = PseudoLocaleTranslations(baseKeys: baseKeys);
-      final localeMap = translations.keys[translations.localeKey]!;
-      expect(localeMap.keys.toSet(), baseKeys.keys.toSet());
-      expect(localeMap.length, baseKeys.length);
-    });
+    test(
+      'phủ toàn bộ key thật của AppTranslations (en) — không bỏ sót key production nào',
+      () {
+        final baseKeys = AppTranslations().keys['en']!;
+        final translations = PseudoLocaleTranslations(baseKeys: baseKeys);
+        final localeMap = translations.keys[translations.localeKey]!;
+        expect(localeMap.keys.toSet(), baseKeys.keys.toSet());
+        expect(localeMap.length, baseKeys.length);
+      },
+    );
 
-    test('KHÔNG nằm trong AppTranslations.supported — không rò vào danh sách locale production', () {
-      expect(
-        AppTranslations.supported.any(
-          (l) =>
-              l.languageCode == PseudoLocaleTranslations.defaultLocale.languageCode,
-        ),
-        isFalse,
-      );
-    });
+    test(
+      'KHÔNG nằm trong AppTranslations.supported — không rò vào danh sách locale production',
+      () {
+        expect(
+          AppTranslations.supported.any(
+            (l) =>
+                l.languageCode ==
+                PseudoLocaleTranslations.defaultLocale.languageCode,
+          ),
+          isFalse,
+        );
+      },
+    );
   });
 }

@@ -167,7 +167,8 @@ class CheckpointCoordinator extends GetxService {
   /// fully valid aggregate was found (no partial apply).
   SdkResult<int> restoreLatest() {
     final decoded =
-        _decode(storage.getString(_key)) ?? _decode(storage.getString('${_key}_prev'));
+        _decode(storage.getString(_key)) ??
+        _decode(storage.getString('${_key}_prev'));
     if (decoded == null) {
       return const SdkFailure(
         kind: SdkErrorKind.validation,

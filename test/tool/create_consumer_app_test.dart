@@ -59,16 +59,20 @@ void main() {
       );
     });
 
-    test('luôn kèm get/flame/shared_preferences làm direct dependency (tránh depend_on_referenced_packages)', () {
-      expect(kitDependencyBlock(), contains('get: ^4.7.3'));
-      expect(kitDependencyBlock(), contains('flame: ^1.35.1'));
-      expect(kitDependencyBlock(), contains('shared_preferences: ^2.5.5'));
-    });
+    test(
+      'luôn kèm get/flame/shared_preferences làm direct dependency (tránh depend_on_referenced_packages)',
+      () {
+        expect(kitDependencyBlock(), contains('get: ^4.7.3'));
+        expect(kitDependencyBlock(), contains('flame: ^1.35.1'));
+        expect(kitDependencyBlock(), contains('shared_preferences: ^2.5.5'));
+      },
+    );
   });
 
   group('patchPubspecWithDependency', () {
     test('chèn đúng ngay sau dòng "dependencies:" đầu tiên', () {
-      const pubspec = 'name: my_game\nversion: 1.0.0\n\ndependencies:\n  flutter:\n    sdk: flutter\n';
+      const pubspec =
+          'name: my_game\nversion: 1.0.0\n\ndependencies:\n  flutter:\n    sdk: flutter\n';
       final patched = patchPubspecWithDependency(
         pubspec,
         '  roy_casual_kit: ^0.2.0',
@@ -80,7 +84,8 @@ void main() {
 
     test('không có "dependencies:" -> throw ArgumentError', () {
       expect(
-        () => patchPubspecWithDependency('name: x\n', '  roy_casual_kit: ^0.2.0'),
+        () =>
+            patchPubspecWithDependency('name: x\n', '  roy_casual_kit: ^0.2.0'),
         throwsArgumentError,
       );
     });
@@ -101,31 +106,50 @@ android {
       final patched = patchAndroidBuildGradleForDesugaring(freshBuildGradle);
       expect(patched, contains('isCoreLibraryDesugaringEnabled = true'));
       final lines = patched.split('\n');
-      final targetIndex = lines.indexWhere((l) => l.contains('targetCompatibility'));
-      expect(lines[targetIndex + 1], contains('isCoreLibraryDesugaringEnabled = true'));
+      final targetIndex = lines.indexWhere(
+        (l) => l.contains('targetCompatibility'),
+      );
+      expect(
+        lines[targetIndex + 1],
+        contains('isCoreLibraryDesugaringEnabled = true'),
+      );
     });
 
     test('thêm dependencies block với coreLibraryDesugaring đúng version', () {
       final patched = patchAndroidBuildGradleForDesugaring(freshBuildGradle);
-      expect(patched, contains('coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'));
-    });
-
-    test('không có targetCompatibility -> throw ArgumentError, không âm thầm bỏ qua', () {
       expect(
-        () => patchAndroidBuildGradleForDesugaring('android {}\n'),
-        throwsArgumentError,
+        patched,
+        contains(
+          'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")',
+        ),
       );
     });
+
+    test(
+      'không có targetCompatibility -> throw ArgumentError, không âm thầm bỏ qua',
+      () {
+        expect(
+          () => patchAndroidBuildGradleForDesugaring('android {}\n'),
+          throwsArgumentError,
+        );
+      },
+    );
   });
 
   group('template content: sinh ra Dart hợp lệ về mặt cấu trúc cơ bản', () {
-    test('mainDartTemplate: class name PascalCase đúng từ snake_case, không còn khoảng trắng lạ', () {
-      final content = mainDartTemplate(appName: 'my_cool_game');
-      expect(content, contains('class MyCoolGameApp extends StatelessWidget'));
-      expect(content, contains('const MyCoolGameApp({super.key});'));
-      expect(content, contains('runApp(const MyCoolGameApp());'));
-      expect(content, isNot(contains('App App')));
-    });
+    test(
+      'mainDartTemplate: class name PascalCase đúng từ snake_case, không còn khoảng trắng lạ',
+      () {
+        final content = mainDartTemplate(appName: 'my_cool_game');
+        expect(
+          content,
+          contains('class MyCoolGameApp extends StatelessWidget'),
+        );
+        expect(content, contains('const MyCoolGameApp({super.key});'));
+        expect(content, contains('runApp(const MyCoolGameApp());'));
+        expect(content, isNot(contains('App App')));
+      },
+    );
 
     test('mainDartTemplate: có gọi RoyCasualKit.initialize', () {
       final content = mainDartTemplate(appName: 'a');
@@ -135,7 +159,10 @@ android {
 
     test('smokeTestTemplate: import đúng theo tên package/app truyền vào', () {
       final content = smokeTestTemplate(appName: 'my_cool_game');
-      expect(content, contains("import 'package:my_cool_game/screens/home_screen.dart';"));
+      expect(
+        content,
+        contains("import 'package:my_cool_game/screens/home_screen.dart';"),
+      );
     });
 
     test('gameDemoScreenTemplate: dùng đúng RoyGame/GameWidget của kit', () {
@@ -153,17 +180,22 @@ android {
 
   group('readTemplateVersion', () {
     test('không có marker file -> null', () {
-      expect(readTemplateVersion('/tmp/definitely_does_not_exist_${DateTime.now().microsecondsSinceEpoch}'), isNull);
+      expect(
+        readTemplateVersion(
+          '/tmp/definitely_does_not_exist_${DateTime.now().microsecondsSinceEpoch}',
+        ),
+        isNull,
+      );
     });
   });
 
   group('generate: validate trước khi đụng filesystem/process', () {
-    test('tên app không hợp lệ -> throw ArgumentError, không gọi flutter create', () async {
-      await expectLater(
-        generate(name: 'Invalid Name'),
-        throwsArgumentError,
-      );
-    });
+    test(
+      'tên app không hợp lệ -> throw ArgumentError, không gọi flutter create',
+      () async {
+        await expectLater(generate(name: 'Invalid Name'), throwsArgumentError);
+      },
+    );
 
     test('org không hợp lệ -> throw ArgumentError', () async {
       await expectLater(

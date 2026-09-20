@@ -7,8 +7,9 @@ import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/hold_to_confirm_button.dart';
 
-Widget _wrap(Widget child) =>
-    MaterialApp(home: Material(child: Center(child: child)));
+Widget _wrap(Widget child) => MaterialApp(
+  home: Material(child: Center(child: child)),
+);
 
 void main() {
   const duration = Duration(milliseconds: 600);
@@ -156,31 +157,32 @@ void main() {
     },
   );
 
-  testWidgets('2 lần giữ liên tiếp (reentrant) gọi đúng 2 lần, không rò rỉ state', (
-    tester,
-  ) async {
-    var count = 0;
-    await tester.pumpWidget(
-      _wrap(
-        HoldToConfirmButton(
-          label: 'Delete',
-          duration: duration,
-          onConfirm: () => count++,
+  testWidgets(
+    '2 lần giữ liên tiếp (reentrant) gọi đúng 2 lần, không rò rỉ state',
+    (tester) async {
+      var count = 0;
+      await tester.pumpWidget(
+        _wrap(
+          HoldToConfirmButton(
+            label: 'Delete',
+            duration: duration,
+            onConfirm: () => count++,
+          ),
         ),
-      ),
-    );
+      );
 
-    final center = tester.getCenter(find.byType(HoldToConfirmButton));
-    for (var i = 0; i < 2; i++) {
-      final gesture = await tester.startGesture(center);
-      await tester.pump();
-      await tester.pump(duration + const Duration(milliseconds: 50));
-      await gesture.up();
-      await tester.pump(const Duration(milliseconds: 400)); // hồi về idle
-    }
+      final center = tester.getCenter(find.byType(HoldToConfirmButton));
+      for (var i = 0; i < 2; i++) {
+        final gesture = await tester.startGesture(center);
+        await tester.pump();
+        await tester.pump(duration + const Duration(milliseconds: 50));
+        await gesture.up();
+        await tester.pump(const Duration(milliseconds: 400)); // hồi về idle
+      }
 
-    expect(count, 2);
-  });
+      expect(count, 2);
+    },
+  );
 
   testWidgets('disabled: giữ đủ duration cũng không gọi onConfirm', (
     tester,

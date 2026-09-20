@@ -74,8 +74,7 @@ class PersistentCooldownService extends GetxService {
     revision.value++;
   }
 
-  CooldownStatus statusOf(String key) =>
-      remainingOf(key) > Duration.zero
+  CooldownStatus statusOf(String key) => remainingOf(key) > Duration.zero
       ? CooldownStatus.running
       : CooldownStatus.ready;
 

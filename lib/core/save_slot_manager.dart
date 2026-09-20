@@ -64,9 +64,8 @@ class SaveSlotManager extends GetxService {
 
   /// Gets the instance if already registered (safe to call from
   /// game/widget tests).
-  static SaveSlotManager? get maybe => Get.isRegistered<SaveSlotManager>()
-      ? Get.find<SaveSlotManager>()
-      : null;
+  static SaveSlotManager? get maybe =>
+      Get.isRegistered<SaveSlotManager>() ? Get.find<SaveSlotManager>() : null;
 
   VersionedJsonStore<List<SaveSlotMeta>> get _store =>
       VersionedJsonStore<List<SaveSlotMeta>>(
@@ -245,9 +244,7 @@ class SaveSlotManager extends GetxService {
       );
     }
     final index = _indexOf(id);
-    _slotList[index] = _slotList[index].copyWith(
-      displayName: newDisplayName,
-    );
+    _slotList[index] = _slotList[index].copyWith(displayName: newDisplayName);
     _scheduleSave();
   }
 
@@ -268,7 +265,8 @@ class SaveSlotManager extends GetxService {
   /// rather than caching a copy here — it's a single plain key, not the
   /// burst-write-prone slot LIST, so there's no race to guard against and
   /// no reason to duplicate state `StorageService` already holds.
-  String? get activeSlotId => StorageService.to.getString(_activeSlotStorageKey);
+  String? get activeSlotId =>
+      StorageService.to.getString(_activeSlotStorageKey);
 
   /// Marks [id] as the active slot. Throws `ArgumentError` (without
   /// changing [activeSlotId]) if [id] doesn't exist — never actives into a

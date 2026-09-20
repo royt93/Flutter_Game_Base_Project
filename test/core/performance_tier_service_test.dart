@@ -34,21 +34,24 @@ void main() {
       expect(tracker.tier, PerformanceTier.high);
     });
 
-    test('hạ cấp xuống low khi FPS trung bình tụt dưới downgrade threshold', () {
-      final tracker = FrameBudgetTracker(windowSize: 60);
-      for (var i = 0; i < 60; i++) {
-        tracker.recordFrameMs(16.6); // ~60fps, lấp đầy window trước.
-      }
-      expect(tracker.tier, PerformanceTier.high);
+    test(
+      'hạ cấp xuống low khi FPS trung bình tụt dưới downgrade threshold',
+      () {
+        final tracker = FrameBudgetTracker(windowSize: 60);
+        for (var i = 0; i < 60; i++) {
+          tracker.recordFrameMs(16.6); // ~60fps, lấp đầy window trước.
+        }
+        expect(tracker.tier, PerformanceTier.high);
 
-      var sawTransition = false;
-      for (var i = 0; i < 60; i++) {
-        final changed = tracker.recordFrameMs(40); // ~25fps.
-        if (changed) sawTransition = true;
-      }
-      expect(tracker.tier, PerformanceTier.low);
-      expect(sawTransition, isTrue);
-    });
+        var sawTransition = false;
+        for (var i = 0; i < 60; i++) {
+          final changed = tracker.recordFrameMs(40); // ~25fps.
+          if (changed) sawTransition = true;
+        }
+        expect(tracker.tier, PerformanceTier.low);
+        expect(sawTransition, isTrue);
+      },
+    );
 
     test('nâng cấp lại high khi FPS trung bình vượt upgrade threshold', () {
       final tracker = FrameBudgetTracker(windowSize: 60);
@@ -130,76 +133,64 @@ void main() {
         expect(() => FrameBudgetTracker(windowSize: -1), throwsArgumentError);
       });
 
-      test(
-        'downgradeFpsThreshold không hữu hạn hoặc âm → ArgumentError',
-        () {
-          expect(
-            () => FrameBudgetTracker(downgradeFpsThreshold: double.nan),
-            throwsArgumentError,
-          );
-          expect(
-            () => FrameBudgetTracker(downgradeFpsThreshold: -1),
-            throwsArgumentError,
-          );
-        },
-      );
+      test('downgradeFpsThreshold không hữu hạn hoặc âm → ArgumentError', () {
+        expect(
+          () => FrameBudgetTracker(downgradeFpsThreshold: double.nan),
+          throwsArgumentError,
+        );
+        expect(
+          () => FrameBudgetTracker(downgradeFpsThreshold: -1),
+          throwsArgumentError,
+        );
+      });
 
-      test(
-        'upgradeFpsThreshold không hữu hạn hoặc âm → ArgumentError',
-        () {
-          expect(
-            () => FrameBudgetTracker(upgradeFpsThreshold: double.infinity),
-            throwsArgumentError,
-          );
-          expect(
-            () => FrameBudgetTracker(upgradeFpsThreshold: -1),
-            throwsArgumentError,
-          );
-        },
-      );
+      test('upgradeFpsThreshold không hữu hạn hoặc âm → ArgumentError', () {
+        expect(
+          () => FrameBudgetTracker(upgradeFpsThreshold: double.infinity),
+          throwsArgumentError,
+        );
+        expect(
+          () => FrameBudgetTracker(upgradeFpsThreshold: -1),
+          throwsArgumentError,
+        );
+      });
 
-      test(
-        'downgradeFpsThreshold >= upgradeFpsThreshold → ArgumentError '
-        '(tier sẽ không bao giờ hồi phục được nếu cho phép)',
-        () {
-          expect(
-            () => FrameBudgetTracker(
-              downgradeFpsThreshold: 50,
-              upgradeFpsThreshold: 50,
-            ),
-            throwsArgumentError,
-          );
-          expect(
-            () => FrameBudgetTracker(
-              downgradeFpsThreshold: 60,
-              upgradeFpsThreshold: 40,
-            ),
-            throwsArgumentError,
-          );
-        },
-      );
+      test('downgradeFpsThreshold >= upgradeFpsThreshold → ArgumentError '
+          '(tier sẽ không bao giờ hồi phục được nếu cho phép)', () {
+        expect(
+          () => FrameBudgetTracker(
+            downgradeFpsThreshold: 50,
+            upgradeFpsThreshold: 50,
+          ),
+          throwsArgumentError,
+        );
+        expect(
+          () => FrameBudgetTracker(
+            downgradeFpsThreshold: 60,
+            upgradeFpsThreshold: 40,
+          ),
+          throwsArgumentError,
+        );
+      });
 
-      test(
-        'mẫu frameDurationMs NaN/Infinity/âm bị bỏ qua, không đầu độc '
-        'rolling average vĩnh viễn',
-        () {
-          final tracker = FrameBudgetTracker(windowSize: 3);
+      test('mẫu frameDurationMs NaN/Infinity/âm bị bỏ qua, không đầu độc '
+          'rolling average vĩnh viễn', () {
+        final tracker = FrameBudgetTracker(windowSize: 3);
 
-          expect(tracker.recordFrameMs(double.nan), isFalse);
-          expect(tracker.recordFrameMs(double.infinity), isFalse);
-          expect(tracker.recordFrameMs(-5), isFalse);
+        expect(tracker.recordFrameMs(double.nan), isFalse);
+        expect(tracker.recordFrameMs(double.infinity), isFalse);
+        expect(tracker.recordFrameMs(-5), isFalse);
 
-          // Sau 3 mẫu HỢP LỆ (16ms ~ 60fps), window phải đầy và tier vẫn ở
-          // high — nếu 3 mẫu xấu ở trên lọt vào window, avg sẽ là NaN/vô lý
-          // và phép so sánh FPS phía dưới sẽ sai lệch không đoán trước được.
-          tracker.recordFrameMs(16);
-          tracker.recordFrameMs(16);
-          final changed = tracker.recordFrameMs(16);
+        // Sau 3 mẫu HỢP LỆ (16ms ~ 60fps), window phải đầy và tier vẫn ở
+        // high — nếu 3 mẫu xấu ở trên lọt vào window, avg sẽ là NaN/vô lý
+        // và phép so sánh FPS phía dưới sẽ sai lệch không đoán trước được.
+        tracker.recordFrameMs(16);
+        tracker.recordFrameMs(16);
+        final changed = tracker.recordFrameMs(16);
 
-          expect(changed, isFalse);
-          expect(tracker.tier, PerformanceTier.high);
-        },
-      );
+        expect(changed, isFalse);
+        expect(tracker.tier, PerformanceTier.high);
+      });
     });
   });
 

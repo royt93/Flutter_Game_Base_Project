@@ -306,10 +306,9 @@ void main() {
         // GetX's forceAppUpdate/performReassemble, which conflicts with
         // Flutter test's scheduler-phase assertion when triggered from
         // inside a real simulated gesture's frame.
-        CandyToggleSwitch toggleWidget() =>
-            tester.widget<CandyToggleSwitch>(
-              find.descendant(of: row, matching: find.byType(CandyToggleSwitch)),
-            );
+        CandyToggleSwitch toggleWidget() => tester.widget<CandyToggleSwitch>(
+          find.descendant(of: row, matching: find.byType(CandyToggleSwitch)),
+        );
 
         toggleWidget().onChanged!(true);
         await tester.pump(const Duration(milliseconds: 100));

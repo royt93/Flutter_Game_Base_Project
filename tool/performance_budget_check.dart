@@ -158,7 +158,9 @@ List<PerformanceBudgetMetric> _loadMetrics(String path) {
   final raw = jsonDecode(file.readAsStringSync()) as List<Object?>;
   return raw
       .whereType<Map>()
-      .map((e) => PerformanceBudgetMetric.fromJson(Map<String, Object?>.from(e)))
+      .map(
+        (e) => PerformanceBudgetMetric.fromJson(Map<String, Object?>.from(e)),
+      )
       .toList();
 }
 
@@ -204,10 +206,7 @@ Future<void> _check({
   exitCode = result.passed ? 0 : 1;
 }
 
-Future<void> _snapshot({
-  required String baselinePath,
-  String? deviceId,
-}) async {
+Future<void> _snapshot({required String baselinePath, String? deviceId}) async {
   final existing = _loadMetrics(baselinePath);
   final now = DateTime.now().millisecondsSinceEpoch;
   final fresh = _measureHostHeadless()
@@ -236,12 +235,10 @@ Future<void> _snapshot({
     for (final m in fresh) m.name: m,
   }.values.toList()..sort((a, b) => a.name.compareTo(b.name));
 
-  await File(
-    baselinePath,
-  ).writeAsString(
-    const JsonEncoder.withIndent('  ').convert(
-      merged.map((m) => m.toJson()).toList(),
-    ),
+  await File(baselinePath).writeAsString(
+    const JsonEncoder.withIndent(
+      '  ',
+    ).convert(merged.map((m) => m.toJson()).toList()),
   );
   stdout.writeln('Wrote $baselinePath (${merged.length} metrics)');
 }

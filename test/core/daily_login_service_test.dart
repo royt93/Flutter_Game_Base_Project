@@ -283,34 +283,40 @@ void main() {
         },
       );
 
-      test('streak reset (bỏ lỡ 1 ngày): longestStreakEver GIỮ NGUYÊN kỷ lục cũ', () async {
-        final service = DailyLoginService();
-        for (var i = 0; i < 5; i++) {
-          await setDay(_realDay + i);
+      test(
+        'streak reset (bỏ lỡ 1 ngày): longestStreakEver GIỮ NGUYÊN kỷ lục cũ',
+        () async {
+          final service = DailyLoginService();
+          for (var i = 0; i < 5; i++) {
+            await setDay(_realDay + i);
+            service.claimToday();
+          }
+          expect(service.longestStreakEver, 5);
+
+          // Bỏ lỡ 1 ngày -> streak reset.
+          await setDay(_realDay + 7);
+          final result = service.claimToday();
+
+          expect(result.streakWasReset, isTrue);
+          expect(service.currentStreakDay, 1);
+          expect(service.longestStreakEver, 5); // kỷ lục cũ vẫn giữ nguyên
+        },
+      );
+
+      test(
+        'claim cùng ngày nhiều lần (no-op): không tăng longestStreakEver sai',
+        () async {
+          final service = DailyLoginService();
+          await setDay(_realDay);
           service.claimToday();
-        }
-        expect(service.longestStreakEver, 5);
+          expect(service.longestStreakEver, 1);
 
-        // Bỏ lỡ 1 ngày -> streak reset.
-        await setDay(_realDay + 7);
-        final result = service.claimToday();
+          service.claimToday(); // no-op, cùng ngày
+          service.claimToday();
 
-        expect(result.streakWasReset, isTrue);
-        expect(service.currentStreakDay, 1);
-        expect(service.longestStreakEver, 5); // kỷ lục cũ vẫn giữ nguyên
-      });
-
-      test('claim cùng ngày nhiều lần (no-op): không tăng longestStreakEver sai', () async {
-        final service = DailyLoginService();
-        await setDay(_realDay);
-        service.claimToday();
-        expect(service.longestStreakEver, 1);
-
-        service.claimToday(); // no-op, cùng ngày
-        service.claimToday();
-
-        expect(service.longestStreakEver, 1);
-      });
+          expect(service.longestStreakEver, 1);
+        },
+      );
 
       test(
         'run mới sau reset vượt qua kỷ lục cũ: longestStreakEver cập nhật đúng',
@@ -397,65 +403,80 @@ void main() {
         },
       );
 
-      test('persist đúng qua "restart" (instance mới đọc lại đúng kỷ lục)', () async {
-        final service = DailyLoginService();
-        for (var i = 0; i < 9; i++) {
-          await setDay(_realDay + i);
-          service.claimToday();
-        }
-        await service.debugPendingSaves;
+      test(
+        'persist đúng qua "restart" (instance mới đọc lại đúng kỷ lục)',
+        () async {
+          final service = DailyLoginService();
+          for (var i = 0; i < 9; i++) {
+            await setDay(_realDay + i);
+            service.claimToday();
+          }
+          await service.debugPendingSaves;
 
-        final restarted = DailyLoginService();
-        expect(restarted.longestStreakEver, 9);
-      });
+          final restarted = DailyLoginService();
+          expect(restarted.longestStreakEver, 9);
+        },
+      );
     });
 
     group('ENH-71: storageKey tuỳ chỉnh', () {
-      test('không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ', () async {
-        final service = DailyLoginService();
-        await setDay(_realDay);
-        service.claimToday();
-        await service.debugPendingSaves;
+      test(
+        'không truyền storageKey: hành vi/dữ liệu y hệt hiện tại, đọc đúng key cũ',
+        () async {
+          final service = DailyLoginService();
+          await setDay(_realDay);
+          service.claimToday();
+          await service.debugPendingSaves;
 
-        expect(store.getString('daily_login_state_v1'), isNotNull);
-      });
+          expect(store.getString('daily_login_state_v1'), isNotNull);
+        },
+      );
 
-      test('2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau', () async {
-        final a = DailyLoginService(storageKey: 'login_a');
-        final b = DailyLoginService(storageKey: 'login_b');
-        await setDay(_realDay);
+      test(
+        '2 storageKey khác nhau: 2 instance hoàn toàn độc lập, không đụng dữ liệu nhau',
+        () async {
+          final a = DailyLoginService(storageKey: 'login_a');
+          final b = DailyLoginService(storageKey: 'login_b');
+          await setDay(_realDay);
 
-        a.claimToday();
-        await setDay(_realDay + 1);
-        b.claimToday();
-        await a.debugPendingSaves;
-        await b.debugPendingSaves;
+          a.claimToday();
+          await setDay(_realDay + 1);
+          b.claimToday();
+          await a.debugPendingSaves;
+          await b.debugPendingSaves;
 
-        expect(a.currentStreakDay, 1);
-        expect(b.currentStreakDay, 1);
-        // Mỗi instance chỉ thấy đúng 1 lần claim của chính nó, không thấy
-        // của instance kia — nếu chung key, b sẽ thấy streak 2.
-      });
+          expect(a.currentStreakDay, 1);
+          expect(b.currentStreakDay, 1);
+          // Mỗi instance chỉ thấy đúng 1 lần claim của chính nó, không thấy
+          // của instance kia — nếu chung key, b sẽ thấy streak 2.
+        },
+      );
 
-      test('storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)', () async {
-        final service = DailyLoginService(storageKey: 'login_custom');
-        await setDay(_realDay);
-        service.claimToday();
-        await service.debugPendingSaves;
+      test(
+        'storageKey tuỳ chỉnh persist đúng qua "restart" (instance mới đọc lại đúng)',
+        () async {
+          final service = DailyLoginService(storageKey: 'login_custom');
+          await setDay(_realDay);
+          service.claimToday();
+          await service.debugPendingSaves;
 
-        final restarted = DailyLoginService(storageKey: 'login_custom');
-        expect(restarted.currentStreakDay, 1);
-        expect(restarted.canClaimToday(), isFalse);
-      });
+          final restarted = DailyLoginService(storageKey: 'login_custom');
+          expect(restarted.currentStreakDay, 1);
+          expect(restarted.canClaimToday(), isFalse);
+        },
+      );
 
-      test('không đổi hành vi claimToday/currentStreakDay hiện có khi dùng storageKey tuỳ chỉnh', () async {
-        final service = DailyLoginService(storageKey: 'k');
-        await setDay(_realDay);
-        final result = service.claimToday();
+      test(
+        'không đổi hành vi claimToday/currentStreakDay hiện có khi dùng storageKey tuỳ chỉnh',
+        () async {
+          final service = DailyLoginService(storageKey: 'k');
+          await setDay(_realDay);
+          final result = service.claimToday();
 
-        expect(result.streakDay, 1);
-        expect(service.currentStreakDay, 1);
-      });
+          expect(result.streakDay, 1);
+          expect(service.currentStreakDay, 1);
+        },
+      );
     });
   });
 }

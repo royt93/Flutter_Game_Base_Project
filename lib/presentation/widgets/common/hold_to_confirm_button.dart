@@ -165,7 +165,9 @@ class _HoldToConfirmButtonState extends State<HoldToConfirmButton>
 
   @override
   Widget build(BuildContext context) {
-    final c = widget.enabled ? (widget.color ?? NeonTheme.red) : NeonTheme.muted;
+    final c = widget.enabled
+        ? (widget.color ?? NeonTheme.red)
+        : NeonTheme.muted;
     return Semantics(
       button: true,
       enabled: widget.enabled,

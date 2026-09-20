@@ -136,7 +136,8 @@ class _AsyncCommonButtonState extends State<AsyncCommonButton> {
             width: widget.width,
             semanticLabel: widget.semanticLabel,
             loading: _status == AsyncButtonStatus.loading,
-            onTap: (_status == AsyncButtonStatus.idle && widget.onPressed != null)
+            onTap:
+                (_status == AsyncButtonStatus.idle && widget.onPressed != null)
                 ? _handleTap
                 : null,
           ),

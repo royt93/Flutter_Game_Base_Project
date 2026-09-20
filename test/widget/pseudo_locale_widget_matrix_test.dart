@@ -13,7 +13,9 @@ void main() {
   tearDown(Get.reset);
 
   Widget wrap(Widget home) => GetMaterialApp(
-    translations: PseudoLocaleTranslations(baseKeys: AppTranslations().keys['en']!),
+    translations: PseudoLocaleTranslations(
+      baseKeys: AppTranslations().keys['en']!,
+    ),
     locale: PseudoLocaleTranslations.defaultLocale,
     fallbackLocale: PseudoLocaleTranslations.defaultLocale,
     home: home,

@@ -14,73 +14,88 @@ void main() {
     pipeline = RewardTransactionPipeline(wallet: wallet)..onInit();
   });
 
-  test('từ chối request rỗng/không hợp lệ, không đụng wallet/audit trail', () async {
-    final empty = await pipeline.grant(
-      source: RewardSource.ad,
-      transactionId: '',
-      lines: const [RewardLine(currency: 'coin', amount: 10)],
-    );
-    final noLines = await pipeline.grant(
-      source: RewardSource.ad,
-      transactionId: 'tx1',
-      lines: const [],
-    );
-    final badLine = await pipeline.grant(
-      source: RewardSource.ad,
-      transactionId: 'tx2',
-      lines: const [RewardLine(currency: 'coin', amount: 0)],
-    );
+  test(
+    'từ chối request rỗng/không hợp lệ, không đụng wallet/audit trail',
+    () async {
+      final empty = await pipeline.grant(
+        source: RewardSource.ad,
+        transactionId: '',
+        lines: const [RewardLine(currency: 'coin', amount: 10)],
+      );
+      final noLines = await pipeline.grant(
+        source: RewardSource.ad,
+        transactionId: 'tx1',
+        lines: const [],
+      );
+      final badLine = await pipeline.grant(
+        source: RewardSource.ad,
+        transactionId: 'tx2',
+        lines: const [RewardLine(currency: 'coin', amount: 0)],
+      );
 
-    expect(empty.isSuccess, isFalse);
-    expect(noLines.isSuccess, isFalse);
-    expect(badLine.isSuccess, isFalse);
-    expect(wallet.balanceOf('coin'), 0);
-    expect(pipeline.auditTrail, isEmpty);
-  });
+      expect(empty.isSuccess, isFalse);
+      expect(noLines.isSuccess, isFalse);
+      expect(badLine.isSuccess, isFalse);
+      expect(wallet.balanceOf('coin'), 0);
+      expect(pipeline.auditTrail, isEmpty);
+    },
+  );
 
-  test('grant 1 line: cộng đúng wallet, record committed trong audit trail', () async {
-    final result = await pipeline.grant(
-      source: RewardSource.ad,
-      transactionId: 'ad1',
-      lines: const [RewardLine(currency: 'coin', amount: 50)],
-    );
+  test(
+    'grant 1 line: cộng đúng wallet, record committed trong audit trail',
+    () async {
+      final result = await pipeline.grant(
+        source: RewardSource.ad,
+        transactionId: 'ad1',
+        lines: const [RewardLine(currency: 'coin', amount: 50)],
+      );
 
-    expect(result.isSuccess, isTrue);
-    expect(wallet.balanceOf('coin'), 50);
-    expect(pipeline.auditTrail.single.status, RewardTransactionStatus.committed);
-    expect(pipeline.auditTrail.single.transactionId, 'ad1');
-  });
+      expect(result.isSuccess, isTrue);
+      expect(wallet.balanceOf('coin'), 50);
+      expect(
+        pipeline.auditTrail.single.status,
+        RewardTransactionStatus.committed,
+      );
+      expect(pipeline.auditTrail.single.transactionId, 'ad1');
+    },
+  );
 
-  test('grant nhiều line cùng 1 transactionId: mỗi currency cộng đúng, không đụng nhau', () async {
-    await pipeline.grant(
-      source: RewardSource.ad,
-      transactionId: 'ad2',
-      lines: const [
-        RewardLine(currency: 'coin', amount: 50),
-        RewardLine(currency: 'energy', amount: 1),
-      ],
-    );
+  test(
+    'grant nhiều line cùng 1 transactionId: mỗi currency cộng đúng, không đụng nhau',
+    () async {
+      await pipeline.grant(
+        source: RewardSource.ad,
+        transactionId: 'ad2',
+        lines: const [
+          RewardLine(currency: 'coin', amount: 50),
+          RewardLine(currency: 'energy', amount: 1),
+        ],
+      );
 
-    expect(wallet.balanceOf('coin'), 50);
-    expect(wallet.balanceOf('energy'), 1);
-  });
+      expect(wallet.balanceOf('coin'), 50);
+      expect(wallet.balanceOf('energy'), 1);
+    },
+  );
 
-  test('gọi lại đúng transactionId lần 2: không cộng thêm, trả về record cũ', () async {
-    await pipeline.grant(
-      source: RewardSource.ad,
-      transactionId: 'ad3',
-      lines: const [RewardLine(currency: 'coin', amount: 20)],
-    );
-    final second = await pipeline.grant(
-      source: RewardSource.ad,
-      transactionId: 'ad3',
-      lines: const [RewardLine(currency: 'coin', amount: 20)],
-    );
+  test(
+    'gọi lại đúng transactionId lần 2: không cộng thêm, trả về record cũ',
+    () async {
+      await pipeline.grant(
+        source: RewardSource.ad,
+        transactionId: 'ad3',
+        lines: const [RewardLine(currency: 'coin', amount: 20)],
+      );
+      final second = await pipeline.grant(
+        source: RewardSource.ad,
+        transactionId: 'ad3',
+        lines: const [RewardLine(currency: 'coin', amount: 20)],
+      );
 
-    expect(second.isSuccess, isTrue);
-    expect(wallet.balanceOf('coin'), 20);
-    expect(pipeline.auditTrail.length, 1);
-  });
+      expect(second.isSuccess, isTrue);
+      expect(wallet.balanceOf('coin'), 20);
+      expect(pipeline.auditTrail.length, 1);
+    },
+  );
 
   test('concurrent callback trùng transactionId: chỉ cộng một lần', () async {
     final results = await Future.wait([
@@ -101,25 +116,32 @@ void main() {
     expect(pipeline.auditTrail.length, 1);
   });
 
-  test('restart: instance mới cùng storage đọc lại đúng audit trail, không cộng lại', () async {
-    await pipeline.grant(
-      source: RewardSource.dailyLogin,
-      transactionId: 'login1',
-      lines: const [RewardLine(currency: 'coin', amount: 5)],
-    );
+  test(
+    'restart: instance mới cùng storage đọc lại đúng audit trail, không cộng lại',
+    () async {
+      await pipeline.grant(
+        source: RewardSource.dailyLogin,
+        transactionId: 'login1',
+        lines: const [RewardLine(currency: 'coin', amount: 5)],
+      );
 
-    final restartedWallet = EconomyWallet(storage: storage)..onInit();
-    final restarted = RewardTransactionPipeline(wallet: restartedWallet)..onInit();
+      final restartedWallet = EconomyWallet(storage: storage)..onInit();
+      final restarted = RewardTransactionPipeline(wallet: restartedWallet)
+        ..onInit();
 
-    expect(restarted.auditTrail.single.status, RewardTransactionStatus.committed);
-    final again = await restarted.grant(
-      source: RewardSource.dailyLogin,
-      transactionId: 'login1',
-      lines: const [RewardLine(currency: 'coin', amount: 5)],
-    );
-    expect(again.isSuccess, isTrue);
-    expect(restartedWallet.balanceOf('coin'), 5);
-  });
+      expect(
+        restarted.auditTrail.single.status,
+        RewardTransactionStatus.committed,
+      );
+      final again = await restarted.grant(
+        source: RewardSource.dailyLogin,
+        transactionId: 'login1',
+        lines: const [RewardLine(currency: 'coin', amount: 5)],
+      );
+      expect(again.isSuccess, isTrue);
+      expect(restartedWallet.balanceOf('coin'), 5);
+    },
+  );
 
   test(
     'partial failure: line sau lỗi (overflow) -> line trước vẫn giữ, record partial, resumePending() hoàn tất sau khi hết lỗi',
@@ -144,7 +166,10 @@ void main() {
       expect(result.isSuccess, isFalse);
       expect(wallet.balanceOf('coin'), 10); // line 1 vẫn giữ, không rollback
       expect(wallet.balanceOf('gem'), 0x7ffffffe); // line 2 chưa áp dụng
-      expect(pipeline.auditTrail.single.status, RewardTransactionStatus.partial);
+      expect(
+        pipeline.auditTrail.single.status,
+        RewardTransactionStatus.partial,
+      );
 
       // Giảm gem xuống để line 2 hợp lệ được, rồi resume.
       await wallet.trySpend(
@@ -154,54 +179,61 @@ void main() {
       );
       await pipeline.resumePending();
 
-      expect(pipeline.auditTrail.single.status, RewardTransactionStatus.committed);
+      expect(
+        pipeline.auditTrail.single.status,
+        RewardTransactionStatus.committed,
+      );
       expect(wallet.balanceOf('coin'), 10); // line 1 không bị cộng lại lần 2
       expect(wallet.balanceOf('gem'), 10);
     },
   );
 
-  test('analytics throw không ảnh hưởng kết quả grant/reward đã commit', () async {
-    final failing = RewardTransactionPipeline(
-      wallet: wallet,
-      onAnalytics: (_) => throw Exception('analytics down'),
-    )..onInit();
+  test(
+    'analytics throw không ảnh hưởng kết quả grant/reward đã commit',
+    () async {
+      final failing = RewardTransactionPipeline(
+        wallet: wallet,
+        onAnalytics: (_) => throw Exception('analytics down'),
+      )..onInit();
 
-    final result = await failing.grant(
-      source: RewardSource.ad,
-      transactionId: 'ad4',
-      lines: const [RewardLine(currency: 'coin', amount: 15)],
-    );
+      final result = await failing.grant(
+        source: RewardSource.ad,
+        transactionId: 'ad4',
+        lines: const [RewardLine(currency: 'coin', amount: 15)],
+      );
 
-    expect(result.isSuccess, isTrue);
-    expect(wallet.balanceOf('coin'), 15);
-  });
+      expect(result.isSuccess, isTrue);
+      expect(wallet.balanceOf('coin'), 15);
+    },
+  );
 
-  test('audit trail bounded: quá capacity thì record CŨ NHẤT bị loại', () async {
-    final bounded = RewardTransactionPipeline(
-      wallet: wallet,
-      capacity: 2,
-    )..onInit();
+  test(
+    'audit trail bounded: quá capacity thì record CŨ NHẤT bị loại',
+    () async {
+      final bounded = RewardTransactionPipeline(wallet: wallet, capacity: 2)
+        ..onInit();
 
-    await bounded.grant(
-      source: RewardSource.ad,
-      transactionId: 'a',
-      lines: const [RewardLine(currency: 'coin', amount: 1)],
-    );
-    await bounded.grant(
-      source: RewardSource.ad,
-      transactionId: 'b',
-      lines: const [RewardLine(currency: 'coin', amount: 1)],
-    );
-    await bounded.grant(
-      source: RewardSource.ad,
-      transactionId: 'c',
-      lines: const [RewardLine(currency: 'coin', amount: 1)],
-    );
+      await bounded.grant(
+        source: RewardSource.ad,
+        transactionId: 'a',
+        lines: const [RewardLine(currency: 'coin', amount: 1)],
+      );
+      await bounded.grant(
+        source: RewardSource.ad,
+        transactionId: 'b',
+        lines: const [RewardLine(currency: 'coin', amount: 1)],
+      );
+      await bounded.grant(
+        source: RewardSource.ad,
+        transactionId: 'c',
+        lines: const [RewardLine(currency: 'coin', amount: 1)],
+      );
 
-    expect(bounded.auditTrail.length, 2);
-    expect(bounded.auditTrail.map((r) => r.transactionId), ['b', 'c']);
-    expect(wallet.balanceOf('coin'), 3); // wallet vẫn cộng đủ dù audit bị cắt
-  });
+      expect(bounded.auditTrail.length, 2);
+      expect(bounded.auditTrail.map((r) => r.transactionId), ['b', 'c']);
+      expect(wallet.balanceOf('coin'), 3); // wallet vẫn cộng đủ dù audit bị cắt
+    },
+  );
 
   group('adapter tiện ích', () {
     test('grantFromDailyQuest: transactionId theo questId+periodKey', () async {
@@ -228,20 +260,23 @@ void main() {
       expect(pipeline.auditTrail.single.source, RewardSource.dailyLogin);
     });
 
-    test('grantFromPurchase: transactionId theo receiptId, giữ receiptMeta', () async {
-      final result = await pipeline.grantFromPurchase(
-        receiptId: 'order_123',
-        lines: const [RewardLine(currency: 'gem', amount: 200)],
-        receiptMeta: const {'productId': 'gem_pack_small'},
-      );
+    test(
+      'grantFromPurchase: transactionId theo receiptId, giữ receiptMeta',
+      () async {
+        final result = await pipeline.grantFromPurchase(
+          receiptId: 'order_123',
+          lines: const [RewardLine(currency: 'gem', amount: 200)],
+          receiptMeta: const {'productId': 'gem_pack_small'},
+        );
 
-      expect(result.isSuccess, isTrue);
-      expect(pipeline.auditTrail.single.source, RewardSource.purchase);
-      expect(
-        pipeline.auditTrail.single.receiptMeta?['productId'],
-        'gem_pack_small',
-      );
-    });
+        expect(result.isSuccess, isTrue);
+        expect(pipeline.auditTrail.single.source, RewardSource.purchase);
+        expect(
+          pipeline.auditTrail.single.receiptMeta?['productId'],
+          'gem_pack_small',
+        );
+      },
+    );
   });
 
   test('onGranted phát đúng record sau khi commit', () async {

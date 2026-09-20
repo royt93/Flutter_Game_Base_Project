@@ -49,13 +49,10 @@ void main() {
     },
   );
 
-  test(
-    'chưa đăng ký CrashReporter nào → reportUncaughtError không throw',
-    () {
-      expect(
-        () => app.reportUncaughtError(StateError('x'), StackTrace.current),
-        returnsNormally,
-      );
-    },
-  );
+  test('chưa đăng ký CrashReporter nào → reportUncaughtError không throw', () {
+    expect(
+      () => app.reportUncaughtError(StateError('x'), StackTrace.current),
+      returnsNormally,
+    );
+  });
 }

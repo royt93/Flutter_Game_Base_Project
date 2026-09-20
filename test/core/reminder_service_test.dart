@@ -104,17 +104,14 @@ void main() {
       },
     );
 
-    test(
-      'permission bị từ chối vẫn tiếp tục schedule (plugin không tự chặn ở '
-      'tầng Dart khi requestNotificationsPermission trả về false)',
-      () async {
-        permissionGranted = false;
-        final service = ReminderService();
-        await service.scheduleNext();
+    test('permission bị từ chối vẫn tiếp tục schedule (plugin không tự chặn ở '
+        'tầng Dart khi requestNotificationsPermission trả về false)', () async {
+      permissionGranted = false;
+      final service = ReminderService();
+      await service.scheduleNext();
 
-        expect(calls.any((c) => c.method == 'zonedSchedule'), isTrue);
-      },
-    );
+      expect(calls.any((c) => c.method == 'zonedSchedule'), isTrue);
+    });
 
     test('cancel(): init trước, rồi gọi cancel với đúng id', () async {
       final service = ReminderService();
@@ -129,31 +126,31 @@ void main() {
       expect(args['id'], 0);
     });
 
-    test(
-      '2 lệnh gọi đồng thời (trước khi _ensureInit lần đầu hoàn tất) chỉ '
-      'init đúng 1 lần',
-      () async {
-        final service = ReminderService();
-        // KHÔNG await lần gọi đầu trước khi gọi lần 2 — cả 2 cùng đua vào
-        // _ensureInit() khi _initialized vẫn còn false.
-        final f1 = service.scheduleNext();
-        final f2 = service.scheduleNext();
-        await Future.wait([f1, f2]);
+    test('2 lệnh gọi đồng thời (trước khi _ensureInit lần đầu hoàn tất) chỉ '
+        'init đúng 1 lần', () async {
+      final service = ReminderService();
+      // KHÔNG await lần gọi đầu trước khi gọi lần 2 — cả 2 cùng đua vào
+      // _ensureInit() khi _initialized vẫn còn false.
+      final f1 = service.scheduleNext();
+      final f2 = service.scheduleNext();
+      await Future.wait([f1, f2]);
 
-        final initCount = calls.where((c) => c.method == 'initialize').length;
-        expect(initCount, 1);
+      final initCount = calls.where((c) => c.method == 'initialize').length;
+      expect(initCount, 1);
+    });
+
+    test(
+      'lỗi từ platform channel bị nuốt (dlog), không throw ra ngoài',
+      () async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (call) async {
+              throw PlatformException(code: 'boom');
+            });
+
+        final service = ReminderService();
+        await expectLater(service.scheduleNext(), completes);
+        await expectLater(service.cancel(), completes);
       },
     );
-
-    test('lỗi từ platform channel bị nuốt (dlog), không throw ra ngoài', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (call) async {
-            throw PlatformException(code: 'boom');
-          });
-
-      final service = ReminderService();
-      await expectLater(service.scheduleNext(), completes);
-      await expectLater(service.cancel(), completes);
-    });
   });
 }
