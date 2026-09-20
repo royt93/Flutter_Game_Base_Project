@@ -86,6 +86,7 @@ export 'core/utils/safe_json.dart';
 export 'core/utils/throttle.dart';
 export 'core/utils/weighted_random_pick.dart';
 export 'core/utils/object_pool.dart';
+export 'core/utils/performance_budget.dart';
 export 'core/utils/pseudo_locale.dart';
 export 'core/utils/theme_contrast_validator.dart';
 

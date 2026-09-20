@@ -1,0 +1,23 @@
+[
+  {
+    "metricName": "object_pool_allocation_reduction_percent",
+    "requiredSource": "hostHeadless",
+    "direction": "atLeast",
+    "limit": 90.0
+  },
+  {
+    "metricName": "object_pool_pooled_elapsed_us",
+    "requiredSource": "hostHeadless",
+    "direction": "atMost",
+    "limit": 2000000.0,
+    "regressionTolerancePercent": 200.0
+  },
+  {
+    "metricName": "example_app_boot_wall_ms",
+    "requiredSource": "realDevice",
+    "direction": "atMost",
+    "limit": 60000.0,
+    "regressionTolerancePercent": 50.0,
+    "maxAgeMs": 2592000000
+  }
+]
