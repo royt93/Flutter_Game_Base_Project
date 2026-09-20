@@ -25,6 +25,7 @@ export 'core/daily_login_service.dart';
 export 'core/daily_quest_service.dart';
 export 'core/deep_link_command_router.dart';
 export 'core/diagnostics_export_bundle.dart';
+export 'core/disaster_recovery_save_export.dart';
 export 'core/energy_service.dart';
 export 'core/experiment_bucketing_service.dart';
 export 'core/haptic_choreographer.dart';
