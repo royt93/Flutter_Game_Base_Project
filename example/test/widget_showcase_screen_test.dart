@@ -27,11 +27,11 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58/FEAT-43: mỗi demo section mới đẩy list dài hơn — tăng
-  // chiều cao viewport ảo để mọi widget phía sau vẫn nằm trong vùng tap
-  // được mà không cần scroll (đúng lý do file này dùng physicalSize cố
-  // định).
-  tester.view.physicalSize = const Size(1080, 14100);
+  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58/FEAT-43/FEAT-52: mỗi demo section mới đẩy list dài hơn —
+  // tăng chiều cao viewport ảo để mọi widget phía sau vẫn nằm trong vùng
+  // tap được mà không cần scroll (đúng lý do file này dùng physicalSize
+  // cố định).
+  tester.view.physicalSize = const Size(1080, 14600);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -1755,5 +1755,29 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+  });
+
+  group('FEAT-52: AdaptiveGameHud demo', () {
+    testWidgets('hiện đúng 4 slot chip, không crash', (tester) async {
+      await _pumpShowcase(tester);
+
+      expect(find.text('HUD score: 900'), findsOneWidget);
+      expect(find.text('HUD pause'), findsOneWidget);
+      expect(find.textContaining('coins 350'), findsOneWidget);
+      expect(find.text('HUD boost'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('bấm "Hiện debug bounds" bọc slot bằng DecoratedBox viền', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+
+      await tester.tap(find.text('Hiện debug bounds'));
+      await tester.pump();
+
+      expect(find.text('Ẩn debug bounds'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

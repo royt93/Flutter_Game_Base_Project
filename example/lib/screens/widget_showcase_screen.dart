@@ -782,6 +782,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // 2 API are genuinely different results once 'You' isn't in the top 3.
   bool _showRankAround = false;
 
+  // FEAT-52: toggles AdaptiveGameHud's debugShowBounds demo control.
+  bool _hudDebugBounds = false;
+
   void _submitRandomScore() {
     final score = 1000 + _rng.stream('leaderboard_demo').nextInt(15000);
     ReplayRecorder.maybe?.record('leaderboard_submit', {
@@ -2758,6 +2761,54 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                           ),
 
                           const SizedBox(height: NeonTheme.s24),
+                          const SectionHeader(title: 'Adaptive HUD'),
+                          const SizedBox(height: NeonTheme.s16),
+                          _Demo(
+                            label: 'AdaptiveGameHud (FEAT-52)',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                ClipRect(
+                                  child: ColoredBox(
+                                    color: NeonTheme.bgMid,
+                                    child: SizedBox(
+                                      height: 240,
+                                      child: AdaptiveGameHud(
+                                        debugShowBounds: _hudDebugBounds,
+                                        compactBreakpointWidth: 500,
+                                        slots: {
+                                          HudSlot.topStart: const _HudChip(
+                                            'HUD score: 900',
+                                          ),
+                                          HudSlot.topEnd: const _HudChip(
+                                            'HUD pause',
+                                          ),
+                                          HudSlot.bottom: const _HudChip(
+                                            'HUD lives 3 · coins 350',
+                                          ),
+                                          HudSlot.side: const _HudChip(
+                                            'HUD boost',
+                                          ),
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: NeonTheme.s8),
+                                CommonButton(
+                                  label: _hudDebugBounds
+                                      ? 'Ẩn debug bounds'
+                                      : 'Hiện debug bounds',
+                                  variant: CommonButtonVariant.secondary,
+                                  onTap: () => setState(
+                                    () => _hudDebugBounds = !_hudDebugBounds,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: NeonTheme.s24),
                           const SectionHeader(title: 'Level Select'),
                           const SizedBox(height: NeonTheme.s16),
                           _Demo(
@@ -3119,6 +3170,35 @@ class _Demo extends StatelessWidget {
             const SizedBox(height: NeonTheme.s8),
             child,
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A small pill of HUD content for the AdaptiveGameHud demo (FEAT-52) —
+/// stands in for whatever a real game would put in a slot (a score
+/// counter, a pause button, ...).
+class _HudChip extends StatelessWidget {
+  const _HudChip(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: NeonTheme.card,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: NeonTheme.s16,
+          vertical: NeonTheme.s8,
+        ),
+        child: Text(
+          text,
+          style: TextStyle(color: NeonTheme.ink, fontWeight: FontWeight.w700),
         ),
       ),
     );
