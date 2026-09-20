@@ -1,0 +1,57 @@
+[
+  {
+    "file": "lib/presentation/widgets/common/hold_to_confirm_button.dart",
+    "rule": "reducedMotionCoverage",
+    "reason": "Cố ý không rút ngắn duration khi reducedMotion — xem doc comment của HoldToConfirmButton: duration là cơ chế an toàn (hold-to-confirm gate), rút ngắn sẽ phá vỡ mục đích chống tap nhầm. Screen-reader/switch-access dùng Semantics tap action thay thế, không phụ thuộc reducedMotion."
+  },
+  {
+    "file": "lib/presentation/widgets/pressable_scale.dart",
+    "rule": "tapTargetSemantics",
+    "reason": "Generic squash/scale wrapper dùng chung cho nhiều nút (CommonButton, v.v.) — không tự sở hữu ý nghĩa semantic, child/caller chịu trách nhiệm Semantics của chính content."
+  },
+  {
+    "file": "lib/presentation/widgets/common/squash_stretch.dart",
+    "rule": "tapTargetSemantics",
+    "reason": "Generic game-feel wrapper (squash/stretch khi tap) — giống PressableScale, không tự sở hữu ý nghĩa semantic của content bên trong."
+  },
+  {
+    "file": "lib/presentation/widgets/common/inventory_grid.dart",
+    "rule": "tapTargetSemantics",
+    "reason": "_ItemCell bọc itemBuilder do caller cung cấp toàn bộ nội dung — Semantics thuộc trách nhiệm itemBuilder của caller (xem doc comment class InventoryGrid, FEAT-56)."
+  },
+  {
+    "file": "lib/presentation/widgets/debug_qa_overlay.dart",
+    "rule": "tapTargetSemantics",
+    "reason": "Overlay debug-only (DebugQaOverlay) — công cụ nội bộ cho dev/QA, không ưu tiên accessibility polish như widget production."
+  },
+  {
+    "file": "lib/presentation/widgets/debug_qa_overlay.dart",
+    "rule": "rtlDirectionalSafety",
+    "reason": "Overlay debug-only — cùng lý do rule tapTargetSemantics ở trên."
+  },
+  {
+    "file": "lib/presentation/widgets/common/spotlight_overlay.dart",
+    "rule": "tapTargetSemantics",
+    "reason": "GestureDetector là scrim toàn màn hình để dismiss bằng tap-bất-kỳ-đâu — không phải 1 nút rời rạc cần label riêng; đường dismiss chính cho accessibility là nút Skip (skipLabel) đã có sẵn semantics riêng."
+  },
+  {
+    "file": "lib/presentation/widgets/common/spotlight_overlay.dart",
+    "rule": "rtlDirectionalSafety",
+    "reason": "left:/right: cùng dùng NeonTheme.s24 — margin đối xứng 2 bên, không phụ thuộc hướng chữ."
+  },
+  {
+    "file": "lib/presentation/widgets/common/adaptive_game_hud.dart",
+    "rule": "rtlDirectionalSafety",
+    "reason": "left: 0/right: 0 dùng để stretch full-width (đối xứng, không phải offset lệch 1 phía) — bản thân widget đã dùng PositionedDirectional cho phần định vị theo slot thật (xem class doc)."
+  },
+  {
+    "file": "lib/presentation/widgets/common/coin_fly_overlay.dart",
+    "rule": "rtlDirectionalSafety",
+    "reason": "Toạ độ world-space cho animation đồng xu bay tới vị trí tuyệt đối trên màn hình (vật lý, không phải layout theo hướng chữ) — cùng nhóm ngoại lệ 'physics-driven motion' đã ghi trong doc comment NeonTheme.reducedMotion."
+  },
+  {
+    "file": "lib/presentation/widgets/flame_tracked_overlay.dart",
+    "rule": "rtlDirectionalSafety",
+    "reason": "Định vị 1 overlay Flutter tại điểm world-space của Flame GameWidget (toạ độ tuyệt đối theo camera, không phải layout theo hướng chữ)."
+  }
+]
