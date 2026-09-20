@@ -34,6 +34,7 @@ export 'core/inventory_service.dart';
 export 'core/kit_bootstrap.dart';
 export 'core/local_scoreboard_service.dart';
 export 'core/locale_service.dart';
+export 'core/memory_lifecycle_watchdog.dart';
 export 'core/lifecycle_coordinator.dart';
 export 'core/game_session_controller.dart';
 export 'core/game_time_controller.dart';
