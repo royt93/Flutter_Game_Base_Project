@@ -1,36 +1,65 @@
 # roy_casual_kit
 
-A Flutter package bundling the core services and casual-game widget kit
-behind a Candy-Crush-style puzzle game: local storage, i18n, audio, haptics,
-local reminders, and theme tokens, plus a 47-widget UI kit (buttons,
-overlays, progress/reward, layout & cards, game-specific, and game-feel/juice)
-built on GetX and styled with a bright candy palette.
+A Flutter SDK for casual/idle games built on GetX + Flame: local storage,
+i18n, audio, haptics, local reminders, theme tokens, an economy/progression
+layer, live-ops and remote-content tooling, privacy-aware analytics, and a
+58-widget candy-styled UI kit — one `RoyCasualKit.initialize(...)` call
+replaces hand-rolling `Get.put` calls for every service a casual game
+typically needs to build from scratch.
 
 ## What's in the package
 
-- `lib/core/` — `StorageService`/`StorageKeys` (SharedPreferences wrapper),
-  `AppTranslations`/`LocaleService` (i18n), `AudioManager`, `Haptics`,
-  `ReminderService` (local notifications), `NeonTheme` design tokens, plus
-  `ShareHelper`, `AppInfo`, `RuntimeFlags`, `debug_log`, and small utils
-  (clamped clock, number formatting, longest-word font-fit).
-- `lib/presentation/widgets/` — the neon widget kit (`NeonButton`,
-  `NeonDialog`, `NeonAppBar`, `NeonBg`, `NeonAuraLayer`, `AuroraBgLayer`,
-  `NeonIcon`, `StrokeText`, `PressableScale`) plus
-  `lib/presentation/widgets/common/`: 40 generic, game-agnostic widgets —
-  buttons & interactive (`CommonButton`, `ToggleSwitch`, `SegmentedTabBar`,
-  `IconBadgeButton`, `SoundToggleFab`), feedback & overlay
-  (`LoadingOverlay`, `ToastBanner`, `TooltipBubble`, `BottomSheetPanel`,
-  `ConfirmDialog`, `ConfettiOverlay`, `FloatingComboText`,
-  `NetworkStatusBanner`, `ShimmerPlaceholder`, `SpotlightOverlay`), progress
-  & reward (`ProgressBarStars`, `CircularProgressRing`, `StarRating`,
-  `CurrencyCounter`, `RewardPopup`, `BadgeDot`, `StreakCounter`,
-  `CountdownChip`, `PaginatedDotsIndicator`, `CoinFlyOverlay`,
-  `DailyLoginCalendarWidget`, `EnergyBar`), layout & cards (`PanelCard`,
-  `ListTileRow`, `SectionHeader`, `EmptyStatePlaceholder`, `AvatarFrame`,
-  `RibbonBadge`, `ShopItemCard`, `VictoryCardTemplate`, `LeaderboardList`), game-specific
-  (`LevelSelectGrid`), and game-feel/juice (`SquashStretch`, `ScreenShake`,
-  `ComboHeatBackground`) — all exported from one barrel,
-  `lib/presentation/widgets/common/common_widgets.dart`.
+`lib/core/` groups by what the service is for — grep `lib/roy_casual_kit.dart`
+or `CLAUDE.md`'s Architecture section for the exhaustive, always-current list;
+this is the shape, not a full inventory:
+
+- **Bootstrap** — `RoyCasualKit.initialize(config: ...)` registers every
+  requested core service idempotently and never throws; a failing module is
+  reported in the result instead of crashing boot.
+- **Storage & save data** — `StorageService` (SharedPreferences wrapper with
+  a write-behind buffer for hot-path counters), `VersionedJsonStore` +
+  `SaveMigrationRegistry` (schema-versioned saves with multi-hop migration),
+  `SaveSlotManager`, `save_integrity.dart` (HMAC tamper detection),
+  `DisasterRecoverySaveExport`, `CheckpointCoordinator`.
+- **Economy & progression** — `EconomyWallet`, `RewardTransactionPipeline`,
+  `PlayerProgressionService`, `InventoryService`, `EnergyService`,
+  `OfflineProgressionService` (cheat-proof idle earnings, see below),
+  `DailyLoginService`, `DailyQuestService`, `AchievementService`,
+  `LocalScoreboardService`, `PurchaseLedgerService` + `PurchaseSeam`.
+- **Live-ops & remote content** — `RemoteConfigService`, `RemoteContentPack`
+  (signed, versioned, asset-fallback-then-fetch), the Remote Schema Compiler
+  (`tool/remote_schema_compiler.dart`, compiles a declarative schema into a
+  typed, self-contained Dart model), `RemoteKillSwitchController`,
+  `SeasonEventService`, `ExperimentBucketingService`.
+- **Privacy, analytics & diagnostics** — `ConsentStateService` +
+  `ConsentGatedAnalyticsProvider`, `PrivacyAwareAnalyticsSampler`
+  (consent-gated, deterministically-sampled, rate-limited),
+  `SdkEventSchemaRegistry` (PII redaction before any event ships),
+  `SdkHealthReport`, `DiagnosticsExportBundle`, `CrashReporter` seam.
+- **Platform seams** (bring your own adapter) — `AnalyticsProvider`,
+  `CrashReporter`, `CloudSaveProvider`, `PurchaseSeam`,
+  `SecureStorageAdapter`, `RemoteConfigService`.
+- **App/session infrastructure** — `AppVersionGate`, `AppSessionTracker`,
+  `RoyLifecycleCoordinator`, `GameSessionController`, `GameTimeController`,
+  `ConnectivityCoordinator`, `DeepLinkCommandRouter`,
+  `OnboardingCoordinatorService`, `InAppReviewHelper`.
+- **i18n, audio, haptics, theme** — `AppTranslations`/`LocaleService`,
+  `AudioManager`, `Haptics` + `HapticChoreographer`, `NeonTheme` design
+  tokens (light-candy default, neon-dark and color-blind-safe variants).
+- **Dev/CI tooling** (`tool/`, headless `dart run`, no device needed) —
+  accessibility audit, dependency SBOM/security gate, asset-license
+  manifest check, API-compatibility gate, performance budget CI, pseudo-locale
+  QA harness, consumer-app starter generator.
+
+`lib/presentation/widgets/` — the neon widget kit (`NeonButton`,
+`NeonDialog`, `NeonAppBar`, `NeonBg`, `NeonAuraLayer`, `AuroraBgLayer`,
+`NeonIcon`, `StrokeText`, `PressableScale` — keyboard/gamepad-activatable,
+not just touch) plus `lib/presentation/widgets/common/`: 58 generic,
+game-agnostic widgets spanning buttons/interactive, feedback/overlay,
+progress/reward, layout/cards, game-specific, and game-feel/juice —
+`example/lib/screens/widget_showcase_screen.dart` is the living usage
+reference, and the whole set is exported from one barrel,
+`lib/presentation/widgets/common/common_widgets.dart`.
 
 ## Cheat-proof offline earnings
 
@@ -73,6 +102,25 @@ dependencies:
 ```
 
 ## Usage
+
+Bootstrap the services a game needs once at startup, instead of hand-rolling
+`Get.put` calls for each one:
+
+```dart
+await RoyCasualKit.initialize(
+  config: RoyCasualKitConfig(
+    modules: {
+      RoyCasualKitModule.storage,
+      RoyCasualKitModule.locale,
+      RoyCasualKitModule.audio,
+      RoyCasualKitModule.lifecycle,
+    },
+  ),
+);
+```
+
+A module that fails to register is reported in the returned result instead
+of crashing boot — see `RoyCasualKitResult`/`RoyCasualKitStatus`.
 
 ```dart
 import 'package:flutter/material.dart';
