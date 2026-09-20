@@ -53,6 +53,7 @@ export 'core/purchase_seam.dart';
 export 'core/reminder_service.dart';
 export 'core/remote_config_service.dart';
 export 'core/remote_content_pack.dart';
+export 'core/remote_kill_switch_controller.dart';
 export 'core/replay_recorder.dart';
 export 'core/reward_transaction_pipeline.dart';
 export 'core/runtime_flags.dart';
