@@ -1,0 +1,13 @@
+{
+  "packName": "shopCatalog",
+  "versions": [
+    {
+      "version": 1,
+      "fields": [
+        {"name": "title", "type": "string"},
+        {"name": "price", "type": "int"},
+        {"name": "onSale", "type": "boolean"}
+      ]
+    }
+  ]
+}

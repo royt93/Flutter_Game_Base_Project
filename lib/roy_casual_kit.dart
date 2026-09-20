@@ -89,6 +89,7 @@ export 'core/utils/weighted_random_pick.dart';
 export 'core/utils/object_pool.dart';
 export 'core/utils/performance_budget.dart';
 export 'core/utils/pseudo_locale.dart';
+export 'core/utils/remote_schema_compiler.dart';
 export 'core/utils/theme_contrast_validator.dart';
 
 // Flame starter game and top-level presentation widgets.
