@@ -3,9 +3,9 @@
 A Flutter SDK for casual/idle games built on GetX + Flame: local storage,
 i18n, audio, haptics, local reminders, theme tokens, an economy/progression
 layer, live-ops and remote-content tooling, privacy-aware analytics, and a
-58-widget candy-styled UI kit — one `RoyCasualKit.initialize(...)` call
-replaces hand-rolling `Get.put` calls for every service a casual game
-typically needs to build from scratch.
+candy-styled widget kit — one `RoyCasualKit.initialize(...)` call replaces
+hand-rolling `Get.put` calls for every service a casual game typically needs
+to build from scratch.
 
 ## What's in the package
 
@@ -54,8 +54,8 @@ this is the shape, not a full inventory:
 `lib/presentation/widgets/` — the neon widget kit (`NeonButton`,
 `NeonDialog`, `NeonAppBar`, `NeonBg`, `NeonAuraLayer`, `AuroraBgLayer`,
 `NeonIcon`, `StrokeText`, `PressableScale` — keyboard/gamepad-activatable,
-not just touch) plus `lib/presentation/widgets/common/`: 58 generic,
-game-agnostic widgets spanning buttons/interactive, feedback/overlay,
+not just touch) plus `lib/presentation/widgets/common/`: a large set of
+generic, game-agnostic widgets spanning buttons/interactive, feedback/overlay,
 progress/reward, layout/cards, game-specific, and game-feel/juice —
 `example/lib/screens/widget_showcase_screen.dart` is the living usage
 reference, and the whole set is exported from one barrel,
@@ -87,13 +87,11 @@ read — the baseline is seeded to "now", not epoch zero.
 
 ## Install
 
-Not yet published to pub.dev. Once it is:
-
 ```bash
 flutter pub add roy_casual_kit
 ```
 
-For local testing before publishing, depend on it directly:
+For working against an unreleased local change, depend on it directly instead:
 
 ```yaml
 dependencies:
@@ -152,9 +150,13 @@ network or vendor SDK dependencies.
 
 ## See it live
 
-`example/` is a separate Flutter app (its own `pubspec.yaml`, `android/`,
-`ios/`) that depends on this package via `path: ../` and exercises every
-widget in `WidgetShowcaseScreen`:
+`example/` is a separate, full Flutter app (its own `pubspec.yaml`,
+`android/`, `ios/`) — deliberately not a trimmed-down toy demo. Its
+`lib/main.dart` wires up real usage of most modules covered above
+(bootstrap, lifecycle, deep links, audio, reminders, theming); reading it
+directly is the fastest way to see the actual integration pattern, not just
+a single-widget snippet. See `example/README.md` for a tour of which file
+covers what.
 
 ```bash
 cd example && flutter run

@@ -1,6 +1,6 @@
 name: roy_casual_kit
-description: "A lean core-services + casual-game widget kit for Flutter (GetX + Flame): storage, i18n, audio, haptics, local reminders, theme tokens, and a 47-widget candy-styled UI kit."
-version: 0.2.0
+description: "A casual/idle-game SDK for Flutter (GetX + Flame): storage, i18n, audio, haptics, reminders, economy/progression, live-ops tooling, and a candy-styled widget kit."
+version: 0.2.1
 homepage: https://github.com/royt93/Flutter_Game_Base_Project
 repository: https://github.com/royt93/Flutter_Game_Base_Project
 issue_tracker: https://github.com/royt93/Flutter_Game_Base_Project/issues
@@ -10,6 +10,26 @@ topics:
   - ui
   - flame
   - casual-game
+
+screenshots:
+  - description: 'Home screen of the example app, light theme.'
+    path: screenshots/home_light.png
+  - description: 'Home screen, neon-dark theme — same NeonTheme tokens, no call-site changes.'
+    path: screenshots/home_dark.png
+  - description: 'Settings screen: locale, audio mute, dark mode, and color-blind-safe toggles.'
+    path: screenshots/settings_light.png
+  - description: 'Settings screen in dark mode.'
+    path: screenshots/settings_dark.png
+  - description: 'Widget kit showcase: buttons and interactive controls, light theme.'
+    path: screenshots/widget_kit_buttons_light.png
+  - description: 'Widget kit showcase: buttons and interactive controls, dark theme.'
+    path: screenshots/widget_kit_buttons.png
+  - description: 'Widget kit showcase: badges, sound toggle, and other interactive widgets.'
+    path: screenshots/widget_kit_interactive.png
+  - description: 'Widget kit showcase: tooltips, bottom sheet, confirm dialog, and network banner.'
+    path: screenshots/widget_kit_overlays.png
+  - description: 'Flame game shell embedded in a normal Flutter widget tree, with a world-tracked HUD label.'
+    path: screenshots/game_demo.png
 
 environment:
   sdk: ^3.9.0
