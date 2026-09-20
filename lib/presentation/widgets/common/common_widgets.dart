@@ -69,6 +69,7 @@ export 'backup_restore_panel.dart';
 // Game-specific
 export 'level_select_grid.dart';
 export 'adaptive_game_hud.dart';
+export 'level_up_overlay.dart';
 
 // Game-feel / juice (IDEA-08)
 export 'squash_stretch.dart';

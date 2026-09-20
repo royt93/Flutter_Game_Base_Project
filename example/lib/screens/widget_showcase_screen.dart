@@ -538,6 +538,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _haptics.cancel();
     _assetSession.onClose();
     _sceneTransition.dispose();
+    _levelUpController.dispose();
     super.dispose();
   }
 
@@ -595,17 +596,24 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   }
 
   Future<void> _grantProgressionXp(BuildContext context, int amount) async {
-    final beforeLevel = _progression.snapshot.value.level;
+    // FEAT-54: collect every LevelUpEvent PlayerProgressionService.grantXp
+    // fires (one per level crossed, in order) into a local buffer — the
+    // demo's own responsibility, not LevelUpOverlayController's. The
+    // overlay only ever receives already-crossed LevelUpEvents.
+    final crossed = <LevelUpEvent>[];
+    final sub = _progression.onLevelUp.listen((event) {
+      if (event != null) crossed.add(event);
+    });
     await _progression.grantXp(
       amount: amount,
       transactionId: 'demo_grant_${DateTime.now().microsecondsSinceEpoch}',
     );
-    final afterLevel = _progression.snapshot.value.level;
-    if (afterLevel > beforeLevel && context.mounted) {
-      ToastBanner.show(
-        context,
-        message: 'Level up! $beforeLevel → $afterLevel',
-        color: NeonTheme.purple,
+    await sub.cancel();
+    if (crossed.isNotEmpty) {
+      unawaited(
+        _levelUpController.show([
+          for (final event in crossed) LevelUpCelebration(event: event),
+        ]),
       );
     }
   }
@@ -765,6 +773,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   late final EconomyWallet _progressionWallet;
   late final RewardTransactionPipeline _progressionPipeline;
   late final PlayerProgressionService _progression;
+  // FEAT-54: presents whatever LevelUpEvents _grantProgressionXp collected
+  // from _progression.onLevelUp during its grantXp call — the overlay
+  // never calls grantXp/pipeline.grant itself.
+  final _levelUpController = LevelUpOverlayController();
   // FEAT-44: catalog riêng cho demo — potion stack tới 10, sword không
   // stack nhưng equip được.
   static const _inventoryCatalog = {
@@ -960,2169 +972,2213 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     // "Achievements" demo card below) shows a ToastBanner via
     // AchievementUnlockListener — reuses the existing toast, no new overlay
     // plumbing.
-    return AchievementUnlockListener(
-      child: Scaffold(
-        body: Stack(
-          children: [
-            NeonBg(
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    NeonAppBar(title: 'Widget Kit', color: NeonTheme.magenta),
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.all(NeonTheme.s16),
-                        children: [
-                          const SectionHeader(title: 'Buttons & Interactive'),
-                          const SizedBox(height: NeonTheme.s16),
-                          _Demo(
-                            label: 'CommonButton',
-                            child: Wrap(
-                              spacing: NeonTheme.s16,
-                              runSpacing: NeonTheme.s16,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                CommonButton(
-                                  key: _spotlightTargetKey,
-                                  label: 'Primary',
-                                  width: 140,
-                                  onTap: () {},
-                                ),
-                                CommonButton(
-                                  label: 'Secondary',
-                                  width: 140,
-                                  variant: CommonButtonVariant.secondary,
-                                  onTap: () {},
-                                ),
-                                CommonButton(
-                                  label: 'Danger',
-                                  width: 140,
-                                  variant: CommonButtonVariant.danger,
-                                  onTap: () {},
-                                ),
-                                CommonButton(
-                                  icon: Icons.settings_rounded,
-                                  variant: CommonButtonVariant.icon,
-                                  onTap: () {},
-                                ),
-                                // IDEA-53: loading state — blocks re-tap and
-                                // shows a spinner for a fake 1.5s async call.
-                                CommonButton(
-                                  label: 'Simulate async',
-                                  width: 180,
-                                  loading: _commonButtonLoading,
-                                  onTap: _simulateAsyncButton,
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'AsyncCommonButton',
-                            child: Wrap(
-                              spacing: NeonTheme.s16,
-                              runSpacing: NeonTheme.s16,
-                              children: [
-                                // FEAT-50: self-managed loading→success, no
-                                // manual bool needed like the demo above.
-                                AsyncCommonButton(
-                                  label: 'Save',
-                                  width: 160,
-                                  onPressed: () => Future<void>.delayed(
-                                    const Duration(milliseconds: 1200),
+    // FEAT-54: wraps the whole screen, same "overlay everything" pattern
+    // as PauseOverlay/NeonDialog.overlay — works over any content
+    // (including, in a real game, a full-screen Flame GameWidget).
+    return LevelUpOverlay(
+      controller: _levelUpController,
+      onSkipTap: _levelUpController.skip,
+      child: AchievementUnlockListener(
+        child: Scaffold(
+          body: Stack(
+            children: [
+              NeonBg(
+                child: SafeArea(
+                  child: Column(
+                    children: [
+                      NeonAppBar(title: 'Widget Kit', color: NeonTheme.magenta),
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.all(NeonTheme.s16),
+                          children: [
+                            const SectionHeader(title: 'Buttons & Interactive'),
+                            const SizedBox(height: NeonTheme.s16),
+                            _Demo(
+                              label: 'CommonButton',
+                              child: Wrap(
+                                spacing: NeonTheme.s16,
+                                runSpacing: NeonTheme.s16,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  CommonButton(
+                                    key: _spotlightTargetKey,
+                                    label: 'Primary',
+                                    width: 140,
+                                    onTap: () {},
                                   ),
-                                ),
-                                AsyncCommonButton(
-                                  label: 'Fails',
-                                  width: 160,
-                                  variant: CommonButtonVariant.danger,
-                                  onPressed: () => Future<void>.delayed(
-                                    const Duration(milliseconds: 800),
-                                    () => throw Exception('demo error'),
+                                  CommonButton(
+                                    label: 'Secondary',
+                                    width: 140,
+                                    variant: CommonButtonVariant.secondary,
+                                    onTap: () {},
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'CandyToggleSwitch',
-                            child: Row(
-                              children: [
-                                CandyToggleSwitch(
-                                  value: _toggleOn,
-                                  onChanged: (v) =>
-                                      setState(() => _toggleOn = v),
-                                ),
-                                const SizedBox(width: NeonTheme.s16),
-                                Text(_toggleOn ? 'On' : 'Off'),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'HoldToConfirmButton',
-                            child: Wrap(
-                              spacing: NeonTheme.s16,
-                              runSpacing: NeonTheme.s16,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                HoldToConfirmButton(
-                                  label: 'Delete',
-                                  onConfirm: () =>
-                                      setState(() => _holdToConfirmCount++),
-                                ),
-                                HoldToConfirmButton(
-                                  label: 'Reset',
-                                  shape: HoldToConfirmShape.linear,
-                                  width: 180,
-                                  onConfirm: () =>
-                                      setState(() => _holdToConfirmCount++),
-                                ),
-                                Text('Confirmed: $_holdToConfirmCount'),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'SegmentedTabBar',
-                            child: SegmentedTabBar(
-                              labels: const ['Easy', 'Normal', 'Hard'],
-                              selectedIndex: _tabIndex,
-                              onChanged: (i) => setState(() => _tabIndex = i),
-                            ),
-                          ),
-                          _Demo(
-                            label: 'IconBadgeButton',
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconBadgeButton(
-                                  icon: Icons.notifications_rounded,
-                                  semanticLabel: 'Notifications',
-                                  showBadge: true,
-                                  onTap: () {},
-                                ),
-                                const SizedBox(width: NeonTheme.s24),
-                                IconBadgeButton(
-                                  icon: Icons.mail_rounded,
-                                  semanticLabel: 'Mail',
-                                  badgeCount: _mailBadgeCount,
-                                  onTap: () =>
-                                      setState(() => _mailBadgeCount++),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Hidden if AudioManager isn't registered — the
-                          // example app always registers it (see main.dart),
-                          // so it renders here.
-                          const _Demo(
-                            label: 'SoundToggleFab',
-                            child: SoundToggleFab(),
-                          ),
-                          _Demo(
-                            label: 'AudioManager audio ducking (IDEA-45)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(
-                                  'Bấm để phát 1 SFX ngắn — bgm tự giảm '
-                                  'volume trong lúc SFX phát, tự trả về sau '
-                                  'khi xong. Nghe thật trên máy để cảm nhận.',
-                                  style: TextStyle(
-                                    color: NeonTheme.inkSoft,
-                                    fontSize: 12,
+                                  CommonButton(
+                                    label: 'Danger',
+                                    width: 140,
+                                    variant: CommonButtonVariant.danger,
+                                    onTap: () {},
                                   ),
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                Text(
-                                  'duckCount: $_duckDemoCount'
-                                  '${_duckDemoCount > 0 ? ' (bgm ducked)' : ''}',
-                                  style: TextStyle(
-                                    color: NeonTheme.ink,
-                                    fontWeight: FontWeight.w700,
+                                  CommonButton(
+                                    icon: Icons.settings_rounded,
+                                    variant: CommonButtonVariant.icon,
+                                    onTap: () {},
                                   ),
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                CommonButton(
-                                  label: 'Play SFX (duck bgm)',
-                                  onTap: _playDuckDemo,
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label:
-                                'throttled() — bấm nhanh nhiều lần để so sánh',
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    children: [
-                                      CommonButton(
-                                        label: 'Không throttle',
-                                        onTap: () =>
-                                            setState(() => _plainTapCount++),
-                                      ),
-                                      Text('Đếm: $_plainTapCount'),
-                                    ],
+                                  // IDEA-53: loading state — blocks re-tap and
+                                  // shows a spinner for a fake 1.5s async call.
+                                  CommonButton(
+                                    label: 'Simulate async',
+                                    width: 180,
+                                    loading: _commonButtonLoading,
+                                    onTap: _simulateAsyncButton,
                                   ),
-                                ),
-                                const SizedBox(width: NeonTheme.s16),
-                                Expanded(
-                                  child: Column(
-                                    children: [
-                                      CommonButton(
-                                        label: 'Có throttle',
-                                        onTap: _throttledIncrement,
-                                      ),
-                                      Text('Đếm: $_throttledTapCount'),
-                                    ],
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'AsyncCommonButton',
+                              child: Wrap(
+                                spacing: NeonTheme.s16,
+                                runSpacing: NeonTheme.s16,
+                                children: [
+                                  // FEAT-50: self-managed loading→success, no
+                                  // manual bool needed like the demo above.
+                                  AsyncCommonButton(
+                                    label: 'Save',
+                                    width: 160,
+                                    onPressed: () => Future<void>.delayed(
+                                      const Duration(milliseconds: 1200),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  AsyncCommonButton(
+                                    label: 'Fails',
+                                    width: 160,
+                                    variant: CommonButtonVariant.danger,
+                                    onPressed: () => Future<void>.delayed(
+                                      const Duration(milliseconds: 800),
+                                      () => throw Exception('demo error'),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          _Demo(
-                            label: 'CandyTextField',
-                            child: CandyTextField(
-                              controller: _candyTextFieldController,
-                              hintText: 'Player name',
-                              prefixIcon: Icons.person_outline,
-                              validator: (v) => (v == null || v.isEmpty)
-                                  ? 'Không được để trống'
-                                  : null,
+                            _Demo(
+                              label: 'CandyToggleSwitch',
+                              child: Row(
+                                children: [
+                                  CandyToggleSwitch(
+                                    value: _toggleOn,
+                                    onChanged: (v) =>
+                                        setState(() => _toggleOn = v),
+                                  ),
+                                  const SizedBox(width: NeonTheme.s16),
+                                  Text(_toggleOn ? 'On' : 'Off'),
+                                ],
+                              ),
                             ),
-                          ),
-
-                          const SizedBox(height: NeonTheme.s24),
-                          const SectionHeader(title: 'Feedback & Overlay'),
-                          const SizedBox(height: NeonTheme.s16),
-                          _Demo(
-                            label: 'LoadingOverlay',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  height: 120,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(18),
-                                    child: Stack(
+                            _Demo(
+                              label: 'HoldToConfirmButton',
+                              child: Wrap(
+                                spacing: NeonTheme.s16,
+                                runSpacing: NeonTheme.s16,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  HoldToConfirmButton(
+                                    label: 'Delete',
+                                    onConfirm: () =>
+                                        setState(() => _holdToConfirmCount++),
+                                  ),
+                                  HoldToConfirmButton(
+                                    label: 'Reset',
+                                    shape: HoldToConfirmShape.linear,
+                                    width: 180,
+                                    onConfirm: () =>
+                                        setState(() => _holdToConfirmCount++),
+                                  ),
+                                  Text('Confirmed: $_holdToConfirmCount'),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'SegmentedTabBar',
+                              child: SegmentedTabBar(
+                                labels: const ['Easy', 'Normal', 'Hard'],
+                                selectedIndex: _tabIndex,
+                                onChanged: (i) => setState(() => _tabIndex = i),
+                              ),
+                            ),
+                            _Demo(
+                              label: 'IconBadgeButton',
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconBadgeButton(
+                                    icon: Icons.notifications_rounded,
+                                    semanticLabel: 'Notifications',
+                                    showBadge: true,
+                                    onTap: () {},
+                                  ),
+                                  const SizedBox(width: NeonTheme.s24),
+                                  IconBadgeButton(
+                                    icon: Icons.mail_rounded,
+                                    semanticLabel: 'Mail',
+                                    badgeCount: _mailBadgeCount,
+                                    onTap: () =>
+                                        setState(() => _mailBadgeCount++),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Hidden if AudioManager isn't registered — the
+                            // example app always registers it (see main.dart),
+                            // so it renders here.
+                            const _Demo(
+                              label: 'SoundToggleFab',
+                              child: SoundToggleFab(),
+                            ),
+                            _Demo(
+                              label: 'AudioManager audio ducking (IDEA-45)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    'Bấm để phát 1 SFX ngắn — bgm tự giảm '
+                                    'volume trong lúc SFX phát, tự trả về sau '
+                                    'khi xong. Nghe thật trên máy để cảm nhận.',
+                                    style: TextStyle(
+                                      color: NeonTheme.inkSoft,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Text(
+                                    'duckCount: $_duckDemoCount'
+                                    '${_duckDemoCount > 0 ? ' (bgm ducked)' : ''}',
+                                    style: TextStyle(
+                                      color: NeonTheme.ink,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  CommonButton(
+                                    label: 'Play SFX (duck bgm)',
+                                    onTap: _playDuckDemo,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label:
+                                  'throttled() — bấm nhanh nhiều lần để so sánh',
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Expanded(
+                                    child: Column(
                                       children: [
-                                        Container(color: NeonTheme.cardAlt),
-                                        if (_showLoadingOverlay)
-                                          const LoadingOverlay(
-                                            message: 'Loading...',
-                                          ),
+                                        CommonButton(
+                                          label: 'Không throttle',
+                                          onTap: () =>
+                                              setState(() => _plainTapCount++),
+                                        ),
+                                        Text('Đếm: $_plainTapCount'),
                                       ],
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(
-                                  label: 'Show for 1.2s',
-                                  onTap: _flashLoadingOverlay,
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'ToastBanner',
-                            child: CommonButton(
-                              label: 'Show toast',
-                              onTap: () => ToastBanner.show(
-                                context,
-                                message: 'Saved!',
-                                color: NeonTheme.lime,
-                              ),
-                            ),
-                          ),
-                          _Demo(
-                            label: 'TooltipBubble',
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                TooltipBubble.text('Tap to pop!'),
-                                const SizedBox(width: NeonTheme.s24),
-                                TooltipBubble(
-                                  color: NeonTheme.cyan,
-                                  direction: TooltipPointerDirection.down,
-                                  child: Text(
-                                    'Combo x3',
-                                    style: TextStyle(
-                                      color: NeonTheme.ink,
-                                      fontWeight: FontWeight.w800,
+                                  const SizedBox(width: NeonTheme.s16),
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        CommonButton(
+                                          label: 'Có throttle',
+                                          onTap: _throttledIncrement,
+                                        ),
+                                        Text('Đếm: $_throttledTapCount'),
+                                      ],
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                          _Demo(
-                            label: 'BottomSheetPanel + showCommonBottomSheet',
-                            child: CommonButton(
-                              label: 'Open sheet',
-                              onTap: _runBottomSheet,
+                            _Demo(
+                              label: 'CandyTextField',
+                              child: CandyTextField(
+                                controller: _candyTextFieldController,
+                                hintText: 'Player name',
+                                prefixIcon: Icons.person_outline,
+                                validator: (v) => (v == null || v.isEmpty)
+                                    ? 'Không được để trống'
+                                    : null,
+                              ),
                             ),
-                          ),
-                          _Demo(
-                            label: 'ConfirmDialog (showConfirmDialog)',
-                            child: CommonButton(
-                              label: 'Delete...',
-                              variant: CommonButtonVariant.danger,
-                              onTap: _runConfirmDialog,
-                            ),
-                          ),
-                          _Demo(
-                            label: 'Network Banner',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: NetworkStatusBanner(
-                                    key: const Key('networkBannerDemo'),
-                                    connected: _networkConnected,
+
+                            const SizedBox(height: NeonTheme.s24),
+                            const SectionHeader(title: 'Feedback & Overlay'),
+                            const SizedBox(height: NeonTheme.s16),
+                            _Demo(
+                              label: 'LoadingOverlay',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    height: 120,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(18),
+                                      child: Stack(
+                                        children: [
+                                          Container(color: NeonTheme.cardAlt),
+                                          if (_showLoadingOverlay)
+                                            const LoadingOverlay(
+                                              message: 'Loading...',
+                                            ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(
-                                  label: _networkConnected
-                                      ? 'Go offline'
-                                      : 'Go online',
-                                  variant: _networkConnected
-                                      ? CommonButtonVariant.danger
-                                      : CommonButtonVariant.primary,
-                                  onTap: () => setState(
-                                    () =>
-                                        _networkConnected = !_networkConnected,
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: 'Show for 1.2s',
+                                    onTap: _flashLoadingOverlay,
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                          _Demo(
-                            label: 'ConnectivityCoordinator (FEAT-62)',
-                            child: StreamBuilder<ConnectivityState>(
-                              stream: _connectivity.stateStream,
-                              initialData: _connectivity.state,
-                              builder: (context, snapshot) {
-                                final state =
-                                    snapshot.data ?? _connectivity.state;
+                            _Demo(
+                              label: 'ToastBanner',
+                              child: CommonButton(
+                                label: 'Show toast',
+                                onTap: () => ToastBanner.show(
+                                  context,
+                                  message: 'Saved!',
+                                  color: NeonTheme.lime,
+                                ),
+                              ),
+                            ),
+                            _Demo(
+                              label: 'TooltipBubble',
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TooltipBubble.text('Tap to pop!'),
+                                  const SizedBox(width: NeonTheme.s24),
+                                  TooltipBubble(
+                                    color: NeonTheme.cyan,
+                                    direction: TooltipPointerDirection.down,
+                                    child: Text(
+                                      'Combo x3',
+                                      style: TextStyle(
+                                        color: NeonTheme.ink,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'BottomSheetPanel + showCommonBottomSheet',
+                              child: CommonButton(
+                                label: 'Open sheet',
+                                onTap: _runBottomSheet,
+                              ),
+                            ),
+                            _Demo(
+                              label: 'ConfirmDialog (showConfirmDialog)',
+                              child: CommonButton(
+                                label: 'Delete...',
+                                variant: CommonButtonVariant.danger,
+                                onTap: _runConfirmDialog,
+                              ),
+                            ),
+                            _Demo(
+                              label: 'Network Banner',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: NetworkStatusBanner(
+                                      key: const Key('networkBannerDemo'),
+                                      connected: _networkConnected,
+                                    ),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: _networkConnected
+                                        ? 'Go offline'
+                                        : 'Go online',
+                                    variant: _networkConnected
+                                        ? CommonButtonVariant.danger
+                                        : CommonButtonVariant.primary,
+                                    onTap: () => setState(
+                                      () => _networkConnected =
+                                          !_networkConnected,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'ConnectivityCoordinator (FEAT-62)',
+                              child: StreamBuilder<ConnectivityState>(
+                                stream: _connectivity.stateStream,
+                                initialData: _connectivity.state,
+                                builder: (context, snapshot) {
+                                  final state =
+                                      snapshot.data ?? _connectivity.state;
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: NetworkStatusBanner.stream(
+                                          key: const Key(
+                                            'connectivityCoordinatorBanner',
+                                          ),
+                                          connected:
+                                              _connectivity.connectedStream,
+                                          initialConnected: false,
+                                        ),
+                                      ),
+                                      const SizedBox(height: NeonTheme.s8),
+                                      Text('State: ${state.name}'),
+                                      const SizedBox(height: NeonTheme.s16),
+                                      Wrap(
+                                        spacing: NeonTheme.s8,
+                                        children: [
+                                          CommonButton(
+                                            label: 'Interface up',
+                                            variant:
+                                                CommonButtonVariant.secondary,
+                                            onTap: () => _connectivitySignal
+                                                .setHasInterface(true),
+                                          ),
+                                          CommonButton(
+                                            label: 'Interface down',
+                                            variant: CommonButtonVariant.danger,
+                                            onTap: () => _connectivitySignal
+                                                .setHasInterface(false),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: NeonTheme.s8),
+                                      CommonButton(
+                                        label: _demoProbeSucceeds
+                                            ? 'Probe: OK (tap to break it)'
+                                            : 'Probe: FAILING (tap to fix it)',
+                                        onTap: () => setState(
+                                          () => _demoProbeSucceeds =
+                                              !_demoProbeSucceeds,
+                                        ),
+                                      ),
+                                      const SizedBox(height: NeonTheme.s16),
+                                      Text(
+                                        'Queue: ${_connectivity.queueLength} pending, '
+                                        '$_demoQueueRanCount đã chạy',
+                                      ),
+                                      const SizedBox(height: NeonTheme.s8),
+                                      CommonButton(
+                                        label: 'Enqueue demo sync task',
+                                        onTap: () => setState(
+                                          () => _connectivity.enqueue(
+                                            QueuedTask(
+                                              idempotencyKey: 'demo_sync',
+                                              run: () async => setState(
+                                                () => _demoQueueRanCount++,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                            _Demo(
+                              label: 'DeepLinkCommandRouter (FEAT-60)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CandyTextField(
+                                    key: const Key('deepLinkUriField'),
+                                    controller: _deepLinkController,
+                                    hintText: 'Deep link URI',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  Wrap(
+                                    spacing: NeonTheme.s8,
+                                    children: [
+                                      CommonButton(
+                                        label: 'Simulate link',
+                                        onTap: () async {
+                                          final uri = Uri.tryParse(
+                                            _deepLinkController.text,
+                                          );
+                                          if (uri == null) {
+                                            setState(
+                                              () => _deepLinkLog =
+                                                  'URI không hợp lệ.',
+                                            );
+                                            return;
+                                          }
+                                          final result = await _deepLinks
+                                              .handleUri(uri);
+                                          setState(
+                                            () => _deepLinkLog =
+                                                'outcome: ${result.outcome.name}',
+                                          );
+                                        },
+                                      ),
+                                      CommonButton(
+                                        label: 'Simulate lại (duplicate)',
+                                        variant: CommonButtonVariant.secondary,
+                                        onTap: () async {
+                                          final uri = Uri.tryParse(
+                                            _deepLinkController.text,
+                                          );
+                                          if (uri == null) return;
+                                          final result = await _deepLinks
+                                              .handleUri(uri);
+                                          setState(
+                                            () => _deepLinkLog =
+                                                'outcome: ${result.outcome.name}',
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  Text(_deepLinkLog),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Text(
+                                    'Thật: adb shell am start -a android.intent.action.VIEW '
+                                    '-d "roycasualkit://open/level/5"',
+                                    style: TextStyle(
+                                      color: NeonTheme.muted,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'AppVersionGate (FEAT-59)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CommonButton(
+                                    label:
+                                        'Scenario: $_versionGateScenario (bấm để đổi)',
+                                    onTap: () async {
+                                      const order = [
+                                        'ok',
+                                        'soft',
+                                        'force',
+                                        'maintenance',
+                                      ];
+                                      final next =
+                                          order[(order.indexOf(
+                                                    _versionGateScenario,
+                                                  ) +
+                                                  1) %
+                                              order.length];
+                                      // Instance MỚI mỗi lần đổi scenario —
+                                      // RemoteConfigService.init() không reset
+                                      // _config khi load asset lỗi (giữ config
+                                      // cũ làm fallback, đúng ý ENH-58), nên
+                                      // gọi lại init() nhiều lần trên CÙNG 1
+                                      // instance sẽ TÍCH LUỸ key cũ thay vì
+                                      // thay hẳn — không đúng ý demo "đổi hẳn
+                                      // sang scenario khác".
+                                      final remoteConfig = RemoteConfigService(
+                                        assetPath:
+                                            'assets/nonexistent_app_version_gate.json',
+                                        fetchRemote: () async {
+                                          switch (next) {
+                                            case 'soft':
+                                              return {
+                                                'appVersionRecommended':
+                                                    '9999.0.0',
+                                              };
+                                            case 'force':
+                                              return {
+                                                'appVersionMinimum': '9999.0.0',
+                                              };
+                                            case 'maintenance':
+                                              return {
+                                                'appVersionMaintenanceActive':
+                                                    true,
+                                                'appVersionMaintenanceMessage':
+                                                    'Đang bảo trì demo, quay lại sau nhé.',
+                                              };
+                                            default:
+                                              return {};
+                                          }
+                                        },
+                                      );
+                                      await remoteConfig.init();
+                                      if (!mounted) return;
+                                      setState(() {
+                                        _versionGateScenario = next;
+                                        _versionGateRemoteConfig = remoteConfig;
+                                        _versionGate = AppVersionGateController(
+                                          remoteConfig: remoteConfig,
+                                        );
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: SizedBox(
+                                      height: 320,
+                                      child: AppVersionGateOverlay(
+                                        decision: _versionGate.decisionFor(
+                                          kAppVersion,
+                                        ),
+                                        config: _versionGate.config,
+                                        launchStore: (url) async {
+                                          ToastBanner.show(
+                                            context,
+                                            message: 'Mở store: $url',
+                                            color: NeonTheme.cyan,
+                                          );
+                                          return true;
+                                        },
+                                        onSoftDismiss: () => setState(
+                                          () => _versionGate
+                                              .recordSoftPromptDismissed(),
+                                        ),
+                                        child: Container(
+                                          color: NeonTheme.card,
+                                          alignment: Alignment.center,
+                                          child: const Text(
+                                            'Nội dung app (demo)',
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'Shimmer Loading',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (_showShimmer)
+                                    const Column(
+                                      children: [
+                                        ShimmerPlaceholder(
+                                          height: 48,
+                                          borderRadius: 12,
+                                        ),
+                                        SizedBox(height: NeonTheme.s8),
+                                        ShimmerPlaceholder(
+                                          height: 48,
+                                          borderRadius: 12,
+                                        ),
+                                      ],
+                                    )
+                                  else
+                                    const CommonListTile(
+                                      title: 'Shop item loaded',
+                                      subtitle: 'Content ready',
+                                    ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: _showShimmer
+                                        ? 'Show loaded content'
+                                        : 'Show shimmer',
+                                    onTap: () => setState(
+                                      () => _showShimmer = !_showShimmer,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: NeonTheme.s24),
+                            const SectionHeader(title: 'Progress & Reward'),
+                            const SizedBox(height: NeonTheme.s16),
+                            _Demo(
+                              label: 'ProgressBarStars',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ProgressBarStars(progress: _progress),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: '+20% progress',
+                                    onTap: _bumpProgress,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'CircularProgressRing',
+                              child: CircularProgressRing(
+                                progress: _progress,
+                                label: '${(_progress * 100).round()}%',
+                              ),
+                            ),
+                            _Demo(
+                              label: 'StarRating',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  StarRating(
+                                    earned: _starsEarned,
+                                    animate: false,
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: 'Cycle stars',
+                                    onTap: _cycleStars,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'CurrencyCounter',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Wrap (not Row) — on a narrower effective
+                                  // width (larger system font scale / display
+                                  // zoom, e.g. reproduced on a real Samsung
+                                  // device with font_scale 1.08 + a density
+                                  // override), 3 fixed-width items in a plain
+                                  // Row(mainAxisSize.min) overflow instead of
+                                  // shrinking; Wrap just flows the 3rd item to
+                                  // a new line instead.
+                                  Wrap(
+                                    spacing: NeonTheme.s16,
+                                    runSpacing: NeonTheme.s8,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      CurrencyCounter(
+                                        key: _coinCounterKey,
+                                        value: _coins,
+                                      ),
+                                      CommonButton(
+                                        label: '+25',
+                                        width: 90,
+                                        onTap: _bumpCoins,
+                                      ),
+                                      // FEAT-12: coins fly from the bottom of
+                                      // the screen to this CurrencyCounter's
+                                      // GlobalKey, bumping the value on arrival
+                                      // instead of jumping instantly.
+                                      CommonButton(
+                                        label: 'Fly +25',
+                                        width: 110,
+                                        color: NeonTheme.gold,
+                                        onTap: _flyCoins,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  // Idle-game scale value — shows
+                                  // fmtNumCompact's K/M/B rounding (ENH-11)
+                                  // instead of a raw digit string.
+                                  const CurrencyCounter(value: 12345678),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              // FloatingComboText.show() inserts into the root
+                              // Overlay (screen-wide), so it pops centered over
+                              // the whole screen rather than inside this card —
+                              // tap repeatedly to see the spam behavior.
+                              label: 'FloatingComboText',
+                              child: CommonButton(
+                                label: 'Spam combo x5',
+                                color: NeonTheme.gold,
+                                onTap: _spamComboText,
+                              ),
+                            ),
+                            _Demo(
+                              label: 'RewardPopup',
+                              child: CommonButton(
+                                label: 'Show reward',
+                                color: NeonTheme.gold,
+                                onTap: _openRewardPopup,
+                              ),
+                            ),
+                            _Demo(
+                              label: 'ConfettiOverlay',
+                              child: SizedBox(
+                                height: 160,
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Align(
+                                      alignment: Alignment.bottomCenter,
+                                      child: CommonButton(
+                                        label: 'Trigger',
+                                        onTap: _fireConfetti,
+                                      ),
+                                    ),
+                                    if (_confettiActive)
+                                      Positioned.fill(
+                                        child: ConfettiOverlay(
+                                          key: ValueKey(_confettiTrigger),
+                                          onFinished: () {
+                                            if (mounted) {
+                                              setState(
+                                                () => _confettiActive = false,
+                                              );
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            _Demo(
+                              // Highlights the "Primary" CommonButton up in
+                              // Buttons & Interactive (keyed via
+                              // _spotlightTargetKey) — scroll up after
+                              // dismissing to see which one it was.
+                              label: 'SpotlightOverlay',
+                              child: CommonButton(
+                                label: 'Start tutorial',
+                                onTap: _startTutorial,
+                              ),
+                            ),
+                            _Demo(
+                              label: 'TutorialSequence',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  CommonButton(
+                                    label: 'Start 2-step tutorial',
+                                    onTap: _startTutorialSequence,
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  CommonButton(
+                                    label: 'Start from JSON (IDEA-35)',
+                                    variant: CommonButtonVariant.secondary,
+                                    onTap: _startTutorialSequenceFromJson,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'OnboardingCoordinatorService (IDEA-54)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Next eligible flow: '
+                                    '${_onboarding.nextEligibleFlow() ?? "(none — all seen)"}',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  CommonButton(
+                                    label: 'Run next onboarding flow',
+                                    onTap:
+                                        _onboarding.nextEligibleFlow() == null
+                                        ? null
+                                        : _runNextOnboardingFlow,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'BadgeDot',
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Icon(
+                                    Icons.notifications_none_rounded,
+                                    size: 32,
+                                    color: NeonTheme.ink,
+                                  ),
+                                  const Positioned(
+                                    top: -2,
+                                    right: -2,
+                                    child: BadgeDot(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'StreakCounter',
+                              child: const StreakCounter(days: 7),
+                            ),
+                            _Demo(
+                              label: 'CountdownChip',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // No key here (BUG-30 fix demo): tapping
+                                  // "Restart 15s" changes `target` on this SAME
+                                  // CountdownChip instance — didUpdateWidget
+                                  // must pick up the new target and restart the
+                                  // ticking, not require a remount to notice it.
+                                  CountdownChip(
+                                    target: _countdownTarget,
+                                    onDone: () => ToastBanner.show(
+                                      context,
+                                      message: 'Countdown done!',
+                                      color: NeonTheme.orange,
+                                    ),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: 'Restart 15s',
+                                    onTap: () => setState(
+                                      () => _countdownTarget = DateTime.now()
+                                          .add(const Duration(seconds: 15)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label:
+                                  'PersistentCooldownService + CooldownCountdownChip',
+                              child: Obx(() {
+                                // Obx tracks whichever .obs .value getters
+                                // run inside this closure — reading
+                                // revision.value here is what makes it
+                                // rebuild on start/cancel; remainingOf()
+                                // itself touches no Rx value.
+                                _cooldown.revision.value;
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: NetworkStatusBanner.stream(
-                                        key: const Key(
-                                          'connectivityCoordinatorBanner',
-                                        ),
-                                        connected:
-                                            _connectivity.connectedStream,
-                                        initialConnected: false,
+                                    CooldownCountdownChip(
+                                      remaining: _cooldown.remainingOf(
+                                        'demo_booster',
+                                      ),
+                                      onDone: () => ToastBanner.show(
+                                        context,
+                                        message: 'Booster cooldown ready!',
+                                        color: NeonTheme.cyan,
                                       ),
                                     ),
-                                    const SizedBox(height: NeonTheme.s8),
-                                    Text('State: ${state.name}'),
                                     const SizedBox(height: NeonTheme.s16),
+                                    CommonButton(
+                                      label: 'Start 12s cooldown',
+                                      onTap: () => _cooldown.start(
+                                        'demo_booster',
+                                        const Duration(seconds: 12),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }),
+                            ),
+                            _Demo(
+                              label: 'Page Dots',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    height: 80,
+                                    child: PageView(
+                                      controller: _dotsPageController,
+                                      onPageChanged: (i) =>
+                                          setState(() => _dotsPageIndex = i),
+                                      children: List.generate(
+                                        4,
+                                        (i) => Container(
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: NeonTheme.cardAlt,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Page ${i + 1}',
+                                            style: TextStyle(
+                                              color: NeonTheme.ink,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  Center(
+                                    child: PaginatedDotsIndicator(
+                                      count: 4,
+                                      currentIndex: _dotsPageIndex,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            _Demo(
+                              label: 'DailyLoginCalendarWidget',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  DailyLoginCalendarWidget(
+                                    currentStreakDay:
+                                        _dailyLogin.currentStreakDay,
+                                    claimedDaysInCycle:
+                                        _dailyLogin.claimedDaysInCycle,
+                                    canClaimToday: _dailyLogin.canClaimToday(),
+                                    onClaim: _claimDailyLogin,
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  // IDEA-49: longestStreakEver keeps counting
+                                  // past the 7-day calendar cycle and never
+                                  // resets, unlike currentStreakDay above.
+                                  Text(
+                                    'Longest streak ever: '
+                                    '${_dailyLogin.longestStreakEver}',
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'EnergyBar',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  EnergyBar(
+                                    currentEnergy: _energy.currentEnergy,
+                                    maxEnergy: _energy.maxEnergy,
+                                    timeUntilNextEnergy:
+                                        _energy.timeUntilNextEnergy,
+                                    hasInfiniteLives: _energy.hasInfiniteLives,
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: 'Consume 1 energy',
+                                    onTap: _consumeEnergy,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'WheelSpinner',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  WheelSpinner(
+                                    segments: _wheelSegments,
+                                    controller: _wheelController,
+                                    onSpinEnd: (segment) => ToastBanner.show(
+                                      context,
+                                      message: 'Landed on ${segment.label}!',
+                                      color: NeonTheme.gold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: 'Spin',
+                                    onTap: _spinWheel,
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: NeonTheme.s24),
+                            const SectionHeader(title: 'Layout & Cards'),
+                            const SizedBox(height: NeonTheme.s16),
+                            _Demo(
+                              label: 'CommonListTile',
+                              child: Column(
+                                children: [
+                                  CommonListTile(
+                                    title: 'Daily Reward',
+                                    subtitle: 'Claim your coins',
+                                    leading: Icon(
+                                      Icons.card_giftcard_rounded,
+                                      color: NeonTheme.magenta,
+                                    ),
+                                    trailing: const Icon(
+                                      Icons.chevron_right_rounded,
+                                    ),
+                                    onTap: () {},
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  CommonListTile(
+                                    title: 'Leaderboard',
+                                    leading: Icon(
+                                      Icons.leaderboard_rounded,
+                                      color: NeonTheme.cyan,
+                                    ),
+                                    onTap: () {},
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label:
+                                  'LeaderboardList (IDEA-46: LocalScoreboardService)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  LeaderboardList(
+                                    entries: [
+                                      for (final entry
+                                          in _showRankAround
+                                              ? _scoreboard.entriesAround(
+                                                  'You',
+                                                  radius: 1,
+                                                )
+                                              : _scoreboard.topN(3))
+                                        LeaderboardEntry(
+                                          rank: entry.rank,
+                                          name: entry.name,
+                                          score: entry.score,
+                                          highlighted: entry.name == 'You',
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: 'Submit random score',
+                                    onTap: _submitRandomScore,
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  CommonButton(
+                                    label: _showRankAround
+                                        ? 'Show top 3'
+                                        : 'Show rank around me (IDEA-48)',
+                                    variant: CommonButtonVariant.secondary,
+                                    onTap: () => setState(
+                                      () => _showRankAround = !_showRankAround,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'QuestBoardPanel (IDEA-44)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  QuestBoardPanel(
+                                    quests: [
+                                      _questWinMatches,
+                                      _questUseBooster,
+                                    ],
+                                    onClaim: _claimQuest,
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: 'Thắng 1 trận',
+                                    onTap: _bumpQuestProgress,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'EmptyStatePlaceholder',
+                              child: const EmptyStatePlaceholder(
+                                icon: Icons.inbox_outlined,
+                                message: 'Nothing here yet.',
+                              ),
+                            ),
+                            _Demo(
+                              label: 'RetryErrorState',
+                              child: RetryErrorState.fromSdkFailure(
+                                const SdkFailure(
+                                  kind: SdkErrorKind.network,
+                                  message: 'Could not reach the server.',
+                                ),
+                                compact: true,
+                                onRetry: () => Future<void>.delayed(
+                                  const Duration(milliseconds: 800),
+                                ),
+                              ),
+                            ),
+                            _Demo(
+                              label: 'AvatarFrame',
+                              child: AvatarFrame(
+                                color: NeonTheme.magenta,
+                                child: Container(
+                                  color: NeonTheme.cardAlt,
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'RB',
+                                    style: TextStyle(
+                                      color: NeonTheme.ink,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            _Demo(
+                              label:
+                                  'VictoryCardTemplate (share_helper wiring)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  RepaintBoundary(
+                                    key: _victoryCardKey,
+                                    child: VictoryCardTemplate(
+                                      title: 'Level 50 Complete!',
+                                      statLines: const [
+                                        'Score: 12,340',
+                                        'Time: 01:23',
+                                      ],
+                                      avatar: const CircleAvatar(
+                                        child: Text('RB'),
+                                      ),
+                                      qrData:
+                                          'https://example.com/invite/abc123',
+                                    ),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: 'Share',
+                                    width: 140,
+                                    onTap: _shareVictoryCard,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'GameOverCardTemplate',
+                              child: GameOverCardTemplate(
+                                title: 'Out of moves!',
+                                message: 'So close — try again?',
+                                icon: Icons.sentiment_dissatisfied_rounded,
+                                statLines: const ['Score: 1,200'],
+                                primaryActionLabel: 'Retry',
+                                onPrimaryAction: () => ToastBanner.show(
+                                  context,
+                                  message: 'Retry tapped',
+                                  color: NeonTheme.cyan,
+                                ),
+                                secondaryActionLabel: 'Home',
+                                onSecondaryAction: () => ToastBanner.show(
+                                  context,
+                                  message: 'Home tapped',
+                                  color: NeonTheme.muted,
+                                ),
+                              ),
+                            ),
+                            _Demo(
+                              label: 'BackupRestorePanel',
+                              child: BackupRestorePanel(
+                                secret: 'showcase-demo-secret',
+                                onExport: (json) async {
+                                  _lastBackup = json;
+                                },
+                                onImport: () async => _lastBackup,
+                              ),
+                            ),
+                            _Demo(
+                              label: 'SaveSlotManager (IDEA-56)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (final slot in _saveSlots.listSlots())
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: NeonTheme.s8,
+                                      ),
+                                      child: CommonListTile(
+                                        title: slot.displayName,
+                                        subtitle:
+                                            'Demo score: ${_demoScoreFor(slot.id)}'
+                                            '${slot.id == _saveSlots.activeSlotId ? " • Active" : ""}',
+                                        trailing: IconButton(
+                                          icon: Icon(
+                                            Icons.delete_outline_rounded,
+                                            color: NeonTheme.red,
+                                          ),
+                                          onPressed: () => _deleteSaveSlot(
+                                            slot.id,
+                                            slot.displayName,
+                                          ),
+                                        ),
+                                        onTap: () =>
+                                            _setActiveSaveSlot(slot.id),
+                                      ),
+                                    ),
+                                  if (_saveSlots.listSlots().isEmpty)
+                                    const Padding(
+                                      padding: EdgeInsets.only(
+                                        bottom: NeonTheme.s8,
+                                      ),
+                                      child: Text('No slots yet.'),
+                                    ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: CommonButton(
+                                          label: 'Create slot',
+                                          onTap: _createSaveSlot,
+                                        ),
+                                      ),
+                                      const SizedBox(width: NeonTheme.s8),
+                                      Expanded(
+                                        child: CommonButton(
+                                          label: '+10 score',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: _saveSlots.activeSlotId == null
+                                              ? null
+                                              : _addDemoScoreToActiveSlot,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'ConsentStateService (FEAT-61)',
+                              child: Obx(() {
+                                // Obx tracks whichever .obs .value getters run
+                                // inside this closure — reading revision.value
+                                // is what makes it rebuild on grant/deny/reset.
+                                _consent.revision.value;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Analytics: ${_consent.statusOf(ConsentCategory.analytics).name}',
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
                                     Wrap(
                                       spacing: NeonTheme.s8,
                                       children: [
                                         CommonButton(
-                                          label: 'Interface up',
+                                          label: 'Grant analytics',
                                           variant:
                                               CommonButtonVariant.secondary,
-                                          onTap: () => _connectivitySignal
-                                              .setHasInterface(true),
+                                          onTap: () => _consent.grant(
+                                            ConsentCategory.analytics,
+                                          ),
                                         ),
                                         CommonButton(
-                                          label: 'Interface down',
+                                          label: 'Deny analytics',
                                           variant: CommonButtonVariant.danger,
-                                          onTap: () => _connectivitySignal
-                                              .setHasInterface(false),
+                                          onTap: () => _consent.deny(
+                                            ConsentCategory.analytics,
+                                          ),
                                         ),
                                       ],
                                     ),
+                                    const SizedBox(height: NeonTheme.s16),
+                                    Text(
+                                      'Personalization: ${_consent.statusOf(ConsentCategory.personalization).name}',
+                                    ),
                                     const SizedBox(height: NeonTheme.s8),
-                                    CommonButton(
-                                      label: _demoProbeSucceeds
-                                          ? 'Probe: OK (tap to break it)'
-                                          : 'Probe: FAILING (tap to fix it)',
-                                      onTap: () => setState(
-                                        () => _demoProbeSucceeds =
-                                            !_demoProbeSucceeds,
-                                      ),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          label: 'Grant personalization',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => _consent.grant(
+                                            ConsentCategory.personalization,
+                                          ),
+                                        ),
+                                        CommonButton(
+                                          label: 'Deny personalization',
+                                          variant: CommonButtonVariant.danger,
+                                          onTap: () => _consent.deny(
+                                            ConsentCategory.personalization,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                     const SizedBox(height: NeonTheme.s16),
                                     Text(
-                                      'Queue: ${_connectivity.queueLength} pending, '
-                                      '$_demoQueueRanCount đã chạy',
+                                      'Demo events actually logged: $_demoAnalyticsEventCount',
                                     ),
                                     const SizedBox(height: NeonTheme.s8),
                                     CommonButton(
-                                      label: 'Enqueue demo sync task',
-                                      onTap: () => setState(
-                                        () => _connectivity.enqueue(
-                                          QueuedTask(
-                                            idempotencyKey: 'demo_sync',
-                                            run: () async => setState(
-                                              () => _demoQueueRanCount++,
-                                            ),
-                                          ),
-                                        ),
+                                      label: 'Log demo event (gated)',
+                                      onTap: () => _gatedAnalytics.logEvent(
+                                        'demo_event',
                                       ),
                                     ),
                                   ],
                                 );
-                              },
+                              }),
                             ),
-                          ),
-                          _Demo(
-                            label: 'DeepLinkCommandRouter (FEAT-60)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CandyTextField(
-                                  key: const Key('deepLinkUriField'),
-                                  controller: _deepLinkController,
-                                  hintText: 'Deep link URI',
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                Wrap(
-                                  spacing: NeonTheme.s8,
+                            _Demo(
+                              label: 'ExperimentBucketingService (IDEA-57)',
+                              child: Obx(() {
+                                _consent.revision.value;
+                                final personalizationGranted = _consent
+                                    .isGranted(ConsentCategory.personalization);
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    CommonButton(
-                                      label: 'Simulate link',
-                                      onTap: () async {
-                                        final uri = Uri.tryParse(
-                                          _deepLinkController.text,
-                                        );
-                                        if (uri == null) {
-                                          setState(
-                                            () => _deepLinkLog =
-                                                'URI không hợp lệ.',
-                                          );
-                                          return;
-                                        }
-                                        final result = await _deepLinks
-                                            .handleUri(uri);
-                                        setState(
-                                          () => _deepLinkLog =
-                                              'outcome: ${result.outcome.name}',
-                                        );
-                                      },
+                                    Text(
+                                      personalizationGranted
+                                          ? 'Experiment "$_demoExperimentKey" → '
+                                                '${_experiments.variantFor(_demoExperimentKey, _demoExperimentVariants)}'
+                                          : 'Experiment "$_demoExperimentKey" → '
+                                                'blocked (no personalization consent)',
                                     ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Device id: '
+                                      '${_experiments.anonymousId.substring(0, 8)}…',
+                                      style: TextStyle(color: NeonTheme.muted),
+                                    ),
+                                  ],
+                                );
+                              }),
+                            ),
+                            _Demo(
+                              label: 'AppSessionTracker (FEAT-63)',
+                              child: Obx(() {
+                                // Obx tracks _consent.revision.value để rebuild
+                                // đúng lúc consent analytics đổi (ảnh hưởng
+                                // analyticsContext() bên dưới).
+                                _consent.revision.value;
+                                final context = _sessionTracker
+                                    .analyticsContext();
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Session #${_sessionTracker.current.sequence} '
+                                      '(id: ${_sessionTracker.current.sessionId.substring(0, 8)}…)',
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Foreground: '
+                                      '${fmtDur(_sessionTracker.foregroundDuration)}',
+                                    ),
+                                    const SizedBox(height: NeonTheme.s16),
                                     CommonButton(
-                                      label: 'Simulate lại (duplicate)',
+                                      label: 'Refresh',
                                       variant: CommonButtonVariant.secondary,
-                                      onTap: () async {
-                                        final uri = Uri.tryParse(
-                                          _deepLinkController.text,
-                                        );
-                                        if (uri == null) return;
-                                        final result = await _deepLinks
-                                            .handleUri(uri);
-                                        setState(
-                                          () => _deepLinkLog =
-                                              'outcome: ${result.outcome.name}',
-                                        );
-                                      },
+                                      onTap: () => setState(() {}),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s16),
+                                    Text(
+                                      context.isEmpty
+                                          ? 'Analytics context: {} (chưa có analytics consent)'
+                                          : 'Analytics context: ${jsonEncode(context)}',
                                     ),
                                   ],
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                Text(_deepLinkLog),
-                                const SizedBox(height: NeonTheme.s8),
-                                Text(
-                                  'Thật: adb shell am start -a android.intent.action.VIEW '
-                                  '-d "roycasualkit://open/level/5"',
-                                  style: TextStyle(
-                                    color: NeonTheme.muted,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
+                                );
+                              }),
                             ),
-                          ),
-                          _Demo(
-                            label: 'AppVersionGate (FEAT-59)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CommonButton(
-                                  label:
-                                      'Scenario: $_versionGateScenario (bấm để đổi)',
-                                  onTap: () async {
-                                    const order = [
-                                      'ok',
-                                      'soft',
-                                      'force',
-                                      'maintenance',
-                                    ];
-                                    final next =
-                                        order[(order.indexOf(
-                                                  _versionGateScenario,
-                                                ) +
-                                                1) %
-                                            order.length];
-                                    // Instance MỚI mỗi lần đổi scenario —
-                                    // RemoteConfigService.init() không reset
-                                    // _config khi load asset lỗi (giữ config
-                                    // cũ làm fallback, đúng ý ENH-58), nên
-                                    // gọi lại init() nhiều lần trên CÙNG 1
-                                    // instance sẽ TÍCH LUỸ key cũ thay vì
-                                    // thay hẳn — không đúng ý demo "đổi hẳn
-                                    // sang scenario khác".
-                                    final remoteConfig = RemoteConfigService(
-                                      assetPath:
-                                          'assets/nonexistent_app_version_gate.json',
-                                      fetchRemote: () async {
-                                        switch (next) {
-                                          case 'soft':
-                                            return {
-                                              'appVersionRecommended':
-                                                  '9999.0.0',
-                                            };
-                                          case 'force':
-                                            return {
-                                              'appVersionMinimum': '9999.0.0',
-                                            };
-                                          case 'maintenance':
-                                            return {
-                                              'appVersionMaintenanceActive':
-                                                  true,
-                                              'appVersionMaintenanceMessage':
-                                                  'Đang bảo trì demo, quay lại sau nhé.',
-                                            };
-                                          default:
-                                            return {};
-                                        }
-                                      },
-                                    );
-                                    await remoteConfig.init();
-                                    if (!mounted) return;
-                                    setState(() {
-                                      _versionGateScenario = next;
-                                      _versionGateRemoteConfig = remoteConfig;
-                                      _versionGate = AppVersionGateController(
-                                        remoteConfig: remoteConfig,
-                                      );
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: SizedBox(
-                                    height: 320,
-                                    child: AppVersionGateOverlay(
-                                      decision: _versionGate.decisionFor(
-                                        kAppVersion,
-                                      ),
-                                      config: _versionGate.config,
-                                      launchStore: (url) async {
-                                        ToastBanner.show(
-                                          context,
-                                          message: 'Mở store: $url',
-                                          color: NeonTheme.cyan,
-                                        );
-                                        return true;
-                                      },
-                                      onSoftDismiss: () => setState(
-                                        () => _versionGate
-                                            .recordSoftPromptDismissed(),
-                                      ),
-                                      child: Container(
-                                        color: NeonTheme.card,
-                                        alignment: Alignment.center,
-                                        child: const Text(
-                                          'Nội dung app (demo)',
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'Shimmer Loading',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (_showShimmer)
-                                  const Column(
-                                    children: [
-                                      ShimmerPlaceholder(
-                                        height: 48,
-                                        borderRadius: 12,
-                                      ),
-                                      SizedBox(height: NeonTheme.s8),
-                                      ShimmerPlaceholder(
-                                        height: 48,
-                                        borderRadius: 12,
-                                      ),
-                                    ],
-                                  )
-                                else
-                                  const CommonListTile(
-                                    title: 'Shop item loaded',
-                                    subtitle: 'Content ready',
-                                  ),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(
-                                  label: _showShimmer
-                                      ? 'Show loaded content'
-                                      : 'Show shimmer',
-                                  onTap: () => setState(
-                                    () => _showShimmer = !_showShimmer,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: NeonTheme.s24),
-                          const SectionHeader(title: 'Progress & Reward'),
-                          const SizedBox(height: NeonTheme.s16),
-                          _Demo(
-                            label: 'ProgressBarStars',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ProgressBarStars(progress: _progress),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(
-                                  label: '+20% progress',
-                                  onTap: _bumpProgress,
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'CircularProgressRing',
-                            child: CircularProgressRing(
-                              progress: _progress,
-                              label: '${(_progress * 100).round()}%',
-                            ),
-                          ),
-                          _Demo(
-                            label: 'StarRating',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                StarRating(
-                                  earned: _starsEarned,
-                                  animate: false,
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(
-                                  label: 'Cycle stars',
-                                  onTap: _cycleStars,
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'CurrencyCounter',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Wrap (not Row) — on a narrower effective
-                                // width (larger system font scale / display
-                                // zoom, e.g. reproduced on a real Samsung
-                                // device with font_scale 1.08 + a density
-                                // override), 3 fixed-width items in a plain
-                                // Row(mainAxisSize.min) overflow instead of
-                                // shrinking; Wrap just flows the 3rd item to
-                                // a new line instead.
-                                Wrap(
-                                  spacing: NeonTheme.s16,
-                                  runSpacing: NeonTheme.s8,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-                                    CurrencyCounter(
-                                      key: _coinCounterKey,
-                                      value: _coins,
-                                    ),
-                                    CommonButton(
-                                      label: '+25',
-                                      width: 90,
-                                      onTap: _bumpCoins,
-                                    ),
-                                    // FEAT-12: coins fly from the bottom of
-                                    // the screen to this CurrencyCounter's
-                                    // GlobalKey, bumping the value on arrival
-                                    // instead of jumping instantly.
-                                    CommonButton(
-                                      label: 'Fly +25',
-                                      width: 110,
-                                      color: NeonTheme.gold,
-                                      onTap: _flyCoins,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                // Idle-game scale value — shows
-                                // fmtNumCompact's K/M/B rounding (ENH-11)
-                                // instead of a raw digit string.
-                                const CurrencyCounter(value: 12345678),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            // FloatingComboText.show() inserts into the root
-                            // Overlay (screen-wide), so it pops centered over
-                            // the whole screen rather than inside this card —
-                            // tap repeatedly to see the spam behavior.
-                            label: 'FloatingComboText',
-                            child: CommonButton(
-                              label: 'Spam combo x5',
-                              color: NeonTheme.gold,
-                              onTap: _spamComboText,
-                            ),
-                          ),
-                          _Demo(
-                            label: 'RewardPopup',
-                            child: CommonButton(
-                              label: 'Show reward',
-                              color: NeonTheme.gold,
-                              onTap: _openRewardPopup,
-                            ),
-                          ),
-                          _Demo(
-                            label: 'ConfettiOverlay',
-                            child: SizedBox(
-                              height: 160,
-                              child: Stack(
-                                clipBehavior: Clip.none,
+                            _Demo(
+                              label: 'PlatformCapabilityRegistry (FEAT-71)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Align(
-                                    alignment: Alignment.bottomCenter,
-                                    child: CommonButton(
-                                      label: 'Trigger',
-                                      onTap: _fireConfetti,
-                                    ),
+                                  Text(
+                                    'Platform: ${_platformCapabilities.snapshot.platformKind.name}',
                                   ),
-                                  if (_confettiActive)
-                                    Positioned.fill(
-                                      child: ConfettiOverlay(
-                                        key: ValueKey(_confettiTrigger),
-                                        onFinished: () {
-                                          if (mounted) {
-                                            setState(
-                                              () => _confettiActive = false,
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Text(
+                                    'Haptics: ${_platformCapabilities.snapshot.supportsHaptics}  '
+                                    '· Shaders: ${_platformCapabilities.snapshot.supportsShaders}',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Text(
+                                    'Notifications: ${_platformCapabilities.snapshot.supportsNotifications}  '
+                                    '· Background audio: ${_platformCapabilities.snapshot.supportsBackgroundAudio}',
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: 'Fire haptic (with fallback)',
+                                    onTap: () => _platformCapabilities
+                                        .withFallback<void>(
+                                          supported: _platformCapabilities
+                                              .snapshot
+                                              .supportsHaptics,
+                                          ifSupported: () {
+                                            fireHaptic(HapticLevel.light);
+                                            ToastBanner.show(
+                                              context,
+                                              message: 'Haptic fired',
+                                              color: NeonTheme.cyan,
                                             );
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          _Demo(
-                            // Highlights the "Primary" CommonButton up in
-                            // Buttons & Interactive (keyed via
-                            // _spotlightTargetKey) — scroll up after
-                            // dismissing to see which one it was.
-                            label: 'SpotlightOverlay',
-                            child: CommonButton(
-                              label: 'Start tutorial',
-                              onTap: _startTutorial,
-                            ),
-                          ),
-                          _Demo(
-                            label: 'TutorialSequence',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                CommonButton(
-                                  label: 'Start 2-step tutorial',
-                                  onTap: _startTutorialSequence,
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                CommonButton(
-                                  label: 'Start from JSON (IDEA-35)',
-                                  variant: CommonButtonVariant.secondary,
-                                  onTap: _startTutorialSequenceFromJson,
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'OnboardingCoordinatorService (IDEA-54)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Next eligible flow: '
-                                  '${_onboarding.nextEligibleFlow() ?? "(none — all seen)"}',
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                CommonButton(
-                                  label: 'Run next onboarding flow',
-                                  onTap: _onboarding.nextEligibleFlow() == null
-                                      ? null
-                                      : _runNextOnboardingFlow,
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'BadgeDot',
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Icon(
-                                  Icons.notifications_none_rounded,
-                                  size: 32,
-                                  color: NeonTheme.ink,
-                                ),
-                                const Positioned(
-                                  top: -2,
-                                  right: -2,
-                                  child: BadgeDot(),
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'StreakCounter',
-                            child: const StreakCounter(days: 7),
-                          ),
-                          _Demo(
-                            label: 'CountdownChip',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // No key here (BUG-30 fix demo): tapping
-                                // "Restart 15s" changes `target` on this SAME
-                                // CountdownChip instance — didUpdateWidget
-                                // must pick up the new target and restart the
-                                // ticking, not require a remount to notice it.
-                                CountdownChip(
-                                  target: _countdownTarget,
-                                  onDone: () => ToastBanner.show(
-                                    context,
-                                    message: 'Countdown done!',
-                                    color: NeonTheme.orange,
-                                  ),
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(
-                                  label: 'Restart 15s',
-                                  onTap: () => setState(
-                                    () => _countdownTarget = DateTime.now().add(
-                                      const Duration(seconds: 15),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label:
-                                'PersistentCooldownService + CooldownCountdownChip',
-                            child: Obx(() {
-                              // Obx tracks whichever .obs .value getters
-                              // run inside this closure — reading
-                              // revision.value here is what makes it
-                              // rebuild on start/cancel; remainingOf()
-                              // itself touches no Rx value.
-                              _cooldown.revision.value;
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CooldownCountdownChip(
-                                    remaining: _cooldown.remainingOf(
-                                      'demo_booster',
-                                    ),
-                                    onDone: () => ToastBanner.show(
-                                      context,
-                                      message: 'Booster cooldown ready!',
-                                      color: NeonTheme.cyan,
-                                    ),
-                                  ),
-                                  const SizedBox(height: NeonTheme.s16),
-                                  CommonButton(
-                                    label: 'Start 12s cooldown',
-                                    onTap: () => _cooldown.start(
-                                      'demo_booster',
-                                      const Duration(seconds: 12),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }),
-                          ),
-                          _Demo(
-                            label: 'Page Dots',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  height: 80,
-                                  child: PageView(
-                                    controller: _dotsPageController,
-                                    onPageChanged: (i) =>
-                                        setState(() => _dotsPageIndex = i),
-                                    children: List.generate(
-                                      4,
-                                      (i) => Container(
-                                        alignment: Alignment.center,
-                                        decoration: BoxDecoration(
-                                          color: NeonTheme.cardAlt,
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'Page ${i + 1}',
-                                          style: TextStyle(
-                                            color: NeonTheme.ink,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                Center(
-                                  child: PaginatedDotsIndicator(
-                                    count: 4,
-                                    currentIndex: _dotsPageIndex,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          _Demo(
-                            label: 'DailyLoginCalendarWidget',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                DailyLoginCalendarWidget(
-                                  currentStreakDay:
-                                      _dailyLogin.currentStreakDay,
-                                  claimedDaysInCycle:
-                                      _dailyLogin.claimedDaysInCycle,
-                                  canClaimToday: _dailyLogin.canClaimToday(),
-                                  onClaim: _claimDailyLogin,
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                // IDEA-49: longestStreakEver keeps counting
-                                // past the 7-day calendar cycle and never
-                                // resets, unlike currentStreakDay above.
-                                Text(
-                                  'Longest streak ever: '
-                                  '${_dailyLogin.longestStreakEver}',
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'EnergyBar',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                EnergyBar(
-                                  currentEnergy: _energy.currentEnergy,
-                                  maxEnergy: _energy.maxEnergy,
-                                  timeUntilNextEnergy:
-                                      _energy.timeUntilNextEnergy,
-                                  hasInfiniteLives: _energy.hasInfiniteLives,
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(
-                                  label: 'Consume 1 energy',
-                                  onTap: _consumeEnergy,
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'WheelSpinner',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                WheelSpinner(
-                                  segments: _wheelSegments,
-                                  controller: _wheelController,
-                                  onSpinEnd: (segment) => ToastBanner.show(
-                                    context,
-                                    message: 'Landed on ${segment.label}!',
-                                    color: NeonTheme.gold,
-                                  ),
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(label: 'Spin', onTap: _spinWheel),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: NeonTheme.s24),
-                          const SectionHeader(title: 'Layout & Cards'),
-                          const SizedBox(height: NeonTheme.s16),
-                          _Demo(
-                            label: 'CommonListTile',
-                            child: Column(
-                              children: [
-                                CommonListTile(
-                                  title: 'Daily Reward',
-                                  subtitle: 'Claim your coins',
-                                  leading: Icon(
-                                    Icons.card_giftcard_rounded,
-                                    color: NeonTheme.magenta,
-                                  ),
-                                  trailing: const Icon(
-                                    Icons.chevron_right_rounded,
-                                  ),
-                                  onTap: () {},
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                CommonListTile(
-                                  title: 'Leaderboard',
-                                  leading: Icon(
-                                    Icons.leaderboard_rounded,
-                                    color: NeonTheme.cyan,
-                                  ),
-                                  onTap: () {},
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label:
-                                'LeaderboardList (IDEA-46: LocalScoreboardService)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                LeaderboardList(
-                                  entries: [
-                                    for (final entry
-                                        in _showRankAround
-                                            ? _scoreboard.entriesAround(
-                                                'You',
-                                                radius: 1,
-                                              )
-                                            : _scoreboard.topN(3))
-                                      LeaderboardEntry(
-                                        rank: entry.rank,
-                                        name: entry.name,
-                                        score: entry.score,
-                                        highlighted: entry.name == 'You',
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(
-                                  label: 'Submit random score',
-                                  onTap: _submitRandomScore,
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                CommonButton(
-                                  label: _showRankAround
-                                      ? 'Show top 3'
-                                      : 'Show rank around me (IDEA-48)',
-                                  variant: CommonButtonVariant.secondary,
-                                  onTap: () => setState(
-                                    () => _showRankAround = !_showRankAround,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'QuestBoardPanel (IDEA-44)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                QuestBoardPanel(
-                                  quests: [_questWinMatches, _questUseBooster],
-                                  onClaim: _claimQuest,
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(
-                                  label: 'Thắng 1 trận',
-                                  onTap: _bumpQuestProgress,
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'EmptyStatePlaceholder',
-                            child: const EmptyStatePlaceholder(
-                              icon: Icons.inbox_outlined,
-                              message: 'Nothing here yet.',
-                            ),
-                          ),
-                          _Demo(
-                            label: 'RetryErrorState',
-                            child: RetryErrorState.fromSdkFailure(
-                              const SdkFailure(
-                                kind: SdkErrorKind.network,
-                                message: 'Could not reach the server.',
-                              ),
-                              compact: true,
-                              onRetry: () => Future<void>.delayed(
-                                const Duration(milliseconds: 800),
-                              ),
-                            ),
-                          ),
-                          _Demo(
-                            label: 'AvatarFrame',
-                            child: AvatarFrame(
-                              color: NeonTheme.magenta,
-                              child: Container(
-                                color: NeonTheme.cardAlt,
-                                alignment: Alignment.center,
-                                child: Text(
-                                  'RB',
-                                  style: TextStyle(
-                                    color: NeonTheme.ink,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          _Demo(
-                            label: 'VictoryCardTemplate (share_helper wiring)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                RepaintBoundary(
-                                  key: _victoryCardKey,
-                                  child: VictoryCardTemplate(
-                                    title: 'Level 50 Complete!',
-                                    statLines: const [
-                                      'Score: 12,340',
-                                      'Time: 01:23',
-                                    ],
-                                    avatar: const CircleAvatar(
-                                      child: Text('RB'),
-                                    ),
-                                    qrData: 'https://example.com/invite/abc123',
-                                  ),
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(
-                                  label: 'Share',
-                                  width: 140,
-                                  onTap: _shareVictoryCard,
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'GameOverCardTemplate',
-                            child: GameOverCardTemplate(
-                              title: 'Out of moves!',
-                              message: 'So close — try again?',
-                              icon: Icons.sentiment_dissatisfied_rounded,
-                              statLines: const ['Score: 1,200'],
-                              primaryActionLabel: 'Retry',
-                              onPrimaryAction: () => ToastBanner.show(
-                                context,
-                                message: 'Retry tapped',
-                                color: NeonTheme.cyan,
-                              ),
-                              secondaryActionLabel: 'Home',
-                              onSecondaryAction: () => ToastBanner.show(
-                                context,
-                                message: 'Home tapped',
-                                color: NeonTheme.muted,
-                              ),
-                            ),
-                          ),
-                          _Demo(
-                            label: 'BackupRestorePanel',
-                            child: BackupRestorePanel(
-                              secret: 'showcase-demo-secret',
-                              onExport: (json) async {
-                                _lastBackup = json;
-                              },
-                              onImport: () async => _lastBackup,
-                            ),
-                          ),
-                          _Demo(
-                            label: 'SaveSlotManager (IDEA-56)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                for (final slot in _saveSlots.listSlots())
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      bottom: NeonTheme.s8,
-                                    ),
-                                    child: CommonListTile(
-                                      title: slot.displayName,
-                                      subtitle:
-                                          'Demo score: ${_demoScoreFor(slot.id)}'
-                                          '${slot.id == _saveSlots.activeSlotId ? " • Active" : ""}',
-                                      trailing: IconButton(
-                                        icon: Icon(
-                                          Icons.delete_outline_rounded,
-                                          color: NeonTheme.red,
-                                        ),
-                                        onPressed: () => _deleteSaveSlot(
-                                          slot.id,
-                                          slot.displayName,
-                                        ),
-                                      ),
-                                      onTap: () => _setActiveSaveSlot(slot.id),
-                                    ),
-                                  ),
-                                if (_saveSlots.listSlots().isEmpty)
-                                  const Padding(
-                                    padding: EdgeInsets.only(
-                                      bottom: NeonTheme.s8,
-                                    ),
-                                    child: Text('No slots yet.'),
-                                  ),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: CommonButton(
-                                        label: 'Create slot',
-                                        onTap: _createSaveSlot,
-                                      ),
-                                    ),
-                                    const SizedBox(width: NeonTheme.s8),
-                                    Expanded(
-                                      child: CommonButton(
-                                        label: '+10 score',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: _saveSlots.activeSlotId == null
-                                            ? null
-                                            : _addDemoScoreToActiveSlot,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'ConsentStateService (FEAT-61)',
-                            child: Obx(() {
-                              // Obx tracks whichever .obs .value getters run
-                              // inside this closure — reading revision.value
-                              // is what makes it rebuild on grant/deny/reset.
-                              _consent.revision.value;
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Analytics: ${_consent.statusOf(ConsentCategory.analytics).name}',
-                                  ),
-                                  const SizedBox(height: NeonTheme.s8),
-                                  Wrap(
-                                    spacing: NeonTheme.s8,
-                                    children: [
-                                      CommonButton(
-                                        label: 'Grant analytics',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: () => _consent.grant(
-                                          ConsentCategory.analytics,
-                                        ),
-                                      ),
-                                      CommonButton(
-                                        label: 'Deny analytics',
-                                        variant: CommonButtonVariant.danger,
-                                        onTap: () => _consent.deny(
-                                          ConsentCategory.analytics,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: NeonTheme.s16),
-                                  Text(
-                                    'Personalization: ${_consent.statusOf(ConsentCategory.personalization).name}',
-                                  ),
-                                  const SizedBox(height: NeonTheme.s8),
-                                  Wrap(
-                                    spacing: NeonTheme.s8,
-                                    children: [
-                                      CommonButton(
-                                        label: 'Grant personalization',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: () => _consent.grant(
-                                          ConsentCategory.personalization,
-                                        ),
-                                      ),
-                                      CommonButton(
-                                        label: 'Deny personalization',
-                                        variant: CommonButtonVariant.danger,
-                                        onTap: () => _consent.deny(
-                                          ConsentCategory.personalization,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: NeonTheme.s16),
-                                  Text(
-                                    'Demo events actually logged: $_demoAnalyticsEventCount',
-                                  ),
-                                  const SizedBox(height: NeonTheme.s8),
-                                  CommonButton(
-                                    label: 'Log demo event (gated)',
-                                    onTap: () =>
-                                        _gatedAnalytics.logEvent('demo_event'),
-                                  ),
-                                ],
-                              );
-                            }),
-                          ),
-                          _Demo(
-                            label: 'ExperimentBucketingService (IDEA-57)',
-                            child: Obx(() {
-                              _consent.revision.value;
-                              final personalizationGranted = _consent.isGranted(
-                                ConsentCategory.personalization,
-                              );
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    personalizationGranted
-                                        ? 'Experiment "$_demoExperimentKey" → '
-                                              '${_experiments.variantFor(_demoExperimentKey, _demoExperimentVariants)}'
-                                        : 'Experiment "$_demoExperimentKey" → '
-                                              'blocked (no personalization consent)',
-                                  ),
-                                  const SizedBox(height: NeonTheme.s8),
-                                  Text(
-                                    'Device id: '
-                                    '${_experiments.anonymousId.substring(0, 8)}…',
-                                    style: TextStyle(color: NeonTheme.muted),
-                                  ),
-                                ],
-                              );
-                            }),
-                          ),
-                          _Demo(
-                            label: 'AppSessionTracker (FEAT-63)',
-                            child: Obx(() {
-                              // Obx tracks _consent.revision.value để rebuild
-                              // đúng lúc consent analytics đổi (ảnh hưởng
-                              // analyticsContext() bên dưới).
-                              _consent.revision.value;
-                              final context = _sessionTracker
-                                  .analyticsContext();
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Session #${_sessionTracker.current.sequence} '
-                                    '(id: ${_sessionTracker.current.sessionId.substring(0, 8)}…)',
-                                  ),
-                                  const SizedBox(height: NeonTheme.s8),
-                                  Text(
-                                    'Foreground: '
-                                    '${fmtDur(_sessionTracker.foregroundDuration)}',
-                                  ),
-                                  const SizedBox(height: NeonTheme.s16),
-                                  CommonButton(
-                                    label: 'Refresh',
-                                    variant: CommonButtonVariant.secondary,
-                                    onTap: () => setState(() {}),
-                                  ),
-                                  const SizedBox(height: NeonTheme.s16),
-                                  Text(
-                                    context.isEmpty
-                                        ? 'Analytics context: {} (chưa có analytics consent)'
-                                        : 'Analytics context: ${jsonEncode(context)}',
-                                  ),
-                                ],
-                              );
-                            }),
-                          ),
-                          _Demo(
-                            label: 'PlatformCapabilityRegistry (FEAT-71)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Platform: ${_platformCapabilities.snapshot.platformKind.name}',
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                Text(
-                                  'Haptics: ${_platformCapabilities.snapshot.supportsHaptics}  '
-                                  '· Shaders: ${_platformCapabilities.snapshot.supportsShaders}',
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                Text(
-                                  'Notifications: ${_platformCapabilities.snapshot.supportsNotifications}  '
-                                  '· Background audio: ${_platformCapabilities.snapshot.supportsBackgroundAudio}',
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(
-                                  label: 'Fire haptic (with fallback)',
-                                  onTap: () =>
-                                      _platformCapabilities.withFallback<void>(
-                                        supported: _platformCapabilities
-                                            .snapshot
-                                            .supportsHaptics,
-                                        ifSupported: () {
-                                          fireHaptic(HapticLevel.light);
-                                          ToastBanner.show(
+                                          },
+                                          fallback: () => ToastBanner.show(
                                             context,
-                                            message: 'Haptic fired',
-                                            color: NeonTheme.cyan,
-                                          );
-                                        },
-                                        fallback: () => ToastBanner.show(
-                                          context,
-                                          message:
-                                              'Haptics not supported here — fallback: no-op',
-                                          color: NeonTheme.muted,
-                                        ),
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label: 'AssetPreloadCoordinator (FEAT-47)',
-                            child: Obx(() {
-                              final progress = _assetPreload.progress.value;
-                              final phase = _assetSession.snapshot.value.phase;
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  LinearProgressIndicator(value: progress),
-                                  const SizedBox(height: NeonTheme.s8),
-                                  Text(
-                                    'Progress: ${(progress * 100).toStringAsFixed(0)}%  '
-                                    '· Session phase: ${phase.name}',
-                                  ),
-                                  const SizedBox(height: NeonTheme.s8),
-                                  Text(_assetDemoStatus),
-                                  const SizedBox(height: NeonTheme.s16),
-                                  Wrap(
-                                    spacing: NeonTheme.s8,
-                                    runSpacing: NeonTheme.s8,
-                                    children: [
-                                      CommonButton(
-                                        label: 'Preload OK',
-                                        onTap: () => _runAssetDemoPreload('ok'),
-                                      ),
-                                      CommonButton(
-                                        label: 'Preload (optional fail)',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: () => _runAssetDemoPreload(
-                                          'optionalFail',
-                                        ),
-                                      ),
-                                      CommonButton(
-                                        label: 'Preload (required fail)',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: () => _runAssetDemoPreload(
-                                          'requiredFail',
-                                        ),
-                                      ),
-                                      CommonButton(
-                                        label: 'Cancel',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: _assetPreload.cancel,
-                                      ),
-                                      CommonButton(
-                                        label: 'Retry failed',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: () async {
-                                          final result = await _assetPreload
-                                              .retryFailed();
-                                          if (!mounted) return;
-                                          setState(() {
-                                            if (result is SdkSuccess<void>) {
-                                              _assetSession.markReady();
-                                              _assetSession.start();
-                                              _assetDemoStatus =
-                                                  'Retry OK — scene sẵn sàng.';
-                                            } else if (result
-                                                is SdkFailure<void>) {
-                                              _assetDemoStatus =
-                                                  'Retry vẫn fail: ${result.message}';
-                                            }
-                                          });
-                                        },
-                                      ),
-                                      CommonButton(
-                                        label: 'Unload scene',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: () {
-                                          _assetPreload.unloadScene();
-                                          _assetSession.restart();
-                                          setState(
-                                            () => _assetDemoStatus =
-                                                'Đã unload scene.',
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              );
-                            }),
-                          ),
-                          _Demo(
-                            label: 'SceneTransitionOverlay (FEAT-58)',
-                            child: Obx(() {
-                              final phase = _sceneTransition.phase.value;
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    height: 320,
-                                    child: SceneTransitionOverlay(
-                                      controller: _sceneTransition,
-                                      onRetry: () => _sceneTransition.retry(
-                                        _sceneDemoLoad,
-                                      ),
-                                      child: DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          color: NeonTheme.cardAlt,
-                                          borderRadius: BorderRadius.circular(
-                                            NeonTheme.s16,
+                                            message:
+                                                'Haptics not supported here — fallback: no-op',
+                                            color: NeonTheme.muted,
                                           ),
                                         ),
-                                        child: Center(
-                                          child: Text(
-                                            'Scene #$_sceneRevision',
-                                            style: TextStyle(
-                                              color: NeonTheme.ink,
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.w800,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'AssetPreloadCoordinator (FEAT-47)',
+                              child: Obx(() {
+                                final progress = _assetPreload.progress.value;
+                                final phase =
+                                    _assetSession.snapshot.value.phase;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    LinearProgressIndicator(value: progress),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Progress: ${(progress * 100).toStringAsFixed(0)}%  '
+                                      '· Session phase: ${phase.name}',
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(_assetDemoStatus),
+                                    const SizedBox(height: NeonTheme.s16),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      runSpacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          label: 'Preload OK',
+                                          onTap: () =>
+                                              _runAssetDemoPreload('ok'),
+                                        ),
+                                        CommonButton(
+                                          label: 'Preload (optional fail)',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => _runAssetDemoPreload(
+                                            'optionalFail',
+                                          ),
+                                        ),
+                                        CommonButton(
+                                          label: 'Preload (required fail)',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => _runAssetDemoPreload(
+                                            'requiredFail',
+                                          ),
+                                        ),
+                                        CommonButton(
+                                          label: 'Cancel',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: _assetPreload.cancel,
+                                        ),
+                                        CommonButton(
+                                          label: 'Retry failed',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () async {
+                                            final result = await _assetPreload
+                                                .retryFailed();
+                                            if (!mounted) return;
+                                            setState(() {
+                                              if (result is SdkSuccess<void>) {
+                                                _assetSession.markReady();
+                                                _assetSession.start();
+                                                _assetDemoStatus =
+                                                    'Retry OK — scene sẵn sàng.';
+                                              } else if (result
+                                                  is SdkFailure<void>) {
+                                                _assetDemoStatus =
+                                                    'Retry vẫn fail: ${result.message}';
+                                              }
+                                            });
+                                          },
+                                        ),
+                                        CommonButton(
+                                          label: 'Unload scene',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () {
+                                            _assetPreload.unloadScene();
+                                            _assetSession.restart();
+                                            setState(
+                                              () => _assetDemoStatus =
+                                                  'Đã unload scene.',
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              }),
+                            ),
+                            _Demo(
+                              label: 'SceneTransitionOverlay (FEAT-58)',
+                              child: Obx(() {
+                                final phase = _sceneTransition.phase.value;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      height: 320,
+                                      child: SceneTransitionOverlay(
+                                        controller: _sceneTransition,
+                                        onRetry: () => _sceneTransition.retry(
+                                          _sceneDemoLoad,
+                                        ),
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: NeonTheme.cardAlt,
+                                            borderRadius: BorderRadius.circular(
+                                              NeonTheme.s16,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              'Scene #$_sceneRevision',
+                                              style: TextStyle(
+                                                color: NeonTheme.ink,
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.w800,
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(height: NeonTheme.s8),
-                                  Text('Phase: ${phase.name}'),
-                                  const SizedBox(height: NeonTheme.s16),
-                                  Wrap(
-                                    spacing: NeonTheme.s8,
-                                    runSpacing: NeonTheme.s8,
-                                    children: [
-                                      CommonButton(
-                                        label: 'Chuyển scene (OK)',
-                                        onTap: () async {
-                                          _sceneDemoForceFail = false;
-                                          final result = await _sceneTransition
-                                              .run(_sceneDemoLoad);
-                                          if (!mounted) return;
-                                          if (result is SdkSuccess<void>) {
-                                            setState(() => _sceneRevision++);
-                                          }
-                                        },
-                                      ),
-                                      CommonButton(
-                                        label: 'Chuyển scene (lỗi)',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: () {
-                                          _sceneDemoForceFail = true;
-                                          _sceneTransition.run(_sceneDemoLoad);
-                                        },
-                                      ),
-                                      CommonButton(
-                                        label: 'Cancel transition',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: _sceneTransition.cancel,
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              );
-                            }),
-                          ),
-                          _Demo(
-                            label: 'PlayerProgressionService (FEAT-43)',
-                            child: Obx(() {
-                              final snap = _progression.snapshot.value;
-                              final progress = snap.isMaxLevel
-                                  ? 1.0
-                                  : snap.xpIntoLevel / snap.xpToNextLevel;
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Level ${snap.level}'
-                                    '${snap.isMaxLevel ? ' (MAX)' : ''}',
-                                  ),
-                                  const SizedBox(height: NeonTheme.s8),
-                                  LinearProgressIndicator(value: progress),
-                                  const SizedBox(height: NeonTheme.s8),
-                                  Text(
-                                    snap.isMaxLevel
-                                        ? 'Total XP: ${snap.totalXpEarned}'
-                                        : 'XP: ${snap.xpIntoLevel}/${snap.xpToNextLevel}'
-                                              ' (total: ${snap.totalXpEarned})',
-                                  ),
-                                  const SizedBox(height: NeonTheme.s8),
-                                  Text(
-                                    'Unlock gems: ${_progressionWallet.balanceOf('gem')}',
-                                  ),
-                                  const SizedBox(height: NeonTheme.s16),
-                                  Wrap(
-                                    spacing: NeonTheme.s8,
-                                    runSpacing: NeonTheme.s8,
-                                    children: [
-                                      CommonButton(
-                                        label: 'Grant 50 XP',
-                                        onTap: () =>
-                                            _grantProgressionXp(context, 50),
-                                      ),
-                                      CommonButton(
-                                        label: 'Grant 300 XP (multi-level)',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: () =>
-                                            _grantProgressionXp(context, 300),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              );
-                            }),
-                          ),
-                          _Demo(
-                            label: 'InventoryService (FEAT-44)',
-                            child: Obx(() {
-                              final snap = _inventory.snapshot.value;
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Slots: ${snap.slots.length}/${snap.capacity}',
-                                  ),
-                                  const SizedBox(height: NeonTheme.s8),
-                                  for (final slot in snap.slots)
-                                    Text(
-                                      '${slot.itemId} x${slot.quantity}'
-                                      '${slot.equipped ? ' (equipped)' : ''}',
-                                    ),
-                                  if (snap.slots.isEmpty) const Text('(rỗng)'),
-                                  const SizedBox(height: NeonTheme.s8),
-                                  Text(_inventoryStatus),
-                                  const SizedBox(height: NeonTheme.s16),
-                                  Wrap(
-                                    spacing: NeonTheme.s8,
-                                    runSpacing: NeonTheme.s8,
-                                    children: [
-                                      CommonButton(
-                                        label: 'Grant potion x3',
-                                        onTap: () =>
-                                            _inventoryGrant('potion', 3),
-                                      ),
-                                      CommonButton(
-                                        label: 'Consume potion x2',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: () =>
-                                            _inventoryConsume('potion', 2),
-                                      ),
-                                      CommonButton(
-                                        label: 'Grant sword',
-                                        onTap: () =>
-                                            _inventoryGrant('sword', 1),
-                                      ),
-                                      CommonButton(
-                                        label: 'Equip sword',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: () {
-                                          final swords = snap.slotsFor('sword');
-                                          if (swords.isEmpty) return;
-                                          final swordSlot = swords.first;
-                                          _inventory.setEquipped(
-                                            slotId: swordSlot.slotId,
-                                            equipped: !swordSlot.equipped,
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              );
-                            }),
-                          ),
-                          _Demo(
-                            label: 'OfflineOutboxService (FEAT-67)',
-                            child: Obx(() {
-                              final pending = _outbox.items
-                                  .where((i) => !i.manualReview)
-                                  .toList();
-                              final manual = _outbox.manualReviewItems;
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Pending: ${pending.length}  · '
-                                    'Manual review: ${manual.length}',
-                                  ),
-                                  for (final item in pending)
-                                    Text(
-                                      '${item.idempotencyKey}: '
-                                      '${item.payload['score']}',
-                                    ),
-                                  for (final item in manual)
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: NeonTheme.s8,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Conflict ${item.idempotencyKey}: '
-                                            'local ${item.payload['score']} '
-                                            'vs server ${item.remotePayload?['score']}',
-                                          ),
-                                          Wrap(
-                                            spacing: NeonTheme.s8,
-                                            children: [
-                                              CommonButton(
-                                                label: 'Keep local',
-                                                variant: CommonButtonVariant
-                                                    .secondary,
-                                                onTap: () =>
-                                                    _outbox.resolveManual(
-                                                      idempotencyKey:
-                                                          item.idempotencyKey,
-                                                      resolution:
-                                                          ManualResolution
-                                                              .keepLocal,
-                                                    ),
-                                              ),
-                                              CommonButton(
-                                                label: 'Accept remote',
-                                                variant: CommonButtonVariant
-                                                    .secondary,
-                                                onTap: () =>
-                                                    _outbox.resolveManual(
-                                                      idempotencyKey:
-                                                          item.idempotencyKey,
-                                                      resolution:
-                                                          ManualResolution
-                                                              .acceptRemote,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  const SizedBox(height: NeonTheme.s16),
-                                  Wrap(
-                                    spacing: NeonTheme.s8,
-                                    runSpacing: NeonTheme.s8,
-                                    children: [
-                                      CommonButton(
-                                        label: 'Enqueue OK',
-                                        onTap: () {
-                                          _outboxCounter++;
-                                          _outbox.enqueue(
-                                            idempotencyKey:
-                                                'score_$_outboxCounter',
-                                            payload: {
-                                              'score': _outboxCounter * 10,
-                                            },
-                                          );
-                                        },
-                                      ),
-                                      CommonButton(
-                                        label: 'Enqueue (conflict)',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: () {
-                                          _outboxCounter++;
-                                          _outbox.enqueue(
-                                            idempotencyKey:
-                                                'score_$_outboxCounter',
-                                            payload: {
-                                              'score': _outboxCounter * 10,
-                                              'forceConflict': true,
-                                            },
-                                          );
-                                        },
-                                      ),
-                                      CommonButton(
-                                        label: 'Drain now',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: _outbox.drain,
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              );
-                            }),
-                          ),
-
-                          const SizedBox(height: NeonTheme.s24),
-                          const SectionHeader(title: 'Adaptive HUD'),
-                          const SizedBox(height: NeonTheme.s16),
-                          _Demo(
-                            label: 'AdaptiveGameHud (FEAT-52)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                ClipRect(
-                                  child: ColoredBox(
-                                    color: NeonTheme.bgMid,
-                                    child: SizedBox(
-                                      height: 240,
-                                      child: AdaptiveGameHud(
-                                        debugShowBounds: _hudDebugBounds,
-                                        compactBreakpointWidth: 500,
-                                        slots: {
-                                          HudSlot.topStart: const _HudChip(
-                                            'HUD score: 900',
-                                          ),
-                                          HudSlot.topEnd: const _HudChip(
-                                            'HUD pause',
-                                          ),
-                                          HudSlot.bottom: const _HudChip(
-                                            'HUD lives 3 · coins 350',
-                                          ),
-                                          HudSlot.side: const _HudChip(
-                                            'HUD boost',
-                                          ),
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                CommonButton(
-                                  label: _hudDebugBounds
-                                      ? 'Ẩn debug bounds'
-                                      : 'Hiện debug bounds',
-                                  variant: CommonButtonVariant.secondary,
-                                  onTap: () => setState(
-                                    () => _hudDebugBounds = !_hudDebugBounds,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: NeonTheme.s24),
-                          const SectionHeader(title: 'Level Select'),
-                          const SizedBox(height: NeonTheme.s16),
-                          _Demo(
-                            label: 'LevelSelectGrid',
-                            child: LevelSelectGrid(
-                              states: _levelStates,
-                              starsEarnedByLevel: _levelStars,
-                              onLevelTap: (level) => ToastBanner.show(
-                                context,
-                                message: 'Level $level tapped',
-                                color: NeonTheme.cyan,
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: NeonTheme.s24),
-                          const SectionHeader(title: 'Reward Choice'),
-                          const SizedBox(height: NeonTheme.s16),
-                          _Demo(
-                            label: 'RewardChoicePanel',
-                            child: RewardChoicePanel(
-                              options: _rewardChoices,
-                              onConfirm: (ids) async {
-                                await Future<void>.delayed(
-                                  const Duration(milliseconds: 500),
-                                );
-                                if (context.mounted) {
-                                  ToastBanner.show(
-                                    context,
-                                    message: 'Granted: ${ids.join(', ')}',
-                                    color: NeonTheme.cyan,
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-
-                          const SizedBox(height: NeonTheme.s24),
-                          const SectionHeader(title: 'Shop'),
-                          const SizedBox(height: NeonTheme.s16),
-                          _Demo(
-                            label: 'RibbonBadge',
-                            child: Wrap(
-                              spacing: NeonTheme.s16,
-                              runSpacing: NeonTheme.s16,
-                              children: [
-                                RibbonBadge(
-                                  text: 'SALE',
-                                  child: SizedBox(
-                                    width: 100,
-                                    height: 80,
-                                    child: PanelCard(
-                                      alt: true,
-                                      child: SizedBox.expand(),
-                                    ),
-                                  ),
-                                ),
-                                RibbonBadge(
-                                  text: 'NEW',
-                                  color: NeonTheme.lime,
-                                  child: SizedBox(
-                                    width: 100,
-                                    height: 80,
-                                    child: PanelCard(
-                                      alt: true,
-                                      child: SizedBox.expand(),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          _Demo(
-                            label:
-                                'ShopItemCard (IDEA-47: PurchaseLedgerService)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(
-                                  'Gems: ${_purchases.balanceOf(_gemsSku)}',
-                                  style: TextStyle(
-                                    color: NeonTheme.ink,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                Wrap(
-                                  spacing: NeonTheme.s16,
-                                  runSpacing: NeonTheme.s16,
-                                  children: [
-                                    ShopItemCard(
-                                      icon: Icons.diamond_rounded,
-                                      title: '100 Gems',
-                                      priceLabel: r'$0.99',
-                                      onBuy: () => _buyGems(100),
-                                    ),
-                                    ShopItemCard(
-                                      icon: Icons.diamond_rounded,
-                                      title: 'Mega Gem Pack',
-                                      priceLabel: r'$4.99',
-                                      ribbonText: 'BEST VALUE',
-                                      ribbonColor: NeonTheme.gold,
-                                      iconColor: NeonTheme.gold,
-                                      onBuy: () => _buyGems(500),
-                                    ),
-                                    ShopItemCard(
-                                      icon: Icons.block_rounded,
-                                      title: 'Remove Ads',
-                                      priceLabel: _purchases.owns(_removeAdsSku)
-                                          ? 'Owned'
-                                          : r'$2.99',
-                                      ribbonText: 'NEW',
-                                      ribbonColor: NeonTheme.lime,
-                                      onBuy: _purchases.owns(_removeAdsSku)
-                                          ? null
-                                          : _buyRemoveAds,
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text('Phase: ${phase.name}'),
+                                    const SizedBox(height: NeonTheme.s16),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      runSpacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          label: 'Chuyển scene (OK)',
+                                          onTap: () async {
+                                            _sceneDemoForceFail = false;
+                                            final result =
+                                                await _sceneTransition.run(
+                                                  _sceneDemoLoad,
+                                                );
+                                            if (!mounted) return;
+                                            if (result is SdkSuccess<void>) {
+                                              setState(() => _sceneRevision++);
+                                            }
+                                          },
+                                        ),
+                                        CommonButton(
+                                          label: 'Chuyển scene (lỗi)',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () {
+                                            _sceneDemoForceFail = true;
+                                            _sceneTransition.run(
+                                              _sceneDemoLoad,
+                                            );
+                                          },
+                                        ),
+                                        CommonButton(
+                                          label: 'Cancel transition',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: _sceneTransition.cancel,
+                                        ),
+                                      ],
                                     ),
                                   ],
-                                ),
-                              ],
+                                );
+                              }),
                             ),
-                          ),
-
-                          const SizedBox(height: NeonTheme.s24),
-                          const SectionHeader(title: 'Game Feel'),
-                          const SizedBox(height: NeonTheme.s16),
-                          _Demo(
-                            label: 'SquashStretch (tap the card)',
-                            child: SquashStretch(
-                              onTap: _bumpSquashTapCount,
-                              child: PanelCard(
-                                alt: true,
-                                child: SizedBox(
-                                  width: 120,
-                                  height: 60,
-                                  child: Center(
-                                    child: Text(
-                                      'Taps: $_squashTapCount',
-                                      style: TextStyle(
-                                        color: NeonTheme.ink,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                            _Demo(
+                              label: 'PlayerProgressionService (FEAT-43)',
+                              child: Obx(() {
+                                final snap = _progression.snapshot.value;
+                                final progress = snap.isMaxLevel
+                                    ? 1.0
+                                    : snap.xpIntoLevel / snap.xpToNextLevel;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Level ${snap.level}'
+                                      '${snap.isMaxLevel ? ' (MAX)' : ''}',
                                     ),
-                                  ),
-                                ),
-                              ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    LinearProgressIndicator(value: progress),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      snap.isMaxLevel
+                                          ? 'Total XP: ${snap.totalXpEarned}'
+                                          : 'XP: ${snap.xpIntoLevel}/${snap.xpToNextLevel}'
+                                                ' (total: ${snap.totalXpEarned})',
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Unlock gems: ${_progressionWallet.balanceOf('gem')}',
+                                    ),
+                                    const SizedBox(height: NeonTheme.s16),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      runSpacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          label: 'Grant 50 XP',
+                                          onTap: () =>
+                                              _grantProgressionXp(context, 50),
+                                        ),
+                                        CommonButton(
+                                          label: 'Grant 300 XP (multi-level)',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () =>
+                                              _grantProgressionXp(context, 300),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              }),
                             ),
-                          ),
-                          _Demo(
-                            label: 'ScreenShake',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ScreenShake(
-                                  controller: _screenShakeController,
-                                  child: PanelCard(
-                                    alt: true,
-                                    child: SizedBox(
-                                      width: 120,
-                                      height: 60,
-                                      child: Center(
-                                        child: Icon(
-                                          Icons.warning_amber_rounded,
-                                          color: NeonTheme.orange,
+                            _Demo(
+                              label: 'InventoryService (FEAT-44)',
+                              child: Obx(() {
+                                final snap = _inventory.snapshot.value;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Slots: ${snap.slots.length}/${snap.capacity}',
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    for (final slot in snap.slots)
+                                      Text(
+                                        '${slot.itemId} x${slot.quantity}'
+                                        '${slot.equipped ? ' (equipped)' : ''}',
+                                      ),
+                                    if (snap.slots.isEmpty)
+                                      const Text('(rỗng)'),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(_inventoryStatus),
+                                    const SizedBox(height: NeonTheme.s16),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      runSpacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          label: 'Grant potion x3',
+                                          onTap: () =>
+                                              _inventoryGrant('potion', 3),
+                                        ),
+                                        CommonButton(
+                                          label: 'Consume potion x2',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () =>
+                                              _inventoryConsume('potion', 2),
+                                        ),
+                                        CommonButton(
+                                          label: 'Grant sword',
+                                          onTap: () =>
+                                              _inventoryGrant('sword', 1),
+                                        ),
+                                        CommonButton(
+                                          label: 'Equip sword',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () {
+                                            final swords = snap.slotsFor(
+                                              'sword',
+                                            );
+                                            if (swords.isEmpty) return;
+                                            final swordSlot = swords.first;
+                                            _inventory.setEquipped(
+                                              slotId: swordSlot.slotId,
+                                              equipped: !swordSlot.equipped,
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              }),
+                            ),
+                            _Demo(
+                              label: 'OfflineOutboxService (FEAT-67)',
+                              child: Obx(() {
+                                final pending = _outbox.items
+                                    .where((i) => !i.manualReview)
+                                    .toList();
+                                final manual = _outbox.manualReviewItems;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Pending: ${pending.length}  · '
+                                      'Manual review: ${manual.length}',
+                                    ),
+                                    for (final item in pending)
+                                      Text(
+                                        '${item.idempotencyKey}: '
+                                        '${item.payload['score']}',
+                                      ),
+                                    for (final item in manual)
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: NeonTheme.s8,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Conflict ${item.idempotencyKey}: '
+                                              'local ${item.payload['score']} '
+                                              'vs server ${item.remotePayload?['score']}',
+                                            ),
+                                            Wrap(
+                                              spacing: NeonTheme.s8,
+                                              children: [
+                                                CommonButton(
+                                                  label: 'Keep local',
+                                                  variant: CommonButtonVariant
+                                                      .secondary,
+                                                  onTap: () =>
+                                                      _outbox.resolveManual(
+                                                        idempotencyKey:
+                                                            item.idempotencyKey,
+                                                        resolution:
+                                                            ManualResolution
+                                                                .keepLocal,
+                                                      ),
+                                                ),
+                                                CommonButton(
+                                                  label: 'Accept remote',
+                                                  variant: CommonButtonVariant
+                                                      .secondary,
+                                                  onTap: () =>
+                                                      _outbox.resolveManual(
+                                                        idempotencyKey:
+                                                            item.idempotencyKey,
+                                                        resolution:
+                                                            ManualResolution
+                                                                .acceptRemote,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    const SizedBox(height: NeonTheme.s16),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      runSpacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          label: 'Enqueue OK',
+                                          onTap: () {
+                                            _outboxCounter++;
+                                            _outbox.enqueue(
+                                              idempotencyKey:
+                                                  'score_$_outboxCounter',
+                                              payload: {
+                                                'score': _outboxCounter * 10,
+                                              },
+                                            );
+                                          },
+                                        ),
+                                        CommonButton(
+                                          label: 'Enqueue (conflict)',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () {
+                                            _outboxCounter++;
+                                            _outbox.enqueue(
+                                              idempotencyKey:
+                                                  'score_$_outboxCounter',
+                                              payload: {
+                                                'score': _outboxCounter * 10,
+                                                'forceConflict': true,
+                                              },
+                                            );
+                                          },
+                                        ),
+                                        CommonButton(
+                                          label: 'Drain now',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: _outbox.drain,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              }),
+                            ),
+
+                            const SizedBox(height: NeonTheme.s24),
+                            const SectionHeader(title: 'Adaptive HUD'),
+                            const SizedBox(height: NeonTheme.s16),
+                            _Demo(
+                              label: 'AdaptiveGameHud (FEAT-52)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  ClipRect(
+                                    child: ColoredBox(
+                                      color: NeonTheme.bgMid,
+                                      child: SizedBox(
+                                        height: 240,
+                                        child: AdaptiveGameHud(
+                                          debugShowBounds: _hudDebugBounds,
+                                          compactBreakpointWidth: 500,
+                                          slots: {
+                                            HudSlot.topStart: const _HudChip(
+                                              'HUD score: 900',
+                                            ),
+                                            HudSlot.topEnd: const _HudChip(
+                                              'HUD pause',
+                                            ),
+                                            HudSlot.bottom: const _HudChip(
+                                              'HUD lives 3 · coins 350',
+                                            ),
+                                            HudSlot.side: const _HudChip(
+                                              'HUD boost',
+                                            ),
+                                          },
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(
-                                  label: 'Shake!',
-                                  onTap: () => _screenShakeController.shake(),
-                                ),
-                              ],
+                                  const SizedBox(height: NeonTheme.s8),
+                                  CommonButton(
+                                    label: _hudDebugBounds
+                                        ? 'Ẩn debug bounds'
+                                        : 'Hiện debug bounds',
+                                    variant: CommonButtonVariant.secondary,
+                                    onTap: () => setState(
+                                      () => _hudDebugBounds = !_hudDebugBounds,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          _Demo(
-                            label: 'ComboHeatBackground',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ComboHeatBackground(
-                                  heat: _comboHeat,
+
+                            const SizedBox(height: NeonTheme.s24),
+                            const SectionHeader(title: 'Level Select'),
+                            const SizedBox(height: NeonTheme.s16),
+                            _Demo(
+                              label: 'LevelSelectGrid',
+                              child: LevelSelectGrid(
+                                states: _levelStates,
+                                starsEarnedByLevel: _levelStars,
+                                onLevelTap: (level) => ToastBanner.show(
+                                  context,
+                                  message: 'Level $level tapped',
+                                  color: NeonTheme.cyan,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: NeonTheme.s24),
+                            const SectionHeader(title: 'Reward Choice'),
+                            const SizedBox(height: NeonTheme.s16),
+                            _Demo(
+                              label: 'RewardChoicePanel',
+                              child: RewardChoicePanel(
+                                options: _rewardChoices,
+                                onConfirm: (ids) async {
+                                  await Future<void>.delayed(
+                                    const Duration(milliseconds: 500),
+                                  );
+                                  if (context.mounted) {
+                                    ToastBanner.show(
+                                      context,
+                                      message: 'Granted: ${ids.join(', ')}',
+                                      color: NeonTheme.cyan,
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+
+                            const SizedBox(height: NeonTheme.s24),
+                            const SectionHeader(title: 'Shop'),
+                            const SizedBox(height: NeonTheme.s16),
+                            _Demo(
+                              label: 'RibbonBadge',
+                              child: Wrap(
+                                spacing: NeonTheme.s16,
+                                runSpacing: NeonTheme.s16,
+                                children: [
+                                  RibbonBadge(
+                                    text: 'SALE',
+                                    child: SizedBox(
+                                      width: 100,
+                                      height: 80,
+                                      child: PanelCard(
+                                        alt: true,
+                                        child: SizedBox.expand(),
+                                      ),
+                                    ),
+                                  ),
+                                  RibbonBadge(
+                                    text: 'NEW',
+                                    color: NeonTheme.lime,
+                                    child: SizedBox(
+                                      width: 100,
+                                      height: 80,
+                                      child: PanelCard(
+                                        alt: true,
+                                        child: SizedBox.expand(),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label:
+                                  'ShopItemCard (IDEA-47: PurchaseLedgerService)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    'Gems: ${_purchases.balanceOf(_gemsSku)}',
+                                    style: TextStyle(
+                                      color: NeonTheme.ink,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Wrap(
+                                    spacing: NeonTheme.s16,
+                                    runSpacing: NeonTheme.s16,
+                                    children: [
+                                      ShopItemCard(
+                                        icon: Icons.diamond_rounded,
+                                        title: '100 Gems',
+                                        priceLabel: r'$0.99',
+                                        onBuy: () => _buyGems(100),
+                                      ),
+                                      ShopItemCard(
+                                        icon: Icons.diamond_rounded,
+                                        title: 'Mega Gem Pack',
+                                        priceLabel: r'$4.99',
+                                        ribbonText: 'BEST VALUE',
+                                        ribbonColor: NeonTheme.gold,
+                                        iconColor: NeonTheme.gold,
+                                        onBuy: () => _buyGems(500),
+                                      ),
+                                      ShopItemCard(
+                                        icon: Icons.block_rounded,
+                                        title: 'Remove Ads',
+                                        priceLabel:
+                                            _purchases.owns(_removeAdsSku)
+                                            ? 'Owned'
+                                            : r'$2.99',
+                                        ribbonText: 'NEW',
+                                        ribbonColor: NeonTheme.lime,
+                                        onBuy: _purchases.owns(_removeAdsSku)
+                                            ? null
+                                            : _buyRemoveAds,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: NeonTheme.s24),
+                            const SectionHeader(title: 'Game Feel'),
+                            const SizedBox(height: NeonTheme.s16),
+                            _Demo(
+                              label: 'SquashStretch (tap the card)',
+                              child: SquashStretch(
+                                onTap: _bumpSquashTapCount,
+                                child: PanelCard(
+                                  alt: true,
                                   child: SizedBox(
-                                    width: double.infinity,
+                                    width: 120,
                                     height: 60,
                                     child: Center(
                                       child: Text(
-                                        'Heat: ${(_comboHeat * 100).round()}%',
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        'Taps: $_squashTapCount',
+                                        style: TextStyle(
+                                          color: NeonTheme.ink,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: NeonTheme.s16),
-                                CommonButton(
-                                  label: 'Bump heat',
-                                  onTap: _cycleComboHeat,
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                          _Demo(
-                            label: 'HapticChoreographer (IDEA-41)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: CommonButton(
-                                        label: 'Reward',
-                                        onTap: () =>
-                                            _playHaptic(HapticPattern.reward),
+                            _Demo(
+                              label: 'ScreenShake',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ScreenShake(
+                                    controller: _screenShakeController,
+                                    child: PanelCard(
+                                      alt: true,
+                                      child: SizedBox(
+                                        width: 120,
+                                        height: 60,
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.warning_amber_rounded,
+                                            color: NeonTheme.orange,
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(width: NeonTheme.s8),
-                                    Expanded(
-                                      child: CommonButton(
-                                        label: 'Combo',
-                                        variant: CommonButtonVariant.secondary,
-                                        onTap: () =>
-                                            _playHaptic(HapticPattern.combo),
-                                      ),
-                                    ),
-                                    const SizedBox(width: NeonTheme.s8),
-                                    Expanded(
-                                      child: CommonButton(
-                                        label: 'Error',
-                                        variant: CommonButtonVariant.danger,
-                                        onTap: () =>
-                                            _playHaptic(HapticPattern.error),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                Text(
-                                  'Pulses fired: ${_hapticLog?.isEmpty ?? true ? '(none yet)' : _hapticLog}',
-                                  style: TextStyle(
-                                    color: NeonTheme.inkSoft,
-                                    fontSize: 12,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: 'Shake!',
+                                    onTap: () => _screenShakeController.shake(),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          _Demo(
-                            label: 'AchievementUnlockListener (IDEA-43)',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(
-                                  _achievements.isCompleted(
-                                        'widget_kit_explorer',
-                                      )
-                                      ? 'widget_kit_explorer: unlocked!'
-                                      : 'widget_kit_explorer: $_achievementTaps / 3',
-                                  style: TextStyle(color: NeonTheme.ink),
-                                ),
-                                const SizedBox(height: NeonTheme.s8),
-                                CommonButton(
-                                  label: 'Tap to progress',
-                                  onTap: _bumpAchievementProgress,
-                                ),
-                              ],
+                            _Demo(
+                              label: 'ComboHeatBackground',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ComboHeatBackground(
+                                    heat: _comboHeat,
+                                    child: SizedBox(
+                                      width: double.infinity,
+                                      height: 60,
+                                      child: Center(
+                                        child: Text(
+                                          'Heat: ${(_comboHeat * 100).round()}%',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  CommonButton(
+                                    label: 'Bump heat',
+                                    onTap: _cycleComboHeat,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                            _Demo(
+                              label: 'HapticChoreographer (IDEA-41)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: CommonButton(
+                                          label: 'Reward',
+                                          onTap: () =>
+                                              _playHaptic(HapticPattern.reward),
+                                        ),
+                                      ),
+                                      const SizedBox(width: NeonTheme.s8),
+                                      Expanded(
+                                        child: CommonButton(
+                                          label: 'Combo',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () =>
+                                              _playHaptic(HapticPattern.combo),
+                                        ),
+                                      ),
+                                      const SizedBox(width: NeonTheme.s8),
+                                      Expanded(
+                                        child: CommonButton(
+                                          label: 'Error',
+                                          variant: CommonButtonVariant.danger,
+                                          onTap: () =>
+                                              _playHaptic(HapticPattern.error),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  Text(
+                                    'Pulses fired: ${_hapticLog?.isEmpty ?? true ? '(none yet)' : _hapticLog}',
+                                    style: TextStyle(
+                                      color: NeonTheme.inkSoft,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label: 'AchievementUnlockListener (IDEA-43)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    _achievements.isCompleted(
+                                          'widget_kit_explorer',
+                                        )
+                                        ? 'widget_kit_explorer: unlocked!'
+                                        : 'widget_kit_explorer: $_achievementTaps / 3',
+                                    style: TextStyle(color: NeonTheme.ink),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  CommonButton(
+                                    label: 'Tap to progress',
+                                    onTap: _bumpAchievementProgress,
+                                  ),
+                                ],
+                              ),
+                            ),
 
-                          const SizedBox(height: NeonTheme.s24),
-                        ],
+                            const SizedBox(height: NeonTheme.s24),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (_rewardPopupOpen)
-              Positioned.fill(
-                child: NeonDialog.overlay(
-                  onBarrier: _closeRewardPopup,
-                  panel: GestureDetector(
-                    onTap: _closeRewardPopup,
-                    child: RewardPopup(
-                      title: 'Level Complete!',
-                      message: '+50 coins earned',
-                      icon: Icons.emoji_events_rounded,
-                      color: NeonTheme.gold,
-                      content: const StarRating(earned: 3, animate: true),
-                    ),
+                    ],
                   ),
                 ),
               ),
-            if (_spotlightActive)
-              Positioned.fill(
-                child: SpotlightOverlay(
-                  targetKey: _spotlightTargetKey,
-                  title: 'Try this',
-                  message:
-                      'This is the Primary button — the main action '
-                      'on any screen.',
-                  color: NeonTheme.cyan,
-                  onDismiss: _endTutorial,
+              if (_rewardPopupOpen)
+                Positioned.fill(
+                  child: NeonDialog.overlay(
+                    onBarrier: _closeRewardPopup,
+                    panel: GestureDetector(
+                      onTap: _closeRewardPopup,
+                      child: RewardPopup(
+                        title: 'Level Complete!',
+                        message: '+50 coins earned',
+                        icon: Icons.emoji_events_rounded,
+                        color: NeonTheme.gold,
+                        content: const StarRating(earned: 3, animate: true),
+                      ),
+                    ),
+                  ),
                 ),
+              if (_spotlightActive)
+                Positioned.fill(
+                  child: SpotlightOverlay(
+                    targetKey: _spotlightTargetKey,
+                    title: 'Try this',
+                    message:
+                        'This is the Primary button — the main action '
+                        'on any screen.',
+                    color: NeonTheme.cyan,
+                    onDismiss: _endTutorial,
+                  ),
+                ),
+              TutorialSequence(
+                controller: _tutorialSequenceController,
+                child: const SizedBox.shrink(),
               ),
-            TutorialSequence(
-              controller: _tutorialSequenceController,
-              child: const SizedBox.shrink(),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

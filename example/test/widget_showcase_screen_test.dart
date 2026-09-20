@@ -1613,7 +1613,7 @@ void main() {
 
     testWidgets(
       'bấm "Grant 300 XP (multi-level)": nhảy thẳng lên Level 3 (MAX), '
-      'unlock gems tăng đúng, hiện toast level up',
+      'unlock gems tăng đúng, hiện đúng LevelUpOverlay tuần tự (FEAT-54)',
       (tester) async {
         await _pumpShowcase(tester);
 
@@ -1625,11 +1625,17 @@ void main() {
         expect(find.text('Level 3 (MAX)'), findsOneWidget);
         expect(find.text('Total XP: 300'), findsOneWidget);
         expect(find.text('Unlock gems: 50'), findsOneWidget);
-        expect(find.textContaining('Level up! 1 → 3'), findsOneWidget);
+        // FEAT-54: LevelUpOverlay hiện đúng level ĐẦU TIÊN trong queue (2)
+        // trước, không nhảy thẳng lên 3 — queue tuần tự đúng thứ tự tăng dần
+        // (grantXp cắt 1 → 3 thành 2 LevelUpEvent: level 2 rồi level 3).
+        expect(find.text('Level 2!'), findsOneWidget);
         expect(tester.takeException(), isNull);
 
-        // Toast auto-dismiss (~2.4s) trước khi test kết thúc.
-        await tester.pump(const Duration(seconds: 3));
+        // Skip overlay để kết thúc sequence sạch sẽ, không để Timer treo
+        // qua cuối test.
+        await tester.tap(find.text('Skip'));
+        await tester.pump();
+        expect(find.text('Level 2!'), findsNothing);
       },
     );
   });
