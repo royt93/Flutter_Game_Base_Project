@@ -1,4 +1,11 @@
+// `SemanticsData.hasFlag`/`SemanticsFlag` are deprecated in favor of
+// `flagsCollection` — but `flagsCollection.isSelected`'s return type changed
+// (bool → Tristate) between CI's pinned Flutter (3.35.1) and newer SDKs, so
+// `hasFlag` is the one API that actually compiles identically on both.
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/segmented_tab_bar.dart';
@@ -49,8 +56,8 @@ void main() {
 
     final semanticsA = tester.getSemantics(find.text('A'));
     final semanticsB = tester.getSemantics(find.text('B'));
-    expect(semanticsA.flagsCollection.isSelected.toBoolOrNull(), false);
-    expect(semanticsB.flagsCollection.isSelected.toBoolOrNull(), true);
+    expect(semanticsA.getSemanticsData().hasFlag(SemanticsFlag.isSelected), isFalse);
+    expect(semanticsB.getSemanticsData().hasFlag(SemanticsFlag.isSelected), isTrue);
   });
 
   testWidgets('SegmentedTabBar throw assert khi số lượng label ngoài 2-4', (

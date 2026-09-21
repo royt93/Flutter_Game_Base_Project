@@ -1,4 +1,11 @@
+// `SemanticsData.hasFlag`/`SemanticsFlag` are deprecated in favor of
+// `flagsCollection` — but `flagsCollection.isEnabled`'s return type changed
+// (bool → Tristate) between CI's pinned Flutter (3.35.1) and newer SDKs, so
+// `hasFlag` is the one API that actually compiles identically on both.
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 
@@ -102,7 +109,7 @@ void main() {
     );
 
     final semantics = tester.getSemantics(find.byType(CommonButton));
-    expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), false);
+    expect(semantics.getSemanticsData().hasFlag(SemanticsFlag.isEnabled), isFalse);
 
     await tester.tap(find.byType(CommonButton));
     await tester.pump();
@@ -316,7 +323,7 @@ void main() {
       );
 
       final semantics = tester.getSemantics(find.byType(CommonButton));
-      expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), isFalse);
+      expect(semantics.getSemanticsData().hasFlag(SemanticsFlag.isEnabled), isFalse);
       handle.dispose();
     });
 

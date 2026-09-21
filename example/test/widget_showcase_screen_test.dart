@@ -1,4 +1,11 @@
+// `SemanticsData.hasFlag`/`SemanticsFlag` are deprecated in favor of
+// `flagsCollection` — but `flagsCollection.isSelected`'s return type changed
+// (bool → Tristate) between CI's pinned Flutter (3.35.1) and newer SDKs, so
+// `hasFlag` is the one API that actually compiles identically on both.
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -724,18 +731,16 @@ void main() {
         expect(
           tester
               .getSemantics(find.text('Easy'))
-              .flagsCollection
-              .isSelected
-              .toBoolOrNull(),
-          true,
+              .getSemanticsData()
+              .hasFlag(SemanticsFlag.isSelected),
+          isTrue,
         );
         expect(
           tester
               .getSemantics(find.text('Hard'))
-              .flagsCollection
-              .isSelected
-              .toBoolOrNull(),
-          false,
+              .getSemanticsData()
+              .hasFlag(SemanticsFlag.isSelected),
+          isFalse,
         );
 
         await tester.tap(find.text('Hard'));
@@ -744,18 +749,16 @@ void main() {
         expect(
           tester
               .getSemantics(find.text('Easy'))
-              .flagsCollection
-              .isSelected
-              .toBoolOrNull(),
-          false,
+              .getSemanticsData()
+              .hasFlag(SemanticsFlag.isSelected),
+          isFalse,
         );
         expect(
           tester
               .getSemantics(find.text('Hard'))
-              .flagsCollection
-              .isSelected
-              .toBoolOrNull(),
-          true,
+              .getSemanticsData()
+              .hasFlag(SemanticsFlag.isSelected),
+          isTrue,
         );
         expect(tester.takeException(), isNull);
       },

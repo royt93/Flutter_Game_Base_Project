@@ -1,6 +1,11 @@
-import 'dart:ui';
+// `SemanticsData.hasFlag`/`SemanticsFlag` are deprecated in favor of
+// `flagsCollection` — but `flagsCollection.isEnabled`'s return type changed
+// (bool → Tristate) between CI's pinned Flutter (3.35.1) and newer SDKs, so
+// `hasFlag` is the one API that actually compiles identically on both.
+// ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/toggle_switch.dart';
 
@@ -61,8 +66,8 @@ void main() {
     );
 
     final semantics = tester.getSemantics(find.byType(CandyToggleSwitch));
-    expect(semantics.flagsCollection.isToggled.toBoolOrNull(), true);
-    expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), true);
+    expect(semantics.getSemanticsData().hasFlag(SemanticsFlag.isToggled), isTrue);
+    expect(semantics.getSemanticsData().hasFlag(SemanticsFlag.isEnabled), isTrue);
   });
 
   testWidgets(
@@ -77,7 +82,7 @@ void main() {
       );
 
       final semantics = tester.getSemantics(find.byType(CandyToggleSwitch));
-      expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), false);
+      expect(semantics.getSemanticsData().hasFlag(SemanticsFlag.isEnabled), isFalse);
 
       await tester.tap(find.byType(CandyToggleSwitch));
       await tester.pump();
@@ -155,8 +160,8 @@ void main() {
         final data = tester.getSemantics(find.byType(CandyToggleSwitch));
         expect(data.label, 'Haptics');
         expect(
-          data.getSemanticsData().flagsCollection.isToggled,
-          Tristate.isTrue,
+          data.getSemanticsData().hasFlag(SemanticsFlag.isToggled),
+          isTrue,
         );
         handle.dispose();
       },
@@ -179,8 +184,8 @@ void main() {
       final data = tester.getSemantics(find.byType(CandyToggleSwitch));
       expect(data.label, 'Dark mode');
       expect(
-        data.getSemanticsData().flagsCollection.isToggled,
-        Tristate.isFalse,
+        data.getSemanticsData().hasFlag(SemanticsFlag.isToggled),
+        isFalse,
       );
       handle.dispose();
     });
