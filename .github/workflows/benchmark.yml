@@ -6,6 +6,14 @@ name: Benchmark (real-device performance snapshot)
 # doc comment for the realDevice/hostHeadless distinction. Opens a PR with
 # the refreshed baseline + README numbers instead of pushing to main
 # directly, so a human still reviews before it lands.
+#
+# NOTE (found 2026-09-21, running regenerate-goldens.yml for the first
+# time): this repo has "Allow GitHub Actions to create and approve pull
+# requests" turned OFF (Settings → Actions → General). The commit + push
+# below still succeeds either way — only the auto-PR step fails with "not
+# permitted". If that happens here too, `git fetch` and
+# `gh pr create --base main --head chore/benchmark-snapshot` manually, or
+# turn that repo setting on so this becomes fully unattended.
 
 on:
   schedule:
