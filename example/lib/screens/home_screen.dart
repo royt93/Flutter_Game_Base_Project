@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import 'package:roy_casual_kit/roy_casual_kit.dart';
 
+import 'cookbook_screen.dart';
 import 'game_demo_screen.dart';
 import 'settings_screen.dart';
 import 'widget_showcase_screen.dart';
@@ -38,6 +39,12 @@ class HomeScreen extends StatelessWidget {
                 label: 'game_demo'.tr,
                 color: NeonTheme.orange,
                 onTap: () => Get.to(() => const GameDemoScreen()),
+              ),
+              const SizedBox(height: 16),
+              NeonButton(
+                label: 'cookbook'.tr,
+                color: NeonTheme.lime,
+                onTap: () => Get.to(() => const CookbookScreen()),
               ),
             ],
           ),

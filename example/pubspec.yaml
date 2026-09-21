@@ -34,6 +34,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/audio/
+    - assets/remote_config/
 
 icons_launcher:
   image_path: "asset/icon/ic_launcher.png"

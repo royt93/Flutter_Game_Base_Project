@@ -1,4 +1,8 @@
-import 'dart:ui' show Tristate;
+// `SemanticsData.hasFlag`/`SemanticsFlag` are deprecated in favor of
+// `flagsCollection` — but `flagsCollection.isEnabled`'s return type changed
+// (bool → Tristate) between CI's pinned Flutter (3.35.1) and newer SDKs, so
+// `hasFlag` is the one API that actually compiles identically on both.
+// ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -212,9 +216,8 @@ void main() {
       tester
           .getSemantics(find.byType(HoldToConfirmButton))
           .getSemanticsData()
-          .flagsCollection
-          .isEnabled,
-      Tristate.isFalse,
+          .hasFlag(SemanticsFlag.isEnabled),
+      isFalse,
     );
   });
 
@@ -238,7 +241,6 @@ void main() {
         semantics.getSemanticsData().hasAction(SemanticsAction.tap),
         isTrue,
       );
-      // ignore: deprecated_member_use
       tester.binding.pipelineOwner.semanticsOwner!.performAction(
         semantics.id,
         SemanticsAction.tap,

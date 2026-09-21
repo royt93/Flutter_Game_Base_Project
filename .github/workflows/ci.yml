@@ -40,3 +40,41 @@ jobs:
       - name: Test example host (loại nhóm slow cần device)
         run: flutter test --exclude-tags slow
         working-directory: example
+
+  # Chỉ chạy khi lib/ hoặc tool/ đổi (paths-filter) — dùng chung concurrency
+  # group ở trên nên push dồn dập tự coalesce, không tốn thêm run thừa.
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            relevant:
+              - 'lib/**'
+              - 'tool/**'
+              - 'pubspec.yaml'
+      - uses: subosito/flutter-action@v2
+        if: steps.changes.outputs.relevant == 'true'
+        with:
+          flutter-version: 3.35.1
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        if: steps.changes.outputs.relevant == 'true'
+      - name: Accessibility audit gate
+        if: steps.changes.outputs.relevant == 'true'
+        run: dart run tool/accessibility_audit_check.dart
+      - name: Dependency SBOM/security gate
+        if: steps.changes.outputs.relevant == 'true'
+        run: dart run tool/dependency_sbom_check.dart --suppressions=tool/dependency_sbom_suppressions.json
+      - name: Asset license manifest gate
+        if: steps.changes.outputs.relevant == 'true'
+        run: dart run tool/asset_license_check.dart
+      - name: Performance budget gate
+        if: steps.changes.outputs.relevant == 'true'
+        run: dart run tool/performance_budget_check.dart check
+      - name: Deprecation removal-schedule gate
+        if: steps.changes.outputs.relevant == 'true'
+        run: dart run tool/deprecation_check.dart
