@@ -7,6 +7,24 @@ candy-styled widget kit — one `RoyCasualKit.initialize(...)` call replaces
 hand-rolling `Get.put` calls for every service a casual game typically needs
 to build from scratch.
 
+## Screenshots
+
+All from `example/` — light and dark are the same `NeonTheme` tokens, no
+call-site changes.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/royt93/Flutter_Game_Base_Project/main/screenshots/home_light.png" width="180" alt="Home screen, light theme" />
+  <img src="https://raw.githubusercontent.com/royt93/Flutter_Game_Base_Project/main/screenshots/home_dark.png" width="180" alt="Home screen, dark theme" />
+  <img src="https://raw.githubusercontent.com/royt93/Flutter_Game_Base_Project/main/screenshots/widget_kit_buttons_light.png" width="180" alt="Widget kit: buttons, light theme" />
+  <img src="https://raw.githubusercontent.com/royt93/Flutter_Game_Base_Project/main/screenshots/widget_kit_buttons.png" width="180" alt="Widget kit: buttons, dark theme" />
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/royt93/Flutter_Game_Base_Project/main/screenshots/widget_kit_interactive.png" width="180" alt="Widget kit: badges and interactive widgets" />
+  <img src="https://raw.githubusercontent.com/royt93/Flutter_Game_Base_Project/main/screenshots/widget_kit_overlays.png" width="180" alt="Widget kit: tooltips, bottom sheet, dialogs" />
+  <img src="https://raw.githubusercontent.com/royt93/Flutter_Game_Base_Project/main/screenshots/settings_dark.png" width="180" alt="Settings screen, dark theme" />
+  <img src="https://raw.githubusercontent.com/royt93/Flutter_Game_Base_Project/main/screenshots/game_demo.png" width="180" alt="Flame game demo with a world-tracked HUD label" />
+</p>
+
 ## What's in the package
 
 `lib/core/` groups by what the service is for — grep `lib/roy_casual_kit.dart`

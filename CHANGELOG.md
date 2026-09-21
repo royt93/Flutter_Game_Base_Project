@@ -1,3 +1,7 @@
+## 0.2.2
+
+- Docs only, no API change. The 0.2.1 `screenshots:` pubspec field only feeds pub.dev's sidebar thumbnail/gallery page — it does not embed images into the rendered README body, so the README itself still had zero pictures. Added a "Screenshots" section with `<img>` tags pointing to `raw.githubusercontent.com` (the repo is public; pub.dev's README renderer doesn't serve package-local files by relative path, only an absolute URL resolves).
+
 ## 0.2.1
 
 - Docs/metadata only, no API change. Fixed `pubspec.yaml`'s `description` and the README's "Install" section, both of which still described the package as pre-publish/with a stale hardcoded widget count. Rewrote widget-kit mentions to avoid hardcoded counts entirely (they drift immediately as widgets are added). Added `example/README.md` (pub.dev's "Example" tab prefers it over dumping raw source) pointing readers to which example file covers what, rather than shrinking `example/lib/main.dart` into a toy snippet — it stays a real, full bootstrap on purpose. Added `screenshots:` to `pubspec.yaml` (home/settings/widget-kit/game-demo, light and dark) for the pub.dev listing.
