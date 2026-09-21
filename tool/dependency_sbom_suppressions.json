@@ -1,0 +1,9 @@
+[
+  {
+    "package": "dbus",
+    "kind": "unknownLicense",
+    "reason": "Linux-only transitive dependency (pulled in by a Linux-desktop plugin implementation) that ships no LICENSE file the scanner recognizes. Not bundled into any Android/iOS/Web build this repo actually ships. Re-check on expiry in case a future dbus release adds one.",
+    "owner": "loitp@skyjoy.vn",
+    "expiresAtMs": 1821541050000
+  }
+]

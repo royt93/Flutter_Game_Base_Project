@@ -68,7 +68,7 @@ jobs:
         run: dart run tool/accessibility_audit_check.dart
       - name: Dependency SBOM/security gate
         if: steps.changes.outputs.relevant == 'true'
-        run: dart run tool/dependency_sbom_check.dart
+        run: dart run tool/dependency_sbom_check.dart --suppressions=tool/dependency_sbom_suppressions.json
       - name: Asset license manifest gate
         if: steps.changes.outputs.relevant == 'true'
         run: dart run tool/asset_license_check.dart
