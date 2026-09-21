@@ -1,0 +1,49 @@
+name: Regenerate goldens (Linux CI-accurate)
+
+# Golden PNGs under test/widget/goldens/ were apparently last generated on
+# macOS (different font hinting/anti-aliasing than Linux) and have been
+# silently failing CI's "Test host" step — not caught until a PR actually
+# ran CI for real. This regenerates them on the exact ubuntu-latest +
+# pinned Flutter version CI itself runs on, and opens a PR so the image
+# diffs get a human look before merging. Manual trigger only (not on a
+# schedule) — run it after a real widget-appearance change, or whenever
+# CI's "Test host" starts failing goldens again.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.1
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter test --update-goldens test/widget/goldens/
+
+      - uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore: regenerate golden images on Linux CI runner'
+          title: 'chore: regenerate golden images on Linux CI runner'
+          body: |
+            Automated regeneration of `test/widget/goldens/*.png` on the
+            exact `ubuntu-latest` + Flutter 3.35.1 environment CI runs on.
+            These were failing CI's "Test host" check (macOS-generated
+            images vs Linux rendering) — review the image diffs before
+            merging.
+          branch: chore/regenerate-goldens
+          base: main
+          delete-branch: true
