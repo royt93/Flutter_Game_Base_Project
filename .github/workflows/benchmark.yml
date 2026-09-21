@@ -1,0 +1,68 @@
+name: Benchmark (real-device performance snapshot)
+
+# Public repo + ubuntu-latest = free/unlimited GH Actions minutes, so this
+# costs $0. Runs on an Android emulator (KVM-accelerated GH-hosted runner),
+# not a real physical device — see tool/performance_budget_check.dart's own
+# doc comment for the realDevice/hostHeadless distinction. Opens a PR with
+# the refreshed baseline + README numbers instead of pushing to main
+# directly, so a human still reviews before it lands.
+
+on:
+  schedule:
+    - cron: '0 3 * * 1' # weekly, Monday 03:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.1
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter pub get
+        working-directory: example
+
+      - name: Enable KVM for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run real-device boot + object-pool benchmark on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          script: |
+            device_id=$(adb devices | awk '/^emulator-/{print $1; exit}')
+            dart run tool/performance_budget_check.dart snapshot --device="$device_id"
+
+      - name: Update README performance numbers from baseline
+        run: dart run tool/update_readme_benchmarks.dart
+
+      - name: Open PR with refreshed numbers
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore: refresh weekly performance benchmark snapshot'
+          title: 'chore: refresh performance benchmark snapshot'
+          body: |
+            Automated weekly run of `tool/performance_budget_check.dart snapshot`
+            on a GH-hosted Android emulator (api 33, google_apis, x86_64) —
+            updates `tool/performance_budget_baseline.json` and the
+            "## Performance" section of `README.md`.
+          branch: chore/benchmark-snapshot
+          delete-branch: true

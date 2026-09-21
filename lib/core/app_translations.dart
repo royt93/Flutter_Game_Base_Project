@@ -26,6 +26,7 @@ class AppTranslations extends Translations {
       'widget_showcase': 'Widget Kit',
       'back_button_label': 'Back',
       'game_demo': 'Flame Demo',
+      'cookbook': 'Cookbook',
     },
     'vi': {
       'app_name': 'Roy Project Base Game',
@@ -39,6 +40,7 @@ class AppTranslations extends Translations {
       'widget_showcase': 'Bộ Widget',
       'back_button_label': 'Quay lại',
       'game_demo': 'Demo Flame',
+      'cookbook': 'Cookbook',
     },
   };
 }
