@@ -438,4 +438,110 @@ void main() {
       });
     },
   );
+
+  group('BUG-43: probe ném exception không crash, không kẹt state', () {
+    test(
+      'probe ném SocketException 1 lần: coi như fail, chuyển degraded (không kẹt checking)',
+      () async {
+        final signal = FakeConnectivitySignal();
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => throw const SocketExceptionStub(),
+          createTimer: fakeCreateTimer,
+        );
+
+        signal.setHasInterface(true);
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(coordinator.state, ConnectivityState.degraded);
+      },
+    );
+
+    test(
+      'probe ném exception đủ failuresToGoOffline lần: chuyển đúng sang offline',
+      () async {
+        final signal = FakeConnectivitySignal();
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => throw const SocketExceptionStub(),
+          createTimer: fakeCreateTimer,
+          failuresToGoOffline: 2,
+        );
+
+        signal.setHasInterface(true);
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+        expect(coordinator.state, ConnectivityState.degraded);
+
+        // Timer periodic vừa được tạo lại sau probe đầu -> fire nó để mô
+        // phỏng lần probe định kỳ thứ 2.
+        scheduled.last.callback();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(coordinator.state, ConnectivityState.offline);
+      },
+    );
+
+    test(
+      'probe ném exception không thoát ra ngoài Zone thành unhandled error',
+      () async {
+        final signal = FakeConnectivitySignal();
+        final zoneErrors = <Object>[];
+
+        await runZonedGuarded(
+          () async {
+            final coordinator = ConnectivityCoordinator(
+              signal: signal,
+              probe: () async => throw const SocketExceptionStub(),
+              createTimer: fakeCreateTimer,
+            );
+            signal.setHasInterface(true);
+            await fireLatest();
+            await Future<void>.delayed(Duration.zero);
+            expect(coordinator.state, ConnectivityState.degraded);
+          },
+          (error, stack) => zoneErrors.add(error),
+        );
+
+        expect(zoneErrors, isEmpty);
+      },
+    );
+
+    test(
+      '_probeInFlight được reset đúng sau khi probe throw — probe kế tiếp vẫn chạy bình thường',
+      () async {
+        var shouldThrow = true;
+        final signal = FakeConnectivitySignal();
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async {
+            if (shouldThrow) throw const SocketExceptionStub();
+            return true;
+          },
+          createTimer: fakeCreateTimer,
+        );
+
+        signal.setHasInterface(true);
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+        expect(coordinator.state, ConnectivityState.degraded);
+
+        shouldThrow = false;
+        scheduled.last.callback();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(coordinator.state, ConnectivityState.online);
+      },
+    );
+  });
+}
+
+/// Stub đứng thế cho `SocketException`/`TimeoutException` thật — không cần
+/// import `dart:io` chỉ để ném 1 exception giả lập trong test.
+class SocketExceptionStub implements Exception {
+  const SocketExceptionStub();
+
+  @override
+  String toString() => 'SocketExceptionStub';
 }

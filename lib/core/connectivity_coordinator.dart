@@ -194,7 +194,19 @@ class ConnectivityCoordinator extends GetxService {
     if (_probeInFlight) return;
     _probeInFlight = true;
     try {
-      final ok = await probe();
+      // BUG-43: `probe` is consumer-supplied (a real HTTP HEAD/socket check)
+      // and routinely throws (SocketException/TimeoutException) when the
+      // network is actually down — that's exactly the "no connectivity"
+      // signal, not a bug in the probe. Treat it the same as `ok == false`
+      // rather than letting it escape this `unawaited(_runProbe())` call as
+      // an unhandled async error, which would also skip the state update
+      // below and leave the coordinator stuck on its last known state.
+      bool ok;
+      try {
+        ok = await probe();
+      } catch (_) {
+        ok = false;
+      }
       if (ok) {
         _consecutiveFailures = 0;
         _setState(ConnectivityState.online);
