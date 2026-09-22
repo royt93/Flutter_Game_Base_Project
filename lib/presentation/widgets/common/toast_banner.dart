@@ -98,17 +98,28 @@ class ToastBanner extends StatelessWidget {
           ),
         );
 
+    // BUG-57: `controller.dispose()` must run even when the OverlayEntry
+    // was already removed from under us (e.g. the screen was popped before
+    // the toast's own timer fired) — the old early `if (!entry.mounted)
+    // return;` skipped straight past dispose(), leaking the
+    // AnimationController/Ticker every time that happened. `_disposed`
+    // also makes this safe to call more than once.
+    var disposed = false;
     Future<void> remove() async {
-      if (!entry.mounted) return;
-      try {
-        await controller.reverse();
-      } catch (_) {
-        // vsync (the Navigator) may already be gone if the whole app was
-        // torn down mid-toast — still clean up below regardless, so the
-        // AnimationController/Ticker never leaks.
+      if (entry.mounted) {
+        try {
+          await controller.reverse();
+        } catch (_) {
+          // vsync (the Navigator) may already be gone if the whole app was
+          // torn down mid-toast — still clean up below regardless, so the
+          // AnimationController/Ticker never leaks.
+        }
+        entry.remove();
       }
-      entry.remove();
-      controller.dispose();
+      if (!disposed) {
+        disposed = true;
+        controller.dispose();
+      }
     }
 
     entry = OverlayEntry(

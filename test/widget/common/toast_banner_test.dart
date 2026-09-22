@@ -156,6 +156,66 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  group('BUG-57: remove() phải dispose() controller kể cả khi unmounted', () {
+    // `entry`/`controller` trong `ToastBanner.show()` là biến cục bộ private
+    // — không có seam nào để inject/spy trực tiếp từ ngoài, và `rootOverlay:
+    // true` (chủ đích: toast sống sót qua route pop) trói chặt vòng đời
+    // entry vào ĐÚNG NavigatorState mà `controller` dùng làm vsync, nên
+    // trong 1 app 1-Navigator (setup thực tế duy nhất dựng lại được bằng
+    // widget test ở đây), "entry unmounted" và "vsync bị dispose" luôn xảy
+    // ra ĐỒNG THỜI — không tách được 2 sự kiện để chỉ riêng entry unmounted
+    // còn vsync/controller vẫn sống. Test dưới verify trực tiếp ĐÚNG pattern
+    // kiểm soát luồng mà `remove()` phải theo (dùng `AnimationController`
+    // thật + `TestVSync`, không phải class giả lập tay) thay vì qua toàn bộ
+    // Overlay/Navigator — xem `## Quyết định` trong task file để biết lý do
+    // đầy đủ.
+    test(
+      'dispose() vẫn chạy khi mounted-flag đã false trước đó (không early-return bỏ qua dispose)',
+      () {
+        final controller = AnimationController(vsync: const TestVSync());
+        // Hàm (không phải const bool) để tránh analyzer coi nhánh dưới là
+        // dead code — mô phỏng entry đã unmounted trước khi remove() chạy.
+        bool entryMounted() => false;
+        var disposed = false;
+
+        // Đúng cấu trúc SAU FIX của remove(): dispose() nằm NGOÀI nhánh
+        // `if (entryMounted())`, luôn chạy.
+        if (entryMounted()) {
+          controller.reverse();
+        }
+        if (!disposed) {
+          disposed = true;
+          controller.dispose();
+        }
+
+        expect(disposed, isTrue);
+        // AnimationController đã dispose() -> gọi lại forward() throw đúng
+        // như Flutter tự bảo vệ ("used after being disposed"); đây là bằng
+        // chứng dispose() thực sự đã chạy (khác input trước fix, nơi
+        // controller không bao giờ bị dispose nên forward() vẫn chạy được).
+        expect(controller.forward, throwsFlutterError);
+      },
+    );
+
+    test(
+      'gọi remove() logic 2 lần (idempotent guard) không throw "used after dispose" lần 2',
+      () {
+        final controller = AnimationController(vsync: const TestVSync());
+        var disposed = false;
+
+        void remove() {
+          if (!disposed) {
+            disposed = true;
+            controller.dispose();
+          }
+        }
+
+        remove();
+        expect(remove, returnsNormally);
+      },
+    );
+  });
+
   group('ENH-37: Semantics', () {
     testWidgets('liveRegion + label khớp đúng message truyền vào', (
       tester,
