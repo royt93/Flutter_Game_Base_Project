@@ -168,6 +168,76 @@ void main() {
     );
 
     testWidgets(
+      // BUG-58: khi `Stack` chứa overlay này KHÔNG nằm ở gốc màn hình (0,0)
+      // — ví dụ dưới 1 `Padding` (mô phỏng nằm dưới AppBar/SafeArea trong
+      // 1 app thật) — `Positioned.left/top` cần toạ độ LOCAL tương đối với
+      // `Stack`, không phải toạ độ GLOBAL màn hình. Test 2 case "roughly the
+      // tracked entity's screen position" ở trên KHÔNG bắt được lỗi này vì
+      // `Stack` của chúng nằm đúng gốc (0,0) — global == local trong trường
+      // hợp đặc biệt đó. (Không dùng `Scaffold`/`AppBar` thật ở đây — probe
+      // riêng xác nhận `Scaffold` làm GameWidget/Flame's `toBeLoaded()` mất
+      // đồng bộ mount timing, một vấn đề hạ tầng test KHÔNG liên quan tới
+      // bug toạ độ đang fix; `Padding` một mình đã đủ tạo offset khác 0 để
+      // tái hiện đúng bug.)
+      'Stack lệch gốc màn hình (dưới Padding) vẫn track đúng vị trí toàn '
+      'cục, không cộng dồn lệch theo offset của Stack (BUG-58)',
+      (tester) async {
+        final game = RoyGame();
+        final gameKey = GlobalKey();
+        final childKey = UniqueKey();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 37, top: 53),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: GameWidget(key: gameKey, game: game),
+                    ),
+                    FlameTrackedOverlay(
+                      game: game,
+                      gameWidgetKey: gameKey,
+                      worldPositionOf: () => game.circle.position,
+                      child: SizedBox(
+                        key: childKey,
+                        width: 20,
+                        height: 10,
+                        child: ColoredBox(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await game.toBeLoaded();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 32));
+
+        // `getTopLeft`/`getCenter` của flutter_test luôn trả toạ độ GLOBAL
+        // (màn hình) bất kể widget dùng Positioned local nào bên trong —
+        // nên so sánh này đúng đắn bất kể `Stack` lệch gốc bao nhiêu, MIỄN
+        // LÀ widget tính đúng toạ độ local. Code lỗi (dùng thẳng global làm
+        // local) sẽ lệch actualCenter khỏi expectedCenter đúng bằng offset
+        // của Stack (~37,53).
+        final gameTopLeft = tester.getTopLeft(find.byKey(gameKey));
+        final expectedCenter = worldToScreenOffset(
+          camera: game.camera,
+          worldPosition: game.circle.position,
+          gameWidgetTopLeft: gameTopLeft,
+        );
+
+        final actualCenter = tester.getCenter(find.byKey(childKey));
+
+        expect((actualCenter - expectedCenter).distance, lessThan(1.0));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
       'hides silently (no Positioned, no exception) when the GlobalKey was '
       'never attached to a GameWidget',
       (tester) async {

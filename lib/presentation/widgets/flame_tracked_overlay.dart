@@ -2,6 +2,7 @@ import 'package:flame/camera.dart';
 import 'package:flame/components.dart' show Vector2;
 import 'package:flame/game.dart' show FlameGame;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 /// Converts a Flame world-space [worldPosition] (e.g. a component's
@@ -93,7 +94,18 @@ class _FlameTrackedOverlayState extends State<FlameTrackedOverlay>
       if (renderBox == null || !renderBox.attached || !renderBox.hasSize) {
         return null;
       }
-      final gameWidgetTopLeft = renderBox.localToGlobal(Offset.zero);
+      // BUG-58: `Positioned.left/top` (set from this in `build()`) is LOCAL
+      // to the enclosing `Stack`'s own RenderBox, not the screen — using
+      // raw global coordinates only happened to work when that Stack sat
+      // exactly at the screen origin (0,0). Convert into whatever RenderStack
+      // ancestor this widget is actually inside; falls back to raw global
+      // if none is found (matches the old, pre-fix behavior rather than
+      // crashing — same defensive style as the null/unattached checks
+      // above).
+      final stackBox = context.findAncestorRenderObjectOfType<RenderStack>();
+      final gameWidgetTopLeft = stackBox != null
+          ? renderBox.localToGlobal(Offset.zero, ancestor: stackBox)
+          : renderBox.localToGlobal(Offset.zero);
       final worldPosition = widget.worldPositionOf();
       return worldToScreenOffset(
         camera: widget.game.camera,
