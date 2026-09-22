@@ -62,6 +62,12 @@ class CheckpointCoordinator extends GetxService {
   final String _key;
   final Timer Function(Duration delay, void Function() callback) _createTimer;
   final _participants = <String, _Participant>{};
+  // BUG-42: every non-critical requestCheckpoint() call pending in the
+  // CURRENT debounce window — not just the most recent one. Coalescing 2+
+  // calls into 1 flush must still resolve every one of their returned
+  // futures with that flush's result, or an earlier caller's `await`
+  // hangs forever once a later call cancels the timer it was waiting on.
+  final _pendingCompleters = <Completer<SdkResult<int>>>[];
   Timer? _debounceTimer;
   RoyLifecycleCoordinator? _lifecycle;
   static const _hookName = 'checkpoint_coordinator';
@@ -95,14 +101,34 @@ class CheckpointCoordinator extends GetxService {
     if (critical) {
       _debounceTimer?.cancel();
       _debounceTimer = null;
-      return flushNow();
+      // BUG-42: a critical call also cancels a pending non-critical
+      // debounce (same as a coalesced non-critical call would) — any
+      // completer(s) already waiting on that debounce must resolve with
+      // THIS flush's result too, not be left hanging.
+      final result = flushNow();
+      _completePending(result);
+      return result;
     }
     _debounceTimer?.cancel();
     final completer = Completer<SdkResult<int>>();
+    _pendingCompleters.add(completer);
     _debounceTimer = _createTimer(debounceWindow, () {
-      completer.complete(flushNow());
+      _completePending(flushNow());
     });
     return completer.future;
+  }
+
+  /// Resolves every completer queued by a coalesced [requestCheckpoint]
+  /// call with [result] (all get the SAME flush's outcome) and clears the
+  /// queue — called once the debounce actually fires, or once a `critical`
+  /// call preempts it.
+  void _completePending(Future<SdkResult<int>> result) {
+    if (_pendingCompleters.isEmpty) return;
+    final pending = List<Completer<SdkResult<int>>>.of(_pendingCompleters);
+    _pendingCompleters.clear();
+    for (final completer in pending) {
+      completer.complete(result);
+    }
   }
 
   /// Gathers every participant's snapshot and commits them as one write.

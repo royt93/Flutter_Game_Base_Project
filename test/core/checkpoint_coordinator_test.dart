@@ -331,4 +331,102 @@ void main() {
   test('.maybe: null khi chưa đăng ký', () {
     expect(CheckpointCoordinator.maybe, isNull);
   });
+
+  group('BUG-42: completer leak khi debounce bị coalesce/hủy', () {
+    test(
+      '2 requestCheckpoint() liên tiếp trong debounce window: CẢ 2 future '
+      'đều complete cùng 1 kết quả flush, không future nào treo',
+      () async {
+        final coordinator = CheckpointCoordinator(
+          storage: storage,
+          createTimer: fakeCreateTimer,
+        );
+        coordinator.registerParticipant(
+          'player',
+          snapshot: () => {'x': 1},
+          restore: (_) {},
+        );
+
+        final first = coordinator.requestCheckpoint();
+        final second = coordinator.requestCheckpoint();
+        expect(scheduled, hasLength(2));
+        expect(scheduled.first.cancelled, isTrue);
+
+        // Chỉ timer CUỐI thật sự fire — đúng hành vi debounce hiện có.
+        scheduled.last.callback();
+
+        final firstResult = await first.timeout(const Duration(seconds: 1));
+        final secondResult = await second.timeout(const Duration(seconds: 1));
+
+        expect(firstResult.isSuccess, isTrue);
+        expect(secondResult.isSuccess, isTrue);
+        expect(
+          storage.getString('checkpoint_coordinator_v1'),
+          contains('"x":1'),
+        );
+      },
+    );
+
+    test(
+      '3 requestCheckpoint() liên tiếp: cả 3 future đều complete, chỉ đúng '
+      '1 lần flush thật sự chạy (aggregate.length == 1 participant)',
+      () async {
+        final coordinator = CheckpointCoordinator(
+          storage: storage,
+          createTimer: fakeCreateTimer,
+        );
+        coordinator.registerParticipant(
+          'player',
+          snapshot: () => {'x': 1},
+          restore: (_) {},
+        );
+
+        final futures = [
+          coordinator.requestCheckpoint(),
+          coordinator.requestCheckpoint(),
+          coordinator.requestCheckpoint(),
+        ];
+        scheduled.last.callback();
+
+        final results = await Future.wait(
+          futures.map((f) => f.timeout(const Duration(seconds: 1))),
+        );
+
+        expect(results.every((r) => r.isSuccess), isTrue);
+        // Mọi kết quả trỏ về CÙNG 1 lần flush (aggregate.length giống nhau).
+        expect(
+          results.map((r) => (r as dynamic).value).toSet(),
+          hasLength(1),
+        );
+      },
+    );
+
+    test(
+      'critical hủy debounce đang chờ: future của request KHÔNG-critical '
+      'bị coalesce trước đó cũng complete (không chỉ future của critical)',
+      () async {
+        final coordinator = CheckpointCoordinator(
+          storage: storage,
+          createTimer: fakeCreateTimer,
+        );
+        coordinator.registerParticipant(
+          'player',
+          snapshot: () => {'x': 9},
+          restore: (_) {},
+        );
+
+        final pending = coordinator.requestCheckpoint();
+        expect(scheduled, hasLength(1));
+
+        final criticalResult = await coordinator.requestCheckpoint(
+          critical: true,
+        );
+        final pendingResult = await pending.timeout(const Duration(seconds: 1));
+
+        expect(criticalResult.isSuccess, isTrue);
+        expect(pendingResult.isSuccess, isTrue);
+        expect(scheduled.single.cancelled, isTrue);
+      },
+    );
+  });
 }
