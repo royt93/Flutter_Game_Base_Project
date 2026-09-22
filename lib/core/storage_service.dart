@@ -347,24 +347,37 @@ class StorageService extends GetxService {
 
   /// Removes every key currently in storage that starts with [prefix] —
   /// e.g. deleting one save slot's namespaced keys (IDEA-56) without
-  /// touching any other slot's. Built on the exact same
-  /// [_replaceAll]/rollback-on-error path as [importAll]/[eraseAll] (the
-  /// desired end-state is just "current data minus the matching keys"),
-  /// so a failure partway through leaves storage exactly as it was before
-  /// this call — no new persistence mechanism invented for this.
+  /// touching any other slot's.
+  ///
+  /// BUG-39: this used to go through [importAll]/[_replaceAll], which
+  /// erases and rewrites EVERY key in storage (not just ones matching
+  /// [prefix]) to reach the "current data minus the matching keys"
+  /// end-state — an OS low-memory-kill or hardware crash partway through
+  /// that native delete loop could wipe the WHOLE profile, not just the
+  /// one slot being removed (rollback-on-error only survives a thrown
+  /// Dart exception, never a killed process — see [importAll]'s doc and
+  /// `doc/task/done/IDEA-55-storage-service-erase-all.md`). Removing only
+  /// the matching keys directly makes the blast radius of that same
+  /// unrecoverable failure exactly the [prefix] being deleted, same as
+  /// before this call was ever made.
   ///
   /// [prefix] must not be empty — an empty prefix would match every key,
   /// silently behaving like [eraseAll] under a name that doesn't say so;
   /// callers that actually want that should call [eraseAll] explicitly.
-  Future<void> removeAllWithPrefix(String prefix) {
+  Future<void> removeAllWithPrefix(String prefix) async {
     if (prefix.isEmpty) {
       throw ArgumentError.value(prefix, 'prefix', 'must not be empty');
     }
-    final remaining = <String, Object>{
-      for (final entry in exportAll().entries)
-        if (!entry.key.startsWith(prefix)) entry.key: entry.value,
-    };
-    return importAll(remaining);
+    _buffer.removeWhere((key, _) => key.startsWith(prefix));
+    final prefs = _prefs;
+    if (prefs != null) {
+      for (final key
+          in prefs.getKeys().where((k) => k.startsWith(prefix)).toList()) {
+        await prefs.remove(key);
+      }
+    } else {
+      _fallback.removeWhere((key, _) => key.startsWith(prefix));
+    }
   }
 
   /// Every key currently in storage that starts with [prefix] — e.g.

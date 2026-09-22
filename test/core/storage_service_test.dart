@@ -311,6 +311,52 @@ void main() {
 
         expect(store.getString('k'), 'v');
       });
+
+      test(
+        'BUG-39: không native-rewrite bất kỳ key nào ngoài prefix '
+        '(platformWrites không tăng — trước đây đi qua importAll/_replaceAll '
+        'sẽ setInt/setString lại MỌI key còn sót, tăng platformWrites theo '
+        'đúng số key không liên quan)',
+        () async {
+          await store.setString('slot_a_name', 'Alice');
+          await store.setString('unrelated1', 'x');
+          await store.setInt('unrelated2', 42);
+          final before = store.platformWrites;
+
+          await store.removeAllWithPrefix('slot_a_');
+
+          expect(store.platformWrites, before);
+        },
+      );
+
+      test(
+        'BUG-39: giá trị buffered (setXBuffered, chưa flush) thuộc prefix '
+        'cũng bị xoá; buffered ngoài prefix không bị đụng',
+        () async {
+          await store.setIntBuffered('slot_a_buffered', 7);
+          await store.setStringBuffered('unrelated_buffered', 'keep');
+
+          await store.removeAllWithPrefix('slot_a_');
+
+          expect(store.getInt('slot_a_buffered', def: -1), -1);
+          expect(store.getString('unrelated_buffered'), 'keep');
+        },
+      );
+
+      test(
+        'BUG-39: khi SharedPreferences null (fallback in-memory), chỉ xoá '
+        'đúng key khớp prefix trong fallback map',
+        () async {
+          final fallbackStore = StorageService(null);
+          await fallbackStore.setString('slot_a_name', 'Alice');
+          await fallbackStore.setString('unrelated', 'keep me');
+
+          await fallbackStore.removeAllWithPrefix('slot_a_');
+
+          expect(fallbackStore.getString('slot_a_name'), isNull);
+          expect(fallbackStore.getString('unrelated'), 'keep me');
+        },
+      );
     });
 
     group('ENH-77: exportWithPrefix/importWithPrefix', () {
