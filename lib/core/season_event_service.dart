@@ -101,18 +101,61 @@ class SeasonEventService extends GetxService {
   // Same save-serialization pattern as every other ledger-shaped service
   // in this package (BUG-17).
   bool _saving = false;
+  // BUG-45: set only by `_scheduleSave` (never inside the loop's own
+  // `await`), so a call arriving while `_saving` is true always lands
+  // between 2 SYNCHRONOUS statements — no gap where it could be missed.
+  bool _saveDirty = false;
   Future<void> _saveChain = Future.value();
 
   Future<void> _runSave() async {
-    _saving = true;
     try {
       await _store.save(_anchors);
     } catch (_) {
       // Swallow — a transient save failure must not wedge every
       // subsequent call's save behind a permanently-rejected chain.
-    } finally {
-      _saving = false;
     }
+  }
+
+  // BUG-45: the originally-proposed fix (chain unconditionally via
+  // `_saveChain = _saveChain.then((_) => _runSave())`, dropping `_saving`
+  // entirely) turned out to be WRONG — proven by TDD, not assumed: 2
+  // existing tests construct a second instance and read it back with NO
+  // `await` at all between that and the save-triggering call, relying on
+  // the FIRST save of a burst starting (and, for the in-memory fallback
+  // `StorageService` these tests use, completing) synchronously. `.then()`
+  // (and an `await` INSIDE another async function's own body awaiting a
+  // nested async call — also tried, also confirmed broken the same way)
+  // is ALWAYS deferred via `scheduleMicrotask`, even on an already-complete
+  // Future — only a plain, un-awaited direct call to an async function
+  // whose own body never actually suspends runs fully synchronously. So
+  // the fix below calls `_runSave()` directly (never wrapped in `await`
+  // from another async function), and reschedules itself via
+  // `Future.whenComplete` instead of looping inside an `async` method.
+  //
+  // This keeps `_saving`, but fixes the ORIGINAL bug's actual defect —
+  // `finally { _saving = false; }` running before a queued `.then()` got
+  // a chance to observe it — by never resetting `_saving` until a whole
+  // pass completes with no new request arriving during it. `_scheduleSave`
+  // itself never awaits anything, so its own `if (_saving)` check-and-set
+  // is atomic; nothing can observe `_saving` mid-transition.
+  void _scheduleSave() {
+    if (_saving) {
+      _saveDirty = true;
+      return;
+    }
+    _saving = true;
+    _runSaveAndReschedule();
+  }
+
+  void _runSaveAndReschedule() {
+    _saveDirty = false;
+    _saveChain = _runSave().whenComplete(() {
+      if (_saveDirty) {
+        _runSaveAndReschedule();
+      } else {
+        _saving = false;
+      }
+    });
   }
 
   /// Awaits every save queued so far — lets a test deterministically wait
@@ -151,7 +194,7 @@ class SeasonEventService extends GetxService {
     if (anchorMs == null) {
       anchorMs = now;
       anchors[eventId] = anchorMs;
-      _saveChain = _saving ? _saveChain.then((_) => _runSave()) : _runSave();
+      _scheduleSave();
     }
 
     final cycleMs = length.inMilliseconds + cooldown.inMilliseconds;

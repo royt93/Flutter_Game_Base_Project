@@ -137,22 +137,52 @@ class DailyQuestService extends GetxService {
   // still land on disk in the order they were made, not whichever I/O
   // happens to finish first.
   bool _saving = false;
+  bool _saveDirty = false;
   Future<void> _saveChain = Future.value();
 
   Future<void> _runSave() async {
-    _saving = true;
     try {
       await _store.save(_records);
     } catch (_) {
       // Swallow — a transient save failure must not wedge every
       // subsequent call's save behind a permanently-rejected chain.
-    } finally {
-      _saving = false;
     }
   }
 
+  // BUG-45: was `_saving ? _saveChain.then(...) : _runSave()` — `_saving`
+  // flipped back to `false` synchronously inside `_runSave`'s old
+  // `finally`, but a QUEUED call's `.then()` continuation only runs on a
+  // later microtask; a new save landing in that gap read `_saving ==
+  // false` and started a second, independent `_runSave()`, orphaning
+  // `_saveChain`. The naive "drop `_saving`, chain unconditionally via
+  // `.then()`" fix is ALSO wrong (proven by TDD on sibling services in
+  // this same family — see season_event_service.dart's longer comment on
+  // this exact method): `.then()` is always deferred via a microtask, even
+  // on an already-complete Future, which breaks tests relying on the
+  // FIRST save of a burst completing synchronously. This keeps `_saving`
+  // but resets it only after a whole pass settles with no new request
+  // arriving during it, by calling `_runSave()` directly (never through
+  // `await`/`.then()`) and rescheduling via `Future.whenComplete`.
+  // `_scheduleSave` itself never awaits anything, so its `if (_saving)`
+  // check-and-set is atomic.
   void _scheduleSave() {
-    _saveChain = _saving ? _saveChain.then((_) => _runSave()) : _runSave();
+    if (_saving) {
+      _saveDirty = true;
+      return;
+    }
+    _saving = true;
+    _runSaveAndReschedule();
+  }
+
+  void _runSaveAndReschedule() {
+    _saveDirty = false;
+    _saveChain = _runSave().whenComplete(() {
+      if (_saveDirty) {
+        _runSaveAndReschedule();
+      } else {
+        _saving = false;
+      }
+    });
   }
 
   /// Awaits every save queued so far — lets a test deterministically wait

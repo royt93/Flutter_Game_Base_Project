@@ -220,9 +220,19 @@ void main() {
       });
 
       test(
-        'mỗi incrementProgress trong burst đều thực sự ghi xuống disk — '
-        'không bị âm thầm rớt/gộp lại (đếm qua StorageService.platformWrites)',
+        'BUG-45: burst 5 lệnh liên tiếp KHÔNG await coalesce thành ít lần '
+        'ghi hơn 5 (đúng thiết kế queue race-free) nhưng KHÔNG mất '
+        'progress nào — state cuối cùng vẫn đúng tổng',
         () async {
+          // Trước BUG-45: mỗi lệnh trong burst thực sự ghi riêng (đúng 5
+          // write) — nhưng đó là TÁC DỤNG PHỤ của chính race bug (mỗi lệnh
+          // vô tình thấy `_saving == false` do gap giữa `finally` và
+          // `.then()`, nên tự chạy `_runSave()` độc lập). Sau khi fix race
+          // đúng cách, các lệnh chồng lấn (`_saving == true` lúc gọi) được
+          // coalesce vào ĐÚNG 1 lần chạy tiếp theo (đọc state MỚI NHẤT tại
+          // thời điểm chạy) — writes < 5 là kết quả ĐÚNG của việc fix race,
+          // không phải regression. Điều thực sự cần đảm bảo (không đổi):
+          // không mất progress nào — verify qua state cuối.
           final service = AchievementService();
           service.register('combo', 100);
 
@@ -232,16 +242,17 @@ void main() {
           }
           await service.debugPendingSaves;
 
-          // >= 5 (không phải == 5): mỗi save() còn gọi nowMsClamped(), có
-          // thể tự thêm 1 write phụ (StorageKeys.maxMsSeen) lần đầu tiên
-          // watermark đó được nâng lên trong test — không liên quan tới
-          // đúng/sai của serialization đang test ở đây. Điều thực sự cần
-          // đảm bảo: không có save nào trong 5 lần bị rớt/gộp mất, tức tổng
-          // write phải đạt ÍT NHẤT 5.
+          // Có coalesce thật (ít hơn 5 write thô) — chứng minh queue race-free
+          // đang hoạt động, không phải mỗi lệnh chạy độc lập như code cũ.
+          expect(storage.platformWrites - writesBefore, lessThan(5));
+          // Nhưng KHÔNG progress nào bị mất — state cuối vẫn đúng tổng 5.
           expect(
-            storage.platformWrites - writesBefore,
-            greaterThanOrEqualTo(5),
+            storage.getString('achievement_progress_v1'),
+            contains('"combo":5'),
           );
+          final reloaded = AchievementService();
+          reloaded.register('combo', 100);
+          expect(reloaded.progressOf('combo'), 5);
         },
       );
     });

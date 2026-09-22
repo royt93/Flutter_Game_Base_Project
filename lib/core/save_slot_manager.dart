@@ -140,25 +140,45 @@ class SaveSlotManager extends GetxService {
   // could otherwise let an older, already-superseded snapshot land on disk
   // LAST and silently roll back a change on next restart.
   bool _saving = false;
+  bool _saveDirty = false;
   Future<void> _saveChain = Future.value();
 
-  Future<void> _runSave(VersionedJsonStore<List<SaveSlotMeta>> store) async {
-    _saving = true;
+  Future<void> _runSave() async {
     try {
-      await store.save(_slotList);
+      await _store.save(_slotList);
     } catch (_) {
       // Swallow — a transient save failure must not wedge every
       // subsequent call's save behind a permanently-rejected chain.
-    } finally {
-      _saving = false;
     }
   }
 
+  // BUG-45: was `_saving ? _saveChain.then(...) : _runSave(store)` — same
+  // race as every other service in this family (see
+  // season_event_service.dart's longer comment on this exact method for
+  // why the naive "drop `_saving`, chain via `.then()`" fix is ALSO wrong,
+  // proven by TDD). Keeps `_saving`, resets it only after a whole pass
+  // settles with no new request arriving during it, calling `_runSave()`
+  // directly (never through `await`/`.then()`) and rescheduling via
+  // `Future.whenComplete`. `_scheduleSave` itself never awaits anything,
+  // so its `if (_saving)` check-and-set is atomic.
   void _scheduleSave() {
-    final store = _store;
-    _saveChain = _saving
-        ? _saveChain.then((_) => _runSave(store))
-        : _runSave(store);
+    if (_saving) {
+      _saveDirty = true;
+      return;
+    }
+    _saving = true;
+    _runSaveAndReschedule();
+  }
+
+  void _runSaveAndReschedule() {
+    _saveDirty = false;
+    _saveChain = _runSave().whenComplete(() {
+      if (_saveDirty) {
+        _runSaveAndReschedule();
+      } else {
+        _saving = false;
+      }
+    });
   }
 
   /// Awaits every save queued so far — lets a test deterministically wait

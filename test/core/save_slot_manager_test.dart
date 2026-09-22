@@ -6,6 +6,22 @@ import 'package:roy_casual_kit/core/save_slot_manager.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Pauses `setString` until [gate] resolves — see the identical helper in
+/// `season_event_service_test.dart` for why a tight synchronous burst
+/// (no real gap between calls) does NOT reproduce BUG-45's race at all
+/// with the in-memory storage these tests use.
+class _GatedStorageService extends StorageService {
+  _GatedStorageService(super.prefs);
+  Completer<void>? gate;
+
+  @override
+  Future<void> setString(String key, String value) async {
+    final g = gate;
+    if (g != null) await g.future;
+    return super.setString(key, value);
+  }
+}
+
 void main() {
   tearDown(Get.reset);
 
@@ -450,6 +466,43 @@ void main() {
 
         final restarted = SaveSlotManager();
         expect(restarted.listSlots().map((s) => s.id), ['slot_restored']);
+      },
+    );
+  });
+
+  group('BUG-45: save-chain race — 2 lệnh liên tiếp chồng lấn thời gian', () {
+    test(
+      'touchSlot() cho slot B gọi khi save của createSlot A vẫn đang thật '
+      'sự treo (Completer chưa complete): cả 2 thay đổi đều persist đúng, '
+      'không thay đổi nào bị mồ côi/mất',
+      () async {
+        final gated = _GatedStorageService(await SharedPreferences.getInstance());
+        Get.put<StorageService>(gated, permanent: true);
+        final manager = SaveSlotManager();
+        final slotA = manager.createSlot('Alice');
+        await manager.debugPendingSaves;
+        final slotB = manager.createSlot('Bob');
+        await manager.debugPendingSaves;
+
+        gated.gate = Completer<void>();
+        // renameSlot('Alice2') trigger _scheduleSave(), nhưng setString()
+        // bị chặn bởi gate -> save này coi như đang "in flight" thật sự.
+        manager.renameSlot(slotA.id, 'Alice2');
+
+        // touchSlot cho slot KHÁC trong khi save của rename A vẫn còn
+        // treo — đúng kịch bản race: `_saving` phải còn `true` lúc này.
+        manager.touchSlot(slotB.id);
+
+        gated.gate!.complete();
+        await manager.debugPendingSaves;
+
+        final restarted = SaveSlotManager();
+        final restoredSlots = {for (final s in restarted.listSlots()) s.id: s};
+        expect(restoredSlots[slotA.id]!.displayName, 'Alice2');
+        expect(
+          restoredSlots[slotB.id]!.lastPlayedAtMs,
+          greaterThanOrEqualTo(slotB.lastPlayedAtMs),
+        );
       },
     );
   });

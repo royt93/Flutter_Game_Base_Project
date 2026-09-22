@@ -112,23 +112,46 @@ class PurchaseLedgerService extends GetxService {
   // without awaiting in between must still land on disk in the order
   // they were made.
   bool _saving = false;
+  bool _saveDirty = false;
   Future<void> _saveChain = Future.value();
 
   Future<void> _runSave() async {
-    _saving = true;
     try {
       await _store.save(_state);
     } catch (_) {
       // Swallow — a transient save failure must not wedge every
       // subsequent grant/consume's save behind a permanently-rejected
       // chain.
-    } finally {
-      _saving = false;
     }
   }
 
+  // BUG-45: was `_saving ? _saveChain.then(...) : _runSave()` — same race
+  // as every other service in this family (see
+  // season_event_service.dart's longer comment on this exact method for
+  // why the naive "drop `_saving`, chain via `.then()`" fix is ALSO wrong,
+  // proven by TDD). Keeps `_saving`, resets it only after a whole pass
+  // settles with no new request arriving during it, calling `_runSave()`
+  // directly (never through `await`/`.then()`) and rescheduling via
+  // `Future.whenComplete`. `_scheduleSave` itself never awaits anything,
+  // so its `if (_saving)` check-and-set is atomic.
   void _scheduleSave() {
-    _saveChain = _saving ? _saveChain.then((_) => _runSave()) : _runSave();
+    if (_saving) {
+      _saveDirty = true;
+      return;
+    }
+    _saving = true;
+    _runSaveAndReschedule();
+  }
+
+  void _runSaveAndReschedule() {
+    _saveDirty = false;
+    _saveChain = _runSave().whenComplete(() {
+      if (_saveDirty) {
+        _runSaveAndReschedule();
+      } else {
+        _saving = false;
+      }
+    });
   }
 
   /// Awaits every save queued so far — lets a test deterministically wait

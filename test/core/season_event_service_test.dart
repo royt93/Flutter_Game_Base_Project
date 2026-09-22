@@ -1,8 +1,31 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/season_event_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// Pauses `setString` until [gate] (a [Completer] the test controls)
+/// resolves — the only way to genuinely hold a save "in flight" long
+/// enough for a SECOND call to land while it's still running. A tight
+/// synchronous loop (no real gap between calls) does NOT reproduce
+/// BUG-45's race at all with the in-memory `StorageService(null)`/mocked
+/// `SharedPreferences` these tests use: `await` on an already-complete
+/// Future can resolve without a microtask hop, so an unawaited burst with
+/// zero real I/O just runs each save to completion before the next call
+/// even starts — verified empirically while building this fix.
+class _GatedStorageService extends StorageService {
+  _GatedStorageService(super.prefs);
+  Completer<void>? gate;
+
+  @override
+  Future<void> setString(String key, String value) async {
+    final g = gate;
+    if (g != null) await g.future;
+    return super.setString(key, value);
+  }
+}
 
 /// `_realMs` anchors to the real clock at test run time — every "simulated
 /// time" in this file is `_realMs + offsetMs` (offsetMs >= 0), written
@@ -485,6 +508,61 @@ void main() {
         );
 
         expect(window.isActive, isTrue);
+      },
+    );
+  });
+
+  group('BUG-45: save-chain race — 2 lệnh liên tiếp chồng lấn thời gian', () {
+    test(
+      'currentWindow() cho event B gọi khi save của event A vẫn đang thật '
+      'sự treo (Completer chưa complete): cả 2 anchor đều persist đúng, '
+      'không anchor nào bị mồ côi/mất',
+      () async {
+        final gated = _GatedStorageService(await SharedPreferences.getInstance());
+        Get.put<StorageService>(gated, permanent: true);
+        await gated.setInt(StorageKeys.maxMsSeen, _realMs);
+        final service = SeasonEventService();
+
+        gated.gate = Completer<void>();
+        // Anchor 'a' tạo lần đầu -> trigger _scheduleSave(), nhưng
+        // setString() bị chặn bởi gate -> save này coi như đang "in
+        // flight" thật sự (không phải suy đoán timing).
+        final originalA = service.currentWindow(
+          'event_a',
+          length: length,
+          cooldown: cooldown,
+        );
+
+        // Gọi tiếp cho event KHÁC trong khi save của 'a' vẫn còn treo —
+        // đúng kịch bản race: `_saving` phải còn `true` lúc này.
+        final originalB = service.currentWindow(
+          'event_b',
+          length: length,
+          cooldown: cooldown,
+        );
+
+        gated.gate!.complete();
+        await service.debugPendingSaves;
+
+        // So khớp CHÍNH XÁC start/end với instance mới — không chỉ
+        // `isActive` (1 anchor MỚI vô tình tạo lại do mất dữ liệu cũng
+        // "active", nên không đủ để chứng minh đây là ĐÚNG anchor cũ đã
+        // persist, không phải 1 anchor mồ côi bị tạo lại từ đầu).
+        final restarted = SeasonEventService();
+        final restoredA = restarted.currentWindow(
+          'event_a',
+          length: length,
+          cooldown: cooldown,
+        );
+        final restoredB = restarted.currentWindow(
+          'event_b',
+          length: length,
+          cooldown: cooldown,
+        );
+        expect(restoredA.start, originalA.start);
+        expect(restoredA.end, originalA.end);
+        expect(restoredB.start, originalB.start);
+        expect(restoredB.end, originalB.end);
       },
     );
   });
