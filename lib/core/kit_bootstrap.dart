@@ -81,11 +81,6 @@ class RoyCasualKit {
     RoyCasualKitConfig config,
   ) async {
     final requested = Set<RoyCasualKitModule>.from(config.modules);
-    if (requested.contains(RoyCasualKitModule.locale) &&
-        !requested.contains(RoyCasualKitModule.storage) &&
-        !Get.isRegistered<StorageService>()) {
-      throw ArgumentError('locale module requires storage module');
-    }
 
     final errors = <RoyCasualKitModule, Object>{};
     final registered = <RoyCasualKitModule>{...?_result?.registeredModules};
@@ -109,6 +104,9 @@ class RoyCasualKit {
             }
           case RoyCasualKitModule.locale:
             if (!Get.isRegistered<LocaleService>()) {
+              if (!Get.isRegistered<StorageService>()) {
+                throw StateError('locale module requires storage module');
+              }
               Get.put(
                 LocaleService(StorageService.to),
                 permanent: config.permanent,
@@ -121,12 +119,14 @@ class RoyCasualKit {
             }
           case RoyCasualKitModule.audio:
             if (!Get.isRegistered<AudioManager>()) {
-              Get.put(AudioManager(), permanent: config.permanent);
+              final audio = AudioManager();
+              Get.put(audio, permanent: config.permanent);
               _owned.add(() async {
                 if (Get.isRegistered<AudioManager>()) {
                   await Get.delete<AudioManager>(force: true);
                 }
               });
+              await audio.init();
             }
           case RoyCasualKitModule.reminders:
             if (!Get.isRegistered<ReminderService>()) {
@@ -157,12 +157,14 @@ class RoyCasualKit {
             }
           case RoyCasualKitModule.wakeLock:
             if (!Get.isRegistered<WakeLockService>()) {
-              Get.put(WakeLockService(), permanent: config.permanent);
+              final wakeLock = WakeLockService();
+              Get.put(wakeLock, permanent: config.permanent);
               _owned.add(() async {
                 if (Get.isRegistered<WakeLockService>()) {
                   await Get.delete<WakeLockService>(force: true);
                 }
               });
+              await wakeLock.init();
             }
         }
         registered.add(module);

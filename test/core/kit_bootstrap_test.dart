@@ -7,6 +7,7 @@ import 'package:roy_casual_kit/core/locale_service.dart';
 import 'package:roy_casual_kit/core/performance_tier_service.dart';
 import 'package:roy_casual_kit/core/reminder_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/wake_lock_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -77,16 +78,68 @@ void main() {
     expect(Get.isRegistered<AudioManager>(), isFalse);
   });
 
-  test('locale without storage fails before partial registration', () async {
-    expect(
-      () => RoyCasualKit.initialize(
-        config: const RoyCasualKitConfig(modules: {RoyCasualKitModule.locale}),
-      ),
-      throwsArgumentError,
-    );
-    expect(StorageService.maybe, isNull);
-    expect(LocaleService.maybe, isNull);
-  });
+  test(
+    // BUG-47: initialize() commits to "never throws" — a module whose
+    // registration fails must land in `errors`/`degraded`, not crash boot.
+    'locale without storage degrades instead of throwing (BUG-47)',
+    () async {
+      final result = await RoyCasualKit.initialize(
+        config: const RoyCasualKitConfig(
+          modules: {RoyCasualKitModule.locale},
+        ),
+      );
+
+      expect(result.status, RoyCasualKitStatus.degraded);
+      expect(result.errors, contains(RoyCasualKitModule.locale));
+      expect(result.registeredModules, isEmpty);
+      expect(StorageService.maybe, isNull);
+      expect(LocaleService.maybe, isNull);
+    },
+  );
+
+  test(
+    'locale with storage still registers normally after BUG-47 fix',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final result = await RoyCasualKit.initialize(
+        config: RoyCasualKitConfig(
+          modules: {RoyCasualKitModule.storage, RoyCasualKitModule.locale},
+          preferences: prefs,
+        ),
+      );
+
+      expect(result.status, RoyCasualKitStatus.initialized);
+      expect(LocaleService.maybe, isNotNull);
+    },
+  );
+
+  test(
+    // BUG-47: audio/wakeLock modules must restore persisted state via
+    // init() during bootstrap, not stay on their hardcoded defaults.
+    'audio and wakeLock modules restore persisted state during bootstrap (BUG-47)',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'audio_muted': true,
+        'wake_lock_enabled': false,
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final result = await RoyCasualKit.initialize(
+        config: RoyCasualKitConfig(
+          modules: {
+            RoyCasualKitModule.storage,
+            RoyCasualKitModule.audio,
+            RoyCasualKitModule.wakeLock,
+          },
+          preferences: prefs,
+        ),
+      );
+
+      expect(result.isDegraded, isFalse);
+      expect(Get.find<AudioManager>().muted.value, isTrue);
+      expect(Get.find<WakeLockService>().enabled.value, isFalse);
+    },
+  );
 
   testWidgets('bootstrap result can be consumed by a widget', (tester) async {
     final result = await RoyCasualKit.initialize(
