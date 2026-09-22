@@ -72,6 +72,15 @@ class CommonButton extends StatelessWidget {
       button: true,
       enabled: _tappable,
       label: loading && baseLabel != null ? '$baseLabel, loading' : baseLabel,
+      // BUG-60: without this, a screen reader also reads the child Text's
+      // own implicit semantics node on top of this explicit `label`.
+      // `excludeSemantics` also discards the descendant GestureDetector's
+      // own tap-action semantics, so `onTap` is repeated here directly on
+      // this node — otherwise an ancestor MergeSemantics (e.g.
+      // ShopItemCard, ENH-44) would merge in a node with no
+      // SemanticsAction.tap at all.
+      excludeSemantics: true,
+      onTap: _tappable ? onTap : null,
       child: PressableScale(
         onTap: _tappable ? onTap : null,
         child: variant == CommonButtonVariant.icon

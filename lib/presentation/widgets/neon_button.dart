@@ -32,6 +32,15 @@ class NeonButton extends StatelessWidget {
       button: true,
       enabled: enabled,
       label: semanticLabel ?? label,
+      // BUG-60: without this, a screen reader also reads the child Text's
+      // own implicit semantics node on top of this explicit `label` —
+      // "Chơi ngay, Chơi ngay" instead of once. `excludeSemantics` also
+      // discards the descendant GestureDetector's own tap-action
+      // semantics, so `onTap` is repeated here directly on this node —
+      // otherwise an ancestor MergeSemantics (e.g. ShopItemCard, ENH-44)
+      // would merge in a node with no SemanticsAction.tap at all.
+      excludeSemantics: true,
+      onTap: onTap,
       child: PressableScale(
         onTap: onTap,
         child: Container(

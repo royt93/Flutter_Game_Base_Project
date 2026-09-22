@@ -81,6 +81,14 @@ class SegmentedTabBar extends StatelessWidget {
                       button: true,
                       selected: active,
                       label: labels[i],
+                      // BUG-60: without this, a screen reader also reads
+                      // the child Text's own implicit semantics node on
+                      // top of this explicit `label`. `excludeSemantics`
+                      // also discards the descendant GestureDetector's own
+                      // tap-action semantics, so `onTap` is repeated here
+                      // directly on this node.
+                      excludeSemantics: true,
+                      onTap: () => onChanged(i),
                       child: PressableScale(
                         onTap: () => onChanged(i),
                         child: SizedBox(
