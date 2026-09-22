@@ -20,11 +20,24 @@
 //   periodic re-run (a stale device number is a `staleMeasurement`
 //   violation, not a silent pass).
 //
+// `--deviceMetricName=` (default `example_app_boot_wall_ms`) is the metric
+// name the device measurement is recorded under. A CI-emulator run is NOT
+// the same population as a real physical device — an emulator's cold-boot
+// wall time is routinely 5-10x a real device's, so `.github/workflows/
+// benchmark.yml` passes a distinct `example_app_boot_wall_ms_emulator`
+// here rather than writing into the physical-device metric name
+// `tool/performance_budget_policy.json` actually gates on. Only a name
+// with a matching policy entry is ever checked — an emulator name with no
+// policy entry is recorded in the baseline (for visibility) but never
+// gates anything.
+//
 // Usage:
 //   dart run tool/performance_budget_check.dart check [--device=<id>]
+//     [--deviceMetricName=example_app_boot_wall_ms]
 //     [--policies=tool/performance_budget_policy.json]
 //     [--baseline=tool/performance_budget_baseline.json]
 //   dart run tool/performance_budget_check.dart snapshot [--device=<id>]
+//     [--deviceMetricName=example_app_boot_wall_ms]
 //     [--baseline=tool/performance_budget_baseline.json]
 //
 // `check` never writes the baseline file — only `snapshot` does, mirroring
@@ -39,6 +52,7 @@ import 'object_pool_benchmark.dart' show runPooled, runUnpooled;
 
 const _defaultPolicyPath = 'tool/performance_budget_policy.json';
 const _defaultBaselinePath = 'tool/performance_budget_baseline.json';
+const _defaultDeviceMetricName = 'example_app_boot_wall_ms';
 
 Future<void> main(List<String> args) async {
   String? command;
@@ -59,6 +73,8 @@ Future<void> main(List<String> args) async {
   final policyPath = options['policies'] ?? _defaultPolicyPath;
   final baselinePath = options['baseline'] ?? _defaultBaselinePath;
   final deviceId = options['device'];
+  final deviceMetricName =
+      options['deviceMetricName'] ?? _defaultDeviceMetricName;
 
   switch (command) {
     case 'check':
@@ -66,13 +82,19 @@ Future<void> main(List<String> args) async {
         policyPath: policyPath,
         baselinePath: baselinePath,
         deviceId: deviceId,
+        deviceMetricName: deviceMetricName,
       );
     case 'snapshot':
-      await _snapshot(baselinePath: baselinePath, deviceId: deviceId);
+      await _snapshot(
+        baselinePath: baselinePath,
+        deviceId: deviceId,
+        deviceMetricName: deviceMetricName,
+      );
     default:
       stderr.writeln(
         'Usage: dart run tool/performance_budget_check.dart '
-        '[check|snapshot] [--device=<id>] [--policies=<path>] [--baseline=<path>]',
+        '[check|snapshot] [--device=<id>] [--deviceMetricName=<name>] '
+        '[--policies=<path>] [--baseline=<path>]',
       );
       exitCode = 64;
   }
@@ -116,7 +138,10 @@ List<PerformanceBudgetMetric> _measureHostHeadless() {
 /// Runs the real device-boot integration test on [deviceId] and returns its
 /// real wall-clock duration as a [MeasurementSource.realDevice] metric, or
 /// `null` if the run itself failed (never fabricates a number on failure).
-Future<PerformanceBudgetMetric?> _measureRealDevice(String deviceId) async {
+Future<PerformanceBudgetMetric?> _measureRealDevice(
+  String deviceId,
+  String metricName,
+) async {
   final stopwatch = Stopwatch()..start();
   final result = await Process.run('flutter', [
     'test',
@@ -134,7 +159,7 @@ Future<PerformanceBudgetMetric?> _measureRealDevice(String deviceId) async {
     return null;
   }
   return PerformanceBudgetMetric(
-    name: 'example_app_boot_wall_ms',
+    name: metricName,
     source: MeasurementSource.realDevice,
     value: stopwatch.elapsedMilliseconds.toDouble(),
     unit: 'ms',
@@ -168,12 +193,13 @@ Future<void> _check({
   required String policyPath,
   required String baselinePath,
   String? deviceId,
+  String deviceMetricName = _defaultDeviceMetricName,
 }) async {
   final policies = _loadPolicies(policyPath);
   final baseline = _loadMetrics(baselinePath);
   final fresh = _measureHostHeadless();
   if (deviceId != null) {
-    final measured = await _measureRealDevice(deviceId);
+    final measured = await _measureRealDevice(deviceId, deviceMetricName);
     if (measured != null) fresh.add(measured);
   }
   // realDevice metrics not freshly re-measured this run fall back to the
@@ -206,7 +232,11 @@ Future<void> _check({
   exitCode = result.passed ? 0 : 1;
 }
 
-Future<void> _snapshot({required String baselinePath, String? deviceId}) async {
+Future<void> _snapshot({
+  required String baselinePath,
+  String? deviceId,
+  String deviceMetricName = _defaultDeviceMetricName,
+}) async {
   final existing = _loadMetrics(baselinePath);
   final now = DateTime.now().millisecondsSinceEpoch;
   final fresh = _measureHostHeadless()
@@ -221,7 +251,7 @@ Future<void> _snapshot({required String baselinePath, String? deviceId}) async {
       )
       .toList();
   if (deviceId != null) {
-    final measured = await _measureRealDevice(deviceId);
+    final measured = await _measureRealDevice(deviceId, deviceMetricName);
     if (measured == null) {
       stderr.writeln(
         'Device measurement failed; keeping previous realDevice metrics in baseline.',
