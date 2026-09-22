@@ -53,7 +53,7 @@ class EnergyService extends GetxService {
   /// the last checkpoint. Capped at [maxEnergy].
   int get currentEnergy {
     _regen();
-    return _readState().count;
+    return _currentState().count;
   }
 
   /// True while a [grantInfiniteLives] window is still active.
@@ -76,19 +76,17 @@ class EnergyService extends GetxService {
     if (hasInfiniteLives) return true;
     _regen();
 
-    final state = _readState();
+    final state = _currentState();
     if (state.count < amount) return false;
 
     final nowFullBeforeSpend = state.count >= maxEnergy;
-    unawaited(
-      _writeState(
-        _EnergyState(
-          count: state.count - amount,
-          // Đầy tim trước khi trừ -> đây là lượt tiêu đầu tiên, bắt đầu
-          // tính giờ hồi tim mới kể từ đúng thời điểm này (không dùng mốc
-          // cũ đã lỗi thời).
-          lastMs: nowFullBeforeSpend ? nowMsClamped() : state.lastMs,
-        ),
+    _scheduleSave(
+      _EnergyState(
+        count: state.count - amount,
+        // Đầy tim trước khi trừ -> đây là lượt tiêu đầu tiên, bắt đầu
+        // tính giờ hồi tim mới kể từ đúng thời điểm này (không dùng mốc
+        // cũ đã lỗi thời).
+        lastMs: nowFullBeforeSpend ? nowMsClamped() : state.lastMs,
       ),
     );
     return true;
@@ -112,7 +110,7 @@ class EnergyService extends GetxService {
     if (hasInfiniteLives) return Duration.zero;
     _regen();
 
-    final state = _readState();
+    final state = _currentState();
     if (state.count >= maxEnergy) return Duration.zero;
 
     final intervalMs = refillInterval.inMilliseconds;
@@ -131,7 +129,7 @@ class EnergyService extends GetxService {
   /// calls, so the two can never drift apart into 2 subtly different
   /// formulas.
   void _regen() {
-    final state = _readState();
+    final state = _currentState();
     final result = regenEnergy(
       count: state.count,
       maxEnergy: maxEnergy,
@@ -141,9 +139,7 @@ class EnergyService extends GetxService {
     );
     if (result.count == state.count && result.lastMs == state.lastMs) return;
 
-    unawaited(
-      _writeState(_EnergyState(count: result.count, lastMs: result.lastMs)),
-    );
+    _scheduleSave(_EnergyState(count: result.count, lastMs: result.lastMs));
   }
 
   /// Reads the persisted `{count, lastMs}` checkpoint, clamping `count`
@@ -155,6 +151,16 @@ class EnergyService extends GetxService {
   /// `energyLastMs`) when `StorageKeys.energyStateV1` hasn't been written
   /// yet — an existing install's save predates this single-blob format and
   /// must not silently reset to full energy.
+  ///
+  /// BUG-46: every read/mutate call site below uses [_currentState] (never
+  /// this directly) — [_pendingState], while a write is in flight, is the
+  /// AUTHORITATIVE latest state (already computed, just not landed on
+  /// disk yet). Reading straight from storage here alone would let a
+  /// second call arriving before the first write lands see the STALE
+  /// pre-write state, compute its OWN delta from that same stale
+  /// baseline, and silently lose the first call's change even though
+  /// write ordering itself (`_scheduleSave`) is race-free — an even
+  /// simpler double-tap free-energy exploit than write reordering alone.
   _EnergyState _readState() {
     final raw = StorageService.to.getString(StorageKeys.energyStateV1);
     if (raw != null) {
@@ -195,11 +201,69 @@ class EnergyService extends GetxService {
     jsonEncode({'count': state.count, 'lastMs': state.lastMs}),
   );
 
+  // BUG-46: consumeEnergy/_regen used to call `unawaited(_writeState(...))`
+  // directly, with no ordering guarantee at all — 2 back-to-back
+  // consumeEnergy() calls (double-tap) without an await in between raced 2
+  // independent writes, and whichever finished LAST (real I/O order, not
+  // call order) won, potentially leaving a STALE, higher energy count on
+  // disk after a restart — a free-energy farm via double-tapping.
+  //
+  // Unlike the sibling ledger services fixed in BUG-45 (which keep an
+  // in-memory field `_runSave` re-reads at actual write time), EnergyService
+  // has no persistent cache — `state` is computed fresh by the caller and
+  // must be captured at SCHEDULE time, not re-derived later. `_pendingState`
+  // holds "the latest state a caller wants written" — overwritten (never
+  // queued as a list) by every call, since only the newest value ever needs
+  // to reach disk. Same atomicity property as BUG-45's `_saveDirty`: this
+  // check-and-set never awaits anything, so it's race-free by construction.
+  // `_latestState` is null until the first `_scheduleSave` call this
+  // instance ever makes — from then on it's the AUTHORITATIVE in-memory
+  // state (see `_currentState`), same role the other 8 ledger services'
+  // permanent in-memory field plays, just lazily started instead of
+  // eagerly hydrated (matches this class's existing "no persistent cache
+  // until there's something to cache" design). `_saveDirty` — not
+  // `_latestState == null` — is what `_runSaveAndReschedule` checks to
+  // decide whether to loop again, since `_latestState` deliberately stays
+  // set (never cleared) so reads keep seeing the true latest value even
+  // while its own write is still in flight.
+  _EnergyState? _latestState;
+  bool _saving = false;
+  bool _saveDirty = false;
+  Future<void> _saveChain = Future.value();
+
+  /// Awaits every save queued so far — lets a test deterministically wait
+  /// for a burst of rapid `consumeEnergy`/regen writes to fully settle
+  /// instead of guessing a delay (same convention as the sibling ledger
+  /// services fixed in BUG-45).
+  @visibleForTesting
+  Future<void> get debugPendingSaves => _saveChain;
+
+  _EnergyState _currentState() => _latestState ?? _readState();
+
+  void _scheduleSave(_EnergyState state) {
+    _latestState = state;
+    _saveDirty = true;
+    if (_saving) return;
+    _saving = true;
+    _runSaveAndReschedule();
+  }
+
+  void _runSaveAndReschedule() {
+    _saveDirty = false;
+    _saveChain = _writeState(_latestState!).whenComplete(() {
+      if (_saveDirty) {
+        _runSaveAndReschedule();
+      } else {
+        _saving = false;
+      }
+    });
+  }
+
   /// The current regen baseline timestamp — exposed for tests that need to
   /// assert an exact elapsed-time expectation without drifting against the
   /// real wall clock.
   @visibleForTesting
-  int get debugLastRegenMs => _readState().lastMs;
+  int get debugLastRegenMs => _currentState().lastMs;
 }
 
 class _EnergyState {

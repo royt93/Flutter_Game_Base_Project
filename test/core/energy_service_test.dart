@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/energy_service.dart';
@@ -5,6 +7,24 @@ import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 int get _realMs => DateTime.now().toUtc().millisecondsSinceEpoch;
+
+/// Pauses `setString` until [gate] resolves — same technique used in
+/// `season_event_service_test.dart`/`save_slot_manager_test.dart` for
+/// BUG-45: a tight synchronous burst (no real gap between calls) does NOT
+/// reproduce this kind of race at all with the in-memory storage these
+/// tests use, since `await` on an already-complete Future can resolve
+/// without a microtask hop.
+class _GatedStorageService extends StorageService {
+  _GatedStorageService(super.prefs);
+  Completer<void>? gate;
+
+  @override
+  Future<void> setString(String key, String value) async {
+    final g = gate;
+    if (g != null) await g.future;
+    return super.setString(key, value);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -277,6 +297,95 @@ void main() {
         expect(service2.currentEnergy, 3);
         expect(service2.debugLastRegenMs, baselineAfterSpend);
       });
+    });
+
+    group('BUG-46: save race khi consumeEnergy()/_regen() chồng lấn', () {
+      test(
+        '2 lần consumeEnergy() liên tiếp, lần đầu vẫn đang ghi thật (Completer '
+        'chưa complete): sau khi settle, count đúng đã trừ CẢ 2 lần, không '
+        'bị lần ghi sau đè ngược (double-tap không farm được năng lượng)',
+        () async {
+          final gated = _GatedStorageService(await SharedPreferences.getInstance());
+          Get.put<StorageService>(gated, permanent: true);
+          final service = EnergyService(maxEnergy: 5);
+          expect(service.currentEnergy, 5);
+
+          gated.gate = Completer<void>();
+          final first = service.consumeEnergy(1); // count 5 -> 4, ghi bị chặn
+          final second = service.consumeEnergy(1); // count 4 -> 3, phải queue
+
+          expect(first, isTrue);
+          expect(second, isTrue);
+          expect(service.currentEnergy, 3); // in-memory đã đúng ngay lập tức
+
+          gated.gate!.complete();
+          await service.debugPendingSaves;
+
+          final restarted = EnergyService(maxEnergy: 5);
+          expect(restarted.currentEnergy, 3); // không rollback về 4
+        },
+      );
+
+      test(
+        '_regen() đang ghi (Completer chưa complete) rồi consumeEnergy() gọi '
+        'ngay sau: write CUỐI CÙNG (của consumeEnergy, theo đúng thứ tự gọi) '
+        'không bị mất — state cuối phản ánh đúng logic mới nhất',
+        () async {
+          final gated = _GatedStorageService(await SharedPreferences.getInstance());
+          Get.put<StorageService>(gated, permanent: true);
+          await gated.setInt(StorageKeys.maxMsSeen, _realMs);
+          final service = EnergyService(
+            maxEnergy: 5,
+            refillInterval: const Duration(minutes: 30),
+          );
+          service.consumeEnergy(2); // count 5 -> 3, chờ settle write đầu.
+          await service.debugPendingSaves;
+
+          // Qua đúng 1 chu kỳ refill -> _regen() sẽ credit +1 khi tính lại.
+          await gated.setInt(
+            StorageKeys.maxMsSeen,
+            _realMs + const Duration(minutes: 30).inMilliseconds,
+          );
+
+          gated.gate = Completer<void>();
+          // Trigger _regen() qua currentEnergy — write (count 3 -> 4) bị
+          // chặn bởi gate, coi như đang "in flight" thật sự.
+          service.currentEnergy;
+
+          // Gọi consumeEnergy ngay sau, trong lúc write regen còn treo —
+          // đúng kịch bản race. _currentState() của lần gọi này đọc qua
+          // `_latestState` (giá trị regen VỪA schedule, count=4) — không
+          // phải storage cũ (count=3, chưa land) — nên trừ đúng từ 4.
+          final consumed = service.consumeEnergy(1);
+          expect(consumed, isTrue);
+
+          gated.gate!.complete();
+          await service.debugPendingSaves;
+
+          // consumeEnergy() giờ đọc qua `_currentState()` (ưu tiên
+          // `_latestState` trong bộ nhớ — giá trị regen VỪA schedule,
+          // dù chưa land disk) thay vì đọc thẳng storage cũ — nên trừ
+          // đúng từ 4 (3 + 1 regen), ra 3, không phải từ 3 cũ (thiếu mất
+          // phần regen vừa tính). Cả 2 thay đổi (regen +1, consume -1)
+          // đều phản ánh đúng, không cái nào bị mất.
+          final restarted = EnergyService(
+            maxEnergy: 5,
+            refillInterval: const Duration(minutes: 30),
+          );
+          expect(restarted.currentEnergy, 3);
+        },
+      );
+
+      test(
+        'hành vi trả về (count sau consumeEnergy) không đổi khi không có race',
+        () {
+          final service = EnergyService(maxEnergy: 5);
+          expect(service.consumeEnergy(2), isTrue);
+          expect(service.currentEnergy, 3);
+          expect(service.consumeEnergy(10), isFalse);
+          expect(service.currentEnergy, 3); // không đổi khi fail
+        },
+      );
     });
   });
 }
