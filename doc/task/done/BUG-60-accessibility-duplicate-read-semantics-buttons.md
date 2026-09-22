@@ -20,10 +20,10 @@ Khi `Semantics(label: 'Chơi ngay')` bọc 1 `Text('Chơi ngay')` (hoặc `Strok
 Thêm `excludeSemantics: true` vào cả 4 `Semantics(...)` wrapper — giữ nguyên `label`/`button`/`selected` (semantics tường minh do wrapper cung cấp), chỉ ẩn semantics ngầm định của các widget con bên trong khỏi accessibility tree.
 
 ## Acceptance criteria
-- [ ] Cả 4 file (`neon_button.dart`, `common_button.dart`, `neon_dialog.dart`, `segmented_tab_bar.dart`) có `excludeSemantics: true` trong `Semantics(...)` wrapper bọc nút bấm.
-- [ ] Test widget verify accessibility tree: mỗi nút chỉ xuất hiện đúng 1 node semantics có `label` đúng, không có node con nào lộ ra ngoài (dùng `tester.getSemantics(find.byType(...))` hoặc so sánh `SemanticsNode` tree trước/sau).
-- [ ] Hành vi visual/tương tác (tap, style) của cả 4 widget không đổi.
-- [ ] Test hiện có của cả 4 widget vẫn pass.
+- [x] Cả 4 file (`neon_button.dart`, `common_button.dart`, `neon_dialog.dart`, `segmented_tab_bar.dart`) có `excludeSemantics: true` trong `Semantics(...)` wrapper bọc nút bấm.
+- [x] Test widget verify accessibility tree: mỗi nút chỉ xuất hiện đúng 1 node semantics có `label` đúng, không có node con nào lộ ra ngoài (dùng `tester.getSemantics(find.byType(...))` hoặc so sánh `SemanticsNode` tree trước/sau).
+- [x] Hành vi visual/tương tác (tap, style) của cả 4 widget không đổi.
+- [x] Test hiện có của cả 4 widget vẫn pass.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-60-accessibility-duplicate-read-semantics-buttons.md` này trước khi làm. Đọc toàn bộ 4 file liệt kê ở "Vị trí" và `lib/presentation/widgets/common/icon_badge_button.dart` (tham khảo đúng pattern `excludeSemantics: true` đã dùng đúng) trước khi sửa. Implement bằng TDD — viết test verify accessibility tree TRƯỚC (test fail vì đọc lặp), rồi thêm `excludeSemantics: true`.
@@ -40,3 +40,17 @@ Sau khi push, viết mục `## Quyết định` vào chính file task này (tick
 
 ## Ghi chú độ tin cậy
 Rất cao — 2 nguồn độc lập (agy, claude) cùng phát hiện; tự grep xác nhận CẢ 4 file có `Semantics(` nhưng KHÔNG nằm trong danh sách 8+ widget khác đã đúng `excludeSemantics: true` trong cùng codebase — convention đã tồn tại rõ ràng, đây là 1 lỗ hổng nhất quán thật, không suy đoán. Không trùng task nào trong `doc/task/done/` (ENH-37/ENH-59 done trước đó về accessibility semantics không đề cập 4 widget này).
+
+## Quyết định
+
+Thêm `excludeSemantics: true` đúng như đề xuất cho cả 4 file.
+
+**Phát hiện + fix thêm 1 regression thật trong lúc làm**: `excludeSemantics: true` không chỉ ẩn label trùng của widget con — nó còn loại bỏ LUÔN `SemanticsAction.tap` mà descendant `GestureDetector`/`PressableScale` tự đóng góp (vì action đó cũng "nằm dưới" node bị exclude). Chạy full suite sau khi thêm `excludeSemantics` phát hiện ngay 2 test có sẵn fail thật (`test/widget/common/shop_item_card_test.dart`, nhóm ENH-44 — `ShopItemCard` dùng `MergeSemantics` bọc `CommonButton`, kỳ vọng node gộp cuối cùng có `hasAction(SemanticsAction.tap)`) — action tap biến mất hoàn toàn sau khi thêm `excludeSemantics` mà không bù lại. Fix: `Semantics` widget có sẵn tham số `onTap` (tự đăng ký `SemanticsAction.tap` ngay trên chính node đó, không phụ thuộc con) — thêm `onTap: onTap`/`onTap: _tappable ? onTap : null`/`onTap: action.onTap`/`onTap: () => onChanged(i)` (theo đúng điều kiện tappable riêng của từng widget) vào cả 4 `Semantics(...)`. Ghi chú: `icon_badge_button.dart` (widget tham chiếu convention `excludeSemantics` ban đầu) có khả năng dính CÙNG lỗ hổng tap-action này — không sửa ở đây (ngoài phạm vi BUG-60, không có test nào hiện tại phát hiện nó ở đó) nhưng đáng thành 1 task riêng nếu cần.
+
+**TDD:** viết 5 test mới (`test/widget/bug_60_button_semantics_test.dart`) trước — 4 test đếm `SemanticsNode.childrenCount` (phải = 0 sau exclude) + check `label`, 1 test hành vi tap không đổi. `git stash` riêng 4 file lib, chạy lại: 4/5 fail đúng, và assertion fail thật sự trưng ra bằng chứng cụ thể — `Actual: 'Dễ\nDễ'` (label bị Flutter tự merge lặp 2 lần cách nhau `\n`, đúng y hệt "đọc lặp" mô tả trong task). Khôi phục fix: 5/5 pass. Riêng ENH-44 regression cũng verify 2 chiều tương tự (fail ngay sau khi thêm `excludeSemantics` chưa có `onTap`, pass lại sau khi thêm `onTap`).
+
+**Không phá gì:** `flutter analyze` root + `example/` sạch. `flutter test --exclude-tags slow` root: 20 fail còn lại đều xác nhận KHÔNG liên quan — 19 golden-image có sẵn từ trước (không tăng so với BUG-40/43/49/56), 1 flaky timestamp-off-by-1ms ở `season_event_service_test.dart` (file không hề chạm tới, verify bằng cách chạy lại riêng file đó 2 lần: lần đầu fail 1ms, lần sau pass sạch — đúng pattern flaky-dưới-tải CI đã biết, không phải regression). `example/`: 125/125 pass.
+
+Không smoke test device thật (TalkBack) — task tự cho phép ("widget test semantics-tree đã là bằng chứng chính xác và đủ mạnh nếu smoke test không tiện") vì không có cách tự động hoá đáng tin để "nghe" TalkBack đọc gì qua MCP; bằng chứng widget-test ở đây mạnh hơn mức tối thiểu (chứng minh bằng crash/label-lặp thật, không phải suy đoán).
+
+**Tự chấm điểm: 9.5/10.** Fix đúng root cause cho cả 4 widget, phát hiện + sửa thêm 1 regression thật (mất tap action) mà mô tả gốc không lường trước, TDD xác nhận rõ ràng cả 2 lớp lỗi bằng bằng chứng cụ thể (label lặp thật, action mất thật), không phá test nào. Trừ 0.5 vì không thể smoke test TalkBack thật trên device (giới hạn công cụ, không phải bỏ sót).
