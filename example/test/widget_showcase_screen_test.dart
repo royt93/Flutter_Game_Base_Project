@@ -2017,6 +2017,42 @@ void main() {
       expect(find.text('Pending: 0  · Manual review: 0'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+      // BUG-63: outbox auto-drains when its `connectivity` coordinator
+      // transitions to online (see offline_outbox_service.dart onInit) —
+      // this only fires if the REOPENED screen's outbox is genuinely
+      // subscribed to the REOPENED screen's own coordinator, not a stale
+      // one reused from the first open (whose stream BUG-62's fix now
+      // closes on screen close, silently killing that subscription).
+      'mở lại screen (reopen): outbox mới tự drain đúng khi connectivity '
+      'của LẦN MỞ MỚI chuyển online, không kẹt vào coordinator cũ (BUG-63)',
+      (tester) async {
+        await _pumpShowcase(tester);
+        ConnectivityCoordinator.maybe?.onClose();
+
+        // "Đóng" screen thật rồi "mở lại" (State hoàn toàn mới) — cùng kỹ
+        // thuật đã dùng cho BUG-62.
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+        await _pumpShowcase(tester);
+
+        await tester.tap(find.widgetWithText(CommonButton, 'Enqueue OK').first);
+        await tester.pump();
+        expect(find.text('Pending: 1  · Manual review: 0'), findsOneWidget);
+
+        // KHÔNG bấm "Drain now" thủ công — chỉ bật interface (Connectivity
+        // demo) để kích hoạt auto-drain qua đúng coordinator của lần mở lại.
+        await tester.tap(find.text('Interface up').last);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Pending: 0  · Manual review: 0'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        ConnectivityCoordinator.maybe?.onClose();
+      },
+    );
   });
 
   group('FEAT-52: AdaptiveGameHud demo', () {

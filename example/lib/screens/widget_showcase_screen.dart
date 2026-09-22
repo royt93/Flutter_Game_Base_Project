@@ -483,17 +483,27 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
           ),
           permanent: true,
         );
-    _outbox =
-        OfflineOutboxService.maybe ??
-        Get.put(
-          OfflineOutboxService(
-            storage: StorageService.to,
-            uploader: _outboxUploader,
-            connectivity: _connectivity,
-            conflictPolicy: ConflictPolicy.manual,
-          ),
-          permanent: true,
-        );
+    // BUG-63: same pattern as BUG-62's ConnectivityCoordinator just above —
+    // `uploader: _outboxUploader` closes over THIS State instance, and
+    // `connectivity: _connectivity` is now a fresh-per-instance coordinator
+    // (BUG-62) that gets disposed in `dispose()` below. Reusing an old
+    // OfflineOutboxService via `.maybe` would leave it calling a disposed
+    // State's uploader method forever, AND (since BUG-62's fix) listening
+    // to a `ConnectivityCoordinator` whose stream was already closed on the
+    // previous screen close — silently never reacting to connectivity
+    // changes again. Always create fresh, tied to this State's lifecycle.
+    if (Get.isRegistered<OfflineOutboxService>()) {
+      Get.delete<OfflineOutboxService>(force: true);
+    }
+    _outbox = Get.put(
+      OfflineOutboxService(
+        storage: StorageService.to,
+        uploader: _outboxUploader,
+        connectivity: _connectivity,
+        conflictPolicy: ConflictPolicy.manual,
+      ),
+      permanent: true,
+    );
     // IDEA-43: demo achievement — 3 taps to unlock, so AchievementUnlockToast
     // (via AchievementUnlockListener wrapping this screen below) has
     // something to show without waiting on real game progress.
@@ -562,6 +572,13 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _assetSession.onClose();
     _sceneTransition.dispose();
     _levelUpController.dispose();
+    // BUG-63: delete our own fresh-per-instance outbox (see the matching
+    // comment in initState) BEFORE the coordinator it subscribes to below,
+    // so its own onClose() cancels that subscription while the coordinator
+    // it's listening to is still alive.
+    if (Get.isRegistered<OfflineOutboxService>()) {
+      Get.delete<OfflineOutboxService>(force: true);
+    }
     // BUG-62: delete our own fresh-per-instance coordinator/signal (see the
     // matching comment in initState) rather than leaving it registered for
     // a future State instance to inherit stale. The coordinator's own
