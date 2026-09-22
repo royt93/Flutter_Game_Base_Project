@@ -156,6 +156,64 @@ void main() {
       );
     });
 
+    group('BUG-52: grantInfiniteLives cộng dồn, không ghi đè', () {
+      test(
+        'grant lần 2 (duration ngắn hơn thời gian còn lại của lần 1) '
+        'KHÔNG rút ngắn mốc hết hạn',
+        () async {
+          final service = EnergyService(maxEnergy: 3);
+
+          await service.grantInfiniteLives(const Duration(hours: 1));
+          final untilAfterFirst = store.getInt(
+            StorageKeys.energyInfiniteUntilMs,
+          );
+
+          await service.grantInfiniteLives(const Duration(minutes: 5));
+          final untilAfterSecond = store.getInt(
+            StorageKeys.energyInfiniteUntilMs,
+          );
+
+          expect(
+            untilAfterSecond,
+            untilAfterFirst,
+            reason:
+                'lần 2 ngắn hơn thời gian còn lại của lần 1 -> giữ nguyên '
+                'mốc dài hơn, không bị ghi đè xuống ngắn hơn',
+          );
+          expect(service.hasInfiniteLives, true);
+        },
+      );
+
+      test(
+        'grant lần 2 (duration dài hơn thời gian còn lại của lần 1) '
+        'kéo dài thêm đúng mốc mới',
+        () async {
+          final service = EnergyService(maxEnergy: 3);
+
+          await service.grantInfiniteLives(const Duration(minutes: 5));
+          await service.grantInfiniteLives(const Duration(hours: 2));
+
+          final until = store.getInt(StorageKeys.energyInfiniteUntilMs);
+          expect(
+            until,
+            greaterThanOrEqualTo(_realMs + const Duration(hours: 2).inMilliseconds),
+          );
+        },
+      );
+
+      test('grant lần đầu (chưa có mốc trước đó) hoạt động đúng như cũ', () async {
+        final service = EnergyService(maxEnergy: 3);
+
+        await service.grantInfiniteLives(const Duration(minutes: 10));
+
+        expect(service.hasInfiniteLives, true);
+        expect(
+          store.getInt(StorageKeys.energyInfiniteUntilMs),
+          greaterThanOrEqualTo(_realMs + const Duration(minutes: 10).inMilliseconds),
+        );
+      });
+    });
+
     test('timeUntilNextEnergy trả về Duration.zero khi đã đầy tim', () {
       final service = EnergyService(maxEnergy: 5);
       expect(service.timeUntilNextEnergy, Duration.zero);

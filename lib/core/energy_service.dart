@@ -94,11 +94,22 @@ class EnergyService extends GetxService {
 
   /// Grants temporary unlimited energy for [duration] — `consumeEnergy`
   /// succeeds without deducting until it elapses.
-  Future<void> grantInfiniteLives(Duration duration) =>
-      StorageService.to.setInt(
-        StorageKeys.energyInfiniteUntilMs,
-        nowMsClamped() + duration.inMilliseconds,
-      );
+  ///
+  /// BUG-52: stacks with an already-active window instead of overwriting it
+  /// — a second grant (e.g. a 2nd IAP/reward redeemed while the first is
+  /// still running) extends the later of the two expiries, it never cuts a
+  /// longer window short.
+  Future<void> grantInfiniteLives(Duration duration) {
+    final current = StorageService.to.getInt(
+      StorageKeys.energyInfiniteUntilMs,
+      def: 0,
+    );
+    final next = nowMsClamped() + duration.inMilliseconds;
+    return StorageService.to.setInt(
+      StorageKeys.energyInfiniteUntilMs,
+      current > next ? current : next,
+    );
+  }
 
   /// Time remaining until the next energy point regens. `Duration.zero`
   /// when already full ([maxEnergy] reached) or while [hasInfiniteLives] is
