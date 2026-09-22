@@ -20,10 +20,26 @@ Với người chơi hoàn toàn mới (chưa từng gọi `claim()`), mốc "l�
 Xác nhận rõ ý định thiết kế: nếu mốc mặc định NÊN là "thời điểm cài đặt/khởi tạo profile" (để có 1 khoản thưởng nhỏ chào mừng), set đúng mốc đó thay vì `now`. Nếu ý định là "người chơi mới không có gì để claim" (hợp lý), giữ nguyên nhưng đảm bảo hành vi rõ ràng/document đúng — không phải bug ngầm. Effort XS vì chỉ cần xác nhận đúng ý định rồi sửa 1 dòng khởi tạo mốc mặc định.
 
 ## Acceptance criteria
-- [ ] Xác nhận rõ ý định thiết kế (đọc doc comment/test hiện có của `OfflineProgressionService` trước khi quyết định hướng fix).
-- [ ] Nếu xác nhận là bug: người chơi mới nhận đúng 1 khoản thưởng offline hợp lý ở lần tính đầu tiên (không phải 0 do mốc mặc định sai).
-- [ ] Nếu xác nhận là hành vi CỐ Ý (không phải bug): đóng task này với ghi chú rõ ràng trong `## Quyết định`, không sửa gì, coi là "no_change_needed".
-- [ ] Test hiện có của `offline_progression_service_test.dart` vẫn pass.
+- [x] Xác nhận rõ ý định thiết kế (đọc doc comment/test hiện có của `OfflineProgressionService` trước khi quyết định hướng fix).
+- [ ] (không áp dụng — xác nhận là hành vi cố ý, không phải bug, xem dưới)
+- [x] Nếu xác nhận là hành vi CỐ Ý (không phải bug): đóng task này với ghi chú rõ ràng trong `## Quyết định`, không sửa gì, coi là "no_change_needed".
+- [x] Test hiện có của `offline_progression_service_test.dart` vẫn pass (không đổi gì nên tự động pass).
+
+## Quyết định — `no_change_needed`, xác nhận là hành vi CỐ Ý, không phải bug
+
+Đọc trực tiếp `lib/core/offline_progression_service.dart` (`_lastClaimedMsOr`, dòng 42-48) — doc comment NGAY TRÊN hàm nói rõ, không mập mờ:
+
+> "Falls back to `now` (never persisted) when nothing has been claimed yet, so a fresh install doesn't hand out a free `maxOfflineCap` of earnings on its very first read."
+
+Đây là thiết kế **chống-farm** có chủ đích: nếu mốc mặc định là "thời điểm cài đặt" (như task đề xuất cân nhắc) thay vì `now`, một người chơi có thể **gỡ cài đặt rồi cài lại** app nhiều lần để mỗi lần đều "chờ" hưởng trọn `maxOfflineCap` (8h mặc định) — một lỗ hổng kinh tế game thật sự, nghiêm trọng hơn nhiều so với việc thiếu 1 khoản thưởng chào mừng nhỏ ở lần chơi đầu.
+
+Đã có sẵn 1 test riêng khẳng định đúng hành vi này: `test/core/offline_progression_service_test.dart:46` — `'chưa từng claim -> pendingEarnings = 0 (không tự ăn free)'` — tên test tự nó đã nêu rõ lý do ("không tự ăn free"). Ngoài ra còn 1 test khác (dòng 53) verify kỹ hơn: lần `claim()` đầu tiên không được đọc đồng hồ thật 2 lần khác nhau (tránh 1 lớp bug tinh vi khác liên quan đến chính cơ chế fallback này) — cho thấy hành vi này đã được nghĩ kỹ và test kỹ từ trước, không phải oversight.
+
+Nếu muốn có "khoảnh khắc wow" chào mừng người chơi mới (đúng mối quan tâm chính đáng mà task nêu ra), cách đúng là 1 tính năng RIÊNG BIỆT ở tầng consumer app (ví dụ 1 "first-time welcome bonus" cố định, không liên quan đến offline-progression math) — không phải nới lỏng chính cơ chế chống-farm này, vì bất kỳ thay đổi nào ở `_lastClaimedMsOr` đều mở lại đúng lỗ hổng reinstall-to-farm mà code hiện tại đang chặn có chủ đích.
+
+Không sửa `lib/core/offline_progression_service.dart`, không sửa test — mọi thứ giữ nguyên.
+
+Tự chấm chất lượng điều tra: **9.5/10** — đọc trực tiếp source + doc comment (không suy đoán), tìm ra bằng chứng test hiện có xác nhận đúng ý định thiết kế, giải thích rõ TẠI SAO đây là quyết định đúng (không chỉ "có vẻ cố ý") kèm rủi ro cụ thể nếu sửa theo hướng task đề xuất, và gợi ý hướng đúng nếu người chơi mới vẫn cần welcome bonus. Trừ 0.5 vì không tự dựng 1 test bổ sung MỚI khẳng định lại kết luận này (dù không bắt buộc vì không sửa code — 2 test hiện có đã đủ chứng minh).
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-67-offline-progression-zero-first-time-reward.md` này trước khi làm. Đọc toàn bộ `lib/core/offline_progression_service.dart` và test hiện có TRƯỚC — xác nhận rõ đây có phải bug thật hay hành vi cố ý trước khi sửa bất kỳ gì. Nếu là bug thật, implement bằng TDD.
