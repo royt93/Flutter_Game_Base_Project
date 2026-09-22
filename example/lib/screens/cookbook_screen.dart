@@ -50,6 +50,7 @@ class _CookbookScreenState extends State<CookbookScreen> {
   late final GameTimeController _gameTime;
   late final HapticChoreographer _haptics;
   late final AssetPreloadCoordinator _preloader;
+  late final PerformanceTierService _performanceTier;
 
   int _checkpointCounter = 0;
 
@@ -114,6 +115,14 @@ class _CookbookScreenState extends State<CookbookScreen> {
     _preloader = AssetPreloadCoordinator(
       loader: (item) async => Future<void>.delayed(const Duration(milliseconds: 30)),
     );
+    // ENH-80: reuse the REAL instance main.dart's bootstrap already
+    // registered (the `performance` module) — same `.maybe ?? Get.put`
+    // pattern as _remoteConfig/_killSwitch above, so this demo exercises
+    // the exact tracker AuroraBgLayer/NeonAuraLayer would check, not a
+    // separate throwaway one.
+    _performanceTier =
+        PerformanceTierService.maybe ??
+        Get.put(PerformanceTierService(), permanent: true);
 
     if (!Get.isRegistered<PurchaseSeam>()) {
       Get.put<PurchaseSeam>(FakePurchaseSeam(), permanent: true);
@@ -158,6 +167,13 @@ class _CookbookScreenState extends State<CookbookScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: NeonBg(
+        // ENH-80: `aurora: true` stacks a real `AuroraBgLayer`
+        // (`ShaderTickerLayerState`) on top of the background — the same
+        // mechanism that checks `PerformanceTierService.maybe` and reacts
+        // live to tier changes. Without this, nothing in `example/` ever
+        // actually exercised that connection (a `null` service was always
+        // treated as "stay high tier forever").
+        aurora: true,
         child: SafeArea(
           child: Column(
             children: [
@@ -364,6 +380,24 @@ class _CookbookScreenState extends State<CookbookScreen> {
                         () {
                           final steps = _gameTime.tick(0.016);
                           return 'tick(0.016s) -> $steps step(s), elapsed=${_gameTime.elapsed.value}';
+                        },
+                      ),
+                      _tile(
+                        // ENH-80: feeds a full windowSize (default 60) of
+                        // slow (~33fps, below the default 40fps downgrade
+                        // threshold) synthetic frames through the REAL
+                        // service — exercises the exact hysteresis
+                        // mechanism AuroraBgLayer/NeonAuraLayer check, live,
+                        // through recordFrame()'s own documented testable
+                        // seam (no fake SchedulerBinding needed).
+                        'PerformanceTierService — feed synthetic slow frames (hysteresis)',
+                        () {
+                          final before = _performanceTier.tier.value;
+                          for (var i = 0; i < 60; i++) {
+                            _performanceTier.recordFrame(30);
+                          }
+                          return 'tier: ${before.name} -> ${_performanceTier.tier.value.name} '
+                              '(sau 60 frame ~33fps, dưới ngưỡng downgrade mặc định 40fps)';
                         },
                       ),
                       _tile(

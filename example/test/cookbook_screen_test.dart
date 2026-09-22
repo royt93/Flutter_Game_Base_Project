@@ -4,8 +4,10 @@ import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/checkpoint_coordinator.dart';
 import 'package:roy_casual_kit/core/locale_service.dart';
+import 'package:roy_casual_kit/core/performance_tier_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
+import 'package:roy_casual_kit/presentation/widgets/aurora_bg_layer.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit_example/screens/cookbook_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -158,6 +160,44 @@ void main() {
     expect(tester.takeException(), isNull);
     await _flushToast(tester);
   });
+
+  testWidgets(
+    // ENH-80: PerformanceTierService chưa từng được đăng ký/demo trong
+    // example — tile này feed đủ 1 windowSize frame chậm qua đúng service
+    // THẬT (`.maybe` tìm lại instance `main.dart`'s bootstrap `performance`
+    // module đã đăng ký), verify cơ chế hysteresis downgrade thật sự chạy,
+    // không chỉ được đăng ký cho có.
+    'PerformanceTierService tile: feed 60 frame chậm (~33fps) hạ tier '
+    'high -> low qua đúng service thật',
+    (tester) async {
+      await _boot();
+      await tester.pumpWidget(_wrap(const CookbookScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final service = PerformanceTierService.maybe;
+      expect(
+        service,
+        isNotNull,
+        reason: 'CookbookScreen phải tự đăng ký nếu bootstrap chưa có, '
+            'không được để null',
+      );
+      expect(service!.tier.value, PerformanceTier.high);
+      // Criterion 3: AuroraBgLayer (ShaderTickerLayerState — cơ chế thật sự
+      // check PerformanceTierService.maybe) phải thật sự có trong cây
+      // widget của CookbookScreen, không chỉ service được đăng ký suông.
+      expect(find.byType(AuroraBgLayer), findsOneWidget);
+
+      await _tapAndShowToast(
+        tester,
+        'PerformanceTierService — feed synthetic slow frames (hysteresis)',
+      );
+
+      expect(service.tier.value, PerformanceTier.low);
+      expect(find.textContaining('high -> low'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _flushToast(tester);
+    },
+  );
 
   testWidgets('MemoryWatchdog tile tracks and releases a real handle', (
     tester,

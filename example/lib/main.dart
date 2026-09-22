@@ -66,6 +66,7 @@ Future<void> app({bool withAudio = !isE2eTest}) async {
     RoyCasualKitModule.lifecycle,
     RoyCasualKitModule.reminders,
     RoyCasualKitModule.wakeLock,
+    RoyCasualKitModule.performance,
     if (withAudio) RoyCasualKitModule.audio,
   };
   await RoyCasualKit.initialize(
@@ -77,6 +78,11 @@ Future<void> app({bool withAudio = !isE2eTest}) async {
   // Giữ màn hình sáng suốt theo tuỳ chọn đã lưu (mặc định bật) — xem
   // SettingsScreen's toggle để bật/tắt.
   unawaited(WakeLockService.maybe?.init());
+  // ENH-80: bootstrap chỉ đăng ký service (permanent), không tự start()
+  // (đúng chủ đích — xem doc comment của PerformanceTierService.start()) —
+  // app thật cần tự gọi start() 1 lần nếu muốn cơ chế hysteresis FPS-gate
+  // chạy thật cho AuroraBgLayer/NeonAuraLayer.
+  PerformanceTierService.maybe?.start();
   final store = StorageService.to;
   dlog('app: bootstrap done');
   // IDEA-42: registered unconditionally (not gated by `withAudio`/module
