@@ -79,7 +79,11 @@ abstract class ShaderTickerLayerState<T extends StatefulWidget> extends State<T>
           // create it now, not just call `.start()` on a null ticker.
           _ticker = createTicker(_onTick)..start();
           _load();
-        } else {
+        } else if (!_ticker!.isTicking) {
+          // BUG-56: tier can change twice in a row without passing through
+          // `low` in between (it oscillates around a hysteresis threshold,
+          // e.g. medium -> high while already ticking) — calling start() on
+          // an already-active Ticker throws "A ticker was started twice."
           _ticker!.start();
         }
       });

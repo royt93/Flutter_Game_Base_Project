@@ -127,4 +127,61 @@ void main() {
     expect(SchedulerBinding.instance.transientCallbackCount, 0);
     expect(tester.takeException(), isNull);
   });
+
+  group('BUG-56: start() không được gọi khi ticker đang chạy', () {
+    testWidgets(
+      'ever() fire 2 lần liên tiếp cùng tier không phải low (trigger() ép '
+      'notify lại dù giá trị không đổi) trong lúc ticker đang chạy — '
+      'không throw "A ticker was started twice", ticker vẫn chạy bình thường',
+      (tester) async {
+        final service = PerformanceTierService();
+        Get.put(service);
+
+        await tester.pumpWidget(
+          MaterialApp(home: AuroraBgLayer(color: NeonTheme.indigo)),
+        );
+        await tester.pump();
+        expect(SchedulerBinding.instance.transientCallbackCount, 1);
+
+        // Đường thật qua PerformanceTierService.recordFrame() chỉ set
+        // tier.value khi CÓ transition thật, và Rx tự bỏ qua reassignment
+        // cùng giá trị (xem get package's RxImpl.set value) — nên để tái
+        // hiện đúng "ever() fire 2 lần liên tiếp với cùng giá trị không
+        // phải low trong khi ticker đang chạy" phải dùng trigger() (API
+        // hợp lệ trên Rx, force-notify bất kể giá trị có đổi hay không).
+        service.tier.trigger(PerformanceTier.high);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        expect(SchedulerBinding.instance.transientCallbackCount, 1);
+
+        service.tier.trigger(PerformanceTier.high);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        expect(SchedulerBinding.instance.transientCallbackCount, 1);
+      },
+    );
+
+    testWidgets(
+      'tier low -> high (ticker đang dừng) vẫn start lại đúng như cũ sau fix',
+      (tester) async {
+        final service = PerformanceTierService();
+        Get.put(service);
+
+        await tester.pumpWidget(
+          MaterialApp(home: AuroraBgLayer(color: NeonTheme.indigo)),
+        );
+        await tester.pump();
+
+        service.tier.value = PerformanceTier.low;
+        await tester.pump();
+        expect(SchedulerBinding.instance.transientCallbackCount, 0);
+
+        service.tier.value = PerformanceTier.high;
+        await tester.pump();
+
+        expect(SchedulerBinding.instance.transientCallbackCount, 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }
