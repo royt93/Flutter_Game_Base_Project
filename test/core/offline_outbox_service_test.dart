@@ -404,4 +404,48 @@ void main() {
       },
     );
   });
+
+  group('BUG-40: hydrate ngay trong constructor, không phụ thuộc onInit()', () {
+    test(
+      'khởi tạo trực tiếp (không gọi onInit()) vẫn đọc đúng items cũ',
+      () async {
+        final storage = StorageService(null);
+        final seed = _service(
+          storage: storage,
+          uploader: (p, k) async => const SyncConflict({}),
+        );
+        seed.enqueue(idempotencyKey: 'seed', payload: const {'v': 1});
+        await pumpEventQueue();
+
+        final direct = OfflineOutboxService(
+          storage: storage,
+          uploader: (p, k) async => const SyncConflict({}),
+        );
+
+        expect(direct.items, hasLength(1));
+        expect(direct.items.single.idempotencyKey, 'seed');
+      },
+    );
+
+    test(
+      'enqueue ngay sau khởi tạo trực tiếp không ghi đè mất item cũ',
+      () async {
+        final storage = StorageService(null);
+        final seed = _service(
+          storage: storage,
+          uploader: (p, k) async => const SyncConflict({}),
+        );
+        seed.enqueue(idempotencyKey: 'seed', payload: const {'v': 1});
+        await pumpEventQueue();
+
+        final direct = OfflineOutboxService(
+          storage: storage,
+          uploader: (p, k) async => const SyncConflict({}),
+        );
+        direct.enqueue(idempotencyKey: 'extra', payload: const {'v': 2});
+
+        expect(direct.items, hasLength(2));
+      },
+    );
+  });
 }

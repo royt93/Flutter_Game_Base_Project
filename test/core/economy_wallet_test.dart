@@ -265,4 +265,31 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.byType(CurrencyCounter), findsOneWidget);
   });
+
+  group('BUG-40: hydrate ngay trong constructor, không phụ thuộc onInit()', () {
+    test(
+      'khởi tạo trực tiếp (không gọi onInit()) vẫn đọc đúng balance cũ',
+      () async {
+        final storage = StorageService(null);
+        final seed = EconomyWallet(storage: storage)..onInit();
+        await seed.earn(currency: 'coin', amount: 25, transactionId: 'seed');
+
+        final direct = EconomyWallet(storage: storage);
+
+        expect(direct.balanceOf('coin'), 25);
+      },
+    );
+
+    test('earn ngay sau khởi tạo trực tiếp cộng dồn đúng, không mất data cũ', (
+    ) async {
+      final storage = StorageService(null);
+      final seed = EconomyWallet(storage: storage)..onInit();
+      await seed.earn(currency: 'coin', amount: 25, transactionId: 'seed');
+
+      final direct = EconomyWallet(storage: storage);
+      await direct.earn(currency: 'coin', amount: 5, transactionId: 'extra');
+
+      expect(direct.balanceOf('coin'), 30);
+    });
+  });
 }

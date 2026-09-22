@@ -172,6 +172,10 @@ class PlayerProgressionService extends GetxService {
     if (error != null) {
       throw ArgumentError(error.message);
     }
+    // BUG-40: see EconomyWallet's constructor for why this can't wait for
+    // onInit() alone.
+    _hydrate();
+    _recompute();
   }
 
   final StorageService storage;

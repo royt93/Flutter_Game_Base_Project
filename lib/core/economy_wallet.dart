@@ -12,7 +12,14 @@ class EconomyWallet extends GetxService {
     AsyncActionGuard? guard,
     String? storageKey,
   }) : _guard = guard ?? AsyncActionGuard(),
-       _key = storageKey ?? 'economy_wallet_v1';
+       _key = storageKey ?? 'economy_wallet_v1' {
+    // BUG-40: hydrate here too, not only in onInit() — onInit() only runs
+    // when this service is registered via Get.put/Get.lazyPut. A caller
+    // that constructs it directly (a local helper, a test, a consumer app
+    // that doesn't go through RoyCasualKit.initialize) would otherwise see
+    // an empty wallet even when storage already has a saved balance.
+    _hydrate();
+  }
   final StorageService storage;
   final AsyncActionGuard _guard;
   final balances = <String, int>{}.obs;

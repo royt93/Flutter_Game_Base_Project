@@ -295,4 +295,42 @@ void main() {
   test('.maybe: null khi chưa đăng ký, đúng instance khi đã Get.put', () {
     expect(RewardTransactionPipeline.maybe, isNull);
   });
+
+  group('BUG-40: hydrate ngay trong constructor, không phụ thuộc onInit()', () {
+    test(
+      'khởi tạo trực tiếp (không gọi onInit()) vẫn đọc đúng auditTrail cũ',
+      () async {
+        await pipeline.grant(
+          source: RewardSource.ad,
+          transactionId: 'seed',
+          lines: const [RewardLine(currency: 'coin', amount: 10)],
+        );
+
+        final direct = RewardTransactionPipeline(wallet: wallet);
+
+        expect(direct.auditTrail, hasLength(1));
+        expect(direct.auditTrail.single.transactionId, 'seed');
+      },
+    );
+
+    test(
+      'grant ngay sau khởi tạo trực tiếp không ghi đè mất auditTrail cũ',
+      () async {
+        await pipeline.grant(
+          source: RewardSource.ad,
+          transactionId: 'seed',
+          lines: const [RewardLine(currency: 'coin', amount: 10)],
+        );
+
+        final direct = RewardTransactionPipeline(wallet: wallet);
+        await direct.grant(
+          source: RewardSource.ad,
+          transactionId: 'extra',
+          lines: const [RewardLine(currency: 'coin', amount: 5)],
+        );
+
+        expect(direct.auditTrail, hasLength(2));
+      },
+    );
+  });
 }

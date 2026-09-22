@@ -348,4 +348,48 @@ void main() {
       },
     );
   });
+
+  group('BUG-40: hydrate ngay trong constructor, không phụ thuộc onInit()', () {
+    test(
+      'khởi tạo trực tiếp (không gọi onInit()) vẫn đọc đúng inventory cũ',
+      () async {
+        final storage = StorageService(null);
+        final seed = _service(storage: storage);
+        await seed.grant(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 3)],
+          transactionId: 'seed',
+        );
+
+        final direct = InventoryService(
+          storage: storage,
+          itemCatalog: _catalog,
+        );
+
+        expect(direct.snapshot.value.quantityOf('potion'), 3);
+      },
+    );
+
+    test(
+      'consume ngay sau khởi tạo trực tiếp trừ đúng trên data cũ, không mất',
+      () async {
+        final storage = StorageService(null);
+        final seed = _service(storage: storage);
+        await seed.grant(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 3)],
+          transactionId: 'seed',
+        );
+
+        final direct = InventoryService(
+          storage: storage,
+          itemCatalog: _catalog,
+        );
+        await direct.consume(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 1)],
+          transactionId: 'extra',
+        );
+
+        expect(direct.snapshot.value.quantityOf('potion'), 2);
+      },
+    );
+  });
 }

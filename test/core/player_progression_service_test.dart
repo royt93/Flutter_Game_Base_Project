@@ -271,4 +271,48 @@ void main() {
       );
     });
   });
+
+  group('BUG-40: hydrate ngay trong constructor, không phụ thuộc onInit()', () {
+    test(
+      'khởi tạo trực tiếp (không gọi onInit()) vẫn đọc đúng state cũ từ storage',
+      () async {
+        final storage = StorageService(null);
+        final seed = PlayerProgressionService(
+          storage: storage,
+          levelCurve: _validCurve,
+        )..onInit();
+        await seed.grantXp(amount: 150, transactionId: 'seed-tx');
+        expect(seed.snapshot.value.level, 2);
+
+        // Không gọi ..onInit() — mô phỏng 1 nơi khởi tạo trực tiếp ngoài GetX.
+        final direct = PlayerProgressionService(
+          storage: storage,
+          levelCurve: _validCurve,
+        );
+
+        expect(direct.snapshot.value.level, 2);
+        expect(direct.snapshot.value.totalXpEarned, 150);
+      },
+    );
+
+    test(
+      'grantXp ngay sau khi khởi tạo trực tiếp không ghi đè mất XP cũ',
+      () async {
+        final storage = StorageService(null);
+        final seed = PlayerProgressionService(
+          storage: storage,
+          levelCurve: _validCurve,
+        )..onInit();
+        await seed.grantXp(amount: 150, transactionId: 'seed-tx');
+
+        final direct = PlayerProgressionService(
+          storage: storage,
+          levelCurve: _validCurve,
+        );
+        await direct.grantXp(amount: 10, transactionId: 'extra-tx');
+
+        expect(direct.snapshot.value.totalXpEarned, 160);
+      },
+    );
+  });
 }
