@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:get/get.dart';
 
 import 'connectivity_coordinator.dart';
+import 'crash_reporter.dart';
 import 'storage_service.dart';
 import 'utils/clamped_clock.dart';
 import 'utils/retry_policy.dart';
@@ -284,8 +285,27 @@ class OfflineOutboxService extends GetxService {
     final next = [...items]
       ..removeWhere((i) => i.idempotencyKey == idempotencyKey);
     if (next.length >= capacity) {
-      var lowestIndex = 0;
-      for (var i = 1; i < next.length; i++) {
+      // BUG-44: eviction candidates exclude any item already parked in
+      // manualReview (never auto-discard something only a human decision
+      // can resolve) and must have STRICTLY LOWER priority than the
+      // incoming item (a low/equal-priority newcomer can't bump an
+      // existing higher-or-equal-priority item). If nothing qualifies,
+      // the outbox is genuinely full for this item — reject it loudly
+      // instead of silently evicting something it has no right to.
+      final evictable = [
+        for (var i = 0; i < next.length; i++)
+          if (!next[i].manualReview && next[i].priority < priority) i,
+      ];
+      if (evictable.isEmpty) {
+        return const SdkFailure(
+          kind: SdkErrorKind.validation,
+          message:
+              'Outbox is full and no lower-priority, non-manualReview item '
+              'can be evicted for this one',
+        );
+      }
+      var lowestIndex = evictable.first;
+      for (final i in evictable) {
         if (next[i].priority < next[lowestIndex].priority) lowestIndex = i;
       }
       next.removeAt(lowestIndex);
@@ -325,7 +345,7 @@ class OfflineOutboxService extends GetxService {
         if (!items.contains(item)) continue;
         final expiresAt = item.expiresAtMs;
         if (expiresAt != null && nowMsClamped(storage) > expiresAt) {
-          await _remove(item.idempotencyKey);
+          await _remove(item);
           continue;
         }
         await _attempt(item);
@@ -348,7 +368,7 @@ class OfflineOutboxService extends GetxService {
     final outcome = (result as SdkSuccess<SyncOutcome>).value;
     switch (outcome) {
       case SyncAck():
-        await _remove(item.idempotencyKey);
+        await _remove(item);
       case SyncConflict(remotePayload: final remote):
         await _handleConflict(item, remote);
     }
@@ -360,14 +380,33 @@ class OfflineOutboxService extends GetxService {
   ) async {
     switch (conflictPolicy) {
       case ConflictPolicy.reject:
-        await _remove(item.idempotencyKey);
+        await _remove(item);
       case ConflictPolicy.manual:
         await _markManualReview(item, remote);
       case ConflictPolicy.merge:
-        final merged = merger!(item.payload, remote);
+        // BUG-44: `merger` is consumer-supplied and can throw (a bad
+        // assumption about the payload shape, a bug in their merge logic)
+        // — without this, that exception would escape drain()'s for-loop
+        // entirely, aborting the whole drain pass (and, since enqueue()
+        // calls drain() via unawaited(...), potentially surfacing as an
+        // unhandled async error) instead of just failing THIS item's
+        // attempt the way a transient upload failure already does.
+        final Map<String, Object?> merged;
+        try {
+          merged = merger!(item.payload, remote);
+        } catch (error, stack) {
+          CrashReporter.maybe?.recordError(
+            error,
+            stack,
+            reason:
+                'OfflineOutboxService: ConflictMerger threw for '
+                '"${item.idempotencyKey}"',
+          );
+          return; // item stays queued untouched, retried on the next drain.
+        }
         final retryOutcome = await uploader(merged, item.idempotencyKey);
         if (retryOutcome is SyncAck) {
-          await _remove(item.idempotencyKey);
+          await _remove(item);
         } else if (retryOutcome is SyncConflict) {
           await _markManualReview(
             item.copyWith(payload: merged),
@@ -394,8 +433,18 @@ class OfflineOutboxService extends GetxService {
     await _persist();
   }
 
-  Future<void> _remove(String idempotencyKey) async {
-    items.removeWhere((i) => i.idempotencyKey == idempotencyKey);
+  /// Removes exactly [item] — matched by object identity, not
+  /// [OutboxItem.idempotencyKey] (BUG-44). `enqueue` replaces (not
+  /// mutates) the item for a given key, so a re-enqueue for the same key
+  /// while [item] is mid-upload in [drain] produces a DIFFERENT instance
+  /// in [items]; removing by key alone would delete that newer instance
+  /// instead of doing nothing to it (silently losing a real, newer
+  /// change). [OutboxItem] has no `==` override, so `next[i] == item` is
+  /// already identity comparison, same as [drain]'s own
+  /// `items.contains(item)` check — `identical` here is just explicit
+  /// about relying on that.
+  Future<void> _remove(OutboxItem item) async {
+    items.removeWhere((i) => identical(i, item));
     await _persist();
   }
 

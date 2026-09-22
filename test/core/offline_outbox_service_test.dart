@@ -448,4 +448,142 @@ void main() {
       },
     );
   });
+
+  group('BUG-44: race enqueue/drain — không xoá nhầm item mới cùng key', () {
+    test(
+      'enqueue lại CÙNG key với payload mới trong khi drain() đang upload '
+      'instance cũ: sau khi drain xong, item MỚI vẫn còn nguyên',
+      () async {
+        final uploadStarted = Completer<void>();
+        final releaseUpload = Completer<void>();
+        final service = _service(
+          uploader: (p, k) async {
+            uploadStarted.complete();
+            await releaseUpload.future;
+            return const SyncAck();
+          },
+        );
+        service.enqueue(idempotencyKey: 'k1', payload: const {'v': 'old'});
+
+        final drainFuture = service.drain();
+        await uploadStarted.future;
+
+        // Re-enqueue cùng key, payload mới, TRONG LÚC upload item cũ vẫn
+        // còn đang treo (chưa resolve).
+        service.enqueue(idempotencyKey: 'k1', payload: const {'v': 'new'});
+
+        releaseUpload.complete();
+        await drainFuture;
+
+        expect(service.items, hasLength(1));
+        expect(service.items.single.payload['v'], 'new');
+      },
+    );
+  });
+
+  group('BUG-44: eviction tôn trọng priority + không đụng manualReview', () {
+    test(
+      'không có ứng viên priority thấp hơn item mới: reject (SdkFailure), '
+      'không evict nhầm item priority cao/bằng',
+      () async {
+        final service = _service(
+          uploader: (p, k) async => const SyncAck(),
+          capacity: 2,
+        );
+        service.enqueue(idempotencyKey: 'a', payload: const {}, priority: 5);
+        service.enqueue(idempotencyKey: 'b', payload: const {}, priority: 5);
+
+        final result = service.enqueue(
+          idempotencyKey: 'c',
+          payload: const {},
+          priority: 1,
+        );
+
+        expect(result, isA<SdkFailure<void>>());
+        expect(service.items.map((i) => i.idempotencyKey), ['a', 'b']);
+      },
+    );
+
+    test(
+      'item manualReview không bao giờ bị tự động evict dù priority thấp nhất',
+      () async {
+        final service = _service(
+          uploader: (p, k) async => const SyncConflict({'server': true}),
+          conflictPolicy: ConflictPolicy.manual,
+          capacity: 2,
+        );
+        service.enqueue(
+          idempotencyKey: 'manual_item',
+          payload: const {},
+          priority: 0,
+        );
+        await service.drain(); // conflict -> manualReview = true
+        expect(service.manualReviewItems, hasLength(1));
+
+        service.enqueue(idempotencyKey: 'b', payload: const {}, priority: 10);
+        expect(service.items, hasLength(2)); // đã đầy capacity: 2
+
+        // Thêm 1 item nữa: ứng viên evict duy nhất về mặt priority là
+        // 'manual_item' (priority 0) — nhưng nó đang manualReview nên bị
+        // loại khỏi danh sách ứng viên; 'b' (priority 10) không evictable
+        // vì priority không thấp hơn item mới -> không còn ứng viên nào.
+        final result = service.enqueue(
+          idempotencyKey: 'c',
+          payload: const {},
+          priority: 1,
+        );
+
+        expect(result, isA<SdkFailure<void>>());
+        expect(service.manualReviewItems.single.idempotencyKey, 'manual_item');
+      },
+    );
+
+    test(
+      'vẫn evict đúng khi CÓ ứng viên hợp lệ (không đổi hành vi bình thường)',
+      () async {
+        final service = _service(
+          uploader: (p, k) async => const SyncAck(),
+          capacity: 2,
+        );
+        service.enqueue(idempotencyKey: 'low', payload: const {}, priority: 0);
+        service.enqueue(idempotencyKey: 'high', payload: const {}, priority: 5);
+
+        final result = service.enqueue(
+          idempotencyKey: 'new',
+          payload: const {},
+          priority: 1,
+        );
+
+        expect(result, isA<SdkSuccess<void>>());
+        expect(service.items.map((i) => i.idempotencyKey), ['high', 'new']);
+      },
+    );
+  });
+
+  group('BUG-44: merger ném exception không làm hỏng state outbox', () {
+    test(
+      'merger throw: item vẫn còn trong outbox nguyên vẹn, có thể retry lại '
+      'ở lần drain() kế tiếp',
+      () async {
+        var mergerCalls = 0;
+        final service = _service(
+          conflictPolicy: ConflictPolicy.merge,
+          merger: (local, remote) {
+            mergerCalls++;
+            if (mergerCalls == 1) throw StateError('merger bug giả lập');
+            return {'v': 999};
+          },
+          uploader: (p, k) async => const SyncConflict({'v': 10}),
+        );
+        service.enqueue(idempotencyKey: 'k1', payload: const {'v': 5});
+
+        await expectLater(service.drain(), completes);
+
+        expect(service.items, hasLength(1));
+        expect(service.items.single.idempotencyKey, 'k1');
+        expect(service.items.single.manualReview, isFalse);
+        expect(service.items.single.payload['v'], 5); // payload gốc, chưa đổi
+      },
+    );
+  });
 }
