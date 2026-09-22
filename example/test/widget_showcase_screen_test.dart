@@ -4,6 +4,9 @@
 // `hasFlag` is the one API that actually compiles identically on both.
 // ignore_for_file: deprecated_member_use
 
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +15,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
+import 'package:roy_casual_kit/core/deep_link_command_router.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/format.dart';
@@ -1377,6 +1381,132 @@ void main() {
     });
   });
 
+  group('BUG-61: mounted guard + DeepLinkCommandRouter handler leak', () {
+    // Không thể tái hiện race "dispose đúng lúc await đang treo" một cách
+    // đáng tin cậy bằng cách gọi thật `_inventoryGrant`/`_inventoryConsume`/
+    // deep-link `handleUri` qua UI: cả 2 đều chỉ `await` trên
+    // `StorageService` chạy trên `SharedPreferences` đã mock trong test —
+    // verify thực nghiệm (gọi trực tiếp `onTap!()` không qua `tester.tap()`,
+    // in log thứ tự hoàn thành) cho thấy Future hoàn tất TRƯỚC khi câu lệnh
+    // `pumpWidget` kế tiếp kịp chạy, dù không có `await` nào chen giữa —
+    // nghĩa là trong môi trường test này không có khoảng hở thời gian thật
+    // để dispose xen vào giữa. Thay vào đó verify bằng 2 cách bổ trợ nhau:
+    // (1) test cấu trúc — đọc thẳng source thật, xác nhận guard `mounted`
+    // đứng đúng trước cả 4 lời gọi `setState` mô tả trong task; (2) chứng
+    // minh tổng quát rằng pattern `if (!mounted) return;` thực sự ngăn được
+    // crash, dùng 1 widget tối giản với `Completer` tự kiểm soát được
+    // khoảng hở async thật (không phụ thuộc timing của SharedPreferences
+    // mock).
+    test(
+      'source thật: cả 4 vị trí (_inventoryGrant, _inventoryConsume, 2 chỗ '
+      'deep-link) có "if (!mounted) return;" ngay trước setState',
+      () {
+        final source = File(
+          'lib/screens/widget_showcase_screen.dart',
+        ).readAsStringSync();
+
+        final guardBeforeSetState = RegExp(
+          r'if \(!mounted\) return;\s*setState\(',
+        );
+        final matches = guardBeforeSetState.allMatches(source).length;
+
+        // 3 chỗ đã đúng từ trước (668/1529/2484 theo mô tả task) + 4 chỗ
+        // BUG-61 vừa fix (_inventoryGrant, _inventoryConsume, 2 deep-link)
+        // = ít nhất 7. Không assert đúng số tuyệt đối (file có thể có thêm
+        // chỗ khác dùng đúng pattern) — chỉ cần >= 7 để chứng minh 4 chỗ
+        // BUG-61 đã có guard mà không hard-code offset dòng dễ vỡ khi file
+        // đổi.
+        expect(matches, greaterThanOrEqualTo(7));
+      },
+    );
+
+    group('chứng minh tổng quát pattern "if (!mounted) return;" (Completer '
+        'tự kiểm soát khoảng hở async thật, không phụ thuộc SharedPreferences '
+        'mock)', () {
+      testWidgets(
+        'KHÔNG có guard: dispose giữa lúc await đang treo THẬT SỰ throw '
+        '"setState() called after dispose()" — chứng minh race window này '
+        'có thật, không phải suy đoán',
+        (tester) async {
+          final completer = Completer<void>();
+          await tester.pumpWidget(
+            MaterialApp(home: _UnguardedAsyncWidget(future: completer.future)),
+          );
+
+          // Await trực tiếp Future trả về từ trigger() (thay vì dựa vào
+          // tester.takeException()) — lỗi ném ra từ 1 microtask bên ngoài
+          // build/pump phase của framework được test binding coi là lỗi
+          // fail-ngay-lập-tức của cả test, không phải loại lỗi
+          // takeException() bắt được (loại đó chỉ dành cho lỗi ném ra
+          // trong chính build/layout/paint phase).
+          final triggered = tester
+              .state<_UnguardedAsyncWidgetState>(
+                find.byType(_UnguardedAsyncWidget),
+              )
+              .trigger();
+          await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+          completer.complete();
+
+          await expectLater(
+            triggered,
+            throwsA(
+              isA<FlutterError>().having(
+                (e) => e.toString(),
+                'message',
+                contains('setState() called after dispose()'),
+              ),
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'CÓ guard (đúng pattern BUG-61): cùng kịch bản dispose giữa await '
+        'nhưng không throw gì cả',
+        (tester) async {
+          final completer = Completer<void>();
+          await tester.pumpWidget(
+            MaterialApp(home: _GuardedAsyncWidget(future: completer.future)),
+          );
+
+          final triggered = tester
+              .state<_GuardedAsyncWidgetState>(
+                find.byType(_GuardedAsyncWidget),
+              )
+              .trigger();
+          await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+          completer.complete();
+
+          await expectLater(triggered, completes);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    });
+
+    testWidgets(
+      'mở rồi đóng WidgetShowcaseScreen nhiều lần: DeepLinkCommandRouter '
+      'không tích luỹ handler mồ côi cho "level"/"shop"',
+      (tester) async {
+        await _pumpShowcase(tester);
+        final router = DeepLinkCommandRouter.maybe!;
+        expect(router.handlerCountFor('level'), 1);
+        expect(router.handlerCountFor('shop'), 1);
+
+        await tester.pumpWidget(_wrap(const SizedBox())); // dispose lần 1
+        expect(router.handlerCountFor('level'), 0);
+        expect(router.handlerCountFor('shop'), 0);
+
+        await _pumpShowcase(tester); // mount lần 2
+        expect(router.handlerCountFor('level'), 1);
+        expect(router.handlerCountFor('shop'), 1);
+
+        await tester.pumpWidget(_wrap(const SizedBox())); // dispose lần 2
+        expect(router.handlerCountFor('level'), 0);
+        expect(router.handlerCountFor('shop'), 0);
+      },
+    );
+  });
+
   group('FEAT-59: AppVersionGate demo', () {
     testWidgets('mặc định scenario ok: không có overlay, thấy nội dung app', (
       tester,
@@ -1871,4 +2001,45 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+}
+
+/// BUG-61: tối giản hoá đúng shape lỗi gốc — `await` 1 Future do TEST tự
+/// kiểm soát (qua [Completer], không phụ thuộc timing của bất kỳ plugin
+/// mock nào) rồi `setState` KHÔNG có `if (!mounted) return;` guard.
+class _UnguardedAsyncWidget extends StatefulWidget {
+  const _UnguardedAsyncWidget({required this.future});
+  final Future<void> future;
+
+  @override
+  State<_UnguardedAsyncWidget> createState() => _UnguardedAsyncWidgetState();
+}
+
+class _UnguardedAsyncWidgetState extends State<_UnguardedAsyncWidget> {
+  Future<void> trigger() async {
+    await widget.future;
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox();
+}
+
+/// Cùng shape với [_UnguardedAsyncWidget], nhưng có đúng guard BUG-61.
+class _GuardedAsyncWidget extends StatefulWidget {
+  const _GuardedAsyncWidget({required this.future});
+  final Future<void> future;
+
+  @override
+  State<_GuardedAsyncWidget> createState() => _GuardedAsyncWidgetState();
+}
+
+class _GuardedAsyncWidgetState extends State<_GuardedAsyncWidget> {
+  Future<void> trigger() async {
+    await widget.future;
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox();
 }

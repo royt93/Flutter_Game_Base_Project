@@ -277,4 +277,78 @@ void main() {
       expect(order, ['high', 'low']);
     });
   });
+
+  group('BUG-61: unregisterHandler', () {
+    test(
+      'unregister đúng handler đã đăng ký — không còn được gọi sau đó',
+      () async {
+        final router = DeepLinkCommandRouter(routes: _routes)..markReady();
+        var calls = 0;
+        void handler(DeepLinkCommand _) => calls++;
+
+        router.registerHandler('level', handler);
+        await router.handleUri(Uri.parse('myapp://open/level/1'));
+        expect(calls, 1);
+
+        router.unregisterHandler('level', handler);
+        await router.handleUri(Uri.parse('myapp://open/level/2'));
+
+        expect(calls, 1); // vẫn 1, không tăng thêm.
+      },
+    );
+
+    test(
+      'unregister 1 handler của 1 type không ảnh hưởng handler khác đăng ký '
+      'cho type khác',
+      () async {
+        final router = DeepLinkCommandRouter(routes: _routes)..markReady();
+        var shopCalls = 0;
+        void levelHandler(DeepLinkCommand _) {}
+        void shopHandler(DeepLinkCommand _) => shopCalls++;
+
+        router.registerHandler('level', levelHandler);
+        router.registerHandler('shop', shopHandler);
+        router.unregisterHandler('level', levelHandler);
+
+        await router.handleUri(Uri.parse('myapp://open/shop'));
+
+        expect(shopCalls, 1);
+      },
+    );
+
+    test(
+      'unregister 1 trong nhiều handler CÙNG type: giữ nguyên các handler '
+      'còn lại của chính type đó',
+      () async {
+        final router = DeepLinkCommandRouter(routes: _routes)..markReady();
+        final order = <String>[];
+        void handlerA(DeepLinkCommand _) => order.add('A');
+        void handlerB(DeepLinkCommand _) => order.add('B');
+
+        router.registerHandler('level', handlerA, priority: 10);
+        router.registerHandler('level', handlerB, priority: 0);
+        router.unregisterHandler('level', handlerA);
+
+        await router.handleUri(Uri.parse('myapp://open/level/1'));
+
+        expect(order, ['B']);
+      },
+    );
+
+    test('unregister handler chưa từng đăng ký là no-op, không throw', () {
+      final router = DeepLinkCommandRouter(routes: _routes)..markReady();
+      expect(
+        () => router.unregisterHandler('level', (_) {}),
+        returnsNormally,
+      );
+    });
+
+    test('unregister trên type chưa từng có handler nào là no-op', () {
+      final router = DeepLinkCommandRouter(routes: _routes)..markReady();
+      expect(
+        () => router.unregisterHandler('nonexistent', (_) {}),
+        returnsNormally,
+      );
+    });
+  });
 }

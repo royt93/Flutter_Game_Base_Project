@@ -406,16 +406,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                 permanent: true,
               )
           ..markReady();
-    _deepLinks.registerHandler(
-      'level',
-      (command) => setState(
-        () => _deepLinkLog = 'level: mở level ${command.params['id']}',
-      ),
-    );
-    _deepLinks.registerHandler(
-      'shop',
-      (command) => setState(() => _deepLinkLog = 'shop: mở cửa hàng'),
-    );
+    _deepLinks.registerHandler('level', _onLevelDeepLink);
+    _deepLinks.registerHandler('shop', _onShopDeepLink);
     _versionGateRemoteConfig = RemoteConfigService(
       assetPath: 'assets/nonexistent_app_version_gate.json',
       fetchRemote: () async {
@@ -527,8 +519,27 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
         Get.put(ExperimentBucketingService(), permanent: true);
   }
 
+  // BUG-61: named methods (not inline closures) so dispose() can pass the
+  // exact same function reference to unregisterHandler — DeepLinkCommandRouter
+  // is a permanent singleton that outlives this screen, so a handler left
+  // registered here would keep calling setState on this State forever after
+  // it unmounts.
+  void _onLevelDeepLink(DeepLinkCommand command) {
+    if (!mounted) return;
+    setState(
+      () => _deepLinkLog = 'level: mở level ${command.params['id']}',
+    );
+  }
+
+  void _onShopDeepLink(DeepLinkCommand command) {
+    if (!mounted) return;
+    setState(() => _deepLinkLog = 'shop: mở cửa hàng');
+  }
+
   @override
   void dispose() {
+    _deepLinks.unregisterHandler('level', _onLevelDeepLink);
+    _deepLinks.unregisterHandler('shop', _onShopDeepLink);
     _dotsPageController.dispose();
     _screenShakeController.dispose();
     _tutorialSequenceController.dispose();
@@ -639,6 +650,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       lines: [InventoryLine(itemId: itemId, quantity: quantity)],
       transactionId: 'demo_grant_${DateTime.now().microsecondsSinceEpoch}',
     );
+    if (!mounted) return;
     setState(() {
       _inventoryStatus = result is SdkFailure<InventorySnapshot>
           ? 'Grant fail: ${result.message}'
@@ -651,6 +663,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       lines: [InventoryLine(itemId: itemId, quantity: quantity)],
       transactionId: 'demo_consume_${DateTime.now().microsecondsSinceEpoch}',
     );
+    if (!mounted) return;
     setState(() {
       _inventoryStatus = result is SdkFailure<InventorySnapshot>
           ? 'Consume fail: ${result.message}'
@@ -1431,6 +1444,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           }
                                           final result = await _deepLinks
                                               .handleUri(uri);
+                                          if (!mounted) return;
                                           setState(
                                             () => _deepLinkLog =
                                                 'outcome: ${result.outcome.name}',
@@ -1447,6 +1461,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           if (uri == null) return;
                                           final result = await _deepLinks
                                               .handleUri(uri);
+                                          if (!mounted) return;
                                           setState(
                                             () => _deepLinkLog =
                                                 'outcome: ${result.outcome.name}',

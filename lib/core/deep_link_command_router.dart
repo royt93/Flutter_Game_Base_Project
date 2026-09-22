@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import 'utils/clamped_clock.dart';
@@ -176,6 +177,30 @@ class DeepLinkCommandRouter extends GetxService {
     list.add((priority: priority, handler: handler));
     list.sort((a, b) => b.priority.compareTo(a.priority));
   }
+
+  /// Removes the specific [handler] previously registered for [commandType]
+  /// via [registerHandler] (matched by function identity) — a no-op if it
+  /// was never registered, or was already removed. This router is a
+  /// `Get.put(..., permanent: true)` singleton that outlives any single
+  /// screen (see class doc), so a caller registering from a `State.initState`
+  /// (e.g. a closure that calls `setState`) must unregister the SAME
+  /// handler in `dispose()`, or it stays reachable — and gets invoked on a
+  /// future deep link — forever after that State unmounts. Other handlers
+  /// registered for the SAME [commandType] (this router supports more than
+  /// one per type, dispatched by priority) are left untouched.
+  void unregisterHandler(String commandType, DeepLinkHandler handler) {
+    final list = _handlers[commandType];
+    if (list == null) return;
+    list.removeWhere((entry) => entry.handler == handler);
+    if (list.isEmpty) _handlers.remove(commandType);
+  }
+
+  /// Number of handlers currently registered for [commandType] — a testing
+  /// seam for proving a `registerHandler`/`unregisterHandler` pair (e.g. in
+  /// a `State`'s `initState`/`dispose`) doesn't leak an orphaned handler.
+  @visibleForTesting
+  int handlerCountFor(String commandType) =>
+      _handlers[commandType]?.length ?? 0;
 
   /// Marks the router ready to dispatch — drains every link queued while
   /// not ready, each exactly once. A second call is a no-op.
