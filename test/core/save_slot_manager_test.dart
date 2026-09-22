@@ -373,4 +373,84 @@ void main() {
       expect(() => manager.createSlot('B'), throwsStateError);
     });
   });
+
+  group('BUG-41: restoreSlotMeta', () {
+    test('slot id chưa tồn tại: thêm mới vào listSlots()', () {
+      final manager = SaveSlotManager();
+      const meta = SaveSlotMeta(
+        id: 'slot_999',
+        displayName: 'Restored',
+        createdAtMs: 1000,
+        lastPlayedAtMs: 2000,
+      );
+
+      manager.restoreSlotMeta(meta);
+
+      final slots = manager.listSlots();
+      expect(slots, hasLength(1));
+      expect(slots.single.id, 'slot_999');
+      expect(slots.single.displayName, 'Restored');
+    });
+
+    test(
+      'slot id ĐÃ tồn tại: thay thế (idempotent), không tạo entry trùng',
+      () {
+        final manager = SaveSlotManager();
+        final original = manager.createSlot('Alice');
+
+        manager.restoreSlotMeta(
+          SaveSlotMeta(
+            id: original.id,
+            displayName: 'Alice (restored)',
+            createdAtMs: original.createdAtMs,
+            lastPlayedAtMs: 9999,
+          ),
+        );
+
+        final slots = manager.listSlots();
+        expect(slots, hasLength(1)); // không nhân đôi
+        expect(slots.single.displayName, 'Alice (restored)');
+        expect(slots.single.lastPlayedAtMs, 9999);
+      },
+    );
+
+    test('không bị chặn bởi maxSlots — khác createSlot, restore dữ liệu cũ '
+        'không phải tạo mới nên không tính vào giới hạn', () {
+      final manager = SaveSlotManager(maxSlots: 1);
+      manager.createSlot('A'); // đã đạt maxSlots: 1
+      expect(manager.canCreateSlot, isFalse);
+
+      expect(
+        () => manager.restoreSlotMeta(
+          const SaveSlotMeta(
+            id: 'slot_restored',
+            displayName: 'B',
+            createdAtMs: 1,
+            lastPlayedAtMs: 1,
+          ),
+        ),
+        returnsNormally,
+      );
+      expect(manager.listSlots(), hasLength(2));
+    });
+
+    test(
+      'persist qua "restart": instance mới đọc lại đúng slot vừa restore',
+      () async {
+        final manager = SaveSlotManager();
+        manager.restoreSlotMeta(
+          const SaveSlotMeta(
+            id: 'slot_restored',
+            displayName: 'Restored',
+            createdAtMs: 1,
+            lastPlayedAtMs: 1,
+          ),
+        );
+        await manager.debugPendingSaves;
+
+        final restarted = SaveSlotManager();
+        expect(restarted.listSlots().map((s) => s.id), ['slot_restored']);
+      },
+    );
+  });
 }

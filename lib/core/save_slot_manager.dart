@@ -225,6 +225,29 @@ class SaveSlotManager extends GetxService {
     return 'slot_$candidate';
   }
 
+  /// Registers/updates [meta] directly in the slot list — BUG-41: used by
+  /// disaster-recovery restore (`DisasterRecoverySaveExport.applyRestore`)
+  /// right after it restores a slot's actual data via
+  /// `StorageService.importWithPrefix`, which only writes the slot's
+  /// namespaced keys and never touches this manager's own separate
+  /// `_metaStorageKey` list — without this, the restored data exists on
+  /// disk but [listSlots] never surfaces it (an orphaned slot).
+  ///
+  /// Unlike [createSlot], this is exempt from [maxSlots] (recovering data
+  /// that already existed is never capacity-limited) and is idempotent: a
+  /// slot already present with the same [SaveSlotMeta.id] is REPLACED by
+  /// [meta], never duplicated — covers restoring a backup over a slot
+  /// that's still there.
+  void restoreSlotMeta(SaveSlotMeta meta) {
+    final index = _indexOf(meta.id);
+    if (index == -1) {
+      _slotList.add(meta);
+    } else {
+      _slotList[index] = meta;
+    }
+    _scheduleSave();
+  }
+
   int _indexOf(String id) => _slotList.indexWhere((s) => s.id == id);
 
   void _validateExists(String id) {

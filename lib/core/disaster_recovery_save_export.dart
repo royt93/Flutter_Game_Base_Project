@@ -268,6 +268,12 @@ class DisasterRecoverySaveExport {
           slotManager.keyFor(entry.meta.id, ''),
           entry.data,
         );
+        // BUG-41: importWithPrefix only wrote this slot's namespaced data
+        // keys — SaveSlotManager's own separate metadata list (what
+        // listSlots() actually reads) never gets touched by that call, so
+        // without this the restored data would be on disk but invisible
+        // in the slot picker.
+        slotManager.restoreSlotMeta(entry.meta);
         _recoveryLog.add(
           RestoreLogEntry(
             slotId: entry.meta.id,

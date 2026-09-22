@@ -379,4 +379,116 @@ void main() {
       },
     );
   });
+
+  group('BUG-41: applyRestore đăng ký lại slot metadata (không mồ côi)', () {
+    test('round-trip đầy đủ: export -> xoá slot khỏi thiết bị (mô phỏng mất '
+        'app state) -> applyRestore -> listSlots() thấy đúng slot', () async {
+      await boot();
+      final slot = slotManager.createSlot('Alice');
+      await storage.setString(slotManager.keyFor(slot.id, 'coins'), '100');
+
+      final export = DisasterRecoverySaveExport(
+        storage: storage,
+        slotManager: slotManager,
+      );
+      final built =
+          (export.buildExport(slotIds: [slot.id], appVersion: '1.0')
+                  as SdkSuccess)
+              .value;
+      final signed = export.sign(built, 'secret');
+
+      // Mô phỏng mất toàn bộ app state cho slot này (data lẫn metadata) —
+      // deleteSlot xoá cả 2 (SaveSlotManager chỉ có 1 instance đọc/ghi
+      // đúng 1 StorageService.to dùng chung trong 1 test, nên không thể
+      // mô phỏng "thiết bị khác" bằng 1 SaveSlotManager thứ 2; deleteSlot
+      // trên cùng manager mới thật sự tạo lại đúng trạng thái "chưa từng
+      // biết slot này" mà applyRestore cần khôi phục).
+      await slotManager.deleteSlot(slot.id);
+      expect(slotManager.listSlots(), isEmpty);
+      expect(storage.getString(slotManager.keyFor(slot.id, 'coins')), isNull);
+
+      final preview =
+          (export.previewRestore(signed, 'secret') as SdkSuccess).value;
+      final result = await export.applyRestore(preview);
+
+      expect(result, isA<SdkSuccess<void>>());
+      final slots = slotManager.listSlots();
+      expect(slots, hasLength(1));
+      expect(slots.single.id, slot.id);
+      expect(slots.single.displayName, 'Alice');
+      expect(storage.getString(slotManager.keyFor(slot.id, 'coins')), '100');
+    });
+
+    test('restore vào slot ĐÃ có sẵn trong listSlots() (case backup/overwrite) '
+        'không tạo entry trùng', () async {
+      await boot();
+      final slot = slotManager.createSlot('Alice');
+      final export = DisasterRecoverySaveExport(
+        storage: storage,
+        slotManager: slotManager,
+      );
+      final built =
+          (export.buildExport(slotIds: [slot.id], appVersion: '1.0')
+                  as SdkSuccess)
+              .value;
+      final preview =
+          (export.previewRestore(export.sign(built, 's'), 's') as SdkSuccess)
+              .value;
+
+      await export.applyRestore(preview);
+
+      expect(slotManager.listSlots(), hasLength(1));
+    });
+
+    test('slot A restore ok, slot B throw giữa chừng trên SaveSlotManager '
+        'rỗng: A có metadata, B KHÔNG thêm metadata mồ côi', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final seedStorage = StorageService(prefs);
+      Get.put(seedStorage, permanent: true);
+      final seedManager = SaveSlotManager();
+      final slotA = seedManager.createSlot('Alice');
+      final slotB = seedManager.createSlot('Bob');
+      await seedStorage.setString(seedManager.keyFor(slotA.id, 'coins'), '111');
+      await seedStorage.setString(seedManager.keyFor(slotB.id, 'coins'), '222');
+
+      final exportBuilder = DisasterRecoverySaveExport(
+        storage: seedStorage,
+        slotManager: seedManager,
+      );
+      final built =
+          (exportBuilder.buildExport(
+                    slotIds: [slotA.id, slotB.id],
+                    appVersion: '1.0',
+                  )
+                  as SdkSuccess)
+              .value;
+      final signed = exportBuilder.sign(built, 's');
+
+      // Mô phỏng mất cả 2 slot (data + metadata) trước khi restore — cùng
+      // lý do đã giải thích ở test round-trip phía trên: 1 SaveSlotManager
+      // mới vẫn đọc chung StorageService.to đã có sẵn slotA/slotB, không
+      // mô phỏng được "chưa từng biết slot này" trừ khi xoá thật.
+      await seedManager.deleteSlot(slotA.id);
+      await seedManager.deleteSlot(slotB.id);
+      expect(seedManager.listSlots(), isEmpty);
+
+      final throwingStorage = _ThrowingStorageService(
+        prefs,
+        seedManager.keyFor(slotB.id, ''),
+      );
+      final crashExport = DisasterRecoverySaveExport(
+        storage: throwingStorage,
+        slotManager: seedManager,
+      );
+      final preview =
+          (crashExport.previewRestore(signed, 's') as SdkSuccess).value;
+
+      final result = await crashExport.applyRestore(preview);
+
+      expect(result, isA<SdkFailure<void>>());
+      final slots = seedManager.listSlots();
+      expect(slots.map((s) => s.id), [slotA.id]);
+    });
+  });
 }
