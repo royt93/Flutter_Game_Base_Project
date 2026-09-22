@@ -72,6 +72,68 @@ void main() {
       },
     );
 
+    group('BUG-69: validate intervalMs > 0', () {
+      test('intervalMs == 0: throw ArgumentError thay vì '
+          'IntegerDivisionByZeroException', () {
+        expect(
+          () => regenEnergy(
+            count: 2,
+            maxEnergy: 5,
+            lastMs: 1000,
+            nowMs: 999999,
+            intervalMs: 0,
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test('intervalMs âm cũng bị chặn tương tự', () {
+        expect(
+          () => regenEnergy(
+            count: 2,
+            maxEnergy: 5,
+            lastMs: 1000,
+            nowMs: 999999,
+            intervalMs: -100,
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test(
+        // Validate PHẢI chạy TRƯỚC nhánh early-return "đã đầy tim" — nếu
+        // không, intervalMs<=0 chỉ crash khi count CHƯA đầy, ẩn bug tuỳ
+        // trạng thái năng lượng hiện tại thay vì báo lỗi nhất quán.
+        'intervalMs == 0 vẫn throw NGAY CẢ KHI count đã đầy (validate chạy '
+        'trước early-return, không phụ thuộc trạng thái)',
+        () {
+          expect(
+            () => regenEnergy(
+              count: 5,
+              maxEnergy: 5,
+              lastMs: 1000,
+              nowMs: 999999,
+              intervalMs: 0,
+            ),
+            throwsArgumentError,
+          );
+        },
+      );
+
+      test('intervalMs > 0 hành vi không đổi (giữ nguyên như trước fix)', () {
+        final result = regenEnergy(
+          count: 2,
+          maxEnergy: 5,
+          lastMs: 1000,
+          nowMs: 1200,
+          intervalMs: 100,
+        );
+
+        expect(result.count, 4);
+        expect(result.lastMs, 1200);
+      });
+    });
+
     test('nowMs lùi lại trước lastMs (giả lập vặn đồng hồ): không tick âm', () {
       final result = regenEnergy(
         count: 2,

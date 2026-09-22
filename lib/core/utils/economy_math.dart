@@ -24,6 +24,14 @@ class EnergyRegenResult {
 /// ticks earned between [lastMs] and [nowMs], capped at [maxEnergy].
 /// A no-op (returns [count]/[lastMs] unchanged) when already full or when
 /// no whole tick has elapsed yet.
+///
+/// Throws [ArgumentError] for a non-positive [intervalMs] (BUG-69) — a
+/// misconfigured CMS/remote-config/game-balance JSON value would otherwise
+/// crash with a bare `IntegerDivisionByZeroException` from the `~/` below,
+/// and only when [count] isn't already at [maxEnergy] (the early-return
+/// above skips the division), making it crash unpredictably depending on
+/// current energy state. Validated unconditionally up front instead, same
+/// convention as [offlineEarnings] below.
 EnergyRegenResult regenEnergy({
   required int count,
   required int maxEnergy,
@@ -31,6 +39,9 @@ EnergyRegenResult regenEnergy({
   required int nowMs,
   required int intervalMs,
 }) {
+  if (intervalMs <= 0) {
+    throw ArgumentError.value(intervalMs, 'intervalMs', 'must be > 0');
+  }
   if (count >= maxEnergy) {
     return EnergyRegenResult(count: count, lastMs: lastMs);
   }
