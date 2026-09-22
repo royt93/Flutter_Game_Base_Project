@@ -21,10 +21,12 @@ import '../storage_service.dart';
 /// worse.
 
 /// Counts how many times a clock-rewind attempt was actually blocked by the
-/// clamp (i.e. `current <= maxSeen`, the device clock was NOT ahead of the
-/// stored watermark) in [nowMsClamped]/[todayEpochDayClamped]. Not
-/// incremented on the normal "clock moved forward" path. Exposed for the
-/// debug/QA overlay to show as a live diagnostic; tests reset it directly.
+/// clamp (i.e. `current < maxSeen`, the device clock went strictly
+/// backward) in [nowMsClamped]/[todayEpochDayClamped]. Not incremented on
+/// the normal "clock moved forward" path, nor on a same-value re-read
+/// (`current == maxSeen`, e.g. calling again later the same day) — neither
+/// is a rewind attempt (BUG-48). Exposed for the debug/QA overlay to show
+/// as a live diagnostic; tests reset it directly.
 int clockRewindBlockedCount = 0;
 
 /// Current millisecond timestamp, clamped to never go below the largest
@@ -44,7 +46,10 @@ int nowMsClamped([StorageService? storage]) {
     store.setInt(StorageKeys.maxMsSeen, current);
     return current;
   }
-  clockRewindBlockedCount++;
+  // BUG-48: `current == maxSeen` (same millisecond re-read, or — far more
+  // commonly for the day-granularity sibling below — a second call the
+  // same day) is NOT a rewind attempt; only `current < maxSeen` is.
+  if (current < maxSeen) clockRewindBlockedCount++;
   return maxSeen;
 }
 
@@ -56,6 +61,8 @@ int todayEpochDayClamped() {
     StorageService.to.setInt(StorageKeys.maxEpochDaySeen, current);
     return current;
   }
-  clockRewindBlockedCount++;
+  // BUG-48: repeated calls within the same day (`current == maxSeen`) are
+  // normal — only `current < maxSeen` is an actual blocked rewind.
+  if (current < maxSeen) clockRewindBlockedCount++;
   return maxSeen;
 }

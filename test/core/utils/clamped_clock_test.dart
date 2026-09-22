@@ -215,6 +215,23 @@ void main() {
 
       expect(clockRewindBlockedCount, 0);
     });
+
+    test(
+      // BUG-48: gọi lại nhiều lần TRONG CÙNG 1 ngày (current == maxSeen mọi
+      // lần) không phải rewind — trước fix, nhánh else tăng đếm mỗi lần gọi
+      // dù đồng hồ không hề bị tua lùi, làm sai lệch số liệu QA/anti-cheat.
+      'ngày: current == maxSeen (gọi lại cùng ngày) -> KHÔNG tăng đếm',
+      () async {
+        await _boot({StorageKeys.maxEpochDaySeen: _realDay});
+
+        todayEpochDayClamped();
+        todayEpochDayClamped();
+        todayEpochDayClamped();
+
+        expect(clockRewindBlockedCount, 0);
+      },
+    );
+
   });
 
   group('save hỏng', () {
