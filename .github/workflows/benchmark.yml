@@ -43,17 +43,20 @@ jobs:
       # GRADLE_USER_HOME's gradle.properties takes precedence over the
       # project's, so this overrides it for CI only.
       - name: Constrain Gradle heap for CI's shared RAM budget
-        # GRADLE_USER_HOME's gradle.properties takes precedence per-key
-        # over the project's, but a first attempt here that wrote ONLY the
-        # jvmargs override left android.useAndroidX/enableJetifier
-        # effectively unset for the build (checkDebugAarMetadata then
-        # failed: "android.useAndroidX property is not enabled") — so this
-        # copies the project's real gradle.properties and only tightens
-        # the heap, instead of replacing the file wholesale.
+        # example/android/gradle.properties is .gitignore'd (it used to
+        # hold signing secrets before those moved to app.properties — see
+        # .gitignore's comment there) so it doesn't exist at all on a
+        # fresh CI checkout; there's nothing to "preserve" here, this file
+        # is the ONLY gradle.properties this build ever sees. Has to spell
+        # out android.useAndroidX/enableJetifier itself, not just jvmargs,
+        # or Gradle's checkDebugAarMetadata fails on "androidX not enabled".
         run: |
           mkdir -p ~/.gradle
-          cp example/android/gradle.properties ~/.gradle/gradle.properties
-          sed -i 's/^org.gradle.jvmargs=.*/org.gradle.jvmargs=-Xmx3G -XX:MaxMetaspaceSize=1G/' ~/.gradle/gradle.properties
+          cat > ~/.gradle/gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx3G -XX:MaxMetaspaceSize=1G
+          android.useAndroidX=true
+          android.enableJetifier=true
+          EOF
           cat ~/.gradle/gradle.properties
 
       - name: Enable KVM for the emulator
