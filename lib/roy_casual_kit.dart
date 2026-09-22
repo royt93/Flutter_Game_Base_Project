@@ -68,6 +68,7 @@ export 'core/sdk_health_report.dart';
 export 'core/share_helper.dart';
 export 'core/storage_service.dart';
 export 'core/versioned_json_store.dart';
+export 'core/wake_lock_service.dart';
 export 'core/utils/accessibility_audit.dart';
 export 'core/utils/asset_license_manifest.dart';
 export 'core/utils/clamped_clock.dart';

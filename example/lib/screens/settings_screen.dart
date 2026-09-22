@@ -41,6 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final locale = Get.find<LocaleService>();
     final audio = AudioManager.maybe;
+    final wakeLock = WakeLockService.maybe;
     return Scaffold(
       body: NeonBg(
         child: SafeArea(
@@ -74,6 +75,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           trailing: CandyToggleSwitch(
                             value: !audio.muted.value,
                             onChanged: (_) => audio.toggleMute(),
+                          ),
+                        ),
+                      ),
+                    // Same null-outside-Obx reasoning as AudioManager above —
+                    // WakeLockService may not be registered (e.g. a test that
+                    // boots without the wakeLock module).
+                    if (wakeLock != null)
+                      Obx(
+                        () => CommonListTile(
+                          title: 'keep_screen_on'.tr,
+                          trailing: CandyToggleSwitch(
+                            value: wakeLock.enabled.value,
+                            onChanged: (v) => wakeLock.setEnabled(v),
                           ),
                         ),
                       ),

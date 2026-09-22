@@ -74,7 +74,8 @@ device boot test.
 `RoyCasualKit.initialize(config: RoyCasualKitConfig(modules: {...}))` is the
 one entry point a consumer app calls at startup instead of hand-rolling
 `Get.put` calls. `RoyCasualKitModule` is an enum of optional modules
-(`storage`, `locale`, `audio`, `reminders`, `performance`, `lifecycle`);
+(`storage`, `locale`, `audio`, `reminders`, `performance`, `lifecycle`,
+`wakeLock`);
 `initialize` registers each requested module's `GetxService` idempotently
 (skips if already registered — safe to call from a test that also does its
 own setup) and never throws: a module whose registration throws is recorded
@@ -131,6 +132,7 @@ this module enum over telling every consumer to call `Get.put` themselves.
 - **`game_session_controller.dart`** — `GameSessionController` (a `GetxController`), the single source of truth for one game session's phase (`GameSessionPhase`: loading/ready/playing/paused/won/lost) and pause reason (`GamePauseReason`).
 - **`consumer_contract_test_kit.dart`** — a deterministic, vendor-neutral test fixture for consumer contract tests: uses `StorageService`'s in-memory fallback and never touches network, audio, notifications, or a platform channel. Reach for this instead of hand-building fakes when testing that a consumer app integrates correctly with the kit's public surface.
 - **`in_app_review_helper.dart`** — `InAppReviewHelper`, decision logic for "should we ask for a store review right now" (the classic casual-game pattern: prompt right after a happy moment, not too often) — platform-neutral, no concrete review-prompt SDK baked in.
+- **`wake_lock_service.dart`** — `WakeLockService`, wraps `wakelock_plus` with a persisted on/off preference (`StorageKeys.wakeLockEnabled`, default `true`) instead of a consumer app unconditionally forcing the screen awake — registered via the `wakeLock` bootstrap module.
 - **Seams (platform-neutral, no concrete SDK dependency; a consumer app implements and registers its own adapter via `Get.put<X>(myAdapter, permanent: true)`)** — `crash_reporter.dart` (`CrashReporter`, since `dlog()` is debug-only/tree-shaken from release builds), `analytics_provider.dart` (`AnalyticsProvider` + a `NoopAnalyticsProvider` default), `cloud_save_provider.dart` (`CloudSaveProvider`, passed to `VersionedJsonStore.syncWith`), `remote_config_service.dart` (`RemoteConfigService`, feature-flag/remote-config seam), `purchase_seam.dart` (`PurchaseSeam` — minimal `buy`/`restorePurchases`/`isOwned` IAP seam, no `Noop*` default on purpose since silently no-op'ing a purchase would hide a real integration bug).
 
 ### 3. Widgets (`lib/presentation/widgets/`)

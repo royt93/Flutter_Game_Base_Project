@@ -62,7 +62,7 @@ this is the shape, not a full inventory:
   `RoyLifecycleCoordinator`, `GameSessionController`, `GameTimeController`,
   `ConnectivityCoordinator`, `DeepLinkCommandRouter`,
   `OnboardingCoordinatorService`, `maybeRequestReview` (in-app review helper),
-  `ReminderService`, `OfflineOutboxService`, `PersistentCooldownService`,
+  `ReminderService`, `WakeLockService`, `OfflineOutboxService`, `PersistentCooldownService`,
   `AssetPreloadCoordinator`, `PlatformCapabilityRegistry`, `MemoryWatchdog`.
 - **i18n, audio, haptics, theme** — `AppTranslations`/`LocaleService`,
   `AudioManager`, `fireHaptic` + `HapticChoreographer`, `NeonTheme` design
@@ -523,6 +523,19 @@ final reminders = ReminderService();
 Get.put(reminders, permanent: true); // or the bootstrap `reminders` module
 await reminders.scheduleNext(delay: const Duration(hours: 24), title: 'Come back!', body: 'Your energy is full.');
 ```
+
+#### WakeLockService
+```dart
+final wakeLock = WakeLockService(); // or the bootstrap `wakeLock` module
+Get.put(wakeLock, permanent: true);
+await wakeLock.init(); // restores the saved on/off preference and applies it
+await wakeLock.setEnabled(false); // e.g. a settings toggle
+```
+Keeps the screen from auto-locking while `enabled` (defaults to `true` —
+opt-out, matching the classic casual-game expectation) — persists the
+choice via `StorageKeys.wakeLockEnabled` so a consumer app's own settings
+screen can expose the toggle instead of the kit forcing the screen awake
+unconditionally.
 
 #### OfflineOutboxService
 ```dart

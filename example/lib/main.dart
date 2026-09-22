@@ -7,7 +7,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'package:roy_casual_kit/roy_casual_kit.dart';
 import 'package:roy_casual_kit/core/debug_log.dart';
@@ -57,8 +56,6 @@ Future<void> app({bool withAudio = !isE2eTest}) async {
   // vùng cử chỉ mép trên (vốn nuốt tap nút X ở HUD).
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  // Giữ màn hình sáng suốt vòng đời app, không chỉ lúc chơi.
-  WakelockPlus.enable();
 
   dlog('app: loadAppVersion start');
   await loadAppVersion();
@@ -70,6 +67,7 @@ Future<void> app({bool withAudio = !isE2eTest}) async {
     RoyCasualKitModule.locale,
     RoyCasualKitModule.lifecycle,
     RoyCasualKitModule.reminders,
+    RoyCasualKitModule.wakeLock,
     if (withAudio) RoyCasualKitModule.audio,
   };
   await RoyCasualKit.initialize(
@@ -78,6 +76,9 @@ Future<void> app({bool withAudio = !isE2eTest}) async {
       preferences: await _loadPrefs(),
     ),
   );
+  // Giữ màn hình sáng suốt theo tuỳ chọn đã lưu (mặc định bật) — xem
+  // SettingsScreen's toggle để bật/tắt.
+  unawaited(WakeLockService.maybe?.init());
   final store = StorageService.to;
   dlog('app: bootstrap done');
   // IDEA-42: registered unconditionally (not gated by `withAudio`/module

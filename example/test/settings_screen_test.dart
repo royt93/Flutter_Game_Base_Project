@@ -7,6 +7,7 @@ import 'package:roy_casual_kit/core/locale_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/pseudo_locale.dart';
+import 'package:roy_casual_kit/core/wake_lock_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/list_tile_row.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/toggle_switch.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
@@ -157,6 +158,50 @@ void main() {
       expect(audio.muted.value, isTrue);
       expect(tester.widget<CandyToggleSwitch>(soundSwitch).value, isFalse);
     });
+  });
+
+  group('SettingsScreen with WakeLockService registered', () {
+    testWidgets('renders the keep-screen-on switch and toggles it', (
+      tester,
+    ) async {
+      await _boot();
+      final wakeLock = Get.put(WakeLockService(), permanent: true);
+      expect(wakeLock.enabled.value, isTrue);
+
+      await tester.pumpWidget(_wrap(const SettingsScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(tester.takeException(), isNull);
+      final row = find.widgetWithText(CommonListTile, 'Keep Screen On');
+      expect(row, findsOneWidget);
+      final wakeLockSwitch = find.descendant(
+        of: row,
+        matching: find.byType(CandyToggleSwitch),
+      );
+      expect(tester.widget<CandyToggleSwitch>(wakeLockSwitch).value, isTrue);
+
+      await tester.tap(wakeLockSwitch);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(wakeLock.enabled.value, isFalse);
+      expect(tester.widget<CandyToggleSwitch>(wakeLockSwitch).value, isFalse);
+    });
+  });
+
+  group('SettingsScreen without WakeLockService registered', () {
+    testWidgets(
+      'does not crash and does not render the keep-screen-on row',
+      (tester) async {
+        await _boot();
+        expect(Get.isRegistered<WakeLockService>(), isFalse);
+
+        await tester.pumpWidget(_wrap(const SettingsScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Keep Screen On'), findsNothing);
+      },
+    );
   });
 
   group('SettingsScreen dark mode toggle', () {

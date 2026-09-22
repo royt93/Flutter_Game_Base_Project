@@ -9,6 +9,7 @@ import 'neon_theme.dart';
 import 'performance_tier_service.dart';
 import 'reminder_service.dart';
 import 'storage_service.dart';
+import 'wake_lock_service.dart';
 
 /// Optional modules that [RoyCasualKit.initialize] can register.
 enum RoyCasualKitModule {
@@ -18,6 +19,7 @@ enum RoyCasualKitModule {
   reminders,
   performance,
   lifecycle,
+  wakeLock,
 }
 
 /// Immutable SDK bootstrap configuration.
@@ -150,6 +152,15 @@ class RoyCasualKit {
               _owned.add(() async {
                 if (Get.isRegistered<RoyLifecycleCoordinator>()) {
                   await Get.delete<RoyLifecycleCoordinator>(force: true);
+                }
+              });
+            }
+          case RoyCasualKitModule.wakeLock:
+            if (!Get.isRegistered<WakeLockService>()) {
+              Get.put(WakeLockService(), permanent: config.permanent);
+              _owned.add(() async {
+                if (Get.isRegistered<WakeLockService>()) {
+                  await Get.delete<WakeLockService>(force: true);
                 }
               });
             }
