@@ -202,6 +202,71 @@ void main() {
         expect(service.snapshot.value.quantityOf('potion'), 3);
       },
     );
+
+    test(
+      // BUG-51: consume() used to rebuild `_slots` from a slotId-sorted
+      // scratch, silently discarding a player's own drag-reorder
+      // (`moveSlot`) on every consume — even when the consumed item's slot
+      // is emptied and removed, the SURVIVING slots' relative order must
+      // stay whatever the player last arranged, not reset to slotId order.
+      'consume giữ nguyên thứ tự hiển thị đã moveSlot, không reset về slotId (BUG-51)',
+      () async {
+        final service = _service(capacity: 8);
+        await service.grant(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 8)],
+          transactionId: 'tx1',
+        );
+        await service.grant(
+          lines: const [InventoryLine(itemId: 'sword', quantity: 1)],
+          transactionId: 'tx2',
+        );
+        // maxStack potion=10: đầy slot potion cũ lên 10 (dùng 2), 3 dư tạo
+        // slot potion thứ 2. Thứ tự sau 3 grant: [potion(10), sword(1),
+        // potion(3)].
+        await service.grant(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 5)],
+          transactionId: 'tx3',
+        );
+        final beforeMove = service.snapshot.value.slots;
+        expect(beforeMove.map((s) => s.itemId).toList(), [
+          'potion',
+          'sword',
+          'potion',
+        ]);
+        final potion10Id = beforeMove[0].slotId;
+        final swordId = beforeMove[1].slotId;
+        final potion3Id = beforeMove[2].slotId;
+
+        // Người chơi kéo-thả: đổi chỗ sword và slot potion(3) -> thứ tự
+        // hiển thị mong muốn: [potion(10), potion(3), sword].
+        await service.moveSlot(fromSlotId: swordId, toSlotId: potion3Id);
+        expect(
+          service.snapshot.value.slots.map((s) => s.slotId).toList(),
+          [potion10Id, potion3Id, swordId],
+        );
+
+        // Tiêu 12 potion: rút hết slot slotId thấp nhất trước (potion10Id,
+        // 10) rồi rút tiếp 2 từ potion3Id (còn lại 1) — sword không đụng.
+        final result = await service.consume(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 12)],
+          transactionId: 'tx4',
+        );
+
+        expect(result, isA<SdkSuccess<InventorySnapshot>>());
+        expect(service.snapshot.value.quantityOf('potion'), 1);
+        expect(service.snapshot.value.quantityOf('sword'), 1);
+        // Thứ tự hiển thị player đã sắp (potion trước sword) PHẢI giữ
+        // nguyên sau consume — không bị reset về thứ tự slotId.
+        expect(
+          service.snapshot.value.slots.map((s) => s.itemId).toList(),
+          ['potion', 'sword'],
+        );
+        expect(
+          service.snapshot.value.slots.firstWhere((s) => s.itemId == 'potion').slotId,
+          potion3Id,
+        );
+      },
+    );
   });
 
   group('InventoryService: equip/unequip', () {

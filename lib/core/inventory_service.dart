@@ -321,21 +321,32 @@ class InventoryService extends GetxService {
       }
     }
 
-    var scratch = [..._slots]..sort((a, b) => a.slotId.compareTo(b.slotId));
+    // BUG-51: which stack a consume takes from must stay lowest-slotId-first
+    // (deterministic), but that's a DIFFERENT thing from the resulting
+    // display order — rebuilding `_slots` straight from a slotId-sorted
+    // scratch (the old code) silently reset the player's own drag-reorder
+    // (`moveSlot`) every single consume. Compute how much to take from each
+    // slot using a slotId-sorted view, but apply it against `_slots`' own
+    // (possibly player-reordered) order.
+    final consumedBySlotId = <int, int>{};
     for (final line in lines) {
       var remaining = line.quantity;
-      final next = <InventorySlot>[];
-      for (final slot in scratch) {
-        if (remaining <= 0 || slot.itemId != line.itemId) {
-          next.add(slot);
-          continue;
-        }
-        final take = math.min(slot.quantity, remaining);
+      final candidates = _slots.where((s) => s.itemId == line.itemId).toList()
+        ..sort((a, b) => a.slotId.compareTo(b.slotId));
+      for (final slot in candidates) {
+        if (remaining <= 0) break;
+        final available = slot.quantity - (consumedBySlotId[slot.slotId] ?? 0);
+        if (available <= 0) continue;
+        final take = math.min(available, remaining);
+        consumedBySlotId[slot.slotId] = (consumedBySlotId[slot.slotId] ?? 0) + take;
         remaining -= take;
-        final leftover = slot.quantity - take;
-        if (leftover > 0) next.add(slot.copyWith(quantity: leftover));
       }
-      scratch = next;
+    }
+
+    final scratch = <InventorySlot>[];
+    for (final slot in _slots) {
+      final leftover = slot.quantity - (consumedBySlotId[slot.slotId] ?? 0);
+      if (leftover > 0) scratch.add(slot.copyWith(quantity: leftover));
     }
 
     _slots
