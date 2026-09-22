@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:roy_casual_kit/roy_casual_kit.dart';
-import 'package:roy_casual_kit/core/debug_log.dart';
 import 'package:roy_casual_kit_example/main.dart' as app;
 import 'package:roy_casual_kit_example/screens/cookbook_screen.dart';
 import 'package:roy_casual_kit_example/screens/home_screen.dart';

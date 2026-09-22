@@ -9,8 +9,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:roy_casual_kit/roy_casual_kit.dart';
-import 'package:roy_casual_kit/core/debug_log.dart';
-import 'package:roy_casual_kit/presentation/widgets/debug_qa_overlay.dart';
 
 import 'screens/home_screen.dart';
 
