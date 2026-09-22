@@ -350,4 +350,113 @@ void main() {
       },
     );
   });
+
+  group('BUG-49: maxConcurrent <= 0 bị chặn ngay tại constructor', () {
+    test('maxConcurrent: 0 throw ArgumentError ngay, không treo preload', () {
+      expect(
+        () => AssetPreloadCoordinator(loader: (item) async {}, maxConcurrent: 0),
+        throwsArgumentError,
+      );
+    });
+
+    test('maxConcurrent: -1 cũng bị chặn tương tự', () {
+      expect(
+        () =>
+            AssetPreloadCoordinator(loader: (item) async {}, maxConcurrent: -1),
+        throwsArgumentError,
+      );
+    });
+
+    test(
+      'validate là if/throw thường, không phải assert() — không thể bị strip ở release build '
+      '(không có cách chạy dart --no-enable-asserts cho package này vì `get` kéo theo dart:ui qua '
+      'package:flutter, nên chứng minh bằng cấu trúc: check chạy vô điều kiện, không nằm trong assert())',
+      () {
+        // Nếu implementation dùng lại `assert(...)`, test này vẫn pass vì
+        // flutter test luôn chạy với assert bật — giá trị thật của test này
+        // là ở review code (xem ## Quyết định trong task file), test ở đây
+        // chỉ giữ hành vi throw không bị đổi ngược lại trong tương lai.
+        expect(
+          () => AssetPreloadCoordinator(
+            loader: (item) async {},
+            maxConcurrent: 0,
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
+  });
+
+  group('BUG-49: sceneId tường minh — unload đúng scene, không nhầm', () {
+    test(
+      'preload scene A rồi scene B (overlap "shared") — unloadScene(A) chỉ unload phần riêng của A, '
+      'giữ shared (B còn giữ ref); unloadScene(B) sau đó mới unload nốt shared',
+      () async {
+        final unloaded = <String>[];
+        final coordinator = _coordinator(
+          loader: (item) async {},
+          unloader: (item) => unloaded.add(item.id),
+        );
+        const sceneA = [
+          AssetManifestItem(id: 'shared', kind: AssetKind.image, path: 'a.png'),
+          AssetManifestItem(id: 'onlyA', kind: AssetKind.image, path: 'a2.png'),
+        ];
+        const sceneB = [
+          AssetManifestItem(id: 'shared', kind: AssetKind.image, path: 'a.png'),
+          AssetManifestItem(id: 'onlyB', kind: AssetKind.image, path: 'b2.png'),
+        ];
+
+        await coordinator.preload(sceneA, sceneId: 'A');
+        await coordinator.preload(sceneB, sceneId: 'B');
+
+        // B được preload sau A (nên là "scene gần nhất"), nhưng ta chủ
+        // động unload A trước bằng sceneId tường minh — phải đúng A, không
+        // rơi vào hành vi cũ "luôn unload scene gần nhất nhất".
+        coordinator.unloadScene('A');
+        expect(unloaded, ['onlyA']);
+        expect(coordinator.isLoaded('shared'), isTrue);
+        expect(coordinator.isLoaded('onlyB'), isTrue);
+
+        coordinator.unloadScene('B');
+        expect(unloaded, ['onlyA', 'shared', 'onlyB']);
+      },
+    );
+  });
+
+  group('BUG-49: retryFailed không double-count refcount', () {
+    test(
+      'retryFailed() lặp lại nhiều lần trên cùng 1 scene vẫn chỉ cần đúng 1 lần unloadScene() để giải phóng hết',
+      () async {
+        final unloaded = <String>[];
+        var shouldFail = true;
+        final coordinator = _coordinator(
+          loader: (item) async {
+            if (item.id == 'flaky' && shouldFail) throw Exception('load lỗi');
+          },
+          unloader: (item) => unloaded.add(item.id),
+        );
+
+        final first = await coordinator.preload(const [
+          AssetManifestItem(id: 'stable', kind: AssetKind.image, path: 'a.png'),
+          AssetManifestItem(id: 'flaky', kind: AssetKind.image, path: 'b.png'),
+        ]);
+        expect(first, isA<SdkFailure<void>>());
+
+        // retry nhiều lần trong khi vẫn còn fail — mỗi lần đều re-process
+        // 'stable' (đã load, cache hit) — không được cộng dồn refCount.
+        await coordinator.retryFailed();
+        await coordinator.retryFailed();
+
+        shouldFail = false;
+        final last = await coordinator.retryFailed();
+        expect(last, isA<SdkSuccess<void>>());
+
+        // Chỉ 1 lần unloadScene() phải giải phóng hết — nếu refCount bị
+        // cộng dồn sai qua các lần retry, 'stable' sẽ còn refCount > 1 và
+        // không xuất hiện trong unloaded sau lần gọi duy nhất này.
+        coordinator.unloadScene();
+        expect(unloaded..sort(), ['flaky', 'stable']);
+      },
+    );
+  });
 }

@@ -71,15 +71,41 @@ typedef AssetUnloaderFn = void Function(AssetManifestItem item);
 /// **Cancel/retry**: [cancel] stops starting new waves — everything already
 /// in flight is still awaited to completion (never abandoned, so nothing
 /// leaks), only items that hadn't started yet are left unprocessed.
-/// [retryFailed] re-runs [preload] against the last manifest — already-
-/// cached items are skipped again via the same cache, so only the
-/// previously-failed (and anything they blocked) actually re-attempts.
+/// [retryFailed] re-runs [preload] against [sceneId]'s own stored manifest
+/// (the most recently preloaded scene when omitted) — already-cached items
+/// are skipped again via the same cache, so only the previously-failed
+/// (and anything they blocked) actually re-attempts, and reusing that same
+/// scene id means none of them get double-counted in the ref count below.
+///
+/// **Scenes**: each [preload] call is its own scene, identified by
+/// `sceneId` (an id you choose, so you can target a specific earlier scene
+/// later) or an auto-generated one when omitted (matching the id of the
+/// single implicit "current scene" every call site that doesn't need
+/// multiple concurrent scenes already uses). An asset shared by more than
+/// one scene is loaded once but reference-counted per scene: [unloadScene]
+/// on one scene only calls [unloader] for an id once no other scene still
+/// holds a reference to it.
 class AssetPreloadCoordinator extends GetxService {
   AssetPreloadCoordinator({
     required this.loader,
     this.unloader,
     this.maxConcurrent = 4,
-  }) : assert(maxConcurrent >= 1, 'maxConcurrent must be >= 1');
+  }) {
+    // BUG-49: was `assert(maxConcurrent >= 1, ...)` — stripped entirely in
+    // release builds. A `maxConcurrent` sourced from remote/CMS config
+    // could then arrive as 0 (or negative) in production with the check
+    // compiled out, and `preload`'s inner `batch.length < maxConcurrent`
+    // condition would never be true — `batch` stays empty forever, `ready`
+    // never shrinks, and the outer loop spins forever without completing.
+    // A plain `if`/`throw` is never stripped, in any build mode.
+    if (maxConcurrent < 1) {
+      throw ArgumentError.value(
+        maxConcurrent,
+        'maxConcurrent',
+        'must be >= 1',
+      );
+    }
+  }
 
   final AssetLoaderFn loader;
   final AssetUnloaderFn? unloader;
@@ -95,13 +121,37 @@ class AssetPreloadCoordinator extends GetxService {
   final _refCounts = <String, int>{};
   final _loadedIds = <String>{};
   final _failedIds = <String>{};
-  List<AssetManifestItem> _lastManifest = const [];
+
+  // BUG-49: was a single `_lastManifest` field — `unloadScene()` could only
+  // ever target whichever scene was preloaded most recently, so preloading
+  // scene A then scene B left no way to unload A specifically (or to
+  // unload B while keeping A). Each scene now gets its own id (caller-
+  // supplied via `preload(..., sceneId: ...)`, or an auto-generated one
+  // when omitted — which is what every existing single-scene call site
+  // still does, unchanged) and its own manifest + ref-count bookkeeping.
+  final Map<String, List<AssetManifestItem>> _manifestsByScene = {};
+  // assetId -> the set of scene ids currently holding a reference to it.
+  // Re-preloading the SAME scene id (e.g. retryFailed()) must not add a
+  // second reference for an id that scene already holds one for — that
+  // was the other half of this bug: retryFailed() re-ran the full last
+  // manifest through preload(), and every already-cached id in it got its
+  // refCount bumped again on every retry, so a single unloadScene() call
+  // could never actually free an asset that had been retried even once.
+  final Map<String, Set<String>> _sceneHoldsId = {};
+  String? _lastSceneId;
+  int _autoSceneCounter = 0;
+
   bool _cancelRequested = false;
 
   bool isLoaded(String id) => _loadedIds.contains(id);
 
-  Future<SdkResult<void>> preload(List<AssetManifestItem> manifest) async {
-    _lastManifest = manifest;
+  Future<SdkResult<void>> preload(
+    List<AssetManifestItem> manifest, {
+    String? sceneId,
+  }) async {
+    final resolvedSceneId = sceneId ?? '__auto_${_autoSceneCounter++}';
+    _manifestsByScene[resolvedSceneId] = manifest;
+    _lastSceneId = resolvedSceneId;
     _cancelRequested = false;
     progress.value = 0.0;
 
@@ -152,7 +202,10 @@ class AssetPreloadCoordinator extends GetxService {
           }
 
           if (ok) {
-            _refCounts[id] = (_refCounts[id] ?? 0) + 1;
+            final holders = _sceneHoldsId.putIfAbsent(id, () => <String>{});
+            if (holders.add(resolvedSceneId)) {
+              _refCounts[id] = (_refCounts[id] ?? 0) + 1;
+            }
           }
           if (ok || !item.required) {
             doneWeight += item.weight;
@@ -204,24 +257,43 @@ class AssetPreloadCoordinator extends GetxService {
   /// (never abandoned), items that hadn't started stay unprocessed.
   void cancel() => _cancelRequested = true;
 
-  Future<SdkResult<void>> retryFailed() => preload(_lastManifest);
+  /// Re-runs [preload] for [sceneId] (the most recently preloaded scene
+  /// when omitted) against its own stored manifest — reusing the SAME
+  /// scene id, so ids that scene already holds a reference for don't get
+  /// double-counted (see `_sceneHoldsId` above). Already-loaded ids are
+  /// cache hits inside [preload] and never call [loader] again; only ids
+  /// still in [_failedIds] (or newly blocked by one) actually retry.
+  Future<SdkResult<void>> retryFailed({String? sceneId}) async {
+    final target = sceneId ?? _lastSceneId;
+    if (target == null) return const SdkSuccess<void>(null);
+    return preload(_manifestsByScene[target] ?? const [], sceneId: target);
+  }
 
-  /// Decrements the reference count of every item in the last [preload]d
-  /// manifest, calling [unloader] only for the ones that reach 0 — a
-  /// still-referenced-elsewhere asset survives.
-  void unloadScene() {
-    for (final item in _lastManifest) {
+  /// Decrements the reference count of every item in [sceneId]'s manifest
+  /// (the most recently preloaded scene when omitted), calling [unloader]
+  /// only for the ones that reach 0 — a still-referenced-by-another-scene
+  /// asset survives.
+  void unloadScene([String? sceneId]) {
+    final target = sceneId ?? _lastSceneId;
+    if (target == null) return;
+    final manifest = _manifestsByScene[target];
+    if (manifest == null) return;
+    for (final item in manifest) {
+      final holders = _sceneHoldsId[item.id];
+      if (holders == null || !holders.remove(target)) continue;
       final current = _refCounts[item.id];
       if (current == null) continue;
       final next = current - 1;
       if (next <= 0) {
         _refCounts.remove(item.id);
         _loadedIds.remove(item.id);
+        _sceneHoldsId.remove(item.id);
         unloader?.call(item);
       } else {
         _refCounts[item.id] = next;
       }
     }
+    _manifestsByScene.remove(target);
   }
 
   SdkFailure<void>? _validate(List<AssetManifestItem> manifest) {
