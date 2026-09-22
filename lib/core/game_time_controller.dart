@@ -16,7 +16,18 @@ class GameClock {
   GameClock({
     this.maxDeltaPerTick = const Duration(milliseconds: 250),
     Duration? fixedStep,
-  }) : _fixedStep = fixedStep;
+  }) : _fixedStep = fixedStep {
+    // BUG-54: with no validation, `fixedStep: Duration.zero` (or negative)
+    // made `advance()`'s `while (_accumulator >= fixedStep) { _accumulator
+    // -= fixedStep; ... }` loop condition permanently true while never
+    // shrinking `_accumulator` — an infinite loop hanging the UI thread the
+    // moment the game called `advance()`. A plain `if`/`throw` (not
+    // `assert`) so it still fires in release builds.
+    final step = fixedStep;
+    if (step != null && step <= Duration.zero) {
+      throw ArgumentError.value(fixedStep, 'fixedStep', 'must be > 0');
+    }
+  }
 
   /// Caps a single [advance] call's delta — without this, a real delta
   /// spanning an app backgrounded for minutes/hours would jump [elapsed] by
@@ -121,8 +132,13 @@ class GameTimeController extends GetxService {
   int tick(double dtSeconds) {
     final owningSession = session;
     if (owningSession != null) {
+      // BUG-54: was `phase == GameSessionPhase.paused` — only that exact
+      // phase froze the clock, so `elapsed` kept advancing during
+      // loading/ready/won/lost too (e.g. a win/lose overlay still rendered
+      // on top of a live game loop). Any phase other than `playing` must
+      // freeze it.
       _clock.paused =
-          owningSession.snapshot.value.phase == GameSessionPhase.paused;
+          owningSession.snapshot.value.phase != GameSessionPhase.playing;
     }
     final steps = _clock.advance(
       Duration(

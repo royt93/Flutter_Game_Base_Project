@@ -153,4 +153,118 @@ void main() {
       expect(GameTimeController.maybe, isNull);
     });
   });
+
+  group('BUG-54: fixedStep <= 0 bị chặn ngay tại constructor', () {
+    test(
+      'GameClock(fixedStep: Duration.zero) throw ngay, không treo advance()',
+      () {
+        expect(
+          () => GameClock(fixedStep: Duration.zero),
+          throwsArgumentError,
+        );
+      },
+    );
+
+    test('fixedStep âm cũng bị chặn tương tự', () {
+      expect(
+        () => GameClock(fixedStep: const Duration(milliseconds: -1)),
+        throwsArgumentError,
+      );
+    });
+
+    test(
+      'fixedStep dương hợp lệ (không đổi hành vi bình thường)',
+      () {
+        expect(
+          () => GameClock(fixedStep: const Duration(milliseconds: 1)),
+          returnsNormally,
+        );
+      },
+    );
+
+    test(
+      'không truyền fixedStep (null) vẫn hợp lệ như cũ',
+      () {
+        expect(() => GameClock(), returnsNormally);
+      },
+    );
+  });
+
+  group(
+    'BUG-54: GameTimeController.tick() chỉ chạy đúng ở phase playing',
+    () {
+      test(
+        'phase loading (chưa markReady): tick() không tăng elapsed',
+        () {
+          final session = GameSessionController();
+          expect(session.snapshot.value.phase, GameSessionPhase.loading);
+          final controller = GameTimeController(session: session);
+
+          controller.tick(1);
+
+          expect(controller.elapsed.value, Duration.zero);
+        },
+      );
+
+      test(
+        'phase ready (đã markReady, chưa start): tick() không tăng elapsed',
+        () {
+          final session = GameSessionController()..markReady();
+          final controller = GameTimeController(session: session);
+
+          controller.tick(1);
+
+          expect(controller.elapsed.value, Duration.zero);
+        },
+      );
+
+      test('phase won: tick() không tăng elapsed thêm nữa', () {
+        final session = GameSessionController()
+          ..markReady()
+          ..start();
+        final controller = GameTimeController(
+          session: session,
+          maxDeltaPerTick: const Duration(seconds: 10),
+        );
+        controller.tick(0.5);
+        expect(controller.elapsed.value, const Duration(milliseconds: 500));
+
+        session.win();
+        controller.tick(1);
+
+        expect(controller.elapsed.value, const Duration(milliseconds: 500));
+      });
+
+      test('phase lost: tick() không tăng elapsed thêm nữa', () {
+        final session = GameSessionController()
+          ..markReady()
+          ..start();
+        final controller = GameTimeController(
+          session: session,
+          maxDeltaPerTick: const Duration(seconds: 10),
+        );
+        controller.tick(0.5);
+        expect(controller.elapsed.value, const Duration(milliseconds: 500));
+
+        session.lose();
+        controller.tick(1);
+
+        expect(controller.elapsed.value, const Duration(milliseconds: 500));
+      });
+
+      test('phase playing: tick() vẫn tăng elapsed bình thường', () {
+        final session = GameSessionController()
+          ..markReady()
+          ..start();
+        final controller = GameTimeController(
+          session: session,
+          maxDeltaPerTick: const Duration(seconds: 10),
+        );
+
+        controller.tick(1);
+
+        expect(controller.elapsed.value, const Duration(seconds: 1));
+      });
+    },
+  );
 }
