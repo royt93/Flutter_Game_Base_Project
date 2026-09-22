@@ -2,22 +2,22 @@
   {
     "name": "example_app_boot_wall_ms",
     "source": "realDevice",
-    "value": 32318.0,
+    "value": 365905.0,
     "unit": "ms",
-    "recordedAtMs": 1789913922550
+    "recordedAtMs": 1790048837933
   },
   {
     "name": "object_pool_allocation_reduction_percent",
     "source": "hostHeadless",
     "value": 97.5,
     "unit": "%",
-    "recordedAtMs": 1790043756932
+    "recordedAtMs": 1790048471994
   },
   {
     "name": "object_pool_pooled_elapsed_us",
     "source": "hostHeadless",
-    "value": 15666.0,
+    "value": 23816.0,
     "unit": "us",
-    "recordedAtMs": 1790043756932
+    "recordedAtMs": 1790048471994
   }
 ]
