@@ -211,7 +211,14 @@ class SeasonEventService extends GetxService {
       // Computed from the SAME `now`/`startMs` already read above — never
       // re-reads the clock, so this can't disagree with `start`/`end`
       // even in theory.
-      isActive: now - startMs < length.inMilliseconds,
+      //
+      // BUG-66: was `now - startMs < length.inMilliseconds` alone — for a
+      // window that hasn't started yet (`now < startMs`, e.g. an anchor
+      // restored from a save/cloud sync ahead of this device's own clamped
+      // clock), that difference is negative and always < a positive
+      // length, so isActive wrongly reported true for a future event. Must
+      // check BOTH bounds: already started AND not yet ended.
+      isActive: now >= startMs && now - startMs < length.inMilliseconds,
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/season_event_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/versioned_json_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Pauses `setString` until [gate] (a [Completer] the test controls)
@@ -348,6 +349,52 @@ void main() {
           'e',
           length: length,
           cooldown: cooldown,
+        );
+        expect(window.isActive, isFalse);
+      },
+    );
+
+    test(
+      // BUG-66: `isActive` trước fix chỉ kiểm tra `now - startMs <
+      // length` — với sự kiện CHƯA bắt đầu (`now < startMs`, ví dụ anchor
+      // được khôi phục từ 1 save/cloud sync đi trước đồng hồ đã kẹp của
+      // chính thiết bị này), hiệu số đó âm, luôn nhỏ hơn length dương ->
+      // isActive sai thành true. Seed thẳng 1 anchor TƯƠNG LAI vào đúng
+      // storage key `SeasonEventService` dùng (không qua `nowMsClamped()`
+      // của chính service, mô phỏng đúng "anchor tới từ nơi khác") rồi mới
+      // gọi `currentWindow` với `now` ở HIỆN TẠI (trước anchor).
+      'isActive == false khi now CHƯA tới startMs (sự kiện tương lai, chưa diễn ra) (BUG-66)',
+      () async {
+        await setNowMs(_realMs);
+        const eventId = 'future_event';
+        // Lệch nhỏ (< 1 chu kỳ length+cooldown) để cycleIndex tính ra đúng
+        // 0 và startMs == đúng anchor đã seed, không bị vòng chu kỳ cuốn
+        // sang cycle khác (dễ hiểu/verify hơn 1 offset nhiều ngày).
+        final futureAnchorMs = _realMs + const Duration(minutes: 10).inMilliseconds;
+
+        final seedStore = VersionedJsonStore<Map<String, int>>(
+          storage: storage,
+          key: StorageKeys.seasonEventAnchorsV1,
+          schemaVersion: 1,
+          toJson: (value) => value,
+          fromJson: (json) => json.map(
+            (key, value) => MapEntry(key, value as int),
+          ),
+          migrate: (fromVersion, json) => json,
+        );
+        await seedStore.save({eventId: futureAnchorMs});
+
+        final service = SeasonEventService();
+        final window = service.currentWindow(
+          eventId,
+          length: length,
+          cooldown: cooldown,
+        );
+
+        expect(
+          window.start.millisecondsSinceEpoch,
+          futureAnchorMs,
+          reason: 'anchor tương lai đã seed phải được đọc lại đúng, không bị ghi đè',
         );
         expect(window.isActive, isFalse);
       },
