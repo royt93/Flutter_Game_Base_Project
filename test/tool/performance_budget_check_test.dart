@@ -158,5 +158,49 @@ void main() {
       expect(byName['example_app_boot_wall_ms']!['value'], 12345.0);
       expect(byName['example_app_boot_wall_ms']!['recordedAtMs'], 1000);
     }, timeout: const Timeout(Duration(seconds: 30)));
+
+    test(
+      '--deviceMetricName chỉ đổi tên khi --device được đo — không '
+      '--device thì baseline không đổi tên/giá trị gì cả',
+      () async {
+        final baselinePath = '${tempDir.path}/baseline.json';
+        File(baselinePath).writeAsStringSync(
+          jsonEncode([
+            {
+              'name': 'example_app_boot_wall_ms',
+              'source': 'realDevice',
+              'value': 12345.0,
+              'unit': 'ms',
+              'recordedAtMs': 1000,
+            },
+          ]),
+        );
+
+        final result = await _run([
+          'snapshot',
+          '--baseline=$baselinePath',
+          '--deviceMetricName=example_app_boot_wall_ms_emulator',
+        ]);
+
+        expect(
+          result.exitCode,
+          0,
+          reason: '${result.stdout}\n${result.stderr}',
+        );
+        final written =
+            jsonDecode(File(baselinePath).readAsStringSync())
+                as List<Object?>;
+        final names = written
+            .cast<Map<String, Object?>>()
+            .map((e) => e['name'])
+            .toSet();
+        // No --device given -> _measureRealDevice never runs -> the
+        // renamed metric is never written, the original name's old value
+        // survives untouched.
+        expect(names, isNot(contains('example_app_boot_wall_ms_emulator')));
+        expect(names, contains('example_app_boot_wall_ms'));
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
   });
 }

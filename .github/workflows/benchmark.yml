@@ -7,6 +7,15 @@ name: Benchmark (real-device performance snapshot)
 # the refreshed baseline + README numbers instead of pushing to main
 # directly, so a human still reviews before it lands.
 #
+# The device-boot metric is recorded as `example_app_boot_wall_ms_emulator`
+# (--deviceMetricName= below), a DIFFERENT name than the physical-device
+# metric `example_app_boot_wall_ms` that tool/performance_budget_policy.json
+# actually gates on — an emulator's cold-boot wall time on a shared CI
+# runner is routinely 5-10x a real device's (confirmed: ~366s here vs ~32s
+# on a Pixel 7 Pro), so it must never feed the same policy-gated number.
+# The emulator metric is still written to the baseline (and shown in
+# README) for visibility, just never checked.
+#
 # "Allow GitHub Actions to create and approve pull requests" (Settings →
 # Actions → General) was OFF until 2026-09-22 — turned on and verified via
 # a real dispatch, so the PR step below is fully unattended now.
@@ -78,7 +87,7 @@ jobs:
           # script), so a `for`/`if` block can't span multiple lines here —
           # everything below is deliberately one physical line.
           script: |
-            device_id=""; for i in $(seq 1 10); do device_id=$(adb devices | awk '$2=="device"{print $1; exit}'); if [ -n "$device_id" ]; then break; fi; echo "Waiting for a fully-booted adb device (attempt $i/10)..."; sleep 3; done; if [ -z "$device_id" ]; then echo "::warning::No adb device reached 'device' state after retries -- realDevice metric will fall back to the committed baseline."; adb devices; fi; dart run tool/performance_budget_check.dart snapshot --device="$device_id"
+            device_id=""; for i in $(seq 1 10); do device_id=$(adb devices | awk '$2=="device"{print $1; exit}'); if [ -n "$device_id" ]; then break; fi; echo "Waiting for a fully-booted adb device (attempt $i/10)..."; sleep 3; done; if [ -z "$device_id" ]; then echo "::warning::No adb device reached 'device' state after retries -- realDevice metric will fall back to the committed baseline."; adb devices; fi; dart run tool/performance_budget_check.dart snapshot --device="$device_id" --deviceMetricName=example_app_boot_wall_ms_emulator
 
       - name: Update README performance numbers from baseline
         run: dart run tool/update_readme_benchmarks.dart
