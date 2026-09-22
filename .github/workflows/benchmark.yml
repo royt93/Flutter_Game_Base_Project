@@ -7,13 +7,9 @@ name: Benchmark (real-device performance snapshot)
 # the refreshed baseline + README numbers instead of pushing to main
 # directly, so a human still reviews before it lands.
 #
-# NOTE (found 2026-09-21, running regenerate-goldens.yml for the first
-# time): this repo has "Allow GitHub Actions to create and approve pull
-# requests" turned OFF (Settings → Actions → General). The commit + push
-# below still succeeds either way — only the auto-PR step fails with "not
-# permitted". If that happens here too, `git fetch` and
-# `gh pr create --base main --head chore/benchmark-snapshot` manually, or
-# turn that repo setting on so this becomes fully unattended.
+# "Allow GitHub Actions to create and approve pull requests" (Settings →
+# Actions → General) was OFF until 2026-09-22 — turned on and verified via
+# a real dispatch, so the PR step below is fully unattended now.
 
 on:
   schedule:
@@ -56,7 +52,17 @@ jobs:
           profile: pixel_5
           disable-animations: true
           script: |
-            device_id=$(adb devices | awk '/^emulator-/{print $1; exit}')
+            device_id=""
+            for i in $(seq 1 10); do
+              device_id=$(adb devices | awk '$2=="device"{print $1; exit}')
+              if [ -n "$device_id" ]; then break; fi
+              echo "Waiting for a fully-booted adb device (attempt $i/10)..."
+              sleep 3
+            done
+            if [ -z "$device_id" ]; then
+              echo "::warning::No adb device reached 'device' state after retries — realDevice metric will fall back to the committed baseline."
+              adb devices
+            fi
             dart run tool/performance_budget_check.dart snapshot --device="$device_id"
 
       - name: Update README performance numbers from baseline
