@@ -1,6 +1,6 @@
 name: roy_casual_kit
 description: "A casual/idle-game SDK for Flutter (GetX + Flame): storage, i18n, audio, haptics, reminders, economy/progression, live-ops tooling, and a candy-styled widget kit."
-version: 0.2.3
+version: 0.2.4
 homepage: https://github.com/royt93/Flutter_Game_Base_Project
 repository: https://github.com/royt93/Flutter_Game_Base_Project
 issue_tracker: https://github.com/royt93/Flutter_Game_Base_Project/issues
@@ -47,6 +47,7 @@ dependencies:
   flutter_local_notifications: ^20.1.0
   timezone: ^0.10.1
   qr_flutter: ^4.1.0
+  wakelock_plus: ^1.4.0
 
 dev_dependencies:
   flutter_test:

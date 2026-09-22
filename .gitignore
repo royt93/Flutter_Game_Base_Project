@@ -2,6 +2,7 @@
 *.class
 *.log
 *.hprof
+test/widget/goldens/failures/
 # ENH-57: these are intentionally checked in (device smoke-test evidence),
 # not accidentally-ignored — un-ignoring them here so `dart pub publish
 # --dry-run` stops flagging a checked-in/gitignore-status mismatch. They're

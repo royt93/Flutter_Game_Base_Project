@@ -12,6 +12,7 @@ class StorageKeys {
   static const String audioMuted = 'audio_muted';
   static const String themeDark = 'theme_dark';
   static const String colorBlindSafe = 'color_blind_safe';
+  static const String wakeLockEnabled = 'wake_lock_enabled';
 
   // 4 extra keys beyond the base project's own 3: lib/core/haptics.dart and
   // lib/core/utils/clamped_clock.dart read/write them directly.
