@@ -30,7 +30,11 @@ class ObjectPool<T> {
   final int maxCapacity;
 
   final _free = <T>[];
-  final _active = <T>{};
+  // BUG-53: `<T>{}` is a plain LinkedHashSet, keyed on T's own `==`/
+  // `hashCode` — the class doc above promises IDENTITY, not equality, so a
+  // value-equal T (e.g. two Vector2(0, 0)) would collide and defeat
+  // double-release detection. `Set<T>.identity()` matches the doc.
+  final _active = Set<T>.identity();
 
   int _totalCreated = 0;
   int _peakActive = 0;

@@ -9,6 +9,21 @@ class _Particle {
   bool disposed = false;
 }
 
+/// Overrides `==`/`hashCode` by [id] — same shape as a Flame `Vector2` or
+/// any value-equality object the class doc explicitly calls out as a case
+/// [ObjectPool] must not confuse (BUG-53).
+class _ValueEqualParticle {
+  _ValueEqualParticle(this.id);
+  final int id;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _ValueEqualParticle && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
+}
+
 void main() {
   group('ObjectPool: acquire/release cơ bản', () {
     test('acquire khi pool rỗng: gọi create() tạo mới', () {
@@ -93,6 +108,68 @@ void main() {
       },
     );
   });
+
+  group(
+    // BUG-53: _active phải dùng IDENTITY, không phải equality — 1 T override
+    // `==`/`hashCode` theo giá trị (như Flame Vector2) không được phép làm
+    // 2 instance active khác nhau bị nhầm là "cùng 1 object" trong pool.
+    'BUG-53: identity, không phải equality, quyết định object nào đang active',
+    () {
+      test(
+        'acquire 2 object khác identity nhưng bằng nhau theo == : '
+        'activeCount đếm đúng 2, không bị Set gộp theo equality',
+        () {
+          final pool = ObjectPool<_ValueEqualParticle>(
+            create: () => _ValueEqualParticle(1),
+          );
+          final a = pool.acquire();
+          final b = pool.acquire();
+
+          expect(a == b, isTrue, reason: 'value-equal theo thiết kế test');
+          expect(identical(a, b), isFalse);
+          expect(pool.activeCount, 2);
+        },
+      );
+
+      test(
+        'release 1 trong 2 object value-equal không ảnh hưởng object kia '
+        'còn active — cả 2 vẫn release được độc lập, đúng identity',
+        () {
+          final pool = ObjectPool<_ValueEqualParticle>(
+            create: () => _ValueEqualParticle(1),
+          );
+          final a = pool.acquire();
+          final b = pool.acquire();
+
+          pool.release(a);
+          expect(
+            pool.activeCount,
+            1,
+            reason: 'release(a) chỉ bỏ đúng a, b vẫn active',
+          );
+
+          // b vẫn thật sự active (đúng identity) -> release được, không
+          // throw StateError như thể đã bị release rồi.
+          expect(() => pool.release(b), returnsNormally);
+        },
+      );
+
+      test(
+        'double-release ĐÚNG CÙNG 1 identity vẫn bị phát hiện dù có object '
+        'khác value-equal cũng từng active',
+        () {
+          final pool = ObjectPool<_ValueEqualParticle>(
+            create: () => _ValueEqualParticle(1),
+          );
+          final a = pool.acquire();
+          pool.acquire(); // b: value-equal với a nếu cùng counter mốc, giữ active
+          pool.release(a);
+
+          expect(() => pool.release(a), throwsStateError);
+        },
+      );
+    },
+  );
 
   group('ObjectPool: capacity/dispose/prewarm', () {
     test(
