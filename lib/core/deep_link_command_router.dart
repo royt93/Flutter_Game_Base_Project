@@ -75,7 +75,9 @@ SdkResult<DeepLinkCommand> parseDeepLink(
     }
     if (!matched) continue;
 
-    params.addAll(uri.queryParameters);
+    // BUG-50: query params must never override a path param of the same
+    // name (see the class doc comment above) — `putIfAbsent`, not `addAll`.
+    uri.queryParameters.forEach((k, v) => params.putIfAbsent(k, () => v));
     return SdkSuccess(
       DeepLinkCommand(type: route.commandType, params: params, raw: uri),
     );

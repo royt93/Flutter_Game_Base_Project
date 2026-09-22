@@ -46,6 +46,25 @@ void main() {
       expect(command.params, {'id': '42', 'campaign': 'fb'});
     });
 
+    test(
+      // BUG-50: query key trùng tên path param không được ghi đè — đúng
+      // như doc comment của DeepLinkCommand đã cam kết.
+      'query param cùng tên path param KHÔNG được đè giá trị path (BUG-50)',
+      () {
+        final result = parseDeepLink(
+          Uri.parse('myapp://open/level/42?id=999'),
+          _routes,
+        );
+
+        expect(result.isSuccess, isTrue);
+        expect(
+          result.value!.params['id'],
+          '42',
+          reason: 'path param phải thắng, query id=999 chỉ là nhiễu/tấn công',
+        );
+      },
+    );
+
     test('link hợp lệ khớp route "shop" (không có path param)', () {
       final result = parseDeepLink(Uri.parse('myapp://open/shop'), _routes);
 
