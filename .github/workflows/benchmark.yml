@@ -37,6 +37,16 @@ jobs:
       - run: flutter pub get
         working-directory: example
 
+      # example/android/gradle.properties sets -Xmx8G, sized for a real dev
+      # machine — on this runner (shared with the already-running emulator)
+      # that OOMs Gradle's dependency-transform step with "Java heap space".
+      # GRADLE_USER_HOME's gradle.properties takes precedence over the
+      # project's, so this overrides it for CI only.
+      - name: Constrain Gradle heap for CI's shared RAM budget
+        run: |
+          mkdir -p ~/.gradle
+          echo "org.gradle.jvmargs=-Xmx3G -XX:MaxMetaspaceSize=1G" > ~/.gradle/gradle.properties
+
       - name: Enable KVM for the emulator
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -71,5 +81,12 @@ jobs:
             on a GH-hosted Android emulator (api 33, google_apis, x86_64) —
             updates `tool/performance_budget_baseline.json` and the
             "## Performance" section of `README.md`.
+          # Scoped on purpose (default is `git add -A`) — a Gradle OOM once
+          # left a 740MB java_pid*.hprof heap dump under example/android/
+          # that got swept up and rejected by GitHub's 100MB file limit.
+          # Only these 2 files are ever meant to change here.
+          add-paths: |
+            README.md
+            tool/performance_budget_baseline.json
           branch: chore/benchmark-snapshot
           delete-branch: true
