@@ -27,10 +27,23 @@ CLAUDE.md và doc comment của `initialize` cam kết rõ ràng: "never throws:
 Thay `throw ArgumentError(...)` bằng cách thêm entry vào `errors` map và tiếp tục xử lý các module khác (đúng contract never-throws hiện có cho mọi lỗi module khác). Gọi `await AudioManager` instance`.init()`/`WakeLockService` instance`.init()` ngay sau `Get.put()` trong nhánh bootstrap tương ứng, bọc trong cùng try/catch ghi vào `errors` nếu thất bại (giống cách các module khác đã làm).
 
 ## Acceptance criteria
-- [ ] Gọi `initialize(config: RoyCasualKitConfig(modules: {locale}))` (thiếu `storage`) không throw — trả về `RoyCasualKitResult` với `status == degraded` và `errors` chứa entry mô tả rõ thiếu `storage`.
-- [ ] Sau `initialize` với module `audio`/`wakeLock`, `AudioManager.to.muted.value`/`WakeLockService.to.enabled.value` phản ánh đúng giá trị đã lưu trước đó trong storage (không phải default), không cần gọi thêm `init()` thủ công.
-- [ ] Mọi test hiện có của `kit_bootstrap_test.dart` vẫn pass.
-- [ ] `resetForTesting()` vẫn dọn dẹp đúng các service này.
+- [x] Gọi `initialize(config: RoyCasualKitConfig(modules: {locale}))` (thiếu `storage`) không throw — trả về `RoyCasualKitResult` với `status == degraded` và `errors` chứa entry mô tả rõ thiếu `storage`.
+- [x] Sau `initialize` với module `audio`/`wakeLock`, `AudioManager.to.muted.value`/`WakeLockService.to.enabled.value` phản ánh đúng giá trị đã lưu trước đó trong storage (không phải default), không cần gọi thêm `init()` thủ công.
+- [x] Mọi test hiện có của `kit_bootstrap_test.dart` vẫn pass.
+- [x] `resetForTesting()` vẫn dọn dẹp đúng các service này.
+
+## Quyết định
+Fix đúng như đề xuất, không lệch scope.
+
+1. Bỏ khối `throw ArgumentError(...)` chạy TRƯỚC vòng lặp module. Chuyển check "locale cần storage" vào bên trong `case RoyCasualKitModule.locale`, ném `StateError` thay vì `ArgumentError` — lỗi này giờ bị try/catch của chính vòng lặp bắt, ghi vào `errors[locale]`, không cản các module khác registered, kết quả `status == degraded` đúng contract never-throws.
+2. `case RoyCasualKitModule.audio`/`case RoyCasualKitModule.wakeLock`: giữ instance vừa `Get.put()` (`audio`/`wakeLock` local var) rồi `await instance.init()` ngay trong cùng try/catch — lỗi init() (nếu có) cũng rơi vào `errors[module]` giống mọi module khác, không phá vỡ ownership/teardown (`_owned` callback thêm trước khi `init()` chạy, nên teardown vẫn đúng kể cả khi `init()` throw).
+3. Không đổi public API (`dart run tool/api_compatibility.dart check` → unchanged).
+
+TDD verify: `git stash` riêng `lib/core/kit_bootstrap.dart`, chạy `test/core/kit_bootstrap_test.dart` — 2 test mới (`locale without storage degrades...`, `audio and wakeLock modules restore persisted state...`) FAIL đúng trên code cũ (1 throw `ArgumentError` không bắt được, 1 assert muted/enabled sai default). `git stash pop`, chạy lại — toàn bộ 8/8 test pass.
+
+Kết quả cuối: `flutter analyze` root sạch, `flutter test --exclude-tags slow` root 2072 pass / -19 fail (baseline golden macOS-only sẵn có, không liên quan), `dart run tool/api_compatibility.dart check` unchanged, `example/` `flutter analyze` sạch + `flutter test --exclude-tags slow` 129/129 pass. Không smoke test device thật (task đánh dấu không bắt buộc, fix ở tầng logic bootstrap, không đổi UI quan sát trực tiếp).
+
+Tự chấm: **9.5/10** — root cause đúng, never-throws contract khôi phục, TDD 2 chiều (fail-without-fix, pass-with-fix) đã chứng minh, không phá test cũ, API compat unchanged. Trừ 0.5 vì chưa smoke test device thật (tuỳ chọn, không bắt buộc).
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-47-kit-bootstrap-throws-and-skips-service-init.md` này trước khi làm. Đọc toàn bộ `lib/core/kit_bootstrap.dart` (đặc biệt cơ chế `errors`/`degraded` cho các module khác) và `test/core/kit_bootstrap_test.dart` trước khi sửa. Implement bằng TDD.
