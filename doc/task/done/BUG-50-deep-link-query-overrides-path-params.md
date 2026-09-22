@@ -20,9 +20,18 @@ Deep link dạng `myapp://level/42?level=999` (path param `level=42`, query para
 Đổi `params.addAll(uri.queryParameters)` thành `uri.queryParameters.forEach((k, v) => params.putIfAbsent(k, () => v));` — query chỉ điền vào key CHƯA có, không đè key path đã capture.
 
 ## Acceptance criteria
-- [ ] URI có path param và query param cùng tên — path param được giữ nguyên, query không đè lên.
-- [ ] Query param không trùng tên path param nào vẫn được thêm vào `params` như cũ.
-- [ ] Test hiện có của `deep_link_command_router_test.dart` vẫn pass.
+- [x] URI có path param và query param cùng tên — path param được giữ nguyên, query không đè lên.
+- [x] Query param không trùng tên path param nào vẫn được thêm vào `params` như cũ.
+- [x] Test hiện có của `deep_link_command_router_test.dart` vẫn pass.
+
+## Quyết định
+Fix đúng như đề xuất trong task: `params.addAll(uri.queryParameters)` → `uri.queryParameters.forEach((k, v) => params.putIfAbsent(k, () => v))`. Không lệch scope.
+
+TDD verify: `git stash` riêng `lib/core/deep_link_command_router.dart`, chạy test mới `query param cùng tên path param KHÔNG được đè giá trị path (BUG-50)` (`myapp://open/level/42?id=999`, path param `id: '42'`) — FAIL đúng trên code cũ (`Expected: '42', Actual: '999'`). `git stash pop`, chạy lại toàn file — 23/23 pass. Test "link hợp lệ khớp route level" cũ (query `campaign=fb`, không trùng tên path param) vẫn pass nguyên vẹn — chứng minh case query-không-trùng-tên không đổi hành vi.
+
+Kết quả cuối: `flutter analyze` root sạch, `flutter test --exclude-tags slow` root 2074 pass / -19 fail (baseline golden có sẵn, không liên quan), `dart run tool/api_compatibility.dart check` unchanged, `example/` `flutter test --exclude-tags slow` 129/129 pass (example dùng `DeepLinkCommandRouter` qua `main.dart`/`cookbook_screen.dart`/`widget_showcase_screen.dart`, verify không phá).
+
+Tự chấm: **9.5/10** — 1 dòng, root cause đúng, khớp 100% doc comment đã cam kết sẵn, TDD 2 chiều chứng minh, không phá test cũ.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-50-deep-link-query-overrides-path-params.md` này trước khi làm. Đọc toàn bộ `lib/core/deep_link_command_router.dart` và test hiện có trước khi sửa. Implement bằng TDD.
