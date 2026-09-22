@@ -51,19 +51,12 @@ jobs:
           arch: x86_64
           profile: pixel_5
           disable-animations: true
+          # reactivecircus/android-emulator-runner runs each line of `script`
+          # as its own separate `sh -c` invocation (not one continuous
+          # script), so a `for`/`if` block can't span multiple lines here —
+          # everything below is deliberately one physical line.
           script: |
-            device_id=""
-            for i in $(seq 1 10); do
-              device_id=$(adb devices | awk '$2=="device"{print $1; exit}')
-              if [ -n "$device_id" ]; then break; fi
-              echo "Waiting for a fully-booted adb device (attempt $i/10)..."
-              sleep 3
-            done
-            if [ -z "$device_id" ]; then
-              echo "::warning::No adb device reached 'device' state after retries — realDevice metric will fall back to the committed baseline."
-              adb devices
-            fi
-            dart run tool/performance_budget_check.dart snapshot --device="$device_id"
+            device_id=""; for i in $(seq 1 10); do device_id=$(adb devices | awk '$2=="device"{print $1; exit}'); if [ -n "$device_id" ]; then break; fi; echo "Waiting for a fully-booted adb device (attempt $i/10)..."; sleep 3; done; if [ -z "$device_id" ]; then echo "::warning::No adb device reached 'device' state after retries -- realDevice metric will fall back to the committed baseline."; adb devices; fi; dart run tool/performance_budget_check.dart snapshot --device="$device_id"
 
       - name: Update README performance numbers from baseline
         run: dart run tool/update_readme_benchmarks.dart
