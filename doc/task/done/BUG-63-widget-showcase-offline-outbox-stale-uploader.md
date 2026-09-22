@@ -20,9 +20,20 @@ Mỗi lần đóng/mở lại `WidgetShowcaseScreen` tạo 1 State instance mớ
 Tách `uploader` thành 1 hàm độc lập không giữ tham chiếu State (top-level function hoặc static method), hoặc không đăng ký `OfflineOutboxService` `permanent: true` cho mục đích demo (dùng instance cục bộ, tự dispose đúng lifecycle của State).
 
 ## Acceptance criteria
-- [ ] Mở/đóng `WidgetShowcaseScreen` nhiều lần — `OfflineOutboxService` demo không giữ tham chiếu instance State cũ nào (verify qua code review/test cấu trúc, không phụ thuộc vào State cụ thể trong uploader).
-- [ ] Demo outbox vẫn hoạt động đúng (enqueue/drain minh hoạ) sau khi sửa.
-- [ ] Test hiện có của `widget_showcase_screen_test.dart` vẫn pass.
+- [x] Mở/đóng `WidgetShowcaseScreen` nhiều lần — `OfflineOutboxService` demo không giữ tham chiếu instance State cũ nào (verify qua code review/test cấu trúc, không phụ thuộc vào State cụ thể trong uploader).
+- [x] Demo outbox vẫn hoạt động đúng (enqueue/drain minh hoạ) sau khi sửa.
+- [x] Test hiện có của `widget_showcase_screen_test.dart` vẫn pass.
+
+## Quyết định
+Chọn nhánh 2 của đề xuất (không phải nhánh 1 "tách uploader thành top-level function"): không đăng ký `permanent` theo kiểu tái sử dụng qua `.maybe`, luôn tạo instance MỚI mỗi `initState()`, dispose đúng trong `dispose()` — CÙNG pattern vừa áp dụng cho `ConnectivityCoordinator` ở BUG-62 (2 bug này nằm sát nhau trong cùng khối `initState()`, cùng root cause).
+
+Phát hiện thêm khi verify: hậu quả thực tế NGHIÊM TRỌNG HƠN mô tả gốc — không chỉ leak tham chiếu lý thuyết. `OfflineOutboxService.onInit()` subscribe `connectivity.stateStream` để auto-drain khi online. Sau khi BUG-62 fix áp dụng (coordinator cũ bị dispose thật khi đóng screen), 1 `OfflineOutboxService` bị tái sử dụng qua `.maybe` ở BUG-63 sẽ giữ subscription tới coordinator ĐÃ ĐÓNG STREAM — nghĩa là sau đúng 1 lần mở lại screen, outbox demo VĨNH VIỄN không còn tự động drain khi bật lại kết nối mạng nữa (bug hành vi quan sát được thật, không chỉ leak bộ nhớ). Thứ tự dispose quan trọng: xoá `OfflineOutboxService` TRƯỚC `ConnectivityCoordinator` (outbox là consumer, coordinator là producer nó lắng nghe).
+
+**TDD verify**: test "mở lại screen" dùng lại đúng kỹ thuật tree-swap của BUG-62 (`pumpWidget(SizedBox())` ở giữa để buộc dispose thật). Kịch bản: mở lại, enqueue 1 item (offline mặc định), KHÔNG bấm "Drain now" thủ công, chỉ bật "Interface up" (demo Connectivity của LẦN MỞ MỚI) — chỉ auto-drain đúng nếu outbox mới thật sự lắng nghe coordinator mới. `git stash` riêng `example/lib/screens/widget_showcase_screen.dart`, chạy test — FAIL đúng trên code cũ (`Pending: 1` mãi không về 0 — outbox cũ lắng nghe coordinator cũ đã đóng, không nhận được sự kiện online). `git stash pop`, chạy lại toàn group `FEAT-67` — 4/4 pass.
+
+Kết quả cuối: `example/` `flutter analyze` sạch + `flutter test --exclude-tags slow` 131/131 pass. Root `flutter analyze` sạch, `dart run tool/api_compatibility.dart check` unchanged (không đổi `lib/`). Không smoke test device thật (task ghi không bắt buộc).
+
+Tự chấm: **9.5/10** — root cause đúng, phát hiện + fix thêm hậu quả nghiêm trọng hơn mô tả gốc (auto-drain vĩnh viễn ngừng hoạt động, không chỉ leak), TDD chứng minh đúng bằng kịch bản auto-drain (mạnh hơn manual-drain vì phân biệt rõ code cũ/mới), không phá test cũ.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-63-widget-showcase-offline-outbox-stale-uploader.md` này trước khi làm. Đọc toàn bộ khu vực demo `OfflineOutboxService` trong `example/lib/screens/widget_showcase_screen.dart` — TỰ XÁC NHẬN lại đúng cơ chế trước khi sửa. Implement bằng TDD.
