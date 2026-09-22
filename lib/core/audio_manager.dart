@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'debug_log.dart';
 import 'storage_service.dart';
+import 'utils/object_pool.dart';
 
 /// Manages the background music: a single track (`asset/audio/bkg.ogg`) + mute.
 ///
@@ -17,6 +18,18 @@ import 'storage_service.dart';
 /// class touched `FlameAudio.audioCache.prefix`. A private pair keeps the
 /// kit's bgm fully independent of whatever the app does with `FlameAudio`.
 class AudioManager extends GetxService {
+  /// ENH-79: how many `AudioPlayer`s [playSfx] keeps warm and reuses for
+  /// one-shot SFX, instead of creating (and disposing) a fresh native
+  /// audio channel on every single call — a combo/win-streak casual game
+  /// firing 15-20 SFX/second would otherwise open that many concurrent
+  /// native channels, which can stutter/drop audio on a low-end Android
+  /// device. A burst beyond [sfxPoolCapacity] still always plays (never
+  /// refused/dropped) — [ObjectPool] just disposes the excess instead of
+  /// retaining it, so the pool's resting size never grows past this.
+  AudioManager({this.sfxPoolCapacity = 6});
+
+  final int sfxPoolCapacity;
+
   static const _bgmTrack = 'bkg.ogg';
   static const _prefix = 'packages/roy_casual_kit/asset/audio/';
 
@@ -40,17 +53,71 @@ class AudioManager extends GetxService {
   /// prefix (`assets/`) so a host app's normal asset paths resolve as-is.
   final AudioCache _sfxCache = AudioCache();
 
+  /// ENH-79: reusable `AudioPlayer`s for [playSfx] — see [sfxPoolCapacity]'s
+  /// doc comment. `reset` stops any lingering playback before an instance
+  /// goes back into the free list (fire-and-forget, same style as
+  /// [_ignoreAudio] — nothing meaningful to await once it's back in the
+  /// pool); `dispose` only ever runs for the rare instance evicted for
+  /// being over capacity, or via [onClose]'s full teardown.
+  late final ObjectPool<AudioPlayer> _sfxPool = ObjectPool<AudioPlayer>(
+    create: () => AudioPlayer()..audioCache = _sfxCache,
+    reset: (player) => unawaited(player.stop().catchError((_) {})),
+    dispose: (player) {
+      debugSfxDisposeCount++;
+      unawaited(player.dispose().catchError((_) {}));
+    },
+    maxCapacity: sfxPoolCapacity,
+  );
+
   final RxBool muted = false.obs;
 
   bool _bgmPlaying = false;
   bool _ready = false;
 
-  /// Count of SFX `AudioPlayer`s actually disposed — BUG-24's regression
-  /// guard, same pattern as `StorageService.platformWrites`: deterministic
-  /// proof `playSfx()` doesn't leak a player, without needing to mock
-  /// `AudioPlayer` itself.
+  /// Count of SFX `AudioPlayer`s actually disposed — a player is only ever
+  /// disposed when [_sfxPool] evicts one over [sfxPoolCapacity] (a burst
+  /// wider than the pool) or on [onClose]'s full teardown; every ordinary
+  /// [playSfx] call now returns its player to the pool instead (BUG-24's
+  /// original "dispose every call" guarantee is superseded by
+  /// [debugSfxReleaseCount]/[debugSfxPoolActiveCount] below — those, not
+  /// this, are what prove a call doesn't leak post-ENH-79).
   @visibleForTesting
   int debugSfxDisposeCount = 0;
+
+  /// Count of [playSfx] calls that returned their player to [_sfxPool] —
+  /// ENH-79's regression guard: every call (success or failure) must
+  /// release exactly once, so this should always equal the number of
+  /// [playSfx] calls that have finished.
+  @visibleForTesting
+  int debugSfxReleaseCount = 0;
+
+  /// How many SFX players [_sfxPool] currently considers "in use" — must
+  /// be back to 0 once every in-flight [playSfx] call has finished; a
+  /// stuck non-zero value would mean a call acquired a player and never
+  /// released it.
+  @visibleForTesting
+  int get debugSfxPoolActiveCount => _sfxPool.activeCount;
+
+  /// Total `AudioPlayer`s [_sfxPool] has ever created. For SEQUENTIAL
+  /// [playSfx] calls (each one's player released before the next starts —
+  /// the realistic staggered-combo-SFX case [sfxPoolCapacity] is about)
+  /// this stays at 1 no matter how many calls run, proving reuse actually
+  /// happens instead of "one new player per call" (the pre-ENH-79
+  /// behavior). For genuinely SIMULTANEOUS calls (all in flight at once,
+  /// e.g. via `Future.wait` with none released yet) this can still exceed
+  /// [sfxPoolCapacity] — that many native channels really are needed at
+  /// that exact instant regardless of pooling; [debugSfxPoolFreeCount] is
+  /// what stays bounded afterward (the excess gets disposed, not
+  /// retained).
+  @visibleForTesting
+  int get debugSfxTotalCreated => _sfxPool.totalCreated;
+
+  /// How many SFX players [_sfxPool] is currently holding onto, idle,
+  /// ready for the next [playSfx] call — bounded by [sfxPoolCapacity] even
+  /// right after a burst wider than that (the excess gets disposed on
+  /// release instead of retained, see [_sfxPool]'s doc comment).
+  @visibleForTesting
+  int get debugSfxPoolFreeCount => _sfxPool.freeCount;
 
   // IDEA-45: number of currently-playing ducked SFX. Bgm volume only drops
   // on the FIRST concurrent duck and only restores once the LAST one ends —
@@ -144,9 +211,12 @@ class AudioManager extends GetxService {
   /// Plays a one-shot SFX from a CONSUMING app's own assets (e.g.
   /// `assets/audio/tap.mp3`), respecting the same [muted] state as the bgm
   /// track. No-ops immediately when muted — doesn't even touch the audio
-  /// cache. A fresh [AudioPlayer] is used per call (via [_sfxCache]) so
-  /// rapid overlapping taps each play independently instead of cutting each
-  /// other off.
+  /// cache. Borrows an [AudioPlayer] from [_sfxPool] (ENH-79) instead of
+  /// creating+disposing a fresh one every call, so rapid overlapping taps
+  /// each still play independently (up to [sfxPoolCapacity] concurrently
+  /// pooled, more than that still plays — just via a short-lived extra
+  /// instance instead of a pooled one) without opening unbounded native
+  /// audio channels during a combo/SFX burst.
   ///
   /// [duck] = true (IDEA-45) temporarily lowers the bgm volume for the
   /// duration of this SFX (e.g. a win/lose stinger that should read as more
@@ -160,17 +230,17 @@ class AudioManager extends GetxService {
   }) async {
     if (muted.value) return;
     if (duck) _duckBgm();
-    // Constructed INSIDE the try (not before it) — the AudioPlayer
-    // constructor itself can throw/reject (e.g. no audio plugin available
-    // in a test), and that must be caught same as a play() failure. Stays
-    // in scope for `finally` via this nullable local so a failed
-    // construction (player still null) has nothing to dispose.
+    // Acquired INSIDE the try (not before it) — the pool's `create`
+    // callback (a fresh AudioPlayer constructor) can throw/reject (e.g. no
+    // audio plugin available in a test), and that must be caught same as a
+    // play() failure. Stays in scope for `finally` via this nullable local
+    // so a failed acquire (player still null) has nothing to release.
     AudioPlayer? player;
     try {
-      player = AudioPlayer()..audioCache = _sfxCache;
+      player = _sfxPool.acquire();
       await player.play(AssetSource(fileName), volume: volume);
-      // Wait for the SFX to actually finish before disposing (BUG-24) —
-      // dispose()ing right after play() returns would cut the sound off,
+      // Wait for the SFX to actually finish before releasing (BUG-24) —
+      // releasing right after play() returns would cut the sound off,
       // since play() resolves once playback STARTS, not once it ends.
       // Subscribed only AFTER play() succeeds (not before): AudioPlayer's
       // own internal creation can fail (e.g. no audio plugin available, as
@@ -179,7 +249,7 @@ class AudioManager extends GetxService {
       // — confirmed by reverting just this ordering and watching the same
       // existing test throw uncaught. A timeout is a safety net for a
       // platform that never fires onPlayerComplete (or a hung/looping
-      // asset) — better to leak this one wait than never dispose at all.
+      // asset) — better to leak this one wait than never release at all.
       await player.onPlayerComplete.first.timeout(const Duration(seconds: 30));
     } catch (e) {
       // no audio backend (tests), missing asset, or the completion timeout
@@ -188,20 +258,24 @@ class AudioManager extends GetxService {
     } finally {
       if (duck) _unduckBgm();
       if (player != null) {
-        // Awaited (not unawaited/fire-and-forget) — a caller that awaits
-        // playSfx() should be able to rely on the player being fully gone
-        // once it returns, and debugSfxDisposeCount being deterministically
-        // testable. dispose() itself can throw (e.g. the player's own
-        // creation never actually finished successfully) — must not let
-        // THAT become a second unhandled rejection on top of whatever
-        // playSfx already caught above.
+        // Synchronous, not awaited — the pool's own bookkeeping
+        // (activeCount/totalCreated) updates immediately, which is what
+        // debugSfxPoolActiveCount/debugSfxTotalCreated rely on being
+        // deterministically testable right after this call returns. Any
+        // actual native stop()/dispose() the pool triggers internally is
+        // fire-and-forget (see _sfxPool's `reset`/`dispose` callbacks).
+        //
+        // Guarded: onClose() (see below) can run _sfxPool.disposeAll()
+        // while THIS call is still in flight — that already disposes
+        // `player` out from under it, so release() would otherwise throw
+        // "not currently active" on top of whatever else was going on.
+        // Best-effort, same as every other cleanup op in this class.
         try {
-          await player.dispose();
+          _sfxPool.release(player);
         } catch (_) {
-          // ignore — best-effort cleanup of an already-broken player.
-        } finally {
-          debugSfxDisposeCount++;
+          // ignore — player was already torn down by onClose().
         }
+        debugSfxReleaseCount++;
       }
     }
   }
@@ -239,6 +313,11 @@ class AudioManager extends GetxService {
     // `_bgm` was ever successfully used lazily constructs it here for the
     // first time, with no guarantee its own creation succeeded.
     unawaited(_bgm.dispose().catchError((_) {}));
+    // ENH-79: dispose every pooled/active SFX player — a permanent
+    // AudioManager never reaches this in normal app life, but a
+    // non-permanent one (test teardown) must not leak the pool's warm
+    // instances.
+    _sfxPool.disposeAll();
     super.onClose();
   }
 }
