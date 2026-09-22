@@ -126,6 +126,20 @@ class _CookbookScreenState extends State<CookbookScreen> {
     }
   }
 
+  // BUG-64: `registerParticipant`'s `snapshot`/`restore` closures both
+  // capture `this` (read/write `_checkpointCounter`). `_checkpoints` is a
+  // `permanent: true` GetxService that outlives this screen — without
+  // unregistering here, closing this screen for good (never reopened)
+  // leaves those closures in `_checkpoints`' map forever, referencing a
+  // disposed State: a real `requestCheckpoint()` call from anywhere else
+  // in the app would keep invoking them, reading/writing a field on a
+  // screen that isn't even shown.
+  @override
+  void dispose() {
+    _checkpoints.removeParticipant('cookbook_counter');
+    super.dispose();
+  }
+
   void _toast(String message) {
     if (!mounted) return;
     ToastBanner.show(context, message: message);

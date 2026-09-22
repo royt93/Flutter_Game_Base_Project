@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
+import 'package:roy_casual_kit/core/checkpoint_coordinator.dart';
 import 'package:roy_casual_kit/core/locale_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit_example/screens/cookbook_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -220,6 +222,53 @@ void main() {
       expect(find.textContaining('passed=true'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await _flushToast(tester);
+    },
+  );
+
+  testWidgets(
+    // BUG-64: `registerParticipant`'s snapshot/restore closures capture
+    // `this` State. Without a matching `dispose()` unregister, closing this
+    // screen for good leaves that entry in `CheckpointCoordinator`'s
+    // participant map forever. `requestCheckpoint()` returns the number of
+    // participants it snapshotted — the most direct observable proof the
+    // entry is really gone after dispose, not just "probably fine".
+    'dispose() gỡ đúng participant "cookbook_counter" khỏi CheckpointCoordinator '
+    '(BUG-64)',
+    (tester) async {
+      await _boot();
+      await tester.pumpWidget(_wrap(const CookbookScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final coordinator = CheckpointCoordinator.maybe!;
+      await _tapAndShowToast(
+        tester,
+        'CheckpointCoordinator — request + restore',
+      );
+      // Demo vẫn hoạt động đúng khi màn hình đang mở (criterion 3) — không
+      // chỉ "không throw", mà thật sự lưu + đọc lại đúng giá trị.
+      expect(
+        find.textContaining('saved counter=1, restored=1'),
+        findsOneWidget,
+      );
+      await _flushToast(tester);
+
+      // "Đóng" screen thật (không phải rebuild tại chỗ) -> dispose() chạy.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+
+      // Gọi checkpoint TRỰC TIẾP sau khi screen đã đóng hẳn — participant
+      // 'cookbook_counter' phải không còn được tính vào nữa.
+      final result = await coordinator.requestCheckpoint(critical: true);
+
+      expect(result, isA<SdkSuccess<int>>());
+      expect(
+        (result as SdkSuccess<int>).value,
+        0,
+        reason:
+            'participant "cookbook_counter" phải đã bị gỡ khi screen dispose, '
+            'không còn được CheckpointCoordinator tính vào checkpoint sau đó',
+      );
+      expect(tester.takeException(), isNull);
     },
   );
 }
