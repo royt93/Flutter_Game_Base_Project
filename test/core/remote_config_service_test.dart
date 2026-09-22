@@ -348,7 +348,12 @@ void main() {
     });
 
     test(
-      'fetchRemote throw → initResult VẪN trả SdkSuccess (init() tự nuốt lỗi nội bộ, không rethrow ra initResult)',
+      // BUG-68: `init()` bản thân vẫn never-throws (nuốt lỗi nội bộ, fall
+      // back đúng thiết kế) — nhưng `initResult()` giờ PHẢI báo lỗi ra
+      // ngoài khi source thực sự là remoteFailed, để caller không phải tự
+      // check thêm `source` mới biết boot đã fail-over.
+      'fetchRemote throw → init() vẫn never-throws + source đúng remoteFailed, '
+      'NHƯNG initResult() giờ trả SdkFailure (BUG-68)',
       () async {
         final service = RemoteConfigService(
           assetPath: _assetPath,
@@ -358,11 +363,38 @@ void main() {
           fetchRemote: () async => throw Exception('down'),
         );
 
+        // init() (không phải initResult()) vẫn never-throws như cũ.
+        await expectLater(service.init(), completes);
+        expect(service.source, RemoteConfigSource.remoteFailed);
+        // Asset fallback vẫn hoạt động đúng — initResult() báo lỗi không
+        // có nghĩa là config bị bỏ trống, chỉ báo "không phải remote thật".
+        expect(service.getInt('a'), 1);
+
+        final result = await service.initResult();
+
+        expect(result, isA<SdkFailure<void>>());
+        expect(
+          (result as SdkFailure<void>).kind,
+          SdkErrorKind.network,
+        );
+      },
+    );
+
+    test(
+      'không truyền fetchRemote (source: assetOnly) → initResult VẪN trả '
+      'SdkSuccess (asset-only là fallback hợp lệ theo thiết kế, không phải lỗi)',
+      () async {
+        final service = RemoteConfigService(
+          assetPath: _assetPath,
+          bundle: _FakeAssetBundle({
+            _assetPath: jsonEncode({'a': 1}),
+          }),
+        );
+
         final result = await service.initResult();
 
         expect(result, isA<SdkSuccess<void>>());
-        expect(service.source, RemoteConfigSource.remoteFailed);
-        expect(service.getInt('a'), 1);
+        expect(service.source, RemoteConfigSource.assetOnly);
       },
     );
 

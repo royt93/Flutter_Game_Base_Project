@@ -101,11 +101,21 @@ class RemoteConfigService extends GetxService {
     }
   }
 
+  /// Unlike [init] (which never throws — a fetch failure just falls back
+  /// to defaults, see the class doc), this DOES surface a failed remote
+  /// fetch as an [SdkFailure] — a caller that wants to know "did boot
+  /// actually succeed" shouldn't have to separately check [source] to
+  /// notice the difference between "remote merged" and "silently fell
+  /// back". [init] itself is unaffected: it still never throws and still
+  /// sets [source] exactly as before — this only changes what
+  /// [initResult] REPORTS about that outcome.
   Future<SdkResult<void>> initResult() async {
     try {
       await init();
-      return const SdkSuccess(null);
     } catch (error, stack) {
+      // init() is documented never-throws, but this stays defensive in
+      // case a future edit there breaks that contract — still reported as
+      // the same kind of failure a fetch failure would be.
       return SdkFailure(
         kind: SdkErrorKind.network,
         message: 'Remote configuration unavailable',
@@ -114,6 +124,14 @@ class RemoteConfigService extends GetxService {
         stackTrace: stack,
       );
     }
+    if (_source == RemoteConfigSource.remoteFailed) {
+      return const SdkFailure(
+        kind: SdkErrorKind.network,
+        message: 'Remote configuration fetch failed, using fallback config',
+        retryable: true,
+      );
+    }
+    return const SdkSuccess(null);
   }
 
   String getString(String key, {String fallback = ''}) =>
