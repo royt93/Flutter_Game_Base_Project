@@ -37,9 +37,9 @@ Thêm guard `isTicking`:
 ```
 
 ## Acceptance criteria
-- [ ] Tier đổi liên tiếp 2 lần đều không phải `low` (ví dụ `medium` → `high`) trong khi ticker đang chạy — không throw, ticker tiếp tục chạy bình thường.
-- [ ] Tier đổi từ `low` → không-`low` (ticker đang dừng) vẫn start lại đúng như cũ.
-- [ ] Test hiện có của `shader_ticker_layer_test.dart`/`aurora_bg_layer_test.dart`/`neon_aura_layer_test.dart` (nếu có) vẫn pass.
+- [x] Tier đổi liên tiếp 2 lần đều không phải `low` (ví dụ `medium` → `high`) trong khi ticker đang chạy — không throw, ticker tiếp tục chạy bình thường.
+- [x] Tier đổi từ `low` → không-`low` (ticker đang dừng) vẫn start lại đúng như cũ.
+- [x] Test hiện có của `shader_ticker_layer_test.dart`/`aurora_bg_layer_test.dart`/`neon_aura_layer_test.dart` (nếu có) vẫn pass.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-56-shader-ticker-layer-double-start-crash.md` này trước khi làm. Đọc toàn bộ `lib/presentation/widgets/shader_ticker_layer.dart` và test hiện có (`AuroraBgLayer`/`NeonAuraLayer` đều dùng mixin này) trước khi sửa. Implement bằng TDD — viết test tái hiện đúng chuỗi tier-change gây crash trước khi sửa.
@@ -56,3 +56,19 @@ Sau khi push, viết mục `## Quyết định` vào chính file task này (tick
 
 ## Ghi chú độ tin cậy
 Rất cao — tự Read trực tiếp code, xác nhận chính xác nhánh `else { _ticker!.start(); }` không có guard `isTicking`, đúng với hành vi crash đã biết của Flutter `Ticker`. Không trùng task nào trong `doc/task/done/`.
+
+## Quyết định
+
+Fix đúng như đề xuất — thêm guard `else if (!_ticker!.isTicking) { _ticker!.start(); }`.
+
+**Đính chính 1 chi tiết trong mô tả gốc**: `PerformanceTier` (`lib/core/performance_tier_service.dart`) chỉ có 2 giá trị `{high, low}`, không có `medium` như ví dụ trong task. Đọc kỹ hơn: đường thật qua `PerformanceTierService.recordFrame()` chỉ set `tier.value` khi CÓ transition thật (`FrameBudgetTracker.recordFrameMs` trả `true`), và `get` package's `Rx.value =` tự bỏ qua reassignment cùng giá trị (`if (_value == val && !firstRebuild) return;` — xác nhận trực tiếp trong source `get-4.7.3/lib/get_rx/src/rx_types/rx_core/rx_impl.dart:101`) — nên qua đường API hiện tại, `ever()` không thể tự nhiên fire 2 lần liên tiếp cùng giá trị. Kịch bản CHỈ tái hiện được qua `tier.trigger(value)` (1 API hợp lệ khác trên `Rx`, cố tình force-notify bất kể giá trị đổi hay không) — dùng đúng API này để viết test tái hiện crash thật, không phải suy đoán.
+
+Dù đường mặc định hiện tại khó tự nhiên rơi vào ca này, field `tier` là `public` (`final Rx<PerformanceTier> tier = ...`, không đóng gói) nên bất kỳ code nào khác (test, 1 `FrameBudgetTracker` khác trong tương lai, hoặc thêm tier thứ 3) đều có thể set/trigger lại → guard `isTicking` là phòng thủ đúng đắn, không có nhược điểm, và khớp đúng tinh thần hardening đã có sẵn trong cùng file (comment `BUG-23`).
+
+**TDD, verify cả 2 chiều:** `git stash` riêng file lib, chạy lại 2 test mới — test đầu crash thật với stack trace `Ticker.start` ném tại đúng dòng cũ của `shader_ticker_layer.dart:83`, gọi từ `ever()` → `trigger()`, xác nhận đúng y hệt lỗi "A ticker was started twice" mô tả trong task. Khôi phục fix: cả 12 test trong 3 file (`shader_ticker_layer_test.dart`/`aurora_bg_layer_test.dart`/`neon_aura_layer_test.dart`) pass.
+
+**Không phá gì:** `flutter analyze` root + `example/` sạch. `flutter test --exclude-tags slow` root: 2028 pass / 19 fail (vẫn đúng 19 golden có sẵn, không tăng). `example/`: 125/125 pass.
+
+Không cần smoke test device bắt buộc — đúng như task tự ghi (fix widget-lifecycle thuần, hành vi có thể verify đầy đủ qua widget test).
+
+**Tự chấm điểm: 9.5/10.** Fix tối thiểu (1 dòng điều kiện), đúng root cause, TDD verify bằng crash thật (không phải giả định), đính chính rõ 1 chi tiết sai trong mô tả gốc (không có tier `medium`) và giải thích chính xác cơ chế Rx để chọn đúng cách viết test tái hiện.
