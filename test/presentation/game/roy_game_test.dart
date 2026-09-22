@@ -77,4 +77,80 @@ void main() {
       expect(circleScreenPos, game.circle.position);
     },
   );
+
+  group('ENH-81: sparkle burst (ObjectPool/PooledComponent demo)', () {
+    testWidgets(
+      'spawnSparkleBurst thêm đúng N SparkleParticle vào component tree',
+      (tester) async {
+        final game = RoyGame();
+        await tester.pumpWidget(
+          MaterialApp(home: Material(child: GameWidget(game: game))),
+        );
+        await game.toBeLoaded();
+        await tester.pump();
+
+        game.spawnSparkleBurst(Vector2(100, 100), count: 5);
+        await tester.pump();
+
+        expect(game.children.whereType<SparkleParticle>().length, 5);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('tap vào circle kích hoạt burst sparkle', (tester) async {
+      final game = RoyGame();
+      await tester.pumpWidget(
+        MaterialApp(home: Material(child: GameWidget(game: game))),
+      );
+      await game.toBeLoaded();
+      await tester.pump();
+
+      await tester.tapAt(tester.getCenter(find.byType(GameWidget<RoyGame>)));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(game.children.whereType<SparkleParticle>(), isNotEmpty);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'particle tự release về pool sau khi hết lifetime — burst sau tái '
+      'sử dụng lại, không tạo mới vô hạn qua nhiều lần burst',
+      (tester) async {
+        final game = RoyGame();
+        await tester.pumpWidget(
+          MaterialApp(home: Material(child: GameWidget(game: game))),
+        );
+        await game.toBeLoaded();
+        await tester.pump();
+
+        game.spawnSparkleBurst(Vector2(50, 50), count: 4);
+        await tester.pump();
+        expect(game.children.whereType<SparkleParticle>().length, 4);
+
+        // Đợi hết lifetime (0.6s) + margin cho chắc. `removeFromParent()`
+        // (gọi trong `update()` khi `_age` vượt lifetime) chỉ ĐÁNH DẤU xoá —
+        // Flame xử lý xoá thật khỏi `children` ở đầu lần update KẾ TIẾP, nên
+        // cần thêm 1 pump() rỗng sau đó mới thấy `children` rỗng thật.
+        await tester.pump(const Duration(milliseconds: 900));
+        await tester.pump();
+
+        expect(game.children.whereType<SparkleParticle>(), isEmpty);
+        expect(game.sparklePool.activeCount, 0);
+        final createdAfterFirstBurst = game.sparklePool.totalCreated;
+
+        // Burst thứ 2 phải tái sử dụng lại 4 particle vừa release, không
+        // tạo thêm — đúng mục đích pooling.
+        game.spawnSparkleBurst(Vector2(50, 50), count: 4);
+        await tester.pump();
+
+        expect(
+          game.sparklePool.totalCreated,
+          createdAfterFirstBurst,
+          reason: 'burst thứ 2 phải tái sử dụng lại particle đã release, '
+              'không tạo mới',
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }

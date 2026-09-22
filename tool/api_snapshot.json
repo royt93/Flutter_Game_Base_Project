@@ -340,6 +340,7 @@
     "core/wake_lock_service.dart:WakeLockService",
     "presentation/game/pooled_component.dart:PooledComponent",
     "presentation/game/roy_game.dart:RoyGame",
+    "presentation/game/roy_game.dart:SparkleParticle",
     "presentation/game/roy_game.dart:TappableCircle",
     "presentation/widgets/aurora_bg_layer.dart:AuroraBgLayer",
     "presentation/widgets/aurora_bg_layer.dart:_AuroraBgLayerState",
