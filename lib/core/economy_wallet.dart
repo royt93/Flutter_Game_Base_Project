@@ -12,7 +12,7 @@ class EconomyWallet extends GetxService {
     AsyncActionGuard? guard,
     String? storageKey,
   }) : _guard = guard ?? AsyncActionGuard(),
-       _key = storageKey ?? 'economy_wallet_v1' {
+       _key = storageKey ?? StorageKeys.economyWalletV1 {
     // BUG-40: hydrate here too, not only in onInit() — onInit() only runs
     // when this service is registered via Get.put/Get.lazyPut. A caller
     // that constructs it directly (a local helper, a test, a consumer app

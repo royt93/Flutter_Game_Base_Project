@@ -45,7 +45,7 @@ class SeasonEventWindow {
 /// clock this service reads go backward.
 class SeasonEventService extends GetxService {
   SeasonEventService({String? storageKey})
-    : _storageKey = storageKey ?? 'season_event_anchors_v1';
+    : _storageKey = storageKey ?? StorageKeys.seasonEventAnchorsV1;
 
   // ENH-71: instance field (was `static const`) so 2 instances can point
   // at 2 independent anchor tables — e.g. 1 per SaveSlotManager slot via

@@ -138,7 +138,7 @@ class RewardTransactionPipeline extends GetxService {
     String? storageKey,
     this.capacity = 200,
   }) : _guard = guard ?? AsyncActionGuard(),
-       _key = storageKey ?? 'reward_transaction_pipeline_v1' {
+       _key = storageKey ?? StorageKeys.rewardTransactionPipelineV1 {
     // BUG-40: see EconomyWallet's constructor for why this can't wait for
     // onInit() alone.
     _hydrate();

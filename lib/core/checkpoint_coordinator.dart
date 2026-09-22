@@ -42,7 +42,7 @@ class CheckpointCoordinator extends GetxService {
     RoyLifecycleCoordinator? lifecycle,
     Timer Function(Duration delay, void Function() callback)? createTimer,
   }) : _guard = guard ?? AsyncActionGuard(),
-       _key = storageKey ?? 'checkpoint_coordinator_v1',
+       _key = storageKey ?? StorageKeys.checkpointCoordinatorV1,
        _createTimer = createTimer ?? Timer.new {
     wasDirtyOnLoad = storage.getBool('${_key}_dirty');
     final coordinator = lifecycle ?? RoyLifecycleCoordinator.maybe;

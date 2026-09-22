@@ -61,6 +61,27 @@ class StorageKeys {
   // lib/core/app_session_tracker.dart reads/writes these directly.
   static const String appSessionInstallTimeMs = 'app_session_install_time_ms';
   static const String appSessionSequence = 'app_session_sequence';
+
+  // BUG-55: default value for each service's own `storageKey` constructor
+  // param (overridable per-instance, e.g. multiple save slots) — named here
+  // instead of a string literal inline at each call site, per this class's
+  // own "never string literals for prefs keys" convention.
+  static const String achievementProgressV1 = 'achievement_progress_v1';
+  static const String checkpointCoordinatorV1 = 'checkpoint_coordinator_v1';
+  static const String dailyLoginStateV1 = 'daily_login_state_v1';
+  static const String dailyQuestProgressV1 = 'daily_quest_progress_v1';
+  static const String economyWalletV1 = 'economy_wallet_v1';
+  static const String inventoryServiceV1 = 'inventory_service_v1';
+  static const String localScoreboardV1 = 'local_scoreboard_v1';
+  static const String onboardingSeenV1 = 'onboarding_seen_v1';
+  static const String playerProgressionV1 = 'player_progression_v1';
+  static const String offlineOutboxV1 = 'offline_outbox_v1';
+  static const String purchaseLedgerV1 = 'purchase_ledger_v1';
+  static const String seasonEventAnchorsV1 = 'season_event_anchors_v1';
+  static const String rewardTransactionPipelineV1 =
+      'reward_transaction_pipeline_v1';
+  static const String saveSlotMetaV1 = 'save_slot_meta_v1';
+  static const String saveSlotActiveIdV1 = 'save_slot_active_id_v1';
 }
 
 /// Shared local storage service (wraps SharedPreferences).

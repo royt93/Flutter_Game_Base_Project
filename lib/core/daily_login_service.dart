@@ -79,7 +79,7 @@ class _DailyLoginState {
 /// same day twice or dodge the streak-reset penalty for a skipped day.
 class DailyLoginService extends GetxService {
   DailyLoginService({String? storageKey})
-    : _storageKey = storageKey ?? 'daily_login_state_v1';
+    : _storageKey = storageKey ?? StorageKeys.dailyLoginStateV1;
 
   // ENH-71: instance field (was `static const`) so 2 instances can point
   // at 2 independent streak states — e.g. 1 per SaveSlotManager slot via

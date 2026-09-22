@@ -209,7 +209,7 @@ class OfflineOutboxService extends GetxService {
          'merger is required when conflictPolicy is ConflictPolicy.merge',
        ),
        _retryExecutor = retryExecutor ?? RetryExecutor(),
-       _key = storageKey ?? 'offline_outbox_v1' {
+       _key = storageKey ?? StorageKeys.offlineOutboxV1 {
     // BUG-40: see EconomyWallet's constructor for why this can't wait for
     // onInit() alone. The connectivity-subscription setup stays in onInit()
     // only — that's a GetX-lifecycle-bound side effect, not state hydration.

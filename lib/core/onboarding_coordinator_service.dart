@@ -23,7 +23,7 @@ import 'versioned_json_store.dart';
 /// replays every session.
 class OnboardingCoordinatorService extends GetxService {
   OnboardingCoordinatorService({String? storageKey})
-    : _storageKey = storageKey ?? 'onboarding_seen_v1';
+    : _storageKey = storageKey ?? StorageKeys.onboardingSeenV1;
 
   // ENH-71: instance field (was `static const`) so 2 instances can point
   // at 2 independent "seen" tables — e.g. 1 per SaveSlotManager slot via

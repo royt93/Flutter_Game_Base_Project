@@ -107,7 +107,7 @@ class InventoryService extends GetxService {
     this.transactionCapacity = 200,
   }) : _catalog = itemCatalog,
        _guard = guard ?? AsyncActionGuard(),
-       _key = storageKey ?? 'inventory_service_v1' {
+       _key = storageKey ?? StorageKeys.inventoryServiceV1 {
     // BUG-40: see EconomyWallet's constructor for why this can't wait for
     // onInit() alone.
     _hydrate();

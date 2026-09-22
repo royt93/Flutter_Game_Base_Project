@@ -51,8 +51,8 @@ class SaveSlotManager extends GetxService {
     }
   }
 
-  static const _metaStorageKey = 'save_slot_meta_v1';
-  static const _activeSlotStorageKey = 'save_slot_active_id_v1';
+  static const _metaStorageKey = StorageKeys.saveSlotMetaV1;
+  static const _activeSlotStorageKey = StorageKeys.saveSlotActiveIdV1;
 
   /// ENH-68: caps how many slots [createSlot] will allow — `null` (default)
   /// means unlimited, unchanged from before this existed. Deliberately not

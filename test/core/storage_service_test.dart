@@ -456,4 +456,70 @@ void main() {
       );
     });
   });
+
+  group(
+    // BUG-55: chín-mấy service dùng string literal làm default storageKey
+    // thay vì tham chiếu 1 hằng số StorageKeys — vi phạm convention của
+    // chính CLAUDE.md. Refactor CƠ HỌC (không đổi giá trị chuỗi thật, chỉ
+    // đổi CÁCH tham chiếu) — nếu đổi nhầm giá trị chuỗi, save đã có của
+    // người chơi cũ sẽ "biến mất" (đọc nhầm key rỗng). Test này khoá cứng
+    // từng giá trị chuỗi ĐÚNG NHƯ TRƯỚC khi refactor.
+    'BUG-55: default storageKey constants giữ đúng giá trị chuỗi cũ (không '
+    'đổi format save đã có)',
+    () {
+      test('giá trị từng hằng số khớp đúng literal cũ (không đổi)', () {
+        expect(
+          StorageKeys.achievementProgressV1,
+          'achievement_progress_v1',
+        );
+        expect(
+          StorageKeys.checkpointCoordinatorV1,
+          'checkpoint_coordinator_v1',
+        );
+        expect(StorageKeys.dailyLoginStateV1, 'daily_login_state_v1');
+        expect(
+          StorageKeys.dailyQuestProgressV1,
+          'daily_quest_progress_v1',
+        );
+        expect(StorageKeys.economyWalletV1, 'economy_wallet_v1');
+        expect(StorageKeys.inventoryServiceV1, 'inventory_service_v1');
+        expect(StorageKeys.localScoreboardV1, 'local_scoreboard_v1');
+        expect(StorageKeys.onboardingSeenV1, 'onboarding_seen_v1');
+        expect(StorageKeys.playerProgressionV1, 'player_progression_v1');
+        expect(StorageKeys.offlineOutboxV1, 'offline_outbox_v1');
+        expect(StorageKeys.purchaseLedgerV1, 'purchase_ledger_v1');
+        expect(
+          StorageKeys.seasonEventAnchorsV1,
+          'season_event_anchors_v1',
+        );
+        expect(
+          StorageKeys.rewardTransactionPipelineV1,
+          'reward_transaction_pipeline_v1',
+        );
+        expect(StorageKeys.saveSlotMetaV1, 'save_slot_meta_v1');
+        expect(StorageKeys.saveSlotActiveIdV1, 'save_slot_active_id_v1');
+      });
+
+      test('không trùng lặp giá trị với bất kỳ hằng số nào khác', () {
+        final values = [
+          StorageKeys.achievementProgressV1,
+          StorageKeys.checkpointCoordinatorV1,
+          StorageKeys.dailyLoginStateV1,
+          StorageKeys.dailyQuestProgressV1,
+          StorageKeys.economyWalletV1,
+          StorageKeys.inventoryServiceV1,
+          StorageKeys.localScoreboardV1,
+          StorageKeys.onboardingSeenV1,
+          StorageKeys.playerProgressionV1,
+          StorageKeys.offlineOutboxV1,
+          StorageKeys.purchaseLedgerV1,
+          StorageKeys.seasonEventAnchorsV1,
+          StorageKeys.rewardTransactionPipelineV1,
+          StorageKeys.saveSlotMetaV1,
+          StorageKeys.saveSlotActiveIdV1,
+        ];
+        expect(values.toSet().length, values.length);
+      });
+    },
+  );
 }

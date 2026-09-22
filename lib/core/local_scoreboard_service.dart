@@ -44,7 +44,7 @@ class _ScoreEntry {
 class LocalScoreboardService extends GetxService {
   LocalScoreboardService({this.capacity = 50, String? storageKey})
     : assert(capacity > 0, 'capacity must be greater than 0'),
-      _storageKey = storageKey ?? 'local_scoreboard_v1';
+      _storageKey = storageKey ?? StorageKeys.localScoreboardV1;
 
   // ENH-69: instance field (was `static const`) so 2 instances can point at
   // 2 independent tables — e.g. 1 per SaveSlotManager slot via its

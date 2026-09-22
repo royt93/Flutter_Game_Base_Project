@@ -59,7 +59,7 @@ class _QuestRecord {
 /// used to re-claim an already-claimed quest early.
 class DailyQuestService extends GetxService {
   DailyQuestService({String? storageKey})
-    : _storageKey = storageKey ?? 'daily_quest_progress_v1';
+    : _storageKey = storageKey ?? StorageKeys.dailyQuestProgressV1;
 
   // ENH-71: instance field (was `static const`) so 2 instances can point
   // at 2 independent quest-progress tables — e.g. 1 per SaveSlotManager

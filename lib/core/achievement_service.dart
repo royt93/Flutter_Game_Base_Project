@@ -26,7 +26,7 @@ import 'versioned_json_store.dart';
 /// run via [register], same as the rest of the game's achievement list.
 class AchievementService extends GetxService {
   AchievementService({String? storageKey})
-    : _storageKey = storageKey ?? 'achievement_progress_v1';
+    : _storageKey = storageKey ?? StorageKeys.achievementProgressV1;
 
   // ENH-71: instance field (was `static const`) so 2 instances can point
   // at 2 independent progress tables — e.g. 1 per SaveSlotManager slot via

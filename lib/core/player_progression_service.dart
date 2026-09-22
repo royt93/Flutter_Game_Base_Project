@@ -167,7 +167,7 @@ class PlayerProgressionService extends GetxService {
          [...levelCurve]..sort((a, b) => a.level.compareTo(b.level)),
        ),
        _guard = guard ?? AsyncActionGuard(),
-       _key = storageKey ?? 'player_progression_v1' {
+       _key = storageKey ?? StorageKeys.playerProgressionV1 {
     final error = validateLevelCurve(_curve);
     if (error != null) {
       throw ArgumentError(error.message);

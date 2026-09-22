@@ -35,7 +35,7 @@ class _LedgerState {
 /// server-side validation" doc.
 class PurchaseLedgerService extends GetxService {
   PurchaseLedgerService({String? storageKey})
-    : _storageKey = storageKey ?? 'purchase_ledger_v1';
+    : _storageKey = storageKey ?? StorageKeys.purchaseLedgerV1;
 
   // ENH-71: instance field (was `static const`) so 2 instances can point
   // at 2 independent ledgers — e.g. 1 per SaveSlotManager slot via its
