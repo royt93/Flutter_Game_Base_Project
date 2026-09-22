@@ -20,9 +20,18 @@ Nếu `T` (ví dụ 1 Flame `Component`, `Vector2`, hoặc bất kỳ object nà
 Đổi khai báo thành `final Set<T> _active = Set<T>.identity();` — so sánh đúng theo con trỏ đối tượng, khớp với doc comment.
 
 ## Acceptance criteria
-- [ ] Test với 1 kiểu `T` có override `==`/`hashCode` theo giá trị (2 instance khác nhau, cùng giá trị) — `release()` chỉ ảnh hưởng đúng instance được truyền vào, không đụng instance khác cùng giá trị.
-- [ ] Double-release đúng 1 instance (gọi `release(item)` 2 lần liên tiếp cho CÙNG 1 object) vẫn bị phát hiện/throw như thiết kế.
-- [ ] Test hiện có của `object_pool_test.dart` vẫn pass.
+- [x] Test với 1 kiểu `T` có override `==`/`hashCode` theo giá trị (2 instance khác nhau, cùng giá trị) — `release()` chỉ ảnh hưởng đúng instance được truyền vào, không đụng instance khác cùng giá trị.
+- [x] Double-release đúng 1 instance (gọi `release(item)` 2 lần liên tiếp cho CÙNG 1 object) vẫn bị phát hiện/throw như thiết kế.
+- [x] Test hiện có của `object_pool_test.dart` vẫn pass.
+
+## Quyết định
+Fix đúng như đề xuất: `final _active = <T>{};` → `final _active = Set<T>.identity();`. Không lệch scope.
+
+TDD verify: thêm `_ValueEqualParticle` (override `==`/`hashCode` theo `id`) trong test. `git stash` riêng `lib/core/utils/object_pool.dart`, chạy 3 test mới — test đầu (`acquire 2 object khác identity nhưng bằng nhau theo ==`) FAIL đúng trên code cũ (`Expected: 2, Actual: 1` — `Set` mặc định coi 2 instance value-equal là "trùng", `add()` thứ 2 bị bỏ qua, `activeCount` đếm sai ngay từ acquire, chưa cần tới release). `git stash pop`, chạy lại toàn file — 13/13 pass.
+
+Kết quả cuối: `flutter analyze` root sạch, `flutter test --exclude-tags slow` root 2080 pass / -20 fail (19 golden macOS-only + 1 flaky đã biết `season_event_service_test.dart ENH-71`, cả 2 loại đều có sẵn trong baseline, không liên quan), `dart run tool/api_compatibility.dart check` unchanged. `ObjectPool` không được dùng trong `example/` (grep xác nhận), bỏ qua bước test/analyze `example/`.
+
+Tự chấm: **9.5/10** — 1 dòng, root cause đúng, khớp 100% đề xuất + doc comment sẵn có, TDD chứng minh cả 3 case (đếm sai do Set equality, release không ảnh hưởng object khác value-equal, double-release đúng identity vẫn bị bắt), không phá test cũ.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-53-object-pool-uses-equality-set-not-identity.md` này trước khi làm. Đọc toàn bộ `lib/core/utils/object_pool.dart` và test hiện có trước khi sửa. Implement bằng TDD — viết test dùng 1 class test-only override `==`/`hashCode` để tái hiện đúng bug trước khi sửa.
