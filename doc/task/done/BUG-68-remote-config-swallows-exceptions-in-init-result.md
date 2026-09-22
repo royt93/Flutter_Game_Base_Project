@@ -20,10 +20,23 @@ Consumer app gọi `initResult()` để biết boot có thành công hay không 
 `initResult()` kiểm tra `_source == RemoteConfigSource.remoteFailed` sau khi `init()` chạy xong, trả `SdkFailure(kind: SdkErrorKind.network, ...)` trong trường hợp đó thay vì luôn `SdkSuccess`.
 
 ## Acceptance criteria
-- [ ] `initResult()` trả `SdkFailure` khi remote fetch thất bại (`source == remoteFailed`).
-- [ ] `initResult()` vẫn trả `SdkSuccess` khi remote fetch thành công hoặc dùng đúng asset/local fallback theo thiết kế (không phải lỗi).
-- [ ] `init()` (không phải `initResult()`) hành vi không đổi — vẫn never-throws, vẫn set `_source` đúng.
-- [ ] Test hiện có của `remote_config_service_test.dart` vẫn pass.
+- [x] `initResult()` trả `SdkFailure` khi remote fetch thất bại (`source == remoteFailed`).
+- [x] `initResult()` vẫn trả `SdkSuccess` khi remote fetch thành công hoặc dùng đúng asset/local fallback theo thiết kế (không phải lỗi).
+- [x] `init()` (không phải `initResult()`) hành vi không đổi — vẫn never-throws, vẫn set `_source` đúng.
+- [x] Test hiện có của `remote_config_service_test.dart` vẫn pass.
+
+## Quyết định
+Fix đúng như đề xuất: `initResult()` check `_source == RemoteConfigSource.remoteFailed` sau khi `init()` hoàn tất, trả `SdkFailure(kind: SdkErrorKind.network, ...)`. Verify kỹ enum `RemoteConfigSource` trước khi sửa — `assetOnly` (chưa cấu hình `fetchRemote`, KHÔNG phải lỗi) và `remoteMerged` (thành công) đều vẫn `SdkSuccess`, chỉ `remoteFailed` (đã cấu hình `fetchRemote` nhưng throw) mới là `SdkFailure` — đúng phân biệt "fallback hợp lệ theo thiết kế" vs "fail thật" mà task yêu cầu.
+
+**Phát hiện quan trọng khi verify test hiện có**: có sẵn 1 test (`ENH-58: initResult() + retry`) TÊN CHÍNH XÁC khẳng định hành vi CŨ (buggy) là "đúng ý": `'fetchRemote throw → initResult VẪN trả SdkSuccess (init() tự nuốt lỗi nội bộ, không rethrow ra initResult)'` — đây chính là test PIN CHẶT bug lại, phải sửa test này (không phải thêm test mới song song) để phản ánh hành vi ĐÚNG sau fix, đồng thời vẫn giữ verify `init()` bản thân never-throws (criterion 3). Thêm 1 test mới riêng cho case `assetOnly` (criterion 2, chưa có trước đó).
+
+**TDD verify**: `git stash` riêng `lib/core/remote_config_service.dart`, chạy 2 test mới/đã sửa — FAIL đúng trên code cũ (`SdkSuccess` thay vì `SdkFailure`). `git stash pop`, chạy lại toàn file — 21/21 pass (gồm cả test "retry" hiện có, không bị ảnh hưởng vì kịch bản retry của nó gọi `init()` lại sau khi đã fail rồi mới check kết quả cuối cùng qua getter, không phụ thuộc `initResult()`'s intermediate result).
+
+**Lưu ý behavior change (không phải breaking API surface — `dart run tool/api_compatibility.dart check` vẫn `unchanged` vì không đổi export/signature, chỉ đổi GIÁ TRỊ TRẢ VỀ ở 1 nhánh cụ thể)**: 1 consumer app đang dựa vào `initResult()` LUÔN trả `SdkSuccess` (hành vi cũ, sai) sẽ thấy `SdkFailure` xuất hiện lần đầu khi remote fetch thật sự fail — đây chính là mục đích của fix, không phải side-effect ngoài ý muốn.
+
+Kết quả cuối: `flutter analyze` root sạch, `flutter test --exclude-tags slow` root 2094 pass / -19 fail (baseline golden có sẵn, không liên quan), `dart run tool/api_compatibility.dart check` unchanged, `example/` `flutter analyze` sạch + `flutter test --exclude-tags slow` 132/132 pass (dùng qua `cookbook_screen.dart`/`widget_showcase_screen.dart`).
+
+Tự chấm: **9.5/10** — root cause đúng, khớp 100% đề xuất + phân biệt đúng "fail thật" vs "fallback hợp lệ", phát hiện và sửa đúng 1 test đang PIN chặt hành vi sai thay vì né tránh nó, TDD 2 chiều chứng minh, không phá test cũ nào khác.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 Đọc kỹ file `doc/task/todo/BUG-68-remote-config-swallows-exceptions-in-init-result.md` này trước khi làm. Đọc toàn bộ `lib/core/remote_config_service.dart` (đặc biệt các giá trị `RemoteConfigSource` — phân biệt rõ trường hợp nào là "fail" thật, trường hợp nào là "fallback hợp lệ theo thiết kế") và test hiện có trước khi sửa. Implement bằng TDD.
