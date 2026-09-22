@@ -1334,6 +1334,47 @@ void main() {
         ConnectivityCoordinator.maybe?.onClose();
       },
     );
+
+    testWidgets(
+      // BUG-62: mở lại screen (State instance mới) không được kế thừa
+      // coordinator/probe/signal của lần mở TRƯỚC. `const WidgetShowcaseScreen()`
+      // không key — pump lại ĐÈ TRỰC TIẾP lên cùng vị trí cây chỉ khiến
+      // Flutter tái dùng CÙNG State (didUpdateWidget), không dispose/tạo
+      // mới thật — phải pump 1 cây KHÁC HẲN ở giữa (mô phỏng route pop) để
+      // buộc dispose thật trước khi mở lại, đúng kịch bản bug mô tả.
+      'mở lại screen (reopen): coordinator luôn tươi mới, không kế thừa '
+      'trạng thái/probe cũ (BUG-62)',
+      (tester) async {
+        await _pumpShowcase(tester);
+        await tester.tap(find.text('Interface up').last);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.text('State: online'), findsOneWidget);
+        ConnectivityCoordinator.maybe?.onClose();
+
+        // "Đóng" screen thật: thay cả cây -> dispose() của State cũ chạy.
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+
+        // "Mở lại": mount 1 State HOÀN TOÀN MỚI.
+        await _pumpShowcase(tester);
+
+        // Coordinator mới -> phải quay về offline mặc định, không kế thừa
+        // "online" từ lần mở trước.
+        expect(find.text('State: offline'), findsOneWidget);
+
+        // Bật interface ở LẦN MỞ MỚI này -> phải chuyển online đúng, chứng
+        // minh signal/probe của lần mở mới thật sự được coordinator mới
+        // lắng nghe (không phải coordinator/probe cũ đã dispose, vô tác dụng).
+        await tester.tap(find.text('Interface up').last);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.text('State: online'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        ConnectivityCoordinator.maybe?.onClose();
+      },
+    );
   });
 
   group('FEAT-60: DeepLinkCommandRouter demo', () {

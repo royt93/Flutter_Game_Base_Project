@@ -372,18 +372,30 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _gatedAnalytics = ConsentGatedAnalyticsProvider(
       _DemoAnalyticsProvider(() => setState(() => _demoAnalyticsEventCount++)),
     );
+    // BUG-62: this demo's `probe`/`signal` are bound to THIS State instance
+    // (`_demoProbeSucceeds`, and the toggle buttons write straight to
+    // `_connectivitySignal`) — reusing a `permanent: true` coordinator
+    // across screen reopens (via `.maybe ??`) left both wired to whatever
+    // State instance happened to create it FIRST: the probe closure kept
+    // reading a stale/unmounted State's field forever, and every
+    // subsequent State's own `_connectivitySignal` was a fresh, never-
+    // actually-listened-to orphan (the coordinator only ever subscribes to
+    // the ONE signal it was constructed with). Always create a fresh one
+    // tied to this State's own lifecycle instead — disposed in `dispose()`
+    // below — so a reopened screen never shares a stale coordinator.
+    if (Get.isRegistered<ConnectivityCoordinator>()) {
+      Get.delete<ConnectivityCoordinator>(force: true);
+    }
     _connectivitySignal = FakeConnectivitySignal();
-    _connectivity =
-        ConnectivityCoordinator.maybe ??
-        Get.put(
-          ConnectivityCoordinator(
-            signal: _connectivitySignal,
-            probe: () async => _demoProbeSucceeds,
-            debounceWindow: const Duration(milliseconds: 100),
-            probeInterval: const Duration(seconds: 5),
-          ),
-          permanent: true,
-        );
+    _connectivity = Get.put(
+      ConnectivityCoordinator(
+        signal: _connectivitySignal,
+        probe: () async => _demoProbeSucceeds,
+        debounceWindow: const Duration(milliseconds: 100),
+        probeInterval: const Duration(seconds: 5),
+      ),
+      permanent: true,
+    );
     _deepLinks =
         DeepLinkCommandRouter.maybe ??
               Get.put(
@@ -550,6 +562,15 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _assetSession.onClose();
     _sceneTransition.dispose();
     _levelUpController.dispose();
+    // BUG-62: delete our own fresh-per-instance coordinator/signal (see the
+    // matching comment in initState) rather than leaving it registered for
+    // a future State instance to inherit stale. The coordinator's own
+    // onClose() cancels ITS subscription to the signal, but the signal
+    // (caller-owned) is ours to close.
+    if (Get.isRegistered<ConnectivityCoordinator>()) {
+      Get.delete<ConnectivityCoordinator>(force: true);
+    }
+    _connectivitySignal.dispose();
     super.dispose();
   }
 
