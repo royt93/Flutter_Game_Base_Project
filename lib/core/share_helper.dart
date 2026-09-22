@@ -5,11 +5,33 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:share_plus/share_plus.dart';
 
+/// BUG-59: `sharePositionOrigin` anchors the iPad share-sheet popover (iPad
+/// uses a popover, not a bottom sheet like iPhone/Android) — omitting it
+/// throws on iPadOS. Derived from [sharePositionContext]'s own `RenderBox`
+/// (typically the button/card that triggered the share) when supplied;
+/// `null` (the pre-fix default — no anchor) on platforms/callers that don't
+/// need it, so this is purely additive, never a behavior change for an
+/// existing call site that doesn't pass it.
+Rect? _sharePositionOriginOf(BuildContext? sharePositionContext) {
+  final box = sharePositionContext?.findRenderObject();
+  if (box is! RenderBox || !box.hasSize) return null;
+  return box.localToGlobal(Offset.zero) & box.size;
+}
+
 /// One shared share pipeline used by every call site in the app — text-only
 /// (e.g. inviting friends) or with a captured screenshot (e.g. a level
 /// result). Don't create a separate share function/plugin call elsewhere.
-Future<void> shareText(String text) {
-  return SharePlus.instance.share(ShareParams(text: text));
+///
+/// Pass [sharePositionContext] (typically the widget that triggered the
+/// share) so the share sheet has an anchor on iPad — see
+/// [_sharePositionOriginOf].
+Future<void> shareText(String text, {BuildContext? sharePositionContext}) {
+  return SharePlus.instance.share(
+    ShareParams(
+      text: text,
+      sharePositionOrigin: _sharePositionOriginOf(sharePositionContext),
+    ),
+  );
 }
 
 /// Captures [boundaryKey] (must be a `RepaintBoundary`) as a PNG, overlaying
@@ -87,15 +109,32 @@ Future<ui.Image> _withTextOverlay(
     Offset(12 * pixelRatio, h - barHeight + 8 * pixelRatio),
   );
   final picture = recorder.endRecording();
-  return picture.toImage(board.width, board.height);
+  // BUG-59: the native Skia `ui.Picture` itself was never disposed — only
+  // the `ui.Image`s it produces were (BUG-29's fix above). `toImage()`
+  // rasterizes the recorded drawing ops into a separate `ui.Image`; the
+  // `Picture` (the ops themselves) is a distinct native object that must be
+  // disposed on its own, or it leaks every time a score/journey card with
+  // overlay text is shared.
+  try {
+    return await picture.toImage(board.width, board.height);
+  } finally {
+    picture.dispose();
+  }
 }
 
 /// Captures the board then opens the share sheet with [text]. No-op if the
 /// capture fails.
+///
+/// Pass [sharePositionContext] for an iPad-safe popover anchor — see
+/// [_sharePositionOriginOf].
 Future<void> shareBoardImage({
   required GlobalKey boundaryKey,
   required String text,
+  BuildContext? sharePositionContext,
 }) async {
+  // Computed before the `await` below — `sharePositionContext`'s widget may
+  // unmount while `captureBoardPng` is running, making the context stale.
+  final sharePositionOrigin = _sharePositionOriginOf(sharePositionContext);
   final png = await captureBoardPng(boundaryKey, overlayText: text);
   if (png == null) return;
   await SharePlus.instance.share(
@@ -103,6 +142,7 @@ Future<void> shareBoardImage({
       text: text,
       files: [XFile.fromData(png, mimeType: 'image/png')],
       fileNameOverrides: const ['roy_casual_kit.png'],
+      sharePositionOrigin: sharePositionOrigin,
     ),
   );
 }
@@ -116,7 +156,10 @@ Future<void> shareBoardImage({
 Future<void> shareScoreCard({
   required GlobalKey boundaryKey,
   required String levelText,
+  BuildContext? sharePositionContext,
 }) async {
+  // Computed before the `await` below — see `shareBoardImage`'s comment.
+  final sharePositionOrigin = _sharePositionOriginOf(sharePositionContext);
   final png = await captureBoardPng(boundaryKey, overlayText: levelText);
   if (png == null) return;
   await SharePlus.instance.share(
@@ -124,6 +167,7 @@ Future<void> shareScoreCard({
       text: levelText,
       files: [XFile.fromData(png, mimeType: 'image/png')],
       fileNameOverrides: const ['roy_casual_kit_score_card.png'],
+      sharePositionOrigin: sharePositionOrigin,
     ),
   );
 }
@@ -140,12 +184,14 @@ Future<void> shareScoreCard({
 Future<void> shareJourneyCard({
   required Uint8List png,
   required String text,
+  BuildContext? sharePositionContext,
 }) async {
   await SharePlus.instance.share(
     ShareParams(
       text: text,
       files: [XFile.fromData(png, mimeType: 'image/png')],
       fileNameOverrides: const ['roy_casual_kit_journey.png'],
+      sharePositionOrigin: _sharePositionOriginOf(sharePositionContext),
     ),
   );
 }

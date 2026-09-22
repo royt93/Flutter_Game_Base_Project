@@ -949,6 +949,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     return shareScoreCard(
       boundaryKey: _victoryCardKey,
       levelText: 'Level 50 Complete!',
+      sharePositionContext: context,
     );
   }
 
