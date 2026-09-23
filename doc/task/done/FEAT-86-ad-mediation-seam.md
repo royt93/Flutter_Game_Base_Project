@@ -42,3 +42,37 @@ Sau khi push, viết mục `## Quyết định` vào chính file task này (tick
 
 ## Ghi chú độ tin cậy
 Cao — xác nhận qua `ls lib/core/*.dart` (fork nội bộ) không có seam nào cho ads, gap thật với genre-fit rõ ràng (casual/idle game). Không trùng task nào trong `doc/task/done/`.
+
+## Quyết định
+**Từ chối, không làm — trùng quyết định phạm vi sản phẩm đã có sẵn.**
+
+Trước khi implement, đã đọc `lib/core/purchase_seam.dart` để mirror pattern (theo
+đúng Prompt), và phát hiện doc comment của
+`lib/core/plugin_adapter_conformance_suite.dart` (class `PluginAdapterConformanceSuite`)
+ghi rõ: *"Standard conformance checklist for the 5 platform-neutral seams
+this kit ships (...) — deliberately excludes an 'ads' adapter, since this kit
+ships no ads mediation seam by product decision (FEAT-02's rejection; ...)"*.
+
+Tra `doc/task/done/FEAT-02-ads-mediation-interface.md` — task này đề xuất gần
+như NGUYÊN VĂN cùng interface (`RewardedAdProvider`/`InterstitialAdProvider`,
+`isReady()`/`show()`) và đã có `## Quyết định` từ trước:
+
+> **Từ chối, không làm.** Chủ repo (Roy) không muốn quảng cáo trong base kit
+> này. Không phải vấn đề kỹ thuật — quyết định phạm vi sản phẩm.
+
+Đây là quyết định sản phẩm của chính chủ repo (không phải technical debt hay
+gap bị bỏ sót) — "Ghi chú độ tin cậy" của FEAT-86 tự nhận "Không trùng task
+nào trong `doc/task/done/`" là **sai**: đã trùng FEAT-02, chỉ không bị bắt vì
+tên file (`ad-mediation-seam` vs `ads-mediation-interface`) khác nhau đủ để
+qua mặt 1 lần grep tên file thô.
+
+Đã viết xong `AdMediationSeam`/`AdResult` (interface + test unit + fake
+adapter + demo tile trong `example/`) TRƯỚC KHI phát hiện FEAT-02 — toàn bộ
+đã revert (`git checkout`/xoá file mới), không có gì được commit. Không tick
+checkbox Acceptance criteria nào vì không implement.
+
+**Đề xuất cho các FEAT còn lại**: quét nhanh mọi `## Quyết định: Từ chối` đã
+có trong `doc/task/done/` trước khi bắt đầu từng FEAT tiếp theo, để tránh lặp
+lại việc này.
+
+Điểm tự chấm: không áp dụng (không implement, không commit code).
