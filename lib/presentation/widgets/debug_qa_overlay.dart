@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_info.dart';
 import '../../core/audio_manager.dart';
+import '../../core/connectivity_coordinator.dart';
+import '../../core/experiment_bucketing_service.dart';
 import '../../core/locale_service.dart';
 import '../../core/neon_theme.dart';
 import '../../core/replay_recorder.dart';
@@ -90,6 +92,13 @@ class _DebugQaOverlayState extends State<DebugQaOverlay> {
 
   void _setTab(int tab) => setState(() => _tab = tab);
 
+  // FEAT-93: Time Travel/Network Simulator tabs mutate EXTERNAL global
+  // state (clamped_clock.dart's offset, ConnectivityCoordinator's forced
+  // state) rather than State owned by this widget — this forces an
+  // immediate rebuild after such a mutation instead of waiting up to
+  // 500ms for the ambient `_refreshTimer` below to catch up.
+  void _refreshQa() => setState(() {});
+
   void _setPlaygroundVariant(CommonButtonVariant variant) =>
       setState(() => _playgroundVariant = variant);
 
@@ -115,6 +124,7 @@ class _DebugQaOverlayState extends State<DebugQaOverlay> {
             onClose: _toggle,
             tab: _tab,
             onTabChanged: _setTab,
+            onQaChanged: _refreshQa,
             playgroundVariant: _playgroundVariant,
             playgroundColor: _playgroundColor,
             playgroundLabelController: _playgroundLabelController,
@@ -150,6 +160,7 @@ class _Panel extends StatelessWidget {
     required this.onClose,
     required this.tab,
     required this.onTabChanged,
+    required this.onQaChanged,
     required this.playgroundVariant,
     required this.playgroundColor,
     required this.playgroundLabelController,
@@ -164,6 +175,7 @@ class _Panel extends StatelessWidget {
   final VoidCallback onClose;
   final int tab;
   final ValueChanged<int> onTabChanged;
+  final VoidCallback onQaChanged;
   final CommonButtonVariant playgroundVariant;
   final Color playgroundColor;
   final TextEditingController playgroundLabelController;
@@ -193,7 +205,11 @@ class _Panel extends StatelessWidget {
                 type: MaterialType.transparency,
                 child: Container(
                   width: 320,
-                  constraints: const BoxConstraints(maxHeight: 520),
+                  // FEAT-93: +80 over the prior 520 — the tab bar now
+                  // wraps onto 2 lines (7 tabs), so each tab's own content
+                  // area needs the same headroom it had before to avoid
+                  // clipping/squeezing content near the bottom edge.
+                  constraints: const BoxConstraints(maxHeight: 600),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -218,35 +234,50 @@ class _Panel extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Row(
+                      // FEAT-93: `Wrap`, not `Row` of `Expanded` (the prior
+                      // layout) — 7 tabs no longer fit on 1 line across
+                      // this panel's fixed 320px width. `Wrap` flows the
+                      // overflow onto a 2nd line instead of requiring a
+                      // horizontal scroll — every tab stays simultaneously
+                      // visible/tappable, so existing tests that
+                      // `tester.tap(find.text('Replay'))` etc. directly
+                      // (no scroll-into-view step) keep working unchanged.
+                      Wrap(
                         children: [
-                          Expanded(
-                            child: _TabButton(
-                              label: 'State',
-                              selected: tab == 0,
-                              onTap: () => onTabChanged(0),
-                            ),
+                          _TabButton(
+                            label: 'State',
+                            selected: tab == 0,
+                            onTap: () => onTabChanged(0),
                           ),
-                          Expanded(
-                            child: _TabButton(
-                              label: 'Playground',
-                              selected: tab == 1,
-                              onTap: () => onTabChanged(1),
-                            ),
+                          _TabButton(
+                            label: 'Playground',
+                            selected: tab == 1,
+                            onTap: () => onTabChanged(1),
                           ),
-                          Expanded(
-                            child: _TabButton(
-                              label: 'Replay',
-                              selected: tab == 2,
-                              onTap: () => onTabChanged(2),
-                            ),
+                          _TabButton(
+                            label: 'Replay',
+                            selected: tab == 2,
+                            onTap: () => onTabChanged(2),
                           ),
-                          Expanded(
-                            child: _TabButton(
-                              label: 'Health',
-                              selected: tab == 3,
-                              onTap: () => onTabChanged(3),
-                            ),
+                          _TabButton(
+                            label: 'Health',
+                            selected: tab == 3,
+                            onTap: () => onTabChanged(3),
+                          ),
+                          _TabButton(
+                            label: 'Time Travel',
+                            selected: tab == 4,
+                            onTap: () => onTabChanged(4),
+                          ),
+                          _TabButton(
+                            label: 'Network',
+                            selected: tab == 5,
+                            onTap: () => onTabChanged(5),
+                          ),
+                          _TabButton(
+                            label: 'Variant',
+                            selected: tab == 6,
+                            onTap: () => onTabChanged(6),
                           ),
                         ],
                       ),
@@ -267,7 +298,10 @@ class _Panel extends StatelessWidget {
                             onStop: onStopReplay,
                             onExport: onExportReplay,
                           ),
-                          _ => const _HealthTab(),
+                          3 => const _HealthTab(),
+                          4 => _TimeTravelTab(onChanged: onQaChanged),
+                          5 => _NetworkSimulatorTab(onChanged: onQaChanged),
+                          _ => const _VariantSwitcherTab(),
                         },
                       ),
                     ],
@@ -301,7 +335,7 @@ class _TabButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
@@ -618,6 +652,269 @@ class _HealthTabState extends State<_HealthTab> {
               style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+String _formatDebugOffset(int ms) {
+  if (ms == 0) return '0 (không time travel)';
+  final sign = ms < 0 ? '-' : '+';
+  final d = Duration(milliseconds: ms.abs());
+  return '$sign${d.inDays}d ${d.inHours.remainder(24)}h '
+      '${d.inMinutes.remainder(60)}m';
+}
+
+/// FEAT-93: simulates advancing time WITHOUT touching the OS clock — QA
+/// can see Daily Login/Quest/Energy/Season Event react instantly to
+/// +2h/+24h/+7d. Applies via `clamped_clock.dart`'s debug-only
+/// [setDebugTimeOffsetMs] (a no-op outside `kDebugMode`/`kProfileMode`),
+/// which every `nowMsClamped`/`todayEpochDayClamped` caller already reads
+/// from — no per-system wiring needed here.
+class _TimeTravelTab extends StatelessWidget {
+  const _TimeTravelTab({required this.onChanged});
+
+  final VoidCallback onChanged;
+
+  void _jump(Duration by) {
+    setDebugTimeOffsetMs(debugTimeOffsetMs + by.inMilliseconds);
+    onChanged();
+  }
+
+  void _reset() {
+    setDebugTimeOffsetMs(0);
+    onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final storageReady = StorageService.maybe != null;
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Time Travel', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text('Offset hiện tại: ${_formatDebugOffset(debugTimeOffsetMs)}'),
+          const SizedBox(height: 4),
+          Text(
+            storageReady
+                ? 'nowMsClamped(): ${nowMsClamped()}'
+                : 'StorageService chưa đăng ký trong app này.',
+            key: const Key('debugQaTimeTravelNow'),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              CommonButton(
+                key: const Key('debugQaTimeTravelPlus2h'),
+                label: '+2h',
+                variant: CommonButtonVariant.secondary,
+                onTap: () => _jump(const Duration(hours: 2)),
+              ),
+              CommonButton(
+                key: const Key('debugQaTimeTravelPlus24h'),
+                label: '+24h',
+                variant: CommonButtonVariant.secondary,
+                onTap: () => _jump(const Duration(hours: 24)),
+              ),
+              CommonButton(
+                key: const Key('debugQaTimeTravelPlus7d'),
+                label: '+7 ngày',
+                variant: CommonButtonVariant.secondary,
+                onTap: () => _jump(const Duration(days: 7)),
+              ),
+              CommonButton(
+                key: const Key('debugQaTimeTravelReset'),
+                label: 'Reset',
+                onTap: _reset,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// FEAT-93: forces `ConnectivityCoordinator` offline/degraded/online
+/// without touching the device's real WiFi/cellular — see
+/// `ConnectivityCoordinator.debugForceState`'s own doc for exactly how the
+/// override interacts with real signal/probe events while active.
+class _NetworkSimulatorTab extends StatelessWidget {
+  const _NetworkSimulatorTab({required this.onChanged});
+
+  final VoidCallback onChanged;
+
+  void _force(ConnectivityState? state) {
+    ConnectivityCoordinator.maybe?.debugForceState(state);
+    onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final coordinator = ConnectivityCoordinator.maybe;
+    if (coordinator == null) {
+      return const Text(
+        'ConnectivityCoordinator chưa được đăng ký (Get.put) trong app này.',
+      );
+    }
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Network Simulator',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'State hiện tại: ${coordinator.state.name}',
+            key: const Key('debugQaNetworkState'),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              CommonButton(
+                key: const Key('debugQaNetworkForceOffline'),
+                label: 'Force offline',
+                variant: CommonButtonVariant.secondary,
+                onTap: () => _force(ConnectivityState.offline),
+              ),
+              CommonButton(
+                key: const Key('debugQaNetworkForceDegraded'),
+                label: 'Force degraded',
+                variant: CommonButtonVariant.secondary,
+                onTap: () => _force(ConnectivityState.degraded),
+              ),
+              CommonButton(
+                key: const Key('debugQaNetworkForceOnline'),
+                label: 'Force online',
+                variant: CommonButtonVariant.secondary,
+                onTap: () => _force(ConnectivityState.online),
+              ),
+              CommonButton(
+                key: const Key('debugQaNetworkClear'),
+                label: 'Clear (real)',
+                onTap: () => _force(null),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// FEAT-93: overrides `ExperimentBucketingService.variantFor`'s result for
+/// a typed-in experiment key/variant list — reflects at EVERY call site
+/// reading that experiment, since the override lives inside `variantFor`
+/// itself (`ExperimentBucketingService.debugSetVariantOverride`), not a
+/// side channel only this tab reads.
+class _VariantSwitcherTab extends StatefulWidget {
+  const _VariantSwitcherTab();
+
+  @override
+  State<_VariantSwitcherTab> createState() => _VariantSwitcherTabState();
+}
+
+class _VariantSwitcherTabState extends State<_VariantSwitcherTab> {
+  final _keyController = TextEditingController(text: 'demo_experiment');
+  final _variantsController = TextEditingController(
+    text: 'control,variant_a,variant_b',
+  );
+
+  @override
+  void dispose() {
+    _keyController.dispose();
+    _variantsController.dispose();
+    super.dispose();
+  }
+
+  List<String> get _variants => _variantsController.text
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+
+  @override
+  Widget build(BuildContext context) {
+    final service = ExperimentBucketingService.maybe;
+    if (service == null) {
+      return const Text(
+        'ExperimentBucketingService chưa được đăng ký (Get.put) trong app này.',
+      );
+    }
+    final experimentKey = _keyController.text.trim();
+    final variants = _variants;
+    final current = experimentKey.isEmpty || variants.isEmpty
+        ? null
+        : service.variantFor(experimentKey, variants);
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Variant Switcher',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          const Text('Experiment key'),
+          TextField(
+            key: const Key('debugQaVariantKeyField'),
+            controller: _keyController,
+            decoration: const InputDecoration(isDense: true),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          const Text('Variants (phân cách bởi dấu phẩy)'),
+          TextField(
+            key: const Key('debugQaVariantListField'),
+            controller: _variantsController,
+            decoration: const InputDecoration(isDense: true),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Đang chọn: ${current ?? "-"}',
+            key: const Key('debugQaVariantCurrent'),
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final variant in variants)
+                ChoiceChip(
+                  key: Key('debugQaVariantChip_$variant'),
+                  label: Text(variant),
+                  selected: current == variant,
+                  onSelected: (_) => setState(
+                    () => service.debugSetVariantOverride(
+                      experimentKey,
+                      variant,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          CommonButton(
+            key: const Key('debugQaVariantClear'),
+            label: 'Clear override',
+            variant: CommonButtonVariant.secondary,
+            onTap: variants.isEmpty
+                ? null
+                : () => setState(
+                    () => service.debugSetVariantOverride(experimentKey, null),
+                  ),
+          ),
         ],
       ),
     );

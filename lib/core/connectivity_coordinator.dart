@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import 'utils/clamped_clock.dart';
@@ -165,6 +166,32 @@ class ConnectivityCoordinator extends GetxService {
 
   int get queueLength => _queue.length;
 
+  // FEAT-93: DebugQaOverlay's "Network Simulator" tab — lets a QA tester
+  // force offline/degraded without touching the device's real WiFi/
+  // cellular. Always `null` in a release build (nothing sets it outside
+  // an already debug-gated UI, and [debugForceState] itself no-ops
+  // outside `kDebugMode`/`kProfileMode`).
+  ConnectivityState? _debugForcedState;
+
+  /// Forces [state]/[stateStream] to report [state] regardless of what
+  /// real signal/probe evaluations find, until cleared with `null` — a
+  /// no-op outside `kDebugMode`/`kProfileMode` (same posture as [dlog]).
+  /// Real probes keep running in the background the whole time (so
+  /// forcing `online` while genuinely offline can still trigger a REAL
+  /// [enqueue]d task drain attempt — a deliberate way to test drain
+  /// behavior on-device without needing actual connectivity); clearing
+  /// the override (`null`) immediately re-evaluates real connectivity
+  /// instead of waiting for the next signal/probe event.
+  void debugForceState(ConnectivityState? state) {
+    if (!kDebugMode && !kProfileMode) return;
+    _debugForcedState = state;
+    if (state != null) {
+      _setState(state);
+    } else {
+      _scheduleInterfaceEvaluation(signal.hasInterfaceNow);
+    }
+  }
+
   void _scheduleInterfaceEvaluation(bool hasInterface) {
     _debounceTimer?.cancel();
     _debounceTimer = _createTimer(
@@ -225,9 +252,12 @@ class ConnectivityCoordinator extends GetxService {
   }
 
   void _setState(ConnectivityState next) {
-    if (_state == next) return;
-    _state = next;
-    _stateController.add(next);
+    // A forced debug state wins over whatever the real signal/probe path
+    // just computed — see [debugForceState].
+    final effective = _debugForcedState ?? next;
+    if (_state == effective) return;
+    _state = effective;
+    _stateController.add(effective);
   }
 
   void enqueue(QueuedTask task) {

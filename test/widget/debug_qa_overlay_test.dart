@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
+import 'package:roy_casual_kit/core/experiment_bucketing_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/replay_recorder.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/clamped_clock.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/debug_qa_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -354,6 +357,258 @@ void main() {
       expect(output.data, contains('schemaVersion'));
       expect(output.data, contains('"audio"'));
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('FEAT-93: Time Travel tab', () {
+    tearDown(() => setDebugTimeOffsetMs(0));
+
+    Future<void> openPanel(WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      Get.put(StorageService(await SharedPreferences.getInstance()));
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: DebugQaOverlay(child: Material(child: Text('app content'))),
+        ),
+      );
+      await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+      await tester.pump();
+      await tester.tap(find.text('Time Travel'));
+      await tester.pump();
+    }
+
+    testWidgets('mặc định offset=0, hiện đúng "không time travel"', (
+      tester,
+    ) async {
+      await openPanel(tester);
+
+      expect(find.textContaining('không time travel'), findsOneWidget);
+    });
+
+    testWidgets(
+      'bấm +24h -> offset cập nhật đúng, nowMsClamped() nhảy tới tương lai',
+      (tester) async {
+        await openPanel(tester);
+        final before = DateTime.now().toUtc().millisecondsSinceEpoch;
+
+        await tester.tap(find.byKey(const Key('debugQaTimeTravelPlus24h')));
+        await tester.pump();
+
+        expect(debugTimeOffsetMs, const Duration(hours: 24).inMilliseconds);
+        final display = tester.widget<Text>(
+          find.byKey(const Key('debugQaTimeTravelNow')),
+        );
+        final shown = int.parse(
+          RegExp(r'nowMsClamped\(\): (\d+)').firstMatch(display.data!)!.group(1)!,
+        );
+        expect(
+          shown,
+          greaterThanOrEqualTo(before + const Duration(hours: 23).inMilliseconds),
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('bấm +2h rồi +7 ngày cộng dồn (không ghi đè)', (
+      tester,
+    ) async {
+      await openPanel(tester);
+
+      await tester.tap(find.byKey(const Key('debugQaTimeTravelPlus2h')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('debugQaTimeTravelPlus7d')));
+      await tester.pump();
+
+      expect(
+        debugTimeOffsetMs,
+        const Duration(hours: 2).inMilliseconds +
+            const Duration(days: 7).inMilliseconds,
+      );
+    });
+
+    testWidgets('bấm Reset -> offset về 0', (tester) async {
+      await openPanel(tester);
+      await tester.tap(find.byKey(const Key('debugQaTimeTravelPlus24h')));
+      await tester.pump();
+      expect(debugTimeOffsetMs, isNot(0));
+
+      await tester.tap(find.byKey(const Key('debugQaTimeTravelReset')));
+      await tester.pump();
+
+      expect(debugTimeOffsetMs, 0);
+      expect(find.textContaining('không time travel'), findsOneWidget);
+    });
+  });
+
+  group('FEAT-93: Network Simulator tab', () {
+    Future<ConnectivityCoordinator> openPanel(WidgetTester tester) async {
+      final coordinator = ConnectivityCoordinator(
+        signal: FakeConnectivitySignal(),
+        probe: () async => true,
+      );
+      Get.put(coordinator, permanent: true);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: DebugQaOverlay(child: Material(child: Text('app content'))),
+        ),
+      );
+      await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+      await tester.pump();
+      await tester.tap(find.text('Network'));
+      await tester.pump();
+      return coordinator;
+    }
+
+    testWidgets(
+      'ConnectivityCoordinator chưa đăng ký -> báo rõ thay vì crash',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: DebugQaOverlay(child: Material(child: Text('app content'))),
+          ),
+        );
+        await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+        await tester.pump();
+        await tester.tap(find.text('Network'));
+        await tester.pump();
+
+        expect(find.textContaining('chưa được đăng ký'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'bấm Force offline -> state=offline ngay, không cần tắt mạng thật',
+      (tester) async {
+        final coordinator = await openPanel(tester);
+
+        await tester.tap(find.byKey(const Key('debugQaNetworkForceOffline')));
+        await tester.pump();
+
+        expect(coordinator.state, ConnectivityState.offline);
+        expect(find.textContaining('offline'), findsWidgets);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('bấm Force degraded -> state=degraded ngay', (tester) async {
+      final coordinator = await openPanel(tester);
+
+      await tester.tap(find.byKey(const Key('debugQaNetworkForceDegraded')));
+      await tester.pump();
+
+      expect(coordinator.state, ConnectivityState.degraded);
+    });
+
+    testWidgets('bấm Clear (real) -> gỡ override, tự đánh giá lại', (
+      tester,
+    ) async {
+      final coordinator = await openPanel(tester);
+      await tester.tap(find.byKey(const Key('debugQaNetworkForceOffline')));
+      await tester.pump();
+      expect(coordinator.state, ConnectivityState.offline);
+
+      await tester.tap(find.byKey(const Key('debugQaNetworkClear')));
+      // debugForceState(null) re-evaluates connectivity through the SAME
+      // real 400ms debounce Timer the coordinator normally uses (no fake
+      // createTimer injected here — this test is about the DebugQaOverlay
+      // wiring, not debounce internals, which connectivity_coordinator_test.dart
+      // already covers in isolation) — pump past it so nothing is left
+      // pending at teardown.
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('FEAT-93: Variant Switcher tab', () {
+    Future<ExperimentBucketingService> openPanel(WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      Get.put(StorageService(await SharedPreferences.getInstance()));
+      final service = ExperimentBucketingService();
+      Get.put(service, permanent: true);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: DebugQaOverlay(child: Material(child: Text('app content'))),
+        ),
+      );
+      await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+      await tester.pump();
+      await tester.tap(find.text('Variant'));
+      await tester.pump();
+      return service;
+    }
+
+    testWidgets(
+      'ExperimentBucketingService chưa đăng ký -> báo rõ thay vì crash',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: DebugQaOverlay(child: Material(child: Text('app content'))),
+          ),
+        );
+        await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+        await tester.pump();
+        await tester.tap(find.text('Variant'));
+        await tester.pump();
+
+        expect(find.textContaining('chưa được đăng ký'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'chọn 1 variant chip -> override có hiệu lực ở mọi lần gọi variantFor sau đó',
+      (tester) async {
+        final service = await openPanel(tester);
+
+        await tester.tap(find.byKey(const Key('debugQaVariantChip_variant_a')));
+        await tester.pump();
+
+        expect(
+          service.variantFor('demo_experiment', [
+            'control',
+            'variant_a',
+            'variant_b',
+          ]),
+          'variant_a',
+        );
+        expect(
+          find.textContaining('Đang chọn: variant_a'),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('bấm Clear override -> quay lại bucket hash bình thường', (
+      tester,
+    ) async {
+      final service = await openPanel(tester);
+      await tester.tap(find.byKey(const Key('debugQaVariantChip_variant_a')));
+      await tester.pump();
+
+      // This tab's content (2 text fields + chip row + button) overflows
+      // the panel's visible height at the default 800x600 test viewport —
+      // scroll the button into view within its own SingleChildScrollView
+      // before tapping it.
+      await tester.ensureVisible(
+        find.byKey(const Key('debugQaVariantClear')),
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('debugQaVariantClear')));
+      await tester.pump();
+
+      final normal = service.variantFor('demo_experiment', [
+        'control',
+        'variant_a',
+        'variant_b',
+      ]);
+      expect(find.textContaining('Đang chọn: $normal'), findsOneWidget);
     });
   });
 }

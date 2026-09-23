@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import 'storage_service.dart';
@@ -54,6 +55,29 @@ class ExperimentBucketingService extends GetxService {
     return generated;
   }
 
+  // FEAT-93: DebugQaOverlay's "Variant Switcher" tab — when an
+  // experimentKey has an entry here, `variantFor` returns it directly
+  // instead of the hash-based bucket, so a QA tester can flip variants
+  // instantly for every call site without waiting for a fresh
+  // `anonymousId`/reinstall. Always empty in a release build.
+  final Map<String, String> _debugVariantOverrides = {};
+
+  /// Overrides `variantFor(experimentKey, ...)`'s result to [variant] —
+  /// affects EVERY call site reading this experiment, not just the caller
+  /// that set it — until cleared with `null`. A no-op outside
+  /// `kDebugMode`/`kProfileMode` (same posture as [dlog]). If [variant]
+  /// isn't actually in the `variants` list a later `variantFor` call
+  /// passes, that call falls back to its normal hash-based bucket instead
+  /// of returning a value the caller never offered.
+  void debugSetVariantOverride(String experimentKey, String? variant) {
+    if (!kDebugMode && !kProfileMode) return;
+    if (variant == null) {
+      _debugVariantOverrides.remove(experimentKey);
+    } else {
+      _debugVariantOverrides[experimentKey] = variant;
+    }
+  }
+
   /// Returns the same variant from [variants] for the same [experimentKey]
   /// on this device, every time it's called (including across app
   /// restarts, since [anonymousId] is cached). A different [experimentKey]
@@ -71,6 +95,10 @@ class ExperimentBucketingService extends GetxService {
     }
     if (variants.isEmpty) {
       throw ArgumentError.value(variants, 'variants', 'must not be empty');
+    }
+    final override = _debugVariantOverrides[experimentKey];
+    if (override != null && variants.contains(override)) {
+      return override;
     }
     return variants[bucketIndex(anonymousId, experimentKey, variants.length)];
   }

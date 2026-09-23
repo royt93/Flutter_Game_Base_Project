@@ -23,6 +23,8 @@ int get _realDay => DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000;
 int get _realMs => DateTime.now().toUtc().millisecondsSinceEpoch;
 
 void main() {
+  tearDown(() => setDebugTimeOffsetMs(0));
+
   setUp(() => clockRewindBlockedCount = 0);
   tearDown(Get.reset);
 
@@ -247,5 +249,61 @@ void main() {
 
       expect(todayEpochDayClamped(), _realDay);
     });
+  });
+
+  group('FEAT-93: setDebugTimeOffsetMs (Time Travel tab)', () {
+    test('mặc định offset=0, không ảnh hưởng gì', () async {
+      await _boot();
+
+      expect(debugTimeOffsetMs, 0);
+      expect(nowMsClamped(), closeTo(_realMs, 2000));
+    });
+
+    test('set offset +24h -> nowMsClamped() nhảy tới đúng tương lai', () async {
+      await _boot();
+      final oneDayMs = const Duration(days: 1).inMilliseconds;
+
+      setDebugTimeOffsetMs(oneDayMs);
+
+      expect(debugTimeOffsetMs, oneDayMs);
+      expect(nowMsClamped(), closeTo(_realMs + oneDayMs, 2000));
+    });
+
+    test(
+      'set offset +7 ngày -> todayEpochDayClamped() cũng nhảy đúng, phản '
+      'ánh nhất quán cả 2 hàm',
+      () async {
+        await _boot();
+        final sevenDaysMs = const Duration(days: 7).inMilliseconds;
+
+        setDebugTimeOffsetMs(sevenDaysMs);
+
+        expect(
+          todayEpochDayClamped(),
+          _realDay + 7,
+          reason:
+              'Daily Login/Quest/Season Event đều đọc todayEpochDayClamped, '
+              'phải cùng nhảy tương lai như nowMsClamped',
+        );
+      },
+    );
+
+    test(
+      'set về 0 -> quay lại đúng ngay lúc gọi (KHÔNG lùi mốc watermark đã '
+      'ratchet lên, giống hệt hành vi vặn đồng hồ thật lùi lại)',
+      () async {
+        await _boot();
+        setDebugTimeOffsetMs(Duration(hours: 2).inMilliseconds);
+        final jumped = nowMsClamped(); // ratchet maxMsSeen lên tương lai.
+
+        setDebugTimeOffsetMs(0);
+
+        expect(debugTimeOffsetMs, 0);
+        // watermark đã ratchet lên `jumped` — đọc lại NGAY LẬP TỨC (không
+        // có thời gian thật trôi qua) phải clamp ở watermark đó, không
+        // lùi xuống thời gian thật hiện tại.
+        expect(nowMsClamped(), greaterThanOrEqualTo(jumped));
+      },
+    );
   });
 }

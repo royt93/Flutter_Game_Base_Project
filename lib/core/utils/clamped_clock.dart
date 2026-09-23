@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../storage_service.dart';
 
 /// A "never goes backward" clock — a monotonic day/ms clock shared by every
@@ -29,6 +31,36 @@ import '../storage_service.dart';
 /// as a live diagnostic; tests reset it directly.
 int clockRewindBlockedCount = 0;
 
+int _debugTimeOffsetMs = 0;
+
+/// The debug-only offset currently added to the real wall clock by every
+/// [nowMsClamped]/[todayEpochDayClamped] read — always `0` unless
+/// [setDebugTimeOffsetMs] was called. Exposed read-only for a debug/QA
+/// panel to show the current "time travel" state.
+int get debugTimeOffsetMs => _debugTimeOffsetMs;
+
+/// Sets the debug-only offset [nowMsClamped]/[todayEpochDayClamped] add to
+/// the real wall clock before every read — FEAT-93's DebugQaOverlay "Time
+/// Travel" tab, letting a QA tester see a time-gated system (Daily Login/
+/// Quest/Energy/Season Event) react to +2h/+24h/+7d without touching the
+/// OS clock (which routinely causes unwanted side effects elsewhere on the
+/// device). A no-op outside `kDebugMode`/`kProfileMode` — same posture as
+/// [dlog] (`debug_log.dart`) — so nothing outside an already debug-gated
+/// UI can ever move this, and it's always exactly `0` in a release build.
+///
+/// The offset itself is never persisted — only its EFFECT is (via the same
+/// `maxMsSeen`/`maxEpochDaySeen` watermark ratchet a real forward clock
+/// jump already causes, see this file's own class doc). Setting it back to
+/// `0` does NOT "undo" a prior jump's watermark advance, matching exactly
+/// how winding a REAL device clock back after a forward jump behaves too —
+/// a QA build's storage should be treated as burned/reset-worthy after
+/// deliberately time-traveling, same as after manually changing the
+/// system clock during testing today.
+void setDebugTimeOffsetMs(int offsetMs) {
+  if (!kDebugMode && !kProfileMode) return;
+  _debugTimeOffsetMs = offsetMs;
+}
+
 /// Current millisecond timestamp, clamped to never go below the largest
 /// value seen so far.
 ///
@@ -40,7 +72,8 @@ int clockRewindBlockedCount = 0;
 /// its own data through.
 int nowMsClamped([StorageService? storage]) {
   final store = storage ?? StorageService.to;
-  final current = DateTime.now().toUtc().millisecondsSinceEpoch;
+  final current =
+      DateTime.now().toUtc().millisecondsSinceEpoch + _debugTimeOffsetMs;
   final maxSeen = store.getInt(StorageKeys.maxMsSeen);
   if (current > maxSeen) {
     store.setInt(StorageKeys.maxMsSeen, current);
@@ -55,7 +88,9 @@ int nowMsClamped([StorageService? storage]) {
 
 /// Days since epoch (UTC), clamped to never go below the largest value seen so far.
 int todayEpochDayClamped() {
-  final current = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000;
+  final current =
+      (DateTime.now().toUtc().millisecondsSinceEpoch + _debugTimeOffsetMs) ~/
+      86400000;
   final maxSeen = StorageService.to.getInt(StorageKeys.maxEpochDaySeen);
   if (current > maxSeen) {
     StorageService.to.setInt(StorageKeys.maxEpochDaySeen, current);

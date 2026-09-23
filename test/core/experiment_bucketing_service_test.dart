@@ -170,4 +170,85 @@ void main() {
       }
     });
   });
+
+  group('FEAT-93: debugSetVariantOverride (Variant Switcher tab)', () {
+    test(
+      'set override -> variantFor trả đúng variant override, KHÔNG phải '
+      'bucket hash bình thường (kiểm bằng cách thử liên tục nếu hash tự '
+      'nhiên đã trùng thì đổi sang key khác)',
+      () {
+        final service = ExperimentBucketingService();
+        // Tìm 1 experimentKey mà bucket hash TỰ NHIÊN không rơi vào 'c'
+        // (nếu tình cờ trùng thì test không phân biệt được override có
+        // thật sự hoạt động hay chỉ đúng do trùng hợp).
+        String key = 'exp_variant_switch';
+        var i = 0;
+        while (service.variantFor(key, ['a', 'b', 'c']) == 'c') {
+          key = 'exp_variant_switch_$i';
+          i++;
+        }
+
+        service.debugSetVariantOverride(key, 'c');
+
+        expect(service.variantFor(key, ['a', 'b', 'c']), 'c');
+      },
+    );
+
+    test(
+      'override ảnh hưởng MỌI call site đọc variantFor cho key đó (mọi '
+      'instance/lần gọi, không chỉ nơi set override)',
+      () {
+        final service = ExperimentBucketingService();
+        service.debugSetVariantOverride('exp_multi_site', 'variant_b');
+
+        expect(
+          service.variantFor('exp_multi_site', ['variant_a', 'variant_b']),
+          'variant_b',
+        );
+        expect(
+          service.variantFor('exp_multi_site', ['variant_a', 'variant_b']),
+          'variant_b',
+          reason: 'gọi lại nhiều lần vẫn phải thấy override, không phải 1 lần rồi hết',
+        );
+      },
+    );
+
+    test(
+      'override variant KHÔNG có trong danh sách variants truyền vào -> '
+      'fallback về bucket hash bình thường, không trả giá trị caller chưa từng đưa',
+      () {
+        final service = ExperimentBucketingService();
+        service.debugSetVariantOverride('exp_stale_override', 'old_variant');
+
+        final result = service.variantFor('exp_stale_override', [
+          'new_a',
+          'new_b',
+        ]);
+
+        expect(result, isIn(['new_a', 'new_b']));
+      },
+    );
+
+    test('clear override (null) -> quay lại đúng bucket hash bình thường', () {
+      final service = ExperimentBucketingService();
+      final normal = service.variantFor('exp_clear_test', ['a', 'b', 'c']);
+      service.debugSetVariantOverride('exp_clear_test', 'a');
+
+      service.debugSetVariantOverride('exp_clear_test', null);
+
+      expect(service.variantFor('exp_clear_test', ['a', 'b', 'c']), normal);
+    });
+
+    test(
+      'override 1 experimentKey KHÔNG ảnh hưởng experimentKey khác',
+      () {
+        final service = ExperimentBucketingService();
+        final otherNormal = service.variantFor('exp_untouched', ['x', 'y']);
+
+        service.debugSetVariantOverride('exp_target', 'x');
+
+        expect(service.variantFor('exp_untouched', ['x', 'y']), otherNormal);
+      },
+    );
+  });
 }

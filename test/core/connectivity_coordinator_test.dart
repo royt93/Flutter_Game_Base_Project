@@ -535,6 +535,81 @@ void main() {
       },
     );
   });
+
+  group('FEAT-93: debugForceState (Network Simulator tab)', () {
+    test(
+      'force offline -> state=offline ngay lập tức, không cần tắt mạng thật',
+      () async {
+        final signal = FakeConnectivitySignal();
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => true,
+          createTimer: fakeCreateTimer,
+        );
+        signal.setHasInterface(true);
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+        expect(coordinator.state, ConnectivityState.online);
+
+        coordinator.debugForceState(ConnectivityState.offline);
+
+        expect(coordinator.state, ConnectivityState.offline);
+      },
+    );
+
+    test(
+      'force degraded rồi có 1 real probe success -> vẫn bị khoá degraded, '
+      'real signal KHÔNG ghi đè lên được override',
+      () async {
+        final signal = FakeConnectivitySignal();
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => true,
+          createTimer: fakeCreateTimer,
+        );
+        coordinator.debugForceState(ConnectivityState.degraded);
+        expect(coordinator.state, ConnectivityState.degraded);
+
+        // 1 real interface event thành công đến trong lúc đang force.
+        signal.setHasInterface(true);
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          coordinator.state,
+          ConnectivityState.degraded,
+          reason: 'override cục bộ phải thắng, real probe không được ghi đè',
+        );
+      },
+    );
+
+    test(
+      'clear override (null) -> tái đánh giá NGAY connectivity thật, không '
+      'đợi tín hiệu tiếp theo',
+      () async {
+        final signal = FakeConnectivitySignal()..setHasInterface(true);
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => true,
+          createTimer: fakeCreateTimer,
+        );
+        coordinator.debugForceState(ConnectivityState.offline);
+        expect(coordinator.state, ConnectivityState.offline);
+
+        coordinator.debugForceState(null);
+        await fireLatest();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          coordinator.state,
+          ConnectivityState.online,
+          reason:
+              'sau khi clear, phải tự đánh giá lại connectivity thật đang '
+              'online (signal đã có interface từ trước)',
+        );
+      },
+    );
+  });
 }
 
 /// Stub đứng thế cho `SocketException`/`TimeoutException` thật — không cần
