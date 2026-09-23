@@ -7,6 +7,14 @@ import 'utils/safe_json.dart';
 /// debug overlay/health report can tell "ops explicitly killed this"
 /// apart from "we couldn't reach a fresh answer and fell back".
 enum KillSwitchSource {
+  /// A client-side caller (FEAT-90's `ShadowActivationController`, or any
+  /// other local guardrail) force-killed this feature via
+  /// [RemoteKillSwitchController.forceKillLocally] — takes priority over
+  /// every remote-driven source below, since it exists precisely to react
+  /// FASTER than waiting for the next remote-config poll. Cleared only by
+  /// an explicit [RemoteKillSwitchController.clearLocalOverride] call.
+  localOverride,
+
   /// The current [RemoteConfigService] snapshot has a validly-shaped
   /// value for this feature right now.
   remoteValid,
@@ -109,7 +117,29 @@ class RemoteKillSwitchController extends GetxService {
   final RxMap<String, KillSwitchState> states = <String, KillSwitchState>{}.obs;
 
   final _lastKnownGood = <String, KillSwitchState>{};
+  final _localOverrides = <String, String>{};
   final _auditLog = <KillSwitchState>[];
+
+  /// Force-kills [featureId] immediately, CLIENT-SIDE, without waiting for
+  /// the next [remoteConfig] poll — see [KillSwitchSource.localOverride].
+  /// [reason] is required (unlike the remote/asset paths, where it's
+  /// optional) since a local override always needs an audit trail
+  /// explaining why THIS device decided to kill a feature on its own.
+  ///
+  /// Idempotent: calling this again for an already-overridden
+  /// [featureId] just replaces the recorded [reason].
+  void forceKillLocally(String featureId, {required String reason}) {
+    _localOverrides[featureId] = reason;
+    isKilled(featureId);
+  }
+
+  /// Removes a prior [forceKillLocally] override for [featureId] — the
+  /// next [isKilled]/[refreshAll] call falls back through to the normal
+  /// remote/cached/asset resolution order again.
+  void clearLocalOverride(String featureId) {
+    _localOverrides.remove(featureId);
+    isKilled(featureId);
+  }
 
   /// Bounded audit history — same ring-buffer reasoning as
   /// `ReplayRecorder`/`MemoryWatchdog`'s own capped lists.
@@ -155,6 +185,18 @@ class RemoteKillSwitchController extends GetxService {
   }
 
   KillSwitchState _resolve(String featureId) {
+    final localReason = _localOverrides[featureId];
+    if (localReason != null) {
+      return KillSwitchState(
+        featureId: featureId,
+        killed: true,
+        reason: localReason,
+        version: 0,
+        source: KillSwitchSource.localOverride,
+        decidedAtMs: _nowMs(),
+      );
+    }
+
     final raw = remoteConfig.snapshot['$keyPrefix$featureId'];
     final parsed = _parseRaw(raw);
     if (parsed != null) {

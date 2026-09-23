@@ -314,4 +314,72 @@ void main() {
       },
     );
   });
+
+  group('FEAT-90: forceKillLocally/clearLocalOverride (local override)', () {
+    test(
+      'forceKillLocally -> isKilled=true ngay, source=localOverride, '
+      'reason đúng như truyền vào, kể cả khi remote đang nói KHÔNG kill',
+      () async {
+        final config = await configWith({'kill_switch_shop': false});
+        final controller = RemoteKillSwitchController(remoteConfig: config);
+        expect(controller.isKilled('shop'), isFalse);
+
+        controller.forceKillLocally('shop', reason: 'guardrail violated');
+
+        expect(controller.isKilled('shop'), isTrue);
+        expect(controller.states['shop']!.source, KillSwitchSource.localOverride);
+        expect(controller.states['shop']!.reason, 'guardrail violated');
+      },
+    );
+
+    test(
+      'local override chỉ ảnh hưởng đúng featureId đó, feature khác '
+      'không bị kill theo',
+      () async {
+        final config = await configWith({
+          'kill_switch_shop': false,
+          'kill_switch_event': false,
+        });
+        final controller = RemoteKillSwitchController(remoteConfig: config);
+
+        controller.forceKillLocally('shop', reason: 'guardrail violated');
+
+        expect(controller.isKilled('shop'), isTrue);
+        expect(controller.isKilled('event'), isFalse);
+      },
+    );
+
+    test(
+      'clearLocalOverride -> quay lại đúng resolution order thường '
+      '(remote/cached/asset), không còn bị khoá cứng',
+      () async {
+        final config = await configWith({'kill_switch_shop': false});
+        final controller = RemoteKillSwitchController(remoteConfig: config);
+        controller.forceKillLocally('shop', reason: 'guardrail violated');
+        expect(controller.isKilled('shop'), isTrue);
+
+        controller.clearLocalOverride('shop');
+
+        expect(controller.isKilled('shop'), isFalse);
+        expect(controller.states['shop']!.source, KillSwitchSource.remoteValid);
+      },
+    );
+
+    test(
+      'local override ưu tiên HƠN cả remote hợp lệ nói killed=true '
+      '(vẫn đúng nội dung reason của override, không bị remote ghi đè)',
+      () async {
+        final config = await configWith({
+          'kill_switch_shop': {'killed': true, 'reason': 'ops maintenance'},
+        });
+        final controller = RemoteKillSwitchController(remoteConfig: config);
+
+        controller.forceKillLocally('shop', reason: 'guardrail violated');
+
+        expect(controller.isKilled('shop'), isTrue);
+        expect(controller.states['shop']!.source, KillSwitchSource.localOverride);
+        expect(controller.states['shop']!.reason, 'guardrail violated');
+      },
+    );
+  });
 }

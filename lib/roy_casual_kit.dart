@@ -69,6 +69,7 @@ export 'core/secure_storage_adapter.dart';
 export 'core/season_event_service.dart';
 export 'core/sdk_event_schema_registry.dart';
 export 'core/sdk_health_report.dart';
+export 'core/shadow_activation_controller.dart';
 export 'core/share_helper.dart';
 export 'core/storage_service.dart';
 export 'core/versioned_json_store.dart';
