@@ -304,13 +304,14 @@ ReplayDivergence? findFirstDivergence(
 /// divergence.
 ReplayDivergence? replayCapsule(
   ReplayCapsule capsule,
-  Object? Function(ReplayEvent event, SeededRandomService rng) handler,
-) {
-  final rng = SeededRandomService(capsule.seed);
+  Object? Function(ReplayEvent event, SeededRandomService rng) handler, {
+  SeededRandomService? rng,
+}) {
+  final effectiveRng = rng ?? SeededRandomService(capsule.seed);
   final expected = <Object?>[];
   final actual = <Object?>[];
   for (final event in capsule.events) {
-    final outcome = handler(event, rng);
+    final outcome = handler(event, effectiveRng);
     if (event.payload.containsKey('expectedOutcome')) {
       expected.add(event.payload['expectedOutcome']);
       actual.add(outcome);

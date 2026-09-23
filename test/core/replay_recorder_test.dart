@@ -288,6 +288,39 @@ void main() {
       expect(replayCapsule(capsule, handleSpin), isNull);
     });
 
+    test(
+      // FEAT-89: `rng` optional param — cho caller (ReproductionCapsule)
+      // truyền vào 1 SeededRandomService riêng để đọc lại state SAU khi
+      // replay xong, thay vì bị khoá vào instance nội bộ dùng-rồi-bỏ.
+      'truyền rng riêng qua param -> vẫn replay đúng VÀ instance đó phản '
+      'ánh đúng state sau khi replay xong (đọc lại được từ bên ngoài)',
+      () {
+        final recorded = recordRealSpins();
+        final capsule = wheelSpinCapsule(recorded);
+        final externalRng = SeededRandomService(capsule.seed);
+
+        final divergence = replayCapsule(
+          capsule,
+          handleSpin,
+          rng: externalRng,
+        );
+
+        expect(divergence, isNull);
+        // Sau đúng 3 lần draw qua handler, state của externalRng phải khớp
+        // hệt 1 SeededRandomService độc lập tự draw 3 lần cùng namespace,
+        // cùng seed — chứng minh `rng` param THẬT SỰ được dùng bên trong,
+        // không bị bỏ qua.
+        final independentRng = SeededRandomService(capsule.seed);
+        for (var i = 0; i < 3; i++) {
+          independentRng.stream('wheel_spin').nextInt(6);
+        }
+        expect(
+          externalRng.snapshotAll()['wheel_spin']!.state,
+          independentRng.snapshotAll()['wheel_spin']!.state,
+        );
+      },
+    );
+
     test('handler khác (bug logic mới) → báo đúng điểm phân kỳ đầu tiên', () {
       final recorded = recordRealSpins();
       final capsule = wheelSpinCapsule(recorded);

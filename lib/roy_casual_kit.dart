@@ -60,6 +60,7 @@ export 'core/remote_config_service.dart';
 export 'core/remote_content_pack.dart';
 export 'core/remote_kill_switch_controller.dart';
 export 'core/replay_recorder.dart';
+export 'core/reproduction_capsule.dart';
 export 'core/reward_transaction_pipeline.dart';
 export 'core/runtime_flags.dart';
 export 'core/save_integrity.dart';
