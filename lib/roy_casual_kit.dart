@@ -42,6 +42,7 @@ export 'core/lifecycle_coordinator.dart';
 export 'core/game_event_bus.dart';
 export 'core/game_session_controller.dart';
 export 'core/game_time_controller.dart';
+export 'core/economy_certificate.dart';
 export 'core/economy_wallet.dart';
 export 'core/neon_theme.dart';
 export 'core/offline_outbox_service.dart';
