@@ -158,8 +158,15 @@ class ReplayCapsule {
 /// [buildCapsule], which a caller invokes explicitly (e.g. from a debug
 /// panel's "Export" button), never automatically.
 class ReplayRecorder extends GetxService {
-  ReplayRecorder({this.capacity = 500})
-    : assert(capacity > 0, 'capacity must be greater than 0') {
+  ReplayRecorder({this.capacity = 500}) {
+    // ENH-85: was `assert(capacity > 0, ...)` — stripped entirely in
+    // release builds. A `capacity` of 0 sourced from a misconfigured
+    // caller would then reach `record()`'s `% capacity` unchecked in
+    // production, dividing by zero. A plain `if`/`throw` is never
+    // stripped, in any build mode.
+    if (capacity <= 0) {
+      throw ArgumentError.value(capacity, 'capacity', 'must be > 0');
+    }
     _buffer = List<ReplayEvent?>.filled(capacity, null);
   }
 

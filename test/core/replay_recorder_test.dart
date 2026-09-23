@@ -147,6 +147,35 @@ void main() {
       expect(ReplayRecorder.maybe, same(recorder));
     });
 
+    group('ENH-85: capacity <= 0 throw ArgumentError ngay tại constructor', () {
+      test('capacity: 0 throw ArgumentError', () {
+        expect(() => ReplayRecorder(capacity: 0), throwsArgumentError);
+      });
+
+      test('capacity: -1 cũng bị chặn tương tự', () {
+        expect(() => ReplayRecorder(capacity: -1), throwsArgumentError);
+      });
+
+      test(
+        'validate là if/throw thường, không phải assert() — không thể bị '
+        'strip ở release build (không có cách chạy dart --no-enable-asserts '
+        'cho package này vì `get` kéo theo dart:ui qua package:flutter, nên '
+        'chứng minh bằng cấu trúc: check chạy vô điều kiện, không nằm trong '
+        'assert())',
+        () {
+          // Nếu implementation dùng lại `assert(...)`, test capacity: 0/-1
+          // ở trên vẫn "pass" theo nghĩa throw — nhưng throw AssertionError,
+          // không phải ArgumentError, nên `throwsArgumentError` phân biệt
+          // đúng 2 trường hợp. Test này chỉ giữ hành vi throw đúng type
+          // không bị đổi ngược lại về assert trong tương lai.
+          expect(
+            () => ReplayRecorder(capacity: 0),
+            throwsA(isA<ArgumentError>()),
+          );
+        },
+      );
+    });
+
     test(
       'chưa start() thì isRecording false, record() không throw (no-op)',
       () {

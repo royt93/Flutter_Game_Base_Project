@@ -43,8 +43,17 @@ class _ScoreEntry {
 /// straight into [LeaderboardList] with no further transform.
 class LocalScoreboardService extends GetxService {
   LocalScoreboardService({this.capacity = 50, String? storageKey})
-    : assert(capacity > 0, 'capacity must be greater than 0'),
-      _storageKey = storageKey ?? StorageKeys.localScoreboardV1;
+    : _storageKey = storageKey ?? StorageKeys.localScoreboardV1 {
+    // ENH-85: was `assert(capacity > 0, ...)` — stripped entirely in
+    // release builds. A `capacity` of 0 sourced from a misconfigured
+    // caller would then silently drop every `submitScore` call in
+    // production (`_sortAndTrim`'s `removeRange(capacity, ...)` truncates
+    // to nothing), with no error to explain why the board stays empty.
+    // A plain `if`/`throw` is never stripped, in any build mode.
+    if (capacity <= 0) {
+      throw ArgumentError.value(capacity, 'capacity', 'must be > 0');
+    }
+  }
 
   // ENH-69: instance field (was `static const`) so 2 instances can point at
   // 2 independent tables — e.g. 1 per SaveSlotManager slot via its

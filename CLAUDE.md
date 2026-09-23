@@ -180,6 +180,28 @@ Use `dlog('message')` from `lib/core/debug_log.dart`. No-ops in release builds. 
 ### Theme
 `NeonTheme` (`lib/core/neon_theme.dart`) is a bright-casual (Candy-Crush-style) look by default: light candy-sky gradient background, tokens `ink`/`inkSoft` (text), `card`/`cardAlt` (panels), and `glow(...)`/`drop(...)` shadow helpers over a candy color palette. Flip `NeonTheme.dark = true` (persisted via `StorageKeys.themeDark`) for a neon-dark palette instead — the same token getters resolve to different colors, no call site needs to change. `NeonTheme.colorBlindSafe` (persisted via `StorageKeys.colorBlindSafe`) is a separate, orthogonal flag for an accessible palette variant.
 
+### Runtime validation in constructors (ENH-85)
+A public constructor invariant (a capacity/count/interval that must be
+positive, a weight that must be `> 0`, etc.) must be checked with a plain
+`if (...) throw ArgumentError.value(value, 'name', 'must be ...');` in the
+constructor body — never with `assert(...)` alone. `assert` is stripped
+entirely from release builds, so a value sourced from remote config/CMS/JSON
+that violates the invariant would sail through unchecked in production and
+fail confusingly downstream (a `% 0` crash, a silent no-op, a wrong
+default) instead of failing loudly at the call site that misused the API.
+See `lib/core/asset_preload_coordinator.dart` (BUG-49), `lib/core/utils/economy_math.dart`
+(BUG-69), `lib/core/replay_recorder.dart` and `lib/core/local_scoreboard_service.dart`
+(both ENH-85) for the pattern. `ArgumentError` is for a programmer calling
+the constructor wrong (bad literal, bad hardcoded config); `SdkFailure.validation` (see
+`utils/sdk_result.dart`) is for the same kind of bad value arriving through an
+untrusted runtime source (parsed JSON, a remote-config payload) that a
+caller is expected to catch/report rather than crash on — pick based on
+where the bad value actually originates, not by default. Not every existing
+`assert`-only constructor in `lib/core/` has been converted yet (grep
+`assert(` there is not a converted-vs-not checklist) — this convention
+governs new code and any constructor touched going forward, not a mandate
+to retrofit the whole file tree in one pass.
+
 ### Public API compatibility gate
 `tool/api_compatibility.dart check` (run in CI before analyze/test) diffs `lib/roy_casual_kit.dart`'s exports against the committed `tool/api_snapshot.json`. Removing or renaming a public export fails CI; regenerate the snapshot with `dart run tool/api_compatibility.dart snapshot` only when the break is intentional.
 
