@@ -60,13 +60,16 @@ typedef AssetUnloaderFn = void Function(AssetManifestItem item);
 /// load in parallel, capped at [maxConcurrent] in flight at once; a later
 /// wave only starts once its dependencies finish.
 ///
-/// **Progress** ([progress], 0.0–1.0) only advances when an item finishes
-/// in a way that lets the scene proceed with it — a successful load, or an
-/// optional item's failure. A required item's failure (and everything that
-/// transitively depends on it) never contributes, so [progress] can never
-/// reach 1.0 while a required asset is missing — a caller must inspect the
-/// returned [SdkResult] instead of waiting for `progress == 1.0` to decide
-/// a scene is ready.
+/// **Progress** ([progress]/[progressOf], 0.0–1.0) only advances when an
+/// item finishes in a way that lets the scene proceed with it — a
+/// successful load, or an optional item's failure. A required item's
+/// failure (and everything that transitively depends on it) never
+/// contributes, so progress can never reach 1.0 while a required asset is
+/// missing — a caller must inspect the returned [SdkResult] instead of
+/// waiting for progress `== 1.0` to decide a scene is ready. [progress] is
+/// shared across every call (correct for the common single-scene-at-a-time
+/// usage); [progressOf] (ENH-88) tracks a specific [sceneId] independently,
+/// for 2+ scenes actually preloading concurrently.
 ///
 /// **Cancel/retry**: [cancel] stops starting new waves — everything already
 /// in flight is still awaited to completion (never abandoned, so nothing
@@ -116,7 +119,28 @@ class AssetPreloadCoordinator extends GetxService {
       ? Get.find<AssetPreloadCoordinator>()
       : null;
 
+  /// Shared "last active [preload] call" progress — fine for the common
+  /// single-scene-at-a-time usage (every existing call site, unchanged),
+  /// but 2+ [preload] calls actually running concurrently (fired without
+  /// awaiting the first) interleave their writes to this SAME field, so
+  /// neither scene's number is meaningful on its own. Use [progressOf]
+  /// instead for that case (ENH-88).
   final progress = 0.0.obs;
+
+  // ENH-88: per-scene progress, keyed the same way `_manifestsByScene`/
+  // `_sceneHoldsId` already are — completes the "explicit sceneId, not an
+  // implicit 'last scene'" API BUG-49 started for ref-counting/unload, but
+  // hadn't yet covered for progress. Not removed on `unloadScene` (same as
+  // `_refCounts`/`_loadedIds` aren't reset per-scene either) — a caller
+  // can still read a just-unloaded scene's final progress value.
+  final _progressByScene = <String, RxDouble>{};
+
+  /// [sceneId]'s own weighted preload progress (0.0–1.0), independent of
+  /// any other scene's concurrent [preload] call — see [progress]'s doc
+  /// for why the shared field isn't safe to read under real concurrency.
+  /// `0.0` for a [sceneId] never passed to [preload].
+  RxDouble progressOf(String sceneId) =>
+      _progressByScene.putIfAbsent(sceneId, () => 0.0.obs);
 
   final _refCounts = <String, int>{};
   final _loadedIds = <String>{};
@@ -153,13 +177,19 @@ class AssetPreloadCoordinator extends GetxService {
     _manifestsByScene[resolvedSceneId] = manifest;
     _lastSceneId = resolvedSceneId;
     _cancelRequested = false;
+    final sceneProgress = _progressByScene.putIfAbsent(
+      resolvedSceneId,
+      () => 0.0.obs,
+    );
     progress.value = 0.0;
+    sceneProgress.value = 0.0;
 
     final validationError = _validate(manifest);
     if (validationError != null) return validationError;
 
     if (manifest.isEmpty) {
       progress.value = 1.0;
+      sceneProgress.value = 1.0;
       return const SdkSuccess(null);
     }
 
@@ -218,7 +248,9 @@ class AssetPreloadCoordinator extends GetxService {
         }),
       );
 
-      progress.value = totalWeight == 0 ? 1.0 : doneWeight / totalWeight;
+      final currentProgress = totalWeight == 0 ? 1.0 : doneWeight / totalWeight;
+      progress.value = currentProgress;
+      sceneProgress.value = currentProgress;
 
       for (final item in manifest) {
         if (processed.contains(item.id) || ready.contains(item.id)) continue;

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/asset_preload_coordinator.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
@@ -456,6 +458,93 @@ void main() {
         // không xuất hiện trong unloaded sau lần gọi duy nhất này.
         coordinator.unloadScene();
         expect(unloaded..sort(), ['flaky', 'stable']);
+      },
+    );
+  });
+
+  group('ENH-88: progressOf — 2 scene preload thật sự chồng lấn (concurrent)', () {
+    test(
+      'preload(A) và preload(B) chạy đồng thời (KHÔNG await tuần tự) — '
+      'progress chung bị B "làm giả" 100% dù A chưa xong; progressOf từng '
+      'scene báo đúng độc lập',
+      () async {
+        final aGate = Completer<void>();
+        final coordinator = _coordinator(
+          loader: (item) async {
+            if (item.id == 'a1') await aGate.future;
+          },
+        );
+
+        // Fire cả 2 preload() KHÔNG await lần lượt — mô phỏng đúng use
+        // case thật của task (preload scene B trong lúc scene A vẫn đang
+        // active/preload dở) thay vì kiểu sequential-await của BUG-49's
+        // test đã có.
+        final futureA = coordinator.preload(const [
+          AssetManifestItem(id: 'a1', kind: AssetKind.image, path: 'a1.png'),
+        ], sceneId: 'A');
+        final futureB = coordinator.preload(const [
+          AssetManifestItem(id: 'b1', kind: AssetKind.image, path: 'b1.png'),
+        ], sceneId: 'B');
+
+        await futureB; // B không chờ gì cả trong loader — xong ngay.
+
+        // Bug thật sự nếu chỉ dùng `progress` chung: B xong khiến field
+        // dùng chung bị ghi đè thành 1.0, trông như "xong 100%" dù A vẫn
+        // đang treo chờ aGate — không phải lỗi mới do ENH-88 gây ra, đây
+        // là hành vi ĐÃ CÓ SẴN của field `progress`, giữ nguyên (đã ghi
+        // rõ trong doc comment) để backward-compat single-scene.
+        expect(coordinator.progress.value, 1.0);
+
+        // progressOf() KHÔNG bị B đánh lừa — A thật sự vẫn 0%, B thật sự
+        // đã 100%, độc lập hoàn toàn.
+        expect(coordinator.progressOf('A').value, 0.0);
+        expect(coordinator.progressOf('B').value, 1.0);
+
+        aGate.complete();
+        await futureA;
+
+        expect(coordinator.progressOf('A').value, 1.0);
+        expect(coordinator.progressOf('B').value, 1.0);
+      },
+    );
+
+    test(
+      'unloadScene đúng theo sceneId ngay cả khi 2 scene KHÔNG chung asset '
+      'nào được preload CHỒNG LẤN THẬT SỰ (B bị treo tới khi A đã xong) — '
+      'regression cho bug "unload nhầm scene" của BUG-49, verify dưới điều '
+      'kiện concurrency thật thay vì sequential-await',
+      () async {
+        final unloaded = <String>[];
+        final bGate = Completer<void>();
+        final coordinator = _coordinator(
+          loader: (item) async {
+            if (item.id == 'b1') await bGate.future;
+          },
+          unloader: (item) => unloaded.add(item.id),
+        );
+
+        // Fire cả 2 KHÔNG await tuần tự — scene B thực sự vẫn còn treo dở
+        // khi scene A đã hoàn tất hẳn (khác BUG-49's test cũ vốn await A
+        // xong rồi mới bắt đầu B).
+        final futureA = coordinator.preload(const [
+          AssetManifestItem(id: 'a1', kind: AssetKind.image, path: 'a1.png'),
+        ], sceneId: 'A');
+        final futureB = coordinator.preload(const [
+          AssetManifestItem(id: 'b1', kind: AssetKind.image, path: 'b1.png'),
+        ], sceneId: 'B');
+        await futureA;
+
+        // Scene B vẫn đang treo (chưa gọi bGate.complete()) — unloadScene
+        // theo đúng sceneId 'A' không được đụng tới bất kỳ trạng thái nào
+        // của B đang preload dở.
+        coordinator.unloadScene('A');
+        expect(unloaded, ['a1']);
+        expect(coordinator.isLoaded('b1'), isFalse);
+
+        bGate.complete();
+        await futureB;
+        coordinator.unloadScene('B');
+        expect(unloaded, ['a1', 'b1']);
       },
     );
   });
