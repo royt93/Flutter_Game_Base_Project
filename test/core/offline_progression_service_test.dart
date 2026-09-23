@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/offline_progression_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/clamped_clock.dart';
+import 'package:roy_casual_kit/core/utils/trusted_clock.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -221,5 +222,135 @@ void main() {
         expect(store.getInt(StorageKeys.offlineLastClaimedMs), before);
       });
     });
+  });
+
+  group('ENH-86: trustedClock optional (mặc định null, không đổi hành vi)', () {
+    test('không truyền trustedClock -> claim vẫn dùng nowMsClamped như cũ', () async {
+      final service = OfflineProgressionService();
+      Get.put(service, permanent: true);
+      expect(service.trustedClock, isNull);
+
+      await service.claim(10);
+      await advanceHours(2);
+      final earned = await service.claim(10);
+
+      expect(earned, closeTo(2 * 3600 * 10, 0.01));
+    });
+
+    test(
+      'có trustedClock, đồng hồ trôi bình thường -> claim tính đúng như '
+      'nowMsClamped (không đổi kết quả hợp lệ)',
+      () async {
+        // Baseline khởi tạo khác 0 — `_lastClaimedMsOr` coi mốc 0 đã lưu
+        // là "chưa từng claim" (hành vi có sẵn, không thuộc ENH-86), nên
+        // test dùng mốc khác 0 để tránh nhầm với case đó.
+        var wallMs = 1000000;
+        var monotonicMs = 0;
+        final trustedClock = TrustedClockService(
+          sampleNow: () => ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+        );
+        final service = OfflineProgressionService(trustedClock: trustedClock);
+        Get.put(service, permanent: true);
+
+        // Sample đầu tiên: chỉ khởi tạo baseline + offlineLastClaimedMs.
+        await service.claim(10);
+
+        // 2 giờ trôi qua bình thường (wall và monotonic cùng tiến).
+        const twoHoursMs = 2 * 3600 * 1000;
+        wallMs += twoHoursMs;
+        monotonicMs += twoHoursMs;
+
+        final earned = await service.claim(10);
+
+        expect(earned, closeTo(2 * 3600 * 10, 0.01));
+        expect(trustedClock.lastJudgement, ClockJudgement.normal);
+      },
+    );
+
+    test(
+      'suspiciousForwardJump (vặn đồng hồ tới tương lai rồi claim) bị từ '
+      'chối: earned = 0, không phải earned lớn như nowMsClamped sẽ cho',
+      () async {
+        var wallMs = 1000000;
+        var monotonicMs = 0;
+        final trustedClock = TrustedClockService(
+          sampleNow: () => ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+        );
+        final service = OfflineProgressionService(trustedClock: trustedClock);
+        Get.put(service, permanent: true);
+
+        // Khởi tạo baseline hợp lệ tại mốc 1000000.
+        await service.claim(10);
+
+        // Vặn wall tới +1 năm, monotonic chỉ tiến 1 giây thật (nhảy vọt
+        // nghi vấn) — nếu dùng nowMsClamped, claim() sẽ trả về gần 1 năm
+        // tiền thưởng (bị cap ở maxOfflineCap) ngay lập tức.
+        const oneYearMs = 365 * 24 * 3600 * 1000;
+        wallMs += oneYearMs;
+        monotonicMs += 1000;
+
+        final earned = await service.claim(10);
+
+        expect(earned, 0.0);
+        expect(trustedClock.lastJudgement, ClockJudgement.suspiciousForwardJump);
+      },
+    );
+
+    test(
+      'rewind (vặn đồng hồ lùi rồi claim) cũng bị từ chối: earned = 0',
+      () async {
+        var wallMs = 100000;
+        var monotonicMs = 0;
+        final trustedClock = TrustedClockService(
+          sampleNow: () => ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+        );
+        final service = OfflineProgressionService(trustedClock: trustedClock);
+        Get.put(service, permanent: true);
+
+        await service.claim(10);
+
+        // Vặn wall lùi hẳn về trước (vượt tolerance mặc định 5 giây),
+        // monotonic vẫn tiến bình thường theo tiến trình thật.
+        wallMs = 0;
+        monotonicMs += 1000;
+
+        final earned = await service.claim(10);
+
+        expect(earned, 0.0);
+        expect(trustedClock.lastJudgement, ClockJudgement.rewind);
+      },
+    );
+
+    test(
+      'phục hồi sau suspiciousForwardJump: sample bình thường tiếp theo '
+      'không bị khoá vĩnh viễn (khác nowMsClamped)',
+      () async {
+        var wallMs = 1000000;
+        var monotonicMs = 0;
+        final trustedClock = TrustedClockService(
+          sampleNow: () => ClockSample(wallMs: wallMs, monotonicMs: monotonicMs),
+        );
+        final service = OfflineProgressionService(trustedClock: trustedClock);
+        Get.put(service, permanent: true);
+
+        await service.claim(10);
+
+        const oneYearMs = 365 * 24 * 3600 * 1000;
+        wallMs += oneYearMs;
+        monotonicMs += 1000;
+        await service.claim(10); // bị từ chối, baseline không đổi
+
+        // Đồng hồ được sửa lại về đúng thời điểm thật, tiếp tục trôi bình
+        // thường từ baseline cũ (1000000ms, mốc "previous" bị đóng băng từ
+        // trước khi nhảy vọt) thêm 1 giờ thật.
+        wallMs = 1000000 + 3600 * 1000;
+        monotonicMs += 3600 * 1000;
+
+        final earned = await service.claim(10);
+
+        expect(trustedClock.lastJudgement, ClockJudgement.normal);
+        expect(earned, closeTo(3600 * 10, 0.01));
+      },
+    );
   });
 }
