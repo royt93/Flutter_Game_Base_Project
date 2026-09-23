@@ -1,11 +1,61 @@
 import 'dart:convert';
 
 import 'cloud_save_provider.dart';
+import 'debug_log.dart';
 import 'storage_service.dart';
 import 'utils/clamped_clock.dart';
 import 'utils/safe_json.dart';
 import 'utils/save_migration_registry.dart';
 import 'utils/sdk_result.dart';
+
+/// One side (local or cloud) of a [VersionedSyncConflict] — the parsed value plus
+/// the `syncedAtMs` timestamp it was saved under.
+class VersionedSyncConflictSide<T> {
+  const VersionedSyncConflictSide({required this.value, required this.syncedAtMs});
+  final T value;
+  final int syncedAtMs;
+}
+
+/// Both sides of a genuine [VersionedJsonStore.syncWith] conflict — local
+/// and cloud both have DIFFERENT data (see [VersionedJsonStore.syncWith]'s
+/// own doc for exactly when this is raised), so picking a winner by
+/// timestamp alone risks silently discarding real progress from whichever
+/// device loses.
+class VersionedSyncConflict<T> {
+  const VersionedSyncConflict({required this.local, required this.cloud});
+  final VersionedSyncConflictSide<T> local;
+  final VersionedSyncConflictSide<T> cloud;
+}
+
+/// Which side [VersionedSyncConflictResolution] picked.
+enum VersionedSyncConflictStrategy { preferLocal, preferCloud, merge }
+
+/// What an [onConflict] handler decided to do about a [VersionedSyncConflict] —
+/// built via one of the 3 named constructors, never directly.
+class VersionedSyncConflictResolution<T> {
+  const VersionedSyncConflictResolution.preferLocal()
+    : strategy = VersionedSyncConflictStrategy.preferLocal,
+      mergedValue = null;
+  const VersionedSyncConflictResolution.preferCloud()
+    : strategy = VersionedSyncConflictStrategy.preferCloud,
+      mergedValue = null;
+
+  /// Neither side wins outright — [value] (built by the caller, e.g. by
+  /// combining fields from both [VersionedSyncConflict.local]/[VersionedSyncConflict.cloud])
+  /// becomes the new value on BOTH local storage and the cloud.
+  const VersionedSyncConflictResolution.merge(T value)
+    : strategy = VersionedSyncConflictStrategy.merge,
+      mergedValue = value;
+
+  final VersionedSyncConflictStrategy strategy;
+  final T? mergedValue;
+}
+
+/// Caller-supplied conflict handler for [VersionedJsonStore.syncWith] —
+/// see that method's doc for exactly when this is invoked, and its
+/// exception-safety contract.
+typedef VersionedSyncConflictHandler<T> =
+    VersionedSyncConflictResolution<T> Function(VersionedSyncConflict<T> conflict);
 
 /// A thin, versioned JSON object store on top of [StorageService]'s plain
 /// key-value strings — for save data with actual shape (player profile,
@@ -149,7 +199,23 @@ class VersionedJsonStore<T> {
   /// a [fromJson] sanity check) as a local save before it's ever trusted
   /// enough to overwrite local data — a malformed or future-schema cloud
   /// record just leaves the local save untouched instead of corrupting it.
-  Future<void> syncWith(CloudSaveProvider provider) async {
+  ///
+  /// [onConflict] (ENH-83) is consulted INSTEAD of blind last-write-wins
+  /// whenever BOTH local and cloud have valid, DIFFERENT data — same
+  /// timestamp (can't tell who's newer) or different timestamps (one side
+  /// might just have a drifted device clock, not genuinely newer data) are
+  /// both exactly the case where trusting the timestamp alone risks
+  /// silently discarding a real device's progress. Left `null` (the
+  /// default), behavior is byte-for-byte the same last-write-wins as
+  /// before this parameter existed — fully backward compatible.
+  ///
+  /// If [onConflict] itself throws, the error is logged (via [dlog]) and
+  /// this falls back to the same last-write-wins default — a broken
+  /// handler can never crash a sync or leave it half-applied.
+  Future<void> syncWith(
+    CloudSaveProvider provider, {
+    VersionedSyncConflictHandler<T>? onConflict,
+  }) async {
     final cloudJson = _validate(await provider.download());
     final localJson = _readLocalJson();
 
@@ -159,6 +225,23 @@ class VersionedJsonStore<T> {
     final localTime = localJson == null
         ? -1
         : asIntOr(localJson['syncedAtMs'], -1);
+
+    if (onConflict != null &&
+        cloudJson != null &&
+        localJson != null &&
+        !_sameContent(localJson, cloudJson)) {
+      final resolved = await _tryResolveConflict(
+        onConflict,
+        provider,
+        localJson: localJson,
+        cloudJson: cloudJson,
+        localTime: localTime,
+        cloudTime: cloudTime,
+      );
+      if (resolved) return;
+      // Handler threw (already logged) or either side failed to parse as
+      // a real T — fall through to the default below.
+    }
 
     if (cloudJson != null && cloudTime > localTime) {
       try {
@@ -173,5 +256,94 @@ class VersionedJsonStore<T> {
     } else if (localJson != null) {
       await provider.upload(localJson);
     }
+  }
+
+  /// Returns `true` if the conflict was fully resolved (either side's data
+  /// already ends up exactly where [syncWith]'s default path would also
+  /// have put it — no further action needed), `false` to fall through to
+  /// the default last-write-wins.
+  Future<bool> _tryResolveConflict(
+    VersionedSyncConflictHandler<T> onConflict,
+    CloudSaveProvider provider, {
+    required Map<String, Object?> localJson,
+    required Map<String, Object?> cloudJson,
+    required int localTime,
+    required int cloudTime,
+  }) async {
+    final T localValue;
+    final T cloudValue;
+    try {
+      localValue = fromJson(localJson);
+      cloudValue = fromJson(cloudJson);
+    } catch (_) {
+      return false;
+    }
+
+    try {
+      final resolution = onConflict(
+        VersionedSyncConflict(
+          local: VersionedSyncConflictSide(value: localValue, syncedAtMs: localTime),
+          cloud: VersionedSyncConflictSide(value: cloudValue, syncedAtMs: cloudTime),
+        ),
+      );
+      switch (resolution.strategy) {
+        case VersionedSyncConflictStrategy.preferLocal:
+          await provider.upload(localJson);
+          return true;
+        case VersionedSyncConflictStrategy.preferCloud:
+          await storage.setString(key, jsonEncode(cloudJson));
+          return true;
+        case VersionedSyncConflictStrategy.merge:
+          final merged = {
+            ...toJson(resolution.mergedValue as T),
+            'schemaVersion': schemaVersion,
+            'syncedAtMs': nowMsClamped(storage),
+          };
+          await storage.setString(key, jsonEncode(merged));
+          await provider.upload(merged);
+          return true;
+      }
+    } catch (error) {
+      dlog(
+        'VersionedJsonStore.syncWith: onConflict handler threw, falling '
+        'back to last-write-wins: $error',
+      );
+      return false;
+    }
+  }
+
+  /// Deep-equal comparison of 2 already-[_validate]d JSON envelopes,
+  /// ignoring `syncedAtMs` — 2 saves with identical content but different
+  /// save timestamps (the common case: re-saving unchanged data) are NOT a
+  /// conflict, so [onConflict] shouldn't fire for them.
+  static bool _sameContent(
+    Map<String, Object?> a,
+    Map<String, Object?> b,
+  ) {
+    Map<String, Object?> withoutTimestamp(Map<String, Object?> json) =>
+        Map.of(json)..remove('syncedAtMs');
+    return _jsonEquals(withoutTimestamp(a), withoutTimestamp(b));
+  }
+
+  static bool _jsonEquals(Object? a, Object? b) {
+    if (identical(a, b)) return true;
+    if (a is Map && b is Map) {
+      if (a.length != b.length) return false;
+      for (final entry in a.entries) {
+        if (!b.containsKey(entry.key) ||
+            !_jsonEquals(entry.value, b[entry.key])) {
+          return false;
+        }
+      }
+      return true;
+    }
+    if (a is List && b is List) {
+      if (a.length != b.length) return false;
+      for (var i = 0; i < a.length; i++) {
+        if (!_jsonEquals(a[i], b[i])) return false;
+      }
+      return true;
+    }
+    return a == b;
   }
 }

@@ -300,4 +300,283 @@ void main() {
       expect(s.load()!.name, 'LocalSafe');
     });
   });
+
+  group('ENH-83: syncWith onConflict handler', () {
+    test(
+      'không truyền onConflict -> hành vi last-write-wins y hệt trước đây '
+      '(backward compatible)',
+      () async {
+        final s = makeStore(schemaVersion: 2);
+        await s.save(const _Profile(name: 'Local', level: 1));
+
+        final provider = _FakeCloudSaveProvider()
+          ..cloudData = {
+            'schemaVersion': 2,
+            'name': 'Cloud',
+            'level': 2,
+            'syncedAtMs': DateTime.now().millisecondsSinceEpoch + 100000,
+          };
+        await s.syncWith(provider);
+
+        expect(s.load()!.name, 'Cloud');
+      },
+    );
+
+    test(
+      'nội dung giống hệt nhau (chỉ khác syncedAtMs) -> KHÔNG gọi '
+      'onConflict, không coi là xung đột thật',
+      () async {
+        final s = makeStore(schemaVersion: 2);
+        await s.save(const _Profile(name: 'Same', level: 5));
+
+        final provider = _FakeCloudSaveProvider()
+          ..cloudData = {
+            'schemaVersion': 2,
+            'name': 'Same',
+            'level': 5,
+            'syncedAtMs': DateTime.now().millisecondsSinceEpoch + 100000,
+          };
+        var called = false;
+        await s.syncWith(
+          provider,
+          onConflict: (conflict) {
+            called = true;
+            return const VersionedSyncConflictResolution.preferLocal();
+          },
+        );
+
+        expect(called, isFalse);
+      },
+    );
+
+    test(
+      'timestamp bằng nhau, nội dung khác nhau -> gọi đúng onConflict với '
+      'đúng local/cloud value + syncedAtMs',
+      () async {
+        final s = makeStore(schemaVersion: 2);
+        await s.save(const _Profile(name: 'Local', level: 1));
+        final localTime = s.load() != null
+            ? jsonDecode(store.getString('profile')!)['syncedAtMs'] as int
+            : 0;
+
+        final provider = _FakeCloudSaveProvider()
+          ..cloudData = {
+            'schemaVersion': 2,
+            'name': 'Cloud',
+            'level': 2,
+            'syncedAtMs': localTime, // cố ý trùng.
+          };
+
+        VersionedSyncConflict<_Profile>? captured;
+        await s.syncWith(
+          provider,
+          onConflict: (conflict) {
+            captured = conflict;
+            return const VersionedSyncConflictResolution.preferLocal();
+          },
+        );
+
+        expect(captured, isNotNull);
+        expect(captured!.local.value.name, 'Local');
+        expect(captured!.local.syncedAtMs, localTime);
+        expect(captured!.cloud.value.name, 'Cloud');
+        expect(captured!.cloud.syncedAtMs, localTime);
+      },
+    );
+
+    test(
+      'clock lệch: cloud timestamp "trong tương lai" so với local NHƯNG '
+      'nội dung khác nhau -> vẫn gọi onConflict (không mặc định tin '
+      'timestamp lớn hơn là "đúng hơn")',
+      () async {
+        final s = makeStore(schemaVersion: 2);
+        await s.save(const _Profile(name: 'Local', level: 1));
+
+        final provider = _FakeCloudSaveProvider()
+          ..cloudData = {
+            'schemaVersion': 2,
+            'name': 'Cloud',
+            'level': 2,
+            // Xa trong tương lai — mô phỏng đồng hồ thiết bị cloud bị lệch,
+            // KHÔNG có nghĩa dữ liệu cloud thật sự "mới hơn".
+            'syncedAtMs': DateTime.now().millisecondsSinceEpoch + 999999999,
+          };
+
+        var called = false;
+        await s.syncWith(
+          provider,
+          onConflict: (conflict) {
+            called = true;
+            return const VersionedSyncConflictResolution.preferLocal();
+          },
+        );
+
+        expect(called, isTrue);
+        expect(
+          s.load()!.name,
+          'Local',
+          reason: 'preferLocal phải thắng, không bị timestamp tương lai của '
+              'cloud ghi đè',
+        );
+      },
+    );
+
+    test('resolution preferLocal -> giữ local, upload local lên cloud', () async {
+      final s = makeStore(schemaVersion: 2);
+      await s.save(const _Profile(name: 'Local', level: 1));
+
+      final provider = _FakeCloudSaveProvider()
+        ..cloudData = {
+          'schemaVersion': 2,
+          'name': 'Cloud',
+          'level': 2,
+          'syncedAtMs': DateTime.now().millisecondsSinceEpoch,
+        };
+      await s.syncWith(
+        provider,
+        onConflict: (_) => const VersionedSyncConflictResolution.preferLocal(),
+      );
+
+      expect(s.load()!.name, 'Local');
+      expect(provider.cloudData!['name'], 'Local');
+    });
+
+    test('resolution preferCloud -> ghi đè local bằng cloud', () async {
+      final s = makeStore(schemaVersion: 2);
+      await s.save(const _Profile(name: 'Local', level: 1));
+
+      final provider = _FakeCloudSaveProvider()
+        ..cloudData = {
+          'schemaVersion': 2,
+          'name': 'Cloud',
+          'level': 2,
+          'syncedAtMs': DateTime.now().millisecondsSinceEpoch,
+        };
+      await s.syncWith(
+        provider,
+        onConflict: (_) => const VersionedSyncConflictResolution.preferCloud(),
+      );
+
+      expect(s.load()!.name, 'Cloud');
+    });
+
+    test(
+      'resolution merge -> giá trị merge được ghi CẢ local LẪN cloud',
+      () async {
+        final s = makeStore(schemaVersion: 2);
+        await s.save(const _Profile(name: 'Local', level: 1));
+
+        final provider = _FakeCloudSaveProvider()
+          ..cloudData = {
+            'schemaVersion': 2,
+            'name': 'Cloud',
+            'level': 2,
+            'syncedAtMs': DateTime.now().millisecondsSinceEpoch,
+          };
+        await s.syncWith(
+          provider,
+          onConflict: (conflict) => VersionedSyncConflictResolution.merge(
+            _Profile(
+              name: 'Merged',
+              level: conflict.local.value.level + conflict.cloud.value.level,
+            ),
+          ),
+        );
+
+        expect(s.load()!.name, 'Merged');
+        expect(s.load()!.level, 3);
+        expect(provider.cloudData!['name'], 'Merged');
+        expect(provider.cloudData!['level'], 3);
+      },
+    );
+
+    test(
+      'onConflict throw -> KHÔNG crash syncWith, fallback về last-write-wins',
+      () async {
+        final s = makeStore(schemaVersion: 2);
+        await s.save(const _Profile(name: 'Local', level: 1));
+
+        final provider = _FakeCloudSaveProvider()
+          ..cloudData = {
+            'schemaVersion': 2,
+            'name': 'Cloud',
+            'level': 2,
+            'syncedAtMs': DateTime.now().millisecondsSinceEpoch + 100000,
+          };
+
+        await expectLater(
+          s.syncWith(
+            provider,
+            onConflict: (_) => throw StateError('handler lỗi'),
+          ),
+          completes,
+        );
+
+        expect(
+          s.load()!.name,
+          'Cloud',
+          reason:
+              'fallback last-write-wins: cloud mới hơn theo timestamp thật '
+              'nên thắng',
+        );
+      },
+    );
+
+    test(
+      'cloud data hỏng (schemaVersion sai kiểu, field không đọc được) -> '
+      'onConflict KHÔNG được gọi (chỉ 1 bên có data hợp lệ, không phải '
+      'xung đột thật), local giữ nguyên',
+      () async {
+        final s = makeStore(schemaVersion: 2);
+        await s.save(const _Profile(name: 'LocalSafe', level: 5));
+
+        final provider = _FakeCloudSaveProvider()
+          ..cloudData = {
+            'schemaVersion': 2,
+            'name': 'FromCloud',
+            'level': 'garbage', // fromJson throw khi cast 'level' as int.
+            'syncedAtMs': DateTime.now().millisecondsSinceEpoch + 100000,
+          };
+
+        var called = false;
+        await s.syncWith(
+          provider,
+          onConflict: (_) {
+            called = true;
+            return const VersionedSyncConflictResolution.preferLocal();
+          },
+        );
+
+        expect(called, isFalse);
+        expect(s.load()!.name, 'LocalSafe');
+      },
+    );
+
+    test(
+      'chỉ 1 bên có data (local rỗng, chỉ có cloud) -> onConflict KHÔNG '
+      'được gọi, chỉ đơn giản dùng cloud',
+      () async {
+        final s = makeStore(schemaVersion: 2);
+        final provider = _FakeCloudSaveProvider()
+          ..cloudData = {
+            'schemaVersion': 2,
+            'name': 'Cloud',
+            'level': 2,
+            'syncedAtMs': DateTime.now().millisecondsSinceEpoch,
+          };
+
+        var called = false;
+        await s.syncWith(
+          provider,
+          onConflict: (_) {
+            called = true;
+            return const VersionedSyncConflictResolution.preferLocal();
+          },
+        );
+
+        expect(called, isFalse);
+        expect(s.load()!.name, 'Cloud');
+      },
+    );
+  });
 }
