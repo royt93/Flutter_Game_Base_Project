@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/achievement_service.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
+import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/game/roy_game.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
@@ -171,6 +172,70 @@ void main() {
 
         expect(find.textContaining('gems: 3'), findsOneWidget);
         expect(find.textContaining('tap: 3/10'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('ENH-82: GameSessionController synced with RoyLifecycleCoordinator', () {
+    testWidgets(
+      'app bị background thật (OS lifecycle) trong lúc playing -> '
+      'PauseOverlay tự hiện đúng panel (không cần bấm FAB); foreground lại '
+      '-> tự ẩn',
+      (tester) async {
+        final lifecycle = RoyLifecycleCoordinator();
+        Get.put(lifecycle, permanent: true);
+
+        await tester.pumpWidget(_wrap(const GameDemoScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(_button('Resume'), findsNothing);
+
+        // Drives the coordinator's own `didChangeAppLifecycleState`
+        // directly (same as test/core/game_session_controller_test.dart's
+        // own lifecycle-bridge unit test) rather than
+        // `tester.binding.handleAppLifecycleStateChanged` — the latter
+        // dispatches to EVERY `WidgetsBindingObserver` registered in this
+        // test's zone (including ones from other services this screen
+        // pulls in, e.g. `AudioManager`/`PerformanceTierService`), one of
+        // which hung the test indefinitely; calling the coordinator
+        // directly exercises the exact same `RoyLifecycleCoordinator` ->
+        // `GameSessionController` hook path this screen actually wires up,
+        // without that unrelated interference.
+        lifecycle.didChangeAppLifecycleState(AppLifecycleState.paused);
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(
+          _button('Resume'),
+          findsWidgets,
+          reason:
+              'showForSystemPause: true nên panel phải tự hiện khi '
+              'background, không cần người chơi bấm FAB pause',
+        );
+
+        // Foreground lại -> tự resume, panel tự ẩn.
+        lifecycle.didChangeAppLifecycleState(AppLifecycleState.resumed);
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(_button('Resume'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'không có RoyLifecycleCoordinator đăng ký -> demo vẫn hoạt động bình '
+      'thường, không crash (lifecycle: null, giống hành vi trước ENH-82)',
+      (tester) async {
+        expect(Get.isRegistered<RoyLifecycleCoordinator>(), isFalse);
+
+        await tester.pumpWidget(_wrap(const GameDemoScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(_button('Resume'), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );

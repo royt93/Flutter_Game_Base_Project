@@ -32,9 +32,29 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
   late final _game = RoyGame(eventBus: _eventBus);
   final _gameWidgetKey = GlobalKey();
   bool _showInfo = false;
-  final _session = GameSessionController()
-    ..markReady()
-    ..start();
+  // ENH-82: without `lifecycle:`, backgrounding the app while `playing`
+  // left `_session.snapshot.phase` stuck at `playing` forever — Flame's
+  // OWN `pauseWhenBackgrounded` (RoyGame's default, unchanged) already
+  // paused the actual render/update loop correctly on the same OS
+  // lifecycle event, but nothing told GameSessionController about it, so
+  // any UI/logic branching on `GameSessionPhase` (this screen's own
+  // `PauseOverlay` below) silently disagreed with what was actually
+  // happening on screen. `GameSessionController` already has this exact
+  // hook built in (see its own `RoyLifecycleCoordinator` wiring in
+  // `onInit()`) — this demo just never passed one in.
+  //
+  // `Get.put()`, not a plain constructor call, is REQUIRED here: GetX only
+  // ever calls a `GetxController`'s `onInit()` (where the lifecycle hook
+  // above actually gets registered) as part of its OWN put/find
+  // dependency-injection machinery — a `GameSessionController` built via
+  // its bare constructor never has `onInit()` fire at all, so passing
+  // `lifecycle:` alone (without this) would silently do nothing. `onClose()`
+  // is still called manually in `dispose()` below rather than through
+  // `Get.delete()`, matching this field's existing (pre-ENH-82) disposal
+  // style.
+  late final _session = Get.put<GameSessionController>(
+    GameSessionController(lifecycle: RoyLifecycleCoordinator.maybe),
+  )..markReady()..start();
 
   late final EconomyWallet _wallet;
   late final AchievementService _achievements;
@@ -75,7 +95,18 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
 
   @override
   void dispose() {
-    _session.onClose();
+    // ENH-82: `_session` is now `Get.put()`'d (required for its own
+    // `onInit()`/lifecycle hook to ever run — see the field's own doc
+    // comment), so its disposal now goes through `Get.delete()` — this
+    // calls `_session.onClose()` internally (GetX's own `onDelete()` ->
+    // `onClose()` chain), so a separate direct `_session.onClose()` call
+    // here would double-invoke it. Matches this codebase's established
+    // "always clean up your own Get registrations on dispose" convention
+    // (see BUG-64/BUG-62's own fixes) — without this, re-opening this
+    // screen would just silently replace the registry entry each time
+    // rather than leaking, but leaving a disposed controller findable via
+    // `Get.find` in the meantime is its own footgun.
+    Get.delete<GameSessionController>(force: true);
     unawaited(_eventBus.dispose());
     super.dispose();
   }
@@ -175,7 +206,17 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                   ],
                 ),
               ),
-              PauseOverlay(session: _session, onQuit: Get.back),
+              // ENH-82: `showForSystemPause: true` so this demo actually
+              // shows the pause panel when the OS-background pause kicks
+              // in (via `_session`'s lifecycle hook above), not just for
+              // the pause FAB's user-initiated pause — the whole point of
+              // this demo is illustrating that flow to a consumer copying
+              // it, not just making the internal phase correct invisibly.
+              PauseOverlay(
+                session: _session,
+                showForSystemPause: true,
+                onQuit: Get.back,
+              ),
               if (_showInfo)
                 Positioned.fill(
                   child: NeonDialog.overlay(
