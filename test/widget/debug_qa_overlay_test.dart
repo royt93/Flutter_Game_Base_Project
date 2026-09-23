@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/experiment_bucketing_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/core/remote_config_service.dart';
+import 'package:roy_casual_kit/core/remote_kill_switch_controller.dart';
 import 'package:roy_casual_kit/core/replay_recorder.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/clamped_clock.dart';
@@ -187,11 +189,17 @@ void main() {
       await tester.tap(find.text('Playground'));
       await tester.pump();
 
-      await tester.tap(
-        find.byKey(
-          Key('debugQaPlaygroundColor_${NeonTheme.magenta.toARGB32()}'),
-        ),
+      // IDEA-58: the tab bar grew a row (8th tab added), pushing this
+      // color-swatch row past the default 800x600 test viewport's bottom
+      // edge — same "scroll it into view within its own
+      // SingleChildScrollView first" fix as the Variant tab's own button
+      // above.
+      final colorFinder = find.byKey(
+        Key('debugQaPlaygroundColor_${NeonTheme.magenta.toARGB32()}'),
       );
+      await tester.ensureVisible(colorFinder);
+      await tester.pump();
+      await tester.tap(colorFinder);
       await tester.pump();
 
       final button = tester.widget<CommonButton>(find.byType(CommonButton));
@@ -610,5 +618,146 @@ void main() {
       ]);
       expect(find.textContaining('Đang chọn: $normal'), findsOneWidget);
     });
+  });
+
+  group('IDEA-58: Kill Switch tab', () {
+    Future<RemoteKillSwitchController> openPanel(
+      WidgetTester tester, {
+      Map<String, bool> assetDefaults = const {},
+    }) async {
+      SharedPreferences.setMockInitialValues({});
+      Get.put(StorageService(await SharedPreferences.getInstance()));
+      final controller = RemoteKillSwitchController(
+        remoteConfig: RemoteConfigService(assetPath: 'assets/no_such_file.json'),
+        assetDefaults: assetDefaults,
+      );
+      Get.put(controller, permanent: true);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: DebugQaOverlay(child: Material(child: Text('app content'))),
+        ),
+      );
+      await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+      await tester.pump();
+      await tester.tap(find.text('Kill Switch'));
+      await tester.pump();
+      return controller;
+    }
+
+    testWidgets(
+      'RemoteKillSwitchController chưa đăng ký -> báo rõ thay vì crash',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: DebugQaOverlay(child: Material(child: Text('app content'))),
+          ),
+        );
+        await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+        await tester.pump();
+        await tester.tap(find.text('Kill Switch'));
+        await tester.pump();
+
+        expect(find.textContaining('chưa được đăng ký'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'hiện đúng danh sách feature flag từ assetDefaults ngay cả khi chưa query',
+      (tester) async {
+        await openPanel(
+          tester,
+          assetDefaults: {'shop_v2': false, 'winter_event': true},
+        );
+
+        expect(find.textContaining('shop_v2: enabled'), findsOneWidget);
+        expect(find.textContaining('winter_event: KILLED'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'nhập feature id mới rồi bấm Thêm -> xuất hiện trong danh sách',
+      (tester) async {
+        await openPanel(tester);
+
+        expect(find.textContaining('new_feature'), findsNothing);
+
+        await tester.enterText(
+          find.byKey(const Key('debugQaKillSwitchFeatureIdField')),
+          'new_feature',
+        );
+        await tester.tap(find.byKey(const Key('debugQaKillSwitchAdd')));
+        await tester.pump();
+
+        expect(find.textContaining('new_feature: enabled'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'bấm Kill -> feature bị kill ngay, phản ánh đúng vào isKilled()',
+      (tester) async {
+        final controller = await openPanel(
+          tester,
+          assetDefaults: {'shop_v2': false},
+        );
+
+        expect(controller.isKilled('shop_v2'), isFalse);
+
+        await tester.tap(find.byKey(const Key('debugQaKillSwitchKill_shop_v2')));
+        await tester.pump();
+
+        expect(controller.isKilled('shop_v2'), isTrue);
+        expect(find.textContaining('shop_v2: KILLED'), findsOneWidget);
+        expect(find.textContaining('localOverride'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'bấm Kill rồi Bỏ override -> quay lại đúng trạng thái asset default',
+      (tester) async {
+        final controller = await openPanel(
+          tester,
+          assetDefaults: {'shop_v2': false},
+        );
+
+        await tester.tap(find.byKey(const Key('debugQaKillSwitchKill_shop_v2')));
+        await tester.pump();
+        expect(controller.isKilled('shop_v2'), isTrue);
+
+        await tester.tap(
+          find.byKey(const Key('debugQaKillSwitchClear_shop_v2')),
+        );
+        await tester.pump();
+
+        expect(controller.isKilled('shop_v2'), isFalse);
+        expect(find.textContaining('shop_v2: enabled'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'feature bị kill bởi nguồn KHÔNG PHẢI local override -> không có nút bỏ, '
+      'chỉ hiện ghi chú "không bật lại được qua đây"',
+      (tester) async {
+        await openPanel(
+          tester,
+          assetDefaults: {'always_off': true},
+        );
+
+        expect(find.textContaining('always_off: KILLED'), findsOneWidget);
+        expect(
+          find.byKey(const Key('debugQaKillSwitchClear_always_off')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('debugQaKillSwitchKill_always_off')),
+          findsNothing,
+        );
+        expect(
+          find.textContaining('không bật lại được qua đây'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

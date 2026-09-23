@@ -10,6 +10,7 @@ import '../../core/connectivity_coordinator.dart';
 import '../../core/experiment_bucketing_service.dart';
 import '../../core/locale_service.dart';
 import '../../core/neon_theme.dart';
+import '../../core/remote_kill_switch_controller.dart';
 import '../../core/replay_recorder.dart';
 import '../../core/sdk_health_report.dart';
 import '../../core/storage_service.dart';
@@ -209,6 +210,13 @@ class _Panel extends StatelessWidget {
                   // wraps onto 2 lines (7 tabs), so each tab's own content
                   // area needs the same headroom it had before to avoid
                   // clipping/squeezing content near the bottom edge.
+                  // IDEA-58: adding an 8th tab ("Kill Switch") pushed the
+                  // Playground tab's color-swatch row past the default
+                  // 800x600 test viewport's bottom edge — fixed in the
+                  // test itself via `tester.ensureVisible` (same pattern
+                  // the Variant tab's own button already uses), not here,
+                  // since this content is already inside a
+                  // SingleChildScrollView — a real device just scrolls.
                   constraints: const BoxConstraints(maxHeight: 600),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -279,6 +287,11 @@ class _Panel extends StatelessWidget {
                             selected: tab == 6,
                             onTap: () => onTabChanged(6),
                           ),
+                          _TabButton(
+                            label: 'Kill Switch',
+                            selected: tab == 7,
+                            onTap: () => onTabChanged(7),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -301,7 +314,8 @@ class _Panel extends StatelessWidget {
                           3 => const _HealthTab(),
                           4 => _TimeTravelTab(onChanged: onQaChanged),
                           5 => _NetworkSimulatorTab(onChanged: onQaChanged),
-                          _ => const _VariantSwitcherTab(),
+                          6 => const _VariantSwitcherTab(),
+                          _ => const _KillSwitchTab(),
                         },
                       ),
                     ],
@@ -915,6 +929,183 @@ class _VariantSwitcherTabState extends State<_VariantSwitcherTab> {
                     () => service.debugSetVariantOverride(experimentKey, null),
                   ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// IDEA-58: lets a QA tester force-kill/un-kill a feature via
+/// [RemoteKillSwitchController.forceKillLocally]/[clearLocalOverride]
+/// without needing a dev to write a one-off test for it — same
+/// "text-field-driven, no dev-authored registry needed" shape as
+/// [_VariantSwitcherTab] above, since [RemoteKillSwitchController] itself
+/// has no "list every known feature id" API either (only resolves
+/// on-demand per id).
+///
+/// Shown features are the union of [RemoteKillSwitchController.assetDefaults]
+/// (whatever the consuming app bundled a fallback for — a reasonable
+/// starting list) and [RemoteKillSwitchController.states] (anything
+/// already queried elsewhere in the app, or added via the text field
+/// below) — union computed at build time, never mutates the controller.
+///
+/// **Only a local override can be toggled here** — a feature currently
+/// killed by a REMOTE/cached/asset-default source has no "un-kill"
+/// button, since [RemoteKillSwitchController] itself has no such API
+/// (see its own class doc: an invalid/missing remote value never flips a
+/// feature back open, and there's deliberately no "force-enable" escape
+/// hatch even locally). Showing a button that would silently no-op there
+/// would be worse than not showing one.
+class _KillSwitchTab extends StatefulWidget {
+  const _KillSwitchTab();
+
+  @override
+  State<_KillSwitchTab> createState() => _KillSwitchTabState();
+}
+
+class _KillSwitchTabState extends State<_KillSwitchTab> {
+  final _featureIdController = TextEditingController();
+
+  @override
+  void dispose() {
+    _featureIdController.dispose();
+    super.dispose();
+  }
+
+  void _addFeature(RemoteKillSwitchController controller) {
+    final id = _featureIdController.text.trim();
+    if (id.isEmpty) return;
+    setState(() {
+      controller.isKilled(id);
+      _featureIdController.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = RemoteKillSwitchController.maybe;
+    if (controller == null) {
+      return const Text(
+        'RemoteKillSwitchController chưa được đăng ký (Get.put) trong app này.',
+      );
+    }
+
+    final featureIds = <String>{
+      ...controller.assetDefaults.keys,
+      ...controller.states.keys,
+    }.toList()..sort();
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Kill Switch',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const Key('debugQaKillSwitchFeatureIdField'),
+                  controller: _featureIdController,
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    hintText: 'feature id',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              CommonButton(
+                key: const Key('debugQaKillSwitchAdd'),
+                label: 'Thêm',
+                variant: CommonButtonVariant.secondary,
+                onTap: () => _addFeature(controller),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (featureIds.isEmpty)
+            const Text('Chưa có feature flag nào — nhập id ở trên.')
+          else
+            for (final featureId in featureIds)
+              _KillSwitchRow(
+                controller: controller,
+                featureId: featureId,
+                onChanged: () => setState(() {}),
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KillSwitchRow extends StatelessWidget {
+  const _KillSwitchRow({
+    required this.controller,
+    required this.featureId,
+    required this.onChanged,
+  });
+
+  final RemoteKillSwitchController controller;
+  final String featureId;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    // Read-through resolve (no side effect beyond what's already tracked)
+    // for a feature only known via `assetDefaults` and never actually
+    // queried yet — `states` has no entry for it until `isKilled`/
+    // `forceKillLocally` is called at least once.
+    final state = controller.states[featureId];
+    final killed = state?.killed ?? controller.assetDefaults[featureId] ?? false;
+    final canClearLocally = state?.source == KillSwitchSource.localOverride;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      // Column, not Row: the panel is narrow (see other tabs' own use of
+      // Wrap/scrollable layouts for the same reason) — a long feature id
+      // plus the "không bật lại được qua đây" hint easily overflow a
+      // single horizontal line.
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            killed
+                ? '$featureId: KILLED'
+                      '${state != null ? ' (${state.source.name})' : ''}'
+                : '$featureId: enabled',
+            key: Key('debugQaKillSwitchRow_$featureId'),
+          ),
+          if (!killed)
+            CommonButton(
+              key: Key('debugQaKillSwitchKill_$featureId'),
+              label: 'Kill',
+              variant: CommonButtonVariant.secondary,
+              onTap: () {
+                controller.forceKillLocally(
+                  featureId,
+                  reason: 'QA override (Debug QA Overlay)',
+                );
+                onChanged();
+              },
+            )
+          else if (canClearLocally)
+            CommonButton(
+              key: Key('debugQaKillSwitchClear_$featureId'),
+              label: 'Bỏ override',
+              variant: CommonButtonVariant.secondary,
+              onTap: () {
+                controller.clearLocalOverride(featureId);
+                onChanged();
+              },
+            )
+          else
+            const Text(
+              '(không phải local override — không bật lại được qua đây)',
+              style: TextStyle(fontSize: 11),
+            ),
         ],
       ),
     );
