@@ -24,6 +24,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _pseudoLocaleEnabled = false;
   Locale? _localeBeforePseudo;
 
+  // FEAT-94: reuses the app's real StorageService singleton — an export/
+  // erasure request operates on the SAME storage every other screen reads/
+  // writes, not a throwaway instance. Null only if StorageService was
+  // never registered (e.g. a test that boots without it), matching this
+  // screen's existing `AudioManager.maybe`/`WakeLockService.maybe` posture.
+  late final PlayerDataRightsService? _dataRights =
+      StorageService.maybe != null
+      ? PlayerDataRightsService(storage: StorageService.to)
+      : null;
+
+  Future<void> _requestExport() async {
+    final rights = _dataRights;
+    if (rights == null) return;
+    final receipt = rights.requestExport();
+    if (!mounted) return;
+    ToastBanner.show(
+      context,
+      message:
+          'Đã xuất ${receipt.data.length} key (schema v${receipt.schemaVersion}) '
+          'lúc ${DateTime.fromMillisecondsSinceEpoch(receipt.exportedAtMs)}',
+    );
+  }
+
+  Future<void> _requestErasure() async {
+    final rights = _dataRights;
+    if (rights == null) return;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Xoá toàn bộ dữ liệu?',
+      message: 'Hành động này không thể hoàn tác — mọi dữ liệu đã lưu sẽ mất.',
+      confirmLabel: 'Xoá',
+      color: NeonTheme.red,
+    );
+    if (!confirmed || !mounted) return;
+    final receipt = await rights.requestErasure();
+    if (!mounted) return;
+    ToastBanner.show(
+      context,
+      message:
+          'Đã xoá ${receipt.erasedKeyCount} key lúc '
+          '${DateTime.fromMillisecondsSinceEpoch(receipt.completedAtMs)}',
+    );
+  }
+
   void _togglePseudoLocale(bool enabled, LocaleService locale) {
     if (enabled) {
       _localeBeforePseudo = locale.current.value;
@@ -135,6 +179,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onChanged: (v) => _togglePseudoLocale(v, locale),
                         ),
                       ),
+                    // FEAT-94: GDPR/CCPA-style "player requested their
+                    // data" workflow — both tiles are no-ops (never call
+                    // PlayerDataRightsService) if StorageService was never
+                    // registered.
+                    if (_dataRights != null) ...[
+                      CommonListTile(
+                        key: const Key('settingsRequestExport'),
+                        title: 'Yêu cầu xuất dữ liệu',
+                        subtitle: 'Tải toàn bộ dữ liệu đã lưu (GDPR/CCPA)',
+                        trailing: Icon(
+                          Icons.download_outlined,
+                          color: NeonTheme.inkSoft,
+                        ),
+                        onTap: _requestExport,
+                      ),
+                      CommonListTile(
+                        key: const Key('settingsRequestErasure'),
+                        title: 'Yêu cầu xoá dữ liệu',
+                        subtitle: 'Xoá vĩnh viễn toàn bộ dữ liệu đã lưu',
+                        trailing: Icon(
+                          Icons.delete_outline,
+                          color: NeonTheme.red,
+                        ),
+                        onTap: _requestErasure,
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -10,6 +10,7 @@ import 'package:roy_casual_kit/core/utils/pseudo_locale.dart';
 import 'package:roy_casual_kit/core/wake_lock_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/list_tile_row.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/toggle_switch.dart';
+import 'package:roy_casual_kit/presentation/widgets/neon_dialog.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
@@ -367,6 +368,112 @@ void main() {
 
         expect(find.text('Settings'), findsWidgets);
         expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('FEAT-94: PlayerDataRightsService tiles', () {
+    testWidgets(
+      'tap "Yêu cầu xuất dữ liệu" -> hiện toast đúng số key đã lưu',
+      (tester) async {
+        final store = await _boot();
+        await store.setString('demo_key', 'demo_value');
+
+        await tester.pumpWidget(_wrap(const SettingsScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(
+          find.byKey(const Key('settingsRequestExport')),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const Key('settingsRequestExport')));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.textContaining('Đã xuất'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        // Drain the toast's auto-dismiss timer before the test ends.
+        await tester.pump(const Duration(seconds: 3));
+      },
+    );
+
+    testWidgets(
+      'tap "Yêu cầu xoá dữ liệu" rồi Cancel -> KHÔNG xoá gì, storage giữ nguyên',
+      (tester) async {
+        final store = await _boot();
+        await store.setString('demo_key', 'demo_value');
+
+        await tester.pumpWidget(_wrap(const SettingsScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.tap(find.byKey(const Key('settingsRequestErasure')));
+        // NeonDialog wraps its content in an IgnorePointer during its
+        // 220ms entrance transition (neon_dialog.dart) — a shorter pump
+        // taps while it's still absorbing pointer events, missing the
+        // button entirely.
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Xoá toàn bộ dữ liệu?'), findsOneWidget);
+
+        // Same robust direct-invoke as the confirm case below — a
+        // coordinate-based tap() here intermittently misses too.
+        final cancelButton = tester.widget<NeonDialogButton>(
+          find.byWidgetPredicate(
+            (w) => w is NeonDialogButton && w.action.label == 'Cancel',
+          ),
+        );
+        cancelButton.action.onTap();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.text('Xoá toàn bộ dữ liệu?'),
+          findsNothing,
+          reason: 'dialog phải đóng sau khi bấm Cancel',
+        );
+        expect(store.exportAll(), isNotEmpty);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'tap "Yêu cầu xoá dữ liệu" rồi xác nhận -> xoá thật storage, hiện '
+      'toast xác nhận biên nhận',
+      (tester) async {
+        final store = await _boot();
+        await store.setString('demo_key', 'demo_value');
+
+        await tester.pumpWidget(_wrap(const SettingsScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.tap(find.byKey(const Key('settingsRequestErasure')));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The confirm button's tap coordinate sometimes lands on an
+        // IgnorePointer left over from the route transition, even after
+        // pumping well past its 220ms duration (a coordinate-hit-test
+        // flakiness the "Cancel" case above doesn't hit, likely position-
+        // dependent) — invoke its own onTap directly instead, same
+        // workaround `tapLocaleRow` above already uses for a similar
+        // route-transition-timing issue.
+        final confirmButton = tester.widget<NeonDialogButton>(
+          find.byWidgetPredicate(
+            (w) => w is NeonDialogButton && w.action.label == 'Xoá',
+          ),
+        );
+        confirmButton.action.onTap();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.text('Xoá toàn bộ dữ liệu?'),
+          findsNothing,
+          reason: 'dialog phải đóng sau khi bấm Xoá',
+        );
+        expect(store.exportAll(), isEmpty);
+        // The toast itself has its own ~220ms entrance animation, on top
+        // of the dialog-close pump above — give it 1 more settle window.
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.textContaining('Đã xoá'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pump(const Duration(seconds: 3));
       },
     );
   });
