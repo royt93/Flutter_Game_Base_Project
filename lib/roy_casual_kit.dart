@@ -34,6 +34,7 @@ export 'core/haptics.dart';
 export 'core/in_app_review_helper.dart';
 export 'core/inventory_service.dart';
 export 'core/kit_bootstrap.dart';
+export 'core/leaderboard_sync_seam.dart';
 export 'core/local_scoreboard_service.dart';
 export 'core/locale_service.dart';
 export 'core/memory_lifecycle_watchdog.dart';

@@ -51,6 +51,7 @@ class _CookbookScreenState extends State<CookbookScreen> {
   late final HapticChoreographer _haptics;
   late final AssetPreloadCoordinator _preloader;
   late final PerformanceTierService _performanceTier;
+  late final LeaderboardSyncCoordinator _leaderboardSync;
 
   int _checkpointCounter = 0;
 
@@ -133,6 +134,18 @@ class _CookbookScreenState extends State<CookbookScreen> {
     if (!Get.isRegistered<SecureStorageAdapter>()) {
       Get.put<SecureStorageAdapter>(FakeSecureStorageAdapter(), permanent: true);
     }
+    // FEAT-87: reuse the SAME LocalScoreboardService instance
+    // WidgetShowcaseScreen's LeaderboardList demo already registered, same
+    // reasoning as `_performanceTier` above — this demo exercises the real
+    // shared instance, not a throwaway one.
+    if (!Get.isRegistered<LeaderboardSyncSeam>()) {
+      Get.put<LeaderboardSyncSeam>(_FakeLeaderboardSyncSeam(), permanent: true);
+    }
+    _leaderboardSync = LeaderboardSyncCoordinator(
+      local:
+          LocalScoreboardService.maybe ??
+          Get.put(LocalScoreboardService(), permanent: true),
+    );
   }
 
   // BUG-64: `registerParticipant`'s `snapshot`/`restore` closures both
@@ -348,6 +361,21 @@ class _CookbookScreenState extends State<CookbookScreen> {
                         },
                       ),
                       _tile(
+                        'LeaderboardSyncSeam (fake adapter) — submit + fetchTop',
+                        () async {
+                          await _leaderboardSync.submitScore(
+                            'cookbook_weekly',
+                            'CookbookPlayer',
+                            777,
+                          );
+                          final top = await _leaderboardSync.fetchTop(
+                            'cookbook_weekly',
+                            limit: 3,
+                          );
+                          return 'top=${top.map((e) => '${e.playerLabel}:${e.score}').join(', ')}';
+                        },
+                      ),
+                      _tile(
                         'SecureStorageAdapter (fake adapter) — round trip',
                         () async {
                           await SecureStorage.write('cookbook_demo_key', 'demo_value');
@@ -510,4 +538,27 @@ class _RecordingAnalyticsProvider implements AnalyticsProvider {
   void logEvent(String name, [Map<String, Object?>? params]) {
     _events.add(name);
   }
+}
+
+/// Minimal in-memory reference [LeaderboardSyncSeam] — keeps 1 board's
+/// scores in a map, for the demo below. FEAT-87.
+class _FakeLeaderboardSyncSeam implements LeaderboardSyncSeam {
+  final _boards = <String, List<ScoreEntry>>{};
+
+  @override
+  Future<void> submitScore(String boardId, int score) async {
+    (_boards[boardId] ??= []).add(
+      ScoreEntry(playerLabel: 'remote_player', score: score),
+    );
+  }
+
+  @override
+  Future<List<ScoreEntry>> fetchTop(String boardId, {int limit = 10}) async =>
+      _boards[boardId]?.take(limit).toList() ?? const [];
+
+  @override
+  Future<List<ScoreEntry>> fetchAroundPlayer(
+    String boardId, {
+    int radius = 2,
+  }) async => _boards[boardId] ?? const [];
 }

@@ -178,6 +178,31 @@ void main() {
   );
 
   testWidgets(
+    'LeaderboardSyncSeam tile submits + fetches top via the registered fake '
+    'adapter (FEAT-87)',
+    (tester) async {
+      await _boot();
+      await tester.pumpWidget(_wrap(const CookbookScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await _tapAndShowToast(
+        tester,
+        'LeaderboardSyncSeam (fake adapter) — submit + fetchTop',
+      );
+
+      // The fake adapter's `submitScore(boardId, score)` (no playerLabel
+      // param, matching real Play Games/Game Center identifying the
+      // signed-in player themselves) records under a fixed
+      // 'remote_player' label — this proves the tile actually round-trips
+      // through the SEAM, not the local fallback (which would show
+      // 'CookbookPlayer' instead).
+      expect(find.textContaining('top=remote_player:777'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _flushToast(tester);
+    },
+  );
+
+  testWidgets(
     'SecureStorageAdapter tile round-trips via the registered fake adapter',
     (tester) async {
       await _boot();
