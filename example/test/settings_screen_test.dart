@@ -382,12 +382,27 @@ void main() {
         await tester.pumpWidget(_wrap(const SettingsScreen()));
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(
-          find.byKey(const Key('settingsRequestExport')),
-          findsOneWidget,
-        );
+        final exportFinder = find.byKey(const Key('settingsRequestExport'));
 
-        await tester.tap(find.byKey(const Key('settingsRequestExport')));
+        // IDEA-59: SaveHealthCard (debug-only) now renders above this tile,
+        // pushing it far enough down that this ListView (a Sliver list,
+        // lazy even with a plain `children:` list) never builds it into
+        // the element tree until scrolled into range — `ensureVisible`
+        // can't help (needs the element to already exist); scroll
+        // incrementally like `cookbook_screen_test.dart`'s own
+        // `_scrollUntilVisible` does for the same reason.
+        await tester.scrollUntilVisible(
+          exportFinder,
+          250,
+          scrollable: find.byType(Scrollable).first,
+        );
+        // scrollUntilVisible stops the moment the target FIRST overlaps
+        // the viewport at all (even by 1px) — nudge a bit further so its
+        // center is actually hit-testable, not just technically visible.
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -150));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(exportFinder, findsOneWidget);
+        await tester.tap(exportFinder);
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.textContaining('Đã xuất'), findsOneWidget);
@@ -406,7 +421,18 @@ void main() {
         await tester.pumpWidget(_wrap(const SettingsScreen()));
         await tester.pump(const Duration(milliseconds: 100));
 
-        await tester.tap(find.byKey(const Key('settingsRequestErasure')));
+        final erasureFinder = find.byKey(
+          const Key('settingsRequestErasure'),
+        );
+        await tester.scrollUntilVisible(
+          erasureFinder,
+          250,
+          scrollable: find.byType(Scrollable).first,
+        );
+        // Same nudge as the export tile's own test above.
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -150));
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.tap(erasureFinder);
         // NeonDialog wraps its content in an IgnorePointer during its
         // 220ms entrance transition (neon_dialog.dart) — a shorter pump
         // taps while it's still absorbing pointer events, missing the
@@ -444,7 +470,18 @@ void main() {
         await tester.pumpWidget(_wrap(const SettingsScreen()));
         await tester.pump(const Duration(milliseconds: 100));
 
-        await tester.tap(find.byKey(const Key('settingsRequestErasure')));
+        final erasureFinder = find.byKey(
+          const Key('settingsRequestErasure'),
+        );
+        await tester.scrollUntilVisible(
+          erasureFinder,
+          250,
+          scrollable: find.byType(Scrollable).first,
+        );
+        // Same nudge as the export tile's own test above.
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -150));
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.tap(erasureFinder);
         await tester.pump(const Duration(milliseconds: 300));
 
         // The confirm button's tap coordinate sometimes lands on an

@@ -179,6 +179,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onChanged: (v) => _togglePseudoLocale(v, locale),
                         ),
                       ),
+                    // IDEA-59: QA/support self-check — "is the save
+                    // currently healthy" without pulling device logs.
+                    // Debug-only, same reasoning as the pseudo-locale tile
+                    // above (a normal player never needs this).
+                    if (kDebugMode && StorageService.maybe != null)
+                      const Padding(
+                        padding: EdgeInsets.all(NeonTheme.s16),
+                        child: SaveHealthCard(),
+                      ),
                     // FEAT-94: GDPR/CCPA-style "player requested their
                     // data" workflow — both tiles are no-ops (never call
                     // PlayerDataRightsService) if StorageService was never

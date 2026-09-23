@@ -66,6 +66,7 @@ export 'leaderboard_list.dart';
 export 'quest_board_panel.dart';
 export 'game_over_card_template.dart';
 export 'backup_restore_panel.dart';
+export 'save_health_card.dart';
 
 // Game-specific
 export 'level_select_grid.dart';
