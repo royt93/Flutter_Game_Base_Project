@@ -5,6 +5,7 @@ import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart' show Color, Paint;
 
+import '../../core/game_event_bus.dart';
 import '../../core/neon_theme.dart';
 import '../../core/utils/object_pool.dart';
 import 'pooled_component.dart';
@@ -16,7 +17,16 @@ import 'pooled_component.dart';
 /// [TappableCircle]. A consumer app building a real game should extend this
 /// rather than reading it as a template to copy-paste from scratch.
 class RoyGame extends FlameGame {
+  RoyGame({this.eventBus});
+
   late final TappableCircle circle;
+
+  // FEAT-88: optional — a game that never passes one behaves exactly as
+  // before (TappableCircle's null-check below is a no-op). Lets a consumer
+  // bridge gameplay events (tap, defeat, combo, ...) to business-logic
+  // services (EconomyWallet, AchievementService, AnalyticsProvider, ...)
+  // without RoyGame itself knowing about any of them.
+  final GameEventBus? eventBus;
 
   // ENH-81: proves ObjectPool (`core/utils/object_pool.dart`)/PooledComponent
   // (`pooled_component.dart`) actually wired into a REAL Flame component
@@ -135,5 +145,18 @@ class TappableCircle extends CircleComponent
     paint.color = tapped ? NeonTheme.magenta : NeonTheme.cyan;
     // ENH-81: tap trigger for the pooled sparkle burst demo.
     game.spawnSparkleBurst(position);
+    // FEAT-88: bridges this Flame-world tap to any business-logic
+    // subscriber (EconomyWallet, AchievementService, ...) wired up through
+    // the optional GameEventBus — see GameDemoScreen for a live example.
+    game.eventBus?.emit(const CircleTappedEvent());
   }
+}
+
+/// Fires whenever [TappableCircle] is tapped — the one demo [GameEvent]
+/// this starter template ships, so `GameDemoScreen` has something concrete
+/// to subscribe to (FEAT-88). A real game defines its own event types
+/// (`EntityDefeated`, `LevelCompleted`, ...) the same way, outside this
+/// package.
+class CircleTappedEvent extends GameEvent {
+  const CircleTappedEvent();
 }

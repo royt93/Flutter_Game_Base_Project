@@ -2,11 +2,15 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:roy_casual_kit/core/achievement_service.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
+import 'package:roy_casual_kit/core/economy_wallet.dart';
+import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/game/roy_game.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/flame_tracked_overlay.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // CommonButton vẽ label qua StrokeText (2 lớp Text chồng nhau) — dùng finder
 // theo CommonButton thay vì find.text trực tiếp (cùng lý do
@@ -25,6 +29,17 @@ Widget _wrap(Widget child) => GetMaterialApp(
 
 void main() {
   tearDown(Get.reset);
+
+  setUp(() async {
+    // FEAT-88: GameDemoScreen now wires EconomyWallet (via
+    // `StorageService.to`) and AchievementService as GameEventBus
+    // subscribers — needs StorageService registered before pumping.
+    SharedPreferences.setMockInitialValues({});
+    Get.put(
+      StorageService(await SharedPreferences.getInstance()),
+      permanent: true,
+    );
+  });
 
   testWidgets('renders a full-screen GameWidget without throwing', (
     tester,
@@ -113,4 +128,51 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('FEAT-88: GameEventBus wires 1 tap to 2 independent services', () {
+    testWidgets(
+      'tap circle -> EconomyWallet (gems) VÀ AchievementService (tap '
+      'progress) đều cập nhật, cả 2 hiện trên badge',
+      (tester) async {
+        await tester.pumpWidget(_wrap(const GameDemoScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.textContaining('gems: 0'), findsOneWidget);
+        expect(find.textContaining('tap: 0/10'), findsOneWidget);
+
+        await tester.tapAt(
+          tester.getCenter(find.byType(GameWidget<RoyGame>)),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.textContaining('gems: 1'), findsOneWidget);
+        expect(find.textContaining('tap: 1/10'), findsOneWidget);
+
+        final wallet = EconomyWallet.maybe!;
+        final achievements = AchievementService.maybe!;
+        expect(wallet.balanceOf('gems'), 1);
+        expect(achievements.progressOf('game_demo_circle_tap_master'), 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'nhiều tap liên tiếp cộng dồn đúng cả 2 phía, không mất event nào',
+      (tester) async {
+        await tester.pumpWidget(_wrap(const GameDemoScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        for (var i = 0; i < 3; i++) {
+          await tester.tapAt(
+            tester.getCenter(find.byType(GameWidget<RoyGame>)),
+          );
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(find.textContaining('gems: 3'), findsOneWidget);
+        expect(find.textContaining('tap: 3/10'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }

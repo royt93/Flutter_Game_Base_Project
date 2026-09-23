@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -21,16 +23,60 @@ class GameDemoScreen extends StatefulWidget {
 }
 
 class _GameDemoScreenState extends State<GameDemoScreen> {
-  final _game = RoyGame();
+  // FEAT-88: created before `_game` (Dart initializes instance fields in
+  // declaration order) so RoyGame's constructor can take it. Bridges
+  // TappableCircle's tap — a Flame-world gameplay event — to 2 independent
+  // business-logic services below, without RoyGame itself knowing either
+  // one exists.
+  final _eventBus = GameEventBus();
+  late final _game = RoyGame(eventBus: _eventBus);
   final _gameWidgetKey = GlobalKey();
   bool _showInfo = false;
   final _session = GameSessionController()
     ..markReady()
     ..start();
 
+  late final EconomyWallet _wallet;
+  late final AchievementService _achievements;
+  int _tapCount = 0;
+
+  static const _tapAchievementId = 'game_demo_circle_tap_master';
+  static const _tapAchievementThreshold = 10;
+
+  @override
+  void initState() {
+    super.initState();
+    _wallet =
+        EconomyWallet.maybe ??
+        Get.put(EconomyWallet(storage: StorageService.to), permanent: true);
+    _achievements =
+        AchievementService.maybe ??
+        Get.put(AchievementService(), permanent: true);
+    _achievements.register(_tapAchievementId, _tapAchievementThreshold);
+    // `earn()` is async (writes to real storage — no guaranteed-synchronous
+    // completion on a real device, unlike the fast microtask-only path a
+    // mocked SharedPreferences test can hit). Awaiting it before the
+    // trailing setState() below is what a device smoke test caught: firing
+    // it with `unawaited()` and calling setState() immediately after would
+    // rebuild the badge with the STALE gem balance on a real device.
+    _eventBus.subscribe<CircleTappedEvent>((_) async {
+      _tapCount++;
+      await _wallet.earn(
+        currency: 'gems',
+        amount: 1,
+        transactionId: 'game_demo_circle_tap_$_tapCount',
+      );
+      if (!_achievements.isCompleted(_tapAchievementId)) {
+        _achievements.incrementProgress(_tapAchievementId, 1);
+      }
+      if (mounted) setState(() {});
+    });
+  }
+
   @override
   void dispose() {
     _session.onClose();
+    unawaited(_eventBus.dispose());
     super.dispose();
   }
 
@@ -78,6 +124,31 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                 left: 0,
                 right: 0,
                 child: NeonAppBar(title: 'game_demo'.tr, onBack: Get.back),
+              ),
+              // FEAT-88: live proof the GameEventBus subscriber wiring
+              // actually reached both EconomyWallet AND AchievementService
+              // from a single CircleTappedEvent, not just "didn't throw".
+              Positioned(
+                top: kToolbarHeight + NeonTheme.s16,
+                left: NeonTheme.s16,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: NeonTheme.card,
+                    borderRadius: BorderRadius.circular(NeonTheme.s16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: NeonTheme.s16,
+                      vertical: NeonTheme.s8,
+                    ),
+                    child: Text(
+                      'gems: ${_wallet.balanceOf('gems')} | '
+                      'tap: ${_achievements.progressOf(_tapAchievementId)}'
+                      '/$_tapAchievementThreshold',
+                      style: TextStyle(color: NeonTheme.ink),
+                    ),
+                  ),
+                ),
               ),
               Positioned(
                 right: NeonTheme.s16,

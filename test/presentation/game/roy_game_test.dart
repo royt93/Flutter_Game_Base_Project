@@ -1,6 +1,7 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/core/game_event_bus.dart';
 import 'package:roy_casual_kit/presentation/game/roy_game.dart';
 
 /// Minimal smoke test proving `flame`'s FlameGame/Component/GameWidget wiring
@@ -150,6 +151,49 @@ void main() {
               'không tạo mới',
         );
         expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('FEAT-88: GameEventBus (optional, non-breaking)', () {
+    testWidgets(
+      'RoyGame() không truyền eventBus -> tap vẫn hoạt động bình thường, '
+      'không throw',
+      (tester) async {
+        final game = RoyGame();
+        await tester.pumpWidget(
+          MaterialApp(home: Material(child: GameWidget(game: game))),
+        );
+        await game.toBeLoaded();
+        await tester.pump();
+
+        await tester.tapAt(tester.getCenter(find.byType(GameWidget<RoyGame>)));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'tap circle emit đúng CircleTappedEvent qua eventBus khi có truyền vào',
+      (tester) async {
+        final bus = GameEventBus();
+        final received = <CircleTappedEvent>[];
+        bus.subscribe<CircleTappedEvent>(received.add);
+        final game = RoyGame(eventBus: bus);
+
+        await tester.pumpWidget(
+          MaterialApp(home: Material(child: GameWidget(game: game))),
+        );
+        await game.toBeLoaded();
+        await tester.pump();
+
+        await tester.tapAt(tester.getCenter(find.byType(GameWidget<RoyGame>)));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(received, hasLength(1));
+        expect(tester.takeException(), isNull);
+        await bus.dispose();
       },
     );
   });
