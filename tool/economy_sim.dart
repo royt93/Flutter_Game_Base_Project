@@ -15,7 +15,13 @@
 //   dart run tool/economy_sim.dart [--days=30] [--sessionsPerDay=3]
 //     [--energyPerSession=2] [--maxEnergy=5] [--refillMinutes=30]
 //     [--sessionSpacingHours=4] [--offlineCapHours=8]
-//     [--productionRatePerSecond=0.01]
+//     [--productionRatePerSecond=0.01] [--relics=0] [--bonusPerRelic=0.0]
+//
+// `relics`/`bonusPerRelic` (FEAT-95) model a `PrestigeService` player
+// already sitting on some accumulated meta-currency — `productionRatePerSecond`
+// is scaled by `prestigeMultiplier(relics, bonusPerRelic)` before the
+// offline-earnings math runs, same formula `PrestigeService.currentMultiplier`
+// uses.
 import 'dart:io';
 
 import 'package:roy_casual_kit/core/utils/economy_math.dart';
@@ -47,6 +53,8 @@ class EconomyScenario {
     required this.sessionSpacingMs,
     required this.maxOfflineCapMs,
     required this.productionRatePerSecond,
+    this.relics = 0,
+    this.bonusPerRelic = 0,
   });
 
   final int days;
@@ -57,6 +65,17 @@ class EconomyScenario {
   final int sessionSpacingMs;
   final int maxOfflineCapMs;
   final double productionRatePerSecond;
+
+  /// FEAT-95: the player's accumulated `PrestigeService` meta-currency
+  /// balance for this scenario — `0` (the default) means "never
+  /// prestiged", matching [prestigeMultiplier]'s own `relics == 0 -> 1`
+  /// baseline, so every existing scenario/test that doesn't set this
+  /// keeps behaving exactly as before.
+  final int relics;
+
+  /// Same meaning as `PrestigeService.bonusPerRelic` — see
+  /// [prestigeMultiplier].
+  final double bonusPerRelic;
 }
 
 /// Runs [scenario] and returns 1 [EconomyDaySnapshot] per simulated day.
@@ -76,13 +95,24 @@ List<EconomyDaySnapshot> simulateEconomy(EconomyScenario scenario) {
   var nowMs = 0;
   final snapshots = <EconomyDaySnapshot>[];
 
+  // FEAT-95: same `prestigeMultiplier` formula `PrestigeService` applies —
+  // computed once per scenario (relics/bonusPerRelic are static inputs,
+  // not something the simulated session loop changes), then folded into
+  // the production rate every offlineEarnings call below uses.
+  final effectiveRate =
+      scenario.productionRatePerSecond *
+      prestigeMultiplier(
+        relics: scenario.relics,
+        bonusPerRelic: scenario.bonusPerRelic,
+      );
+
   for (var day = 1; day <= scenario.days; day++) {
     for (var session = 0; session < scenario.sessionsPerDay; session++) {
       currency += offlineEarnings(
         lastClaimedMs: lastClaimedMs,
         nowMs: nowMs,
         maxOfflineCapMs: scenario.maxOfflineCapMs,
-        productionRatePerSecond: scenario.productionRatePerSecond,
+        productionRatePerSecond: effectiveRate,
       );
       lastClaimedMs = nowMs;
 
@@ -126,6 +156,8 @@ const _defaults = <String, Object>{
   'sessionSpacingHours': 4,
   'offlineCapHours': 8,
   'productionRatePerSecond': 0.01,
+  'relics': 0,
+  'bonusPerRelic': 0.0,
 };
 
 /// Parses `--key=value` CLI args over [_defaults]; unrecognized keys and
@@ -160,6 +192,8 @@ EconomyScenario scenarioFrom(Map<String, Object> options) => EconomyScenario(
   sessionSpacingMs: (options['sessionSpacingHours']! as int) * 3600000,
   maxOfflineCapMs: (options['offlineCapHours']! as int) * 3600000,
   productionRatePerSecond: options['productionRatePerSecond']! as double,
+  relics: options['relics']! as int,
+  bonusPerRelic: options['bonusPerRelic']! as double,
 );
 
 void main(List<String> args) {

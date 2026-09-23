@@ -102,6 +102,29 @@ void main() {
   });
 
   testWidgets(
+    'PrestigeService tile: accumulate + prestige đúng thật, multiplier áp '
+    'đúng vào OfflineProgressionService.claim() (FEAT-95)',
+    (tester) async {
+      await _boot();
+      await tester.pumpWidget(_wrap(const CookbookScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Tap 1 lần: earn 100 coins < ngưỡng 100 nhưng >= (canPrestige dùng
+      // >=) nên đủ prestige ngay lần đầu.
+      await _tapAndShowToast(
+        tester,
+        'PrestigeService — accumulate + prestige + apply multiplier',
+      );
+
+      expect(find.textContaining('relics=1'), findsOneWidget);
+      expect(find.textContaining('multiplier='), findsOneWidget);
+      expect(find.textContaining('earned='), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _flushToast(tester);
+    },
+  );
+
+  testWidgets(
     'Consent-gated + sampled analytics tile forwards a real logged event',
     (tester) async {
       await _boot();

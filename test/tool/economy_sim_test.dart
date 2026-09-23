@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/energy_service.dart';
 import 'package:roy_casual_kit/core/offline_progression_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/economy_math.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../tool/economy_sim.dart';
@@ -212,6 +213,96 @@ void main() {
         expect(lines, hasLength(3));
       },
       timeout: const Timeout(Duration(seconds: 30)),
+    );
+  });
+
+  group('FEAT-95: relics/bonusPerRelic cross-check (PrestigeService formula)', () {
+    const baseScenario = EconomyScenario(
+      days: 2,
+      sessionsPerDay: 2,
+      energyPerSession: 1,
+      maxEnergy: 5,
+      refillIntervalMs: 10 * 60 * 1000,
+      sessionSpacingMs: 60 * 60 * 1000,
+      maxOfflineCapMs: 4 * 60 * 60 * 1000,
+      productionRatePerSecond: 0.5,
+    );
+
+    test(
+      'relics=0 (mặc định) -> kết quả giống hệt không truyền relics/bonusPerRelic '
+      'gì cả (không breaking scenario cũ)',
+      () {
+        final withDefaults = simulateEconomy(baseScenario);
+        final explicitZero = simulateEconomy(
+          const EconomyScenario(
+            days: 2,
+            sessionsPerDay: 2,
+            energyPerSession: 1,
+            maxEnergy: 5,
+            refillIntervalMs: 10 * 60 * 1000,
+            sessionSpacingMs: 60 * 60 * 1000,
+            maxOfflineCapMs: 4 * 60 * 60 * 1000,
+            productionRatePerSecond: 0.5,
+            relics: 0,
+            bonusPerRelic: 0,
+          ),
+        );
+
+        for (var i = 0; i < withDefaults.length; i++) {
+          expect(
+            withDefaults[i].cumulativeCurrency,
+            explicitZero[i].cumulativeCurrency,
+          );
+        }
+      },
+    );
+
+    test(
+      'relics/bonusPerRelic scale cumulativeCurrency ĐÚNG theo hệ số '
+      'prestigeMultiplier (cùng công thức PrestigeService.currentMultiplier '
+      'dùng) — so với scenario tương đương relics=0, energy curve không đổi',
+      () {
+        const relics = 5;
+        const bonusPerRelic = 0.2;
+        final withoutPrestige = simulateEconomy(baseScenario);
+        final withPrestige = simulateEconomy(
+          const EconomyScenario(
+            days: 2,
+            sessionsPerDay: 2,
+            energyPerSession: 1,
+            maxEnergy: 5,
+            refillIntervalMs: 10 * 60 * 1000,
+            sessionSpacingMs: 60 * 60 * 1000,
+            maxOfflineCapMs: 4 * 60 * 60 * 1000,
+            productionRatePerSecond: 0.5,
+            relics: relics,
+            bonusPerRelic: bonusPerRelic,
+          ),
+        );
+
+        final expectedMultiplier = prestigeMultiplier(
+          relics: relics,
+          bonusPerRelic: bonusPerRelic,
+        );
+        expect(expectedMultiplier, 2.0); // 1 + 5*0.2
+
+        for (var i = 0; i < withoutPrestige.length; i++) {
+          expect(
+            withPrestige[i].cumulativeCurrency,
+            closeTo(
+              withoutPrestige[i].cumulativeCurrency * expectedMultiplier,
+              0.0001,
+            ),
+            reason: 'ngày ${withoutPrestige[i].day}',
+          );
+          // Prestige multiplier chỉ ảnh hưởng currency — energy là hệ
+          // thống độc lập, không được vô tình đổi theo.
+          expect(
+            withPrestige[i].endEnergyCount,
+            withoutPrestige[i].endEnergyCount,
+          );
+        }
+      },
     );
   });
 }

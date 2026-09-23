@@ -53,6 +53,7 @@ export 'core/player_data_rights_service.dart';
 export 'core/player_progression_service.dart';
 export 'core/platform_capability_registry.dart';
 export 'core/plugin_adapter_conformance_suite.dart';
+export 'core/prestige_service.dart';
 export 'core/persistent_cooldown_service.dart';
 export 'core/privacy_aware_analytics_sampler.dart';
 export 'core/purchase_ledger_service.dart';

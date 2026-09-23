@@ -239,4 +239,47 @@ void main() {
       },
     );
   });
+
+  group('prestigeMultiplier', () {
+    test('0 relic (chưa từng prestige) -> multiplier = 1 (không đổi)', () {
+      expect(
+        prestigeMultiplier(relics: 0, bonusPerRelic: 0.1),
+        1.0,
+      );
+    });
+
+    test('công thức đúng: 1 + relics * bonusPerRelic', () {
+      expect(prestigeMultiplier(relics: 5, bonusPerRelic: 0.1), 1.5);
+      expect(prestigeMultiplier(relics: 10, bonusPerRelic: 0.25), 3.5);
+    });
+
+    test('bonusPerRelic = 0 -> multiplier luôn = 1 bất kể relics', () {
+      expect(prestigeMultiplier(relics: 999, bonusPerRelic: 0), 1.0);
+    });
+
+    test('relics âm -> throw ArgumentError', () {
+      expect(
+        () => prestigeMultiplier(relics: -1, bonusPerRelic: 0.1),
+        throwsArgumentError,
+      );
+    });
+
+    test('bonusPerRelic âm -> throw ArgumentError', () {
+      expect(
+        () => prestigeMultiplier(relics: 5, bonusPerRelic: -0.1),
+        throwsArgumentError,
+      );
+    });
+
+    test('bonusPerRelic NaN/infinite -> throw ArgumentError', () {
+      expect(
+        () => prestigeMultiplier(relics: 5, bonusPerRelic: double.nan),
+        throwsArgumentError,
+      );
+      expect(
+        () => prestigeMultiplier(relics: 5, bonusPerRelic: double.infinity),
+        throwsArgumentError,
+      );
+    });
+  });
 }

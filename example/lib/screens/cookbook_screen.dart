@@ -254,6 +254,56 @@ class _CookbookScreenState extends State<CookbookScreen> {
                         },
                       ),
                       _tile(
+                        // FEAT-95: earns enough `coins` to cross the demo
+                        // threshold, prestiges (soft-resets coins, grants
+                        // `relics`), then shows `currentMultiplier` actually
+                        // applied to a real `OfflineProgressionService.claim()`
+                        // rate — the "integration" acceptance criterion
+                        // (PrestigeService itself never touches
+                        // OfflineProgressionService; the caller multiplies
+                        // the rate it already owns).
+                        'PrestigeService — accumulate + prestige + apply multiplier',
+                        () async {
+                          final EconomyWallet wallet =
+                              EconomyWallet.maybe ??
+                              Get.put<EconomyWallet>(
+                                EconomyWallet(storage: StorageService.to),
+                                permanent: true,
+                              );
+                          final PrestigeService prestige =
+                              PrestigeService.maybe ??
+                              Get.put<PrestigeService>(
+                                PrestigeService(
+                                  wallet: wallet,
+                                  prestigeThreshold: 100,
+                                ),
+                                permanent: true,
+                              );
+                          await wallet.earn(
+                            currency: 'coins',
+                            amount: 100,
+                            transactionId:
+                                'cookbook_prestige_${DateTime.now().microsecondsSinceEpoch}',
+                          );
+                          if (!prestige.canPrestige()) {
+                            return 'chưa đủ ngưỡng (coins=${wallet.balanceOf('coins')})';
+                          }
+                          await prestige.prestige();
+                          final offline =
+                              OfflineProgressionService.maybe ??
+                              Get.put<OfflineProgressionService>(
+                                OfflineProgressionService(),
+                                permanent: true,
+                              );
+                          final earned = await offline.claim(
+                            0.5 * prestige.currentMultiplier,
+                          );
+                          return 'relics=${wallet.balanceOf('relics')}, '
+                              'multiplier=${prestige.currentMultiplier.toStringAsFixed(2)}x, '
+                              'earned=${earned.toStringAsFixed(2)} (rate×multiplier)';
+                        },
+                      ),
+                      _tile(
                         'DailyQuestService — register + progress + claim',
                         () {
                           const questId = 'cookbook_win_1';

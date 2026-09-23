@@ -89,3 +89,27 @@ double offlineEarnings({
   final elapsedMs = (nowMs - lastClaimedMs).clamp(0, maxOfflineCapMs);
   return elapsedMs / 1000 * productionRatePerSecond;
 }
+
+/// Same formula as `PrestigeService.currentMultiplier`: the permanent
+/// earn-rate multiplier a player's accumulated prestige meta-currency
+/// (`relics`) grants — `1 + relics * bonusPerRelic`, so `relics == 0`
+/// (never prestiged) is exactly `1` (no change), and each relic owned adds
+/// a flat [bonusPerRelic] on top, forever (relics are never soft-reset by
+/// a prestige, only the low-tier currencies are).
+///
+/// Throws [ArgumentError] for a negative [relics] or a non-finite/negative
+/// [bonusPerRelic] — same "misconfigured input fails loud" posture as
+/// [offlineEarnings]/[regenEnergy] above.
+double prestigeMultiplier({required int relics, required double bonusPerRelic}) {
+  if (relics < 0) {
+    throw ArgumentError.value(relics, 'relics', 'must be >= 0');
+  }
+  if (!bonusPerRelic.isFinite || bonusPerRelic < 0) {
+    throw ArgumentError.value(
+      bonusPerRelic,
+      'bonusPerRelic',
+      'must be finite and >= 0',
+    );
+  }
+  return 1 + relics * bonusPerRelic;
+}
