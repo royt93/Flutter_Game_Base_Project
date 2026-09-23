@@ -255,6 +255,7 @@
     "core/purchase_ledger_service.dart:_LedgerState",
     "core/purchase_seam.dart:PurchaseSeam",
     "core/reminder_service.dart:ReminderService",
+    "core/remote_config_service.dart:RemoteConfigKeySchema",
     "core/remote_config_service.dart:RemoteConfigService",
     "core/remote_config_service.dart:RemoteConfigSource",
     "core/remote_content_pack.dart:RemoteContentPack",

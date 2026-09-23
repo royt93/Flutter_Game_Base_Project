@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/remote_config_service.dart';
+import 'package:roy_casual_kit/core/sdk_event_schema_registry.dart'
+    show EventParamType;
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 
 /// Fake [AssetBundle] backed by an in-memory map of asset path -> JSON
@@ -423,6 +425,212 @@ void main() {
         expect(service.source, RemoteConfigSource.remoteMerged);
         expect(service.getInt('a'), 99);
         expect(service.getInt('b'), 2);
+      },
+    );
+  });
+
+  group('ENH-84: schema validation', () {
+    test(
+      'không đăng ký schema nào (mặc định {}) -> schemaViolations rỗng, '
+      'initResult vẫn SdkSuccess như trước',
+      () async {
+        final service = RemoteConfigService(
+          assetPath: _assetPath,
+          bundle: _FakeAssetBundle({
+            _assetPath: jsonEncode({'a': 'not-an-int-but-no-schema'}),
+          }),
+        );
+
+        final result = await service.initResult();
+
+        expect(service.schemaViolations, isEmpty);
+        expect(result, isA<SdkSuccess<void>>());
+      },
+    );
+
+    test('config khớp schema hoàn toàn -> không violation, SdkSuccess', () async {
+      final service = RemoteConfigService(
+        assetPath: _assetPath,
+        bundle: _FakeAssetBundle({
+          _assetPath: jsonEncode({'maxEnergy': 5, 'eventName': 'sale'}),
+        }),
+        schema: const {
+          'maxEnergy': RemoteConfigKeySchema(type: EventParamType.int),
+          'eventName': RemoteConfigKeySchema(type: EventParamType.string),
+        },
+      );
+
+      final result = await service.initResult();
+
+      expect(service.schemaViolations, isEmpty);
+      expect(result, isA<SdkSuccess<void>>());
+      expect(service.getInt('maxEnergy'), 5);
+    });
+
+    test(
+      '1 key sai type -> phát hiện ngay tại init(), initResult liệt kê '
+      'đúng tên key sai (không phải crash ở nơi dùng)',
+      () async {
+        final service = RemoteConfigService(
+          assetPath: _assetPath,
+          bundle: _FakeAssetBundle({
+            // Server trả String thay vì int cho 'maxEnergy' — đúng kịch
+            // bản lỗi vận hành task mô tả.
+            _assetPath: jsonEncode({'maxEnergy': 'five'}),
+          }),
+          schema: const {
+            'maxEnergy': RemoteConfigKeySchema(type: EventParamType.int),
+          },
+        );
+
+        final result = await service.initResult();
+
+        expect(service.schemaViolations, hasLength(1));
+        expect(service.schemaViolations.first, contains('maxEnergy'));
+        expect(result, isA<SdkFailure<void>>());
+        expect((result as SdkFailure<void>).kind, SdkErrorKind.validation);
+        expect(result.message, contains('maxEnergy'));
+      },
+    );
+
+    test(
+      'nhiều key sai cùng lúc -> liệt kê ĐỦ mọi key sai, không dừng ở key '
+      'đầu tiên',
+      () async {
+        final service = RemoteConfigService(
+          assetPath: _assetPath,
+          bundle: _FakeAssetBundle({
+            _assetPath: jsonEncode({'maxEnergy': 'five', 'ratio': 'bad'}),
+          }),
+          schema: const {
+            'maxEnergy': RemoteConfigKeySchema(type: EventParamType.int),
+            'ratio': RemoteConfigKeySchema(type: EventParamType.double),
+          },
+        );
+
+        await service.init();
+
+        expect(service.schemaViolations, hasLength(2));
+      },
+    );
+
+    test(
+      'key required nhưng thiếu hoàn toàn (không có trong asset lẫn remote) '
+      '-> violation',
+      () async {
+        final service = RemoteConfigService(
+          assetPath: _assetPath,
+          bundle: _FakeAssetBundle({_assetPath: jsonEncode({})}),
+          schema: const {
+            'requiredKey': RemoteConfigKeySchema(
+              type: EventParamType.string,
+              required: true,
+            ),
+          },
+        );
+
+        await service.init();
+
+        expect(service.schemaViolations, hasLength(1));
+        expect(service.schemaViolations.first, contains('requiredKey'));
+      },
+    );
+
+    test(
+      'key KHÔNG required và thiếu -> KHÔNG phải violation (optional theo '
+      'đúng thiết kế getter fallback)',
+      () async {
+        final service = RemoteConfigService(
+          assetPath: _assetPath,
+          bundle: _FakeAssetBundle({_assetPath: jsonEncode({})}),
+          schema: const {
+            'optionalKey': RemoteConfigKeySchema(type: EventParamType.string),
+          },
+        );
+
+        await service.init();
+
+        expect(service.schemaViolations, isEmpty);
+      },
+    );
+
+    test(
+      'key có trong config nhưng KHÔNG có trong schema -> không phải '
+      'violation (schema không phải allowlist chặt)',
+      () async {
+        final service = RemoteConfigService(
+          assetPath: _assetPath,
+          bundle: _FakeAssetBundle({
+            _assetPath: jsonEncode({'declared': 1, 'undeclared': 'anything'}),
+          }),
+          schema: const {
+            'declared': RemoteConfigKeySchema(type: EventParamType.int),
+          },
+        );
+
+        await service.init();
+
+        expect(service.schemaViolations, isEmpty);
+      },
+    );
+
+    test(
+      'double type chấp nhận cả int (JSON không phân biệt 5 vs 5.0)',
+      () async {
+        final service = RemoteConfigService(
+          assetPath: _assetPath,
+          bundle: _FakeAssetBundle({_assetPath: jsonEncode({'ratio': 5})}),
+          schema: const {
+            'ratio': RemoteConfigKeySchema(type: EventParamType.double),
+          },
+        );
+
+        await service.init();
+
+        expect(service.schemaViolations, isEmpty);
+      },
+    );
+
+    test(
+      'validate lại đúng SAU MỖI lần init() (remote merge đổi type) -> '
+      'schemaViolations cập nhật đúng theo config mới nhất',
+      () async {
+        final service = RemoteConfigService(
+          assetPath: _assetPath,
+          bundle: _FakeAssetBundle({
+            _assetPath: jsonEncode({'maxEnergy': 5}),
+          }),
+          fetchRemote: () async => {'maxEnergy': 'broken-by-server'},
+          schema: const {
+            'maxEnergy': RemoteConfigKeySchema(type: EventParamType.int),
+          },
+        );
+
+        await service.init();
+
+        expect(service.schemaViolations, hasLength(1));
+      },
+    );
+
+    test(
+      'fetchRemote fail (source=remoteFailed) VẪN validate đúng theo config '
+      'fallback (asset) đang có, không bỏ qua bước validate',
+      () async {
+        final service = RemoteConfigService(
+          assetPath: _assetPath,
+          bundle: _FakeAssetBundle({
+            _assetPath: jsonEncode({'maxEnergy': 'bad-in-asset-too'}),
+          }),
+          fetchRemote: () async => throw Exception('down'),
+          schema: const {
+            'maxEnergy': RemoteConfigKeySchema(type: EventParamType.int),
+          },
+        );
+
+        await service.init();
+
+        expect(service.source, RemoteConfigSource.remoteFailed);
+        expect(service.schemaViolations, hasLength(1));
       },
     );
   });
