@@ -279,6 +279,20 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     setState(() => _achievementTaps++);
   }
 
+  // ENH-87: ReviewPromptTrigger demo — "Giả lập thắng level" bumps a local
+  // win-streak counter and pushes it onto the stream the widget listens
+  // on, same "consumer fires its own happy-moment event" shape the real
+  // widget doc comment describes (this screen has no real level-win event
+  // to hook, so it fakes one with a button).
+  int _reviewWinStreak = 0;
+  int _reviewPromptShown = 0;
+  final _reviewWinStreakController = StreamController<int>.broadcast();
+
+  void _simulateLevelWin() {
+    setState(() => _reviewWinStreak++);
+    _reviewWinStreakController.add(_reviewWinStreak);
+  }
+
   // IDEA-44: QuestBoardPanel demo — a fixed 2-quest list this screen owns
   // locally (no DailyQuestService wiring here; the panel is deliberately
   // decoupled from any specific service, see the widget's own doc comment).
@@ -564,6 +578,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _deepLinks.unregisterHandler('shop', _onShopDeepLink);
     _dotsPageController.dispose();
     _screenShakeController.dispose();
+    _reviewWinStreakController.close();
     _tutorialSequenceController.dispose();
     _wheelController.dispose();
     _candyTextFieldController.dispose();
@@ -1038,7 +1053,17 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       controller: _levelUpController,
       onSkipTap: _levelUpController.skip,
       child: AchievementUnlockListener(
-        child: Scaffold(
+        child: ReviewPromptTrigger(
+          winStreakEvents: _reviewWinStreakController.stream,
+          minWinStreak: 3,
+          // Demo-only fake "show the native prompt" call (this package
+          // stays neutral of the concrete `in_app_review` package/SDK —
+          // see `in_app_review_helper.dart`'s own doc comment) — a real
+          // consumer app passes `() => InAppReview.instance.requestReview()`.
+          showReview: () async {
+            if (mounted) setState(() => _reviewPromptShown++);
+          },
+          child: Scaffold(
           body: Stack(
             children: [
               NeonBg(
@@ -3286,6 +3311,24 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ],
                               ),
                             ),
+                            _Demo(
+                              label: 'ReviewPromptTrigger (ENH-87)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    'Win streak: $_reviewWinStreak | '
+                                    'Review prompt shown: $_reviewPromptShown lần',
+                                    style: TextStyle(color: NeonTheme.ink),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  CommonButton(
+                                    label: 'Giả lập thắng level',
+                                    onTap: _simulateLevelWin,
+                                  ),
+                                ],
+                              ),
+                            ),
 
                             const SizedBox(height: NeonTheme.s24),
                           ],
@@ -3329,6 +3372,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
