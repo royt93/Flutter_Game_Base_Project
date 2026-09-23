@@ -70,7 +70,12 @@ class FlameTrackedOverlay extends StatefulWidget {
 class _FlameTrackedOverlayState extends State<FlameTrackedOverlay>
     with SingleTickerProviderStateMixin {
   Ticker? _ticker;
-  Offset? _screenOffset;
+
+  // FEAT-92: position updates flow through this notifier, NOT setState() —
+  // see build()'s doc for why this is what makes the per-frame update
+  // paint-only (no Stack layout pass) instead of rebuild-based.
+  final ValueNotifier<Offset?> _offsetNotifier = ValueNotifier(null);
+  bool _everResolved = false;
 
   @override
   void initState() {
@@ -80,11 +85,25 @@ class _FlameTrackedOverlayState extends State<FlameTrackedOverlay>
 
   void _onTick(Duration elapsed) {
     final next = _computeScreenOffset();
-    if (next != _screenOffset && mounted) {
-      setState(() => _screenOffset = next);
-    } else {
-      _screenOffset = next;
+    if (!_everResolved) {
+      if (next == null || !mounted) return;
+      // The ONLY setState() this widget ever calls, and only once — the
+      // first frame the tracked entity actually resolves. Every update
+      // after this point goes through `_offsetNotifier` instead, so
+      // build() below never runs again (Positioned's props are fixed
+      // constants from here on) and the Stack this widget lives in never
+      // re-lays-out this slot on a per-frame basis.
+      setState(() {
+        _everResolved = true;
+        _offsetNotifier.value = next;
+      });
+      return;
     }
+    // `ValueNotifier.value=` already no-ops (skips notifyListeners) when
+    // the new value equals the old one, so an unchanged position still
+    // triggers zero rebuild work here, same guarantee the old
+    // `next != _screenOffset` check gave.
+    _offsetNotifier.value = next;
   }
 
   Offset? _computeScreenOffset() {
@@ -120,21 +139,47 @@ class _FlameTrackedOverlayState extends State<FlameTrackedOverlay>
   @override
   void dispose() {
     _ticker?.dispose();
+    _offsetNotifier.dispose();
     super.dispose();
   }
 
+  /// FEAT-92 (zero-jank state bridge): before this, EVERY tick called
+  /// `setState()` with a new `Positioned(left:, top:)` — `Positioned`'s
+  /// left/top affect `Stack`'s LAYOUT algorithm, so a moving tracked
+  /// entity forced a full layout pass for this slot every single frame
+  /// (measurably so at N tracked overlays — see
+  /// `test/widget/flame_tracked_overlay_benchmark_test.dart`).
+  ///
+  /// Now: [_everResolved] stays `false` (this returns [SizedBox.shrink]
+  /// unchanged — same "hides silently" contract as before) until the
+  /// tracked entity resolves for the first time, ONE setState() call.
+  /// From then on, `Positioned`'s `left`/`top` are fixed constants
+  /// (`0`/`0`) — the Stack lays out this slot exactly once, never again —
+  /// and [ValueListenableBuilder] applies the REAL per-frame position via
+  /// [Transform.translate], a paint-time-only property on
+  /// [RenderTransform] that never triggers a layout pass. The net
+  /// rendered position is identical either way (both apply the same
+  /// offset in the same Stack-local coordinate space — see
+  /// `_computeScreenOffset`'s BUG-58 note), just computed at paint time
+  /// instead of layout time.
   @override
   Widget build(BuildContext context) {
-    final offset = _screenOffset;
-    if (offset == null) return const SizedBox.shrink();
+    if (!_everResolved) return const SizedBox.shrink();
 
     final a = widget.childAnchor;
     return Positioned(
-      left: offset.dx,
-      top: offset.dy,
-      child: FractionalTranslation(
-        translation: Offset(-(a.x + 1) / 2, -(a.y + 1) / 2),
-        child: widget.child,
+      left: 0,
+      top: 0,
+      child: ValueListenableBuilder<Offset?>(
+        valueListenable: _offsetNotifier,
+        builder: (context, offset, child) {
+          if (offset == null) return const SizedBox.shrink();
+          return Transform.translate(offset: offset, child: child);
+        },
+        child: FractionalTranslation(
+          translation: Offset(-(a.x + 1) / 2, -(a.y + 1) / 2),
+          child: widget.child,
+        ),
       ),
     );
   }
