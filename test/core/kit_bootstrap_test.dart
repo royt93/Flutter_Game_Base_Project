@@ -150,4 +150,49 @@ void main() {
     );
     expect(find.text('ready'), findsOneWidget);
   });
+
+  group('IDEA-64: RoyCasualKit.lastResult', () {
+    test('null trước khi initialize() từng được gọi', () {
+      expect(RoyCasualKit.lastResult, isNull);
+    });
+
+    test('bằng đúng kết quả initialize() vừa trả về', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final result = await RoyCasualKit.initialize(
+        config: RoyCasualKitConfig(
+          modules: {RoyCasualKitModule.storage},
+          preferences: prefs,
+        ),
+      );
+
+      expect(RoyCasualKit.lastResult, same(result));
+    });
+
+    test('phản ánh đúng status degraded khi 1 module lỗi', () async {
+      final result = await RoyCasualKit.initialize(
+        config: const RoyCasualKitConfig(
+          modules: {RoyCasualKitModule.locale},
+        ),
+      );
+
+      expect(RoyCasualKit.lastResult, same(result));
+      expect(RoyCasualKit.lastResult!.status, RoyCasualKitStatus.degraded);
+      expect(
+        RoyCasualKit.lastResult!.errors,
+        contains(RoyCasualKitModule.locale),
+      );
+    });
+
+    test('resetForTesting() xoá về null', () async {
+      await RoyCasualKit.initialize(
+        config: const RoyCasualKitConfig(modules: {}),
+      );
+      expect(RoyCasualKit.lastResult, isNotNull);
+
+      await RoyCasualKit.resetForTesting();
+
+      expect(RoyCasualKit.lastResult, isNull);
+    });
+  });
 }

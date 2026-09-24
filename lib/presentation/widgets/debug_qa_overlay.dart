@@ -8,6 +8,7 @@ import '../../core/app_info.dart';
 import '../../core/audio_manager.dart';
 import '../../core/connectivity_coordinator.dart';
 import '../../core/experiment_bucketing_service.dart';
+import '../../core/kit_bootstrap.dart';
 import '../../core/locale_service.dart';
 import '../../core/neon_theme.dart';
 import '../../core/remote_kill_switch_controller.dart';
@@ -292,6 +293,11 @@ class _Panel extends StatelessWidget {
                             selected: tab == 7,
                             onTap: () => onTabChanged(7),
                           ),
+                          _TabButton(
+                            label: 'Boot',
+                            selected: tab == 8,
+                            onTap: () => onTabChanged(8),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -315,7 +321,8 @@ class _Panel extends StatelessWidget {
                           4 => _TimeTravelTab(onChanged: onQaChanged),
                           5 => _NetworkSimulatorTab(onChanged: onQaChanged),
                           6 => const _VariantSwitcherTab(),
-                          _ => const _KillSwitchTab(),
+                          7 => const _KillSwitchTab(),
+                          _ => const _BootTab(),
                         },
                       ),
                     ],
@@ -1106,6 +1113,66 @@ class _KillSwitchRow extends StatelessWidget {
               '(không phải local override — không bật lại được qua đây)',
               style: TextStyle(fontSize: 11),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// IDEA-64: surfaces [RoyCasualKit.lastResult] — the app's own
+/// `RoyCasualKit.initialize()` boot outcome, otherwise only readable via
+/// log/debugger — so a dev/QA tester can see at a glance which modules
+/// registered and which failed (BUG-47's `degraded` status means a
+/// misconfigured module no longer crashes boot outright, which also means
+/// its failure is easy to miss without a UI like this one).
+class _BootTab extends StatelessWidget {
+  const _BootTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final result = RoyCasualKit.lastResult;
+    if (result == null) {
+      return const Text(
+        'RoyCasualKit.initialize() chưa được gọi trong app này.',
+      );
+    }
+
+    final ok = result.status == RoyCasualKitStatus.initialized;
+    final modules = result.registeredModules.toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
+    final errorEntries = result.errors.entries.toList()
+      ..sort((a, b) => a.key.name.compareTo(b.key.name));
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Boot', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(
+            ok
+                ? 'OK — mọi module đăng ký thành công'
+                : 'Degraded — ${result.errors.length} module lỗi',
+            style: TextStyle(
+              color: ok ? NeonTheme.lime : NeonTheme.red,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text('Modules đã đăng ký:'),
+          if (modules.isEmpty)
+            const Text('(không có)')
+          else
+            for (final module in modules) Text('✓ ${module.name}'),
+          if (errorEntries.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text('Lỗi:'),
+            for (final entry in errorEntries)
+              Text(
+                '✗ ${entry.key.name}: ${entry.value}',
+                style: TextStyle(color: NeonTheme.red),
+              ),
+          ],
         ],
       ),
     );

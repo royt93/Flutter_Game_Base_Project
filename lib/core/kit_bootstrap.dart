@@ -67,6 +67,14 @@ class RoyCasualKit {
   static Future<RoyCasualKitResult>? _pending;
   static final _owned = <Future<void> Function()>[];
 
+  /// The most recent [initialize] call's own return value (IDEA-64) —
+  /// `null` before [initialize] has ever been called. [initialize] itself
+  /// only hands this to its ONE caller at boot time; this is the seam a
+  /// debug/QA panel (or anything else that wants to inspect boot health
+  /// later) reads from instead — never mutated except by [initialize]/
+  /// [resetForTesting].
+  static RoyCasualKitResult? get lastResult => _result;
+
   static Future<RoyCasualKitResult> initialize({
     RoyCasualKitConfig config = const RoyCasualKitConfig(),
   }) {

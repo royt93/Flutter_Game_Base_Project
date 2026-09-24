@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/experiment_bucketing_service.dart';
+import 'package:roy_casual_kit/core/kit_bootstrap.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/remote_config_service.dart';
 import 'package:roy_casual_kit/core/remote_kill_switch_controller.dart';
@@ -14,7 +15,10 @@ import 'package:roy_casual_kit/presentation/widgets/debug_qa_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  tearDown(Get.reset);
+  tearDown(() async {
+    Get.reset();
+    await RoyCasualKit.resetForTesting();
+  });
 
   testWidgets('child always renders, closed panel shows nothing', (
     tester,
@@ -756,6 +760,87 @@ void main() {
         expect(
           find.textContaining('không bật lại được qua đây'),
           findsOneWidget,
+        );
+      },
+    );
+  });
+
+  group('IDEA-64: Boot tab', () {
+    Future<void> openBootTab(WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: DebugQaOverlay(child: Material(child: Text('app content'))),
+        ),
+      );
+      await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+      await tester.pump();
+      await tester.tap(find.text('Boot'));
+      await tester.pump();
+    }
+
+    testWidgets(
+      'chưa gọi RoyCasualKit.initialize() -> báo rõ, không crash',
+      (tester) async {
+        await openBootTab(tester);
+
+        expect(
+          find.textContaining('chưa được gọi trong app này'),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'status healthy -> hiện rõ "OK" + đúng danh sách module đã đăng ký',
+      (tester) async {
+        await RoyCasualKit.initialize(
+          config: const RoyCasualKitConfig(modules: {}),
+        );
+
+        await openBootTab(tester);
+
+        expect(
+          find.textContaining('OK — mọi module đăng ký thành công'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'có module đăng ký thành công -> liệt kê đúng tên module',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        await RoyCasualKit.initialize(
+          config: RoyCasualKitConfig(
+            modules: {RoyCasualKitModule.storage},
+            preferences: prefs,
+          ),
+        );
+
+        await openBootTab(tester);
+
+        expect(find.textContaining('✓ storage'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'status degraded -> hiện rõ "Degraded" + liệt kê đúng module lỗi',
+      (tester) async {
+        await RoyCasualKit.initialize(
+          config: const RoyCasualKitConfig(
+            modules: {RoyCasualKitModule.locale},
+          ),
+        );
+
+        await openBootTab(tester);
+
+        expect(find.textContaining('Degraded — 1 module lỗi'), findsOneWidget);
+        expect(find.textContaining('✗ locale:'), findsOneWidget);
+        expect(
+          find.textContaining('OK — mọi module đăng ký thành công'),
+          findsNothing,
         );
       },
     );

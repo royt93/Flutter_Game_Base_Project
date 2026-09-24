@@ -380,6 +380,7 @@
     "presentation/widgets/aurora_bg_layer.dart:_AuroraBgLayerState",
     "presentation/widgets/aurora_bg_layer.dart:_AuroraPainter",
     "presentation/widgets/debug_qa_overlay.dart:DebugQaOverlay",
+    "presentation/widgets/debug_qa_overlay.dart:_BootTab",
     "presentation/widgets/debug_qa_overlay.dart:_DebugQaOverlayState",
     "presentation/widgets/debug_qa_overlay.dart:_HealthTab",
     "presentation/widgets/debug_qa_overlay.dart:_HealthTabState",
