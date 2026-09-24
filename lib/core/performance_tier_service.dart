@@ -104,6 +104,14 @@ class PerformanceTierService extends GetxService {
   final Rx<PerformanceTier> tier = PerformanceTier.high.obs;
   bool _listening = false;
 
+  /// The FPS tracker's own current opinion (IDEA-63) — unlike [tier]
+  /// (which an external coordinator, e.g. `BatterySaverCoordinator`, can
+  /// force to a different value), this always reflects real measured
+  /// frame timing, letting such a coordinator restore [tier] to the
+  /// legitimate value once its own override condition clears instead of
+  /// guessing [PerformanceTier.high].
+  PerformanceTier get measuredTier => _tracker.tier;
+
   /// Null-safe accessor for call sites that may run before/without this
   /// service registered (mirrors `AudioManager.maybe`).
   static PerformanceTierService? get maybe =>

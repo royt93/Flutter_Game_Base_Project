@@ -7,6 +7,7 @@ library;
 
 // Core services and contracts.
 export 'core/achievement_service.dart';
+export 'core/battery_saver_coordinator.dart';
 export 'core/analytics_provider.dart';
 export 'core/app_info.dart';
 export 'core/app_translations.dart';
