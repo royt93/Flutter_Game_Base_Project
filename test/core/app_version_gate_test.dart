@@ -33,6 +33,46 @@ void main() {
       expect(compareAppVersions('not-a-version', '1.2.3'), isNull);
       expect(compareAppVersions('1.2.3', 'also-invalid'), isNull);
     });
+
+    group('BUG-72: so 2 prerelease phải theo numeric identifier, không '
+        'phải lexicographic string', () {
+      test('rc.2 THẤP HƠN rc.10 (numeric đúng chuẩn semver)', () {
+        expect(
+          compareAppVersions('1.2.3-rc.2', '1.2.3-rc.10'),
+          lessThan(0),
+        );
+        expect(
+          compareAppVersions('1.2.3-rc.10', '1.2.3-rc.2'),
+          greaterThan(0),
+        );
+      });
+
+      test('rc.9 THẤP HƠN rc.10', () {
+        expect(compareAppVersions('1.0.0-rc.9', '1.0.0-rc.10'), lessThan(0));
+      });
+
+      test('identifier chữ (alpha) vẫn so lexicographic bình thường', () {
+        expect(
+          compareAppVersions('1.0.0-alpha.1', '1.0.0-alpha.2'),
+          lessThan(0),
+        );
+        expect(
+          compareAppVersions('1.0.0-alpha.1', '1.0.0-beta.1'),
+          lessThan(0),
+        );
+      });
+
+      test('identifier số luôn thấp hơn identifier chữ ở cùng vị trí', () {
+        expect(compareAppVersions('1.0.0-1', '1.0.0-alpha'), lessThan(0));
+      });
+
+      test('nhiều field hơn, các field chung bằng nhau -> cao hơn', () {
+        expect(
+          compareAppVersions('1.0.0-alpha', '1.0.0-alpha.1'),
+          lessThan(0),
+        );
+      });
+    });
   });
 
   group('evaluateVersionGate: quyết định gate', () {
@@ -51,6 +91,18 @@ void main() {
       );
       expect(decision, GateDecision.forceUpdate);
     });
+
+    test(
+      'BUG-72: current prerelease rc.2 THẬT SỰ cũ hơn minimum rc.10 -> '
+      'forceUpdate (không bị lexicographic compare đánh lừa)',
+      () {
+        final decision = evaluateVersionGate(
+          currentVersion: '1.2.3-rc.2',
+          config: const AppVersionGateConfig(minimumVersion: '1.2.3-rc.10'),
+        );
+        expect(decision, GateDecision.forceUpdate);
+      },
+    );
 
     test('current == minimum: đủ điều kiện, KHÔNG forceUpdate', () {
       final decision = evaluateVersionGate(

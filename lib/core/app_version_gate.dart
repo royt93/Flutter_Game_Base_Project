@@ -70,7 +70,32 @@ int? compareAppVersions(String a, String b) {
   if (va.prerelease == vb.prerelease) return 0;
   if (va.prerelease == null) return 1; // a is a release, b is a prerelease
   if (vb.prerelease == null) return -1; // a is a prerelease, b is a release
-  return va.prerelease!.compareTo(vb.prerelease!);
+  return _comparePrerelease(va.prerelease!, vb.prerelease!);
+}
+
+/// Compares 2 prerelease tags dot-identifier-by-identifier, per semver.org
+/// §11: an identifier consisting only of digits compares NUMERICALLY, not
+/// lexicographically (BUG-72 — `"rc.2".compareTo("rc.10")` via plain
+/// `String.compareTo` wrongly says `rc.2 > rc.10`, since it compares the
+/// character `'2'` to `'1'`). A numeric identifier always has lower
+/// precedence than an alphanumeric one at the same position; more fields
+/// (with all shared fields equal) has higher precedence.
+int _comparePrerelease(String a, String b) {
+  final aParts = a.split('.');
+  final bParts = b.split('.');
+  final len = aParts.length < bParts.length ? aParts.length : bParts.length;
+  for (var i = 0; i < len; i++) {
+    final ai = aParts[i];
+    final bi = bParts[i];
+    if (ai == bi) continue;
+    final an = int.tryParse(ai);
+    final bn = int.tryParse(bi);
+    if (an != null && bn != null) return an.compareTo(bn);
+    if (an != null) return -1;
+    if (bn != null) return 1;
+    return ai.compareTo(bi);
+  }
+  return aParts.length.compareTo(bParts.length);
 }
 
 /// Immutable version-gate policy — from a bundled asset default, a remote
