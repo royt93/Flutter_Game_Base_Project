@@ -1,36 +1,61 @@
 import 'dart:convert';
 import 'dart:io';
 
-const _entrypoint = 'lib/roy_casual_kit.dart';
-const _snapshotPath = 'tool/api_snapshot.json';
+const _entrypointRelPath = 'lib/roy_casual_kit.dart';
+const _snapshotRelPath = 'tool/api_snapshot.json';
 
+/// [args] usage: `[snapshot|check] [--root=.]`. `--root` (default `.`,
+/// the real repo when invoked normally) exists so
+/// `test/tool/api_compatibility_check_test.dart` can point this at a
+/// synthetic fixture directory instead of the real repo, same convention
+/// `tool/asset_license_check.dart`'s own `--root` already established —
+/// see that file's doc comment for why (exercising a
+/// removed/added-export scenario without mutating real repo state).
 Future<void> main(List<String> args) async {
-  final command = args.isEmpty ? 'check' : args.single;
+  var root = '.';
+  final positional = <String>[];
+  for (final arg in args) {
+    if (arg.startsWith('--root=')) {
+      root = arg.substring('--root='.length);
+    } else {
+      positional.add(arg);
+    }
+  }
+  if (positional.length > 1) {
+    stderr.writeln(
+      'Usage: dart run tool/api_compatibility.dart [snapshot|check] [--root=.]',
+    );
+    exitCode = 64;
+    return;
+  }
+  final command = positional.isEmpty ? 'check' : positional.single;
   switch (command) {
     case 'snapshot':
-      await File(_snapshotPath).writeAsString(
-        const JsonEncoder.withIndent('  ').convert(await collectApiSnapshot()),
+      await File('$root/$_snapshotRelPath').writeAsString(
+        const JsonEncoder.withIndent(
+          '  ',
+        ).convert(await collectApiSnapshot(root)),
       );
-      stdout.writeln('Wrote $_snapshotPath');
+      stdout.writeln('Wrote $_snapshotRelPath');
     case 'check':
-      await checkCompatibility();
+      await checkCompatibility(root);
     default:
       stderr.writeln(
-        'Usage: dart run tool/api_compatibility.dart [snapshot|check]',
+        'Usage: dart run tool/api_compatibility.dart [snapshot|check] [--root=.]',
       );
       exitCode = 64;
   }
 }
 
-Future<Map<String, Object>> collectApiSnapshot() async {
-  final entry = await File(_entrypoint).readAsString();
+Future<Map<String, Object>> collectApiSnapshot(String root) async {
+  final entry = await File('$root/$_entrypointRelPath').readAsString();
   final exports = RegExp(
     r"^export '([^']+)';",
     multiLine: true,
   ).allMatches(entry).map((m) => m.group(1)!).toList()..sort();
   final symbols = <String>[];
   for (final relative in exports) {
-    final source = await File('lib/$relative').readAsString();
+    final source = await File('$root/lib/$relative').readAsString();
     for (final match in RegExp(
       r'^(?:abstract\s+)?(?:class|enum|mixin|typedef|extension)\s+([A-Za-z_]\w*)',
       multiLine: true,
@@ -45,16 +70,20 @@ Future<Map<String, Object>> collectApiSnapshot() async {
     }
   }
   symbols.sort();
-  return {'entrypoint': _entrypoint, 'exports': exports, 'symbols': symbols};
+  return {
+    'entrypoint': _entrypointRelPath,
+    'exports': exports,
+    'symbols': symbols,
+  };
 }
 
-Future<void> checkCompatibility() async {
-  final snapshotFile = File(_snapshotPath);
+Future<void> checkCompatibility(String root) async {
+  final snapshotFile = File('$root/$_snapshotRelPath');
   if (!snapshotFile.existsSync()) {
-    throw StateError('Missing $_snapshotPath; run snapshot first.');
+    throw StateError('Missing $_snapshotRelPath; run snapshot first.');
   }
   final baseline = jsonDecode(await snapshotFile.readAsString()) as Map;
-  final current = await collectApiSnapshot();
+  final current = await collectApiSnapshot(root);
   final baselineExports = Set<String>.from(baseline['exports'] as List);
   final currentExports = Set<String>.from(current['exports'] as List);
   final baselineSymbols = Set<String>.from(baseline['symbols'] as List);
@@ -72,8 +101,10 @@ Future<void> checkCompatibility() async {
     stdout.writeln('API compatibility: unchanged');
     return;
   }
-  final changelog = await File('CHANGELOG.md').readAsString();
-  final version = _readVersion(await File('pubspec.yaml').readAsString());
+  final changelog = await File('$root/CHANGELOG.md').readAsString();
+  final version = _readVersion(
+    await File('$root/pubspec.yaml').readAsString(),
+  );
   final section = _currentChangelogSection(changelog, version);
   if (removed.isNotEmpty &&
       !_isMajor(version) &&
