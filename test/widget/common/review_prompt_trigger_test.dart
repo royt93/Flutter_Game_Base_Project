@@ -193,4 +193,67 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  group('BUG-70: resubscribe khi winStreakEvents đổi reference', () {
+    testWidgets(
+      'đổi sang StreamController khác giữa 2 lần build -> event trên '
+      'stream MỚI vẫn được nhận đúng',
+      (tester) async {
+        final controllerA = StreamController<int>.broadcast();
+        final controllerB = StreamController<int>.broadcast();
+        addTearDown(controllerA.close);
+        addTearDown(controllerB.close);
+        var showReviewCalls = 0;
+
+        Widget build(Stream<int> stream) => MaterialApp(
+          home: ReviewPromptTrigger(
+            winStreakEvents: stream,
+            showReview: () async => showReviewCalls++,
+            minWinStreak: 3,
+            child: const Text('game content'),
+          ),
+        );
+
+        await tester.pumpWidget(build(controllerA.stream));
+        await tester.pumpWidget(build(controllerB.stream));
+
+        // Stream CŨ (A) không còn được lắng nghe nữa.
+        controllerA.add(5);
+        await tester.pump();
+        expect(showReviewCalls, 0);
+
+        // Stream MỚI (B) phải được nhận đúng.
+        controllerB.add(5);
+        await tester.pump();
+        expect(showReviewCalls, 1);
+      },
+    );
+
+    testWidgets(
+      'winStreakEvents KHÔNG đổi qua rebuild -> vẫn hoạt động bình '
+      'thường, không resubscribe thừa',
+      (tester) async {
+        final controller = StreamController<int>.broadcast();
+        addTearDown(controller.close);
+        var showReviewCalls = 0;
+
+        Widget build() => MaterialApp(
+          home: ReviewPromptTrigger(
+            winStreakEvents: controller.stream,
+            showReview: () async => showReviewCalls++,
+            minWinStreak: 3,
+            child: const Text('game content'),
+          ),
+        );
+
+        await tester.pumpWidget(build());
+        await tester.pumpWidget(build()); // rebuild, cùng stream reference
+
+        controller.add(3);
+        await tester.pump();
+
+        expect(showReviewCalls, 1);
+      },
+    );
+  });
 }

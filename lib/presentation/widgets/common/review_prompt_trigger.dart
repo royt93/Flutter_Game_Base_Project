@@ -73,6 +73,21 @@ class _ReviewPromptTriggerState extends State<ReviewPromptTrigger> {
     _subscription = widget.winStreakEvents.listen(_onEvent);
   }
 
+  // BUG-70: without this, a parent rebuilding this widget with a
+  // DIFFERENT winStreakEvents Stream (e.g. switching game mode, a fresh
+  // StreamController) left _subscription listening to the OLD stream
+  // forever — every event on the new one was silently lost, no error, no
+  // log. Same resubscribe-on-change pattern ScreenShake's own
+  // didUpdateWidget already uses for its controller.
+  @override
+  void didUpdateWidget(covariant ReviewPromptTrigger oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.winStreakEvents != widget.winStreakEvents) {
+      _subscription?.cancel();
+      _subscription = widget.winStreakEvents.listen(_onEvent);
+    }
+  }
+
   Future<void> _onEvent(int recentWinStreak) async {
     bool requested;
     try {
