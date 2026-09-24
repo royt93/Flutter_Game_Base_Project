@@ -108,6 +108,38 @@ class HapticPattern {
   ]);
 }
 
+/// Builds a [HapticPattern] synced to a combo/SFX sequence whose timing is
+/// already known ahead of time (IDEA-67) — e.g. a pitch-escalating combo
+/// SFX that steps every [stepInterval]. No real-time audio analysis: this
+/// is a pure data-driven mapping from "N steps, M ms apart" straight onto
+/// [HapticPattern]'s own pulse/delay shape, played via
+/// [HapticChoreographer.play] exactly like any other pattern — the caller
+/// is responsible for actually starting the SFX at the same moment.
+///
+/// [levelForStep] defaults to [hapticLevelForGroupSize] (`haptics.dart`)
+/// — treats the 1-based step index as a magnitude, so a longer combo
+/// escalates light → medium → heavy the same way a bigger match group
+/// already does, reusing that existing mapping instead of inventing a
+/// second one.
+///
+/// [steps] must be positive; both it and [stepInterval] are still subject
+/// to [HapticPattern]'s own existing pulse-count/delay/total-duration caps
+/// (thrown from its constructor, not re-validated here).
+HapticPattern comboSyncHapticPattern({
+  required int steps,
+  required Duration stepInterval,
+  HapticLevel Function(int step)? levelForStep,
+}) {
+  if (steps <= 0) {
+    throw ArgumentError.value(steps, 'steps', 'must be > 0');
+  }
+  final level = levelForStep ?? hapticLevelForGroupSize;
+  return HapticPattern([
+    for (var step = 1; step <= steps; step++)
+      HapticPulse(level: level(step), delayAfter: stepInterval),
+  ]);
+}
+
 /// Schedules and plays back a [HapticPattern] pulse by pulse, through
 /// [fireHaptic] (so every existing `hapticsEnabled`/`hapticSoftMode`
 /// contract already applies to every pulse, for free — this never calls

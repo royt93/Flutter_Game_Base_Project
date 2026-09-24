@@ -320,4 +320,111 @@ void main() {
       },
     );
   });
+
+  group('IDEA-67: comboSyncHapticPattern', () {
+    test('tạo đúng số pulse bằng steps truyền vào', () {
+      final pattern = comboSyncHapticPattern(
+        steps: 4,
+        stepInterval: const Duration(milliseconds: 150),
+      );
+
+      expect(pattern.pulses, hasLength(4));
+    });
+
+    test('mỗi pulse có đúng delayAfter = stepInterval', () {
+      const interval = Duration(milliseconds: 200);
+      final pattern = comboSyncHapticPattern(steps: 3, stepInterval: interval);
+
+      for (final pulse in pattern.pulses) {
+        expect(pulse.delayAfter, interval);
+      }
+    });
+
+    test(
+      'mặc định dùng hapticLevelForGroupSize -> leo thang light -> medium -> heavy',
+      () {
+        final pattern = comboSyncHapticPattern(
+          steps: 10,
+          stepInterval: const Duration(milliseconds: 100),
+        );
+
+        // hapticLevelForGroupSize: <4 light, 4-7 medium, >=8 heavy.
+        expect(pattern.pulses[0].level, HapticLevel.light); // step 1
+        expect(pattern.pulses[3].level, HapticLevel.medium); // step 4
+        expect(pattern.pulses[7].level, HapticLevel.heavy); // step 8
+      },
+    );
+
+    test('levelForStep tuỳ chỉnh được dùng thay vì mặc định', () {
+      final pattern = comboSyncHapticPattern(
+        steps: 3,
+        stepInterval: const Duration(milliseconds: 100),
+        levelForStep: (step) => HapticLevel.heavy,
+      );
+
+      expect(
+        pattern.pulses.every((p) => p.level == HapticLevel.heavy),
+        isTrue,
+      );
+    });
+
+    test('steps: 0 hoặc âm -> throw ArgumentError, không tạo pattern rỗng', () {
+      expect(
+        () => comboSyncHapticPattern(
+          steps: 0,
+          stepInterval: const Duration(milliseconds: 100),
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => comboSyncHapticPattern(
+          steps: -1,
+          stepInterval: const Duration(milliseconds: 100),
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test(
+      'steps vượt quá HapticPattern.maxPulses -> vẫn throw đúng (không '
+      'bypass validation có sẵn của HapticPattern)',
+      () {
+        expect(
+          () => comboSyncHapticPattern(
+            steps: HapticPattern.maxPulses + 1,
+            stepInterval: const Duration(milliseconds: 100),
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
+
+    test('pattern trả về chơi được thật qua HapticChoreographer.play()', () async {
+      final calls = <MethodCall>[];
+      SharedPreferences.setMockInitialValues({});
+      final store = StorageService(await SharedPreferences.getInstance());
+      Get.put(store, permanent: true);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            calls.add(call);
+            return null;
+          });
+      addTearDown(() {
+        Get.reset();
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null);
+      });
+
+      final choreographer = HapticChoreographer();
+      choreographer.play(
+        comboSyncHapticPattern(
+          steps: 2,
+          stepInterval: const Duration(milliseconds: 10),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(calls, isNotEmpty);
+    });
+  });
 }
