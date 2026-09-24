@@ -130,11 +130,20 @@ String _readVersion(String yaml) => RegExp(
 
 bool _isMajor(String version) => int.parse(version.split('.').first) > 0;
 
+// BUG-74: previously used a lookahead `(?=^## |\Z)` to find the section's
+// end — `\Z` isn't a valid escape in Dart's RegExp (ECMAScript syntax, not
+// Perl/ICU where `\Z` means "end of string"), so it silently matched
+// nothing, and the WHOLE regex failed to match at all whenever the current
+// version's section was the LAST one in the file (no `## ` header after
+// it to anchor on instead) — returning '' regardless of the section's
+// real content. Finds the header via a plain `firstMatch`, then slices to
+// either the next `## ` header or the end of the string — never relies on
+// an end-of-string regex anchor at all.
 String _currentChangelogSection(String changelog, String version) {
-  final match = RegExp(
-    '^## $version\\n(.*?)(?=^## |\\Z)',
-    multiLine: true,
-    dotAll: true,
-  ).firstMatch(changelog);
-  return match?.group(1) ?? '';
+  final header = RegExp('^## $version\$', multiLine: true).firstMatch(changelog);
+  if (header == null) return '';
+  final bodyStart = (header.end + 1).clamp(0, changelog.length);
+  final rest = changelog.substring(bodyStart);
+  final nextHeader = RegExp(r'^## ', multiLine: true).firstMatch(rest);
+  return nextHeader == null ? rest : rest.substring(0, nextHeader.start);
 }

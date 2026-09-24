@@ -48,21 +48,20 @@ void main() {
     Future<void> writeSnapshot(Map<String, Object?> json) =>
         writeFile('tool/api_snapshot.json', jsonEncode(json));
 
-    // Ghi 2 mục vào CHANGELOG (mục hiện tại + 1 mục cũ hơn bên dưới), KHÔNG
-    // chỉ 1 mục — `_currentChangelogSection`'s regex tìm ranh giới mục hiện
-    // tại qua lookahead `(?=^## |\Z)`, và `\Z` không phải escape hợp lệ
-    // trong RegExp của Dart (ECMAScript syntax, không giống Perl/ICU) nên
-    // KHÔNG BAO GIỜ khớp cuối chuỗi thật — với CHANGELOG chỉ có đúng 1 mục,
-    // section luôn trả về rỗng bất kể nội dung thật là gì. Đây là 1 bug có
-    // thật, đã verify độc lập (script tái hiện riêng), nhưng KHÔNG sửa ở
-    // đây — nằm ngoài phạm vi ENH-92 (viết test, không phải sửa gate logic)
-    // và repo thật không bao giờ trúng nhánh này vì CHANGELOG.md thật luôn
-    // có nhiều mục. Xem BUG-74 cho việc sửa gốc rễ.
+    // Ghi 2 mục vào CHANGELOG (mục hiện tại + 1 mục cũ hơn bên dưới) cho
+    // hầu hết test — khớp đúng shape CHANGELOG.md thật của repo (luôn có
+    // nhiều mục). Case CHỈ 1 mục (mục hiện tại là mục cuối cùng, từng bị
+    // BUG-74 làm section luôn trả về rỗng sai) được test riêng bên dưới.
     Future<void> writeChangelog(String currentVersion, String body) =>
         writeFile(
           'CHANGELOG.md',
           '## $currentVersion\n$body\n\n## 0.0.1\n- initial\n',
         );
+
+    Future<void> writeChangelogSingleEntry(
+      String currentVersion,
+      String body,
+    ) => writeFile('CHANGELOG.md', '## $currentVersion\n$body\n');
 
     Future<void> writePubspec(String version) =>
         writeFile('pubspec.yaml', 'name: fixture\nversion: $version\n');
@@ -156,6 +155,40 @@ void main() {
         );
         expect(result.stdout as String, contains('bar.dart:Bar'));
         expect(result.stdout as String, contains('Added: {}'));
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      // BUG-74: mục hiện tại là mục DUY NHẤT/CUỐI CÙNG trong CHANGELOG
+      // (không có mục nào bên dưới để làm ranh giới) — trước khi sửa,
+      // section luôn bị coi là rỗng dù có ghi "### BREAKING" thật, khiến
+      // 1 xoá export hợp lệ bị từ chối sai.
+      'BUG-74: changelog CHỈ 1 mục duy nhất (mục hiện tại = mục cuối cùng), '
+      'CÓ ghi BREAKING -> vẫn được chấp nhận đúng, KHÔNG bị từ chối sai',
+      () async {
+        await writeEntrypoint(['foo.dart']);
+        await writeFile('lib/foo.dart', 'class Foo {}');
+        await writeSnapshot({
+          'entrypoint': 'lib/roy_casual_kit.dart',
+          'exports': ['foo.dart', 'bar.dart'],
+          'symbols': ['foo.dart:Foo', 'bar.dart:Bar'],
+        });
+        await writePubspec('0.1.0');
+        await writeChangelogSingleEntry('0.1.0', '### BREAKING\n- Removed Bar.');
+
+        final result = await _runCheck(['check', '--root=${tempDir.path}']);
+
+        expect(
+          result.exitCode,
+          0,
+          reason: '${result.stdout}\n${result.stderr}',
+        );
+        expect(
+          result.stdout as String,
+          contains('API compatibility: breaking'),
+        );
+        expect(result.stdout as String, contains('bar.dart:Bar'));
       },
       timeout: const Timeout(Duration(seconds: 30)),
     );
