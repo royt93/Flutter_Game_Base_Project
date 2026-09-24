@@ -24,6 +24,7 @@ export 'candy_text_field.dart';
 
 // Feedback & Overlay
 export 'achievement_unlock_listener.dart';
+export 'consent_banner.dart';
 export 'loading_overlay.dart';
 export 'toast_banner.dart';
 export 'tooltip_bubble.dart';
