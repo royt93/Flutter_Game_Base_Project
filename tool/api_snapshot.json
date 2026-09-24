@@ -372,6 +372,7 @@
     "core/versioned_json_store.dart:VersionedSyncConflictStrategy",
     "core/wake_lock_service.dart:WakeLockService",
     "presentation/game/pooled_component.dart:PooledComponent",
+    "presentation/game/roy_game.dart:BouncingOrb",
     "presentation/game/roy_game.dart:CircleTappedEvent",
     "presentation/game/roy_game.dart:RoyGame",
     "presentation/game/roy_game.dart:SparkleParticle",

@@ -155,6 +155,14 @@ void main() {
       );
       await game.toBeLoaded();
       await tester.pump();
+      // IDEA-65: RoyGame's components now add their own hitbox child in
+      // onLoad (TappableCircle/BouncingOrb) — that child's own mount
+      // settles on the frame AFTER the one that flushes toBeLoaded(), so
+      // a single pump() here left 1 more relayout to leak into the
+      // frameCount loop below (inflating the "no more relayouts" count
+      // this test asserts on). A second pump folds that settling into
+      // the initial-resolve baseline instead, where it belongs.
+      await tester.pump();
       final layoutsAfterInitialResolve = stackLayouts.count;
       expect(
         layoutsAfterInitialResolve,

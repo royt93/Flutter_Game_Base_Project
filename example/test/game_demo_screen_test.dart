@@ -137,6 +137,12 @@ void main() {
       (tester) async {
         await tester.pumpWidget(_wrap(const GameDemoScreen()));
         await tester.pump(const Duration(milliseconds: 100));
+        // IDEA-65: RoyGame's TappableCircle now adds its own hitbox child
+        // in onLoad — that child's mount settles 1 Flutter frame after the
+        // one the pump above flushed, and a tap dispatched before it fully
+        // settles is simply missed (not deferred/retried). 1 extra bare
+        // pump() reliably closes that gap.
+        await tester.pump();
 
         expect(find.textContaining('gems: 0'), findsOneWidget);
         expect(find.textContaining('tap: 0/10'), findsOneWidget);
@@ -162,6 +168,9 @@ void main() {
       (tester) async {
         await tester.pumpWidget(_wrap(const GameDemoScreen()));
         await tester.pump(const Duration(milliseconds: 100));
+        // IDEA-65: see the sibling test above for why this extra pump is
+        // needed before the first tap can land.
+        await tester.pump();
 
         for (var i = 0; i < 3; i++) {
           await tester.tapAt(

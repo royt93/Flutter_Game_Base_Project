@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
@@ -16,10 +17,16 @@ import 'pooled_component.dart';
 /// Deliberately not a real game: one background color + one tappable
 /// [TappableCircle]. A consumer app building a real game should extend this
 /// rather than reading it as a template to copy-paste from scratch.
-class RoyGame extends FlameGame {
+class RoyGame extends FlameGame with HasCollisionDetection {
   RoyGame({this.eventBus});
 
   late final TappableCircle circle;
+
+  // IDEA-65: the collision-detection counterpart to ENH-81's pooling demo
+  // above — proves `HasCollisionDetection`/`CollisionCallbacks`/hitboxes
+  // actually wire up through a real `GameWidget`, since neither existed
+  // anywhere in this package with more than unit-test coverage before.
+  late final BouncingOrb orb;
 
   // FEAT-88: optional — a game that never passes one behaves exactly as
   // before (TappableCircle's null-check below is a no-op). Lets a consumer
@@ -57,6 +64,9 @@ class RoyGame extends FlameGame {
     camera.viewfinder.anchor = Anchor.topLeft;
     circle = TappableCircle()..position = size / 2;
     add(circle);
+
+    orb = BouncingOrb()..position = Vector2(size.x * 0.2, size.y * 0.2);
+    add(orb);
   }
 
   @override
@@ -129,7 +139,7 @@ class SparkleParticle extends CircleComponent with PooledComponent {
 /// real `GameWidget` (see `neon_dialog.dart`'s overlay pattern doc comment,
 /// which this template's demo screen also exercises).
 class TappableCircle extends CircleComponent
-    with TapCallbacks, HasGameReference<RoyGame> {
+    with TapCallbacks, HasGameReference<RoyGame>, CollisionCallbacks {
   TappableCircle()
     : super(
         radius: 40,
@@ -138,6 +148,20 @@ class TappableCircle extends CircleComponent
       );
 
   bool tapped = false;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    // IDEA-65: a hitbox is required for `HasCollisionDetection` to ever
+    // consider this component — without one, `BouncingOrb` would just
+    // pass straight through it. `radius:` passed explicitly — the
+    // no-args `CircleHitbox()` does NOT auto-infer it from this
+    // component's own `radius`, it defaults to a zero-size hitbox that
+    // never collides with anything. Awaited so the hitbox is guaranteed
+    // mounted (in `children`) by the time `onLoad` itself completes,
+    // rather than merely queued.
+    await add(CircleHitbox(radius: radius));
+  }
 
   @override
   void onTapDown(TapDownEvent event) {
@@ -149,6 +173,71 @@ class TappableCircle extends CircleComponent
     // subscriber (EconomyWallet, AchievementService, ...) wired up through
     // the optional GameEventBus — see GameDemoScreen for a live example.
     game.eventBus?.emit(const CircleTappedEvent());
+  }
+
+  /// IDEA-65: called by [BouncingOrb] on collision — a visible reaction on
+  /// BOTH sides of a hit, not just the orb, so the demo reads as "these 2
+  /// things touched" rather than "the orb noticed something". Overwritten
+  /// by the next tap's own color flip either way — no dedicated
+  /// "un-flash" timer needed for a starter template.
+  void flashFromCollision() {
+    paint.color = NeonTheme.gold;
+  }
+}
+
+/// Bounces around the viewport and reverses off its edges — the
+/// collision-detection counterpart (IDEA-65) to [SparkleParticle]'s
+/// pooling demo: on touching [TappableCircle], both components flash
+/// [NeonTheme.gold], proving Flame's `CollisionCallbacks`/hitbox wiring
+/// actually fires through a real `GameWidget`, not just a unit test
+/// constructing `CircleHitbox` in isolation.
+class BouncingOrb extends CircleComponent
+    with HasGameReference<RoyGame>, CollisionCallbacks {
+  BouncingOrb()
+    : super(
+        radius: 16,
+        anchor: Anchor.center,
+        paint: Paint()..color = NeonTheme.lime,
+      );
+
+  /// Logical pixels/second — public so a test can drive deterministic
+  /// bounce math without waiting on real elapsed time.
+  Vector2 velocity = Vector2(90, 70);
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    // See TappableCircle.onLoad's own comment for why `radius:` must be
+    // explicit here.
+    await add(CircleHitbox(radius: radius));
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    position += velocity * dt;
+
+    final bounds = game.size;
+    if (position.x - radius <= 0 || position.x + radius >= bounds.x) {
+      velocity.x = -velocity.x;
+      position.x = position.x.clamp(radius, bounds.x - radius);
+    }
+    if (position.y - radius <= 0 || position.y + radius >= bounds.y) {
+      velocity.y = -velocity.y;
+      position.y = position.y.clamp(radius, bounds.y - radius);
+    }
+  }
+
+  @override
+  void onCollisionStart(
+    Set<Vector2> intersectionPoints,
+    PositionComponent other,
+  ) {
+    super.onCollisionStart(intersectionPoints, other);
+    if (other is TappableCircle) {
+      paint.color = NeonTheme.gold;
+      other.flashFromCollision();
+    }
   }
 }
 
