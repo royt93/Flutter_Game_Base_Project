@@ -33,6 +33,7 @@ export 'confetti_overlay.dart';
 export 'floating_combo_text.dart';
 export 'network_status_banner.dart';
 export 'review_prompt_trigger.dart';
+export 'smart_review_funnel.dart';
 export 'shimmer_placeholder.dart';
 export 'spotlight_overlay.dart';
 export 'tutorial_sequence.dart';
