@@ -290,4 +290,87 @@ void main() {
     expect(tester.takeException(), isNull);
     await _flushToast(tester);
   });
+
+  testWidgets(
+    // ENH-91: BatterySaverCoordinator had no demo anywhere.
+    'BatterySaverCoordinator tile forces tier low on low battery, releases '
+    'on recovery',
+    (tester) async {
+      await _boot();
+      await tester.pumpWidget(_wrap(const CookbookScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await _tapAndShowToast(
+        tester,
+        'BatterySaverCoordinator — force PerformanceTier low on low '
+        'battery, release on recovery',
+      );
+
+      expect(find.textContaining('tier=low'), findsOneWidget);
+      expect(find.textContaining('isForcingLow=false'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _flushToast(tester);
+    },
+  );
+
+  testWidgets(
+    // ENH-91: EconomyCertificate had no demo anywhere.
+    'EconomyCertificate tile issues + verifies a real signed snapshot',
+    (tester) async {
+      await _boot();
+      await tester.pumpWidget(_wrap(const CookbookScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await _tapAndShowToast(
+        tester,
+        'EconomyCertificate — issue + verify a signed economy snapshot',
+      );
+
+      expect(find.textContaining('status=valid'), findsOneWidget);
+      expect(find.textContaining('coins=50'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _flushToast(tester);
+    },
+  );
+
+  testWidgets(
+    // ENH-91: ReproductionCapsule had no demo anywhere.
+    'ReproductionCapsule tile captures + replays a real session, matches',
+    (tester) async {
+      await _boot();
+      await tester.pumpWidget(_wrap(const CookbookScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await _tapAndShowToast(
+        tester,
+        'ReproductionCapsule — capture a session, replay it, verify it '
+        'matches',
+      );
+
+      expect(find.textContaining('replay matches=true'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _flushToast(tester);
+    },
+  );
+
+  testWidgets(
+    // ENH-91: ShadowActivationController had no demo anywhere.
+    'ShadowActivationController tile auto-rolls-back a real guardrail '
+    'violation',
+    (tester) async {
+      await _boot();
+      await tester.pumpWidget(_wrap(const CookbookScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await _tapAndShowToast(
+        tester,
+        'ShadowActivationController — guardrail auto-rollback on '
+        'violation',
+      );
+
+      expect(find.textContaining('killed: false -> true'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _flushToast(tester);
+    },
+  );
 }

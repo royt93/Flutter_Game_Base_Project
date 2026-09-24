@@ -608,6 +608,124 @@ class _CookbookScreenState extends State<CookbookScreen> {
                         },
                       ),
                     ]),
+                    // ENH-91: these 4 services (BatterySaverCoordinator,
+                    // EconomyCertificate, ReproductionCapsule,
+                    // ShadowActivationController) had no demo anywhere —
+                    // only unit-test coverage since they shipped.
+                    _section('Live-ops guardrails & anti-cheat', [
+                      _tile(
+                        'BatterySaverCoordinator — force PerformanceTier '
+                        'low on low battery, release on recovery',
+                        () async {
+                          var batteryLevel = 10;
+                          final coordinator = BatterySaverCoordinator(
+                            performanceTier: _performanceTier,
+                            batteryLevelProvider: () async => batteryLevel,
+                          );
+                          await coordinator.check();
+                          final afterLow = _performanceTier.tier.value;
+                          batteryLevel = 80;
+                          await coordinator.check();
+                          final afterRecover = _performanceTier.tier.value;
+                          return 'battery 10% -> tier=${afterLow.name}; '
+                              'battery 80% -> tier=${afterRecover.name}, '
+                              'isForcingLow=${coordinator.isForcingLow}';
+                        },
+                      ),
+                      _tile(
+                        'EconomyCertificate — issue + verify a signed '
+                        'economy snapshot',
+                        () async {
+                          final EconomyWallet wallet =
+                              EconomyWallet.maybe ??
+                              Get.put<EconomyWallet>(
+                                EconomyWallet(storage: StorageService.to),
+                                permanent: true,
+                              );
+                          await wallet.earn(
+                            currency: 'coins',
+                            amount: 50,
+                            transactionId:
+                                'cookbook_cert_${DateTime.now().microsecondsSinceEpoch}',
+                          );
+                          const secret = 'cookbook-demo-secret';
+                          final certificate = EconomyCertificate.issue(
+                            wallet: wallet,
+                            secret: secret,
+                          );
+                          final verification = EconomyCertificate.verify(
+                            certificate,
+                            secret,
+                          );
+                          return 'issued + verified -> '
+                              'status=${verification.status.name}, '
+                              'coins=${verification.balances?['coins']}';
+                        },
+                      ),
+                      _tile(
+                        'ReproductionCapsule — capture a session, replay '
+                        'it, verify it matches',
+                        () async {
+                          const secret = 'cookbook-demo-secret';
+                          final rng = SeededRandomService(1234);
+                          final recorder = ReplayRecorder()
+                            ..start(seed: 1234);
+                          for (var i = 0; i < 3; i++) {
+                            final outcome = rng
+                                .stream('cookbook_demo')
+                                .nextInt(6);
+                            recorder.record('spin', {
+                              'segments': 6,
+                              'expectedOutcome': outcome,
+                            });
+                          }
+                          final captured = ReproductionCapsule.capture(
+                            recorder: recorder,
+                            rng: rng,
+                            appVersion: '1.0.0-cookbook-demo',
+                            secret: secret,
+                          );
+                          final result = ReproductionCapsule.replay(
+                            captured,
+                            secret,
+                            (event, replayRng) => replayRng
+                                .stream('cookbook_demo')
+                                .nextInt(event.payload['segments']! as int),
+                          );
+                          return 'replay matches=${result.matches} '
+                              '(rngMismatches=${result.rngMismatches?.length})';
+                        },
+                      ),
+                      _tile(
+                        'ShadowActivationController — guardrail '
+                        'auto-rollback on violation',
+                        () {
+                          final controller = ShadowActivationController(
+                            killSwitch: _killSwitch,
+                          );
+                          controller.registerGuardrail(
+                            'cookbook_shadow_feature',
+                            const GuardrailDefinition(
+                              metricName: 'error_rate',
+                              max: 0.05,
+                            ),
+                          );
+                          final before = _killSwitch.isKilled(
+                            'cookbook_shadow_feature',
+                          );
+                          controller.reportMetric(
+                            'cookbook_shadow_feature',
+                            'error_rate',
+                            0.5,
+                          );
+                          final after = _killSwitch.isKilled(
+                            'cookbook_shadow_feature',
+                          );
+                          return 'error_rate=0.5 > max 0.05 -> '
+                              'killed: $before -> $after';
+                        },
+                      ),
+                    ]),
                     _section('i18n, audio, haptics, theme', [
                       _tile(
                         'HapticChoreographer — play a prebuilt pattern',
