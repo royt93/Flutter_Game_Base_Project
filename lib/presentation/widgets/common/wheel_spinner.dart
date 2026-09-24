@@ -160,6 +160,13 @@ class _WheelSpinnerState extends State<WheelSpinner>
       oldWidget.controller.removeListener(_onSpinRequested);
       widget.controller.addListener(_onSpinRequested);
     }
+    // BUG-73: without this, changing `widget.spinDuration` on the same
+    // mounted instance was silently ignored — `_controller` (created once
+    // in `initState`) kept spinning at whichever duration was live at
+    // first mount.
+    if (oldWidget.spinDuration != widget.spinDuration) {
+      _controller.duration = widget.spinDuration;
+    }
   }
 
   double _normalizeAngle(double angle) {

@@ -110,6 +110,92 @@ void main() {
     handle.dispose();
   });
 
+  group('BUG-73: didUpdateWidget resync duration khi đang chạy', () {
+    double tOf(WidgetTester tester) {
+      final gradient = _decorationOf(tester).gradient! as LinearGradient;
+      // build(): begin = Alignment(-3 + 6*t, 0) -> t = (begin.x + 3) / 6.
+      return ((gradient.begin as Alignment).x + 3) / 6;
+    }
+
+    testWidgets(
+      'đổi duration khi đang chạy -> loop restart dùng đúng duration MỚI '
+      '(không kẹt ở duration cũ)',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: ShimmerPlaceholder(
+                width: 120,
+                height: 20,
+                duration: Duration(seconds: 10),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Rebuild CÙNG cây widget (không đổi key) với duration nhỏ hẳn —
+        // trigger didUpdateWidget ngay tại t gần 0.
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: ShimmerPlaceholder(
+                width: 120,
+                height: 20,
+                duration: Duration(milliseconds: 100),
+              ),
+            ),
+          ),
+        );
+
+        // Nếu bug còn (duration cũ 10s vẫn giữ nguyên): sau 50ms, t ~
+        // 50/10000 ~ 0.005. Nếu đã fix (loop restart đúng 100ms mới): sau
+        // 50ms (nửa chu kỳ mới), t ~ 0.5.
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(tOf(tester), closeTo(0.5, 0.15));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'không đổi duration -> hành vi giữ nguyên như cũ (không bị restart '
+      'thừa mỗi lần rebuild)',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: ShimmerPlaceholder(
+                width: 120,
+                height: 20,
+                duration: Duration(seconds: 1),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        final tBefore = tOf(tester);
+
+        // Rebuild CÙNG duration (không đổi gì) — không được restart loop.
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: ShimmerPlaceholder(
+                width: 120,
+                height: 20,
+                duration: Duration(seconds: 1),
+              ),
+            ),
+          ),
+        );
+
+        expect(tOf(tester), closeTo(tBefore, 0.01));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
   group('ENH-49: shape/baseColor/highlightColor', () {
     testWidgets(
       'không truyền → giữ nguyên default cũ (rectangle, borderRadius, cardAlt/card)',

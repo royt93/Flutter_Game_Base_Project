@@ -67,6 +67,25 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
     if (!NeonTheme.reducedMotion(context)) _controller.repeat();
   }
 
+  // BUG-73: without this, changing `widget.duration` on the same mounted
+  // instance was silently ignored — the sweep kept looping at whichever
+  // duration was live at first mount. Setting `_controller.duration` ALONE
+  // isn't enough here (unlike a controller only ever driven by a fresh
+  // `forward()` per trigger, e.g. WheelSpinner/HoldToConfirmButton):
+  // `AnimationController.repeat()` captures its period once, at the moment
+  // it's called, into an internal `_RepeatingSimulation` — the ALREADY
+  // repeating loop this started in [didChangeDependencies] keeps using
+  // that captured old period regardless of the `duration` setter, so the
+  // loop must be restarted for a new duration to actually take effect.
+  @override
+  void didUpdateWidget(covariant ShimmerPlaceholder oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.duration != widget.duration) {
+      _controller.duration = widget.duration;
+      if (!NeonTheme.reducedMotion(context)) _controller.repeat();
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();

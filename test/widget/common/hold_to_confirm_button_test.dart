@@ -53,6 +53,47 @@ void main() {
     expect(count, 1);
   });
 
+  testWidgets(
+    'BUG-73: đổi duration trước khi giữ -> hold dùng đúng duration MỚI '
+    '(không kẹt duration cũ)',
+    (tester) async {
+      var count = 0;
+      await tester.pumpWidget(
+        _wrap(
+          HoldToConfirmButton(
+            label: 'Delete',
+            duration: const Duration(seconds: 5),
+            onConfirm: () => count++,
+          ),
+        ),
+      );
+
+      // Rebuild CÙNG cây (không đổi key) với duration nhỏ hẳn, TRƯỚC khi
+      // bắt đầu giữ.
+      await tester.pumpWidget(
+        _wrap(
+          HoldToConfirmButton(
+            label: 'Delete',
+            duration: const Duration(milliseconds: 100),
+            onConfirm: () => count++,
+          ),
+        ),
+      );
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(HoldToConfirmButton)),
+      );
+      await tester.pump();
+      // Nếu bug còn (kẹt duration 5s cũ): chưa xong sau 150ms. Nếu đã fix
+      // (dùng đúng 100ms mới): xong rồi.
+      await tester.pump(const Duration(milliseconds: 150));
+      await gesture.up();
+      await tester.pump();
+
+      expect(count, 1);
+    },
+  );
+
   testWidgets('thả trước khi đủ duration: không gọi onConfirm, progress về 0', (
     tester,
   ) async {

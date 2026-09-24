@@ -157,6 +157,18 @@ class _HoldToConfirmButtonState extends State<HoldToConfirmButton>
     widget.onConfirm();
   }
 
+  // BUG-73: without this, changing `widget.duration` on the same mounted
+  // instance (e.g. an accessibility "hold longer" setting) was silently
+  // ignored — the hold-to-confirm safety gate kept using whichever
+  // duration was live at first mount.
+  @override
+  void didUpdateWidget(covariant HoldToConfirmButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.duration != widget.duration) {
+      _controller.duration = widget.duration;
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();

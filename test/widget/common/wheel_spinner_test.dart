@@ -141,6 +141,48 @@ void main() {
     );
 
     testWidgets(
+      'BUG-73: đổi spinDuration trước khi spin -> spin dùng đúng duration '
+      'MỚI (không kẹt duration cũ)',
+      (tester) async {
+        WheelSegment? result;
+        final controller = WheelSpinnerController();
+        await tester.pumpWidget(
+          _wrap(
+            WheelSpinner(
+              segments: segments,
+              controller: controller,
+              onSpinEnd: (s) => result = s,
+              spinDuration: const Duration(seconds: 5),
+            ),
+          ),
+        );
+
+        // Rebuild CÙNG cây (không đổi key) với spinDuration nhỏ hẳn, TRƯỚC
+        // khi spin.
+        await tester.pumpWidget(
+          _wrap(
+            WheelSpinner(
+              segments: segments,
+              controller: controller,
+              onSpinEnd: (s) => result = s,
+              spinDuration: const Duration(milliseconds: 100),
+            ),
+          ),
+        );
+
+        controller.spin(1);
+        await tester.pump();
+        expect(result, isNull);
+        // Nếu bug còn (kẹt duration 5s cũ): chưa xong sau 150ms. Nếu đã
+        // fix (dùng đúng 100ms mới): xong rồi.
+        await tester.pump(const Duration(milliseconds: 150));
+
+        expect(result, segments[1]);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
       'ENH-17: Reduce Motion bật → onSpinEnd fire ngay, không cần chờ animation',
       (tester) async {
         WheelSegment? result;
