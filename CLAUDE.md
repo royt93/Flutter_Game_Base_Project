@@ -42,6 +42,13 @@ dart run tool/api_compatibility.dart check                # public-API diff gate
 dart run tool/api_compatibility.dart snapshot              # regenerate tool/api_snapshot.json after an intentional export change
 dart pub publish --dry-run                                 # publish-hygiene gate
 
+# quality-gate CI job (see below) — only runs when lib/, tool/, or pubspec.yaml changed
+dart run tool/accessibility_audit_check.dart
+dart run tool/dependency_sbom_check.dart --suppressions=tool/dependency_sbom_suppressions.json
+dart run tool/asset_license_check.dart
+dart run tool/performance_budget_check.dart check
+dart run tool/deprecation_check.dart
+
 # example/ app — its own analyze/test surface, run from example/
 cd example
 flutter analyze
@@ -59,7 +66,11 @@ in order: the API-compatibility check, `flutter analyze`, `flutter test`,
 `working-directory: example`. A change that adds/removes/renames a public
 export in `lib/roy_casual_kit.dart` will fail CI until you run the
 `tool/api_compatibility.dart snapshot` command above and commit the updated
-`tool/api_snapshot.json`.
+`tool/api_snapshot.json`. A separate `quality-gate` job (only triggered when
+`lib/`, `tool/`, or `pubspec.yaml` changed, via `paths-filter`) runs the 5
+`tool/*_check.dart` commands listed above — easy to miss since it's
+conditional, so a PR touching those paths can fail CI on one of these even
+though they aren't in the always-run `analyze-test` job above.
 
 Root tests mirror `lib/`: `test/core` (+ `test/core/utils`), `test/widget`
 (+ `test/widget/common`, `test/widget/goldens`), `test/presentation/game`
