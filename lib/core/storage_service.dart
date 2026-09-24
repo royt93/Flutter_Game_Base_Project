@@ -82,6 +82,9 @@ class StorageKeys {
       'reward_transaction_pipeline_v1';
   static const String saveSlotMetaV1 = 'save_slot_meta_v1';
   static const String saveSlotActiveIdV1 = 'save_slot_active_id_v1';
+
+  // lib/core/invite_friend_coordinator.dart reads/writes this directly.
+  static const String inviteRedeemedCode = 'invite_redeemed_code';
 }
 
 /// Shared local storage service (wraps SharedPreferences).
