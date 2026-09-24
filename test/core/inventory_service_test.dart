@@ -457,4 +457,25 @@ void main() {
       },
     );
   });
+
+  group('ENH-89: itemCatalog validation', () {
+    test(
+      'entry có maxStack <= 0 -> throw ArgumentError ngay tại constructor',
+      () {
+        expect(
+          () => InventoryService(
+            storage: StorageService(null),
+            itemCatalog: {
+              'broken': const ItemDefinition(id: 'broken', maxStack: 0),
+            },
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
+
+    test('catalog toàn entry hợp lệ -> không throw gì cả', () {
+      expect(() => _service(), returnsNormally);
+    });
+  });
 }

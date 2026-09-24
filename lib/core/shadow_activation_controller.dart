@@ -3,13 +3,14 @@ import 'remote_kill_switch_controller.dart';
 /// A min/max threshold on 1 named metric — a violation of either bound is
 /// what [ShadowActivationController] treats as "this shadow-activated
 /// feature/event is misbehaving, roll it back now". Either bound can be
-/// `null` (no lower/upper check).
+/// `null` (no lower/upper check) — but not BOTH; that invariant is
+/// enforced by [ShadowActivationController.registerGuardrail] (ENH-89),
+/// not here — a runtime `assert` on this `const`-constructible class
+/// would be stripped from release builds anyway, and a genuine
+/// `if`/`throw` here would force every `const` guardrail list in
+/// consumers off `const`.
 class GuardrailDefinition {
-  const GuardrailDefinition({required this.metricName, this.min, this.max})
-    : assert(
-        min != null || max != null,
-        'GuardrailDefinition needs at least a min or a max bound',
-      );
+  const GuardrailDefinition({required this.metricName, this.min, this.max});
 
   final String metricName;
   final double? min;
@@ -47,7 +48,25 @@ class ShadowActivationController {
   /// Registers [guardrail] for [featureId]. A feature can have several
   /// guardrails (e.g. both an earn-rate ceiling and a spend-rate floor);
   /// any single violation is enough to trigger rollback.
+  ///
+  /// ENH-89: GuardrailDefinition's own `min`/`max` invariant is only an
+  /// `assert` (stripped in release builds) — it stays that way
+  /// deliberately, since GuardrailDefinition is `const`-constructible and
+  /// used in `const` guardrail lists throughout consumers; giving its
+  /// constructor a runtime-throwing body would force every one of those
+  /// call sites off `const`. This is the real runtime trust boundary
+  /// instead — a guardrail with neither bound set (e.g. one assembled
+  /// from a remote-config payload missing both fields) is caught HERE,
+  /// unconditionally, in every build mode, rather than silently never
+  /// firing [violatedBy] at all.
   void registerGuardrail(String featureId, GuardrailDefinition guardrail) {
+    if (guardrail.min == null && guardrail.max == null) {
+      throw ArgumentError.value(
+        guardrail,
+        'guardrail',
+        'needs at least a min or a max bound',
+      );
+    }
     (_guardrails[featureId] ??= []).add(guardrail);
   }
 

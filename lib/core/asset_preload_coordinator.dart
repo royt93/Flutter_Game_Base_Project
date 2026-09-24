@@ -10,6 +10,13 @@ import 'utils/sdk_result.dart';
 enum AssetKind { image, audio, flutterAsset, shader }
 
 /// One entry in a scene's asset manifest.
+///
+/// [weight]'s only invariant (`> 0`) is enforced by
+/// [AssetPreloadCoordinator]'s own `preload()` (ENH-89), not here — a
+/// runtime `assert` on this `const`-constructible class would be
+/// stripped from release builds anyway, and a genuine `if`/`throw` here
+/// would force every `const` manifest list in this repo/consumers off
+/// `const`. See `_validate()`'s own doc comment for the real check.
 class AssetManifestItem {
   const AssetManifestItem({
     required this.id,
@@ -18,7 +25,7 @@ class AssetManifestItem {
     this.dependsOn = const [],
     this.required = true,
     this.weight = 1.0,
-  }) : assert(weight > 0, 'weight must be > 0');
+  });
 
   final String id;
   final AssetKind kind;
@@ -329,6 +336,25 @@ class AssetPreloadCoordinator extends GetxService {
   }
 
   SdkFailure<void>? _validate(List<AssetManifestItem> manifest) {
+    // ENH-89: AssetManifestItem's own `weight` invariant is only an
+    // `assert` (stripped in release builds) — it stays that way
+    // deliberately, since AssetManifestItem is `const`-constructible and
+    // used in `const` manifest lists throughout this repo/consumers;
+    // giving its constructor a runtime-throwing body would force every
+    // one of those call sites off `const`. This is the real runtime
+    // trust boundary instead — every manifest passed to `preload()`
+    // (including one assembled from remote content, not just a
+    // hardcoded literal) is checked here, unconditionally, in every
+    // build mode.
+    for (final item in manifest) {
+      if (item.weight <= 0) {
+        return SdkFailure(
+          kind: SdkErrorKind.validation,
+          message: 'Asset "${item.id}" has weight <= 0',
+        );
+      }
+    }
+
     final ids = manifest.map((i) => i.id).toSet();
     for (final item in manifest) {
       for (final dep in item.dependsOn) {

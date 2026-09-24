@@ -32,11 +32,23 @@ class PrestigeService extends GetxService {
     this.bonusPerRelic = 0.1,
     this.relicsPerPrestige = 1,
     this.softResetCurrencies = const {'coins'},
-  }) : assert(
-         !softResetCurrencies.contains(metaCurrency),
-         'metaCurrency must survive a prestige — it cannot also be in '
-         'softResetCurrencies',
-       );
+  }) {
+    // ENH-89: was `assert(!softResetCurrencies.contains(metaCurrency),
+    // ...)` — stripped entirely in release builds. A misconfigured
+    // `softResetCurrencies` that also lists `metaCurrency` would then
+    // silently wipe relics on every prestige in production — the exact
+    // bug this invariant exists to prevent, undetected until a player
+    // notices their relics vanishing. A plain `if`/`throw` is never
+    // stripped, in any build mode.
+    if (softResetCurrencies.contains(metaCurrency)) {
+      throw ArgumentError.value(
+        softResetCurrencies,
+        'softResetCurrencies',
+        'must not contain metaCurrency ("$metaCurrency") — metaCurrency '
+            'must survive a prestige',
+      );
+    }
+  }
 
   final EconomyWallet wallet;
 

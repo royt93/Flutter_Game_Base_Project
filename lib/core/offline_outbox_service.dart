@@ -204,12 +204,23 @@ class OfflineOutboxService extends GetxService {
     this.retryPolicy = const RetryPolicy(maxAttempts: 3),
     RetryExecutor? retryExecutor,
     String? storageKey,
-  }) : assert(
-         conflictPolicy != ConflictPolicy.merge || merger != null,
-         'merger is required when conflictPolicy is ConflictPolicy.merge',
-       ),
-       _retryExecutor = retryExecutor ?? RetryExecutor(),
+  }) : _retryExecutor = retryExecutor ?? RetryExecutor(),
        _key = storageKey ?? StorageKeys.offlineOutboxV1 {
+    // ENH-89: was `assert(conflictPolicy != ConflictPolicy.merge ||
+    // merger != null, ...)` — stripped entirely in release builds. A
+    // caller passing `conflictPolicy: merge` without `merger` (a
+    // hardcoded mistake, or a value assembled from remote config) would
+    // then reach a real conflict at runtime with no merger to call,
+    // failing confusingly deep inside the conflict-resolution path
+    // instead of at construction. A plain `if`/`throw` is never
+    // stripped, in any build mode.
+    if (conflictPolicy == ConflictPolicy.merge && merger == null) {
+      throw ArgumentError.value(
+        merger,
+        'merger',
+        'is required when conflictPolicy is ConflictPolicy.merge',
+      );
+    }
     // BUG-40: see EconomyWallet's constructor for why this can't wait for
     // onInit() alone. The connectivity-subscription setup stays in onInit()
     // only — that's a GetX-lifecycle-bound side effect, not state hydration.

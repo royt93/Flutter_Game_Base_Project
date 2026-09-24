@@ -98,6 +98,30 @@ void main() {
     );
 
     test(
+      'ENH-89: item weight <= 0 báo SdkFailure kind validation, không '
+      'gọi loader',
+      () async {
+        final calls = <String>[];
+        final coordinator = _coordinator(
+          loader: (item) async => calls.add(item.id),
+        );
+
+        final result = await coordinator.preload([
+          AssetManifestItem(
+            id: 'bad',
+            kind: AssetKind.image,
+            path: 'bad.png',
+            weight: 0,
+          ),
+        ]);
+
+        expect(result, isA<SdkFailure<void>>());
+        expect((result as SdkFailure<void>).kind, SdkErrorKind.validation);
+        expect(calls, isEmpty);
+      },
+    );
+
+    test(
       'dependency cycle báo SdkFailure kind validation, không treo',
       () async {
         final coordinator = _coordinator(loader: (item) async {});

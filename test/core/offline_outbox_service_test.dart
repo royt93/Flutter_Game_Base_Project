@@ -586,4 +586,38 @@ void main() {
       },
     );
   });
+
+  group('ENH-89: conflictPolicy.merge yêu cầu merger', () {
+    test(
+      'conflictPolicy: merge, merger: null -> throw ArgumentError ngay '
+      'tại constructor',
+      () {
+        expect(
+          () => _service(
+            uploader: (p, k) async => const SyncAck(),
+            conflictPolicy: ConflictPolicy.merge,
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
+
+    test('conflictPolicy: merge kèm merger hợp lệ -> không throw', () {
+      expect(
+        () => _service(
+          uploader: (p, k) async => const SyncAck(),
+          conflictPolicy: ConflictPolicy.merge,
+          merger: (local, remote) => local,
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('conflictPolicy khác merge, merger: null -> không throw', () {
+      expect(
+        () => _service(uploader: (p, k) async => const SyncAck()),
+        returnsNormally,
+      );
+    });
+  });
 }

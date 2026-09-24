@@ -154,10 +154,44 @@ void main() {
       expect(minOnly.violatedBy(999999), isFalse); // không có max -> không chặn.
     });
 
-    test('thiếu cả min lẫn max -> assert (guardrail vô nghĩa)', () {
+    test(
+      'thiếu cả min lẫn max -> constructor KHÔNG throw (ENH-89: validate '
+      'chuyển sang registerGuardrail, xem group riêng bên dưới)',
+      () {
+        expect(() => const GuardrailDefinition(metricName: 'x'), returnsNormally);
+      },
+    );
+  });
+
+  group('ENH-89: registerGuardrail validation', () {
+    test(
+      'guardrail thiếu cả min lẫn max -> throw ArgumentError ngay tại '
+      'registerGuardrail (không phải AssertionError — không bị strip ở '
+      'release build)',
+      () async {
+        final killSwitch = await buildKillSwitch();
+        final shadow = ShadowActivationController(killSwitch: killSwitch);
+
+        expect(
+          () => shadow.registerGuardrail(
+            'feature',
+            const GuardrailDefinition(metricName: 'x'),
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
+
+    test('guardrail có ít nhất 1 bound -> registerGuardrail không throw', () async {
+      final killSwitch = await buildKillSwitch();
+      final shadow = ShadowActivationController(killSwitch: killSwitch);
+
       expect(
-        () => GuardrailDefinition(metricName: 'x'),
-        throwsA(isA<AssertionError>()),
+        () => shadow.registerGuardrail(
+          'feature',
+          const GuardrailDefinition(metricName: 'x', max: 100),
+        ),
+        returnsNormally,
       );
     });
   });

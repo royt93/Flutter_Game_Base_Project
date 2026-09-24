@@ -13,13 +13,19 @@ enum ItemRarity { common, rare, epic, legendary }
 /// Static catalog entry for one item id — [InventoryService] is generic
 /// over whatever catalog a consumer app supplies; it has no concrete item
 /// list of its own.
+///
+/// [maxStack]'s only invariant (`> 0`) is enforced by [InventoryService]'s
+/// own constructor (ENH-89), not here — a runtime `assert` on this
+/// `const`-constructible class would be stripped from release builds
+/// anyway, and a genuine `if`/`throw` here would force every `const`
+/// catalog map in this repo/consumers off `const`.
 class ItemDefinition {
   const ItemDefinition({
     required this.id,
     this.maxStack = 1,
     this.equippable = false,
     this.rarity = ItemRarity.common,
-  }) : assert(maxStack > 0, 'maxStack must be > 0');
+  });
 
   final String id;
 
@@ -108,6 +114,24 @@ class InventoryService extends GetxService {
   }) : _catalog = itemCatalog,
        _guard = guard ?? AsyncActionGuard(),
        _key = storageKey ?? StorageKeys.inventoryServiceV1 {
+    // ENH-89: ItemDefinition's own `maxStack` invariant is only an
+    // `assert` (stripped in release builds) — it stays that way
+    // deliberately, since ItemDefinition is `const`-constructible and
+    // used in `const` catalog maps throughout consumers; giving its
+    // constructor a runtime-throwing body would force every one of
+    // those call sites off `const`. This is the real runtime trust
+    // boundary instead — the WHOLE incoming catalog is checked here,
+    // unconditionally, in every build mode, the moment this service is
+    // constructed.
+    for (final entry in itemCatalog.entries) {
+      if (entry.value.maxStack <= 0) {
+        throw ArgumentError.value(
+          entry.value.maxStack,
+          'itemCatalog["${entry.key}"].maxStack',
+          'must be > 0',
+        );
+      }
+    }
     // BUG-40: see EconomyWallet's constructor for why this can't wait for
     // onInit() alone.
     _hydrate();

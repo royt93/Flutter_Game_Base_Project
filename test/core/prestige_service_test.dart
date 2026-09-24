@@ -171,17 +171,35 @@ void main() {
     );
   });
 
-  group('PrestigeService: cấu hình sai (assert)', () {
-    test('metaCurrency trùng 1 phần tử trong softResetCurrencies -> assert', () {
+  group('PrestigeService: cấu hình sai (ENH-89: ArgumentError thật)', () {
+    test(
+      'metaCurrency trùng 1 phần tử trong softResetCurrencies -> '
+      'ArgumentError (không phải AssertionError — không bị strip ở '
+      'release build)',
+      () {
+        final wallet = EconomyWallet(storage: StorageService(null));
+
+        expect(
+          () => PrestigeService(
+            wallet: wallet,
+            metaCurrency: 'relics',
+            softResetCurrencies: const {'coins', 'relics'},
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
+
+    test('metaCurrency KHÔNG trùng softResetCurrencies -> không throw', () {
       final wallet = EconomyWallet(storage: StorageService(null));
 
       expect(
         () => PrestigeService(
           wallet: wallet,
           metaCurrency: 'relics',
-          softResetCurrencies: const {'coins', 'relics'},
+          softResetCurrencies: const {'coins'},
         ),
-        throwsA(isA<AssertionError>()),
+        returnsNormally,
       );
     });
   });
