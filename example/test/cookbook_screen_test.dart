@@ -284,6 +284,27 @@ void main() {
     await _flushToast(tester);
   });
 
+  testWidgets(
+    'comboSyncHapticPattern tile builds + plays a real 5-step pattern '
+    '(ENH-90)',
+    (tester) async {
+      await _boot();
+      await tester.pumpWidget(_wrap(const CookbookScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await _tapAndShowToast(
+        tester,
+        'comboSyncHapticPattern — build + play a 5-step combo-synced '
+        'pattern',
+      );
+
+      expect(find.textContaining('played 5 pulses'), findsOneWidget);
+      expect(find.textContaining('light -> light -> light'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _flushToast(tester);
+    },
+  );
+
   testWidgets('PurchaseSeam tile buys via the registered fake adapter', (
     tester,
   ) async {

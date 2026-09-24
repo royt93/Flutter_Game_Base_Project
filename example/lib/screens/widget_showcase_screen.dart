@@ -16,6 +16,7 @@ import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/player_progression_service.dart';
 import 'package:roy_casual_kit/core/inventory_service.dart';
 import 'package:roy_casual_kit/core/offline_outbox_service.dart';
+import 'package:roy_casual_kit/core/reminder_service.dart';
 import 'package:roy_casual_kit/core/remote_config_service.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/consent_gated_analytics_provider.dart';
@@ -35,6 +36,7 @@ import 'package:roy_casual_kit/core/save_slot_manager.dart';
 import 'package:roy_casual_kit/core/replay_recorder.dart';
 import 'package:roy_casual_kit/core/utils/format.dart';
 import 'package:roy_casual_kit/core/utils/seeded_random.dart';
+import 'package:roy_casual_kit/core/utils/smart_reminder_scheduling.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/share_helper.dart';
 import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
@@ -881,6 +883,42 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   void _claimDailyLogin() => setState(() => _dailyLogin.claimToday());
 
   void _consumeEnergy() => setState(() => _energy.consumeEnergy());
+
+  // ENH-90: rescheduleEnergyReminder/rescheduleStreakReminder (IDEA-62)
+  // had no demo anywhere in example/ — only unit-test coverage (a mocked
+  // platform channel) since they shipped. `.maybe ?? Get.put(...)` — same
+  // lazy self-registration convention as _energy/_dailyLogin above — so
+  // this section works standalone in a widget test too, not just under
+  // main.dart's real bootstrap (which already registers ReminderService
+  // via the `reminders` module).
+  late final ReminderService _reminder =
+      ReminderService.maybe ?? Get.put(ReminderService(), permanent: true);
+  String _energyReminderStatus = 'Chưa kiểm tra.';
+  String _streakReminderStatus = 'Chưa kiểm tra.';
+
+  Future<void> _rescheduleEnergyReminder() async {
+    await rescheduleEnergyReminder(energy: _energy, reminder: _reminder);
+    final delay = energyFullReminderDelay(_energy);
+    if (!mounted) return;
+    setState(() {
+      _energyReminderStatus = delay == null
+          ? 'Đã huỷ lịch nhắc (năng lượng đã đầy hoặc đang vô hạn)'
+          : 'Đã đặt lịch nhắc sau ${delay.inMinutes} phút '
+                '(${delay.inSeconds}s)';
+    });
+  }
+
+  Future<void> _rescheduleStreakReminder() async {
+    await rescheduleStreakReminder(dailyLogin: _dailyLogin, reminder: _reminder);
+    final canClaim = _dailyLogin.canClaimToday();
+    if (!mounted) return;
+    setState(() {
+      _streakReminderStatus = !canClaim
+          ? 'Đã huỷ lịch nhắc (hôm nay đã claim rồi)'
+          : 'Đã đặt lịch nhắc sau '
+                '${streakExpiringReminderDelay(_dailyLogin).inHours} giờ';
+    });
+  }
 
   // IDEA-13: WheelSpinner demo — the wheel never picks its own result, so
   // the demo's own RNG decides which index to spin to.
@@ -2044,6 +2082,35 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   CommonButton(
                                     label: 'Consume 1 energy',
                                     onTap: _consumeEnergy,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _Demo(
+                              label:
+                                  'rescheduleEnergyReminder / '
+                                  'rescheduleStreakReminder (ENH-90)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _energyReminderStatus,
+                                    style: TextStyle(color: NeonTheme.ink),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  CommonButton(
+                                    label: 'Reschedule energy reminder',
+                                    onTap: _rescheduleEnergyReminder,
+                                  ),
+                                  const SizedBox(height: NeonTheme.s16),
+                                  Text(
+                                    _streakReminderStatus,
+                                    style: TextStyle(color: NeonTheme.ink),
+                                  ),
+                                  const SizedBox(height: NeonTheme.s8),
+                                  CommonButton(
+                                    label: 'Reschedule streak reminder',
+                                    onTap: _rescheduleStreakReminder,
                                   ),
                                 ],
                               ),

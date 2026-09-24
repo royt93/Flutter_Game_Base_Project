@@ -38,11 +38,11 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58/FEAT-43/FEAT-52/FEAT-56: mỗi demo section mới đẩy list
-  // dài hơn — tăng chiều cao viewport ảo để mọi widget phía sau vẫn nằm
-  // trong vùng tap được mà không cần scroll (đúng lý do file này dùng
-  // physicalSize cố định).
-  tester.view.physicalSize = const Size(1080, 15000);
+  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58/FEAT-43/FEAT-52/FEAT-56/ENH-90:
+  // mỗi demo section mới đẩy list dài hơn — tăng chiều cao viewport ảo để
+  // mọi widget phía sau vẫn nằm trong vùng tap được mà không cần scroll
+  // (đúng lý do file này dùng physicalSize cố định).
+  tester.view.physicalSize = const Size(1080, 15400);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -2077,6 +2077,81 @@ void main() {
       expect(find.text('Ẩn debug bounds'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+  });
+
+  group('ENH-90: rescheduleEnergyReminder / rescheduleStreakReminder demo', () {
+    testWidgets(
+      'năng lượng chưa đầy -> bấm nút hiện đúng delay tính được, không '
+      'phải "đã huỷ"',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(find.text('Consume 1 energy').last);
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Reschedule energy reminder').first,
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.textContaining('Đã đặt lịch nhắc sau'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'năng lượng đầy sẵn (chưa tiêu gì) -> bấm nút hiện đúng "đã huỷ"',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Reschedule energy reminder').first,
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.textContaining('Đã huỷ lịch nhắc'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'chưa claim hôm nay -> bấm nút streak reminder hiện đúng delay '
+      'tính được',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Reschedule streak reminder').first,
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.textContaining('Đã đặt lịch nhắc sau'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'đã claim hôm nay -> bấm nút streak reminder hiện đúng "đã huỷ"',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        // Claim hôm nay bằng cách tap đúng ngày 1 trong
+        // DailyLoginCalendarWidget — cùng cách test demo widget đó đã dùng.
+        final calendar = find.byType(DailyLoginCalendarWidget);
+        await tester.tap(
+          find.descendant(of: calendar, matching: find.text('1')),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Reschedule streak reminder').first,
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.textContaining('Đã huỷ lịch nhắc'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }
 

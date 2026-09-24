@@ -616,6 +616,22 @@ class _CookbookScreenState extends State<CookbookScreen> {
                           return 'played HapticPattern.combo';
                         },
                       ),
+                      _tile(
+                        // ENH-90: comboSyncHapticPattern (IDEA-67) had no
+                        // demo anywhere — only unit-test coverage since it
+                        // shipped.
+                        'comboSyncHapticPattern — build + play a 5-step '
+                        'combo-synced pattern',
+                        () {
+                          final pattern = comboSyncHapticPattern(
+                            steps: 5,
+                            stepInterval: const Duration(milliseconds: 120),
+                          );
+                          _haptics.play(pattern);
+                          return 'played ${pattern.pulses.length} pulses, '
+                              '${pattern.pulses.map((p) => p.level.name).join(' -> ')}';
+                        },
+                      ),
                     ]),
                   ],
                 ),
