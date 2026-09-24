@@ -89,6 +89,7 @@
     "core/utils/save_migration_registry.dart",
     "core/utils/sdk_result.dart",
     "core/utils/seeded_random.dart",
+    "core/utils/smart_reminder_scheduling.dart",
     "core/utils/theme_contrast_validator.dart",
     "core/utils/throttle.dart",
     "core/utils/trusted_clock.dart",

@@ -126,6 +126,44 @@ void main() {
       expect(args['id'], 0);
     });
 
+    group('IDEA-62: id tuỳ chỉnh — nhiều reminder độc lập', () {
+      test(
+        'scheduleNext(id: 5) dùng đúng id truyền vào, không phải 0 mặc định',
+        () async {
+          final service = ReminderService();
+          await service.scheduleNext(id: 5, title: 'T', body: 'B');
+
+          final args = calls.last.arguments as Map;
+          expect(args['id'], 5);
+        },
+      );
+
+      test('cancel(id: 5) dùng đúng id truyền vào, không phải 0 mặc định', () async {
+        final service = ReminderService();
+        await service.cancel(id: 5);
+
+        final args = calls.last.arguments as Map;
+        expect(args['id'], 5);
+      });
+
+      test(
+        'schedule 2 id khác nhau -> 2 lời gọi zonedSchedule độc lập, '
+        'không cái nào ghi đè cái kia',
+        () async {
+          final service = ReminderService();
+          await service.scheduleNext(id: 1, title: 'A');
+          await service.scheduleNext(id: 2, title: 'B');
+
+          final scheduleCalls = calls
+              .where((c) => c.method == 'zonedSchedule')
+              .toList();
+          expect(scheduleCalls, hasLength(2));
+          expect((scheduleCalls[0].arguments as Map)['id'], 1);
+          expect((scheduleCalls[1].arguments as Map)['id'], 2);
+        },
+      );
+    });
+
     test('2 lệnh gọi đồng thời (trước khi _ensureInit lần đầu hoàn tất) chỉ '
         'init đúng 1 lần', () async {
       final service = ReminderService();

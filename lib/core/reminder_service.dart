@@ -58,15 +58,26 @@ class ReminderService extends GetxService {
     _initialized = true;
   }
 
+  /// [id] (IDEA-62) lets a caller manage more than one independent
+  /// reminder slot — left at its default (`0`), this is the exact same
+  /// single-reminder call every existing call site already makes. A
+  /// second call with a DIFFERENT [id] schedules an entirely separate
+  /// notification rather than replacing the first (the platform plugin
+  /// keys purely on `id`); a second call with the SAME [id] replaces
+  /// whatever that slot previously had scheduled, same as before this
+  /// param existed. See `utils/smart_reminder_scheduling.dart` for a
+  /// worked example (energy-full/streak-expiring reminders, each in
+  /// their own slot).
   Future<void> scheduleNext({
     Duration delay = const Duration(hours: 24),
     String title = 'Roy Project Base Game',
     String body = 'Come back and play!',
+    int id = 0,
   }) async {
     try {
       await _ensureInit();
       await _plugin.zonedSchedule(
-        id: 0,
+        id: id,
         title: title,
         body: body,
         scheduledDate: tz.TZDateTime.now(tz.local).add(delay),
@@ -81,10 +92,11 @@ class ReminderService extends GetxService {
     }
   }
 
-  Future<void> cancel() async {
+  /// [id] — see [scheduleNext]'s own doc for what it lets a caller do.
+  Future<void> cancel({int id = 0}) async {
     try {
       await _ensureInit();
-      await _plugin.cancel(id: 0);
+      await _plugin.cancel(id: id);
     } catch (e) {
       dlog('ReminderService.cancel failed: $e');
     }

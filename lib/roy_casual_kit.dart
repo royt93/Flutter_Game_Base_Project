@@ -85,6 +85,7 @@ export 'core/utils/deprecation_registry.dart';
 export 'core/utils/economy_math.dart';
 export 'core/utils/fnv1a.dart';
 export 'core/utils/seeded_random.dart';
+export 'core/utils/smart_reminder_scheduling.dart';
 export 'core/utils/trusted_clock.dart';
 export 'core/utils/async_action_guard.dart';
 export 'core/utils/save_migration_registry.dart';
