@@ -252,6 +252,25 @@ class RewardTransactionPipeline extends GetxService {
       return SdkSuccess(existing);
     }
 
+    // BUG-71: a pending/partial record's `lines` are what each line index's
+    // derived wallet transaction id (`'$transactionId#$i'`) was already
+    // reserved against — silently swapping in a DIFFERENT `lines` list here
+    // would keep using the OLD lines (see below), quietly discarding
+    // whatever the caller just passed, with no error to signal it. Reject
+    // instead so a caller who genuinely needs different amounts is forced
+    // to either retry via [resumePending] (which always replays the
+    // original `lines`) or pick a new `transactionId`.
+    if (existing != null && !_linesMatch(existing.lines, lines)) {
+      return const SdkFailure(
+        kind: SdkErrorKind.validation,
+        message:
+            'grant() called again for a pending/partial transactionId with '
+            'different lines than the existing record — call '
+            'resumePending() to retry with the original lines, or use a '
+            'new transactionId for a different grant',
+      );
+    }
+
     var record =
         existing ??
         RewardTransactionRecord(
@@ -351,4 +370,14 @@ class RewardTransactionPipeline extends GetxService {
     lines: lines,
     receiptMeta: receiptMeta,
   );
+
+  static bool _linesMatch(List<RewardLine> a, List<RewardLine> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].currency != b[i].currency || a[i].amount != b[i].amount) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
