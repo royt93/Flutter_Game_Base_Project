@@ -19,19 +19,33 @@ class ScreenShakeController extends ChangeNotifier {
   double _intensity = 0;
   double _frequency = 0;
   Duration _decay = Duration.zero;
+  Offset? _direction;
 
   /// Starts (or restarts, discarding any shake already in progress) a
   /// decaying oscillation. [intensity] is the max displacement in logical
   /// pixels, [frequency] in Hz, [decay] how long until it fully settles to
   /// [Offset.zero].
+  ///
+  /// [direction] (IDEA-60) optionally biases the shake toward a collision
+  /// vector — e.g. a Flame collision callback's own separation/normal
+  /// vector, passed straight through as an [Offset] (this widget has zero
+  /// Flame dependency today and stays that way; a `Vector2` from
+  /// `package:flame`/`vector_math` converts trivially via
+  /// `Offset(v.x, v.y)`, no new import needed here). Left `null` (the
+  /// default), the shake keeps its original symmetric elliptical trace —
+  /// see [offsetAt] for exactly how the bias is computed.
   void shake({
     double intensity = 12,
     double frequency = 30,
     Duration decay = const Duration(milliseconds: 400),
+    Offset? direction,
   }) {
     _intensity = intensity;
     _frequency = frequency;
     _decay = decay;
+    _direction = (direction != null && direction.distance > 0)
+        ? direction / direction.distance
+        : null;
     notifyListeners();
   }
 
@@ -40,8 +54,17 @@ class ScreenShakeController extends ChangeNotifier {
   /// again once [elapsed] reaches [_decay] (clamped, not asymptotic) — a
   /// live-driven [ScreenShake] uses this to know when it can stop ticking.
   ///
-  /// dx uses sin, dy uses cos (a different phase) so the shake traces an
-  /// ellipse rather than a perfectly straight diagonal line.
+  /// No [direction] given to [shake] (the default): `primary` uses sin,
+  /// `secondary` uses cos at a different phase, mapped straight onto x/y —
+  /// this traces a symmetric ellipse, not a straight diagonal line, and is
+  /// byte-for-byte the same formula this method always used (IDEA-60 never
+  /// changes this path).
+  ///
+  /// With a [direction]: the SAME `primary` oscillation now runs fully
+  /// ALONG that (unit) vector, and `secondary` runs perpendicular to it —
+  /// scaled down by [_perpendicularFactor] — so the shake's peak
+  /// displacement is visibly biased along the collision direction instead
+  /// of tracing a shape-agnostic ellipse.
   Offset offsetAt(Duration elapsed) {
     if (elapsed <= Duration.zero) elapsed = Duration.zero;
     if (_decay <= Duration.zero || elapsed >= _decay) return Offset.zero;
@@ -53,11 +76,24 @@ class ScreenShakeController extends ChangeNotifier {
     // response — good enough for a juice effect, revisit if a designer
     // wants a different "feel" curve.
     final envelope = math.exp(-4 * t / decaySeconds);
-    final dx = _intensity * envelope * math.sin(2 * math.pi * _frequency * t);
-    final dy =
+    final primary =
+        _intensity * envelope * math.sin(2 * math.pi * _frequency * t);
+    final secondary =
         _intensity * envelope * math.cos(2 * math.pi * _frequency * 1.3 * t);
-    return Offset(dx, dy);
+
+    final dir = _direction;
+    if (dir == null) return Offset(primary, secondary);
+
+    final perpendicular = Offset(-dir.dy, dir.dx);
+    return dir * primary + perpendicular * (secondary * _perpendicularFactor);
   }
+
+  /// How much weaker the perpendicular wobble is relative to the primary,
+  /// directed oscillation — 0 would collapse the shake to a straight line
+  /// (no ellipse "give" at all, too mechanical), 1 would be no bias at all
+  /// (identical peak in every direction, defeating the point). 0.35 keeps
+  /// a visible ellipse while still reading as clearly directional.
+  static const double _perpendicularFactor = 0.35;
 }
 
 /// Wraps [child] in a `Transform.translate` driven by [controller]. Ticks a
