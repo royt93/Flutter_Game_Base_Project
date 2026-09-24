@@ -121,6 +121,57 @@ void main() {
     await _flushToast(tester);
   });
 
+  group('IDEA-66: unified save story (verify HMAC -> migrate -> sync)', () {
+    testWidgets(
+      'chạy đủ 1 luồng liên tục: verify HMAC thật, migrate v1->v2 thật, '
+      'sync + phát hiện đúng xung đột thật qua CloudSaveProvider',
+      (tester) async {
+        await _boot();
+        await tester.pumpWidget(_wrap(const CookbookScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await _tapAndShowToast(
+          tester,
+          'Unified save story: verify HMAC → migrate → sync '
+          '(differentiator demo)',
+        );
+
+        // Xung đột PHẢI được phát hiện thật (không phải giả vờ) — local
+        // migrate ra level=5, cloud bị ghi đè level=99 trước khi sync.
+        expect(find.textContaining('xung đột thật:'), findsOneWidget);
+        expect(find.textContaining('local level=5'), findsOneWidget);
+        expect(find.textContaining('cloud level=99'), findsOneWidget);
+        // Migration thật sự chạy: save cuối phải có field 'gems' (chỉ
+        // được thêm bởi bước migrate v1->v2, không có trong save gốc).
+        expect(find.textContaining('gems'), findsOneWidget);
+        expect(find.textContaining('schemaVersion: 2'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await _flushToast(tester);
+      },
+    );
+
+    testWidgets(
+      'gọi lại lần 2 vẫn hoạt động đúng (không tích luỹ trạng thái sai '
+      'giữa các lần chạy demo)',
+      (tester) async {
+        await _boot();
+        await tester.pumpWidget(_wrap(const CookbookScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        const label =
+            'Unified save story: verify HMAC → migrate → sync '
+            '(differentiator demo)';
+        await _tapAndShowToast(tester, label);
+        await _flushToast(tester);
+        await _tapAndShowToast(tester, label);
+
+        expect(find.textContaining('xung đột thật:'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await _flushToast(tester);
+      },
+    );
+  });
+
   testWidgets('RemoteKillSwitchController tile resolves a real decision', (
     tester,
   ) async {

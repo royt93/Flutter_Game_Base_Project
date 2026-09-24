@@ -222,6 +222,91 @@ class _CookbookScreenState extends State<CookbookScreen> {
                         },
                       ),
                       _tile(
+                        // IDEA-66: ties 4 pieces that each already exist
+                        // independently (save_integrity.dart's HMAC,
+                        // SaveMigrationRegistry's multi-hop migration,
+                        // VersionedJsonStore, CloudSaveProvider's conflict
+                        // resolution from ENH-83) into ONE continuous
+                        // flow, not 4 separate demos — see CLAUDE.md's
+                        // "Unified save security story" note for why this
+                        // combination (not any single piece) is the real
+                        // differentiator.
+                        'Unified save story: verify HMAC → migrate → sync '
+                        '(differentiator demo)',
+                        () async {
+                          const secret = 'cookbook_unified_demo_secret';
+
+                          // 1. An "old" V1 save, as it would arrive from
+                          // disk/cloud — already signed at rest.
+                          final oldSave = <String, Object?>{
+                            'schemaVersion': 1,
+                            'level': 5,
+                          };
+                          final signed = signExport(oldSave, secret);
+
+                          // 2. Load & verify BEFORE trusting any of it —
+                          // throws FormatException on a tampered/corrupt
+                          // blob (not caught here on purpose: a real
+                          // caller should refuse to import, not silently
+                          // continue).
+                          final verified = verifyAndStrip(signed, secret);
+
+                          // 3. Bring the verified-but-stale save up to the
+                          // current schema.
+                          final registry = SaveMigrationRegistry(
+                            currentVersion: 2,
+                            steps: [
+                              SaveMigrationStep(
+                                fromVersion: 1,
+                                toVersion: 2,
+                                migrate: (j) => {
+                                  ...j,
+                                  'schemaVersion': 2,
+                                  'gems': 0,
+                                },
+                              ),
+                            ],
+                          );
+                          final migrated = registry.migrate(
+                            verified['schemaVersion']! as int,
+                            verified,
+                          );
+
+                          // 4. Persist it, then sync — simulating the
+                          // cloud already holding a genuinely different
+                          // value, so this demo actually exercises
+                          // conflict resolution, not just a clean upload.
+                          final store = VersionedJsonStore<Map<String, Object?>>(
+                            storage: StorageService.to,
+                            key: 'cookbook_unified_save_demo',
+                            schemaVersion: 2,
+                            toJson: (m) => m,
+                            fromJson: (j) => j,
+                            migrate: (fromVersion, json) =>
+                                registry.migrate(fromVersion, json),
+                          );
+                          await store.save(migrated);
+
+                          final cloudProvider = Get.find<CloudSaveProvider>();
+                          await cloudProvider.upload({...migrated, 'level': 99});
+
+                          var conflictOutcome = 'không có xung đột';
+                          await store.syncWith(
+                            cloudProvider,
+                            onConflict: (conflict) {
+                              conflictOutcome =
+                                  'xung đột thật: local level='
+                                  '${conflict.local.value['level']}, cloud '
+                                  'level=${conflict.cloud.value['level']} '
+                                  '-> chọn cloud';
+                              return VersionedSyncConflictResolution.preferCloud();
+                            },
+                          );
+
+                          return '$conflictOutcome | final save: ${store.load()}';
+                        },
+                      ),
+                      _tile(
                         'DisasterRecoverySaveExport — build + sign + preview',
                         () async {
                           final SaveSlotManager slots =

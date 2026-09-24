@@ -202,6 +202,22 @@ where the bad value actually originates, not by default. Not every existing
 governs new code and any constructor touched going forward, not a mandate
 to retrofit the whole file tree in one pass.
 
+### Unified save security story (IDEA-66)
+`save_integrity.dart` (HMAC sign/verify), `utils/save_migration_registry.dart`
+(multi-hop schema migration), `versioned_json_store.dart` (the store
+itself, plus its `syncWith(..., onConflict: ...)` conflict resolution from
+ENH-83), and `cloud_save_provider.dart` (the cloud seam) each do exactly
+one job and are individually unremarkable — most casual-game starter kits
+have at most one of these. The differentiator isn't any single piece,
+it's that they compose into one real flow: **load a save → verify its
+HMAC before trusting it → migrate it through N schema versions →
+persist it in a `VersionedJsonStore` → sync to the cloud, resolving a
+genuine conflict if the cloud copy disagrees**. `example/lib/screens/cookbook_screen.dart`'s
+"Unified save story" tile is the reference implementation of that full
+chain (with a real, deliberately-provoked conflict, not a happy-path-only
+demo) — copy its shape rather than wiring the 4 pieces from scratch when
+a consumer app needs this.
+
 ### Public API compatibility gate
 `tool/api_compatibility.dart check` (run in CI before analyze/test) diffs `lib/roy_casual_kit.dart`'s exports against the committed `tool/api_snapshot.json`. Removing or renaming a public export fails CI; regenerate the snapshot with `dart run tool/api_compatibility.dart snapshot` only when the break is intentional.
 
