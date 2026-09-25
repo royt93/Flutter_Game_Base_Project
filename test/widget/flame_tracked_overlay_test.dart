@@ -273,5 +273,43 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets(
+      'D1: FlameTrackedOverlay bọc child trong RepaintBoundary để cô lập render chuyển động',
+      (tester) async {
+        final game = RoyGame();
+        final gameKey = GlobalKey();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: GameWidget(key: gameKey, game: game),
+                  ),
+                  FlameTrackedOverlay(
+                    game: game,
+                    gameWidgetKey: gameKey,
+                    worldPositionOf: () => game.circle.position,
+                    child: const Text('tracked'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await game.toBeLoaded();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 32));
+
+        final boundary = find.descendant(
+          of: find.byType(FlameTrackedOverlay),
+          matching: find.byType(RepaintBoundary),
+        );
+        expect(boundary, findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

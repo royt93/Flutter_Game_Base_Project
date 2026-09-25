@@ -227,6 +227,9 @@ class _ConfettiPainter extends CustomPainter {
   final List<ConfettiParticle> particles;
   final double elapsedSeconds;
   final double totalSeconds;
+  // D2: Reusable paint instance avoids allocating a new Paint() object
+  // for every particle on every frame (thousands of allocations per burst).
+  final Paint _paint = Paint();
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -239,7 +242,7 @@ class _ConfettiPainter extends CustomPainter {
       canvas.save();
       canvas.translate(pos.dx, pos.dy);
       canvas.rotate(confettiRotationAt(p, elapsedSeconds));
-      final paint = Paint()..color = p.color.withValues(alpha: opacity);
+      _paint.color = p.color.withValues(alpha: opacity);
       if (p.shape == ConfettiShape.circle) {
         canvas.drawOval(
           Rect.fromCenter(
@@ -247,7 +250,7 @@ class _ConfettiPainter extends CustomPainter {
             width: p.size,
             height: p.size * 0.6,
           ),
-          paint,
+          _paint,
         );
       } else {
         canvas.drawRRect(
@@ -259,7 +262,7 @@ class _ConfettiPainter extends CustomPainter {
             ),
             const Radius.circular(2),
           ),
-          paint,
+          _paint,
         );
       }
       canvas.restore();

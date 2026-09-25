@@ -151,7 +151,9 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
           child: Stack(
             children: [
               Positioned.fill(
-                child: GameWidget(key: _gameWidgetKey, game: _game),
+                child: RepaintBoundary(
+                  child: GameWidget(key: _gameWidgetKey, game: _game),
+                ),
               ),
               FlameTrackedOverlay(
                 game: _game,
@@ -176,7 +178,9 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                 top: 0,
                 left: 0,
                 right: 0,
-                child: NeonAppBar(title: 'game_demo'.tr, onBack: Get.back),
+                child: RepaintBoundary(
+                  child: NeonAppBar(title: 'game_demo'.tr, onBack: Get.back),
+                ),
               ),
               // FEAT-88: live proof the GameEventBus subscriber wiring
               // actually reached both EconomyWallet AND AchievementService
@@ -184,53 +188,55 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
               Positioned(
                 top: kToolbarHeight + NeonTheme.s16,
                 left: NeonTheme.s16,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: NeonTheme.card,
-                    borderRadius: BorderRadius.circular(NeonTheme.s16),
-                    border: Border.all(
-                      color: _achievements.isCompleted(_tapAchievementId)
-                          ? NeonTheme.gold
-                          : NeonTheme.cyan.withValues(alpha: 0.6),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      ...NeonTheme.glow(
-                        _achievements.isCompleted(_tapAchievementId)
+                child: RepaintBoundary(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: NeonTheme.card,
+                      borderRadius: BorderRadius.circular(NeonTheme.s16),
+                      border: Border.all(
+                        color: _achievements.isCompleted(_tapAchievementId)
                             ? NeonTheme.gold
-                            : NeonTheme.cyan,
-                        blur: 8,
+                            : NeonTheme.cyan.withValues(alpha: 0.6),
+                        width: 2,
                       ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: NeonTheme.s16,
-                      vertical: NeonTheme.s8,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
+                      boxShadow: [
+                        ...NeonTheme.glow(
                           _achievements.isCompleted(_tapAchievementId)
-                              ? Icons.stars_rounded
-                              : Icons.diamond_outlined,
-                          size: 18,
-                          color: _achievements.isCompleted(_tapAchievementId)
                               ? NeonTheme.gold
                               : NeonTheme.cyan,
-                        ),
-                        const SizedBox(width: NeonTheme.s8),
-                        Text(
-                          'gems: ${_wallet.balanceOf('gems')} | '
-                          'tap: ${_achievements.progressOf(_tapAchievementId)}'
-                          '/$_tapAchievementThreshold',
-                          style: TextStyle(
-                            color: NeonTheme.ink,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          blur: 8,
                         ),
                       ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: NeonTheme.s16,
+                        vertical: NeonTheme.s8,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _achievements.isCompleted(_tapAchievementId)
+                                ? Icons.stars_rounded
+                                : Icons.diamond_outlined,
+                            size: 18,
+                            color: _achievements.isCompleted(_tapAchievementId)
+                                ? NeonTheme.gold
+                                : NeonTheme.cyan,
+                          ),
+                          const SizedBox(width: NeonTheme.s8),
+                          Text(
+                            'gems: ${_wallet.balanceOf('gems')} | '
+                            'tap: ${_achievements.progressOf(_tapAchievementId)}'
+                            '/$_tapAchievementThreshold',
+                            style: TextStyle(
+                              color: NeonTheme.ink,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -238,32 +244,34 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
               Positioned(
                 right: NeonTheme.s16,
                 bottom: NeonTheme.s16,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    FloatingActionButton(
-                      heroTag: 'pause',
-                      onPressed: () {
-                        fireHaptic(HapticLevel.medium);
-                        _session.pause(GamePauseReason.user);
-                      },
-                      backgroundColor: NeonTheme.cyan,
-                      child: const Icon(Icons.pause, color: Colors.white),
-                    ),
-                    const SizedBox(height: NeonTheme.s16),
-                    FloatingActionButton(
-                      heroTag: 'info',
-                      onPressed: () {
-                        fireHaptic(HapticLevel.medium);
-                        setState(() => _showInfo = true);
-                      },
-                      backgroundColor: NeonTheme.purple,
-                      child: const Icon(
-                        Icons.info_outline,
-                        color: Colors.white,
+                child: RepaintBoundary(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FloatingActionButton(
+                        heroTag: 'pause',
+                        onPressed: () {
+                          fireHaptic(HapticLevel.medium);
+                          _session.pause(GamePauseReason.user);
+                        },
+                        backgroundColor: NeonTheme.cyan,
+                        child: const Icon(Icons.pause, color: Colors.white),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: NeonTheme.s16),
+                      FloatingActionButton(
+                        heroTag: 'info',
+                        onPressed: () {
+                          fireHaptic(HapticLevel.medium);
+                          setState(() => _showInfo = true);
+                        },
+                        backgroundColor: NeonTheme.purple,
+                        child: const Icon(
+                          Icons.info_outline,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               // Nổ pháo hoa giấy và hiện banner khi hoàn thành thành tựu

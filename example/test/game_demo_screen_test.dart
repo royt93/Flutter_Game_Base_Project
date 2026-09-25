@@ -11,6 +11,7 @@ import 'package:roy_casual_kit/presentation/game/roy_game.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/confetti_overlay.dart';
 import 'package:roy_casual_kit/presentation/widgets/flame_tracked_overlay.dart';
+import 'package:roy_casual_kit/presentation/widgets/neon_app_bar.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -272,6 +273,94 @@ void main() {
 
         await tester.pumpWidget(_wrap(const GameDemoScreen()));
         await tester.pump(const Duration(milliseconds: 100));
+
+        expect(_button('Resume'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('D1: Render Pipeline & Repaint Isolation', () {
+    testWidgets(
+      'các tầng GameWidget, NeonAppBar, HUD Badge và FAB đều có RepaintBoundary riêng',
+      (tester) async {
+        await tester.pumpWidget(_wrap(const GameDemoScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // GameWidget bọc trong RepaintBoundary
+        expect(
+          find.descendant(
+            of: find.byType(RepaintBoundary),
+            matching: find.byType(GameWidget<RoyGame>),
+          ),
+          findsOneWidget,
+        );
+
+        // NeonAppBar bọc trong RepaintBoundary
+        expect(
+          find.descendant(
+            of: find.byType(RepaintBoundary),
+            matching: find.byType(NeonAppBar),
+          ),
+          findsOneWidget,
+        );
+
+        // Ít nhất 4 RepaintBoundary độc lập trên màn hình chính
+        final boundaries = find.byType(RepaintBoundary);
+        expect(boundaries, findsAtLeastNWidgets(4));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('D4 Integration Flow: Full Gameplay, Burst & Memory Lifecycle', () {
+    testWidgets(
+      'Integration test: 10 taps -> unlock achievement + Confetti burst -> '
+      'background dọn dẹp cache + pause -> foreground resume mượt mà',
+      (tester) async {
+        var memoryTrimCount = 0;
+        final lifecycle = RoyLifecycleCoordinator(
+          trimMemoryOnBackground: true,
+          onTrimMemory: () => memoryTrimCount++,
+        );
+        Get.put(lifecycle, permanent: true);
+
+        await tester.pumpWidget(_wrap(const GameDemoScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
+
+        // Ban đầu chưa có ConfettiOverlay
+        expect(find.byType(ConfettiOverlay), findsNothing);
+        expect(find.textContaining('gems: 0'), findsOneWidget);
+
+        // 1. Gameplay tap burst 10 lần
+        for (var i = 0; i < 10; i++) {
+          await tester.tapAt(
+            tester.getCenter(find.byType(GameWidget<RoyGame>)),
+          );
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Confetti xuất hiện và thưởng điểm đúng
+        expect(find.byType(ConfettiOverlay), findsOneWidget);
+        expect(find.textContaining('gems: 20'), findsOneWidget);
+        expect(find.textContaining('tap: 10/10'), findsOneWidget);
+
+        // 2. Chuyển sang background: kích hoạt memory trim và PauseOverlay
+        lifecycle.didChangeAppLifecycleState(AppLifecycleState.paused);
+        for (var i = 0; i < 8; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(memoryTrimCount, 1, reason: 'Bộ nhớ cache phải được dọn khi app background');
+        expect(_button('Resume'), findsWidgets);
+
+        // 3. Foreground trở lại: tự resume và tiếp tục vẽ ổn định
+        lifecycle.didChangeAppLifecycleState(AppLifecycleState.resumed);
+        for (var i = 0; i < 8; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
 
         expect(_button('Resume'), findsNothing);
         expect(tester.takeException(), isNull);

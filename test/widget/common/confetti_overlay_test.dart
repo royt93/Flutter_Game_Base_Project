@@ -179,5 +179,56 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets(
+      'D1: ConfettiOverlay bọc CustomPaint trong RepaintBoundary để cô lập render',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: ConfettiOverlay(
+                particleCount: 15,
+                duration: Duration(seconds: 1),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final repaintBoundaries = find.descendant(
+          of: find.byType(ConfettiOverlay),
+          matching: find.byType(RepaintBoundary),
+        );
+        expect(repaintBoundaries, findsOneWidget);
+
+        final customPaint = find.descendant(
+          of: repaintBoundaries,
+          matching: find.byType(CustomPaint),
+        );
+        expect(customPaint, findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'D2: ConfettiOverlay render qua nhiều frames không crash, paint tái sử dụng bền vững',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: ConfettiOverlay(
+                particleCount: 20,
+                duration: Duration(milliseconds: 300),
+              ),
+            ),
+          ),
+        );
+
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(tester.takeException(), isNull);
+        }
+      },
+    );
   });
 }

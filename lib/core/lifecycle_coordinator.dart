@@ -21,8 +21,15 @@ class RoyLifecycleHookFailure {
 
 /// Ordered, isolated lifecycle dispatcher shared by SDK modules and consumers.
 class RoyLifecycleCoordinator extends GetxService with WidgetsBindingObserver {
-  RoyLifecycleCoordinator({this.hookTimeout = const Duration(seconds: 2)});
+  RoyLifecycleCoordinator({
+    this.hookTimeout = const Duration(seconds: 2),
+    this.trimMemoryOnBackground = false,
+    void Function()? onTrimMemory,
+  }) : _onTrimMemory = onTrimMemory;
+
   final Duration hookTimeout;
+  final bool trimMemoryOnBackground;
+  final void Function()? _onTrimMemory;
   final state = RoyLifecycleState.foreground.obs;
   final failures = <RoyLifecycleHookFailure>[].obs;
   final _hooks = <({String name, RoyLifecycleHook callback})>[];
@@ -77,6 +84,19 @@ class RoyLifecycleCoordinator extends GetxService with WidgetsBindingObserver {
         await StorageService.maybe?.flush();
       } catch (error) {
         failures.add(RoyLifecycleHookFailure('storage.flush', error));
+      }
+      if (trimMemoryOnBackground) {
+        try {
+          if (_onTrimMemory != null) {
+            _onTrimMemory();
+          } else {
+            PaintingBinding.instance.imageCache.clear();
+            PaintingBinding.instance.imageCache.clearLiveImages();
+          }
+        } catch (error) {
+          failures.add(RoyLifecycleHookFailure('memory.trim', error));
+          dlog('memory trim failed: $error');
+        }
       }
     } else {
       AudioManager.maybe?.resumeBgm();

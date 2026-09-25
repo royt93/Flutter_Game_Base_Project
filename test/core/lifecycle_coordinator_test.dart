@@ -66,4 +66,47 @@ void main() {
     coordinator.didChangeAppLifecycleState(AppLifecycleState.hidden);
     expect(coordinator.state.value, RoyLifecycleState.background);
   });
+
+  group('D3: trimMemoryOnBackground', () {
+    test('onTrimMemory được gọi khi app chuyển sang background', () async {
+      var trimmed = false;
+      final coordinator = RoyLifecycleCoordinator(
+        trimMemoryOnBackground: true,
+        onTrimMemory: () => trimmed = true,
+      );
+      Get.put(coordinator);
+
+      coordinator.didChangeAppLifecycleState(AppLifecycleState.paused);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(trimmed, isTrue);
+    });
+
+    test('onTrimMemory không được gọi nếu trimMemoryOnBackground = false', () async {
+      var trimmed = false;
+      final coordinator = RoyLifecycleCoordinator(
+        trimMemoryOnBackground: false,
+        onTrimMemory: () => trimmed = true,
+      );
+      Get.put(coordinator);
+
+      coordinator.didChangeAppLifecycleState(AppLifecycleState.paused);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(trimmed, isFalse);
+    });
+
+    test('onTrimMemory throw không làm vỡ lifecycle dispatch', () async {
+      final coordinator = RoyLifecycleCoordinator(
+        trimMemoryOnBackground: true,
+        onTrimMemory: () => throw StateError('oom-clean-fail'),
+      );
+      Get.put(coordinator);
+
+      coordinator.didChangeAppLifecycleState(AppLifecycleState.paused);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(coordinator.failures.map((f) => f.name), contains('memory.trim'));
+    });
+  });
 }

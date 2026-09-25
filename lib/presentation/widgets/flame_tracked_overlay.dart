@@ -176,9 +176,11 @@ class _FlameTrackedOverlayState extends State<FlameTrackedOverlay>
           if (offset == null) return const SizedBox.shrink();
           return Transform.translate(offset: offset, child: child);
         },
-        child: FractionalTranslation(
-          translation: Offset(-(a.x + 1) / 2, -(a.y + 1) / 2),
-          child: widget.child,
+        child: RepaintBoundary(
+          child: FractionalTranslation(
+            translation: Offset(-(a.x + 1) / 2, -(a.y + 1) / 2),
+            child: widget.child,
+          ),
         ),
       ),
     );
