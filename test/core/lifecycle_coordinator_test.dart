@@ -96,6 +96,23 @@ void main() {
       expect(trimmed, isFalse);
     });
 
+    testWidgets('không truyền onTrimMemory thì clear Flutter image cache mặc định', (
+      tester,
+    ) async {
+      final imageCache = PaintingBinding.instance.imageCache;
+      imageCache.maximumSize = 10;
+      imageCache.maximumSizeBytes = 1024 * 1024;
+      final coordinator = RoyLifecycleCoordinator(trimMemoryOnBackground: true);
+      Get.put(coordinator);
+
+      coordinator.didChangeAppLifecycleState(AppLifecycleState.paused);
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(imageCache.currentSize, 0);
+      expect(imageCache.liveImageCount, 0);
+      expect(coordinator.failures, isEmpty);
+    });
+
     test('onTrimMemory throw không làm vỡ lifecycle dispatch', () async {
       final coordinator = RoyLifecycleCoordinator(
         trimMemoryOnBackground: true,
