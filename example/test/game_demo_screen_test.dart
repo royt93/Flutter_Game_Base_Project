@@ -9,6 +9,7 @@ import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/game/roy_game.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/confetti_overlay.dart';
 import 'package:roy_casual_kit/presentation/widgets/flame_tracked_overlay.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -181,6 +182,34 @@ void main() {
 
         expect(find.textContaining('gems: 3'), findsOneWidget);
         expect(find.textContaining('tap: 3/10'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'tap đủ 10 lần -> hoàn thành achievement -> nổ ConfettiOverlay, thưởng '
+      'thêm 10 gems bonus và đổi icon sao',
+      (tester) async {
+        await tester.pumpWidget(_wrap(const GameDemoScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
+
+        expect(find.byType(ConfettiOverlay), findsNothing);
+        expect(find.byIcon(Icons.diamond_outlined), findsOneWidget);
+
+        for (var i = 0; i < 10; i++) {
+          await tester.tapAt(
+            tester.getCenter(find.byType(GameWidget<RoyGame>)),
+          );
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byType(ConfettiOverlay), findsOneWidget);
+        expect(find.byIcon(Icons.stars_rounded), findsOneWidget);
+        expect(find.textContaining('gems: 20'), findsOneWidget);
+        expect(find.textContaining('tap: 10/10'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

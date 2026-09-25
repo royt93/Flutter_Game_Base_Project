@@ -59,6 +59,10 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
   late final EconomyWallet _wallet;
   late final AchievementService _achievements;
   int _tapCount = 0;
+  int _confettiBurstKey = 0;
+  bool _showConfetti = false;
+  bool _showAchievementBanner = false;
+  StreamSubscription<String>? _unlockSub;
 
   static const _tapAchievementId = 'game_demo_circle_tap_master';
   static const _tapAchievementThreshold = 10;
@@ -73,6 +77,22 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
         AchievementService.maybe ??
         Get.put(AchievementService(), permanent: true);
     _achievements.register(_tapAchievementId, _tapAchievementThreshold);
+
+    _unlockSub = _achievements.onUnlock.listen((id) async {
+      if (id == _tapAchievementId) {
+        fireHaptic(HapticLevel.heavy);
+        _confettiBurstKey++;
+        _showConfetti = true;
+        _showAchievementBanner = true;
+        await _wallet.earn(
+          currency: 'gems',
+          amount: 10,
+          transactionId: 'bonus_tap_master',
+        );
+        if (mounted) setState(() {});
+      }
+    });
+
     // `earn()` is async (writes to real storage — no guaranteed-synchronous
     // completion on a real device, unlike the fast microtask-only path a
     // mocked SharedPreferences test can hit). Awaiting it before the
@@ -81,6 +101,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     // rebuild the badge with the STALE gem balance on a real device.
     _eventBus.subscribe<CircleTappedEvent>((_) async {
       _tapCount++;
+      fireHaptic(HapticLevel.light);
       await _wallet.earn(
         currency: 'gems',
         amount: 1,
@@ -106,6 +127,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     // screen would just silently replace the registry entry each time
     // rather than leaking, but leaving a disposed controller findable via
     // `Get.find` in the meantime is its own footgun.
+    unawaited(_unlockSub?.cancel());
     Get.delete<GameSessionController>(force: true);
     unawaited(_eventBus.dispose());
     super.dispose();
@@ -166,17 +188,49 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                   decoration: BoxDecoration(
                     color: NeonTheme.card,
                     borderRadius: BorderRadius.circular(NeonTheme.s16),
+                    border: Border.all(
+                      color: _achievements.isCompleted(_tapAchievementId)
+                          ? NeonTheme.gold
+                          : NeonTheme.cyan.withValues(alpha: 0.6),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      ...NeonTheme.glow(
+                        _achievements.isCompleted(_tapAchievementId)
+                            ? NeonTheme.gold
+                            : NeonTheme.cyan,
+                        blur: 8,
+                      ),
+                    ],
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: NeonTheme.s16,
                       vertical: NeonTheme.s8,
                     ),
-                    child: Text(
-                      'gems: ${_wallet.balanceOf('gems')} | '
-                      'tap: ${_achievements.progressOf(_tapAchievementId)}'
-                      '/$_tapAchievementThreshold',
-                      style: TextStyle(color: NeonTheme.ink),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _achievements.isCompleted(_tapAchievementId)
+                              ? Icons.stars_rounded
+                              : Icons.diamond_outlined,
+                          size: 18,
+                          color: _achievements.isCompleted(_tapAchievementId)
+                              ? NeonTheme.gold
+                              : NeonTheme.cyan,
+                        ),
+                        const SizedBox(width: NeonTheme.s8),
+                        Text(
+                          'gems: ${_wallet.balanceOf('gems')} | '
+                          'tap: ${_achievements.progressOf(_tapAchievementId)}'
+                          '/$_tapAchievementThreshold',
+                          style: TextStyle(
+                            color: NeonTheme.ink,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -189,14 +243,20 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                   children: [
                     FloatingActionButton(
                       heroTag: 'pause',
-                      onPressed: () => _session.pause(GamePauseReason.user),
+                      onPressed: () {
+                        fireHaptic(HapticLevel.medium);
+                        _session.pause(GamePauseReason.user);
+                      },
                       backgroundColor: NeonTheme.cyan,
                       child: const Icon(Icons.pause, color: Colors.white),
                     ),
                     const SizedBox(height: NeonTheme.s16),
                     FloatingActionButton(
                       heroTag: 'info',
-                      onPressed: () => setState(() => _showInfo = true),
+                      onPressed: () {
+                        fireHaptic(HapticLevel.medium);
+                        setState(() => _showInfo = true);
+                      },
                       backgroundColor: NeonTheme.purple,
                       child: const Icon(
                         Icons.info_outline,
@@ -206,6 +266,36 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                   ],
                 ),
               ),
+              // Nổ pháo hoa giấy và hiện banner khi hoàn thành thành tựu
+              if (_showConfetti)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: ConfettiOverlay(
+                      key: ValueKey(_confettiBurstKey),
+                      particleCount: 75,
+                      duration: const Duration(milliseconds: 2400),
+                      onFinished: () {
+                        if (mounted) {
+                          setState(() {
+                            _showConfetti = false;
+                            _showAchievementBanner = false;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              if (_showAchievementBanner)
+                Positioned(
+                  top: kToolbarHeight + 70,
+                  left: NeonTheme.s24,
+                  right: NeonTheme.s24,
+                  child: const ToastBanner(
+                    message:
+                        '🎉 Achievement Unlocked: Circle Tap Master! +10 Gems',
+                    color: null,
+                  ),
+                ),
               // ENH-82: `showForSystemPause: true` so this demo actually
               // shows the pause panel when the OS-background pause kicks
               // in (via `_session`'s lifecycle hook above), not just for
