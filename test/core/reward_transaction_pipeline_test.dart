@@ -418,6 +418,25 @@ void main() {
     expect(RewardTransactionPipeline.maybe, isNull);
   });
 
+  test(
+    'BUG-81: createdAtMs dùng nowMs seam, không hard-code DateTime.now()',
+    () async {
+      const fakeNow = 9_000_000_000_000;
+      final p = RewardTransactionPipeline(
+        wallet: wallet,
+        nowMs: () => fakeNow,
+      )..onInit();
+
+      await p.grant(
+        source: RewardSource.ad,
+        transactionId: 'ts_test',
+        lines: const [RewardLine(currency: 'coin', amount: 1)],
+      );
+
+      expect(p.auditTrail.single.createdAtMs, fakeNow);
+    },
+  );
+
   group('BUG-40: hydrate ngay trong constructor, không phụ thuộc onInit()', () {
     test(
       'khởi tạo trực tiếp (không gọi onInit()) vẫn đọc đúng auditTrail cũ',

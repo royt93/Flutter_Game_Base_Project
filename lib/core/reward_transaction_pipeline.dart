@@ -137,8 +137,12 @@ class RewardTransactionPipeline extends GetxService {
     AsyncActionGuard? guard,
     String? storageKey,
     this.capacity = 200,
+    // BUG-81: injectable seam so tests can fake createdAtMs without
+    // depending on real wall-clock; defaults to DateTime.now() in prod.
+    int Function()? nowMs,
   }) : _guard = guard ?? AsyncActionGuard(),
-       _key = storageKey ?? StorageKeys.rewardTransactionPipelineV1 {
+       _key = storageKey ?? StorageKeys.rewardTransactionPipelineV1,
+       _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch) {
     if (capacity <= 0) {
       throw ArgumentError.value(capacity, 'capacity', 'must be > 0');
     }
@@ -158,6 +162,7 @@ class RewardTransactionPipeline extends GetxService {
   final int capacity;
   final AsyncActionGuard _guard;
   final String _key;
+  final int Function() _nowMs;
   final _records = <RewardTransactionRecord>[];
 
   /// Fires with the completed record right after each successful commit —
@@ -281,7 +286,7 @@ class RewardTransactionPipeline extends GetxService {
           source: source,
           lines: lines,
           status: RewardTransactionStatus.pending,
-          createdAtMs: DateTime.now().millisecondsSinceEpoch,
+          createdAtMs: _nowMs(),
           receiptMeta: receiptMeta,
         );
     await _upsert(record);
