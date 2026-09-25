@@ -6,6 +6,7 @@
 - Enhanced `ConsentBanner` with dynamic widget lifecycle awareness (`didUpdateWidget`), supporting seamless policy version bumps and flow migrations on persistent state without dialog stacking.
 - Enforced strict teardown lifecycle contract in `CheckpointCoordinator.onClose()`: immediately completes all pending debounced checkpoint completers with typed failure, preventing permanently leaked Futures.
 - Guarded `ConnectivityCoordinator` asynchronous continuations against post-close invocations, eliminating `Bad state: Cannot add new events after calling close` and preventing dangling probe loops or rogue queue drains.
+- Injected `nowMs` testable clock seam into `RewardTransactionPipeline.grant()` (BUG-81): replaces hard-coded `DateTime.now()` with an injectable `int Function()? nowMs` param, aligning with the SDK-wide timestamp seam convention.
 - Modernized API compatibility tool (`tool/api_compatibility.dart`): added full support for modern Dart 3 modifiers (`sealed`, `final`, `base`, `interface`), typed top-level functions, getters/setters, eliminated 44 private symbol leaks, and corrected semver major release gating.
 
 ## 0.2.4
