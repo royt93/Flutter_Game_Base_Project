@@ -253,5 +253,148 @@ void main() {
       },
       timeout: const Timeout(Duration(seconds: 30)),
     );
+
+    test(
+      'BUG-80: snapshot thu thập đầy đủ sealed/final class, typed functions, và loại bỏ private symbols',
+      () async {
+        await writeEntrypoint(['types.dart']);
+        await writeFile('lib/types.dart', '''
+sealed class SdkResult<T> {}
+final class SdkSuccess<T> extends SdkResult<T> {}
+base class BaseService {}
+interface class ServiceInterface {}
+class _PrivateClass {}
+enum PublicKind { a, b }
+enum _PrivateKind { x }
+typedef PublicHandler = void Function();
+typedef _PrivateHandler = void Function();
+extension PublicExtension on String {}
+extension _PrivateExtension on String {}
+const int kPublicConst = 42;
+const _kPrivateConst = 99;
+final String publicFinal = 'hello';
+final _privateFinal = 'bye';
+int compareAppVersions(String a, String b) { return 0; }
+int _comparePrivate(String a, String b) => 0;
+bool isSomethingValid(String input) => input.isNotEmpty;
+''');
+        Directory('${tempDir.path}/tool').createSync(recursive: true);
+        await writePubspec('1.0.0');
+
+        final result = await _runCheck([
+          'snapshot',
+          '--root=${tempDir.path}',
+        ]);
+
+        expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+        final written = jsonDecode(
+          File('${tempDir.path}/tool/api_snapshot.json').readAsStringSync(),
+        ) as Map<String, Object?>;
+
+        final symbols = (written['symbols'] as List).cast<String>();
+
+        // Phải có version
+        expect(written['version'], '1.0.0');
+
+        // Phải có sealed/final/base/interface class
+        expect(symbols, contains('types.dart:SdkResult'));
+        expect(symbols, contains('types.dart:SdkSuccess'));
+        expect(symbols, contains('types.dart:BaseService'));
+        expect(symbols, contains('types.dart:ServiceInterface'));
+        expect(symbols, contains('types.dart:PublicKind'));
+        expect(symbols, contains('types.dart:PublicHandler'));
+        expect(symbols, contains('types.dart:PublicExtension'));
+        expect(symbols, contains('types.dart:kPublicConst'));
+        expect(symbols, contains('types.dart:publicFinal'));
+
+        // Phải có typed functions (block & arrow)
+        expect(symbols, contains('types.dart:compareAppVersions'));
+        expect(symbols, contains('types.dart:isSomethingValid'));
+
+        // KHÔNG ĐƯỢC có bất kỳ symbol private nào (bắt đầu bằng _)
+        for (final sym in symbols) {
+          final name = sym.split(':').last;
+          expect(name.startsWith('_'), isFalse, reason: 'Found private symbol: $sym');
+        }
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      'BUG-80: removal ở stable patch/minor (1.0.0 -> 1.0.1) KHÔNG có BREAKING bị từ chối',
+      () async {
+        await writeEntrypoint(['foo.dart']);
+        await writeFile('lib/foo.dart', 'class Foo {}');
+        await writeSnapshot({
+          'version': '1.0.0',
+          'entrypoint': 'lib/roy_casual_kit.dart',
+          'exports': ['foo.dart', 'bar.dart'],
+          'symbols': ['foo.dart:Foo', 'bar.dart:Bar'],
+        });
+        // 1.0.1 là patch bump của 1.0.0 (không phải major)
+        await writePubspec('1.0.1');
+        await writeChangelog('1.0.1', '- Removed Bar silently.');
+
+        final result = await _runCheck(['check', '--root=${tempDir.path}']);
+
+        expect(result.exitCode, isNot(0));
+        expect(
+          result.stderr as String,
+          contains('Breaking API removals require a major version'),
+        );
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      'BUG-80: removal ở major release (1.0.0 -> 2.0.0) so với baseline version được chấp nhận',
+      () async {
+        await writeEntrypoint(['foo.dart']);
+        await writeFile('lib/foo.dart', 'class Foo {}');
+        await writeSnapshot({
+          'version': '1.0.0',
+          'entrypoint': 'lib/roy_casual_kit.dart',
+          'exports': ['foo.dart', 'bar.dart'],
+          'symbols': ['foo.dart:Foo', 'bar.dart:Bar'],
+        });
+        // 2.0.0 là major bump so với 1.0.0
+        await writePubspec('2.0.0');
+        await writeChangelog('2.0.0', '- Removed Bar as planned.');
+
+        final result = await _runCheck(['check', '--root=${tempDir.path}']);
+
+        expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+        expect(
+          result.stdout as String,
+          contains('API compatibility: breaking'),
+        );
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      'BUG-80: snapshot cũ không có field version (backward-compatible) -> removal ở patch/minor không BREAKING vẫn bị từ chối',
+      () async {
+        await writeEntrypoint(['foo.dart']);
+        await writeFile('lib/foo.dart', 'class Foo {}');
+        // Snapshot cũ không có field 'version'
+        await writeSnapshot({
+          'entrypoint': 'lib/roy_casual_kit.dart',
+          'exports': ['foo.dart', 'bar.dart'],
+          'symbols': ['foo.dart:Foo', 'bar.dart:Bar'],
+        });
+        await writePubspec('1.0.1');
+        await writeChangelog('1.0.1', '- Removed Bar.');
+
+        final result = await _runCheck(['check', '--root=${tempDir.path}']);
+
+        expect(result.exitCode, isNot(0));
+        expect(
+          result.stderr as String,
+          contains('Breaking API removals require a major version'),
+        );
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
   });
 }

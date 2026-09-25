@@ -49,6 +49,10 @@ Future<void> main(List<String> args) async {
 
 Future<Map<String, Object>> collectApiSnapshot(String root) async {
   final entry = await File('$root/$_entrypointRelPath').readAsString();
+  final pubspecFile = File('$root/pubspec.yaml');
+  final version = pubspecFile.existsSync()
+      ? _readVersion(await pubspecFile.readAsString())
+      : null;
   final exports = RegExp(
     r"^export '([^']+)';",
     multiLine: true,
@@ -56,25 +60,54 @@ Future<Map<String, Object>> collectApiSnapshot(String root) async {
   final symbols = <String>[];
   for (final relative in exports) {
     final source = await File('$root/lib/$relative').readAsString();
+    // 1. Classes, enums, mixins, typedefs, extensions, extension types with modern Dart modifiers
     for (final match in RegExp(
-      r'^(?:abstract\s+)?(?:class|enum|mixin|typedef|extension)\s+([A-Za-z_]\w*)',
+      r'^(?:(?:abstract|sealed|final|base|interface|mixin)\s+)*(?:class|enum|mixin|typedef|extension(?:\s+type)?)\s+([A-Za-z][A-Za-z0-9_]*)',
       multiLine: true,
     ).allMatches(source)) {
       symbols.add('$relative:${match.group(1)}');
     }
+    // 2. Top-level const / final
     for (final match in RegExp(
-      r'^(?:const|final)\s+([A-Za-z_]\w*)\s*=|^([A-Za-z_]\w*)\s*\([^;]*\)\s*\{',
+      r'^(?:const|final)\s+(?:[A-Za-z0-9_<>,?\s]+\s+)?([A-Za-z][A-Za-z0-9_]*)\s*=',
       multiLine: true,
     ).allMatches(source)) {
-      symbols.add('$relative:${match.group(1) ?? match.group(2)}');
+      symbols.add('$relative:${match.group(1)}');
+    }
+    // 3. Top-level typed functions (block or arrow) and getters/setters
+    for (final match in RegExp(
+      r'^(?:(?:external\s+)?(?:(?:void|[A-Za-z][A-Za-z0-9_<>.,?]*)\s+)?(?:(get|set)\s+)?([A-Za-z][A-Za-z0-9_]*)\s*(?:<[^>]*>)?\s*(?:\([^;]*?\)|(?<=\bget\s+[A-Za-z][A-Za-z0-9_]*))\s*(?:async\*?|sync\*?)?\s*(?:=>|\{))',
+      multiLine: true,
+    ).allMatches(source)) {
+      final name = match.group(2)!;
+      const reserved = {
+        'if',
+        'for',
+        'while',
+        'switch',
+        'return',
+        'class',
+        'enum',
+        'mixin',
+        'typedef',
+        'extension',
+        'const',
+        'final',
+        'assert',
+      };
+      if (!reserved.contains(name)) {
+        symbols.add('$relative:$name');
+      }
     }
   }
   symbols.sort();
-  return {
+  final result = <String, Object>{
+    'version': ?version,
     'entrypoint': _entrypointRelPath,
     'exports': exports,
     'symbols': symbols,
   };
+  return result;
 }
 
 Future<void> checkCompatibility(String root) async {
@@ -83,6 +116,7 @@ Future<void> checkCompatibility(String root) async {
     throw StateError('Missing $_snapshotRelPath; run snapshot first.');
   }
   final baseline = jsonDecode(await snapshotFile.readAsString()) as Map;
+  final baselineVersion = baseline['version'] as String?;
   final current = await collectApiSnapshot(root);
   final baselineExports = Set<String>.from(baseline['exports'] as List);
   final currentExports = Set<String>.from(current['exports'] as List);
@@ -106,8 +140,9 @@ Future<void> checkCompatibility(String root) async {
     await File('$root/pubspec.yaml').readAsString(),
   );
   final section = _currentChangelogSection(changelog, version);
+  final isMajor = _isMajorBump(version, baselineVersion);
   if (removed.isNotEmpty &&
-      !_isMajor(version) &&
+      !isMajor &&
       !section.contains('BREAKING')) {
     throw StateError(
       'Breaking API removals require a major version or BREAKING changelog entry: $removed',
@@ -124,11 +159,28 @@ Future<void> checkCompatibility(String root) async {
 }
 
 String _readVersion(String yaml) => RegExp(
-  r'^version:\s*([^\s]+)',
+  r'^version:\s*([^\s+]+)',
   multiLine: true,
 ).firstMatch(yaml)!.group(1)!;
 
-bool _isMajor(String version) => int.parse(version.split('.').first) > 0;
+({int major, int minor, int patch})? _parseSemver(String version) {
+  final clean = version.split('+').first.split('-').first;
+  final parts = clean.split('.');
+  if (parts.length != 3) return null;
+  final major = int.tryParse(parts[0]);
+  final minor = int.tryParse(parts[1]);
+  final patch = int.tryParse(parts[2]);
+  if (major == null || minor == null || patch == null) return null;
+  return (major: major, minor: minor, patch: patch);
+}
+
+bool _isMajorBump(String currentVersion, String? baselineVersion) {
+  if (baselineVersion == null) return false;
+  final current = _parseSemver(currentVersion);
+  final baseline = _parseSemver(baselineVersion);
+  if (current == null || baseline == null) return false;
+  return current.major > baseline.major;
+}
 
 // BUG-74: previously used a lookahead `(?=^## |\Z)` to find the section's
 // end — `\Z` isn't a valid escape in Dart's RegExp (ECMAScript syntax, not
