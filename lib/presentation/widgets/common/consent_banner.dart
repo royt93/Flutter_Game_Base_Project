@@ -72,6 +72,8 @@ class ConsentBanner extends StatefulWidget {
 
 class _ConsentBannerState extends State<ConsentBanner> {
   bool _scheduled = false;
+  int _activeGeneration = 0;
+  bool _dialogShowing = false;
 
   @override
   void initState() {
@@ -87,27 +89,59 @@ class _ConsentBannerState extends State<ConsentBanner> {
     super.didChangeDependencies();
     if (_scheduled) return;
     _scheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShow());
+    _scheduleCheck();
   }
 
-  Future<void> _maybeShow() async {
-    if (!mounted) return;
+  @override
+  void didUpdateWidget(ConsentBanner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.flowId != widget.flowId ||
+        oldWidget.version != widget.version) {
+      OnboardingCoordinatorService.maybe?.registerFlow(
+        widget.flowId,
+        version: widget.version,
+      );
+      _scheduleCheck();
+    }
+  }
+
+  void _scheduleCheck() {
+    final gen = ++_activeGeneration;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShow(gen));
+  }
+
+  Future<void> _maybeShow(int gen) async {
+    if (!mounted || gen != _activeGeneration) return;
+    final targetFlowId = widget.flowId;
+    final targetVersion = widget.version;
     final onboarding = OnboardingCoordinatorService.maybe;
     if (onboarding != null &&
-        onboarding.isFlowSeen(widget.flowId, version: widget.version)) {
+        onboarding.isFlowSeen(targetFlowId, version: targetVersion)) {
       return;
     }
-    final accepted = await _showDialog();
-    if (!mounted) return;
-    final consent = ConsentStateService.maybe;
-    for (final category in ConsentCategory.values) {
-      if (accepted) {
-        consent?.grant(category);
-      } else {
-        consent?.deny(category);
+    if (_dialogShowing) return;
+    _dialogShowing = true;
+    try {
+      final accepted = await _showDialog();
+      if (!mounted || gen != _activeGeneration) return;
+      if (widget.flowId != targetFlowId || widget.version != targetVersion) {
+        return;
+      }
+      final consent = ConsentStateService.maybe;
+      for (final category in ConsentCategory.values) {
+        if (accepted) {
+          consent?.grant(category);
+        } else {
+          consent?.deny(category);
+        }
+      }
+      onboarding?.markFlowSeen(targetFlowId, version: targetVersion);
+    } finally {
+      _dialogShowing = false;
+      if (mounted && _activeGeneration != gen) {
+        _scheduleCheck();
       }
     }
-    onboarding?.markFlowSeen(widget.flowId, version: widget.version);
   }
 
   Future<bool> _showDialog() {
