@@ -70,6 +70,7 @@ class CheckpointCoordinator extends GetxService {
   final _pendingCompleters = <Completer<SdkResult<int>>>[];
   Timer? _debounceTimer;
   RoyLifecycleCoordinator? _lifecycle;
+  bool _isClosed = false;
   static const _hookName = 'checkpoint_coordinator';
 
   /// Whether `${_key}_dirty` was already `true` when this instance was
@@ -98,6 +99,14 @@ class CheckpointCoordinator extends GetxService {
   /// hot-path case). `critical: true` cancels that pending debounce and
   /// flushes immediately instead.
   Future<SdkResult<int>> requestCheckpoint({bool critical = false}) {
+    if (_isClosed) {
+      return Future.value(
+        const SdkFailure(
+          kind: SdkErrorKind.unknown,
+          message: 'CheckpointCoordinator is closed',
+        ),
+      );
+    }
     if (critical) {
       _debounceTimer?.cancel();
       _debounceTimer = null;
@@ -113,6 +122,7 @@ class CheckpointCoordinator extends GetxService {
     final completer = Completer<SdkResult<int>>();
     _pendingCompleters.add(completer);
     _debounceTimer = _createTimer(debounceWindow, () {
+      if (_isClosed) return;
       _completePending(flushNow());
     });
     return completer.future;
@@ -127,7 +137,9 @@ class CheckpointCoordinator extends GetxService {
     final pending = List<Completer<SdkResult<int>>>.of(_pendingCompleters);
     _pendingCompleters.clear();
     for (final completer in pending) {
-      completer.complete(result);
+      if (!completer.isCompleted) {
+        completer.complete(result);
+      }
     }
   }
 
@@ -138,6 +150,12 @@ class CheckpointCoordinator extends GetxService {
   /// being JSON-encodable, aborts the WHOLE flush before anything is
   /// written — the previous checkpoint is left exactly as it was.
   Future<SdkResult<int>> flushNow() => _guard.runExclusive(_hookName, () async {
+    if (_isClosed) {
+      return const SdkFailure(
+        kind: SdkErrorKind.unknown,
+        message: 'CheckpointCoordinator is closed',
+      );
+    }
     _debounceTimer?.cancel();
     _debounceTimer = null;
 
@@ -227,8 +245,24 @@ class CheckpointCoordinator extends GetxService {
 
   @override
   void onClose() {
+    _isClosed = true;
     _debounceTimer?.cancel();
+    _debounceTimer = null;
     _lifecycle?.removeHook(_hookName);
+    if (_pendingCompleters.isNotEmpty) {
+      final pending = List<Completer<SdkResult<int>>>.of(_pendingCompleters);
+      _pendingCompleters.clear();
+      const failure = SdkFailure<int>(
+        kind: SdkErrorKind.unknown,
+        message:
+            'CheckpointCoordinator closed before checkpoint could be written',
+      );
+      for (final completer in pending) {
+        if (!completer.isCompleted) {
+          completer.complete(failure);
+        }
+      }
+    }
     super.onClose();
   }
 }
