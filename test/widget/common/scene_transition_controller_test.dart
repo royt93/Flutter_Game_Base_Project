@@ -102,6 +102,49 @@ void main() {
       expect(controller.phase.value, SceneTransitionPhase.idle);
       expect(controller.lastError, isNull);
     });
+
+    test(
+      'BUG-76: load throw exception trả về SdkFailure có cause/stackTrace và cập nhật lastError/phase',
+      () async {
+        final controller = _controller();
+        final error = StateError('asset load crash');
+
+        final result = await controller.run((onProgress) async => throw error);
+
+        expect(result, isA<SdkFailure<void>>());
+        final failure = result as SdkFailure<void>;
+        expect(failure.cause, error);
+        expect(failure.stackTrace, isNotNull);
+        expect(controller.phase.value, SceneTransitionPhase.error);
+        expect(controller.lastError, failure);
+      },
+    );
+
+    test(
+      'BUG-76: transition superseded hoặc cancelled: callback throw muộn không mutate state',
+      () async {
+        final controller = _controller();
+        final completer = Completer<SdkResult<void>>();
+
+        final firstFuture = controller.run((onProgress) => completer.future);
+        await Future<void>.delayed(Duration.zero);
+        expect(controller.phase.value, SceneTransitionPhase.loading);
+
+        final secondFuture = controller.run((onProgress) async {
+          return const SdkSuccess(null);
+        });
+
+        await secondFuture;
+        expect(controller.phase.value, SceneTransitionPhase.idle);
+
+        completer.completeError(StateError('stale throw'));
+        final staleResult = await firstFuture;
+
+        expect(staleResult, isA<SdkFailure<void>>());
+        expect(controller.phase.value, SceneTransitionPhase.idle);
+        expect(controller.lastError, isNull);
+      },
+    );
   });
 
   group('SceneTransitionController: cancel không kẹt pointer barrier', () {

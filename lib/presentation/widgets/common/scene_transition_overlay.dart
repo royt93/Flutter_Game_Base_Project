@@ -72,9 +72,23 @@ class SceneTransitionController {
     }
 
     phase.value = SceneTransitionPhase.loading;
-    final result = await load((value) {
-      if (_isCurrent(token)) progress.value = value.clamp(0.0, 1.0);
-    });
+    final SdkResult<void> result;
+    try {
+      result = await load((value) {
+        if (_isCurrent(token)) progress.value = value.clamp(0.0, 1.0);
+      });
+    } catch (error, stack) {
+      final failure = SdkFailure<void>(
+        kind: SdkErrorKind.unknown,
+        message: 'Scene transition load callback threw: $error',
+        cause: error,
+        stackTrace: stack,
+      );
+      if (!_isCurrent(token)) return failure;
+      lastError = failure;
+      phase.value = SceneTransitionPhase.error;
+      return failure;
+    }
 
     if (!_isCurrent(token)) return result;
 

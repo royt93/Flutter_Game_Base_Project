@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/retry_error_state.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/scene_transition_overlay.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: Material(child: child));
@@ -175,6 +176,46 @@ void main() {
       completer.complete(const SdkSuccess(null));
       await tester.pump(_kStep);
 
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'BUG-76: load throw exception chuyển sang error và không kẹt loading indicator',
+    (tester) async {
+      final controller = _controller();
+      var retried = false;
+
+      await tester.pumpWidget(
+        _wrap(
+          SceneTransitionOverlay(
+            controller: controller,
+            onRetry: () async {
+              retried = true;
+            },
+            child: const Text('Scene content'),
+          ),
+        ),
+      );
+
+      final runFuture = controller.run((onProgress) async {
+        throw StateError('asset bundle decode crashed');
+      });
+
+      await tester.pump(_kStep);
+      final result = await runFuture;
+      await tester.pump();
+
+      expect(result, isA<SdkFailure<void>>());
+      expect(controller.phase.value, SceneTransitionPhase.error);
+      expect(controller.lastError, isNotNull);
+      expect(controller.lastError?.cause, isA<StateError>());
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(RetryErrorState), findsOneWidget);
+
+      await tester.tap(find.text('Retry').last);
+      await tester.pump();
+      expect(retried, isTrue);
       expect(tester.takeException(), isNull);
     },
   );
