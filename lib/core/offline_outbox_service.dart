@@ -206,6 +206,9 @@ class OfflineOutboxService extends GetxService {
     String? storageKey,
   }) : _retryExecutor = retryExecutor ?? RetryExecutor(),
        _key = storageKey ?? StorageKeys.offlineOutboxV1 {
+    if (capacity <= 0) {
+      throw ArgumentError.value(capacity, 'capacity', 'must be > 0');
+    }
     // ENH-89: was `assert(conflictPolicy != ConflictPolicy.merge ||
     // merger != null, ...)` — stripped entirely in release builds. A
     // caller passing `conflictPolicy: merge` without `merger` (a

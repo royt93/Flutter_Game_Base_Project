@@ -139,6 +139,9 @@ class RewardTransactionPipeline extends GetxService {
     this.capacity = 200,
   }) : _guard = guard ?? AsyncActionGuard(),
        _key = storageKey ?? StorageKeys.rewardTransactionPipelineV1 {
+    if (capacity <= 0) {
+      throw ArgumentError.value(capacity, 'capacity', 'must be > 0');
+    }
     // BUG-40: see EconomyWallet's constructor for why this can't wait for
     // onInit() alone.
     _hydrate();

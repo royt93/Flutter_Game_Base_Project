@@ -272,6 +272,22 @@ void main() {
     });
   });
 
+  group('BUG-75: capacity validation', () {
+    test(
+      'capacity <= 0 bị từ chối trước khi làm mất transaction idempotency',
+      () {
+        expect(
+          () => PlayerProgressionService(
+            storage: StorageService(null),
+            levelCurve: _validCurve,
+            capacity: 0,
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
+  });
+
   group('BUG-40: hydrate ngay trong constructor, không phụ thuộc onInit()', () {
     test(
       'khởi tạo trực tiếp (không gọi onInit()) vẫn đọc đúng state cũ từ storage',

@@ -240,10 +240,11 @@ void main() {
         // Người chơi kéo-thả: đổi chỗ sword và slot potion(3) -> thứ tự
         // hiển thị mong muốn: [potion(10), potion(3), sword].
         await service.moveSlot(fromSlotId: swordId, toSlotId: potion3Id);
-        expect(
-          service.snapshot.value.slots.map((s) => s.slotId).toList(),
-          [potion10Id, potion3Id, swordId],
-        );
+        expect(service.snapshot.value.slots.map((s) => s.slotId).toList(), [
+          potion10Id,
+          potion3Id,
+          swordId,
+        ]);
 
         // Tiêu 12 potion: rút hết slot slotId thấp nhất trước (potion10Id,
         // 10) rồi rút tiếp 2 từ potion3Id (còn lại 1) — sword không đụng.
@@ -257,12 +258,14 @@ void main() {
         expect(service.snapshot.value.quantityOf('sword'), 1);
         // Thứ tự hiển thị player đã sắp (potion trước sword) PHẢI giữ
         // nguyên sau consume — không bị reset về thứ tự slotId.
+        expect(service.snapshot.value.slots.map((s) => s.itemId).toList(), [
+          'potion',
+          'sword',
+        ]);
         expect(
-          service.snapshot.value.slots.map((s) => s.itemId).toList(),
-          ['potion', 'sword'],
-        );
-        expect(
-          service.snapshot.value.slots.firstWhere((s) => s.itemId == 'potion').slotId,
+          service.snapshot.value.slots
+              .firstWhere((s) => s.itemId == 'potion')
+              .slotId,
           potion3Id,
         );
       },
@@ -477,5 +480,32 @@ void main() {
     test('catalog toàn entry hợp lệ -> không throw gì cả', () {
       expect(() => _service(), returnsNormally);
     });
+  });
+
+  group('BUG-75: runtime capacity validation', () {
+    test('capacity <= 0 bị từ chối ngay tại constructor', () {
+      expect(
+        () => InventoryService(
+          storage: StorageService(null),
+          itemCatalog: _catalog,
+          capacity: 0,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test(
+      'transactionCapacity <= 0 bị từ chối trước khi ledger quên transaction',
+      () {
+        expect(
+          () => InventoryService(
+            storage: StorageService(null),
+            itemCatalog: _catalog,
+            transactionCapacity: 0,
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
   });
 }

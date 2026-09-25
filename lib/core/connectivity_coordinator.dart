@@ -122,6 +122,16 @@ class ConnectivityCoordinator extends GetxService {
     Timer Function(Duration delay, void Function() callback)? createTimer,
   }) : _retryExecutor = retryExecutor ?? RetryExecutor(),
        _createTimer = createTimer ?? Timer.new {
+    if (failuresToGoOffline <= 0) {
+      throw ArgumentError.value(
+        failuresToGoOffline,
+        'failuresToGoOffline',
+        'must be > 0',
+      );
+    }
+    if (maxQueueSize <= 0) {
+      throw ArgumentError.value(maxQueueSize, 'maxQueueSize', 'must be > 0');
+    }
     _stateController = StreamController<ConnectivityState>.broadcast();
     _sub = signal.hasInterfaceStream.listen(_scheduleInterfaceEvaluation);
     _scheduleInterfaceEvaluation(signal.hasInterfaceNow);

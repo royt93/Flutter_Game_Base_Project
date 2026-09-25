@@ -114,6 +114,16 @@ class InventoryService extends GetxService {
   }) : _catalog = itemCatalog,
        _guard = guard ?? AsyncActionGuard(),
        _key = storageKey ?? StorageKeys.inventoryServiceV1 {
+    if (capacity <= 0) {
+      throw ArgumentError.value(capacity, 'capacity', 'must be > 0');
+    }
+    if (transactionCapacity <= 0) {
+      throw ArgumentError.value(
+        transactionCapacity,
+        'transactionCapacity',
+        'must be > 0',
+      );
+    }
     // ENH-89: ItemDefinition's own `maxStack` invariant is only an
     // `assert` (stripped in release builds) — it stays that way
     // deliberately, since ItemDefinition is `const`-constructible and
@@ -362,7 +372,8 @@ class InventoryService extends GetxService {
         final available = slot.quantity - (consumedBySlotId[slot.slotId] ?? 0);
         if (available <= 0) continue;
         final take = math.min(available, remaining);
-        consumedBySlotId[slot.slotId] = (consumedBySlotId[slot.slotId] ?? 0) + take;
+        consumedBySlotId[slot.slotId] =
+            (consumedBySlotId[slot.slotId] ?? 0) + take;
         remaining -= take;
       }
     }

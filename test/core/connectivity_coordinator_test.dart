@@ -58,6 +58,35 @@ void main() {
     });
   });
 
+  group('BUG-75: runtime limit validation', () {
+    test(
+      'maxQueueSize <= 0 bị từ chối trước khi enqueue removeAt list rỗng',
+      () {
+        expect(
+          () => ConnectivityCoordinator(
+            signal: FakeConnectivitySignal(),
+            probe: () async => true,
+            maxQueueSize: 0,
+            createTimer: fakeCreateTimer,
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
+
+    test('failuresToGoOffline <= 0 bị từ chối ngay tại constructor', () {
+      expect(
+        () => ConnectivityCoordinator(
+          signal: FakeConnectivitySignal(),
+          probe: () async => true,
+          failuresToGoOffline: 0,
+          createTimer: fakeCreateTimer,
+        ),
+        throwsArgumentError,
+      );
+    });
+  });
+
   group(
     'ConnectivityCoordinator: interface up nhưng probe fail không báo online giả',
     () {
@@ -489,20 +518,17 @@ void main() {
         final signal = FakeConnectivitySignal();
         final zoneErrors = <Object>[];
 
-        await runZonedGuarded(
-          () async {
-            final coordinator = ConnectivityCoordinator(
-              signal: signal,
-              probe: () async => throw const SocketExceptionStub(),
-              createTimer: fakeCreateTimer,
-            );
-            signal.setHasInterface(true);
-            await fireLatest();
-            await Future<void>.delayed(Duration.zero);
-            expect(coordinator.state, ConnectivityState.degraded);
-          },
-          (error, stack) => zoneErrors.add(error),
-        );
+        await runZonedGuarded(() async {
+          final coordinator = ConnectivityCoordinator(
+            signal: signal,
+            probe: () async => throw const SocketExceptionStub(),
+            createTimer: fakeCreateTimer,
+          );
+          signal.setHasInterface(true);
+          await fireLatest();
+          await Future<void>.delayed(Duration.zero);
+          expect(coordinator.state, ConnectivityState.degraded);
+        }, (error, stack) => zoneErrors.add(error));
 
         expect(zoneErrors, isEmpty);
       },
@@ -557,58 +583,52 @@ void main() {
       },
     );
 
-    test(
-      'force degraded rồi có 1 real probe success -> vẫn bị khoá degraded, '
-      'real signal KHÔNG ghi đè lên được override',
-      () async {
-        final signal = FakeConnectivitySignal();
-        final coordinator = ConnectivityCoordinator(
-          signal: signal,
-          probe: () async => true,
-          createTimer: fakeCreateTimer,
-        );
-        coordinator.debugForceState(ConnectivityState.degraded);
-        expect(coordinator.state, ConnectivityState.degraded);
+    test('force degraded rồi có 1 real probe success -> vẫn bị khoá degraded, '
+        'real signal KHÔNG ghi đè lên được override', () async {
+      final signal = FakeConnectivitySignal();
+      final coordinator = ConnectivityCoordinator(
+        signal: signal,
+        probe: () async => true,
+        createTimer: fakeCreateTimer,
+      );
+      coordinator.debugForceState(ConnectivityState.degraded);
+      expect(coordinator.state, ConnectivityState.degraded);
 
-        // 1 real interface event thành công đến trong lúc đang force.
-        signal.setHasInterface(true);
-        await fireLatest();
-        await Future<void>.delayed(Duration.zero);
+      // 1 real interface event thành công đến trong lúc đang force.
+      signal.setHasInterface(true);
+      await fireLatest();
+      await Future<void>.delayed(Duration.zero);
 
-        expect(
-          coordinator.state,
-          ConnectivityState.degraded,
-          reason: 'override cục bộ phải thắng, real probe không được ghi đè',
-        );
-      },
-    );
+      expect(
+        coordinator.state,
+        ConnectivityState.degraded,
+        reason: 'override cục bộ phải thắng, real probe không được ghi đè',
+      );
+    });
 
-    test(
-      'clear override (null) -> tái đánh giá NGAY connectivity thật, không '
-      'đợi tín hiệu tiếp theo',
-      () async {
-        final signal = FakeConnectivitySignal()..setHasInterface(true);
-        final coordinator = ConnectivityCoordinator(
-          signal: signal,
-          probe: () async => true,
-          createTimer: fakeCreateTimer,
-        );
-        coordinator.debugForceState(ConnectivityState.offline);
-        expect(coordinator.state, ConnectivityState.offline);
+    test('clear override (null) -> tái đánh giá NGAY connectivity thật, không '
+        'đợi tín hiệu tiếp theo', () async {
+      final signal = FakeConnectivitySignal()..setHasInterface(true);
+      final coordinator = ConnectivityCoordinator(
+        signal: signal,
+        probe: () async => true,
+        createTimer: fakeCreateTimer,
+      );
+      coordinator.debugForceState(ConnectivityState.offline);
+      expect(coordinator.state, ConnectivityState.offline);
 
-        coordinator.debugForceState(null);
-        await fireLatest();
-        await Future<void>.delayed(Duration.zero);
+      coordinator.debugForceState(null);
+      await fireLatest();
+      await Future<void>.delayed(Duration.zero);
 
-        expect(
-          coordinator.state,
-          ConnectivityState.online,
-          reason:
-              'sau khi clear, phải tự đánh giá lại connectivity thật đang '
-              'online (signal đã có interface từ trước)',
-        );
-      },
-    );
+      expect(
+        coordinator.state,
+        ConnectivityState.online,
+        reason:
+            'sau khi clear, phải tự đánh giá lại connectivity thật đang '
+            'online (signal đã có interface từ trước)',
+      );
+    });
   });
 }
 

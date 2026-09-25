@@ -2,6 +2,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/utils/retry_policy.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 
+class _InvalidAttemptsPolicy extends RetryPolicy {
+  _InvalidAttemptsPolicy() : super(maxAttempts: 1);
+  @override
+  int get maxAttempts => 0;
+}
+
+class _InvalidJitterPolicy extends RetryPolicy {
+  _InvalidJitterPolicy() : super(jitterFraction: 0.2);
+  @override
+  double get jitterFraction => 2.0;
+}
+
+class _NegativeDelayPolicy extends RetryPolicy {
+  _NegativeDelayPolicy() : super();
+  @override
+  Duration get baseDelay => const Duration(milliseconds: -1);
+}
+
 void main() {
   group('RetryPolicy.delayBeforeAttempt', () {
     const policy = RetryPolicy(
@@ -57,6 +75,43 @@ void main() {
         expect(() => const RetryPolicy(jitterFraction: 1), returnsNormally);
       },
     );
+  });
+
+  group('BUG-75: RetryPolicy runtime validation', () {
+    test('maxAttempts invalid bị từ chối trong mọi build mode', () async {
+      final executor = RetryExecutor(delayFn: (_) async {});
+      final result = await executor.run<int>(
+        () async => 1,
+        policy: _InvalidAttemptsPolicy(),
+      );
+
+      expect(result, isA<SdkFailure<int>>());
+      expect((result as SdkFailure<int>).message, contains('maxAttempts'));
+    });
+
+    test('jitter ngoài [0, 1] bị từ chối thay vì chạy phép tính sai', () async {
+      final executor = RetryExecutor(delayFn: (_) async {});
+      final result = await executor.run<int>(
+        () async => 1,
+        policy: _InvalidJitterPolicy(),
+      );
+
+      expect(result, isA<SdkFailure<int>>());
+      expect((result as SdkFailure<int>).message, contains('jitterFraction'));
+    });
+
+    test('delay âm bị từ chối trước khi gọi delayFn', () async {
+      var actionCalled = false;
+      final executor = RetryExecutor(delayFn: (_) async {});
+      final result = await executor.run<int>(() async {
+        actionCalled = true;
+        return 1;
+      }, policy: _NegativeDelayPolicy());
+
+      expect(result, isA<SdkFailure<int>>());
+      expect((result as SdkFailure<int>).message, contains('baseDelay'));
+      expect(actionCalled, isFalse);
+    });
   });
 
   group('RetryExecutor.run', () {

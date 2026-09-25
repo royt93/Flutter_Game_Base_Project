@@ -131,6 +131,13 @@ class RetryExecutor {
     void Function(RetryAttemptEvent event)? onAttempt,
     bool Function()? isCancelled,
   }) async {
+    final validationError = _validatePolicy(policy);
+    if (validationError != null) {
+      return SdkFailure(
+        kind: SdkErrorKind.validation,
+        message: validationError,
+      );
+    }
     for (var attempt = 1; attempt <= policy.maxAttempts; attempt++) {
       if (attempt > 1) {
         final delay = policy.delayBeforeAttempt(attempt, _randomFn());
@@ -210,5 +217,18 @@ class RetryExecutor {
     // Unreachable: the loop above always returns before exhausting its
     // range (the last iteration's `exhausted` branch always returns).
     throw StateError('unreachable');
+  }
+
+  String? _validatePolicy(RetryPolicy policy) {
+    if (policy.maxAttempts < 1) return 'maxAttempts must be >= 1';
+    if (policy.jitterFraction < 0 || policy.jitterFraction > 1) {
+      return 'jitterFraction must be within [0, 1]';
+    }
+    if (policy.baseDelay.isNegative) return 'baseDelay must not be negative';
+    if (policy.maxDelay.isNegative) return 'maxDelay must not be negative';
+    if (policy.timeout?.isNegative ?? false) {
+      return 'timeout must not be negative';
+    }
+    return null;
   }
 }

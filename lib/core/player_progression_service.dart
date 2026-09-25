@@ -168,6 +168,9 @@ class PlayerProgressionService extends GetxService {
        ),
        _guard = guard ?? AsyncActionGuard(),
        _key = storageKey ?? StorageKeys.playerProgressionV1 {
+    if (capacity <= 0) {
+      throw ArgumentError.value(capacity, 'capacity', 'must be > 0');
+    }
     final error = validateLevelCurve(_curve);
     if (error != null) {
       throw ArgumentError(error.message);

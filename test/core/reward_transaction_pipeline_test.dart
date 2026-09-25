@@ -208,6 +208,16 @@ void main() {
   );
 
   test(
+    'BUG-75: capacity <= 0 bị từ chối trước khi audit/resume bị vô hiệu',
+    () {
+      expect(
+        () => RewardTransactionPipeline(wallet: wallet, capacity: 0),
+        throwsArgumentError,
+      );
+    },
+  );
+
+  test(
     'audit trail bounded: quá capacity thì record CŨ NHẤT bị loại',
     () async {
       final bounded = RewardTransactionPipeline(wallet: wallet, capacity: 2)
@@ -235,129 +245,117 @@ void main() {
     },
   );
 
-  group(
-    'BUG-71: grant() lần 2 cùng transactionId pending/partial với lines '
-    'KHÁC',
-    () {
-      test(
-        'record partial + gọi lại grant() trực tiếp với lines khác -> '
+  group('BUG-71: grant() lần 2 cùng transactionId pending/partial với lines '
+      'KHÁC', () {
+    test('record partial + gọi lại grant() trực tiếp với lines khác -> '
         'từ chối (validation), KHÔNG âm thầm commit theo lines cũ (đã lưu) '
-        'lẫn không commit theo lines mới (bị bỏ qua)',
-        () async {
-          // Đẩy 'gem' sát biên overflow để line thứ 2 thất bại, giống hệt
-          // setup của test "partial failure" sẵn có ở trên.
-          await wallet.earn(
-            currency: 'gem',
-            amount: 0x7ffffffe,
-            transactionId: 'seed_overflow_2',
-          );
-
-          final first = await pipeline.grant(
-            source: RewardSource.ad,
-            transactionId: 'multi2',
-            lines: const [
-              RewardLine(currency: 'coin', amount: 10),
-              RewardLine(currency: 'gem', amount: 10),
-            ],
-          );
-          expect(first.isSuccess, isFalse);
-          expect(
-            pipeline.auditTrail.single.status,
-            RewardTransactionStatus.partial,
-          );
-
-          // Hết lỗi overflow (giống hệt cách test partial-failure sẵn có
-          // dọn lại trước khi resumePending()) — để line thứ 2 giờ ĐỦ ĐIỀU
-          // KIỆN áp dụng thành công nếu code cũ âm thầm dùng lại
-          // `existing.lines` (10 gem, không phải 999 gem).
-          await wallet.trySpend(
-            currency: 'gem',
-            amount: 0x7ffffffe,
-            transactionId: 'undo_overflow_2',
-          );
-
-          // Gọi lại TRỰC TIẾP grant() (không qua resumePending()) với
-          // lines KHÁC hẳn cho cùng transactionId đang partial.
-          final second = await pipeline.grant(
-            source: RewardSource.ad,
-            transactionId: 'multi2',
-            lines: const [
-              RewardLine(currency: 'coin', amount: 999),
-              RewardLine(currency: 'gem', amount: 999),
-            ],
-          );
-
-          // Code cũ (bug): âm thầm dùng lại `existing.lines` ([10, 10]),
-          // line 2 giờ áp dụng thành công (gem đã hết overflow) -> commit
-          // "thành công" nhưng với số liệu SAI (không phải 999 caller vừa
-          // yêu cầu, cũng không báo lỗi gì để caller biết bị bỏ qua).
-          // Code đúng (sau fix): từ chối thẳng vì lines không khớp.
-          expect(second.isSuccess, isFalse);
-          // Bị chặn TRƯỚC khi loop áp dụng bất kỳ line nào (không dùng
-          // lines cũ [10] lẫn lines mới [999]) — gem giữ nguyên 0 (đã undo
-          // overflow ở trên), không bị cộng thêm.
-          expect(wallet.balanceOf('gem'), 0);
-        },
+        'lẫn không commit theo lines mới (bị bỏ qua)', () async {
+      // Đẩy 'gem' sát biên overflow để line thứ 2 thất bại, giống hệt
+      // setup của test "partial failure" sẵn có ở trên.
+      await wallet.earn(
+        currency: 'gem',
+        amount: 0x7ffffffe,
+        transactionId: 'seed_overflow_2',
       );
 
-      test(
-        'record pending (chưa line nào chạy, do concurrent) + gọi lại với '
+      final first = await pipeline.grant(
+        source: RewardSource.ad,
+        transactionId: 'multi2',
+        lines: const [
+          RewardLine(currency: 'coin', amount: 10),
+          RewardLine(currency: 'gem', amount: 10),
+        ],
+      );
+      expect(first.isSuccess, isFalse);
+      expect(
+        pipeline.auditTrail.single.status,
+        RewardTransactionStatus.partial,
+      );
+
+      // Hết lỗi overflow (giống hệt cách test partial-failure sẵn có
+      // dọn lại trước khi resumePending()) — để line thứ 2 giờ ĐỦ ĐIỀU
+      // KIỆN áp dụng thành công nếu code cũ âm thầm dùng lại
+      // `existing.lines` (10 gem, không phải 999 gem).
+      await wallet.trySpend(
+        currency: 'gem',
+        amount: 0x7ffffffe,
+        transactionId: 'undo_overflow_2',
+      );
+
+      // Gọi lại TRỰC TIẾP grant() (không qua resumePending()) với
+      // lines KHÁC hẳn cho cùng transactionId đang partial.
+      final second = await pipeline.grant(
+        source: RewardSource.ad,
+        transactionId: 'multi2',
+        lines: const [
+          RewardLine(currency: 'coin', amount: 999),
+          RewardLine(currency: 'gem', amount: 999),
+        ],
+      );
+
+      // Code cũ (bug): âm thầm dùng lại `existing.lines` ([10, 10]),
+      // line 2 giờ áp dụng thành công (gem đã hết overflow) -> commit
+      // "thành công" nhưng với số liệu SAI (không phải 999 caller vừa
+      // yêu cầu, cũng không báo lỗi gì để caller biết bị bỏ qua).
+      // Code đúng (sau fix): từ chối thẳng vì lines không khớp.
+      expect(second.isSuccess, isFalse);
+      // Bị chặn TRƯỚC khi loop áp dụng bất kỳ line nào (không dùng
+      // lines cũ [10] lẫn lines mới [999]) — gem giữ nguyên 0 (đã undo
+      // overflow ở trên), không bị cộng thêm.
+      expect(wallet.balanceOf('gem'), 0);
+    });
+
+    test('record pending (chưa line nào chạy, do concurrent) + gọi lại với '
         'lines khác hệt -> vẫn OK bình thường (không phải mọi lần gọi lại '
-        'đều bị chặn, chỉ khi lines thật sự khác)',
-        () async {
-          final results = await Future.wait([
-            pipeline.grant(
-              source: RewardSource.purchase,
-              transactionId: 'iap_same',
-              lines: const [RewardLine(currency: 'gem', amount: 100)],
-            ),
-            pipeline.grant(
-              source: RewardSource.purchase,
-              transactionId: 'iap_same',
-              lines: const [RewardLine(currency: 'gem', amount: 100)],
-            ),
-          ]);
+        'đều bị chặn, chỉ khi lines thật sự khác)', () async {
+      final results = await Future.wait([
+        pipeline.grant(
+          source: RewardSource.purchase,
+          transactionId: 'iap_same',
+          lines: const [RewardLine(currency: 'gem', amount: 100)],
+        ),
+        pipeline.grant(
+          source: RewardSource.purchase,
+          transactionId: 'iap_same',
+          lines: const [RewardLine(currency: 'gem', amount: 100)],
+        ),
+      ]);
 
-          expect(results.every((r) => r.isSuccess), isTrue);
-          expect(wallet.balanceOf('gem'), 100);
-        },
+      expect(results.every((r) => r.isSuccess), isTrue);
+      expect(wallet.balanceOf('gem'), 100);
+    });
+
+    test('resumePending() sau partial vẫn hoạt động đúng như cũ (tự truyền '
+        'lại đúng lines đã lưu, không bị validation mới chặn nhầm)', () async {
+      await wallet.earn(
+        currency: 'gem',
+        amount: 0x7ffffffe,
+        transactionId: 'seed_overflow_3',
       );
 
-      test(
-        'resumePending() sau partial vẫn hoạt động đúng như cũ (tự truyền '
-        'lại đúng lines đã lưu, không bị validation mới chặn nhầm)',
-        () async {
-          await wallet.earn(
-            currency: 'gem',
-            amount: 0x7ffffffe,
-            transactionId: 'seed_overflow_3',
-          );
-
-          await pipeline.grant(
-            source: RewardSource.ad,
-            transactionId: 'multi3',
-            lines: const [
-              RewardLine(currency: 'coin', amount: 10),
-              RewardLine(currency: 'gem', amount: 10),
-            ],
-          );
-
-          await wallet.trySpend(
-            currency: 'gem',
-            amount: 0x7ffffffe,
-            transactionId: 'undo_overflow_3',
-          );
-          await pipeline.resumePending();
-
-          expect(
-            pipeline.auditTrail.single.status,
-            RewardTransactionStatus.committed,
-          );
-          expect(wallet.balanceOf('gem'), 10);
-        },
+      await pipeline.grant(
+        source: RewardSource.ad,
+        transactionId: 'multi3',
+        lines: const [
+          RewardLine(currency: 'coin', amount: 10),
+          RewardLine(currency: 'gem', amount: 10),
+        ],
       );
-    },
-  );
+
+      await wallet.trySpend(
+        currency: 'gem',
+        amount: 0x7ffffffe,
+        transactionId: 'undo_overflow_3',
+      );
+      await pipeline.resumePending();
+
+      expect(
+        pipeline.auditTrail.single.status,
+        RewardTransactionStatus.committed,
+      );
+      expect(wallet.balanceOf('gem'), 10);
+    });
+  });
 
   group('adapter tiện ích', () {
     test('grantFromDailyQuest: transactionId theo questId+periodKey', () async {
