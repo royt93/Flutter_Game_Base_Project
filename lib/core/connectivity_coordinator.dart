@@ -172,6 +172,7 @@ class ConnectivityCoordinator extends GetxService {
   int _consecutiveFailures = 0;
   bool _probeInFlight = false;
   bool _draining = false;
+  bool _isClosed = false;
   final _queue = <QueuedTask>[];
 
   int get queueLength => _queue.length;
@@ -193,6 +194,7 @@ class ConnectivityCoordinator extends GetxService {
   /// the override (`null`) immediately re-evaluates real connectivity
   /// instead of waiting for the next signal/probe event.
   void debugForceState(ConnectivityState? state) {
+    if (_isClosed) return;
     if (!kDebugMode && !kProfileMode) return;
     _debugForcedState = state;
     if (state != null) {
@@ -203,6 +205,7 @@ class ConnectivityCoordinator extends GetxService {
   }
 
   void _scheduleInterfaceEvaluation(bool hasInterface) {
+    if (_isClosed) return;
     _debounceTimer?.cancel();
     _debounceTimer = _createTimer(
       debounceWindow,
@@ -211,6 +214,7 @@ class ConnectivityCoordinator extends GetxService {
   }
 
   void _handleInterfaceChange(bool hasInterface) {
+    if (_isClosed) return;
     _probeTimer?.cancel();
     if (!hasInterface) {
       _consecutiveFailures = 0;
@@ -219,16 +223,19 @@ class ConnectivityCoordinator extends GetxService {
     }
     _setState(ConnectivityState.checking);
     unawaited(_runProbe());
+    if (_isClosed) return;
     _probeTimer = _createTimer(probeInterval, _periodicProbe);
   }
 
   void _periodicProbe() {
+    if (_isClosed) return;
     unawaited(_runProbe());
+    if (_isClosed) return;
     _probeTimer = _createTimer(probeInterval, _periodicProbe);
   }
 
   Future<void> _runProbe() async {
-    if (_probeInFlight) return;
+    if (_isClosed || _probeInFlight) return;
     _probeInFlight = true;
     try {
       // BUG-43: `probe` is consumer-supplied (a real HTTP HEAD/socket check)
@@ -244,6 +251,7 @@ class ConnectivityCoordinator extends GetxService {
       } catch (_) {
         ok = false;
       }
+      if (_isClosed) return;
       if (ok) {
         _consecutiveFailures = 0;
         _setState(ConnectivityState.online);
@@ -262,15 +270,19 @@ class ConnectivityCoordinator extends GetxService {
   }
 
   void _setState(ConnectivityState next) {
+    if (_isClosed) return;
     // A forced debug state wins over whatever the real signal/probe path
     // just computed — see [debugForceState].
     final effective = _debugForcedState ?? next;
     if (_state == effective) return;
     _state = effective;
-    _stateController.add(effective);
+    if (!_stateController.isClosed) {
+      _stateController.add(effective);
+    }
   }
 
   void enqueue(QueuedTask task) {
+    if (_isClosed) return;
     _queue.removeWhere((t) => t.idempotencyKey == task.idempotencyKey);
     if (_queue.length >= maxQueueSize) {
       var lowestIndex = 0;
@@ -286,13 +298,13 @@ class ConnectivityCoordinator extends GetxService {
   }
 
   Future<void> _drainQueue() async {
-    if (_draining) return;
+    if (_isClosed || _draining) return;
     _draining = true;
     try {
       final ordered = [..._queue]
         ..sort((a, b) => b.priority.compareTo(a.priority));
       for (final task in ordered) {
-        if (_state != ConnectivityState.online) break;
+        if (_isClosed || _state != ConnectivityState.online) break;
         if (!_queue.contains(task)) continue;
         final expiresAt = task.expiresAtMs;
         if (expiresAt != null && nowMsClamped() > expiresAt) {
@@ -304,6 +316,7 @@ class ConnectivityCoordinator extends GetxService {
         // this loop for the rest of the queue — the result is discarded
         // on purpose, a permanently-failed task is simply dropped.
         await _retryExecutor.run(task.run, policy: retryPolicy);
+        if (_isClosed) break;
         _queue.remove(task);
       }
     } finally {
@@ -313,8 +326,11 @@ class ConnectivityCoordinator extends GetxService {
 
   @override
   void onClose() {
+    _isClosed = true;
     _debounceTimer?.cancel();
+    _debounceTimer = null;
     _probeTimer?.cancel();
+    _probeTimer = null;
     unawaited(_sub?.cancel());
     unawaited(_stateController.close());
     super.onClose();

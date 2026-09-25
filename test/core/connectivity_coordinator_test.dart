@@ -287,6 +287,47 @@ void main() {
         expect(await coordinator.stateStream.isEmpty, isTrue);
       },
     );
+
+    test(
+      'BUG-79: probe in-flight hoàn tất sau onClose() không throw Bad state, không mutate state và không drain queue',
+      () async {
+        final probeCompleter = Completer<bool>();
+        final signal = FakeConnectivitySignal(initialHasInterface: true);
+        final coordinator = ConnectivityCoordinator(
+          signal: signal,
+          probe: () => probeCompleter.future,
+          createTimer: fakeCreateTimer,
+        );
+
+        await fireLatest(); // debounce nổ -> bắt đầu probe, state = checking
+        expect(coordinator.state, ConnectivityState.checking);
+
+        var taskRan = false;
+        coordinator.enqueue(
+          QueuedTask(
+            idempotencyKey: 'task1',
+            run: () async {
+              taskRan = true;
+            },
+          ),
+        );
+
+        coordinator.onClose();
+
+        final scheduledCountBefore = scheduled.length;
+        final zoneErrors = <Object>[];
+        await runZonedGuarded(() async {
+          probeCompleter.complete(true);
+          await Future<void>.delayed(Duration.zero);
+        }, (error, stack) {
+          zoneErrors.add(error);
+        });
+
+        expect(zoneErrors, isEmpty);
+        expect(taskRan, isFalse);
+        expect(scheduled.length, scheduledCountBefore);
+      },
+    );
   });
 
   group('ConnectivityCoordinator: queue', () {
