@@ -6,7 +6,10 @@ import 'package:roy_casual_kit/core/achievement_service.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
+import 'package:roy_casual_kit/core/energy_service.dart';
 import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
+import 'package:roy_casual_kit/core/local_scoreboard_service.dart';
+import 'package:roy_casual_kit/core/player_progression_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/game/roy_game.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
@@ -19,7 +22,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 // CommonButton vẽ label qua StrokeText (2 lớp Text chồng nhau) — dùng finder
 // theo CommonButton thay vì find.text trực tiếp (cùng lý do
 // common_button_test.dart / pause_overlay_test.dart).
-Finder _button(String label) => find.widgetWithText(CommonButton, label);
+Finder _button(String label) => find.byWidgetPredicate(
+  (widget) => widget is CommonButton && widget.label == label,
+);
 
 /// GameDemoScreen doesn't use NeonBg, but the FlameGame it hosts runs its own
 /// permanent game-loop Ticker (same class of issue — see CLAUDE.md's NeonBg
@@ -142,6 +147,37 @@ void main() {
           of: find.byType(FlameTrackedOverlay),
           matching: find.byType(Positioned),
         ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'core loop: start round spends energy; five Circle taps earn XP, coins, and score',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const GameDemoScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+
+      expect(_button('Start Round (-1 Energy)'), findsOneWidget);
+      expect(EnergyService.maybe!.currentEnergy, 5);
+      await tester.tap(_button('Start Round (-1 Energy)'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(EnergyService.maybe!.currentEnergy, 4);
+      expect(find.text('Tap Circle: 0 / 5'), findsWidgets);
+
+      final game = find.byType(GameWidget<RoyGame>);
+      for (var i = 0; i < 5; i++) {
+        await tester.tapAt(tester.getCenter(game));
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(PlayerProgressionService.maybe!.snapshot.value.totalXpEarned, 40);
+      expect(EconomyWallet.maybe!.balanceOf('coins'), 30);
+      expect(LocalScoreboardService.maybe!.topN(1).single.score, '50');
+      expect(
+        find.textContaining('Victory! +40 XP, +30 coins.'),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);

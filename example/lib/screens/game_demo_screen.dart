@@ -63,8 +63,15 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
         ..start();
 
   late final EconomyWallet _wallet;
+  late final EnergyService _energy;
+  late final PlayerProgressionService _progression;
+  late final LocalScoreboardService _scoreboard;
   late final AchievementService _achievements;
   int _tapCount = 0;
+  int _roundTaps = 0;
+  int _roundScore = 0;
+  bool _roundActive = false;
+  String _roundStatus = 'Spend 1 energy, then tap Circle 5 times to win.';
   int _confettiBurstKey = 0;
   bool _showConfetti = false;
   bool _showAchievementBanner = false;
@@ -79,6 +86,33 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     _wallet =
         EconomyWallet.maybe ??
         Get.put(EconomyWallet(storage: StorageService.to), permanent: true);
+    _energy =
+        EnergyService.maybe ??
+        Get.put(
+          EnergyService(
+            maxEnergy: 5,
+            refillInterval: const Duration(minutes: 10),
+          ),
+          permanent: true,
+        );
+    _progression =
+        PlayerProgressionService.maybe ??
+        Get.put(
+          PlayerProgressionService(
+            storage: StorageService.to,
+            levelCurve: const [
+              LevelDefinition(level: 1, xpToNext: 100),
+              LevelDefinition(level: 2, xpToNext: 200),
+              LevelDefinition(level: 3, xpToNext: 400),
+              LevelDefinition(level: 4, xpToNext: 800),
+              LevelDefinition(level: 5, xpToNext: 0),
+            ],
+          ),
+          permanent: true,
+        );
+    _scoreboard =
+        LocalScoreboardService.maybe ??
+        Get.put(LocalScoreboardService(capacity: 20), permanent: true);
     _achievements =
         AchievementService.maybe ??
         Get.put(AchievementService(), permanent: true);
@@ -108,6 +142,8 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     // rebuild the badge with the STALE gem balance on a real device.
     _eventBus.subscribe<CircleTappedEvent>((_) async {
       _tapCount++;
+      if (_roundActive) _roundTaps++;
+      _roundScore += 10;
       _haptics.play(
         _tapCount % 5 == 0
             ? HapticPattern.combo
@@ -122,8 +158,59 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
       if (!_achievements.isCompleted(_tapAchievementId)) {
         _achievements.incrementProgress(_tapAchievementId, 1);
       }
+      if (_roundActive && _roundTaps >= 5) {
+        _roundActive = false;
+        await _finishRound();
+      }
       if (mounted) setState(() {});
     });
+  }
+
+  void _startRound() {
+    if (!_energy.consumeEnergy()) {
+      _haptics.play(HapticPattern.error);
+      setState(() {
+        _roundStatus = 'Not enough energy. Wait for refill.';
+      });
+      return;
+    }
+    setState(() {
+      _roundActive = true;
+      _roundTaps = 0;
+      _roundScore = 0;
+      _roundStatus = 'Round active: tap Circle 5 times!';
+    });
+  }
+
+  Future<void> _finishRound() async {
+    final prevLevel = _progression.snapshot.value.level;
+    final xpResult = await _progression.grantXp(
+      amount: 40,
+      transactionId: 'round_xp_${DateTime.now().microsecondsSinceEpoch}',
+    );
+    await _wallet.earn(
+      currency: 'coins',
+      amount: 30,
+      transactionId: 'round_coins_${DateTime.now().microsecondsSinceEpoch}',
+    );
+    if (_roundScore > 0) {
+      _scoreboard.submitScore('Hero Player', _roundScore);
+    }
+    _haptics.play(HapticPattern.reward);
+    unawaited(AudioManager.maybe?.playSfx(_sfxTap, duck: true));
+    final currentLevel =
+        xpResult.value?.level ?? _progression.snapshot.value.level;
+    final levelUpMsg = currentLevel > prevLevel
+        ? ' LEVEL UP to Lv.$currentLevel!'
+        : '';
+    if (!mounted) return;
+    setState(() {
+      _confettiBurstKey++;
+      _showConfetti = true;
+      _roundStatus = 'Victory! +40 XP, +30 coins.$levelUpMsg';
+    });
+    // ponytail: keep reward feedback in screen state; add a transient toast
+    // when host app owns snackbar lifecycle and teardown policy.
   }
 
   @override
@@ -255,8 +342,52 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                 ),
               ),
               Positioned(
+                left: NeonTheme.s16,
                 right: NeonTheme.s16,
-                bottom: NeonTheme.s16,
+                bottom: NeonTheme.s16 + 4,
+                child: RepaintBoundary(
+                  child: PanelCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          _roundStatus,
+                          style: TextStyle(
+                            color: NeonTheme.ink,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: NeonTheme.s8),
+                        EnergyBar(
+                          currentEnergy: _energy.currentEnergy,
+                          maxEnergy: _energy.maxEnergy,
+                          timeUntilNextEnergy: _energy.timeUntilNextEnergy,
+                          hasInfiniteLives: _energy.hasInfiniteLives,
+                          direction: Axis.horizontal,
+                        ),
+                        const SizedBox(height: NeonTheme.s8),
+                        CommonButton(
+                          label: _roundActive
+                              ? 'Tap Circle: $_roundTaps / 5'
+                              : 'Start Round (-1 Energy)',
+                          onTap: _roundActive ? null : _startRound,
+                        ),
+                        const SizedBox(height: NeonTheme.s8),
+                        Obx(() {
+                          final progress = _progression.snapshot.value;
+                          return Text(
+                            'Score: $_roundScore | Lv.${progress.level} | XP: ${progress.xpIntoLevel}/${progress.xpToNextLevel} | Coins: ${_wallet.balanceOf('coins')}',
+                            style: TextStyle(color: NeonTheme.inkSoft),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: NeonTheme.s16,
+                bottom: 240,
                 child: RepaintBoundary(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
