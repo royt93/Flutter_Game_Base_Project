@@ -7,6 +7,8 @@
 - Enforced strict teardown lifecycle contract in `CheckpointCoordinator.onClose()`: immediately completes all pending debounced checkpoint completers with typed failure, preventing permanently leaked Futures.
 - Guarded `ConnectivityCoordinator` asynchronous continuations against post-close invocations, eliminating `Bad state: Cannot add new events after calling close` and preventing dangling probe loops or rogue queue drains.
 - Injected `nowMs` testable clock seam into `RewardTransactionPipeline.grant()` (BUG-81): replaces hard-coded `DateTime.now()` with an injectable `int Function()? nowMs` param, aligning with the SDK-wide timestamp seam convention.
+- Added end-to-end performance/memory optimization pass (Option D4): isolated Flame game/HUD/app bar/FAB/tracked overlays behind `RepaintBoundary`, reused `ConfettiOverlay` painter allocation state to reduce per-frame GC churn, and added optional `RoyLifecycleCoordinator(trimMemoryOnBackground: true)` image-cache trimming on background.
+- Added D4 proof coverage: lifecycle unit tests, confetti/flame overlay widget tests, GameDemoScreen render-isolation widget test, focused integration test (`example/integration_test/d4_perf_memory_test.dart`), and verified a release APK build/install/launch on a physical TECNO KJ7 with no fatal AndroidRuntime crash in smoke logs.
 - Modernized API compatibility tool (`tool/api_compatibility.dart`): added full support for modern Dart 3 modifiers (`sealed`, `final`, `base`, `interface`), typed top-level functions, getters/setters, eliminated 44 private symbol leaks, and corrected semver major release gating.
 
 ## 0.2.4
