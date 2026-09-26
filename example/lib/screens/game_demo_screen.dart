@@ -23,7 +23,9 @@ class GameDemoScreen extends StatefulWidget {
 }
 
 class _GameDemoScreenState extends State<GameDemoScreen> {
-  static const _sfxTap = 'audio/demo_sfx.mp3';
+  static const _sfxTap = 'audio/tap.ogg';
+  static const _sfxVictory = 'audio/victory.ogg';
+  static const _sfxError = 'audio/error.ogg';
 
   // FEAT-88: created before `_game` (Dart initializes instance fields in
   // declaration order) so RoyGame's constructor can take it. Bridges
@@ -169,6 +171,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
   void _startRound() {
     if (!_energy.consumeEnergy()) {
       _haptics.play(HapticPattern.error);
+      unawaited(AudioManager.maybe?.playSfx(_sfxError));
       setState(() {
         _roundStatus = 'Not enough energy. Wait for refill.';
       });
@@ -197,7 +200,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
       _scoreboard.submitScore('Hero Player', _roundScore);
     }
     _haptics.play(HapticPattern.reward);
-    unawaited(AudioManager.maybe?.playSfx(_sfxTap, duck: true));
+    unawaited(AudioManager.maybe?.playSfx(_sfxVictory, duck: true));
     final currentLevel =
         xpResult.value?.level ?? _progression.snapshot.value.level;
     final levelUpMsg = currentLevel > prevLevel

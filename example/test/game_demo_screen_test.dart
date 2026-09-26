@@ -227,7 +227,7 @@ void main() {
       await tester.tapAt(tester.getCenter(find.byType(GameWidget<RoyGame>)));
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(audio.played, ['audio/demo_sfx.mp3']);
+      expect(audio.played, ['audio/tap.ogg']);
       expect(audio.ducked, [false]);
 
       while (EconomyWallet.maybe!.balanceOf('gems') < 20) {

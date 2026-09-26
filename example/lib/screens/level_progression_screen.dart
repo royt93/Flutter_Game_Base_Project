@@ -10,7 +10,8 @@ class LevelProgressionScreen extends StatefulWidget {
 }
 
 class _LevelProgressionScreenState extends State<LevelProgressionScreen> {
-  static const _sfxVictory = 'audio/demo_sfx.mp3';
+  static const _sfxVictory = 'audio/victory.ogg';
+  static const _sfxError = 'audio/error.ogg';
 
   late final EnergyService _energy;
   late final PlayerProgressionService _progression;
@@ -62,6 +63,7 @@ class _LevelProgressionScreenState extends State<LevelProgressionScreen> {
     final success = _energy.consumeEnergy(1);
     if (!success) {
       _haptics.play(HapticPattern.error);
+      AudioManager.maybe?.playSfx(_sfxError);
       if (!mounted) return;
       setState(() {
         _status = 'Not enough energy! Wait for refill or use infinite lives.';
