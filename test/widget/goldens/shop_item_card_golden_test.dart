@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/shop_item_card.dart';
+import 'golden_test_support.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
   home: Material(child: Center(child: child)),
 );
 
 void main() {
+  final previousGoldenComparator = installGoldenTolerance(
+    'shop_item_card_golden_test.dart',
+  );
+  tearDownAll(() => goldenFileComparator = previousGoldenComparator);
   testWidgets('ShopItemCard basic layout', (tester) async {
     await tester.pumpWidget(
       _wrap(

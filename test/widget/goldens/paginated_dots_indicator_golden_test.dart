@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/paginated_dots_indicator.dart';
+import 'golden_test_support.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
   home: Material(
@@ -9,6 +10,10 @@ Widget _wrap(Widget child) => MaterialApp(
 );
 
 void main() {
+  final previousGoldenComparator = installGoldenTolerance(
+    'paginated_dots_indicator_golden_test.dart',
+  );
+  tearDownAll(() => goldenFileComparator = previousGoldenComparator);
   testWidgets('PaginatedDotsIndicator first of 4 active', (tester) async {
     await tester.pumpWidget(
       _wrap(const PaginatedDotsIndicator(count: 4, currentIndex: 0)),

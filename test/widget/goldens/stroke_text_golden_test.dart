@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/stroke_text.dart';
+import 'golden_test_support.dart';
 
 void main() {
+  final previousGoldenComparator = installGoldenTolerance(
+    'stroke_text_golden_test.dart',
+  );
+  tearDownAll(() => goldenFileComparator = previousGoldenComparator);
   testWidgets('StrokeText default', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(

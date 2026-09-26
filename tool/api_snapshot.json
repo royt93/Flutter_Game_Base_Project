@@ -3,6 +3,7 @@
   "entrypoint": "lib/roy_casual_kit.dart",
   "exports": [
     "core/achievement_service.dart",
+    "core/ad_reward_seam.dart",
     "core/analytics_provider.dart",
     "core/app_info.dart",
     "core/app_session_tracker.dart",
@@ -118,6 +119,7 @@
   ],
   "symbols": [
     "core/achievement_service.dart:AchievementService",
+    "core/ad_reward_seam.dart:AdRewardSeam",
     "core/analytics_provider.dart:AnalyticsProvider",
     "core/analytics_provider.dart:NoopAnalyticsProvider",
     "core/app_info.dart:kAppName",
@@ -258,6 +260,7 @@
     "core/player_progression_service.dart:validateLevelCurve",
     "core/player_progression_service.dart:xpIntoLevelForTotalXp",
     "core/plugin_adapter_conformance_suite.dart:ConformanceReport",
+    "core/plugin_adapter_conformance_suite.dart:FakeAdRewardSeam",
     "core/plugin_adapter_conformance_suite.dart:FakeCloudSaveProvider",
     "core/plugin_adapter_conformance_suite.dart:FakeCrashReporter",
     "core/plugin_adapter_conformance_suite.dart:FakePurchaseSeam",

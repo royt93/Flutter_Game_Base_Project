@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_icon.dart';
+import 'golden_test_support.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
   home: Material(
@@ -10,6 +11,10 @@ Widget _wrap(Widget child) => MaterialApp(
 );
 
 void main() {
+  final previousGoldenComparator = installGoldenTolerance(
+    'neon_icon_golden_test.dart',
+  );
+  tearDownAll(() => goldenFileComparator = previousGoldenComparator);
   testWidgets('NeonIcon plain', (tester) async {
     await tester.pumpWidget(
       _wrap(NeonIcon(Icons.star_rounded, color: NeonTheme.gold, size: 40)),

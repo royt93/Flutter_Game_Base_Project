@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 
 import '../../support/golden_matrix.dart';
+import 'golden_test_support.dart';
 
 // FEAT-69: demonstrates `runGoldenMatrix` against a real widget kit widget
 // (not just the runner's own synthetic fixtures, see
@@ -11,6 +12,10 @@ import '../../support/golden_matrix.dart';
 // task rather than all ~47 in the kit — see this task's Quyết định for why
 // a full rollout is left as follow-up work, not scope creep here.
 void main() {
+  final previousGoldenComparator = installGoldenTolerance(
+    'common_button_matrix_golden_test.dart',
+  );
+  tearDownAll(() => goldenFileComparator = previousGoldenComparator);
   testWidgets('CommonButton primary qua toàn bộ ma trận mặc định (7 case)', (
     tester,
   ) async {

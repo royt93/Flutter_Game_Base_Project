@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/ribbon_badge.dart';
+import 'golden_test_support.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
   home: Material(
@@ -16,6 +17,10 @@ Widget _wrap(Widget child) => MaterialApp(
 );
 
 void main() {
+  final previousGoldenComparator = installGoldenTolerance(
+    'ribbon_badge_golden_test.dart',
+  );
+  tearDownAll(() => goldenFileComparator = previousGoldenComparator);
   testWidgets('RibbonBadge default color', (tester) async {
     await tester.pumpWidget(
       _wrap(const RibbonBadge(text: 'SALE', child: SizedBox.expand())),
