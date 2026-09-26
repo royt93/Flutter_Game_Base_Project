@@ -23,12 +23,15 @@ class GameDemoScreen extends StatefulWidget {
 }
 
 class _GameDemoScreenState extends State<GameDemoScreen> {
+  static const _sfxTap = 'audio/demo_sfx.mp3';
+
   // FEAT-88: created before `_game` (Dart initializes instance fields in
   // declaration order) so RoyGame's constructor can take it. Bridges
   // TappableCircle's tap — a Flame-world gameplay event — to 2 independent
   // business-logic services below, without RoyGame itself knowing either
   // one exists.
   final _eventBus = GameEventBus();
+  final _haptics = HapticChoreographer();
   late final _game = RoyGame(eventBus: _eventBus);
   final _gameWidgetKey = GlobalKey();
   bool _showInfo = false;
@@ -52,9 +55,12 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
   // is still called manually in `dispose()` below rather than through
   // `Get.delete()`, matching this field's existing (pre-ENH-82) disposal
   // style.
-  late final _session = Get.put<GameSessionController>(
-    GameSessionController(lifecycle: RoyLifecycleCoordinator.maybe),
-  )..markReady()..start();
+  late final _session =
+      Get.put<GameSessionController>(
+          GameSessionController(lifecycle: RoyLifecycleCoordinator.maybe),
+        )
+        ..markReady()
+        ..start();
 
   late final EconomyWallet _wallet;
   late final AchievementService _achievements;
@@ -80,7 +86,8 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
 
     _unlockSub = _achievements.onUnlock.listen((id) async {
       if (id == _tapAchievementId) {
-        fireHaptic(HapticLevel.heavy);
+        _haptics.play(HapticPattern.reward);
+        unawaited(AudioManager.maybe?.playSfx(_sfxTap, duck: true));
         _confettiBurstKey++;
         _showConfetti = true;
         _showAchievementBanner = true;
@@ -101,7 +108,12 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     // rebuild the badge with the STALE gem balance on a real device.
     _eventBus.subscribe<CircleTappedEvent>((_) async {
       _tapCount++;
-      fireHaptic(HapticLevel.light);
+      _haptics.play(
+        _tapCount % 5 == 0
+            ? HapticPattern.combo
+            : HapticPattern([const HapticPulse(level: HapticLevel.light)]),
+      );
+      unawaited(AudioManager.maybe?.playSfx(_sfxTap, volume: 0.45));
       await _wallet.earn(
         currency: 'gems',
         amount: 1,
@@ -127,6 +139,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     // screen would just silently replace the registry entry each time
     // rather than leaking, but leaving a disposed controller findable via
     // `Get.find` in the meantime is its own footgun.
+    _haptics.cancel();
     unawaited(_unlockSub?.cancel());
     Get.delete<GameSessionController>(force: true);
     unawaited(_eventBus.dispose());
@@ -251,7 +264,10 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                       FloatingActionButton(
                         heroTag: 'pause',
                         onPressed: () {
-                          fireHaptic(HapticLevel.medium);
+                          _haptics.play(HapticPattern.combo);
+                          unawaited(
+                            AudioManager.maybe?.playSfx(_sfxTap, volume: 0.35),
+                          );
                           _session.pause(GamePauseReason.user);
                         },
                         backgroundColor: NeonTheme.cyan,
@@ -261,7 +277,10 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                       FloatingActionButton(
                         heroTag: 'info',
                         onPressed: () {
-                          fireHaptic(HapticLevel.medium);
+                          _haptics.play(HapticPattern.combo);
+                          unawaited(
+                            AudioManager.maybe?.playSfx(_sfxTap, volume: 0.35),
+                          );
                           setState(() => _showInfo = true);
                         },
                         backgroundColor: NeonTheme.purple,

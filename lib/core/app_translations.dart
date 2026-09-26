@@ -29,6 +29,8 @@ class AppTranslations extends Translations {
       'game_demo': 'Flame Demo',
       'cookbook': 'Cookbook',
       'daily_rewards': 'Daily Rewards',
+      'shop': 'Shop',
+      'save_cloud': 'Save & Cloud',
     },
     'vi': {
       'app_name': 'Roy Project Base Game',
@@ -45,6 +47,8 @@ class AppTranslations extends Translations {
       'game_demo': 'Demo Flame',
       'cookbook': 'Cookbook',
       'daily_rewards': 'Thưởng ngày',
+      'shop': 'Cửa hàng',
+      'save_cloud': 'Lưu trữ & Đám mây',
     },
   };
 }

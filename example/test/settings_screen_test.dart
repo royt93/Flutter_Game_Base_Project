@@ -15,7 +15,9 @@ import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
 import 'package:roy_casual_kit_example/screens/daily_reward_screen.dart';
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
+import 'package:roy_casual_kit_example/screens/save_cloud_screen.dart';
 import 'package:roy_casual_kit_example/screens/settings_screen.dart';
+import 'package:roy_casual_kit_example/screens/shop_screen.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -130,6 +132,46 @@ void main() {
           }
 
           expect(find.byType(DailyRewardScreen), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'tap "Shop" → điều hướng thật sang ShopScreen',
+        (tester) async {
+          await _boot();
+
+          await tester.pumpWidget(_wrap(const HomeScreen()));
+          await tester.pump(const Duration(milliseconds: 100));
+
+          await tester.tap(
+            find.widgetWithText(NeonButton, 'Shop').first,
+          );
+          for (var i = 0; i < 3; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+
+          expect(find.byType(ShopScreen), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'tap "Save & Cloud" → điều hướng thật sang SaveCloudScreen',
+        (tester) async {
+          await _boot();
+
+          await tester.pumpWidget(_wrap(const HomeScreen()));
+          await tester.pump(const Duration(milliseconds: 100));
+
+          await tester.tap(
+            find.widgetWithText(NeonButton, 'Save & Cloud').first,
+          );
+          for (var i = 0; i < 3; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+
+          expect(find.byType(SaveCloudScreen), findsOneWidget);
           expect(tester.takeException(), isNull);
         },
       );

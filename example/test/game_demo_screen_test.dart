@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/achievement_service.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
+import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
@@ -29,6 +30,21 @@ Widget _wrap(Widget child) => GetMaterialApp(
   fallbackLocale: AppTranslations.fallback,
   home: child,
 );
+
+class _FakeAudioManager extends AudioManager {
+  final played = <String>[];
+  final ducked = <bool>[];
+
+  @override
+  Future<void> playSfx(
+    String fileName, {
+    double volume = 1.0,
+    bool duck = false,
+  }) async {
+    played.add(fileName);
+    ducked.add(duck);
+  }
+}
 
 void main() {
   tearDown(Get.reset);
@@ -133,37 +149,61 @@ void main() {
   );
 
   group('FEAT-88: GameEventBus wires 1 tap to 2 independent services', () {
-    testWidgets(
-      'tap circle -> EconomyWallet (gems) VÀ AchievementService (tap '
-      'progress) đều cập nhật, cả 2 hiện trên badge',
-      (tester) async {
-        await tester.pumpWidget(_wrap(const GameDemoScreen()));
-        await tester.pump(const Duration(milliseconds: 100));
-        // IDEA-65: RoyGame's TappableCircle now adds its own hitbox child
-        // in onLoad — that child's mount settles 1 Flutter frame after the
-        // one the pump above flushed, and a tap dispatched before it fully
-        // settles is simply missed (not deferred/retried). 1 extra bare
-        // pump() reliably closes that gap.
-        await tester.pump();
+    testWidgets('tap circle -> EconomyWallet (gems) VÀ AchievementService (tap '
+        'progress) đều cập nhật, cả 2 hiện trên badge', (tester) async {
+      await tester.pumpWidget(_wrap(const GameDemoScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+      // IDEA-65: RoyGame's TappableCircle now adds its own hitbox child
+      // in onLoad — that child's mount settles 1 Flutter frame after the
+      // one the pump above flushed, and a tap dispatched before it fully
+      // settles is simply missed (not deferred/retried). 1 extra bare
+      // pump() reliably closes that gap.
+      await tester.pump();
 
-        expect(find.textContaining('gems: 0'), findsOneWidget);
-        expect(find.textContaining('tap: 0/10'), findsOneWidget);
+      expect(find.textContaining('gems: 0'), findsOneWidget);
+      expect(find.textContaining('tap: 0/10'), findsOneWidget);
 
-        await tester.tapAt(
-          tester.getCenter(find.byType(GameWidget<RoyGame>)),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
+      await tester.tapAt(tester.getCenter(find.byType(GameWidget<RoyGame>)));
+      await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.textContaining('gems: 1'), findsOneWidget);
-        expect(find.textContaining('tap: 1/10'), findsOneWidget);
+      expect(find.textContaining('gems: 1'), findsOneWidget);
+      expect(find.textContaining('tap: 1/10'), findsOneWidget);
 
-        final wallet = EconomyWallet.maybe!;
-        final achievements = AchievementService.maybe!;
-        expect(wallet.balanceOf('gems'), 1);
-        expect(achievements.progressOf('game_demo_circle_tap_master'), 1);
-        expect(tester.takeException(), isNull);
-      },
-    );
+      final wallet = EconomyWallet.maybe!;
+      final achievements = AchievementService.maybe!;
+      expect(wallet.balanceOf('gems'), 1);
+      expect(achievements.progressOf('game_demo_circle_tap_master'), 1);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('tap circle phát SFX thường, unlock phát SFX ducked', (
+      tester,
+    ) async {
+      final audio = _FakeAudioManager();
+      Get.put<AudioManager>(audio, permanent: true);
+
+      await tester.pumpWidget(_wrap(const GameDemoScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+      // IDEA-65: see the sibling test above for why this extra pump is
+      // needed before the first tap can land.
+      await tester.pump();
+
+      await tester.tapAt(tester.getCenter(find.byType(GameWidget<RoyGame>)));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(audio.played, ['audio/demo_sfx.mp3']);
+      expect(audio.ducked, [false]);
+
+      while (EconomyWallet.maybe!.balanceOf('gems') < 20) {
+        await tester.tapAt(tester.getCenter(find.byType(GameWidget<RoyGame>)));
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(audio.played.length, 11);
+      expect(audio.ducked.where((duck) => duck), hasLength(1));
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets(
       'nhiều tap liên tiếp cộng dồn đúng cả 2 phía, không mất event nào',
@@ -216,12 +256,12 @@ void main() {
     );
   });
 
-  group('ENH-82: GameSessionController synced with RoyLifecycleCoordinator', () {
-    testWidgets(
-      'app bị background thật (OS lifecycle) trong lúc playing -> '
-      'PauseOverlay tự hiện đúng panel (không cần bấm FAB); foreground lại '
-      '-> tự ẩn',
-      (tester) async {
+  group(
+    'ENH-82: GameSessionController synced with RoyLifecycleCoordinator',
+    () {
+      testWidgets('app bị background thật (OS lifecycle) trong lúc playing -> '
+          'PauseOverlay tự hiện đúng panel (không cần bấm FAB); foreground lại '
+          '-> tự ẩn', (tester) async {
         final lifecycle = RoyLifecycleCoordinator();
         Get.put(lifecycle, permanent: true);
 
@@ -262,23 +302,23 @@ void main() {
 
         expect(_button('Resume'), findsNothing);
         expect(tester.takeException(), isNull);
-      },
-    );
+      });
 
-    testWidgets(
-      'không có RoyLifecycleCoordinator đăng ký -> demo vẫn hoạt động bình '
-      'thường, không crash (lifecycle: null, giống hành vi trước ENH-82)',
-      (tester) async {
-        expect(Get.isRegistered<RoyLifecycleCoordinator>(), isFalse);
+      testWidgets(
+        'không có RoyLifecycleCoordinator đăng ký -> demo vẫn hoạt động bình '
+        'thường, không crash (lifecycle: null, giống hành vi trước ENH-82)',
+        (tester) async {
+          expect(Get.isRegistered<RoyLifecycleCoordinator>(), isFalse);
 
-        await tester.pumpWidget(_wrap(const GameDemoScreen()));
-        await tester.pump(const Duration(milliseconds: 100));
+          await tester.pumpWidget(_wrap(const GameDemoScreen()));
+          await tester.pump(const Duration(milliseconds: 100));
 
-        expect(_button('Resume'), findsNothing);
-        expect(tester.takeException(), isNull);
-      },
-    );
-  });
+          expect(_button('Resume'), findsNothing);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    },
+  );
 
   group('D1: Render Pipeline & Repaint Isolation', () {
     testWidgets(
@@ -353,7 +393,11 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        expect(memoryTrimCount, 1, reason: 'Bộ nhớ cache phải được dọn khi app background');
+        expect(
+          memoryTrimCount,
+          1,
+          reason: 'Bộ nhớ cache phải được dọn khi app background',
+        );
         expect(_button('Resume'), findsWidgets);
 
         // 3. Foreground trở lại: tự resume và tiếp tục vẽ ổn định
