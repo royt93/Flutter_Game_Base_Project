@@ -194,30 +194,33 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _isVip ? 'VIP Member' : 'Standard Player',
-                                  style: TextStyle(
-                                    color:
-                                        _isVip ? NeonTheme.gold : NeonTheme.ink,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _isVip ? 'VIP Member' : 'Standard Player',
+                                    style: TextStyle(
+                                      color:
+                                          _isVip ? NeonTheme.gold : NeonTheme.ink,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _isVip
-                                      ? 'No-Ads Active (Instant ad skip)'
-                                      : 'Ads enabled',
-                                  style: TextStyle(
-                                    color: NeonTheme.inkSoft,
-                                    fontSize: 12,
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _isVip
+                                        ? 'No-Ads Active (Instant ad skip)'
+                                        : 'Ads enabled',
+                                    style: TextStyle(
+                                      color: NeonTheme.inkSoft,
+                                      fontSize: 12,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
                               'Coins: $coins | Gems: $gems',
                               style: TextStyle(
@@ -248,6 +251,7 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
                             title: 'Pouch of Coins (+100 Coins)',
                             subtitle: r'Consumable pack • $0.99',
                             trailing: CommonButton(
+                              width: 90,
                               label: r'$0.99',
                               onTap:
                                   () => _buyConsumable(
@@ -263,6 +267,7 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
                             title: 'Handful of Gems (+20 Gems)',
                             subtitle: r'Consumable pack • $1.99',
                             trailing: CommonButton(
+                              width: 90,
                               label: r'$1.99',
                               onTap:
                                   () => _buyConsumable(
@@ -281,6 +286,7 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
                                     ? 'Owned (Permanent unlock)'
                                     : r'Remove all ads & instant claim • $2.99',
                             trailing: CommonButton(
+                              width: 90,
                               label: _isVip ? 'Owned' : r'$2.99',
                               variant:
                                   _isVip
@@ -307,15 +313,18 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Rewarded Ads (AppLovin / AdMob)',
-                                style: TextStyle(
-                                  color: NeonTheme.ink,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                              Expanded(
+                                child: Text(
+                                  'Rewarded Ads (AppLovin / AdMob)',
+                                  style: TextStyle(
+                                    color: NeonTheme.ink,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
                                 ),
                               ),
-                              if (_isVip)
+                              if (_isVip) ...[
+                                const SizedBox(width: 8),
                                 Text(
                                   'Instant VIP Skip',
                                   style: TextStyle(
@@ -324,6 +333,7 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
+                              ],
                             ],
                           ),
                           const SizedBox(height: NeonTheme.s8),

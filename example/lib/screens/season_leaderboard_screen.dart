@@ -168,6 +168,7 @@ class _SeasonLeaderboardScreenState extends State<SeasonLeaderboardScreen> {
                                 ),
                               ),
                               CommonButton(
+                                width: 140,
                                 label: 'Submit +500',
                                 variant: CommonButtonVariant.secondary,
                                 onTap: () => _submitScore(500 + _seasonPoints * 10),
