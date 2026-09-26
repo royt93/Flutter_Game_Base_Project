@@ -8,6 +8,44 @@ debug/QA overlay. Read it directly for the actual integration pattern
 instead of a single isolated snippet — that's the fastest way to see how
 the pieces fit together in a real app.
 
+
+## Non-technical demo script
+
+Use this 2-minute script when showing the app to someone who does not read code:
+
+1. Run the example app.
+2. From Home, open **Game Demo**.
+3. Tap the circle 10 times.
+4. Check these visible results:
+   - `tap: 10/10`
+   - `gems: 20`
+   - star achievement icon
+   - confetti burst
+5. Press the phone Home button or background the app, then return.
+6. Check that the pause panel appears while backgrounded and disappears after resume.
+
+This single flow demonstrates gameplay events, reward economy, achievement unlock, confetti, haptics, repaint isolation, and memory trim lifecycle behavior.
+
+## Proof tests
+
+Focused D4 proof:
+
+```bash
+flutter test integration_test/d4_perf_memory_test.dart
+```
+
+Game demo widget proof:
+
+```bash
+flutter test test/game_demo_screen_test.dart
+```
+
+Release build proof:
+
+```bash
+flutter build apk --release
+```
+
 ## Run it
 
 ```bash

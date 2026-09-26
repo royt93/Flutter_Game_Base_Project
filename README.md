@@ -7,6 +7,49 @@ candy-styled widget kit — one `RoyCasualKit.initialize(...)` call replaces
 hand-rolling `Get.put` calls for every service a casual game typically needs
 to build from scratch.
 
+
+## Quick path for non-technical reviewers
+
+Want to see proof without reading code? Use this order:
+
+1. Open `example/` on a device.
+2. Tap **Game Demo**.
+3. Tap the circle 10 times.
+4. Expected result: the badge reaches `tap: 10/10`, gems reach `20`, a confetti burst appears, and the achievement icon turns into a star.
+5. Background and resume the app. Expected result: the pause panel appears while backgrounded and disappears after resume; no crash.
+
+What this proves:
+
+- Flame gameplay events reach SDK services (`EconomyWallet`, `AchievementService`).
+- Achievement unlock triggers reward, haptics, banner, and confetti.
+- Render-heavy pieces are isolated behind `RepaintBoundary` so the game loop does not repaint the whole UI.
+- Background lifecycle can trim memory cache through `RoyLifecycleCoordinator(trimMemoryOnBackground: true)`.
+
+## Device proof
+
+Latest physical-device smoke proof:
+
+- Device: **TECNO KJ7**
+- Build: `example/build/app/outputs/flutter-apk/app-release.apk`
+- APK size: `61.6MB`
+- Install: `Success`
+- Launch package: `com.galaxyjoy.roycasualkit`
+- Smoke result: app launched with a running pid and no `FATAL EXCEPTION` / `AndroidRuntime` crash in scanned logcat output.
+
+Re-run the focused performance/memory proof:
+
+```bash
+cd example
+flutter test integration_test/d4_perf_memory_test.dart
+```
+
+Re-run the release APK build:
+
+```bash
+cd example
+flutter build apk --release
+```
+
 ## Screenshots
 
 All from `example/` — light and dark are the same `NeonTheme` tokens, no
