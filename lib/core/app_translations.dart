@@ -28,6 +28,7 @@ class AppTranslations extends Translations {
       'back_button_label': 'Back',
       'game_demo': 'Flame Demo',
       'cookbook': 'Cookbook',
+      'daily_rewards': 'Daily Rewards',
     },
     'vi': {
       'app_name': 'Roy Project Base Game',
@@ -43,6 +44,7 @@ class AppTranslations extends Translations {
       'back_button_label': 'Quay lại',
       'game_demo': 'Demo Flame',
       'cookbook': 'Cookbook',
+      'daily_rewards': 'Thưởng ngày',
     },
   };
 }

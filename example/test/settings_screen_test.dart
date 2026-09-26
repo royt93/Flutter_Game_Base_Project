@@ -13,6 +13,7 @@ import 'package:roy_casual_kit/presentation/widgets/common/toggle_switch.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_dialog.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
+import 'package:roy_casual_kit_example/screens/daily_reward_screen.dart';
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
 import 'package:roy_casual_kit_example/screens/settings_screen.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
@@ -112,6 +113,26 @@ void main() {
         expect(find.byType(GameDemoScreen), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
+
+      testWidgets(
+        'tap "Daily Rewards" → điều hướng thật sang DailyRewardScreen',
+        (tester) async {
+          await _boot();
+
+          await tester.pumpWidget(_wrap(const HomeScreen()));
+          await tester.pump(const Duration(milliseconds: 100));
+
+          await tester.tap(
+            find.widgetWithText(NeonButton, 'Daily Rewards').first,
+          );
+          for (var i = 0; i < 3; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+
+          expect(find.byType(DailyRewardScreen), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
     });
   });
 
@@ -190,19 +211,18 @@ void main() {
   });
 
   group('SettingsScreen without WakeLockService registered', () {
-    testWidgets(
-      'does not crash and does not render the keep-screen-on row',
-      (tester) async {
-        await _boot();
-        expect(Get.isRegistered<WakeLockService>(), isFalse);
+    testWidgets('does not crash and does not render the keep-screen-on row', (
+      tester,
+    ) async {
+      await _boot();
+      expect(Get.isRegistered<WakeLockService>(), isFalse);
 
-        await tester.pumpWidget(_wrap(const SettingsScreen()));
-        await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpWidget(_wrap(const SettingsScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
 
-        expect(tester.takeException(), isNull);
-        expect(find.text('Keep Screen On'), findsNothing);
-      },
-    );
+      expect(tester.takeException(), isNull);
+      expect(find.text('Keep Screen On'), findsNothing);
+    });
   });
 
   group('SettingsScreen dark mode toggle', () {
@@ -373,44 +393,43 @@ void main() {
   });
 
   group('FEAT-94: PlayerDataRightsService tiles', () {
-    testWidgets(
-      'tap "Yêu cầu xuất dữ liệu" -> hiện toast đúng số key đã lưu',
-      (tester) async {
-        final store = await _boot();
-        await store.setString('demo_key', 'demo_value');
+    testWidgets('tap "Yêu cầu xuất dữ liệu" -> hiện toast đúng số key đã lưu', (
+      tester,
+    ) async {
+      final store = await _boot();
+      await store.setString('demo_key', 'demo_value');
 
-        await tester.pumpWidget(_wrap(const SettingsScreen()));
-        await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpWidget(_wrap(const SettingsScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
 
-        final exportFinder = find.byKey(const Key('settingsRequestExport'));
+      final exportFinder = find.byKey(const Key('settingsRequestExport'));
 
-        // IDEA-59: SaveHealthCard (debug-only) now renders above this tile,
-        // pushing it far enough down that this ListView (a Sliver list,
-        // lazy even with a plain `children:` list) never builds it into
-        // the element tree until scrolled into range — `ensureVisible`
-        // can't help (needs the element to already exist); scroll
-        // incrementally like `cookbook_screen_test.dart`'s own
-        // `_scrollUntilVisible` does for the same reason.
-        await tester.scrollUntilVisible(
-          exportFinder,
-          250,
-          scrollable: find.byType(Scrollable).first,
-        );
-        // scrollUntilVisible stops the moment the target FIRST overlaps
-        // the viewport at all (even by 1px) — nudge a bit further so its
-        // center is actually hit-testable, not just technically visible.
-        await tester.drag(find.byType(Scrollable).first, const Offset(0, -150));
-        await tester.pump(const Duration(milliseconds: 100));
-        expect(exportFinder, findsOneWidget);
-        await tester.tap(exportFinder);
-        await tester.pump(const Duration(milliseconds: 300));
+      // IDEA-59: SaveHealthCard (debug-only) now renders above this tile,
+      // pushing it far enough down that this ListView (a Sliver list,
+      // lazy even with a plain `children:` list) never builds it into
+      // the element tree until scrolled into range — `ensureVisible`
+      // can't help (needs the element to already exist); scroll
+      // incrementally like `cookbook_screen_test.dart`'s own
+      // `_scrollUntilVisible` does for the same reason.
+      await tester.scrollUntilVisible(
+        exportFinder,
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      // scrollUntilVisible stops the moment the target FIRST overlaps
+      // the viewport at all (even by 1px) — nudge a bit further so its
+      // center is actually hit-testable, not just technically visible.
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -150));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(exportFinder, findsOneWidget);
+      await tester.tap(exportFinder);
+      await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.textContaining('Đã xuất'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-        // Drain the toast's auto-dismiss timer before the test ends.
-        await tester.pump(const Duration(seconds: 3));
-      },
-    );
+      expect(find.textContaining('Đã xuất'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      // Drain the toast's auto-dismiss timer before the test ends.
+      await tester.pump(const Duration(seconds: 3));
+    });
 
     testWidgets(
       'tap "Yêu cầu xoá dữ liệu" rồi Cancel -> KHÔNG xoá gì, storage giữ nguyên',
@@ -421,9 +440,7 @@ void main() {
         await tester.pumpWidget(_wrap(const SettingsScreen()));
         await tester.pump(const Duration(milliseconds: 100));
 
-        final erasureFinder = find.byKey(
-          const Key('settingsRequestErasure'),
-        );
+        final erasureFinder = find.byKey(const Key('settingsRequestErasure'));
         await tester.scrollUntilVisible(
           erasureFinder,
           250,
@@ -470,9 +487,7 @@ void main() {
         await tester.pumpWidget(_wrap(const SettingsScreen()));
         await tester.pump(const Duration(milliseconds: 100));
 
-        final erasureFinder = find.byKey(
-          const Key('settingsRequestErasure'),
-        );
+        final erasureFinder = find.byKey(const Key('settingsRequestErasure'));
         await tester.scrollUntilVisible(
           erasureFinder,
           250,
