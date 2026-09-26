@@ -6,7 +6,10 @@ import 'package:roy_casual_kit/roy_casual_kit.dart';
 import 'cookbook_screen.dart';
 import 'daily_reward_screen.dart';
 import 'game_demo_screen.dart';
+import 'level_progression_screen.dart';
+import 'monetization_screen.dart';
 import 'save_cloud_screen.dart';
+import 'season_leaderboard_screen.dart';
 import 'settings_screen.dart';
 import 'shop_screen.dart';
 import 'widget_showcase_screen.dart';
@@ -62,6 +65,24 @@ class HomeScreen extends StatelessWidget {
                   label: 'save_cloud'.tr,
                   color: NeonTheme.blue,
                   onTap: () => Get.to(() => const SaveCloudScreen()),
+                ),
+                const SizedBox(height: 16),
+                NeonButton(
+                  label: 'level_progression'.tr,
+                  color: NeonTheme.cyan,
+                  onTap: () => Get.to(() => const LevelProgressionScreen()),
+                ),
+                const SizedBox(height: 16),
+                NeonButton(
+                  label: 'season_leaderboard'.tr,
+                  color: NeonTheme.orange,
+                  onTap: () => Get.to(() => const SeasonLeaderboardScreen()),
+                ),
+                const SizedBox(height: 16),
+                NeonButton(
+                  label: 'monetization'.tr,
+                  color: NeonTheme.gold,
+                  onTap: () => Get.to(() => const MonetizationScreen()),
                 ),
                 const SizedBox(height: 16),
                 NeonButton(

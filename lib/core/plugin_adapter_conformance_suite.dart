@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'ad_reward_seam.dart';
 import 'analytics_provider.dart';
 import 'cloud_save_provider.dart';
 import 'crash_reporter.dart';
@@ -246,6 +247,23 @@ class PluginAdapterConformanceSuite {
     return ConformanceReport(adapterName: 'PurchaseSeam', checks: checks);
   }
 
+  static Future<ConformanceReport> verifyAdRewardSeam(
+    AdRewardSeam adapter, {
+    Duration timeout = const Duration(seconds: 2),
+  }) async {
+    final checks = <String, bool>{
+      'isReady does not throw': await _noThrow(
+        () async => adapter.isReady,
+        timeout,
+      ),
+      'showRewardedAd completes within timeout': await _completesWithin(
+        () => adapter.showRewardedAd(),
+        timeout,
+      ),
+    };
+    return ConformanceReport(adapterName: 'AdRewardSeam', checks: checks);
+  }
+
   /// Runs [action], bounded by [timeout] — a hang counts as a failure here
   /// (same as a thrown error), so a stuck adapter can never block the rest
   /// of the checklist regardless of which check catches it first.
@@ -333,4 +351,14 @@ class FakePurchaseSeam implements PurchaseSeam {
 
   @override
   bool isOwned(String productId) => _owned.contains(productId);
+}
+
+/// Minimal, correct in-memory reference [AdRewardSeam] — [showRewardedAd]
+/// always completes successfully with reward earned.
+class FakeAdRewardSeam implements AdRewardSeam {
+  @override
+  bool get isReady => true;
+
+  @override
+  Future<bool> showRewardedAd({String? placement}) async => true;
 }

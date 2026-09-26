@@ -31,6 +31,9 @@ class AppTranslations extends Translations {
       'daily_rewards': 'Daily Rewards',
       'shop': 'Shop',
       'save_cloud': 'Save & Cloud',
+      'level_progression': 'Level & Energy',
+      'season_leaderboard': 'Season & Ranking',
+      'monetization': 'Store & Monetization',
     },
     'vi': {
       'app_name': 'Roy Project Base Game',
@@ -49,6 +52,9 @@ class AppTranslations extends Translations {
       'daily_rewards': 'Thưởng ngày',
       'shop': 'Cửa hàng',
       'save_cloud': 'Lưu trữ & Đám mây',
+      'level_progression': 'Cấp độ & Năng lượng',
+      'season_leaderboard': 'Mùa giải & Xếp hạng',
+      'monetization': 'Cửa hàng & Kiếm tiền',
     },
   };
 }

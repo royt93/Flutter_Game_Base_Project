@@ -226,6 +226,16 @@ void main() {
     );
   });
 
+  group('PluginAdapterConformanceSuite: AdRewardSeam', () {
+    test('FakeAdRewardSeam pass toàn bộ checklist', () async {
+      final report = await PluginAdapterConformanceSuite.verifyAdRewardSeam(
+        FakeAdRewardSeam(),
+      );
+
+      expect(report.passed, isTrue, reason: report.failures.join(', '));
+    });
+  });
+
   group('ConformanceReport', () {
     test('passed = true khi mọi check true; failures rỗng', () {
       const report = ConformanceReport(
