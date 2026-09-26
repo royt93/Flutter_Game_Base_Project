@@ -4,7 +4,7 @@
 
 | Date | Device | OS source | Build | Result |
 | --- | --- | --- | --- | --- |
-| 2026-09-26 | TECNO KJ7 (`115333744A005844`) | Android via ADB | `example` release APK | PASS — install + launch smoke, no `FATAL EXCEPTION` / `AndroidRuntime` crash in scanned logcat |
+| 2026-09-26 | TECNO KJ7 (`115333744A005844`) | Android 14, arm64-v8a, 1080×2436, ~7.5GB RAM | `example` release APK | PASS — install + launch smoke, live process pid confirmed, no `FATAL EXCEPTION` / `AndroidRuntime` crash in scanned logcat |
 
 ## TECNO KJ7 proof commands
 
