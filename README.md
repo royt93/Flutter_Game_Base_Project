@@ -731,6 +731,10 @@ emulator, re-measures both, and opens a PR refreshing the numbers below.
 | Object Pool Pooled Elapsed Us | 22327 us | hostHeadless | 2026-09-22 |
 <!-- PERF_BENCHMARK_END -->
 
+## Integration guide
+
+Game mới nên bắt đầu bằng [hướng dẫn tích hợp từng bước](doc/INTEGRATION_GUIDE.md): bootstrap, core gameplay loop, Flame events, save/offline, audio/haptics, platform adapters, và release checklist.
+
 ## Install
 
 ```bash
