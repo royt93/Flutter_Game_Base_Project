@@ -22,6 +22,24 @@ class _FakeTimer implements Timer {
   int get tick => 0;
 }
 
+class _BlockingStorageService extends StorageService {
+  _BlockingStorageService() : super(null);
+
+  final writeStarted = Completer<void>();
+  final releaseWrite = Completer<void>();
+  bool _blocked = false;
+
+  @override
+  Future<void> setBool(String key, bool value) async {
+    if (!_blocked && key.endsWith('_dirty') && value) {
+      _blocked = true;
+      writeStarted.complete();
+      await releaseWrite.future;
+    }
+    return super.setBool(key, value);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   tearDown(Get.reset);
@@ -419,6 +437,116 @@ void main() {
         expect(scheduled.single.cancelled, isTrue);
       },
     );
+  });
+
+  group('BUG-82: flushNow luôn complete pending completers', () {
+    test(
+      'gọi flushNow trực tiếp vẫn complete request không-critical đang chờ',
+      () async {
+        final coordinator = CheckpointCoordinator(
+          storage: storage,
+          createTimer: fakeCreateTimer,
+        );
+        coordinator.registerParticipant(
+          'player',
+          snapshot: () => {'x': 7},
+          restore: (_) {},
+        );
+
+        final pending = coordinator.requestCheckpoint();
+        expect(scheduled, hasLength(1));
+
+        final direct = await coordinator.flushNow();
+        final pendingResult = await pending.timeout(const Duration(seconds: 1));
+
+        expect(direct.isSuccess, isTrue);
+        expect(pendingResult.isSuccess, isTrue);
+        expect(scheduled.single.cancelled, isTrue);
+      },
+    );
+
+    test(
+      'request MỚI đến giữa lúc 1 flush trực tiếp khác đang await storage '
+      'KHÔNG bị flush đó cuỗm mất — vẫn đợi timer/flush riêng của chính nó',
+      () async {
+        final blockingStorage = _BlockingStorageService();
+        final coordinator = CheckpointCoordinator(
+          storage: blockingStorage,
+          createTimer: fakeCreateTimer,
+        );
+        var value = 1;
+        coordinator.registerParticipant(
+          'player',
+          snapshot: () => {'x': value},
+          restore: (_) {},
+        );
+
+        // Flush A: khởi động, sẽ dừng ngay khi chạm write đầu tiên.
+        final flushA = coordinator.flushNow();
+        await blockingStorage.writeStarted.future;
+
+        // Trong lúc A còn "đang bay" (chưa complete), 1 request MỚI tới —
+        // participant đã đổi state (value=2) SAU KHI A đã chụp snapshot cũ
+        // (value=1) một cách đồng bộ trước khi A await. Request này phải
+        // được coi là thuộc 1 chu kỳ flush KHÁC, không phải của A.
+        value = 2;
+        final pendingB = coordinator.requestCheckpoint();
+
+        // Thả A ra cho ghi xong.
+        blockingStorage.releaseWrite.complete();
+        final resultA = await flushA;
+        expect(resultA.isSuccess, isTrue);
+        expect(
+          blockingStorage.getString('checkpoint_coordinator_v1'),
+          contains('"x":1'),
+        );
+
+        // pendingB KHÔNG được phép đã complete bằng kết quả của A — nó phải
+        // vẫn đang chờ timer riêng của nó (chưa fire).
+        var bCompletedEarly = false;
+        unawaited(pendingB.then((_) => bCompletedEarly = true));
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          bCompletedEarly,
+          isFalse,
+          reason:
+              'request B bị flush A cuỗm mất kết quả dù state của nó (x=2) '
+              'chưa từng được flush A ghi xuống — sẽ báo "thành công" sai sự thật',
+        );
+
+        // Giờ mới fire timer thật của B — B phải tự flush đúng state MỚI.
+        scheduled.last.callback();
+        final resultB = await pendingB.timeout(const Duration(seconds: 1));
+        expect(resultB.isSuccess, isTrue);
+        expect(
+          blockingStorage.getString('checkpoint_coordinator_v1'),
+          contains('"x":2'),
+        );
+      },
+    );
+
+    test('critical và pending non-critical không double-complete', () async {
+      final coordinator = CheckpointCoordinator(
+        storage: storage,
+        createTimer: fakeCreateTimer,
+      );
+      coordinator.registerParticipant(
+        'player',
+        snapshot: () => {'x': 9},
+        restore: (_) {},
+      );
+
+      var completions = 0;
+      final pending = coordinator.requestCheckpoint()
+        ..then((_) => completions++);
+      final critical = await coordinator.requestCheckpoint(critical: true);
+      final pendingResult = await pending.timeout(const Duration(seconds: 1));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(critical.isSuccess, isTrue);
+      expect(pendingResult.isSuccess, isTrue);
+      expect(completions, 1);
+    });
   });
 
   group('BUG-78: onClose hoàn tất pending completers và ngăn write mới', () {

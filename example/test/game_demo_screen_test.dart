@@ -105,7 +105,9 @@ void main() {
   );
 
   testWidgets(
-    'FEAT-53: pause FAB shows PauseOverlay above the GameWidget, Resume hides it',
+    'FEAT-53 + BUG-91: pause FAB shows PauseOverlay above the GameWidget AND '
+    'actually freezes the Flame engine (not just the session UI); Resume '
+    'hides overlay and unfreezes it',
     (tester) async {
       await tester.pumpWidget(_wrap(const GameDemoScreen()));
       await tester.pump(const Duration(milliseconds: 100));
@@ -113,13 +115,29 @@ void main() {
       expect(find.byIcon(Icons.pause), findsOneWidget);
       expect(_button('Resume'), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.pause));
+      final game = tester
+          .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
+          .game!;
+      expect(game.paused, isFalse);
+
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is FloatingActionButton && widget.heroTag == 'pause',
+        ),
+      );
       for (var i = 0; i < 6; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }
 
       expect(_button('Resume'), findsWidgets);
       expect(_button('Restart'), findsWidgets);
+      // BUG-91: FAB used to only pause GameSessionController, never the
+      // Flame engine — the orb kept bouncing under the pause overlay.
+      expect(game.paused, isTrue);
+      final frozen = game.orb.position.clone();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(game.orb.position, equals(frozen));
 
       await tester.tap(_button('Resume').first);
       for (var i = 0; i < 6; i++) {
@@ -127,6 +145,44 @@ void main() {
       }
 
       expect(_button('Resume'), findsNothing);
+      expect(game.paused, isFalse);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(game.orb.position, isNot(equals(frozen)));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'BUG-91 audit: Pause rồi Restart chạy lại Flame engine, không kẹt pause',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const GameDemoScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+      final game = tester
+          .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
+          .game!;
+
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is FloatingActionButton && widget.heroTag == 'pause',
+        ),
+      );
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      expect(game.paused, isTrue);
+
+      await tester.tap(_button('Restart').first);
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      expect(_button('Resume'), findsNothing);
+      expect(game.paused, isFalse);
+
+      final before = game.orb.position.clone();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(game.orb.position, isNot(equals(before)));
       expect(tester.takeException(), isNull);
     },
   );

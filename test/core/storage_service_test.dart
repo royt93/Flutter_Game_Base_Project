@@ -1,6 +1,115 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// BUG-81: records every mutating call so tests can prove exactly which keys
+/// `importWithPrefix` touched, and in what order.
+class _RecordingStorageService extends StorageService {
+  _RecordingStorageService(super.prefs);
+  final touched = <String>[];
+
+  @override
+  Future<void> setInt(String key, int value) {
+    touched.add('set:$key');
+    return super.setInt(key, value);
+  }
+
+  @override
+  Future<void> setBool(String key, bool value) {
+    touched.add('set:$key');
+    return super.setBool(key, value);
+  }
+
+  @override
+  Future<void> setDouble(String key, double value) {
+    touched.add('set:$key');
+    return super.setDouble(key, value);
+  }
+
+  @override
+  Future<void> setString(String key, String value) {
+    touched.add('set:$key');
+    return super.setString(key, value);
+  }
+
+  @override
+  Future<void> remove(String key) {
+    touched.add('remove:$key');
+    return super.remove(key);
+  }
+}
+
+/// BUG-81 (post-audit #2): records touched keys AND throws once on a chosen
+/// key — proves the ORDER rollback itself writes in, not just its end state.
+class _RecordingThrowingStorageService extends StorageService {
+  _RecordingThrowingStorageService(super.prefs, this.throwOnKey);
+  final String throwOnKey;
+  final touched = <String>[];
+
+  @override
+  Future<void> setString(String key, String value) {
+    touched.add('set:$key');
+    if (key == throwOnKey) {
+      throw Exception('simulated platform write failure');
+    }
+    return super.setString(key, value);
+  }
+
+  @override
+  Future<void> remove(String key) {
+    touched.add('remove:$key');
+    return super.remove(key);
+  }
+}
+
+class _ThrowingAfterNStorageService extends StorageService {
+  _ThrowingAfterNStorageService(super.prefs, this.throwOnKey);
+  final String throwOnKey;
+
+  @override
+  Future<void> setString(String key, String value) {
+    if (key == throwOnKey) {
+      throw Exception('simulated platform write failure');
+    }
+    return super.setString(key, value);
+  }
+}
+
+class _RollbackFailingStorageService extends StorageService {
+  _RollbackFailingStorageService(super.prefs);
+  bool armed = false;
+
+  @override
+  Future<void> setString(String key, String value) {
+    if (armed && key == 'slot_a_new_fail') {
+      throw StateError('original write failure');
+    }
+    if (armed && key == 'slot_a_old') {
+      throw StateError('rollback failure');
+    }
+    return super.setString(key, value);
+  }
+}
+
+class _BlockingPrefixStorageService extends StorageService {
+  _BlockingPrefixStorageService(super.prefs);
+  final firstWriteStarted = Completer<void>();
+  final releaseFirstWrite = Completer<void>();
+  bool armed = false;
+  bool _blocked = false;
+
+  @override
+  Future<void> setString(String key, String value) async {
+    if (armed && !_blocked && key == 'slot_a_first') {
+      _blocked = true;
+      firstWriteStarted.complete();
+      await releaseFirstWrite.future;
+    }
+    return super.setString(key, value);
+  }
+}
 
 void main() {
   group('StorageService', () {
@@ -452,6 +561,217 @@ void main() {
           expect(store.getString('slot_a_name'), 'Alice');
           expect(store.getString('unrelated'), 'keep me');
           expect(store.getString('slot_a_bad'), isNull);
+        },
+      );
+
+      test(
+        'BUG-81: platformWrites tăng đúng bằng số key trong data, không phụ '
+        'thuộc số key ngoài prefix',
+        () async {
+          await store.setString('slot_a_name', 'Alice');
+          await store.setString('unrelated1', 'a');
+          await store.setInt('unrelated2', 1);
+          await store.setBool('unrelated3', true);
+
+          final before = store.platformWrites;
+          await store.importWithPrefix('slot_a_', {
+            'slot_a_name': 'Alice renamed',
+          });
+
+          expect(store.platformWrites, before + 1);
+        },
+      );
+
+      test(
+        'BUG-81: blast radius — key ngoài prefix không hề bị set/remove',
+        () async {
+          final recording = _RecordingStorageService(
+            await SharedPreferences.getInstance(),
+          );
+          await recording.setString('slot_a_name', 'Alice');
+          await recording.setInt('slot_a_score', 100);
+          await recording.setString('unrelated1', 'a');
+          await recording.setInt('unrelated2', 1);
+          recording.touched.clear();
+
+          await recording.importWithPrefix('slot_a_', {
+            'slot_a_name': 'Alice renamed',
+          });
+
+          expect(
+            recording.touched.where((t) => t.contains('unrelated')),
+            isEmpty,
+          );
+          expect(recording.touched, contains('set:slot_a_name'));
+          expect(recording.touched, contains('remove:slot_a_score'));
+        },
+      );
+
+      test(
+        'BUG-81: set áp dụng trước remove trong cùng 1 lần import',
+        () async {
+          final recording = _RecordingStorageService(
+            await SharedPreferences.getInstance(),
+          );
+          await recording.setString('slot_a_old', 'stale');
+          await recording.setString('slot_a_keep', 'v1');
+          recording.touched.clear();
+
+          await recording.importWithPrefix('slot_a_', {
+            'slot_a_keep': 'v2',
+            'slot_a_new': 'x',
+          });
+
+          final lastSet = recording.touched.lastIndexWhere(
+            (t) => t.startsWith('set:'),
+          );
+          final firstRemove = recording.touched.indexWhere(
+            (t) => t.startsWith('remove:'),
+          );
+          expect(firstRemove, greaterThan(lastSet));
+        },
+      );
+
+      test(
+        'BUG-81: round-trip giữ đúng mọi kiểu giá trị',
+        () async {
+          await store.setString('slot_a_str', 'hi');
+          await store.setInt('slot_a_int', 7);
+          await store.setBool('slot_a_bool', true);
+          await store.setDouble('slot_a_double', 1.5);
+
+          final dump = store.exportWithPrefix('slot_a_');
+          await store.removeAllWithPrefix('slot_a_');
+          await store.importWithPrefix('slot_a_', dump);
+
+          expect(store.getString('slot_a_str'), 'hi');
+          expect(store.getInt('slot_a_int'), 7);
+          expect(store.getBool('slot_a_bool'), true);
+          expect(store.getDouble('slot_a_double'), 1.5);
+        },
+      );
+
+      test(
+        'BUG-81 audit: platform write throw giữa loop rollback đúng prefix',
+        () async {
+          final prefs = await SharedPreferences.getInstance();
+          final throwing = _ThrowingAfterNStorageService(
+            prefs,
+            'slot_a_second',
+          );
+          await throwing.setString('slot_a_first', 'old-first');
+          await throwing.setString('slot_a_stale', 'old-stale');
+          await throwing.setString('unrelated', 'keep me');
+
+          await expectLater(
+            throwing.importWithPrefix('slot_a_', {
+              'slot_a_first': 'new-first',
+              'slot_a_second': 'new-second',
+            }),
+            throwsA(isA<Exception>()),
+          );
+
+          expect(throwing.getString('slot_a_first'), 'old-first');
+          expect(throwing.getString('slot_a_second'), isNull);
+          expect(throwing.getString('slot_a_stale'), 'old-stale');
+          expect(throwing.getString('unrelated'), 'keep me');
+        },
+      );
+
+      test(
+        'BUG-81 audit: rollback fail vẫn rethrow original write error',
+        () async {
+          final prefs = await SharedPreferences.getInstance();
+          final throwing = _RollbackFailingStorageService(prefs);
+          await throwing.setString('slot_a_old', 'old');
+          throwing.armed = true;
+
+          Object? caught;
+          try {
+            await throwing.importWithPrefix('slot_a_', {
+              'slot_a_new_ok': 'new',
+              'slot_a_new_fail': 'boom',
+            });
+          } catch (error) {
+            caught = error;
+          }
+
+          expect(caught, isA<StateError>());
+          expect((caught as StateError).message, 'original write failure');
+        },
+      );
+
+      test(
+        'BUG-81 audit: 2 import cùng prefix serialize, không tạo save lai',
+        () async {
+          final prefs = await SharedPreferences.getInstance();
+          final blocking = _BlockingPrefixStorageService(prefs);
+          await blocking.setString('slot_a_old', 'old');
+          blocking.armed = true;
+
+          final first = blocking.importWithPrefix('slot_a_', {
+            'slot_a_first': 'A1',
+            'slot_a_second': 'A2',
+          });
+          await blocking.firstWriteStarted.future;
+
+          // Call thứ 2 đến khi call thứ 1 đang đứng giữa set-loop. Nó phải
+          // chờ — không được xen set/remove hoặc dùng snapshot dở dang của A.
+          final second = blocking.importWithPrefix('slot_a_', {
+            'slot_a_first': 'B1',
+            'slot_a_third': 'B3',
+          });
+          var secondCompletedEarly = false;
+          unawaited(second.then((_) => secondCompletedEarly = true));
+          await Future<void>.delayed(Duration.zero);
+          expect(secondCompletedEarly, isFalse);
+
+          blocking.releaseFirstWrite.complete();
+          await first;
+          await second;
+
+          // Last invocation wins as one WHOLE replace-scoped operation.
+          expect(blocking.getString('slot_a_first'), 'B1');
+          expect(blocking.getString('slot_a_second'), isNull);
+          expect(blocking.getString('slot_a_third'), 'B3');
+        },
+      );
+
+      test(
+        'BUG-81 audit #2: rollback tự nó cũng set trước remove sau '
+        '(crash giữa rollback không được để mất dữ liệu cũ)',
+        () async {
+          final prefs = await SharedPreferences.getInstance();
+          final recording = _RecordingThrowingStorageService(
+            prefs,
+            'slot_a_fail',
+          );
+          await recording.setString('slot_a_keep', 'v1');
+
+          await expectLater(
+            recording.importWithPrefix('slot_a_', {
+              'slot_a_keep': 'v2',
+              'slot_a_new': 'x',
+              'slot_a_fail': 'boom',
+            }),
+            throwsA(isA<Exception>()),
+          );
+
+          // Rollback restores `slot_a_keep` and removes the newly-added
+          // `slot_a_new` — its OWN set must land before its OWN remove, or a
+          // kill mid-rollback would leave the prefix with data MISSING
+          // (`slot_a_keep` deleted before being restored) instead of merely
+          // extra — the exact regression this test locks in.
+          final lastSet = recording.touched.lastIndexWhere(
+            (t) => t.startsWith('set:'),
+          );
+          final firstRemove = recording.touched.indexWhere(
+            (t) => t.startsWith('remove:'),
+          );
+          expect(firstRemove, greaterThan(lastSet));
+
+          expect(recording.getString('slot_a_keep'), 'v1');
+          expect(recording.getString('slot_a_new'), isNull);
         },
       );
     });

@@ -108,34 +108,28 @@ class CheckpointCoordinator extends GetxService {
       );
     }
     if (critical) {
-      _debounceTimer?.cancel();
-      _debounceTimer = null;
-      // BUG-42: a critical call also cancels a pending non-critical
-      // debounce (same as a coalesced non-critical call would) — any
-      // completer(s) already waiting on that debounce must resolve with
-      // THIS flush's result too, not be left hanging.
-      final result = flushNow();
-      _completePending(result);
-      return result;
+      // flushNow() itself synchronously cancels any pending debounce and
+      // captures whatever's currently in `_pendingCompleters` (see its own
+      // doc comment) — no separate handling needed here.
+      return flushNow();
     }
     _debounceTimer?.cancel();
     final completer = Completer<SdkResult<int>>();
     _pendingCompleters.add(completer);
     _debounceTimer = _createTimer(debounceWindow, () {
       if (_isClosed) return;
-      _completePending(flushNow());
+      flushNow();
     });
     return completer.future;
   }
 
-  /// Resolves every completer queued by a coalesced [requestCheckpoint]
-  /// call with [result] (all get the SAME flush's outcome) and clears the
-  /// queue — called once the debounce actually fires, or once a `critical`
-  /// call preempts it.
-  void _completePending(Future<SdkResult<int>> result) {
-    if (_pendingCompleters.isEmpty) return;
-    final pending = List<Completer<SdkResult<int>>>.of(_pendingCompleters);
-    _pendingCompleters.clear();
+  /// Resolves only the [pending] waiters captured by one specific flush.
+  /// Waiters added after that flush starts belong to the NEXT debounce/flush
+  /// and must never receive an older snapshot's result.
+  void _completePending(
+    List<Completer<SdkResult<int>>> pending,
+    Future<SdkResult<int>> result,
+  ) {
     for (final completer in pending) {
       if (!completer.isCompleted) {
         completer.complete(result);
@@ -149,15 +143,37 @@ class CheckpointCoordinator extends GetxService {
   /// participant's [_Participant.snapshot] throwing, or the aggregate not
   /// being JSON-encodable, aborts the WHOLE flush before anything is
   /// written — the previous checkpoint is left exactly as it was.
-  Future<SdkResult<int>> flushNow() => _guard.runExclusive(_hookName, () async {
+  ///
+  /// BUG-82: this method is public and may be called directly while one or
+  /// more non-critical [requestCheckpoint] calls are waiting on a debounce.
+  /// It cancels that debounce, so it must also resolve those waiters with
+  /// this exact flush's result — done SYNCHRONOUSLY, right here, before any
+  /// async work starts. Capturing them only AFTER awaiting the write (as an
+  /// earlier version of this fix did) has a real race: a request arriving
+  /// WHILE that write is in flight would get swept into THIS flush's result
+  /// even though its own state change may not even be part of the snapshot
+  /// this flush already took — a false "saved" for data that was never
+  /// written. Snapshotting the waiter list (and cancelling the timer) at
+  /// call time instead means a request arriving during the write starts a
+  /// genuinely separate cycle, exactly like the pre-BUG-82 critical branch
+  /// already did correctly.
+  Future<SdkResult<int>> flushNow() {
+    _debounceTimer?.cancel();
+    _debounceTimer = null;
+    final pending = List<Completer<SdkResult<int>>>.of(_pendingCompleters);
+    _pendingCompleters.clear();
+    final result = _guard.runExclusive(_hookName, _computeFlush);
+    _completePending(pending, result);
+    return result;
+  }
+
+  Future<SdkResult<int>> _computeFlush() async {
     if (_isClosed) {
       return const SdkFailure(
         kind: SdkErrorKind.unknown,
         message: 'CheckpointCoordinator is closed',
       );
     }
-    _debounceTimer?.cancel();
-    _debounceTimer = null;
 
     final aggregate = <String, Object?>{};
     for (final entry in _participants.entries) {
@@ -202,7 +218,7 @@ class CheckpointCoordinator extends GetxService {
         stackTrace: stack,
       );
     }
-  });
+  }
 
   /// Validates the current checkpoint, falling back to the previous
   /// generation if it's missing/corrupt, then — only once a whole valid

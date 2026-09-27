@@ -89,7 +89,26 @@ class PauseOverlay extends StatelessWidget {
     final callback = onResume;
     if (callback != null) {
       callback();
-    } else {
+      return;
+    }
+    // BUG-92: used to hard-code `resume(GamePauseReason.user)` — rejected
+    // by [GameSessionController.resume]'s own `pauseReasons.contains(reason)`
+    // check whenever ONLY `system` was active (app backgrounded while this
+    // overlay is visible via [showForSystemPause]), leaving Resume with no
+    // effect. Resume whichever reason is actually active instead — `system`
+    // first (matches this overlay's own system-pause priority in
+    // [_isVisible]), `user` otherwise.
+    //
+    // The `showForSystemPause` gate below matters: an instance configured
+    // `showForSystemPause: false` never shows itself FOR a system pause
+    // ([_isVisible] above), so it must not resume one either just because
+    // `system` happens to also be in the set (e.g. this instance is visible
+    // for `user`, while the app is independently mid-background) — that
+    // reason belongs to whatever DOES manage system pauses, not to this tap.
+    final reasons = session.snapshot.value.pauseReasons;
+    if (showForSystemPause && reasons.contains(GamePauseReason.system)) {
+      session.resume(GamePauseReason.system);
+    } else if (reasons.contains(GamePauseReason.user)) {
       session.resume(GamePauseReason.user);
     }
   }

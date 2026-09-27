@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'debug_log.dart';
+import 'utils/async_action_guard.dart';
 
 class StorageKeys {
   StorageKeys._();
@@ -98,6 +99,7 @@ class StorageKeys {
 class StorageService extends GetxService {
   final SharedPreferences? _prefs;
   final Map<String, Object> _fallback = {};
+  final AsyncActionGuard _prefixImportGuard = AsyncActionGuard();
   StorageService(this._prefs);
 
   static StorageService get to => Get.find<StorageService>();
@@ -425,8 +427,17 @@ class StorageService extends GetxService {
   /// [data] is removed (mirrors [importAll] REPLACING a profile, scoped
   /// to just this prefix). Every key in [data] must start with [prefix]
   /// — guards against a caller accidentally restoring another slot's
-  /// backup into this one. Built on [importAll], so the same
-  /// rollback-on-error guarantee applies.
+  /// backup into this one.
+  ///
+  /// BUG-81: this used to merge [data] with the rest of the store
+  /// (everything outside [prefix], read via [exportAll]) and call
+  /// [importAll] — which goes through [_replaceAll], erasing and
+  /// rewriting EVERY key in storage just to restore one slot. An OS
+  /// low-memory kill or crash partway through that native loop could wipe
+  /// keys OUTSIDE [prefix] that were never even meant to change. This now
+  /// only ever touches keys under [prefix] — the same scoping
+  /// [removeAllWithPrefix] already uses — so the worst a kill mid-call can
+  /// do is leave THIS prefix partially restored, never anything else.
   Future<void> importWithPrefix(String prefix, Map<String, Object?> data) {
     if (prefix.isEmpty) {
       throw ArgumentError.value(prefix, 'prefix', 'must not be empty');
@@ -438,12 +449,127 @@ class StorageService extends GetxService {
         'every key must start with $prefix',
       );
     }
-    final merged = <String, Object?>{
-      for (final entry in exportAll().entries)
-        if (!entry.key.startsWith(prefix)) entry.key: entry.value,
-      ...data,
+    // Same-prefix restores must never interleave their set/remove/rollback
+    // loops — each call's snapshot is only meaningful if no sibling call
+    // mutates that prefix before it finishes. Keyed by prefix so unrelated
+    // save slots still restore concurrently.
+    return _prefixImportGuard.runExclusive(
+      prefix,
+      () => _importWithPrefixBody(prefix, data),
+    );
+  }
+
+  /// Split from [importWithPrefix] so the 2 [ArgumentError] checks above
+  /// stay synchronous (this method's own `async` would otherwise wrap them
+  /// in a Future, changing when callers observe the throw — existing
+  /// callers rely on `expect(() => ..., throwsArgumentError)`, a plain sync
+  /// closure).
+  Future<void> _importWithPrefixBody(
+    String prefix,
+    Map<String, Object?> data,
+  ) async {
+    // Same validation [importAll] does, checked BEFORE touching storage at
+    // all — a bad value type never leaves a half-applied prefix behind.
+    if (data.values.any(
+      (value) =>
+          value is! int &&
+          value is! bool &&
+          value is! double &&
+          value is! String,
+    )) {
+      throw const FormatException('Unsupported backup value type');
+    }
+    final normalized = <String, Object>{
+      for (final entry in data.entries) entry.key: entry.value!,
     };
-    return importAll(merged);
+
+    // Snapshot this prefix BEFORE mutating anything — the scoped
+    // counterpart of what [importAll] captures for the whole store, so a
+    // genuine failure partway through the loop below (a real platform
+    // write throwing, not just a pre-validated bad value) can be rolled
+    // back to what THIS prefix had before this call, same guarantee
+    // `disaster_recovery_save_export.dart`'s `applyRestore` doc comment
+    // already promises callers. Scoped to `prefix`, not the whole store —
+    // BUG-81's whole point was narrowing the blast radius, rollback must
+    // stay narrow too.
+    final previous = exportWithPrefix(prefix);
+    try {
+      // SET every key in `data` first — if a kill/crash happens mid-loop,
+      // the prefix is left with EXTRA (not-yet-removed stale) data rather
+      // than MISSING data, the safer failure mode for a save restore.
+      for (final entry in normalized.entries) {
+        await _writeTyped(entry.key, entry.value);
+      }
+
+      // REMOVE stale prefix keys — anything under `prefix` not present in
+      // the new `data` — same scoped-key discovery [removeAllWithPrefix]
+      // uses.
+      for (final key in _staleKeysUnder(prefix, normalized)) {
+        await remove(key);
+      }
+    } catch (error, stack) {
+      try {
+        await _restorePrefixSnapshot(prefix, previous);
+      } catch (rollbackError) {
+        // Same guarantee as [importAll]: preserve the ORIGINAL write failure
+        // (the useful root cause for callers/recovery logs), only log the
+        // best-effort rollback failure instead of masking it.
+        dlog('importWithPrefix rollback thất bại: $rollbackError');
+      }
+      Error.throwWithStackTrace(error, stack);
+    }
+  }
+
+  /// Re-applies a [exportWithPrefix] snapshot verbatim: anything under
+  /// [prefix] not in [snapshot] is removed, everything in [snapshot] is
+  /// written back — best-effort (this itself can't be made atomic any more
+  /// than the call it's undoing could), but it's the same scoped set/remove
+  /// primitive [_importWithPrefixBody] already uses, just run in reverse.
+  Future<void> _restorePrefixSnapshot(
+    String prefix,
+    Map<String, Object> snapshot,
+  ) async {
+    // Same set-before-remove order as [_importWithPrefixBody] — a rollback
+    // is itself a scoped write that can ALSO be interrupted mid-loop, and
+    // the same safety rule applies: a kill between these two loops must
+    // leave EXTRA (not-yet-removed) data, never data missing that existed
+    // before the original call. Removing stale keys first here would
+    // reintroduce BUG-81's exact failure shape inside its own rollback path.
+    for (final entry in snapshot.entries) {
+      await _writeTyped(entry.key, entry.value);
+    }
+    for (final key in _staleKeysUnder(prefix, snapshot)) {
+      await remove(key);
+    }
+  }
+
+  /// Every key under [prefix] not present in [keep] — the shared
+  /// scoped-key-removal discovery both [_importWithPrefixBody] and
+  /// [_restorePrefixSnapshot] need, kept in exactly one place so a future
+  /// change to key-matching (e.g. a reserved key exclusion) can't silently
+  /// apply to only one of the two and reintroduce BUG-81's over-deletion
+  /// shape.
+  Iterable<String> _staleKeysUnder(String prefix, Map<String, Object> keep) =>
+      allKeys().where((key) => key.startsWith(prefix) && !keep.containsKey(key));
+
+  /// Dispatches to the matching typed setter — the one place every
+  /// `int`/`bool`/`double`/`String` write for a scoped-prefix operation goes
+  /// through, so [_importWithPrefixBody] and its rollback in
+  /// [_restorePrefixSnapshot] can never drift apart on which types they
+  /// support.
+  Future<void> _writeTyped(String key, Object value) {
+    switch (value) {
+      case int v:
+        return setInt(key, v);
+      case bool v:
+        return setBool(key, v);
+      case double v:
+        return setDouble(key, v);
+      case String v:
+        return setString(key, v);
+      default:
+        throw ArgumentError.value(value, 'value', 'unsupported scalar type');
+    }
   }
 
   Future<void> _replaceAll(Map<String, Object> data) async {
@@ -456,17 +582,7 @@ class StorageService extends GetxService {
       _fallback.clear();
     }
     for (final entry in data.entries) {
-      final value = entry.value;
-      switch (value) {
-        case int v:
-          await setInt(entry.key, v);
-        case bool v:
-          await setBool(entry.key, v);
-        case double v:
-          await setDouble(entry.key, v);
-        case String v:
-          await setString(entry.key, v);
-      }
+      await _writeTyped(entry.key, entry.value);
     }
   }
 }

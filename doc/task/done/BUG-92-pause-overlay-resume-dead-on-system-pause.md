@@ -25,13 +25,36 @@ User quay lại app đang system-paused có màn pause nhưng không thể tiế
 
 ## Acceptance criteria
 
-- [ ] Widget test: pause(system), tap Resume, không truyền `onResume` → phase `playing`.
-- [ ] User pause vẫn resume bình thường.
-- [ ] Cả user + system → Resume chỉ gỡ đúng reason được chọn, không resume sớm.
+- [x] Widget test: pause(system), tap Resume, không truyền `onResume` → phase `playing`.
+- [x] User pause vẫn resume bình thường.
+- [x] Cả user + system → Resume chỉ gỡ đúng reason được chọn, không resume sớm.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+`_handleResume` giờ đọc `session.snapshot.value.pauseReasons` thay vì
+fallback cứng `GamePauseReason.user`: ưu tiên gỡ `system` nếu active VÀ
+`showForSystemPause == true`, không thì `user`. Không đổi hành vi khi chỉ
+có `user` active (test cũ vẫn pass). Guard `showForSystemPause` được bổ
+sung sau audit: 1 overlay cấu hình mặc định (`showForSystemPause: false`)
+chỉ visible vì user-pause không được phép vô tình gỡ luôn system-pause độc
+lập đang active cùng lúc — `_handleResume` phải tôn trọng cùng ownership
+mà `_isVisible` đã định nghĩa.
+
+2 test mới trong `test/widget/common/pause_overlay_test.dart`: pause CHỈ
+`system` (`showForSystemPause: true`) → tap Resume → phase về `playing`,
+`pauseReasons` rỗng (FAIL với code cũ — `resume(user)` bị reject); cả
+`user`+`system` cùng active → tap Resume 1 lần → chỉ gỡ `system`, phase vẫn
+`paused`, `pauseReasons` còn `{user}` (không resume sớm). Test cũ "bấm
+Resume gọi session.resume(user) đúng 1 lần" vẫn pass nguyên văn.
+
+Bug này gộp chung device smoke test với BUG-91 (cùng
+`GameDemoScreen`/`PauseOverlay` trên 1 lần chạy
+`app_boot_test.dart` trên TECNO KJ7 — xem mục Quyết định của BUG-91).
+
+`flutter analyze` + `flutter test --exclude-tags slow` sạch ở root và
+`example/`.
+
+Tự chấm: 9.5/10.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

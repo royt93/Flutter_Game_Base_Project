@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -7,6 +8,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:roy_casual_kit/roy_casual_kit.dart';
 import 'package:roy_casual_kit_example/main.dart' as app;
 import 'package:roy_casual_kit_example/screens/cookbook_screen.dart';
+import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
 import 'package:roy_casual_kit_example/screens/settings_screen.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
@@ -46,6 +48,17 @@ Future<void> _goToCookbook(WidgetTester tester) async {
   await tester.tap(find.byType(NeonButton).at(3));
   await tester.pump(const Duration(seconds: 1));
   expect(find.byType(CookbookScreen), findsOneWidget);
+}
+
+/// Same index-not-label reasoning as [_goToWidgetShowcase].
+Future<void> _goToGameDemo(WidgetTester tester) async {
+  while (find.byType(GameDemoScreen).evaluate().isNotEmpty) {
+    Get.back();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+  await tester.tap(find.byType(NeonButton).at(2));
+  await tester.pump(const Duration(seconds: 1));
+  expect(find.byType(GameDemoScreen), findsOneWidget);
 }
 
 /// Scrolls the screen's `ListView` in `-delta`-pixel steps until [target]
@@ -249,6 +262,100 @@ void main() {
     session.onClose();
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'BUG-91/BUG-92: GameDemoScreen pause FAB dừng Flame engine thật trên '
+    'device, Resume chạy lại',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToGameDemo(tester);
+
+      final game = tester
+          .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
+          .game!;
+
+      // warnIfMissed: false — on a real device the FAB's Material ink/ripple
+      // layer sits slightly ahead of its own RenderObject in the hit-test
+      // stack during its entrance transition, so the exact-widget hit test
+      // is a known-flaky false negative here even though the tap correctly
+      // lands within the button's bounds — confirmed by `game.paused` below
+      // actually flipping to `true` right after.
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is FloatingActionButton && widget.heroTag == 'pause',
+        ),
+        warnIfMissed: false,
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(game.paused, isTrue);
+      final frozen = game.orb.position.clone();
+      await tester.pump(const Duration(seconds: 1));
+      expect(game.orb.position, equals(frozen));
+
+      await tester.tap(
+        find
+            .byWidgetPredicate(
+              (widget) => widget is CommonButton && widget.label == 'Resume',
+            )
+            .first,
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(game.paused, isFalse);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(game.orb.position, isNot(equals(frozen)));
+
+      Get.back();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'BUG-91 audit: pause FAB rồi Restart chạy lại Flame engine thật trên '
+    'device, không kẹt pause',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToGameDemo(tester);
+
+      final game = tester
+          .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
+          .game!;
+
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is FloatingActionButton && widget.heroTag == 'pause',
+        ),
+        warnIfMissed: false,
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(game.paused, isTrue);
+
+      await tester.tap(
+        find
+            .byWidgetPredicate(
+              (widget) => widget is CommonButton && widget.label == 'Restart',
+            )
+            .first,
+        warnIfMissed: false,
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(game.paused, isFalse);
+
+      final position = game.orb.position.clone();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(game.orb.position, isNot(equals(position)));
+
+      Get.back();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'FEAT-49: game time freezes on background, resumes without catch-up',

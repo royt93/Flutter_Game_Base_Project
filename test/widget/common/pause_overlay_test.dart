@@ -79,6 +79,41 @@ void main() {
     expect(find.text('Paused'), findsNothing);
   });
 
+  testWidgets(
+    'BUG-92: chỉ system pause + showForSystemPause=true, Resume gỡ system',
+    (tester) async {
+      final session = _playingSession()..pause(GamePauseReason.system);
+      await tester.pumpWidget(_wrap(session, showForSystemPause: true));
+      await tester.pumpAndSettle();
+
+      await tester.tap(_button('Resume').first);
+      await tester.pumpAndSettle();
+
+      expect(session.snapshot.value.phase, GameSessionPhase.playing);
+      expect(session.snapshot.value.pauseReasons, isEmpty);
+      expect(find.text('Paused'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'BUG-92: cả system + user pause, Resume ưu tiên gỡ system nhưng không '
+    'resume sớm khi user vẫn active',
+    (tester) async {
+      final session = _playingSession()
+        ..pause(GamePauseReason.user)
+        ..pause(GamePauseReason.system);
+      await tester.pumpWidget(_wrap(session, showForSystemPause: true));
+      await tester.pumpAndSettle();
+
+      await tester.tap(_button('Resume').first);
+      await tester.pumpAndSettle();
+
+      expect(session.snapshot.value.phase, GameSessionPhase.paused);
+      expect(session.snapshot.value.pauseReasons, {GamePauseReason.user});
+      expect(find.text('Paused'), findsOneWidget);
+    },
+  );
+
   testWidgets('bấm Restart mặc định gọi session.restart()', (tester) async {
     final session = _playingSession()..pause(GamePauseReason.user);
     await tester.pumpWidget(_wrap(session));

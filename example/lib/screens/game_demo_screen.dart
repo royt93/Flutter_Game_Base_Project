@@ -64,6 +64,18 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
         ..markReady()
         ..start();
 
+  // BUG-91: `_session.pause/resume` used to be pure UI/session state — the
+  // Flame engine underneath (`_game`, a real `FlameGame`) kept ticking
+  // `BouncingOrb.update` under the pause overlay, so the "paused" UI lied
+  // about whether gameplay simulation had actually stopped. Listening to
+  // PHASE CHANGES (not to a specific pause/resume ACTION call site) catches
+  // every source uniformly — the FAB below, AND `GameSessionController`'s
+  // own `RoyLifecycleCoordinator` hook (registered in its `onInit()`) that
+  // pauses/resumes with `GamePauseReason.system` directly, bypassing any
+  // helper this screen could define. Same `ever()`/`Worker` pattern already
+  // used in `lib/presentation/widgets/shader_ticker_layer.dart`.
+  late final Worker _sessionPhaseWorker;
+
   late final EconomyWallet _wallet;
   late final EnergyService _energy;
   late final PlayerProgressionService _progression;
@@ -85,6 +97,15 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
   @override
   void initState() {
     super.initState();
+    _sessionPhaseWorker = ever<GameSessionSnapshot>(_session.snapshot, (
+      snapshot,
+    ) {
+      if (snapshot.phase == GameSessionPhase.paused && !_game.paused) {
+        _game.pauseEngine();
+      } else if (snapshot.phase == GameSessionPhase.playing && _game.paused) {
+        _game.resumeEngine();
+      }
+    });
     _wallet =
         EconomyWallet.maybe ??
         Get.put(EconomyWallet(storage: StorageService.to), permanent: true);
@@ -168,6 +189,18 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     });
   }
 
+  void _restartGame() {
+    // PauseOverlay's package-level default can only reset the abstract
+    // session back to `loading`; this concrete demo also owns the Flame
+    // engine, so complete its known local boot flow immediately. The
+    // `_sessionPhaseWorker` above observes the final `playing` transition
+    // and resumes the engine — without this callback Restart hid the overlay
+    // at `loading` but left `_game.paused == true` forever.
+    _session.restart();
+    _session.markReady();
+    _session.start();
+  }
+
   void _startRound() {
     if (!_energy.consumeEnergy()) {
       _haptics.play(HapticPattern.error);
@@ -229,6 +262,10 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     // screen would just silently replace the registry entry each time
     // rather than leaking, but leaving a disposed controller findable via
     // `Get.find` in the meantime is its own footgun.
+    // Dispose the worker BEFORE Get.delete — it listens to `_session.
+    // snapshot` (a Rx owned by `_session`), so it must stop before that Rx
+    // is torn down.
+    _sessionPhaseWorker.dispose();
     _haptics.cancel();
     unawaited(_unlockSub?.cancel());
     Get.delete<GameSessionController>(force: true);
@@ -466,6 +503,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
               PauseOverlay(
                 session: _session,
                 showForSystemPause: true,
+                onRestart: _restartGame,
                 onQuit: Get.back,
               ),
               if (_showInfo)

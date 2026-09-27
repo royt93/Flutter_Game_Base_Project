@@ -268,6 +268,33 @@ void main() {
     });
   });
 
+  group('BUG-91: pauseEngine/resumeEngine đóng băng game loop', () {
+    testWidgets(
+      'pauseEngine dừng orb update; resumeEngine cho orb chạy lại',
+      (tester) async {
+        final game = RoyGame();
+        await tester.pumpWidget(
+          MaterialApp(home: Material(child: GameWidget(game: game))),
+        );
+        await _settled(tester, game);
+
+        game.pauseEngine();
+        final frozen = game.orb.position.clone();
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(game.orb.position, equals(frozen));
+
+        game.resumeEngine();
+        // Flame's GameLoop guarantees the first callback after start/resume
+        // has dt=0; one frame primes its timestamp, the next carries the
+        // elapsed duration and must move the orb.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(game.orb.position, isNot(equals(frozen)));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
   group('FEAT-88: GameEventBus (optional, non-breaking)', () {
     testWidgets(
       'RoyGame() không truyền eventBus -> tap vẫn hoạt động bình thường, '
