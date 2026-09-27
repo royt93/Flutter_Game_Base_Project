@@ -766,4 +766,23 @@ void main() {
 
     expect(tester.takeException(), isNull);
   }, skip: true);
+
+  testWidgets(
+    'BUG-98: public service and widget member methods execute safely on device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+
+      final wallet = Get.find<EconomyWallet>();
+      final balanceBefore = wallet.balanceOf('coins');
+      await wallet.earn(
+        currency: 'coins',
+        amount: 10,
+        transactionId: 'test_tx_bug98',
+      );
+      expect(wallet.balanceOf('coins'), balanceBefore + 10);
+
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

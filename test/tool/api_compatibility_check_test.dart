@@ -518,5 +518,54 @@ class _InternalFoo {
       },
       timeout: const Timeout(Duration(seconds: 30)),
     );
+
+    test(
+      'BUG-98: xóa named constructor bị nhận là breaking change',
+      () async {
+        await writeEntrypoint(['foo.dart']);
+        await writeFile('lib/foo.dart', 'class Foo { Foo.named(); }');
+        await writeSnapshot({
+          'version': '1.0.0',
+          'entrypoint': 'lib/roy_casual_kit.dart',
+          'exports': ['foo.dart'],
+          'symbols': ['foo.dart:Foo'],
+          'members': ['foo.dart:Foo.new()', 'foo.dart:Foo.named()'],
+        });
+        await writePubspec('1.0.1');
+        await writeChangelog('1.0.1', '- Bỏ constructor mặc định.');
+
+        final result = await _runCheck(['check', '--root=${tempDir.path}']);
+
+        expect(result.exitCode, isNot(0));
+        expect(result.stderr as String, contains('foo.dart:Foo.new()'));
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      'BUG-98: static method được theo dõi signature và bắt breaking change',
+      () async {
+        await writeEntrypoint(['foo.dart']);
+        await writeFile(
+          'lib/foo.dart',
+          'class Foo { static void reset(int id) {} }',
+        );
+        await writeSnapshot({
+          'version': '1.0.0',
+          'entrypoint': 'lib/roy_casual_kit.dart',
+          'exports': ['foo.dart'],
+          'symbols': ['foo.dart:Foo'],
+          'members': ['foo.dart:Foo.reset(): void'],
+        });
+        await writePubspec('1.0.1');
+        await writeChangelog('1.0.1', '- Sửa hàm static.');
+
+        final result = await _runCheck(['check', '--root=${tempDir.path}']);
+
+        expect(result.exitCode, isNot(0));
+        expect(result.stderr as String, contains('foo.dart:Foo.reset(): void'));
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
   });
 }
