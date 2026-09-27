@@ -71,37 +71,26 @@ void main() {
       exportedFiles.map((f) => "export '$f';").join('\n'),
     );
 
-    test(
-      'export mới thêm (additive), changelog có mục cho version hiện tại: '
-      'exit code 0, "additive", Added đúng symbol mới',
-      () async {
-        await writeEntrypoint(['foo.dart', 'bar.dart']);
-        await writeFile('lib/foo.dart', 'class Foo {}');
-        await writeFile('lib/bar.dart', 'class Bar {}');
-        await writeSnapshot({
-          'entrypoint': 'lib/roy_casual_kit.dart',
-          'exports': ['foo.dart'],
-          'symbols': ['foo.dart:Foo'],
-        });
-        await writePubspec('0.1.0');
-        await writeChangelog('0.1.0', '- Added Bar.');
+    test('export mới thêm (additive), changelog có mục cho version hiện tại: '
+        'exit code 0, "additive", Added đúng symbol mới', () async {
+      await writeEntrypoint(['foo.dart', 'bar.dart']);
+      await writeFile('lib/foo.dart', 'class Foo {}');
+      await writeFile('lib/bar.dart', 'class Bar {}');
+      await writeSnapshot({
+        'entrypoint': 'lib/roy_casual_kit.dart',
+        'exports': ['foo.dart'],
+        'symbols': ['foo.dart:Foo'],
+      });
+      await writePubspec('0.1.0');
+      await writeChangelog('0.1.0', '- Added Bar.');
 
-        final result = await _runCheck(['check', '--root=${tempDir.path}']);
+      final result = await _runCheck(['check', '--root=${tempDir.path}']);
 
-        expect(
-          result.exitCode,
-          0,
-          reason: '${result.stdout}\n${result.stderr}',
-        );
-        expect(
-          result.stdout as String,
-          contains('API compatibility: additive'),
-        );
-        expect(result.stdout as String, contains('bar.dart:Bar'));
-        expect(result.stdout as String, contains('Removed: {}'));
-      },
-      timeout: const Timeout(Duration(seconds: 30)),
-    );
+      expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+      expect(result.stdout as String, contains('API compatibility: additive'));
+      expect(result.stdout as String, contains('bar.dart:Bar'));
+      expect(result.stdout as String, contains('Removed: {}'));
+    }, timeout: const Timeout(Duration(seconds: 30)));
 
     test(
       'export bị xoá (removed) + changelog KHÔNG có ghi chú BREAKING cho '
@@ -175,7 +164,10 @@ void main() {
           'symbols': ['foo.dart:Foo', 'bar.dart:Bar'],
         });
         await writePubspec('0.1.0');
-        await writeChangelogSingleEntry('0.1.0', '### BREAKING\n- Removed Bar.');
+        await writeChangelogSingleEntry(
+          '0.1.0',
+          '### BREAKING\n- Removed Bar.',
+        );
 
         final result = await _runCheck(['check', '--root=${tempDir.path}']);
 
@@ -221,38 +213,27 @@ void main() {
       timeout: const Timeout(Duration(seconds: 30)),
     );
 
-    test(
-      'snapshot command với --root: ghi đúng file tool/api_snapshot.json '
-      'vào fixture, KHÔNG đụng snapshot thật của repo',
-      () async {
-        await writeEntrypoint(['foo.dart']);
-        await writeFile('lib/foo.dart', 'class Foo {}');
-        // Tool ghi trực tiếp vào '$root/tool/api_snapshot.json' — không tự
-        // tạo thư mục cha nếu chưa tồn tại (repo thật luôn có sẵn tool/,
-        // nên trước giờ chưa lộ ra), fixture rỗng cần tự tạo trước.
-        Directory('${tempDir.path}/tool').createSync(recursive: true);
+    test('snapshot command với --root: ghi đúng file tool/api_snapshot.json '
+        'vào fixture, KHÔNG đụng snapshot thật của repo', () async {
+      await writeEntrypoint(['foo.dart']);
+      await writeFile('lib/foo.dart', 'class Foo {}');
+      // Tool ghi trực tiếp vào '$root/tool/api_snapshot.json' — không tự
+      // tạo thư mục cha nếu chưa tồn tại (repo thật luôn có sẵn tool/,
+      // nên trước giờ chưa lộ ra), fixture rỗng cần tự tạo trước.
+      Directory('${tempDir.path}/tool').createSync(recursive: true);
 
-        final result = await _runCheck([
-          'snapshot',
-          '--root=${tempDir.path}',
-        ]);
+      final result = await _runCheck(['snapshot', '--root=${tempDir.path}']);
 
-        expect(
-          result.exitCode,
-          0,
-          reason: '${result.stdout}\n${result.stderr}',
-        );
-        final written = File(
-          '${tempDir.path}/tool/api_snapshot.json',
-        ).readAsStringSync();
-        expect(written, contains('foo.dart:Foo'));
+      expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+      final written = File(
+        '${tempDir.path}/tool/api_snapshot.json',
+      ).readAsStringSync();
+      expect(written, contains('foo.dart:Foo'));
 
-        // Repo thật không hề bị đụng tới.
-        final realSnapshot = File('tool/api_snapshot.json').readAsStringSync();
-        expect(realSnapshot, isNot(contains('lib/foo.dart')));
-      },
-      timeout: const Timeout(Duration(seconds: 30)),
-    );
+      // Repo thật không hề bị đụng tới.
+      final realSnapshot = File('tool/api_snapshot.json').readAsStringSync();
+      expect(realSnapshot, isNot(contains('lib/foo.dart')));
+    }, timeout: const Timeout(Duration(seconds: 30)));
 
     test(
       'BUG-80: snapshot thu thập đầy đủ sealed/final class, typed functions, và loại bỏ private symbols',
@@ -281,15 +262,20 @@ bool isSomethingValid(String input) => input.isNotEmpty;
         Directory('${tempDir.path}/tool').createSync(recursive: true);
         await writePubspec('1.0.0');
 
-        final result = await _runCheck([
-          'snapshot',
-          '--root=${tempDir.path}',
-        ]);
+        final result = await _runCheck(['snapshot', '--root=${tempDir.path}']);
 
-        expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
-        final written = jsonDecode(
-          File('${tempDir.path}/tool/api_snapshot.json').readAsStringSync(),
-        ) as Map<String, Object?>;
+        expect(
+          result.exitCode,
+          0,
+          reason: '${result.stdout}\n${result.stderr}',
+        );
+        final written =
+            jsonDecode(
+                  File(
+                    '${tempDir.path}/tool/api_snapshot.json',
+                  ).readAsStringSync(),
+                )
+                as Map<String, Object?>;
 
         final symbols = (written['symbols'] as List).cast<String>();
 
@@ -314,7 +300,11 @@ bool isSomethingValid(String input) => input.isNotEmpty;
         // KHÔNG ĐƯỢC có bất kỳ symbol private nào (bắt đầu bằng _)
         for (final sym in symbols) {
           final name = sym.split(':').last;
-          expect(name.startsWith('_'), isFalse, reason: 'Found private symbol: $sym');
+          expect(
+            name.startsWith('_'),
+            isFalse,
+            reason: 'Found private symbol: $sym',
+          );
         }
       },
       timeout: const Timeout(Duration(seconds: 30)),
@@ -363,7 +353,11 @@ bool isSomethingValid(String input) => input.isNotEmpty;
 
         final result = await _runCheck(['check', '--root=${tempDir.path}']);
 
-        expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+        expect(
+          result.exitCode,
+          0,
+          reason: '${result.stdout}\n${result.stderr}',
+        );
         expect(
           result.stdout as String,
           contains('API compatibility: breaking'),
@@ -393,6 +387,134 @@ bool isSomethingValid(String input) => input.isNotEmpty;
           result.stderr as String,
           contains('Breaking API removals require a major version'),
         );
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      'BUG-98: xóa public method bị nhận là breaking change',
+      () async {
+        await writeEntrypoint(['foo.dart']);
+        await writeFile('lib/foo.dart', 'class Foo {}');
+        await writeSnapshot({
+          'version': '1.0.0',
+          'entrypoint': 'lib/roy_casual_kit.dart',
+          'exports': ['foo.dart'],
+          'symbols': ['foo.dart:Foo'],
+          'members': ['foo.dart:Foo.run(int value): void'],
+        });
+        await writePubspec('1.0.1');
+        await writeChangelog('1.0.1', '- Không có breaking change.');
+
+        final result = await _runCheck(['check', '--root=${tempDir.path}']);
+
+        expect(result.exitCode, isNot(0));
+        expect(
+          result.stderr as String,
+          contains('foo.dart:Foo.run(int value): void'),
+        );
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      'BUG-98: đổi param và return type của public method bị nhận là breaking change',
+      () async {
+        await writeEntrypoint(['foo.dart']);
+        await writeFile(
+          'lib/foo.dart',
+          'class Foo { String run(String value) => value; }',
+        );
+        await writeSnapshot({
+          'version': '1.0.0',
+          'entrypoint': 'lib/roy_casual_kit.dart',
+          'exports': ['foo.dart'],
+          'symbols': ['foo.dart:Foo'],
+          'members': ['foo.dart:Foo.run(int value): int'],
+        });
+        await writePubspec('1.0.1');
+        await writeChangelog('1.0.1', '- Không có breaking change.');
+
+        final result = await _runCheck(['check', '--root=${tempDir.path}']);
+
+        expect(result.exitCode, isNot(0));
+        expect(
+          result.stderr as String,
+          contains('foo.dart:Foo.run(int value): int'),
+        );
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      'BUG-98: snapshot giữ method có generic return type chứa khoảng trắng',
+      () async {
+        await writeEntrypoint(['foo.dart']);
+        await writeFile('lib/foo.dart', '''
+class Foo {
+  Map<String, Object?> exportAll() => {};
+  Future<Map<String, Object?>?> download() async => null;
+}
+''');
+        await writePubspec('1.0.0');
+        Directory('${tempDir.path}/tool').createSync(recursive: true);
+
+        final result = await _runCheck(['snapshot', '--root=${tempDir.path}']);
+
+        expect(
+          result.exitCode,
+          0,
+          reason: '${result.stdout}\n${result.stderr}',
+        );
+        final snapshot =
+            jsonDecode(
+                  File(
+                    '${tempDir.path}/tool/api_snapshot.json',
+                  ).readAsStringSync(),
+                )
+                as Map<String, Object?>;
+        expect(
+          snapshot['members'],
+          containsAll([
+            'foo.dart:Foo.download(): Future<Map<String, Object?>?>',
+            'foo.dart:Foo.exportAll(): Map<String, Object?>',
+          ]),
+        );
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      'BUG-98: snapshot bỏ qua private member và member của private class',
+      () async {
+        await writeEntrypoint(['foo.dart']);
+        await writeFile('lib/foo.dart', '''
+class Foo {
+  void run() {}
+  void _internal() {}
+}
+class _InternalFoo {
+  void leak() {}
+}
+''');
+        await writePubspec('1.0.0');
+        Directory('${tempDir.path}/tool').createSync(recursive: true);
+
+        final result = await _runCheck(['snapshot', '--root=${tempDir.path}']);
+
+        expect(
+          result.exitCode,
+          0,
+          reason: '${result.stdout}\n${result.stderr}',
+        );
+        final snapshot =
+            jsonDecode(
+                  File(
+                    '${tempDir.path}/tool/api_snapshot.json',
+                  ).readAsStringSync(),
+                )
+                as Map<String, Object?>;
+        expect(snapshot['members'], ['foo.dart:Foo.run(): void']);
       },
       timeout: const Timeout(Duration(seconds: 30)),
     );

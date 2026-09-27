@@ -25,13 +25,17 @@ Snapshot member signature (method/param list) cho class export; check fail khi m
 
 ## Acceptance criteria
 
-- [ ] Fixture class `Foo` có method → xóa method → check fail.
-- [ ] Đổi param/return type cũng fail.
-- [ ] Không false positive cho private/internal member.
+- [x] Fixture class `Foo` có method → xóa method → check fail.
+- [x] Đổi param/return type cũng fail.
+- [x] Không false positive cho private/internal member.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+Đã sửa bằng parser signature dựa trên Regex và block-depth match (không dùng analyzer để giữ fast/zero-deps).
+- Bổ sung `members` field vào `api_snapshot.json` (tự parse backward-compatible cho file cũ).
+- Thêm 4 regression test fixture, gồm generic return type có khoảng trắng.
+- Audit độc lập tìm và đã sửa case `Map<K, V>`; operator/getter/setter nằm ngoài scope có ghi rõ.
+- Analyze, API tests, full root/example tests và quality gates đều xanh; tự đánh giá 9.5/10.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 
