@@ -127,4 +127,85 @@ void main() {
     expect(find.textContaining('Restored 1 slot from backup.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'BUG-87: tap delete on a slot removes it, no exception, status updates',
+    (tester) async {
+      await _boot();
+
+      await tester.pumpWidget(_wrap(const SaveCloudScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.tap(_button('Create slot').first);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Hero Slot 1'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded).first);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Hero Slot 1'), findsNothing);
+      expect(find.text('No slots yet.'), findsOneWidget);
+      expect(find.textContaining('Deleted slot.'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'BUG-87: deleting the ACTIVE slot clears active state — "+10 score" '
+    'button becomes disabled again',
+    (tester) async {
+      await _boot();
+
+      await tester.pumpWidget(_wrap(const SaveCloudScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.tap(_button('Create slot').first);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.textContaining('• Active'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded).first);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final addScoreButton = tester.widget<CommonButton>(
+        _button('+10 score').first,
+      );
+      expect(
+        addScoreButton.onTap,
+        isNull,
+        reason: 'không còn slot active nào sau khi xoá slot active duy nhất',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'BUG-87: delete 1 trong 2 slot — slot còn lại và score của nó không đổi',
+    (tester) async {
+      await _boot();
+
+      await tester.pumpWidget(_wrap(const SaveCloudScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.tap(_button('Create slot').first);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(_button('+10 score').first);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.tap(_button('Create slot').first);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Hero Slot 1'), findsOneWidget);
+      expect(find.text('Hero Slot 2'), findsOneWidget);
+
+      // "Hero Slot 2" vừa tạo có lastPlayedAtMs mới nhất -> listSlots() sắp
+      // nó lên ĐẦU danh sách (most-recently-played first). Xoá icon `.first`
+      // (= slot 2, đang active), "Hero Slot 1" (score 10) phải còn nguyên.
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded).first);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Hero Slot 2'), findsNothing);
+      expect(find.text('Hero Slot 1'), findsOneWidget);
+      expect(find.textContaining('Score: 10'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

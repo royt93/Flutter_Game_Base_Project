@@ -62,9 +62,54 @@ còn đồng bộ hoàn toàn tới điểm đó).
 `save_slot_manager_test.dart` pass (bao gồm Slice 1/2/3, ENH-68, ENH-72,
 BUG-41, BUG-45, BUG-87 mới) — không regression.
 
-**Tự chấm:** 9/10. Fix đúng nguyên nhân gốc (thứ tự 2 side-effect không
+**Tự chấm (v1):** 9/10. Fix đúng nguyên nhân gốc (thứ tự 2 side-effect không
 transaction), phát hiện và sửa thêm 1 lỗ hổng race trong helper test
 (`debugPendingSaves`) mà lẽ ra sẽ làm suite flaky ngầm về sau.
+
+**Re-audit độc lập (fork riêng) phát hiện gap thật:** thứ tự data-trước-
+metadata đúng, nhưng `_scheduleSave()` là fire-and-forget và `_runSave()`
+tự nuốt mọi lỗi (`catch (_) {}`, có chủ đích để không làm kẹt hàng đợi save
+của các call khác) — `deleteSlot` (v1) chỉ `await _waitForPendingSaves()`
+rồi xoá `activeSlotId` NGAY, không hề biết save đó có thực sự ghi xuống
+disk hay đã âm thầm thất bại. Một lỗi persist thật ở bước metadata sẽ bị
+nuốt hoàn toàn, `deleteSlot` trả về như đã xong trong khi metadata cũ vẫn
+còn nguyên trên disk.
+
+**Fix v2 (rollback best-effort, theo lựa chọn người dùng):** `deleteSlot`
+nay: (1) snapshot data qua `exportWithPrefix` TRƯỚC khi xoá; (2) xoá data;
+(3) snapshot in-memory metadata + `wasActive` TRƯỚC khi mutate; (4) mutate,
+`_scheduleSave()`, đợi hàng đợi rỗng; (5) đọc lại THẬT từ disk
+(`_store.load()`) để xác nhận id đã thực sự biến mất — không tin tưởng
+"await xong là chắc chắn thành công" nữa; (6) nếu vẫn còn trên disk (persist
+thất bại): khôi phục data qua `importWithPrefix`, khôi phục `_slots` về
+snapshot, `_scheduleSave()` lại, rồi `throw StateError` thay vì trả về như
+đã xong; (7) chỉ xoá `activeSlotId` sau khi bước (5) xác nhận thành công
+thật. Giới hạn đã biết (ghi trong code + đây): multi-key storage không có
+transaction nguyên tử tuyệt đối — vẫn còn 1 cửa sổ rất hẹp giữa (2) và (6)
+nếu process bị kill đúng lúc đó; "best effort" nghĩa là mọi lỗi runtime
+(throw) được rollback, không phải mọi kịch bản process-kill.
+
+**TDD bổ sung:** `_ThrowingMetaPersistStorage` (chỉ throw đúng lúc
+`setString(saveSlotMetaV1, ...)`, để phân biệt "chưa từng persist" với
+"removal thất bại") + 1 test mới: metadata persist throw sau khi data đã
+xoá thành công → xác nhận data được khôi phục lại, metadata + activeSlotId
+giữ nguyên, `deleteSlot` throw thay vì trả về êm.
+
+**Widget test bổ sung (gap thật khác từ re-audit — trước đó KHÔNG có test '
+nào cho nút xoá slot trong UI):** `example/test/save_cloud_screen_test.dart`
+— 3 test mới: tap xoá 1 slot (happy path, không exception), xoá slot đang
+active thì nút "+10 score" disable lại đúng, xoá 1 trong 2 slot thì slot
+còn lại + score của nó không đổi.
+
+**Integration/device test bổ sung:** `example/integration_test/app_boot_test.dart`
+— test `BUG-87` tạo slot thật, set active, ghi data thật, xoá, xác nhận cả
+3 (data/metadata/active) cùng biến mất trên SharedPreferences THẬT của
+thiết bị (không phải mock).
+
+**Tự chấm (v2, sau re-audit + fix):** 9.5/10. Điểm trừ còn lại: rollback
+"best-effort" (đã nêu rõ), không phải transaction nguyên tử tuyệt đối qua
+nhiều key — giới hạn vốn có của SharedPreferences, đã tài liệu hoá đầy đủ
+thay vì giả vờ đã giải quyết triệt để.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

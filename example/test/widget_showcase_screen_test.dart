@@ -17,7 +17,9 @@ import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/deep_link_command_router.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:roy_casual_kit/core/utils/format.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
@@ -71,6 +73,21 @@ Future<void> _settle(
 }) async {
   for (var i = 0; i < steps; i++) {
     await tester.pump(Duration(milliseconds: stepMs));
+  }
+}
+
+/// Throws ONLY on `setString(targetKey, ...)` — every other write succeeds
+/// normally. Used to simulate a real persist failure for exactly one
+/// service's storage key without breaking every other service the demo
+/// screen also constructs during `initState`.
+class _ThrowingOnKeyStorage extends StorageService {
+  _ThrowingOnKeyStorage(super.prefs, this.targetKey);
+  final String targetKey;
+
+  @override
+  Future<void> setString(String key, String value) {
+    if (key == targetKey) throw StateError('simulated persist failure');
+    return super.setString(key, value);
   }
 }
 
@@ -309,6 +326,55 @@ void main() {
 
       expect(audio.muted.value, isTrue);
       expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'BUG-88: reward pipeline persist failure inside a live widget tree '
+    'rolls back — gem display stays at the last actually-persisted value, '
+    'no ghost balance, no crash',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final failing = _ThrowingOnKeyStorage(
+        await SharedPreferences.getInstance(),
+        StorageKeys.rewardTransactionPipelineV1,
+      );
+      Get.put<StorageService>(failing);
+
+      await _pumpShowcase(tester);
+
+      // The showcase screen's own initState registers a REAL
+      // RewardTransactionPipeline (permanent, via `.maybe ?? Get.put(...)`)
+      // wired to `StorageService.to` — this is the exact live instance the
+      // pumped widget tree reads from, not a separately constructed one.
+      final pipeline = RewardTransactionPipeline.maybe;
+      expect(pipeline, isNotNull);
+
+      final result = await pipeline!.grant(
+        source: RewardSource.ad,
+        transactionId: 'widget_test_bug88',
+        lines: const [RewardLine(currency: 'gem', amount: 999)],
+      );
+
+      expect(
+        result,
+        isA<SdkFailure<RewardTransactionRecord>>(),
+        reason: 'rewardTransactionPipelineV1 writes are forced to throw',
+      );
+      expect(
+        pipeline.auditTrail,
+        isEmpty,
+        reason: 'a failed persist must not leave a ghost record in memory',
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(
+        find.textContaining('Unlock gems: 0'),
+        findsOneWidget,
+        reason: 'gem balance in the live widget tree must NOT reflect a '
+            'grant whose persist failed and was rolled back',
+      );
       expect(tester.takeException(), isNull);
     },
   );

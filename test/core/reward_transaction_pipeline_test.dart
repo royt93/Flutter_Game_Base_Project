@@ -508,8 +508,10 @@ void main() {
         final throwingStorage = _ThrowingStorageService();
         final throwingWallet = EconomyWallet(storage: throwingStorage)
           ..onInit();
+        var analyticsCalls = 0;
         final throwingPipeline = RewardTransactionPipeline(
           wallet: throwingWallet,
+          onAnalytics: (_) => analyticsCalls++,
         )..onInit();
         RewardTransactionRecord? granted;
         throwingPipeline.onGranted.listen((r) => granted = r);
@@ -527,6 +529,11 @@ void main() {
         );
         expect(throwingPipeline.auditTrail, isEmpty);
         expect(granted, isNull);
+        expect(
+          analyticsCalls,
+          0,
+          reason: 'persist thất bại không được báo analytics như thể đã grant',
+        );
       },
     );
 
@@ -543,8 +550,11 @@ void main() {
         // cho commit thất bại".
         final gatingStorage = _ThrowingStorageService()..failOnCall = 3;
         final gatingWallet = EconomyWallet(storage: gatingStorage)..onInit();
-        final gatingPipeline = RewardTransactionPipeline(wallet: gatingWallet)
-          ..onInit();
+        var analyticsCalls = 0;
+        final gatingPipeline = RewardTransactionPipeline(
+          wallet: gatingWallet,
+          onAnalytics: (_) => analyticsCalls++,
+        )..onInit();
         RewardTransactionRecord? granted;
         gatingPipeline.onGranted.listen((r) => granted = r);
 
@@ -568,6 +578,11 @@ void main() {
               'committed persist thất bại phải rollback memory về snapshot '
               'pending đã persist thành công trước đó — không được báo '
               'committed giả chỉ tồn tại trong RAM',
+        );
+        expect(
+          analyticsCalls,
+          0,
+          reason: 'commit thất bại không được báo analytics như thể đã grant',
         );
       },
     );

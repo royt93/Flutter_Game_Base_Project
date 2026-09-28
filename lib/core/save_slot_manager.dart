@@ -343,17 +343,53 @@ class SaveSlotManager extends GetxService {
   /// longer exists). Throws `ArgumentError` if [id] doesn't exist.
   Future<void> deleteSlot(String id) async {
     _validateExists(id);
-    // BUG-87: data delete FIRST — if this throws, metadata/activeSlotId are
+    final storage = StorageService.to;
+    // BUG-87: data delete FIRST — if THIS throws, metadata/activeSlotId are
     // untouched below, so a failed delete never orphans a slot's data (no
     // metadata pointing at it, but the data itself still on disk). The old
     // order removed metadata first, so a mid-delete crash/throw left data
     // on disk with no metadata entry (and possibly activeSlotId still
     // pointing at a slot that no longer "exists" per listSlots()).
-    await StorageService.to.removeAllWithPrefix('slot_${id}_');
+    final dataSnapshot = storage.exportWithPrefix('slot_${id}_');
+    await storage.removeAllWithPrefix('slot_${id}_');
+
+    // Snapshot in-memory metadata state BEFORE mutating it, so a failure to
+    // actually PERSIST the removal (verified below, not merely "didn't
+    // throw" — a swallowed error inside `_scheduleSave`'s fire-and-forget
+    // save chain would otherwise silently leave stale metadata on disk
+    // while this method returns as if fully committed) can roll everything
+    // — data, in-memory metadata, and the active-slot pointer — back to
+    // exactly the pre-delete state instead of leaving a partial delete
+    // behind.
+    final metaSnapshot = List<SaveSlotMeta>.of(_slotList);
+    final wasActive = activeSlotId == id;
     _slotList.removeWhere((s) => s.id == id);
     _scheduleSave();
-    if (activeSlotId == id) {
-      await StorageService.to.remove(_activeSlotStorageKey);
+    await _waitForPendingSaves();
+
+    final persistedIds = (_store.load() ?? const <SaveSlotMeta>[])
+        .map((s) => s.id)
+        .toSet();
+    if (persistedIds.contains(id)) {
+      // Metadata removal never actually reached disk (the save chain's own
+      // `catch (_) {}` swallowed a real write failure) — restore data,
+      // in-memory metadata, and rollback the failed removal attempt with
+      // one more (best-effort) save, then surface the failure instead of
+      // returning as if the slot were gone.
+      if (dataSnapshot.isNotEmpty) {
+        await storage.importWithPrefix('slot_${id}_', dataSnapshot);
+      }
+      _slots = metaSnapshot;
+      _scheduleSave();
+      await _waitForPendingSaves();
+      throw StateError(
+        'deleteSlot: metadata removal for "$id" failed to persist; rolled '
+        'back',
+      );
+    }
+
+    if (wasActive) {
+      await storage.remove(_activeSlotStorageKey);
     }
   }
 }

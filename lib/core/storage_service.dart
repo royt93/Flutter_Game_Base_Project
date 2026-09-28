@@ -101,12 +101,13 @@ class StorageService extends GetxService {
   final SharedPreferences? _prefs;
   final Map<String, Object> _fallback = {};
   final AsyncActionGuard _prefixImportGuard = AsyncActionGuard();
-  // BUG-83: serializes the actual platform WRITE performed by every direct
-  // `setX` and by `flush()`'s own write loop, so the two can never race —
-  // whichever call was invoked later always lands last on disk, matching
-  // real call order instead of whichever platform-channel round trip
-  // happens to complete first. Only the write itself goes through this
-  // (buffer bookkeeping stays synchronous, unaffected — see each `setX`).
+  // BUG-83: serializes `flush()`'s platform write loop against every direct
+  // `setX`, so a stale buffered snapshot can never land AFTER a newer direct
+  // write to the same key. This deliberately does NOT serialize direct writes
+  // against each other — SharedPreferences already orders its own calls, and
+  // preserving their no-await fast path is required by synchronous read-back
+  // callers (see below). Only the flush-vs-direct ordering this bug concerns
+  // goes through the queue; buffer bookkeeping stays synchronous.
   //
   // NOT `AsyncActionGuard.runExclusive`: that helper unconditionally
   // `await`s the previous tail even when it's already resolved, which

@@ -30,6 +30,30 @@ class _ThrowingPrefixDeleteStorage extends StorageService {
       throw StateError('simulated prefix delete failure');
 }
 
+/// Throws ONLY on `setString(StorageKeys.saveSlotMetaV1, ...)` — every other
+/// write (a slot's own data keys, `saveSlotActiveIdV1`) succeeds normally.
+/// Mimics a metadata-persist failure inside `deleteSlot`'s fire-and-forget
+/// `_scheduleSave()` (whose own `catch (_) {}` would otherwise swallow this
+/// silently) without touching the actual data-delete path BUG-87 already
+/// covers.
+class _ThrowingMetaPersistStorage extends StorageService {
+  _ThrowingMetaPersistStorage(super.prefs);
+  // Starts `false` so `createSlot`/`setActiveSlot` (called during test
+  // setup, BEFORE the delete under test) persist metadata normally — only
+  // flipped to `true` right before calling `deleteSlot`, so the test can
+  // tell "removal genuinely failed to persist" apart from "metadata was
+  // never successfully persisted in the first place".
+  bool shouldThrow = false;
+
+  @override
+  Future<void> setString(String key, String value) {
+    if (shouldThrow && key == StorageKeys.saveSlotMetaV1) {
+      throw StateError('simulated metadata persist failure');
+    }
+    return super.setString(key, value);
+  }
+}
+
 void main() {
   tearDown(Get.reset);
 
@@ -296,6 +320,45 @@ void main() {
                 .where((k) => k.startsWith('slot_${slot.id}_')),
             isEmpty,
           );
+        },
+      );
+
+      test(
+        'metadata persist throw (sau khi data đã xoá thành công) → rollback '
+        'ĐẦY ĐỦ: data khôi phục lại, metadata + activeSlotId giữ nguyên, '
+        'deleteSlot throw thay vì trả về như đã xoá xong',
+        () async {
+          Get.reset();
+          final metaThrowing = _ThrowingMetaPersistStorage(
+            await SharedPreferences.getInstance(),
+          );
+          Get.put<StorageService>(metaThrowing, permanent: true);
+          final manager = SaveSlotManager();
+          final slot = manager.createSlot('Alice');
+          await manager.setActiveSlot(slot.id);
+          await metaThrowing.setString(
+            manager.keyFor(slot.id, 'profile'),
+            'important-save-data',
+          );
+          await manager.debugPendingSaves;
+
+          metaThrowing.shouldThrow = true;
+          await expectLater(
+            manager.deleteSlot(slot.id),
+            throwsA(isA<StateError>()),
+          );
+
+          // Rollback phải khôi phục ĐỦ CẢ 3: data, metadata (in-memory), và
+          // activeSlotId — không được để deleteSlot "thành công một nửa"
+          // (data mất, metadata/active vẫn còn trỏ tới slot không còn data).
+          expect(
+            metaThrowing.getString(manager.keyFor(slot.id, 'profile')),
+            'important-save-data',
+            reason: 'data phải được khôi phục lại sau khi metadata persist '
+                'thất bại',
+          );
+          expect(manager.listSlots().map((s) => s.id), [slot.id]);
+          expect(manager.activeSlotId, slot.id);
         },
       );
     });

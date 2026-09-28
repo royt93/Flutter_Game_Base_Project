@@ -368,6 +368,42 @@ void main() {
       expect(result.isSuccess, isTrue);
       expect(restored, isTrue);
     });
+
+    test(
+      '2 participant CÙNG throw -> failure message liệt kê ĐỦ CẢ 2 tên, '
+      'participant thứ 3 (không throw) vẫn restore đầy đủ',
+      () async {
+        final coordinator = CheckpointCoordinator(
+          storage: storage,
+          createTimer: fakeCreateTimer,
+        );
+        coordinator.registerParticipant(
+          'first_broken',
+          snapshot: () => {'a': 1},
+          restore: (_) => throw StateError('first boom'),
+        );
+        coordinator.registerParticipant(
+          'second_broken',
+          snapshot: () => {'b': 2},
+          restore: (_) => throw StateError('second boom'),
+        );
+        Object? restoredGood;
+        coordinator.registerParticipant(
+          'good',
+          snapshot: () => {'c': 3},
+          restore: (data) => restoredGood = data,
+        );
+        await coordinator.requestCheckpoint(critical: true);
+
+        final result = coordinator.restoreLatest();
+
+        expect(result.isSuccess, isFalse);
+        final message = (result as SdkFailure<int>).message;
+        expect(message, contains('first_broken'));
+        expect(message, contains('second_broken'));
+        expect((restoredGood as Map)['c'], 3);
+      },
+    );
   });
 
   test(
