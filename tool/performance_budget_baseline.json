@@ -9,22 +9,22 @@
   {
     "name": "example_app_boot_wall_ms_emulator",
     "source": "realDevice",
-    "value": 338690.0,
+    "value": 375770.0,
     "unit": "ms",
-    "recordedAtMs": 1790050364949
+    "recordedAtMs": 1790588200202
   },
   {
     "name": "object_pool_allocation_reduction_percent",
     "source": "hostHeadless",
     "value": 97.5,
     "unit": "%",
-    "recordedAtMs": 1790050026226
+    "recordedAtMs": 1790587824374
   },
   {
     "name": "object_pool_pooled_elapsed_us",
     "source": "hostHeadless",
-    "value": 22327.0,
+    "value": 41930.0,
     "unit": "us",
-    "recordedAtMs": 1790050026226
+    "recordedAtMs": 1790587824374
   }
 ]
