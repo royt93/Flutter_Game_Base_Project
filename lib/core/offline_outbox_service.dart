@@ -242,6 +242,14 @@ class OfflineOutboxService extends GetxService {
 
   final items = <OutboxItem>[].obs;
   bool _draining = false;
+  // BUG-89: set by `enqueue` when it sees a drain already in flight — the
+  // in-progress drain's `ordered` snapshot was taken before this item
+  // existed, so without this flag it would sit unprocessed until some
+  // LATER drain() call happens to fire, which may never come (nothing else
+  // in this class calls drain() again on its own). Checked once after the
+  // snapshot loop finishes; if set, one more snapshot+loop pass runs before
+  // `drain()` returns, picking up everything enqueued mid-drain.
+  bool _dirtyDuringDrain = false;
   StreamSubscription<ConnectivityState>? _connectivitySub;
 
   List<OutboxItem> get manualReviewItems =>
@@ -333,6 +341,12 @@ class OfflineOutboxService extends GetxService {
       ),
     );
     items.assignAll(next);
+    // BUG-89: a drain() pass already in flight took its `ordered` snapshot
+    // before this item existed, so it won't see it — flag it so drain()'s
+    // own loop runs one more pass after this one finishes instead of
+    // leaving this item stuck until some later, not-guaranteed-to-happen
+    // drain() call.
+    if (_draining) _dirtyDuringDrain = true;
     unawaited(_persist());
     // Auto-drain only when a ConnectivityCoordinator confirms we're online
     // right now — without one, the caller drives drain() explicitly (e.g.
@@ -353,17 +367,29 @@ class OfflineOutboxService extends GetxService {
     if (_draining) return;
     _draining = true;
     try {
-      final ordered = [...items.where((i) => !i.manualReview)]
-        ..sort((a, b) => b.priority.compareTo(a.priority));
-      for (final item in ordered) {
-        if (!items.contains(item)) continue;
-        final expiresAt = item.expiresAtMs;
-        if (expiresAt != null && nowMsClamped(storage) > expiresAt) {
-          await _remove(item);
-          continue;
+      // BUG-89: re-snapshots and re-loops whenever `enqueue` marks
+      // `_dirtyDuringDrain` while a pass is still running — an item
+      // enqueued mid-drain isn't in the snapshot this pass already took,
+      // so without this it would sit unprocessed until some LATER drain()
+      // call happens to fire (nothing else in this class calls drain()
+      // again on its own). Cleared BEFORE each pass (not after) so an
+      // enqueue landing mid-pass — after the snapshot but before this
+      // flag is reset — is never lost: it re-sets the flag, which survives
+      // to be checked at the bottom of the loop.
+      do {
+        _dirtyDuringDrain = false;
+        final ordered = [...items.where((i) => !i.manualReview)]
+          ..sort((a, b) => b.priority.compareTo(a.priority));
+        for (final item in ordered) {
+          if (!items.contains(item)) continue;
+          final expiresAt = item.expiresAtMs;
+          if (expiresAt != null && nowMsClamped(storage) > expiresAt) {
+            await _remove(item);
+            continue;
+          }
+          await _attempt(item);
         }
-        await _attempt(item);
-      }
+      } while (_dirtyDuringDrain);
     } finally {
       _draining = false;
     }

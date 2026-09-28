@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:get/get.dart';
@@ -100,6 +101,50 @@ class StorageService extends GetxService {
   final SharedPreferences? _prefs;
   final Map<String, Object> _fallback = {};
   final AsyncActionGuard _prefixImportGuard = AsyncActionGuard();
+  // BUG-83: serializes the actual platform WRITE performed by every direct
+  // `setX` and by `flush()`'s own write loop, so the two can never race —
+  // whichever call was invoked later always lands last on disk, matching
+  // real call order instead of whichever platform-channel round trip
+  // happens to complete first. Only the write itself goes through this
+  // (buffer bookkeeping stays synchronous, unaffected — see each `setX`).
+  //
+  // NOT `AsyncActionGuard.runExclusive`: that helper unconditionally
+  // `await`s the previous tail even when it's already resolved, which
+  // defers the actual `prefs.setX(...)` call by at least one microtask —
+  // breaking a fire-and-forget caller (e.g. `ConsentStateService._persist`,
+  // called without awaiting) that reads back synchronously right after and
+  // relies on the SharedPreferences plugin's own cache having been updated
+  // synchronously the moment `prefs.setX` was CALLED (which the pre-BUG-83
+  // code preserved: an `async` function runs synchronously up to its first
+  // `await`, so `await _prefs.setString(...)` still called `setString`
+  // synchronously before yielding). `_guardedWrite` below keeps that fast
+  // path when nothing else is in flight, and only chains behind a prior
+  // write when one is genuinely still pending.
+  Future<void>? _pendingWrite;
+
+  Future<void> _guardedWrite(
+    FutureOr<void> Function() write, {
+    required bool queueWhenIdle,
+  }) {
+    final previous = _pendingWrite;
+    if (previous == null && !queueWhenIdle) {
+      return Future<void>.sync(write);
+    }
+    final future = previous == null
+        ? Future<void>.sync(write)
+        : previous.then(
+            (_) => Future<void>.sync(write),
+            onError: (_, _) => Future<void>.sync(write),
+          );
+    _pendingWrite = future;
+    void cleanup() {
+      if (identical(_pendingWrite, future)) _pendingWrite = null;
+    }
+
+    future.then<void>((_) => cleanup(), onError: (_, _) => cleanup());
+    return future;
+  }
+
   StorageService(this._prefs);
 
   static StorageService get to => Get.find<StorageService>();
@@ -158,13 +203,19 @@ class StorageService extends GetxService {
   /// Writing directly here means `_buffer` (already cleared above) is never
   /// touched again mid-flush, so any value buffered during a flush simply
   /// survives untouched for the next flush to pick up.
-  Future<void> flush() async {
-    if (_buffer.isEmpty) return;
+  Future<void> flush() {
+    if (_buffer.isEmpty) return Future.value();
     final pending = Map<String, Object>.from(_buffer);
     _buffer.clear();
-    for (final entry in pending.entries) {
-      await _writeDirect(entry.key, entry.value);
-    }
+    // BUG-83: the actual disk-write loop goes through the same write guard
+    // as every direct `setX` below, so a real transaction landing while
+    // this loop is still mid-flight can never get overwritten by a stale
+    // snapshotted value that hasn't been written yet.
+    return _guardedWrite(() async {
+      for (final entry in pending.entries) {
+        await _writeDirect(entry.key, entry.value);
+      }
+    }, queueWhenIdle: true);
   }
 
   Future<void> _writeDirect(String key, Object value) async {
@@ -216,14 +267,19 @@ class StorageService extends GetxService {
   /// result in `_raw`, and the next [flush] would overwrite it right back
   /// down to disk — an undo, reset, purchase, or import would silently have
   /// no effect if that key had ever gone through the hot path.
-  Future<void> setInt(String key, int value) async {
+  Future<void> setInt(String key, int value) {
     _buffer.remove(key);
     platformWrites++;
-    if (_prefs != null) {
-      await _prefs.setInt(key, value);
-      return;
+    final prefs = _prefs;
+    if (prefs == null) {
+      _fallback[key] = value;
+      return Future.value();
     }
-    _fallback[key] = value;
+    // BUG-83: same write queue [flush] uses — a `flush()` batch already in
+    // flight for this key must finish (with its now-superseded stale value)
+    // BEFORE this real write lands, never after, or this write would be
+    // the one silently lost instead of the stale one.
+    return _guardedWrite(() => prefs.setInt(key, value), queueWhenIdle: false);
   }
 
   bool getBool(String key, {bool def = false}) {
@@ -232,14 +288,15 @@ class StorageService extends GetxService {
   }
 
   /// See the note on [setInt].
-  Future<void> setBool(String key, bool value) async {
+  Future<void> setBool(String key, bool value) {
     _buffer.remove(key);
     platformWrites++;
-    if (_prefs != null) {
-      await _prefs.setBool(key, value);
-      return;
+    final prefs = _prefs;
+    if (prefs == null) {
+      _fallback[key] = value;
+      return Future.value();
     }
-    _fallback[key] = value;
+    return _guardedWrite(() => prefs.setBool(key, value), queueWhenIdle: false);
   }
 
   double getDouble(String key, {double def = 0.0}) {
@@ -248,14 +305,15 @@ class StorageService extends GetxService {
   }
 
   /// See the note on [setInt].
-  Future<void> setDouble(String key, double value) async {
+  Future<void> setDouble(String key, double value) {
     _buffer.remove(key);
     platformWrites++;
-    if (_prefs != null) {
-      await _prefs.setDouble(key, value);
-      return;
+    final prefs = _prefs;
+    if (prefs == null) {
+      _fallback[key] = value;
+      return Future.value();
     }
-    _fallback[key] = value;
+    return _guardedWrite(() => prefs.setDouble(key, value), queueWhenIdle: false);
   }
 
   String? getString(String key) {
@@ -264,14 +322,15 @@ class StorageService extends GetxService {
   }
 
   /// See the note on [setInt].
-  Future<void> setString(String key, String value) async {
+  Future<void> setString(String key, String value) {
     _buffer.remove(key);
     platformWrites++;
-    if (_prefs != null) {
-      await _prefs.setString(key, value);
-      return;
+    final prefs = _prefs;
+    if (prefs == null) {
+      _fallback[key] = value;
+      return Future.value();
     }
-    _fallback[key] = value;
+    return _guardedWrite(() => prefs.setString(key, value), queueWhenIdle: false);
   }
 
   /// Reads a JSON list (unlike the CSV-join pattern of other keys in this
@@ -550,7 +609,9 @@ class StorageService extends GetxService {
   /// apply to only one of the two and reintroduce BUG-81's over-deletion
   /// shape.
   Iterable<String> _staleKeysUnder(String prefix, Map<String, Object> keep) =>
-      allKeys().where((key) => key.startsWith(prefix) && !keep.containsKey(key));
+      allKeys().where(
+        (key) => key.startsWith(prefix) && !keep.containsKey(key),
+      );
 
   /// Dispatches to the matching typed setter — the one place every
   /// `int`/`bool`/`double`/`String` write for a scoped-prefix operation goes

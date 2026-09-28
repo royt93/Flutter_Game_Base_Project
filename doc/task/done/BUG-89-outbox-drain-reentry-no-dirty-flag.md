@@ -25,12 +25,36 @@ Khi online auto-drain, event mới có thể bị kẹt dù connectivity tốt.
 
 ## Acceptance criteria
 
-- [ ] Test enqueue giữa `drain` → item mới được xử lý trong cùng chu kỳ drain.
-- [ ] Re-entry không tạo upload song song cho cùng item.
+- [x] Test enqueue giữa `drain` → item mới được xử lý trong cùng chu kỳ drain.
+- [x] Re-entry không tạo upload song song cho cùng item.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+**Implementation:** Thêm field `bool _dirtyDuringDrain`, set `true` trong
+`enqueue` khi thấy `_draining == true` (item vừa thêm không nằm trong
+snapshot `ordered` mà pass hiện tại của `drain()` đã chụp). `drain()` bọc
+snapshot+loop hiện có trong `do { ... } while (_dirtyDuringDrain)` — cờ
+được reset về `false` NGAY ĐẦU mỗi pass (không phải cuối), để 1 enqueue lọt
+vào giữa lúc pass đang chạy (sau khi đã reset, trước khi pass kết thúc)
+vẫn kịp set lại cờ và không bị mất. `_draining` (re-entry guard cũ) giữ
+nguyên, không đổi — `if (_draining) return` ở đầu vẫn chặn 2 lời gọi
+`drain()` song song y hệt trước.
+
+**TDD:** 2 test mới trong `test/core/offline_outbox_service_test.dart`
+(group `BUG-89`): (1) enqueue item mới (key khác) trong lúc upload item
+đầu còn mid-flight → item mới được upload trong CHÍNH lần `drain()` đang
+chạy (dùng `Completer` gate uploader, cùng pattern `BUG-44` đã dùng); (2)
+gọi `drain()` lần 2 khi lần 1 đang mid-flight → no-op ngay, không
+double-attempt cùng item (regression guard cho re-entry cũ).
+
+**Kết quả:** `flutter analyze` sạch root + `example/`. Full file
+`offline_outbox_service_test.dart`: 34/34 pass (bao gồm toàn bộ nhóm cũ
+BUG-44, ENH-89, conflict policy, persist-qua-restart — không regression).
+
+**Tự chấm:** 9/10. Tái dùng đúng dirty-flag pattern đã có tiền lệ trong
+repo (`SeasonEventService._saveDirty`), vòng lặp có điều kiện dừng rõ ràng
+(không dirty nữa thì thoát), không có nguy cơ vòng lặp vô hạn vì mỗi pass
+chỉ dirty lại khi có enqueue MỚI thực sự xảy ra trong pass đó.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

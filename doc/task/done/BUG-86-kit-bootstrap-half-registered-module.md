@@ -25,12 +25,35 @@ Lỗi audio transient (thiết bị không có audio backend) biến thành mấ
 
 ## Acceptance criteria
 
-- [ ] Test init-throw → không còn registration nửa hỏng; gọi lại `initialize` thành công.
-- [ ] `errors` trong `RoyCasualKitResult` vẫn ghi nhận module lỗi lần đầu.
+- [x] Test init-throw → không còn registration nửa hỏng; gọi lại `initialize` thành công.
+- [x] `errors` trong `RoyCasualKitResult` vẫn ghi nhận module lỗi lần đầu.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+**Implementation:** Đảo thứ tự ở CẢ 2 nhánh `audio` và `wakeLock` (task đã
+ghi chú `wakeLock` cùng pattern lỗi, không phải pattern an toàn) —
+`await instance.init()` chạy TRƯỚC `Get.put(instance, ...)`. Nếu `init()`
+throw, không có gì được đăng ký vào Get và `_owned` không có closure dọn
+dẹp nào được thêm → exception thoát ra ngoài, bị bắt bởi outer
+try/catch của `_initialize`, ghi vào `errors[module]`, KHÔNG để lại instance
+nửa đăng ký. Lần `initialize()` sau `Get.isRegistered<X>()` vẫn `false` nên
+retry chạy lại đầy đủ từ đầu (không bị skip vĩnh viễn).
+
+**TDD:** 2 test mới trong `test/core/kit_bootstrap_test.dart` (group
+`BUG-86`) — request module `audio`/`wakeLock` riêng lẻ KHÔNG kèm `storage`
+→ `init()` throw THẬT (do `StorageService.to` bên trong `init()` chưa đăng
+ký, không cần mock giả lập) → verify `Get.isRegistered` là `false` và
+`errors` có ghi nhận; gọi lại `initialize` với cấu hình đúng (có storage)
+→ đăng ký + `init()` chạy thành công thật sự (verify qua giá trị
+`muted`/`enabled` phản ánh đúng state đã persist trước đó).
+
+**Kết quả:** `flutter analyze` sạch root + `example/`. `flutter test
+--exclude-tags slow` sạch root + `example/`, không regression trên 15 test
+khác trong `kit_bootstrap_test.dart`.
+
+**Tự chấm:** 9/10. Fix tối thiểu (đảo 2 dòng mỗi nhánh), tận dụng throw THẬT
+sẵn có trong code (thiếu storage) thay vì phải viết mock riêng để giả lập
+init-throw — test do đó verify đúng hành vi thật của hệ thống.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

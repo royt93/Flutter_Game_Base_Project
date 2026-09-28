@@ -331,6 +331,64 @@ void main() {
           expect(store.exportAll()['b'], 2);
         },
       );
+
+      test(
+        'BUG-83: setInt trực tiếp xen giữa lúc flush() đang ghi KHÔNG bị '
+        'flush ghi đè bằng giá trị cũ đã snapshot trước đó',
+        () async {
+          await store.setIntBuffered('a', 100);
+
+          // Không await ngay — flush() chạy đồng bộ tới khi gặp await đầu
+          // tiên (ghi 'a' xuống đĩa với giá trị SNAPSHOT CŨ = 100) rồi treo
+          // lại, trả quyền điều khiển về đây trước khi write thật hoàn tất.
+          final flushFuture = store.flush();
+
+          // Trong lúc flush() vẫn đang "bay" (chưa ghi xong 'a'), 1 giao
+          // dịch thật (không buffer) ghi giá trị MỚI cho cùng key — đây
+          // chính là race BUG-83 mô tả: nếu không serialize, giá trị mới
+          // này có thể bị flush() ghi đè bằng snapshot cũ ngay sau đó.
+          final setFuture = store.setInt('a', 200);
+
+          await Future.wait([flushFuture, setFuture]);
+
+          expect(
+            store.getInt('a'),
+            200,
+            reason:
+                'setInt trực tiếp phải luôn là lần ghi SAU CÙNG khi nó xảy '
+                'ra trong lúc flush() đang ghi cùng key — không được để '
+                'flush() ghi đè bằng giá trị cũ hơn.',
+          );
+        },
+      );
+
+      test(
+        'BUG-83: không phá vỡ đảm bảo cũ — direct write vẫn luôn thắng '
+        'buffered stale khi không có flush nào đang chạy',
+        () async {
+          await store.setIntBuffered('k', 1);
+          await store.setInt('k', 2);
+
+          expect(store.getInt('k'), 2);
+          await store.flush();
+          expect(store.getInt('k'), 2);
+        },
+      );
+
+      test(
+        'BUG-83 regression: gọi setString KHÔNG await (fire-and-forget) rồi '
+        'đọc lại NGAY (đồng bộ, cùng microtask) vẫn thấy giá trị mới — '
+        'guard write không được trì hoãn platform write khi không có write '
+        'nào khác đang chạy (nhiều service, vd ConsentStateService, dựa vào '
+        'tính chất này)',
+        () {
+          // Không `await` — mô phỏng đúng caller thật (setString(...) rồi
+          // return, không await), sau đó đọc lại NGAY LẬP TỨC.
+          // ignore: unawaited_futures
+          store.setString('k', 'v1');
+          expect(store.getString('k'), 'v1');
+        },
+      );
     });
 
     group('IDEA-55: eraseAll', () {

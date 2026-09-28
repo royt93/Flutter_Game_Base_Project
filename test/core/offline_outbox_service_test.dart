@@ -487,6 +487,86 @@ void main() {
     });
   });
 
+  group('BUG-89: enqueue giữa lúc drain đang chạy được xử lý CÙNG chu kỳ', () {
+    test(
+      'enqueue item MỚI (key khác) trong lúc drain đang upload item khác '
+      '-> item mới được upload trong CÙNG lần drain() đó (không phải chờ '
+      'lần drain kế tiếp)',
+      () async {
+        final uploadStarted = Completer<void>();
+        final releaseFirstUpload = Completer<void>();
+        final uploadedKeys = <String>[];
+        final service = _service(
+          uploader: (p, k) async {
+            uploadedKeys.add(k);
+            if (k == 'first') {
+              uploadStarted.complete();
+              await releaseFirstUpload.future;
+            }
+            return const SyncAck();
+          },
+        );
+        service.enqueue(idempotencyKey: 'first', payload: const {'v': 1});
+
+        final drainFuture = service.drain();
+        await uploadStarted.future;
+
+        // Enqueue TRONG LÚC drain() vẫn đang mid-flight (upload 'first'
+        // chưa resolve) — snapshot 'ordered' bên trong drain() đã chụp
+        // xong TRƯỚC dòng này, nên 'second' không nằm trong snapshot đó.
+        service.enqueue(idempotencyKey: 'second', payload: const {'v': 2});
+
+        releaseFirstUpload.complete();
+        await drainFuture;
+
+        expect(
+          uploadedKeys,
+          contains('second'),
+          reason:
+              'item enqueue giữa chu kỳ drain phải được xử lý trong CHÍNH '
+              'lần drain() đang chạy (dirty-flag -> thêm 1 vòng), không '
+              'phải nằm chờ vô định đến lần drain() kế tiếp',
+        );
+        expect(service.items, isEmpty);
+      },
+    );
+
+    test(
+      're-entry drain() khi đang drain: không tạo upload song song cho '
+      'cùng 1 item (drain lần 2 no-op ngay, không double-attempt)',
+      () async {
+        final uploadStarted = Completer<void>();
+        final releaseUpload = Completer<void>();
+        var attemptCount = 0;
+        final service = _service(
+          uploader: (p, k) async {
+            attemptCount++;
+            uploadStarted.complete();
+            await releaseUpload.future;
+            return const SyncAck();
+          },
+        );
+        service.enqueue(idempotencyKey: 'k1', payload: const {'v': 1});
+
+        final firstDrain = service.drain();
+        await uploadStarted.future;
+
+        // Gọi drain() LẦN 2 trong khi lần 1 vẫn đang mid-flight — phải
+        // no-op ngay (return sớm), không attempt lại 'k1' song song.
+        final secondDrain = service.drain();
+
+        releaseUpload.complete();
+        await Future.wait([firstDrain, secondDrain]);
+
+        expect(
+          attemptCount,
+          1,
+          reason: 're-entry không được double-attempt cùng 1 item',
+        );
+      },
+    );
+  });
+
   group('BUG-44: eviction tôn trọng priority + không đụng manualReview', () {
     test('không có ứng viên priority thấp hơn item mới: reject (SdkFailure), '
         'không evict nhầm item priority cao/bằng', () async {

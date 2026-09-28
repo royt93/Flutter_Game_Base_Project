@@ -1007,6 +1007,7 @@
     "core/versioned_json_store.dart:VersionedJsonStore.new({ required this.storage, required this.key, required this.schemaVersion, required this.toJson, required this.fromJson, required this.migrate, this.migrationRegistry, })",
     "core/versioned_json_store.dart:VersionedJsonStore.save(T value): Future<void>",
     "core/versioned_json_store.dart:VersionedJsonStore.syncWith(CloudSaveProvider provider, { VersionedSyncConflictHandler<T>? onConflict, }): Future<void>",
+    "core/versioned_json_store.dart:VersionedJsonStore.syncWithResult(CloudSaveProvider provider, { VersionedSyncConflictHandler<T>? onConflict, }): Future<SdkResult<void>>",
     "core/versioned_json_store.dart:VersionedSyncConflict.new({required this.local, required this.cloud})",
     "core/versioned_json_store.dart:VersionedSyncConflictResolution.merge(T value)",
     "core/versioned_json_store.dart:VersionedSyncConflictResolution.preferCloud()",

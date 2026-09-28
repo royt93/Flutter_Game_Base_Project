@@ -2,6 +2,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/sdk_result.dart';
+
+class _ThrowingStorageService extends StorageService {
+  _ThrowingStorageService() : super(null);
+  bool shouldThrow = true;
+
+  /// Only throws on the [failOnCall]-th `setString` call (1-indexed) — lets
+  /// a test target a SPECIFIC persist inside `grant` (pending vs. commit)
+  /// instead of only the first one. `null` (default) throws on every call
+  /// while [shouldThrow] is true.
+  int? failOnCall;
+  int _callCount = 0;
+
+  @override
+  Future<void> setString(String key, String value) async {
+    _callCount++;
+    final shouldFailThisCall = failOnCall == null
+        ? shouldThrow
+        : shouldThrow && _callCount == failOnCall;
+    if (shouldFailThisCall) {
+      throw StateError('simulated disk write failure');
+    }
+    return super.setString(key, value);
+  }
+}
 
 void main() {
   late StorageService storage;
@@ -471,6 +496,79 @@ void main() {
         );
 
         expect(direct.auditTrail, hasLength(2));
+      },
+    );
+  });
+
+  group('BUG-88: persist throw không phá hợp đồng SdkResult', () {
+    test(
+      'setString throw ngay lần persist ĐẦU (pending) -> grant trả SdkFailure.storage, '
+      'không throw, không để lại record giả trong memory, không phát onGranted',
+      () async {
+        final throwingStorage = _ThrowingStorageService();
+        final throwingWallet = EconomyWallet(storage: throwingStorage)
+          ..onInit();
+        final throwingPipeline = RewardTransactionPipeline(
+          wallet: throwingWallet,
+        )..onInit();
+        RewardTransactionRecord? granted;
+        throwingPipeline.onGranted.listen((r) => granted = r);
+
+        final result = await throwingPipeline.grant(
+          source: RewardSource.ad,
+          transactionId: 'persist_fail_1',
+          lines: const [RewardLine(currency: 'coin', amount: 5)],
+        );
+
+        expect(result, isA<SdkFailure<RewardTransactionRecord>>());
+        expect(
+          (result as SdkFailure<RewardTransactionRecord>).kind,
+          SdkErrorKind.storage,
+        );
+        expect(throwingPipeline.auditTrail, isEmpty);
+        expect(granted, isNull);
+      },
+    );
+
+    test(
+      'setString throw ở lần persist CUỐI (commit, sau khi wallet.earn thành công) '
+      '-> grant trả SdkFailure.storage, in-memory rollback về snapshot trước commit, '
+      'không phát onGranted',
+      () async {
+        // Cùng 1 `storage` instance được cả pipeline (_upsert) VÀ
+        // EconomyWallet (earn's own setString) dùng chung — 1 line ->
+        // đúng 3 lần setString trong nhánh happy path: (1) pending upsert,
+        // (2) wallet.earn's own persist, (3) committed upsert. Nhắm lần
+        // thứ 3 để mô phỏng đúng "wallet.earn thành công nhưng disk write
+        // cho commit thất bại".
+        final gatingStorage = _ThrowingStorageService()..failOnCall = 3;
+        final gatingWallet = EconomyWallet(storage: gatingStorage)..onInit();
+        final gatingPipeline = RewardTransactionPipeline(wallet: gatingWallet)
+          ..onInit();
+        RewardTransactionRecord? granted;
+        gatingPipeline.onGranted.listen((r) => granted = r);
+
+        final result = await gatingPipeline.grant(
+          source: RewardSource.ad,
+          transactionId: 'persist_fail_2',
+          lines: const [RewardLine(currency: 'coin', amount: 5)],
+        );
+
+        expect(result, isA<SdkFailure<RewardTransactionRecord>>());
+        expect(
+          (result as SdkFailure<RewardTransactionRecord>).kind,
+          SdkErrorKind.storage,
+        );
+        expect(granted, isNull);
+        expect(gatingPipeline.auditTrail, hasLength(1));
+        expect(
+          gatingPipeline.auditTrail.single.status,
+          RewardTransactionStatus.pending,
+          reason:
+              'committed persist thất bại phải rollback memory về snapshot '
+              'pending đã persist thành công trước đó — không được báo '
+              'committed giả chỉ tồn tại trong RAM',
+        );
       },
     );
   });

@@ -216,7 +216,15 @@ class RewardTransactionPipeline extends GetxService {
     return null;
   }
 
-  Future<void> _upsert(RewardTransactionRecord record) async {
+  /// Returns `null` on success. A persist failure (BUG-88) rolls the
+  /// in-memory mutation back to the snapshot taken before this call — so a
+  /// storage exception never leaves `_records` claiming a state the disk
+  /// doesn't actually have — and returns an `SdkFailure(kind: storage)` for
+  /// [grant] to surface instead of letting the exception escape.
+  Future<SdkFailure<RewardTransactionRecord>?> _upsert(
+    RewardTransactionRecord record,
+  ) async {
+    final snapshot = List<RewardTransactionRecord>.of(_records);
     final idx = _records.indexWhere(
       (r) => r.transactionId == record.transactionId,
     );
@@ -228,10 +236,23 @@ class RewardTransactionPipeline extends GetxService {
         _records.removeRange(0, _records.length - capacity);
       }
     }
-    await storage.setString(
-      _key,
-      jsonEncode(_records.map((r) => r.toJson()).toList()),
-    );
+    try {
+      await storage.setString(
+        _key,
+        jsonEncode(_records.map((r) => r.toJson()).toList()),
+      );
+      return null;
+    } catch (error, stack) {
+      _records
+        ..clear()
+        ..addAll(snapshot);
+      return SdkFailure(
+        kind: SdkErrorKind.storage,
+        message: 'Failed to persist reward transaction',
+        cause: error,
+        stackTrace: stack,
+      );
+    }
   }
 
   /// Grants [lines] under [transactionId]. Rejects the whole request before
@@ -289,7 +310,8 @@ class RewardTransactionPipeline extends GetxService {
           createdAtMs: _nowMs(),
           receiptMeta: receiptMeta,
         );
-    await _upsert(record);
+    final pendingPersistFailure = await _upsert(record);
+    if (pendingPersistFailure != null) return pendingPersistFailure;
 
     for (var i = 0; i < record.lines.length; i++) {
       final line = record.lines[i];
@@ -300,7 +322,8 @@ class RewardTransactionPipeline extends GetxService {
       );
       if (result is SdkFailure<int>) {
         record = record.copyWith(status: RewardTransactionStatus.partial);
-        await _upsert(record);
+        final partialPersistFailure = await _upsert(record);
+        if (partialPersistFailure != null) return partialPersistFailure;
         return SdkFailure(
           kind: result.kind,
           message: result.message,
@@ -310,7 +333,8 @@ class RewardTransactionPipeline extends GetxService {
     }
 
     record = record.copyWith(status: RewardTransactionStatus.committed);
-    await _upsert(record);
+    final committedPersistFailure = await _upsert(record);
+    if (committedPersistFailure != null) return committedPersistFailure;
     onGranted.value = record;
     _reportAnalytics(record);
     return SdkSuccess(record);

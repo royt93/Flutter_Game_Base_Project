@@ -22,6 +22,14 @@ class _GatedStorageService extends StorageService {
   }
 }
 
+class _ThrowingPrefixDeleteStorage extends StorageService {
+  _ThrowingPrefixDeleteStorage(super.prefs);
+
+  @override
+  Future<void> removeAllWithPrefix(String prefix) =>
+      throw StateError('simulated prefix delete failure');
+}
+
 void main() {
   tearDown(Get.reset);
 
@@ -243,6 +251,55 @@ void main() {
       await expectLater(manager.deleteSlot('ghost'), throwsArgumentError);
     });
 
+    group('BUG-87: xoá data trước metadata — throw giữa chừng không mồ côi', () {
+      test(
+        'removeAllWithPrefix throw → metadata VÀ activeSlotId giữ nguyên (không mồ côi)',
+        () async {
+          Get.reset();
+          final throwing = _ThrowingPrefixDeleteStorage(
+            await SharedPreferences.getInstance(),
+          );
+          Get.put<StorageService>(throwing, permanent: true);
+          final manager = SaveSlotManager();
+          final slot = manager.createSlot('Alice');
+          await manager.setActiveSlot(slot.id);
+
+          await expectLater(
+            manager.deleteSlot(slot.id),
+            throwsA(isA<StateError>()),
+          );
+
+          // Data-delete thất bại trước khi chạm metadata/active — cả 2 phải
+          // còn nguyên, không phải trạng thái mồ côi (metadata mất nhưng
+          // data/active còn, hoặc ngược lại).
+          expect(manager.listSlots().map((s) => s.id), [slot.id]);
+          expect(manager.activeSlotId, slot.id);
+        },
+      );
+
+      test(
+        'xoá thành công: data prefix, metadata, và active (nếu trỏ slot) cùng biến mất',
+        () async {
+          final manager = SaveSlotManager();
+          final slot = manager.createSlot('Alice');
+          await storage.setString(manager.keyFor(slot.id, 'profile'), 'x');
+          await manager.setActiveSlot(slot.id);
+
+          await manager.deleteSlot(slot.id);
+
+          expect(manager.listSlots(), isEmpty);
+          expect(manager.activeSlotId, isNull);
+          expect(
+            storage
+                .exportAll()
+                .keys
+                .where((k) => k.startsWith('slot_${slot.id}_')),
+            isEmpty,
+          );
+        },
+      );
+    });
+
     test(
       'JSON metadata cũ/thiếu/hỏng: rơi về danh sách slot rỗng an toàn, không throw',
       () async {
@@ -277,9 +334,16 @@ void main() {
         final b = manager.createSlot('B');
         manager.touchSlot(a.id);
         final c = manager.createSlot('C');
-        unawaited(manager.deleteSlot(b.id));
+        // BUG-87: deleteSlot's metadata mutation now lands AFTER its data
+        // delete's own await (not synchronously before any await, like
+        // before) — a genuinely fire-and-forget caller has no ordering
+        // guarantee for when that mutation converges relative to a LATER
+        // unawaited touchSlot, so this awaits deleteSlot's own future
+        // (not just debugPendingSaves) before asserting persisted state.
+        final deleteFuture = manager.deleteSlot(b.id);
         manager.touchSlot(c.id);
 
+        await deleteFuture;
         await manager.debugPendingSaves;
 
         final restarted = SaveSlotManager();

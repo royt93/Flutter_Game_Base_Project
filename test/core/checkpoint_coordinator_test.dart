@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/checkpoint_coordinator.dart';
 import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 
 class _FakeTimer implements Timer {
   _FakeTimer(this.callback);
@@ -298,6 +299,76 @@ void main() {
       expect(restoreCalled, isFalse);
     },
   );
+
+  group('BUG-85: restoreLatest không bỏ dở khi 1 participant throw', () {
+    test('1 participant restore() throw -> các participant còn lại (kể cả '
+        'đăng ký SAU participant hỏng) vẫn được restore đầy đủ', () async {
+      final coordinator = CheckpointCoordinator(
+        storage: storage,
+        createTimer: fakeCreateTimer,
+      );
+      coordinator.registerParticipant(
+        'broken',
+        snapshot: () => {'x': 1},
+        restore: (_) => throw StateError('broken restore'),
+      );
+      Object? restoredAfter;
+      coordinator.registerParticipant(
+        'after',
+        snapshot: () => {'y': 2},
+        restore: (data) => restoredAfter = data,
+      );
+      await coordinator.requestCheckpoint(critical: true);
+
+      final result = coordinator.restoreLatest();
+
+      expect(result.isSuccess, isFalse);
+      expect((restoredAfter as Map)['y'], 2);
+    });
+
+    test('failure message liệt kê đúng tên participant hỏng', () async {
+      final coordinator = CheckpointCoordinator(
+        storage: storage,
+        createTimer: fakeCreateTimer,
+      );
+      coordinator.registerParticipant(
+        'good',
+        snapshot: () => {'a': 1},
+        restore: (_) {},
+      );
+      coordinator.registerParticipant(
+        'evil',
+        snapshot: () => {'b': 2},
+        restore: (_) => throw StateError('boom'),
+      );
+      await coordinator.requestCheckpoint(critical: true);
+
+      final result = coordinator.restoreLatest();
+
+      expect(result.isSuccess, isFalse);
+      expect((result as SdkFailure<int>).message, contains('evil'));
+    });
+
+    test('không participant nào throw -> vẫn success như cũ (không đổi hành vi '
+        'happy path)', () async {
+      final coordinator = CheckpointCoordinator(
+        storage: storage,
+        createTimer: fakeCreateTimer,
+      );
+      var restored = false;
+      coordinator.registerParticipant(
+        'ok',
+        snapshot: () => {'x': 1},
+        restore: (_) => restored = true,
+      );
+      await coordinator.requestCheckpoint(critical: true);
+
+      final result = coordinator.restoreLatest();
+
+      expect(result.isSuccess, isTrue);
+      expect(restored, isTrue);
+    });
+  });
 
   test(
     'wasDirtyOnLoad: false sau flush bình thường, true nếu key dirty còn sót từ trước',

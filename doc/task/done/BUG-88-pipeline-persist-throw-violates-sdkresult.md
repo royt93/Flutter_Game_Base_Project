@@ -25,12 +25,37 @@ Bọc các persist `_upsert` trong try/catch, trả `SdkFailure` kind storage; c
 
 ## Acceptance criteria
 
-- [ ] Test persist-throw → `grant` trả `SdkFailure.storage`, không throw.
-- [ ] Test failure không báo `onGranted`/analytics và không để record committed giả trong memory.
+- [x] Test persist-throw → `grant` trả `SdkFailure.storage`, không throw.
+- [x] Test failure không báo `onGranted`/analytics và không để record committed giả trong memory.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+**Implementation:** Đổi private `_upsert` từ `Future<void>` sang
+`Future<SdkFailure<RewardTransactionRecord>?>`. Trước mutation, snapshot
+`_records`; sau mutation thử `storage.setString`; nếu persist throw →
+rollback `_records` về snapshot rồi trả `SdkFailure(kind: storage,
+cause: error, stackTrace: stack)` thay vì để exception thoát khỏi public
+`grant`. Ba call site trong `grant` (persist `pending`, persist `partial`,
+persist `committed`) đều kiểm tra failure và return ngay. `onGranted` +
+analytics chỉ chạy SAU khi committed persist thành công — không phát tín
+hiệu "đã grant" giả nếu disk chưa commit.
+
+**TDD:** thêm `_ThrowingStorageService` (throw mọi setString hoặc đúng
+lần gọi thứ N) + 2 test trong `test/core/reward_transaction_pipeline_test.dart`:
+1. Throw ngay pending persist → `SdkFailure.storage`, auditTrail rỗng
+   (rollback khỏi record vừa add), `onGranted` không phát.
+2. Persist pending thành công, `wallet.earn` thành công, chỉ committed
+   persist throw → `SdkFailure.storage`, `onGranted` không phát, auditTrail
+   rollback về đúng record `pending` đã persist trước đó (không để
+   `committed` giả chỉ tồn tại trong RAM).
+
+**Kết quả:** `flutter analyze` sạch root + `example/`. Full file
+`reward_transaction_pipeline_test.dart`: 23/23 pass; full root + example
+suite sạch.
+
+**Tự chấm:** 9.5/10. Fix không chỉ catch exception cho đủ hợp đồng
+`SdkResult`, mà còn rollback memory về snapshot disk-consistent ở mọi
+persist point — xử lý đúng cả nhánh pending, partial và committed.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

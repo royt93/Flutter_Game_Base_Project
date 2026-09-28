@@ -184,7 +184,13 @@ class SaveSlotManager extends GetxService {
   /// Awaits every save queued so far — lets a test deterministically wait
   /// for a burst of rapid calls to fully settle instead of guessing a delay.
   @visibleForTesting
-  Future<void> get debugPendingSaves => _saveChain;
+  Future<void> get debugPendingSaves => _waitForPendingSaves();
+
+  Future<void> _waitForPendingSaves() async {
+    while (_saving) {
+      await _saveChain;
+    }
+  }
 
   /// `true` if [createSlot] can be called right now without throwing —
   /// always `true` when [maxSlots] is `null` (unlimited). A UI checks this
@@ -337,9 +343,15 @@ class SaveSlotManager extends GetxService {
   /// longer exists). Throws `ArgumentError` if [id] doesn't exist.
   Future<void> deleteSlot(String id) async {
     _validateExists(id);
+    // BUG-87: data delete FIRST — if this throws, metadata/activeSlotId are
+    // untouched below, so a failed delete never orphans a slot's data (no
+    // metadata pointing at it, but the data itself still on disk). The old
+    // order removed metadata first, so a mid-delete crash/throw left data
+    // on disk with no metadata entry (and possibly activeSlotId still
+    // pointing at a slot that no longer "exists" per listSlots()).
+    await StorageService.to.removeAllWithPrefix('slot_${id}_');
     _slotList.removeWhere((s) => s.id == id);
     _scheduleSave();
-    await StorageService.to.removeAllWithPrefix('slot_${id}_');
     if (activeSlotId == id) {
       await StorageService.to.remove(_activeSlotStorageKey);
     }

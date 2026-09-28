@@ -25,12 +25,30 @@ try/catch từng `restore`, gom lỗi, trả failure liệt kê tên participant
 
 ## Acceptance criteria
 
-- [ ] Unit test 1 participant throw → các participant còn lại vẫn restore xong + failure nêu tên kẻ hỏng.
-- [ ] Không throw khỏi `restoreLatest` với mọi input participant.
+- [x] Unit test 1 participant throw → các participant còn lại vẫn restore xong + failure nêu tên kẻ hỏng.
+- [x] Không throw khỏi `restoreLatest` với mọi input participant.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+**Implementation:** Bọc từng `entry.value.restore(participants[entry.key])`
+trong try/catch riêng lẻ trong vòng lặp — participant hỏng bị `dlog` lại và
+thêm vào `failedIds`, nhưng vòng lặp KHÔNG break, mọi participant khác
+(kể cả đăng ký SAU participant hỏng) vẫn được restore đầy đủ. Sau vòng lặp:
+`failedIds` rỗng → `SdkSuccess`; ngược lại → `SdkFailure(kind: unknown,
+message: 'Restore failed for participant(s): ...')` liệt kê đúng tên mọi
+participant hỏng.
+
+**TDD:** 3 test mới trong `test/core/checkpoint_coordinator_test.dart`
+(group `BUG-85`): (1) 1 participant throw → participant đăng ký SAU nó vẫn
+restore đúng; (2) failure message chứa đúng tên participant hỏng; (3) happy
+path (không ai throw) vẫn `SdkSuccess` như cũ (regression guard).
+
+**Kết quả:** `flutter analyze` sạch (đã sửa warning `unused_catch_stack` —
+catch chỉ dùng `error` trong `dlog`, không cần `stack`). `flutter test
+--exclude-tags slow` sạch root + `example/`, 24/24 test trong file pass.
+
+**Tự chấm:** 9.5/10. Fix đối xứng với `flushNow` (cùng file, đã try/catch
+từng snapshot từ trước) — không còn asymmetry giữa 2 method của cùng class.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

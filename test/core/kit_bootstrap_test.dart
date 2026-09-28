@@ -151,6 +151,71 @@ void main() {
     expect(find.text('ready'), findsOneWidget);
   });
 
+  group('BUG-86: init throw không để lại nửa đăng ký', () {
+    test(
+      'audio module: init() throw (thiếu storage) → không half-register, retry sau thành công',
+      () async {
+        // Lần 1: audio module KHÔNG có storage → AudioManager.init() thật
+        // sự throw vì StorageService.to (Get.find) chưa đăng ký.
+        final firstResult = await RoyCasualKit.initialize(
+          config: const RoyCasualKitConfig(modules: {RoyCasualKitModule.audio}),
+        );
+        expect(firstResult.isDegraded, isTrue);
+        expect(firstResult.errors, contains(RoyCasualKitModule.audio));
+        expect(
+          Get.isRegistered<AudioManager>(),
+          isFalse,
+          reason: 'init() throw không được để lại instance nửa đăng ký',
+        );
+
+        // Lần 2: cấu hình đúng (có storage) → phải đăng ký + init thành
+        // công thật sự, không bị coi là "đã đăng ký" nên skip vĩnh viễn.
+        SharedPreferences.setMockInitialValues({'audio_muted': true});
+        final prefs = await SharedPreferences.getInstance();
+        final secondResult = await RoyCasualKit.initialize(
+          config: RoyCasualKitConfig(
+            modules: {RoyCasualKitModule.storage, RoyCasualKitModule.audio},
+            preferences: prefs,
+          ),
+        );
+
+        expect(secondResult.isDegraded, isFalse);
+        expect(Get.isRegistered<AudioManager>(), isTrue);
+        expect(Get.find<AudioManager>().muted.value, isTrue);
+      },
+    );
+
+    test(
+      'wakeLock module: init() throw (thiếu storage) → không half-register, retry sau thành công',
+      () async {
+        final firstResult = await RoyCasualKit.initialize(
+          config: const RoyCasualKitConfig(
+            modules: {RoyCasualKitModule.wakeLock},
+          ),
+        );
+        expect(firstResult.isDegraded, isTrue);
+        expect(firstResult.errors, contains(RoyCasualKitModule.wakeLock));
+        expect(Get.isRegistered<WakeLockService>(), isFalse);
+
+        SharedPreferences.setMockInitialValues({'wake_lock_enabled': false});
+        final prefs = await SharedPreferences.getInstance();
+        final secondResult = await RoyCasualKit.initialize(
+          config: RoyCasualKitConfig(
+            modules: {
+              RoyCasualKitModule.storage,
+              RoyCasualKitModule.wakeLock,
+            },
+            preferences: prefs,
+          ),
+        );
+
+        expect(secondResult.isDegraded, isFalse);
+        expect(Get.isRegistered<WakeLockService>(), isTrue);
+        expect(Get.find<WakeLockService>().enabled.value, isFalse);
+      },
+    );
+  });
+
   group('IDEA-64: RoyCasualKit.lastResult', () {
     test('null trước khi initialize() từng được gọi', () {
       expect(RoyCasualKit.lastResult, isNull);

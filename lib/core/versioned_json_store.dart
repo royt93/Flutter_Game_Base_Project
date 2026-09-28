@@ -212,11 +212,45 @@ class VersionedJsonStore<T> {
   /// If [onConflict] itself throws, the error is logged (via [dlog]) and
   /// this falls back to the same last-write-wins default — a broken
   /// handler can never crash a sync or leave it half-applied.
+  ///
+  /// BUG-84: kept `Future<void>` (unchanged, non-breaking) — a genuine
+  /// network failure is now caught internally (see [syncWithResult]) and
+  /// logged rather than thrown, instead of crashing whatever called this.
+  /// A caller that needs to know WHETHER the sync actually succeeded should
+  /// call [syncWithResult] instead.
   Future<void> syncWith(
     CloudSaveProvider provider, {
     VersionedSyncConflictHandler<T>? onConflict,
   }) async {
-    final cloudJson = _validate(await provider.download());
+    await syncWithResult(provider, onConflict: onConflict);
+  }
+
+  /// Same merge as [syncWith], but reports whether it actually succeeded
+  /// instead of silently swallowing a transport failure.
+  ///
+  /// BUG-84: [CloudSaveProvider.download]/`upload` are real network calls
+  /// this class doesn't control — before this, `download()` throwing
+  /// (offline, timeout, server error) propagated straight out of `syncWith`
+  /// as an unhandled exception, even though every OTHER failure path in
+  /// this method already degrades gracefully (a malformed cloud payload,
+  /// a broken [onConflict] handler). Both are now caught and reported as
+  /// `SdkFailure(kind: SdkErrorKind.network)` instead.
+  Future<SdkResult<void>> syncWithResult(
+    CloudSaveProvider provider, {
+    VersionedSyncConflictHandler<T>? onConflict,
+  }) async {
+    final Map<String, Object?>? cloudRaw;
+    try {
+      cloudRaw = await provider.download();
+    } catch (error, stack) {
+      return SdkFailure(
+        kind: SdkErrorKind.network,
+        message: 'Cloud download failed',
+        cause: error,
+        stackTrace: stack,
+      );
+    }
+    final cloudJson = _validate(cloudRaw);
     final localJson = _readLocalJson();
 
     final cloudTime = cloudJson == null
@@ -238,7 +272,7 @@ class VersionedJsonStore<T> {
         localTime: localTime,
         cloudTime: cloudTime,
       );
-      if (resolved) return;
+      if (resolved) return const SdkSuccess(null);
       // Handler threw (already logged) or either side failed to parse as
       // a real T — fall through to the default below.
     }
@@ -250,12 +284,22 @@ class VersionedJsonStore<T> {
         // Passed the envelope-level checks in _validate but still isn't a
         // real T (e.g. a field of the wrong type inside) — don't let it
         // anywhere near local storage.
-        return;
+        return const SdkSuccess(null);
       }
       await storage.setString(key, jsonEncode(cloudJson));
     } else if (localJson != null) {
-      await provider.upload(localJson);
+      try {
+        await provider.upload(localJson);
+      } catch (error, stack) {
+        return SdkFailure(
+          kind: SdkErrorKind.network,
+          message: 'Cloud upload failed',
+          cause: error,
+          stackTrace: stack,
+        );
+      }
     }
+    return const SdkSuccess(null);
   }
 
   /// Returns `true` if the conflict was fully resolved (either side's data
@@ -282,8 +326,14 @@ class VersionedJsonStore<T> {
     try {
       final resolution = onConflict(
         VersionedSyncConflict(
-          local: VersionedSyncConflictSide(value: localValue, syncedAtMs: localTime),
-          cloud: VersionedSyncConflictSide(value: cloudValue, syncedAtMs: cloudTime),
+          local: VersionedSyncConflictSide(
+            value: localValue,
+            syncedAtMs: localTime,
+          ),
+          cloud: VersionedSyncConflictSide(
+            value: cloudValue,
+            syncedAtMs: cloudTime,
+          ),
         ),
       );
       switch (resolution.strategy) {
@@ -316,10 +366,7 @@ class VersionedJsonStore<T> {
   /// ignoring `syncedAtMs` — 2 saves with identical content but different
   /// save timestamps (the common case: re-saving unchanged data) are NOT a
   /// conflict, so [onConflict] shouldn't fire for them.
-  static bool _sameContent(
-    Map<String, Object?> a,
-    Map<String, Object?> b,
-  ) {
+  static bool _sameContent(Map<String, Object?> a, Map<String, Object?> b) {
     Map<String, Object?> withoutTimestamp(Map<String, Object?> json) =>
         Map.of(json)..remove('syncedAtMs');
     return _jsonEquals(withoutTimestamp(a), withoutTimestamp(b));

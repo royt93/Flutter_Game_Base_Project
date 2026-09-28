@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:get/get.dart';
 
+import 'debug_log.dart';
 import 'lifecycle_coordinator.dart';
 import 'storage_service.dart';
 import 'utils/async_action_guard.dart';
@@ -224,7 +225,22 @@ class CheckpointCoordinator extends GetxService {
   /// generation if it's missing/corrupt, then — only once a whole valid
   /// aggregate is found — calls every registered participant's `restore`
   /// with its own slice. Never calls `restore` on any participant unless a
-  /// fully valid aggregate was found (no partial apply).
+  /// fully valid aggregate was found (no partial apply at the AGGREGATE
+  /// level: either every participant gets a chance to restore its slice,
+  /// or none do).
+  ///
+  /// BUG-85: at the PARTICIPANT level, `restore` is caller-supplied code
+  /// this class doesn't control — one participant throwing used to abort
+  /// the whole loop, silently skipping every participant registered AFTER
+  /// it (a worse outcome than the caller ever seeing, since this method
+  /// still returned no way to know that happened). Each participant's
+  /// `restore` now runs independently: a throw is caught, that
+  /// participant's id is recorded, and the loop continues — so a single
+  /// broken participant can never block every other one from restoring
+  /// its own state. This does NOT make [restoreLatest] itself atomic
+  /// (there's still no rollback if participant B restoring after a
+  /// broken A leaves A's state stale) — this class was never in a
+  /// position to guarantee that, only to stop making it worse.
   SdkResult<int> restoreLatest() {
     final decoded =
         _decode(storage.getString(_key)) ??
@@ -242,8 +258,23 @@ class CheckpointCoordinator extends GetxService {
         message: 'Malformed checkpoint',
       );
     }
+    final failedIds = <String>[];
     for (final entry in _participants.entries) {
-      entry.value.restore(participants[entry.key]);
+      try {
+        entry.value.restore(participants[entry.key]);
+      } catch (error) {
+        dlog(
+          'CheckpointCoordinator.restoreLatest: participant "${entry.key}" '
+          'restore() threw: $error',
+        );
+        failedIds.add(entry.key);
+      }
+    }
+    if (failedIds.isNotEmpty) {
+      return SdkFailure(
+        kind: SdkErrorKind.unknown,
+        message: 'Restore failed for participant(s): ${failedIds.join(', ')}',
+      );
     }
     return SdkSuccess(_participants.length);
   }

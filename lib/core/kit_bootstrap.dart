@@ -127,14 +127,18 @@ class RoyCasualKit {
             }
           case RoyCasualKitModule.audio:
             if (!Get.isRegistered<AudioManager>()) {
+              // BUG-86: init() BEFORE Get.put — if init() throws, nothing
+              // is registered at all, so a retried initialize() re-attempts
+              // cleanly instead of finding isRegistered==true and skipping
+              // this whole branch forever with a half-initialized instance.
               final audio = AudioManager();
+              await audio.init();
               Get.put(audio, permanent: config.permanent);
               _owned.add(() async {
                 if (Get.isRegistered<AudioManager>()) {
                   await Get.delete<AudioManager>(force: true);
                 }
               });
-              await audio.init();
             }
           case RoyCasualKitModule.reminders:
             if (!Get.isRegistered<ReminderService>()) {
@@ -165,14 +169,15 @@ class RoyCasualKit {
             }
           case RoyCasualKitModule.wakeLock:
             if (!Get.isRegistered<WakeLockService>()) {
+              // BUG-86: same init-before-put fix as the audio branch above.
               final wakeLock = WakeLockService();
+              await wakeLock.init();
               Get.put(wakeLock, permanent: config.permanent);
               _owned.add(() async {
                 if (Get.isRegistered<WakeLockService>()) {
                   await Get.delete<WakeLockService>(force: true);
                 }
               });
-              await wakeLock.init();
             }
         }
         registered.add(module);
