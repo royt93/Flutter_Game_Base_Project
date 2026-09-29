@@ -220,12 +220,22 @@ class BouncingOrb extends CircleComponent
     final bounds = game.size;
     if (position.x - radius <= 0 || position.x + radius >= bounds.x) {
       velocity.x = -velocity.x;
-      position.x = position.x.clamp(radius, bounds.x - radius);
+      position.x = _clampToBounds(position.x, radius, bounds.x);
     }
     if (position.y - radius <= 0 || position.y + radius >= bounds.y) {
       velocity.y = -velocity.y;
-      position.y = position.y.clamp(radius, bounds.y - radius);
+      position.y = _clampToBounds(position.y, radius, bounds.y);
     }
+  }
+
+  /// `value.clamp(radius, extent - radius)` throws `ArgumentError` (BUG-97)
+  /// once a tiny viewport makes `extent - radius < radius` (lower bound >
+  /// upper bound) — e.g. a 20px-wide viewport with this 16px-radius orb.
+  /// Falls back to the viewport's center in that case instead of crashing.
+  double _clampToBounds(double value, double radius, double extent) {
+    final upper = extent - radius;
+    if (upper < radius) return extent / 2;
+    return value.clamp(radius, upper);
   }
 
   @override

@@ -60,6 +60,55 @@ class RemoteSchemaCompilerException implements Exception {
 
 final _identifierPattern = RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$');
 
+// BUG-97: `_identifierPattern` alone accepts any Dart reserved word (e.g.
+// "class", "final") as a packName/field name, so generateModelSource can
+// emit code like `class ClassContent` that never compiles. Dart's reserved
+// words (not the larger "built-in identifier" set like `dynamic`, which IS
+// legal as a class/field name) — https://dart.dev/language/keywords.
+// "await"/"yield" are deliberately excluded: they're CONTEXTUAL keywords,
+// reserved only inside an async/sync/generator function body, and remain
+// legal identifiers everywhere else (including a class/field name) — the
+// generated model code here is always synchronous, so rejecting them would
+// be an unnecessary behavior regression, not a real compile hazard.
+const _reservedWords = <String>{
+  'assert',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'default',
+  'do',
+  'else',
+  'enum',
+  'extends',
+  'false',
+  'final',
+  'finally',
+  'for',
+  'if',
+  'in',
+  'is',
+  'new',
+  'null',
+  'rethrow',
+  'return',
+  'super',
+  'switch',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'var',
+  'void',
+  'while',
+  'with',
+};
+
+bool _isValidIdentifier(String name) =>
+    _identifierPattern.hasMatch(name) && !_reservedWords.contains(name);
+
 /// Validated, immutable definition of one remote content pack's schema
 /// across its version history. See library doc for the safety guarantee
 /// its factory constructor provides.
@@ -68,7 +117,7 @@ class RemoteSchemaDef {
     required String packName,
     required List<RemoteSchemaVersion> versions,
   }) {
-    if (!_identifierPattern.hasMatch(packName)) {
+    if (!_isValidIdentifier(packName)) {
       throw RemoteSchemaCompilerException(
         'packName "$packName" is not a valid Dart identifier',
       );
@@ -78,6 +127,11 @@ class RemoteSchemaDef {
     }
     final sorted = [...versions]
       ..sort((a, b) => a.version.compareTo(b.version));
+    // BUG-97: freeze each version's own copy of `fields` here (not just the
+    // outer `versions` list) — otherwise a caller who kept a reference to
+    // the growable list they passed in can mutate it AFTER this validated
+    // instance is returned, silently changing an already-verified schema.
+    final frozen = <RemoteSchemaVersion>[];
     for (var i = 0; i < sorted.length; i++) {
       final version = sorted[i];
       if (version.version < 0) {
@@ -97,7 +151,7 @@ class RemoteSchemaDef {
       }
       final seenFields = <String>{};
       for (final field in version.fields) {
-        if (!_identifierPattern.hasMatch(field.name)) {
+        if (!_isValidIdentifier(field.name)) {
           throw RemoteSchemaCompilerException(
             'field "${field.name}" (version ${version.version}) is not a '
             'valid Dart identifier',
@@ -109,10 +163,16 @@ class RemoteSchemaDef {
           );
         }
       }
+      frozen.add(
+        RemoteSchemaVersion(
+          version: version.version,
+          fields: List.unmodifiable(version.fields),
+        ),
+      );
     }
     return RemoteSchemaDef._(
       packName: packName,
-      versions: List.unmodifiable(sorted),
+      versions: List.unmodifiable(frozen),
     );
   }
 

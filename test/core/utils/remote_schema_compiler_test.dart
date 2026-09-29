@@ -126,6 +126,76 @@ void main() {
       );
     });
 
+    test('BUG-97: packName là Dart reserved keyword ("class") -> throw '
+        '(regex identifier cũ chấp nhận, codegen sinh ra "class ClassContent" '
+        'không compile được)', () {
+      expect(
+        () => RemoteSchemaDef(packName: 'class', versions: [_v1()]),
+        throwsA(isA<RemoteSchemaCompilerException>()),
+      );
+    });
+
+    test('BUG-97: field name là Dart reserved keyword ("final") -> throw', () {
+      expect(
+        () => RemoteSchemaDef(
+          packName: 'pack',
+          versions: [
+            const RemoteSchemaVersion(
+              version: 1,
+              fields: [
+                RemoteSchemaField(
+                  name: 'final',
+                  type: RemoteSchemaFieldType.string,
+                ),
+              ],
+            ),
+          ],
+        ),
+        throwsA(isA<RemoteSchemaCompilerException>()),
+      );
+    });
+
+    test(
+      'BUG-97: built-in identifier ("dynamic") không phải reserved word thật '
+      '-> vẫn được chấp nhận (chỉ chặn reserved words, không chặn mọi '
+      'built-in type name)',
+      () {
+        expect(
+          () => RemoteSchemaDef(packName: 'dynamic', versions: [_v1()]),
+          returnsNormally,
+        );
+      },
+    );
+
+    test(
+      'BUG-97 audit fix: "await"/"yield" là contextual keyword, chỉ reserved '
+      'BÊN TRONG thân hàm async/generator — hợp lệ làm tên class/field ở '
+      'mọi nơi khác (generated model code luôn sync) -> phải được chấp nhận',
+      () {
+        expect(
+          () => RemoteSchemaDef(packName: 'await', versions: [_v1()]),
+          returnsNormally,
+        );
+        expect(
+          () => RemoteSchemaDef(
+            packName: 'pack',
+            versions: [
+              const RemoteSchemaVersion(
+                version: 1,
+                fields: [
+                  RemoteSchemaField(
+                    name: 'yield',
+                    type: RemoteSchemaFieldType.string,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          returnsNormally,
+        );
+      },
+    );
+
     test(
       'schema hợp lệ: versions tự sắp xếp tăng dần, current là version lớn nhất',
       () {
@@ -138,6 +208,44 @@ void main() {
         expect(schema.current.version, 2);
       },
     );
+
+    test('BUG-97: mutate list fields GỐC (growable, không phải const) SAU khi '
+        'validate -> schema đã tạo KHÔNG đổi (deep-freeze/clone tại validate, '
+        'không giữ reference sống tới list của caller)', () {
+      final mutableFields = <RemoteSchemaField>[
+        const RemoteSchemaField(
+          name: 'title',
+          type: RemoteSchemaFieldType.string,
+        ),
+      ];
+      final version = RemoteSchemaVersion(version: 1, fields: mutableFields);
+      final schema = RemoteSchemaDef(packName: 'pack', versions: [version]);
+
+      mutableFields.add(
+        const RemoteSchemaField(
+          name: 'sneaky',
+          type: RemoteSchemaFieldType.int,
+        ),
+      );
+
+      expect(schema.current.fields, hasLength(1));
+      expect(schema.current.fields.single.name, 'title');
+    });
+
+    test('BUG-97: schema.current.fields là unmodifiable -> mutate trực tiếp '
+        'qua schema throw thay vì âm thầm đổi schema đã verify', () {
+      final schema = RemoteSchemaDef(packName: 'pack', versions: [_v1()]);
+
+      expect(
+        () => schema.current.fields.add(
+          const RemoteSchemaField(
+            name: 'sneaky',
+            type: RemoteSchemaFieldType.int,
+          ),
+        ),
+        throwsUnsupportedError,
+      );
+    });
   });
 
   group('generateModelSource: sinh Dart hợp lệ, không import gì', () {

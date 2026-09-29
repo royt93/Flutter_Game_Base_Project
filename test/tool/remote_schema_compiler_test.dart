@@ -116,6 +116,31 @@ void main() {
       },
       timeout: const Timeout(Duration(seconds: 30)),
     );
+
+    test('BUG-97: field name là Dart reserved keyword ("class") -> reject, '
+        'không sinh code không compile được', () async {
+      final schemaPath = '${tempDir.path}/schema.json';
+      File(schemaPath).writeAsStringSync(
+        jsonEncode({
+          'packName': 'shopCatalog',
+          'versions': [
+            {
+              'version': 1,
+              'fields': [
+                {'name': 'class', 'type': 'string'},
+              ],
+            },
+          ],
+        }),
+      );
+      final outDir = '${tempDir.path}/out';
+
+      final result = await _run(['--schema=$schemaPath', '--outDir=$outDir']);
+
+      expect(result.exitCode, 1);
+      expect(result.stderr, contains('Schema invalid'));
+      expect(Directory(outDir).existsSync(), isFalse);
+    }, timeout: const Timeout(Duration(seconds: 30)));
   });
 
   group(

@@ -96,7 +96,9 @@ void main() {
       (tester) async {
         final game = RoyGame();
         await tester.pumpWidget(
-          MaterialApp(home: Material(child: GameWidget(game: game))),
+          MaterialApp(
+            home: Material(child: GameWidget(game: game)),
+          ),
         );
         await _settled(tester, game);
 
@@ -111,7 +113,9 @@ void main() {
     testWidgets('tap vào circle kích hoạt burst sparkle', (tester) async {
       final game = RoyGame();
       await tester.pumpWidget(
-        MaterialApp(home: Material(child: GameWidget(game: game))),
+        MaterialApp(
+          home: Material(child: GameWidget(game: game)),
+        ),
       );
       await _settled(tester, game);
 
@@ -128,7 +132,9 @@ void main() {
       (tester) async {
         final game = RoyGame();
         await tester.pumpWidget(
-          MaterialApp(home: Material(child: GameWidget(game: game))),
+          MaterialApp(
+            home: Material(child: GameWidget(game: game)),
+          ),
         );
         await _settled(tester, game);
 
@@ -155,7 +161,8 @@ void main() {
         expect(
           game.sparklePool.totalCreated,
           createdAfterFirstBurst,
-          reason: 'burst thứ 2 phải tái sử dụng lại particle đã release, '
+          reason:
+              'burst thứ 2 phải tái sử dụng lại particle đã release, '
               'không tạo mới',
         );
         expect(tester.takeException(), isNull);
@@ -169,7 +176,9 @@ void main() {
     ) async {
       final game = RoyGame();
       await tester.pumpWidget(
-        MaterialApp(home: Material(child: GameWidget(game: game))),
+        MaterialApp(
+          home: Material(child: GameWidget(game: game)),
+        ),
       );
       await _settled(tester, game);
 
@@ -177,29 +186,30 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets(
-      'orb di chuyển theo velocity mỗi frame (update thật sự chạy)',
-      (tester) async {
-        final game = RoyGame();
-        await tester.pumpWidget(
-          MaterialApp(home: Material(child: GameWidget(game: game))),
-        );
-        await _settled(tester, game);
-
-        final before = game.orb.position.clone();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        expect(game.orb.position, isNot(equals(before)));
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets('orb bật ngược lại khi chạm mép trái màn hình', (
+    testWidgets('orb di chuyển theo velocity mỗi frame (update thật sự chạy)', (
       tester,
     ) async {
       final game = RoyGame();
       await tester.pumpWidget(
-        MaterialApp(home: Material(child: GameWidget(game: game))),
+        MaterialApp(
+          home: Material(child: GameWidget(game: game)),
+        ),
+      );
+      await _settled(tester, game);
+
+      final before = game.orb.position.clone();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(game.orb.position, isNot(equals(before)));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('orb bật ngược lại khi chạm mép trái màn hình', (tester) async {
+      final game = RoyGame();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(child: GameWidget(game: game)),
+        ),
       );
       await _settled(tester, game);
 
@@ -213,47 +223,50 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets(
-      'orb chạm TappableCircle -> cả 2 component đổi màu vàng '
-      '(CollisionCallbacks thật sự bắt được va chạm qua GameWidget)',
-      (tester) async {
-        final game = RoyGame();
-        await tester.pumpWidget(
-          MaterialApp(home: Material(child: GameWidget(game: game))),
-        );
-        await _settled(tester, game);
+    testWidgets('orb chạm TappableCircle -> cả 2 component đổi màu vàng '
+        '(CollisionCallbacks thật sự bắt được va chạm qua GameWidget)', (
+      tester,
+    ) async {
+      final game = RoyGame();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(child: GameWidget(game: game)),
+        ),
+      );
+      await _settled(tester, game);
 
-        // Đặt orb lệch tâm circle đúng 30px — nằm giữa |40-16|=24 (orb
-        // NẰM HẲN TRONG circle, 2 vòng tròn không cắt nhau ở biên nào cả
-        // — Flame's circle-circle intersections() trả về RỖNG cho case
-        // containment thuần, dù 2 hình dạng rõ ràng chồng lấn) và
-        // 40+16=56 (tách rời hoàn toàn) — đúng vùng biên 2 vòng tròn THẬT
-        // SỰ cắt nhau, nơi Flame's collision engine phát hiện được.
-        game.orb.position = game.circle.position + Vector2(30, 0);
-        game.orb.velocity = Vector2.zero();
+      // Đặt orb lệch tâm circle đúng 30px — nằm giữa |40-16|=24 (orb
+      // NẰM HẲN TRONG circle, 2 vòng tròn không cắt nhau ở biên nào cả
+      // — Flame's circle-circle intersections() trả về RỖNG cho case
+      // containment thuần, dù 2 hình dạng rõ ràng chồng lấn) và
+      // 40+16=56 (tách rời hoàn toàn) — đúng vùng biên 2 vòng tròn THẬT
+      // SỰ cắt nhau, nơi Flame's collision engine phát hiện được.
+      game.orb.position = game.circle.position + Vector2(30, 0);
+      game.orb.velocity = Vector2.zero();
 
-        for (var i = 0; i < 3; i++) {
-          game.update(0.016);
-        }
-        await tester.pump();
+      for (var i = 0; i < 3; i++) {
+        game.update(0.016);
+      }
+      await tester.pump();
 
-        // toARGB32(), not raw Color equality: comparing Color objects
-        // directly here is flaky — a value round-tripped through a real
-        // render pass (this test does several via _settled/update/pump)
-        // can differ by float epsilon from the same-looking source
-        // constant despite printing identically at 4-decimal precision.
-        expect(game.orb.paint.color.toARGB32(), NeonTheme.gold.toARGB32());
-        expect(game.circle.paint.color.toARGB32(), NeonTheme.gold.toARGB32());
-        expect(tester.takeException(), isNull);
-      },
-    );
+      // toARGB32(), not raw Color equality: comparing Color objects
+      // directly here is flaky — a value round-tripped through a real
+      // render pass (this test does several via _settled/update/pump)
+      // can differ by float epsilon from the same-looking source
+      // constant despite printing identically at 4-decimal precision.
+      expect(game.orb.paint.color.toARGB32(), NeonTheme.gold.toARGB32());
+      expect(game.circle.paint.color.toARGB32(), NeonTheme.gold.toARGB32());
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets('không va chạm -> circle vẫn giữ màu tap-toggle bình thường', (
       tester,
     ) async {
       final game = RoyGame();
       await tester.pumpWidget(
-        MaterialApp(home: Material(child: GameWidget(game: game))),
+        MaterialApp(
+          home: Material(child: GameWidget(game: game)),
+        ),
       );
       await _settled(tester, game);
 
@@ -266,33 +279,59 @@ void main() {
       expect(game.circle.paint.color.toARGB32(), NeonTheme.cyan.toARGB32());
       expect(tester.takeException(), isNull);
     });
-  });
 
-  group('BUG-91: pauseEngine/resumeEngine đóng băng game loop', () {
     testWidgets(
-      'pauseEngine dừng orb update; resumeEngine cho orb chạy lại',
+      'BUG-97: viewport nhỏ hơn 2x bán kính orb (bounds - radius < radius) '
+      'không throw ở clamp — orb kẹt giữa viewport tí hon thay vì crash',
       (tester) async {
         final game = RoyGame();
         await tester.pumpWidget(
-          MaterialApp(home: Material(child: GameWidget(game: game))),
+          MaterialApp(
+            home: Material(child: GameWidget(game: game)),
+          ),
         );
         await _settled(tester, game);
 
-        game.pauseEngine();
-        final frozen = game.orb.position.clone();
-        await tester.pump(const Duration(milliseconds: 200));
-        expect(game.orb.position, equals(frozen));
+        // orb.radius == 16 — viewport 20x20 làm `bounds - radius` (4) nhỏ
+        // hơn `radius` (16), khiến `clamp(radius, bounds - radius)` cũ
+        // (lower > upper) throw ArgumentError ngay khi orb chạm mép.
+        game.onGameResize(Vector2(20, 20));
+        game.orb
+          ..position = Vector2(1, 10)
+          ..velocity = Vector2(-90, 0);
 
-        game.resumeEngine();
-        // Flame's GameLoop guarantees the first callback after start/resume
-        // has dt=0; one frame primes its timestamp, the next carries the
-        // elapsed duration and must move the orb.
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 200));
-        expect(game.orb.position, isNot(equals(frozen)));
+        expect(() => game.update(0.05), returnsNormally);
         expect(tester.takeException(), isNull);
       },
     );
+  });
+
+  group('BUG-91: pauseEngine/resumeEngine đóng băng game loop', () {
+    testWidgets('pauseEngine dừng orb update; resumeEngine cho orb chạy lại', (
+      tester,
+    ) async {
+      final game = RoyGame();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(child: GameWidget(game: game)),
+        ),
+      );
+      await _settled(tester, game);
+
+      game.pauseEngine();
+      final frozen = game.orb.position.clone();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(game.orb.position, equals(frozen));
+
+      game.resumeEngine();
+      // Flame's GameLoop guarantees the first callback after start/resume
+      // has dt=0; one frame primes its timestamp, the next carries the
+      // elapsed duration and must move the orb.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(game.orb.position, isNot(equals(frozen)));
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('FEAT-88: GameEventBus (optional, non-breaking)', () {
@@ -302,7 +341,9 @@ void main() {
       (tester) async {
         final game = RoyGame();
         await tester.pumpWidget(
-          MaterialApp(home: Material(child: GameWidget(game: game))),
+          MaterialApp(
+            home: Material(child: GameWidget(game: game)),
+          ),
         );
         await _settled(tester, game);
 
@@ -322,7 +363,9 @@ void main() {
         final game = RoyGame(eventBus: bus);
 
         await tester.pumpWidget(
-          MaterialApp(home: Material(child: GameWidget(game: game))),
+          MaterialApp(
+            home: Material(child: GameWidget(game: game)),
+          ),
         );
         await _settled(tester, game);
 

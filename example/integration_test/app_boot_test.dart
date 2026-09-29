@@ -1189,6 +1189,47 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'BUG-97: reserved-keyword schema rejected, tiny-viewport orb clamp does '
+    'not throw on device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+
+      expect(
+        () => RemoteSchemaDef(
+          packName: 'class',
+          versions: const [
+            RemoteSchemaVersion(
+              version: 1,
+              fields: [
+                RemoteSchemaField(
+                  name: 'title',
+                  type: RemoteSchemaFieldType.string,
+                ),
+              ],
+            ),
+          ],
+        ),
+        throwsA(isA<RemoteSchemaCompilerException>()),
+      );
+
+      await _goToGameDemo(tester);
+      final game = tester
+          .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
+          .game!;
+      game.onGameResize(Vector2(20, 20));
+      game.orb
+        ..position = Vector2(1, 10)
+        ..velocity = Vector2(-90, 0);
+      expect(() => game.update(0.05), returnsNormally);
+
+      Get.back();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 class _ThrowingDeviceCloudProvider extends CloudSaveProvider {
