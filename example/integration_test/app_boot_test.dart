@@ -1087,6 +1087,108 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'ENH-94: RemoteContentPack verified fetch survives a fresh instance on '
+    'real device SharedPreferences (simulated restart)',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+
+      const cacheKey = 'enh94_device_cache';
+      const secret = 'enh94-device-secret';
+      final first = RemoteContentPack<Map<String, Object?>>.withCache(
+        assetPath: 'assets/remote_config/season_event_defaults.json',
+        schemaVersion: 1,
+        fromJson: (json) => json,
+        contentSecret: secret,
+        storage: StorageService.to,
+        cacheKey: cacheKey,
+        fetchRemote: () async => signExport({
+          'schemaVersion': 1,
+          'eventName': 'Device Verified Event',
+        }, secret),
+      );
+      await first.load();
+      await first.refreshed;
+      expect(first.current?['eventName'], 'Device Verified Event');
+
+      // Fresh instance (simulates a restart) — same real StorageService.to,
+      // no fetchRemote wired at all, so the ONLY way it could see this
+      // content is by reading the cache this test just wrote.
+      final restarted = RemoteContentPack<Map<String, Object?>>.withCache(
+        assetPath: 'assets/remote_config/season_event_defaults.json',
+        schemaVersion: 1,
+        fromJson: (json) => json,
+        storage: StorageService.to,
+        cacheKey: cacheKey,
+      );
+      final content = await restarted.load();
+
+      expect(content?['eventName'], 'Device Verified Event');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'FEAT-96: reward plan preview + executePlan on device commits currency '
+    '+ item atomically, persists through a fresh instance',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+
+      final wallet = EconomyWallet(
+        storage: StorageService.to,
+        storageKey: 'feat96_device_wallet',
+      );
+      final inventory = InventoryService(
+        storage: StorageService.to,
+        itemCatalog: const {
+          'device_gem_bag': ItemDefinition(id: 'device_gem_bag', maxStack: 10),
+        },
+        storageKey: 'feat96_device_inventory',
+      );
+      final pipeline = RewardTransactionPipeline.withInventory(
+        wallet: wallet,
+        inventory: inventory,
+        storageKey: 'feat96_device_pipeline',
+      );
+      final txId = 'feat96_device_${DateTime.now().microsecondsSinceEpoch}';
+
+      final preview = pipeline.preview(
+        source: RewardSource.ad,
+        transactionId: txId,
+        currencyLines: const [RewardLine(currency: 'device_coin', amount: 30)],
+        itemLines: const [InventoryLine(itemId: 'device_gem_bag', quantity: 4)],
+      );
+      expect(preview.isSuccess, isTrue);
+      final plan = (preview as SdkSuccess<RewardPlan>).value;
+
+      final result = await pipeline.executePlan(plan);
+
+      expect(result.isSuccess, isTrue);
+      expect(wallet.balanceOf('device_coin'), 30);
+      expect(inventory.snapshot.value.quantityOf('device_gem_bag'), 4);
+
+      // Fresh instances (simulates a restart) — same real StorageService.to
+      // + same storageKeys, no in-memory state carried over.
+      final restartedWallet = EconomyWallet(
+        storage: StorageService.to,
+        storageKey: 'feat96_device_wallet',
+      );
+      final restartedInventory = InventoryService(
+        storage: StorageService.to,
+        itemCatalog: const {
+          'device_gem_bag': ItemDefinition(id: 'device_gem_bag', maxStack: 10),
+        },
+        storageKey: 'feat96_device_inventory',
+      );
+
+      expect(restartedWallet.balanceOf('device_coin'), 30);
+      expect(restartedInventory.snapshot.value.quantityOf('device_gem_bag'), 4);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 class _ThrowingDeviceCloudProvider extends CloudSaveProvider {

@@ -16,6 +16,7 @@ import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/deep_link_command_router.dart';
+import 'package:roy_casual_kit/core/inventory_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
@@ -1959,6 +1960,96 @@ void main() {
       expect(find.text('sword x1'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+  });
+
+  group('FEAT-96: Preview & claim reward demo', () {
+    testWidgets(
+      'tap Preview & claim -> dialog hiện đúng nội dung -> confirm -> gem '
+      'và potion đều tăng đúng',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Preview & claim reward').first,
+        );
+        await _settle(tester);
+
+        expect(find.text('Claim reward?'), findsOneWidget);
+        expect(
+          find.text('You will receive +15 gem and +1 potion.'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Claim reward now'));
+        await _settle(tester);
+
+        expect(find.text('Claim reward?'), findsNothing);
+        expect(find.textContaining('Claimed +15 gem, +1 potion'), findsOneWidget);
+        expect(find.text('potion x1'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'preview rồi CANCEL dialog -> không claim gì cả, state không đổi',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        await tester.tap(
+          find.widgetWithText(CommonButton, 'Preview & claim reward').first,
+        );
+        await _settle(tester);
+        expect(find.text('Claim reward?'), findsOneWidget);
+
+        await tester.tap(find.text('Not now'));
+        await _settle(tester);
+
+        expect(find.text('Claim reward?'), findsNothing);
+        expect(find.textContaining('Claimed'), findsNothing);
+        expect(find.text('(rỗng)'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'plan preview từ trước, inventory bị lấp đầy qua UI SAU preview -> '
+      'executePlan trên chính live pipeline/inventory instance của màn '
+      'hình trả lỗi stale (conflict), không claim một phần',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        // Lấy đúng live instance màn hình đang dùng (được Get.put permanent
+        // trong initState) — preview một plan y hệt nút demo tự tạo.
+        final pipeline = Get.find<RewardTransactionPipeline>();
+        final preview = pipeline.preview(
+          source: RewardSource.other,
+          transactionId: 'widget_test_stale_plan',
+          currencyLines: const [RewardLine(currency: 'gem', amount: 15)],
+          itemLines: const [InventoryLine(itemId: 'potion', quantity: 1)],
+        );
+        final plan = (preview as SdkSuccess<RewardPlan>).value;
+
+        // Lấp đầy capacity (4) qua UI thật ("Grant sword" — maxStack mặc
+        // định 1, mỗi tap chiếm 1 slot mới) — plan đã preview ở trên giờ
+        // stale vì inventory snapshot đã đổi.
+        for (var i = 0; i < 4; i++) {
+          await tester.tap(
+            find.widgetWithText(CommonButton, 'Grant sword').first,
+          );
+          await _settle(tester);
+        }
+        expect(find.textContaining('Granted 1 x sword'), findsOneWidget);
+
+        final result = await pipeline.executePlan(plan);
+
+        expect(result, isA<SdkFailure<RewardTransactionRecord>>());
+        expect(
+          (result as SdkFailure<RewardTransactionRecord>).kind,
+          SdkErrorKind.conflict,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('FEAT-56: InventoryGrid demo', () {

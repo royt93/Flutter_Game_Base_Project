@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
+import 'package:roy_casual_kit/core/inventory_service.dart';
 import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
@@ -447,10 +448,8 @@ void main() {
     'BUG-81: createdAtMs dùng nowMs seam, không hard-code DateTime.now()',
     () async {
       const fakeNow = 9_000_000_000_000;
-      final p = RewardTransactionPipeline(
-        wallet: wallet,
-        nowMs: () => fakeNow,
-      )..onInit();
+      final p = RewardTransactionPipeline(wallet: wallet, nowMs: () => fakeNow)
+        ..onInit();
 
       await p.grant(
         source: RewardSource.ad,
@@ -586,5 +585,296 @@ void main() {
         );
       },
     );
+  });
+
+  group('FEAT-96: reward plan preview/execute', () {
+    const catalog = {
+      'gem_bag': ItemDefinition(id: 'gem_bag', maxStack: 10),
+      // maxStack: 1 — a SEPARATE item type so granting more never just
+      // tops up the same slot (unlike gem_bag) and genuinely needs its own
+      // new slot, making a small `capacity` actually reachable in tests.
+      'trophy': ItemDefinition(id: 'trophy'),
+    };
+
+    ({
+      _ThrowingStorageService storage,
+      EconomyWallet wallet,
+      InventoryService inventory,
+      RewardTransactionPipeline pipeline,
+    })
+    makeSet({int inventoryCapacity = 40}) {
+      final storage = _ThrowingStorageService()..shouldThrow = false;
+      final wallet = EconomyWallet(storage: storage)..onInit();
+      final inventory = InventoryService(
+        storage: storage,
+        itemCatalog: catalog,
+        capacity: inventoryCapacity,
+      )..onInit();
+      final pipeline = RewardTransactionPipeline.withInventory(
+        wallet: wallet,
+        inventory: inventory,
+      )..onInit();
+      return (
+        storage: storage,
+        wallet: wallet,
+        inventory: inventory,
+        pipeline: pipeline,
+      );
+    }
+
+    test('preview không ghi storage (setString count = 0)', () {
+      final s = makeSet();
+      final before = s.storage.platformWrites;
+
+      final result = s.pipeline.preview(
+        source: RewardSource.ad,
+        transactionId: 'preview_1',
+        currencyLines: const [RewardLine(currency: 'coin', amount: 10)],
+        itemLines: const [InventoryLine(itemId: 'gem_bag', quantity: 2)],
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(s.storage.platformWrites, before);
+    });
+
+    test('preview deterministic: cùng state, gọi 2 lần cho cùng kết quả', () {
+      final s = makeSet();
+
+      final r1 = s.pipeline.preview(
+        source: RewardSource.ad,
+        transactionId: 'preview_a',
+        currencyLines: const [RewardLine(currency: 'coin', amount: 10)],
+      );
+      final r2 = s.pipeline.preview(
+        source: RewardSource.ad,
+        transactionId: 'preview_a',
+        currencyLines: const [RewardLine(currency: 'coin', amount: 10)],
+      );
+
+      final p1 = (r1 as SdkSuccess<RewardPlan>).value;
+      final p2 = (r2 as SdkSuccess<RewardPlan>).value;
+      expect(p1.stateFingerprint, p2.stateFingerprint);
+    });
+
+    test(
+      'preview tích luỹ đúng nhiều dòng CÙNG currency: 2 dòng riêng lẻ đều '
+      'trong ngưỡng balance hiện tại nhưng CỘNG LẠI overflow -> preview phải '
+      'reject NGAY, không để executePlan mới phát hiện (rơi vào partial)',
+      () async {
+        final s = makeSet();
+        // Balance hiện tại 0 — mỗi dòng riêng lẻ hợp lệ (đều <= int32 max),
+        // nhưng cộng lại vượt 0x7fffffff.
+        final result = s.pipeline.preview(
+          source: RewardSource.ad,
+          transactionId: 'overflow_sum',
+          currencyLines: const [
+            RewardLine(currency: 'coin', amount: 0x7ffffff0),
+            RewardLine(currency: 'coin', amount: 0x7ffffff0),
+          ],
+        );
+
+        expect(result, isA<SdkFailure<RewardPlan>>());
+      },
+    );
+
+    test(
+      'preview deep-copy receiptMeta: mutate map gốc SAU preview() không '
+      'ảnh hưởng plan đã tạo, executePlan vẫn dùng đúng nội dung tại thời '
+      'điểm preview',
+      () async {
+        final s = makeSet();
+        final receiptMeta = <String, Object?>{'note': 'original'};
+
+        final preview = s.pipeline.preview(
+          source: RewardSource.ad,
+          transactionId: 'meta_copy_1',
+          currencyLines: const [RewardLine(currency: 'coin', amount: 5)],
+          receiptMeta: receiptMeta,
+        );
+        final plan = (preview as SdkSuccess<RewardPlan>).value;
+
+        // Mutate map GỐC sau preview — plan.receiptMeta phải KHÔNG đổi vì
+        // là deep copy, không phải cùng reference.
+        receiptMeta['note'] = 'tampered';
+
+        expect(plan.receiptMeta!['note'], 'original');
+
+        final result = await s.pipeline.executePlan(plan);
+
+        expect(result.isSuccess, isTrue);
+        final record = (result as SdkSuccess<RewardTransactionRecord>).value;
+        expect(record.receiptMeta!['note'], 'original');
+      },
+    );
+
+    test(
+      'executePlan reject stale: inventory đầy giữa preview và execute',
+      () async {
+        final s = makeSet(inventoryCapacity: 1);
+        final preview = s.pipeline.preview(
+          source: RewardSource.ad,
+          transactionId: 'stale_1',
+          itemLines: const [InventoryLine(itemId: 'trophy', quantity: 1)],
+        );
+        final plan = (preview as SdkSuccess<RewardPlan>).value;
+
+        // Lấp đầy inventory bằng 1 grant khác, TRONG LÚC plan vẫn cầm 1
+        // fingerprint đã cũ.
+        await s.inventory.grant(
+          lines: const [InventoryLine(itemId: 'gem_bag', quantity: 1)],
+          transactionId: 'someone_else',
+        );
+
+        final result = await s.pipeline.executePlan(plan);
+
+        expect(result, isA<SdkFailure<RewardTransactionRecord>>());
+        expect(
+          (result as SdkFailure<RewardTransactionRecord>).kind,
+          SdkErrorKind.conflict,
+        );
+      },
+    );
+
+    test('malformed plan bị reject tại preview(): currency rỗng, amount<=0, '
+        'item vượt capacity — không tạo record nào', () {
+      final s = makeSet(inventoryCapacity: 1);
+
+      expect(
+        s.pipeline.preview(
+          source: RewardSource.ad,
+          transactionId: 'bad_1',
+          currencyLines: const [RewardLine(currency: '', amount: 10)],
+        ),
+        isA<SdkFailure<RewardPlan>>(),
+      );
+      expect(
+        s.pipeline.preview(
+          source: RewardSource.ad,
+          transactionId: 'bad_2',
+          currencyLines: const [RewardLine(currency: 'coin', amount: 0)],
+        ),
+        isA<SdkFailure<RewardPlan>>(),
+      );
+      expect(
+        s.pipeline.preview(
+          source: RewardSource.ad,
+          transactionId: 'bad_3',
+          // trophy: maxStack 1 -> quantity 2 needs 2 slots, capacity is 1.
+          itemLines: const [InventoryLine(itemId: 'trophy', quantity: 2)],
+        ),
+        isA<SdkFailure<RewardPlan>>(),
+      );
+      expect(s.pipeline.auditTrail, isEmpty);
+    });
+
+    test('executePlan thành công: currency + item cùng áp dụng, 1 record '
+        'committed với cả lines lẫn itemLines đúng', () async {
+      final s = makeSet();
+      final preview = s.pipeline.preview(
+        source: RewardSource.ad,
+        transactionId: 'happy_1',
+        currencyLines: const [RewardLine(currency: 'coin', amount: 20)],
+        itemLines: const [InventoryLine(itemId: 'gem_bag', quantity: 3)],
+      );
+      final plan = (preview as SdkSuccess<RewardPlan>).value;
+
+      final result = await s.pipeline.executePlan(plan);
+
+      expect(result.isSuccess, isTrue);
+      expect(s.wallet.balanceOf('coin'), 20);
+      expect(s.inventory.snapshot.value.quantityOf('gem_bag'), 3);
+      final record = (result as SdkSuccess<RewardTransactionRecord>).value;
+      expect(record.status, RewardTransactionStatus.committed);
+      expect(record.lines, hasLength(1));
+      expect(record.itemLines, hasLength(1));
+    });
+
+    test(
+      'item-line fail SAU KHI currency đã commit -> record partial, '
+      'resumePending() sau khi dọn chỗ trống thì item apply nốt -> committed',
+      () async {
+        final s = makeSet(inventoryCapacity: 1);
+        // Lấp đầy inventory TRƯỚC (trophy: maxStack 1, chiếm trọn slot duy
+        // nhất), để executePlan's currency line vẫn qua (currency không
+        // liên quan capacity item) nhưng item line fail.
+        await s.inventory.grant(
+          lines: const [InventoryLine(itemId: 'trophy', quantity: 1)],
+          transactionId: 'occupy',
+        );
+
+        // Preview TRƯỚC KHI lấp đầy đã không còn hợp lệ nên fingerprint sẽ
+        // stale — để test đúng nhánh "item fail sau currency commit" (không
+        // phải nhánh stale ở trên), gọi grantWithItems() trực tiếp thay vì
+        // qua preview/executePlan.
+        final result = await s.pipeline.grantWithItems(
+          source: RewardSource.ad,
+          transactionId: 'partial_item_1',
+          lines: const [RewardLine(currency: 'coin', amount: 15)],
+          itemLines: const [InventoryLine(itemId: 'gem_bag', quantity: 1)],
+        );
+
+        expect(result, isA<SdkFailure<RewardTransactionRecord>>());
+        expect(s.wallet.balanceOf('coin'), 15);
+        expect(
+          s.pipeline.auditTrail.single.status,
+          RewardTransactionStatus.partial,
+        );
+
+        // Dọn chỗ trống rồi resume.
+        await s.inventory.consume(
+          lines: const [InventoryLine(itemId: 'trophy', quantity: 1)],
+          transactionId: 'free_up',
+        );
+        await s.pipeline.resumePending();
+
+        expect(
+          s.pipeline.auditTrail.single.status,
+          RewardTransactionStatus.committed,
+        );
+        expect(s.wallet.balanceOf('coin'), 15, reason: 'không cộng đôi');
+        expect(s.inventory.snapshot.value.quantityOf('gem_bag'), 1);
+      },
+    );
+
+    test(
+      'itemLines non-empty nhưng inventory không inject -> reject validation '
+      'ngay từ preview()',
+      () {
+        final storage = _ThrowingStorageService()..shouldThrow = false;
+        final wallet = EconomyWallet(storage: storage)..onInit();
+        final pipeline = RewardTransactionPipeline(wallet: wallet)..onInit();
+
+        final result = pipeline.preview(
+          source: RewardSource.ad,
+          transactionId: 'no_inventory',
+          itemLines: const [InventoryLine(itemId: 'gem_bag', quantity: 1)],
+        );
+
+        expect(result, isA<SdkFailure<RewardPlan>>());
+        expect(
+          (result as SdkFailure<RewardPlan>).kind,
+          SdkErrorKind.validation,
+        );
+      },
+    );
+
+    test('backward-compat: RewardTransactionRecord.fromJson đọc record CŨ '
+        '(không có itemLines trong JSON) -> parse ra itemLines rỗng', () {
+      final legacyJson = {
+        'transactionId': 'legacy_1',
+        'source': 'ad',
+        'lines': [
+          {'currency': 'coin', 'amount': 5},
+        ],
+        'status': 'committed',
+        'createdAtMs': 1000,
+      };
+
+      final record = RewardTransactionRecord.fromJson(legacyJson);
+
+      expect(record, isNotNull);
+      expect(record!.itemLines, isEmpty);
+      expect(record.lines, hasLength(1));
+    });
   });
 }

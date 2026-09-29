@@ -508,4 +508,123 @@ void main() {
       },
     );
   });
+
+  group('FEAT-96: previewGrant', () {
+    test('previewGrant không mutate state thật, không tăng slot', () {
+      final service = _service();
+      final before = service.snapshot.value.slots.length;
+
+      final result = service.previewGrant(
+        lines: const [InventoryLine(itemId: 'potion', quantity: 3)],
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(service.snapshot.value.slots.length, before);
+      expect(service.snapshot.value.slots, isEmpty);
+    });
+
+    test(
+      'previewGrant trả đúng nội dung sẽ được grant (fill slot cũ trước)',
+      () async {
+        final service = _service();
+        // Grant thật trước để có 1 slot potion chưa đầy.
+        await service.grant(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 2)],
+          transactionId: 'seed',
+        );
+
+        final result = service.previewGrant(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 3)],
+        );
+
+        final preview = (result as SdkSuccess<InventorySnapshot>).value;
+        expect(preview.quantityOf('potion'), 5);
+        expect(preview.slots, hasLength(1));
+        // Thật sự chưa mutate — state thật vẫn chỉ có 2.
+        expect(service.snapshot.value.quantityOf('potion'), 2);
+      },
+    );
+
+    test(
+      'previewGrant deterministic: gọi 2 lần cùng state cho cùng kết quả',
+      () {
+        final service = _service();
+        final r1 = service.previewGrant(
+          lines: const [InventoryLine(itemId: 'gem', quantity: 5)],
+        );
+        final r2 = service.previewGrant(
+          lines: const [InventoryLine(itemId: 'gem', quantity: 5)],
+        );
+
+        final p1 = (r1 as SdkSuccess<InventorySnapshot>).value;
+        final p2 = (r2 as SdkSuccess<InventorySnapshot>).value;
+        expect(p1.quantityOf('gem'), p2.quantityOf('gem'));
+        expect(p1.slots.length, p2.slots.length);
+      },
+    );
+
+    test('previewGrant vượt capacity -> SdkFailure, không mutate', () async {
+      final service = _service(capacity: 1);
+      await service.grant(
+        lines: const [InventoryLine(itemId: 'sword', quantity: 1)],
+        transactionId: 'seed',
+      );
+
+      final result = service.previewGrant(
+        lines: const [InventoryLine(itemId: 'gem', quantity: 1)],
+      );
+
+      expect(result, isA<SdkFailure<InventorySnapshot>>());
+      expect(service.snapshot.value.slots, hasLength(1));
+    });
+
+    test('previewGrant unknown item id -> SdkFailure validation', () {
+      final service = _service();
+
+      final result = service.previewGrant(
+        lines: const [InventoryLine(itemId: 'ghost', quantity: 1)],
+      );
+
+      expect(result, isA<SdkFailure<InventorySnapshot>>());
+      expect(
+        (result as SdkFailure<InventorySnapshot>).kind,
+        SdkErrorKind.validation,
+      );
+    });
+
+    test(
+      'previewGrant lines rỗng hoặc quantity<=0 -> SdkFailure validation',
+      () {
+        final service = _service();
+
+        expect(
+          service.previewGrant(lines: const []),
+          isA<SdkFailure<InventorySnapshot>>(),
+        );
+        expect(
+          service.previewGrant(
+            lines: const [InventoryLine(itemId: 'potion', quantity: 0)],
+          ),
+          isA<SdkFailure<InventorySnapshot>>(),
+        );
+      },
+    );
+
+    test('previewGrant KHÔNG cần transactionId, KHÔNG chặn cùng nội dung gọi '
+        'grant() thật ngay sau đó', () async {
+      final service = _service();
+      final preview = service.previewGrant(
+        lines: const [InventoryLine(itemId: 'potion', quantity: 2)],
+      );
+      expect(preview.isSuccess, isTrue);
+
+      final result = await service.grant(
+        lines: const [InventoryLine(itemId: 'potion', quantity: 2)],
+        transactionId: 'tx_after_preview',
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(service.snapshot.value.quantityOf('potion'), 2);
+    });
+  });
 }

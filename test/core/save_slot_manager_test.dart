@@ -158,10 +158,16 @@ void main() {
         await manager.debugPendingSaves;
 
         final restarted = SaveSlotManager();
-        expect(restarted.listSlots().map((s) => s.displayName), [
-          'Alice',
-          'Bob',
-        ]);
+        // Persist/reload correctness only cares both slots survived. Their
+        // list order is intentionally most-recently-played-first, but 2
+        // createSlot calls can land in the same millisecond (tie) or cross
+        // one (Bob newer than Alice) — fixed order here was timing-dependent
+        // and failed even on clean HEAD. The dedicated sorting test above
+        // owns ordering; this one owns persistence.
+        expect(
+          restarted.listSlots().map((s) => s.displayName),
+          unorderedEquals(['Alice', 'Bob']),
+        );
       },
     );
   });
@@ -434,7 +440,17 @@ void main() {
 
       expect(() => manager.createSlot('D'), throwsStateError);
       expect(manager.listSlots(), hasLength(3));
-      expect(manager.listSlots().map((s) => s.displayName), ['A', 'B', 'C']);
+      // listSlots() deliberately sorts by lastPlayedAtMs DESCENDING, and 3
+      // back-to-back createSlot calls can share one millisecond (tie) or
+      // cross a millisecond boundary (C/B newer than A). This maxSlots test
+      // only cares that D was NOT added and A/B/C all remain — asserting a
+      // fixed display order here was timing-dependent and failed even on a
+      // clean HEAD. Order itself is covered by the dedicated listSlots sort
+      // test above.
+      expect(
+        manager.listSlots().map((s) => s.displayName),
+        unorderedEquals(['A', 'B', 'C']),
+      );
     });
 
     test(

@@ -66,11 +66,18 @@ class _CookbookScreenState extends State<CookbookScreen> {
           ),
           permanent: true,
         );
-    _seasonEventPack = RemoteContentPack<Map<String, Object?>>(
+    _seasonEventPack = RemoteContentPack<Map<String, Object?>>.withCache(
       assetPath: 'assets/remote_config/season_event_defaults.json',
       schemaVersion: 1,
       fromJson: (json) => json,
       bundle: widget.remoteContentBundle,
+      // ENH-94: demo-only cache key — this screen constructs a fresh
+      // RemoteContentPack every time it's opened (not GetX-registered, see
+      // widget.remoteContentBundle's own doc comment), so without a durable
+      // cache a verified fetch's content never survives navigating away and
+      // back, let alone an app restart.
+      storage: StorageService.to,
+      cacheKey: 'cookbook_season_event_pack_cache_v1',
     );
     _killSwitch =
         RemoteKillSwitchController.maybe ??
@@ -87,7 +94,9 @@ class _CookbookScreenState extends State<CookbookScreen> {
     _seasonEvents =
         SeasonEventService.maybe ??
         Get.put(SeasonEventService(), permanent: true);
-    _quests = DailyQuestService.maybe ?? Get.put(DailyQuestService(), permanent: true);
+    _quests =
+        DailyQuestService.maybe ??
+        Get.put(DailyQuestService(), permanent: true);
     _checkpoints =
         CheckpointCoordinator.maybe ??
         Get.put(
@@ -105,7 +114,10 @@ class _CookbookScreenState extends State<CookbookScreen> {
           name: 'cookbook_demo_event',
           version: 1,
           params: {
-            'source': EventParamSchema(type: EventParamType.string, required: true),
+            'source': EventParamSchema(
+              type: EventParamType.string,
+              required: true,
+            ),
           },
         ),
       );
@@ -114,7 +126,8 @@ class _CookbookScreenState extends State<CookbookScreen> {
     _gameTime = GameTimeController();
     _haptics = HapticChoreographer();
     _preloader = AssetPreloadCoordinator(
-      loader: (item) async => Future<void>.delayed(const Duration(milliseconds: 30)),
+      loader: (item) async =>
+          Future<void>.delayed(const Duration(milliseconds: 30)),
     );
     // ENH-80: reuse the REAL instance main.dart's bootstrap already
     // registered (the `performance` module) — same `.maybe ?? Get.put`
@@ -132,7 +145,10 @@ class _CookbookScreenState extends State<CookbookScreen> {
       Get.put<CloudSaveProvider>(FakeCloudSaveProvider(), permanent: true);
     }
     if (!Get.isRegistered<SecureStorageAdapter>()) {
-      Get.put<SecureStorageAdapter>(FakeSecureStorageAdapter(), permanent: true);
+      Get.put<SecureStorageAdapter>(
+        FakeSecureStorageAdapter(),
+        permanent: true,
+      );
     }
     // FEAT-87: reuse the SAME LocalScoreboardService instance
     // WidgetShowcaseScreen's LeaderboardList demo already registered, same
@@ -196,22 +212,21 @@ class _CookbookScreenState extends State<CookbookScreen> {
                   padding: const EdgeInsets.all(NeonTheme.s16),
                   children: [
                     _section('Storage & save data', [
-                      _tile(
-                        'VersionedJsonStore — save + load',
-                        () async {
-                          final store = VersionedJsonStore<Map<String, Object?>>(
-                            storage: StorageService.to,
-                            key: 'cookbook_versioned_demo',
-                            schemaVersion: 1,
-                            toJson: (m) => m,
-                            fromJson: (j) => j,
-                            migrate: (fromVersion, json) => json,
-                          );
-                          await store.save({'demo': DateTime.now().millisecondsSinceEpoch});
-                          final loaded = store.load();
-                          return 'round-tripped: $loaded';
-                        },
-                      ),
+                      _tile('VersionedJsonStore — save + load', () async {
+                        final store = VersionedJsonStore<Map<String, Object?>>(
+                          storage: StorageService.to,
+                          key: 'cookbook_versioned_demo',
+                          schemaVersion: 1,
+                          toJson: (m) => m,
+                          fromJson: (j) => j,
+                          migrate: (fromVersion, json) => json,
+                        );
+                        await store.save({
+                          'demo': DateTime.now().millisecondsSinceEpoch,
+                        });
+                        final loaded = store.load();
+                        return 'round-tripped: $loaded';
+                      }),
                       _tile(
                         'CheckpointCoordinator — request + restore',
                         () async {
@@ -276,19 +291,23 @@ class _CookbookScreenState extends State<CookbookScreen> {
                           // cloud already holding a genuinely different
                           // value, so this demo actually exercises
                           // conflict resolution, not just a clean upload.
-                          final store = VersionedJsonStore<Map<String, Object?>>(
-                            storage: StorageService.to,
-                            key: 'cookbook_unified_save_demo',
-                            schemaVersion: 2,
-                            toJson: (m) => m,
-                            fromJson: (j) => j,
-                            migrate: (fromVersion, json) =>
-                                registry.migrate(fromVersion, json),
-                          );
+                          final store =
+                              VersionedJsonStore<Map<String, Object?>>(
+                                storage: StorageService.to,
+                                key: 'cookbook_unified_save_demo',
+                                schemaVersion: 2,
+                                toJson: (m) => m,
+                                fromJson: (j) => j,
+                                migrate: (fromVersion, json) =>
+                                    registry.migrate(fromVersion, json),
+                              );
                           await store.save(migrated);
 
                           final cloudProvider = Get.find<CloudSaveProvider>();
-                          await cloudProvider.upload({...migrated, 'level': 99});
+                          await cloudProvider.upload({
+                            ...migrated,
+                            'level': 99,
+                          });
 
                           var conflictOutcome = 'không có xung đột';
                           await store.syncWith(
@@ -310,20 +329,33 @@ class _CookbookScreenState extends State<CookbookScreen> {
                         'DisasterRecoverySaveExport — build + sign + preview',
                         () async {
                           final SaveSlotManager slots =
-                              SaveSlotManager.maybe ?? Get.put<SaveSlotManager>(SaveSlotManager(), permanent: true);
+                              SaveSlotManager.maybe ??
+                              Get.put<SaveSlotManager>(
+                                SaveSlotManager(),
+                                permanent: true,
+                              );
                           final recovery = DisasterRecoverySaveExport(
                             storage: StorageService.to,
                             slotManager: slots,
                           );
                           final export = recovery.buildExport(
-                            slotIds: slots.listSlots().map((s) => s.id).toList(),
+                            slotIds: slots
+                                .listSlots()
+                                .map((s) => s.id)
+                                .toList(),
                             appVersion: kAppVersion,
                           );
                           if (export case SdkFailure(:final message)) {
                             return 'buildExport failed: $message';
                           }
-                          final signed = recovery.sign(export.value!, 'cookbook_demo_secret');
-                          final preview = recovery.previewRestore(signed, 'cookbook_demo_secret');
+                          final signed = recovery.sign(
+                            export.value!,
+                            'cookbook_demo_secret',
+                          );
+                          final preview = recovery.previewRestore(
+                            signed,
+                            'cookbook_demo_secret',
+                          );
                           return 'export ok, restore preview valid=${preview.isSuccess}';
                         },
                       ),
@@ -332,8 +364,12 @@ class _CookbookScreenState extends State<CookbookScreen> {
                       _tile(
                         'OfflineProgressionService — claim idle earnings',
                         () async {
-                          final OfflineProgressionService offline = OfflineProgressionService.maybe ??
-                              Get.put<OfflineProgressionService>(OfflineProgressionService(), permanent: true);
+                          final OfflineProgressionService offline =
+                              OfflineProgressionService.maybe ??
+                              Get.put<OfflineProgressionService>(
+                                OfflineProgressionService(),
+                                permanent: true,
+                              );
                           final earned = await offline.claim(0.5);
                           return 'earned ${earned.toStringAsFixed(2)} coins since last claim';
                         },
@@ -396,30 +432,29 @@ class _CookbookScreenState extends State<CookbookScreen> {
                             _quests.register(questId, 1);
                             _quests.incrementProgress(questId, 1);
                           }
-                          final claimed = _quests.isCompleted(questId) && !_quests.isClaimed(questId)
+                          final claimed =
+                              _quests.isCompleted(questId) &&
+                                  !_quests.isClaimed(questId)
                               ? _quests.claim(questId)
                               : false;
                           return 'progress=${_quests.progressOf(questId)}, claimed=$claimed';
                         },
                       ),
-                      _tile(
-                        'PurchaseSeam — buy via your adapter',
-                        () async {
-                          final seam = PurchaseSeam.maybe!;
-                          final bought = await seam.buy('cookbook_demo_sku');
-                          return 'bought=$bought, owns=${seam.isOwned('cookbook_demo_sku')}';
-                        },
-                      ),
+                      _tile('PurchaseSeam — buy via your adapter', () async {
+                        final seam = PurchaseSeam.maybe!;
+                        final bought = await seam.buy('cookbook_demo_sku');
+                        return 'bought=$bought, owns=${seam.isOwned('cookbook_demo_sku')}';
+                      }),
                     ]),
                     _section('Live-ops & remote content', [
-                      _tile(
-                        'RemoteConfigService — init + read',
-                        () async {
-                          await _remoteConfig.init();
-                          final multiplier = _remoteConfig.getDouble('reward_multiplier', fallback: 1.0);
-                          return 'reward_multiplier=$multiplier (source: ${_remoteConfig.source.name})';
-                        },
-                      ),
+                      _tile('RemoteConfigService — init + read', () async {
+                        await _remoteConfig.init();
+                        final multiplier = _remoteConfig.getDouble(
+                          'reward_multiplier',
+                          fallback: 1.0,
+                        );
+                        return 'reward_multiplier=$multiplier (source: ${_remoteConfig.source.name})';
+                      }),
                       _tile(
                         'RemoteContentPack — load asset + await refresh',
                         () async {
@@ -428,24 +463,20 @@ class _CookbookScreenState extends State<CookbookScreen> {
                           return 'loaded: $content';
                         },
                       ),
-                      _tile(
-                        'RemoteKillSwitchController — isKilled',
-                        () {
-                          final killed = _killSwitch.isKilled('cookbook_demo_feature');
-                          return 'cookbook_demo_feature killed=$killed';
-                        },
-                      ),
-                      _tile(
-                        'SeasonEventService — currentWindow',
-                        () {
-                          final window = _seasonEvents.currentWindow(
-                            'cookbook_demo_event',
-                            length: const Duration(days: 7),
-                            cooldown: const Duration(days: 21),
-                          );
-                          return 'active=${window.isActive}, ends=${window.end}';
-                        },
-                      ),
+                      _tile('RemoteKillSwitchController — isKilled', () {
+                        final killed = _killSwitch.isKilled(
+                          'cookbook_demo_feature',
+                        );
+                        return 'cookbook_demo_feature killed=$killed';
+                      }),
+                      _tile('SeasonEventService — currentWindow', () {
+                        final window = _seasonEvents.currentWindow(
+                          'cookbook_demo_event',
+                          length: const Duration(days: 7),
+                          cooldown: const Duration(days: 21),
+                        );
+                        return 'active=${window.isActive}, ends=${window.end}';
+                      }),
                     ]),
                     _section('Privacy, analytics & diagnostics', [
                       _tile(
@@ -453,36 +484,42 @@ class _CookbookScreenState extends State<CookbookScreen> {
                         () async {
                           final events = <String>[];
                           final sampler = PrivacyAwareAnalyticsSampler(
-                            ConsentGatedAnalyticsProvider(_RecordingAnalyticsProvider(events)),
+                            ConsentGatedAnalyticsProvider(
+                              _RecordingAnalyticsProvider(events),
+                            ),
                             defaultSamplingRate: 1.0,
                           );
-                          ConsentStateService.maybe?.grant(ConsentCategory.analytics);
-                          sampler.logEvent('cookbook_demo_event', {'source': 'cookbook'});
+                          ConsentStateService.maybe?.grant(
+                            ConsentCategory.analytics,
+                          );
+                          sampler.logEvent('cookbook_demo_event', {
+                            'source': 'cookbook',
+                          });
                           return 'forwarded=${sampler.auditSnapshot.forwarded}, logged=$events';
                         },
                       ),
-                      _tile(
-                        'SdkEventSchemaRegistry — validate',
-                        () {
-                          final result = _schemas.validate('cookbook_demo_event', {'source': 'cookbook'});
-                          return 'accepted=${result.accepted}, violations=${result.violations}';
-                        },
-                      ),
-                      _tile(
-                        'SdkHealthReport — collect',
-                        () async {
-                          final report = await _health.collect();
-                          return 'sections: ${(report['sections'] as Map).keys.join(', ')}';
-                        },
-                      ),
-                      _tile(
-                        'DiagnosticsExportBundle — build + sign',
-                        () async {
-                          final bundle = await _diagnostics.build(appVersion: kAppVersion, health: _health);
-                          final signed = _diagnostics.sign(bundle, 'cookbook_demo_secret');
-                          return 'built, signed=${signed.containsKey(checksumKey)}, truncated=${bundle['truncated']}';
-                        },
-                      ),
+                      _tile('SdkEventSchemaRegistry — validate', () {
+                        final result = _schemas.validate(
+                          'cookbook_demo_event',
+                          {'source': 'cookbook'},
+                        );
+                        return 'accepted=${result.accepted}, violations=${result.violations}';
+                      }),
+                      _tile('SdkHealthReport — collect', () async {
+                        final report = await _health.collect();
+                        return 'sections: ${(report['sections'] as Map).keys.join(', ')}';
+                      }),
+                      _tile('DiagnosticsExportBundle — build + sign', () async {
+                        final bundle = await _diagnostics.build(
+                          appVersion: kAppVersion,
+                          health: _health,
+                        );
+                        final signed = _diagnostics.sign(
+                          bundle,
+                          'cookbook_demo_secret',
+                        );
+                        return 'built, signed=${signed.containsKey(checksumKey)}, truncated=${bundle['truncated']}';
+                      }),
                     ]),
                     _section('Platform seams', [
                       _tile(
@@ -513,38 +550,38 @@ class _CookbookScreenState extends State<CookbookScreen> {
                       _tile(
                         'SecureStorageAdapter (fake adapter) — round trip',
                         () async {
-                          await SecureStorage.write('cookbook_demo_key', 'demo_value');
-                          final read = await SecureStorage.read('cookbook_demo_key');
+                          await SecureStorage.write(
+                            'cookbook_demo_key',
+                            'demo_value',
+                          );
+                          final read = await SecureStorage.read(
+                            'cookbook_demo_key',
+                          );
                           return 'read back: ${read.value}';
                         },
                       ),
                       _tile(
                         'PluginAdapterConformanceSuite — verify PurchaseSeam',
                         () async {
-                          final report = await PluginAdapterConformanceSuite.verifyPurchaseSeam(
-                            PurchaseSeam.maybe!,
-                            testProductId: 'cookbook_demo_sku',
-                          );
+                          final report =
+                              await PluginAdapterConformanceSuite.verifyPurchaseSeam(
+                                PurchaseSeam.maybe!,
+                                testProductId: 'cookbook_demo_sku',
+                              );
                           return 'passed=${report.passed}${report.passed ? '' : ', failures=${report.failures}'}';
                         },
                       ),
                     ]),
                     _section('App/session infrastructure', [
-                      _tile(
-                        'AppVersionGateController — decisionFor',
-                        () async {
-                          await _remoteConfig.init();
-                          final decision = _versionGate.decisionFor(kAppVersion);
-                          return 'decision=${decision.name}';
-                        },
-                      ),
-                      _tile(
-                        'GameTimeController — tick',
-                        () {
-                          final steps = _gameTime.tick(0.016);
-                          return 'tick(0.016s) -> $steps step(s), elapsed=${_gameTime.elapsed.value}';
-                        },
-                      ),
+                      _tile('AppVersionGateController — decisionFor', () async {
+                        await _remoteConfig.init();
+                        final decision = _versionGate.decisionFor(kAppVersion);
+                        return 'decision=${decision.name}';
+                      }),
+                      _tile('GameTimeController — tick', () {
+                        final steps = _gameTime.tick(0.016);
+                        return 'tick(0.016s) -> $steps step(s), elapsed=${_gameTime.elapsed.value}';
+                      }),
                       _tile(
                         // ENH-80: feeds a full windowSize (default 60) of
                         // slow (~33fps, below the default 40fps downgrade
@@ -563,168 +600,151 @@ class _CookbookScreenState extends State<CookbookScreen> {
                               '(sau 60 frame ~33fps, dưới ngưỡng downgrade mặc định 40fps)';
                         },
                       ),
-                      _tile(
-                        'maybeRequestReview — happy-moment prompt',
-                        () async {
-                          var shown = false;
-                          final triggered = await maybeRequestReview(
-                            recentWinStreak: 3,
-                            showReview: () async => shown = true,
-                            minWinStreak: 3,
-                          );
-                          return 'triggered=$triggered, showReview called=$shown';
-                        },
-                      ),
-                      _tile(
-                        'MemoryWatchdog — track + orphans + release',
-                        () {
-                          final id = MemoryWatchdog.track(
-                            WatchdogKind.subscription,
-                            owner: 'CookbookScreen',
-                            label: 'demoStream',
-                          );
-                          final orphans = MemoryWatchdog.orphans();
-                          MemoryWatchdog.release(id);
-                          return 'tracked id=$id, orphan count before release=${orphans.length}';
-                        },
-                      ),
+                      _tile('maybeRequestReview — happy-moment prompt', () async {
+                        var shown = false;
+                        final triggered = await maybeRequestReview(
+                          recentWinStreak: 3,
+                          showReview: () async => shown = true,
+                          minWinStreak: 3,
+                        );
+                        return 'triggered=$triggered, showReview called=$shown';
+                      }),
+                      _tile('MemoryWatchdog — track + orphans + release', () {
+                        final id = MemoryWatchdog.track(
+                          WatchdogKind.subscription,
+                          owner: 'CookbookScreen',
+                          label: 'demoStream',
+                        );
+                        final orphans = MemoryWatchdog.orphans();
+                        MemoryWatchdog.release(id);
+                        return 'tracked id=$id, orphan count before release=${orphans.length}';
+                      }),
                       _tile(
                         'AssetPreloadCoordinator — preload manifest',
                         () async {
                           final result = await _preloader.preload(const [
-                            AssetManifestItem(id: 'demo_asset', kind: AssetKind.flutterAsset, path: 'assets/audio/'),
+                            AssetManifestItem(
+                              id: 'demo_asset',
+                              kind: AssetKind.flutterAsset,
+                              path: 'assets/audio/',
+                            ),
                           ]);
                           return 'preload success=${result.isSuccess}, progress=${_preloader.progress}';
                         },
                       ),
-                      _tile(
-                        'RoyLifecycleCoordinator — registerHook',
-                        () {
-                          RoyLifecycleCoordinator.maybe?.registerHook(
-                            'cookbook_demo_hook',
-                            (event) async => debugPrint('cookbook demo hook fired: $event'),
-                          );
-                          return 'hook registered (fires next background/resume)';
-                        },
-                      ),
+                      _tile('RoyLifecycleCoordinator — registerHook', () {
+                        RoyLifecycleCoordinator.maybe?.registerHook(
+                          'cookbook_demo_hook',
+                          (event) async =>
+                              debugPrint('cookbook demo hook fired: $event'),
+                        );
+                        return 'hook registered (fires next background/resume)';
+                      }),
                     ]),
                     // ENH-91: these 4 services (BatterySaverCoordinator,
                     // EconomyCertificate, ReproductionCapsule,
                     // ShadowActivationController) had no demo anywhere —
                     // only unit-test coverage since they shipped.
                     _section('Live-ops guardrails & anti-cheat', [
-                      _tile(
-                        'BatterySaverCoordinator — force PerformanceTier '
-                        'low on low battery, release on recovery',
-                        () async {
-                          var batteryLevel = 10;
-                          final coordinator = BatterySaverCoordinator(
-                            performanceTier: _performanceTier,
-                            batteryLevelProvider: () async => batteryLevel,
-                          );
-                          await coordinator.check();
-                          final afterLow = _performanceTier.tier.value;
-                          batteryLevel = 80;
-                          await coordinator.check();
-                          final afterRecover = _performanceTier.tier.value;
-                          return 'battery 10% -> tier=${afterLow.name}; '
-                              'battery 80% -> tier=${afterRecover.name}, '
-                              'isForcingLow=${coordinator.isForcingLow}';
-                        },
-                      ),
-                      _tile(
-                        'EconomyCertificate — issue + verify a signed '
-                        'economy snapshot',
-                        () async {
-                          final EconomyWallet wallet =
-                              EconomyWallet.maybe ??
-                              Get.put<EconomyWallet>(
-                                EconomyWallet(storage: StorageService.to),
-                                permanent: true,
-                              );
-                          await wallet.earn(
-                            currency: 'coins',
-                            amount: 50,
-                            transactionId:
-                                'cookbook_cert_${DateTime.now().microsecondsSinceEpoch}',
-                          );
-                          const secret = 'cookbook-demo-secret';
-                          final certificate = EconomyCertificate.issue(
-                            wallet: wallet,
-                            secret: secret,
-                          );
-                          final verification = EconomyCertificate.verify(
-                            certificate,
-                            secret,
-                          );
-                          return 'issued + verified -> '
-                              'status=${verification.status.name}, '
-                              'coins=${verification.balances?['coins']}';
-                        },
-                      ),
-                      _tile(
-                        'ReproductionCapsule — capture a session, replay '
-                        'it, verify it matches',
-                        () async {
-                          const secret = 'cookbook-demo-secret';
-                          final rng = SeededRandomService(1234);
-                          final recorder = ReplayRecorder()
-                            ..start(seed: 1234);
-                          for (var i = 0; i < 3; i++) {
-                            final outcome = rng
-                                .stream('cookbook_demo')
-                                .nextInt(6);
-                            recorder.record('spin', {
-                              'segments': 6,
-                              'expectedOutcome': outcome,
-                            });
-                          }
-                          final captured = ReproductionCapsule.capture(
-                            recorder: recorder,
-                            rng: rng,
-                            appVersion: '1.0.0-cookbook-demo',
-                            secret: secret,
-                          );
-                          final result = ReproductionCapsule.replay(
-                            captured,
-                            secret,
-                            (event, replayRng) => replayRng
-                                .stream('cookbook_demo')
-                                .nextInt(event.payload['segments']! as int),
-                          );
-                          return 'replay matches=${result.matches} '
-                              '(rngMismatches=${result.rngMismatches?.length})';
-                        },
-                      ),
-                      _tile(
-                        'ShadowActivationController — guardrail '
-                        'auto-rollback on violation',
-                        () {
-                          final controller = ShadowActivationController(
-                            killSwitch: _killSwitch,
-                          );
-                          controller.registerGuardrail(
-                            'cookbook_shadow_feature',
-                            const GuardrailDefinition(
-                              metricName: 'error_rate',
-                              max: 0.05,
-                            ),
-                          );
-                          final before = _killSwitch.isKilled(
-                            'cookbook_shadow_feature',
-                          );
-                          controller.reportMetric(
-                            'cookbook_shadow_feature',
-                            'error_rate',
-                            0.5,
-                          );
-                          final after = _killSwitch.isKilled(
-                            'cookbook_shadow_feature',
-                          );
-                          return 'error_rate=0.5 > max 0.05 -> '
-                              'killed: $before -> $after';
-                        },
-                      ),
+                      _tile('BatterySaverCoordinator — force PerformanceTier '
+                          'low on low battery, release on recovery', () async {
+                        var batteryLevel = 10;
+                        final coordinator = BatterySaverCoordinator(
+                          performanceTier: _performanceTier,
+                          batteryLevelProvider: () async => batteryLevel,
+                        );
+                        await coordinator.check();
+                        final afterLow = _performanceTier.tier.value;
+                        batteryLevel = 80;
+                        await coordinator.check();
+                        final afterRecover = _performanceTier.tier.value;
+                        return 'battery 10% -> tier=${afterLow.name}; '
+                            'battery 80% -> tier=${afterRecover.name}, '
+                            'isForcingLow=${coordinator.isForcingLow}';
+                      }),
+                      _tile('EconomyCertificate — issue + verify a signed '
+                          'economy snapshot', () async {
+                        final EconomyWallet wallet =
+                            EconomyWallet.maybe ??
+                            Get.put<EconomyWallet>(
+                              EconomyWallet(storage: StorageService.to),
+                              permanent: true,
+                            );
+                        await wallet.earn(
+                          currency: 'coins',
+                          amount: 50,
+                          transactionId:
+                              'cookbook_cert_${DateTime.now().microsecondsSinceEpoch}',
+                        );
+                        const secret = 'cookbook-demo-secret';
+                        final certificate = EconomyCertificate.issue(
+                          wallet: wallet,
+                          secret: secret,
+                        );
+                        final verification = EconomyCertificate.verify(
+                          certificate,
+                          secret,
+                        );
+                        return 'issued + verified -> '
+                            'status=${verification.status.name}, '
+                            'coins=${verification.balances?['coins']}';
+                      }),
+                      _tile('ReproductionCapsule — capture a session, replay '
+                          'it, verify it matches', () async {
+                        const secret = 'cookbook-demo-secret';
+                        final rng = SeededRandomService(1234);
+                        final recorder = ReplayRecorder()..start(seed: 1234);
+                        for (var i = 0; i < 3; i++) {
+                          final outcome = rng
+                              .stream('cookbook_demo')
+                              .nextInt(6);
+                          recorder.record('spin', {
+                            'segments': 6,
+                            'expectedOutcome': outcome,
+                          });
+                        }
+                        final captured = ReproductionCapsule.capture(
+                          recorder: recorder,
+                          rng: rng,
+                          appVersion: '1.0.0-cookbook-demo',
+                          secret: secret,
+                        );
+                        final result = ReproductionCapsule.replay(
+                          captured,
+                          secret,
+                          (event, replayRng) => replayRng
+                              .stream('cookbook_demo')
+                              .nextInt(event.payload['segments']! as int),
+                        );
+                        return 'replay matches=${result.matches} '
+                            '(rngMismatches=${result.rngMismatches?.length})';
+                      }),
+                      _tile('ShadowActivationController — guardrail '
+                          'auto-rollback on violation', () {
+                        final controller = ShadowActivationController(
+                          killSwitch: _killSwitch,
+                        );
+                        controller.registerGuardrail(
+                          'cookbook_shadow_feature',
+                          const GuardrailDefinition(
+                            metricName: 'error_rate',
+                            max: 0.05,
+                          ),
+                        );
+                        final before = _killSwitch.isKilled(
+                          'cookbook_shadow_feature',
+                        );
+                        controller.reportMetric(
+                          'cookbook_shadow_feature',
+                          'error_rate',
+                          0.5,
+                        );
+                        final after = _killSwitch.isKilled(
+                          'cookbook_shadow_feature',
+                        );
+                        return 'error_rate=0.5 > max 0.05 -> '
+                            'killed: $before -> $after';
+                      }),
                     ]),
                     _section('i18n, audio, haptics, theme', [
                       _tile(

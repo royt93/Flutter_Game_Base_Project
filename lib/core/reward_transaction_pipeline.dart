@@ -5,8 +5,10 @@ import 'package:get/get.dart';
 import 'analytics_provider.dart';
 import 'debug_log.dart';
 import 'economy_wallet.dart';
+import 'inventory_service.dart';
 import 'storage_service.dart';
 import 'utils/async_action_guard.dart';
+import 'utils/fnv1a.dart';
 import 'utils/safe_json.dart';
 import 'utils/sdk_result.dart';
 
@@ -49,10 +51,23 @@ class RewardLine {
 /// product id) for reconciliation/support — never put a secret in it, it's
 /// persisted locally in plain JSON.
 class RewardTransactionRecord {
+  /// Legacy/source-compatible currency-only constructor — exact public
+  /// signature preserved for the API compatibility gate. Use
+  /// [RewardTransactionRecord.withItems] for a FEAT-96 combined plan.
   const RewardTransactionRecord({
     required this.transactionId,
     required this.source,
     required this.lines,
+    required this.status,
+    required this.createdAtMs,
+    this.receiptMeta,
+  }) : itemLines = const [];
+
+  const RewardTransactionRecord.withItems({
+    required this.transactionId,
+    required this.source,
+    required this.lines,
+    required this.itemLines,
     required this.status,
     required this.createdAtMs,
     this.receiptMeta,
@@ -65,15 +80,30 @@ class RewardTransactionRecord {
   final int createdAtMs;
   final Map<String, Object?>? receiptMeta;
 
+  /// FEAT-96: inventory item lines granted alongside [lines] (currency) as
+  /// part of the same logical transaction — populated by [RewardTransactionPipeline.executePlan].
+  /// Empty for every reward that predates FEAT-96 or never involved items.
+  final List<InventoryLine> itemLines;
+
   RewardTransactionRecord copyWith({RewardTransactionStatus? status}) =>
-      RewardTransactionRecord(
-        transactionId: transactionId,
-        source: source,
-        lines: lines,
-        status: status ?? this.status,
-        createdAtMs: createdAtMs,
-        receiptMeta: receiptMeta,
-      );
+      itemLines.isEmpty
+      ? RewardTransactionRecord(
+          transactionId: transactionId,
+          source: source,
+          lines: lines,
+          status: status ?? this.status,
+          createdAtMs: createdAtMs,
+          receiptMeta: receiptMeta,
+        )
+      : RewardTransactionRecord.withItems(
+          transactionId: transactionId,
+          source: source,
+          lines: lines,
+          itemLines: itemLines,
+          status: status ?? this.status,
+          createdAtMs: createdAtMs,
+          receiptMeta: receiptMeta,
+        );
 
   Map<String, Object?> toJson() => {
     'transactionId': transactionId,
@@ -82,6 +112,10 @@ class RewardTransactionRecord {
     'status': status.name,
     'createdAtMs': createdAtMs,
     if (receiptMeta != null) 'receiptMeta': receiptMeta,
+    if (itemLines.isNotEmpty)
+      'itemLines': itemLines
+          .map((l) => {'itemId': l.itemId, 'quantity': l.quantity})
+          .toList(),
   };
 
   static RewardTransactionRecord? fromJson(Object? json) {
@@ -92,7 +126,24 @@ class RewardTransactionRecord {
     final lines = rawLines is List
         ? rawLines.map(RewardLine.fromJson).whereType<RewardLine>().toList()
         : const <RewardLine>[];
-    if (lines.isEmpty) return null;
+    final rawItemLines = json['itemLines'];
+    final itemLines = rawItemLines is List
+        ? rawItemLines
+              .whereType<Map>()
+              .map((raw) {
+                final itemId = asStringOr(raw['itemId'], '');
+                final quantity = asIntOr(raw['quantity'], 0);
+                return itemId.isEmpty || quantity <= 0
+                    ? null
+                    : InventoryLine(itemId: itemId, quantity: quantity);
+              })
+              .whereType<InventoryLine>()
+              .toList()
+        : const <InventoryLine>[];
+    // A record predating FEAT-96 (or a legacy currency-only reward) has no
+    // itemLines at all — only reject when BOTH are empty, matching the old
+    // "lines.isEmpty => reject" rule extended to "nothing to grant at all".
+    if (lines.isEmpty && itemLines.isEmpty) return null;
     final source = RewardSource.values.firstWhere(
       (s) => s.name == json['source'],
       orElse: () => RewardSource.other,
@@ -102,15 +153,77 @@ class RewardTransactionRecord {
       orElse: () => RewardTransactionStatus.pending,
     );
     final rawMeta = json['receiptMeta'];
-    return RewardTransactionRecord(
-      transactionId: id,
-      source: source,
-      lines: lines,
-      status: status,
-      createdAtMs: asIntOr(json['createdAtMs'], 0),
-      receiptMeta: rawMeta is Map ? Map<String, Object?>.from(rawMeta) : null,
-    );
+    final receiptMeta = rawMeta is Map
+        ? Map<String, Object?>.from(rawMeta)
+        : null;
+    return itemLines.isEmpty
+        ? RewardTransactionRecord(
+            transactionId: id,
+            source: source,
+            lines: lines,
+            status: status,
+            createdAtMs: asIntOr(json['createdAtMs'], 0),
+            receiptMeta: receiptMeta,
+          )
+        : RewardTransactionRecord.withItems(
+            transactionId: id,
+            source: source,
+            lines: lines,
+            itemLines: itemLines,
+            status: status,
+            createdAtMs: asIntOr(json['createdAtMs'], 0),
+            receiptMeta: receiptMeta,
+          );
   }
+}
+
+/// Immutable dry-run result from [RewardTransactionPipeline.preview] —
+/// what [RewardTransactionPipeline.executePlan] would grant, validated
+/// against the state at preview time, WITHOUT having mutated or persisted
+/// anything yet (FEAT-96). Only [RewardTransactionPipeline.preview] can
+/// construct one.
+class RewardPlan {
+  const RewardPlan._({
+    required this.transactionId,
+    required this.source,
+    required this.currencyLines,
+    required this.itemLines,
+    required this.receiptMeta,
+    required this.stateFingerprint,
+    required this.contentFingerprint,
+  });
+
+  final String transactionId;
+  final RewardSource source;
+  final List<RewardLine> currencyLines;
+  final List<InventoryLine> itemLines;
+
+  /// A DEEP COPY of the map passed to [RewardTransactionPipeline.preview] —
+  /// never the caller's original reference. Without this, a caller that
+  /// kept its own reference to the map it passed in could mutate it after
+  /// preview (before [RewardTransactionPipeline.executePlan] runs) and
+  /// silently change what gets persisted, with neither [stateFingerprint]
+  /// nor [contentFingerprint] (computed from THIS copy, not the caller's
+  /// live object) any the wiser.
+  final Map<String, Object?>? receiptMeta;
+
+  /// Deterministic fingerprint of every balance/inventory value this plan's
+  /// validity depended on at preview time — see
+  /// [RewardTransactionPipeline._stateFingerprint]. [executePlan] recomputes
+  /// the same fingerprint against the CURRENT state and rejects the plan as
+  /// stale (`SdkErrorKind.conflict`) if it no longer matches, instead of
+  /// executing against state that may no longer actually have room/balance
+  /// for it.
+  final int stateFingerprint;
+
+  /// Deterministic fingerprint of this plan's OWN content (currency/item
+  /// lines + receiptMeta) — defense-in-depth against a plan somehow being
+  /// reconstructed with different content than what [preview] validated
+  /// (the primary defense is that [RewardPlan]'s constructor is private and
+  /// every field is immutable/unmodifiable, making that impossible through
+  /// this class's own public API). [executePlan] recomputes and compares it
+  /// the same way it does [stateFingerprint].
+  final int contentFingerprint;
 }
 
 /// Orchestrates a reward grant (ad/IAP/quest/daily-login) across multiple
@@ -131,6 +244,10 @@ class RewardTransactionRecord {
 /// Earn-only by design — this models a reward being granted, not currency
 /// being spent; a spend flow should call [EconomyWallet.trySpend] directly.
 class RewardTransactionPipeline extends GetxService {
+  /// Legacy/source-compatible currency-only constructor — exact public
+  /// signature preserved for the API compatibility gate. Use
+  /// [RewardTransactionPipeline.withInventory] to preview/execute combined
+  /// currency+item plans.
   RewardTransactionPipeline({
     required this.wallet,
     this.onAnalytics,
@@ -140,9 +257,28 @@ class RewardTransactionPipeline extends GetxService {
     // BUG-81: injectable seam so tests can fake createdAtMs without
     // depending on real wall-clock; defaults to DateTime.now() in prod.
     int Function()? nowMs,
+  }) : inventory = null,
+       _guard = guard ?? AsyncActionGuard(),
+       _key = storageKey ?? StorageKeys.rewardTransactionPipelineV1,
+       _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch) {
+    _validateCapacityAndHydrate();
+  }
+
+  RewardTransactionPipeline.withInventory({
+    required this.wallet,
+    required this.inventory,
+    this.onAnalytics,
+    AsyncActionGuard? guard,
+    String? storageKey,
+    this.capacity = 200,
+    int Function()? nowMs,
   }) : _guard = guard ?? AsyncActionGuard(),
        _key = storageKey ?? StorageKeys.rewardTransactionPipelineV1,
        _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch) {
+    _validateCapacityAndHydrate();
+  }
+
+  void _validateCapacityAndHydrate() {
     if (capacity <= 0) {
       throw ArgumentError.value(capacity, 'capacity', 'must be > 0');
     }
@@ -152,6 +288,11 @@ class RewardTransactionPipeline extends GetxService {
   }
 
   final EconomyWallet wallet;
+
+  /// FEAT-96: required whenever a [preview]/[executePlan]/[grant] call
+  /// actually includes item lines — `null` (default) is fine for a pipeline
+  /// that only ever grants currency, matching every pre-FEAT-96 call site.
+  final InventoryService? inventory;
 
   /// Called once, right after a transaction fully commits. Defaults to
   /// `AnalyticsProvider.maybe?.logEvent(...)` when left null. Any exception
@@ -260,20 +401,50 @@ class RewardTransactionPipeline extends GetxService {
   /// line has an empty currency/non-positive amount. Calling this again
   /// with a [transactionId] that already fully committed is a no-op that
   /// returns the existing record.
+  /// Legacy/source-compatible currency-only API — exact public signature
+  /// preserved for the API compatibility gate. Use [grantWithItems] (or
+  /// [preview]/[executePlan]) for a combined currency+inventory reward.
   Future<SdkResult<RewardTransactionRecord>> grant({
     required RewardSource source,
     required String transactionId,
     required List<RewardLine> lines,
     Map<String, Object?>? receiptMeta,
+  }) => _grantInternal(
+    source: source,
+    transactionId: transactionId,
+    lines: lines,
+    receiptMeta: receiptMeta,
+  );
+
+  Future<SdkResult<RewardTransactionRecord>> grantWithItems({
+    required RewardSource source,
+    required String transactionId,
+    List<RewardLine> lines = const [],
+    required List<InventoryLine> itemLines,
+    Map<String, Object?>? receiptMeta,
+  }) => _grantInternal(
+    source: source,
+    transactionId: transactionId,
+    lines: lines,
+    itemLines: itemLines,
+    receiptMeta: receiptMeta,
+  );
+
+  Future<SdkResult<RewardTransactionRecord>> _grantInternal({
+    required RewardSource source,
+    required String transactionId,
+    required List<RewardLine> lines,
+    List<InventoryLine> itemLines = const [],
+    Map<String, Object?>? receiptMeta,
   }) => _guard.runExclusive('pipeline', () async {
-    if (transactionId.isEmpty ||
-        lines.isEmpty ||
-        lines.any((l) => l.currency.isEmpty || l.amount <= 0)) {
+    if (transactionId.isEmpty) {
       return const SdkFailure(
         kind: SdkErrorKind.validation,
         message: 'Invalid reward transaction',
       );
     }
+    final invalid = _validateLines(lines, itemLines);
+    if (invalid != null) return invalid;
 
     final existing = _find(transactionId);
     if (existing != null &&
@@ -288,8 +459,11 @@ class RewardTransactionPipeline extends GetxService {
     // whatever the caller just passed, with no error to signal it. Reject
     // instead so a caller who genuinely needs different amounts is forced
     // to either retry via [resumePending] (which always replays the
-    // original `lines`) or pick a new `transactionId`.
-    if (existing != null && !_linesMatch(existing.lines, lines)) {
+    // original `lines`) or pick a new `transactionId`. FEAT-96: same rule
+    // now extended to `itemLines`.
+    if (existing != null &&
+        (!_linesMatch(existing.lines, lines) ||
+            !_itemLinesMatch(existing.itemLines, itemLines))) {
       return const SdkFailure(
         kind: SdkErrorKind.validation,
         message:
@@ -302,14 +476,24 @@ class RewardTransactionPipeline extends GetxService {
 
     var record =
         existing ??
-        RewardTransactionRecord(
-          transactionId: transactionId,
-          source: source,
-          lines: lines,
-          status: RewardTransactionStatus.pending,
-          createdAtMs: _nowMs(),
-          receiptMeta: receiptMeta,
-        );
+        (itemLines.isEmpty
+            ? RewardTransactionRecord(
+                transactionId: transactionId,
+                source: source,
+                lines: lines,
+                status: RewardTransactionStatus.pending,
+                createdAtMs: _nowMs(),
+                receiptMeta: receiptMeta,
+              )
+            : RewardTransactionRecord.withItems(
+                transactionId: transactionId,
+                source: source,
+                lines: lines,
+                itemLines: itemLines,
+                status: RewardTransactionStatus.pending,
+                createdAtMs: _nowMs(),
+                receiptMeta: receiptMeta,
+              ));
     final pendingPersistFailure = await _upsert(record);
     if (pendingPersistFailure != null) return pendingPersistFailure;
 
@@ -332,6 +516,45 @@ class RewardTransactionPipeline extends GetxService {
       }
     }
 
+    // FEAT-96: item lines apply AFTER every currency line has committed —
+    // same `pending -> partial -> committed` state machine, just one more
+    // sub-operation in the chain. A failure here leaves the record
+    // `partial` (currency already committed, items not yet) exactly like a
+    // currency-line failure would — [resumePending] retries this same
+    // `grant()` call, and `wallet.earn`'s own idempotency ledger makes
+    // re-running the already-committed currency lines a no-op, so nothing
+    // is double-applied on retry.
+    if (record.itemLines.isNotEmpty) {
+      final inv = inventory;
+      if (inv == null) {
+        // Can only happen if `inventory` was removed between grant() calls
+        // for a pending/partial record — validated as non-null at the top
+        // of this method for the normal path.
+        record = record.copyWith(status: RewardTransactionStatus.partial);
+        final partialPersistFailure = await _upsert(record);
+        if (partialPersistFailure != null) return partialPersistFailure;
+        return const SdkFailure(
+          kind: SdkErrorKind.validation,
+          message: 'itemLines require an InventoryService to be configured',
+          retryable: true,
+        );
+      }
+      final itemResult = await inv.grant(
+        lines: record.itemLines,
+        transactionId: '$transactionId#item',
+      );
+      if (itemResult is SdkFailure<InventorySnapshot>) {
+        record = record.copyWith(status: RewardTransactionStatus.partial);
+        final partialPersistFailure = await _upsert(record);
+        if (partialPersistFailure != null) return partialPersistFailure;
+        return SdkFailure(
+          kind: itemResult.kind,
+          message: itemResult.message,
+          retryable: true,
+        );
+      }
+    }
+
     record = record.copyWith(status: RewardTransactionStatus.committed);
     final committedPersistFailure = await _upsert(record);
     if (committedPersistFailure != null) return committedPersistFailure;
@@ -339,6 +562,208 @@ class RewardTransactionPipeline extends GetxService {
     _reportAnalytics(record);
     return SdkSuccess(record);
   });
+
+  SdkFailure<RewardTransactionRecord>? _validateLines(
+    List<RewardLine> lines,
+    List<InventoryLine> itemLines,
+  ) {
+    if (lines.isEmpty && itemLines.isEmpty) {
+      return const SdkFailure(
+        kind: SdkErrorKind.validation,
+        message: 'Invalid reward transaction',
+      );
+    }
+    if (lines.any((l) => l.currency.isEmpty || l.amount <= 0) ||
+        itemLines.any((l) => l.itemId.isEmpty || l.quantity <= 0)) {
+      return const SdkFailure(
+        kind: SdkErrorKind.validation,
+        message: 'Invalid reward transaction',
+      );
+    }
+    if (itemLines.isNotEmpty && inventory == null) {
+      return const SdkFailure(
+        kind: SdkErrorKind.validation,
+        message: 'itemLines require an InventoryService to be configured',
+      );
+    }
+    return null;
+  }
+
+  /// FEAT-96: computes what [grant]/[executePlan] would do for [lines] +
+  /// [itemLines] against the state RIGHT NOW, without mutating or
+  /// persisting anything — for a UI that needs to show "you will receive
+  /// X" before the player commits. Rejects the same malformed input
+  /// [grant] would (empty transactionId, empty currency/non-positive
+  /// amount, unknown item id, capacity exceeded) so a caller can trust a
+  /// successful preview will actually apply cleanly via [executePlan] —
+  /// unless the relevant state changes in between, which [executePlan]
+  /// itself detects and rejects as stale.
+  SdkResult<RewardPlan> preview({
+    required RewardSource source,
+    required String transactionId,
+    List<RewardLine> currencyLines = const [],
+    List<InventoryLine> itemLines = const [],
+    Map<String, Object?>? receiptMeta,
+  }) {
+    if (transactionId.isEmpty) {
+      return const SdkFailure(
+        kind: SdkErrorKind.validation,
+        message: 'Invalid reward transaction',
+      );
+    }
+    final invalid = _validateLines(currencyLines, itemLines);
+    if (invalid != null) {
+      return SdkFailure(kind: invalid.kind, message: invalid.message);
+    }
+
+    // Accumulate per-currency instead of checking each line independently
+    // against the real current balance — `grant`/`_grantInternal` applies
+    // lines SEQUENTIALLY via `wallet.earn`, so 2+ lines for the SAME
+    // currency compound on top of each other by the time execution reaches
+    // the later one. Checking each line against the unchanged real balance
+    // would let a preview succeed for amounts that individually fit but
+    // together overflow, only for `executePlan` to then hit that same
+    // overflow for real and land the plan in `partial` — silently breaking
+    // this method's own "a successful preview applies cleanly" promise.
+    final projectedBalances = <String, int>{};
+    for (final line in currencyLines) {
+      final current =
+          projectedBalances[line.currency] ?? wallet.balanceOf(line.currency);
+      final next = current + line.amount;
+      if (next < 0 || next > 0x7fffffff) {
+        return const SdkFailure(
+          kind: SdkErrorKind.validation,
+          message: 'Insufficient or invalid balance',
+        );
+      }
+      projectedBalances[line.currency] = next;
+    }
+    if (itemLines.isNotEmpty) {
+      final previewResult = inventory!.previewGrant(lines: itemLines);
+      if (previewResult is SdkFailure<InventorySnapshot>) {
+        return SdkFailure(
+          kind: previewResult.kind,
+          message: previewResult.message,
+        );
+      }
+    }
+
+    // Deep copy — via a JSON round-trip, since receiptMeta is documented as
+    // plain-JSON-safe bookkeeping already (RewardTransactionRecord persists
+    // it through jsonEncode) — so a caller mutating the map/list reference
+    // it originally passed in can never retroactively change this plan's
+    // content out from under [contentFingerprint].
+    final receiptMetaCopy = receiptMeta == null
+        ? null
+        : (jsonDecode(jsonEncode(receiptMeta)) as Map).cast<String, Object?>();
+    final frozenCurrencyLines = List<RewardLine>.unmodifiable(currencyLines);
+    final frozenItemLines = List<InventoryLine>.unmodifiable(itemLines);
+
+    return SdkSuccess(
+      RewardPlan._(
+        transactionId: transactionId,
+        source: source,
+        currencyLines: frozenCurrencyLines,
+        itemLines: frozenItemLines,
+        receiptMeta: receiptMetaCopy,
+        stateFingerprint: _stateFingerprint(currencyLines, itemLines),
+        contentFingerprint: _contentFingerprint(
+          transactionId,
+          frozenCurrencyLines,
+          frozenItemLines,
+          receiptMetaCopy,
+        ),
+      ),
+    );
+  }
+
+  /// Applies a [plan] built by [preview] — rejects it as stale
+  /// (`SdkErrorKind.conflict`) if the balances/inventory it was validated
+  /// against have changed since, instead of executing against state that
+  /// may no longer actually have room/balance for it. Otherwise delegates
+  /// straight to [grant] — same persisted audit trail, same resumable
+  /// `partial` state on a mid-way failure.
+  Future<SdkResult<RewardTransactionRecord>> executePlan(
+    RewardPlan plan,
+  ) async {
+    // Defense-in-depth (see RewardPlan.contentFingerprint's doc) — this
+    // can't actually be tripped through this class's own public API today
+    // (RewardPlan's constructor is private, its lists unmodifiable, and
+    // preview() deep-copies receiptMeta), but recomputing it costs nothing
+    // and means a future change to this file that accidentally weakens one
+    // of those guarantees fails loudly here instead of silently executing
+    // altered content.
+    final recomputedContent = _contentFingerprint(
+      plan.transactionId,
+      plan.currencyLines,
+      plan.itemLines,
+      plan.receiptMeta,
+    );
+    if (recomputedContent != plan.contentFingerprint) {
+      return const SdkFailure(
+        kind: SdkErrorKind.conflict,
+        message: 'Reward plan content does not match what was previewed.',
+      );
+    }
+    final current = _stateFingerprint(plan.currencyLines, plan.itemLines);
+    if (current != plan.stateFingerprint) {
+      return const SdkFailure(
+        kind: SdkErrorKind.conflict,
+        message:
+            'Reward plan is stale — balances/inventory changed since it '
+            'was previewed. Preview again before executing.',
+      );
+    }
+    return grantWithItems(
+      source: plan.source,
+      transactionId: plan.transactionId,
+      lines: plan.currencyLines,
+      itemLines: plan.itemLines,
+      receiptMeta: plan.receiptMeta,
+    );
+  }
+
+  /// Deterministic fingerprint of every value a [preview]'s validity
+  /// depended on: the CURRENT balance of every currency in [currencyLines]
+  /// (not the whole wallet — an unrelated currency changing shouldn't stale
+  /// a plan that never touched it) plus the full inventory snapshot
+  /// whenever [itemLines] is non-empty (capacity fill order depends on
+  /// every existing slot, not just same-item ones).
+  int _stateFingerprint(
+    List<RewardLine> currencyLines,
+    List<InventoryLine> itemLines,
+  ) {
+    final currencies = {for (final l in currencyLines) l.currency}.toList()
+      ..sort();
+    final balances = {
+      for (final currency in currencies) currency: wallet.balanceOf(currency),
+    };
+    Object? inventoryFingerprint;
+    if (itemLines.isNotEmpty) {
+      final snap = inventory!.snapshot.value;
+      inventoryFingerprint = [
+        for (final slot in snap.slots)
+          '${slot.slotId}:${slot.itemId}:${slot.quantity}:${slot.equipped}',
+      ];
+    }
+    return fnv1aHash(jsonEncode({'b': balances, 'i': inventoryFingerprint}));
+  }
+
+  int _contentFingerprint(
+    String transactionId,
+    List<RewardLine> currencyLines,
+    List<InventoryLine> itemLines,
+    Map<String, Object?>? receiptMeta,
+  ) => fnv1aHash(
+    jsonEncode({
+      'tx': transactionId,
+      'currency': [for (final l in currencyLines) l.toJson()],
+      'items': [
+        for (final l in itemLines) {'itemId': l.itemId, 'quantity': l.quantity},
+      ],
+      'meta': receiptMeta,
+    }),
+  );
 
   void _reportAnalytics(RewardTransactionRecord record) {
     try {
@@ -363,12 +788,22 @@ class RewardTransactionPipeline extends GetxService {
         .where((r) => r.status != RewardTransactionStatus.committed)
         .toList();
     for (final record in unresolved) {
-      await grant(
-        source: record.source,
-        transactionId: record.transactionId,
-        lines: record.lines,
-        receiptMeta: record.receiptMeta,
-      );
+      if (record.itemLines.isEmpty) {
+        await grant(
+          source: record.source,
+          transactionId: record.transactionId,
+          lines: record.lines,
+          receiptMeta: record.receiptMeta,
+        );
+      } else {
+        await grantWithItems(
+          source: record.source,
+          transactionId: record.transactionId,
+          lines: record.lines,
+          itemLines: record.itemLines,
+          receiptMeta: record.receiptMeta,
+        );
+      }
     }
   }
 
@@ -407,6 +842,16 @@ class RewardTransactionPipeline extends GetxService {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
       if (a[i].currency != b[i].currency || a[i].amount != b[i].amount) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static bool _itemLinesMatch(List<InventoryLine> a, List<InventoryLine> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].itemId != b[i].itemId || a[i].quantity != b[i].quantity) {
         return false;
       }
     }

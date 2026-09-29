@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/remote_content_pack.dart';
 import 'package:roy_casual_kit/core/save_integrity.dart' show signExport;
+import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Fake [AssetBundle] backed by an in-memory map, same convention as
 /// `test/core/remote_config_service_test.dart`.
@@ -30,6 +32,21 @@ class _Level {
   static _Level fromJson(Map<String, Object?> json) =>
       _Level(json['id']! as int, json['name']! as String);
 }
+
+class _ThrowingCacheStorage extends StorageService {
+  _ThrowingCacheStorage(super.prefs, this.targetKey);
+  final String targetKey;
+
+  @override
+  Future<void> setString(String key, String value) {
+    if (key == targetKey) throw StateError('cache write failed');
+    return super.setString(key, value);
+  }
+}
+
+_FakeAssetBundle _asset(String name) => _FakeAssetBundle({
+  _assetPath: jsonEncode({'id': 1, 'name': name, 'schemaVersion': 1}),
+});
 
 void main() {
   test(
@@ -432,4 +449,246 @@ void main() {
       );
     },
   );
+
+  group('ENH-94: durable verified cache', () {
+    late StorageService storage;
+    const cacheKey = 'test_remote_content_cache';
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      storage = StorageService(await SharedPreferences.getInstance());
+    });
+
+    Future<void> seedVerifiedCache(String name) async {
+      final pack = RemoteContentPack<_Level>.withCache(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        contentSecret: _secret,
+        storage: storage,
+        cacheKey: cacheKey,
+        bundle: _asset('Old Asset'),
+        fetchRemote: () async =>
+            signExport({'id': 2, 'name': name, 'schemaVersion': 1}, _secret),
+      );
+      await pack.load();
+      await pack.refreshed;
+      expect(pack.current!.name, name);
+    }
+
+    test('verified fetch -> ghi cache -> instance MỚI đọc cache đúng, cache '
+        'thắng asset cũ', () async {
+      await seedVerifiedCache('Verified Remote');
+
+      final restarted = RemoteContentPack<_Level>.withCache(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        storage: storage,
+        cacheKey: cacheKey,
+        bundle: _asset('Different Asset'),
+      );
+
+      final level = await restarted.load();
+
+      expect(level!.name, 'Verified Remote');
+      expect(restarted.current!.name, 'Verified Remote');
+    });
+
+    test('tampered envelope sau cache hợp lệ -> cache cũ giữ nguyên, không bị '
+        'ghi đè', () async {
+      await seedVerifiedCache('Last Known Good');
+      final tamperedRefresh = RemoteContentPack<_Level>.withCache(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        contentSecret: _secret,
+        storage: storage,
+        cacheKey: cacheKey,
+        bundle: _asset('Asset'),
+        fetchRemote: () async => {
+          'id': 999,
+          'name': 'Tampered',
+          'schemaVersion': 1,
+          '_checksum': 'wrong',
+        },
+      );
+      await tamperedRefresh.load();
+      await tamperedRefresh.refreshed;
+
+      final restarted = RemoteContentPack<_Level>.withCache(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        storage: storage,
+        cacheKey: cacheKey,
+        bundle: _asset('Asset'),
+      );
+      final level = await restarted.load();
+
+      expect(level!.name, 'Last Known Good');
+    });
+
+    test('restart offline (fetch throw) -> dùng cache verified gần nhất, không '
+        'rơi về asset cũ hơn', () async {
+      await seedVerifiedCache('Cached While Online');
+      final offline = RemoteContentPack<_Level>.withCache(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        contentSecret: _secret,
+        storage: storage,
+        cacheKey: cacheKey,
+        bundle: _asset('Old Asset'),
+        fetchRemote: () async => throw Exception('offline'),
+      );
+
+      final level = await offline.load();
+      await offline.refreshed;
+
+      expect(level!.name, 'Cached While Online');
+      expect(offline.current!.name, 'Cached While Online');
+    });
+
+    test('cache schema tương lai -> reject cache, fallback asset', () async {
+      await storage.setString(
+        cacheKey,
+        jsonEncode({
+          'id': 8,
+          'name': 'Future Cache',
+          'schemaVersion': 99,
+          'cachedAtMs': DateTime.now().millisecondsSinceEpoch,
+        }),
+      );
+      final pack = RemoteContentPack<_Level>.withCache(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        storage: storage,
+        cacheKey: cacheKey,
+        bundle: _asset('Safe Asset'),
+      );
+
+      final level = await pack.load();
+
+      expect(level!.name, 'Safe Asset');
+    });
+
+    test('cache wrong-typed (fromJson throw) -> fallback asset', () async {
+      await storage.setString(
+        cacheKey,
+        jsonEncode({
+          'id': 'not-an-int',
+          'name': 'Broken Cache',
+          'schemaVersion': 1,
+          'cachedAtMs': DateTime.now().millisecondsSinceEpoch,
+        }),
+      );
+      final pack = RemoteContentPack<_Level>.withCache(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        storage: storage,
+        cacheKey: cacheKey,
+        bundle: _asset('Safe Asset'),
+      );
+
+      final level = await pack.load();
+
+      expect(level!.name, 'Safe Asset');
+    });
+
+    test('maxCacheAge hết hạn -> fallback asset', () async {
+      await storage.setString(
+        cacheKey,
+        jsonEncode({
+          'id': 2,
+          'name': 'Expired Cache',
+          'schemaVersion': 1,
+          'cachedAtMs': 1,
+        }),
+      );
+      final pack = RemoteContentPack<_Level>.withCache(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        storage: storage,
+        cacheKey: cacheKey,
+        maxCacheAge: const Duration(seconds: 1),
+        bundle: _asset('Fresh Asset'),
+      );
+
+      final level = await pack.load();
+
+      expect(level!.name, 'Fresh Asset');
+    });
+
+    test('maxCacheAge null -> cache không hết hạn theo tuổi', () async {
+      await storage.setString(
+        cacheKey,
+        jsonEncode({
+          'id': 2,
+          'name': 'Ancient But Valid Cache',
+          'schemaVersion': 1,
+          'cachedAtMs': 1,
+        }),
+      );
+      final pack = RemoteContentPack<_Level>.withCache(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        storage: storage,
+        cacheKey: cacheKey,
+        bundle: _asset('Asset'),
+      );
+
+      final level = await pack.load();
+
+      expect(level!.name, 'Ancient But Valid Cache');
+    });
+
+    test('withCache cacheKey rỗng -> ArgumentError tại constructor', () {
+      expect(
+        () => RemoteContentPack<_Level>.withCache(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          storage: storage,
+          cacheKey: '',
+          bundle: _asset('Asset'),
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test(
+      'cache write throw -> atomic swap: giữ current asset cũ, không áp dụng '
+      'remote chỉ tồn tại trong RAM',
+      () async {
+        final throwing = _ThrowingCacheStorage(
+          await SharedPreferences.getInstance(),
+          cacheKey,
+        );
+        final pack = RemoteContentPack<_Level>.withCache(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          contentSecret: _secret,
+          storage: throwing,
+          cacheKey: cacheKey,
+          bundle: _asset('Asset Before Failed Write'),
+          fetchRemote: () async => signExport({
+            'id': 2,
+            'name': 'Remote That Cannot Persist',
+            'schemaVersion': 1,
+          }, _secret),
+        );
+
+        await pack.load();
+        await pack.refreshed;
+
+        expect(pack.current!.name, 'Asset Before Failed Write');
+      },
+    );
+  });
 }

@@ -253,25 +253,21 @@ class InventoryService extends GetxService {
     }
   }
 
-  /// Grants [lines] under [transactionId]. Fills existing under-capacity
-  /// stacks of the same item first, then creates new slots (up to
-  /// [capacity]) for the remainder — if there isn't room for every line,
-  /// the whole call is rejected and nothing is mutated (atomic).
-  Future<SdkResult<InventorySnapshot>> grant({
-    required List<InventoryLine> lines,
-    required String transactionId,
-  }) => _guard.runExclusive('inventory', () async {
-    if (transactionId.isEmpty ||
-        lines.isEmpty ||
-        lines.any((l) => l.quantity <= 0)) {
-      return const SdkFailure(
-        kind: SdkErrorKind.validation,
-        message: 'Invalid inventory grant',
-      );
-    }
-    if (_transactions.contains(transactionId)) {
-      return SdkSuccess(snapshot.value);
-    }
+  /// Pure capacity-fill computation shared by [grant] and [previewGrant]
+  /// (FEAT-96) — fills existing under-capacity stacks of the same item
+  /// first, then creates new slots (up to [capacity]) for the remainder.
+  /// Never reads or writes `_slots`/`_nextSlotId` directly: takes/returns
+  /// its own local copies, so a caller that only wants to LOOK at the
+  /// result (a preview) never risks the slightest mutation, and [grant]
+  /// commits the result itself.
+  ///
+  /// Returns a validation `SdkFailure` (unknown item id, capacity
+  /// exceeded) or the computed `(scratch, nextSlotId)` pair on success.
+  /// Does NOT check [transactionId]/idempotency — that's caller-specific
+  /// (a preview has no transaction to be idempotent against).
+  SdkResult<(List<InventorySlot>, int)> _computeGrant(
+    List<InventoryLine> lines,
+  ) {
     for (final line in lines) {
       if (!_catalog.containsKey(line.itemId)) {
         return SdkFailure(
@@ -314,6 +310,64 @@ class InventoryService extends GetxService {
         remaining -= add;
       }
     }
+    return SdkSuccess((scratch, scratchNextSlotId));
+  }
+
+  /// Computes what [grant] WOULD do for [lines] against the CURRENT
+  /// inventory state, without mutating or persisting anything (FEAT-96).
+  /// Does not consult the idempotency ledger — a preview isn't tied to any
+  /// [transactionId] yet, so "already applied" isn't a meaningful concept
+  /// here; [grant] itself still checks it when the plan is actually
+  /// executed.
+  SdkResult<InventorySnapshot> previewGrant({
+    required List<InventoryLine> lines,
+  }) {
+    if (lines.isEmpty || lines.any((l) => l.quantity <= 0)) {
+      return const SdkFailure(
+        kind: SdkErrorKind.validation,
+        message: 'Invalid inventory grant',
+      );
+    }
+    final result = _computeGrant(lines);
+    return switch (result) {
+      SdkFailure<(List<InventorySlot>, int)> failure => SdkFailure(
+        kind: failure.kind,
+        message: failure.message,
+      ),
+      SdkSuccess<(List<InventorySlot>, int)> success => SdkSuccess(
+        InventorySnapshot(
+          slots: List.unmodifiable(success.value.$1),
+          capacity: capacity,
+        ),
+      ),
+    };
+  }
+
+  /// Grants [lines] under [transactionId]. Fills existing under-capacity
+  /// stacks of the same item first, then creates new slots (up to
+  /// [capacity]) for the remainder — if there isn't room for every line,
+  /// the whole call is rejected and nothing is mutated (atomic).
+  Future<SdkResult<InventorySnapshot>> grant({
+    required List<InventoryLine> lines,
+    required String transactionId,
+  }) => _guard.runExclusive('inventory', () async {
+    if (transactionId.isEmpty ||
+        lines.isEmpty ||
+        lines.any((l) => l.quantity <= 0)) {
+      return const SdkFailure(
+        kind: SdkErrorKind.validation,
+        message: 'Invalid inventory grant',
+      );
+    }
+    if (_transactions.contains(transactionId)) {
+      return SdkSuccess(snapshot.value);
+    }
+    final result = _computeGrant(lines);
+    if (result case SdkFailure<(List<InventorySlot>, int)> failure) {
+      return SdkFailure(kind: failure.kind, message: failure.message);
+    }
+    final (scratch, scratchNextSlotId) =
+        (result as SdkSuccess<(List<InventorySlot>, int)>).value;
 
     _slots
       ..clear()

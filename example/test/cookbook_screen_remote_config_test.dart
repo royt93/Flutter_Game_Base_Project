@@ -145,4 +145,39 @@ void main() {
     expect(tester.takeException(), isNull);
     await _flushToast(tester);
   });
+
+  testWidgets(
+    'ENH-94: RemoteContentPack tile đọc cache đã ghi trước, thắng asset bundle',
+    (tester) async {
+      // Không dùng `_boot()` — cần seed cache TRƯỚC khi StorageService đọc,
+      // `_boot()` tự gọi `setMockInitialValues({})` (rỗng) nên seed ở đây
+      // thay vì qua helper đó.
+      SharedPreferences.setMockInitialValues({
+        'cookbook_season_event_pack_cache_v1': jsonEncode({
+          'schemaVersion': 1,
+          'eventName': 'Cached Spring Fest',
+          'bannerColor': '#00FF00',
+          'cachedAtMs': DateTime.now().millisecondsSinceEpoch,
+        }),
+      });
+      final store = StorageService(await SharedPreferences.getInstance());
+      Get.put(store, permanent: true);
+      Get.put(LocaleService(store), permanent: true);
+
+      await tester.pumpWidget(
+        _wrap(CookbookScreen(remoteContentBundle: _fakeBundle())),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await _tapAndShowToast(
+        tester,
+        'RemoteContentPack — load asset + await refresh',
+      );
+
+      expect(find.textContaining('Cached Spring Fest'), findsOneWidget);
+      expect(find.textContaining('Winter Festival'), findsNothing);
+      expect(tester.takeException(), isNull);
+      await _flushToast(tester);
+    },
+  );
 }
