@@ -607,6 +607,7 @@
     "core/game_session_controller.dart:GameSessionController.resume(GamePauseReason reason): SdkResult<GameSessionSnapshot>",
     "core/game_session_controller.dart:GameSessionController.start(): SdkResult<GameSessionSnapshot>",
     "core/game_session_controller.dart:GameSessionController.win(): SdkResult<GameSessionSnapshot>",
+    "core/game_session_controller.dart:GameSessionController.withHookName({this.lifecycle, required this.hookName})",
     "core/game_session_controller.dart:GameSessionSnapshot.copyWith({ GameSessionPhase? phase, Set<GamePauseReason>? pauseReasons, }): GameSessionSnapshot",
     "core/game_session_controller.dart:GameSessionSnapshot.new(this.phase, {this.pauseReasons = const {}})",
     "core/game_time_controller.dart:GameClock.advance(Duration realDelta): int",

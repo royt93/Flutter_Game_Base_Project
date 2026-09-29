@@ -16,7 +16,10 @@ import 'package:roy_casual_kit/roy_casual_kit.dart';
 /// `PauseOverlay` (FEAT-53) — the pause FAB pauses `_session`, which is the
 /// same in-tree-overlay-over-Flame pattern the info dialog above uses.
 class GameDemoScreen extends StatefulWidget {
-  const GameDemoScreen({super.key});
+  const GameDemoScreen({super.key, this.eventBus});
+
+  /// Optional test/demo seam. When omitted, this screen owns a fresh bus.
+  final GameEventBus? eventBus;
 
   @override
   State<GameDemoScreen> createState() => _GameDemoScreenState();
@@ -27,14 +30,15 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
   static const _sfxVictory = 'audio/victory.ogg';
   static const _sfxError = 'audio/error.ogg';
 
-  // FEAT-88: created before `_game` (Dart initializes instance fields in
-  // declaration order) so RoyGame's constructor can take it. Bridges
-  // TappableCircle's tap — a Flame-world gameplay event — to 2 independent
-  // business-logic services below, without RoyGame itself knowing either
-  // one exists.
-  final _eventBus = GameEventBus();
+  // FEAT-88: set in initState (before `_game`, which needs it in its own
+  // constructor) rather than a field initializer, so a test can inject a
+  // fake bus via widget.eventBus (BUG-93). Bridges TappableCircle's tap —
+  // a Flame-world gameplay event — to 2 independent business-logic
+  // services below, without RoyGame itself knowing either one exists.
+  late final GameEventBus _eventBus;
+  late final bool _ownsEventBus;
   final _haptics = HapticChoreographer();
-  late final _game = RoyGame(eventBus: _eventBus);
+  late final RoyGame _game;
   final _gameWidgetKey = GlobalKey();
   bool _showInfo = false;
   // ENH-82: without `lifecycle:`, backgrounding the app while `playing`
@@ -90,6 +94,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
   bool _showConfetti = false;
   bool _showAchievementBanner = false;
   StreamSubscription<String>? _unlockSub;
+  StreamSubscription<GameEvent>? _tapSub;
 
   static const _tapAchievementId = 'game_demo_circle_tap_master';
   static const _tapAchievementThreshold = 10;
@@ -97,6 +102,9 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
   @override
   void initState() {
     super.initState();
+    _ownsEventBus = widget.eventBus == null;
+    _eventBus = widget.eventBus ?? GameEventBus();
+    _game = RoyGame(eventBus: _eventBus);
     _sessionPhaseWorker = ever<GameSessionSnapshot>(_session.snapshot, (
       snapshot,
     ) {
@@ -163,7 +171,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     // trailing setState() below is what a device smoke test caught: firing
     // it with `unawaited()` and calling setState() immediately after would
     // rebuild the badge with the STALE gem balance on a real device.
-    _eventBus.subscribe<CircleTappedEvent>((_) async {
+    _tapSub = _eventBus.subscribe<CircleTappedEvent>((_) async {
       _tapCount++;
       if (_roundActive) _roundTaps++;
       _roundScore += 10;
@@ -268,8 +276,13 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     _sessionPhaseWorker.dispose();
     _haptics.cancel();
     unawaited(_unlockSub?.cancel());
+    // BUG-93: was previously discarded at subscribe time — the underlying
+    // `StreamController.broadcast()` in `GameEventBus` doesn't auto-cancel
+    // listeners on `dispose()`, so this subscription (and its captured
+    // `context`/`this` closure) leaked past screen teardown until now.
+    unawaited(_tapSub?.cancel());
     Get.delete<GameSessionController>(force: true);
-    unawaited(_eventBus.dispose());
+    if (_ownsEventBus) unawaited(_eventBus.dispose());
     super.dispose();
   }
 

@@ -16,7 +16,9 @@ import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/deep_link_command_router.dart';
+import 'package:roy_casual_kit/core/game_session_controller.dart';
 import 'package:roy_casual_kit/core/inventory_service.dart';
+import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
@@ -373,7 +375,8 @@ void main() {
       expect(
         find.textContaining('Unlock gems: 0'),
         findsOneWidget,
-        reason: 'gem balance in the live widget tree must NOT reflect a '
+        reason:
+            'gem balance in the live widget tree must NOT reflect a '
             'grant whose persist failed and was rolled back',
       );
       expect(tester.takeException(), isNull);
@@ -1505,28 +1508,25 @@ void main() {
     // crash, dùng 1 widget tối giản với `Completer` tự kiểm soát được
     // khoảng hở async thật (không phụ thuộc timing của SharedPreferences
     // mock).
-    test(
-      'source thật: cả 4 vị trí (_inventoryGrant, _inventoryConsume, 2 chỗ '
-      'deep-link) có "if (!mounted) return;" ngay trước setState',
-      () {
-        final source = File(
-          'lib/screens/widget_showcase_screen.dart',
-        ).readAsStringSync();
+    test('source thật: cả 4 vị trí (_inventoryGrant, _inventoryConsume, 2 chỗ '
+        'deep-link) có "if (!mounted) return;" ngay trước setState', () {
+      final source = File(
+        'lib/screens/widget_showcase_screen.dart',
+      ).readAsStringSync();
 
-        final guardBeforeSetState = RegExp(
-          r'if \(!mounted\) return;\s*setState\(',
-        );
-        final matches = guardBeforeSetState.allMatches(source).length;
+      final guardBeforeSetState = RegExp(
+        r'if \(!mounted\) return;\s*setState\(',
+      );
+      final matches = guardBeforeSetState.allMatches(source).length;
 
-        // 3 chỗ đã đúng từ trước (668/1529/2484 theo mô tả task) + 4 chỗ
-        // BUG-61 vừa fix (_inventoryGrant, _inventoryConsume, 2 deep-link)
-        // = ít nhất 7. Không assert đúng số tuyệt đối (file có thể có thêm
-        // chỗ khác dùng đúng pattern) — chỉ cần >= 7 để chứng minh 4 chỗ
-        // BUG-61 đã có guard mà không hard-code offset dòng dễ vỡ khi file
-        // đổi.
-        expect(matches, greaterThanOrEqualTo(7));
-      },
-    );
+      // 3 chỗ đã đúng từ trước (668/1529/2484 theo mô tả task) + 4 chỗ
+      // BUG-61 vừa fix (_inventoryGrant, _inventoryConsume, 2 deep-link)
+      // = ít nhất 7. Không assert đúng số tuyệt đối (file có thể có thêm
+      // chỗ khác dùng đúng pattern) — chỉ cần >= 7 để chứng minh 4 chỗ
+      // BUG-61 đã có guard mà không hard-code offset dòng dễ vỡ khi file
+      // đổi.
+      expect(matches, greaterThanOrEqualTo(7));
+    });
 
     group('chứng minh tổng quát pattern "if (!mounted) return;" (Completer '
         'tự kiểm soát khoảng hở async thật, không phụ thuộc SharedPreferences '
@@ -1578,9 +1578,7 @@ void main() {
           );
 
           final triggered = tester
-              .state<_GuardedAsyncWidgetState>(
-                find.byType(_GuardedAsyncWidget),
-              )
+              .state<_GuardedAsyncWidgetState>(find.byType(_GuardedAsyncWidget))
               .trigger();
           await tester.pumpWidget(const MaterialApp(home: SizedBox()));
           completer.complete();
@@ -1719,6 +1717,40 @@ void main() {
   });
 
   group('FEAT-47: AssetPreloadCoordinator demo', () {
+    testWidgets(
+      'BUG-93: asset session được Get.put với tag riêng -> onInit đăng ký '
+      'lifecycle hook thật; background pause, resumed chạy lại, dispose '
+      'Get.delete đúng tag (không manual onClose/double-free)',
+      (tester) async {
+        final lifecycle = RoyLifecycleCoordinator();
+        Get.put(lifecycle, permanent: true);
+
+        await _pumpShowcase(tester);
+        const tag = 'widget-showcase-asset-session';
+        expect(Get.isRegistered<GameSessionController>(tag: tag), isTrue);
+        final session = Get.find<GameSessionController>(tag: tag);
+        expect(session.initialized, isTrue);
+
+        await tester.tap(find.widgetWithText(CommonButton, 'Preload OK').first);
+        await tester.pump(const Duration(milliseconds: 800));
+        expect(session.snapshot.value.phase, GameSessionPhase.playing);
+
+        lifecycle.didChangeAppLifecycleState(AppLifecycleState.paused);
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(session.snapshot.value.phase, GameSessionPhase.paused);
+
+        lifecycle.didChangeAppLifecycleState(AppLifecycleState.resumed);
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(session.snapshot.value.phase, GameSessionPhase.playing);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+        expect(Get.isRegistered<GameSessionController>(tag: tag), isFalse);
+        expect(session.isClosed, isTrue);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     testWidgets(
       'bấm "Preload OK": progress đạt 100%, session phase chuyển playing',
       (tester) async {
@@ -1984,7 +2016,10 @@ void main() {
         await _settle(tester);
 
         expect(find.text('Claim reward?'), findsNothing);
-        expect(find.textContaining('Claimed +15 gem, +1 potion'), findsOneWidget);
+        expect(
+          find.textContaining('Claimed +15 gem, +1 potion'),
+          findsOneWidget,
+        );
         expect(find.text('potion x1'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
@@ -2271,21 +2306,18 @@ void main() {
       },
     );
 
-    testWidgets(
-      'chưa claim hôm nay -> bấm nút streak reminder hiện đúng delay '
-      'tính được',
-      (tester) async {
-        await _pumpShowcase(tester);
+    testWidgets('chưa claim hôm nay -> bấm nút streak reminder hiện đúng delay '
+        'tính được', (tester) async {
+      await _pumpShowcase(tester);
 
-        await tester.tap(
-          find.widgetWithText(CommonButton, 'Reschedule streak reminder').first,
-        );
-        await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(
+        find.widgetWithText(CommonButton, 'Reschedule streak reminder').first,
+      );
+      await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.textContaining('Đã đặt lịch nhắc sau'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      },
-    );
+      expect(find.textContaining('Đã đặt lịch nhắc sau'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets(
       'đã claim hôm nay -> bấm nút streak reminder hiện đúng "đã huỷ"',

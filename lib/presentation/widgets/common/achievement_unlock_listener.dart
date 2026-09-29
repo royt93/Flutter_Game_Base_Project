@@ -45,11 +45,26 @@ class AchievementUnlockListener extends StatefulWidget {
 
 class _AchievementUnlockListenerState extends State<AchievementUnlockListener> {
   StreamSubscription<String>? _subscription;
+  AchievementService? _service;
 
   @override
   void initState() {
     super.initState();
-    _subscription = AchievementService.maybe?.onUnlock.listen(_onUnlock);
+    _subscribeToCurrentService();
+  }
+
+  @override
+  void didUpdateWidget(covariant AchievementUnlockListener oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _subscribeToCurrentService();
+  }
+
+  void _subscribeToCurrentService() {
+    final current = AchievementService.maybe;
+    if (identical(current, _service)) return;
+    unawaited(_subscription?.cancel());
+    _service = current;
+    _subscription = current?.onUnlock.listen(_onUnlock);
   }
 
   void _onUnlock(String achievementId) {

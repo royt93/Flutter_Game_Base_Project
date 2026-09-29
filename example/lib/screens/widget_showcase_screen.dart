@@ -15,6 +15,7 @@ import 'package:roy_casual_kit/core/game_session_controller.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/player_progression_service.dart';
 import 'package:roy_casual_kit/core/inventory_service.dart';
+import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
 import 'package:roy_casual_kit/core/offline_outbox_service.dart';
 import 'package:roy_casual_kit/core/reminder_service.dart';
 import 'package:roy_casual_kit/core/remote_config_service.dart';
@@ -465,7 +466,13 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
         PlatformCapabilityRegistry.maybe ??
         Get.put(PlatformCapabilityRegistry(), permanent: true);
     _assetPreload = AssetPreloadCoordinator(loader: _assetDemoLoader);
-    _assetSession = GameSessionController();
+    _assetSession = Get.put<GameSessionController>(
+      GameSessionController.withHookName(
+        lifecycle: RoyLifecycleCoordinator.maybe,
+        hookName: _assetSessionTag,
+      ),
+      tag: _assetSessionTag,
+    );
     _sceneTransition = SceneTransitionController(
       coverDuration: const Duration(milliseconds: 260),
       revealDuration: const Duration(milliseconds: 220),
@@ -591,7 +598,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _candyTextFieldController.dispose();
     _deepLinkController.dispose();
     _haptics.cancel();
-    _assetSession.onClose();
+    Get.delete<GameSessionController>(tag: _assetSessionTag, force: true);
     _sceneTransition.dispose();
     _levelUpController.dispose();
     // BUG-63: delete our own fresh-per-instance outbox (see the matching
@@ -859,6 +866,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // lập (không có asset thật để load trong template RoyGame), nên tách
   // biệt để không ảnh hưởng session thật của game demo.
   late final AssetPreloadCoordinator _assetPreload;
+  static const _assetSessionTag = 'widget-showcase-asset-session';
   late final GameSessionController _assetSession;
   String _assetDemoScenario = 'ok';
   String _assetDemoStatus = 'Chưa preload.';

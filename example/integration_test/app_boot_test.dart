@@ -1230,6 +1230,43 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'BUG-93: GameDemo subscription cleanup + tagged asset session lifecycle '
+    'wiring survive real navigation on device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+
+      await _goToGameDemo(tester);
+      final game = tester
+          .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
+          .game!;
+      await tester.tapAt(tester.getCenter(find.byType(GameWidget<RoyGame>)));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(game.eventBus?.hasListeners, isTrue);
+
+      while (find.byType(GameDemoScreen).evaluate().isNotEmpty) {
+        Get.back();
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+      expect(game.eventBus?.hasListeners, isFalse);
+
+      await _goToWidgetShowcase(tester);
+      const tag = 'widget-showcase-asset-session';
+      expect(Get.isRegistered<GameSessionController>(tag: tag), isTrue);
+      final session = Get.find<GameSessionController>(tag: tag);
+      expect(session.initialized, isTrue);
+
+      while (find.byType(WidgetShowcaseScreen).evaluate().isNotEmpty) {
+        Get.back();
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+      expect(Get.isRegistered<GameSessionController>(tag: tag), isFalse);
+      expect(session.isClosed, isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 class _ThrowingDeviceCloudProvider extends CloudSaveProvider {

@@ -7,6 +7,7 @@ import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/energy_service.dart';
+import 'package:roy_casual_kit/core/game_event_bus.dart';
 import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
 import 'package:roy_casual_kit/core/local_scoreboard_service.dart';
 import 'package:roy_casual_kit/core/player_progression_service.dart';
@@ -441,6 +442,27 @@ void main() {
         final boundaries = find.byType(RepaintBoundary);
         expect(boundaries, findsAtLeastNWidgets(4));
         expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('BUG-93: GameEventBus subscription cleanup', () {
+    testWidgets(
+      'dispose GameDemoScreen cancel subscription do screen tạo trên bus '
+      'caller inject; bus vẫn mở nhưng không còn listener giữ State/context',
+      (tester) async {
+        final bus = GameEventBus();
+
+        await tester.pumpWidget(_wrap(GameDemoScreen(eventBus: bus)));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(bus.hasListeners, isTrue);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+
+        expect(bus.hasListeners, isFalse);
+        expect(tester.takeException(), isNull);
+        await bus.dispose();
       },
     );
   });

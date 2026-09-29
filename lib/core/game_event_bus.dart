@@ -22,6 +22,13 @@ abstract class GameEvent {
 class GameEventBus {
   final _controller = StreamController<GameEvent>.broadcast();
 
+  /// Whether any [subscribe] call's returned [StreamSubscription] is still
+  /// listening (i.e. hasn't been cancelled and the bus hasn't been
+  /// disposed). Exists so a caller/test can prove a subscription was
+  /// actually released on teardown, rather than only inferring it from
+  /// [emit] silently no-oping after [dispose] (BUG-93).
+  bool get hasListeners => _controller.hasListener;
+
   /// Emits [event] to every current subscriber whose type matches. A no-op
   /// once [dispose] has run — a gameplay callback racing a screen's own
   /// teardown shouldn't crash on a stale bus reference.

@@ -190,4 +190,90 @@ void main() {
       expect(find.text('game content'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'BUG-93: mount TRƯỚC khi AchievementService đăng ký -> service đăng ký '
+    'muộn + widget rebuild (didUpdateWidget) -> vẫn nhận được unlock, '
+    'không bị treo mãi mãi ở initState với service null',
+    (tester) async {
+      // Không Get.put service trước — initState chạy với AchievementService.maybe == null.
+      var rebuildKey = 0;
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) => MaterialApp(
+            home: Column(
+              children: [
+                AchievementUnlockListener(child: const Text('game content')),
+                TextButton(
+                  onPressed: () => setState(() => rebuildKey++),
+                  child: const Text('rebuild'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final service = AchievementService()..register('first_win', 1);
+      Get.put(service, permanent: true);
+
+      // Trigger didUpdateWidget bằng cách rebuild parent (không đổi prop nào
+      // của AchievementUnlockListener) — cùng cách 1 setState thật của
+      // consumer app sau khi service async-register xong sẽ hoạt động.
+      await tester.tap(find.text('rebuild'));
+      await tester.pump();
+
+      service.incrementProgress('first_win', 1);
+      await tester.pump();
+
+      expect(find.text('first_win'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await settleToast(tester);
+    },
+  );
+
+  testWidgets(
+    'BUG-93: AchievementService bị thay thế (Get.delete rồi Get.put service '
+    'MỚI) + widget rebuild -> resubscribe sang stream mới, không kẹt ở '
+    'stream cũ đã đóng',
+    (tester) async {
+      final serviceA = AchievementService()..register('first_win', 1);
+      Get.put(serviceA, permanent: true);
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) => MaterialApp(
+            home: Column(
+              children: [
+                AchievementUnlockListener(child: const Text('game content')),
+                TextButton(
+                  onPressed: () => setState(() {}),
+                  child: const Text('rebuild'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      serviceA.incrementProgress('first_win', 1);
+      await tester.pump();
+      expect(find.text('first_win'), findsOneWidget);
+      await settleToast(tester);
+
+      await Get.delete<AchievementService>(force: true);
+      final serviceB = AchievementService()..register('second_win', 1);
+      Get.put(serviceB, permanent: true);
+
+      await tester.tap(find.text('rebuild'));
+      await tester.pump();
+
+      serviceB.incrementProgress('second_win', 1);
+      await tester.pump();
+
+      expect(find.text('second_win'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await settleToast(tester);
+    },
+  );
 }

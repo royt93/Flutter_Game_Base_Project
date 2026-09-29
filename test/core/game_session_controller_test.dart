@@ -113,6 +113,75 @@ void main() {
     });
   });
 
+  group('BUG-93 audit: hookName collision', () {
+    test(
+      'default constructor: 2 instance CÙNG lifecycle -> đóng instance A '
+      '(onClose) xoá nhầm hook của B vì cả 2 dùng chung hookName mặc định '
+      '"game-session" (removeHook match theo tên, không theo instance)',
+      () async {
+        final lifecycle = RoyLifecycleCoordinator();
+        final a = Get.put<GameSessionController>(
+          GameSessionController(lifecycle: lifecycle),
+          tag: 'a',
+        );
+        final b = Get.put<GameSessionController>(
+          GameSessionController(lifecycle: lifecycle),
+          tag: 'b',
+        );
+        a.markReady();
+        a.start();
+        b.markReady();
+        b.start();
+
+        Get.delete<GameSessionController>(tag: 'a', force: true);
+
+        lifecycle.didChangeAppLifecycleState(AppLifecycleState.paused);
+        await Future<void>.delayed(Duration.zero);
+        expect(b.snapshot.value.phase, GameSessionPhase.playing);
+
+        Get.delete<GameSessionController>(tag: 'b', force: true);
+      },
+    );
+
+    test('withHookName: 2 instance CÙNG lifecycle nhưng hookName KHÁC nhau -> '
+        'đóng instance A không ảnh hưởng hook của B', () async {
+      final lifecycle = RoyLifecycleCoordinator();
+      final a = Get.put<GameSessionController>(
+        GameSessionController.withHookName(
+          lifecycle: lifecycle,
+          hookName: 'session-a',
+        ),
+        tag: 'a',
+      );
+      final b = Get.put<GameSessionController>(
+        GameSessionController.withHookName(
+          lifecycle: lifecycle,
+          hookName: 'session-b',
+        ),
+        tag: 'b',
+      );
+      a.markReady();
+      a.start();
+      b.markReady();
+      b.start();
+
+      Get.delete<GameSessionController>(tag: 'a', force: true);
+
+      lifecycle.didChangeAppLifecycleState(AppLifecycleState.paused);
+      await Future<void>.delayed(Duration.zero);
+      expect(b.snapshot.value.phase, GameSessionPhase.paused);
+
+      Get.delete<GameSessionController>(tag: 'b', force: true);
+    });
+
+    test('withHookName: hookName rỗng -> ArgumentError tại constructor', () {
+      expect(
+        () => GameSessionController.withHookName(hookName: ''),
+        throwsArgumentError,
+      );
+    });
+  });
+
   group('ENH-65: .maybe', () {
     test('trả về null khi chưa Get.put', () {
       expect(GameSessionController.maybe, isNull);

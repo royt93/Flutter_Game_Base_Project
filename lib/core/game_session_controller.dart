@@ -24,8 +24,30 @@ class GameSessionSnapshot {
 
 /// Single source of truth for a game's session lifecycle.
 class GameSessionController extends GetxController {
-  GameSessionController({this.lifecycle});
+  GameSessionController({this.lifecycle}) : hookName = 'game-session';
+
+  /// BUG-93 audit fix: use this constructor instead of the default one
+  /// when a consumer app builds MORE THAN ONE [GameSessionController]
+  /// against the SAME [RoyLifecycleCoordinator] (e.g. 2 different demo
+  /// screens' independent sessions) — give each a distinct [hookName].
+  /// [RoyLifecycleCoordinator.removeHook] matches by name, not by
+  /// instance, so 2 controllers sharing the default 'game-session' name
+  /// would have EITHER one's [onClose] silently remove the OTHER's hook
+  /// too.
+  GameSessionController.withHookName({this.lifecycle, required this.hookName}) {
+    if (hookName.isEmpty) {
+      throw ArgumentError.value(hookName, 'hookName', 'must not be empty');
+    }
+  }
+
   final RoyLifecycleCoordinator? lifecycle;
+
+  /// Name this controller registers/removes its lifecycle hook under via
+  /// [lifecycle]. See [GameSessionController.withHookName]'s doc for why
+  /// this must be unique per [RoyLifecycleCoordinator] a consumer shares
+  /// across more than one controller instance.
+  final String hookName;
+
   final snapshot = const GameSessionSnapshot(GameSessionPhase.loading).obs;
   final events = <GameSessionPhase>[].obs;
 
@@ -39,7 +61,7 @@ class GameSessionController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    lifecycle?.registerHook('game-session', (event) async {
+    lifecycle?.registerHook(hookName, (event) async {
       if (event == RoyLifecycleEvent.background) {
         pause(GamePauseReason.system);
       } else {
@@ -118,7 +140,7 @@ class GameSessionController extends GetxController {
 
   @override
   void onClose() {
-    lifecycle?.removeHook('game-session');
+    lifecycle?.removeHook(hookName);
     super.onClose();
   }
 }
