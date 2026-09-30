@@ -1267,6 +1267,47 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'FEAT-99: GameAccessibilityAnnouncer announces locale-aware text on '
+    'device, rate-limits a burst, and never touches the real platform '
+    'accessibility channel through the injected announce seam',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+
+      final bus = GameEventBus();
+      final spoken = <String>[];
+      final announcer = GameAccessibilityAnnouncer(
+        eventBus: bus,
+        announce: (message) async => spoken.add(message),
+        locale: () => const Locale('vi'),
+        throttleWindow: const Duration(milliseconds: 500),
+      );
+
+      bus.emit(
+        GameAccessibilityEvent(
+          category: GameAccessibilityCategory.levelUp,
+          translationKey: 'a11y_level_up',
+          parameters: const {'value': '9'},
+        ),
+      );
+      bus.emit(
+        GameAccessibilityEvent(
+          category: GameAccessibilityCategory.levelUp,
+          translationKey: 'a11y_level_up',
+          parameters: const {'value': '10'},
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(spoken, ['Lên cấp! Hiện tại cấp 9.']);
+
+      await announcer.dispose();
+      await bus.dispose();
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 class _ThrowingDeviceCloudProvider extends CloudSaveProvider {

@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
-/// Minimal seed translations for the base project — 2 locales, 11 keys.
+/// Minimal seed translations for the base project — 2 locales with key parity.
 /// Copy this file's pattern (one `Map<String,String>` per locale code) when
 /// a new game needs more languages or more keys.
 class AppTranslations extends Translations {
@@ -34,6 +34,9 @@ class AppTranslations extends Translations {
       'level_progression': 'Level & Energy',
       'season_leaderboard': 'Season & Ranking',
       'monetization': 'Store & Monetization',
+      'a11y_level_up': 'Level up! Now level {value}.',
+      'a11y_reward_granted': 'Reward received: {value}.',
+      'a11y_lives_changed': 'Lives: {value}.',
     },
     'vi': {
       'app_name': 'Roy Project Base Game',
@@ -55,6 +58,9 @@ class AppTranslations extends Translations {
       'level_progression': 'Cấp độ & Năng lượng',
       'season_leaderboard': 'Mùa giải & Xếp hạng',
       'monetization': 'Cửa hàng & Kiếm tiền',
+      'a11y_level_up': 'Lên cấp! Hiện tại cấp {value}.',
+      'a11y_reward_granted': 'Nhận thưởng: {value}.',
+      'a11y_lives_changed': 'Số mạng: {value}.',
     },
   };
 }

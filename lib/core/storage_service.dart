@@ -87,6 +87,9 @@ class StorageKeys {
 
   // lib/core/invite_friend_coordinator.dart reads/writes this directly.
   static const String inviteRedeemedCode = 'invite_redeemed_code';
+
+  // lib/core/game_accessibility_announcer.dart reads this directly.
+  static const String gameA11yAnnouncerEnabled = 'game_a11y_announcer_enabled';
 }
 
 /// Shared local storage service (wraps SharedPreferences).
