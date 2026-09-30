@@ -27,6 +27,112 @@ void main() {
     );
   });
 
+  group('BUG-99: example/assets dùng --asset-roots=assets', () {
+    test(
+      'fixture mp3 trong assets/ không có manifest entry -> exit 1, báo đúng path',
+      () async {
+        final tempDir = Directory.systemTemp.createTempSync(
+          'asset_license_example_missing_',
+        );
+        addTearDown(() => tempDir.deleteSync(recursive: true));
+        final audio = File('${tempDir.path}/assets/audio/missing.mp3');
+        audio.parent.createSync(recursive: true);
+        audio.writeAsStringSync('x');
+        final manifest = File('${tempDir.path}/assets/LICENSES.json');
+        manifest.writeAsStringSync(
+          jsonEncode({'schemaVersion': 1, 'entries': []}),
+        );
+
+        final result = await _runCheck([
+          '--root=${tempDir.path}',
+          '--asset-roots=assets',
+          '--manifest=assets/LICENSES.json',
+        ]);
+
+        expect(result.exitCode, 1);
+        expect(result.stdout as String, contains('missing'));
+        expect(result.stdout as String, contains('assets/audio/missing.mp3'));
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      'repo thật: example/assets có 6 runtime assets + manifest hợp lệ -> pass',
+      () async {
+        final result = await _runCheck([
+          '--root=example',
+          '--asset-roots=assets',
+          '--manifest=assets/LICENSES.json',
+        ]);
+
+        expect(
+          result.exitCode,
+          0,
+          reason: '${result.stdout}\n${result.stderr}',
+        );
+        expect(result.stdout as String, contains('6 asset runtime'));
+        expect(
+          result.stdout as String,
+          contains('No asset license issues found.'),
+        );
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test('audit fix: --asset-roots trùng lặp (assets,assets) được dedupe, '
+        'không double-count 6 asset thật thành 12', () async {
+      final result = await _runCheck([
+        '--root=example',
+        '--asset-roots=assets, assets',
+        '--manifest=assets/LICENSES.json',
+      ]);
+
+      expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+      expect(result.stdout as String, contains('6 asset runtime'));
+      expect(result.stdout as String, isNot(contains('12 asset runtime')));
+    }, timeout: const Timeout(Duration(seconds: 30)));
+
+    test(
+      'fixture assets/ có manifest hợp lệ -> pass',
+      () async {
+        final tempDir = Directory.systemTemp.createTempSync(
+          'asset_license_example_valid_',
+        );
+        addTearDown(() => tempDir.deleteSync(recursive: true));
+        final audio = File('${tempDir.path}/assets/audio/ok.mp3');
+        audio.parent.createSync(recursive: true);
+        audio.writeAsStringSync('x');
+        File('${tempDir.path}/assets/LICENSES.json').writeAsStringSync(
+          jsonEncode({
+            'schemaVersion': 1,
+            'entries': [
+              {
+                'path': 'assets/audio/ok.mp3',
+                'owner': 'test',
+                'license': 'MIT',
+                'source': 'fixture',
+              },
+            ],
+          }),
+        );
+
+        final result = await _runCheck([
+          '--root=${tempDir.path}',
+          '--asset-roots=assets',
+          '--manifest=assets/LICENSES.json',
+        ]);
+
+        expect(
+          result.exitCode,
+          0,
+          reason: '${result.stdout}\n${result.stderr}',
+        );
+        expect(result.stdout as String, contains('1 asset runtime'));
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
+  });
+
   group('CLI: fixture --root synthetic bắt lỗi thật', () {
     late Directory tempDir;
 
@@ -150,9 +256,10 @@ void main() {
     );
 
     test(
-      '.DS_Store và LICENSES.json tự thân không bị coi là asset cần khai',
+      '.DS_Store, LICENSES.json và LICENSES.md tự thân không bị coi là asset cần khai',
       () async {
         await writeAsset('asset/.DS_Store', 'junk');
+        await writeAsset('asset/LICENSES.md', '# attribution');
         await writeManifest({'schemaVersion': 1, 'entries': []});
 
         final result = await _runCheck(['--root=${tempDir.path}']);

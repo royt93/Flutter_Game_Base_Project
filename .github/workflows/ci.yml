@@ -41,8 +41,10 @@ jobs:
         run: flutter test --exclude-tags slow
         working-directory: example
 
-  # Chỉ chạy khi lib/ hoặc tool/ đổi (paths-filter) — dùng chung concurrency
-  # group ở trên nên push dồn dập tự coalesce, không tốn thêm run thừa.
+  # Chỉ chạy khi lib/, tool/, pubspec.yaml, asset/shaders root, hoặc
+  # example/assets (+ example/pubspec.yaml) đổi (paths-filter, BUG-99) —
+  # dùng chung concurrency group ở trên nên push dồn dập tự coalesce,
+  # không tốn thêm run thừa.
   quality-gate:
     runs-on: ubuntu-latest
     steps:
@@ -55,6 +57,10 @@ jobs:
               - 'lib/**'
               - 'tool/**'
               - 'pubspec.yaml'
+              - 'asset/**'
+              - 'shaders/**'
+              - 'example/assets/**'
+              - 'example/pubspec.yaml'
       - uses: subosito/flutter-action@v2
         if: steps.changes.outputs.relevant == 'true'
         with:
@@ -69,9 +75,12 @@ jobs:
       - name: Dependency SBOM/security gate
         if: steps.changes.outputs.relevant == 'true'
         run: dart run tool/dependency_sbom_check.dart --suppressions=tool/dependency_sbom_suppressions.json
-      - name: Asset license manifest gate
+      - name: Asset license manifest gate (package)
         if: steps.changes.outputs.relevant == 'true'
         run: dart run tool/asset_license_check.dart
+      - name: Asset license manifest gate (example)
+        if: steps.changes.outputs.relevant == 'true'
+        run: dart run tool/asset_license_check.dart --root=example --asset-roots=assets --manifest=assets/LICENSES.json
       - name: Performance budget gate
         if: steps.changes.outputs.relevant == 'true'
         run: dart run tool/performance_budget_check.dart check

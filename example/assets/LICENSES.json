@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "path": "assets/audio/demo_sfx.mp3",
+      "owner": "royt93",
+      "license": "MIT",
+      "source": "derived from asset/audio/bkg.ogg; original composition by royt93",
+      "attributionRequired": false,
+      "distributable": true
+    },
+    {
+      "path": "assets/audio/error.ogg",
+      "owner": "Google Actions Sound Library",
+      "license": "CC-BY-4.0",
+      "source": "https://actions.google.com/sounds/v1/alarms/beep_short.ogg",
+      "attributionRequired": true,
+      "distributable": true
+    },
+    {
+      "path": "assets/audio/tap.ogg",
+      "owner": "Google Actions Sound Library",
+      "license": "CC-BY-4.0",
+      "source": "https://actions.google.com/sounds/v1/ui/wood_click.ogg",
+      "attributionRequired": true,
+      "distributable": true
+    },
+    {
+      "path": "assets/audio/victory.ogg",
+      "owner": "Google Actions Sound Library",
+      "license": "CC-BY-4.0",
+      "source": "https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg",
+      "attributionRequired": true,
+      "distributable": true
+    },
+    {
+      "path": "assets/remote_config/remote_config_defaults.json",
+      "owner": "royt93",
+      "license": "MIT",
+      "source": "original configuration data, written for this project",
+      "attributionRequired": false,
+      "distributable": true
+    },
+    {
+      "path": "assets/remote_config/season_event_defaults.json",
+      "owner": "royt93",
+      "license": "MIT",
+      "source": "original configuration data, written for this project",
+      "attributionRequired": false,
+      "distributable": true
+    }
+  ]
+}
