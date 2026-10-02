@@ -37,6 +37,13 @@ Widget _wrap(Widget child) => GetMaterialApp(
   home: child,
 );
 
+Widget _wrapVi(Widget child) => GetMaterialApp(
+  translations: AppTranslations(),
+  locale: const Locale('vi'),
+  fallbackLocale: AppTranslations.fallback,
+  home: child,
+);
+
 class _FakeAudioManager extends AudioManager {
   final played = <String>[];
   final ducked = <bool>[];
@@ -521,6 +528,49 @@ void main() {
         }
 
         expect(_button('Resume'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('BUG-94: i18n sweep', () {
+    testWidgets(
+      'vi locale: status/HUD/buttons/pause overlay all render Vietnamese, '
+      'not the old hardcoded English literals',
+      (tester) async {
+        await tester.pumpWidget(_wrapVi(const GameDemoScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(
+          find.text('Dùng 1 năng lượng, rồi chạm Vòng tròn 5 lần để thắng.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Vòng tròn'), findsWidgets);
+        expect(find.textContaining('ngọc:'), findsWidgets);
+        expect(_button('Bắt đầu vòng chơi (-1 Năng lượng)'), findsWidgets);
+        // Swept English must be gone, not just replaced alongside.
+        expect(
+          find.text('Spend 1 energy, then tap Circle 5 times to win.'),
+          findsNothing,
+        );
+        expect(find.text('Start Round (-1 Energy)'), findsNothing);
+
+        await tester.tap(_button('Bắt đầu vòng chơi (-1 Năng lượng)').first);
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(
+          find.text('Vòng chơi đang diễn ra: chạm Vòng tròn 5 lần!'),
+          findsOneWidget,
+        );
+
+        await tester.tap(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is FloatingActionButton && widget.heroTag == 'pause',
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(_button('Tiếp tục'), findsWidgets);
+        expect(_button('Chơi lại'), findsWidgets);
         expect(tester.takeException(), isNull);
       },
     );

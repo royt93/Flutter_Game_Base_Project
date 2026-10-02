@@ -56,6 +56,9 @@ class StorageKeys {
   // lib/core/consent_state_service.dart reads/writes this directly.
   static const String consentStateV1 = 'consent_state_v1';
 
+  // lib/core/privacy_aware_analytics_queue.dart reads/writes this directly.
+  static const String analyticsQueueV1 = 'analytics_queue_v1';
+
   // lib/core/app_version_gate.dart reads/writes this directly.
   static const String appVersionSoftPromptLastMs =
       'app_version_soft_prompt_last_ms';
@@ -317,7 +320,10 @@ class StorageService extends GetxService {
       _fallback[key] = value;
       return Future.value();
     }
-    return _guardedWrite(() => prefs.setDouble(key, value), queueWhenIdle: false);
+    return _guardedWrite(
+      () => prefs.setDouble(key, value),
+      queueWhenIdle: false,
+    );
   }
 
   String? getString(String key) {
@@ -334,7 +340,10 @@ class StorageService extends GetxService {
       _fallback[key] = value;
       return Future.value();
     }
-    return _guardedWrite(() => prefs.setString(key, value), queueWhenIdle: false);
+    return _guardedWrite(
+      () => prefs.setString(key, value),
+      queueWhenIdle: false,
+    );
   }
 
   /// Reads a JSON list (unlike the CSV-join pattern of other keys in this

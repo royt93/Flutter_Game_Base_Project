@@ -25,8 +25,28 @@ class AsyncActionGuard {
 
   Future<T> runExclusive<T>(Object key, FutureOr<T> Function() action) async {
     final previous = _exclusiveTails[key] ?? Future<void>.value();
-    final completer = Completer<void>();
-    _exclusiveTails[key] = completer.future;
+    final myTurn = Completer<void>();
+    // BUG-96: the barrier this waiter publishes for the NEXT caller must
+    // stay pending until `previous` (the ACTUAL holder, however long that
+    // takes) really finishes — not until this waiter's own `maxQueueWait`
+    // timeout gives up on it. Chaining onto `previous` (rather than
+    // completing a fresh tail immediately) is what keeps a C queued behind
+    // this B still correctly blocked on A while A is still running, even
+    // though B itself returns (with a TimeoutException) long before A does.
+    // `previous` never itself throws (its own `finally` below always
+    // completes successfully), but guard with `onError` anyway so a waiter
+    // that somehow still throws can't wedge the chain for later callers.
+    final tail = previous.then<void>(
+      (_) => myTurn.future,
+      onError: (_, _) => myTurn.future,
+    );
+    _exclusiveTails[key] = tail;
+    unawaited(
+      tail.whenComplete(() {
+        if (identical(_exclusiveTails[key], tail)) _exclusiveTails.remove(key);
+      }),
+    );
+    var acquired = false;
     try {
       final wait = maxQueueWait;
       if (wait == null) {
@@ -34,11 +54,21 @@ class AsyncActionGuard {
       } else {
         await previous.timeout(wait);
       }
+      acquired = true;
       return await Future<T>.sync(action);
     } finally {
-      if (!completer.isCompleted) completer.complete();
-      if (identical(_exclusiveTails[key], completer.future)) {
-        _exclusiveTails.remove(key);
+      if (!myTurn.isCompleted) myTurn.complete();
+      if (acquired) {
+        // Preserve the pre-BUG-96 observable contract for the normal path:
+        // once this call's returned Future completes, its keyed barrier has
+        // already been cleaned up (`pendingCount == 0` when it was last).
+        // A timed-out waiter MUST NOT await [tail] here, because [tail] is
+        // intentionally still chained to the stuck predecessor — awaiting it
+        // would make maxQueueWait stop returning promptly.
+        await tail;
+        if (identical(_exclusiveTails[key], tail)) {
+          _exclusiveTails.remove(key);
+        }
       }
     }
   }

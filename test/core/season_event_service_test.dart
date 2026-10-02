@@ -370,16 +370,16 @@ void main() {
         // Lệch nhỏ (< 1 chu kỳ length+cooldown) để cycleIndex tính ra đúng
         // 0 và startMs == đúng anchor đã seed, không bị vòng chu kỳ cuốn
         // sang cycle khác (dễ hiểu/verify hơn 1 offset nhiều ngày).
-        final futureAnchorMs = _realMs + const Duration(minutes: 10).inMilliseconds;
+        final futureAnchorMs =
+            _realMs + const Duration(minutes: 10).inMilliseconds;
 
         final seedStore = VersionedJsonStore<Map<String, int>>(
           storage: storage,
           key: StorageKeys.seasonEventAnchorsV1,
           schemaVersion: 1,
           toJson: (value) => value,
-          fromJson: (json) => json.map(
-            (key, value) => MapEntry(key, value as int),
-          ),
+          fromJson: (json) =>
+              json.map((key, value) => MapEntry(key, value as int)),
           migrate: (fromVersion, json) => json,
         );
         await seedStore.save({eventId: futureAnchorMs});
@@ -394,7 +394,8 @@ void main() {
         expect(
           window.start.millisecondsSinceEpoch,
           futureAnchorMs,
-          reason: 'anchor tương lai đã seed phải được đọc lại đúng, không bị ghi đè',
+          reason:
+              'anchor tương lai đã seed phải được đọc lại đúng, không bị ghi đè',
         );
         expect(window.isActive, isFalse);
       },
@@ -497,14 +498,15 @@ void main() {
       () async {
         final a = SeasonEventService(storageKey: 'season_a');
         final b = SeasonEventService(storageKey: 'season_b');
-        await setNowMs(_realMs);
+        final realMs = _realMs;
+        await setNowMs(realMs);
 
         final windowA = a.currentWindow(
           'e',
           length: length,
           cooldown: cooldown,
         );
-        await setNowMs(_realMs + 999999);
+        await setNowMs(realMs + 999999);
         final windowB = b.currentWindow(
           'e',
           length: length,
@@ -516,8 +518,8 @@ void main() {
         // Anchor của b được lập từ mốc thời gian khác hẳn a (do gọi lần
         // đầu ở thời điểm khác) — nếu chung key, b sẽ đọc lại đúng anchor
         // của a thay vì tự lập anchor riêng.
-        expect(windowA.start.millisecondsSinceEpoch, _realMs);
-        expect(windowB.start.millisecondsSinceEpoch, _realMs + 999999);
+        expect(windowA.start.millisecondsSinceEpoch, realMs);
+        expect(windowB.start.millisecondsSinceEpoch, realMs + 999999);
       },
     );
 
@@ -560,57 +562,54 @@ void main() {
   });
 
   group('BUG-45: save-chain race — 2 lệnh liên tiếp chồng lấn thời gian', () {
-    test(
-      'currentWindow() cho event B gọi khi save của event A vẫn đang thật '
-      'sự treo (Completer chưa complete): cả 2 anchor đều persist đúng, '
-      'không anchor nào bị mồ côi/mất',
-      () async {
-        final gated = _GatedStorageService(await SharedPreferences.getInstance());
-        Get.put<StorageService>(gated, permanent: true);
-        await gated.setInt(StorageKeys.maxMsSeen, _realMs);
-        final service = SeasonEventService();
+    test('currentWindow() cho event B gọi khi save của event A vẫn đang thật '
+        'sự treo (Completer chưa complete): cả 2 anchor đều persist đúng, '
+        'không anchor nào bị mồ côi/mất', () async {
+      final gated = _GatedStorageService(await SharedPreferences.getInstance());
+      Get.put<StorageService>(gated, permanent: true);
+      await gated.setInt(StorageKeys.maxMsSeen, _realMs);
+      final service = SeasonEventService();
 
-        gated.gate = Completer<void>();
-        // Anchor 'a' tạo lần đầu -> trigger _scheduleSave(), nhưng
-        // setString() bị chặn bởi gate -> save này coi như đang "in
-        // flight" thật sự (không phải suy đoán timing).
-        final originalA = service.currentWindow(
-          'event_a',
-          length: length,
-          cooldown: cooldown,
-        );
+      gated.gate = Completer<void>();
+      // Anchor 'a' tạo lần đầu -> trigger _scheduleSave(), nhưng
+      // setString() bị chặn bởi gate -> save này coi như đang "in
+      // flight" thật sự (không phải suy đoán timing).
+      final originalA = service.currentWindow(
+        'event_a',
+        length: length,
+        cooldown: cooldown,
+      );
 
-        // Gọi tiếp cho event KHÁC trong khi save của 'a' vẫn còn treo —
-        // đúng kịch bản race: `_saving` phải còn `true` lúc này.
-        final originalB = service.currentWindow(
-          'event_b',
-          length: length,
-          cooldown: cooldown,
-        );
+      // Gọi tiếp cho event KHÁC trong khi save của 'a' vẫn còn treo —
+      // đúng kịch bản race: `_saving` phải còn `true` lúc này.
+      final originalB = service.currentWindow(
+        'event_b',
+        length: length,
+        cooldown: cooldown,
+      );
 
-        gated.gate!.complete();
-        await service.debugPendingSaves;
+      gated.gate!.complete();
+      await service.debugPendingSaves;
 
-        // So khớp CHÍNH XÁC start/end với instance mới — không chỉ
-        // `isActive` (1 anchor MỚI vô tình tạo lại do mất dữ liệu cũng
-        // "active", nên không đủ để chứng minh đây là ĐÚNG anchor cũ đã
-        // persist, không phải 1 anchor mồ côi bị tạo lại từ đầu).
-        final restarted = SeasonEventService();
-        final restoredA = restarted.currentWindow(
-          'event_a',
-          length: length,
-          cooldown: cooldown,
-        );
-        final restoredB = restarted.currentWindow(
-          'event_b',
-          length: length,
-          cooldown: cooldown,
-        );
-        expect(restoredA.start, originalA.start);
-        expect(restoredA.end, originalA.end);
-        expect(restoredB.start, originalB.start);
-        expect(restoredB.end, originalB.end);
-      },
-    );
+      // So khớp CHÍNH XÁC start/end với instance mới — không chỉ
+      // `isActive` (1 anchor MỚI vô tình tạo lại do mất dữ liệu cũng
+      // "active", nên không đủ để chứng minh đây là ĐÚNG anchor cũ đã
+      // persist, không phải 1 anchor mồ côi bị tạo lại từ đầu).
+      final restarted = SeasonEventService();
+      final restoredA = restarted.currentWindow(
+        'event_a',
+        length: length,
+        cooldown: cooldown,
+      );
+      final restoredB = restarted.currentWindow(
+        'event_b',
+        length: length,
+        cooldown: cooldown,
+      );
+      expect(restoredA.start, originalA.start);
+      expect(restoredA.end, originalA.end);
+      expect(restoredB.start, originalB.start);
+      expect(restoredB.end, originalB.end);
+    });
   });
 }

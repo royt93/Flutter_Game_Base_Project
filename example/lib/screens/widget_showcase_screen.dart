@@ -32,9 +32,11 @@ import 'package:roy_casual_kit/core/local_scoreboard_service.dart';
 import 'package:roy_casual_kit/core/onboarding_coordinator_service.dart';
 import 'package:roy_casual_kit/core/persistent_cooldown_service.dart';
 import 'package:roy_casual_kit/core/platform_capability_registry.dart';
+import 'package:roy_casual_kit/core/privacy_aware_analytics_queue.dart';
 import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
 import 'package:roy_casual_kit/core/save_slot_manager.dart';
 import 'package:roy_casual_kit/core/replay_recorder.dart';
+import 'package:roy_casual_kit/core/sdk_event_schema_registry.dart';
 import 'package:roy_casual_kit/core/utils/format.dart';
 import 'package:roy_casual_kit/core/utils/seeded_random.dart';
 import 'package:roy_casual_kit/core/utils/smart_reminder_scheduling.dart';
@@ -42,6 +44,7 @@ import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/share_helper.dart';
 import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/retry_policy.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:roy_casual_kit/core/utils/throttle.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
@@ -389,6 +392,35 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _gatedAnalytics = ConsentGatedAnalyticsProvider(
       _DemoAnalyticsProvider(() => setState(() => _demoAnalyticsEventCount++)),
     );
+    final analyticsRegistry = SdkEventSchemaRegistry()
+      ..register(
+        EventSchema(
+          name: 'demo_level_start',
+          version: 1,
+          params: {
+            'level': const EventParamSchema(
+              type: EventParamType.int,
+              required: true,
+            ),
+            'email': const EventParamSchema(
+              type: EventParamType.string,
+              pii: true,
+            ),
+          },
+        ),
+      );
+    _analyticsQueue = PrivacyAwareAnalyticsQueue(
+      storage: StorageService.to,
+      consent: _consent,
+      registry: analyticsRegistry,
+      uploader: (batch) async {
+        if (_analyticsUploadFails) throw StateError('demo offline');
+        if (mounted) {
+          setState(() => _analyticsUploadedCount += batch.length);
+        }
+      },
+      retryPolicy: const RetryPolicy(maxAttempts: 1, baseDelay: Duration.zero),
+    );
     // BUG-62: this demo's `probe`/`signal` are bound to THIS State instance
     // (`_demoProbeSucceeds`, and the toggle buttons write straight to
     // `_connectivitySignal`) — reusing a `permanent: true` coordinator
@@ -594,6 +626,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _screenShakeController.dispose();
     _reviewWinStreakController.close();
     _tutorialSequenceController.dispose();
+    _analyticsQueue.dispose();
     _wheelController.dispose();
     _candyTextFieldController.dispose();
     _deepLinkController.dispose();
@@ -851,6 +884,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoQueueRanCount = 0;
   late final ConsentGatedAnalyticsProvider _gatedAnalytics;
   int _demoAnalyticsEventCount = 0;
+  late final PrivacyAwareAnalyticsQueue _analyticsQueue;
+  int _analyticsUploadedCount = 0;
+  bool _analyticsUploadFails = true;
   late final DeepLinkCommandRouter _deepLinks;
   final _deepLinkController = TextEditingController(
     text: 'roycasualkit://open/level/5',
@@ -2538,6 +2574,88 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     ],
                                   );
                                 }),
+                              ),
+                              _Demo(
+                                label: 'PrivacyAwareAnalyticsQueue (FEAT-98)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Analytics queue — Pending: ${_analyticsQueue.pendingCount} · '
+                                      'Dropped: ${_analyticsQueue.auditSnapshot.totalDropped} · '
+                                      'Uploaded: $_analyticsUploadedCount',
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      runSpacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          label: 'Queue valid + PII',
+                                          onTap: () async {
+                                            await _analyticsQueue
+                                                .enqueueDurably(
+                                                  'demo_level_start',
+                                                  {
+                                                    'level': 1,
+                                                    'email':
+                                                        'redacted@example.com',
+                                                  },
+                                                );
+                                            if (mounted) setState(() {});
+                                          },
+                                        ),
+                                        CommonButton(
+                                          label: 'Queue rejected',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () async {
+                                            await _analyticsQueue.enqueueDurably(
+                                              'demo_level_start',
+                                              const {
+                                                'email':
+                                                    'never-persisted@example.com',
+                                              },
+                                            );
+                                            if (mounted) setState(() {});
+                                          },
+                                        ),
+                                        CommonButton(
+                                          label: 'Flush fail',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () async {
+                                            _analyticsUploadFails = true;
+                                            await _analyticsQueue.flush();
+                                            if (mounted) setState(() {});
+                                          },
+                                        ),
+                                        CommonButton(
+                                          label: 'Flush success',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () async {
+                                            _analyticsUploadFails = false;
+                                            await _analyticsQueue.flush();
+                                            if (mounted) setState(() {});
+                                          },
+                                        ),
+                                        CommonButton(
+                                          label: 'Revoke + purge',
+                                          variant: CommonButtonVariant.danger,
+                                          onTap: () async {
+                                            _consent.deny(
+                                              ConsentCategory.analytics,
+                                            );
+                                            await _analyticsQueue
+                                                .flushPersistence();
+                                            if (mounted) setState(() {});
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                               _Demo(
                                 label: 'ExperimentBucketingService (IDEA-57)',

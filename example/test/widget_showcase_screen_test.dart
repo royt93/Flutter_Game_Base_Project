@@ -47,7 +47,7 @@ Future<void> _pumpShowcase(WidgetTester tester) async {
   // mỗi demo section mới đẩy list dài hơn — tăng chiều cao viewport ảo để
   // mọi widget phía sau vẫn nằm trong vùng tap được mà không cần scroll
   // (đúng lý do file này dùng physicalSize cố định).
-  tester.view.physicalSize = const Size(1080, 15400);
+  tester.view.physicalSize = const Size(1080, 16600);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -1337,6 +1337,79 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+  });
+
+  group('FEAT-98: PrivacyAwareAnalyticsQueue demo', () {
+    testWidgets(
+      'valid/PII queue, schema reject, failed flush retain, success clear',
+      (tester) async {
+        await _pumpShowcase(tester);
+        expect(
+          find.text('Analytics queue — Pending: 0 · Dropped: 0 · Uploaded: 0'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Grant analytics').last);
+        await tester.pump();
+        await tester.tap(find.text('Queue valid + PII').last);
+        await tester.pump();
+        expect(
+          find.textContaining('Analytics queue — Pending: 1'),
+          findsOneWidget,
+        );
+        expect(
+          StorageService.to.getString(StorageKeys.analyticsQueueV1),
+          isNot(contains('redacted@example.com')),
+        );
+
+        await tester.tap(find.text('Queue rejected').last);
+        await tester.pump();
+        expect(find.textContaining('Pending: 1 · Dropped: 1'), findsOneWidget);
+        expect(
+          StorageService.to.getString(StorageKeys.analyticsQueueV1),
+          isNot(contains('never-persisted@example.com')),
+        );
+
+        await tester.tap(find.text('Flush fail').last);
+        await tester.pump();
+        expect(
+          find.textContaining('Analytics queue — Pending: 1'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Flush success').last);
+        await tester.pump();
+        expect(
+          find.text('Analytics queue — Pending: 0 · Dropped: 1 · Uploaded: 1'),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('revoke consent purges pending queue and persisted payload', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+      await tester.tap(find.text('Grant analytics').last);
+      await tester.pump();
+      await tester.tap(find.text('Queue valid + PII').last);
+      await tester.pump();
+      expect(
+        find.textContaining('Analytics queue — Pending: 1'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Revoke + purge').last);
+      await tester.pump();
+
+      expect(
+        find.textContaining('Analytics queue — Pending: 0'),
+        findsOneWidget,
+      );
+      expect(StorageService.to.getString(StorageKeys.analyticsQueueV1), isNull);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('FEAT-62: ConnectivityCoordinator demo', () {

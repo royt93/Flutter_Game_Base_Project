@@ -260,7 +260,9 @@ class LevelUpOverlay extends StatelessWidget {
             Positioned.fill(
               child: Semantics(
                 container: true,
-                label: 'Level ${celebration.event.level}!',
+                label: 'level_up_banner'.trParams({
+                  'level': '${celebration.event.level}',
+                }),
                 child: ColoredBox(
                   color: const Color(0x99000000),
                   child: Stack(
@@ -373,7 +375,7 @@ class _LevelUpPanelState extends State<_LevelUpPanel> {
             builder: (context, scale, child) =>
                 Transform.scale(scale: scale, child: child),
             child: Text(
-              'Level ${event.level}!',
+              'level_up_banner'.trParams({'level': '${event.level}'}),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: NeonTheme.ink,
@@ -434,7 +436,7 @@ class _LevelUpPanelState extends State<_LevelUpPanel> {
             GestureDetector(
               onTap: widget.onSkipTap,
               child: Text(
-                'Skip',
+                'level_up_skip'.tr,
                 style: TextStyle(
                   color: NeonTheme.inkSoft,
                   fontWeight: FontWeight.w700,

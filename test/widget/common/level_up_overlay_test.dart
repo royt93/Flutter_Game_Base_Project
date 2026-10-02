@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/player_progression_service.dart';
 import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/level_up_overlay.dart';
@@ -20,12 +22,16 @@ Widget _host(
   VoidCallback? onSkipTap,
   TextDirection textDirection = TextDirection.ltr,
   double textScaleFactor = 1.0,
+  Locale locale = AppTranslations.fallback,
 }) {
   return MediaQuery(
     data: MediaQueryData(textScaler: TextScaler.linear(textScaleFactor)),
     child: Directionality(
       textDirection: textDirection,
-      child: MaterialApp(
+      child: GetMaterialApp(
+        translations: AppTranslations(),
+        locale: locale,
+        fallbackLocale: AppTranslations.fallback,
         home: LevelUpOverlay(
           controller: controller,
           reducedMotion: reducedMotion,
@@ -55,6 +61,8 @@ Future<void> _finishOrSkip(
 }
 
 void main() {
+  tearDown(Get.reset);
+
   group('LevelUpOverlay: render cơ bản', () {
     testWidgets('idle: chỉ hiện child, không có overlay', (tester) async {
       final controller = LevelUpOverlayController();
@@ -279,6 +287,37 @@ void main() {
 
       expect(find.text('+1 currency_0'), findsOneWidget);
       expect(find.text('+10 currency_9'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await _finishOrSkip(tester, controller);
+    });
+  });
+
+  group('BUG-94: i18n', () {
+    testWidgets('vi locale: "Lên cấp N!" và "Bỏ qua" thay vì literal English', (
+      tester,
+    ) async {
+      final controller = LevelUpOverlayController(
+        xpFillDuration: const Duration(milliseconds: 5),
+        levelPopDuration: const Duration(milliseconds: 5),
+        rewardRevealDuration: const Duration(milliseconds: 5),
+      );
+      await tester.pumpWidget(
+        _host(
+          controller,
+          reducedMotion: true,
+          onSkipTap: controller.skip,
+          locale: const Locale('vi'),
+        ),
+      );
+
+      unawaited(controller.show([_celebration(5)]));
+      await tester.pump();
+
+      expect(find.text('Lên cấp 5!'), findsOneWidget);
+      expect(find.text('Bỏ qua'), findsOneWidget);
+      expect(find.text('Level 5!'), findsNothing);
+      expect(find.text('Skip'), findsNothing);
       expect(tester.takeException(), isNull);
 
       await _finishOrSkip(tester, controller);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/analytics_provider.dart';
+import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/spotlight_overlay.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/tutorial_sequence.dart';
 
@@ -104,7 +105,10 @@ void main() {
         final targetKey = GlobalKey();
 
         await tester.pumpWidget(
-          MaterialApp(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: AppTranslations.fallback,
+            fallbackLocale: AppTranslations.fallback,
             home: TutorialSequence(
               controller: controller,
               child: Material(child: Text('target', key: targetKey)),
@@ -125,7 +129,10 @@ void main() {
         final keyB = GlobalKey();
 
         await tester.pumpWidget(
-          MaterialApp(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: AppTranslations.fallback,
+            fallbackLocale: AppTranslations.fallback,
             home: TutorialSequence(
               controller: controller,
               child: Material(
@@ -164,7 +171,10 @@ void main() {
       var completed = false;
 
       await tester.pumpWidget(
-        MaterialApp(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: AppTranslations.fallback,
+          fallbackLocale: AppTranslations.fallback,
           home: TutorialSequence(
             controller: controller,
             onComplete: () => completed = true,
@@ -193,7 +203,10 @@ void main() {
       final keyB = GlobalKey();
 
       await tester.pumpWidget(
-        MaterialApp(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: AppTranslations.fallback,
+          fallbackLocale: AppTranslations.fallback,
           home: TutorialSequence(
             controller: controller,
             child: Material(
@@ -233,7 +246,10 @@ void main() {
         var completed = false;
 
         await tester.pumpWidget(
-          MaterialApp(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: AppTranslations.fallback,
+            fallbackLocale: AppTranslations.fallback,
             home: TutorialSequence(
               controller: controller,
               onComplete: () => completed = true,
@@ -272,7 +288,10 @@ void main() {
       final key = GlobalKey();
 
       await tester.pumpWidget(
-        MaterialApp(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: AppTranslations.fallback,
+          fallbackLocale: AppTranslations.fallback,
           home: TutorialSequence(
             controller: controller,
             showSkip: false,
@@ -297,7 +316,10 @@ void main() {
       final key = GlobalKey();
 
       await tester.pumpWidget(
-        MaterialApp(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: AppTranslations.fallback,
+          fallbackLocale: AppTranslations.fallback,
           home: TutorialSequence(
             controller: controller,
             skipLabel: 'Bỏ qua',
@@ -313,6 +335,38 @@ void main() {
       expect(find.text('Skip'), findsNothing);
       expect(find.text('Bỏ qua'), findsOneWidget);
     });
+
+    testWidgets(
+      'BUG-94: vi locale → "Đã hiểu"/"Bước N/M"/"Bỏ qua" mặc định, không phải '
+      'literal English',
+      (tester) async {
+        final controller = TutorialSequenceController();
+        final key = GlobalKey();
+
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('vi'),
+            fallbackLocale: AppTranslations.fallback,
+            home: TutorialSequence(
+              controller: controller,
+              child: Material(child: Text('A', key: key)),
+            ),
+          ),
+        );
+
+        controller.start([TutorialStep(targetKey: key, message: 'Message A')]);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Bước 1/1'), findsOneWidget);
+        expect(find.text('Bỏ qua'), findsOneWidget);
+        expect(find.text('Đã hiểu'), findsOneWidget);
+        expect(find.text('Step 1/1'), findsNothing);
+        expect(find.text('Got it'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('IDEA-35: TutorialStep.listFromJson', () {
@@ -336,7 +390,10 @@ void main() {
       expect(steps[1].id, 's2');
       expect(steps[1].targetKey, keyB);
       expect(steps[1].title, isNull);
-      expect(steps[1].buttonLabel, 'Got it');
+      // BUG-94: no buttonLabel in JSON stays null now (no more hardcoded
+      // 'Got it' fallback baked into parsing) — TutorialSequence resolves
+      // the translated default itself at build time via `.tr`.
+      expect(steps[1].buttonLabel, isNull);
     });
 
     test('targetKey không có trong registry: skip bước đó, không crash', () {

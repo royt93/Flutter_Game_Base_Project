@@ -89,7 +89,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
   int _roundTaps = 0;
   int _roundScore = 0;
   bool _roundActive = false;
-  String _roundStatus = 'Spend 1 energy, then tap Circle 5 times to win.';
+  String _roundStatus = 'game_demo_round_initial'.tr;
   int _confettiBurstKey = 0;
   bool _showConfetti = false;
   bool _showAchievementBanner = false;
@@ -214,7 +214,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
       _haptics.play(HapticPattern.error);
       unawaited(AudioManager.maybe?.playSfx(_sfxError));
       setState(() {
-        _roundStatus = 'Not enough energy. Wait for refill.';
+        _roundStatus = 'game_demo_round_error_energy'.tr;
       });
       return;
     }
@@ -222,7 +222,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
       _roundActive = true;
       _roundTaps = 0;
       _roundScore = 0;
-      _roundStatus = 'Round active: tap Circle 5 times!';
+      _roundStatus = 'game_demo_round_active'.tr;
     });
   }
 
@@ -244,14 +244,16 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     unawaited(AudioManager.maybe?.playSfx(_sfxVictory, duck: true));
     final currentLevel =
         xpResult.value?.level ?? _progression.snapshot.value.level;
-    final levelUpMsg = currentLevel > prevLevel
-        ? ' LEVEL UP to Lv.$currentLevel!'
-        : '';
+    final leveledUp = currentLevel > prevLevel;
     if (!mounted) return;
     setState(() {
       _confettiBurstKey++;
       _showConfetti = true;
-      _roundStatus = 'Victory! +40 XP, +30 coins.$levelUpMsg';
+      _roundStatus = leveledUp
+          ? 'game_demo_round_victory_level_up'.trParams({
+              'level': '$currentLevel',
+            })
+          : 'game_demo_round_victory'.tr;
     });
     // ponytail: keep reward feedback in screen state; add a transient toast
     // when host app owns snackbar lifecycle and teardown policy.
@@ -323,7 +325,10 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                       horizontal: NeonTheme.s16,
                       vertical: NeonTheme.s8,
                     ),
-                    child: const StrokeText('Circle', fontSize: 14),
+                    child: StrokeText(
+                      'game_demo_circle_label'.tr,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
@@ -380,9 +385,12 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                           ),
                           const SizedBox(width: NeonTheme.s8),
                           Text(
-                            'gems: ${_wallet.balanceOf('gems')} | '
-                            'tap: ${_achievements.progressOf(_tapAchievementId)}'
-                            '/$_tapAchievementThreshold',
+                            'game_demo_hud_progress'.trParams({
+                              'gems': '${_wallet.balanceOf('gems')}',
+                              'tap':
+                                  '${_achievements.progressOf(_tapAchievementId)}',
+                              'target': '$_tapAchievementThreshold',
+                            }),
                             style: TextStyle(
                               color: NeonTheme.ink,
                               fontWeight: FontWeight.w700,
@@ -421,15 +429,24 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                         const SizedBox(height: NeonTheme.s8),
                         CommonButton(
                           label: _roundActive
-                              ? 'Tap Circle: $_roundTaps / 5'
-                              : 'Start Round (-1 Energy)',
+                              ? 'game_demo_tap_circle_progress'.trParams({
+                                  'current': '$_roundTaps',
+                                  'target': '5',
+                                })
+                              : 'game_demo_start_round'.tr,
                           onTap: _roundActive ? null : _startRound,
                         ),
                         const SizedBox(height: NeonTheme.s8),
                         Obx(() {
                           final progress = _progression.snapshot.value;
                           return Text(
-                            'Score: $_roundScore | Lv.${progress.level} | XP: ${progress.xpIntoLevel}/${progress.xpToNextLevel} | Coins: ${_wallet.balanceOf('coins')}',
+                            'game_demo_score_hud'.trParams({
+                              'score': '$_roundScore',
+                              'level': '${progress.level}',
+                              'xp': '${progress.xpIntoLevel}',
+                              'xpToNext': '${progress.xpToNextLevel}',
+                              'coins': '${_wallet.balanceOf('coins')}',
+                            }),
                             style: TextStyle(color: NeonTheme.inkSoft),
                           );
                         }),
@@ -501,9 +518,8 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                   top: kToolbarHeight + 70,
                   left: NeonTheme.s24,
                   right: NeonTheme.s24,
-                  child: const ToastBanner(
-                    message:
-                        '🎉 Achievement Unlocked: Circle Tap Master! +10 Gems',
+                  child: ToastBanner(
+                    message: 'game_demo_achievement_unlocked'.tr,
                     color: null,
                   ),
                 ),

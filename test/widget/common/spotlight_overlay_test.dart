@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/spotlight_overlay.dart';
 
 void main() {
+  tearDown(Get.reset);
+
   Widget harness(GlobalKey targetKey, {VoidCallback? onDismiss}) {
-    return MaterialApp(
+    return GetMaterialApp(
+      translations: AppTranslations(),
+      locale: AppTranslations.fallback,
+      fallbackLocale: AppTranslations.fallback,
       home: Scaffold(
         body: Stack(
           children: [
@@ -83,7 +90,10 @@ void main() {
     (tester) async {
       final targetKey = GlobalKey();
       await tester.pumpWidget(
-        MaterialApp(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: AppTranslations.fallback,
+          fallbackLocale: AppTranslations.fallback,
           home: Scaffold(
             body: Stack(
               children: [
@@ -127,7 +137,10 @@ void main() {
   ) async {
     final targetKey = GlobalKey();
     await tester.pumpWidget(
-      MaterialApp(
+      GetMaterialApp(
+        translations: AppTranslations(),
+        locale: AppTranslations.fallback,
+        fallbackLocale: AppTranslations.fallback,
         home: Scaffold(
           body: SpotlightOverlay(
             targetKey: targetKey,
@@ -183,7 +196,10 @@ void main() {
 
   group('ENH-38: RTL', () {
     Widget harness(GlobalKey targetKey, TextDirection dir) {
-      return MaterialApp(
+      return GetMaterialApp(
+        translations: AppTranslations(),
+        locale: AppTranslations.fallback,
+        fallbackLocale: AppTranslations.fallback,
         home: Scaffold(
           body: Directionality(
             textDirection: dir,
@@ -285,7 +301,10 @@ void main() {
     ) async {
       final targetKey = GlobalKey();
       await tester.pumpWidget(
-        MaterialApp(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: AppTranslations.fallback,
+          fallbackLocale: AppTranslations.fallback,
           home: Scaffold(
             body: Stack(
               children: [
@@ -329,7 +348,10 @@ void main() {
         var dismissed = false;
         var skipped = false;
         await tester.pumpWidget(
-          MaterialApp(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: AppTranslations.fallback,
+            fallbackLocale: AppTranslations.fallback,
             home: Scaffold(
               body: Stack(
                 children: [
@@ -377,7 +399,10 @@ void main() {
     ) async {
       final targetKey = GlobalKey();
       await tester.pumpWidget(
-        MaterialApp(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: AppTranslations.fallback,
+          fallbackLocale: AppTranslations.fallback,
           home: Scaffold(
             body: Stack(
               children: [
@@ -415,4 +440,54 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  testWidgets(
+    'BUG-94: vi locale → nút dismiss/skip mặc định là "Đã hiểu"/"Bỏ qua", '
+    'không phải literal English',
+    (tester) async {
+      final targetKey = GlobalKey();
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('vi'),
+          fallbackLocale: AppTranslations.fallback,
+          home: Scaffold(
+            body: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 200, left: 40),
+                    child: SizedBox(
+                      key: targetKey,
+                      width: 120,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        child: const Text('Target'),
+                      ),
+                    ),
+                  ),
+                ),
+                SpotlightOverlay(
+                  targetKey: targetKey,
+                  message: 'Nhấn vào đây để bắt đầu',
+                  title: 'Bước 1',
+                  onDismiss: () {},
+                  onSkip: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Đã hiểu'), findsOneWidget);
+      expect(find.text('Bỏ qua'), findsOneWidget);
+      expect(find.text('Got it'), findsNothing);
+      expect(find.text('Skip'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

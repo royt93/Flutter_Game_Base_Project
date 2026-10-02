@@ -1308,6 +1308,223 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'BUG-94: vi locale trên device dịch GameDemo status/HUD/button và '
+    'PauseOverlay, không còn literal English',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      // `Get.updateLocale` calls `performReassemble`, which can hang under a
+      // real-device integration harness. Set GetX's locale source directly,
+      // then rebuild the app root; production still changes locale through
+      // LocaleService.
+      Get.locale = const Locale('vi');
+      await tester.pumpWidget(
+        const app.RoyBaseGameApp(initialLocale: Locale('vi')),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+
+      await _goToGameDemo(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        find.text('Dùng 1 năng lượng, rồi chạm Vòng tròn 5 lần để thắng.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('ngọc:'), findsWidgets);
+      expect(
+        find.text('Spend 1 energy, then tap Circle 5 times to win.'),
+        findsNothing,
+      );
+      expect(find.text('Start Round (-1 Energy)'), findsNothing);
+
+      final startRound = find.byWidgetPredicate(
+        (widget) =>
+            widget is CommonButton &&
+            widget.label == 'Bắt đầu vòng chơi (-1 Năng lượng)',
+      );
+      expect(startRound, findsWidgets);
+      await tester.tap(startRound.first);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.text('Vòng chơi đang diễn ra: chạm Vòng tròn 5 lần!'),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is FloatingActionButton && widget.heroTag == 'pause',
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is CommonButton && widget.label == 'Tiếp tục',
+        ),
+        findsWidgets,
+      );
+      expect(find.text('Resume'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'FEAT-98: real SharedPreferences giữ redacted queue qua failed flush/restart, '
+    'success flush xoá durable queue',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+
+      final ConsentStateService consent;
+      final existingConsent = ConsentStateService.maybe;
+      if (existingConsent != null) {
+        consent = existingConsent;
+      } else {
+        consent = Get.put(
+          ConsentStateService(policyVersion: 1),
+          permanent: true,
+        );
+      }
+      consent.grant(ConsentCategory.analytics);
+      final registry = SdkEventSchemaRegistry()
+        ..register(
+          EventSchema(
+            name: 'device_event',
+            version: 1,
+            params: {
+              'level': const EventParamSchema(
+                type: EventParamType.int,
+                required: true,
+              ),
+              'email': const EventParamSchema(
+                type: EventParamType.string,
+                pii: true,
+              ),
+            },
+          ),
+        );
+      var shouldFail = true;
+      Future<void> upload(List<QueuedAnalyticsEvent> _) async {
+        if (shouldFail) throw StateError('device offline');
+      }
+
+      final queue = PrivacyAwareAnalyticsQueue(
+        storage: StorageService.to,
+        consent: consent,
+        registry: registry,
+        uploader: upload,
+        retryPolicy: const RetryPolicy(
+          maxAttempts: 1,
+          baseDelay: Duration.zero,
+        ),
+      );
+      expect(
+        await queue.enqueueDurably('device_event', {
+          'level': 7,
+          'email': 'must-redact@example.com',
+        }),
+        isTrue,
+      );
+      expect(
+        StorageService.to.getString(StorageKeys.analyticsQueueV1),
+        isNot(contains('must-redact@example.com')),
+      );
+      expect((await queue.flush()).isSuccess, isFalse);
+      expect(queue.pendingCount, 1);
+      queue.dispose();
+
+      final restarted = PrivacyAwareAnalyticsQueue(
+        storage: StorageService.to,
+        consent: consent,
+        registry: registry,
+        uploader: upload,
+        retryPolicy: const RetryPolicy(
+          maxAttempts: 1,
+          baseDelay: Duration.zero,
+        ),
+      );
+      expect(restarted.pendingCount, 1);
+      shouldFail = false;
+      expect((await restarted.flush()).value, 1);
+      expect(restarted.pendingCount, 0);
+      expect(StorageService.to.getString(StorageKeys.analyticsQueueV1), isNull);
+      restarted.dispose();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('BUG-96: timeout trên device không mở AsyncActionGuard lock và '
+      'RetryExecutor không overlap attempt cũ còn sống', (tester) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+
+    // Real wall-clock timers on a device (no fake-async zone the way plain
+    // `flutter test` widget tests get) — use a generous window so this
+    // proves correctness (ordering), not a micro-timing race against
+    // device/Gradle-harness overhead.
+    final guard = AsyncActionGuard(
+      maxQueueWait: const Duration(milliseconds: 500),
+    );
+    final holder = Completer<void>();
+    var active = 0;
+    var maxActive = 0;
+    final first = guard.runExclusive('device-bug96', () async {
+      active++;
+      if (active > maxActive) maxActive = active;
+      await holder.future;
+      active--;
+    });
+    final timedOut = guard
+        .runExclusive('device-bug96', () async => 2)
+        .catchError((Object _) => -1);
+
+    // Real-duration pump, comfortably past maxQueueWait, so the timeout
+    // genuinely fires before we read its result.
+    await tester.pump(const Duration(milliseconds: 800));
+    expect(await timedOut, -1);
+
+    var thirdRan = false;
+    final third = guard.runExclusive('device-bug96', () async {
+      thirdRan = true;
+      active++;
+      if (active > maxActive) maxActive = active;
+      active--;
+    });
+    // third's own 500ms window just started — check promptly, well before
+    // it could time out on its own, that it hasn't run while A still holds.
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(thirdRan, isFalse);
+    expect(maxActive, 1);
+
+    // Release A immediately (no further real delay) so third resolves far
+    // under its own 500ms budget once A's barrier clears.
+    holder.complete();
+    await first;
+    await third;
+    expect(thirdRan, isTrue);
+    expect(maxActive, 1);
+
+    final retryAttempt = Completer<void>();
+    var retryCalls = 0;
+    final retryResult = await RetryExecutor(delayFn: (_) async {}).run<void>(
+      () async {
+        retryCalls++;
+        await retryAttempt.future;
+      },
+      policy: const RetryPolicy(
+        maxAttempts: 3,
+        baseDelay: Duration.zero,
+        timeout: Duration(milliseconds: 200),
+      ),
+    );
+    expect(retryResult.isSuccess, isFalse);
+    expect(retryCalls, 1);
+    retryAttempt.complete();
+    await retryAttempt.future;
+    expect(tester.takeException(), isNull);
+  });
 }
 
 class _ThrowingDeviceCloudProvider extends CloudSaveProvider {

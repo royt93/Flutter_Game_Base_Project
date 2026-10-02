@@ -37,6 +37,30 @@ class AppTranslations extends Translations {
       'a11y_level_up': 'Level up! Now level {value}.',
       'a11y_reward_granted': 'Reward received: {value}.',
       'a11y_lives_changed': 'Lives: {value}.',
+      'pause_title': 'Paused',
+      'pause_resume': 'Resume',
+      'pause_restart': 'Restart',
+      'pause_quit': 'Quit',
+      'tutorial_got_it': 'Got it',
+      'tutorial_skip': 'Skip',
+      'tutorial_step_indicator': 'Step @current/@total',
+      'level_up_banner': 'Level @level!',
+      'level_up_skip': 'Skip',
+      'game_demo_round_initial':
+          'Spend 1 energy, then tap Circle 5 times to win.',
+      'game_demo_round_error_energy': 'Not enough energy. Wait for refill.',
+      'game_demo_round_active': 'Round active: tap Circle 5 times!',
+      'game_demo_round_victory': 'Victory! +40 XP, +30 coins.',
+      'game_demo_round_victory_level_up':
+          'Victory! +40 XP, +30 coins. LEVEL UP to Lv.@level!',
+      'game_demo_circle_label': 'Circle',
+      'game_demo_hud_progress': 'gems: @gems | tap: @tap/@target',
+      'game_demo_tap_circle_progress': 'Tap Circle: @current / @target',
+      'game_demo_start_round': 'Start Round (-1 Energy)',
+      'game_demo_score_hud':
+          'Score: @score | Lv.@level | XP: @xp/@xpToNext | Coins: @coins',
+      'game_demo_achievement_unlocked':
+          '🎉 Achievement Unlocked: Circle Tap Master! +10 Gems',
     },
     'vi': {
       'app_name': 'Roy Project Base Game',
@@ -61,6 +85,31 @@ class AppTranslations extends Translations {
       'a11y_level_up': 'Lên cấp! Hiện tại cấp {value}.',
       'a11y_reward_granted': 'Nhận thưởng: {value}.',
       'a11y_lives_changed': 'Số mạng: {value}.',
+      'pause_title': 'Đã tạm dừng',
+      'pause_resume': 'Tiếp tục',
+      'pause_restart': 'Chơi lại',
+      'pause_quit': 'Thoát',
+      'tutorial_got_it': 'Đã hiểu',
+      'tutorial_skip': 'Bỏ qua',
+      'tutorial_step_indicator': 'Bước @current/@total',
+      'level_up_banner': 'Lên cấp @level!',
+      'level_up_skip': 'Bỏ qua',
+      'game_demo_round_initial':
+          'Dùng 1 năng lượng, rồi chạm Vòng tròn 5 lần để thắng.',
+      'game_demo_round_error_energy':
+          'Không đủ năng lượng. Chờ hồi năng lượng.',
+      'game_demo_round_active': 'Vòng chơi đang diễn ra: chạm Vòng tròn 5 lần!',
+      'game_demo_round_victory': 'Chiến thắng! +40 XP, +30 xu.',
+      'game_demo_round_victory_level_up':
+          'Chiến thắng! +40 XP, +30 xu. LÊN CẤP @level!',
+      'game_demo_circle_label': 'Vòng tròn',
+      'game_demo_hud_progress': 'ngọc: @gems | lượt chạm: @tap/@target',
+      'game_demo_tap_circle_progress': 'Chạm Vòng tròn: @current / @target',
+      'game_demo_start_round': 'Bắt đầu vòng chơi (-1 Năng lượng)',
+      'game_demo_score_hud':
+          'Điểm: @score | Cấp @level | XP: @xp/@xpToNext | Xu: @coins',
+      'game_demo_achievement_unlocked':
+          '🎉 Đã mở khóa thành tựu: Bậc thầy chạm Vòng tròn! +10 Ngọc',
     },
   };
 }

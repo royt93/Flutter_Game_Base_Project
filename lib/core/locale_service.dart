@@ -23,13 +23,11 @@ class LocaleService extends GetxService {
         if (AppTranslations.codeOf(l) == saved) return l;
       }
     }
-    // chưa chọn → theo máy nếu hỗ trợ, không thì English (default)
-    final device = Get.deviceLocale;
-    if (device != null) {
-      for (final l in AppTranslations.supported) {
-        if (l.languageCode == device.languageCode) return l;
-      }
-    }
+    // Chưa chọn locale nào → luôn mặc định English, KHÔNG suy theo locale
+    // máy. Sản phẩm hướng global: một build cài trên thiết bị bất kỳ quốc
+    // gia nào phải mở lên cùng một trải nghiệm English mặc định, người
+    // dùng tự đổi ngôn ngữ qua Settings nếu muốn — không đoán hộ theo
+    // device locale.
     return AppTranslations.fallback;
   }
 

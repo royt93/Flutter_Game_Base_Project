@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../core/analytics_provider.dart';
 import '../../../core/neon_theme.dart';
@@ -14,7 +15,7 @@ class TutorialStep {
     required this.targetKey,
     required this.message,
     this.title,
-    this.buttonLabel = 'Got it',
+    this.buttonLabel,
     this.color,
     this.id,
   });
@@ -22,7 +23,10 @@ class TutorialStep {
   final GlobalKey targetKey;
   final String message;
   final String? title;
-  final String buttonLabel;
+
+  /// Defaults to `'tutorial_got_it'.tr` (BUG-94) — nullable because a
+  /// locale-resolved string is no longer a compile-time constant.
+  final String? buttonLabel;
   final Color? color;
 
   /// Stable id for this step, used to key its shown/dismissed
@@ -86,7 +90,7 @@ class TutorialStep {
           targetKey: targetKey,
           message: message,
           title: title as String?,
-          buttonLabel: (buttonLabel as String?) ?? 'Got it',
+          buttonLabel: buttonLabel as String?,
         ),
       );
     }
@@ -189,7 +193,7 @@ class TutorialSequence extends StatefulWidget {
     required this.child,
     this.onComplete,
     this.showSkip = true,
-    this.skipLabel = 'Skip',
+    this.skipLabel,
   });
 
   final TutorialSequenceController controller;
@@ -206,7 +210,8 @@ class TutorialSequence extends StatefulWidget {
   final bool showSkip;
 
   /// Label for the skip action, only shown when [showSkip] is true.
-  final String skipLabel;
+  /// Defaults to `'tutorial_skip'.tr` (BUG-94).
+  final String? skipLabel;
 
   @override
   State<TutorialSequence> createState() => _TutorialSequenceState();
@@ -257,9 +262,10 @@ class _TutorialSequenceState extends State<TutorialSequence> {
             // ENH-48: "Step X/Y" so the player knows how much is left, and
             // an optional early-exit Skip action (the controller already
             // had skip() — this just wires a button to it).
-            stepIndicator:
-                'Step ${widget.controller.currentIndex + 1}/'
-                '${widget.controller.stepCount}',
+            stepIndicator: 'tutorial_step_indicator'.trParams({
+              'current': '${widget.controller.currentIndex + 1}',
+              'total': '${widget.controller.stepCount}',
+            }),
             onSkip: widget.showSkip ? widget.controller.skip : null,
             skipLabel: widget.skipLabel,
           ),

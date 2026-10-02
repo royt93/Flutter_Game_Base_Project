@@ -139,67 +139,51 @@ void main() {
     );
 
     testWidgets(
-      'sau 1 lệnh gọi timeout, runExclusive MỚI cho ĐÚNG key vẫn chạy được, không bị kẹt bởi hàng đợi cũ đã timeout',
+      'BUG-96: sau khi B timeout chờ A, C CÙNG key vẫn phải đợi A thật sự '
+      'xong mới được chạy — waiter timeout KHÔNG được mở khoá trong khi '
+      'holder cũ còn sống (phá mutual exclusion)',
       (tester) async {
         final guard = AsyncActionGuard(
           maxQueueWait: const Duration(milliseconds: 50),
         );
         final blocker = Completer<void>();
         final order = <String>[];
-        final first = guard.runExclusive('k', () => blocker.future);
+        final first = guard.runExclusive('k', () async {
+          order.add('first:start');
+          await blocker.future;
+          order.add('first:end');
+          return 1;
+        });
         final second = guard
             .runExclusive('k', () async => 2)
             .catchError((Object _) => -1);
 
         await tester.pump(const Duration(milliseconds: 60));
-        await second; // second đã timeout và tự dọn dẹp xong
+        await second; // second đã timeout (đúng hành vi cũ, vẫn giữ)
 
-        // 'third' KHÔNG liên quan gì tới 'first'/'second' — theo đúng thiết
-        // kế của maxQueueWait, không được chờ 'first' (vốn vẫn đang treo)
-        // mới chạy được.
+        // C bắt đầu NGAY sau khi B timeout, trong lúc A (holder thật) vẫn
+        // đang treo chờ blocker — C KHÔNG được chạy cho tới khi A xong.
         final third = guard.runExclusive('k', () async {
           order.add('third:ran');
           return 3;
         });
-        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 20));
 
-        expect(order, ['third:ran']);
-        expect(await third, 3);
-
-        blocker.complete();
-        await first;
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
-      'pendingCount không bị rò rỉ/sai lệch sau khi có lệnh gọi timeout',
-      (tester) async {
-        final guard = AsyncActionGuard(
-          maxQueueWait: const Duration(milliseconds: 50),
-        );
-        final blocker = Completer<void>();
-        final first = guard.runExclusive('k', () => blocker.future);
-        expect(guard.pendingCount, 1);
-
-        final second = guard
-            .runExclusive('k', () async => 2)
-            .catchError((Object _) => -1);
+        expect(order, [
+          'first:start',
+        ], reason: 'C chưa được chạy khi A (holder thật) còn sống');
         expect(
           guard.pendingCount,
           1,
-        ); // second thay thế chỗ của first trong map
-
-        await tester.pump(const Duration(milliseconds: 60));
-        await second;
-        expect(
-          guard.pendingCount,
-          0,
-        ); // second timeout, tự dọn dẹp, không rò rỉ
+          reason: 'key vẫn coi là bị giữ bởi A, dù B đã timeout và return',
+        );
 
         blocker.complete();
         await first;
         await tester.pump();
+        await third;
+
+        expect(order, ['first:start', 'first:end', 'third:ran']);
         expect(guard.pendingCount, 0);
       },
     );

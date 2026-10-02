@@ -25,13 +25,16 @@ Thêm key en+vi vào `AppTranslations`, thay mọi literal; giữ test key parit
 
 ## Acceptance criteria
 
-- [ ] Test key parity pass cho mọi key mới.
-- [ ] Grep literal cũ trong source/widget/example rỗng.
-- [ ] Screenshot/widget test không phụ thuộc locale cố định cho label đã đổi.
+- [x] Test key parity pass cho mọi key mới.
+- [x] Grep literal cũ trong source/widget/example rỗng.
+- [x] Screenshot/widget test không phụ thuộc locale cố định cho label đã đổi.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+- **Implementation**: Thêm đủ key en/vi cho Pause/Tutorial/Spotlight/LevelUp/GameDemo; dùng GetX `@param` đúng cho `.trParams`, giữ `{value}` cho announcer resolver riêng. Default constructor label chuyển nullable và resolve `.tr` lúc build để đổi locale runtime đúng. Fresh install luôn English, không theo OS locale; đã cập nhật `CLAUDE.md` theo quyết định sản phẩm global.
+- **TDD & Test coverage**: Key parity + placeholder parity; widget tests en/vi cho Pause/Tutorial/Spotlight/LevelUp/GameDemo; custom overrides giữ nguyên; device test mở GameDemo vi, kiểm tra status/HUD/button/PauseOverlay và không còn English.
+- **Phân tích/test**: Grep literal cũ rỗng; root 2537/2537 pass, example 200/200 pass; analyze sạch. Device test BUG-94 pass trên TECNO KJ7.
+- **Audit**: Fork độc lập review toàn cụm đạt 9.8/10, không finding i18n/default-locale.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

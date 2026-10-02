@@ -25,15 +25,18 @@ Decorator/service local: consent trước tiên, schema validate + redact, sampl
 
 ## Acceptance criteria
 
-- [ ] Denied/unknown consent không queue bất kỳ event nào.
-- [ ] Validate/redact trước enqueue; schema reject không chạm outbox.
-- [ ] Queue bounded FIFO; overflow/drop reason observable.
-- [ ] Flush retry qua RetryPolicy/outbox; success clear crash-safe, failure giữ item.
-- [ ] Không thêm vendor SDK/transport/network.
+- [x] Denied/unknown consent không queue bất kỳ event nào.
+- [x] Validate/redact trước enqueue; schema reject không chạm outbox.
+- [x] Queue bounded FIFO; overflow/drop reason observable.
+- [x] Flush retry qua RetryPolicy/outbox; success clear crash-safe, failure giữ item.
+- [x] Không thêm vendor SDK/transport/network.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+- **Implementation**: `lib/core/privacy_aware_analytics_queue.dart` — thứ tự cố định consent → schema validate/redact → sampling FNV-1a → enqueue bounded FIFO (reject-newest khi đầy, lý do quan sát được qua `AnalyticsQueueAudit`). Consent revoke purge ngay memory + storage, chặn ACK đang bay. Persist qua 1 tail tuần tự; `enqueueDurably` rollback memory nếu ghi đĩa lỗi. `flush()` single-flight, upload all-or-nothing qua `RetryExecutor`/`RetryPolicy` đã fix ở BUG-96. `logEvent` sync không bao giờ throw ra ngoài.
+- **TDD & Test coverage**: 10 unit test core (consent gate, redact, FIFO reject-newest, sampling determinism, hydrate/corrupt storage, retry fail/success, single-flight concurrency, revoke purge, persistence-failure rollback, constructor validation); widget demo 2 test (queue/drop/upload, revoke) trong `widget_showcase_screen_test.dart`; device test thật trên SharedPreferences xác nhận redacted queue sống qua failed flush + restart process, rồi xoá sạch khi flush thành công.
+- **Phân tích/test**: Root 2537/2537 pass, example 200/200 pass, `flutter analyze` sạch 2 nơi, API compatibility additive rồi regenerate snapshot unchanged, `dart pub publish --dry-run` không lỗi nội dung package, đủ 5 quality-gate script pass. Device test pass trên TECNO KJ7.
+- **Audit**: Fork độc lập review toàn batch (bao gồm FEAT-98) đạt 9.8/10, 0 finding thật về consent/privacy/concurrency/persistence.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

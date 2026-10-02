@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/utils/retry_policy.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
@@ -228,28 +230,65 @@ void main() {
       expect(events.last.outcome, RetryOutcome.cancelled);
     });
 
+    test('BUG-96: timeout per-attempt là TERMINAL — KHÔNG retry, vì Future gốc '
+        'của attempt 1 không hề bị cancel và vẫn có thể commit side-effect '
+        'sau đó; attempt 2 chạy song song sẽ double side-effect', () async {
+      var calls = 0;
+      final attempt1Completer = Completer<String>();
+      final result = await run(
+        () async {
+          calls++;
+          if (calls == 1) return attempt1Completer.future;
+          return 'done';
+        },
+        policy: const RetryPolicy(
+          maxAttempts: 2,
+          baseDelay: Duration(milliseconds: 10),
+          timeout: Duration(milliseconds: 1),
+        ),
+      );
+
+      expect(result.isSuccess, isFalse);
+      final failure = result as SdkFailure;
+      expect(failure.cause, isA<TimeoutException>());
+      expect(delaysUsed, isEmpty, reason: 'timeout không trigger backoff');
+      expect(
+        calls,
+        1,
+        reason: 'attempt 2 KHÔNG được bắt đầu khi attempt 1 còn sống',
+      );
+      expect(events.single.outcome, RetryOutcome.failedNonRetryable);
+
+      // Attempt 1's Future gốc vẫn còn sống SAU KHI run() đã trả lời —
+      // chứng minh timeout không cancel được nó, đúng lý do phải terminal.
+      attempt1Completer.complete('late-commit');
+      await attempt1Completer.future;
+      expect(calls, 1);
+    });
+
     test(
-      'timeout per-attempt: TimeoutException đi qua đúng logic retry (mặc định retryable)',
+      'BUG-96: lỗi action bình thường (không phải timeout) vẫn retry như cũ',
       () async {
         var calls = 0;
         final result = await run(
           () async {
             calls++;
-            if (calls == 1) {
-              await Future<void>.delayed(const Duration(seconds: 10));
-            }
-            return 'done';
+            if (calls < 2) throw Exception('transient, not a timeout');
+            return 'ok';
           },
           policy: const RetryPolicy(
-            maxAttempts: 2,
+            maxAttempts: 3,
             baseDelay: Duration(milliseconds: 10),
-            timeout: Duration(milliseconds: 1),
           ),
         );
 
         expect(result.isSuccess, isTrue);
-        expect(result.value, 'done');
+        expect(result.value, 'ok');
         expect(calls, 2);
+        expect(events.map((e) => e.outcome), [
+          RetryOutcome.retrying,
+          RetryOutcome.success,
+        ]);
       },
     );
 

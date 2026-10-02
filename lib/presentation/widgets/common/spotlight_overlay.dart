@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../core/neon_theme.dart';
 import '../neon_dialog.dart';
@@ -22,21 +23,24 @@ class SpotlightOverlay extends StatefulWidget {
     required this.message,
     required this.onDismiss,
     this.title,
-    this.buttonLabel = 'Got it',
+    this.buttonLabel,
     this.color,
     this.holeRadius = 16,
     this.holePadding = 8,
     this.dimColor,
     this.stepIndicator,
     this.onSkip,
-    this.skipLabel = 'Skip',
+    this.skipLabel,
   });
 
   /// The already-mounted target widget to highlight.
   final GlobalKey targetKey;
   final String message;
   final String? title;
-  final String buttonLabel;
+
+  /// Defaults to `'tutorial_got_it'.tr` (BUG-94) — nullable because a
+  /// locale-resolved string is no longer a compile-time constant.
+  final String? buttonLabel;
   final VoidCallback onDismiss;
 
   /// Small progress caption shown above [title]/[message] (e.g. "Step
@@ -51,7 +55,8 @@ class SpotlightOverlay extends StatefulWidget {
   final VoidCallback? onSkip;
 
   /// Label for the [onSkip] action, only shown when [onSkip] is non-null.
-  final String skipLabel;
+  /// Defaults to `'tutorial_skip'.tr` (BUG-94).
+  final String? skipLabel;
 
   /// Defaults to [NeonTheme.purple] — nullable because a `NeonTheme` color
   /// field is no longer a compile-time constant.
@@ -138,13 +143,13 @@ class _SpotlightOverlayState extends State<SpotlightOverlay> {
             screenSize: screenSize,
             title: widget.title,
             message: widget.message,
-            buttonLabel: widget.buttonLabel,
+            buttonLabel: widget.buttonLabel ?? 'tutorial_got_it'.tr,
             color: widget.color ?? NeonTheme.purple,
             onDismiss: widget.onDismiss,
             entranceDuration: entranceDuration,
             stepIndicator: widget.stepIndicator,
             onSkip: widget.onSkip,
-            skipLabel: widget.skipLabel,
+            skipLabel: widget.skipLabel ?? 'tutorial_skip'.tr,
           ),
       ],
     );
@@ -205,7 +210,7 @@ class _Callout extends StatelessWidget {
     required this.entranceDuration,
     this.stepIndicator,
     this.onSkip,
-    this.skipLabel = 'Skip',
+    required this.skipLabel,
   });
 
   final Rect rect;

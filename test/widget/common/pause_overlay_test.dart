@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/game_session_controller.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/pause_overlay.dart';
@@ -9,10 +11,16 @@ import 'package:roy_casual_kit/presentation/widgets/common/pause_overlay.dart';
 // thay vì text trực tiếp cho mọi nút (cùng lý do common_button_test.dart).
 Finder _button(String label) => find.widgetWithText(CommonButton, label);
 
+// BUG-94: GetMaterialApp (không MaterialApp trơn) — mặc định dịch 'Paused'/
+// 'Resume'/... giờ đi qua `.tr`, cần GetX translations binding thật mới
+// resolve đúng thay vì hiện nguyên key.
 Widget _wrap(
   GameSessionController session, {
   bool showForSystemPause = false,
-}) => MaterialApp(
+  Locale locale = AppTranslations.fallback,
+}) => GetMaterialApp(
+  translations: AppTranslations(),
+  locale: locale,
   home: Material(
     child: Stack(
       children: [
@@ -132,7 +140,8 @@ void main() {
     var resumed = false;
     var restarted = false;
     await tester.pumpWidget(
-      MaterialApp(
+      GetMaterialApp(
+        translations: AppTranslations(),
         home: Material(
           child: Stack(
             children: [
@@ -173,7 +182,8 @@ void main() {
     var quit = false;
     var settings = false;
     await tester.pumpWidget(
-      MaterialApp(
+      GetMaterialApp(
+        translations: AppTranslations(),
         home: Material(
           child: Stack(
             children: [
@@ -236,7 +246,8 @@ void main() {
     (tester) async {
       final session = _playingSession()..pause(GamePauseReason.user);
       await tester.pumpWidget(
-        MaterialApp(
+        GetMaterialApp(
+          translations: AppTranslations(),
           home: MediaQuery(
             data: const MediaQueryData(disableAnimations: true),
             child: Material(
@@ -257,7 +268,8 @@ void main() {
   testWidgets('RTL + text scale lớn không throw', (tester) async {
     final session = _playingSession()..pause(GamePauseReason.user);
     await tester.pumpWidget(
-      MaterialApp(
+      GetMaterialApp(
+        translations: AppTranslations(),
         home: Directionality(
           textDirection: TextDirection.rtl,
           child: MediaQuery(
@@ -281,7 +293,8 @@ void main() {
         final session = _playingSession();
         final gameButtonFocus = FocusNode(debugLabel: 'gameButton');
         await tester.pumpWidget(
-          MaterialApp(
+          GetMaterialApp(
+            translations: AppTranslations(),
             home: Material(
               child: Stack(
                 children: [
@@ -314,6 +327,68 @@ void main() {
 
         expect(gameButtonFocus.hasFocus, isTrue);
         gameButtonFocus.dispose();
+      },
+    );
+  });
+
+  group('BUG-94: i18n sweep', () {
+    testWidgets('locale vi: default title/resume/restart/quit dịch đúng', (
+      tester,
+    ) async {
+      final session = GameSessionController()
+        ..markReady()
+        ..start()
+        ..pause(GamePauseReason.user);
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('vi'),
+          home: Material(
+            child: Stack(
+              children: [
+                const Center(child: Text('game content')),
+                PauseOverlay(session: session, onQuit: () {}),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Đã tạm dừng'), findsOneWidget);
+      expect(_button('Tiếp tục'), findsWidgets);
+      expect(_button('Chơi lại'), findsWidgets);
+      expect(_button('Thoát'), findsWidgets);
+    });
+
+    testWidgets(
+      'custom label override vẫn giữ nguyên, không bị .tr đè (en lẫn vi)',
+      (tester) async {
+        final session = GameSessionController()
+          ..markReady()
+          ..start()
+          ..pause(GamePauseReason.user);
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('vi'),
+            home: Material(
+              child: Stack(
+                children: [
+                  PauseOverlay(
+                    session: session,
+                    title: 'Custom Title',
+                    resumeLabel: 'Custom Resume',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Custom Title'), findsOneWidget);
+        expect(_button('Custom Resume'), findsWidgets);
       },
     );
   });

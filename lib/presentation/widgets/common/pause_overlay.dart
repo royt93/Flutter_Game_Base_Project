@@ -159,12 +159,12 @@ class PauseOverlay extends StatelessWidget {
         ),
         child: Semantics(
           container: true,
-          label: title ?? 'Paused',
+          label: title ?? 'pause_title'.tr,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                title ?? 'Paused',
+                title ?? 'pause_title'.tr,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: NeonTheme.ink,
@@ -175,19 +175,19 @@ class PauseOverlay extends StatelessWidget {
               ),
               const SizedBox(height: NeonTheme.s24),
               CommonButton(
-                label: resumeLabel ?? 'Resume',
+                label: resumeLabel ?? 'pause_resume'.tr,
                 onTap: _handleResume,
               ),
               const SizedBox(height: NeonTheme.s16),
               CommonButton(
-                label: restartLabel ?? 'Restart',
+                label: restartLabel ?? 'pause_restart'.tr,
                 variant: CommonButtonVariant.secondary,
                 onTap: _handleRestart,
               ),
               if (onSettings != null) ...[
                 const SizedBox(height: NeonTheme.s16),
                 CommonButton(
-                  label: settingsLabel ?? 'Settings',
+                  label: settingsLabel ?? 'settings'.tr,
                   variant: CommonButtonVariant.secondary,
                   onTap: onSettings!,
                 ),
@@ -195,7 +195,7 @@ class PauseOverlay extends StatelessWidget {
               if (onQuit != null) ...[
                 const SizedBox(height: NeonTheme.s16),
                 CommonButton(
-                  label: quitLabel ?? 'Quit',
+                  label: quitLabel ?? 'pause_quit'.tr,
                   variant: CommonButtonVariant.danger,
                   onTap: onQuit!,
                 ),

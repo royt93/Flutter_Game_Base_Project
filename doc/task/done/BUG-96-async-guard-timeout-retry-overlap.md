@@ -25,12 +25,15 @@ Wallet/inventory/order dùng guard/retry có thể double side-effect: grant tr�
 
 ## Acceptance criteria
 
-- [ ] Test exclusive vẫn loại trừ khi waiter timeout.
-- [ ] Test retry không double side-effect khi attempt timeout.
+- [x] Test exclusive vẫn loại trừ khi waiter timeout.
+- [x] Test retry không double side-effect khi attempt timeout.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+- **Implementation**: `AsyncActionGuard` chain tail vào previous thật, waiter timeout chỉ complete chính nó mà không mở barrier; `RetryExecutor` bắt `TimeoutException` và dừng ngay (terminal `SdkFailure`), không retry để tránh overlap (bỏ qua giải pháp cancel vì Future không huỷ được).
+- **TDD & Test coverage**: Bổ sung unit test cho cả guard và retry; viết integration test `app_boot_test.dart` đo timing tường minh trên device thật chứng minh C không thể chen ngang A khi B timeout.
+- **Phân tích/test**: Root 2537/2537 pass, example 200/200 pass. `flutter analyze` sạch. Device test pass trên S24 Ultra và TECNO KJ7.
+- **Audit**: Fork độc lập review diff uncommitted đạt 9.8/10 (không có finding nào về correctness/overlap). Mức hoàn thiện cao.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

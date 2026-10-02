@@ -168,6 +168,29 @@ class RetryExecutor {
           ),
         );
         return SdkSuccess(value);
+      } on TimeoutException catch (error, stack) {
+        // BUG-96: Future.timeout only abandons its WRAPPER — it cannot
+        // cancel [future], which may still be mutating a wallet, uploading,
+        // or committing a purchase after this method returns. Starting the
+        // next retry attempt here would overlap those side effects and can
+        // double-apply them. Timeout is therefore terminal for this
+        // non-cancellable API: callers needing timeout+retry must make the
+        // action itself idempotent/cooperatively cancellable and expose that
+        // through a future additive API, not silently overlap it here.
+        onAttempt?.call(
+          RetryAttemptEvent(
+            attemptNumber: attempt,
+            outcome: RetryOutcome.failedNonRetryable,
+            error: error,
+            stackTrace: stack,
+          ),
+        );
+        return SdkFailure(
+          kind: SdkErrorKind.unknown,
+          message: 'Retry attempt timed out and was not retried',
+          cause: error,
+          stackTrace: stack,
+        );
       } catch (error, stack) {
         final retryable = retryIf?.call(error) ?? true;
         final exhausted = attempt >= policy.maxAttempts;
