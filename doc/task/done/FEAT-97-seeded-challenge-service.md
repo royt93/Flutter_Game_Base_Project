@@ -25,16 +25,19 @@ Consumer phải tự nối nhiều primitive dễ lệch seed/clock/replay; mấ
 
 ## Acceptance criteria
 
-- [ ] Cùng period + challengeId → seed/stream ổn định across restart.
-- [ ] Snapshot/resume RNG tạo chuỗi tiếp theo giống nhau.
-- [ ] Replay cùng seed/input → score deterministic; divergence được báo.
-- [ ] Leaderboard chỉ local, không gọi network.
-- [ ] Clock rewind không mở period cũ; fake clock test.
-- [ ] Cookbook tile demo flow, không vendor/backend.
+- [x] Cùng period + challengeId → seed/stream ổn định across restart.
+- [x] Snapshot/resume RNG tạo chuỗi tiếp theo giống nhau.
+- [x] Replay cùng seed/input → score deterministic; divergence được báo.
+- [x] Leaderboard chỉ local, không gọi network.
+- [x] Clock rewind không mở period cũ; fake clock test.
+- [x] Cookbook tile demo flow, không vendor/backend.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+- **Implementation**: `SeededChallengeService` derive FNV-1a seed từ `periodKey:challengeId`, daily/weekly period qua clamped epoch day, tạo `SeededRandomService`, start/end replay capsule + divergence verification, và local scoreboard scoped theo challenge/period. Không network/vendor SDK. Export public API và Cookbook end-to-end demo.
+- **TDD/verification**: 11 unit tests determinism/snapshot/replay/divergence/scoreboard/clock-rewind; Cookbook widget test pass; device persistent scoreboard test trên TECNO BG6 pass.
+- **Gates**: root 2571/2571, example 202/202; API snapshot unchanged after regeneration; quality gates pass.
+- **Audit**: independent fork 9.5/10.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

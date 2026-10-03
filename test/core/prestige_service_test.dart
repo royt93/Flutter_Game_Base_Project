@@ -4,6 +4,20 @@ import 'package:roy_casual_kit/core/prestige_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 
+class _PrestigeFailingStorage extends StorageService {
+  _PrestigeFailingStorage() : super(null);
+
+  bool fail = false;
+
+  @override
+  Future<void> setString(String key, String value) {
+    if (fail && key == StorageKeys.economyWalletV1) {
+      throw StateError('simulated wallet persist failure');
+    }
+    return super.setString(key, value);
+  }
+}
+
 void main() {
   group('PrestigeService.canPrestige', () {
     test('dưới ngưỡng -> false', () async {
@@ -58,7 +72,10 @@ void main() {
       () async {
         final wallet = EconomyWallet(storage: StorageService(null));
         await wallet.earn(currency: 'coins', amount: 500, transactionId: 't1');
-        final prestige = PrestigeService(wallet: wallet, prestigeThreshold: 1000);
+        final prestige = PrestigeService(
+          wallet: wallet,
+          prestigeThreshold: 1000,
+        );
 
         final result = await prestige.prestige();
 
@@ -89,106 +106,95 @@ void main() {
       },
     );
 
-    test(
-      'prestige 2 lần liên tiếp -> relics CỘNG DỒN (không ghi đè), '
-      'currentMultiplier tăng theo đúng',
-      () async {
-        final wallet = EconomyWallet(storage: StorageService(null));
-        await wallet.earn(currency: 'coins', amount: 2000, transactionId: 't1');
-        final prestige = PrestigeService(
-          wallet: wallet,
-          prestigeThreshold: 1000,
-          bonusPerRelic: 0.1,
-        );
+    test('prestige 2 lần liên tiếp -> relics CỘNG DỒN (không ghi đè), '
+        'currentMultiplier tăng theo đúng', () async {
+      final wallet = EconomyWallet(storage: StorageService(null));
+      await wallet.earn(currency: 'coins', amount: 2000, transactionId: 't1');
+      final prestige = PrestigeService(
+        wallet: wallet,
+        prestigeThreshold: 1000,
+        bonusPerRelic: 0.1,
+      );
 
-        await prestige.prestige();
-        expect(prestige.currentMultiplier, 1.1); // 1 relic
+      await prestige.prestige();
+      expect(prestige.currentMultiplier, 1.1); // 1 relic
 
-        await wallet.earn(currency: 'coins', amount: 2000, transactionId: 't2');
-        await prestige.prestige();
+      await wallet.earn(currency: 'coins', amount: 2000, transactionId: 't2');
+      await prestige.prestige();
 
-        expect(wallet.balanceOf('relics'), 2);
-        expect(prestige.currentMultiplier, 1.2);
-      },
-    );
+      expect(wallet.balanceOf('relics'), 2);
+      expect(prestige.currentMultiplier, 1.2);
+    });
 
-    test(
-      'không mất/nhân đôi dữ liệu: 2 lần gọi prestige() liên tiếp (mỗi lần '
-      'tự sinh transactionId riêng) không bao giờ trùng id, không bị coi '
-      'là trùng lặp rồi bỏ qua',
-      () async {
-        final wallet = EconomyWallet(storage: StorageService(null));
-        await wallet.earn(currency: 'coins', amount: 1000, transactionId: 't1');
-        final prestige = PrestigeService(wallet: wallet, prestigeThreshold: 1000);
+    test('không mất/nhân đôi dữ liệu: 2 lần gọi prestige() liên tiếp (mỗi lần '
+        'tự sinh transactionId riêng) không bao giờ trùng id, không bị coi '
+        'là trùng lặp rồi bỏ qua', () async {
+      final wallet = EconomyWallet(storage: StorageService(null));
+      await wallet.earn(currency: 'coins', amount: 1000, transactionId: 't1');
+      final prestige = PrestigeService(wallet: wallet, prestigeThreshold: 1000);
 
-        await prestige.prestige();
-        await wallet.earn(currency: 'coins', amount: 1000, transactionId: 't2');
-        await prestige.prestige();
+      await prestige.prestige();
+      await wallet.earn(currency: 'coins', amount: 1000, transactionId: 't2');
+      await prestige.prestige();
 
-        // 2 relic thật (không phải 1 do bị coi trùng transactionId).
-        expect(wallet.balanceOf('relics'), 2);
-      },
-    );
+      // 2 relic thật (không phải 1 do bị coi trùng transactionId).
+      expect(wallet.balanceOf('relics'), 2);
+    });
 
-    test(
-      'softResetCurrencies tuỳ chỉnh: chỉ reset đúng currency được liệt kê, '
-      'currency khác giữ nguyên',
-      () async {
-        final wallet = EconomyWallet(storage: StorageService(null));
-        await wallet.earn(currency: 'coins', amount: 1000, transactionId: 't1');
-        await wallet.earn(currency: 'gems', amount: 50, transactionId: 't2');
-        final prestige = PrestigeService(
-          wallet: wallet,
-          prestigeThreshold: 1000,
-          softResetCurrencies: const {'coins'},
-        );
+    test('softResetCurrencies tuỳ chỉnh: chỉ reset đúng currency được liệt kê, '
+        'currency khác giữ nguyên', () async {
+      final wallet = EconomyWallet(storage: StorageService(null));
+      await wallet.earn(currency: 'coins', amount: 1000, transactionId: 't1');
+      await wallet.earn(currency: 'gems', amount: 50, transactionId: 't2');
+      final prestige = PrestigeService(
+        wallet: wallet,
+        prestigeThreshold: 1000,
+        softResetCurrencies: const {'coins'},
+      );
 
-        await prestige.prestige();
+      await prestige.prestige();
 
-        expect(wallet.balanceOf('coins'), 0);
-        expect(wallet.balanceOf('gems'), 50, reason: 'gems không nằm trong softResetCurrencies');
-      },
-    );
+      expect(wallet.balanceOf('coins'), 0);
+      expect(
+        wallet.balanceOf('gems'),
+        50,
+        reason: 'gems không nằm trong softResetCurrencies',
+      );
+    });
 
-    test(
-      'coins đã là 0 sẵn (currency khác trong softResetCurrencies) -> '
-      'không throw, vẫn cộng relic bình thường',
-      () async {
-        final wallet = EconomyWallet(storage: StorageService(null));
-        await wallet.earn(currency: 'gems', amount: 1000, transactionId: 't1');
-        final prestige = PrestigeService(
-          wallet: wallet,
-          primaryCurrency: 'gems',
-          prestigeThreshold: 1000,
-          softResetCurrencies: const {'coins'}, // coins vẫn 0 từ đầu.
-        );
+    test('coins đã là 0 sẵn (currency khác trong softResetCurrencies) -> '
+        'không throw, vẫn cộng relic bình thường', () async {
+      final wallet = EconomyWallet(storage: StorageService(null));
+      await wallet.earn(currency: 'gems', amount: 1000, transactionId: 't1');
+      final prestige = PrestigeService(
+        wallet: wallet,
+        primaryCurrency: 'gems',
+        prestigeThreshold: 1000,
+        softResetCurrencies: const {'coins'}, // coins vẫn 0 từ đầu.
+      );
 
-        final result = await prestige.prestige();
+      final result = await prestige.prestige();
 
-        expect(result, isA<SdkSuccess<int>>());
-        expect(wallet.balanceOf('coins'), 0);
-      },
-    );
+      expect(result, isA<SdkSuccess<int>>());
+      expect(wallet.balanceOf('coins'), 0);
+    });
   });
 
   group('PrestigeService: cấu hình sai (ENH-89: ArgumentError thật)', () {
-    test(
-      'metaCurrency trùng 1 phần tử trong softResetCurrencies -> '
-      'ArgumentError (không phải AssertionError — không bị strip ở '
-      'release build)',
-      () {
-        final wallet = EconomyWallet(storage: StorageService(null));
+    test('metaCurrency trùng 1 phần tử trong softResetCurrencies -> '
+        'ArgumentError (không phải AssertionError — không bị strip ở '
+        'release build)', () {
+      final wallet = EconomyWallet(storage: StorageService(null));
 
-        expect(
-          () => PrestigeService(
-            wallet: wallet,
-            metaCurrency: 'relics',
-            softResetCurrencies: const {'coins', 'relics'},
-          ),
-          throwsA(isA<ArgumentError>()),
-        );
-      },
-    );
+      expect(
+        () => PrestigeService(
+          wallet: wallet,
+          metaCurrency: 'relics',
+          softResetCurrencies: const {'coins', 'relics'},
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
 
     test('metaCurrency KHÔNG trùng softResetCurrencies -> không throw', () {
       final wallet = EconomyWallet(storage: StorageService(null));
@@ -201,6 +207,35 @@ void main() {
         ),
         returnsNormally,
       );
+    });
+  });
+
+  group('BUG-90: prestige() is all-or-nothing', () {
+    test('storage failure mid-write leaves NO currency reset and NO relic '
+        'granted — no half-applied state', () async {
+      final storage = _PrestigeFailingStorage();
+      final wallet = EconomyWallet(storage: storage);
+      await wallet.earn(currency: 'coins', amount: 1000, transactionId: 't1');
+      await wallet.earn(currency: 'gems', amount: 50, transactionId: 't2');
+      final prestige = PrestigeService(
+        wallet: wallet,
+        prestigeThreshold: 1000,
+        softResetCurrencies: const {'coins', 'gems'},
+      );
+
+      storage.fail = true;
+      final result = await prestige.prestige();
+
+      expect(result.isSuccess, isFalse);
+      // Neither currency was reset, and relics stay at 0 — the previous
+      // per-currency-transaction design could reset 'coins' successfully
+      // then fail persisting 'gems', leaving coins at 0 with no relic
+      // grant. batchTransaction's single combined write means ALL of
+      // this call's deltas (both resets + the relic grant) share one
+      // fate.
+      expect(wallet.balanceOf('coins'), 1000);
+      expect(wallet.balanceOf('gems'), 50);
+      expect(wallet.balanceOf('relics'), 0);
     });
   });
 }

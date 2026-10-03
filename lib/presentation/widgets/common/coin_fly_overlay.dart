@@ -234,49 +234,51 @@ class _CoinFlyOverlayState extends State<CoinFlyOverlay>
   @override
   Widget build(BuildContext context) {
     final color = widget.color ?? NeonTheme.gold;
-    return IgnorePointer(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, _) => Stack(
-          children: [
-            for (var i = 0; i < widget.coinCount; i++)
-              Builder(
-                builder: (context) {
-                  // BUG-32: without this, a coin not yet at its turn sits
-                  // drawn at `from` (every not-yet-started coin stacked
-                  // there), and a coin that already arrived stays drawn at
-                  // `to` for the rest of the shared timeline (every already-
-                  // arrived coin stacked there) — only render it during its
-                  // own `[startAt, endAt]` window.
-                  final v = _controller.value;
-                  if (v < _startAt[i] || v > _endAt[i]) {
-                    return const SizedBox.shrink();
-                  }
-                  final t = Curves.easeInOut.transform(_coinProgress(i));
-                  final pos = _reducedMotion
-                      ? Offset.lerp(widget.from, widget.to, t)!
-                      : coinArcOffsetAt(
-                          widget.from,
-                          widget.to,
-                          t,
-                          arcHeight: (widget.to - widget.from).distance * 0.3,
-                        );
-                  final scale = _reducedMotion ? 1.0 : coinScaleAt(t);
-                  return Positioned(
-                    left: pos.dx - widget.coinSize / 2,
-                    top: pos.dy - widget.coinSize / 2,
-                    child: Transform.scale(
-                      scale: scale,
-                      child: Icon(
-                        widget.icon,
-                        color: color,
-                        size: widget.coinSize,
+    return ExcludeSemantics(
+      child: IgnorePointer(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) => Stack(
+            children: [
+              for (var i = 0; i < widget.coinCount; i++)
+                Builder(
+                  builder: (context) {
+                    // BUG-32: without this, a coin not yet at its turn sits
+                    // drawn at `from` (every not-yet-started coin stacked
+                    // there), and a coin that already arrived stays drawn at
+                    // `to` for the rest of the shared timeline (every already-
+                    // arrived coin stacked there) — only render it during its
+                    // own `[startAt, endAt]` window.
+                    final v = _controller.value;
+                    if (v < _startAt[i] || v > _endAt[i]) {
+                      return const SizedBox.shrink();
+                    }
+                    final t = Curves.easeInOut.transform(_coinProgress(i));
+                    final pos = _reducedMotion
+                        ? Offset.lerp(widget.from, widget.to, t)!
+                        : coinArcOffsetAt(
+                            widget.from,
+                            widget.to,
+                            t,
+                            arcHeight: (widget.to - widget.from).distance * 0.3,
+                          );
+                    final scale = _reducedMotion ? 1.0 : coinScaleAt(t);
+                    return Positioned(
+                      left: pos.dx - widget.coinSize / 2,
+                      top: pos.dy - widget.coinSize / 2,
+                      child: Transform.scale(
+                        scale: scale,
+                        child: Icon(
+                          widget.icon,
+                          color: color,
+                          size: widget.coinSize,
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-          ],
+                    );
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );

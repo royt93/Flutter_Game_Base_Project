@@ -136,45 +136,39 @@ void main() {
         },
       );
 
-      testWidgets(
-        'tap "Shop" → điều hướng thật sang ShopScreen',
-        (tester) async {
-          await _boot();
+      testWidgets('tap "Shop" → điều hướng thật sang ShopScreen', (
+        tester,
+      ) async {
+        await _boot();
 
-          await tester.pumpWidget(_wrap(const HomeScreen()));
+        await tester.pumpWidget(_wrap(const HomeScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.tap(find.widgetWithText(NeonButton, 'Shop').first);
+        for (var i = 0; i < 3; i++) {
           await tester.pump(const Duration(milliseconds: 100));
+        }
 
-          await tester.tap(
-            find.widgetWithText(NeonButton, 'Shop').first,
-          );
-          for (var i = 0; i < 3; i++) {
-            await tester.pump(const Duration(milliseconds: 100));
-          }
+        expect(find.byType(ShopScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
 
-          expect(find.byType(ShopScreen), findsOneWidget);
-          expect(tester.takeException(), isNull);
-        },
-      );
+      testWidgets('tap "Save & Cloud" → điều hướng thật sang SaveCloudScreen', (
+        tester,
+      ) async {
+        await _boot();
 
-      testWidgets(
-        'tap "Save & Cloud" → điều hướng thật sang SaveCloudScreen',
-        (tester) async {
-          await _boot();
+        await tester.pumpWidget(_wrap(const HomeScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
 
-          await tester.pumpWidget(_wrap(const HomeScreen()));
+        await tester.tap(find.widgetWithText(NeonButton, 'Save & Cloud').first);
+        for (var i = 0; i < 3; i++) {
           await tester.pump(const Duration(milliseconds: 100));
+        }
 
-          await tester.tap(
-            find.widgetWithText(NeonButton, 'Save & Cloud').first,
-          );
-          for (var i = 0; i < 3; i++) {
-            await tester.pump(const Duration(milliseconds: 100));
-          }
-
-          expect(find.byType(SaveCloudScreen), findsOneWidget);
-          expect(tester.takeException(), isNull);
-        },
-      );
+        expect(find.byType(SaveCloudScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
     });
   });
 
@@ -222,6 +216,37 @@ void main() {
       expect(audio.muted.value, isTrue);
       expect(tester.widget<CandyToggleSwitch>(soundSwitch).value, isFalse);
     });
+
+    testWidgets(
+      'ENH-95: hiện 2 slider BGM/SFX có semantics, kéo cập nhật volume và vẫn '
+      'hiện dù đang mute',
+      (tester) async {
+        await _boot();
+        final audio = Get.put(AudioManager(), permanent: true);
+        audio.toggleMute();
+
+        await tester.pumpWidget(_wrap(const SettingsScreen()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byType(Slider), findsNWidgets(2));
+        final bgmSemantics = tester.getSemantics(
+          find
+              .ancestor(
+                of: find.byType(Slider).first,
+                matching: find.byType(Semantics),
+              )
+              .first,
+        );
+        expect(bgmSemantics.label, 'Background music volume');
+
+        await tester.drag(find.byType(Slider).first, const Offset(-200, 0));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(audio.bgmVolume.value, lessThan(1.0));
+        expect(tester.takeException(), isNull);
+      },
+      semanticsEnabled: true,
+    );
   });
 
   group('SettingsScreen with WakeLockService registered', () {

@@ -40,6 +40,16 @@ Future<void> _goToWidgetShowcase(WidgetTester tester) async {
 
 /// Same index-not-label reasoning as [_goToWidgetShowcase] — HomeScreen's
 /// buttons in order are [Settings, Widget Showcase, Game Demo, Cookbook].
+Future<void> _goToSettings(WidgetTester tester) async {
+  while (find.byType(SettingsScreen).evaluate().isNotEmpty) {
+    Get.back();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+  await tester.tap(find.byType(NeonButton).at(0));
+  await tester.pump(const Duration(seconds: 1));
+  expect(find.byType(SettingsScreen), findsOneWidget);
+}
+
 Future<void> _goToCookbook(WidgetTester tester) async {
   while (find.byType(CookbookScreen).evaluate().isNotEmpty) {
     Get.back();
@@ -1451,6 +1461,107 @@ void main() {
       expect(restarted.pendingCount, 0);
       expect(StorageService.to.getString(StorageKeys.analyticsQueueV1), isNull);
       restarted.dispose();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('BUG-95: ReactiveEnergyBar tự động cập nhật khi có refill ngầm '
+      'trên thiết bị thật (không phụ thuộc FakeAsync)', (tester) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+
+    // EnergyService is owned/registered by GameDemoScreen, not app bootstrap.
+    await _goToGameDemo(tester);
+    await tester.pump(const Duration(milliseconds: 500));
+    final energy = EnergyService.maybe!;
+    expect(energy.consumeEnergy(2), isTrue);
+    expect(energy.currentEnergy, energy.maxEnergy - 2);
+    await Future<void>.delayed(const Duration(milliseconds: 1200));
+    await tester.pump();
+
+    // ReactiveEnergyBar is in GameDemoScreen — confirm it renders with
+    // the consumed pip count.
+    expect(find.byType(ReactiveEnergyBar), findsOneWidget);
+    final barSemantics = tester.getSemantics(find.byType(EnergyBar));
+    expect(barSemantics.label, contains('${energy.maxEnergy - 2}/'));
+
+    // Chờ qua một nửa thời gian để thấy bar vẫn render. Refill thật
+    // tốn 30p, nên trong integration test ta đẩy clock debug.
+    setDebugTimeOffsetMs(
+      energy.refillInterval.inMilliseconds +
+          const Duration(seconds: 1).inMilliseconds,
+    );
+    // ReactiveEnergyBar poll mỗi giây. Đợi > 1s thật sự trên device.
+    await tester.pump(const Duration(milliseconds: 1500));
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    await tester.pump();
+
+    final updatedSemantics = tester.getSemantics(
+      find.byType(ReactiveEnergyBar),
+    );
+    expect(updatedSemantics.label, contains('${energy.maxEnergy - 1}/'));
+
+    setDebugTimeOffsetMs(0);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'ENH-95: Cài đặt âm lượng từ Settings cập nhật AudioService volume '
+    'trên thiết bị thật (tránh lỗi MissingPluginException)',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+
+      // Under E2E_TEST=true, main.dart omits audio registration so audioplayers
+      // doesn't leak frame callbacks across tests. Put an instance explicitly
+      // here to test the sliders and user volume preference.
+      final audio = Get.put(AudioManager(), permanent: true);
+      addTearDown(() => Get.delete<AudioManager>(force: true));
+      await audio.setBgmVolume(0.8);
+
+      await _goToSettings(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(Slider), findsNWidgets(2));
+      final bgmSlider = find.byType(Slider).first;
+
+      await tester.drag(bgmSlider, const Offset(-150, 0));
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(audio.bgmVolume.value, lessThan(0.8));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'FEAT-97: SeededChallengeService lưu và khôi phục local scoreboard '
+    'trên bộ nhớ thật của thiết bị',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+
+      final challengeId =
+          'device_challenge_${DateTime.now().microsecondsSinceEpoch}';
+      final challenge = SeededChallengeService(
+        challengeId: challengeId,
+        period: ChallengePeriod.daily,
+      );
+      challenge.submitScore('tester_device', 12345);
+
+      final top = challenge.topScores(1);
+      expect(top, hasLength(1));
+      expect(top.first.name, 'tester_device');
+      expect(top.first.score, fmtNum(12345));
+
+      // Tái tạo thể hiện (giả lập restart app)
+      final restarted = SeededChallengeService(
+        challengeId: challengeId,
+        period: ChallengePeriod.daily,
+      );
+      final restoredTop = restarted.topScores(1);
+      expect(restoredTop, hasLength(1));
+      expect(restoredTop.first.score, fmtNum(12345));
+
       expect(tester.takeException(), isNull);
     },
   );

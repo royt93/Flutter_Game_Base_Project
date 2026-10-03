@@ -124,12 +124,12 @@ void main() {
       );
     });
 
-    group('BUG-24 / ENH-79: SFX player lifecycle (pool thay vì tạo/huỷ mỗi lần)', () {
-      test(
-        'mỗi playSfx() (kể cả khi thất bại vì thiếu audio backend) đều '
-        'release đúng player về pool — debugSfxReleaseCount tăng đúng 1, '
-        'pool không còn player nào active sau khi xong',
-        () async {
+    group(
+      'BUG-24 / ENH-79: SFX player lifecycle (pool thay vì tạo/huỷ mỗi lần)',
+      () {
+        test('mỗi playSfx() (kể cả khi thất bại vì thiếu audio backend) đều '
+            'release đúng player về pool — debugSfxReleaseCount tăng đúng 1, '
+            'pool không còn player nào active sau khi xong', () async {
           final manager = AudioManager();
           manager.muted.value = false;
 
@@ -138,110 +138,169 @@ void main() {
 
           expect(manager.debugSfxReleaseCount - before, 1);
           expect(manager.debugSfxPoolActiveCount, 0);
-        },
-      );
+        });
 
-      test('playSfx() liên tiếp — mỗi lần gọi đều release đúng player riêng '
-          'về pool, không bị bỏ sót', () async {
-        final manager = AudioManager();
-        manager.muted.value = false;
-
-        final before = manager.debugSfxReleaseCount;
-        await Future.wait([
-          manager.playSfx('tap.mp3'),
-          manager.playSfx('tap.mp3'),
-          manager.playSfx('tap.mp3'),
-        ]).timeout(const Duration(seconds: 2));
-
-        expect(manager.debugSfxReleaseCount - before, 3);
-        expect(manager.debugSfxPoolActiveCount, 0);
-      });
-
-      test(
-        // ENH-79: đúng mục đích của pool — kịch bản combo SFX thật (mỗi
-        // lần gọi xong TRƯỚC khi lần sau bắt đầu, không phải 20 lần phát
-        // cùng 1 khoảnh khắc tuyệt đối) phải TÁI SỬ DỤNG lại player, không
-        // tạo mới cho mỗi lần gọi như code cũ.
-        '20 lần gọi playSfx() TUẦN TỰ (mỗi lần release xong mới gọi lần '
-        'sau): chỉ tạo ĐÚNG 1 player, tái sử dụng lại 19 lần còn lại',
-        () async {
-          final manager = AudioManager(sfxPoolCapacity: 4);
+        test('playSfx() liên tiếp — mỗi lần gọi đều release đúng player riêng '
+            'về pool, không bị bỏ sót', () async {
+          final manager = AudioManager();
           manager.muted.value = false;
 
-          for (var i = 0; i < 20; i++) {
-            await manager.playSfx('tap.mp3').timeout(const Duration(seconds: 2));
-          }
-
-          expect(manager.debugSfxReleaseCount, 20);
-          expect(manager.debugSfxPoolActiveCount, 0);
-          expect(
-            manager.debugSfxTotalCreated,
-            1,
-            reason: 'gọi tuần tự phải tái dùng lại đúng 1 player, không tạo '
-                'mới mỗi lần như hành vi trước ENH-79',
-          );
-        },
-      );
-
-      test(
-        // Burst THẬT SỰ đồng thời (tất cả in-flight cùng lúc, chưa ai kịp
-        // release) vẫn cần đủ N channel tại đúng thời điểm đó — pooling
-        // không thể giảm con số đó xuống dưới N (vật lý), nhưng phải đảm
-        // bảo KHÔNG GIỮ LẠI quá sfxPoolCapacity sau khi burst kết thúc.
-        'burst 20 lần gọi ĐỒNG THỜI (Future.wait): sau khi xong, số player '
-        'GIỮ LẠI trong pool không vượt quá sfxPoolCapacity (phần dư bị '
-        'dispose, không tích luỹ)',
-        () async {
-          final manager = AudioManager(sfxPoolCapacity: 4);
-          manager.muted.value = false;
-
+          final before = manager.debugSfxReleaseCount;
           await Future.wait([
-            for (var i = 0; i < 20; i++) manager.playSfx('tap.mp3'),
-          ]).timeout(const Duration(seconds: 5));
+            manager.playSfx('tap.mp3'),
+            manager.playSfx('tap.mp3'),
+            manager.playSfx('tap.mp3'),
+          ]).timeout(const Duration(seconds: 2));
 
-          expect(manager.debugSfxReleaseCount, 20);
+          expect(manager.debugSfxReleaseCount - before, 3);
           expect(manager.debugSfxPoolActiveCount, 0);
-          expect(manager.debugSfxPoolFreeCount, lessThanOrEqualTo(4));
-        },
-      );
+        });
 
-      test('muted.value == true (no-op, không tạo player nào) → '
-          'debugSfxReleaseCount/debugSfxTotalCreated không đổi', () async {
-        final manager = AudioManager();
-        manager.muted.value = true;
+        test(
+          // ENH-79: đúng mục đích của pool — kịch bản combo SFX thật (mỗi
+          // lần gọi xong TRƯỚC khi lần sau bắt đầu, không phải 20 lần phát
+          // cùng 1 khoảnh khắc tuyệt đối) phải TÁI SỬ DỤNG lại player, không
+          // tạo mới cho mỗi lần gọi như code cũ.
+          '20 lần gọi playSfx() TUẦN TỰ (mỗi lần release xong mới gọi lần '
+          'sau): chỉ tạo ĐÚNG 1 player, tái sử dụng lại 19 lần còn lại',
+          () async {
+            final manager = AudioManager(sfxPoolCapacity: 4);
+            manager.muted.value = false;
 
-        final beforeRelease = manager.debugSfxReleaseCount;
-        final beforeCreated = manager.debugSfxTotalCreated;
-        await manager.playSfx('tap.mp3').timeout(const Duration(seconds: 2));
+            for (var i = 0; i < 20; i++) {
+              await manager
+                  .playSfx('tap.mp3')
+                  .timeout(const Duration(seconds: 2));
+            }
 
-        expect(manager.debugSfxReleaseCount, beforeRelease);
-        expect(manager.debugSfxTotalCreated, beforeCreated);
-      });
+            expect(manager.debugSfxReleaseCount, 20);
+            expect(manager.debugSfxPoolActiveCount, 0);
+            expect(
+              manager.debugSfxTotalCreated,
+              1,
+              reason:
+                  'gọi tuần tự phải tái dùng lại đúng 1 player, không tạo '
+                  'mới mỗi lần như hành vi trước ENH-79',
+            );
+          },
+        );
 
-      test('onClose() dispose _bgm + mọi player trong pool, không throw kể '
-          'cả khi chưa init()', () {
-        final manager = AudioManager();
-        Get.put(manager, permanent: true);
+        test(
+          // Burst THẬT SỰ đồng thời (tất cả in-flight cùng lúc, chưa ai kịp
+          // release) vẫn cần đủ N channel tại đúng thời điểm đó — pooling
+          // không thể giảm con số đó xuống dưới N (vật lý), nhưng phải đảm
+          // bảo KHÔNG GIỮ LẠI quá sfxPoolCapacity sau khi burst kết thúc.
+          'burst 20 lần gọi ĐỒNG THỜI (Future.wait): sau khi xong, số player '
+          'GIỮ LẠI trong pool không vượt quá sfxPoolCapacity (phần dư bị '
+          'dispose, không tích luỹ)',
+          () async {
+            final manager = AudioManager(sfxPoolCapacity: 4);
+            manager.muted.value = false;
 
-        expect(() => Get.delete<AudioManager>(force: true), returnsNormally);
-      });
+            await Future.wait([
+              for (var i = 0; i < 20; i++) manager.playSfx('tap.mp3'),
+            ]).timeout(const Duration(seconds: 5));
 
-      test(
-        'onClose() giữa lúc playSfx() đang chạy dở: không throw, không lỗi '
-        'khi playSfx() release() player đã bị onClose() dispose trước đó',
-        () async {
+            expect(manager.debugSfxReleaseCount, 20);
+            expect(manager.debugSfxPoolActiveCount, 0);
+            expect(manager.debugSfxPoolFreeCount, lessThanOrEqualTo(4));
+          },
+        );
+
+        test('muted.value == true (no-op, không tạo player nào) → '
+            'debugSfxReleaseCount/debugSfxTotalCreated không đổi', () async {
+          final manager = AudioManager();
+          manager.muted.value = true;
+
+          final beforeRelease = manager.debugSfxReleaseCount;
+          final beforeCreated = manager.debugSfxTotalCreated;
+          await manager.playSfx('tap.mp3').timeout(const Duration(seconds: 2));
+
+          expect(manager.debugSfxReleaseCount, beforeRelease);
+          expect(manager.debugSfxTotalCreated, beforeCreated);
+        });
+
+        test('onClose() dispose _bgm + mọi player trong pool, không throw kể '
+            'cả khi chưa init()', () {
           final manager = AudioManager();
           Get.put(manager, permanent: true);
 
-          final future = manager.playSfx('tap.mp3');
           expect(() => Get.delete<AudioManager>(force: true), returnsNormally);
+        });
 
-          await expectLater(
-            future.timeout(const Duration(seconds: 2)),
-            completes,
+        test(
+          'onClose() giữa lúc playSfx() đang chạy dở: không throw, không lỗi '
+          'khi playSfx() release() player đã bị onClose() dispose trước đó',
+          () async {
+            final manager = AudioManager();
+            Get.put(manager, permanent: true);
+
+            final future = manager.playSfx('tap.mp3');
+            expect(
+              () => Get.delete<AudioManager>(force: true),
+              returnsNormally,
+            );
+
+            await expectLater(
+              future.timeout(const Duration(seconds: 2)),
+              completes,
+            );
+          },
+        );
+      },
+    );
+
+    group('ENH-95: persisted BGM/SFX mix', () {
+      test('init() loads persisted BGM/SFX volumes', () async {
+        await store.setDouble(StorageKeys.bgmVolume, 0.72);
+        await store.setDouble(StorageKeys.sfxVolume, 0.44);
+        final manager = AudioManager();
+
+        await manager.init();
+
+        expect(manager.bgmVolume.value, closeTo(0.72, 0.0001));
+        expect(manager.sfxVolume.value, closeTo(0.44, 0.0001));
+      });
+
+      test('setBgmVolume/setSfxVolume clamp then persist', () async {
+        final manager = AudioManager();
+
+        await manager.setBgmVolume(2);
+        await manager.setSfxVolume(-1);
+
+        expect(manager.bgmVolume.value, 1);
+        expect(manager.sfxVolume.value, 0);
+        expect(store.getDouble(StorageKeys.bgmVolume), 1);
+        expect(store.getDouble(StorageKeys.sfxVolume), 0);
+      });
+
+      test(
+        'duck restore target follows user BGM volume, not old constant',
+        () async {
+          final manager = AudioManager();
+          await manager.setBgmVolume(0.8);
+
+          expect(manager.debugNormalBgmVolume, 0.8);
+          expect(
+            manager.debugDuckedBgmVolume,
+            closeTo(0.8 * 0.08 / 0.35, 0.0001),
           );
         },
       );
+
+      test('legacy mute stays orthogonal to saved mix', () async {
+        await store.setBool(StorageKeys.audioMuted, true);
+        await store.setDouble(StorageKeys.bgmVolume, 0.61);
+        await store.setDouble(StorageKeys.sfxVolume, 0.27);
+        final manager = AudioManager();
+
+        await manager.init();
+        manager.toggleMute();
+
+        expect(manager.muted.value, isFalse);
+        expect(manager.bgmVolume.value, closeTo(0.61, 0.0001));
+        expect(manager.sfxVolume.value, closeTo(0.27, 0.0001));
+      });
     });
 
     group('IDEA-45: audio ducking', () {

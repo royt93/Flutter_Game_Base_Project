@@ -28,34 +28,43 @@ class StrokeText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: weight,
-            letterSpacing: letterSpacing,
-            shadows: shadows,
-            foreground: Paint()
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = strokeWidth
-              ..strokeJoin = StrokeJoin.round
-              ..color = stroke ?? NeonTheme.ink,
+    // BUG-95: the stroke+fill layers below are 2 stacked `Text` widgets
+    // rendering the SAME string — without this wrapper a screen reader
+    // announces `text` twice (once per layer). One `Semantics` node with
+    // `excludeSemantics: true` collapses that back to a single, correct
+    // announcement.
+    return Semantics(
+      label: text,
+      excludeSemantics: true,
+      child: Stack(
+        children: [
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: weight,
+              letterSpacing: letterSpacing,
+              shadows: shadows,
+              foreground: Paint()
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = strokeWidth
+                ..strokeJoin = StrokeJoin.round
+                ..color = stroke ?? NeonTheme.ink,
+            ),
           ),
-        ),
-        Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: weight,
-            letterSpacing: letterSpacing,
-            color: color,
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: weight,
+              letterSpacing: letterSpacing,
+              color: color,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

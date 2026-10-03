@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
+import 'debug_log.dart';
 import 'storage_service.dart';
+import 'utils/sdk_result.dart';
 import 'versioned_json_store.dart';
 
 /// Local achievement/badge progress tracker (no Game Center/Play Games
@@ -25,8 +27,19 @@ import 'versioned_json_store.dart';
 /// persisted — they're cheap in-memory data the caller re-declares every
 /// run via [register], same as the rest of the game's achievement list.
 class AchievementService extends GetxService {
-  AchievementService({String? storageKey})
-    : _storageKey = storageKey ?? StorageKeys.achievementProgressV1;
+  /// [storage] (BUG-90) lets a caller inject its own [StorageService]
+  /// instance instead of relying on the ambient `StorageService.to`
+  /// (`Get.find`) — useful for an isolated test/slot instance, or any
+  /// caller that constructs this service before `StorageService` is
+  /// Get.put'd. When omitted, falls back to [StorageService.maybe] at the
+  /// point of first use (not at construction — same lazy-hydration timing
+  /// as before) so an app that registers storage after constructing this
+  /// service (unusual, but not previously forbidden) still works; a `dlog`
+  /// warns once if neither is available, since that previously silently
+  /// masqueraded as "no saved progress" with no way to tell the two apart.
+  AchievementService({String? storageKey, StorageService? storage})
+    : _storageKey = storageKey ?? StorageKeys.achievementProgressV1,
+      _injectedStorage = storage;
 
   // ENH-71: instance field (was `static const`) so 2 instances can point
   // at 2 independent progress tables — e.g. 1 per SaveSlotManager slot via
@@ -35,6 +48,8 @@ class AchievementService extends GetxService {
   // release used keeps an existing consumer app's save reading exactly the
   // same table it always did.
   final String _storageKey;
+  final StorageService? _injectedStorage;
+  bool _warnedMissingStorage = false;
 
   final Map<String, int> _thresholds = {};
   Map<String, int>? _progress;
@@ -60,15 +75,35 @@ class AchievementService extends GetxService {
       ? Get.find<AchievementService>()
       : null;
 
-  VersionedJsonStore<Map<String, int>> get _store =>
-      VersionedJsonStore<Map<String, int>>(
-        storage: StorageService.to,
-        key: _storageKey,
-        schemaVersion: 1,
-        toJson: (value) => value,
-        fromJson: _parseProgress,
-        migrate: (fromVersion, json) => json,
+  /// Resolves the storage this instance actually uses: [_injectedStorage]
+  /// if given, else [StorageService.maybe] — `null` (BUG-90) rather than
+  /// the old ambient `StorageService.to`, whose `Get.find` throw used to
+  /// get silently swallowed by the hydrate/save try/catch below and read
+  /// back indistinguishable from "no saved progress yet".
+  StorageService? get _resolvedStorage {
+    final storage = _injectedStorage ?? StorageService.maybe;
+    if (storage == null && !_warnedMissingStorage) {
+      _warnedMissingStorage = true;
+      dlog(
+        'AchievementService: no StorageService available (not injected, '
+        'none registered) — progress will not persist across restarts',
       );
+    }
+    return storage;
+  }
+
+  VersionedJsonStore<Map<String, int>>? get _store {
+    final storage = _resolvedStorage;
+    if (storage == null) return null;
+    return VersionedJsonStore<Map<String, int>>(
+      storage: storage,
+      key: _storageKey,
+      schemaVersion: 1,
+      toJson: (value) => value,
+      fromJson: _parseProgress,
+      migrate: (fromVersion, json) => json,
+    );
+  }
 
   // Lazily hydrated on first touch, not in a constructor/onInit — avoids
   // depending on StorageService already being Get.put'd before this
@@ -76,7 +111,7 @@ class AchievementService extends GetxService {
   Map<String, int> get _progressMap {
     if (_progress != null) return _progress!;
     try {
-      _progress = _store.load() ?? <String, int>{};
+      _progress = _store?.load() ?? <String, int>{};
     } catch (_) {
       // Domain fields are untrusted even after the envelope is valid. A
       // corrupt achievement entry must never prevent the app from booting.
@@ -116,12 +151,27 @@ class AchievementService extends GetxService {
   bool _saveDirty = false;
   Future<void> _saveChain = Future.value();
 
+  /// Set by [_runSave] on its most recent attempt — `null` on success,
+  /// the thrown error otherwise. Read by [incrementProgressDurably] right
+  /// after awaiting the save it triggered so a caller gets a real
+  /// pass/fail signal instead of the legacy swallow-and-hope-for-the-best
+  /// [incrementProgress] contract (BUG-90).
+  Object? _lastSaveError;
+
   Future<void> _runSave() async {
     try {
-      await _store.save(_progressMap);
-    } catch (_) {
-      // Swallow — a transient save failure must not wedge every
-      // subsequent increment's save behind a permanently-rejected chain.
+      final store = _store;
+      if (store == null) {
+        throw StateError('no StorageService available to persist to');
+      }
+      await store.save(_progressMap);
+      _lastSaveError = null;
+    } catch (error) {
+      _lastSaveError = error;
+      // Still swallowed here — a transient save failure must not wedge
+      // every subsequent increment's save behind a permanently-rejected
+      // chain. `incrementProgressDurably` is the opt-in path for a caller
+      // that needs to know a save actually failed.
     }
   }
 
@@ -207,6 +257,46 @@ class AchievementService extends GetxService {
       _unlockController.add(achievementId);
     }
     _scheduleSave();
+  }
+
+  /// Awaitable counterpart to [incrementProgress] (BUG-90) — applies the
+  /// SAME increment (identical validation, in-memory mutation, unlock
+  /// semantics), then awaits the save it triggers and reports whether that
+  /// save actually reached disk. Returns [SdkFailure] (kind
+  /// [SdkErrorKind.storage]) when it didn't — e.g. no [StorageService]
+  /// available, or the underlying write threw — without undoing the
+  /// in-memory progress: a caller that gets a failure already has an
+  /// accurate in-RAM progress value to show, it just additionally knows
+  /// that value isn't durable yet and may retry/alert. Reach for this at
+  /// any call site that cares whether an unlock is actually saved (e.g. a
+  /// "load-bearing" one-time reward); gameplay call sites that don't need
+  /// that proof can keep using the simpler sync [incrementProgress].
+  Future<SdkResult<int>> incrementProgressDurably(
+    String achievementId,
+    int amount,
+  ) async {
+    incrementProgress(achievementId, amount);
+    // Awaiting a single `_saveChain` snapshot isn't enough: if a save was
+    // ALREADY in flight when `_scheduleSave()` above ran, this increment
+    // only set `_saveDirty = true` and `_saveChain` still points at that
+    // OLDER, already-in-progress save — one that may not include this
+    // increment yet. Loop until `_saving` genuinely settles back to
+    // `false`, which only happens once a save that found no further dirty
+    // flag (i.e. one that ran AFTER this increment was applied) completes.
+    while (_saving) {
+      await _saveChain;
+    }
+    final error = _lastSaveError;
+    if (error != null) {
+      return SdkFailure(
+        kind: SdkErrorKind.storage,
+        message:
+            'Failed to persist achievement progress for '
+            '"$achievementId"',
+        cause: error,
+      );
+    }
+    return SdkSuccess(progressOf(achievementId));
   }
 
   /// `true` once progress reaches the registered threshold. `false` (never

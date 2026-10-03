@@ -12,6 +12,8 @@ class StorageKeys {
 
   static const String localeCode = 'locale_code';
   static const String audioMuted = 'audio_muted';
+  static const String bgmVolume = 'bgm_volume_v1';
+  static const String sfxVolume = 'sfx_volume_v1';
   static const String themeDark = 'theme_dark';
   static const String colorBlindSafe = 'color_blind_safe';
   static const String wakeLockEnabled = 'wake_lock_enabled';

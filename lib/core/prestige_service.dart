@@ -96,13 +96,13 @@ class PrestigeService extends GetxService {
   /// balance on success. Fails with [SdkErrorKind.validation] (no state
   /// change at all) if [canPrestige] is false.
   ///
-  /// Each currency reset is its own [EconomyWallet] transaction (a unique,
-  /// auto-generated id per call, so retrying after a transient storage
-  /// failure never double-applies) — if one fails partway through, the
-  /// currencies already reset stay reset (the same "no rollback across
-  /// separate wallet transactions" posture [EconomyWallet] itself has no
-  /// primitive to avoid) and that failure is returned immediately without
-  /// granting [metaCurrency].
+  /// BUG-90: every reset + the relic grant commit as ONE
+  /// [EconomyWallet.batchTransaction] — one combined balance update, one
+  /// disk write. A balance that can't go negative (already enforced inside
+  /// the batch) fails the WHOLE prestige with nothing changed; a storage
+  /// error partway used to leave some currencies already reset with no
+  /// relic grant (a real, previously-reachable half-applied state) — the
+  /// batch either fully applies or fully doesn't.
   Future<SdkResult<int>> prestige() async {
     if (!canPrestige()) {
       return SdkFailure(
@@ -113,21 +113,27 @@ class PrestigeService extends GetxService {
       );
     }
 
+    final deltas = <String, int>{};
     for (final currency in softResetCurrencies) {
       final balance = wallet.balanceOf(currency);
       if (balance <= 0) continue;
-      final result = await wallet.trySpend(
-        currency: currency,
-        amount: balance,
-        transactionId: 'prestige_softreset_${currency}_${_txCounter++}',
-      );
-      if (result is SdkFailure<int>) return result;
+      deltas[currency] = -balance;
     }
+    deltas[metaCurrency] = (deltas[metaCurrency] ?? 0) + relicsPerPrestige;
 
-    return wallet.earn(
-      currency: metaCurrency,
-      amount: relicsPerPrestige,
-      transactionId: 'prestige_relic_grant_${_txCounter++}',
+    final result = await wallet.batchTransaction(
+      deltas: deltas,
+      transactionId: 'prestige_${_txCounter++}',
     );
+    if (result is SdkFailure<void>) {
+      return SdkFailure(
+        kind: result.kind,
+        message: result.message,
+        retryable: result.retryable,
+        cause: result.cause,
+        stackTrace: result.stackTrace,
+      );
+    }
+    return SdkSuccess(wallet.balanceOf(metaCurrency));
   }
 }

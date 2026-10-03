@@ -3,7 +3,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/achievement_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _FailingAchievementStorage extends StorageService {
+  _FailingAchievementStorage(super.prefs);
+
+  @override
+  Future<void> setString(String key, String value) {
+    if (key == 'achievement_fails') throw StateError('disk full');
+    return super.setString(key, value);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -219,42 +230,39 @@ void main() {
         );
       });
 
-      test(
-        'BUG-45: burst 5 lệnh liên tiếp KHÔNG await coalesce thành ít lần '
-        'ghi hơn 5 (đúng thiết kế queue race-free) nhưng KHÔNG mất '
-        'progress nào — state cuối cùng vẫn đúng tổng',
-        () async {
-          // Trước BUG-45: mỗi lệnh trong burst thực sự ghi riêng (đúng 5
-          // write) — nhưng đó là TÁC DỤNG PHỤ của chính race bug (mỗi lệnh
-          // vô tình thấy `_saving == false` do gap giữa `finally` và
-          // `.then()`, nên tự chạy `_runSave()` độc lập). Sau khi fix race
-          // đúng cách, các lệnh chồng lấn (`_saving == true` lúc gọi) được
-          // coalesce vào ĐÚNG 1 lần chạy tiếp theo (đọc state MỚI NHẤT tại
-          // thời điểm chạy) — writes < 5 là kết quả ĐÚNG của việc fix race,
-          // không phải regression. Điều thực sự cần đảm bảo (không đổi):
-          // không mất progress nào — verify qua state cuối.
-          final service = AchievementService();
-          service.register('combo', 100);
+      test('BUG-45: burst 5 lệnh liên tiếp KHÔNG await coalesce thành ít lần '
+          'ghi hơn 5 (đúng thiết kế queue race-free) nhưng KHÔNG mất '
+          'progress nào — state cuối cùng vẫn đúng tổng', () async {
+        // Trước BUG-45: mỗi lệnh trong burst thực sự ghi riêng (đúng 5
+        // write) — nhưng đó là TÁC DỤNG PHỤ của chính race bug (mỗi lệnh
+        // vô tình thấy `_saving == false` do gap giữa `finally` và
+        // `.then()`, nên tự chạy `_runSave()` độc lập). Sau khi fix race
+        // đúng cách, các lệnh chồng lấn (`_saving == true` lúc gọi) được
+        // coalesce vào ĐÚNG 1 lần chạy tiếp theo (đọc state MỚI NHẤT tại
+        // thời điểm chạy) — writes < 5 là kết quả ĐÚNG của việc fix race,
+        // không phải regression. Điều thực sự cần đảm bảo (không đổi):
+        // không mất progress nào — verify qua state cuối.
+        final service = AchievementService();
+        service.register('combo', 100);
 
-          final writesBefore = storage.platformWrites;
-          for (var i = 0; i < 5; i++) {
-            service.incrementProgress('combo', 1);
-          }
-          await service.debugPendingSaves;
+        final writesBefore = storage.platformWrites;
+        for (var i = 0; i < 5; i++) {
+          service.incrementProgress('combo', 1);
+        }
+        await service.debugPendingSaves;
 
-          // Có coalesce thật (ít hơn 5 write thô) — chứng minh queue race-free
-          // đang hoạt động, không phải mỗi lệnh chạy độc lập như code cũ.
-          expect(storage.platformWrites - writesBefore, lessThan(5));
-          // Nhưng KHÔNG progress nào bị mất — state cuối vẫn đúng tổng 5.
-          expect(
-            storage.getString('achievement_progress_v1'),
-            contains('"combo":5'),
-          );
-          final reloaded = AchievementService();
-          reloaded.register('combo', 100);
-          expect(reloaded.progressOf('combo'), 5);
-        },
-      );
+        // Có coalesce thật (ít hơn 5 write thô) — chứng minh queue race-free
+        // đang hoạt động, không phải mỗi lệnh chạy độc lập như code cũ.
+        expect(storage.platformWrites - writesBefore, lessThan(5));
+        // Nhưng KHÔNG progress nào bị mất — state cuối vẫn đúng tổng 5.
+        expect(
+          storage.getString('achievement_progress_v1'),
+          contains('"combo":5'),
+        );
+        final reloaded = AchievementService();
+        reloaded.register('combo', 100);
+        expect(reloaded.progressOf('combo'), 5);
+      });
     });
 
     group('IDEA-43: onUnlock stream', () {
@@ -512,5 +520,86 @@ void main() {
       service.incrementProgress('wins', 10);
       expect(service.progressRatio('wins'), 1.0);
     });
+  });
+
+  group('BUG-90: inject StorageService + durable failure surfacing', () {
+    test(
+      'constructor nhận StorageService riêng, không phụ thuộc Get.find ambient',
+      () async {
+        Get.reset();
+        final prefs = await SharedPreferences.getInstance();
+        final ownStorage = StorageService(prefs);
+        // Cố ý KHÔNG Get.put ownStorage — nếu service vẫn dùng
+        // StorageService.to ambient, dòng dưới sẽ throw ngay khi chạm
+        // _progressMap.
+        final service = AchievementService(storage: ownStorage);
+
+        service.register('wins', 3);
+        service.incrementProgress('wins', 1);
+        await service.debugPendingSaves;
+
+        expect(service.progressOf('wins'), 1);
+        expect(
+          ownStorage.getString(StorageKeys.achievementProgressV1),
+          isNotNull,
+        );
+      },
+    );
+
+    test(
+      'incrementProgressDurably trả SdkFailure khi persist lỗi, không silent',
+      () async {
+        final failing = _FailingAchievementStorage(
+          await SharedPreferences.getInstance(),
+        );
+        final service = AchievementService(
+          storage: failing,
+          storageKey: 'achievement_fails',
+        );
+        service.register('wins', 3);
+
+        final result = await service.incrementProgressDurably('wins', 1);
+
+        expect(result.isSuccess, isFalse);
+        expect((result as SdkFailure<int>).kind, SdkErrorKind.storage);
+        // Progress vẫn áp dụng trong RAM (ENH-85/BUG-90: không rollback
+        // in-memory state — chỉ surface rằng DISK chưa chắc đã có nó) —
+        // caller (test/consumer) biết để retry/báo lỗi thay vì tưởng đã an
+        // toàn.
+        expect(service.progressOf('wins'), 1);
+      },
+    );
+
+    test(
+      'incrementProgressDurably trả SdkSuccess khi persist OK, progress sau đó',
+      () async {
+        final service = AchievementService(
+          storage: StorageService(await SharedPreferences.getInstance()),
+        );
+        service.register('wins', 3);
+
+        final result = await service.incrementProgressDurably('wins', 2);
+
+        expect(result.isSuccess, isTrue);
+        expect(result.value, 2);
+        expect(service.progressOf('wins'), 2);
+      },
+    );
+
+    test(
+      'incrementProgress (sync, legacy) vẫn hoạt động y hệt trước đây',
+      () async {
+        final service = AchievementService(
+          storage: StorageService(await SharedPreferences.getInstance()),
+        );
+        service.register('wins', 3);
+
+        service.incrementProgress('wins', 1);
+        await service.debugPendingSaves;
+
+        expect(service.progressOf('wins'), 1);
+        expect(service.isCompleted('wins'), isFalse);
+      },
+    );
   });
 }

@@ -719,6 +719,36 @@ class _CookbookScreenState extends State<CookbookScreen> {
                         return 'replay matches=${result.matches} '
                             '(rngMismatches=${result.rngMismatches?.length})';
                       }),
+                      _tile('SeededChallengeService — daily deterministic run '
+                          '+ replay + local score', () async {
+                        final challenge = SeededChallengeService(
+                          challengeId: 'cookbook_daily_rolls',
+                          period: ChallengePeriod.daily,
+                        );
+                        final recorder = ReplayRecorder();
+                        final rng = challenge.startRun(recorder: recorder);
+                        var score = 0;
+                        for (var i = 0; i < 3; i++) {
+                          final roll = rng.stream('gameplay').nextInt(100);
+                          score += roll;
+                          recorder.record('roll', {'expectedOutcome': roll});
+                        }
+                        final capsule = challenge.endRun(
+                          recorder,
+                          appVersion: 'cookbook-demo',
+                        );
+                        final replay = challenge.replay(
+                          capsule,
+                          (event, replayRng) =>
+                              replayRng.stream('gameplay').nextInt(100),
+                        );
+                        challenge.submitScore('Cookbook player', score);
+                        final top = challenge.topScores(1);
+                        return 'period=${challenge.periodKey}, '
+                            'seed=${challenge.currentSeed}, '
+                            'replay matches=${replay.matches}, '
+                            'local top=${top.isEmpty ? "none" : top.first.score}';
+                      }),
                       _tile('ShadowActivationController — guardrail '
                           'auto-rollback on violation', () {
                         final controller = ShadowActivationController(

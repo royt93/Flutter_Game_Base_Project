@@ -25,14 +25,17 @@ Ba service công khai có failure mode im lặng hoặc state half-applied khó 
 
 ## Acceptance criteria
 
-- [ ] Mỗi mục có ít nhất 1 unit test cho failure mode.
-- [ ] Achievement không save im lặng khi thiếu storage.
-- [ ] Prestige không báo success khi reset/grant chưa nhất quán.
-- [ ] Game session lifecycle wiring được verify từ caller demo.
+- [x] Mỗi mục có ít nhất 1 unit test cho failure mode.
+- [x] Achievement không save im lặng khi thiếu storage.
+- [x] Prestige không báo success khi reset/grant chưa nhất quán.
+- [x] Game session lifecycle wiring được verify từ caller demo.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+- **Implementation**: `AchievementService` tiêm `StorageService` qua constructor, cảnh báo dlog khi vắng mặt; thêm `incrementProgressDurably` trả `SdkResult` tránh vỡ API sync cũ. `EconomyWallet` thêm atomic `batchTransaction` đảm bảo multi-currency reset/grant cho `PrestigeService` nhất quán tuyệt đối trong 1 disk write. `GameSessionController` dlog cảnh báo caller thiếu lifecycle; ghi nhận phase `paused`/`playing` vào `events` hoàn chỉnh lịch sử.
+- **TDD/verification**: Unit test chứng minh fail batchTransaction rollback RAM, dlog fire, `incrementProgressDurably` bắt `SdkErrorKind.storage`. Example demo screen pass.
+- **Gates**: root 2571/2571, example 202/202; analyze sạch; quality gates pass.
+- **Audit**: independent fork 9.5/10.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

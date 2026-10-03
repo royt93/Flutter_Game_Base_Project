@@ -280,16 +280,100 @@ void main() {
       },
     );
 
-    test('earn ngay sau khởi tạo trực tiếp cộng dồn đúng, không mất data cũ', (
-    ) async {
-      final storage = StorageService(null);
-      final seed = EconomyWallet(storage: storage)..onInit();
-      await seed.earn(currency: 'coin', amount: 25, transactionId: 'seed');
+    test(
+      'earn ngay sau khởi tạo trực tiếp cộng dồn đúng, không mất data cũ',
+      () async {
+        final storage = StorageService(null);
+        final seed = EconomyWallet(storage: storage)..onInit();
+        await seed.earn(currency: 'coin', amount: 25, transactionId: 'seed');
 
-      final direct = EconomyWallet(storage: storage);
-      await direct.earn(currency: 'coin', amount: 5, transactionId: 'extra');
+        final direct = EconomyWallet(storage: storage);
+        await direct.earn(currency: 'coin', amount: 5, transactionId: 'extra');
 
-      expect(direct.balanceOf('coin'), 30);
+        expect(direct.balanceOf('coin'), 30);
+      },
+    );
+  });
+
+  group('BUG-90: batchTransaction (atomic multi-currency)', () {
+    test('validates EVERY delta before applying any of them — one insufficient '
+        'currency fails the whole batch, no partial balances change', () async {
+      final wallet = EconomyWallet(storage: StorageService(null));
+      await wallet.earn(currency: 'coins', amount: 5, transactionId: 'seed');
+
+      final result = await wallet.batchTransaction(
+        deltas: const {'coins': -5, 'gems': -1},
+        transactionId: 'batch_1',
+      );
+
+      expect(result.isSuccess, isFalse);
+      expect(wallet.balanceOf('coins'), 5);
+      expect(wallet.balanceOf('gems'), 0);
+    });
+
+    test(
+      'applies all deltas atomically and persists them in one snapshot',
+      () async {
+        final storage = StorageService(null);
+        final wallet = EconomyWallet(storage: storage);
+        await wallet.earn(currency: 'coins', amount: 10, transactionId: 's1');
+        await wallet.earn(currency: 'gems', amount: 3, transactionId: 's2');
+
+        final result = await wallet.batchTransaction(
+          deltas: const {'coins': -10, 'gems': -3, 'relics': 1},
+          transactionId: 'batch_ok',
+        );
+
+        expect(result.isSuccess, isTrue);
+        expect(wallet.balanceOf('coins'), 0);
+        expect(wallet.balanceOf('gems'), 0);
+        expect(wallet.balanceOf('relics'), 1);
+
+        final restarted = EconomyWallet(storage: storage);
+        expect(restarted.balanceOf('coins'), 0);
+        expect(restarted.balanceOf('gems'), 0);
+        expect(restarted.balanceOf('relics'), 1);
+      },
+    );
+
+    test(
+      'same transactionId retried is idempotent, not double-applied',
+      () async {
+        final wallet = EconomyWallet(storage: StorageService(null));
+        await wallet.earn(currency: 'coins', amount: 10, transactionId: 's1');
+
+        final first = await wallet.batchTransaction(
+          deltas: const {'coins': -10, 'relics': 1},
+          transactionId: 'batch_dup',
+        );
+        final second = await wallet.batchTransaction(
+          deltas: const {'coins': -10, 'relics': 1},
+          transactionId: 'batch_dup',
+        );
+
+        expect(first.isSuccess, isTrue);
+        expect(second.isSuccess, isTrue);
+        expect(wallet.balanceOf('relics'), 1);
+      },
+    );
+
+    test('empty deltas or empty transactionId is rejected', () async {
+      final wallet = EconomyWallet(storage: StorageService(null));
+
+      expect(
+        (await wallet.batchTransaction(
+          deltas: const {},
+          transactionId: 'x',
+        )).isSuccess,
+        isFalse,
+      );
+      expect(
+        (await wallet.batchTransaction(
+          deltas: const {'coins': 1},
+          transactionId: '',
+        )).isSuccess,
+        isFalse,
+      );
     });
   });
 }

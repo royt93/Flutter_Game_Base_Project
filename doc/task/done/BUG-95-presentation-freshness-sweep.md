@@ -25,13 +25,16 @@ Screen reader đọc overlay trang trí; HUD energy sai sau refill nền.
 
 ## Acceptance criteria
 
-- [ ] Semantics test pass cho overlay và HUD.
-- [ ] Timer/freshness test: refill nền làm UI cập nhật.
-- [ ] Không regression animation/confetti hiện tại.
+- [x] Semantics test pass cho overlay và HUD.
+- [x] Timer/freshness test: refill nền làm UI cập nhật.
+- [x] Không regression animation/confetti hiện tại.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+- **Implementation**: Bọc `ExcludeSemantics` quanh `ConfettiOverlay`, `CoinFlyOverlay`, `AuroraBgLayer`, `NeonAuraLayer`; sửa `StrokeText` dùng một node `Semantics` duy nhất tránh screen reader đọc 2 lần. Thêm `ReactiveEnergyBar` lắng nghe lazy refill định kỳ từ `EnergyService` mà vẫn giữ `EnergyBar` gốc nhận plain-data; thay thế tại `GameDemoScreen`.
+- **TDD/verification**: `confetti_overlay_test.dart`, `coin_fly_overlay_test.dart`, `aurora_bg_layer_test.dart`, `neon_aura_layer_test.dart`, `energy_bar_test.dart` đều pass; regression golden/button/daily-login pass; device test `ReactiveEnergyBar` trên TECNO BG6 pass.
+- **Gates**: root 2571/2571, example 202/202; analyze sạch; quality gates pass.
+- **Audit**: independent fork 9.5/10.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

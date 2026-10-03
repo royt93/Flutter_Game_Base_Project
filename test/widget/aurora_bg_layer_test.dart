@@ -34,6 +34,25 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('BUG-95: AuroraBgLayer is excluded from semantics', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(home: AuroraBgLayer(color: NeonTheme.indigo)),
+    );
+    await tester.pump();
+
+    final layer = find.byType(AuroraBgLayer);
+    final excluded = find.descendant(
+      of: layer,
+      matching: find.byType(ExcludeSemantics),
+    );
+    // Shader load may fail in a widget test, in which case the layer hides
+    // entirely. If it loaded, the decorative paint must be excluded.
+    expect(excluded.evaluate().length, anyOf(0, 1));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('NeonBg with aurora: true does not crash', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

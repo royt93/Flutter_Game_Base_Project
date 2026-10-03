@@ -155,4 +155,81 @@ class EconomyWallet extends GetxService {
       );
     }
   });
+
+  /// Applies every currency delta in [deltas] atomically — either ALL of
+  /// them take effect (one combined balance update, one disk write) or
+  /// NONE do (BUG-90). Built for `PrestigeService.prestige()`'s "reset N
+  /// soft-reset currencies, then grant 1 meta currency" sequence, which
+  /// used to be N+1 separate [_apply] transactions — any one of them
+  /// failing partway (storage error, process kill) left some currencies
+  /// already reset with no relic grant, an inconsistent state [_apply]'s
+  /// single-currency transaction has no way to avoid on its own.
+  ///
+  /// Validates every resulting balance (same `[0, 0x7fffffff]` bound
+  /// [_apply] enforces) BEFORE mutating anything — a single currency
+  /// that would go negative or overflow fails the whole batch with no
+  /// balance changed at all, not just that one currency.
+  ///
+  /// [transactionId] makes the whole batch idempotent the same way a
+  /// single [_apply] call is: retrying the same id after an app restart
+  /// (or a caller's own retry-on-timeout policy) is a safe no-op rather
+  /// than double-applying every delta a second time.
+  Future<SdkResult<void>> batchTransaction({
+    required Map<String, int> deltas,
+    required String transactionId,
+  }) => _guard.runExclusive('wallet', () async {
+    if (deltas.isEmpty || transactionId.isEmpty) {
+      return const SdkFailure(
+        kind: SdkErrorKind.validation,
+        message: 'Invalid batch wallet transaction',
+      );
+    }
+    if (_transactions.contains(transactionId)) {
+      return const SdkSuccess<void>(null);
+    }
+
+    final snapshot = {...balances};
+    for (final entry in deltas.entries) {
+      if (entry.key.isEmpty) {
+        return const SdkFailure(
+          kind: SdkErrorKind.validation,
+          message: 'Invalid batch wallet transaction',
+        );
+      }
+      final next = (snapshot[entry.key] ?? 0) + entry.value;
+      if (next < 0 || next > 0x7fffffff) {
+        return const SdkFailure(
+          kind: SdkErrorKind.validation,
+          message: 'Insufficient or invalid balance',
+        );
+      }
+      snapshot[entry.key] = next;
+    }
+
+    final nextTransactions = [..._transactions, transactionId];
+    if (nextTransactions.length > _transactionsCapacity) {
+      nextTransactions.removeRange(
+        0,
+        nextTransactions.length - _transactionsCapacity,
+      );
+    }
+    try {
+      await storage.setString(
+        _key,
+        jsonEncode({'balances': snapshot, 'transactions': nextTransactions}),
+      );
+      balances.assignAll(snapshot);
+      _transactions
+        ..clear()
+        ..addAll(nextTransactions);
+      return const SdkSuccess<void>(null);
+    } catch (error, stack) {
+      return SdkFailure(
+        kind: SdkErrorKind.storage,
+        message: 'Wallet could not be saved',
+        cause: error,
+        stackTrace: stack,
+      );
+    }
+  });
 }

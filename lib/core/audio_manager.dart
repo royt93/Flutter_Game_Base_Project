@@ -33,14 +33,34 @@ class AudioManager extends GetxService {
   static const _bgmTrack = 'bkg.ogg';
   static const _prefix = 'packages/roy_casual_kit/asset/audio/';
 
-  /// Normal bgm volume — also what a duck (see [playSfx]'s `duck` param)
-  /// restores to once every ducked SFX has finished.
-  static const _bgmVolume = 0.35;
+  /// Default bgm volume (ENH-95: overridden by [bgmVolume] once a user
+  /// preference is persisted — this const is only the factory-default seed).
+  static const _defaultBgmVolume = 0.35;
 
-  /// Bgm volume while at least one ducked SFX is playing (IDEA-45) —
-  /// quieter, not silent, so the SFX reads as more important without the
-  /// music fully cutting out.
-  static const _bgmDuckedVolume = 0.08;
+  /// Default sfx volume multiplier (ENH-95: overridden by [sfxVolume]).
+  static const _defaultSfxVolume = 1.0;
+
+  /// Ratio applied to the user's chosen [bgmVolume] while at least one ducked
+  /// SFX is playing (IDEA-45) — quieter, not silent, so the SFX reads as more
+  /// important without the music fully cutting out. Derived from the old
+  /// hardcoded 0.08/0.35 ratio so the "how much quieter" feel is unchanged,
+  /// but now scales with whatever bgm volume the user actually chose instead
+  /// of a fixed absolute value (ENH-95) — a user who turned bgm down to 0.1
+  /// should still hear it duck proportionally, not duck to a constant that
+  /// might already be louder than their chosen normal volume.
+  static const _duckRatio = 0.08 / 0.35;
+
+  /// User-chosen bgm volume (ENH-95) — persisted via [StorageKeys.bgmVolume].
+  /// This is what a duck restores to once every ducked SFX has finished, and
+  /// what [startBgm]/[resumeBgm] play/resume at. Orthogonal to [muted]: muting
+  /// never resets this, so unmuting always restores the user's chosen level.
+  final RxDouble bgmVolume = _defaultBgmVolume.obs;
+
+  /// User-chosen sfx volume multiplier (ENH-95) — persisted via
+  /// [StorageKeys.sfxVolume]. Multiplies every [playSfx] call's own `volume`
+  /// argument (that argument stays a per-call relative weight, e.g. a quieter
+  /// footstep vs. a louder explosion; this is the player's overall SFX mix).
+  final RxDouble sfxVolume = _defaultSfxVolume.obs;
 
   final AudioCache _cache = AudioCache(prefix: _prefix);
   late final Bgm _bgm = Bgm(audioCache: _cache);
@@ -145,9 +165,23 @@ class AudioManager extends GetxService {
   @visibleForTesting
   String get debugSfxCachePrefix => _sfxCache.prefix;
 
+  @visibleForTesting
+  double get debugNormalBgmVolume => bgmVolume.value;
+
+  @visibleForTesting
+  double get debugDuckedBgmVolume => bgmVolume.value * _duckRatio;
+
   Future<void> init() async {
-    // Restore the saved mute state before loading audio
-    muted.value = StorageService.to.getBool(StorageKeys.audioMuted, def: false);
+    // Restore all user choices before loading audio (ENH-95). A missing key
+    // is the pre-ENH-95 state: keep the old 0.35 bgm / 1.0 sfx defaults.
+    final storage = StorageService.to;
+    muted.value = storage.getBool(StorageKeys.audioMuted, def: false);
+    bgmVolume.value = storage
+        .getDouble(StorageKeys.bgmVolume, def: _defaultBgmVolume)
+        .clamp(0.0, 1.0);
+    sfxVolume.value = storage
+        .getDouble(StorageKeys.sfxVolume, def: _defaultSfxVolume)
+        .clamp(0.0, 1.0);
 
     try {
       await _cache.loadAll([_bgmTrack]);
@@ -160,7 +194,7 @@ class AudioManager extends GetxService {
 
   void startBgm() {
     if (!_ready || muted.value || _bgmPlaying) return;
-    _ignoreAudio(_bgm.play(_bgmTrack, volume: _bgmVolume));
+    _ignoreAudio(_bgm.play(_bgmTrack, volume: bgmVolume.value));
     _bgmPlaying = true;
   }
 
@@ -179,19 +213,28 @@ class AudioManager extends GetxService {
   }
 
   /// Resumes playback when the app returns to foreground (resumed). Does
-  /// not resume if the user has muted.
+  /// not resume if the user has muted. Re-applies [bgmVolume] (ENH-95,
+  /// "focus policy") rather than trusting whatever volume the platform
+  /// stream happened to keep across a pause — so a duck that was still
+  /// active right as the app backgrounded can never leave bgm stuck quiet
+  /// after returning to foreground.
   void resumeBgm() {
     if (!_bgmPlaying || muted.value) return;
+    _ignoreAudio(_bgm.audioPlayer.setVolume(_targetBgmVolume));
     _ignoreAudio(_bgm.resume());
   }
+
+  double get _targetBgmVolume =>
+      _duckCount > 0 ? bgmVolume.value * _duckRatio : bgmVolume.value;
 
   // IDEA-45: drops bgm volume on the first concurrent duck, restores it
   // once the last one ends (see _duckCount's doc comment). No-ops if bgm
   // isn't actually playing — nothing to duck.
   void _duckBgm() {
     if (_duckCount == 0 && _bgmPlaying) {
-      dlog('audio ducking: bgm volume -> $_bgmDuckedVolume');
-      _ignoreAudio(_bgm.audioPlayer.setVolume(_bgmDuckedVolume));
+      final target = bgmVolume.value * _duckRatio;
+      dlog('audio ducking: bgm volume -> $target');
+      _ignoreAudio(_bgm.audioPlayer.setVolume(target));
     }
     _duckCount++;
   }
@@ -203,9 +246,32 @@ class AudioManager extends GetxService {
   void _unduckBgm() {
     if (_duckCount > 0) _duckCount--;
     if (_duckCount == 0 && _bgmPlaying) {
-      dlog('audio ducking: bgm volume -> $_bgmVolume (restored)');
-      _ignoreAudio(_bgm.audioPlayer.setVolume(_bgmVolume));
+      dlog('audio ducking: bgm volume -> ${bgmVolume.value} (restored)');
+      _ignoreAudio(_bgm.audioPlayer.setVolume(bgmVolume.value));
     }
+  }
+
+  /// Sets the player's chosen BGM volume (ENH-95), clamped to `[0, 1]` and
+  /// persisted via [StorageKeys.bgmVolume]. Applies immediately if bgm is
+  /// currently playing and not ducked; if a duck is in progress, the new
+  /// level takes effect once [_unduckBgm] restores it (ducking is always
+  /// relative to this value, never a stale snapshot).
+  Future<void> setBgmVolume(double value) async {
+    final clamped = value.clamp(0.0, 1.0);
+    bgmVolume.value = clamped;
+    if (_bgmPlaying && _duckCount == 0) {
+      _ignoreAudio(_bgm.audioPlayer.setVolume(clamped));
+    }
+    await StorageService.to.setDouble(StorageKeys.bgmVolume, clamped);
+  }
+
+  /// Sets the player's chosen SFX volume multiplier (ENH-95), clamped to
+  /// `[0, 1]` and persisted via [StorageKeys.sfxVolume]. Multiplies every
+  /// subsequent [playSfx] call's own `volume` argument.
+  Future<void> setSfxVolume(double value) async {
+    final clamped = value.clamp(0.0, 1.0);
+    sfxVolume.value = clamped;
+    await StorageService.to.setDouble(StorageKeys.sfxVolume, clamped);
   }
 
   /// Plays a one-shot SFX from a CONSUMING app's own assets (e.g.
@@ -238,7 +304,13 @@ class AudioManager extends GetxService {
     AudioPlayer? player;
     try {
       player = _sfxPool.acquire();
-      await player.play(AssetSource(fileName), volume: volume);
+      // ENH-95: `volume` stays the call site's own per-SFX relative weight
+      // (a quieter footstep vs. a louder explosion); `sfxVolume` is the
+      // player's overall SFX mix preference layered on top of it.
+      await player.play(
+        AssetSource(fileName),
+        volume: volume * sfxVolume.value,
+      );
       // Wait for the SFX to actually finish before releasing (BUG-24) —
       // releasing right after play() returns would cut the sound off,
       // since play() resolves once playback STARTS, not once it ends.

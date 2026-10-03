@@ -44,15 +44,17 @@ class _AuroraBgLayerState extends ShaderTickerLayerState<AuroraBgLayer> {
   Widget build(BuildContext context) {
     final shader = this.shader;
     if (shader == null) return const SizedBox.shrink();
-    return IgnorePointer(
-      child: RepaintBoundary(
-        child: CustomPaint(
-          painter: _AuroraPainter(
-            shader: shader,
-            time: time,
-            color: widget.color,
+    return ExcludeSemantics(
+      child: IgnorePointer(
+        child: RepaintBoundary(
+          child: CustomPaint(
+            painter: _AuroraPainter(
+              shader: shader,
+              time: time,
+              color: widget.color,
+            ),
+            size: Size.infinite,
           ),
-          size: Size.infinite,
         ),
       ),
     );

@@ -419,11 +419,8 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                           ),
                         ),
                         const SizedBox(height: NeonTheme.s8),
-                        EnergyBar(
-                          currentEnergy: _energy.currentEnergy,
-                          maxEnergy: _energy.maxEnergy,
-                          timeUntilNextEnergy: _energy.timeUntilNextEnergy,
-                          hasInfiniteLives: _energy.hasInfiniteLives,
+                        ReactiveEnergyBar(
+                          energyService: _energy,
                           direction: Axis.horizontal,
                         ),
                         const SizedBox(height: NeonTheme.s8),

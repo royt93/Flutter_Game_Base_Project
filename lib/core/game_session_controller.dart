@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import 'debug_log.dart';
 import 'lifecycle_coordinator.dart';
 import 'utils/sdk_result.dart';
 
@@ -24,7 +25,9 @@ class GameSessionSnapshot {
 
 /// Single source of truth for a game's session lifecycle.
 class GameSessionController extends GetxController {
-  GameSessionController({this.lifecycle}) : hookName = 'game-session';
+  GameSessionController({this.lifecycle}) : hookName = 'game-session' {
+    _warnIfLifecycleMissing();
+  }
 
   /// BUG-93 audit fix: use this constructor instead of the default one
   /// when a consumer app builds MORE THAN ONE [GameSessionController]
@@ -37,6 +40,27 @@ class GameSessionController extends GetxController {
   GameSessionController.withHookName({this.lifecycle, required this.hookName}) {
     if (hookName.isEmpty) {
       throw ArgumentError.value(hookName, 'hookName', 'must not be empty');
+    }
+    _warnIfLifecycleMissing();
+  }
+
+  /// BUG-90: a caller constructing this controller without a real
+  /// [RoyLifecycleCoordinator] used to fail completely silently — `onInit`
+  /// just skips `lifecycle?.registerHook(...)` via `?.`, with nothing ever
+  /// observing it, so "forgot to wire background auto-pause" only showed
+  /// up as a tester noticing the session kept running while backgrounded.
+  /// This doesn't forbid the null case (some callers, e.g. a one-off
+  /// unit-tested session with no real app lifecycle, legitimately don't
+  /// need it) — it just makes the omission observable via [dlog] instead
+  /// of invisible.
+  void _warnIfLifecycleMissing() {
+    if (lifecycle == null) {
+      dlog(
+        'GameSessionController("$hookName"): lifecycle is null — '
+        'background/foreground auto-pause/resume will not fire for this '
+        'session. Pass a real RoyLifecycleCoordinator if that is not '
+        'intentional.',
+      );
     }
   }
 
@@ -87,10 +111,17 @@ class GameSessionController extends GetxController {
       return _reject('Session is not playing');
     }
     final reasons = {...current.pauseReasons, reason};
+    final wasPaused = current.phase == GameSessionPhase.paused;
     snapshot.value = current.copyWith(
       phase: GameSessionPhase.paused,
       pauseReasons: reasons,
     );
+    // BUG-90: record the phase change in `events` (this session's history)
+    // — only on the FIRST pause (playing -> paused), not every subsequent
+    // overlapping pause reason (e.g. system pausing on top of an already
+    // user-paused session), since the phase itself doesn't change again
+    // until the session is fully resumed.
+    if (!wasPaused) events.add(GameSessionPhase.paused);
     return SdkSuccess(snapshot.value);
   }
 
@@ -101,12 +132,17 @@ class GameSessionController extends GetxController {
       return _reject('Pause reason is not active');
     }
     final reasons = {...current.pauseReasons}..remove(reason);
-    snapshot.value = current.copyWith(
-      phase: reasons.isEmpty
-          ? GameSessionPhase.playing
-          : GameSessionPhase.paused,
-      pauseReasons: reasons,
-    );
+    final nextPhase = reasons.isEmpty
+        ? GameSessionPhase.playing
+        : GameSessionPhase.paused;
+    snapshot.value = current.copyWith(phase: nextPhase, pauseReasons: reasons);
+    // Same reasoning as `pause()` above: only the resume that actually
+    // clears every pause reason (phase genuinely returns to playing) is a
+    // real transition worth recording — a resume that leaves another
+    // reason still active doesn't change the observable phase.
+    if (nextPhase == GameSessionPhase.playing) {
+      events.add(GameSessionPhase.playing);
+    }
     return SdkSuccess(snapshot.value);
   }
 

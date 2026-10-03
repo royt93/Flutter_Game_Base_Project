@@ -29,8 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // writes, not a throwaway instance. Null only if StorageService was
   // never registered (e.g. a test that boots without it), matching this
   // screen's existing `AudioManager.maybe`/`WakeLockService.maybe` posture.
-  late final PlayerDataRightsService? _dataRights =
-      StorageService.maybe != null
+  late final PlayerDataRightsService? _dataRights = StorageService.maybe != null
       ? PlayerDataRightsService(storage: StorageService.to)
       : null;
 
@@ -112,7 +111,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     // null-check must sit outside Obx, or `?.` short-circuits
                     // and Obx registers no observable, which GetX treats as
                     // "improper use of a GetX".
-                    if (audio != null)
+                    if (audio != null) ...[
                       Obx(
                         () => CommonListTile(
                           title: 'sound'.tr,
@@ -122,6 +121,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
+                      // ENH-95: mute is a separate orthogonal gate — these
+                      // sliders stay enabled and keep their saved value even
+                      // while muted, exactly like the volume knobs on a real
+                      // mixer stay where you left them while the channel is
+                      // muted.
+                      Obx(
+                        () => Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: NeonTheme.s16,
+                          ),
+                          child: Semantics(
+                            label: 'bgm_volume'.tr,
+                            value: '${(audio.bgmVolume.value * 100).round()}%',
+                            slider: true,
+                            child: Slider(
+                              value: audio.bgmVolume.value,
+                              onChanged: audio.setBgmVolume,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Obx(
+                        () => Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: NeonTheme.s16,
+                          ),
+                          child: Semantics(
+                            label: 'sfx_volume'.tr,
+                            value: '${(audio.sfxVolume.value * 100).round()}%',
+                            slider: true,
+                            child: Slider(
+                              value: audio.sfxVolume.value,
+                              onChanged: audio.setSfxVolume,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     // Same null-outside-Obx reasoning as AudioManager above —
                     // WakeLockService may not be registered (e.g. a test that
                     // boots without the wakeLock module).

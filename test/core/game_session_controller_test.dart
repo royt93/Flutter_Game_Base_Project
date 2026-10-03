@@ -193,4 +193,89 @@ void main() {
       expect(GameSessionController.maybe, same(c));
     });
   });
+
+  group('BUG-90: lifecycle wiring observability + pause/resume history', () {
+    test(
+      'constructor với lifecycle == null in cảnh báo dlog, không im lặng',
+      () {
+        final messages = <String>[];
+        final original = debugPrint;
+        debugPrint = (String? message, {int? wrapWidth}) {
+          if (message != null) messages.add(message);
+        };
+        addTearDown(() => debugPrint = original);
+
+        GameSessionController();
+
+        expect(
+          messages.any((m) => m.contains('lifecycle') && m.contains('null')),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'constructor với lifecycle thật -> KHÔNG cảnh báo (wiring đã đúng)',
+      () {
+        final messages = <String>[];
+        final original = debugPrint;
+        debugPrint = (String? message, {int? wrapWidth}) {
+          if (message != null) messages.add(message);
+        };
+        addTearDown(() => debugPrint = original);
+
+        GameSessionController(lifecycle: RoyLifecycleCoordinator());
+
+        expect(
+          messages.any((m) => m.contains('lifecycle') && m.contains('null')),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'pause()/resume() ghi nhận vào events, không chỉ markReady/start/...',
+      () {
+        final c = GameSessionController();
+        c.markReady();
+        c.start();
+        c.pause(GamePauseReason.user);
+        c.resume(GamePauseReason.user);
+
+        expect(c.events, [
+          GameSessionPhase.ready,
+          GameSessionPhase.playing,
+          GameSessionPhase.paused,
+          GameSessionPhase.playing,
+        ]);
+      },
+    );
+
+    test(
+      'nested pause (user+system) chỉ ghi 1 event mỗi lần resume thực sự '
+      'đổi phase, không ghi khi vẫn còn pause reason khác giữ trạng thái',
+      () {
+        final c = GameSessionController();
+        c.markReady();
+        c.start();
+        c.pause(GamePauseReason.user);
+        c.pause(GamePauseReason.system);
+        c.resume(GamePauseReason.system);
+
+        expect(c.events, [
+          GameSessionPhase.ready,
+          GameSessionPhase.playing,
+          GameSessionPhase.paused,
+        ]);
+
+        c.resume(GamePauseReason.user);
+        expect(c.events, [
+          GameSessionPhase.ready,
+          GameSessionPhase.playing,
+          GameSessionPhase.paused,
+          GameSessionPhase.playing,
+        ]);
+      },
+    );
+  });
 }

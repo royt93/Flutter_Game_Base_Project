@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/energy_service.dart';
 import '../../../core/neon_theme.dart';
 import '../../../core/utils/format.dart';
 
@@ -187,6 +188,127 @@ class _EnergyBarState extends State<EnergyBar> {
         pips,
         if (showCountdown) ...[const SizedBox(height: NeonTheme.s8), countdown],
       ],
+    );
+  }
+}
+
+/// Service-bound freshness wrapper for [EnergyBar] (BUG-95).
+///
+/// [EnergyBar] intentionally remains a plain-data display widget (same
+/// convention as `LevelSelectGrid`/`DailyLoginCalendarWidget`) so it is easy
+/// to reuse and test without GetX. This wrapper is the opt-in bridge for live
+/// HUDs that DO want to follow [EnergyService]'s lazy refill state: it polls
+/// the service at [pollInterval], which causes [EnergyService.currentEnergy]
+/// to run its lazy `_regen()` calculation and rebuilds the child only when
+/// the rendered values actually change.
+///
+/// If no service is supplied and [EnergyService.maybe] is unavailable, this
+/// renders [SizedBox.shrink] rather than throwing — same null-safe startup
+/// convention as `AudioManager.maybe`/`EnergyService.maybe` elsewhere.
+class ReactiveEnergyBar extends StatefulWidget {
+  const ReactiveEnergyBar({
+    super.key,
+    this.energyService,
+    this.pollInterval = const Duration(seconds: 1),
+    this.direction = Axis.vertical,
+    this.icon = Icons.favorite,
+    this.emptyIcon = Icons.favorite_border,
+    this.color,
+    this.semanticLabel,
+  });
+
+  final EnergyService? energyService;
+  final Duration pollInterval;
+  final Axis direction;
+  final IconData icon;
+  final IconData emptyIcon;
+  final Color? color;
+  final String? semanticLabel;
+
+  @override
+  State<ReactiveEnergyBar> createState() => _ReactiveEnergyBarState();
+}
+
+class _ReactiveEnergyBarState extends State<ReactiveEnergyBar> {
+  Timer? _timer;
+  int? _energy;
+  Duration _untilNext = Duration.zero;
+  bool _infinite = false;
+
+  EnergyService? get _service => widget.energyService ?? EnergyService.maybe;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh(force: true);
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant ReactiveEnergyBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pollInterval != widget.pollInterval ||
+        oldWidget.energyService != widget.energyService) {
+      _refresh(force: true);
+      _startTimer();
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (widget.pollInterval <= Duration.zero) return;
+    _timer = Timer.periodic(widget.pollInterval, (_) => _refresh());
+  }
+
+  void _refresh({bool force = false}) {
+    final service = _service;
+    if (service == null) {
+      if (force) _energy = null;
+      return;
+    }
+    final nextEnergy = service.currentEnergy;
+    final nextUntil = service.timeUntilNextEnergy;
+    final nextInfinite = service.hasInfiniteLives;
+    final changed =
+        force ||
+        _energy != nextEnergy ||
+        _untilNext != nextUntil ||
+        _infinite != nextInfinite;
+    if (!changed) return;
+    if (!mounted) {
+      _energy = nextEnergy;
+      _untilNext = nextUntil;
+      _infinite = nextInfinite;
+      return;
+    }
+    setState(() {
+      _energy = nextEnergy;
+      _untilNext = nextUntil;
+      _infinite = nextInfinite;
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final service = _service;
+    final energy = _energy;
+    if (service == null || energy == null) return const SizedBox.shrink();
+    return EnergyBar(
+      currentEnergy: energy,
+      maxEnergy: service.maxEnergy,
+      timeUntilNextEnergy: _untilNext,
+      hasInfiniteLives: _infinite,
+      direction: widget.direction,
+      icon: widget.icon,
+      emptyIcon: widget.emptyIcon,
+      color: widget.color,
+      semanticLabel: widget.semanticLabel,
     );
   }
 }

@@ -36,7 +36,11 @@ Widget _wrap(Widget child) => GetMaterialApp(
 /// misses. `scrollUntilVisible` checks real on-screen visibility, not just
 /// tree presence, so every lookup below goes through it.
 Future<void> _scrollUntilVisible(WidgetTester tester, Finder target) async {
-  await tester.scrollUntilVisible(target, 250, scrollable: find.byType(Scrollable).first);
+  await tester.scrollUntilVisible(
+    target,
+    250,
+    scrollable: find.byType(Scrollable).first,
+  );
   await tester.pump(const Duration(milliseconds: 100));
 }
 
@@ -81,6 +85,7 @@ void main() {
       'Privacy, analytics & diagnostics',
       'Platform seams',
       'App/session infrastructure',
+      'Live-ops guardrails & anti-cheat',
       'i18n, audio, haptics, theme',
     ]) {
       await _scrollUntilVisible(tester, find.text(section));
@@ -186,9 +191,7 @@ void main() {
     await _flushToast(tester);
   });
 
-  testWidgets('SeasonEventService tile resolves a real window', (
-    tester,
-  ) async {
+  testWidgets('SeasonEventService tile resolves a real window', (tester) async {
     await _boot();
     await tester.pumpWidget(_wrap(const CookbookScreen()));
     await tester.pump(const Duration(milliseconds: 100));
@@ -229,7 +232,8 @@ void main() {
       expect(
         service,
         isNotNull,
-        reason: 'CookbookScreen phải tự đăng ký nếu bootstrap chưa có, '
+        reason:
+            'CookbookScreen phải tự đăng ký nếu bootstrap chưa có, '
             'không được để null',
       );
       expect(service!.tier.value, PerformanceTier.high);
@@ -267,9 +271,25 @@ void main() {
     await _flushToast(tester);
   });
 
-  testWidgets('HapticChoreographer tile plays a real pattern', (
-    tester,
-  ) async {
+  testWidgets('FEAT-97: SeededChallengeService tile chạy deterministic replay và '
+      'submit local score end-to-end', (tester) async {
+    await _boot();
+    await tester.pumpWidget(_wrap(const CookbookScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await _tapAndShowToast(
+      tester,
+      'SeededChallengeService — daily deterministic run + replay + local score',
+    );
+
+    expect(find.textContaining('replay matches=true'), findsOneWidget);
+    expect(find.textContaining('local top='), findsOneWidget);
+    expect(find.textContaining('period=d'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await _flushToast(tester);
+  });
+
+  testWidgets('HapticChoreographer tile plays a real pattern', (tester) async {
     await _boot();
     await tester.pumpWidget(_wrap(const CookbookScreen()));
     await tester.pump(const Duration(milliseconds: 100));

@@ -202,15 +202,17 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
   @override
   Widget build(BuildContext context) {
     if (_finished) return const SizedBox.shrink();
-    return IgnorePointer(
-      child: RepaintBoundary(
-        child: CustomPaint(
-          painter: _ConfettiPainter(
-            particles: _particles,
-            elapsedSeconds: _elapsedSeconds,
-            totalSeconds: _totalSeconds,
+    return ExcludeSemantics(
+      child: IgnorePointer(
+        child: RepaintBoundary(
+          child: CustomPaint(
+            painter: _ConfettiPainter(
+              particles: _particles,
+              elapsedSeconds: _elapsedSeconds,
+              totalSeconds: _totalSeconds,
+            ),
+            size: Size.infinite,
           ),
-          size: Size.infinite,
         ),
       ),
     );

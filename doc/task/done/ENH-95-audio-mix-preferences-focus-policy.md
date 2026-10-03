@@ -25,15 +25,18 @@ Persist `bgmVolume`/`sfxVolume` clamp 0..1, tương thích key mute cũ. Mute l�
 
 ## Acceptance criteria
 
-- [ ] Unit fake player: clamp/persist/reload BGM+SFX volume.
-- [ ] Mute cũ vẫn tương thích, unmute restore volume user.
-- [ ] Duck/focus/pause/resume restore đúng user volume khi overlap.
-- [ ] Widget settings test slider + semantics.
-- [ ] No-backend path không throw.
+- [x] Unit fake player: clamp/persist/reload BGM+SFX volume.
+- [x] Mute cũ vẫn tương thích, unmute restore volume user.
+- [x] Duck/focus/pause/resume restore đúng user volume khi overlap.
+- [x] Widget settings test slider + semantics.
+- [x] No-backend path không throw.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+- **Implementation**: Thêm `StorageKeys.bgmVolume/sfxVolume`, `RxDouble` BGM/SFX mix, API clamp+persist, SFX per-call volume nhân user mix. Duck dùng tỷ lệ cũ nhưng áp lên BGM user chọn; resume foreground re-apply target volume đúng khi overlap duck. Settings có 2 slider semantics en/vi, mute giữ độc lập.
+- **TDD/verification**: `audio_manager_test.dart` 29/29 pass; `settings_screen_test.dart` 20/20 pass; device test trên TECNO BG6 pass. No-backend/MissingPlugin path vẫn không throw.
+- **Gates**: root 2571/2571, example 202/202; analyze sạch; API/5 quality gates pass.
+- **Audit**: independent fork 9.5/10, không finding cần sửa.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

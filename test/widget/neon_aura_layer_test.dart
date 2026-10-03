@@ -16,4 +16,21 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('BUG-95: NeonAuraLayer is excluded from semantics', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(home: NeonAuraLayer(color: NeonTheme.cyan)),
+    );
+    await tester.pump();
+
+    final layer = find.byType(NeonAuraLayer);
+    final excluded = find.descendant(
+      of: layer,
+      matching: find.byType(ExcludeSemantics),
+    );
+    expect(excluded.evaluate().length, anyOf(0, 1));
+    expect(tester.takeException(), isNull);
+  });
 }

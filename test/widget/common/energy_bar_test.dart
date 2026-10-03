@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:roy_casual_kit/core/energy_service.dart';
+import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/clamped_clock.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/energy_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: Material(child: child));
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  tearDown(Get.reset);
+
   testWidgets('renders maxEnergy pips, currentEnergy of them filled', (
     tester,
   ) async {
@@ -224,6 +232,62 @@ void main() {
 
       expect(tester.getSemantics(find.byType(EnergyBar)).label, 'Lives: 3');
       handle.dispose();
+    });
+  });
+
+  group('BUG-95: ReactiveEnergyBar', () {
+    late StorageService store;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      store = StorageService(await SharedPreferences.getInstance());
+      Get.put(store, permanent: true);
+    });
+
+    testWidgets(
+      'tự cập nhật pip khi EnergyService refill ngầm, không cần caller '
+      'truyền snapshot mới',
+      (tester) async {
+        final service = Get.put(
+          EnergyService(
+            maxEnergy: 3,
+            refillInterval: const Duration(seconds: 5),
+          ),
+          permanent: true,
+        );
+        expect(service.consumeEnergy(2), isTrue);
+        expect(service.currentEnergy, 1);
+
+        await tester.pumpWidget(
+          _wrap(const ReactiveEnergyBar(pollInterval: Duration(seconds: 1))),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(
+          tester.getSemantics(find.byType(EnergyBar)).label,
+          contains('1/3'),
+        );
+
+        setDebugTimeOffsetMs(const Duration(seconds: 6).inMilliseconds);
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(
+          tester.getSemantics(find.byType(EnergyBar)).label,
+          contains('2/3'),
+        );
+
+        setDebugTimeOffsetMs(0);
+      },
+    );
+
+    testWidgets('không có EnergyService đăng ký → không throw, ẩn', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrap(const ReactiveEnergyBar()));
+      await tester.pump();
+
+      expect(find.byType(EnergyBar), findsNothing);
+      expect(tester.takeException(), isNull);
     });
   });
 }

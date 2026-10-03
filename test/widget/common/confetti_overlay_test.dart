@@ -230,5 +230,31 @@ void main() {
         }
       },
     );
+
+    testWidgets(
+      'BUG-95: decorative burst is excluded from the semantics tree',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Material(
+              child: ConfettiOverlay(
+                particleCount: 10,
+                duration: Duration(seconds: 1),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final excluders = tester.widgetList<ExcludeSemantics>(
+          find.descendant(
+            of: find.byType(ConfettiOverlay),
+            matching: find.byType(ExcludeSemantics),
+          ),
+        );
+        expect(excluders, hasLength(1));
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

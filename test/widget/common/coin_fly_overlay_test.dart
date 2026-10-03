@@ -410,4 +410,29 @@ void main() {
       },
     );
   });
+
+  testWidgets('BUG-95: flying coins are excluded from the semantics tree', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: CoinFlyOverlay(
+            from: const Offset(0, 0),
+            to: const Offset(100, 100),
+            coinCount: 2,
+            duration: const Duration(seconds: 1),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final outerExcluder = find.ancestor(
+      of: find.byType(IgnorePointer),
+      matching: find.byType(ExcludeSemantics),
+    );
+    expect(outerExcluder, findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
