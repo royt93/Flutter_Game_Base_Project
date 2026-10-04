@@ -98,6 +98,18 @@ void main() {
     );
   });
 
+  test('chọn cỡ lớn nhất bất kể thứ tự candidates', () {
+    expect(
+      fitFontSizeForLongestWord(
+        'A',
+        width,
+        candidates: const [8, 11],
+        measureWord: (_, size) => size,
+      ),
+      11,
+    );
+  });
+
   test('một ký tự luôn giữ cỡ lớn nhất, bất kể font', () {
     expect(fitFontSizeForLongestWord('A', width), candidates.first);
   });

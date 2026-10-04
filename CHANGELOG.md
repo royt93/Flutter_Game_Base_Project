@@ -1,5 +1,7 @@
 ## 0.4.0
 
+- Fixed `fitFontSizeForLongestWord` returning the first fitting candidate instead of the largest fitting one when passed an unsorted candidates list (BUG-101).
+- Note: `ObjectPool(maxCapacity:)` and `fitFontSizeForLongestWord(candidates:)` runtime validations are now backed by `ArgumentError` (ENH-85) instead of assert-only checks, meaning invalid arguments will now throw in release builds.
 - Added `GameAccessibilityAnnouncer` + `GameAccessibilityEvent` (FEAT-99): a locale-aware, rate-limited screen-reader announcer driven by `GameEventBus` for gameplay moments (level-up, reward, lives, custom categories).
 - Added `PrivacyAwareAnalyticsQueue` (FEAT-98): a bounded, privacy-first offline analytics queue with serialized persistence and all-or-nothing retry batch uploads.
 - Added `SeededChallengeService` (FEAT-97): deterministic offline daily/weekly seeded challenges, replayable from the same seed.

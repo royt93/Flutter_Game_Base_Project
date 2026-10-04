@@ -35,8 +35,10 @@ double fitFontSizeForLongestWord(
   if (candidates.isEmpty) {
     throw ArgumentError.value(candidates, 'candidates', 'must not be empty');
   }
+  final sortedCandidates = candidates.toList()
+    ..sort((a, b) => b.compareTo(a));
   final words = label.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-  if (words.isEmpty || maxWidth <= 0) return candidates.first;
+  if (words.isEmpty || maxWidth <= 0) return sortedCandidates.first;
 
   double measure(String word, double size) {
     if (measureWord != null) return measureWord(word, size);
@@ -63,8 +65,8 @@ double fitFontSizeForLongestWord(
     return widest;
   }
 
-  for (final size in candidates) {
+  for (final size in sortedCandidates) {
     if (widestWord(size) <= maxWidth) return size;
   }
-  return candidates.last;
+  return sortedCandidates.last;
 }
