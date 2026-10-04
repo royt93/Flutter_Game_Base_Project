@@ -5,5 +5,12 @@
     "reason": "Linux-only transitive dependency (pulled in by a Linux-desktop plugin implementation) that ships no LICENSE file the scanner recognizes. Not bundled into any Android/iOS/Web build this repo actually ships. Re-check on expiry in case a future dbus release adds one.",
     "owner": "loitp@skyjoy.vn",
     "expiresAtMs": 1821541050000
+  },
+  {
+    "package": "gtk",
+    "kind": "unknownLicense",
+    "reason": "Linux-only transitive dependency from the example app's desktop plugin graph. The example ships Android/iOS demos and does not bundle this package there. Scanner cannot classify the package's license metadata; re-check on expiry.",
+    "owner": "loitp@skyjoy.vn",
+    "expiresAtMs": 1798761600000
   }
 ]

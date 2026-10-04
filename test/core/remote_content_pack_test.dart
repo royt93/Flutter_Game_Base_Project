@@ -691,4 +691,262 @@ void main() {
       },
     );
   });
+
+  group('ENH-96: verified content history + rollback', () {
+    late StorageService storage;
+    const cacheKey = 'test_history_cache';
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      storage = StorageService(await SharedPreferences.getInstance());
+    });
+
+    Map<String, Object?> envelopeFor(
+      int id,
+      String name, {
+      int contentVersion = 1,
+    }) => signExport({
+      'id': id,
+      'name': name,
+      'schemaVersion': 1,
+      'contentVersion': contentVersion,
+    }, _secret);
+
+    RemoteContentPack<_Level> packWithHistory({
+      required StorageService useStorage,
+      Future<Map<String, Object?>> Function()? fetchRemote,
+      int historyCapacity = 3,
+    }) => RemoteContentPack<_Level>.withHistory(
+      assetPath: _assetPath,
+      schemaVersion: 1,
+      fromJson: _Level.fromJson,
+      contentSecret: _secret,
+      storage: useStorage,
+      cacheKey: cacheKey,
+      historyCapacity: historyCapacity,
+      bundle: _asset('Asset'),
+      fetchRemote: fetchRemote,
+    );
+
+    test('historyCapacity <= 0 -> ArgumentError tại constructor', () {
+      expect(
+        () => packWithHistory(useStorage: storage, historyCapacity: 0),
+        throwsArgumentError,
+      );
+    });
+
+    test('mỗi fetch verified thành công được thêm vào history, capped FIFO '
+        'theo historyCapacity', () async {
+      var version = 1;
+      final pack = packWithHistory(
+        useStorage: storage,
+        fetchRemote: () async =>
+            envelopeFor(version, 'v$version', contentVersion: version++),
+        historyCapacity: 2,
+      );
+
+      for (var i = 0; i < 4; i++) {
+        await pack.load();
+        await pack.refreshed;
+      }
+
+      expect(pack.history, hasLength(2));
+      expect(pack.history.map((e) => e.contentVersion), [3, 4]);
+      expect(pack.currentContentVersion, 4);
+    });
+
+    test('history persist qua restart (instance mới đọc lại đúng history + '
+        'current)', () async {
+      final seed = packWithHistory(
+        useStorage: storage,
+        fetchRemote: () async => envelopeFor(1, 'Seeded', contentVersion: 5),
+      );
+      await seed.load();
+      await seed.refreshed;
+
+      final restarted = packWithHistory(useStorage: storage);
+      await restarted.load();
+
+      expect(restarted.currentContentVersion, 5);
+      expect(restarted.history, hasLength(1));
+      expect(restarted.history.single.contentVersion, 5);
+    });
+
+    test('downgrade: fetch trả contentVersion nhỏ hơn current bị từ chối, '
+        'current/history không đổi', () async {
+      final pack = packWithHistory(
+        useStorage: storage,
+        fetchRemote: () async => envelopeFor(1, 'v10', contentVersion: 10),
+      );
+      await pack.load();
+      await pack.refreshed;
+      expect(pack.currentContentVersion, 10);
+
+      final downgraded = RemoteContentPack<_Level>.withHistory(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        contentSecret: _secret,
+        storage: storage,
+        cacheKey: cacheKey,
+        historyCapacity: 3,
+        bundle: _asset('Asset'),
+        fetchRemote: () async => envelopeFor(1, 'v3', contentVersion: 3),
+      );
+      await downgraded.load();
+      await downgraded.refreshed;
+
+      expect(downgraded.currentContentVersion, 10);
+      expect(downgraded.history, hasLength(1));
+    });
+
+    test('tamper: chữ ký sai không áp dụng, không thêm vào history, current '
+        'giữ nguyên', () async {
+      final pack = packWithHistory(
+        useStorage: storage,
+        fetchRemote: () async => envelopeFor(1, 'Good', contentVersion: 1),
+      );
+      await pack.load();
+      await pack.refreshed;
+      expect(pack.history, hasLength(1));
+
+      final tampered = RemoteContentPack<_Level>.withHistory(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        contentSecret: _secret,
+        storage: storage,
+        cacheKey: cacheKey,
+        historyCapacity: 3,
+        bundle: _asset('Asset'),
+        fetchRemote: () async => {
+          'id': 2,
+          'name': 'Tampered',
+          'schemaVersion': 1,
+          'contentVersion': 2,
+          '_checksum': 'wrong',
+        },
+      );
+      await tampered.load();
+      await tampered.refreshed;
+
+      expect(tampered.currentContentVersion, 1);
+      expect(tampered.history, hasLength(1));
+    });
+
+    test('rollbackToChecksum: khôi phục đúng bản cũ trong history, cập nhật '
+        'current + cache, persist qua restart', () async {
+      final pack = packWithHistory(
+        useStorage: storage,
+        fetchRemote: () async => envelopeFor(1, 'V1', contentVersion: 1),
+      );
+      await pack.load();
+      await pack.refreshed;
+      final v1Checksum = pack.currentChecksum!;
+
+      final toV2 = RemoteContentPack<_Level>.withHistory(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        contentSecret: _secret,
+        storage: storage,
+        cacheKey: cacheKey,
+        historyCapacity: 3,
+        bundle: _asset('Asset'),
+        fetchRemote: () async => envelopeFor(2, 'V2', contentVersion: 2),
+      );
+      await toV2.load();
+      await toV2.refreshed;
+      expect(toV2.current!.name, 'V2');
+
+      final result = await toV2.rollbackToChecksum(v1Checksum);
+      expect(result.isSuccess, isTrue);
+      expect(toV2.current!.name, 'V1');
+      expect(toV2.currentContentVersion, 1);
+
+      final restarted = packWithHistory(useStorage: storage);
+      await restarted.load();
+      expect(restarted.current!.name, 'V1');
+    });
+
+    test('rollbackToVersion: chọn bản applied mới nhất nếu trùng version, trả '
+        'SdkFailure khi version không tồn tại', () async {
+      final pack = packWithHistory(
+        useStorage: storage,
+        fetchRemote: () async => envelopeFor(1, 'V1', contentVersion: 1),
+      );
+      await pack.load();
+      await pack.refreshed;
+
+      final toV2 = RemoteContentPack<_Level>.withHistory(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        contentSecret: _secret,
+        storage: storage,
+        cacheKey: cacheKey,
+        historyCapacity: 3,
+        bundle: _asset('Asset'),
+        fetchRemote: () async => envelopeFor(2, 'V2', contentVersion: 2),
+      );
+      await toV2.load();
+      await toV2.refreshed;
+
+      final missing = await toV2.rollbackToVersion(999);
+      expect(missing.isSuccess, isFalse);
+      expect(toV2.current!.name, 'V2');
+
+      final rolledBack = await toV2.rollbackToVersion(1);
+      expect(rolledBack.isSuccess, isTrue);
+      expect(toV2.current!.name, 'V1');
+    });
+
+    test('diagnosticsSummary chỉ chứa metadata (schemaVersion/contentVersion/'
+        'checksum/appliedAtMs), tuyệt đối không có content body/PII', () async {
+      final pack = packWithHistory(
+        useStorage: storage,
+        fetchRemote: () async =>
+            envelopeFor(1, 'Secret Player Name', contentVersion: 1),
+      );
+      await pack.load();
+      await pack.refreshed;
+
+      final summary = pack.diagnosticsSummary();
+      final encoded = jsonEncode(summary);
+
+      expect(summary['schemaVersion'], 1);
+      expect(summary['contentVersion'], 1);
+      expect(summary['checksum'], isNotNull);
+      expect(summary['appliedAtMs'], isNotNull);
+      expect(encoded, isNot(contains('Secret Player Name')));
+      expect(encoded, isNot(contains('"name"')));
+      expect(encoded, isNot(contains('"id"')));
+    });
+
+    test('contentVersionResolver tuỳ chỉnh được ưu tiên hơn mặc định '
+        '(contentVersion -> version -> 0)', () async {
+      final signedWithVersionField = signExport({
+        'id': 1,
+        'name': 'Legacy Shape',
+        'schemaVersion': 1,
+        'version': 7,
+      }, _secret);
+      final pack = RemoteContentPack<_Level>.withHistory(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        contentSecret: _secret,
+        storage: storage,
+        cacheKey: cacheKey,
+        historyCapacity: 3,
+        bundle: _asset('Asset'),
+        fetchRemote: () async => signedWithVersionField,
+      );
+
+      await pack.load();
+      await pack.refreshed;
+
+      expect(pack.currentContentVersion, 7);
+    });
+  });
 }

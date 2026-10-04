@@ -95,6 +95,61 @@ void main() {
   });
 
   testWidgets(
+    'IDEA-71: RoyCasualKitContractTestKit tile runs a real double-bootstrap '
+    'verification and shows passed=true',
+    (tester) async {
+      await _boot();
+      await tester.pumpWidget(_wrap(const CookbookScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await _tapAndShowToast(
+        tester,
+        'RoyCasualKitContractTestKit — verifyBootstrap (consumer contract)',
+      );
+
+      expect(find.textContaining('passed=true'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _flushToast(tester);
+    },
+  );
+
+  testWidgets('ENH-96: RemoteContentPack.withHistory tile applies a real newer '
+      'verified revision then rolls it back for real — not a static label', (
+    tester,
+  ) async {
+    await _boot();
+    await tester.pumpWidget(_wrap(const CookbookScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await _tapAndShowToast(
+      tester,
+      'RemoteContentPack.withHistory — verified apply + rollback',
+    );
+
+    expect(find.textContaining('rollback OK'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await _flushToast(tester);
+  });
+
+  testWidgets('ENH-96: GameSessionController.withTimeline tile exports a real '
+      'timeline with allowlisted metadata, no PII', (tester) async {
+    await _boot();
+    await tester.pumpWidget(_wrap(const CookbookScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await _tapAndShowToast(
+      tester,
+      'GameSessionController.withTimeline — export outcome timeline',
+    );
+
+    expect(find.textContaining('terminal=won'), findsOneWidget);
+    expect(find.textContaining('combo: 5'), findsOneWidget);
+    expect(find.textContaining('userId'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await _flushToast(tester);
+  });
+
+  testWidgets(
     'DailyQuestService tile registers/increments/claims a real quest',
     (tester) async {
       await _boot();

@@ -1465,6 +1465,99 @@ void main() {
     },
   );
 
+  testWidgets('BUG-100: full GameDemo core loop smoke trên thiết bị thật — '
+      'Home → GameDemo → tap circle (HUD đổi) → Pause → Resume → Home', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+
+    await _goToGameDemo(tester);
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final gameWidget = find.byType(GameWidget<RoyGame>);
+    expect(gameWidget, findsOneWidget);
+    final game = tester.widget<GameWidget<RoyGame>>(gameWidget).game!;
+    // IDEA-65: TappableCircle's hitbox child mounts asynchronously in
+    // Flame's own `onLoad` — a tap dispatched before it settles is simply
+    // missed. Give the real device game loop actual elapsed time.
+    await tester.pump(const Duration(seconds: 1));
+
+    // The app can land here already system-paused (the real device's own
+    // app-lifecycle event right after install/launch, picked up by
+    // GameSessionController's RoyLifecycleCoordinator hook) — PauseOverlay
+    // (showForSystemPause: true on this screen) then covers the circle
+    // with its Resume/Restart/Quit panel, so any tap on the circle's
+    // screen position actually lands on that panel instead. Dismiss it
+    // first if present.
+    final resumeButton = find.byWidgetPredicate(
+      (widget) => widget is CommonButton && widget.label == 'Resume',
+    );
+    if (resumeButton.evaluate().isNotEmpty) {
+      await tester.tap(resumeButton.first);
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+
+    // This device persists real StorageService state across every smoke
+    // test session, so gems/tap-progress are NOT guaranteed to start at 0
+    // — read the HUD text before tapping and assert it actually CHANGES,
+    // rather than asserting an absolute post-tap value.
+    String hudText() => tester
+        .widget<Text>(
+          find.byWidgetPredicate(
+            (widget) => widget is Text && (widget.data ?? '').contains('gems:'),
+          ),
+        )
+        .data!;
+    final before = hudText();
+    final tappedBefore = game.circle.tapped;
+
+    // Never assume the world-space circle is at the GameWidget's rendered
+    // center: the camera transform is the authority (same conversion
+    // FlameTrackedOverlay uses). Tap 20 logical px below the circle center
+    // so the Flutter label anchored above it cannot intercept the touch;
+    // still safely inside the circle's 40px radius.
+    final circleInGame = game.camera.localToGlobal(game.circle.position);
+    final circleOnScreen =
+        tester.getRect(gameWidget).topLeft +
+        Offset(circleInGame.x, circleInGame.y + 20);
+    await tester.tapAt(circleOnScreen);
+    // Tap -> CircleTappedEvent -> EconomyWallet.earn() is a real async
+    // storage write on a real device (no guaranteed-synchronous completion
+    // like a mocked SharedPreferences test gets) — give it a full 2s like
+    // every other post-write pump in this file, not a short fixed delay.
+    await tester.pump(const Duration(seconds: 2));
+    // Prove the Flame-level tap actually landed first — isolates "tap
+    // missed the circle entirely" from "tap landed but the async
+    // HUD/storage update hasn't flushed yet" when this fails.
+    expect(
+      game.circle.tapped,
+      isNot(equals(tappedBefore)),
+      reason: 'Tap did not register on TappableCircle at all',
+    );
+    final after = hudText();
+    expect(after, isNot(equals(before)));
+
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) => widget is FloatingActionButton && widget.heroTag == 'pause',
+      ),
+      warnIfMissed: false,
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    final resume = find.byWidgetPredicate(
+      (widget) => widget is CommonButton && widget.label == 'Resume',
+    );
+    expect(resume, findsWidgets);
+    await tester.tap(resume.first);
+    await tester.pump(const Duration(milliseconds: 500));
+
+    Get.back();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(HomeScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('BUG-95: ReactiveEnergyBar tự động cập nhật khi có refill ngầm '
       'trên thiết bị thật (không phụ thuộc FakeAsync)', (tester) async {
     await app.app();

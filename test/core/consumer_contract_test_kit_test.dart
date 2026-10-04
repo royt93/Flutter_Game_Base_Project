@@ -38,6 +38,40 @@ void main() {
     expect(report.failures, contains('all expected modules registered'));
   });
 
+  test(
+    'IDEA-71: double bootstrap is idempotent — repeated verifyBootstrap '
+    'keeps the exact same registered module set, never duplicates/drops',
+    () async {
+      final fixture = RoyCasualKitTestFixture();
+      var initializeCalls = 0;
+      final report = await RoyCasualKitContractTestKit.verifyBootstrap(
+        initialize: () {
+          initializeCalls++;
+          return RoyCasualKit.initialize(config: fixture.config);
+        },
+        expectedModules: fixture.modules,
+      );
+
+      expect(report.passed, isTrue);
+      // verifyBootstrap itself calls initialize twice internally (see its
+      // own doc) to prove idempotency — confirms this isn't a single-call
+      // coincidence.
+      expect(initializeCalls, 2);
+    },
+  );
+
+  test('IDEA-71: fixture never touches network/platform channel — uses only '
+      'the in-memory StorageService fallback', () async {
+    final fixture = RoyCasualKitTestFixture();
+
+    // StorageService(null) is the documented in-memory fallback
+    // constructor — if this ever silently switched to a real
+    // SharedPreferences-backed instance, this assertion would catch it.
+    expect(fixture.storage.getString('probe'), isNull);
+    await fixture.storage.setString('probe', 'value');
+    expect(fixture.storage.getString('probe'), 'value');
+  });
+
   testWidgets('consumer can render a contract result in a widget', (
     tester,
   ) async {

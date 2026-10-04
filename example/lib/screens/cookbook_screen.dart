@@ -39,6 +39,8 @@ class CookbookScreen extends StatefulWidget {
 class _CookbookScreenState extends State<CookbookScreen> {
   late final RemoteConfigService _remoteConfig;
   late final RemoteContentPack<Map<String, Object?>> _seasonEventPack;
+  late final RemoteContentPack<Map<String, Object?>> _historyPack;
+  late final GameSessionController _timelineSession;
   late final RemoteKillSwitchController _killSwitch;
   late final AppVersionGateController _versionGate;
   late final SeasonEventService _seasonEvents;
@@ -78,6 +80,28 @@ class _CookbookScreenState extends State<CookbookScreen> {
       // back, let alone an app restart.
       storage: StorageService.to,
       cacheKey: 'cookbook_season_event_pack_cache_v1',
+    );
+    // ENH-96: separate pack instance so the content-history/rollback demo
+    // below doesn't share state with the plain `.withCache` demo above —
+    // same "fresh instance per screen open, same reason" posture as
+    // `_seasonEventPack`'s own doc comment.
+    _historyPack = RemoteContentPack<Map<String, Object?>>.withHistory(
+      assetPath: 'assets/remote_config/season_event_defaults.json',
+      schemaVersion: 1,
+      fromJson: (json) => json,
+      bundle: widget.remoteContentBundle,
+      storage: StorageService.to,
+      cacheKey: 'cookbook_history_pack_cache_v1',
+      contentSecret: 'cookbook_demo_secret',
+      historyCapacity: 5,
+    );
+    // ENH-96: separate session instance (not GetX-registered) so the
+    // timeline/export demo below doesn't interfere with any real
+    // `GameSessionController` the consuming app may already have running
+    // (e.g. GameDemoScreen's own session).
+    _timelineSession = GameSessionController.withTimeline(
+      hookName: 'cookbook_timeline_demo',
+      allowedMetadataKeys: {'combo'},
     );
     _killSwitch =
         RemoteKillSwitchController.maybe ??
@@ -463,6 +487,79 @@ class _CookbookScreenState extends State<CookbookScreen> {
                           return 'loaded: $content';
                         },
                       ),
+                      _tile(
+                        // ENH-96: real verified-apply → newer-apply →
+                        // explicit-rollback flow, not a static label — each
+                        // tap genuinely advances `_historyPack`'s state.
+                        // Shows ONLY diagnosticsSummary()'s metadata
+                        // (schemaVersion/contentVersion/checksum/
+                        // appliedAtMs/historyCount), never the content
+                        // body, matching this feature's own privacy rule.
+                        'RemoteContentPack.withHistory — verified apply + rollback',
+                        () async {
+                          await _historyPack.load();
+                          await _historyPack.refreshed;
+                          final before = _historyPack.currentContentVersion;
+
+                          final envelope = signExport({
+                            'id': 1,
+                            'name': 'Winter Event v2',
+                            'schemaVersion': 1,
+                            'contentVersion': before + 1,
+                          }, 'cookbook_demo_secret');
+                          final newer =
+                              RemoteContentPack<
+                                Map<String, Object?>
+                              >.withHistory(
+                                assetPath:
+                                    'assets/remote_config/season_event_defaults.json',
+                                schemaVersion: 1,
+                                fromJson: (json) => json,
+                                bundle: widget.remoteContentBundle,
+                                storage: StorageService.to,
+                                cacheKey: 'cookbook_history_pack_cache_v1',
+                                contentSecret: 'cookbook_demo_secret',
+                                historyCapacity: 5,
+                                fetchRemote: () async => envelope,
+                              );
+                          await newer.load();
+                          await newer.refreshed;
+                          final afterApply = newer.diagnosticsSummary();
+
+                          final checksumToRestore =
+                              newer.history.first.checksum;
+                          final rollback = await newer.rollbackToChecksum(
+                            checksumToRestore,
+                          );
+                          return 'applied v${afterApply['contentVersion']} '
+                              '(history=${afterApply['historyCount']}) -> '
+                              'rollback ${rollback.isSuccess ? 'OK' : 'FAILED'} '
+                              'to v${newer.currentContentVersion}';
+                        },
+                      ),
+                      _tile(
+                        // ENH-96: real session transitions (not a static
+                        // label) then exports the timeline — shows it
+                        // contains an allowlisted metadata key but no
+                        // PII/wall-clock/device identifier.
+                        'GameSessionController.withTimeline — export outcome timeline',
+                        () {
+                          _timelineSession.restart();
+                          _timelineSession.markReady();
+                          _timelineSession.start();
+                          _timelineSession.pause(GamePauseReason.user);
+                          _timelineSession.resume(GamePauseReason.user);
+                          _timelineSession.winWithMetadata({
+                            'combo': 5,
+                            'userId': 'dropped-by-blacklist',
+                          });
+                          final export = _timelineSession.exportTimeline();
+                          return '${export.entries.length} entries, '
+                              'durationMs=${export.durationMs}, '
+                              'terminal=${export.terminalPhase?.name}, '
+                              'metadata=${export.entries.last.metadata}';
+                        },
+                      ),
                       _tile('RemoteKillSwitchController — isKilled', () {
                         final killed = _killSwitch.isKilled(
                           'cookbook_demo_feature',
@@ -640,6 +737,27 @@ class _CookbookScreenState extends State<CookbookScreen> {
                         );
                         return 'hook registered (fires next background/resume)';
                       }),
+                      _tile(
+                        // IDEA-71: RoyCasualKitContractTestKit/
+                        // RoyCasualKitTestFixture previously had no in-app
+                        // demo — only device integration-test usage. Runs
+                        // the SAME deterministic, vendor-neutral fixture a
+                        // consumer's own test suite would use, so it's
+                        // visible here too, not just inside a test file.
+                        'RoyCasualKitContractTestKit — verifyBootstrap (consumer contract)',
+                        () async {
+                          final fixture = RoyCasualKitTestFixture();
+                          final report =
+                              await RoyCasualKitContractTestKit.verifyBootstrap(
+                                initialize: () => RoyCasualKit.initialize(
+                                  config: fixture.config,
+                                ),
+                                expectedModules: fixture.modules,
+                              );
+                          return 'passed=${report.passed}'
+                              '${report.passed ? '' : ', failures=${report.failures}'}';
+                        },
+                      ),
                     ]),
                     // ENH-91: these 4 services (BatterySaverCoordinator,
                     // EconomyCertificate, ReproductionCapsule,

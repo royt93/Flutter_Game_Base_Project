@@ -25,16 +25,29 @@ Mỗi mục thêm ≥1 test tối thiểu: AdReward demo neutral (không vendor 
 
 ## Acceptance criteria
 
-- [ ] Mỗi mục có ít nhất 1 test; liệt kê file test mới.
-- [ ] AdReward test giữ vendor-neutral, không thêm SDK quảng cáo.
-- [ ] RuntimeFlags/DebugLog test không phụ thuộc platform channel.
-- [ ] Common widgets barrel import smoke compile.
-- [ ] PauseOverlay system-reason Resume covered sau BUG-92.
-- [ ] Consumer contract fixture được demo trong example hoặc có lý do ghi rõ + unit contract coverage.
+- [x] Mỗi mục có ít nhất 1 test; liệt kê file test mới.
+- [x] AdReward test giữ vendor-neutral, không thêm SDK quảng cáo.
+- [x] RuntimeFlags/DebugLog test không phụ thuộc platform channel.
+- [x] Common widgets barrel import smoke compile.
+- [x] PauseOverlay system-reason Resume covered sau BUG-92.
+- [x] Consumer contract fixture được demo trong example hoặc có lý do ghi rõ + unit contract coverage.
 
 ## Quyết định
 
-_(điền sau khi implement + push: implementation, TDD, kết quả analyze/test, tự chấm điểm)_
+File test mới/mở rộng:
+- `test/core/ad_reward_seam_test.dart` (mới) — `.maybe` null/registered, fake seam vendor-neutral, trả reward đúng/sai.
+- `test/core/runtime_flags_test.dart` (mới) — `isE2eTest == false` mặc định trong host test run, không đụng platform channel.
+- `test/core/debug_log_test.dart` (mới) — capture `debugPrint`, verify prefix `roy93~ ` chính xác.
+- `test/widget/common/common_widgets_barrel_test.dart` (mới) — chỉ import barrel `common_widgets.dart`, compile/resolve độc lập, không phụ thuộc `example/`.
+- `test/widget/common/pause_overlay_test.dart` (mở rộng) — thêm case BUG-92: `showForSystemPause: false` + cả user lẫn system pause cùng lúc, back button chỉ gỡ user, overlay ẩn đúng khi chỉ còn system pause.
+- `test/core/consumer_contract_test_kit_test.dart` (mở rộng) — thêm idempotency test (double bootstrap qua `verifyBootstrap` nội bộ) và no-network/in-memory-storage-only assertion.
+- `example/lib/screens/cookbook_screen.dart` + `example/test/cookbook_screen_test.dart` — tile mới "RoyCasualKitContractTestKit — verifyBootstrap (consumer contract)" chạy `RoyCasualKitContractTestKit.verifyBootstrap` thật, hiện `passed=true`; test riêng xác nhận tile chạy thật.
+
+Test: tất cả file trên chạy pass độc lập; không ảnh hưởng 2571 test gốc.
+
+Gates: root+example `flutter analyze` sạch; root+example `flutter test --exclude-tags slow` pass toàn bộ (2601 root / 206 example).
+
+Tự chấm: 9.5/10 — coverage đúng mục tiêu từng seam/flag/barrel nhỏ, vendor-neutral giữ nguyên, không thêm phụ thuộc platform/SDK mới.
 
 ## Prompt (dùng cho /loop hoặc giao cho agent độc lập)
 

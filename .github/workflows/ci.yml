@@ -61,6 +61,7 @@ jobs:
               - 'shaders/**'
               - 'example/assets/**'
               - 'example/pubspec.yaml'
+              - 'example/pubspec.lock'
       - uses: subosito/flutter-action@v2
         if: steps.changes.outputs.relevant == 'true'
         with:
@@ -72,9 +73,12 @@ jobs:
       - name: Accessibility audit gate
         if: steps.changes.outputs.relevant == 'true'
         run: dart run tool/accessibility_audit_check.dart
-      - name: Dependency SBOM/security gate
+      - name: Dependency SBOM/security gate (package)
         if: steps.changes.outputs.relevant == 'true'
         run: dart run tool/dependency_sbom_check.dart --suppressions=tool/dependency_sbom_suppressions.json
+      - name: Dependency SBOM/security gate (example)
+        if: steps.changes.outputs.relevant == 'true'
+        run: dart run tool/dependency_sbom_check.dart --root=example --lockfile=example/pubspec.lock --suppressions=tool/dependency_sbom_suppressions.json
       - name: Asset license manifest gate (package)
         if: steps.changes.outputs.relevant == 'true'
         run: dart run tool/asset_license_check.dart

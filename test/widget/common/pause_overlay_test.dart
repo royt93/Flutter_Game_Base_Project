@@ -122,6 +122,29 @@ void main() {
     },
   );
 
+  testWidgets(
+    'IDEA-71/BUG-92: showForSystemPause=false + cả user lẫn system đang '
+    'pause cùng lúc — back button CHỈ gỡ user, không đụng system (overlay '
+    'này không quản lý system pause khi showForSystemPause tắt)',
+    (tester) async {
+      final session = _playingSession()
+        ..pause(GamePauseReason.system)
+        ..pause(GamePauseReason.user);
+      await tester.pumpWidget(_wrap(session));
+      await tester.pumpAndSettle();
+      expect(find.text('Paused'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(session.snapshot.value.phase, GameSessionPhase.paused);
+      expect(session.snapshot.value.pauseReasons, {GamePauseReason.system});
+      // Overlay correctly hides itself now (only `system` remains, and this
+      // instance is configured `showForSystemPause: false`).
+      expect(find.text('Paused'), findsNothing);
+    },
+  );
+
   testWidgets('bấm Restart mặc định gọi session.restart()', (tester) async {
     final session = _playingSession()..pause(GamePauseReason.user);
     await tester.pumpWidget(_wrap(session));

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -278,4 +280,181 @@ void main() {
       },
     );
   });
+
+  group('ENH-96: GameSessionController.withTimeline', () {
+    test('timelineCapacity <= 0 -> ArgumentError tại constructor', () {
+      expect(
+        () => GameSessionController.withTimeline(timelineCapacity: 0),
+        throwsArgumentError,
+      );
+    });
+
+    test('legacy win()/lose() và constructors mặc định KHÔNG đổi hành vi — '
+        'events/snapshot y hệt trước ENH-96', () {
+      final c = GameSessionController();
+      c.markReady();
+      c.start();
+      expect(c.win().isSuccess, isTrue);
+      expect(c.events, [
+        GameSessionPhase.ready,
+        GameSessionPhase.playing,
+        GameSessionPhase.won,
+      ]);
+    });
+
+    test('withTimeline dùng fake Stopwatch — offsetMs ghi đúng, đơn điệu tăng, '
+        'không phụ thuộc wall-clock', () {
+      var elapsed = 0;
+      final fakeStopwatch = _FakeStopwatch(() => elapsed);
+      final c = GameSessionController.withTimeline(
+        createStopwatch: () => fakeStopwatch,
+      );
+      c.markReady();
+      elapsed = 100;
+      c.start();
+      elapsed = 250;
+      c.winWithMetadata({});
+
+      // Entry 0 is the implicit `loading@0` every session starts with
+      // (same as `events` always starting with `loading`).
+      expect(c.timeline.map((e) => e.offsetMs), [0, 0, 100, 250]);
+      expect(c.timeline.map((e) => e.phase), [
+        GameSessionPhase.loading,
+        GameSessionPhase.ready,
+        GameSessionPhase.playing,
+        GameSessionPhase.won,
+      ]);
+    });
+
+    test('pause ghi lại đầy đủ pauseReasons hiện tại trong entry, outcome '
+        '(win/lose) ghi lại metadata đã sanitize', () {
+      final c = GameSessionController.withTimeline(
+        allowedMetadataKeys: {'combo', 'userId'},
+      );
+      c.markReady();
+      c.start();
+      c.pause(GamePauseReason.user);
+      c.pause(GamePauseReason.system);
+      c.resume(GamePauseReason.system);
+      c.resume(GamePauseReason.user);
+      c.loseWithMetadata({'combo': 7, 'userId': 'should-be-blacklisted'});
+
+      // Timeline records every pause-reason change as its own entry
+      // (unlike `events`, which only logs the overall phase); the entry
+      // where BOTH reasons were simultaneously active is the one with 2
+      // reasons recorded.
+      final bothReasonsEntry = c.timeline.firstWhere(
+        (e) => e.phase == GameSessionPhase.paused && e.pauseReasons.length == 2,
+      );
+      expect(bothReasonsEntry.pauseReasons, {
+        GamePauseReason.user,
+        GamePauseReason.system,
+      });
+
+      final lostEntry = c.timeline.last;
+      expect(lostEntry.phase, GameSessionPhase.lost);
+      // 'combo' is allowlisted and not PII -> kept. 'userId' is
+      // allowlisted but IS in ReproductionCapsule.defaultRedactedKeys ->
+      // dropped despite being explicitly allowlisted (blacklist wins).
+      expect(lostEntry.metadata, {'combo': 7});
+    });
+
+    test('metadata key không nằm trong allowedMetadataKeys bị bỏ qua, dù '
+        'không phải PII', () {
+      final c = GameSessionController.withTimeline(
+        allowedMetadataKeys: {'combo'},
+      );
+      c.markReady();
+      c.start();
+      c.winWithMetadata({'combo': 3, 'notAllowed': 'dropped'});
+
+      expect(c.timeline.last.metadata, {'combo': 3});
+    });
+
+    test('timelineCapacity evicts oldest entry khi vượt quá, không bao giờ '
+        'vượt cap', () {
+      final c = GameSessionController.withTimeline(timelineCapacity: 2);
+      c.markReady();
+      c.start();
+      c.pause(GamePauseReason.user);
+
+      expect(c.timeline, hasLength(2));
+      expect(c.timeline.map((e) => e.phase), [
+        GameSessionPhase.playing,
+        GameSessionPhase.paused,
+      ]);
+    });
+
+    test('restart() reset cả events lẫn timeline/stopwatch — timeline chỉ còn '
+        '1 entry loading@0', () {
+      var elapsed = 500;
+      final fakeStopwatch = _FakeStopwatch(() => elapsed);
+      final c = GameSessionController.withTimeline(
+        createStopwatch: () => fakeStopwatch,
+      );
+      c.markReady();
+      c.start();
+      c.restart();
+
+      expect(c.timeline, hasLength(1));
+      expect(c.timeline.single.phase, GameSessionPhase.loading);
+      expect(c.timeline.single.offsetMs, 0);
+    });
+
+    test('exportTimeline() round-trip JSON chính xác, không chứa trường '
+        'wall-clock/device/user identifier nào ngoài metadata đã sanitize', () {
+      final c = GameSessionController.withTimeline(
+        allowedMetadataKeys: {'combo'},
+      );
+      c.markReady();
+      c.start();
+      c.winWithMetadata({'combo': 9});
+
+      final export = c.exportTimeline();
+      final json = export.toJson();
+      final encoded = jsonEncode(json);
+      final decoded = GameSessionTimelineExport.fromJson(
+        jsonDecode(encoded) as Map<String, Object?>,
+      );
+
+      expect(decoded.schemaVersion, export.schemaVersion);
+      expect(decoded.terminalPhase, GameSessionPhase.won);
+      expect(decoded.entries.length, export.entries.length);
+      expect(decoded.entries.last.metadata, {'combo': 9});
+      expect(encoded, isNot(contains('deviceId')));
+      expect(encoded, isNot(contains('userId')));
+    });
+  });
+}
+
+class _FakeStopwatch implements Stopwatch {
+  _FakeStopwatch(this._elapsed);
+  final int Function() _elapsed;
+
+  @override
+  int get elapsedMilliseconds => _elapsed();
+
+  @override
+  Duration get elapsed => Duration(milliseconds: _elapsed());
+
+  @override
+  void start() {}
+
+  @override
+  void stop() {}
+
+  @override
+  void reset() {}
+
+  @override
+  bool get isRunning => true;
+
+  @override
+  int get elapsedMicroseconds => _elapsed() * 1000;
+
+  @override
+  int get elapsedTicks => _elapsed();
+
+  @override
+  int get frequency => 1000;
 }

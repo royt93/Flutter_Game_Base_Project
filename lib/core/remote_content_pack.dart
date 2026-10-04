@@ -6,6 +6,91 @@ import 'save_integrity.dart';
 import 'storage_service.dart';
 import 'utils/clamped_clock.dart';
 import 'utils/safe_json.dart';
+import 'utils/sdk_result.dart';
+
+/// One verified, previously-applied content revision (ENH-96) — metadata
+/// only, by design: never the content body itself. Exposed via
+/// [RemoteContentPack.history] / [RemoteContentPack.diagnosticsSummary] so a
+/// support/live-ops investigation can answer "which content version was
+/// active when this happened" without ever handing back a player's actual
+/// game data (a level layout, a shop catalog, whatever `T` represents).
+class ContentPackHistoryEntry {
+  const ContentPackHistoryEntry({
+    required this.schemaVersion,
+    required this.contentVersion,
+    required this.checksum,
+    required this.appliedAtMs,
+  });
+
+  final int schemaVersion;
+  final int contentVersion;
+  final String checksum;
+  final int appliedAtMs;
+}
+
+/// Internal pairing of a [ContentPackHistoryEntry]'s metadata with the
+/// actual validated+migrated JSON it was applied from — the metadata alone
+/// (what [ContentPackHistoryEntry] exposes publicly) isn't enough to
+/// reactivate a historical revision via rollback, but the full `json` must
+/// never leak into a public getter/diagnostics summary.
+class _HistoryRecord {
+  const _HistoryRecord({
+    required this.schemaVersion,
+    required this.contentVersion,
+    required this.checksum,
+    required this.appliedAtMs,
+    required this.json,
+  });
+
+  final int schemaVersion;
+  final int contentVersion;
+  final String checksum;
+  final int appliedAtMs;
+  final Map<String, Object?> json;
+
+  ContentPackHistoryEntry toEntry() => ContentPackHistoryEntry(
+    schemaVersion: schemaVersion,
+    contentVersion: contentVersion,
+    checksum: checksum,
+    appliedAtMs: appliedAtMs,
+  );
+
+  Map<String, Object?> toStorageJson() => {
+    'schemaVersion': schemaVersion,
+    'contentVersion': contentVersion,
+    'checksum': checksum,
+    'appliedAtMs': appliedAtMs,
+    'json': json,
+  };
+
+  static _HistoryRecord? fromStorageJson(Object? raw) {
+    if (raw is! Map) return null;
+    final map = raw.cast<String, Object?>();
+    final json = map['json'];
+    final checksum = map['checksum'];
+    if (json is! Map || checksum is! String) return null;
+    return _HistoryRecord(
+      schemaVersion: asIntOr(map['schemaVersion'], 0),
+      contentVersion: asIntOr(map['contentVersion'], 0),
+      checksum: checksum,
+      appliedAtMs: asIntOr(map['appliedAtMs'], 0),
+      json: json.cast<String, Object?>(),
+    );
+  }
+}
+
+/// Default [RemoteContentPack.contentVersionResolver] — reads
+/// `contentVersion` first (the convention this feature introduces), falls
+/// back to the older/shorter `version` key some already-authored content
+/// may use, defaults to `0` if neither is present (same "untrusted input,
+/// never crash" trust-boundary convention `asIntOr` itself documents).
+int _defaultContentVersionResolver(Map<String, Object?> json) {
+  if (json.containsKey('contentVersion')) {
+    return asIntOr(json['contentVersion'], 0);
+  }
+  if (json.containsKey('version')) return asIntOr(json['version'], 0);
+  return 0;
+}
 
 /// A typed, signed remote content slot — live-ops content (a level
 /// definition, a shop catalog page, an event schedule) pushed from a
@@ -43,6 +128,8 @@ class RemoteContentPack<T> {
   }) : storage = null,
        cacheKey = null,
        maxCacheAge = null,
+       historyCapacity = null,
+       contentVersionResolver = null,
        _bundle = bundle ?? rootBundle;
 
   /// ENH-94: same signed/typed content pack with a durable verified cache.
@@ -61,9 +148,50 @@ class RemoteContentPack<T> {
     this.fetchRemote,
     this.maxCacheAge,
     AssetBundle? bundle,
-  }) : _bundle = bundle ?? rootBundle {
+  }) : historyCapacity = null,
+       contentVersionResolver = null,
+       _bundle = bundle ?? rootBundle {
     if (cacheKey == null || cacheKey!.isEmpty) {
       throw ArgumentError.value(cacheKey, 'cacheKey', 'must not be empty');
+    }
+  }
+
+  /// ENH-96: adds a bounded, persisted history of previously-applied
+  /// VERIFIED revisions on top of [withCache]'s single-slot cache, plus
+  /// downgrade rejection and explicit [rollbackToChecksum]/
+  /// [rollbackToVersion] — a consumer that doesn't need rollback/audit
+  /// history keeps using [withCache] unchanged; this is a strict superset,
+  /// additive new constructor (same "new named constructor, never change
+  /// an existing one" convention [withCache]'s own doc comment explains).
+  ///
+  /// Requires [contentSecret] — history/rollback only make sense for
+  /// verified content; an unsigned pack has no integrity guarantee to
+  /// audit or roll back to.
+  RemoteContentPack.withHistory({
+    required this.assetPath,
+    required this.schemaVersion,
+    required this.fromJson,
+    required StorageService this.storage,
+    required String this.cacheKey,
+    required String this.contentSecret,
+    this.migrate,
+    this.fetchRemote,
+    this.maxCacheAge,
+    this.historyCapacity = 5,
+    int Function(Map<String, Object?> json)? contentVersionResolver,
+    AssetBundle? bundle,
+  }) : contentVersionResolver =
+           contentVersionResolver ?? _defaultContentVersionResolver,
+       _bundle = bundle ?? rootBundle {
+    if (cacheKey!.isEmpty) {
+      throw ArgumentError.value(cacheKey, 'cacheKey', 'must not be empty');
+    }
+    if (historyCapacity! <= 0) {
+      throw ArgumentError.value(
+        historyCapacity,
+        'historyCapacity',
+        'must be > 0',
+      );
     }
   }
 
@@ -110,6 +238,41 @@ class RemoteContentPack<T> {
   /// for being tampered/malformed/a future schema version.
   final Duration? maxCacheAge;
 
+  /// ENH-96 (`withHistory` only): max verified revisions kept in [history],
+  /// oldest evicted first once exceeded. `null` for [RemoteContentPack]/
+  /// [RemoteContentPack.withCache] — those constructors keep no history at
+  /// all.
+  final int? historyCapacity;
+
+  /// ENH-96 (`withHistory` only): resolves a fetched envelope's content
+  /// revision number — defaults to [_defaultContentVersionResolver]
+  /// (`contentVersion`, then `version`, then `0`). Used to reject a
+  /// downgrade (an incoming revision numbered lower than
+  /// [currentContentVersion]) without touching [_current]/the cache/
+  /// [history] at all.
+  final int Function(Map<String, Object?> json)? contentVersionResolver;
+
+  final List<_HistoryRecord> _history = [];
+
+  /// Every verified revision currently retained, oldest first, capped at
+  /// [historyCapacity] — metadata only (see [ContentPackHistoryEntry]'s
+  /// doc), never the content body. Empty for [RemoteContentPack]/
+  /// [RemoteContentPack.withCache].
+  List<ContentPackHistoryEntry> get history =>
+      List.unmodifiable(_history.map((r) => r.toEntry()));
+
+  /// The content revision number of whatever [current] holds right now —
+  /// `0` before any verified fetch has ever been applied (`withHistory`
+  /// only; always `0` for the other 2 constructors).
+  int get currentContentVersion =>
+      _history.isEmpty ? 0 : _history.last.contentVersion;
+
+  /// The checksum of whatever [current] holds right now — `null` before
+  /// any verified fetch has ever been applied, or for a constructor that
+  /// doesn't track history.
+  String? get currentChecksum =>
+      _history.isEmpty ? null : _history.last.checksum;
+
   T? _current;
 
   /// The latest applied content: the asset fallback until (if ever) a
@@ -126,7 +289,63 @@ class RemoteContentPack<T> {
   /// wait deterministically past the background refresh.
   Future<void> get refreshed => _refreshFuture ?? Future.value();
 
+  /// ENH-96 (`withHistory` only): where [_history] is persisted —
+  /// deliberately a DIFFERENT key than [cacheKey] (`${cacheKey}_history_v1`)
+  /// so an existing [withCache] consumer's cache entry is never touched by
+  /// upgrading to [withHistory], and a `withHistory` pack's own single-slot
+  /// cache (still written by [_writeCache], unchanged) stays exactly
+  /// compatible with [withCache]'s format too.
+  String? get _historyStorageKey {
+    final key = cacheKey;
+    if (key == null || historyCapacity == null) return null;
+    return '${key}_history_v1';
+  }
+
+  bool _historyLoaded = false;
+
+  void _ensureHistoryLoaded() {
+    if (_historyLoaded) return;
+    _historyLoaded = true;
+    final store = storage;
+    final key = _historyStorageKey;
+    if (store == null || key == null) return;
+    final raw = store.getString(key);
+    if (raw == null) return;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+      for (final entry in decoded) {
+        final record = _HistoryRecord.fromStorageJson(entry);
+        if (record != null) _history.add(record);
+      }
+    } catch (_) {
+      // Corrupt/malformed history blob → start from an empty history
+      // rather than crash boot (same trust-boundary posture every other
+      // persisted JSON blob in this package uses).
+      _history.clear();
+    }
+  }
+
+  Future<void> _persistHistory() async {
+    final store = storage;
+    final key = _historyStorageKey;
+    if (store == null || key == null) return;
+    await store.setString(
+      key,
+      jsonEncode([for (final r in _history) r.toStorageJson()]),
+    );
+  }
+
+  void _appendHistory(_HistoryRecord record) {
+    _history.add(record);
+    final capacity = historyCapacity;
+    if (capacity != null && _history.length > capacity) {
+      _history.removeRange(0, _history.length - capacity);
+    }
+  }
+
   Future<T?> load() async {
+    _ensureHistoryLoaded();
     // ENH-94: a verified cache entry always wins over the bundled asset —
     // it only ever exists after a signature-verified fetch, so its mere
     // presence-and-validity already implies it's live-ops content strictly
@@ -213,18 +432,127 @@ class RemoteContentPack<T> {
       if (verified == null) return;
       final validated = _validateSchema(verified);
       if (validated == null) return;
+
+      // ENH-96: a history-tracking pack rejects a downgrade outright —
+      // `_current`/the cache/`_history` all stay exactly as they were.
+      // Checked against the validated+migrated shape (not the raw
+      // envelope) so `contentVersionResolver` always sees the SAME shape
+      // `fromJson` itself will receive.
+      final resolver = contentVersionResolver;
+      if (resolver != null && _history.isNotEmpty) {
+        final incomingVersion = resolver(validated);
+        if (incomingVersion < currentContentVersion) return;
+      }
+
       // ENH-94: cache write happens BEFORE `_current` is swapped in — an
       // atomic swap in the sense the task asked for ("ghi xong mới trỏ
       // _current"). If the write throws, this whole try block's catch
       // below catches it too, so `_current` is left untouched rather than
       // pointing at content the disk doesn't actually have a record of.
       await _writeCache(validated);
+      if (resolver != null) {
+        final checksum = envelope[checksumKey];
+        _appendHistory(
+          _HistoryRecord(
+            schemaVersion: schemaVersion,
+            contentVersion: resolver(validated),
+            checksum: checksum is String ? checksum : '',
+            appliedAtMs: nowMsClamped(storage),
+            json: validated,
+          ),
+        );
+        await _persistHistory();
+      }
       _current = fromJson(validated);
     } catch (_) {
       // Network failure, bad signature/schema, a fromJson throw on a
       // wrong-typed field, or a cache-write failure → keep whatever
       // _current already was.
     }
+  }
+
+  /// ENH-96 (`withHistory` only): re-activates the verified revision whose
+  /// checksum is [checksum] — re-verifies it was indeed in [history] (never
+  /// trusts an caller-supplied checksum blindly), persists it as the
+  /// current cache entry, appends a fresh history entry recording WHEN the
+  /// rollback itself happened (so the audit trail shows the rollback as
+  /// its own event, not a silent rewrite of the original entry's
+  /// timestamp), and only then swaps [_current]. Returns [SdkFailure] (no
+  /// mutation at all) if no history entry matches.
+  Future<SdkResult<T>> rollbackToChecksum(String checksum) async {
+    _ensureHistoryLoaded();
+    final match = _history.cast<_HistoryRecord?>().lastWhere(
+      (r) => r!.checksum == checksum,
+      orElse: () => null,
+    );
+    if (match == null) {
+      return const SdkFailure(
+        kind: SdkErrorKind.validation,
+        message: 'No history entry matches that checksum',
+      );
+    }
+    return _activateHistoryRecord(match);
+  }
+
+  /// ENH-96 (`withHistory` only): re-activates [contentVersion] — if more
+  /// than one history entry shares that version number (same version
+  /// re-applied more than once), the most-recently-applied one wins, same
+  /// "latest wins" convention [currentContentVersion] itself uses. Returns
+  /// [SdkFailure] (no mutation) if no history entry matches.
+  Future<SdkResult<T>> rollbackToVersion(int contentVersion) async {
+    _ensureHistoryLoaded();
+    final matches = _history
+        .where((r) => r.contentVersion == contentVersion)
+        .toList();
+    if (matches.isEmpty) {
+      return const SdkFailure(
+        kind: SdkErrorKind.validation,
+        message: 'No history entry matches that content version',
+      );
+    }
+    matches.sort((a, b) => a.appliedAtMs.compareTo(b.appliedAtMs));
+    return _activateHistoryRecord(matches.last);
+  }
+
+  Future<SdkResult<T>> _activateHistoryRecord(_HistoryRecord record) async {
+    try {
+      await _writeCache(record.json);
+      _appendHistory(
+        _HistoryRecord(
+          schemaVersion: record.schemaVersion,
+          contentVersion: record.contentVersion,
+          checksum: record.checksum,
+          appliedAtMs: nowMsClamped(storage),
+          json: record.json,
+        ),
+      );
+      await _persistHistory();
+      _current = fromJson(record.json);
+      return SdkSuccess(_current as T);
+    } catch (error, stack) {
+      return SdkFailure(
+        kind: SdkErrorKind.storage,
+        message: 'Rollback failed to persist',
+        cause: error,
+        stackTrace: stack,
+      );
+    }
+  }
+
+  /// ENH-96 (`withHistory` only): metadata-only snapshot safe to paste into
+  /// a support ticket / log line / `DiagnosticsExportBundle` section — NEVER
+  /// the content body (a level layout, a shop catalog, whatever `T`
+  /// represents), matching this package's existing default-deny diagnostics
+  /// convention (`DiagnosticsExportBundle.build`'s `configAllowedKeys`).
+  Map<String, Object?> diagnosticsSummary() {
+    _ensureHistoryLoaded();
+    return {
+      'schemaVersion': schemaVersion,
+      'contentVersion': currentContentVersion,
+      'checksum': currentChecksum,
+      'appliedAtMs': _history.isEmpty ? null : _history.last.appliedAtMs,
+      'historyCount': _history.length,
+    };
   }
 
   /// Checks the HMAC on a fetched [envelope]. A pack with no
