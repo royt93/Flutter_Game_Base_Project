@@ -333,15 +333,14 @@ class _CookbookScreenState extends State<CookbookScreen> {
                             'level': 99,
                           });
 
-                          var conflictOutcome = 'không có xung đột';
+                          var conflictOutcome = 'cookbook_sync_no_conflict'.tr;
                           await store.syncWith(
                             cloudProvider,
                             onConflict: (conflict) {
-                              conflictOutcome =
-                                  'xung đột thật: local level='
-                                  '${conflict.local.value['level']}, cloud '
-                                  'level=${conflict.cloud.value['level']} '
-                                  '-> chọn cloud';
+                              conflictOutcome = 'cookbook_sync_conflict'.trParams({
+                                'local': '${conflict.local.value['level']}',
+                                'cloud': '${conflict.cloud.value['level']}',
+                              });
                               return VersionedSyncConflictResolution.preferCloud();
                             },
                           );
@@ -431,7 +430,9 @@ class _CookbookScreenState extends State<CookbookScreen> {
                                 'cookbook_prestige_${DateTime.now().microsecondsSinceEpoch}',
                           );
                           if (!prestige.canPrestige()) {
-                            return 'chưa đủ ngưỡng (coins=${wallet.balanceOf('coins')})';
+                            return 'cookbook_prestige_threshold'.trParams({
+                              'coins': '${wallet.balanceOf('coins')}',
+                            });
                           }
                           await prestige.prestige();
                           final offline =
@@ -443,9 +444,11 @@ class _CookbookScreenState extends State<CookbookScreen> {
                           final earned = await offline.claim(
                             0.5 * prestige.currentMultiplier,
                           );
-                          return 'relics=${wallet.balanceOf('relics')}, '
-                              'multiplier=${prestige.currentMultiplier.toStringAsFixed(2)}x, '
-                              'earned=${earned.toStringAsFixed(2)} (rate×multiplier)';
+                          return 'cookbook_prestige_result'.trParams({
+                            'relics': '${wallet.balanceOf('relics')}',
+                            'multiplier': prestige.currentMultiplier.toStringAsFixed(2),
+                            'earned': earned.toStringAsFixed(2),
+                          });
                         },
                       ),
                       _tile(
@@ -693,8 +696,10 @@ class _CookbookScreenState extends State<CookbookScreen> {
                           for (var i = 0; i < 60; i++) {
                             _performanceTier.recordFrame(30);
                           }
-                          return 'tier: ${before.name} -> ${_performanceTier.tier.value.name} '
-                              '(sau 60 frame ~33fps, dưới ngưỡng downgrade mặc định 40fps)';
+                          return 'cookbook_perf_downgrade'.trParams({
+                            'before': before.name,
+                            'after': _performanceTier.tier.value.name,
+                          });
                         },
                       ),
                       _tile('maybeRequestReview — happy-moment prompt', () async {

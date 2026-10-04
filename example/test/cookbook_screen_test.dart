@@ -198,7 +198,7 @@ void main() {
 
         // Xung đột PHẢI được phát hiện thật (không phải giả vờ) — local
         // migrate ra level=5, cloud bị ghi đè level=99 trước khi sync.
-        expect(find.textContaining('xung đột thật:'), findsOneWidget);
+        expect(find.textContaining('real conflict:'), findsOneWidget);
         expect(find.textContaining('local level=5'), findsOneWidget);
         expect(find.textContaining('cloud level=99'), findsOneWidget);
         // Migration thật sự chạy: save cuối phải có field 'gems' (chỉ
@@ -225,7 +225,7 @@ void main() {
         await _flushToast(tester);
         await _tapAndShowToast(tester, label);
 
-        expect(find.textContaining('xung đột thật:'), findsOneWidget);
+        expect(find.textContaining('real conflict:'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await _flushToast(tester);
       },

@@ -460,7 +460,7 @@ void main() {
   });
 
   group('FEAT-94: PlayerDataRightsService tiles', () {
-    testWidgets('tap "Yêu cầu xuất dữ liệu" -> hiện toast đúng số key đã lưu', (
+    testWidgets('tap "Request Data Export" -> shows toast with key count', (
       tester,
     ) async {
       final store = await _boot();
@@ -492,14 +492,14 @@ void main() {
       await tester.tap(exportFinder);
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.textContaining('Đã xuất'), findsOneWidget);
+      expect(find.textContaining('Exported'), findsOneWidget);
       expect(tester.takeException(), isNull);
       // Drain the toast's auto-dismiss timer before the test ends.
       await tester.pump(const Duration(seconds: 3));
     });
 
     testWidgets(
-      'tap "Yêu cầu xoá dữ liệu" rồi Cancel -> KHÔNG xoá gì, storage giữ nguyên',
+      'tap "Request Data Erasure" then Cancel -> does NOT delete anything, storage intact',
       (tester) async {
         final store = await _boot();
         await store.setString('demo_key', 'demo_value');
@@ -522,7 +522,7 @@ void main() {
         // taps while it's still absorbing pointer events, missing the
         // button entirely.
         await tester.pump(const Duration(milliseconds: 300));
-        expect(find.text('Xoá toàn bộ dữ liệu?'), findsOneWidget);
+        expect(find.text('Delete all data?'), findsOneWidget);
 
         // Same robust direct-invoke as the confirm case below — a
         // coordinate-based tap() here intermittently misses too.
@@ -535,9 +535,9 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(
-          find.text('Xoá toàn bộ dữ liệu?'),
+          find.text('Delete all data?'),
           findsNothing,
-          reason: 'dialog phải đóng sau khi bấm Cancel',
+          reason: 'dialog must close after Cancel',
         );
         expect(store.exportAll(), isNotEmpty);
         expect(tester.takeException(), isNull);
@@ -545,8 +545,7 @@ void main() {
     );
 
     testWidgets(
-      'tap "Yêu cầu xoá dữ liệu" rồi xác nhận -> xoá thật storage, hiện '
-      'toast xác nhận biên nhận',
+      'tap "Request Data Erasure" then confirm -> deletes storage, shows toast receipt',
       (tester) async {
         final store = await _boot();
         await store.setString('demo_key', 'demo_value');
@@ -575,22 +574,22 @@ void main() {
         // route-transition-timing issue.
         final confirmButton = tester.widget<NeonDialogButton>(
           find.byWidgetPredicate(
-            (w) => w is NeonDialogButton && w.action.label == 'Xoá',
+            (w) => w is NeonDialogButton && w.action.label == 'Delete',
           ),
         );
         confirmButton.action.onTap();
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(
-          find.text('Xoá toàn bộ dữ liệu?'),
+          find.text('Delete all data?'),
           findsNothing,
-          reason: 'dialog phải đóng sau khi bấm Xoá',
+          reason: 'dialog must close after Delete',
         );
         expect(store.exportAll(), isEmpty);
         // The toast itself has its own ~220ms entrance animation, on top
         // of the dialog-close pump above — give it 1 more settle window.
         await tester.pump(const Duration(milliseconds: 300));
-        expect(find.textContaining('Đã xoá'), findsOneWidget);
+        expect(find.textContaining('Erased'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tester.pump(const Duration(seconds: 3));
       },

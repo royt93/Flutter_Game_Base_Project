@@ -1470,7 +1470,7 @@ void main() {
         await tester.pump();
 
         expect(
-          find.textContaining('Queue: 0 pending, 1 đã chạy'),
+          find.textContaining('Queue: 0 pending, 1 ran'),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);
@@ -1531,14 +1531,14 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('bấm "Simulate lại (duplicate)" ngay sau: bị dedupe', (
+    testWidgets('bấm "Simulate again (duplicate)" ngay sau: bị dedupe', (
       tester,
     ) async {
       await _pumpShowcase(tester);
 
       await tester.tap(find.text('Simulate link').last);
       await tester.pump();
-      await tester.tap(find.text('Simulate lại (duplicate)').last);
+      await tester.tap(find.text('Simulate again (duplicate)').last);
       await tester.pump();
 
       expect(find.text('outcome: duplicateIgnored'), findsOneWidget);
@@ -1692,7 +1692,7 @@ void main() {
     ) async {
       await _pumpShowcase(tester);
 
-      expect(find.text('Nội dung app (demo)'), findsOneWidget);
+      expect(find.text('App content (demo)'), findsOneWidget);
       expect(find.text('Update now'), findsNothing);
     });
 
@@ -1701,7 +1701,7 @@ void main() {
     ) async {
       await _pumpShowcase(tester);
 
-      await tester.tap(find.text('Scenario: ok (bấm để đổi)').last);
+      await tester.tap(find.text('Scenario: ok (tap to change)').last);
       await _settle(tester);
 
       expect(find.text('Có bản cập nhật mới'), findsOneWidget);
@@ -1732,7 +1732,7 @@ void main() {
 
         expect(find.textContaining('Session #1'), findsOneWidget);
         expect(
-          find.text('Analytics context: {} (chưa có analytics consent)'),
+          find.text('Analytics context: {} (no analytics consent)'),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);
@@ -1839,7 +1839,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.textContaining('Preload OK — scene sẵn sàng'),
+          find.textContaining('Preload OK — scene ready'),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);
@@ -1858,7 +1858,7 @@ void main() {
 
         expect(find.textContaining('Progress: 100%'), findsOneWidget);
         expect(
-          find.textContaining('Preload OK — scene sẵn sàng'),
+          find.textContaining('Preload OK — scene ready'),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);
@@ -1901,20 +1901,20 @@ void main() {
       await tester.tap(find.widgetWithText(CommonButton, 'Unload scene').first);
       await tester.pump();
 
-      expect(find.textContaining('Đã unload scene'), findsOneWidget);
+      expect(find.textContaining('Scene unloaded'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
 
   group('FEAT-58: SceneTransitionOverlay demo', () {
     testWidgets(
-      'bấm "Chuyển scene (OK)": phase quay lại idle, Scene revision tăng',
+      'bấm "Switch scene (OK)": phase quay lại idle, Scene revision tăng',
       (tester) async {
         await _pumpShowcase(tester);
 
         expect(find.text('Scene #1'), findsOneWidget);
         await tester.tap(
-          find.widgetWithText(CommonButton, 'Chuyển scene (OK)').first,
+          find.widgetWithText(CommonButton, 'Switch scene (OK)').first,
         );
         // covering(260ms) + loading(delay 300ms trong load) + revealing(220ms).
         await tester.pump(const Duration(milliseconds: 900));
@@ -1926,18 +1926,18 @@ void main() {
     );
 
     testWidgets(
-      'bấm "Chuyển scene (lỗi)": phase error hiện RetryErrorState, không tăng revision',
+      'bấm "Switch scene (fail)": phase error hiện RetryErrorState, không tăng revision',
       (tester) async {
         await _pumpShowcase(tester);
 
         await tester.tap(
-          find.widgetWithText(CommonButton, 'Chuyển scene (lỗi)').first,
+          find.widgetWithText(CommonButton, 'Switch scene (fail)').first,
         );
         await tester.pump(const Duration(milliseconds: 900));
 
         expect(find.text('Phase: error'), findsOneWidget);
         expect(find.text('Scene #1'), findsOneWidget);
-        expect(find.textContaining('Không tải được scene mới'), findsOneWidget);
+        expect(find.textContaining('Could not load the new scene'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -1948,7 +1948,7 @@ void main() {
       await _pumpShowcase(tester);
 
       await tester.tap(
-        find.widgetWithText(CommonButton, 'Chuyển scene (OK)').first,
+        find.widgetWithText(CommonButton, 'Switch scene (OK)').first,
       );
       // covering kéo dài 260ms — pump qua khỏi mốc đó để vào loading nhưng
       // chưa hết 300ms delay của load() bên trong.
@@ -2017,7 +2017,7 @@ void main() {
     ) async {
       await _pumpShowcase(tester);
 
-      expect(find.text('(rỗng)'), findsOneWidget);
+      expect(find.text('(empty)'), findsOneWidget);
       await tester.tap(
         find.widgetWithText(CommonButton, 'Grant potion x3').first,
       );
@@ -2114,7 +2114,7 @@ void main() {
 
         expect(find.text('Claim reward?'), findsNothing);
         expect(find.textContaining('Claimed'), findsNothing);
-        expect(find.text('(rỗng)'), findsOneWidget);
+        expect(find.text('(empty)'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -2331,15 +2331,15 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('bấm "Hiện debug bounds" bọc slot bằng DecoratedBox viền', (
+    testWidgets('bấm "Show debug bounds" bọc slot bằng DecoratedBox viền', (
       tester,
     ) async {
       await _pumpShowcase(tester);
 
-      await tester.tap(find.text('Hiện debug bounds'));
+      await tester.tap(find.text('Show debug bounds'));
       await tester.pump();
 
-      expect(find.text('Ẩn debug bounds'), findsOneWidget);
+      expect(find.text('Hide debug bounds'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
@@ -2359,7 +2359,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.textContaining('Đã đặt lịch nhắc sau'), findsOneWidget);
+        expect(find.textContaining('Reminder set in'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -2374,7 +2374,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.textContaining('Đã huỷ lịch nhắc'), findsOneWidget);
+        expect(find.textContaining('Reminder cancelled'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -2388,7 +2388,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.textContaining('Đã đặt lịch nhắc sau'), findsOneWidget);
+      expect(find.textContaining('Reminder set in'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -2410,7 +2410,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.textContaining('Đã huỷ lịch nhắc'), findsOneWidget);
+        expect(find.textContaining('Reminder cancelled'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

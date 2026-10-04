@@ -40,9 +40,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     ToastBanner.show(
       context,
-      message:
-          'Đã xuất ${receipt.data.length} key (schema v${receipt.schemaVersion}) '
-          'lúc ${DateTime.fromMillisecondsSinceEpoch(receipt.exportedAtMs)}',
+      message: 'settings_export_success'.trParams({
+        'count': '${receipt.data.length}',
+        'version': '${receipt.schemaVersion}',
+        'time':
+            '${DateTime.fromMillisecondsSinceEpoch(receipt.exportedAtMs)}',
+      }),
     );
   }
 
@@ -51,9 +54,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (rights == null) return;
     final confirmed = await showConfirmDialog(
       context,
-      title: 'Xoá toàn bộ dữ liệu?',
-      message: 'Hành động này không thể hoàn tác — mọi dữ liệu đã lưu sẽ mất.',
-      confirmLabel: 'Xoá',
+      title: 'settings_erasure_dialog_title'.tr,
+      message: 'settings_erasure_dialog_message'.tr,
+      confirmLabel: 'settings_erasure_dialog_confirm'.tr,
       color: NeonTheme.red,
     );
     if (!confirmed || !mounted) return;
@@ -61,9 +64,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     ToastBanner.show(
       context,
-      message:
-          'Đã xoá ${receipt.erasedKeyCount} key lúc '
-          '${DateTime.fromMillisecondsSinceEpoch(receipt.completedAtMs)}',
+      message: 'settings_erasure_success'.trParams({
+        'count': '${receipt.erasedKeyCount}',
+        'time':
+            '${DateTime.fromMillisecondsSinceEpoch(receipt.completedAtMs)}',
+      }),
     );
   }
 
@@ -210,7 +215,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     if (kDebugMode)
                       CommonListTile(
                         title: 'Pseudo-locale (QA)',
-                        subtitle: 'Debug only — bắt hardcode/overflow',
+                        subtitle: 'settings_pseudo_locale_subtitle'.tr,
                         trailing: CandyToggleSwitch(
                           value: _pseudoLocaleEnabled,
                           onChanged: (v) => _togglePseudoLocale(v, locale),
@@ -232,8 +237,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     if (_dataRights != null) ...[
                       CommonListTile(
                         key: const Key('settingsRequestExport'),
-                        title: 'Yêu cầu xuất dữ liệu',
-                        subtitle: 'Tải toàn bộ dữ liệu đã lưu (GDPR/CCPA)',
+                        title: 'settings_request_export_title'.tr,
+                        subtitle: 'settings_request_export_subtitle'.tr,
                         trailing: Icon(
                           Icons.download_outlined,
                           color: NeonTheme.inkSoft,
@@ -242,8 +247,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       CommonListTile(
                         key: const Key('settingsRequestErasure'),
-                        title: 'Yêu cầu xoá dữ liệu',
-                        subtitle: 'Xoá vĩnh viễn toàn bộ dữ liệu đã lưu',
+                        title: 'settings_request_erasure_title'.tr,
+                        subtitle: 'settings_request_erasure_subtitle'.tr,
                         trailing: Icon(
                           Icons.delete_outline,
                           color: NeonTheme.red,

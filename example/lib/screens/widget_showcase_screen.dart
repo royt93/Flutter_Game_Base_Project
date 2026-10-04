@@ -302,19 +302,29 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // IDEA-44: QuestBoardPanel demo — a fixed 2-quest list this screen owns
   // locally (no DailyQuestService wiring here; the panel is deliberately
   // decoupled from any specific service, see the widget's own doc comment).
+  // `label` holds a translation KEY, resolved with `.tr` at render time (see
+  // `_localizedQuest`) so a locale change never leaves a stale label.
   var _questWinMatches = const QuestViewModel(
     id: 'win_3',
-    label: 'Thắng 3 trận',
+    label: 'showcase_quest_win_label',
     progress: 2,
     target: 3,
     claimed: false,
   );
   var _questUseBooster = const QuestViewModel(
     id: 'use_booster',
-    label: 'Dùng 1 booster',
+    label: 'showcase_quest_booster_label',
     progress: 1,
     target: 1,
     claimed: false,
+  );
+
+  QuestViewModel _localizedQuest(QuestViewModel q) => QuestViewModel(
+    id: q.id,
+    label: q.label.tr,
+    progress: q.progress,
+    target: q.target,
+    claimed: q.claimed,
   );
 
   void _bumpQuestProgress() {
@@ -481,7 +491,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
             return {
               'appVersionMaintenanceActive': true,
               'appVersionMaintenanceMessage':
-                  'Đang bảo trì demo, quay lại sau nhé.',
+                  'showcase_maintenance_msg'.tr,
             };
           default:
             return {};
@@ -610,12 +620,16 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // it unmounts.
   void _onLevelDeepLink(DeepLinkCommand command) {
     if (!mounted) return;
-    setState(() => _deepLinkLog = 'level: mở level ${command.params['id']}');
+    setState(
+      () => _deepLinkLog = 'showcase_dl_level'.trParams({
+        'id': '${command.params['id']}',
+      }),
+    );
   }
 
   void _onShopDeepLink(DeepLinkCommand command) {
     if (!mounted) return;
-    setState(() => _deepLinkLog = 'shop: mở cửa hàng');
+    setState(() => _deepLinkLog = 'showcase_dl_shop'.tr);
   }
 
   @override
@@ -659,9 +673,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     onProgress(0.4);
     await Future<void>.delayed(const Duration(milliseconds: 300));
     if (_sceneDemoForceFail) {
-      return const SdkFailure(
+      return SdkFailure(
         kind: SdkErrorKind.network,
-        message: 'Không tải được scene mới (demo lỗi giả lập).',
+        message: 'showcase_scene_load_failed'.tr,
       );
     }
     onProgress(1.0);
@@ -737,9 +751,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   ) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
     if (payload['forceConflict'] == true) {
-      return const SyncConflict({
+      return SyncConflict({
         'score': 999,
-        'reason': 'server có giá trị khác',
+        'reason': 'showcase_conflict_reason'.tr,
       });
     }
     return const SyncAck();
@@ -810,7 +824,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   Future<void> _runAssetDemoPreload(String scenario) async {
     setState(() {
       _assetDemoScenario = scenario;
-      _assetDemoStatus = 'Đang preload...';
+      _assetDemoStatus = 'showcase_preload_loading'.tr;
     });
     final result = await _assetPreload.preload(_assetDemoManifest);
     if (!mounted) return;
@@ -818,7 +832,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       if (result is SdkSuccess<void>) {
         _assetSession.markReady();
         _assetSession.start();
-        _assetDemoStatus = 'Preload OK — scene sẵn sàng (phase: playing).';
+        _assetDemoStatus = 'showcase_preload_ok'.tr;
       } else if (result is SdkFailure<void>) {
         _assetDemoStatus = 'Preload fail: ${result.message}';
       }
@@ -891,7 +905,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   final _deepLinkController = TextEditingController(
     text: 'roycasualkit://open/level/5',
   );
-  String _deepLinkLog = 'Chưa có deep link nào.';
+  String? _deepLinkLog;
+  String get _effectiveDeepLinkLog => _deepLinkLog ?? 'showcase_dl_initial'.tr;
   late RemoteConfigService _versionGateRemoteConfig;
   late AppVersionGateController _versionGate;
   String _versionGateScenario = 'ok';
@@ -905,7 +920,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   static const _assetSessionTag = 'widget-showcase-asset-session';
   late final GameSessionController _assetSession;
   String _assetDemoScenario = 'ok';
-  String _assetDemoStatus = 'Chưa preload.';
+  String? _assetDemoStatus;
+  String get _effectiveAssetDemoStatus =>
+      _assetDemoStatus ?? 'showcase_preload_initial'.tr;
   // FEAT-58: instance riêng, KHÔNG dùng chung _assetPreload/_assetSession ở
   // trên — 2 demo minh hoạ 2 khía cạnh khác nhau (preload thuần vs
   // transition state machine), dùng chung sẽ làm rối UX của cả 2.
@@ -979,8 +996,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // via the `reminders` module).
   late final ReminderService _reminder =
       ReminderService.maybe ?? Get.put(ReminderService(), permanent: true);
-  String _energyReminderStatus = 'Chưa kiểm tra.';
-  String _streakReminderStatus = 'Chưa kiểm tra.';
+  String? _energyReminderStatus;
+  String? _streakReminderStatus;
 
   Future<void> _rescheduleEnergyReminder() async {
     await rescheduleEnergyReminder(energy: _energy, reminder: _reminder);
@@ -988,9 +1005,11 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     if (!mounted) return;
     setState(() {
       _energyReminderStatus = delay == null
-          ? 'Đã huỷ lịch nhắc (năng lượng đã đầy hoặc đang vô hạn)'
-          : 'Đã đặt lịch nhắc sau ${delay.inMinutes} phút '
-                '(${delay.inSeconds}s)';
+          ? 'showcase_reminder_cancelled_full'.tr
+          : 'showcase_reminder_set_minutes'.trParams({
+              'minutes': '${delay.inMinutes}',
+              'seconds': '${delay.inSeconds}',
+            });
     });
   }
 
@@ -1003,9 +1022,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     if (!mounted) return;
     setState(() {
       _streakReminderStatus = !canClaim
-          ? 'Đã huỷ lịch nhắc (hôm nay đã claim rồi)'
-          : 'Đã đặt lịch nhắc sau '
-                '${streakExpiringReminderDelay(_dailyLogin).inHours} giờ';
+          ? 'showcase_reminder_cancelled_claimed'.tr
+          : 'showcase_reminder_set_hours'.trParams({
+              'hours': '${streakExpiringReminderDelay(_dailyLogin).inHours}',
+            });
     });
   }
 
@@ -1359,9 +1379,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     Text(
-                                      'Bấm để phát 1 SFX ngắn — bgm tự giảm '
-                                      'volume trong lúc SFX phát, tự trả về sau '
-                                      'khi xong. Nghe thật trên máy để cảm nhận.',
+                                      'showcase_duck_desc'.tr,
                                       style: TextStyle(
                                         color: NeonTheme.inkSoft,
                                         fontSize: 12,
@@ -1385,8 +1403,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                               _Demo(
-                                label:
-                                    'throttled() — bấm nhanh nhiều lần để so sánh',
+                                label: 'showcase_throttle_desc'.tr,
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -1394,12 +1411,17 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       child: Column(
                                         children: [
                                           CommonButton(
-                                            label: 'Không throttle',
+                                            label:
+                                                'showcase_throttle_btn_no'.tr,
                                             onTap: () => setState(
                                               () => _plainTapCount++,
                                             ),
                                           ),
-                                          Text('Đếm: $_plainTapCount'),
+                                          Text(
+                                            'showcase_throttle_count'.trParams({
+                                              'count': '$_plainTapCount',
+                                            }),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -1408,10 +1430,15 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       child: Column(
                                         children: [
                                           CommonButton(
-                                            label: 'Có throttle',
+                                            label:
+                                                'showcase_throttle_btn_yes'.tr,
                                             onTap: _throttledIncrement,
                                           ),
-                                          Text('Đếm: $_throttledTapCount'),
+                                          Text(
+                                            'showcase_throttle_count'.trParams({
+                                              'count': '$_throttledTapCount',
+                                            }),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -1425,7 +1452,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   hintText: 'Player name',
                                   prefixIcon: Icons.person_outline,
                                   validator: (v) => (v == null || v.isEmpty)
-                                      ? 'Không được để trống'
+                                      ? 'showcase_textfield_empty'.tr
                                       : null,
                                 ),
                               ),
@@ -1596,8 +1623,11 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                         ),
                                         const SizedBox(height: NeonTheme.s16),
                                         Text(
-                                          'Queue: ${_connectivity.queueLength} pending, '
-                                          '$_demoQueueRanCount đã chạy',
+                                          'showcase_queue_status'.trParams({
+                                            'pending':
+                                                '${_connectivity.queueLength}',
+                                            'ran': '$_demoQueueRanCount',
+                                          }),
                                         ),
                                         const SizedBox(height: NeonTheme.s8),
                                         CommonButton(
@@ -1641,7 +1671,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                             if (uri == null) {
                                               setState(
                                                 () => _deepLinkLog =
-                                                    'URI không hợp lệ.',
+                                                    'showcase_dl_invalid'.tr,
                                               );
                                               return;
                                             }
@@ -1655,7 +1685,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           },
                                         ),
                                         CommonButton(
-                                          label: 'Simulate lại (duplicate)',
+                                          label: 'showcase_simulate_duplicate'.tr,
                                           variant:
                                               CommonButtonVariant.secondary,
                                           onTap: () async {
@@ -1675,11 +1705,14 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       ],
                                     ),
                                     const SizedBox(height: NeonTheme.s16),
-                                    Text(_deepLinkLog),
+                                    Text(_effectiveDeepLinkLog),
                                     const SizedBox(height: NeonTheme.s8),
                                     Text(
-                                      'Thật: adb shell am start -a android.intent.action.VIEW '
-                                      '-d "roycasualkit://open/level/5"',
+                                      'showcase_dl_adb_hint'.trParams({
+                                        'cmd':
+                                            'adb shell am start -a android.intent.action.VIEW '
+                                            '-d "roycasualkit://open/level/5"',
+                                      }),
                                       style: TextStyle(
                                         color: NeonTheme.muted,
                                         fontSize: 12,
@@ -1695,7 +1728,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   children: [
                                     CommonButton(
                                       label:
-                                          'Scenario: $_versionGateScenario (bấm để đổi)',
+                                          'showcase_scenario_btn'.trParams({
+                                            'scenario': _versionGateScenario,
+                                          }),
                                       onTap: () async {
                                         const order = [
                                           'ok',
@@ -1737,7 +1772,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                                   'appVersionMaintenanceActive':
                                                       true,
                                                   'appVersionMaintenanceMessage':
-                                                      'Đang bảo trì demo, quay lại sau nhé.',
+                                                      'showcase_maintenance_msg'.tr,
                                                 };
                                               default:
                                                 return {};
@@ -1770,7 +1805,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           launchStore: (url) async {
                                             ToastBanner.show(
                                               context,
-                                              message: 'Mở store: $url',
+                                              message: 'showcase_store_toast'
+                                                  .trParams({'url': url}),
                                               color: NeonTheme.cyan,
                                             );
                                             return true;
@@ -1782,8 +1818,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           child: Container(
                                             color: NeonTheme.card,
                                             alignment: Alignment.center,
-                                            child: const Text(
-                                              'Nội dung app (demo)',
+                                            child: Text(
+                                              'showcase_app_content'.tr,
                                             ),
                                           ),
                                         ),
@@ -2202,7 +2238,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      _energyReminderStatus,
+                                      _energyReminderStatus ??
+                                          'showcase_reminder_unchecked'.tr,
                                       style: TextStyle(color: NeonTheme.ink),
                                     ),
                                     const SizedBox(height: NeonTheme.s8),
@@ -2212,7 +2249,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     ),
                                     const SizedBox(height: NeonTheme.s16),
                                     Text(
-                                      _streakReminderStatus,
+                                      _streakReminderStatus ??
+                                          'showcase_reminder_unchecked'.tr,
                                       style: TextStyle(color: NeonTheme.ink),
                                     ),
                                     const SizedBox(height: NeonTheme.s8),
@@ -2328,14 +2366,14 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   children: [
                                     QuestBoardPanel(
                                       quests: [
-                                        _questWinMatches,
-                                        _questUseBooster,
+                                        _localizedQuest(_questWinMatches),
+                                        _localizedQuest(_questUseBooster),
                                       ],
                                       onClaim: _claimQuest,
                                     ),
                                     const SizedBox(height: NeonTheme.s16),
                                     CommonButton(
-                                      label: 'Thắng 1 trận',
+                                      label: 'showcase_btn_win_one'.tr,
                                       onTap: _bumpQuestProgress,
                                     ),
                                   ],
@@ -2719,7 +2757,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       const SizedBox(height: NeonTheme.s16),
                                       Text(
                                         context.isEmpty
-                                            ? 'Analytics context: {} (chưa có analytics consent)'
+                                            ? 'showcase_analytics_no_consent'.tr
                                             : 'Analytics context: ${jsonEncode(context)}',
                                       ),
                                     ],
@@ -2788,7 +2826,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                         '· Session phase: ${phase.name}',
                                       ),
                                       const SizedBox(height: NeonTheme.s8),
-                                      Text(_assetDemoStatus),
+                                      Text(_effectiveAssetDemoStatus),
                                       const SizedBox(height: NeonTheme.s16),
                                       Wrap(
                                         spacing: NeonTheme.s8,
@@ -2835,11 +2873,14 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                                   _assetSession.markReady();
                                                   _assetSession.start();
                                                   _assetDemoStatus =
-                                                      'Retry OK — scene sẵn sàng.';
+                                                      'showcase_preload_retry_ok'.tr;
                                                 } else if (result
                                                     is SdkFailure<void>) {
                                                   _assetDemoStatus =
-                                                      'Retry vẫn fail: ${result.message}';
+                                                      'showcase_preload_retry_fail'
+                                                          .trParams({
+                                                            'msg': result.message,
+                                                          });
                                                 }
                                               });
                                             },
@@ -2853,7 +2894,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                               _assetSession.restart();
                                               setState(
                                                 () => _assetDemoStatus =
-                                                    'Đã unload scene.',
+                                                    'showcase_preload_unloaded'.tr,
                                               );
                                             },
                                           ),
@@ -2907,7 +2948,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                         runSpacing: NeonTheme.s8,
                                         children: [
                                           CommonButton(
-                                            label: 'Chuyển scene (OK)',
+                                            label: 'showcase_scene_btn_ok'.tr,
                                             onTap: () async {
                                               _sceneDemoForceFail = false;
                                               final result =
@@ -2923,7 +2964,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                             },
                                           ),
                                           CommonButton(
-                                            label: 'Chuyển scene (lỗi)',
+                                            label: 'showcase_scene_btn_fail'.tr,
                                             variant:
                                                 CommonButtonVariant.secondary,
                                             onTap: () {
@@ -3018,7 +3059,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           '${slot.equipped ? ' (equipped)' : ''}',
                                         ),
                                       if (snap.slots.isEmpty)
-                                        const Text('(rỗng)'),
+                                        Text('showcase_empty'.tr),
                                       const SizedBox(height: NeonTheme.s8),
                                       Text(_inventoryStatus),
                                       const SizedBox(height: NeonTheme.s16),
@@ -3323,8 +3364,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     const SizedBox(height: NeonTheme.s8),
                                     CommonButton(
                                       label: _hudDebugBounds
-                                          ? 'Ẩn debug bounds'
-                                          : 'Hiện debug bounds',
+                                          ? 'showcase_hide_bounds'.tr
+                                          : 'showcase_show_bounds'.tr,
                                       variant: CommonButtonVariant.secondary,
                                       onTap: () => setState(
                                         () =>
@@ -3625,12 +3666,14 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   children: [
                                     Text(
                                       'Win streak: $_reviewWinStreak | '
-                                      'Review prompt shown: $_reviewPromptShown lần',
+                                      'showcase_review_shown'.trParams({
+                                        'count': '$_reviewPromptShown',
+                                      }),
                                       style: TextStyle(color: NeonTheme.ink),
                                     ),
                                     const SizedBox(height: NeonTheme.s8),
                                     CommonButton(
-                                      label: 'Giả lập thắng level',
+                                      label: 'showcase_simulate_win'.tr,
                                       onTap: _simulateLevelWin,
                                     ),
                                   ],
