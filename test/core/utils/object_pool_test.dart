@@ -115,63 +115,83 @@ void main() {
     // 2 instance active khác nhau bị nhầm là "cùng 1 object" trong pool.
     'BUG-53: identity, không phải equality, quyết định object nào đang active',
     () {
-      test(
-        'acquire 2 object khác identity nhưng bằng nhau theo == : '
-        'activeCount đếm đúng 2, không bị Set gộp theo equality',
-        () {
-          final pool = ObjectPool<_ValueEqualParticle>(
-            create: () => _ValueEqualParticle(1),
-          );
-          final a = pool.acquire();
-          final b = pool.acquire();
+      test('acquire 2 object khác identity nhưng bằng nhau theo == : '
+          'activeCount đếm đúng 2, không bị Set gộp theo equality', () {
+        final pool = ObjectPool<_ValueEqualParticle>(
+          create: () => _ValueEqualParticle(1),
+        );
+        final a = pool.acquire();
+        final b = pool.acquire();
 
-          expect(a == b, isTrue, reason: 'value-equal theo thiết kế test');
-          expect(identical(a, b), isFalse);
-          expect(pool.activeCount, 2);
-        },
-      );
+        expect(a == b, isTrue, reason: 'value-equal theo thiết kế test');
+        expect(identical(a, b), isFalse);
+        expect(pool.activeCount, 2);
+      });
 
-      test(
-        'release 1 trong 2 object value-equal không ảnh hưởng object kia '
-        'còn active — cả 2 vẫn release được độc lập, đúng identity',
-        () {
-          final pool = ObjectPool<_ValueEqualParticle>(
-            create: () => _ValueEqualParticle(1),
-          );
-          final a = pool.acquire();
-          final b = pool.acquire();
+      test('release 1 trong 2 object value-equal không ảnh hưởng object kia '
+          'còn active — cả 2 vẫn release được độc lập, đúng identity', () {
+        final pool = ObjectPool<_ValueEqualParticle>(
+          create: () => _ValueEqualParticle(1),
+        );
+        final a = pool.acquire();
+        final b = pool.acquire();
 
-          pool.release(a);
-          expect(
-            pool.activeCount,
-            1,
-            reason: 'release(a) chỉ bỏ đúng a, b vẫn active',
-          );
+        pool.release(a);
+        expect(
+          pool.activeCount,
+          1,
+          reason: 'release(a) chỉ bỏ đúng a, b vẫn active',
+        );
 
-          // b vẫn thật sự active (đúng identity) -> release được, không
-          // throw StateError như thể đã bị release rồi.
-          expect(() => pool.release(b), returnsNormally);
-        },
-      );
+        // b vẫn thật sự active (đúng identity) -> release được, không
+        // throw StateError như thể đã bị release rồi.
+        expect(() => pool.release(b), returnsNormally);
+      });
 
-      test(
-        'double-release ĐÚNG CÙNG 1 identity vẫn bị phát hiện dù có object '
-        'khác value-equal cũng từng active',
-        () {
-          final pool = ObjectPool<_ValueEqualParticle>(
-            create: () => _ValueEqualParticle(1),
-          );
-          final a = pool.acquire();
-          pool.acquire(); // b: value-equal với a nếu cùng counter mốc, giữ active
-          pool.release(a);
+      test('double-release ĐÚNG CÙNG 1 identity vẫn bị phát hiện dù có object '
+          'khác value-equal cũng từng active', () {
+        final pool = ObjectPool<_ValueEqualParticle>(
+          create: () => _ValueEqualParticle(1),
+        );
+        final a = pool.acquire();
+        pool.acquire(); // b: value-equal với a nếu cùng counter mốc, giữ active
+        pool.release(a);
 
-          expect(() => pool.release(a), throwsStateError);
-        },
-      );
+        expect(() => pool.release(a), throwsStateError);
+      });
     },
   );
 
   group('ObjectPool: capacity/dispose/prewarm', () {
+    test(
+      'maxCapacity == 0 ném ArgumentError đúng tên/giá trị param (ENH-85)',
+      () {
+        expect(
+          () =>
+              ObjectPool<_Particle>(create: () => _Particle(0), maxCapacity: 0),
+          throwsA(
+            isA<ArgumentError>()
+                .having((e) => e.name, 'name', 'maxCapacity')
+                .having((e) => e.invalidValue, 'invalidValue', 0),
+          ),
+        );
+      },
+    );
+
+    test('maxCapacity âm ném ArgumentError (ENH-85)', () {
+      expect(
+        () =>
+            ObjectPool<_Particle>(create: () => _Particle(0), maxCapacity: -5),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.invalidValue,
+            'invalidValue',
+            -5,
+          ),
+        ),
+      );
+    });
+
     test(
       'prewarm(n) tạo sẵn đúng n object vào free list, không vượt maxCapacity',
       () {

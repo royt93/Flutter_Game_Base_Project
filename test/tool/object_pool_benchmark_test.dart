@@ -99,7 +99,7 @@ void main() {
       expect(pooled.totalAllocations, unpooled.totalAllocations);
     });
 
-    test('capacity <= 0: ObjectPool tự validate, throw AssertionError', () {
+    test('capacity <= 0: ObjectPool tự validate, throw ArgumentError', () {
       expect(
         () => runPooled(
           frames: 1,
@@ -107,7 +107,7 @@ void main() {
           lifetimeFrames: 1,
           capacity: 0,
         ),
-        throwsA(isA<AssertionError>()),
+        throwsArgumentError,
       );
     });
   });

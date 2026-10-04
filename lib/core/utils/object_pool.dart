@@ -15,8 +15,15 @@ class ObjectPool<T> {
     this.maxCapacity = 200,
   }) : _create = create,
        _reset = reset,
-       _dispose = dispose,
-       assert(maxCapacity > 0, 'maxCapacity must be greater than 0');
+       _dispose = dispose {
+    if (maxCapacity <= 0) {
+      throw ArgumentError.value(
+        maxCapacity,
+        'maxCapacity',
+        'must be greater than 0',
+      );
+    }
+  }
 
   final T Function() _create;
   final void Function(T item)? _reset;

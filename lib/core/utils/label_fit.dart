@@ -32,7 +32,9 @@ double fitFontSizeForLongestWord(
   /// "measures by width" property actually be tested.
   @visibleForTesting double Function(String word, double fontSize)? measureWord,
 }) {
-  assert(candidates.isNotEmpty, 'cần ít nhất một cỡ chữ');
+  if (candidates.isEmpty) {
+    throw ArgumentError.value(candidates, 'candidates', 'must not be empty');
+  }
   final words = label.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
   if (words.isEmpty || maxWidth <= 0) return candidates.first;
 

@@ -140,4 +140,23 @@ void main() {
     expect(fitFontSizeForLongestWord('   ', width), candidates.first);
     expect(fitFontSizeForLongestWord('Zen', 0), candidates.first);
   });
+
+  test('candidates rỗng (const) ném ArgumentError đúng tên param (ENH-85)', () {
+    expect(
+      () => fitFontSizeForLongestWord('Zen', width, candidates: const []),
+      throwsA(isA<ArgumentError>().having((e) => e.name, 'name', 'candidates')),
+    );
+  });
+
+  test(
+    'candidates rỗng động (List<double>.empty(), không const) cũng ném '
+    'ArgumentError — mô phỏng list rỗng do caller ngoài package build runtime',
+    () {
+      final dynamicEmpty = List<double>.empty();
+      expect(
+        () => fitFontSizeForLongestWord('Zen', width, candidates: dynamicEmpty),
+        throwsArgumentError,
+      );
+    },
+  );
 }

@@ -1,3 +1,20 @@
+## 0.4.0
+
+- Added `GameAccessibilityAnnouncer` + `GameAccessibilityEvent` (FEAT-99): a locale-aware, rate-limited screen-reader announcer driven by `GameEventBus` for gameplay moments (level-up, reward, lives, custom categories).
+- Added `PrivacyAwareAnalyticsQueue` (FEAT-98): a bounded, privacy-first offline analytics queue with serialized persistence and all-or-nothing retry batch uploads.
+- Added `SeededChallengeService` (FEAT-97): deterministic offline daily/weekly seeded challenges, replayable from the same seed.
+- Added `RemoteContentPack.withHistory` and `GameSessionController.withTimeline` (ENH-96): a bounded, verified, persisted content-pack revision history with rollback-by-checksum/version, and a privacy-sanitized game-session outcome timeline with JSON export. Strictly additive — no existing public signature changed.
+- Added independent `AudioManager.setBgmVolume`/`setSfxVolume` with restore-on-focus/ducking behavior (ENH-95).
+- Added direct unit/widget coverage for `AdRewardSeam`, `RuntimeFlags`, `debug_log`, the `common_widgets` barrel, the BUG-92 `PauseOverlay` edge case, and `RoyCasualKitContractTestKit` (IDEA-71).
+- Hardened CI (BUG-100): audits `example/`'s own dependency graph, proves the golden-tolerance comparator's exact 1%/2% boundary, and adds a real-device GameDemo core-loop smoke test.
+- Generalized `tool/asset_license_check.dart` to scan multiple asset roots via `--asset-roots` so `example/`'s own audio assets are covered too (BUG-99).
+- Fixed an async lock chain losing mutual exclusion across a waiter's timeout, and made retry timeouts terminal instead of silently retryable (BUG-96).
+- Swept all remaining runtime English string literals into the `en`/`vi` translation maps and confirmed a fresh install always defaults to English regardless of device locale (BUG-94).
+- Excluded decorative overlays from the semantics tree and made `EnergyBar` reactive to its underlying stream (BUG-95).
+- Fixed `GameEventBus` subscriptions leaking past widget dispose in the Game Demo, and `AchievementUnlockListener` only ever subscribing once instead of re-resolving on `didUpdateWidget` (BUG-93).
+- Surfaced storage failures from `AchievementService` instead of silently dropping them, and made `EconomyWallet` multi-currency updates atomic via a batch transaction so `PrestigeService` can no longer partially apply (BUG-90).
+- Fixed `RemoteSchemaDef` accepting reserved Dart keywords as identifiers, a validated schema still holding a live (mutable) reference to the caller's field list, and `BouncingOrb`'s bounce-clamp throwing in a viewport smaller than twice the orb radius (BUG-97).
+
 ## 0.3.1
 
 - Added durable verified caching to `RemoteContentPack.withCache` (ENH-94): a signature-verified, migrated live-ops pack is persisted only after validation succeeds; a fresh instance prefers that last-known-good cache over its bundled asset, survives an offline restart, rejects tampered/future-schema/wrong-typed cache data, and supports an optional max cache age. The original `RemoteContentPack(...)` constructor remains unchanged and cache-free for full source compatibility.
