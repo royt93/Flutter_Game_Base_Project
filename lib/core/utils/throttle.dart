@@ -14,6 +14,9 @@ VoidCallback throttled(
   VoidCallback fn, {
   Duration window = const Duration(milliseconds: 600),
 }) {
+  if (window.isNegative) {
+    throw ArgumentError.value(window, 'window', 'must not be negative');
+  }
   final stopwatch = Stopwatch();
   Duration? lastRunAt;
   return () {

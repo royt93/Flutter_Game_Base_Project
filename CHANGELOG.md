@@ -1,5 +1,6 @@
 ## 0.4.0
 
+- Note: `throttled(window:)` now throws `ArgumentError` for a negative window (previously it silently disabled throttling), and `RetryPolicy.delayBeforeAttempt` now throws `ArgumentError` for `attemptNumber < 1`, a `randomValue` outside `[0, 1]`, or a policy with invalid `maxAttempts`/`jitterFraction`, in release builds too (ENH-85). `attemptNumber: 0` previously returned `Duration.zero`.
 - Fixed `fitFontSizeForLongestWord` returning the first fitting candidate instead of the largest fitting one when passed an unsorted candidates list (BUG-101).
 - Note: `ObjectPool(maxCapacity:)` and `fitFontSizeForLongestWord(candidates:)` runtime validations are now backed by `ArgumentError` (ENH-85) instead of assert-only checks, meaning invalid arguments will now throw in release builds.
 - Added `GameAccessibilityAnnouncer` + `GameAccessibilityEvent` (FEAT-99): a locale-aware, rate-limited screen-reader announcer driven by `GameEventBus` for gameplay moments (level-up, reward, lives, custom categories).

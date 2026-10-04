@@ -41,8 +41,30 @@ class RetryPolicy {
   /// [attemptNumber] (2^exponent overflowing toward infinity) still clamps
   /// correctly to [maxDelay] via [min] instead of overflowing/throwing —
   /// `min(double.infinity, x) == x`.
+  ///
+  /// Throws [ArgumentError] for an invalid [attemptNumber] (`< 1`), a
+  /// [randomValue] outside `[0, 1]` (or NaN), or a policy whose
+  /// [maxAttempts]/[jitterFraction] violate the constructor's asserts — those
+  /// asserts are stripped from release builds, so a policy built from remote
+  /// config is re-checked here (ENH-85).
   Duration delayBeforeAttempt(int attemptNumber, double randomValue) {
-    if (attemptNumber <= 1) return Duration.zero;
+    if (attemptNumber < 1) {
+      throw ArgumentError.value(attemptNumber, 'attemptNumber', 'must be >= 1');
+    }
+    if (!(randomValue >= 0 && randomValue <= 1)) {
+      throw ArgumentError.value(randomValue, 'randomValue', 'must be in [0, 1]');
+    }
+    if (maxAttempts < 1) {
+      throw ArgumentError.value(maxAttempts, 'maxAttempts', 'must be >= 1');
+    }
+    if (!(jitterFraction >= 0 && jitterFraction <= 1)) {
+      throw ArgumentError.value(
+        jitterFraction,
+        'jitterFraction',
+        'must be within [0, 1]',
+      );
+    }
+    if (attemptNumber == 1) return Duration.zero;
     final exponent = attemptNumber - 2;
     final rawMicros = baseDelay.inMicroseconds.toDouble() * pow(2, exponent);
     final cappedMicros = min(rawMicros, maxDelay.inMicroseconds.toDouble());

@@ -23,6 +23,29 @@ class _NegativeDelayPolicy extends RetryPolicy {
 }
 
 void main() {
+  group('RetryPolicy.delayBeforeAttempt runtime validation (ENH-85)', () {
+    const policy = RetryPolicy();
+
+    test('attemptNumber < 1 → ArgumentError', () {
+      expect(() => policy.delayBeforeAttempt(0, 0.5), throwsArgumentError);
+      expect(() => policy.delayBeforeAttempt(-1, 0.5), throwsArgumentError);
+    });
+
+    test('randomValue ngoài [0,1] hoặc NaN → ArgumentError', () {
+      expect(() => policy.delayBeforeAttempt(2, 5), throwsArgumentError);
+      expect(() => policy.delayBeforeAttempt(2, -0.1), throwsArgumentError);
+      expect(
+        () => policy.delayBeforeAttempt(2, double.nan),
+        throwsArgumentError,
+      );
+    });
+
+    test('biên 0 và 1 hợp lệ', () {
+      expect(() => policy.delayBeforeAttempt(2, 0), returnsNormally);
+      expect(() => policy.delayBeforeAttempt(2, 1), returnsNormally);
+    });
+  });
+
   group('RetryPolicy.delayBeforeAttempt', () {
     const policy = RetryPolicy(
       baseDelay: Duration(milliseconds: 100),

@@ -32,6 +32,14 @@ void main() {
     expect(calls, 2);
   });
 
+  test('window âm → ArgumentError, window 0 vẫn hợp lệ (ENH-85)', () {
+    expect(
+      () => throttled(() {}, window: const Duration(milliseconds: -1)),
+      throwsArgumentError,
+    );
+    expect(() => throttled(() {}, window: Duration.zero), returnsNormally);
+  });
+
   test('không nuốt lỗi nếu callback throw', () {
     final fn = throttled(() => throw StateError('boom'));
     expect(fn, throwsA(isA<StateError>()));
