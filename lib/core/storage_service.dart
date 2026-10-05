@@ -355,7 +355,7 @@ class StorageService extends GetxService {
     final raw = getString(key);
     if (raw == null) return [];
     try {
-      return (jsonDecode(raw) as List).cast<String>();
+      return List<String>.from(jsonDecode(raw) as List);
     } catch (_) {
       return [];
     }

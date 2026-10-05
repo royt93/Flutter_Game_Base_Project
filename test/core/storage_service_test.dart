@@ -144,6 +144,18 @@ void main() {
       expect(store.getInt('k_int'), 0);
     });
 
+    test('getStringList: round-trip, key thiếu, JSON hỏng/sai kiểu -> []', () async {
+      expect(store.getStringList('missing'), isEmpty);
+
+      await store.setStringList('k_list', ['a', 'b']);
+      expect(store.getStringList('k_list'), ['a', 'b']);
+
+      for (final bad in ['not json', '{"a":1}', '[1,2]']) {
+        await store.setString('k_bad', bad);
+        expect(store.getStringList('k_bad'), isEmpty, reason: bad);
+      }
+    });
+
     test('StorageKeys giữ 3 hằng số cơ bản, key khác nhau', () {
       expect(StorageKeys.localeCode, isNot(StorageKeys.audioMuted));
       expect(StorageKeys.audioMuted, isNot(StorageKeys.themeDark));

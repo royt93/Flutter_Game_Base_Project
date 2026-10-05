@@ -48,10 +48,16 @@ void main() {
 
     test(
       'thiếu N điểm -> delay = timeUntilNextEnergy + (N-1) * refillInterval',
-      () {
+      () async {
         const interval = Duration(minutes: 30);
         final energy = EnergyService(maxEnergy: 5, refillInterval: interval);
         Get.put(energy, permanent: true);
+
+        // Đóng băng đồng hồ TRƯỚC khi tiêu thụ: timeUntilNextEnergy đọc
+        // nowMsClamped() ở mỗi lần gọi, nên 2 lần gọi cách nhau vài ms sẽ lệch
+        // 1ms và flake. Ghim sau consumeEnergy thì mốc tiêu thụ nằm quá xa
+        // quá khứ và năng lượng tự hồi đầy.
+        await _pinNow(store, DateTime.now().millisecondsSinceEpoch + 60000);
         energy.consumeEnergy(3); // còn 2, thiếu 3
 
         final delay = energyFullReminderDelay(energy)!;

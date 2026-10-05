@@ -119,6 +119,63 @@ void main() {
     expect(count, 0);
   });
 
+  testWidgets('hệ thống huỷ pointer (PointerCancel) giữa chừng: không onConfirm, '
+      'sau đó giữ lại đủ duration vẫn confirm được', (tester) async {
+    var count = 0;
+    await tester.pumpWidget(
+      _wrap(
+        HoldToConfirmButton(
+          label: 'Delete',
+          duration: duration,
+          onConfirm: () => count++,
+        ),
+      ),
+    );
+    final center = tester.getCenter(find.byType(HoldToConfirmButton));
+
+    final first = await tester.startGesture(center);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await first.cancel();
+    await tester.pump(const Duration(milliseconds: 800));
+    expect(count, 0);
+    expect(tester.takeException(), isNull);
+
+    final second = await tester.startGesture(center);
+    await tester.pump();
+    await tester.pump(duration + const Duration(milliseconds: 50));
+    await second.up();
+    await tester.pump();
+    expect(count, 1);
+  });
+
+  testWidgets('shape linear: render không lỗi và vẫn confirm sau đủ duration', (
+    tester,
+  ) async {
+    var count = 0;
+    await tester.pumpWidget(
+      _wrap(
+        HoldToConfirmButton(
+          label: 'Delete',
+          duration: duration,
+          shape: HoldToConfirmShape.linear,
+          onConfirm: () => count++,
+        ),
+      ),
+    );
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(HoldToConfirmButton)),
+    );
+    await tester.pump();
+    await tester.pump(duration + const Duration(milliseconds: 50));
+    await gesture.up();
+    await tester.pump();
+
+    expect(count, 1);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'kéo ra ngoài bounds trước khi đủ duration: huỷ, không gọi onConfirm',
     (tester) async {

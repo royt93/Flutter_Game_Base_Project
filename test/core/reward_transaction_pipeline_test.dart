@@ -876,5 +876,71 @@ void main() {
       expect(record!.itemLines, isEmpty);
       expect(record.lines, hasLength(1));
     });
+
+    group('RewardTransactionRecord.fromJson: dữ liệu lưu hỏng', () {
+      Map<String, Object?> base({
+        Object? lines,
+        Object? itemLines,
+        Object? source = 'ad',
+        Object? status = 'committed',
+      }) => {
+        'transactionId': 'tx_1',
+        'source': source,
+        'lines': lines ?? const <Object?>[],
+        'itemLines': itemLines,
+        'status': status,
+        'createdAtMs': 1,
+      };
+
+      test('itemId rỗng hoặc quantity <= 0 bị loại, dòng hợp lệ còn lại', () {
+        final record = RewardTransactionRecord.fromJson(
+          base(
+            itemLines: [
+              {'itemId': '', 'quantity': 2},
+              {'itemId': 'bad_qty', 'quantity': 0},
+              {'itemId': 'neg_qty', 'quantity': -1},
+              {'itemId': 'trophy', 'quantity': 3},
+            ],
+          ),
+        );
+
+        expect(record, isNotNull);
+        expect(record!.itemLines, hasLength(1));
+        expect(record.itemLines.single.itemId, 'trophy');
+        expect(record.itemLines.single.quantity, 3);
+      });
+
+      test('không còn dòng nào hợp lệ (cả lines lẫn itemLines) -> null', () {
+        expect(
+          RewardTransactionRecord.fromJson(
+            base(
+              lines: [
+                {'currency': '', 'amount': 5},
+              ],
+              itemLines: [
+                {'itemId': '', 'quantity': 1},
+              ],
+            ),
+          ),
+          isNull,
+        );
+      });
+
+      test('source/status lạ -> rơi về other/pending, không throw', () {
+        final record = RewardTransactionRecord.fromJson(
+          base(
+            lines: [
+              {'currency': 'coin', 'amount': 5},
+            ],
+            source: 'from_the_future',
+            status: 'archived',
+          ),
+        );
+
+        expect(record, isNotNull);
+        expect(record!.source, RewardSource.other);
+        expect(record.status, RewardTransactionStatus.pending);
+      });
+    });
   });
 }

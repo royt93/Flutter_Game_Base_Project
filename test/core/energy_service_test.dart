@@ -330,6 +330,10 @@ void main() {
 
       test('consumeEnergy() ghi count + lastMs bằng đúng 1 lần write (atomic) '
           'thay vì 2 write rời rạc', () {
+        // Ghim watermark vào tương lai gần: nowMsClamped() còn tự ghi thêm 1 lần
+        // mỗi khi đồng hồ thật nhích 1ms, làm số write đếm được flake theo
+        // thời gian chạy.
+        store.setInt(StorageKeys.maxMsSeen, _realMs + 60 * 1000);
         final service = EnergyService(maxEnergy: 5);
         // "Làm nóng" watermark của nowMsClamped() trước — lần đầu tiên nó
         // được gọi trong 1 test luôn tự thêm 1 write phụ (nâng

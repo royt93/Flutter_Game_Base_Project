@@ -298,6 +298,9 @@ void main() {
       () async {
         await store.setBool(StorageKeys.hapticsEnabled, false);
         final choreographer = HapticChoreographer();
+        // Pattern nhiều pulse hẹn Timer: không cancel thì timer bắn SAU
+        // tearDown (Get.reset) và gây "StorageService not found" ở test khác.
+        addTearDown(choreographer.cancel);
 
         choreographer.play(HapticPattern.reward);
         await Future<void>.delayed(Duration.zero);

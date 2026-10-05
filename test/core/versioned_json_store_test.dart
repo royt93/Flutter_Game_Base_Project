@@ -52,6 +52,35 @@ class _ThrowingCloudSaveProvider implements CloudSaveProvider {
   }
 }
 
+class _FailingWriteStorageService extends StorageService {
+  _FailingWriteStorageService(super.prefs);
+  bool failWrites = false;
+
+  @override
+  Future<void> setString(String key, String value) {
+    if (failWrites) throw Exception('simulated storage write failure');
+    return super.setString(key, value);
+  }
+}
+
+class _CountingUploadProvider implements CloudSaveProvider {
+  _CountingUploadProvider(this.cloudData);
+  Map<String, Object?>? cloudData;
+  int uploads = 0;
+
+  @override
+  Future<void> signIn() async {}
+
+  @override
+  Future<Map<String, Object?>?> download() async => cloudData;
+
+  @override
+  Future<void> upload(Map<String, Object?> data) async {
+    uploads++;
+    cloudData = data;
+  }
+}
+
 void main() {
   late StorageService store;
 
@@ -663,6 +692,49 @@ void main() {
           ),
           completes,
         );
+      });
+    }
+
+    for (final merge in [false, true]) {
+      test('conflict ${merge ? 'merge' : 'preferCloud'} storage write failure '
+          '-> SdkFailure(storage), local save untouched, no upload', () async {
+        final failing = _FailingWriteStorageService(
+          await SharedPreferences.getInstance(),
+        );
+        final s = VersionedJsonStore<_Profile>(
+          storage: failing,
+          key: 'profile',
+          schemaVersion: 2,
+          toJson: (p) => {'name': p.name, 'level': p.level},
+          fromJson: (json) => _Profile(
+            name: json['name'] as String,
+            level: json['level'] as int,
+          ),
+          migrate: (fromVersion, json) => json,
+        );
+        await s.save(const _Profile(name: 'Local', level: 3));
+        final localBefore = failing.getString('profile');
+        final provider = _CountingUploadProvider({
+          'schemaVersion': 2,
+          'name': 'Cloud',
+          'level': 5,
+          'syncedAtMs': DateTime.now().millisecondsSinceEpoch + 86400000,
+        });
+        failing.failWrites = true;
+
+        final result = await s.syncWithResult(
+          provider,
+          onConflict: (_) => merge
+              ? const VersionedSyncConflictResolution.merge(
+                  _Profile(name: 'Merged', level: 8),
+                )
+              : const VersionedSyncConflictResolution.preferCloud(),
+        );
+
+        expect(result, isA<SdkFailure<void>>());
+        expect((result as SdkFailure<void>).kind, SdkErrorKind.storage);
+        expect(failing.getString('profile'), localBefore);
+        expect(provider.uploads, 0);
       });
     }
 
