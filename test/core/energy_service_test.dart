@@ -189,6 +189,9 @@ void main() {
         'kéo dài thêm đúng mốc mới',
         () async {
           final service = EnergyService(maxEnergy: 3);
+          // Mốc phải lấy TRƯỚC khi grant: đồng hồ thật nhích sau đó, nên đọc
+          // sau sẽ lớn hơn `until` 1ms và so sánh >= flake.
+          final startMs = _realMs;
 
           await service.grantInfiniteLives(const Duration(minutes: 5));
           await service.grantInfiniteLives(const Duration(hours: 2));
@@ -196,20 +199,25 @@ void main() {
           final until = store.getInt(StorageKeys.energyInfiniteUntilMs);
           expect(
             until,
-            greaterThanOrEqualTo(_realMs + const Duration(hours: 2).inMilliseconds),
+            greaterThanOrEqualTo(
+              startMs + const Duration(hours: 2).inMilliseconds,
+            ),
           );
         },
       );
 
       test('grant lần đầu (chưa có mốc trước đó) hoạt động đúng như cũ', () async {
         final service = EnergyService(maxEnergy: 3);
+        final startMs = _realMs;
 
         await service.grantInfiniteLives(const Duration(minutes: 10));
 
         expect(service.hasInfiniteLives, true);
         expect(
           store.getInt(StorageKeys.energyInfiniteUntilMs),
-          greaterThanOrEqualTo(_realMs + const Duration(minutes: 10).inMilliseconds),
+          greaterThanOrEqualTo(
+            startMs + const Duration(minutes: 10).inMilliseconds,
+          ),
         );
       });
     });
