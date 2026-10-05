@@ -91,3 +91,64 @@ jobs:
       - name: Deprecation removal-schedule gate
         if: steps.changes.outputs.relevant == 'true'
         run: dart run tool/deprecation_check.dart
+
+  # Sinh app consumer thật từ tool/create_consumer_app.dart (path dependency
+  # vào PR này), rồi analyze + test + build APK + chạy integration test trên
+  # emulator. Bắt lỗi chỉ lộ ở app tiêu thụ package (vd 0.4.0: font chưa
+  # qualify theo package, cấu hình native Android thiếu).
+  consumer-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            relevant:
+              - 'lib/**'
+              - 'tool/create_consumer_app.dart'
+              - 'pubspec.yaml'
+              - 'asset/**'
+              - '.github/workflows/ci.yml'
+      - uses: subosito/flutter-action@v2
+        if: steps.changes.outputs.relevant == 'true'
+        with:
+          flutter-version: 3.35.1
+          channel: stable
+          cache: true
+      - uses: actions/setup-java@v4
+        if: steps.changes.outputs.relevant == 'true'
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Generate consumer app (path dependency on this checkout)
+        if: steps.changes.outputs.relevant == 'true'
+        run: |
+          flutter pub get
+          dart run tool/create_consumer_app.dart --name=ci_smoke --output="$RUNNER_TEMP" --kitPath="$GITHUB_WORKSPACE"
+      - name: Analyze + test generated app
+        if: steps.changes.outputs.relevant == 'true'
+        working-directory: ${{ runner.temp }}/ci_smoke
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+      - name: Build debug APK
+        if: steps.changes.outputs.relevant == 'true'
+        working-directory: ${{ runner.temp }}/ci_smoke
+        run: flutter build apk --debug
+      - name: Enable KVM
+        if: steps.changes.outputs.relevant == 'true'
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Integration test on emulator
+        if: steps.changes.outputs.relevant == 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          working-directory: ${{ runner.temp }}/ci_smoke
+          script: flutter test integration_test/app_boot_test.dart

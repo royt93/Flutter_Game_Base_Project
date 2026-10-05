@@ -5,7 +5,7 @@
 //
 // Usage:
 //   dart run tool/create_consumer_app.dart --name=my_game [--output=.]
-//     [--org=com.example] [--kitVersion=^0.2.0] [--kitPath=<path>] [--force]
+//     [--org=com.example] [--kitVersion=^0.4.1] [--kitPath=<path>] [--force]
 //   dart run tool/create_consumer_app.dart --check-version=<app_dir>
 //
 // Shells out to the REAL `flutter create` for the platform scaffolding
@@ -28,7 +28,7 @@ import 'dart:io';
 /// (auto-migration) is intentionally NOT implemented by this task — see
 /// this task's Quyết định for why that's a deliberately separate, larger
 /// feature.
-const int templateSchemaVersion = 1;
+const int templateSchemaVersion = 2;
 
 const _templateVersionFileName = '.roy_template_version';
 
@@ -114,7 +114,7 @@ bool isValidOrg(String org) {
 /// the generated smoke test's `shared_preferences` import). Versions
 /// pinned to match this package's own `pubspec.yaml` so both resolve the
 /// same package graph.
-String kitDependencyBlock({String? kitPath, String kitVersion = '^0.2.0'}) {
+String kitDependencyBlock({String? kitPath, String kitVersion = '^0.4.1'}) {
   final kitLine = kitPath != null
       ? '  roy_casual_kit:\n    path: $kitPath\n'
       : '  roy_casual_kit: $kitVersion\n';
@@ -137,6 +137,19 @@ String patchPubspecWithDependency(
     );
   }
   lines.insert(index + 1, dependencyBlock.trimRight());
+  return lines.join('\n');
+}
+
+/// Adds `integration_test` (an SDK package) under `dev_dependencies:` so the
+/// generated app can run `integration_test/app_boot_test.dart` on a device.
+/// Throws [ArgumentError] if there is no `dev_dependencies:` line to anchor on.
+String patchPubspecWithIntegrationTest(String pubspecContent) {
+  final lines = pubspecContent.split('\n');
+  final index = lines.indexWhere((l) => l.trim() == 'dev_dependencies:');
+  if (index == -1) {
+    throw ArgumentError('pubspec.yaml không có dòng "dev_dependencies:".');
+  }
+  lines.insertAll(index + 1, ['  integration_test:', '    sdk: flutter']);
   return lines.join('\n');
 }
 
@@ -356,6 +369,130 @@ void main() {
 }
 ''';
 
+/// Consumer-only regressions of a published package that host tests inside
+/// the package itself cannot see: the package font's asset key (0.4.0 shipped
+/// it unqualified) and `VersionedJsonStore.syncWith` failure reporting (0.4.0
+/// reported success when a conflict resolution's write/upload failed).
+String consumerRegressionTestTemplate() => '''
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:roy_casual_kit/roy_casual_kit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _FailingUploadCloud implements CloudSaveProvider {
+  _FailingUploadCloud(this.data);
+  final Map<String, Object?> data;
+  @override
+  Future<void> signIn() async {}
+  @override
+  Future<Map<String, Object?>?> download() async => data;
+  @override
+  Future<void> upload(Map<String, Object?> d) async => throw StateError('offline');
+}
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  tearDown(() async {
+    await RoyCasualKit.resetForTesting();
+    Get.reset();
+  });
+
+  test('package font is declared under its package-qualified key', () async {
+    final manifest = await rootBundle.loadString('FontManifest.json');
+    expect(NeonTheme.fontFamily, 'packages/roy_casual_kit/Baloo2');
+    expect(manifest, contains(NeonTheme.fontFamily));
+  });
+
+  test('conflict resolution upload failure is reported, local save kept', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await RoyCasualKit.initialize(
+      config: RoyCasualKitConfig(
+        modules: {RoyCasualKitModule.storage},
+        preferences: prefs,
+      ),
+    );
+    final store = VersionedJsonStore<int>(
+      storage: StorageService.to,
+      key: 'coins',
+      schemaVersion: 1,
+      toJson: (v) => {'coins': v},
+      fromJson: (j) => j['coins'] as int,
+      migrate: (from, j) => j,
+    );
+    await store.save(100);
+
+    final result = await store.syncWithResult(
+      _FailingUploadCloud({'schemaVersion': 1, 'syncedAtMs': 1, 'coins': 5}),
+      onConflict: (_) => const VersionedSyncConflictResolution<int>.preferLocal(),
+    );
+
+    expect(result, isA<SdkFailure<void>>());
+    expect((result as SdkFailure<void>).kind, SdkErrorKind.network);
+    expect(store.load(), 100);
+  });
+}
+''';
+
+/// Device/emulator boot test for a generated consumer app: starts the real
+/// `main()` and checks the Home screen renders. Bounded `pump`, never
+/// `pumpAndSettle` - `NeonBg`/Flame run a permanent ticker.
+String integrationBootTestTemplate({required String appName}) => '''
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:roy_casual_kit/roy_casual_kit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:$appName/main.dart' as app;
+import 'package:$appName/screens/home_screen.dart';
+import 'package:$appName/screens/widget_showcase_screen.dart';
+import 'package:$appName/screens/game_demo_screen.dart';
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('consumer bootstrap, font, persistence and navigation', (tester) async {
+    await app.main();
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.byType(HomeScreen), findsOneWidget);
+
+    final manifest = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
+    final font = manifest.cast<Map<String, dynamic>>().singleWhere(
+      (entry) => entry['family'] == NeonTheme.fontFamily,
+    );
+    final asset = (font['fonts'] as List).first['asset'] as String;
+    expect((await rootBundle.load(asset)).lengthInBytes, greaterThan(1000));
+    expect(Theme.of(tester.element(find.byType(HomeScreen))).textTheme.bodyMedium!.fontFamily,
+        NeonTheme.fontFamily);
+
+    await StorageService.to.setBool(StorageKeys.themeDark, true);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+    expect(StorageService(prefs).getBool(StorageKeys.themeDark), isTrue);
+    await StorageService.to.remove(StorageKeys.themeDark);
+
+    await tester.tap(find.byKey(const Key('open_widget_showcase')));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(WidgetShowcaseScreen), findsOneWidget);
+    expect(find.text('Widget Showcase'), findsWidgets);
+    await tester.pageBack();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.tap(find.byKey(const Key('open_game_demo')));
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.byType(GameDemoScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pageBack();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Game Demo'), findsWidgets);
+  });
+}
+''';
+
 String ciWorkflowTemplate() => '''
 name: CI
 
@@ -398,7 +535,7 @@ Future<GeneratedApp> generate({
   String outputDir = '.',
   String org = 'com.example',
   String? kitPath,
-  String kitVersion = '^0.2.0',
+  String kitVersion = '^0.4.1',
   bool force = false,
 }) async {
   if (!isValidAppName(name)) {
@@ -450,6 +587,14 @@ Future<GeneratedApp> generate({
   );
   write('lib/screens/game_demo_screen.dart', gameDemoScreenTemplate());
   write('test/widget_test.dart', smokeTestTemplate(appName: appName));
+  write(
+    'test/consumer_regression_test.dart',
+    consumerRegressionTestTemplate(),
+  );
+  write(
+    'integration_test/app_boot_test.dart',
+    integrationBootTestTemplate(appName: appName),
+  );
   write('.github/workflows/ci.yml', ciWorkflowTemplate());
   write(_templateVersionFileName, '$templateSchemaVersion\n');
 
@@ -458,7 +603,7 @@ Future<GeneratedApp> generate({
     pubspecFile.readAsStringSync(),
     kitDependencyBlock(kitPath: kitPath, kitVersion: kitVersion),
   );
-  pubspecFile.writeAsStringSync(patched);
+  pubspecFile.writeAsStringSync(patchPubspecWithIntegrationTest(patched));
   written.add('pubspec.yaml (patched)');
 
   final buildGradleFile = File(
@@ -531,7 +676,7 @@ Future<void> main(List<String> args) async {
       outputDir: options['output'] ?? '.',
       org: options['org'] ?? 'com.example',
       kitPath: options['kitPath'],
-      kitVersion: options['kitVersion'] ?? '^0.2.0',
+      kitVersion: options['kitVersion'] ?? '^0.4.1',
       force: force,
     );
     stdout.writeln('Đã tạo app tại ${result.path}:');

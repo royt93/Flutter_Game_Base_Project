@@ -91,6 +91,24 @@ void main() {
     });
   });
 
+  group('patchPubspecWithIntegrationTest', () {
+    test('chèn SDK dependency dưới dev_dependencies, không đụng dependencies', () {
+      const source = 'dependencies:\n  flutter:\n    sdk: flutter\n'
+          'dev_dependencies:\n  flutter_test:\n    sdk: flutter\n';
+      expect(
+        patchPubspecWithIntegrationTest(source),
+        contains('dev_dependencies:\n  integration_test:\n    sdk: flutter\n'),
+      );
+    });
+
+    test('không có dev_dependencies -> throw ArgumentError', () {
+      expect(
+        () => patchPubspecWithIntegrationTest('name: app\n'),
+        throwsArgumentError,
+      );
+    });
+  });
+
   group('patchAndroidBuildGradleForDesugaring', () {
     const freshBuildGradle = '''
 android {
@@ -163,6 +181,21 @@ android {
         content,
         contains("import 'package:my_cool_game/screens/home_screen.dart';"),
       );
+    });
+
+    test('consumerRegressionTestTemplate: giữ assert font + lỗi sync conflict', () {
+      final content = consumerRegressionTestTemplate();
+      expect(content, contains("'packages/roy_casual_kit/Baloo2'"));
+      expect(content, contains('FontManifest.json'));
+      expect(content, contains('SdkErrorKind.network'));
+      expect(content, contains('syncWithResult'));
+    });
+
+    test('integrationBootTestTemplate: bounded pump, không pumpAndSettle', () {
+      final content = integrationBootTestTemplate(appName: 'my_cool_game');
+      expect(content, contains("package:my_cool_game/main.dart"));
+      expect(content, contains('IntegrationTestWidgetsFlutterBinding'));
+      expect(content, isNot(contains('pumpAndSettle')));
     });
 
     test('gameDemoScreenTemplate: dùng đúng RoyGame/GameWidget của kit', () {
