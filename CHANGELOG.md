@@ -1,3 +1,8 @@
+## 0.4.1
+
+- Fixed `VersionedJsonStore.syncWith(..., onConflict:)` returning `SdkSuccess` when the conflict resolution's storage write or cloud upload failed, silently losing the save. It now returns `SdkFailure` (`SdkErrorKind.storage` or `SdkErrorKind.network`). A handler that throws still falls back to last-write-wins.
+- Fixed Baloo2 not loading in consumer apps: `NeonTheme.fontFamily` and the `fitFontSizeForLongestWord` default now use the package-qualified family `packages/roy_casual_kit/Baloo2`.
+
 ## 0.4.0
 
 - Note: `throttled(window:)` now throws `ArgumentError` for a negative window (previously it silently disabled throttling), and `RetryPolicy.delayBeforeAttempt` now throws `ArgumentError` for `attemptNumber < 1`, a `randomValue` outside `[0, 1]`, or a policy with invalid `maxAttempts`/`jitterFraction`, in release builds too (ENH-85). `attemptNumber: 0` previously returned `Duration.zero`.

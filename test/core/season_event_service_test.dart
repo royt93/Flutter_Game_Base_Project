@@ -498,7 +498,9 @@ void main() {
       () async {
         final a = SeasonEventService(storageKey: 'season_a');
         final b = SeasonEventService(storageKey: 'season_b');
-        final realMs = _realMs;
+        // Mốc tương lai 60s: watermark luôn thắng đồng hồ thật, nên mili-giây
+        // trôi giữa các lệnh không làm lệch anchor.
+        final realMs = _realMs + 60000;
         await setNowMs(realMs);
 
         final windowA = a.currentWindow(
