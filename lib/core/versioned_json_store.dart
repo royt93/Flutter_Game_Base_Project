@@ -272,9 +272,7 @@ class VersionedJsonStore<T> {
         localTime: localTime,
         cloudTime: cloudTime,
       );
-      if (resolved) return const SdkSuccess(null);
-      // Handler threw (already logged) or either side failed to parse as
-      // a real T — fall through to the default below.
+      if (resolved != null) return resolved;
     }
 
     if (cloudJson != null && cloudTime > localTime) {
@@ -302,11 +300,10 @@ class VersionedJsonStore<T> {
     return const SdkSuccess(null);
   }
 
-  /// Returns `true` if the conflict was fully resolved (either side's data
-  /// already ends up exactly where [syncWith]'s default path would also
-  /// have put it — no further action needed), `false` to fall through to
-  /// the default last-write-wins.
-  Future<bool> _tryResolveConflict(
+  /// Returns `SdkSuccess(null)` if the conflict was fully resolved,
+  /// `SdkFailure` if an underlying storage or upload call failed, or
+  /// `null` to fall through to the default last-write-wins (e.g. handler threw).
+  Future<SdkResult<void>?> _tryResolveConflict(
     VersionedSyncConflictHandler<T> onConflict,
     CloudSaveProvider provider, {
     required Map<String, Object?> localJson,
@@ -320,11 +317,12 @@ class VersionedJsonStore<T> {
       localValue = fromJson(localJson);
       cloudValue = fromJson(cloudJson);
     } catch (_) {
-      return false;
+      return null;
     }
 
+    final VersionedSyncConflictResolution<T> resolution;
     try {
-      final resolution = onConflict(
+      resolution = onConflict(
         VersionedSyncConflict(
           local: VersionedSyncConflictSide(
             value: localValue,
@@ -336,29 +334,44 @@ class VersionedJsonStore<T> {
           ),
         ),
       );
+    } catch (error) {
+      dlog(
+        'VersionedJsonStore.syncWith: onConflict handler threw, falling '
+        'back to last-write-wins: $error',
+      );
+      return null;
+    }
+
+    var failureKind = SdkErrorKind.storage;
+    try {
       switch (resolution.strategy) {
         case VersionedSyncConflictStrategy.preferLocal:
+          failureKind = SdkErrorKind.network;
           await provider.upload(localJson);
-          return true;
+          return const SdkSuccess(null);
         case VersionedSyncConflictStrategy.preferCloud:
+          failureKind = SdkErrorKind.storage;
           await storage.setString(key, jsonEncode(cloudJson));
-          return true;
+          return const SdkSuccess(null);
         case VersionedSyncConflictStrategy.merge:
           final merged = {
             ...toJson(resolution.mergedValue as T),
             'schemaVersion': schemaVersion,
             'syncedAtMs': nowMsClamped(storage),
           };
+          failureKind = SdkErrorKind.storage;
           await storage.setString(key, jsonEncode(merged));
+          failureKind = SdkErrorKind.network;
           await provider.upload(merged);
-          return true;
+          return const SdkSuccess(null);
       }
-    } catch (error) {
-      dlog(
-        'VersionedJsonStore.syncWith: onConflict handler threw, falling '
-        'back to last-write-wins: $error',
+    } catch (error, stack) {
+      return SdkFailure(
+        kind: failureKind,
+        message: 'Conflict resolution failed: $error',
+        cause: error,
+        stackTrace: stack,
       );
-      return false;
     }
   }
 

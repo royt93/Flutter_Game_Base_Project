@@ -3,6 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 
 void main() {
+  test('fontFamily uses the consumer package namespace', () {
+    expect(NeonTheme.fontFamily, 'packages/roy_casual_kit/Baloo2');
+  });
+
   testWidgets('reducedMotion đọc đúng MediaQuery.disableAnimations', (
     tester,
   ) async {

@@ -69,7 +69,7 @@ class NeonTheme {
   /// code rather than "nobody set one".
 
   /// App-wide font — Baloo2 (full Vietnamese glyph coverage + a friendly rounded look).
-  static const String fontFamily = 'Baloo2';
+  static const String fontFamily = 'packages/roy_casual_kit/Baloo2';
 
   // Hệ spacing chuẩn (8 / 16 / 24).
   static const double s8 = 8;

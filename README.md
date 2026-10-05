@@ -737,6 +737,24 @@ Game mới nên bắt đầu bằng [hướng dẫn tích hợp từng bước](
 
 ## Install
 
+**Android prerequisites:** The `flutter_local_notifications` v20+ dependency requires `compileSdk 35` at minimum, Java 17 compatibility, and core library desugaring. You must configure this in your consumer app's `android/app/build.gradle.kts` (or `.gradle`), or the app will crash/fail to build:
+
+```kotlin
+android {
+    compileSdk = 35
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
+    }
+}
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+}
+```
+
+Also declare `<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />` and the plugin's `ScheduledNotificationReceiver` in your `AndroidManifest.xml` (`<application>` node).
+
 ```bash
 flutter pub add roy_casual_kit
 ```

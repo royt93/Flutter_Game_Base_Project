@@ -30,9 +30,11 @@ class _ThrowingCloudSaveProvider implements CloudSaveProvider {
   _ThrowingCloudSaveProvider({
     this.throwOnDownload = false,
     this.throwOnUpload = false,
+    this.cloudData,
   });
   final bool throwOnDownload;
   final bool throwOnUpload;
+  Map<String, Object?>? cloudData;
 
   @override
   Future<void> signIn() async {}
@@ -40,12 +42,13 @@ class _ThrowingCloudSaveProvider implements CloudSaveProvider {
   @override
   Future<Map<String, Object?>?> download() async {
     if (throwOnDownload) throw StateError('download failed');
-    return null;
+    return cloudData;
   }
 
   @override
   Future<void> upload(Map<String, Object?> data) async {
     if (throwOnUpload) throw StateError('upload failed');
+    cloudData = data;
   }
 }
 
@@ -622,6 +625,46 @@ void main() {
       expect(result, isA<SdkFailure<void>>());
       expect((result as SdkFailure<void>).kind, SdkErrorKind.network);
     });
+
+    for (final merge in [false, true]) {
+      test('conflict ${merge ? 'merge' : 'preferLocal'} upload failure '
+          'preserves selected local data', () async {
+        final s = makeStore();
+        await s.save(const _Profile(name: 'Local', level: 3));
+        final localBefore = store.getString('profile');
+        final provider = _ThrowingCloudSaveProvider(
+          throwOnUpload: true,
+          cloudData: {
+            'schemaVersion': 2,
+            'name': 'Cloud',
+            'level': 5,
+            'syncedAtMs': DateTime.now().millisecondsSinceEpoch + 86400000,
+          },
+        );
+
+        final result = await s.syncWithResult(
+          provider,
+          onConflict: (_) => merge
+              ? const VersionedSyncConflictResolution.merge(
+                  _Profile(name: 'Merged', level: 8),
+                )
+              : const VersionedSyncConflictResolution.preferLocal(),
+        );
+
+        expect(result, isA<SdkFailure<void>>());
+        expect((result as SdkFailure<void>).kind, SdkErrorKind.network);
+        expect(s.load()!.name, merge ? 'Merged' : 'Local');
+        expect(s.load()!.level, merge ? 8 : 3);
+        if (!merge) expect(store.getString('profile'), localBefore);
+        await expectLater(
+          s.syncWith(
+            provider,
+            onConflict: (_) => const VersionedSyncConflictResolution.preferLocal(),
+          ),
+          completes,
+        );
+      });
+    }
 
     test('download thành công, không cần upload (không có local) -> '
         'syncWithResult trả SdkSuccess', () async {

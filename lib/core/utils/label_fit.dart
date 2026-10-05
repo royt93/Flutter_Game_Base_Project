@@ -21,7 +21,7 @@ double fitFontSizeForLongestWord(
   double maxWidth, {
   List<double> candidates = const [11, 10, 9, 8],
   FontWeight fontWeight = FontWeight.w700,
-  String? fontFamily = 'Baloo2',
+  String? fontFamily = 'packages/roy_casual_kit/Baloo2',
 
   /// Test-only measurement seam.
   ///
