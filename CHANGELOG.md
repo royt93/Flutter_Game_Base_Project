@@ -1,3 +1,8 @@
+## 0.4.3
+
+- Corrected the README Android setup for scheduled reminders, verified on a Pixel 7 Pro (Android 17): the plugin already merges `POST_NOTIFICATIONS` and `VIBRATE`, so the app does not declare them. `ScheduledNotificationReceiver` is required for reminders to appear (without it the alarm registers but no notification is posted); the boot receiver and exact-alarm permissions are optional.
+- Added platform-mocked tests for `AudioManager`'s background-music paths (start/stop, pause/resume, ducking, volume, mute toggle, dispose). No library code changed.
+
 ## 0.4.2
 
 - Fixed `StorageService.getStringList` throwing when the stored JSON list held non-string elements (e.g. `[1,2]`): the lazy `cast<String>()` escaped its `try/catch` and failed on first read. It now returns `[]` for any wrong-typed content, as documented.
