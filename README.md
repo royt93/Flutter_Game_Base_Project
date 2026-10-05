@@ -753,7 +753,17 @@ dependencies {
 }
 ```
 
-Also declare `<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />` and the plugin's `ScheduledNotificationReceiver` in your `AndroidManifest.xml` (`<application>` node).
+The plugin automatically merges `POST_NOTIFICATIONS` and `VIBRATE` into the app's manifest. Android 13+ still requires the notification permission to be granted at runtime; `ReminderService` requests it during initialization. If the player denies permission, reminders will not appear.
+
+**Only when using scheduled reminders:** add this receiver inside `<application>` in `android/app/src/main/AndroidManifest.xml`. Without it, the app can build and register an alarm, but the scheduled notification will not appear:
+
+```xml
+<receiver
+    android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+    android:exported="false" />
+```
+
+`ReminderService` uses `AndroidScheduleMode.inexactAllowWhileIdle`: delivery may be delayed by Android, and neither `SCHEDULE_EXACT_ALARM` nor `USE_EXACT_ALARM` is required. Rescheduling after a reboot or app update is optional; for that behavior, also configure `RECEIVE_BOOT_COMPLETED` and `ScheduledNotificationBootReceiver` with the boot/update intent filters described in the plugin's Android setup documentation.
 
 ```bash
 flutter pub add roy_casual_kit

@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flame_audio/flame_audio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
@@ -15,6 +19,283 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     store = StorageService(await SharedPreferences.getInstance());
     Get.put(store, permanent: true);
+  });
+
+  group('AudioManager: BGM với platform audio giả', () {
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    const audioChannel = MethodChannel('xyz.luan/audioplayers');
+    const globalChannel = MethodChannel('xyz.luan/audioplayers.global');
+    const globalEvents = EventChannel('xyz.luan/audioplayers.global/events');
+    const pathChannel = MethodChannel('plugins.flutter.io/path_provider');
+    final calls = <MethodCall>[];
+    final sinks = <String, MockStreamHandlerEventSink>{};
+    final eventChannels = <EventChannel>[];
+    late Directory temp;
+    late AudioManager manager;
+    String? bgmId;
+    bool closed = false;
+    late StreamController<void> nativeCalls;
+
+    Future<void> waitForSfxResumes(int count) async {
+      while (calls
+              .where(
+                (call) =>
+                    call.method == 'resume' &&
+                    (call.arguments as Map)['playerId'] != bgmId,
+              )
+              .length <
+          count) {
+        await nativeCalls.stream.first.timeout(const Duration(seconds: 2));
+      }
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    List<MethodCall> bgmCalls(String method) => calls
+        .where(
+          (call) =>
+              call.method == method &&
+              (call.arguments as Map)['playerId'] == bgmId,
+        )
+        .toList();
+
+    Future<void> flush() => Future<void>.delayed(Duration.zero);
+
+    Future<void> start() async {
+      manager.startBgm();
+      await flush();
+      bgmId =
+          (calls.firstWhere((call) => call.method == 'setReleaseMode').arguments
+                  as Map)['playerId']
+              as String;
+      expect(bgmCalls('resume'), hasLength(1));
+    }
+
+    setUp(() async {
+      calls.clear();
+      sinks.clear();
+      eventChannels.clear();
+      bgmId = null;
+      closed = false;
+      nativeCalls = StreamController<void>.broadcast();
+      temp = Directory.systemTemp.createTempSync('roy_audio_test_');
+      messenger.setMockMessageHandler('flutter/assets', (message) async {
+        final key = const StringCodec().decodeMessage(message);
+        if (key == 'packages/roy_casual_kit/asset/audio/bkg.ogg' ||
+            key == 'assets/a.mp3' ||
+            key == 'assets/b.mp3') {
+          return Uint8List.fromList([1, 2, 3]).buffer.asByteData();
+        }
+        return null;
+      });
+      messenger.setMockMethodCallHandler(
+        pathChannel,
+        (call) async => temp.path,
+      );
+      messenger.setMockMethodCallHandler(globalChannel, (call) async => null);
+      messenger.setMockStreamHandler(
+        globalEvents,
+        MockStreamHandler.inline(onListen: (arguments, events) {}),
+      );
+      messenger.setMockMethodCallHandler(audioChannel, (call) async {
+        calls.add(call);
+        scheduleMicrotask(() => nativeCalls.add(null));
+        final id = (call.arguments as Map)['playerId'] as String;
+        if (call.method == 'create') {
+          final channel = EventChannel('xyz.luan/audioplayers/events/$id');
+          eventChannels.add(channel);
+          messenger.setMockStreamHandler(
+            channel,
+            MockStreamHandler.inline(
+              onListen: (arguments, events) {
+                sinks[id] = events;
+              },
+            ),
+          );
+        } else if (call.method == 'setSourceUrl') {
+          sinks[id]!.success({'event': 'audio.onPrepared', 'value': true});
+        } else if (call.method == 'getCurrentPosition' ||
+            call.method == 'getDuration') {
+          return 0;
+        }
+        return null;
+      });
+      manager = AudioManager();
+      await manager.init();
+    });
+
+    tearDown(() async {
+      if (!closed) manager.onClose();
+      await flush();
+      await nativeCalls.close();
+      for (final channel in eventChannels) {
+        messenger.setMockStreamHandler(channel, null);
+      }
+      messenger.setMockStreamHandler(globalEvents, null);
+      messenger.setMockMethodCallHandler(audioChannel, null);
+      messenger.setMockMethodCallHandler(globalChannel, null);
+      messenger.setMockMethodCallHandler(pathChannel, null);
+      messenger.setMockMessageHandler('flutter/assets', null);
+      temp.deleteSync(recursive: true);
+    });
+
+    test(
+      'startBgm dùng volume đã lưu và lần gọi thứ hai không phát lại',
+      () async {
+        await store.setDouble(StorageKeys.bgmVolume, 0.72);
+        await manager.init();
+        await start();
+        expect((bgmCalls('setVolume').single.arguments as Map)['volume'], 0.72);
+        manager.startBgm();
+        await flush();
+        expect(bgmCalls('resume'), hasLength(1));
+        expect(bgmCalls('setSourceUrl'), hasLength(1));
+      },
+    );
+
+    test('mute chặn start/pause/resume, stop rồi start phát lại', () async {
+      manager.muted.value = true;
+      manager.startBgm();
+      await flush();
+      expect(calls, isEmpty);
+      manager.muted.value = false;
+      await start();
+      calls.clear();
+      manager.muted.value = true;
+      manager.pauseBgm();
+      manager.resumeBgm();
+      await flush();
+      expect(calls, isEmpty);
+      manager.muted.value = false;
+      manager.stopBgm();
+      await flush();
+      expect(bgmCalls('stop'), hasLength(1));
+      manager.stopBgm();
+      await flush();
+      expect(bgmCalls('stop'), hasLength(1));
+      manager.startBgm();
+      await flush();
+      expect(bgmCalls('resume'), hasLength(1));
+    });
+
+    test('pause/resume áp dụng lại volume bình thường', () async {
+      await manager.setBgmVolume(0.8);
+      await start();
+      calls.clear();
+      manager.pauseBgm();
+      await flush();
+      expect(bgmCalls('pause'), hasLength(1));
+      manager.resumeBgm();
+      await flush();
+      expect((bgmCalls('setVolume').single.arguments as Map)['volume'], 0.8);
+      expect(bgmCalls('resume'), hasLength(1));
+    });
+
+    test(
+      'SFX duck chồng: resume dùng volume duck, chỉ SFX cuối mới khôi phục mix mới',
+      () async {
+        await manager.setBgmVolume(0.7);
+        await start();
+        calls.clear();
+        final first = manager.playSfx('a.mp3', duck: true);
+        final second = manager.playSfx('b.mp3', duck: true);
+        await flush();
+        expect(manager.duckCount, 2);
+        await waitForSfxResumes(2);
+        expect(bgmCalls('setVolume'), hasLength(1));
+        expect(
+          (bgmCalls('setVolume').single.arguments as Map)['volume'],
+          closeTo(0.16, 0.0001),
+        );
+        manager.pauseBgm();
+        await flush();
+        manager.resumeBgm();
+        await flush();
+        expect(
+          (bgmCalls('setVolume').last.arguments as Map)['volume'],
+          closeTo(0.16, 0.0001),
+        );
+        await manager.setBgmVolume(0.9);
+        await flush();
+        expect(bgmCalls('setVolume'), hasLength(2));
+        // Ghép player theo tên file nguồn (setSourceUrl), không theo thứ tự
+        // resume: 2 SFX đọc file tạm bất đồng bộ nên thứ tự đó không đảm bảo.
+        String sfxId(String file) =>
+            calls
+                    .firstWhere(
+                      (call) =>
+                          call.method == 'setSourceUrl' &&
+                          (call.arguments as Map)['playerId'] != bgmId &&
+                          ((call.arguments as Map)['url'] as String).endsWith(
+                            '/$file',
+                          ),
+                    )
+                    .arguments['playerId']
+                as String;
+        sinks[sfxId('a.mp3')]!.success({'event': 'audio.onComplete'});
+        await first;
+        await flush();
+        expect(manager.duckCount, 1);
+        expect(bgmCalls('setVolume'), hasLength(2));
+        sinks[sfxId('b.mp3')]!.success({'event': 'audio.onComplete'});
+        await second;
+        await flush();
+        expect(manager.duckCount, 0);
+        expect((bgmCalls('setVolume').last.arguments as Map)['volume'], 0.9);
+        expect(bgmCalls('setVolume'), hasLength(3));
+      },
+    );
+
+    test(
+      'setBgmVolume áp dụng live khi đang chơi, không gọi player trước start',
+      () async {
+        await manager.setBgmVolume(0.6);
+        expect(calls, isEmpty);
+        await start();
+        calls.clear();
+        await manager.setBgmVolume(0.4);
+        await flush();
+        expect((bgmCalls('setVolume').single.arguments as Map)['volume'], 0.4);
+      },
+    );
+
+    test(
+      'toggleMute pause rồi resume BGM đang chơi, không phát lại source',
+      () async {
+        await start();
+        calls.clear();
+        manager.toggleMute();
+        await flush();
+        expect(bgmCalls('pause'), hasLength(1));
+        expect(store.getBool(StorageKeys.audioMuted), isTrue);
+        manager.toggleMute();
+        await flush();
+        expect(bgmCalls('resume'), hasLength(1));
+        expect(bgmCalls('setSourceUrl'), isEmpty);
+        expect(store.getBool(StorageKeys.audioMuted), isFalse);
+      },
+    );
+
+    test('toggleMute unmute trước start tự phát BGM', () async {
+      manager.muted.value = true;
+      manager.toggleMute();
+      await flush();
+      bgmId =
+          (calls.firstWhere((call) => call.method == 'setReleaseMode').arguments
+                  as Map)['playerId']
+              as String;
+      expect(bgmCalls('resume'), hasLength(1));
+    });
+
+    test('onClose dispose đúng BGM player, không throw', () async {
+      await start();
+      calls.clear();
+      manager.onClose();
+      closed = true;
+      await flush();
+      expect(bgmCalls('dispose'), hasLength(1));
+      expect(bgmCalls('release'), hasLength(1));
+    });
   });
 
   group('AudioManager', () {
