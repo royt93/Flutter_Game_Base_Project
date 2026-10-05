@@ -248,6 +248,75 @@ void main() {
     },
   );
 
+  testWidgets(
+    'core loop: hết energy chặn bắt đầu vòng và không cấp phần thưởng',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const GameDemoScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+      final energy = EnergyService.maybe!;
+      energy.consumeEnergy(5);
+      expect(energy.currentEnergy, 0);
+
+      await tester.tap(_button('Start Round (-1 Energy)'));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Not enough energy. Wait for refill.'), findsOneWidget);
+      expect(_button('Start Round (-1 Energy)'), findsOneWidget);
+      expect(EconomyWallet.maybe!.balanceOf('coins'), 0);
+      expect(PlayerProgressionService.maybe!.snapshot.value.totalXpEarned, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('core loop: thắng vòng vượt ngưỡng XP hiển thị LEVEL UP', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_wrap(const GameDemoScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+    await PlayerProgressionService.maybe!.grantXp(
+      amount: 90,
+      transactionId: 'seed_near_level_up',
+    );
+    await tester.pump();
+
+    await tester.tap(_button('Start Round (-1 Energy)'));
+    await tester.pump(const Duration(milliseconds: 100));
+    final game = find.byType(GameWidget<RoyGame>);
+    for (var i = 0; i < 5; i++) {
+      await tester.tapAt(tester.getCenter(game));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(PlayerProgressionService.maybe!.snapshot.value.level, 2);
+    expect(EconomyWallet.maybe!.balanceOf('coins'), 30);
+    expect(find.textContaining('LEVEL UP to Lv.2!'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('info dialog closes by OK button and by barrier tap', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_wrap(const GameDemoScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byIcon(Icons.info_outline));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('OK'), findsWidgets);
+    await tester.tap(find.text('OK').last);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('OK'), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.info_outline));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('OK'), findsWidgets);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('OK'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   group('FEAT-88: GameEventBus wires 1 tap to 2 independent services', () {
     testWidgets('tap circle -> EconomyWallet (gems) VÀ AchievementService (tap '
         'progress) đều cập nhật, cả 2 hiện trên badge', (tester) async {

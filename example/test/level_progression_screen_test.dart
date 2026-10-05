@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
+import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/energy_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/clamped_clock.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/energy_bar.dart';
 import 'package:roy_casual_kit_example/screens/level_progression_screen.dart';
@@ -130,6 +132,41 @@ void main() {
       find.textContaining('No offline earnings accumulated yet'),
       findsOneWidget,
     );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('claim offline earnings sau 10 giây cộng coins vào ví và reset mốc',
+      (tester) async {
+    await _boot();
+    final start = nowMsClamped(StorageService.to);
+    await StorageService.to.setInt(
+      StorageKeys.offlineLastClaimedMs,
+      start - 10000,
+    );
+
+    await tester.pumpWidget(_wrap(const LevelProgressionScreen()));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await tester.tap(_button('Claim Offline Earnings').first);
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final coins = EconomyWallet.maybe!.balanceOf('coins');
+    // 10s * 2 coin/s = 20, cộng độ trễ test vài trăm ms (tối đa vài coin).
+    expect(coins, inInclusiveRange(20, 30));
+    expect(find.text('Coins: $coins'), findsOneWidget);
+    expect(find.textContaining('Claimed $coins offline coins!'), findsOneWidget);
+    expect(
+      StorageService.to.getInt(StorageKeys.offlineLastClaimedMs),
+      greaterThan(start - 10000),
+    );
+
+    await tester.tap(_button('Claim Offline Earnings').first);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(
+      find.textContaining('No offline earnings accumulated yet'),
+      findsOneWidget,
+    );
+    expect(EconomyWallet.maybe!.balanceOf('coins'), coins);
     expect(tester.takeException(), isNull);
   });
 }

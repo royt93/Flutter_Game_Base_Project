@@ -128,6 +128,91 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Download cloud khi cloud còn trống báo "Cloud is empty."', (
+    tester,
+  ) async {
+    await _boot();
+
+    await tester.pumpWidget(_wrap(const SaveCloudScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final downloadBtn = _button('Download cloud').first;
+    await tester.ensureVisible(downloadBtn);
+    await tester.tap(downloadBtn);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.textContaining('Cloud is empty.'), findsOneWidget);
+    expect(find.textContaining('Downloaded fake cloud save.'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Restore selected khi chưa export báo "No backup yet."', (
+    tester,
+  ) async {
+    await _boot();
+
+    await tester.pumpWidget(_wrap(const SaveCloudScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(_button('Create slot').first);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final restoreBtn = _button('Restore selected').first;
+    await tester.ensureVisible(restoreBtn);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(restoreBtn);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.textContaining('No backup yet.'), findsOneWidget);
+    expect(find.textContaining('Restored'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Export selected khi chưa có slot active không đổi status', (
+    tester,
+  ) async {
+    await _boot();
+
+    await tester.pumpWidget(_wrap(const SaveCloudScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final exportBtn = _button('Export selected').first;
+    await tester.ensureVisible(exportBtn);
+    await tester.tap(exportBtn);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      find.textContaining('Create a save slot, add score, then back it up.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Exported'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('chọn lại slot cũ đổi slot active và báo "Selected ..."', (
+    tester,
+  ) async {
+    await _boot();
+
+    await tester.pumpWidget(_wrap(const SaveCloudScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(_button('Create slot').first);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(_button('+10 score').first);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(_button('Create slot').first);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.textContaining('Score: 0 • Active'), findsOneWidget);
+
+    await tester.tap(find.text('Hero Slot 1'));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.textContaining('Selected Hero Slot 1.'), findsOneWidget);
+    expect(find.textContaining('Score: 10 • Active'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'BUG-87: tap delete on a slot removes it, no exception, status updates',
     (tester) async {
