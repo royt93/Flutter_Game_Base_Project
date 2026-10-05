@@ -1,3 +1,8 @@
+## 0.4.2
+
+- Fixed `StorageService.getStringList` throwing when the stored JSON list held non-string elements (e.g. `[1,2]`): the lazy `cast<String>()` escaped its `try/catch` and failed on first read. It now returns `[]` for any wrong-typed content, as documented.
+- Consumer app generator (`tool/create_consumer_app.dart`) now emits a font/sync-conflict regression test and a device integration test, and defaults to `roy_casual_kit: ^0.4.1`. CI gained a `consumer-smoke` job that builds and runs a generated consumer app on an emulator.
+
 ## 0.4.1
 
 - Fixed `VersionedJsonStore.syncWith(..., onConflict:)` returning `SdkSuccess` when the conflict resolution's storage write or cloud upload failed, silently losing the save. It now returns `SdkFailure` (`SdkErrorKind.storage` or `SdkErrorKind.network`). A handler that throws still falls back to last-write-wins.
