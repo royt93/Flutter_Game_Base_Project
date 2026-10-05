@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:roy_casual_kit/core/crash_reporter.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/offline_outbox_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
@@ -24,7 +26,95 @@ OfflineOutboxService _service({
   retryPolicy: const RetryPolicy(maxAttempts: 2, baseDelay: Duration.zero),
 )..onInit();
 
+class _RecordingCrashReporter implements CrashReporter {
+  final errors = <Object>[];
+  final reasons = <String?>[];
+
+  @override
+  void recordError(Object error, StackTrace stack, {String? reason}) {
+    errors.add(error);
+    reasons.add(reason);
+  }
+}
+
 void main() {
+  tearDown(Get.reset);
+
+  group('OutboxItem: parse payload cũ/sai kiểu', () {
+    test('expiresAtMs round-trip và type lạ fallback về 0', () {
+      final original = OutboxItem(
+        idempotencyKey: 'k',
+        payload: const {'v': 1},
+        expiresAtMs: 1000,
+      );
+      expect(OutboxItem.fromJson(original.toJson())!.expiresAtMs, 1000);
+      expect(
+        OutboxItem.fromJson({
+          'idempotencyKey': 'k',
+          'payload': 'bad',
+          'expiresAtMs': 'bad',
+        })!.expiresAtMs,
+        0,
+      );
+    });
+  });
+
+  group('OfflineOutboxService: accessor/dispose/reporting', () {
+    test('maybe là null khi chưa đăng ký, trả instance khi đã đăng ký', () {
+      expect(OfflineOutboxService.maybe, isNull);
+      final service = _service(uploader: (p, k) async => const SyncAck());
+      Get.put(service);
+      expect(OfflineOutboxService.maybe, same(service));
+    });
+
+    test('merger throw báo CrashReporter với key, item giữ nguyên', () async {
+      final reporter = _RecordingCrashReporter();
+      Get.put<CrashReporter>(reporter);
+      final error = StateError('merge failed');
+      final service = _service(
+        conflictPolicy: ConflictPolicy.merge,
+        merger: (local, remote) => throw error,
+        uploader: (p, k) async => const SyncConflict({'v': 2}),
+      );
+      service.enqueue(idempotencyKey: 'report_me', payload: const {'v': 1});
+
+      await service.drain();
+
+      expect(reporter.errors, [same(error)]);
+      expect(reporter.reasons.single, contains('report_me'));
+      expect(service.items.single.payload, {'v': 1});
+    });
+
+    test('onClose huỷ listener online: event sau dispose không drain', () async {
+      final signal = FakeConnectivitySignal();
+      final connectivity = ConnectivityCoordinator(
+        signal: signal,
+        probe: () async => true,
+        createTimer: (delay, callback) => Timer(Duration.zero, callback),
+      );
+      addTearDown(connectivity.onClose);
+      addTearDown(signal.dispose);
+      var uploads = 0;
+      final service = _service(
+        connectivity: connectivity,
+        uploader: (p, k) async {
+          uploads++;
+          return const SyncAck();
+        },
+      );
+      service.enqueue(idempotencyKey: 'k', payload: const {});
+      service.onClose();
+      await pumpEventQueue();
+
+      signal.setHasInterface(true);
+      await pumpEventQueue();
+
+      expect(connectivity.state, ConnectivityState.online);
+      expect(uploads, 0);
+      expect(service.items, hasLength(1));
+    });
+  });
+
   group('BUG-75: runtime capacity validation', () {
     test('capacity <= 0 bị từ chối trước khi outbox vô hiệu hóa enqueue', () {
       expect(

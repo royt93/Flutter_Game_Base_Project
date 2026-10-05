@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -338,6 +339,125 @@ void main() {
 
         expect(fakePlatform.lastParams, isNotNull);
         expect(fakePlatform.lastParams!.sharePositionOrigin, expectedRect);
+      },
+    );
+
+    Future<GlobalKey> pumpBoundary(WidgetTester tester) async {
+      final key = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RepaintBoundary(
+            key: key,
+            child: Container(color: Colors.red, width: 50, height: 50),
+          ),
+        ),
+      );
+      return key;
+    }
+
+    testWidgets(
+      'shareScoreCard: chia sẻ PNG + caption với tên file score card riêng',
+      (tester) async {
+        final boundaryKey = await pumpBoundary(tester);
+
+        await tester.runAsync(
+          () => shareScoreCard(boundaryKey: boundaryKey, levelText: 'Level 3'),
+        );
+
+        final params = fakePlatform.lastParams!;
+        expect(params.text, 'Level 3');
+        expect(params.fileNameOverrides, ['roy_casual_kit_score_card.png']);
+        expect(params.files, hasLength(1));
+        expect(params.files!.single.mimeType, 'image/png');
+        expect(params.sharePositionOrigin, isNull);
+      },
+    );
+
+    testWidgets(
+      'shareScoreCard: sharePositionContext truyền đúng qua sharePositionOrigin',
+      (tester) async {
+        final boundaryKey = GlobalKey();
+        final anchorKey = GlobalKey();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Column(
+              children: [
+                RepaintBoundary(
+                  key: boundaryKey,
+                  child: Container(color: Colors.red, width: 50, height: 50),
+                ),
+                SizedBox(key: anchorKey, width: 30, height: 30),
+              ],
+            ),
+          ),
+        );
+        final ctx = anchorKey.currentContext!;
+        final box = ctx.findRenderObject()! as RenderBox;
+        final expectedRect = box.localToGlobal(Offset.zero) & box.size;
+
+        await tester.runAsync(
+          () => shareScoreCard(
+            boundaryKey: boundaryKey,
+            levelText: 'x',
+            sharePositionContext: ctx,
+          ),
+        );
+
+        expect(fakePlatform.lastParams!.sharePositionOrigin, expectedRect);
+      },
+    );
+
+    testWidgets(
+      'shareBoardImage/shareScoreCard: key chưa build -> không mở share sheet',
+      (tester) async {
+        final unbuilt = GlobalKey();
+
+        await shareBoardImage(boundaryKey: unbuilt, text: 'x');
+        await shareScoreCard(boundaryKey: unbuilt, levelText: 'x');
+
+        expect(fakePlatform.lastParams, isNull);
+      },
+    );
+
+    testWidgets(
+      'shareBoardImage: gắn tên file board, caption và PNG đã chụp',
+      (tester) async {
+        final boundaryKey = await pumpBoundary(tester);
+
+        await tester.runAsync(
+          () => shareBoardImage(boundaryKey: boundaryKey, text: 'Board'),
+        );
+
+        final params = fakePlatform.lastParams!;
+        expect(params.text, 'Board');
+        expect(params.fileNameOverrides, ['roy_casual_kit.png']);
+        expect(params.files!.single.mimeType, 'image/png');
+      },
+    );
+
+    testWidgets(
+      'shareJourneyCard: dùng bytes có sẵn, không chụp lại, đúng tên file',
+      (tester) async {
+        final png = Uint8List.fromList([137, 80, 78, 71, 13, 10, 26, 10]);
+        final anchorKey = GlobalKey();
+        await tester.pumpWidget(
+          MaterialApp(home: SizedBox(key: anchorKey, width: 30, height: 30)),
+        );
+        final ctx = anchorKey.currentContext!;
+        final box = ctx.findRenderObject()! as RenderBox;
+        final expectedRect = box.localToGlobal(Offset.zero) & box.size;
+
+        await shareJourneyCard(
+          png: png,
+          text: 'Journey',
+          sharePositionContext: ctx,
+        );
+
+        final params = fakePlatform.lastParams!;
+        expect(params.text, 'Journey');
+        expect(params.fileNameOverrides, ['roy_casual_kit_journey.png']);
+        expect(await params.files!.single.readAsBytes(), png);
+        expect(params.sharePositionOrigin, expectedRect);
       },
     );
   });
