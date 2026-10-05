@@ -165,6 +165,10 @@ void main() {
         'device-smoke',
         (event) async => events.add(event),
       );
+      coordinator.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await tester.pump(const Duration(milliseconds: 100));
+      events.clear();
+
       coordinator.didChangeAppLifecycleState(AppLifecycleState.paused);
       await tester.pump(const Duration(milliseconds: 100));
       coordinator.didChangeAppLifecycleState(AppLifecycleState.resumed);
@@ -1563,10 +1567,19 @@ void main() {
     await app.app();
     await tester.pump(const Duration(seconds: 4));
 
+    // Reset energy storage keys to ensure a clean state (maxEnergy = 5)
+    // regardless of what previous tests in this session consumed.
+    await StorageService.maybe?.remove(StorageKeys.energyStateV1);
+    await StorageService.maybe?.remove(StorageKeys.energyCount);
+    await StorageService.maybe?.remove(StorageKeys.energyLastMs);
+    // Force GameDemoScreen to re-create the service reading from clean storage.
+    Get.delete<EnergyService>(force: true);
+
     // EnergyService is owned/registered by GameDemoScreen, not app bootstrap.
     await _goToGameDemo(tester);
     await tester.pump(const Duration(milliseconds: 500));
     final energy = EnergyService.maybe!;
+
     expect(energy.consumeEnergy(2), isTrue);
     expect(energy.currentEnergy, energy.maxEnergy - 2);
     await Future<void>.delayed(const Duration(milliseconds: 1200));
