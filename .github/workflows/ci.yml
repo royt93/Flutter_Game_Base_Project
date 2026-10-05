@@ -98,6 +98,10 @@ jobs:
   # qualify theo package, cấu hình native Android thiếu).
   consumer-smoke:
     runs-on: ubuntu-latest
+    # Một lần chạy bình thường ~8 phút (emulator ~3 phút); lần treo emulator
+    # từng chiếm 36+ phút (mặc định GitHub là 6 giờ). Job-level chặn mọi bước,
+    # step-level bên dưới cắt riêng emulator để lỗi hiện đúng chỗ.
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -145,6 +149,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - name: Integration test on emulator
         if: steps.changes.outputs.relevant == 'true'
+        timeout-minutes: 20
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
