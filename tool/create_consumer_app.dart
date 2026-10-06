@@ -496,18 +496,41 @@ void main() {
       const NeonAuraLayer(color: Colors.orange),
       const AuroraBgLayer(color: Colors.orange),
     ]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: layer,
+          ),
+        ),
+      );
+      var state = tester.state(find.byWidget(layer)) as ShaderTickerLayerState;
+      expect(MediaQuery.of(tester.element(find.byWidget(layer))).disableAnimations, isTrue);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(state.shader, isNull);
+      expect(state.time, 0);
+      expect(find.descendant(
+        of: find.byWidget(layer),
+        matching: find.byType(CustomPaint),
+      ), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+
       final repaintKey = GlobalKey();
       await tester.pumpWidget(
         MaterialApp(
-          home: Center(
-            child: RepaintBoundary(
-              key: repaintKey,
-              child: SizedBox(width: 64, height: 64, child: layer),
+          home: MediaQuery(
+            data: const MediaQueryData(disableAnimations: false),
+            child: Center(
+              child: RepaintBoundary(
+                key: repaintKey,
+                child: SizedBox(width: 64, height: 64, child: layer),
+              ),
             ),
           ),
         ),
       );
-      final state = tester.state(find.byWidget(layer)) as ShaderTickerLayerState;
+      state = tester.state(find.byWidget(layer)) as ShaderTickerLayerState;
+      expect(MediaQuery.of(tester.element(find.byWidget(layer))).disableAnimations, isFalse);
       for (var attempt = 0; attempt < 50 && state.shader == null; attempt++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
