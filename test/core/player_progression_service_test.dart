@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/player_progression_service.dart';
 import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
@@ -16,6 +19,45 @@ const _validCurve = [
 ];
 
 void main() {
+  test('non-terminal level with zero or negative cost is rejected', () {
+    for (final cost in [0, -1]) {
+      final error = validateLevelCurve([
+        LevelDefinition(level: 1, xpToNext: cost),
+        const LevelDefinition(level: 2, xpToNext: 0),
+      ]);
+      expect(error, isA<SdkFailure<void>>());
+      expect(error!.kind, SdkErrorKind.validation);
+      expect(error.message, contains('must have xpToNext > 0'));
+    }
+  });
+
+  test('bounded XP transaction ledger retains recent IDs across restart', () async {
+    addTearDown(Get.reset);
+    expect(PlayerProgressionService.maybe, isNull);
+    final storage = StorageService(null);
+    final service = Get.put(PlayerProgressionService(
+      storage: storage,
+      levelCurve: _validCurve,
+      capacity: 2,
+    ));
+    expect(PlayerProgressionService.maybe, same(service));
+    expect(service.snapshot.value.isMaxLevel, isFalse);
+    for (var i = 0; i < 3; i++) {
+      await service.grantXp(amount: 100, transactionId: 'tx$i');
+    }
+    expect(service.snapshot.value.isMaxLevel, isTrue);
+    final saved = jsonDecode(storage.getString(StorageKeys.playerProgressionV1)!) as Map;
+    expect(saved['transactions'], ['tx1', 'tx2']);
+    final restarted = PlayerProgressionService(
+      storage: storage,
+      levelCurve: _validCurve,
+      capacity: 2,
+    );
+    await restarted.grantXp(amount: 100, transactionId: 'tx2');
+    expect(restarted.snapshot.value.totalXpEarned, 300);
+    expect(restarted.snapshot.value.xpIntoLevel, 0);
+  });
+
   group('validateLevelCurve', () {
     test(
       'curve hợp lệ (contiguous, tăng dần, kết thúc xpToNext=0) trả null',
@@ -330,5 +372,67 @@ void main() {
         expect(direct.snapshot.value.totalXpEarned, 160);
       },
     );
+
+    test(
+      'persist lỗi: grantXp ném và hoàn tác bộ nhớ, retry cùng transactionId '
+      'thật sự lưu XP (không báo thành công giả)',
+      () async {
+        final storage = _FailOnceStorage();
+        final service = PlayerProgressionService(
+          storage: storage,
+          levelCurve: _validCurve,
+        )..onInit();
+
+        storage.failNext = true;
+        await expectLater(
+          service.grantXp(amount: 40, transactionId: 'tx1'),
+          throwsA(isA<StateError>()),
+        );
+        expect(service.snapshot.value.totalXpEarned, 0);
+
+        final retry = await service.grantXp(amount: 40, transactionId: 'tx1');
+        expect(retry.isSuccess, isTrue);
+        expect(service.snapshot.value.totalXpEarned, 40);
+
+        final reloaded = PlayerProgressionService(
+          storage: storage,
+          levelCurve: _validCurve,
+        )..onInit();
+        expect(reloaded.snapshot.value.totalXpEarned, 40);
+      },
+    );
+
+    test('persist lỗi lúc lên cấp: cấp độ cao nhất cũng được hoàn tác', () async {
+      final storage = _FailOnceStorage();
+      final service = PlayerProgressionService(
+        storage: storage,
+        levelCurve: _validCurve,
+      )..onInit();
+
+      storage.failNext = true;
+      await expectLater(
+        service.grantXp(amount: 150, transactionId: 'big'),
+        throwsA(isA<StateError>()),
+      );
+      expect(service.snapshot.value.level, 1);
+
+      await service.grantXp(amount: 150, transactionId: 'big');
+      expect(service.snapshot.value.level, 2);
+      expect(service.snapshot.value.totalXpEarned, 150);
+    });
   });
+}
+
+class _FailOnceStorage extends StorageService {
+  _FailOnceStorage() : super(null);
+  bool failNext = false;
+
+  @override
+  Future<void> setString(String key, String value) {
+    if (failNext && key == StorageKeys.playerProgressionV1) {
+      failNext = false;
+      throw StateError('disk full');
+    }
+    return super.setString(key, value);
+  }
 }

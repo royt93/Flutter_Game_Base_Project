@@ -400,11 +400,18 @@ class InventoryService extends GetxService {
       return SdkSuccess(snapshot.value);
     }
     final current = InventorySnapshot(slots: _slots, capacity: capacity);
+    // Aggregate per item first: two lines for the same item must be checked
+    // against their SUM, otherwise 5 owned passes "4 then 4" line by line.
+    final requestedByItem = <String, int>{};
     for (final line in lines) {
-      if (current.quantityOf(line.itemId) < line.quantity) {
+      requestedByItem[line.itemId] =
+          (requestedByItem[line.itemId] ?? 0) + line.quantity;
+    }
+    for (final entry in requestedByItem.entries) {
+      if (current.quantityOf(entry.key) < entry.value) {
         return SdkFailure(
           kind: SdkErrorKind.validation,
-          message: 'Insufficient quantity of ${line.itemId}',
+          message: 'Insufficient quantity of ${entry.key}',
         );
       }
     }

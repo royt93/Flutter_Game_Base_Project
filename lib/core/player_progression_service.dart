@@ -298,10 +298,26 @@ class PlayerProgressionService extends GetxService {
       for (var lvl = _highestUnlockedLevel + 1; lvl <= newLevel; lvl++) lvl,
     ];
 
+    // Snapshot for rollback: if persisting fails the grant must not be
+    // remembered as done, or a retry with the same id returns success while
+    // nothing was ever saved.
+    final previousTotal = _totalXpEarned;
+    final previousHighest = _highestUnlockedLevel;
+    final previousTransactions = List<String>.of(_transactions);
+
     _totalXpEarned = nextTotal;
     _appendTransaction(transactionId);
     if (leveledUpTo.isNotEmpty) _highestUnlockedLevel = newLevel;
-    await _persist();
+    try {
+      await _persist();
+    } catch (_) {
+      _totalXpEarned = previousTotal;
+      _highestUnlockedLevel = previousHighest;
+      _transactions
+        ..clear()
+        ..addAll(previousTransactions);
+      rethrow;
+    }
     _recompute();
 
     for (final lvl in leveledUpTo) {

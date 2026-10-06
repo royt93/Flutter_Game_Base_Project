@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/inventory_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
@@ -17,6 +20,50 @@ InventoryService _service({int capacity = 4, StorageService? storage}) =>
     )..onInit();
 
 void main() {
+  test('snapshot accessors select equipped slots and measure fullness', () {
+    const snapshot = InventorySnapshot(
+      capacity: 2,
+      slots: [
+        InventorySlot(slotId: 1, itemId: 'potion', quantity: 3),
+        InventorySlot(slotId: 2, itemId: 'sword', quantity: 1, equipped: true),
+      ],
+    );
+    expect(snapshot.isFull, isTrue);
+    expect(snapshot.slotsFor('potion').single.quantity, 3);
+    expect(snapshot.slotsFor('missing'), isEmpty);
+    expect(snapshot.equippedSlots.single.itemId, 'sword');
+  });
+
+  test('maybe tracks registration and bounded transaction ledger survives restart', () async {
+    addTearDown(Get.reset);
+    expect(InventoryService.maybe, isNull);
+    final storage = StorageService(null);
+    final service = Get.put(InventoryService(
+      storage: storage,
+      itemCatalog: _catalog,
+      transactionCapacity: 2,
+    ));
+    expect(InventoryService.maybe, same(service));
+    for (var i = 0; i < 3; i++) {
+      await service.grant(
+        lines: const [InventoryLine(itemId: 'potion', quantity: 1)],
+        transactionId: 'tx$i',
+      );
+    }
+    final saved = jsonDecode(storage.getString(StorageKeys.inventoryServiceV1)!) as Map;
+    expect(saved['transactions'], ['tx1', 'tx2']);
+    final restarted = InventoryService(
+      storage: storage,
+      itemCatalog: _catalog,
+      transactionCapacity: 2,
+    );
+    await restarted.grant(
+      lines: const [InventoryLine(itemId: 'potion', quantity: 1)],
+      transactionId: 'tx2',
+    );
+    expect(restarted.snapshot.value.quantityOf('potion'), 3);
+  });
+
   group('InventoryService: grant cơ bản', () {
     test('grant item mới tạo 1 slot với đúng quantity', () async {
       final service = _service();
@@ -625,6 +672,36 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect(service.snapshot.value.quantityOf('potion'), 2);
+    });
+
+    test('consume gộp các dòng trùng item khi kiểm tra đủ số lượng (atomic)', () async {
+      final service = _service();
+      await service.grant(
+        lines: const [InventoryLine(itemId: 'potion', quantity: 5)],
+        transactionId: 'seed',
+      );
+
+      final result = await service.consume(
+        lines: const [
+          InventoryLine(itemId: 'potion', quantity: 4),
+          InventoryLine(itemId: 'potion', quantity: 4),
+        ],
+        transactionId: 'dup_lines',
+      );
+
+      expect(result, isA<SdkFailure<InventorySnapshot>>());
+      expect((result as SdkFailure<InventorySnapshot>).kind, SdkErrorKind.validation);
+      expect(service.snapshot.value.quantityOf('potion'), 5);
+      // Một lần thử hợp lệ cùng tổng ≤ số có vẫn chạy được.
+      final ok = await service.consume(
+        lines: const [
+          InventoryLine(itemId: 'potion', quantity: 2),
+          InventoryLine(itemId: 'potion', quantity: 3),
+        ],
+        transactionId: 'dup_lines_ok',
+      );
+      expect(ok.isSuccess, isTrue);
+      expect(service.snapshot.value.quantityOf('potion'), 0);
     });
   });
 }
