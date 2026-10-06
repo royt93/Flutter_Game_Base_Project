@@ -147,6 +147,9 @@ void main() {
         final button = tester.widget<CommonButton>(find.byType(CommonButton));
         expect(button.variant, CommonButtonVariant.primary);
         expect(button.color, NeonTheme.cyan);
+        await tester.tap(find.byType(CommonButton));
+        await tester.pump();
+        expect(find.byKey(const Key('debugQaPlaygroundLabelField')), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -505,6 +508,17 @@ void main() {
       },
     );
 
+    testWidgets('Force online thay override offline thành online', (tester) async {
+      final coordinator = await openPanel(tester);
+      await tester.tap(find.byKey(const Key('debugQaNetworkForceOffline')));
+      await tester.pump();
+      expect(coordinator.state, ConnectivityState.offline);
+      await tester.tap(find.byKey(const Key('debugQaNetworkForceOnline')));
+      await tester.pump();
+      expect(coordinator.state, ConnectivityState.online);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('bấm Force degraded -> state=degraded ngay', (tester) async {
       final coordinator = await openPanel(tester);
 
@@ -596,6 +610,23 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets('đổi experiment key và danh sách variants rebuild chips và override đúng key', (
+      tester,
+    ) async {
+      final service = await openPanel(tester);
+      await tester.enterText(find.byKey(const Key('debugQaVariantKeyField')), 'new_experiment');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('debugQaVariantListField')), 'alpha,beta');
+      await tester.pump();
+      expect(find.byKey(const Key('debugQaVariantChip_variant_a')), findsNothing);
+      expect(find.byKey(const Key('debugQaVariantChip_beta')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('debugQaVariantChip_beta')));
+      await tester.pump();
+      expect(service.variantFor('new_experiment', ['alpha', 'beta']), 'beta');
+      expect(find.textContaining('Đang chọn: beta'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets('bấm Clear override -> quay lại bucket hash bình thường', (
       tester,

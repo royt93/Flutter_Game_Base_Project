@@ -7,6 +7,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: Material(child: child));
 
+class _CorruptSaveStorage extends StorageService {
+  _CorruptSaveStorage() : super(null);
+  bool corrupt = true;
+
+  @override
+  Map<String, Object> exportAll() =>
+      corrupt ? {'invalid': Object()} : {'coins': 10};
+}
+
 void main() {
   tearDown(Get.reset);
 
@@ -31,6 +40,29 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('save không serialize được báo lỗi, check lại phục hồi khi save hợp lệ', (
+    tester,
+  ) async {
+    final broken = _CorruptSaveStorage();
+    await tester.pumpWidget(_wrap(SaveHealthCard(
+      storage: broken,
+      secret: 'secret',
+      nowMs: () => 1000,
+    )));
+    final state = tester.state<SaveHealthCardState>(find.byType(SaveHealthCard));
+    expect(state.result, SaveHealthResult.error);
+    expect(state.errorMessage, contains('Converting object'));
+    expect(find.textContaining('HMAC/save: lỗi'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    broken.corrupt = false;
+    await tester.tap(find.byKey(const Key('saveHealthCardCheckNow')));
+    await tester.pump();
+    expect(state.result, SaveHealthResult.ok);
+    expect(state.errorMessage, isNull);
+    expect(find.textContaining('HMAC: hợp lệ'), findsOneWidget);
+  });
 
   testWidgets('có secret hợp lệ -> HMAC báo "hợp lệ"', (tester) async {
     await storage.setInt('coins', 100);

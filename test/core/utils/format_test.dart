@@ -1,4 +1,6 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/utils/format.dart';
 
 void main() {
@@ -46,6 +48,21 @@ void main() {
       expect(fmtNum(999), '999');
       expect(fmtNum(-1000), isNot(contains('--')));
       expect(fmtNum(1000000).replaceAll(RegExp(r'[.,]'), ''), '1000000');
+    });
+  });
+
+  group('fmtNum fallback (catch block)', () {
+    test('ném lỗi -> rơi về format fallback kiểu tiếng Việt', () {
+      final old = Get.locale;
+      addTearDown(() => Get.updateLocale(old ?? const Locale('en')));
+      // 'xx_XX' không có data trong intl, NumberFormat sẽ throw
+      Get.updateLocale(const Locale('xx_XX'));
+
+      expect(fmtNum(0), '0');
+      expect(fmtNum(999), '999');
+      expect(fmtNum(1000), '1.000');
+      expect(fmtNum(1234567), '1.234.567');
+      expect(fmtNum(-1234567), '-1.234.567');
     });
   });
 

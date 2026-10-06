@@ -30,6 +30,34 @@ void main() {
     },
   );
 
+  test('base result value handles both variants and equality ignores diagnostics', () {
+    const SdkResult<int> success = SdkSuccess<int>(3);
+    final cause = StateError('private cause');
+    final stack = StackTrace.fromString('private stack');
+    final SdkResult<int> failure = SdkFailure<int>(
+      kind: SdkErrorKind.storage,
+      message: 'safe',
+      retryable: true,
+      cause: cause,
+      stackTrace: stack,
+    );
+    expect(success.value, 3);
+    expect(success.toString(), 'SdkSuccess<int>(3)');
+    expect(failure.value, isNull);
+    final typed = failure as SdkFailure<int>;
+    expect(typed.cause, same(cause));
+    expect(typed.stackTrace, same(stack));
+    const equivalent = SdkFailure<int>(
+      kind: SdkErrorKind.storage,
+      message: 'safe',
+      retryable: true,
+    );
+    expect(typed, equivalent);
+    expect(typed.hashCode, equivalent.hashCode);
+    expect(success.hashCode, const SdkSuccess<int>(3).hashCode);
+    expect(typed.toString(), isNot(contains('private')));
+  });
+
   test('VersionedJsonStore exposes storage failures as SdkResult', () {
     final store = VersionedJsonStore<int>(
       storage: StorageService(null),

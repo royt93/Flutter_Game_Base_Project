@@ -40,6 +40,37 @@ void main() {
     pipeline = RewardTransactionPipeline(wallet: wallet)..onInit();
   });
 
+  test('record copy preserves state and parsed receipt metadata', () {
+    final parsed = RewardTransactionRecord.fromJson({
+      'transactionId': 'receipt',
+      'source': 'purchase',
+      'lines': [{'currency': 'coin', 'amount': 5}],
+      'status': 'committed',
+      'createdAtMs': 10,
+      'receiptMeta': {'product': 'coins'},
+    })!;
+    final legacyCopy = parsed.copyWith();
+    expect(legacyCopy.status, RewardTransactionStatus.committed);
+    expect(legacyCopy.receiptMeta, {'product': 'coins'});
+    const withItems = RewardTransactionRecord.withItems(
+      transactionId: 'items',
+      source: RewardSource.other,
+      lines: [],
+      itemLines: [InventoryLine(itemId: 'potion', quantity: 1)],
+      status: RewardTransactionStatus.partial,
+      createdAtMs: 1,
+    );
+    expect(withItems.copyWith().status, RewardTransactionStatus.partial);
+    expect(withItems.copyWith().itemLines.single.quantity, 1);
+  });
+
+  test('non-list stored audit data leaves ledger empty without changing wallet', () async {
+    await storage.setString(StorageKeys.rewardTransactionPipelineV1, '{"wrong":true}');
+    final restored = RewardTransactionPipeline(wallet: wallet);
+    expect(restored.auditTrail, isEmpty);
+    expect(wallet.balanceOf('coin'), 0);
+  });
+
   test(
     'từ chối request rỗng/không hợp lệ, không đụng wallet/audit trail',
     () async {

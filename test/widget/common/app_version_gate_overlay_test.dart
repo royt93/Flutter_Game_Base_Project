@@ -146,6 +146,44 @@ void main() {
     expect(find.text('app content'), findsOneWidget);
   });
 
+  testWidgets('soft back dismisses, decision change restores panel and clears launch error', (
+    tester,
+  ) async {
+    var dismissals = 0;
+    Future<void> render(GateDecision decision) => tester.pumpWidget(wrap(
+      AppVersionGateOverlay(
+        decision: decision,
+        config: const AppVersionGateConfig(),
+        launchStore: (_) async => false,
+        onSoftDismiss: () => dismissals++,
+        child: const Text('app content'),
+      ),
+    ));
+    await render(GateDecision.softUpdate);
+    var pop = tester.widget<PopScope>(find.byKey(const Key('appVersionGatePopScope')));
+    pop.onPopInvokedWithResult!(false, null);
+    await tester.pump();
+    expect(dismissals, 1);
+    expect(find.text('Update now'), findsNothing);
+
+    await render(GateDecision.forceUpdate);
+    expect(find.text('Update now'), findsWidgets);
+    pop = tester.widget<PopScope>(find.byKey(const Key('appVersionGatePopScope')));
+    pop.onPopInvokedWithResult!(false, null);
+    await tester.pump();
+    expect(dismissals, 1);
+    expect(find.text('Update now'), findsWidgets);
+    await tester.tap(find.text('Update now').last);
+    await tester.pump();
+    expect(find.text('Retry'), findsWidgets);
+
+    await render(GateDecision.maintenance);
+    expect(find.text('Retry'), findsNothing);
+    expect(find.textContaining('Không thể mở'), findsNothing);
+    expect(find.text('Đang bảo trì'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('softUpdate: PopScope không chặn back (canPop true)', (
     tester,
   ) async {

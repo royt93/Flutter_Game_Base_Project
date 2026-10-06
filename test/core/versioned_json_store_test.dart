@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/cloud_save_provider.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
+import 'package:roy_casual_kit/core/utils/save_migration_registry.dart';
 import 'package:roy_casual_kit/core/versioned_json_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -104,6 +105,82 @@ void main() {
       migrate: migrate ?? (fromVersion, json) => json,
     );
   }
+
+  test('migration registry supersedes legacy callback and applies every hop', () async {
+    await store.setString('profile', '{"schemaVersion":0,"name":"Before"}');
+    final registry = SaveMigrationRegistry(
+      currentVersion: 2,
+      steps: [
+        SaveMigrationStep(fromVersion: 0, toVersion: 1, migrate: (json) => {...json, 'level': 4}),
+        SaveMigrationStep(fromVersion: 1, toVersion: 2, migrate: (json) => {...json, 'name': 'After'}),
+      ],
+    );
+    final s = VersionedJsonStore<_Profile>(
+      storage: store,
+      key: 'profile',
+      schemaVersion: 2,
+      toJson: (p) => {'name': p.name, 'level': p.level},
+      fromJson: (json) => _Profile(name: json['name'] as String, level: json['level'] as int),
+      migrate: (_, json) => throw StateError('legacy callback must not run'),
+      migrationRegistry: registry,
+    );
+    expect(s.load()!.name, 'After');
+    expect(s.load()!.level, 4);
+  });
+
+  test('loadResult returns success or typed storage failure retaining parse cause', () async {
+    final s = makeStore();
+    await s.save(const _Profile(name: 'Valid', level: 2));
+    expect(s.loadResult(), isA<SdkSuccess<_Profile>>());
+    await store.setString('profile', '{"schemaVersion":2,"name":"MissingLevel"}');
+    final result = s.loadResult();
+    expect(result, isA<SdkFailure<_Profile>>());
+    final failure = result as SdkFailure<_Profile>;
+    expect(failure.kind, SdkErrorKind.storage);
+    expect(failure.cause, isA<TypeError>());
+    expect(failure.stackTrace, isNotNull);
+  });
+
+  test('nested list content controls conflict detection, not map key order', () async {
+    final s = VersionedJsonStore<List<Object?>>(
+      storage: store,
+      key: 'nested',
+      schemaVersion: 1,
+      toJson: (items) => {'items': items},
+      fromJson: (json) => (json['items'] as List).cast<Object?>(),
+      migrate: (_, json) => json,
+    );
+    await s.save([{'a': 1, 'b': [2, 3]}]);
+    final provider = _FakeCloudSaveProvider()
+      ..cloudData = {
+        'schemaVersion': 1,
+        'syncedAtMs': 1,
+        'items': [{'b': [2, 3], 'a': 1}],
+      };
+    var conflicts = 0;
+    VersionedSyncConflictResolution<List<Object?>> resolve(
+      VersionedSyncConflict<List<Object?>> conflict,
+    ) {
+      conflicts++;
+      return const VersionedSyncConflictResolution.preferLocal();
+    }
+    await s.syncWithResult(provider, onConflict: resolve);
+    expect(conflicts, 0);
+    provider.cloudData = {
+      'schemaVersion': 1,
+      'syncedAtMs': 1,
+      'items': [{'b': [2, 4], 'a': 1}],
+    };
+    await s.syncWithResult(provider, onConflict: resolve);
+    expect(conflicts, 1);
+    provider.cloudData = {
+      'schemaVersion': 1,
+      'syncedAtMs': 1,
+      'items': [{'b': [2], 'a': 1}],
+    };
+    await s.syncWithResult(provider, onConflict: resolve);
+    expect(conflicts, 2);
+  });
 
   test('chưa từng lưu → load() trả về null', () {
     expect(makeStore().load(), isNull);

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/game_session_controller.dart';
 import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
+import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 
 void main() {
   tearDown(() => Get.reset());
@@ -423,6 +424,169 @@ void main() {
       expect(decoded.entries.last.metadata, {'combo': 9});
       expect(encoded, isNot(contains('deviceId')));
       expect(encoded, isNot(contains('userId')));
+    });
+
+    test('withTimeline rejects an empty lifecycle hook name', () {
+      expect(
+        () => GameSessionController.withTimeline(hookName: ''),
+        throwsArgumentError,
+      );
+    });
+
+    test('paused timeline round-trips recognized pause reasons only', () {
+      final c = GameSessionController.withTimeline();
+      c.markReady();
+      c.start();
+      c.pause(GamePauseReason.user);
+      c.pause(GamePauseReason.system);
+      final raw = c.exportTimeline().toJson();
+      final parsed = GameSessionTimelineExport.fromJson(
+        jsonDecode(jsonEncode(raw)) as Map<String, Object?>,
+      );
+      expect(parsed.terminalPhase, isNull);
+      expect(parsed.entries.last.pauseReasons, {
+        GamePauseReason.user,
+        GamePauseReason.system,
+      });
+      final entry = GameSessionTimelineEntry.fromJson({
+        'pauseReasons': ['user', 'alien', 12, 'system'],
+        'metadata': {'combo': 1},
+      });
+      expect(entry.pauseReasons, {
+        GamePauseReason.user,
+        GamePauseReason.system,
+      });
+      expect(entry.metadata, {'combo': 1});
+      expect(
+        () => entry.pauseReasons.add(GamePauseReason.user),
+        throwsUnsupportedError,
+      );
+      expect(() => entry.metadata['combo'] = 2, throwsUnsupportedError);
+    });
+
+    test(
+      'snapshot copyWith retains unspecified state and immutable reasons',
+      () {
+        const original = GameSessionSnapshot(
+          GameSessionPhase.paused,
+          pauseReasons: {GamePauseReason.user},
+        );
+        final same = original.copyWith();
+        expect(same.phase, GameSessionPhase.paused);
+        expect(same.pauseReasons, {GamePauseReason.user});
+        final changed = original.copyWith(
+          phase: GameSessionPhase.playing,
+          pauseReasons: {},
+        );
+        expect(changed.phase, GameSessionPhase.playing);
+        expect(changed.pauseReasons, isEmpty);
+        expect(original.pauseReasons, {GamePauseReason.user});
+        expect(() => same.pauseReasons.clear(), throwsUnsupportedError);
+      },
+    );
+
+    test('foreground lifecycle clears only system pause reason', () async {
+      final lifecycle = RoyLifecycleCoordinator();
+      final c = Get.put(GameSessionController(lifecycle: lifecycle));
+      c.markReady();
+      c.start();
+      c.pause(GamePauseReason.user);
+      lifecycle.didChangeAppLifecycleState(AppLifecycleState.paused);
+      await Future<void>.delayed(Duration.zero);
+      expect(c.snapshot.value.pauseReasons, {
+        GamePauseReason.user,
+        GamePauseReason.system,
+      });
+      lifecycle.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await Future<void>.delayed(Duration.zero);
+      expect(c.snapshot.value.phase, GameSessionPhase.paused);
+      expect(c.snapshot.value.pauseReasons, {GamePauseReason.user});
+      expect(c.resume(GamePauseReason.user).isSuccess, isTrue);
+      expect(c.snapshot.value.phase, GameSessionPhase.playing);
+    });
+
+    test(
+      'lost session cannot pause or resume and retains terminal timeline',
+      () {
+        final c = GameSessionController();
+        c.markReady();
+        c.start();
+        c.lose();
+        final events = c.events.toList();
+        final timeline = c.timeline;
+        expect(c.pause(GamePauseReason.system).isSuccess, isFalse);
+        expect(c.resume(GamePauseReason.system).isSuccess, isFalse);
+        expect(c.snapshot.value.phase, GameSessionPhase.lost);
+        expect(c.events, events);
+        expect(c.timeline, timeline);
+      },
+    );
+
+    test(
+      'timeline entries and export handle corrupted/unusual json gracefully',
+      () {
+        final entry = GameSessionTimelineEntry.fromJson({
+          'offsetMs': 'not an int',
+          'phase': 'unknown_phase',
+          'pauseReasons': ['not_a_valid_reason', 123],
+          'metadata': 'not a map',
+        });
+        expect(entry.offsetMs, 0);
+        expect(entry.phase, GameSessionPhase.loading);
+        expect(entry.pauseReasons, isEmpty);
+        expect(entry.metadata, isEmpty);
+
+        final export = GameSessionTimelineExport.fromJson({
+          'schemaVersion': 'not an int',
+          'durationMs': 'not an int',
+          'terminalPhase': null,
+          'entries': 'not a list',
+        });
+        expect(export.schemaVersion, 0);
+        expect(export.durationMs, 0);
+        expect(export.terminalPhase, isNull);
+        expect(export.entries, isEmpty);
+
+        final exportWithCorruptedList = GameSessionTimelineExport.fromJson({
+          'terminalPhase': 'alien_phase',
+          'entries': [
+            'not a map',
+            {'offsetMs': 10, 'phase': 'won'},
+          ],
+        });
+        expect(exportWithCorruptedList.terminalPhase, GameSessionPhase.loading);
+        expect(exportWithCorruptedList.entries, hasLength(1));
+      },
+    );
+
+    test('invalid phase transitions reject appropriately', () {
+      final c = GameSessionController();
+      // loading state cannot pause
+      final resPause = c.pause(GamePauseReason.user);
+      expect(resPause.isSuccess, isFalse);
+      expect(
+        (resPause as SdkFailure<GameSessionSnapshot>).message,
+        contains('not playing'),
+      );
+
+      // cannot resume if not paused
+      final resResume = c.resume(GamePauseReason.user);
+      expect(resResume.isSuccess, isFalse);
+      expect(
+        (resResume as SdkFailure<GameSessionSnapshot>).message,
+        contains('not active'),
+      );
+
+      // resume unheld reason while paused
+      c.markReady();
+      c.start();
+      c.pause(GamePauseReason.user);
+      final unheldResume = c.resume(GamePauseReason.system);
+      expect(unheldResume.isSuccess, isFalse);
+      expect(
+        (unheldResume as SdkFailure<GameSessionSnapshot>).message,
+        contains('not active'),
+      );
     });
   });
 }

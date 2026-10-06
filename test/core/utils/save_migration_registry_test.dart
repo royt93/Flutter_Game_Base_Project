@@ -10,6 +10,11 @@ void main() {
     migrate: (input) => {...input, key: true},
   );
 
+  test('migration failure exposes its message in diagnostics', () {
+    const error = SaveMigrationException('missing version hop');
+    expect(error.toString(), 'SaveMigrationException: missing version hop');
+  });
+
   test('runs multi-hop in order without mutating input', () {
     final registry = SaveMigrationRegistry(
       currentVersion: 3,

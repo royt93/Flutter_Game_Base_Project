@@ -1,3 +1,6 @@
+import 'dart:collection';
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/diagnostics_export_bundle.dart';
 import 'package:roy_casual_kit/core/replay_recorder.dart';
@@ -192,6 +195,41 @@ void main() {
       },
     );
 
+    test('size cap drops replay before preserving smaller config', () async {
+      const dropped = 'dropped: bundle size cap exceeded';
+      const retained = {'mode': 'safe'};
+      final cap = utf8
+          .encode(
+            jsonEncode({
+              'sections': {'config': retained},
+              'errors': {'logs': dropped, 'replay': dropped},
+            }),
+          )
+          .length;
+      final result = await DiagnosticsExportBundle(maxBytes: cap).build(
+        appVersion: '1.0',
+        replay: ReplayCapsule(
+          seed: 1,
+          appVersion: '1.0',
+          events: List.generate(
+            20,
+            (i) => ReplayEvent(
+              offsetMs: i,
+              type: 'tap',
+              payload: {'value': 'x' * 100},
+            ),
+          ),
+        ),
+        config: retained,
+        configAllowedKeys: const {'mode'},
+        logs: ['x' * 1000],
+        maxLogLineLength: 1000,
+      );
+      expect(result['sections'], {'config': retained});
+      expect(result['errors'], {'logs': dropped, 'replay': dropped});
+      expect(result['truncated'], isTrue);
+    });
+
     test(
       'bundle rất nhỏ, health tự nó cũng vượt cap -> vẫn không throw, ghi lỗi bundle',
       () async {
@@ -252,6 +290,91 @@ void main() {
       expect(DiagnosticsBundleView.fromJson({'foo': 'bar'}), isNull);
     });
 
+    test('view handles non-map errors and non-list logs defensively', () {
+      final view = DiagnosticsBundleView.fromJson({
+        'sections': {'logs': 'not a list'},
+        'errors': 'not a map',
+      });
+      expect(view, isNotNull);
+      expect(view!.errors, isEmpty);
+      expect(view.logs, isNull);
+
+      final viewWithTypedErrors = DiagnosticsBundleView.fromJson({
+        'sections': <String, Object?>{},
+        'errors': {
+          'health': 123, // not string
+        },
+      });
+      expect(viewWithTypedErrors!.errors['health'], '');
+    });
+
+    test(
+      'subsystem collectors throwing populate errors map without failing bundle',
+      () async {
+        final bundle = DiagnosticsExportBundle();
+        final brokenHealth = _ThrowingHealthReport();
+
+        final result = await bundle.build(
+          appVersion: '1.0',
+          health: brokenHealth,
+          replay: const _ThrowingReplayCapsule(),
+          config: _ThrowingConfigMap(),
+          configAllowedKeys: const {'key'},
+          logs: _ThrowingLogsList(),
+        );
+
+        expect(result['errors'], {
+          'health': 'collector failed',
+          'replay': 'serialize failed',
+          'config': 'redact failed',
+          'logs': 'capture failed',
+        });
+        expect(result['sections'], isEmpty);
+        expect(result['truncated'], isFalse);
+        expect(result['appVersion'], '1.0');
+      },
+    );
+
+    test(
+      'failed health collector preserves config and parseable signed bundle',
+      () async {
+        final bundle = DiagnosticsExportBundle(nowMs: () => 7);
+        final result = await bundle.build(
+          appVersion: '1.0',
+          health: _ThrowingHealthReport(),
+          config: const {'mode': 'safe', 'token': 'not-exported'},
+          configAllowedKeys: const {'mode'},
+          logs: const ['ok'],
+        );
+        final view = DiagnosticsBundleView.fromSignedJson(
+          bundle.sign(result, 'secret'),
+          'secret',
+        )!;
+        expect(view.errors, {'health': 'collector failed'});
+        expect(view.health, isNull);
+        expect(view.config, {'mode': 'safe'});
+        expect(view.logs, ['ok']);
+        expect(view.generatedAtMs, 7);
+      },
+    );
+
+    test('errors keys stringify and values preserve only strings', () {
+      final view = DiagnosticsBundleView.fromJson({
+        'sections': {
+          'health': 1,
+          'replay': false,
+          'config': [],
+          'logs': ['ok', 1],
+        },
+        'errors': {7: 'failed', 'config': true},
+      })!;
+      expect(view.errors, {'7': 'failed', 'config': ''});
+      expect(view.health, isNull);
+      expect(view.replay, isNull);
+      expect(view.config, isNull);
+      expect(view.logs, ['ok', '']);
+    });
+
     test(
       'parse không đụng tới bất kỳ state/service nào khác (thuần đọc)',
       () async {
@@ -266,4 +389,43 @@ void main() {
       },
     );
   });
+}
+
+class _ThrowingHealthReport extends SdkHealthReport {
+  @override
+  Future<Map<String, Object?>> collect() async => throw StateError('health');
+}
+
+class _ThrowingReplayCapsule extends ReplayCapsule {
+  const _ThrowingReplayCapsule()
+    : super(seed: 0, appVersion: '', events: const []);
+
+  @override
+  Map<String, Object?> toJson() => throw StateError('replay');
+}
+
+class _ThrowingConfigMap extends MapMixin<String, Object?> {
+  @override
+  Object? operator [](Object? key) => null;
+  @override
+  void operator []=(String key, Object? value) =>
+      throw UnsupportedError('read only');
+  @override
+  void clear() => throw UnsupportedError('read only');
+  @override
+  Iterable<String> get keys => throw StateError('config');
+  @override
+  Object? remove(Object? key) => throw UnsupportedError('read only');
+}
+
+class _ThrowingLogsList extends ListMixin<String> {
+  @override
+  int get length => throw StateError('logs');
+  @override
+  set length(int newLength) => throw UnsupportedError('read only');
+  @override
+  String operator [](int index) => throw StateError('logs');
+  @override
+  void operator []=(int index, String value) =>
+      throw UnsupportedError('read only');
 }

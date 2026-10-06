@@ -27,6 +27,32 @@ void main() {
   Future<void> setDay(int day) =>
       storage.setInt(StorageKeys.maxEpochDaySeen, day);
 
+  test('maybe returns registered instance, null before registration', () {
+    expect(DailyQuestService.maybe, isNull);
+    final service = Get.put(DailyQuestService());
+    expect(DailyQuestService.maybe, same(service));
+  });
+
+  test('schema zero migrates quest state and preserves claimed reward on restart', () async {
+    const day = 999999;
+    await setDay(day);
+    await storage.setString(
+      StorageKeys.dailyQuestProgressV1,
+      '{"schemaVersion":0,"quest":{"periodKey":$day,"progress":3,"claimed":true}}',
+    );
+    final service = DailyQuestService()..register('quest', 3);
+    expect(service.progressOf('quest'), 3);
+    expect(service.isClaimed('quest'), isTrue);
+    expect(service.claim('quest'), isFalse);
+    await setDay(day + 1);
+    expect(service.progressOf('quest'), 0);
+    expect(service.isClaimed('quest'), isFalse);
+    service.incrementProgress('quest', 3);
+    expect(service.claim('quest'), isTrue);
+    expect(service.claim('quest'), isFalse);
+    await service.debugPendingSaves;
+  });
+
   group('DailyQuestService: register', () {
     test('rejects invalid registration before mutation', () {
       final service = DailyQuestService();

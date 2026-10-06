@@ -4,6 +4,18 @@ import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/utils/theme_contrast_validator.dart';
 
 void main() {
+  test('contrast diagnostic includes token, state, ratio, threshold and kind', () {
+    const issue = ContrastIssue(
+      token: 'ink on card',
+      state: 'dark',
+      ratio: 2.125,
+      threshold: 4.5,
+      kind: ContrastCheckKind.text,
+    );
+    expect(issue.toString(),
+        'ink on card (dark): 2.13 < threshold 4.50 [ContrastCheckKind.text]');
+  });
+
   group('relativeLuminance / contrastRatio', () {
     test('trắng có luminance ~1.0, đen có luminance ~0.0', () {
       expect(relativeLuminance(Colors.white), closeTo(1.0, 0.001));

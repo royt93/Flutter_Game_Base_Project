@@ -40,6 +40,17 @@ void main() {
       );
     });
 
+    test('invalid policy fields are rechecked by delayBeforeAttempt', () {
+      expect(
+        () => _InvalidAttemptsPolicy().delayBeforeAttempt(1, 0.5),
+        throwsA(isA<ArgumentError>().having((e) => e.name, 'name', 'maxAttempts')),
+      );
+      expect(
+        () => _InvalidJitterPolicy().delayBeforeAttempt(1, 0.5),
+        throwsA(isA<ArgumentError>().having((e) => e.name, 'name', 'jitterFraction')),
+      );
+    });
+
     test('biên 0 và 1 hợp lệ', () {
       expect(() => policy.delayBeforeAttempt(2, 0), returnsNormally);
       expect(() => policy.delayBeforeAttempt(2, 1), returnsNormally);

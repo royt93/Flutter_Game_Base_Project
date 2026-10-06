@@ -111,6 +111,25 @@ class _BlockingPrefixStorageService extends StorageService {
   }
 }
 
+class _ControlledPreferences implements SharedPreferences {
+  _ControlledPreferences(this.delegate);
+  final SharedPreferences delegate;
+  final intWrite = Completer<bool>();
+
+  @override
+  Future<bool> setInt(String key, int value) => intWrite.future;
+  @override
+  Future<bool> setString(String key, String value) => delegate.setString(key, value);
+  @override
+  Set<String> getKeys() => delegate.getKeys();
+  @override
+  Object? get(String key) => delegate.get(key);
+  @override
+  Future<bool> remove(String key) => delegate.remove(key);
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   group('StorageService', () {
     late StorageService store;
@@ -912,4 +931,73 @@ void main() {
       });
     },
   );
+
+  group('StorageService: in-memory fallback và write errors', () {
+    test('StorageService(null) in-memory setDouble, remove, buffer flush', () async {
+      final mem = StorageService(null);
+      await mem.setDouble('mem_double', 3.14);
+      expect(mem.getDouble('mem_double'), 3.14);
+
+      await mem.remove('mem_double');
+      expect(mem.getDouble('mem_double'), 0.0);
+
+      await mem.setIntBuffered('buf_int', 99);
+      await mem.setStringBuffered('buf_str', 'val');
+      expect(mem.getInt('buf_int'), 99);
+      expect(mem.getString('buf_str'), 'val');
+
+      await mem.flush();
+      expect(mem.getInt('buf_int'), 99);
+      expect(mem.getString('buf_str'), 'val');
+    });
+
+    test('direct write queued behind failed flush still persists successfully', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = _ControlledPreferences(await SharedPreferences.getInstance());
+      final store = StorageService(prefs);
+      await store.setIntBuffered('buffered', 1);
+      final flush = store.flush();
+      final observedFailure = expectLater(flush, throwsStateError);
+      final direct = store.setString('transaction', 'committed');
+      prefs.intWrite.completeError(StateError('flush failed'));
+      await observedFailure;
+      await direct;
+      expect(store.getString('transaction'), 'committed');
+      await store.setString('later', 'still working');
+      expect(store.getString('later'), 'still working');
+    });
+
+    test('in-memory importAll failure restores previous state', () async {
+      final store = _ThrowingAfterNStorageService(null, 'failed');
+      await store.setString('original', 'kept');
+      await expectLater(
+        store.importAll({'first': 1, 'failed': 'cannot write'}),
+        throwsException,
+      );
+      expect(store.exportAll(), {'original': 'kept'});
+    });
+
+    test('in-memory rollback failure preserves original restore error', () async {
+      final store = _RollbackFailingStorageService(null);
+      await store.setString('slot_a_old', 'old');
+      store.armed = true;
+      await expectLater(
+        store.importAll({'slot_a_new_fail': 'new'}),
+        throwsA(isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'original write failure',
+        )),
+      );
+    });
+
+    test('in-memory importAll replaces all types and clears buffered keys', () async {
+      final mem = StorageService(null);
+      await mem.setStringBuffered('stale', 'buffered');
+      await mem.importAll({'count': 4, 'ratio': 0.5, 'enabled': true, 'name': 'new'});
+      await mem.flush();
+      expect(mem.exportAll(), {'count': 4, 'ratio': 0.5, 'enabled': true, 'name': 'new'});
+      expect(mem.getString('stale'), isNull);
+    });
+  });
 }

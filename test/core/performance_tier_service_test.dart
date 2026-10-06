@@ -1,9 +1,49 @@
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/performance_tier_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   tearDown(Get.reset);
+
+  test('native timings start once, stop removes listener, restart subscribes again', () {
+    final service = PerformanceTierService(
+      tracker: FrameBudgetTracker(windowSize: 2),
+    );
+    addTearDown(service.stopListening);
+    FrameTiming timing(int durationUs) => FrameTiming(
+      vsyncStart: 0,
+      buildStart: 0,
+      buildFinish: durationUs ~/ 2,
+      rasterStart: durationUs ~/ 2,
+      rasterFinish: durationUs,
+      rasterFinishWallTime: durationUs,
+    );
+    void report(int durationUs) =>
+        SchedulerBinding.instance.platformDispatcher.onReportTimings?.call([
+          timing(durationUs),
+        ]);
+
+    service.start();
+    service.start();
+    report(40000);
+    expect(service.tier.value, PerformanceTier.high);
+    report(40000);
+    expect(service.tier.value, PerformanceTier.low);
+    service.stopListening();
+    report(10000);
+    report(10000);
+    expect(service.tier.value, PerformanceTier.low);
+    service.start();
+    report(10000);
+    report(10000);
+    expect(service.tier.value, PerformanceTier.high);
+    service.onClose();
+    report(40000);
+    report(40000);
+    expect(service.tier.value, PerformanceTier.high);
+  });
 
   group('FrameBudgetTracker', () {
     test('mặc định windowSize=60, downgrade=40fps, upgrade=55fps', () {

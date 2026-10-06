@@ -2,11 +2,14 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/player_progression_service.dart';
 import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
+import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/confetti_overlay.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/level_up_overlay.dart';
 
 LevelUpCelebration _celebration(
@@ -170,6 +173,49 @@ void main() {
 
       await _finishOrSkip(tester, controller);
     });
+  });
+
+  testWidgets('normal motion fires one level-pop haptic and renders reward confetti', (
+    tester,
+  ) async {
+    Get.put<StorageService>(StorageService(null));
+    final calls = <MethodCall>[];
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      calls.add(call);
+      return null;
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final controller = LevelUpOverlayController(
+      xpFillDuration: const Duration(milliseconds: 100),
+      levelPopDuration: const Duration(milliseconds: 100),
+      rewardRevealDuration: const Duration(milliseconds: 500),
+    );
+    await tester.pumpWidget(GetMaterialApp(
+      translations: AppTranslations(),
+      locale: const Locale('en'),
+      home: LevelUpOverlay(
+        controller: controller,
+        reducedMotion: false,
+        child: const SizedBox.shrink(),
+      ),
+    ));
+    unawaited(controller.show([_celebration(2)]));
+    await tester.pump();
+    expect(tester.widgetList<TweenAnimationBuilder<double>>(
+      find.byType(TweenAnimationBuilder<double>),
+    ).every((builder) => builder.duration > Duration.zero), isTrue);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(controller.phase.value, LevelUpPhase.levelPop);
+    expect(calls.where((call) => call.method == 'HapticFeedback.vibrate'), hasLength(1));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(calls.where((call) => call.method == 'HapticFeedback.vibrate'), hasLength(1));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(controller.phase.value, LevelUpPhase.rewardReveal);
+    expect(find.byType(ConfettiOverlay), findsOneWidget);
+    await _finishOrSkip(tester, controller);
+    await tester.pumpWidget(const SizedBox.shrink());
+    expect(tester.takeException(), isNull);
   });
 
   group('LevelUpOverlay: reduced motion', () {
