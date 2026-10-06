@@ -137,6 +137,14 @@ jobs:
           flutter pub get
           flutter analyze
           flutter test
+      - name: Pre-install NDK
+        if: steps.changes.outputs.relevant == 'true'
+        timeout-minutes: 12
+        run: |
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          timeout 300 "$sdkmanager" --install "ndk;27.0.12077973" || timeout 300 "$sdkmanager" --install "ndk;27.0.12077973"
+          grep -Eq '^Pkg.Revision[[:space:]]*=[[:space:]]*27\.0\.12077973[[:space:]]*$' "$ANDROID_HOME/ndk/27.0.12077973/source.properties"
+          test -x "$ANDROID_HOME/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
       - name: Build debug APK
         if: steps.changes.outputs.relevant == 'true'
         working-directory: ${{ runner.temp }}/ci_smoke

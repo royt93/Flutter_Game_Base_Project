@@ -195,6 +195,9 @@ android {
       final content = integrationBootTestTemplate(appName: 'my_cool_game');
       expect(content, contains("package:my_cool_game/main.dart"));
       expect(content, contains('IntegrationTestWidgetsFlutterBinding'));
+      expect(content, contains('NeonAuraLayer'));
+      expect(content, contains('AuroraBgLayer'));
+      expect(content, contains('state.shader, isNotNull'));
       expect(content, isNot(contains('pumpAndSettle')));
     });
 

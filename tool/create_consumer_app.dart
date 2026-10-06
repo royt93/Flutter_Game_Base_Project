@@ -28,7 +28,7 @@ import 'dart:io';
 /// (auto-migration) is intentionally NOT implemented by this task — see
 /// this task's Quyết định for why that's a deliberately separate, larger
 /// feature.
-const int templateSchemaVersion = 2;
+const int templateSchemaVersion = 3;
 
 const _templateVersionFileName = '.roy_template_version';
 
@@ -441,8 +441,10 @@ void main() {
 /// `pumpAndSettle` - `NeonBg`/Flame run a permanent ticker.
 String integrationBootTestTemplate({required String appName}) => '''
 import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -489,6 +491,57 @@ void main() {
     await tester.pageBack();
     await tester.pump(const Duration(seconds: 1));
     expect(find.text('Game Demo'), findsWidgets);
+
+    for (final layer in <Widget>[
+      const NeonAuraLayer(color: Colors.orange),
+      const AuroraBgLayer(color: Colors.orange),
+    ]) {
+      final repaintKey = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Center(
+            child: RepaintBoundary(
+              key: repaintKey,
+              child: SizedBox(width: 64, height: 64, child: layer),
+            ),
+          ),
+        ),
+      );
+      final state = tester.state(find.byWidget(layer)) as ShaderTickerLayerState;
+      for (var attempt = 0; attempt < 50 && state.shader == null; attempt++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(state.shader, isNotNull, reason: state.shaderAssetPath);
+      expect(state.shaderAssetPath, startsWith('packages/roy_casual_kit/shaders/'));
+      final painted = find.descendant(
+        of: find.byWidget(layer),
+        matching: find.byType(CustomPaint),
+      );
+      expect(painted, findsOneWidget);
+      expect(find.descendant(
+        of: find.byWidget(layer),
+        matching: find.byType(ExcludeSemantics),
+      ), findsOneWidget);
+      final before = state.time;
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(state.time, greaterThan(before));
+      final boundary =
+          repaintKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 1.0);
+      try {
+        expect(image.width, 64);
+        expect(image.height, 64);
+        final pixels = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+        expect([
+          for (var i = 3; i < pixels.lengthInBytes; i += 4) pixels.getUint8(i),
+        ].any((alpha) => alpha > 0), isTrue);
+      } finally {
+        image.dispose();
+      }
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
+    await RoyCasualKit.resetForTesting();
   });
 }
 ''';
