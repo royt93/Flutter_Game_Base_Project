@@ -536,6 +536,7 @@ void main() {
       }
       expect(state.shader, isNotNull, reason: state.shaderAssetPath);
       expect(state.shaderAssetPath, startsWith('packages/roy_casual_kit/shaders/'));
+      await tester.pump(); // Render frame có CustomPaint sau setState(_load)
       final painted = find.descendant(
         of: find.byWidget(layer),
         matching: find.byType(CustomPaint),
