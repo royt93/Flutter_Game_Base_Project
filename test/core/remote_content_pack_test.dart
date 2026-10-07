@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/remote_content_pack.dart';
 import 'package:roy_casual_kit/core/save_integrity.dart' show signExport;
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Fake [AssetBundle] backed by an in-memory map, same convention as
@@ -727,6 +728,101 @@ void main() {
       bundle: _asset('Asset'),
       fetchRemote: fetchRemote,
     );
+
+    test('cacheKey rỗng -> ArgumentError tại constructor', () {
+      expect(
+        () => RemoteContentPack<_Level>.withHistory(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          contentSecret: _secret,
+          storage: storage,
+          cacheKey: '',
+          historyCapacity: 3,
+          bundle: _asset('Asset'),
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('rollbackToChecksum: checksum không có trong history -> SdkFailure, '
+        'current và history không đổi', () async {
+      final pack = packWithHistory(
+        useStorage: storage,
+        fetchRemote: () async => envelopeFor(1, 'V1', contentVersion: 1),
+      );
+      await pack.load();
+      await pack.refreshed;
+
+      final result = await pack.rollbackToChecksum('khong-ton-tai');
+
+      expect(result, isA<SdkFailure<_Level>>());
+      expect((result as SdkFailure<_Level>).kind, SdkErrorKind.validation);
+      expect(pack.current!.name, 'V1');
+      expect(pack.history, hasLength(1));
+    });
+
+    test('rollback: ghi cache lỗi -> SdkFailure(storage), current giữ nguyên', () async {
+      final seed = packWithHistory(
+        useStorage: storage,
+        fetchRemote: () async => envelopeFor(1, 'V1', contentVersion: 1),
+      );
+      await seed.load();
+      await seed.refreshed;
+      final v1Checksum = seed.currentChecksum!;
+
+      final failing = RemoteContentPack<_Level>.withHistory(
+        assetPath: _assetPath,
+        schemaVersion: 1,
+        fromJson: _Level.fromJson,
+        contentSecret: _secret,
+        storage: _ThrowingCacheStorage(
+          await SharedPreferences.getInstance(),
+          cacheKey,
+        ),
+        cacheKey: cacheKey,
+        historyCapacity: 3,
+        bundle: _asset('Asset'),
+        fetchRemote: () async => envelopeFor(2, 'V2', contentVersion: 2),
+      );
+      await failing.load();
+      await failing.refreshed;
+      final before = failing.current!.name;
+
+      final result = await failing.rollbackToChecksum(v1Checksum);
+
+      expect(result, isA<SdkFailure<_Level>>());
+      final failure = result as SdkFailure<_Level>;
+      expect(failure.kind, SdkErrorKind.storage);
+      expect(failure.cause, isA<StateError>());
+      expect(failure.stackTrace, isNotNull);
+      expect(failing.current!.name, before);
+    });
+
+    test('history hỏng trên đĩa: bỏ entry hỏng, giữ entry hợp lệ, không chặn boot', () async {
+      const good =
+          '{"schemaVersion":1,"contentVersion":1,"checksum":"c1","appliedAtMs":1,"json":{"id":1,"name":"V1"}}';
+
+      // Không phải list, hoặc không phải JSON -> rỗng.
+      await storage.setString('${cacheKey}_history_v1', '{"not":"a list"}');
+      final notList = packWithHistory(useStorage: storage);
+      await notList.load();
+      expect(notList.history, isEmpty);
+
+      await storage.setString('${cacheKey}_history_v1', 'not json at all');
+      final garbage = packWithHistory(useStorage: storage);
+      await garbage.load();
+      expect(garbage.history, isEmpty);
+
+      // Entry hỏng nằm giữa entry hợp lệ: chỉ entry hỏng bị bỏ.
+      await storage.setString(
+        '${cacheKey}_history_v1',
+        '[$good,"not a map",{"checksum":"c2"},{"checksum":5,"json":{}},$good]',
+      );
+      final mixed = packWithHistory(useStorage: storage);
+      await mixed.load();
+      expect(mixed.history.map((r) => r.checksum), ['c1', 'c1']);
+    });
 
     test('historyCapacity <= 0 -> ArgumentError tại constructor', () {
       expect(

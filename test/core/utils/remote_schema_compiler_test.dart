@@ -264,6 +264,38 @@ void main() {
       expect(source, isNot(contains('import ')));
     });
 
+    test('field double và bool: đúng kiểu Dart, đúng reader, chỉ thêm helper đã dùng', () {
+      final schema = RemoteSchemaDef(
+        packName: 'pack',
+        versions: const [
+          RemoteSchemaVersion(
+            version: 1,
+            fields: [
+              RemoteSchemaField(name: 'ratio', type: RemoteSchemaFieldType.double),
+              RemoteSchemaField(name: 'enabled', type: RemoteSchemaFieldType.boolean),
+            ],
+          ),
+        ],
+      );
+      final source = generateModelSource(schema);
+
+      expect(source, contains('final double ratio;'));
+      expect(source, contains('final bool enabled;'));
+      expect(source, contains('_asDouble(json[\'ratio\'])'));
+      expect(source, contains('_asBool(json[\'enabled\'])'));
+      expect(source, contains('double _asDouble('));
+      expect(source, contains('bool _asBool('));
+      expect(source, isNot(contains('_asString')));
+      expect(source, isNot(contains('_asInt')));
+    });
+
+    test('RemoteSchemaCompilerException.toString mang theo message', () {
+      expect(
+        const RemoteSchemaCompilerException('boom').toString(),
+        'RemoteSchemaCompilerException: boom',
+      );
+    });
+
     test('chỉ sinh helper reader cho type thực sự dùng', () {
       final schema = RemoteSchemaDef(
         packName: 'pack',
