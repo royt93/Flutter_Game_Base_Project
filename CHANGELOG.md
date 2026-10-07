@@ -1,3 +1,8 @@
+## 0.4.5
+
+- Fixed `InventoryService` leaving its in-memory state changed when persisting failed. `grant`, `consume`, `setEquipped` and `moveSlot` changed the slots, the next slot id and the transaction ledger before writing, and the storage error was thrown without undoing that. A retry of `grant` with the same `transactionId` then returned `SdkSuccess` although nothing had been saved, and a failed `consume` kept showing the old count until an unrelated call exposed the hidden change and wrote it to disk. These methods now restore the previous state and rethrow the same error, so a retry saves for real. Signatures and the thrown error are unchanged.
+- Tightened tests found weak by mutation checks (`SdkResult` equality and hash, the level-up haptic type, `ReactiveEnergyBar` service swap, daily quest read failures). No other library code changed.
+
 ## 0.4.4
 
 - Fixed `InventoryService.consume` checking each line against the owned quantity on its own, so a request split across duplicate lines (5 owned, "4 then 4") succeeded and left 0. It now sums quantities per item first and rejects with `SdkErrorKind.validation` when the total exceeds what is owned.
