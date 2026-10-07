@@ -104,6 +104,33 @@ void main() {
     expect(confirmedIds, ['coin']);
   });
 
+  testWidgets('multi-select: bấm lại option đã chọn thì bỏ chọn, confirm chỉ còn option kia', (
+    tester,
+  ) async {
+    List<String>? confirmedIds;
+    await tester.pumpWidget(
+      _wrap(
+        RewardChoicePanel(
+          options: _options,
+          multiSelect: true,
+          onConfirm: (ids) async => confirmedIds = ids,
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Coin pack'));
+    await tester.pump();
+    await tester.tap(find.text('Gem pack'));
+    await tester.pump();
+    await tester.tap(find.text('Coin pack')); // bỏ chọn
+    await tester.pump();
+
+    await tester.tap(find.byType(AsyncCommonButton));
+    await tester.pump();
+
+    expect(confirmedIds, ['gem']);
+  });
+
   testWidgets('minSelectable chưa đạt: nút confirm disabled', (tester) async {
     await tester.pumpWidget(
       _wrap(

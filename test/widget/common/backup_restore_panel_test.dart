@@ -59,6 +59,38 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  group('BackupRestorePanel: restore lỗi không phải FormatException', () {
+    testWidgets('onImport ném lỗi bất kỳ -> "Restore failed", không crash, nút dùng lại được', (
+      tester,
+    ) async {
+      var calls = 0;
+      await tester.pumpWidget(
+        _wrap(
+          BackupRestorePanel(
+            secret: _secret,
+            storage: storage,
+            onExport: (_) async {},
+            onImport: () async {
+              calls++;
+              throw StateError('disk unavailable');
+            },
+          ),
+        ),
+      );
+
+      await confirmRestore(tester);
+
+      expect(calls, 1);
+      expect(find.textContaining('Restore failed'), findsOneWidget);
+      expect(find.textContaining('disk unavailable'), findsOneWidget);
+      expect(find.byIcon(Icons.error), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await confirmRestore(tester);
+      expect(calls, 2);
+    });
+  });
+
   group('BackupRestorePanel: export', () {
     testWidgets(
       'tap Export gọi onExport với JSON đã ký hợp lệ, hiện đúng success message',

@@ -98,6 +98,39 @@ void main() {
   });
 
   group('TutorialSequence widget', () {
+    testWidgets('đổi controller: theo dõi controller mới, controller cũ không còn điều khiển', (
+      tester,
+    ) async {
+      final oldController = _CountingTutorialController();
+      final newController = _CountingTutorialController();
+      final targetKey = GlobalKey();
+
+      Widget build(TutorialSequenceController c) => GetMaterialApp(
+        translations: AppTranslations(),
+        locale: AppTranslations.fallback,
+        fallbackLocale: AppTranslations.fallback,
+        home: TutorialSequence(
+          controller: c,
+          child: Material(child: Text('target', key: targetKey)),
+        ),
+      );
+
+      await tester.pumpWidget(build(oldController));
+      await tester.pumpWidget(build(newController));
+      expect(oldController.listenerCount, 0, reason: 'listener phải được gỡ khỏi controller cũ');
+      expect(newController.listenerCount, 1);
+
+      oldController.start([TutorialStep(targetKey: targetKey, message: 'OLD')]);
+      await tester.pump();
+      expect(find.byType(SpotlightOverlay), findsNothing);
+      expect(find.text('OLD'), findsNothing);
+
+      newController.start([TutorialStep(targetKey: targetKey, message: 'NEW')]);
+      await tester.pump();
+      expect(find.byType(SpotlightOverlay), findsOneWidget);
+      expect(find.text('NEW'), findsOneWidget);
+    });
+
     testWidgets(
       'chưa start() thì chỉ render child, không có SpotlightOverlay',
       (tester) async {
@@ -552,4 +585,20 @@ void main() {
       );
     });
   });
+}
+
+class _CountingTutorialController extends TutorialSequenceController {
+  int listenerCount = 0;
+
+  @override
+  void addListener(VoidCallback listener) {
+    listenerCount++;
+    super.addListener(listener);
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    listenerCount--;
+    super.removeListener(listener);
+  }
 }

@@ -172,6 +172,46 @@ void main() {
       },
     );
 
+    testWidgets('đổi controller: nghe controller mới, controller cũ không còn tác động', (
+      tester,
+    ) async {
+      final oldController = _CountingShakeController();
+      final newController = _CountingShakeController();
+      addTearDown(oldController.dispose);
+      addTearDown(newController.dispose);
+
+      Widget build(ScreenShakeController c) => MaterialApp(
+        home: Material(
+          child: ScreenShake(
+            controller: c,
+            child: const SizedBox(width: 40, height: 40),
+          ),
+        ),
+      );
+
+      Offset offset() {
+        final t = tester.widget<Transform>(find.byType(Transform)).transform
+            .getTranslation();
+        return Offset(t.x, t.y);
+      }
+
+      await tester.pumpWidget(build(oldController));
+      await tester.pumpWidget(build(newController));
+
+      expect(oldController.listenerCount, 0, reason: 'listener phải được gỡ khỏi controller cũ');
+      expect(newController.listenerCount, 1);
+
+      oldController.shake(intensity: 12, decay: const Duration(milliseconds: 400));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(offset(), Offset.zero, reason: 'controller cũ đã bị gỡ listener');
+
+      newController.shake(intensity: 12, decay: const Duration(milliseconds: 400));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(offset(), isNot(Offset.zero));
+    });
+
     testWidgets('returns to no visible offset after decay elapses', (
       tester,
     ) async {
@@ -229,4 +269,20 @@ void main() {
       expect(find.byType(Transform), findsNothing);
     });
   });
+}
+
+class _CountingShakeController extends ScreenShakeController {
+  int listenerCount = 0;
+
+  @override
+  void addListener(VoidCallback listener) {
+    listenerCount++;
+    super.addListener(listener);
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    listenerCount--;
+    super.removeListener(listener);
+  }
 }
