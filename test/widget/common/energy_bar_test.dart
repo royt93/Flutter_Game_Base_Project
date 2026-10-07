@@ -343,6 +343,32 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('didUpdateWidget: chỉ đổi energyService (pollInterval giữ nguyên) '
+        'vẫn đọc lại ngay từ service mới', (tester) async {
+      final s1 = _SnapshotEnergyService(maxEnergy: 4, count: 2);
+      final s2 = _SnapshotEnergyService(maxEnergy: 6, count: 5);
+      const interval = Duration(seconds: 30);
+
+      await tester.pumpWidget(_wrap(ReactiveEnergyBar(
+        energyService: s1,
+        pollInterval: interval,
+      )));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.byIcon(Icons.favorite), findsNWidgets(2));
+
+      await tester.pumpWidget(_wrap(ReactiveEnergyBar(
+        energyService: s2,
+        pollInterval: interval,
+      )));
+      // Chưa tới lần poll kế tiếp (30s): chỉ didUpdateWidget mới làm UI đổi.
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.byIcon(Icons.favorite), findsNWidgets(5));
+      expect(find.byIcon(Icons.favorite_border), findsNWidgets(1));
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('didUpdateWidget trên EnergyBar khởi động lại timer đếm lùi', (
       tester,
     ) async {
