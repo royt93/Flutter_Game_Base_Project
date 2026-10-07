@@ -16,6 +16,18 @@ AssetPreloadCoordinator _coordinator({
 
 void main() {
   group('AssetPreloadCoordinator: load cơ bản + cache', () {
+    test('manifest rỗng: thành công ngay, tiến độ tổng và theo scene đều về 1.0, loader không được gọi', () async {
+      var loaderCalls = 0;
+      final coordinator = _coordinator(loader: (item) async => loaderCalls++);
+
+      final result = await coordinator.preload(const [], sceneId: 'empty_scene');
+
+      expect(result, isA<SdkSuccess<void>>());
+      expect(coordinator.progress.value, 1.0);
+      expect(coordinator.progressOf('empty_scene').value, 1.0);
+      expect(loaderCalls, 0);
+    });
+
     test('preload gọi loader đúng 1 lần cho mỗi item', () async {
       final calls = <String>[];
       final coordinator = _coordinator(

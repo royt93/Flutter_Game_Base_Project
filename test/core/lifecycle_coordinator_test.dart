@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
+import 'package:roy_casual_kit/core/storage_service.dart';
 
 void main() {
   tearDown(() => Get.reset());
@@ -55,6 +56,35 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 20));
     expect(events, ['ran']);
     expect(coordinator.failures.map((e) => e.name), ['bad', 'slow']);
+  });
+
+  test('detached được coi là background và chạy hook một lần', () async {
+    final coordinator = RoyLifecycleCoordinator();
+    Get.put(coordinator);
+    final events = <RoyLifecycleEvent>[];
+    coordinator.registerHook('h', (event) async => events.add(event));
+
+    coordinator.didChangeAppLifecycleState(AppLifecycleState.detached);
+    coordinator.didChangeAppLifecycleState(AppLifecycleState.paused); // cùng background: bỏ qua
+    await Future<void>.delayed(Duration.zero);
+
+    expect(coordinator.state.value, RoyLifecycleState.background);
+    expect(events, [RoyLifecycleEvent.background]);
+  });
+
+  test('flush storage lỗi khi vào background: ghi vào failures, hook sau vẫn chạy', () async {
+    Get.put<StorageService>(_FlushFailingStorage());
+    final coordinator = RoyLifecycleCoordinator();
+    Get.put(coordinator);
+    final events = <String>[];
+    coordinator.registerHook('after', (_) async => events.add('ran'));
+
+    coordinator.didChangeAppLifecycleState(AppLifecycleState.paused);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    expect(coordinator.failures.map((f) => f.name), ['storage.flush']);
+    expect(coordinator.failures.single.error, isA<StateError>());
+    expect(events, ['ran']);
   });
 
   testWidgets('observer tracks foreground and background', (tester) async {
@@ -126,4 +156,11 @@ void main() {
       expect(coordinator.failures.map((f) => f.name), contains('memory.trim'));
     });
   });
+}
+
+class _FlushFailingStorage extends StorageService {
+  _FlushFailingStorage() : super(null);
+
+  @override
+  Future<void> flush() => Future<void>.error(StateError('flush failed'));
 }

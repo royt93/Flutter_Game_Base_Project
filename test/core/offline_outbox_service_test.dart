@@ -240,6 +240,25 @@ void main() {
   });
 
   group('OfflineOutboxService: conflict policy merge', () {
+    test('merge: sau khi merge server vẫn xung đột: chuyển sang review thủ công, giữ payload đã merge và payload server', () async {
+      final service = _service(
+        conflictPolicy: ConflictPolicy.merge,
+        merger: (local, remote) => {'v': (local['v'] as int) + (remote['v'] as int)},
+        uploader: (p, k) async => SyncConflict({'v': 100 + (p['v'] as int)}),
+      );
+      service.enqueue(idempotencyKey: 'k1', payload: const {'v': 5});
+
+      await service.drain();
+
+      expect(service.items, hasLength(1));
+      final item = service.items.single;
+      expect(item.manualReview, isTrue);
+      // Lần 1: local 5, remote 105 (=100+5) -> merge = 110; lần 2 upload 110 -> remote 210.
+      expect(item.payload, {'v': 110});
+      expect(item.remotePayload, {'v': 210});
+      expect(service.manualReviewItems.map((i) => i.idempotencyKey), ['k1']);
+    });
+
     test(
       'conflict + merge: merger được gọi, upload lại payload merge, ack thì xoá item',
       () async {
