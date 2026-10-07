@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/currency_counter.dart';
 
 void main() {
@@ -376,4 +377,76 @@ void main() {
       );
     });
   });
+
+  group('EconomyWallet: lưu lỗi và giới hạn sổ giao dịch', () {
+    test('earn: ghi storage lỗi -> SdkFailure(storage), số dư và sổ giao dịch không đổi, retry thật sự lưu', () async {
+      final storage = _FailOnceWalletStorage();
+      final wallet = EconomyWallet(storage: storage)..onInit();
+
+      storage.failNext = true;
+      final failed = await wallet.earn(currency: 'coin', amount: 5, transactionId: 't1');
+
+      expect(failed, isA<SdkFailure<int>>());
+      final failure = failed as SdkFailure<int>;
+      expect(failure.kind, SdkErrorKind.storage);
+      expect(failure.cause, isA<StateError>());
+      expect(wallet.balanceOf('coin'), 0);
+
+      final retry = await wallet.earn(currency: 'coin', amount: 5, transactionId: 't1');
+      expect(retry, isA<SdkSuccess<int>>());
+      expect(wallet.balanceOf('coin'), 5);
+      final reloaded = EconomyWallet(storage: storage)..onInit();
+      expect(reloaded.balanceOf('coin'), 5);
+    });
+
+    test('batchTransaction: sổ giao dịch bị cắt ở 200, id mới nhất vẫn chống trùng', () async {
+      final storage = StorageService(null);
+      final wallet = EconomyWallet(storage: storage)..onInit();
+
+      for (var i = 0; i < 205; i++) {
+        final r = await wallet.batchTransaction(deltas: {'coin': 1}, transactionId: 'b$i');
+        expect(r.isSuccess, isTrue);
+      }
+      expect(wallet.balanceOf('coin'), 205);
+
+      // id mới nhất vẫn nằm trong sổ: gọi lại không cộng thêm.
+      await wallet.batchTransaction(deltas: {'coin': 1}, transactionId: 'b204');
+      expect(wallet.balanceOf('coin'), 205);
+
+      // id cũ nhất (b0) đã bị cắt khỏi sổ: gọi lại được coi là giao dịch mới.
+      await wallet.batchTransaction(deltas: {'coin': 1}, transactionId: 'b0');
+      expect(wallet.balanceOf('coin'), 206);
+    });
+
+    test('batchTransaction: ghi storage lỗi -> SdkFailure(storage), không số dư nào đổi', () async {
+      final storage = _FailOnceWalletStorage();
+      final wallet = EconomyWallet(storage: storage)..onInit();
+      await wallet.earn(currency: 'coin', amount: 10, transactionId: 'seed');
+
+      storage.failNext = true;
+      final failed = await wallet.batchTransaction(
+        deltas: {'coin': -3, 'gem': 4},
+        transactionId: 'batch',
+      );
+
+      expect(failed, isA<SdkFailure<void>>());
+      expect((failed as SdkFailure<void>).kind, SdkErrorKind.storage);
+      expect(wallet.balanceOf('coin'), 10);
+      expect(wallet.balanceOf('gem'), 0);
+    });
+  });
+}
+
+class _FailOnceWalletStorage extends StorageService {
+  _FailOnceWalletStorage() : super(null);
+  bool failNext = false;
+
+  @override
+  Future<void> setString(String key, String value) {
+    if (failNext && key == StorageKeys.economyWalletV1) {
+      failNext = false;
+      throw StateError('disk full');
+    }
+    return super.setString(key, value);
+  }
 }

@@ -974,4 +974,82 @@ void main() {
       });
     });
   });
+
+  group('RewardTransactionPipeline: lưu hỏng, analytics, inventory bị gỡ', () {
+    test('audit trail hỏng giữa chừng (JSON không parse được): bỏ sạch, không ném lỗi', () async {
+      await storage.setString(StorageKeys.rewardTransactionPipelineV1, 'not json at all');
+      final restored = RewardTransactionPipeline(wallet: wallet)..onInit();
+
+      expect(restored.auditTrail, isEmpty);
+    });
+
+    test('đã có record trong bộ nhớ rồi nạp lại bản hỏng: bộ nhớ cũng bị xoá, '
+        'không giữ record cũ không còn khớp đĩa', () async {
+      final live = RewardTransactionPipeline(wallet: wallet)..onInit();
+      await live.grant(
+        source: RewardSource.ad,
+        transactionId: 'first',
+        lines: const [RewardLine(currency: 'coin', amount: 1)],
+      );
+      expect(live.auditTrail, hasLength(1));
+
+      await storage.setString(StorageKeys.rewardTransactionPipelineV1, '<<corrupt>>');
+      live.onInit(); // nạp lại từ đĩa
+
+      expect(live.auditTrail, isEmpty);
+    });
+
+    test('analytics ném lỗi: grant vẫn thành công, không ảnh hưởng ví', () async {
+      final noisy = RewardTransactionPipeline(
+        wallet: wallet,
+        onAnalytics: (_) => throw StateError('analytics down'),
+      )..onInit();
+
+      final result = await noisy.grant(
+        source: RewardSource.ad,
+        transactionId: 'ok',
+        lines: const [RewardLine(currency: 'coin', amount: 5)],
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(wallet.balanceOf('coin'), 5);
+      expect(noisy.auditTrail.single.status, RewardTransactionStatus.committed);
+    });
+
+    test('record có itemLines nạp vào pipeline KHÔNG có inventory: resumePending bị chặn '
+        'ở bước validate, chưa áp dụng gì, record giữ nguyên pending kèm itemLines', () async {
+      await storage.setString(
+        StorageKeys.rewardTransactionPipelineV1,
+        '[{"transactionId":"orphan","source":"ad","lines":[{"currency":"coin","amount":3}],'
+        '"itemLines":[{"itemId":"potion","quantity":2}],"status":"pending","createdAtMs":1}]',
+      );
+      final withoutInventory = RewardTransactionPipeline(wallet: wallet)..onInit();
+      expect(withoutInventory.auditTrail.single.itemLines, isNotEmpty);
+
+      await withoutInventory.resumePending();
+
+      final record = withoutInventory.auditTrail.single;
+      expect(record.status, RewardTransactionStatus.pending);
+      expect(record.itemLines.single.itemId, 'potion');
+      expect(record.itemLines.single.quantity, 2);
+      // Bị chặn trước khi chạm ví: không cộng tiền một nửa.
+      expect(wallet.balanceOf('coin'), 0);
+
+      // Cấu hình lại đủ inventory thì cùng record đó hoàn tất bình thường.
+      final inventory = InventoryService(
+        storage: storage,
+        itemCatalog: const {'potion': ItemDefinition(id: 'potion', maxStack: 10)},
+        capacity: 4,
+      )..onInit();
+      final withInventory = RewardTransactionPipeline.withInventory(
+        wallet: wallet,
+        inventory: inventory,
+      )..onInit();
+      await withInventory.resumePending();
+
+      expect(withInventory.auditTrail.single.status, RewardTransactionStatus.committed);
+      expect(wallet.balanceOf('coin'), 3);
+      expect(inventory.snapshot.value.quantityOf('potion'), 2);
+    });
+  });
 }
