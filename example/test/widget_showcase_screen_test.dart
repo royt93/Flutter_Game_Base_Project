@@ -20,10 +20,12 @@ import 'package:roy_casual_kit/core/game_session_controller.dart';
 import 'package:roy_casual_kit/core/inventory_service.dart';
 import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/core/reminder_service.dart';
 import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:roy_casual_kit/core/utils/format.dart';
+import 'package:roy_casual_kit/core/utils/smart_reminder_scheduling.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -2345,6 +2347,13 @@ void main() {
   });
 
   group('ENH-90: rescheduleEnergyReminder / rescheduleStreakReminder demo', () {
+    late _RecordingReminderService reminder;
+
+    setUp(() {
+      reminder = _RecordingReminderService();
+      Get.put<ReminderService>(reminder, permanent: true);
+    });
+
     testWidgets(
       'năng lượng chưa đầy -> bấm nút hiện đúng delay tính được, không '
       'phải "đã huỷ"',
@@ -2360,6 +2369,9 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.textContaining('Reminder set in'), findsOneWidget);
+        expect(reminder.scheduled.map((c) => c.id), [kEnergyReminderNotificationId]);
+        expect(reminder.scheduled.single.delay, greaterThan(Duration.zero));
+        expect(reminder.cancelled, isEmpty);
         expect(tester.takeException(), isNull);
       },
     );
@@ -2375,6 +2387,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.textContaining('Reminder cancelled'), findsOneWidget);
+        expect(reminder.cancelled, [kEnergyReminderNotificationId]);
+        expect(reminder.scheduled, isEmpty);
         expect(tester.takeException(), isNull);
       },
     );
@@ -2389,6 +2403,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.textContaining('Reminder set in'), findsOneWidget);
+      expect(reminder.scheduled.map((c) => c.id), [kStreakReminderNotificationId]);
+      expect(reminder.scheduled.single.delay, greaterThan(Duration.zero));
+      expect(reminder.cancelled, isEmpty);
       expect(tester.takeException(), isNull);
     });
 
@@ -2411,6 +2428,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.textContaining('Reminder cancelled'), findsOneWidget);
+        expect(reminder.cancelled, [kStreakReminderNotificationId]);
+        expect(reminder.scheduled, isEmpty);
         expect(tester.takeException(), isNull);
       },
     );
@@ -2456,4 +2475,24 @@ class _GuardedAsyncWidgetState extends State<_GuardedAsyncWidget> {
 
   @override
   Widget build(BuildContext context) => const SizedBox();
+}
+
+
+/// Ghi lại lời gọi thay vì chạm plugin thông báo thật: plugin chưa được nạp
+/// trong widget test nên `ReminderService` thật ném `LateInitializationError`
+/// (bị nuốt, chỉ in log) và test không kiểm được gì về lời gọi.
+class _RecordingReminderService extends ReminderService {
+  final scheduled = <({int id, Duration delay})>[];
+  final cancelled = <int>[];
+
+  @override
+  Future<void> scheduleNext({
+    Duration delay = const Duration(hours: 24),
+    String title = 'Roy Project Base Game',
+    String body = 'Come back and play!',
+    int id = 0,
+  }) async => scheduled.add((id: id, delay: delay));
+
+  @override
+  Future<void> cancel({int id = 0}) async => cancelled.add(id);
 }
