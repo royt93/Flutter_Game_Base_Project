@@ -732,4 +732,58 @@ void main() {
       },
     );
   });
+
+  test('removeParticipant: participant đã gỡ không còn nằm trong checkpoint', () async {
+    final coordinator = CheckpointCoordinator(
+      storage: storage,
+      createTimer: fakeCreateTimer,
+    );
+    coordinator.registerParticipant('a', snapshot: () => {'x': 1}, restore: (_) {});
+    coordinator.registerParticipant('b', snapshot: () => {'y': 2}, restore: (_) {});
+    coordinator.removeParticipant('a');
+
+    final result = await coordinator.requestCheckpoint(critical: true);
+
+    expect((result as SdkSuccess<int>).value, 1);
+    final saved = storage.getString('checkpoint_coordinator_v1')!;
+    expect(saved, contains('"b"'));
+    expect(saved, isNot(contains('"a"')));
+  });
+
+  test('snapshot không JSON-encode được: SdkFailure(validation), không ghi gì', () async {
+    final coordinator = CheckpointCoordinator(
+      storage: storage,
+      createTimer: fakeCreateTimer,
+    );
+    coordinator.registerParticipant('bad', snapshot: () => Object(), restore: (_) {});
+
+    final result = await coordinator.requestCheckpoint(critical: true);
+
+    expect(result, isA<SdkFailure<int>>());
+    expect((result as SdkFailure<int>).kind, SdkErrorKind.validation);
+    expect(storage.getString('checkpoint_coordinator_v1'), isNull);
+  });
+
+  test('ghi storage lỗi: SdkFailure(storage) mang theo lỗi gốc', () async {
+    final coordinator = CheckpointCoordinator(
+      storage: _FailingCheckpointStorage(),
+      createTimer: fakeCreateTimer,
+    );
+    coordinator.registerParticipant('p', snapshot: () => {'x': 1}, restore: (_) {});
+
+    final result = await coordinator.requestCheckpoint(critical: true);
+
+    expect(result, isA<SdkFailure<int>>());
+    final failure = result as SdkFailure<int>;
+    expect(failure.kind, SdkErrorKind.storage);
+    expect(failure.cause, isA<StateError>());
+  });
+}
+
+class _FailingCheckpointStorage extends StorageService {
+  _FailingCheckpointStorage() : super(null);
+
+  @override
+  Future<void> setBool(String key, bool value) =>
+      throw StateError('disk full');
 }

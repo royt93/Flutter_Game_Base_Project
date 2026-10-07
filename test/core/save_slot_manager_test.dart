@@ -66,6 +66,40 @@ void main() {
   });
 
   group('Slice 1: metadata CRUD', () {
+    test('renameSlot với tên rỗng/blank throw ArgumentError, tên cũ giữ nguyên', () {
+      final manager = SaveSlotManager();
+      final slot = manager.createSlot('Alice');
+
+      expect(() => manager.renameSlot(slot.id, ''), throwsArgumentError);
+      expect(() => manager.renameSlot(slot.id, '   '), throwsArgumentError);
+      expect(manager.listSlots().single.displayName, 'Alice');
+
+      manager.renameSlot(slot.id, 'Bob');
+      expect(manager.listSlots().single.displayName, 'Bob');
+    });
+
+    test('SaveSlotManager.maybe: null khi chưa đăng ký, trả đúng instance khi đã đăng ký', () {
+      expect(SaveSlotManager.maybe, isNull);
+      final manager = Get.put(SaveSlotManager());
+      expect(SaveSlotManager.maybe, same(manager));
+    });
+
+    test('storage.getString ném lỗi: danh sách slot rỗng, không văng lỗi', () async {
+      Get.delete<StorageService>(force: true);
+      Get.put<StorageService>(_ThrowingReadSlotStorage(), permanent: true);
+      final manager = SaveSlotManager();
+
+      expect(manager.listSlots(), isEmpty);
+    });
+
+    test('danh sách slot hỏng: bắt đầu lại rỗng, không chặn tạo slot mới', () async {
+      await storage.setString('save_slot_meta_v1', '{"schemaVersion":1,"slots":"corrupt"}');
+      final manager = SaveSlotManager();
+
+      expect(manager.listSlots(), isEmpty);
+      expect(manager.createSlot('Fresh').displayName, 'Fresh');
+    });
+
     test('listSlots() rỗng khi chưa tạo slot nào', () {
       final manager = SaveSlotManager();
       expect(manager.listSlots(), isEmpty);
@@ -649,4 +683,14 @@ void main() {
       },
     );
   });
+}
+
+class _ThrowingReadSlotStorage extends StorageService {
+  _ThrowingReadSlotStorage() : super(null);
+
+  @override
+  String? getString(String key) {
+    if (key == StorageKeys.saveSlotMetaV1) throw StateError('read failure');
+    return super.getString(key);
+  }
 }

@@ -523,6 +523,37 @@ void main() {
   });
 
   group('BUG-90: inject StorageService + durable failure surfacing', () {
+    test('không có StorageService nào: không crash, tiến độ chỉ ở bộ nhớ, durable báo lỗi', () async {
+      Get.reset();
+      final service = AchievementService();
+      service.register('wins', 3);
+
+      service.incrementProgress('wins', 2);
+      expect(service.progressOf('wins'), 2);
+
+      final result = await service.incrementProgressDurably('wins', 1);
+      expect(result, isA<SdkFailure<int>>());
+      expect((result as SdkFailure<int>).kind, SdkErrorKind.storage);
+    });
+
+    test('storage.getString ném lỗi: tiến độ bắt đầu lại từ 0, không văng lỗi', () async {
+      final throwing = _ThrowingReadAchievementStorage();
+      final service = AchievementService(storage: throwing)..register('wins', 3);
+
+      expect(service.progressOf('wins'), 0);
+      expect(service.isCompleted('wins'), isFalse);
+    });
+
+    test('đọc lỗi/hỏng: bắt đầu lại từ 0 nhưng vẫn ghi được tiến độ mới', () async {
+      await storage.setString(StorageKeys.achievementProgressV1, '{"schemaVersion":1,"wins":"nope"}');
+      final service = AchievementService()..register('wins', 3);
+
+      expect(service.progressOf('wins'), 0);
+      service.incrementProgress('wins', 2);
+      await service.debugPendingSaves;
+      expect(AchievementService().progressOf('wins'), 2);
+    });
+
     test(
       'constructor nhận StorageService riêng, không phụ thuộc Get.find ambient',
       () async {
@@ -602,4 +633,16 @@ void main() {
       },
     );
   });
+}
+
+class _ThrowingReadAchievementStorage extends StorageService {
+  _ThrowingReadAchievementStorage() : super(null);
+
+  @override
+  String? getString(String key) {
+    if (key == StorageKeys.achievementProgressV1) {
+      throw StateError('read failure');
+    }
+    return super.getString(key);
+  }
 }

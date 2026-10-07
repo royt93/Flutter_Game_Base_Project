@@ -50,6 +50,21 @@ void main() {
   });
 
   group('PersistentCooldownService: start/read/cancel/restart', () {
+    test('snapshotOf gộp đúng key, status và remaining của cùng một thời điểm', () {
+      final service = PersistentCooldownService();
+
+      final idle = service.snapshotOf('booster');
+      expect(idle.key, 'booster');
+      expect(idle.status, CooldownStatus.ready);
+      expect(idle.remaining, Duration.zero);
+
+      service.start('booster', const Duration(seconds: 10));
+      final running = service.snapshotOf('booster');
+      expect(running.key, 'booster');
+      expect(running.status, CooldownStatus.running);
+      expect(running.remaining.inMilliseconds, inInclusiveRange(9000, 10000));
+    });
+
     test('key chưa từng start: ready, remaining = 0', () {
       final service = PersistentCooldownService();
       expect(service.statusOf('never'), CooldownStatus.ready);
