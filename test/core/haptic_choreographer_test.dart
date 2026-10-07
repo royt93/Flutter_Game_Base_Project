@@ -419,6 +419,9 @@ void main() {
       });
 
       final choreographer = HapticChoreographer();
+      // Pattern nhiều pulse hẹn Timer: phải huỷ trước khi Get.reset() chạy,
+      // nếu không timer bắn sau teardown và ném "StorageService not found".
+      addTearDown(choreographer.cancel);
       choreographer.play(
         comboSyncHapticPattern(
           steps: 2,
