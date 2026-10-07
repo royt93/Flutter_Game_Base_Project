@@ -40,6 +40,20 @@ void main() {
   });
 
   group('PurchaseLedgerService: consumable balance', () {
+    test('grantConsumable tràn int64: ném RangeError, số dư cũ giữ nguyên', () {
+      final service = PurchaseLedgerService();
+      const maxInt = 0x7FFFFFFFFFFFFFFF;
+
+      service.grantConsumable('gems', maxInt - 5);
+      expect(() => service.grantConsumable('gems', 6), throwsRangeError);
+      expect(service.balanceOf('gems'), maxInt - 5);
+
+      // Đúng bằng giới hạn thì vẫn hợp lệ (biên: amount == max - current).
+      service.grantConsumable('gems', 5);
+      expect(service.balanceOf('gems'), maxInt);
+      expect(() => service.grantConsumable('gems', 1), throwsRangeError);
+    });
+
     test('balanceOf trả về 0 cho sku chưa từng grant, không throw', () {
       final service = PurchaseLedgerService();
 

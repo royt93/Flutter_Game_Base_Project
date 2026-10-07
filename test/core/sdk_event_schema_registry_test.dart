@@ -116,6 +116,83 @@ void main() {
     });
   });
 
+  group('validate: kiểu double và bool', () {
+    late SdkEventSchemaRegistry registry;
+
+    setUp(() {
+      registry = SdkEventSchemaRegistry()
+        ..registerAll([
+          EventSchema(
+            name: 'shop_view',
+            version: 1,
+            params: {
+              'price': const EventParamSchema(
+                type: EventParamType.double,
+                required: true,
+              ),
+              'is_first': const EventParamSchema(type: EventParamType.bool),
+            },
+          ),
+        ]);
+    });
+
+    test('double chấp nhận cả double lẫn int, từ chối string', () {
+      expect(
+        registry.validate('shop_view', {'price': 1.5}).sanitizedParams,
+        {'price': 1.5},
+      );
+      expect(
+        registry.validate('shop_view', {'price': 2}).sanitizedParams,
+        {'price': 2},
+      );
+      final bad = registry.validate('shop_view', {'price': '1.5'});
+      expect(bad.accepted, isFalse);
+      expect(bad.violations.single, contains('price'));
+    });
+
+    test('bool chỉ chấp nhận bool: 1 và "true" bị drop, event vẫn được nhận', () {
+      expect(
+        registry
+            .validate('shop_view', {'price': 1.0, 'is_first': true})
+            .sanitizedParams,
+        {'price': 1.0, 'is_first': true},
+      );
+      for (final wrong in <Object>[1, 'true']) {
+        final result = registry.validate('shop_view', {
+          'price': 1.0,
+          'is_first': wrong,
+        });
+        expect(result.accepted, isTrue, reason: '$wrong');
+        expect(result.sanitizedParams, {'price': 1.0}, reason: '$wrong');
+        expect(result.violations.single, contains('is_first'), reason: '$wrong');
+      }
+    });
+
+    test('registerAll đăng ký từng schema; schema trùng tên: bản sau ghi đè', () {
+      registry.registerAll([
+        EventSchema(
+          name: 'a',
+          version: 1,
+          params: {'x': const EventParamSchema(type: EventParamType.int)},
+        ),
+        EventSchema(
+          name: 'b',
+          version: 1,
+          params: {'y': const EventParamSchema(type: EventParamType.int)},
+        ),
+        EventSchema(
+          name: 'a',
+          version: 2,
+          params: {'z': const EventParamSchema(type: EventParamType.int)},
+        ),
+      ]);
+
+      expect(registry.validate('b', {'y': 1}).accepted, isTrue);
+      expect(registry.validate('a', {'z': 1}).sanitizedParams, {'z': 1});
+      expect(registry.validate('a', {'x': 1}).sanitizedParams, isEmpty);
+    });
+  });
+
   group('PHÁT HIỆN THẬT: PII luôn bị redact bất kể policy field khác', () {
     test(
       'param pii có mặt -> bị drop khỏi sanitizedParams, event vẫn accept nếu không có lỗi khác',
