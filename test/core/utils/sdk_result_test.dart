@@ -88,4 +88,48 @@ void main() {
     );
     expect(find.text('Try again').evaluate(), isNotEmpty);
   });
+
+  group('equality distinguishes every field that is part of a result', () {
+    const base = SdkFailure<int>(
+      kind: SdkErrorKind.storage,
+      message: 'safe',
+      retryable: true,
+    );
+
+    test('failure: khác kind/message/retryable thì không bằng nhau', () {
+      expect(
+        base,
+        isNot(const SdkFailure<int>(kind: SdkErrorKind.network, message: 'safe', retryable: true)),
+      );
+      expect(
+        base,
+        isNot(const SdkFailure<int>(kind: SdkErrorKind.storage, message: 'other', retryable: true)),
+      );
+      expect(
+        base,
+        isNot(const SdkFailure<int>(kind: SdkErrorKind.storage, message: 'safe')),
+      );
+    });
+
+    test('failure: retryable khác nhau cho hashCode khác nhau', () {
+      const notRetryable = SdkFailure<int>(
+        kind: SdkErrorKind.storage,
+        message: 'safe',
+      );
+      expect(base.hashCode, isNot(notRetryable.hashCode));
+    });
+
+    test('success: giá trị khác nhau thì không bằng nhau, cùng giá trị thì bằng', () {
+      expect(const SdkSuccess<int>(1), isNot(const SdkSuccess<int>(2)));
+      expect(const SdkSuccess<int>(1), const SdkSuccess<int>(1));
+      expect(const SdkSuccess<int>(1).hashCode, isNot(const SdkSuccess<int>(2).hashCode));
+    });
+
+    test('success và failure không bao giờ bằng nhau', () {
+      // ignore: unrelated_type_equality_checks
+      expect(const SdkSuccess<int>(1) == base, isFalse);
+      // ignore: unrelated_type_equality_checks
+      expect(base == const SdkSuccess<int>(1), isFalse);
+    });
+  });
 }

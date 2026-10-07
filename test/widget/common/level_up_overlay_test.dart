@@ -207,9 +207,17 @@ void main() {
     ).every((builder) => builder.duration > Duration.zero), isTrue);
     await tester.pump(const Duration(milliseconds: 100));
     expect(controller.phase.value, LevelUpPhase.levelPop);
-    expect(calls.where((call) => call.method == 'HapticFeedback.vibrate'), hasLength(1));
+    final vibrations = [
+      for (final call in calls)
+        if (call.method == 'HapticFeedback.vibrate') call.arguments,
+    ];
+    // Đúng một lần và đúng loại medium (không chỉ "có rung").
+    expect(vibrations, ['HapticFeedbackType.mediumImpact']);
     await tester.pump(const Duration(milliseconds: 50));
-    expect(calls.where((call) => call.method == 'HapticFeedback.vibrate'), hasLength(1));
+    expect(
+      calls.where((call) => call.method == 'HapticFeedback.vibrate'),
+      hasLength(1),
+    );
     await tester.pump(const Duration(milliseconds: 50));
     expect(controller.phase.value, LevelUpPhase.rewardReveal);
     expect(find.byType(ConfettiOverlay), findsOneWidget);

@@ -437,4 +437,51 @@ void main() {
       expect(service.progressRatio('wins'), 1.0);
     });
   });
+
+  group('đọc save lỗi/hỏng: quest bắt đầu lại từ 0, không văng lỗi', () {
+    test('storage.getString ném lỗi: progress 0, chưa claim, vẫn ghi tiến độ mới', () async {
+      Get.delete<StorageService>(force: true);
+      final throwing = _ThrowingReadStorage();
+      Get.put<StorageService>(throwing);
+      final service = DailyQuestService()..register('wins', 3);
+
+      expect(service.progressOf('wins'), 0);
+      expect(service.isClaimed('wins'), isFalse);
+
+      throwing.failReads = false;
+      service.incrementProgress('wins', 2);
+      expect(service.progressOf('wins'), 2);
+      await service.debugPendingSaves;
+    });
+
+    test('record sai kiểu (claimed không phải bool) bị bỏ, record hợp lệ khác vẫn giữ', () async {
+      const day = 888888;
+      await setDay(day);
+      await storage.setString(
+        StorageKeys.dailyQuestProgressV1,
+        '{"schemaVersion":1,'
+        '"bad":{"periodKey":$day,"progress":2,"claimed":"yes"},'
+        '"good":{"periodKey":$day,"progress":2,"claimed":false}}',
+      );
+      final service = DailyQuestService()
+        ..register('bad', 3)
+        ..register('good', 3);
+
+      expect(service.progressOf('bad'), 0);
+      expect(service.progressOf('good'), 2);
+    });
+  });
+}
+
+class _ThrowingReadStorage extends StorageService {
+  _ThrowingReadStorage() : super(null);
+  bool failReads = true;
+
+  @override
+  String? getString(String key) {
+    if (failReads && key == StorageKeys.dailyQuestProgressV1) {
+      throw StateError('read failure');
+    }
+    return super.getString(key);
+  }
 }
