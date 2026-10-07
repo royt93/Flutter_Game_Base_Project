@@ -239,6 +239,30 @@ class InventoryService extends GetxService {
     }),
   );
 
+  /// Runs [mutate] against the internal state, then persists. If persisting
+  /// throws, the slots, next slot id and transaction ledger are put back
+  /// exactly as they were and the same error is rethrown. Without this a
+  /// failed write left memory changed and remembered the transaction id, so a
+  /// retry returned success while nothing was saved.
+  Future<void> _mutateAndPersist(void Function() mutate) async {
+    final previousSlots = List<InventorySlot>.of(_slots);
+    final previousNextSlotId = _nextSlotId;
+    final previousTransactions = List<String>.of(_transactions);
+    mutate();
+    try {
+      await _persist();
+    } catch (_) {
+      _slots
+        ..clear()
+        ..addAll(previousSlots);
+      _nextSlotId = previousNextSlotId;
+      _transactions
+        ..clear()
+        ..addAll(previousTransactions);
+      rethrow;
+    }
+  }
+
   void _recompute() {
     snapshot.value = InventorySnapshot(
       slots: List.unmodifiable(_slots),
@@ -369,12 +393,13 @@ class InventoryService extends GetxService {
     final (scratch, scratchNextSlotId) =
         (result as SdkSuccess<(List<InventorySlot>, int)>).value;
 
-    _slots
-      ..clear()
-      ..addAll(scratch);
-    _nextSlotId = scratchNextSlotId;
-    _appendTransaction(transactionId);
-    await _persist();
+    await _mutateAndPersist(() {
+      _slots
+        ..clear()
+        ..addAll(scratch);
+      _nextSlotId = scratchNextSlotId;
+      _appendTransaction(transactionId);
+    });
     _recompute();
     return SdkSuccess(snapshot.value);
   });
@@ -445,11 +470,12 @@ class InventoryService extends GetxService {
       if (leftover > 0) scratch.add(slot.copyWith(quantity: leftover));
     }
 
-    _slots
-      ..clear()
-      ..addAll(scratch);
-    _appendTransaction(transactionId);
-    await _persist();
+    await _mutateAndPersist(() {
+      _slots
+        ..clear()
+        ..addAll(scratch);
+      _appendTransaction(transactionId);
+    });
     _recompute();
     return SdkSuccess(snapshot.value);
   });
@@ -477,8 +503,9 @@ class InventoryService extends GetxService {
         message: 'Item is not equippable',
       );
     }
-    _slots[idx] = slot.copyWith(equipped: equipped);
-    await _persist();
+    await _mutateAndPersist(() {
+      _slots[idx] = slot.copyWith(equipped: equipped);
+    });
     _recompute();
     return SdkSuccess(snapshot.value);
   });
@@ -497,10 +524,11 @@ class InventoryService extends GetxService {
         message: 'Slot not found',
       );
     }
-    final tmp = _slots[fromIdx];
-    _slots[fromIdx] = _slots[toIdx];
-    _slots[toIdx] = tmp;
-    await _persist();
+    await _mutateAndPersist(() {
+      final tmp = _slots[fromIdx];
+      _slots[fromIdx] = _slots[toIdx];
+      _slots[toIdx] = tmp;
+    });
     _recompute();
     return SdkSuccess(snapshot.value);
   });

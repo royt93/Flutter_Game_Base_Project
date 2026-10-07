@@ -703,5 +703,189 @@ void main() {
       expect(ok.isSuccess, isTrue);
       expect(service.snapshot.value.quantityOf('potion'), 0);
     });
+
+    group('persist lỗi một lần: hoàn tác bộ nhớ, ném lại, retry thật sự lưu', () {
+      late _FailOnceInventoryStorage storage;
+      late InventoryService service;
+
+      InventoryService reload() => InventoryService(
+        storage: storage,
+        itemCatalog: _catalog,
+        capacity: 4,
+      )..onInit();
+
+      setUp(() {
+        storage = _FailOnceInventoryStorage();
+        service = reload();
+      });
+
+      int onDisk(String itemId) => reload().snapshot.value.quantityOf(itemId);
+
+      test('grant', () async {
+        storage.failNext = true;
+        await expectLater(
+          service.grant(
+            lines: const [InventoryLine(itemId: 'potion', quantity: 3)],
+            transactionId: 'g1',
+          ),
+          throwsA(isA<StateError>()),
+        );
+        expect(service.snapshot.value.quantityOf('potion'), 0);
+
+        final retry = await service.grant(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 3)],
+          transactionId: 'g1',
+        );
+        expect(retry.isSuccess, isTrue);
+        expect(service.snapshot.value.quantityOf('potion'), 3);
+        expect(onDisk('potion'), 3);
+      });
+
+      test('grant: slotId kế tiếp cũng được hoàn tác (không nhảy số)', () async {
+        storage.failNext = true;
+        await expectLater(
+          service.grant(
+            lines: const [InventoryLine(itemId: 'sword', quantity: 1)],
+            transactionId: 'g_slot',
+          ),
+          throwsA(isA<StateError>()),
+        );
+        await service.grant(
+          lines: const [InventoryLine(itemId: 'sword', quantity: 1)],
+          transactionId: 'g_slot',
+        );
+        expect(service.snapshot.value.slots.single.slotId, 1);
+      });
+
+      test('consume', () async {
+        await service.grant(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 5)],
+          transactionId: 'seed',
+        );
+        storage.failNext = true;
+        await expectLater(
+          service.consume(
+            lines: const [InventoryLine(itemId: 'potion', quantity: 2)],
+            transactionId: 'c1',
+          ),
+          throwsA(isA<StateError>()),
+        );
+        expect(service.snapshot.value.quantityOf('potion'), 5);
+        expect(onDisk('potion'), 5);
+
+        final retry = await service.consume(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 2)],
+          transactionId: 'c1',
+        );
+        expect(retry.isSuccess, isTrue);
+        expect(service.snapshot.value.quantityOf('potion'), 3);
+        expect(onDisk('potion'), 3);
+      });
+
+      test('consume lỗi không làm một grant không liên quan đọc sai số lượng', () async {
+        await service.grant(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 5)],
+          transactionId: 'seed',
+        );
+        storage.failNext = true;
+        await expectLater(
+          service.consume(
+            lines: const [InventoryLine(itemId: 'potion', quantity: 2)],
+            transactionId: 'c2',
+          ),
+          throwsA(isA<StateError>()),
+        );
+        await service.grant(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 1)],
+          transactionId: 'later',
+        );
+        expect(service.snapshot.value.quantityOf('potion'), 6);
+        expect(onDisk('potion'), 6);
+      });
+
+      test('setEquipped', () async {
+        await service.grant(
+          lines: const [InventoryLine(itemId: 'sword', quantity: 1)],
+          transactionId: 'seed',
+        );
+        final slotId = service.snapshot.value.slots.single.slotId;
+        storage.failNext = true;
+        await expectLater(
+          service.setEquipped(slotId: slotId, equipped: true),
+          throwsA(isA<StateError>()),
+        );
+        expect(service.snapshot.value.slots.single.equipped, isFalse);
+        expect(reload().snapshot.value.slots.single.equipped, isFalse);
+
+        // Một thao tác không liên quan làm snapshot đọc lại _slots nội bộ:
+        // nếu setEquipped lỗi vẫn để equipped=true trong _slots thì nó lộ ra
+        // ở đây và được ghi xuống đĩa.
+        await service.grant(
+          lines: const [InventoryLine(itemId: 'potion', quantity: 1)],
+          transactionId: 'unrelated',
+        );
+        expect(
+          service.snapshot.value.slots.firstWhere((s) => s.slotId == slotId).equipped,
+          isFalse,
+        );
+        expect(
+          reload().snapshot.value.slots.firstWhere((s) => s.slotId == slotId).equipped,
+          isFalse,
+        );
+
+        await service.setEquipped(slotId: slotId, equipped: true);
+        expect(
+          service.snapshot.value.slots.firstWhere((s) => s.slotId == slotId).equipped,
+          isTrue,
+        );
+        expect(
+          reload().snapshot.value.slots.firstWhere((s) => s.slotId == slotId).equipped,
+          isTrue,
+        );
+      });
+
+      test('moveSlot', () async {
+        await service.grant(
+          lines: const [
+            InventoryLine(itemId: 'potion', quantity: 1),
+            InventoryLine(itemId: 'sword', quantity: 1),
+          ],
+          transactionId: 'seed',
+        );
+        final before = [
+          for (final s in service.snapshot.value.slots) s.slotId,
+        ];
+        storage.failNext = true;
+        await expectLater(
+          service.moveSlot(fromSlotId: before.first, toSlotId: before.last),
+          throwsA(isA<StateError>()),
+        );
+        expect(
+          [for (final s in service.snapshot.value.slots) s.slotId],
+          before,
+        );
+        expect([for (final s in reload().snapshot.value.slots) s.slotId], before);
+
+        await service.moveSlot(fromSlotId: before.first, toSlotId: before.last);
+        expect(
+          [for (final s in service.snapshot.value.slots) s.slotId],
+          before.reversed.toList(),
+        );
+      });
+    });
   });
+}
+
+class _FailOnceInventoryStorage extends StorageService {
+  _FailOnceInventoryStorage() : super(null);
+  bool failNext = false;
+
+  @override
+  Future<void> setString(String key, String value) {
+    if (failNext && key == StorageKeys.inventoryServiceV1) {
+      failNext = false;
+      throw StateError('disk full');
+    }
+    return super.setString(key, value);
+  }
 }
