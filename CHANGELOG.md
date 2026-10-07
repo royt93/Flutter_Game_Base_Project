@@ -1,3 +1,9 @@
+## 0.4.4
+
+- Fixed `InventoryService.consume` checking each line against the owned quantity on its own, so a request split across duplicate lines (5 owned, "4 then 4") succeeded and left 0. It now sums quantities per item first and rejects with `SdkErrorKind.validation` when the total exceeds what is owned.
+- Fixed `PlayerProgressionService.grantXp` leaving its in-memory state changed when persisting failed. The storage error was already thrown, but the XP total, highest unlocked level and transaction ledger were not restored, so a retry with the same `transactionId` returned `SdkSuccess` without anything ever being saved. It now restores the previous state and rethrows the same error, so the retry saves the grant. The method signature and the thrown error are unchanged.
+- Added behavioural tests for `StorageService`, `GameSessionController`, the diagnostics export bundle, `DailyQuestService`, `InventoryService`, `PlayerProgressionService`, `RewardTransactionPipeline`, `PerformanceTierService` and several widgets. No other library code changed.
+
 ## 0.4.3
 
 - Corrected the README Android setup for scheduled reminders, verified on a Pixel 7 Pro (Android 17): the plugin already merges `POST_NOTIFICATIONS` and `VIBRATE`, so the app does not declare them. `ScheduledNotificationReceiver` is required for reminders to appear (without it the alarm registers but no notification is posted); the boot receiver and exact-alarm permissions are optional.
