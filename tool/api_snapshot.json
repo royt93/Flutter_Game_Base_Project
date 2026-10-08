@@ -1,5 +1,5 @@
 {
-  "version": "0.4.5",
+  "version": "0.5.0",
   "entrypoint": "lib/roy_casual_kit.dart",
   "exports": [
     "core/achievement_service.dart",
@@ -795,6 +795,7 @@
     "core/plugin_adapter_conformance_suite.dart:FakePurchaseSeam.buy(String productId): Future<bool>",
     "core/plugin_adapter_conformance_suite.dart:FakePurchaseSeam.isOwned(String productId): bool",
     "core/plugin_adapter_conformance_suite.dart:FakePurchaseSeam.restorePurchases(): Future<void>",
+    "core/plugin_adapter_conformance_suite.dart:PluginAdapterConformanceSuite.verifyAchievementSyncSeam(AchievementSyncSeam adapter, { required String testIdPrefix, Duration timeout = const Duration(seconds: 2), }): Future<ConformanceReport>",
     "core/plugin_adapter_conformance_suite.dart:PluginAdapterConformanceSuite.verifyAdRewardSeam(AdRewardSeam adapter, { Duration timeout = const Duration(seconds: 2), }): Future<ConformanceReport>",
     "core/plugin_adapter_conformance_suite.dart:PluginAdapterConformanceSuite.verifyAnalyticsProvider(AnalyticsProvider adapter, { Duration timeout = const Duration(seconds: 2), }): Future<ConformanceReport>",
     "core/plugin_adapter_conformance_suite.dart:PluginAdapterConformanceSuite.verifyCloudSaveProvider(CloudSaveProvider adapter, { Duration timeout = const Duration(seconds: 2), }): Future<ConformanceReport>",

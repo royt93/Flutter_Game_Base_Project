@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'achievement_sync_seam.dart';
 import 'ad_reward_seam.dart';
 import 'analytics_provider.dart';
 import 'cloud_save_provider.dart';
@@ -24,12 +25,7 @@ class ConformanceReport {
   ];
 }
 
-/// Standard conformance checklist for the 5 platform-neutral seams this
-/// kit ships (`AnalyticsProvider`, `CloudSaveProvider`,
-/// `SecureStorageAdapter`, `CrashReporter`, `PurchaseSeam`) — deliberately
-/// excludes an "ads" adapter, since this kit ships no ads mediation seam
-/// by product decision (FEAT-02's rejection; see FEAT-61's `ConsentStateService`
-/// decision for the same scoping call).
+/// Vendor-neutral conformance checks for the kit's platform adapters.
 ///
 /// Every `verifyX` method only depends on the abstract seam interface — a
 /// consumer runs it against their own concrete adapter without this
@@ -43,7 +39,7 @@ class ConformanceReport {
 /// (that's what the corresponding "does not throw" check is for) — so
 /// each check tests exactly one property.
 ///
-/// **Dispose**: none of these 5 interfaces declare a dispose/close method
+/// **Dispose**: these interfaces do not declare a dispose/close method
 /// (they're stateless call surfaces, not owned resources), so there is no
 /// generic "dispose" check here — a consumer adapter that itself owns a
 /// disposable resource (a stream subscription, a native SDK handle) is
@@ -245,6 +241,72 @@ class PluginAdapterConformanceSuite {
       ),
     };
     return ConformanceReport(adapterName: 'PurchaseSeam', checks: checks);
+  }
+
+  // Writes sandbox data; use a fresh prefix. Timeouts do not cancel I/O, and a concurrent probe cannot prove every race schedule.
+  static Future<ConformanceReport> verifyAchievementSyncSeam(
+    AchievementSyncSeam adapter, {
+    required String testIdPrefix,
+    Duration timeout = const Duration(seconds: 2),
+  }) async {
+    if (testIdPrefix.trim().isEmpty) {
+      throw ArgumentError.value(testIdPrefix, 'testIdPrefix', 'must not be blank');
+    }
+    if (timeout <= Duration.zero) {
+      throw ArgumentError.value(timeout, 'timeout', 'must be positive');
+    }
+    final roundTripA = '${testIdPrefix}_roundtrip_a';
+    final roundTripB = '${testIdPrefix}_roundtrip_b';
+    final repeat = '${testIdPrefix}_repeat';
+    final maximum = '${testIdPrefix}_maximum';
+    final disjointA = '${testIdPrefix}_disjoint_a';
+    final disjointB = '${testIdPrefix}_disjoint_b';
+    final shared = '${testIdPrefix}_concurrent_shared';
+    final left = '${testIdPrefix}_concurrent_left';
+    final right = '${testIdPrefix}_concurrent_right';
+    final checks = <String, bool>{
+      'progress round-trips exactly': await _check(() async {
+        await adapter.pushProgress({roundTripA: 3, roundTripB: 7});
+        final result = await adapter.pullProgress();
+        return result?[roundTripA] == 3 && result?[roundTripB] == 7;
+      }, timeout),
+      'repeated uploads do not inflate progress': await _check(() async {
+        await adapter.pushProgress({repeat: 3});
+        await adapter.pushProgress({repeat: 3});
+        return (await adapter.pullProgress())?[repeat] == 3;
+      }, timeout),
+      'lower uploads preserve maximum progress': await _check(() async {
+        await adapter.pushProgress({maximum: 7});
+        await adapter.pushProgress({maximum: 3});
+        return (await adapter.pullProgress())?[maximum] == 7;
+      }, timeout),
+      'uploads preserve unrelated achievement IDs': await _check(() async {
+        await adapter.pushProgress({disjointA: 3});
+        await adapter.pushProgress({disjointB: 7});
+        final result = await adapter.pullProgress();
+        return result?[disjointA] == 3 && result?[disjointB] == 7;
+      }, timeout),
+      'concurrent uploads preserve max and both achievement IDs': await _check(
+        () async {
+          await Future.wait([
+            adapter.pushProgress({shared: 9, left: 2}),
+            adapter.pushProgress({shared: 4, right: 6}),
+          ]);
+          final result = await adapter.pullProgress();
+          return result?[shared] == 9 &&
+              result?[left] == 2 &&
+              result?[right] == 6 &&
+              result?[roundTripA] == 3 &&
+              result?[roundTripB] == 7 &&
+              result?[repeat] == 3 &&
+              result?[maximum] == 7 &&
+              result?[disjointA] == 3 &&
+              result?[disjointB] == 7;
+        },
+        timeout,
+      ),
+    };
+    return ConformanceReport(adapterName: 'AchievementSyncSeam', checks: checks);
   }
 
   static Future<ConformanceReport> verifyAdRewardSeam(

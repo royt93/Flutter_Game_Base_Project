@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/core/achievement_sync_seam.dart';
 import 'package:roy_casual_kit/core/analytics_provider.dart';
 import 'package:roy_casual_kit/core/cloud_save_provider.dart';
 import 'package:roy_casual_kit/core/crash_reporter.dart';
@@ -64,7 +65,141 @@ class _ThrowingCrashReporter implements CrashReporter {
       throw StateError('crash reporter itself crashed');
 }
 
+enum _SyncBehaviour { max, noop, add, downgrade, replace, race, clearConcurrent, wrong, nullPull, throwPush, throwPull, hangPush, hangPull }
+
+class _AchievementAdapter implements AchievementSyncSeam {
+  _AchievementAdapter(this.behaviour);
+  final _SyncBehaviour behaviour;
+  final progress = <String, int>{'unrelated': 99};
+  final raceGate = Completer<void>();
+  var concurrentCalls = 0;
+  var pushCalls = 0;
+  var pullCalls = 0;
+
+  @override
+  Future<void> pushProgress(Map<String, int> values) async {
+    pushCalls++;
+    if (behaviour == _SyncBehaviour.throwPush) throw StateError('offline');
+    if (behaviour == _SyncBehaviour.hangPush) await Completer<void>().future;
+    if (behaviour == _SyncBehaviour.noop) return;
+    if (behaviour == _SyncBehaviour.clearConcurrent &&
+        values.keys.any((key) => key.endsWith('_concurrent_shared')) &&
+        concurrentCalls++ == 0) {
+      progress.clear();
+    }
+    if (behaviour == _SyncBehaviour.race &&
+        values.keys.any((key) => key.endsWith('_concurrent_shared'))) {
+      final snapshot = Map<String, int>.of(progress);
+      for (final entry in values.entries) {
+        if (entry.value > (snapshot[entry.key] ?? 0)) snapshot[entry.key] = entry.value;
+      }
+      if (++concurrentCalls == 2) raceGate.complete();
+      await raceGate.future;
+      progress..clear()..addAll(snapshot);
+      return;
+    }
+    if (behaviour == _SyncBehaviour.replace) progress.clear();
+    for (final entry in values.entries) {
+      if (behaviour == _SyncBehaviour.add) {
+        progress[entry.key] = (progress[entry.key] ?? 0) + entry.value;
+      } else if (behaviour == _SyncBehaviour.downgrade || behaviour == _SyncBehaviour.replace) {
+        progress[entry.key] = entry.value;
+      } else if (entry.value > (progress[entry.key] ?? 0)) {
+        progress[entry.key] = entry.value;
+      }
+    }
+  }
+
+  @override
+  Future<Map<String, int>?> pullProgress() async {
+    pullCalls++;
+    if (behaviour == _SyncBehaviour.throwPull) throw StateError('offline');
+    if (behaviour == _SyncBehaviour.hangPull) return Completer<Map<String, int>?>().future;
+    if (behaviour == _SyncBehaviour.nullPull) return null;
+    if (behaviour == _SyncBehaviour.wrong) return {for (final key in progress.keys) key: 999};
+    return Map.of(progress);
+  }
+}
+
 void main() {
+  group('PluginAdapterConformanceSuite: AchievementSyncSeam', () {
+    Future<ConformanceReport> verify(_AchievementAdapter adapter) =>
+        PluginAdapterConformanceSuite.verifyAchievementSyncSeam(
+          adapter, testIdPrefix: 'isolated_probe',
+          timeout: const Duration(milliseconds: 30),
+        );
+
+    test('max adapter passes five checks with unrelated backend data', () async {
+      final adapter = _AchievementAdapter(_SyncBehaviour.max);
+      final report = await verify(adapter);
+      expect(report.adapterName, 'AchievementSyncSeam');
+      expect(report.checks, hasLength(5));
+      expect(report.passed, isTrue, reason: report.failures.join(', '));
+      expect(adapter.progress['unrelated'], 99);
+    });
+
+    for (final behaviour in [_SyncBehaviour.noop, _SyncBehaviour.wrong, _SyncBehaviour.nullPull]) {
+      test('$behaviour fails exact round-trip', () async {
+        final report = await verify(_AchievementAdapter(behaviour));
+        expect(report.checks['progress round-trips exactly'], isFalse);
+      });
+    }
+    test('additive adapter fails repeat but round-trip succeeds', () async {
+      final report = await verify(_AchievementAdapter(_SyncBehaviour.add));
+      expect(report.checks['progress round-trips exactly'], isTrue);
+      expect(report.checks['repeated uploads do not inflate progress'], isFalse);
+    });
+    test('overwriting a lower value fails max check', () async {
+      final report = await verify(_AchievementAdapter(_SyncBehaviour.downgrade));
+      expect(report.checks['lower uploads preserve maximum progress'], isFalse);
+      expect(report.checks['uploads preserve unrelated achievement IDs'], isTrue);
+    });
+    test('whole-map replacement fails disjoint check', () async {
+      final report = await verify(_AchievementAdapter(_SyncBehaviour.replace));
+      expect(report.checks['uploads preserve unrelated achievement IDs'], isFalse);
+      expect(report.checks['progress round-trips exactly'], isTrue);
+    });
+    test('concurrent uploads cannot erase progress from earlier checks', () async {
+      final report = await verify(_AchievementAdapter(_SyncBehaviour.clearConcurrent));
+      expect(report.failures, ['concurrent uploads preserve max and both achievement IDs']);
+    });
+    test('barrier-controlled lost update fails concurrent check only', () async {
+      final report = await verify(_AchievementAdapter(_SyncBehaviour.race));
+      expect(report.failures, ['concurrent uploads preserve max and both achievement IDs']);
+    });
+    for (final behaviour in [_SyncBehaviour.throwPush, _SyncBehaviour.throwPull, _SyncBehaviour.hangPush, _SyncBehaviour.hangPull]) {
+      test('$behaviour yields five failures without throwing or hanging suite', () async {
+        final report = await verify(_AchievementAdapter(behaviour));
+        expect(report.failures, hasLength(5));
+      });
+    }
+    test('validates blank prefix and nonpositive timeout before adapter calls', () async {
+      final adapter = _AchievementAdapter(_SyncBehaviour.max);
+      for (final prefix in ['', '   ']) {
+        await expectLater(PluginAdapterConformanceSuite.verifyAchievementSyncSeam(
+          adapter, testIdPrefix: prefix,
+        ), throwsArgumentError);
+      }
+      for (final timeout in [Duration.zero, const Duration(milliseconds: -1)]) {
+        await expectLater(PluginAdapterConformanceSuite.verifyAchievementSyncSeam(
+          adapter, testIdPrefix: 'isolated_probe', timeout: timeout,
+        ), throwsArgumentError);
+      }
+      expect(adapter.pushCalls, 0);
+      expect(adapter.pullCalls, 0);
+    });
+    test('prefix is preserved and distinct prefixes can reuse sandbox', () async {
+      final adapter = _AchievementAdapter(_SyncBehaviour.max);
+      for (final prefix in [' first ', 'second']) {
+        final report = await PluginAdapterConformanceSuite.verifyAchievementSyncSeam(
+          adapter, testIdPrefix: prefix,
+        );
+        expect(report.passed, isTrue);
+        expect(adapter.progress['${prefix}_roundtrip_a'], 3);
+      }
+    });
+  });
+
   group('PluginAdapterConformanceSuite: AnalyticsProvider', () {
     test(
       'NoopAnalyticsProvider (fake reference) pass toàn bộ checklist',
