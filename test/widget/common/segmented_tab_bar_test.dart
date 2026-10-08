@@ -60,6 +60,30 @@ void main() {
     expect(semanticsB.getSemanticsData().hasFlag(SemanticsFlag.isSelected), isTrue);
   });
 
+  testWidgets('SegmentedTabBar: kích hoạt tap qua Semantics gọi onChanged đúng index', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    final changed = <int>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: SegmentedTabBar(
+            labels: const ['A', 'B'],
+            selectedIndex: 0,
+            onChanged: changed.add,
+          ),
+        ),
+      ),
+    );
+
+    final id = tester.getSemantics(find.text('B')).id;
+    tester.binding.pipelineOwner.semanticsOwner!.performAction(id, SemanticsAction.tap);
+    await tester.pump();
+    expect(changed, [1]);
+    handle.dispose();
+  });
+
   testWidgets('SegmentedTabBar throw assert khi số lượng label ngoài 2-4', (
     tester,
   ) async {

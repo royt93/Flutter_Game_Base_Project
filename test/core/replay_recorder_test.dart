@@ -282,6 +282,14 @@ void main() {
       },
     );
 
+    test('actual dài hơn expected → báo phần thừa đầu tiên với expected null', () {
+      final d = findFirstDivergence(['a', 'b'], ['a', 'b', 'c']);
+      expect(d, isNotNull);
+      expect(d!.index, 2);
+      expect(d.expected, isNull);
+      expect(d.actual, 'c');
+    });
+
     test('danh sách rỗng cả 2 bên → null', () {
       expect(findFirstDivergence(<Object?>[], <Object?>[]), isNull);
     });

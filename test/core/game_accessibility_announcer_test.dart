@@ -42,6 +42,28 @@ void main() {
     throttleWindow: const Duration(milliseconds: 500),
   );
 
+  test('không truyền nowMs: dùng đồng hồ mặc định, vẫn throttle cùng category', () async {
+    final announcer = GameAccessibilityAnnouncer(
+      eventBus: bus,
+      announce: (message) async => spoken.add(message),
+      locale: () => locale,
+      isEnabled: () => true,
+      throttleWindow: const Duration(minutes: 5),
+    );
+    addTearDown(announcer.dispose);
+    for (var i = 0; i < 2; i++) {
+      bus.emit(
+        GameAccessibilityEvent(
+          category: GameAccessibilityCategory.levelUp,
+          translationKey: 'a11y_level_up',
+          parameters: const {'value': '7'},
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+    }
+    expect(spoken, hasLength(1));
+  });
+
   test('fake announcer nhận đúng text locale en + params', () async {
     final announcer = makeAnnouncer();
 
