@@ -4,6 +4,22 @@ import 'package:roy_casual_kit/core/utils/format.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/countdown_chip.dart';
 
 void main() {
+  testWidgets('already expired at mount notifies parent after the build exactly once', (tester) async {
+    var completed = 0;
+    final target = DateTime(2000);
+    await tester.pumpWidget(MaterialApp(home: Material(child: StatefulBuilder(
+      builder: (context, setState) => Column(children: [
+        CountdownChip(target: target, onDone: () => setState(() => completed++)),
+        Text('completed:$completed'),
+      ]),
+    ))));
+    await tester.pump();
+    expect(find.text('completed:1'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    expect(completed, 1);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('counts down every second, formatted via fmtDur', (tester) async {
     final target = DateTime.now().add(const Duration(seconds: 3));
     await tester.pumpWidget(

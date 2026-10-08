@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:roy_casual_kit/core/crash_reporter.dart';
 import 'package:roy_casual_kit/core/analytics_provider.dart';
 import 'package:roy_casual_kit/core/sdk_event_schema_registry.dart';
 
@@ -19,6 +21,19 @@ class _ThrowingProvider implements AnalyticsProvider {
 }
 
 void main() {
+  test('validated provider reports a throwing analytics vendor with event reason', () {
+    final reporter = _SchemaCrashReporter();
+    Get.put<CrashReporter>(reporter);
+    addTearDown(Get.reset);
+    final registry = SdkEventSchemaRegistry()..register(EventSchema(
+      name: 'safe_event', version: 1, params: const {},
+    ));
+    final provider = SchemaValidatedAnalyticsProvider(_ThrowingProvider(), registry);
+    expect(() => provider.logEvent('safe_event'), returnsNormally);
+    expect(reporter.reasons, ['AnalyticsProvider.logEvent threw for event "safe_event"']);
+    expect(reporter.errors.single, isA<Exception>());
+  });
+
   group('EventSchema: validate cấu hình ngay khi tạo', () {
     test(
       'param vừa required vừa pii -> throw ArgumentError ngay khi tạo schema',
@@ -463,4 +478,14 @@ void main() {
       },
     );
   });
+}
+
+class _SchemaCrashReporter implements CrashReporter {
+  final reasons = <String?>[];
+  final errors = <Object>[];
+  @override
+  void recordError(Object error, StackTrace stack, {String? reason}) {
+    reasons.add(reason);
+    errors.add(error);
+  }
 }

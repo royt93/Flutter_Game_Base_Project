@@ -39,6 +39,39 @@ void main() {
     });
   });
 
+  group('PurchaseLedgerService: đọc save lỗi/hỏng', () {
+    test('storage.getString ném lỗi: sổ bắt đầu rỗng, vẫn ghi được số dư mới', () async {
+      Get.delete<StorageService>(force: true);
+      Get.put<StorageService>(_ThrowingReadLedgerStorage(), permanent: true);
+      final service = PurchaseLedgerService();
+
+      expect(service.balanceOf('gems'), 0);
+      expect(service.owns('remove_ads'), isFalse);
+
+      service.grantConsumable('gems', 3);
+      expect(service.balanceOf('gems'), 3);
+    });
+
+    test('consumables/permanents sai kiểu: sổ rỗng, không ném lỗi', () async {
+      for (final raw in [
+        '{"schemaVersion":1,"consumables":{"gems":8},"permanents":{"a":1}}',
+        '{"schemaVersion":1,"consumables":"x","permanents":["a"]}',
+      ]) {
+        await storage.setString(StorageKeys.purchaseLedgerV1, raw);
+        final service = PurchaseLedgerService();
+
+        expect(service.balanceOf('gems'), 0);
+        expect(service.owns('a'), isFalse);
+      }
+    });
+
+    test('PurchaseLedgerService.maybe: null khi chưa đăng ký, đúng instance khi đã đăng ký', () {
+      expect(PurchaseLedgerService.maybe, isNull);
+      final service = Get.put(PurchaseLedgerService());
+      expect(PurchaseLedgerService.maybe, same(service));
+    });
+  });
+
   group('PurchaseLedgerService: consumable balance', () {
     test('grantConsumable tràn int64: ném RangeError, số dư cũ giữ nguyên', () {
       final service = PurchaseLedgerService();
@@ -347,4 +380,14 @@ void main() {
       );
     });
   });
+}
+
+class _ThrowingReadLedgerStorage extends StorageService {
+  _ThrowingReadLedgerStorage() : super(null);
+
+  @override
+  String? getString(String key) {
+    if (key == StorageKeys.purchaseLedgerV1) throw StateError('read failure');
+    return super.getString(key);
+  }
 }

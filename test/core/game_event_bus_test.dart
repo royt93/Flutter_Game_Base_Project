@@ -12,6 +12,19 @@ class _TestEventB extends GameEvent {
 }
 
 void main() {
+  test('hasListeners tracks subscriptions and cancellation', () async {
+    final bus = GameEventBus();
+    expect(bus.hasListeners, isFalse);
+    final first = bus.subscribe<_TestEventA>((_) {});
+    final second = bus.subscribe<_TestEventB>((_) {});
+    expect(bus.hasListeners, isTrue);
+    await first.cancel();
+    expect(bus.hasListeners, isTrue);
+    await second.cancel();
+    expect(bus.hasListeners, isFalse);
+    await bus.dispose();
+  });
+
   test('subscribe(T) chỉ nhận đúng loại event, bỏ qua loại khác', () async {
     final bus = GameEventBus();
     final receivedA = <int>[];

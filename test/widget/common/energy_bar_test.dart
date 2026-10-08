@@ -12,15 +12,17 @@ Widget _wrap(Widget child) => MaterialApp(home: Material(child: child));
 class _SnapshotEnergyService extends EnergyService {
   _SnapshotEnergyService({required super.maxEnergy, required this.count});
   int count;
+  Duration until = Duration.zero;
+  bool infinite = false;
 
   @override
   int get currentEnergy => count;
 
   @override
-  Duration get timeUntilNextEnergy => Duration.zero;
+  Duration get timeUntilNextEnergy => until;
 
   @override
-  bool get hasInfiniteLives => false;
+  bool get hasInfiniteLives => infinite;
 }
 
 void main() {
@@ -364,6 +366,35 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
       expect(find.byIcon(Icons.favorite), findsNWidgets(5));
       expect(find.byIcon(Icons.favorite_border), findsNWidgets(1));
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('poll làm mới khi CHỈ đếm lùi đổi, rồi khi CHỈ trạng thái vô hạn đổi', (
+      tester,
+    ) async {
+      final service = _SnapshotEnergyService(maxEnergy: 3, count: 1)
+        ..until = const Duration(seconds: 30);
+      await tester.pumpWidget(_wrap(ReactiveEnergyBar(
+        energyService: service,
+        pollInterval: const Duration(milliseconds: 200),
+      )));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('00:30'), findsOneWidget);
+
+      // Chỉ đếm lùi đổi (số tim giữ nguyên).
+      service.until = const Duration(seconds: 12);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('00:12'), findsOneWidget);
+      expect(find.byIcon(Icons.favorite), findsOneWidget);
+
+      // Chỉ trạng thái vô hạn đổi.
+      expect(find.text('∞'), findsNothing);
+      service.infinite = true;
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('∞'), findsOneWidget);
+      expect(find.byIcon(Icons.favorite), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
       expect(tester.takeException(), isNull);

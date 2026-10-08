@@ -18,6 +18,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 int get _realDay => DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000;
 
 void main() {
+  test('throwing storage read returns the initial streak state without crashing', () async {
+    await Get.delete<StorageService>(force: true);
+    Get.put<StorageService>(_ReadFailureLoginStorage(), permanent: true);
+    expect(DailyLoginService().currentStreakDay, 0);
+  });
+
   tearDown(Get.reset);
 
   late StorageService store;
@@ -479,4 +485,13 @@ void main() {
       );
     });
   });
+}
+
+class _ReadFailureLoginStorage extends StorageService {
+  _ReadFailureLoginStorage() : super(null);
+  @override
+  String? getString(String key) {
+    if (key == StorageKeys.dailyLoginStateV1) throw StateError('read failure');
+    return super.getString(key);
+  }
 }

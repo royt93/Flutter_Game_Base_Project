@@ -16,6 +16,13 @@ void main() {
   });
 
   group('Slice 1: isFlowSeen/markFlowSeen cơ bản', () {
+    test('throwing storage read treats onboarding as unseen', () async {
+      await Get.delete<StorageService>(force: true);
+      Get.put<StorageService>(_ReadFailureOnboardingStorage(), permanent: true);
+      expect(OnboardingCoordinatorService().isFlowSeen('intro'), isFalse);
+    });
+
+
     test(
       'chưa markFlowSeen: isFlowSeen trả về false, không throw kể cả chưa registerFlow',
       () {
@@ -291,4 +298,13 @@ void main() {
       },
     );
   });
+}
+
+class _ReadFailureOnboardingStorage extends StorageService {
+  _ReadFailureOnboardingStorage() : super(null);
+  @override
+  String? getString(String key) {
+    if (key == StorageKeys.onboardingSeenV1) throw StateError('read failure');
+    return super.getString(key);
+  }
 }

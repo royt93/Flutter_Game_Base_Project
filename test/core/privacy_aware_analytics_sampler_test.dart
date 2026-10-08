@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/analytics_provider.dart';
+import 'package:roy_casual_kit/core/app_session_tracker.dart';
 import 'package:roy_casual_kit/core/consent_state_service.dart';
 import 'package:roy_casual_kit/core/crash_reporter.dart';
 import 'package:roy_casual_kit/core/privacy_aware_analytics_sampler.dart';
@@ -49,6 +50,25 @@ void main() {
       StorageService(await SharedPreferences.getInstance()),
       permanent: true,
     );
+  });
+
+  test('default seed follows registered session or no-session fallback', () {
+    _grantConsent();
+    for (final withSession in [false, true]) {
+      if (withSession) Get.put(AppSessionTracker(generateSessionId: () => 'sample-session'));
+      final defaultInner = _RecordingAnalyticsProvider();
+      final explicitInner = _RecordingAnalyticsProvider();
+      final implicit = PrivacyAwareAnalyticsSampler(defaultInner,
+        defaultSamplingRate: 0.5, maxEventsPerWindow: 100, nowMs: () => 1);
+      final explicit = PrivacyAwareAnalyticsSampler(explicitInner,
+        defaultSamplingRate: 0.5, maxEventsPerWindow: 100, nowMs: () => 1,
+        sessionSeed: () => withSession ? 'sample-session' : 'no-session');
+      for (var i = 0; i < 30; i++) {
+        implicit.logEvent('event_$i');
+        explicit.logEvent('event_$i');
+      }
+      expect(defaultInner.calls.map((e) => e.key), explicitInner.calls.map((e) => e.key));
+    }
   });
 
   group('consent gate', () {

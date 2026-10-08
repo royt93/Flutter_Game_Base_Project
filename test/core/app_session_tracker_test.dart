@@ -57,6 +57,22 @@ void main() {
     Get.put(store, permanent: true);
   });
 
+  test('onClose removes lifecycle hook so foreground timer stays stopped', () async {
+    final coordinator = RoyLifecycleCoordinator();
+    Get.put(coordinator);
+    final watch = _FakeStopwatch();
+    final tracker = AppSessionTracker(lifecycle: coordinator, createStopwatch: () => watch);
+    Get.put(tracker);
+    expect(AppSessionTracker.maybe, same(tracker));
+    coordinator.didChangeAppLifecycleState(AppLifecycleState.paused);
+    await Future<void>.delayed(Duration.zero);
+    expect(watch.isRunning, isFalse);
+    tracker.onClose();
+    coordinator.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await Future<void>.delayed(Duration.zero);
+    expect(watch.isRunning, isFalse);
+  });
+
   group('AppSessionTracker: accessor', () {
     test('maybe trả về null khi chưa Get.put', () {
       expect(AppSessionTracker.maybe, isNull);

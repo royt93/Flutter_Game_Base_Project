@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/level_select_grid.dart';
@@ -31,6 +32,22 @@ void main() {
   });
 
   group('LevelNodeButton', () {
+    testWidgets('pulse starts and stops when existing node state changes', (tester) async {
+      Widget build(LevelState state, bool pulse) => MaterialApp(home: Material(
+        child: LevelNodeButton(levelNumber: 1, state: state, pulse: pulse),
+      ));
+      await tester.pumpWidget(build(LevelState.locked, true));
+      await tester.pump(const Duration(seconds: 1));
+      expect(SchedulerBinding.instance.transientCallbackCount, 0);
+      await tester.pumpWidget(build(LevelState.unlocked, true));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(SchedulerBinding.instance.transientCallbackCount, greaterThan(0));
+      await tester.pumpWidget(build(LevelState.unlocked, false));
+      await tester.pump(const Duration(seconds: 1));
+      expect(SchedulerBinding.instance.transientCallbackCount, 0);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
     testWidgets('locked: shows a lock icon and blocks tap', (tester) async {
       var tapped = false;
       await tester.pumpWidget(

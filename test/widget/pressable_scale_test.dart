@@ -4,6 +4,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/pressable_scale.dart';
 
 void main() {
+  testWidgets('cancelled gesture restores scale and never fires onTap', (tester) async {
+    var taps = 0;
+    await tester.pumpWidget(MaterialApp(home: Material(child: Center(
+      child: PressableScale(
+        onTap: () => taps++,
+        child: const ColoredBox(color: Colors.blue, child: SizedBox(width: 60, height: 60)),
+      ),
+    ))));
+    final gesture = await tester.startGesture(tester.getCenter(find.byType(PressableScale)));
+    await tester.pump();
+    expect(tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale, 0.94);
+    await gesture.cancel();
+    await tester.pump();
+    expect(tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale, 1.0);
+    expect(taps, 0);
+  });
+
   testWidgets('tap invokes onTap', (tester) async {
     var tapped = false;
     await tester.pumpWidget(

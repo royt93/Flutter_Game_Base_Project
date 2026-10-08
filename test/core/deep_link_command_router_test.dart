@@ -23,6 +23,23 @@ final _routes = [
 ];
 
 void main() {
+  test('handlerCountFor drops only the removed handler and reports zero for unknown routes', () {
+    final router = DeepLinkCommandRouter(routes: _routes);
+    void first(DeepLinkCommand _) {}
+    void second(DeepLinkCommand _) {}
+    expect(router.handlerCountFor('level'), 0);
+    router.registerHandler('level', first);
+    router.registerHandler('level', second);
+    expect(router.handlerCountFor('level'), 2);
+    expect(router.handlerCountFor('unknown'), 0);
+    router.unregisterHandler('level', first);
+    expect(router.handlerCountFor('level'), 1);
+    router.unregisterHandler('level', first);
+    expect(router.handlerCountFor('level'), 1);
+    router.unregisterHandler('level', second);
+    expect(router.handlerCountFor('level'), 0);
+  });
+
   TestWidgetsFlutterBinding.ensureInitialized();
   tearDown(Get.reset);
 

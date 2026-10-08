@@ -28,6 +28,19 @@ const _options = [
 ];
 
 void main() {
+  testWidgets('option icons distinguish a locked option from an available one', (tester) async {
+    await tester.pumpWidget(_wrap(RewardChoicePanel(
+      options: const [
+        RewardChoiceOption(id: 'open', label: 'Open', icon: Icons.star),
+        RewardChoiceOption(id: 'locked', label: 'Locked', icon: Icons.diamond, locked: true),
+      ],
+      onConfirm: (_) async {},
+    )));
+    expect(find.byIcon(Icons.star), findsOneWidget);
+    expect(find.byIcon(Icons.lock_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.diamond), findsNothing);
+  });
+
   testWidgets('hiện đúng label mọi option', (tester) async {
     await tester.pumpWidget(
       _wrap(RewardChoicePanel(options: _options, onConfirm: (_) async {})),

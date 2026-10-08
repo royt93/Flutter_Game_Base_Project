@@ -37,6 +37,18 @@ class _GatedStorageService extends StorageService {
 int get _realMs => DateTime.now().toUtc().millisecondsSinceEpoch;
 
 void main() {
+  test('throwing storage read starts a new event window without crashing', () async {
+    await Get.delete<StorageService>(force: true);
+    Get.put<StorageService>(_ReadFailureSeasonStorage(), permanent: true);
+    final service = SeasonEventService();
+    final window = service.currentWindow(
+      'event', length: const Duration(hours: 2), cooldown: const Duration(hours: 1),
+    );
+    expect(window, isNotNull);
+    await service.debugPendingSaves;
+  });
+
+
   tearDown(Get.reset);
 
   late StorageService storage;
@@ -614,4 +626,13 @@ void main() {
       expect(restoredB.end, originalB.end);
     });
   });
+}
+
+class _ReadFailureSeasonStorage extends StorageService {
+  _ReadFailureSeasonStorage() : super(null);
+  @override
+  String? getString(String key) {
+    if (key == StorageKeys.seasonEventAnchorsV1) throw StateError('read failure');
+    return super.getString(key);
+  }
 }

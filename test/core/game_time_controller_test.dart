@@ -4,6 +4,15 @@ import 'package:roy_casual_kit/core/game_session_controller.dart';
 import 'package:roy_casual_kit/core/game_time_controller.dart';
 
 void main() {
+  test('clock scale reflects valid changes and remains unchanged for invalid input', () {
+    final clock = GameClock();
+    expect(clock.scale, 1.0);
+    clock.setScale(2.0);
+    expect(clock.scale, 2.0);
+    expect(clock.setScale(-1).isSuccess, isFalse);
+    expect(clock.scale, 2.0);
+  });
+
   tearDown(Get.reset);
 
   group('GameClock: pure, deterministic', () {

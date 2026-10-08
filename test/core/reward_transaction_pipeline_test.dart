@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:roy_casual_kit/core/analytics_provider.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/inventory_service.dart';
 import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
@@ -38,6 +40,17 @@ void main() {
     storage = StorageService(null);
     wallet = EconomyWallet(storage: storage)..onInit();
     pipeline = RewardTransactionPipeline(wallet: wallet)..onInit();
+  });
+
+  test('default analytics sends reward transaction id and source once', () async {
+    final provider = _RecordingRewardAnalytics();
+    Get.put<AnalyticsProvider>(provider);
+    addTearDown(Get.reset);
+    await pipeline.grant(source: RewardSource.dailyLogin, transactionId: 'daily',
+      lines: const [RewardLine(currency: 'coin', amount: 2)]);
+    expect(provider.events, hasLength(1));
+    expect(provider.events.single.$1, 'reward_granted');
+    expect(provider.events.single.$2, {'transactionId': 'daily', 'source': 'dailyLogin'});
   });
 
   test('record copy preserves state and parsed receipt metadata', () {
@@ -1052,4 +1065,10 @@ void main() {
       expect(inventory.snapshot.value.quantityOf('potion'), 2);
     });
   });
+}
+
+class _RecordingRewardAnalytics implements AnalyticsProvider {
+  final events = <(String, Map<String, Object?>?)>[];
+  @override
+  void logEvent(String name, [Map<String, Object?>? params]) => events.add((name, params));
 }

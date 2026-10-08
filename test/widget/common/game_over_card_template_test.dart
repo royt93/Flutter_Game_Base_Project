@@ -8,6 +8,13 @@ Widget _wrap(Widget child) => MaterialApp(
 
 void main() {
   group('GameOverCardTemplate', () {
+    testWidgets('optional icon uses the configured glyph', (tester) async {
+      await tester.pumpWidget(_wrap(GameOverCardTemplate(
+        title: 'Lost', icon: Icons.warning, primaryActionLabel: 'Retry', onPrimaryAction: () {},
+      )));
+      expect(find.byIcon(Icons.warning), findsOneWidget);
+    });
+
     testWidgets('renders title, message and stat lines', (tester) async {
       await tester.pumpWidget(
         _wrap(

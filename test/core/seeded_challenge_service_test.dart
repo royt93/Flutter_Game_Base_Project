@@ -8,6 +8,15 @@ import 'package:roy_casual_kit/core/utils/seeded_random.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  test('nonpositive scoreboard capacity is rejected at construction', () {
+    for (final capacity in [0, -1]) {
+      expect(() => SeededChallengeService(
+        challengeId: 'daily', period: ChallengePeriod.daily,
+        scoreboardCapacity: capacity,
+      ), throwsArgumentError);
+    }
+  });
+
   TestWidgetsFlutterBinding.ensureInitialized();
   tearDown(() {
     setDebugTimeOffsetMs(0);

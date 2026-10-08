@@ -12,6 +12,19 @@ void main() {
   });
 
   group('track/release: happy path', () {
+    test('disposed history retains only the latest 200 entries in order', () {
+      MemoryWatchdog.nowMs = () => 100;
+      for (var i = 0; i < 205; i++) {
+        final id = MemoryWatchdog.track(WatchdogKind.overlay, owner: 'owner$i');
+        MemoryWatchdog.release(id);
+      }
+      final history = MemoryWatchdog.recentlyDisposed();
+      expect(history, hasLength(200));
+      expect(history.first.entry.owner, 'owner5');
+      expect(history.last.entry.owner, 'owner204');
+      expect(MemoryWatchdog.orphans(), isEmpty);
+    });
+
     test('track rồi release ngay -> không còn orphan', () {
       final id = MemoryWatchdog.track(WatchdogKind.overlay, owner: 'X');
       expect(MemoryWatchdog.orphans(), hasLength(1));

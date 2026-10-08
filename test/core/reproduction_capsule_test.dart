@@ -172,6 +172,21 @@ void main() {
   });
 
   group('ReproductionCapsule.replay', () {
+    test('different RNG draw count reports the namespace even when outcomes match', () {
+      final rng = SeededRandomService(99);
+      final recorder = _recordSession(rng, seed: 99, count: 4);
+      final signed = ReproductionCapsule.capture(
+        recorder: recorder, rng: rng, appVersion: '1', secret: _secret,
+      );
+      final result = ReproductionCapsule.replay(signed, _secret, (event, replayRng) {
+        final outcome = _spinHandler(event, replayRng);
+        replayRng.stream('wheel_spin').nextInt(6);
+        return outcome;
+      });
+      expect(result.matches, isFalse);
+      expect(result.rngMismatches, contains('wheel_spin'));
+    });
+
     test(
       'capture rồi replay cùng handler -> matches=true (không phân kỳ, '
       'rngSnapshots khớp)',

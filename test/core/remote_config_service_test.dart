@@ -26,6 +26,14 @@ class _FakeAssetBundle extends AssetBundle {
 
 const _assetPath = 'assets/remote_config_fallback.json';
 
+class _ThrowingInitConfig extends RemoteConfigService {
+  _ThrowingInitConfig(this.error) : super(assetPath: _assetPath);
+  final StateError error;
+
+  @override
+  Future<void> init() async => throw error;
+}
+
 void main() {
   tearDown(Get.reset);
 
@@ -430,6 +438,32 @@ void main() {
   });
 
   group('ENH-84: schema validation', () {
+    test('bool schema accepts bool but rejects strings and integers', () async {
+      for (final value in <Object>[true, false, 'true', 1]) {
+        final service = RemoteConfigService(
+          assetPath: _assetPath,
+          bundle: _FakeAssetBundle({_assetPath: jsonEncode({'enabled': value})}),
+          schema: const {
+            'enabled': RemoteConfigKeySchema(type: EventParamType.bool, required: true),
+          },
+        );
+        final result = await service.initResult();
+        expect(result.isSuccess, value is bool, reason: '$value');
+        expect(service.schemaViolations.isEmpty, value is bool);
+      }
+    });
+
+    test('initResult reports a throwing init as retryable network failure', () async {
+      final error = StateError('init broke');
+      final result = await _ThrowingInitConfig(error).initResult();
+      expect(result, isA<SdkFailure<void>>());
+      final failure = result as SdkFailure<void>;
+      expect(failure.kind, SdkErrorKind.network);
+      expect(failure.retryable, isTrue);
+      expect(failure.cause, same(error));
+      expect(failure.stackTrace, isNotNull);
+    });
+
     test(
       'không đăng ký schema nào (mặc định {}) -> schemaViolations rỗng, '
       'initResult vẫn SdkSuccess như trước',

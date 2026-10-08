@@ -173,6 +173,13 @@ void main() {
   });
 
   group('LocalScoreboardService: persist/corrupt', () {
+    test('throwing storage read falls back to an empty scoreboard', () async {
+      await Get.delete<StorageService>(force: true);
+      Get.put<StorageService>(_ReadFailureScoreStorage(), permanent: true);
+      expect(LocalScoreboardService().topN(10), isEmpty);
+    });
+
+
     test('drops corrupt entries instead of crashing hydration', () async {
       await storage.setString(
         'local_scoreboard_v1',
@@ -391,4 +398,13 @@ void main() {
       },
     );
   });
+}
+
+class _ReadFailureScoreStorage extends StorageService {
+  _ReadFailureScoreStorage() : super(null);
+  @override
+  String? getString(String key) {
+    if (key == StorageKeys.localScoreboardV1) throw StateError('read failure');
+    return super.getString(key);
+  }
 }

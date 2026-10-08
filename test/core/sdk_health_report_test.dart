@@ -4,10 +4,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/replay_recorder.dart';
+import 'package:roy_casual_kit/core/performance_tier_service.dart';
+import 'package:roy_casual_kit/core/remote_config_service.dart';
 import 'package:roy_casual_kit/core/sdk_health_report.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 
 void main() {
+  test('default report includes registered performance tier and remote config source', () async {
+    Get.put(PerformanceTierService());
+    Get.put(RemoteConfigService(assetPath: 'unused'));
+    final report = SdkHealthReport(nowMs: () => 1)..registerAll(defaultHealthCollectors());
+    final sections = (await report.collect())['sections'] as Map;
+    expect(sections['performance'], {'registered': true, 'tier': 'high'});
+    expect(sections['remoteConfig'], {'registered': true, 'source': 'assetOnly'});
+  });
+
   tearDown(Get.reset);
 
   test('không collector nào: vẫn ra report hợp lệ với sections rỗng', () async {

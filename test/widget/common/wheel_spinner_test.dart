@@ -13,6 +13,35 @@ Widget _wrap(Widget child, {bool reducedMotion = false}) => MediaQuery(
 
 void main() {
   group('WheelSpinner', () {
+    testWidgets('controller swap removes old listener and new controller spins', (tester) async {
+      final old = _CountingWheelController();
+      final next = _CountingWheelController();
+      addTearDown(old.dispose);
+      addTearDown(next.dispose);
+      const choices = [
+        WheelSegment(label: 'A', color: Colors.red),
+        WheelSegment(label: 'B', color: Colors.blue),
+      ];
+      final results = <WheelSegment>[];
+      Widget build(WheelSpinnerController c) => _wrap(WheelSpinner(
+        segments: choices, controller: c, onSpinEnd: results.add,
+        spinDuration: const Duration(milliseconds: 100),
+      ));
+      await tester.pumpWidget(build(old));
+      await tester.pumpWidget(build(next));
+      expect(old.listeners, 0);
+      expect(next.listeners, 1);
+      old.spin(0);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(results, isEmpty);
+      next.spin(1);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(results.single.label, 'B');
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(next.listeners, 0);
+    });
+
     final segments = const [
       WheelSegment(label: '10 coins', color: Colors.red, value: 10),
       WheelSegment(label: '50 coins', color: Colors.blue, value: 50),
@@ -443,4 +472,12 @@ void main() {
       );
     });
   });
+}
+
+class _CountingWheelController extends WheelSpinnerController {
+  int listeners = 0;
+  @override
+  void addListener(VoidCallback listener) { listeners++; super.addListener(listener); }
+  @override
+  void removeListener(VoidCallback listener) { listeners--; super.removeListener(listener); }
 }

@@ -5,6 +5,28 @@ import 'package:roy_casual_kit/presentation/widgets/common/progress_bar_stars.da
 import 'package:roy_casual_kit/presentation/widgets/common/quest_board_panel.dart';
 
 void main() {
+  testWidgets('becoming claimable animates the claim button and cleans up on unmount', (tester) async {
+    String? claimed;
+    Widget build(int progress) => MaterialApp(home: Scaffold(body: QuestBoardPanel(
+      quests: [QuestViewModel(id: 'q', label: 'Win', progress: progress, target: 3, claimed: false)],
+      onClaim: (id) => claimed = id,
+    )));
+    final claimAnimation = find.byWidgetPredicate(
+      (widget) => widget is ScaleTransition && widget.child is CommonButton,
+    );
+    await tester.pumpWidget(build(2));
+    expect(claimAnimation, findsNothing);
+    await tester.pumpWidget(build(3));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(claimAnimation, findsOneWidget);
+    expect(tester.widget<ScaleTransition>(claimAnimation).scale.value, greaterThan(0));
+    await tester.tap(find.byType(CommonButton));
+    await tester.pump();
+    expect(claimed, 'q');
+    await tester.pumpWidget(const SizedBox.shrink());
+    expect(tester.takeException(), isNull);
+  });
+
   Widget host(Widget child) => MaterialApp(home: Scaffold(body: child));
 
   testWidgets('danh sách rỗng hiển thị empty-state, không crash', (

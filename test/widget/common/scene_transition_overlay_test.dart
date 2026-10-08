@@ -19,6 +19,28 @@ SceneTransitionController _controller() =>
     SceneTransitionController(coverDuration: _kStep, revealDuration: _kStep);
 
 void main() {
+  testWidgets('normal-motion reveal uses revealDuration and active state clears on completion', (tester) async {
+    final controller = SceneTransitionController(
+      coverDuration: const Duration(milliseconds: 10),
+      revealDuration: const Duration(milliseconds: 200),
+    );
+    addTearDown(controller.dispose);
+    final loaded = Completer<SdkResult<void>>();
+    await tester.pumpWidget(_wrap(SceneTransitionOverlay(controller: controller, child: const Text('Scene'))));
+    expect(controller.isActive, isFalse);
+    final future = controller.run((_) => loaded.future);
+    await tester.pump(const Duration(milliseconds: 10));
+    expect(controller.isActive, isTrue);
+    loaded.complete(const SdkSuccess(null));
+    await tester.pump();
+    expect(controller.phase.value, SceneTransitionPhase.revealing);
+    expect(tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity)).duration,
+        const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 250));
+    await future;
+    expect(controller.isActive, isFalse);
+  });
+
   testWidgets('idle: child hiện bình thường, không có barrier, nhận được tap', (
     tester,
   ) async {

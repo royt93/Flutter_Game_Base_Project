@@ -5,6 +5,15 @@ import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/reward_popup.dart';
 
 void main() {
+  testWidgets('custom reward content is rendered inside the popup', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: Material(child: Center(
+      child: RewardPopup(title: 'Reward', enableParticles: false, content: Text('Custom reward')),
+    ))));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Custom reward'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('RewardPopup burst animation runs without throwing', (
     tester,
   ) async {
