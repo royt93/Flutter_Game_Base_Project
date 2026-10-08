@@ -648,6 +648,26 @@ class _CookbookScreenState extends State<CookbookScreen> {
                         },
                       ),
                       _tile(
+                        'AchievementSyncSeam (fake adapter) — merge by max',
+                        () async {
+                          final service = AchievementService(
+                            storage: StorageService(null),
+                          )..register('cookbook_wins', 10);
+                          service.incrementProgress('cookbook_wins', 3);
+                          final seam = _FakeAchievementSyncSeam()
+                            ..remote = {'cookbook_wins': 7};
+                          final result = await AchievementSyncCoordinator(
+                            service: service,
+                            seam: seam,
+                          ).sync();
+                          return switch (result) {
+                            SdkSuccess(:final value) =>
+                              'raised=$value local=${service.progressOf('cookbook_wins')} pushed=${seam.remote}',
+                            SdkFailure(:final message) => 'failed: $message',
+                          };
+                        },
+                      ),
+                      _tile(
                         'SecureStorageAdapter (fake adapter) — round trip',
                         () async {
                           await SecureStorage.write(
@@ -1003,4 +1023,20 @@ class _FakeLeaderboardSyncSeam implements LeaderboardSyncSeam {
     String boardId, {
     int radius = 2,
   }) async => _boards[boardId] ?? const [];
+}
+
+class _FakeAchievementSyncSeam implements AchievementSyncSeam {
+  Map<String, int>? remote;
+
+  @override
+  Future<Map<String, int>?> pullProgress() async => remote;
+
+  @override
+  Future<void> pushProgress(Map<String, int> progress) async {
+    final merged = Map<String, int>.of(remote ?? {});
+    for (final entry in progress.entries) {
+      if (entry.value > (merged[entry.key] ?? 0)) merged[entry.key] = entry.value;
+    }
+    remote = merged;
+  }
 }

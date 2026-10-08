@@ -123,9 +123,15 @@ class AchievementService extends GetxService {
   Map<String, int> _parseProgress(Map<String, Object?> json) {
     final result = <String, int>{};
     for (final entry in json.entries) {
-      final id = entry.key.trim();
+      final id = entry.key;
       final value = entry.value;
-      if (id.isEmpty || value is! int || value < 0) continue;
+      if (id.trim().isEmpty ||
+          id == 'schemaVersion' ||
+          id == 'syncedAtMs' ||
+          value is! int ||
+          value < 0) {
+        continue;
+      }
       result[id] = value;
     }
     return result;
@@ -299,6 +305,44 @@ class AchievementService extends GetxService {
     return SdkSuccess(progressOf(achievementId));
   }
 
+  /// Detached, unmodifiable snapshot of stored progress.
+  Map<String, int> get progressSnapshot => Map.unmodifiable(_progressMap);
+
+  /// Merges by max and persists; storage failure retains in-memory progress.
+  Future<SdkResult<int>> mergeProgressDurably(Map<String, int> remote) async {
+    var raised = 0;
+    final unlocked = <String>[];
+    for (final entry in remote.entries) {
+      final id = entry.key;
+      final value = entry.value;
+      if (id.trim().isEmpty || id == 'schemaVersion' || id == 'syncedAtMs') {
+        continue;
+      }
+      final current = _progressMap[id] ?? 0;
+      // Also rejects negatives: current is never below 0.
+      if (value <= current) continue;
+      final wasCompleted = isCompleted(id);
+      _progressMap[id] = value;
+      raised++;
+      if (!wasCompleted && isCompleted(id)) unlocked.add(id);
+    }
+    // An unchanged merge still retries a previous failed or pending save.
+    unlocked.forEach(_unlockController.add);
+    _scheduleSave();
+    while (_saving) {
+      await _saveChain;
+    }
+    final error = _lastSaveError;
+    if (error != null) {
+      return SdkFailure(
+        kind: SdkErrorKind.storage,
+        message: 'Failed to persist merged achievement progress',
+        cause: error,
+      );
+    }
+    return SdkSuccess(raised);
+  }
+
   /// `true` once progress reaches the registered threshold. `false` (never
   /// throws) for an id that was never [register]ed or has no progress yet.
   bool isCompleted(String achievementId) {
@@ -339,6 +383,13 @@ class AchievementService extends GetxService {
   static final int _maxInt = 0x7FFFFFFFFFFFFFFF;
 
   void _validateId(String achievementId) {
+    if (achievementId == 'schemaVersion' || achievementId == 'syncedAtMs') {
+      throw ArgumentError.value(
+        achievementId,
+        'achievementId',
+        'reserved for save metadata',
+      );
+    }
     if (achievementId.trim().isEmpty) {
       throw ArgumentError.value(
         achievementId,

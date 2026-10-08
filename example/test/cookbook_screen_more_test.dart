@@ -201,6 +201,29 @@ void main() {
   );
 
   testWidgets(
+    'AchievementSyncSeam tile merges remote progress by max and pushes it back',
+    (tester) async {
+      await _boot();
+      await tester.pumpWidget(_wrap(const CookbookScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await _tapAndShowToast(
+        tester,
+        'AchievementSyncSeam (fake adapter) — merge by max',
+      );
+
+      expect(
+        find.textContaining(
+          'raised=1 local=7 pushed={cookbook_wins: 7}',
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      await _flushToast(tester);
+    },
+  );
+
+  testWidgets(
     'LeaderboardSyncSeam tile submits + fetches top via the registered fake '
     'adapter (FEAT-87)',
     (tester) async {

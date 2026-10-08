@@ -1,3 +1,11 @@
+## 0.5.0
+
+- Added `AchievementSyncSeam` (`pushProgress` / `pullProgress`) and `AchievementSyncCoordinator`, a platform-neutral way to sync `AchievementService` progress with Play Games, Game Center or your own backend. The package ships no backend client; register your adapter with `Get.put<AchievementSyncSeam>(adapter, permanent: true)`.
+- `AchievementSyncCoordinator.sync()` pulls, merges per achievement with `max(local, remote)`, then pushes the merged map. Adapters must merge uploads atomically by max on the backend to preserve concurrent device updates. Progress only grows; unchanged merges still persist so retries after a failed save remain durable. A failed pull or push returns a retryable `SdkFailure(network)`; a failed local save returns `SdkFailure(storage)`. Resetting or lowering progress is not supported by this merge.
+- Added `AchievementService.mergeProgressDurably(remote)` (raises progress, fires `onUnlock` for newly completed achievements, awaits the save) and `AchievementService.progressSnapshot` (read-only copy). Purely additive: no existing signature changed.
+- Fixed `AchievementService` trimming nonempty achievement IDs during hydration even though registration and increments preserve them. IDs now round-trip unchanged through storage. Save metadata (`schemaVersion`, `syncedAtMs`) is excluded from progress and these two IDs are reserved; registering or incrementing them throws `ArgumentError`. Save format is unchanged.
+- Added an `AchievementSyncSeam` tile to the example cookbook. Added the `workflow_dispatch` trigger to CI so the gated jobs can be run on demand.
+
 ## 0.4.5
 
 - Fixed `InventoryService` leaving its in-memory state changed when persisting failed. `grant`, `consume`, `setEquipped` and `moveSlot` changed the slots, the next slot id and the transaction ledger before writing, and the storage error was thrown without undoing that. A retry of `grant` with the same `transactionId` then returned `SdkSuccess` although nothing had been saved, and a failed `consume` kept showing the old count until an unrelated call exposed the hidden change and wrote it to disk. These methods now restore the previous state and rethrow the same error, so a retry saves for real. Signatures and the thrown error are unchanged.
