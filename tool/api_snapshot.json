@@ -1,5 +1,5 @@
 {
-  "version": "0.5.0",
+  "version": "0.5.1",
   "entrypoint": "lib/roy_casual_kit.dart",
   "exports": [
     "core/achievement_service.dart",

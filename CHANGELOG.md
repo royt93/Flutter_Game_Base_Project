@@ -1,3 +1,8 @@
+## 0.5.1
+
+- Added `PluginAdapterConformanceSuite.verifyAchievementSyncSeam` with five checks for exact round-trip, duplicate uploads without progress inflation, max-progress merging, disjoint ID preservation, and a concurrent-upload probe that also checks previously written IDs remain intact. Throws and timeouts fail the relevant check.
+- The checklist writes test progress: use an isolated sandbox/test account and a fresh, nonblank `testIdPrefix`. Test data is not deleted; a prefix does not protect production data from a broken adapter. Timeouts do not cancel underlying I/O, and passing the concurrent probe does not prove every race schedule.
+
 ## 0.5.0
 
 - Added `AchievementSyncSeam` (`pushProgress` / `pullProgress`) and `AchievementSyncCoordinator`, a platform-neutral way to sync `AchievementService` progress with Play Games, Game Center or your own backend. The package ships no backend client; register your adapter with `Get.put<AchievementSyncSeam>(adapter, permanent: true)`.
