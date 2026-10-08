@@ -186,6 +186,35 @@ void main() {
     );
 
     testWidgets(
+      'đổi version khi dialog đang mở -> đóng dialog cũ không đánh dấu v1, rồi hỏi lại cho v2',
+      (tester) async {
+        await tester.pumpWidget(
+          wrap(const ConsentBanner(version: 1, child: Text('home'))),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Chấp nhận tất cả'), findsOneWidget);
+
+        await tester.pumpWidget(
+          wrap(const ConsentBanner(version: 2, child: Text('home'))),
+        );
+        await tester.pumpAndSettle();
+        // Dialog v1 vẫn đang mở: lần kiểm tra v2 không được chồng thêm dialog.
+        expect(find.text('Chấp nhận tất cả'), findsOneWidget);
+
+        await tester.tap(find.text('Chấp nhận tất cả'));
+        await tester.pumpAndSettle();
+        final onboarding = OnboardingCoordinatorService.maybe!;
+        expect(onboarding.isFlowSeen('consent_banner', version: 1), isFalse);
+
+        // Dialog v1 đóng xong -> tự lên lịch kiểm tra lại và hỏi cho v2.
+        expect(find.text('Chấp nhận tất cả'), findsOneWidget);
+        await tester.tap(find.text('Chấp nhận tất cả'));
+        await tester.pumpAndSettle();
+        expect(onboarding.isFlowSeen('consent_banner', version: 2), isTrue);
+      },
+    );
+
+    testWidgets(
       'rebuild cùng State nhưng version/flowId KHÔNG đổi -> KHÔNG hiện dialog lại',
       (tester) async {
         await tester.pumpWidget(
