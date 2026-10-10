@@ -14,9 +14,9 @@ Gacha, bốc thẻ bài may mắn, mở thưởng đặc biệt luôn cần hi�
 Widget CardFlip3D nhận front/back widget, góc quay Y với Transform Matrix4 perspective, và hiệu ứng GleamSweep (vệt sáng chạy chéo qua thẻ sau khi lật).
 
 ## Yêu cầu kiểm thử (Bắt buộc theo chuẩn đối tác)
-- [ ] **Unit test**: Kiểm tra tính toán ma trận xoay góc 0..pi, trạng thái hiển thị mặt trước/sau tại mốc pi/2.
-- [ ] **Widget test**: Tap để lật thẻ, kiểm tra mặt trước ẩn đi và mặt sau hiện lên ở nửa sau của animation, tia sáng quét đúng chu kỳ.
-- [ ] **Integration test**: Lật liên tiếp 3 thẻ bài gacha trên thiết bị thật, đo hiệu năng dựng hình 3D mượt mà.
+- [x] **Unit test**: Kiểm tra tính toán ma trận xoay góc 0..pi, trạng thái hiển thị mặt trước/sau tại mốc pi/2.
+- [x] **Widget test**: Tap để lật thẻ, kiểm tra mặt trước ẩn đi và mặt sau hiện lên ở nửa sau của animation, tia sáng quét đúng chu kỳ.
+- [x] **Integration test**: Lật liên tiếp 3 thẻ bài gacha trên thiết bị thật, đo hiệu năng dựng hình 3D mượt mà.
 
 ## Yêu cầu hiệu năng & Animation
-- [ ] **60 FPS & Resource cleanup**: Sử dụng RepaintBoundary cho từng mặt thẻ, ngắt tia quét sáng khi reducedMotion bật.
+- [x] **60 FPS & Resource cleanup**: Sử dụng RepaintBoundary cho từng mặt thẻ, ngắt tia quét sáng khi reducedMotion bật.

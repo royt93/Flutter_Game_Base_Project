@@ -187,4 +187,239 @@ void main() {
       },
     );
   });
+
+  group('ENH-98: Continuous / Responsive CurrencyCounter', () {
+    testWidgets('runtime validation throws on non-positive duration', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: CurrencyCounter(
+              value: 100,
+              duration: Duration.zero,
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isA<ArgumentError>());
+    });
+
+    testWidgets(
+      'continuous rolling starts from current intermediate value on mid-animation update',
+      (tester) async {
+        var value = 100;
+        late StateSetter setValue;
+        final key = GlobalKey<CurrencyCounterState>();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  setValue = setState;
+                  return CurrencyCounter(
+                    key: key,
+                    value: value,
+                    compact: false,
+                    duration: const Duration(milliseconds: 500),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(key.currentState!.displayedValue, 100);
+
+        // Start animating from 100 to 200
+        setValue(() => value = 200);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+
+        final intermediate = key.currentState!.displayedValue;
+        expect(intermediate, greaterThan(100));
+        expect(intermediate, lessThan(200));
+        expect(key.currentState!.isAnimating, isTrue);
+
+        // Interrupt mid-animation with target 300
+        setValue(() => value = 300);
+        await tester.pump();
+
+        // The counter must start rolling from the intermediate value, NOT jump to 200 or 100
+        expect(key.currentState!.displayedValue, intermediate);
+
+        // Advance to completion
+        await tester.pump(const Duration(milliseconds: 550));
+        expect(key.currentState!.displayedValue, 300);
+        expect(key.currentState!.isAnimating, isFalse);
+        expect(find.text(fmtNum(300)), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'chained reward updates advance smoothly without discontinuous drops',
+      (tester) async {
+        var value = 100;
+        late StateSetter setValue;
+        final key = GlobalKey<CurrencyCounterState>();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Material(
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  setValue = setState;
+                  return CurrencyCounter(
+                    key: key,
+                    value: value,
+                    compact: false,
+                    duration: const Duration(milliseconds: 400),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        var lastSeen = 100;
+        for (final target in [200, 350, 500, 800]) {
+          setValue(() => value = target);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          final current = key.currentState!.displayedValue;
+          expect(current, greaterThanOrEqualTo(lastSeen));
+          lastSeen = current;
+        }
+
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(key.currentState!.displayedValue, 800);
+        expect(find.text(fmtNum(800)), findsOneWidget);
+      },
+    );
+
+    testWidgets('tapping counter instantly triggers skipToEnd', (
+      tester,
+    ) async {
+      var value = 100;
+      late StateSetter setValue;
+      final key = GlobalKey<CurrencyCounterState>();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                setValue = setState;
+                return CurrencyCounter(
+                  key: key,
+                  value: value,
+                  compact: false,
+                  duration: const Duration(milliseconds: 600),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      setValue(() => value = 1000);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(key.currentState!.isAnimating, isTrue);
+      expect(key.currentState!.displayedValue, lessThan(1000));
+
+      // Tap on the counter
+      await tester.tap(find.byType(CurrencyCounter));
+      await tester.pump();
+
+      expect(key.currentState!.displayedValue, 1000);
+      expect(key.currentState!.isAnimating, isFalse);
+      expect(find.text(fmtNum(1000)), findsOneWidget);
+    });
+
+    testWidgets('programmatic skipToEnd completes roll immediately', (
+      tester,
+    ) async {
+      final key = GlobalKey<CurrencyCounterState>();
+      var value = 50;
+      late StateSetter setValue;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                setValue = setState;
+                return CurrencyCounter(
+                  key: key,
+                  value: value,
+                  compact: false,
+                  enableTapToSkip: false,
+                  duration: const Duration(milliseconds: 500),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      setValue(() => value = 999);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      key.currentState!.skipToEnd();
+      await tester.pump();
+
+      expect(key.currentState!.displayedValue, 999);
+      expect(key.currentState!.isAnimating, isFalse);
+    });
+
+    testWidgets(
+      'reducedMotion turned on mid-animation immediately snaps to target',
+      (tester) async {
+        final key = GlobalKey<CurrencyCounterState>();
+        var reduceMotion = false;
+        var value = 10;
+        late StateSetter update;
+
+        await tester.pumpWidget(
+          StatefulBuilder(
+            builder: (context, setState) {
+              update = setState;
+              return MediaQuery(
+                data: MediaQueryData(disableAnimations: reduceMotion),
+                child: MaterialApp(
+                  home: Material(
+                    child: CurrencyCounter(
+                      key: key,
+                      value: value,
+                      compact: false,
+                      duration: const Duration(milliseconds: 500),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+        await tester.pump();
+
+        update(() => value = 500);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(key.currentState!.isAnimating, isTrue);
+
+        update(() => reduceMotion = true);
+        await tester.pump();
+
+        expect(key.currentState!.displayedValue, 500);
+        expect(key.currentState!.isAnimating, isFalse);
+      },
+    );
+  });
 }

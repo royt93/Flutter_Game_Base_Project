@@ -16,7 +16,10 @@ class CurrencyCounter extends StatefulWidget {
     this.fontSize = 18,
     this.compact = true,
     this.semanticLabel,
-  });
+    this.duration = const Duration(milliseconds: 500),
+    this.enableTapToSkip = true,
+    this.curve = Curves.easeOut,
+  }) : assert(fontSize > 0, 'fontSize must be positive');
 
   final int value;
   final IconData icon;
@@ -34,34 +37,141 @@ class CurrencyCounter extends StatefulWidget {
   /// [compact] — a screen reader should always hear the precise amount.
   final String? semanticLabel;
 
+  /// Duration of the rolling number animation (default 500ms).
+  final Duration duration;
+
+  /// When true (default), tapping the counter instantly skips to [value].
+  final bool enableTapToSkip;
+
+  /// Animation curve for rolling numbers (default [Curves.easeOut]).
+  final Curve curve;
+
   @override
-  State<CurrencyCounter> createState() => _CurrencyCounterState();
+  State<CurrencyCounter> createState() => CurrencyCounterState();
 }
 
-class _CurrencyCounterState extends State<CurrencyCounter> {
-  late int _from = widget.value;
-  int _to = 0;
+class CurrencyCounterState extends State<CurrencyCounter>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late CurvedAnimation _curvedAnimation;
+  late int _startValue;
+  late int _targetValue;
+  late int _displayedValue;
+
+  /// Currently visible value as the counter rolls.
+  int get displayedValue => _displayedValue;
+
+  /// Whether the number is actively rolling.
+  bool get isAnimating => _controller.isAnimating;
 
   @override
   void initState() {
     super.initState();
-    _to = widget.value;
-    _from = widget.value;
+    if (widget.duration <= Duration.zero) {
+      throw ArgumentError.value(
+        widget.duration,
+        'duration',
+        'must be positive',
+      );
+    }
+    _startValue = widget.value;
+    _targetValue = widget.value;
+    _displayedValue = widget.value;
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.duration,
+    )..addListener(_handleTick);
+    _curvedAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: widget.curve,
+    );
+  }
+
+  void _handleTick() {
+    final double t = _curvedAnimation.value;
+    final int next = (_startValue + (_targetValue - _startValue) * t).round();
+    if (next != _displayedValue) {
+      setState(() {
+        _displayedValue = next;
+      });
+    }
+  }
+
+  /// Instantly completes ongoing number rolling to [widget.value].
+  void skipToEnd() {
+    if (_displayedValue != widget.value || _controller.isAnimating) {
+      _controller.stop();
+      _controller.value = 1.0;
+      setState(() {
+        _startValue = widget.value;
+        _targetValue = widget.value;
+        _displayedValue = widget.value;
+      });
+    }
   }
 
   @override
-  void didUpdateWidget(covariant CurrencyCounter old) {
-    super.didUpdateWidget(old);
-    if (old.value != widget.value) {
-      _from = old.value;
-      _to = widget.value;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (NeonTheme.reducedMotion(context) && _controller.isAnimating) {
+      skipToEnd();
     }
+  }
+
+  @override
+  void didUpdateWidget(covariant CurrencyCounter oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.duration <= Duration.zero) {
+      throw ArgumentError.value(
+        widget.duration,
+        'duration',
+        'must be positive',
+      );
+    }
+    if (oldWidget.duration != widget.duration) {
+      _controller.duration = widget.duration;
+    }
+    if (oldWidget.curve != widget.curve) {
+      _curvedAnimation.curve = widget.curve;
+    }
+    if (oldWidget.value != widget.value) {
+      _animateTo(widget.value);
+    }
+  }
+
+  void _animateTo(int newTarget) {
+    if (NeonTheme.reducedMotion(context)) {
+      _controller.stop();
+      _controller.value = 1.0;
+      _startValue = newTarget;
+      _targetValue = newTarget;
+      setState(() {
+        _displayedValue = newTarget;
+      });
+      return;
+    }
+
+    _startValue = _displayedValue;
+    _targetValue = newTarget;
+    if (_startValue == _targetValue) {
+      _controller.stop();
+      _controller.value = 1.0;
+      return;
+    }
+
+    _controller.forward(from: 0.0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final c = widget.color ?? NeonTheme.gold;
-    return Semantics(
+    Widget content = Semantics(
       label: widget.semanticLabel ?? fmtNum(widget.value),
       liveRegion: true,
       excludeSemantics: true,
@@ -71,26 +181,17 @@ class _CurrencyCounterState extends State<CurrencyCounter> {
           Icon(widget.icon, color: c, size: widget.fontSize + 6),
           const SizedBox(width: 4),
           Flexible(
-            child: TweenAnimationBuilder<int>(
-              tween: IntTween(begin: _from, end: _to),
-              duration: NeonTheme.reducedMotion(context)
-                  ? Duration.zero
-                  : const Duration(milliseconds: 500),
-              curve: Curves.easeOut,
-              builder: (context, n, _) => FittedBox(
-                fit: BoxFit.scaleDown,
-                // ENH-38: centerStart resolves against ambient
-                // Directionality (physical left in LTR, right in RTL) so a
-                // shrunk-to-fit number stays anchored to the reading start
-                // instead of always the physical left.
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  widget.compact ? fmtNumCompact(n) : fmtNum(n),
-                  style: TextStyle(
-                    color: NeonTheme.ink,
-                    fontSize: widget.fontSize,
-                    fontWeight: FontWeight.w800,
-                  ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                widget.compact
+                    ? fmtNumCompact(_displayedValue)
+                    : fmtNum(_displayedValue),
+                style: TextStyle(
+                  color: NeonTheme.ink,
+                  fontSize: widget.fontSize,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -98,5 +199,15 @@ class _CurrencyCounterState extends State<CurrencyCounter> {
         ],
       ),
     );
+
+    if (widget.enableTapToSkip) {
+      content = GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: skipToEnd,
+        child: content,
+      );
+    }
+
+    return content;
   }
 }

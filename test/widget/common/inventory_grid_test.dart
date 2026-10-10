@@ -434,6 +434,161 @@ void main() {
     });
   });
 
+  group('FEAT-101: AnimatedInventoryGrid & Geometry', () {
+    test('inventoryGridCellOffset calculates exact row and column position', () {
+      final pos0 = inventoryGridCellOffset(
+        index: 0,
+        crossAxisCount: 4,
+        cellSize: 60,
+        spacing: 8,
+      );
+      expect(pos0, Offset.zero);
+
+      final pos5 = inventoryGridCellOffset(
+        index: 5, // row 1, col 1
+        crossAxisCount: 4,
+        cellSize: 60,
+        spacing: 8,
+      );
+      expect(pos5, const Offset(68, 68));
+
+      // Guard edge cases
+      expect(
+        inventoryGridCellOffset(
+          index: -1,
+          crossAxisCount: 4,
+          cellSize: 60,
+          spacing: 8,
+        ),
+        Offset.zero,
+      );
+    });
+
+    test('inventoryGridCellDelta calculates exact translation delta', () {
+      final delta = inventoryGridCellDelta(
+        oldIndex: 0,
+        newIndex: 1,
+        crossAxisCount: 4,
+        cellSize: 60,
+        spacing: 8,
+      );
+      // Moved right by 68px, so old - new = -68px
+      expect(delta, const Offset(-68, 0));
+    });
+
+    testWidgets('AnimatedInventoryGrid mounts with pop-in scale animation', (
+      tester,
+    ) async {
+      const snapshot = InventorySnapshot(
+        slots: [
+          InventorySlot(slotId: 1, itemId: 'potion', quantity: 1),
+        ],
+        capacity: 4,
+      );
+
+      await tester.pumpWidget(
+        _host(
+          AnimatedInventoryGrid(
+            snapshot: snapshot,
+            itemBuilder: _defaultItemBuilder,
+            animationDuration: const Duration(milliseconds: 300),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+          ),
+        ),
+      );
+
+      // Initial frame mounts wrapper
+      await tester.pump();
+      expect(find.text('potion x1'), findsOneWidget);
+
+      // Advance animation through pop-in scale
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.text('potion x1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'AnimatedInventoryGrid reorder slides smoothly into new index',
+      (tester) async {
+        const initial = InventorySnapshot(
+          slots: [
+            InventorySlot(slotId: 1, itemId: 'potion', quantity: 1),
+            InventorySlot(slotId: 2, itemId: 'sword', quantity: 1),
+          ],
+          capacity: 4,
+        );
+
+        var current = initial;
+        late StateSetter update;
+
+        await tester.pumpWidget(
+          _host(
+            StatefulBuilder(
+              builder: (context, setState) {
+                update = setState;
+                return AnimatedInventoryGrid(
+                  snapshot: current,
+                  itemBuilder: _defaultItemBuilder,
+                  animationDuration: const Duration(milliseconds: 250),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                );
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300)); // Finish mount
+
+        // Reorder slots
+        const swapped = InventorySnapshot(
+          slots: [
+            InventorySlot(slotId: 2, itemId: 'sword', quantity: 1),
+            InventorySlot(slotId: 1, itemId: 'potion', quantity: 1),
+          ],
+          capacity: 4,
+        );
+        update(() => current = swapped);
+        await tester.pump(); // Triggers didUpdateWidget and starts slide
+
+        // Advance slide animation
+        await tester.pump(const Duration(milliseconds: 120));
+        expect(find.text('sword x1'), findsOneWidget);
+        expect(find.text('potion x1'), findsOneWidget);
+
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('Reduced Motion disables animation lag', (tester) async {
+      const snapshot = InventorySnapshot(
+        slots: [
+          InventorySlot(slotId: 1, itemId: 'potion', quantity: 1),
+        ],
+        capacity: 2,
+      );
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: _host(
+            AnimatedInventoryGrid(
+              snapshot: snapshot,
+              itemBuilder: _defaultItemBuilder,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('potion x1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('InventoryGrid: danh sách lớn dùng lazy builder', () {
     testWidgets(
       'capacity 500: chỉ build số cell hiển thị trên viewport, không build hết 500',

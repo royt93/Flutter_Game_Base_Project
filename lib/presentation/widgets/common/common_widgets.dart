@@ -60,6 +60,7 @@ export 'energy_bar.dart';
 export 'wheel_spinner.dart';
 
 // Layout & Cards
+export 'card_flip_3d.dart';
 export 'panel_card.dart';
 export 'list_tile_row.dart';
 export 'section_header.dart';

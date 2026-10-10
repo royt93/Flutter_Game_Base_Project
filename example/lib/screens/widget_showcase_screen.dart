@@ -134,6 +134,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   );
   final _candyTextFieldController = TextEditingController();
   double _candySliderValue = 0.5;
+  bool _cardFlipped = false;
 
   // FEAT-11: SpotlightOverlay demo — highlights the "Primary" CommonButton
   // from the Buttons & Interactive section above.
@@ -2356,6 +2357,91 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               const SizedBox(height: NeonTheme.s24),
                               const SectionHeader(title: 'Layout & Cards'),
                               const SizedBox(height: NeonTheme.s16),
+                              _Demo(
+                                label: 'CardFlip3D (FEAT-103)',
+                                child: Column(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () => setState(
+                                        () => _cardFlipped = !_cardFlipped,
+                                      ),
+                                      child: SizedBox(
+                                        width: 180,
+                                        height: 120,
+                                        child: CardFlip3D(
+                                          isFlipped: _cardFlipped,
+                                          front: Container(
+                                            decoration: BoxDecoration(
+                                              color: NeonTheme.purple,
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              boxShadow: NeonTheme.drop(),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: const Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.help_outline_rounded,
+                                                  color: Colors.white,
+                                                  size: 36,
+                                                ),
+                                                SizedBox(height: 6),
+                                                Text(
+                                                  'Tap to reveal',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                        FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          back: Container(
+                                            decoration: BoxDecoration(
+                                              color: NeonTheme.gold,
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              boxShadow: NeonTheme.drop(),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: const Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.star_rounded,
+                                                  color: Colors.white,
+                                                  size: 40,
+                                                ),
+                                                SizedBox(height: 6),
+                                                Text(
+                                                  'SSR HERO!',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                        FontWeight.w900,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s16),
+                                    CommonButton(
+                                      label: _cardFlipped
+                                          ? 'Flip back'
+                                          : 'Reveal card',
+                                      variant: CommonButtonVariant.secondary,
+                                      onTap: () => setState(
+                                        () => _cardFlipped = !_cardFlipped,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                               _Demo(
                                 label: 'CommonListTile',
                                 child: Column(

@@ -2483,6 +2483,26 @@ void main() {
           expect(tester.takeException(), isNull);
         },
       );
+
+      testWidgets('CardFlip3D demo renders and flips on reveal button tap', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        expect(find.byType(CardFlip3D), findsOneWidget);
+        expect(find.text('Tap to reveal'), findsOneWidget);
+
+        final revealBtn = find
+            .widgetWithText(CommonButton, 'Reveal card')
+            .first;
+        await tester.tap(revealBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(const Duration(milliseconds: 400)); // gleam
+
+        expect(find.text('SSR HERO!'), findsOneWidget);
+        expect(find.text('Flip back'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
     },
   );
 }

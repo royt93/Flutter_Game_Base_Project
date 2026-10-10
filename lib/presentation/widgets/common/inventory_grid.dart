@@ -5,6 +5,44 @@ import 'package:flutter/material.dart';
 import '../../../core/inventory_service.dart';
 import '../../../core/neon_theme.dart';
 
+/// Calculates the top-left offset of a grid cell relative to the grid origin.
+Offset inventoryGridCellOffset({
+  required int index,
+  required int crossAxisCount,
+  required double cellSize,
+  required double spacing,
+}) {
+  if (index < 0 || crossAxisCount <= 0 || cellSize < 0 || spacing < 0) {
+    return Offset.zero;
+  }
+  final col = index % crossAxisCount;
+  final row = index ~/ crossAxisCount;
+  return Offset(col * (cellSize + spacing), row * (cellSize + spacing));
+}
+
+/// Calculates the layout translation delta between [oldIndex] and [newIndex].
+Offset inventoryGridCellDelta({
+  required int oldIndex,
+  required int newIndex,
+  required int crossAxisCount,
+  required double cellSize,
+  required double spacing,
+}) {
+  final oldOffset = inventoryGridCellOffset(
+    index: oldIndex,
+    crossAxisCount: crossAxisCount,
+    cellSize: cellSize,
+    spacing: spacing,
+  );
+  final newOffset = inventoryGridCellOffset(
+    index: newIndex,
+    crossAxisCount: crossAxisCount,
+    cellSize: cellSize,
+    spacing: spacing,
+  );
+  return oldOffset - newOffset;
+}
+
 /// Renders one filled cell — [isSelected] reflects [InventoryGrid.selectedSlotId]
 /// so the caller decides how to highlight it (this widget holds no
 /// selection state of its own, see class doc).
@@ -60,6 +98,9 @@ class InventoryGrid extends StatelessWidget {
     this.onReorder,
     this.shrinkWrap = false,
     this.physics,
+    this.animate = false,
+    this.animationDuration = NeonTheme.motionDefault,
+    this.animationCurve = NeonTheme.curveSurface,
   });
 
   final InventorySnapshot snapshot;
@@ -91,6 +132,12 @@ class InventoryGrid extends StatelessWidget {
   final bool shrinkWrap;
   final ScrollPhysics? physics;
 
+  /// Enables pop-in scale for newly added items and smooth slide transitions
+  /// when items reorder in the grid.
+  final bool animate;
+  final Duration animationDuration;
+  final Curve animationCurve;
+
   @override
   Widget build(BuildContext context) {
     final unlocked = unlockedCapacity ?? snapshot.capacity;
@@ -103,6 +150,12 @@ class InventoryGrid extends StatelessWidget {
           key: ValueKey(('item', slot.slotId)),
           child: _ItemCell(
             slot: slot,
+            index: index,
+            crossAxisCount: crossAxisCount,
+            spacing: spacing,
+            animate: animate,
+            animationDuration: animationDuration,
+            animationCurve: animationCurve,
             isSelected: slot.slotId == selectedSlotId,
             itemBuilder: itemBuilder,
             onTap: onSlotTap,
@@ -167,6 +220,12 @@ class InventoryGrid extends StatelessWidget {
 class _ItemCell extends StatelessWidget {
   const _ItemCell({
     required this.slot,
+    required this.index,
+    required this.crossAxisCount,
+    required this.spacing,
+    required this.animate,
+    required this.animationDuration,
+    required this.animationCurve,
     required this.isSelected,
     required this.itemBuilder,
     required this.onTap,
@@ -175,6 +234,12 @@ class _ItemCell extends StatelessWidget {
   });
 
   final InventorySlot slot;
+  final int index;
+  final int crossAxisCount;
+  final double spacing;
+  final bool animate;
+  final Duration animationDuration;
+  final Curve animationCurve;
   final bool isSelected;
   final InventoryItemBuilder itemBuilder;
   final ValueChanged<InventorySlot>? onTap;
@@ -183,28 +248,213 @@ class _ItemCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget content = itemBuilder(context, slot, isSelected);
+    Widget baseContent = itemBuilder(context, slot, isSelected);
     if (onTap != null || onLongPress != null) {
-      content = GestureDetector(
+      baseContent = GestureDetector(
         onTap: onTap == null ? null : () => onTap!(slot),
         onLongPress: onLongPress == null ? null : () => onLongPress!(slot),
+        child: baseContent,
+      );
+    }
+
+    Widget content = baseContent;
+    final reorder = onReorder;
+    if (reorder != null) {
+      content = DragTarget<int>(
+        onAcceptWithDetails: (details) => reorder(details.data, slot.slotId),
+        builder: (context, candidateData, rejectedData) => Draggable<int>(
+          data: slot.slotId,
+          feedback: Material(
+            color: Colors.transparent,
+            child: Opacity(opacity: 0.85, child: baseContent),
+          ),
+          childWhenDragging: Opacity(opacity: 0.3, child: baseContent),
+          child: baseContent,
+        ),
+      );
+    }
+
+    if (animate) {
+      content = _AnimatedItemCellWrapper(
+        index: index,
+        crossAxisCount: crossAxisCount,
+        spacing: spacing,
+        duration: animationDuration,
+        curve: animationCurve,
         child: content,
       );
     }
-    final reorder = onReorder;
-    if (reorder == null) return content;
 
-    return DragTarget<int>(
-      onAcceptWithDetails: (details) => reorder(details.data, slot.slotId),
-      builder: (context, candidateData, rejectedData) => Draggable<int>(
-        data: slot.slotId,
-        feedback: Material(
-          color: Colors.transparent,
-          child: Opacity(opacity: 0.85, child: content),
-        ),
-        childWhenDragging: Opacity(opacity: 0.3, child: content),
-        child: content,
-      ),
+    return content;
+  }
+}
+
+class _AnimatedItemCellWrapper extends StatefulWidget {
+  const _AnimatedItemCellWrapper({
+    required this.index,
+    required this.crossAxisCount,
+    required this.spacing,
+    required this.duration,
+    required this.curve,
+    required this.child,
+  });
+
+  final int index;
+  final int crossAxisCount;
+  final double spacing;
+  final Duration duration;
+  final Curve curve;
+  final Widget child;
+
+  @override
+  State<_AnimatedItemCellWrapper> createState() =>
+      _AnimatedItemCellWrapperState();
+}
+
+class _AnimatedItemCellWrapperState extends State<_AnimatedItemCellWrapper>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final CurvedAnimation _curved;
+  Offset _fromOffset = Offset.zero;
+  bool _isFirstMount = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _curved = CurvedAnimation(parent: _controller, curve: widget.curve);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (NeonTheme.reducedMotion(context)) {
+        _isFirstMount = false;
+        return;
+      }
+      _controller.forward(from: 0.0).then((_) {
+        if (mounted) setState(() => _isFirstMount = false);
+      });
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedItemCellWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.duration != widget.duration) {
+      _controller.duration = widget.duration;
+    }
+    if (oldWidget.curve != widget.curve) {
+      _curved.curve = widget.curve;
+    }
+    if (oldWidget.index != widget.index) {
+      if (NeonTheme.reducedMotion(context)) {
+        _fromOffset = Offset.zero;
+        return;
+      }
+      final box = context.findRenderObject() as RenderBox?;
+      final cellSize = (box != null && box.hasSize && box.size.width > 0)
+          ? box.size.width
+          : 64.0;
+      _fromOffset = inventoryGridCellDelta(
+        oldIndex: oldWidget.index,
+        newIndex: widget.index,
+        crossAxisCount: widget.crossAxisCount,
+        cellSize: cellSize,
+        spacing: widget.spacing,
+      );
+      _controller.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (NeonTheme.reducedMotion(context)) return widget.child;
+
+    return AnimatedBuilder(
+      animation: _curved,
+      builder: (context, child) {
+        Widget transformed = child!;
+        if (_isFirstMount) {
+          final scale = 0.8 + 0.2 * _curved.value;
+          transformed = Transform.scale(
+            scale: scale,
+            child: Opacity(
+              opacity: _curved.value.clamp(0.0, 1.0),
+              child: transformed,
+            ),
+          );
+        } else if (_fromOffset != Offset.zero) {
+          final offset = Offset.lerp(_fromOffset, Offset.zero, _curved.value)!;
+          transformed = Transform.translate(offset: offset, child: transformed);
+        }
+        return RepaintBoundary(child: transformed);
+      },
+      child: widget.child,
+    );
+  }
+}
+
+/// Animated variant of [InventoryGrid] with pop-in scale for newly added items
+/// and smooth sliding transitions on slot reorders.
+class AnimatedInventoryGrid extends StatelessWidget {
+  const AnimatedInventoryGrid({
+    super.key,
+    required this.snapshot,
+    required this.itemBuilder,
+    this.unlockedCapacity,
+    this.emptyBuilder,
+    this.lockedBuilder,
+    this.crossAxisCount = 4,
+    this.spacing = NeonTheme.s8,
+    this.selectedSlotId,
+    this.onSlotTap,
+    this.onSlotLongPress,
+    this.onReorder,
+    this.shrinkWrap = false,
+    this.physics,
+    this.animationDuration = NeonTheme.motionDefault,
+    this.animationCurve = NeonTheme.curveSurface,
+  });
+
+  final InventorySnapshot snapshot;
+  final InventoryItemBuilder itemBuilder;
+  final int? unlockedCapacity;
+  final InventoryPlaceholderBuilder? emptyBuilder;
+  final InventoryPlaceholderBuilder? lockedBuilder;
+  final int crossAxisCount;
+  final double spacing;
+  final int? selectedSlotId;
+  final ValueChanged<InventorySlot>? onSlotTap;
+  final ValueChanged<InventorySlot>? onSlotLongPress;
+  final void Function(int fromSlotId, int toSlotId)? onReorder;
+  final bool shrinkWrap;
+  final ScrollPhysics? physics;
+  final Duration animationDuration;
+  final Curve animationCurve;
+
+  @override
+  Widget build(BuildContext context) {
+    return InventoryGrid(
+      snapshot: snapshot,
+      itemBuilder: itemBuilder,
+      unlockedCapacity: unlockedCapacity,
+      emptyBuilder: emptyBuilder,
+      lockedBuilder: lockedBuilder,
+      crossAxisCount: crossAxisCount,
+      spacing: spacing,
+      selectedSlotId: selectedSlotId,
+      onSlotTap: onSlotTap,
+      onSlotLongPress: onSlotLongPress,
+      onReorder: onReorder,
+      shrinkWrap: shrinkWrap,
+      physics: physics,
+      animate: true,
+      animationDuration: animationDuration,
+      animationCurve: animationCurve,
     );
   }
 }
