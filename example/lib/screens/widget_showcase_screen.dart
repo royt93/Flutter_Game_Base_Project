@@ -133,6 +133,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     const Duration(seconds: 15),
   );
   final _candyTextFieldController = TextEditingController();
+  double _candySliderValue = 0.5;
 
   // FEAT-11: SpotlightOverlay demo — highlights the "Primary" CommonButton
   // from the Buttons & Interactive section above.
@@ -490,8 +491,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
           case 'maintenance':
             return {
               'appVersionMaintenanceActive': true,
-              'appVersionMaintenanceMessage':
-                  'showcase_maintenance_msg'.tr,
+              'appVersionMaintenanceMessage': 'showcase_maintenance_msg'.tr,
             };
           default:
             return {};
@@ -1456,6 +1456,17 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       : null,
                                 ),
                               ),
+                              _Demo(
+                                label: 'CandySlider',
+                                child: SizedBox(
+                                  width: 280,
+                                  child: CandySlider(
+                                    value: _candySliderValue,
+                                    onChanged: (v) =>
+                                        setState(() => _candySliderValue = v),
+                                  ),
+                                ),
+                              ),
 
                               const SizedBox(height: NeonTheme.s24),
                               const SectionHeader(title: 'Feedback & Overlay'),
@@ -1496,6 +1507,63 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     context,
                                     message: 'Saved!',
                                     color: NeonTheme.lime,
+                                  ),
+                                ),
+                              ),
+                              _Demo(
+                                label: 'ItemFlyOverlay',
+                                child: Builder(
+                                  builder: (ctx) => CommonButton(
+                                    label: 'Fly items',
+                                    onTap: () {
+                                      final box =
+                                          ctx.findRenderObject() as RenderBox?;
+                                      final pos = box != null && box.attached
+                                          ? box.localToGlobal(Offset.zero)
+                                          : const Offset(100, 300);
+                                      ItemFlyOverlay.show(
+                                        ctx,
+                                        from: pos,
+                                        to: Offset(pos.dx + 120, pos.dy - 150),
+                                        itemCount: 4,
+                                        icon: Icons.star_rounded,
+                                        color: NeonTheme.gold,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              _Demo(
+                                label: 'RewardSequenceCoordinator',
+                                child: Container(
+                                  padding: const EdgeInsets.all(NeonTheme.s16),
+                                  decoration: BoxDecoration(
+                                    color: NeonTheme.cardAlt,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: RewardSequenceCoordinator(
+                                    stepDuration: const Duration(
+                                      milliseconds: 200,
+                                    ),
+                                    banner: Text(
+                                      'Stage Clear!',
+                                      style: TextStyle(
+                                        color: NeonTheme.ink,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 20,
+                                      ),
+                                    ),
+                                    content: Text(
+                                      '3 Stars Earned',
+                                      style: TextStyle(
+                                        color: NeonTheme.gold,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    actionButton: CommonButton(
+                                      label: 'Claim All',
+                                      onTap: () {},
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1685,7 +1753,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           },
                                         ),
                                         CommonButton(
-                                          label: 'showcase_simulate_duplicate'.tr,
+                                          label:
+                                              'showcase_simulate_duplicate'.tr,
                                           variant:
                                               CommonButtonVariant.secondary,
                                           onTap: () async {
@@ -1727,10 +1796,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     CommonButton(
-                                      label:
-                                          'showcase_scenario_btn'.trParams({
-                                            'scenario': _versionGateScenario,
-                                          }),
+                                      label: 'showcase_scenario_btn'.trParams({
+                                        'scenario': _versionGateScenario,
+                                      }),
                                       onTap: () async {
                                         const order = [
                                           'ok',
@@ -1772,7 +1840,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                                   'appVersionMaintenanceActive':
                                                       true,
                                                   'appVersionMaintenanceMessage':
-                                                      'showcase_maintenance_msg'.tr,
+                                                      'showcase_maintenance_msg'
+                                                          .tr,
                                                 };
                                               default:
                                                 return {};
@@ -2873,13 +2942,15 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                                   _assetSession.markReady();
                                                   _assetSession.start();
                                                   _assetDemoStatus =
-                                                      'showcase_preload_retry_ok'.tr;
+                                                      'showcase_preload_retry_ok'
+                                                          .tr;
                                                 } else if (result
                                                     is SdkFailure<void>) {
                                                   _assetDemoStatus =
                                                       'showcase_preload_retry_fail'
                                                           .trParams({
-                                                            'msg': result.message,
+                                                            'msg':
+                                                                result.message,
                                                           });
                                                 }
                                               });
@@ -2894,7 +2965,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                               _assetSession.restart();
                                               setState(
                                                 () => _assetDemoStatus =
-                                                    'showcase_preload_unloaded'.tr,
+                                                    'showcase_preload_unloaded'
+                                                        .tr,
                                               );
                                             },
                                           ),
@@ -3666,9 +3738,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   children: [
                                     Text(
                                       'Win streak: $_reviewWinStreak | '
-                                      'showcase_review_shown'.trParams({
-                                        'count': '$_reviewPromptShown',
-                                      }),
+                                              'showcase_review_shown'
+                                          .trParams({
+                                            'count': '$_reviewPromptShown',
+                                          }),
                                       style: TextStyle(color: NeonTheme.ink),
                                     ),
                                     const SizedBox(height: NeonTheme.s8),

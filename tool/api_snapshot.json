@@ -731,6 +731,7 @@
     "core/neon_theme.dart:NeonTheme.exportPalette(): Map<String, String>",
     "core/neon_theme.dart:NeonTheme.glow(Color color, { double blur = 18, double spread = 1, // roy93~fix: BoxShadow vẽ 1 hình đặc cùng dạng box, không chỉ viền cạnh — // với box có fill trong suốt (vd panel bàn chơi alpha 0.25) thì phần lớn // shadow xuyên qua fill, nhuộm kín cả nội thất thay vì chỉ toả nhẹ ở // mép. `intensity` cho phép hạ alpha 3 lớp shadow ở nơi cần fill mờ mà // không đổi 14+ chỗ gọi khác đang dùng mặc định 1.0. double intensity = 1.0, }): List<BoxShadow>",
     "core/neon_theme.dart:NeonTheme.importPalette(Map<String, Object?> json): void",
+    "core/neon_theme.dart:NeonTheme.motionDuration(BuildContext context, Duration base): Duration",
     "core/neon_theme.dart:NeonTheme.reducedMotion(BuildContext context): bool",
     "core/offline_outbox_service.dart:OfflineOutboxService.drain(): Future<void>",
     "core/offline_outbox_service.dart:OfflineOutboxService.enqueue({ required String idempotencyKey, required Map<String, Object?> payload, int priority = 0, int? expiresAtMs, }): SdkResult<void>",

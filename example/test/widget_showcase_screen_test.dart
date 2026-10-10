@@ -1471,10 +1471,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
         await tester.pump();
 
-        expect(
-          find.textContaining('Queue: 0 pending, 1 ran'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('Queue: 0 pending, 1 ran'), findsOneWidget);
         expect(tester.takeException(), isNull);
         ConnectivityCoordinator.maybe?.onClose();
       },
@@ -1840,10 +1837,7 @@ void main() {
           find.text('Progress: 100%  · Session phase: playing'),
           findsOneWidget,
         );
-        expect(
-          find.textContaining('Preload OK — scene ready'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('Preload OK — scene ready'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -1859,10 +1853,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 800));
 
         expect(find.textContaining('Progress: 100%'), findsOneWidget);
-        expect(
-          find.textContaining('Preload OK — scene ready'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('Preload OK — scene ready'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -1939,7 +1930,10 @@ void main() {
 
         expect(find.text('Phase: error'), findsOneWidget);
         expect(find.text('Scene #1'), findsOneWidget);
-        expect(find.textContaining('Could not load the new scene'), findsOneWidget);
+        expect(
+          find.textContaining('Could not load the new scene'),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
       },
     );
@@ -2369,7 +2363,9 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.textContaining('Reminder set in'), findsOneWidget);
-        expect(reminder.scheduled.map((c) => c.id), [kEnergyReminderNotificationId]);
+        expect(reminder.scheduled.map((c) => c.id), [
+          kEnergyReminderNotificationId,
+        ]);
         expect(reminder.scheduled.single.delay, greaterThan(Duration.zero));
         expect(reminder.cancelled, isEmpty);
         expect(tester.takeException(), isNull);
@@ -2403,7 +2399,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.textContaining('Reminder set in'), findsOneWidget);
-      expect(reminder.scheduled.map((c) => c.id), [kStreakReminderNotificationId]);
+      expect(reminder.scheduled.map((c) => c.id), [
+        kStreakReminderNotificationId,
+      ]);
       expect(reminder.scheduled.single.delay, greaterThan(Duration.zero));
       expect(reminder.cancelled, isEmpty);
       expect(tester.takeException(), isNull);
@@ -2434,6 +2432,59 @@ void main() {
       },
     );
   });
+
+  group(
+    'Wave 1 P0: CandySlider, ItemFlyOverlay, RewardSequenceCoordinator demos',
+    () {
+      testWidgets('CandySlider demo renders and responds to drag', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final slider = find.byType(CandySlider);
+        expect(slider, findsOneWidget);
+        await tester.drag(slider, const Offset(50, 0));
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets(
+        'ItemFlyOverlay demo: tapping Fly items inserts overlay without throwing',
+        (tester) async {
+          await _pumpShowcase(tester);
+          final flyButton = find
+              .widgetWithText(CommonButton, 'Fly items')
+              .first;
+          expect(flyButton, findsOneWidget);
+          await tester.tap(flyButton);
+          await tester.pump();
+          expect(find.byType(ItemFlyOverlay), findsOneWidget);
+          // The overlay creates its AnimationController after the insertion frame;
+          // prime its ticker, then advance past 4*550ms + 3*70ms flight timeline.
+          await tester.pump(const Duration(milliseconds: 1));
+          await tester.pump(const Duration(milliseconds: 3000));
+          await tester.pump(); // OverlayEntry removal rebuilds Overlay on next frame.
+          expect(find.byType(ItemFlyOverlay), findsNothing);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'RewardSequenceCoordinator demo displays banner and content',
+        (tester) async {
+          await _pumpShowcase(tester);
+          expect(find.byType(RewardSequenceCoordinator), findsOneWidget);
+          expect(find.text('Stage Clear!'), findsOneWidget);
+          await tester.pump(const Duration(milliseconds: 400));
+          expect(find.text('3 Stars Earned'), findsOneWidget);
+          expect(
+            find.widgetWithText(CommonButton, 'Claim All').first,
+            findsOneWidget,
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
+    },
+  );
 }
 
 /// BUG-61: tối giản hoá đúng shape lỗi gốc — `await` 1 Future do TEST tự
@@ -2476,7 +2527,6 @@ class _GuardedAsyncWidgetState extends State<_GuardedAsyncWidget> {
   @override
   Widget build(BuildContext context) => const SizedBox();
 }
-
 
 /// Ghi lại lời gọi thay vì chạm plugin thông báo thật: plugin chưa được nạp
 /// trong widget test nên `ReminderService` thật ném `LateInitializationError`

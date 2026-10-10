@@ -45,6 +45,32 @@ class NeonTheme {
   static bool reducedMotion(BuildContext context) =>
       MediaQuery.of(context).disableAnimations;
 
+  // --- Motion Tokens (ENH-97) ---
+  /// Fast micro-interaction duration (150ms) — tap feedback, badge pop.
+  static const Duration motionFast = Duration(milliseconds: 150);
+
+  /// Default UI transition duration (250ms) — modal slide, tab switch.
+  static const Duration motionDefault = Duration(milliseconds: 250);
+
+  /// Deliberate entrance/exit duration (400ms) — sheet expand, banner drop.
+  static const Duration motionDeliberate = Duration(milliseconds: 400);
+
+  /// Celebration / reward sequence duration (800ms) — chest open, confetti burst.
+  static const Duration motionCelebrate = Duration(milliseconds: 800);
+
+  /// Playful pop curve with overshoot for celebration and reward moments.
+  static const Curve curvePop = Curves.easeOutBack;
+
+  /// Smooth surface curve for neutral/system transitions.
+  static const Curve curveSurface = Curves.easeOut;
+
+  /// Symmetrical smooth curve for loop or continuous movements.
+  static const Curve curveSmooth = Curves.easeInOut;
+
+  /// Returns [Duration.zero] if [reducedMotion] is on, else [base].
+  static Duration motionDuration(BuildContext context, Duration base) =>
+      reducedMotion(context) ? Duration.zero : base;
+
   /// Motion-language convention for ephemeral/entrance animations (IDEA-21)
   /// — pick the curve by what KIND of moment it is, not by habit:
   /// - **Celebration/reward** (confetti trigger, combo/score text, a won

@@ -15,12 +15,14 @@ export 'hold_to_confirm_button.dart';
 export 'pause_overlay.dart';
 export 'retry_error_state.dart';
 export 'reward_choice_panel.dart';
+export 'reward_sequence_coordinator.dart';
 export 'scene_transition_overlay.dart';
 export 'toggle_switch.dart';
 export 'segmented_tab_bar.dart';
 export 'icon_badge_button.dart';
 export 'sound_toggle_fab.dart';
 export 'candy_text_field.dart';
+export 'candy_slider.dart';
 
 // Feedback & Overlay
 export 'achievement_unlock_listener.dart';
@@ -52,6 +54,7 @@ export 'cooldown_countdown_chip.dart';
 export 'countdown_chip.dart';
 export 'paginated_dots_indicator.dart';
 export 'coin_fly_overlay.dart';
+export 'item_fly_overlay.dart';
 export 'daily_login_calendar.dart';
 export 'energy_bar.dart';
 export 'wheel_spinner.dart';

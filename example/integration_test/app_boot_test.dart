@@ -1742,6 +1742,45 @@ void main() {
     await retryAttempt.future;
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'Wave 1 P0: CandySlider, ItemFlyOverlay, RewardSequenceCoordinator survive real app boot on device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final slider = find.byType(Slider);
+      await _scrollUntilVisible(tester, slider);
+      await tester.drag(slider, const Offset(90, 0));
+      await tester.pump(const Duration(milliseconds: 300));
+      final sliderValue = tester.widget<Slider>(slider).value;
+      expect(sliderValue, greaterThan(0.5));
+
+      final flyButton = find.widgetWithText(CommonButton, 'Fly items');
+      await _scrollUntilVisible(tester, flyButton);
+      await tester.tap(flyButton.first);
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.byType(ItemFlyOverlay), findsOneWidget);
+      // ItemFlyOverlay is 4 * 500ms + 3 * 60ms; advance after insertion frame.
+      await tester.pump(const Duration(milliseconds: 1));
+      await tester.pump(const Duration(milliseconds: 2100));
+      await tester.pump();
+      expect(find.byType(ItemFlyOverlay), findsNothing);
+
+      final coordinator = find.byType(RewardSequenceCoordinator);
+      await _scrollUntilVisible(tester, coordinator);
+      final claim = find.widgetWithText(CommonButton, 'Claim All');
+      await _scrollUntilVisible(tester, claim);
+      await tester.tap(claim.first);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(claim.hitTestable(), findsOneWidget);
+      final button = tester.widget<CommonButton>(claim.first);
+      expect(button.label, 'Claim All');
+      expect(button.onTap, isNotNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 class _ThrowingDeviceCloudProvider extends CloudSaveProvider {
