@@ -83,7 +83,8 @@ class _GoldenShimmerTextState extends State<GoldenShimmerText>
   void _syncTicker() {
     final shouldAnimate =
         widget.animated &&
-        TickerMode.valuesOf(context).enabled &&
+        // ignore: deprecated_member_use
+        TickerMode.of(context) &&
         !NeonTheme.reducedMotion(context);
     if (shouldAnimate == _shouldAnimate) return;
     _shouldAnimate = shouldAnimate;
