@@ -2568,6 +2568,30 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      testWidgets('FEAT-110 MysteryChest showcase reveals caller reward', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final chest = find.byType(MysteryChestOpening).first;
+        await tester.scrollUntilVisible(
+          chest,
+          400,
+          scrollable: find
+              .ancestor(of: chest, matching: find.byType(Scrollable))
+              .first,
+        );
+        final chestState = tester.state<MysteryChestOpeningState>(chest);
+        final gesture = await tester.startGesture(tester.getCenter(chest));
+        await tester.pump();
+        await gesture.up();
+        await tester.pump();
+        expect(chestState.isAnimating, isTrue);
+        await tester.pump(const Duration(milliseconds: 1700));
+        expect(chestState.phase, MysteryChestPhase.revealed);
+        expect(find.text('Reward revealed: +500 coins'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('FEAT-109 demo lazily scrolls full 30 milestone road', (
         tester,
       ) async {

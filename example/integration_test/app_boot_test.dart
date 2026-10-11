@@ -1828,6 +1828,22 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-110: MysteryChest opens and reveals on TECNO', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final chest = find.byType(MysteryChestOpening);
+    await _scrollUntilVisible(tester, chest);
+    await tester.ensureVisible(chest.first);
+    await tester.tap(chest.first);
+    await tester.pump(const Duration(milliseconds: 1600));
+    expect(find.text('Reward revealed: +500 coins'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-109: BattlePassRoad scrolls 30 tiers on TECNO', (
     tester,
   ) async {

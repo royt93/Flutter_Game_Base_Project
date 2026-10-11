@@ -979,6 +979,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // 2 API are genuinely different results once 'You' isn't in the top 3.
   bool _showRankAround = false;
   int _battlePassProgress = 500;
+  bool _chestRewardRevealed = false;
   bool _battlePassVipEnabled = false;
   final Set<String> _battlePassClaimedFree = {};
   final Set<String> _battlePassClaimedVip = {};
@@ -3694,6 +3695,33 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
 
+                              const SizedBox(height: NeonTheme.s24),
+                              const SectionHeader(title: 'Mystery Chest'),
+                              const SizedBox(height: NeonTheme.s16),
+                              _Demo(
+                                label: 'MysteryChestOpening (FEAT-110)',
+                                child: Column(
+                                  children: [
+                                    MysteryChestOpening(
+                                      semanticLabel:
+                                          'Open mystery reward chest',
+                                      onRevealed: () => setState(
+                                        () => _chestRewardRevealed = true,
+                                      ),
+                                      reward: Text(
+                                        _chestRewardRevealed
+                                            ? 'Reward revealed: +500 coins'
+                                            : '',
+                                        key: const Key('mysteryChestReward'),
+                                        style: TextStyle(
+                                          color: NeonTheme.gold,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: NeonTheme.s24),
                               const SectionHeader(title: 'Battle Pass'),
                               const SizedBox(height: NeonTheme.s16),

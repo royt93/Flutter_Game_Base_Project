@@ -51,6 +51,7 @@ export 'star_rating.dart';
 export 'currency_counter.dart';
 export 'golden_shimmer_text.dart';
 export 'reward_popup.dart';
+export 'mystery_chest_opening.dart';
 export 'badge_dot.dart';
 export 'streak_counter.dart';
 export 'cooldown_countdown_chip.dart';
