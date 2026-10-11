@@ -135,6 +135,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   final _candyTextFieldController = TextEditingController();
   double _candySliderValue = 0.5;
   bool _cardFlipped = false;
+  final List<int> _victoryStarsPopped = [];
+  int _victoryStarBurstRevision = 0;
 
   // FEAT-11: SpotlightOverlay demo — highlights the "Primary" CommonButton
   // from the Buttons & Interactive section above.
@@ -2391,8 +2393,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                                   'Tap to reveal',
                                                   style: TextStyle(
                                                     color: Colors.white,
-                                                    fontWeight:
-                                                        FontWeight.w700,
+                                                    fontWeight: FontWeight.w700,
                                                   ),
                                                 ),
                                               ],
@@ -2419,8 +2420,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                                   'SSR HERO!',
                                                   style: TextStyle(
                                                     color: Colors.white,
-                                                    fontWeight:
-                                                        FontWeight.w900,
+                                                    fontWeight: FontWeight.w900,
                                                   ),
                                                 ),
                                               ],
@@ -2580,17 +2580,43 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     RepaintBoundary(
                                       key: _victoryCardKey,
                                       child: VictoryCardTemplate(
+                                        key: ValueKey(
+                                          _victoryStarBurstRevision,
+                                        ),
                                         title: 'Level 50 Complete!',
                                         statLines: const [
                                           'Score: 12,340',
                                           'Time: 01:23',
                                         ],
+                                        starsEarned: 3,
+                                        onStarPopped: (index) {
+                                          if (mounted) {
+                                            setState(
+                                              () => _victoryStarsPopped.add(
+                                                index,
+                                              ),
+                                            );
+                                          }
+                                        },
                                         avatar: const CircleAvatar(
                                           child: Text('RB'),
                                         ),
                                         qrData:
                                             'https://example.com/invite/abc123',
                                       ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Star burst: ${_victoryStarsPopped.join(', ')}',
+                                      key: const Key('victoryStarBurstStatus'),
+                                    ),
+                                    CommonButton(
+                                      label: 'Replay star burst',
+                                      variant: CommonButtonVariant.secondary,
+                                      onTap: () => setState(() {
+                                        _victoryStarsPopped.clear();
+                                        _victoryStarBurstRevision++;
+                                      }),
                                     ),
                                     const SizedBox(height: NeonTheme.s16),
                                     CommonButton(

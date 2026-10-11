@@ -31,6 +31,108 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'ENH-99: victory card optionally renders staggered earned stars',
+    (tester) async {
+      final popped = <int>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: VictoryCardTemplate(
+              title: 'Level 3 Complete!',
+              statLines: const ['Score: 900'],
+              starsEarned: 3,
+              onStarPopped: popped.add,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(popped, [0]);
+      expect(find.byIcon(Icons.star_rounded), findsNWidgets(3));
+
+      await tester.pump(const Duration(milliseconds: 260));
+      expect(popped, [0, 1]);
+
+      await tester.pump(const Duration(milliseconds: 260));
+      expect(popped, [0, 1, 2]);
+
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'ENH-99: victory card with Reduced Motion completes immediately',
+    (tester) async {
+      final popped = <int>[];
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: VictoryCardTemplate(
+                title: 'Level 3 Complete!',
+                statLines: const ['Score: 900'],
+                starsEarned: 3,
+                onStarPopped: popped.add,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(popped, [0, 1, 2]);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'ENH-99: zero earned stars render as outlines without callbacks',
+    (tester) async {
+      final popped = <int>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: VictoryCardTemplate(
+              title: 'Level 3 Complete!',
+              statLines: const ['Score: 900'],
+              starsEarned: 0,
+              onStarPopped: popped.add,
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byIcon(Icons.star_outline_rounded), findsNWidgets(3));
+      expect(find.byIcon(Icons.star_rounded), findsNothing);
+      expect(popped, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('ENH-99: star bounds clamp to [0,totalStars]', (tester) async {
+    final popped = <int>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: VictoryCardTemplate(
+            title: 'Level 3 Complete!',
+            statLines: const ['Score: 900'],
+            starsEarned: 10,
+            totalStars: 2,
+            onStarPopped: popped.add,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byIcon(Icons.star_rounded), findsNWidgets(2));
+    expect(popped, [0, 1]);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('QrImageView absent when qrData is null', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

@@ -11,6 +11,7 @@ import 'package:roy_casual_kit/core/replay_recorder.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/clamped_clock.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/live_frame_graph.dart';
 import 'package:roy_casual_kit/presentation/widgets/debug_qa_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -149,7 +150,10 @@ void main() {
         expect(button.color, NeonTheme.cyan);
         await tester.tap(find.byType(CommonButton));
         await tester.pump();
-        expect(find.byKey(const Key('debugQaPlaygroundLabelField')), findsOneWidget);
+        expect(
+          find.byKey(const Key('debugQaPlaygroundLabelField')),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
       },
     );
@@ -415,19 +419,21 @@ void main() {
           find.byKey(const Key('debugQaTimeTravelNow')),
         );
         final shown = int.parse(
-          RegExp(r'nowMsClamped\(\): (\d+)').firstMatch(display.data!)!.group(1)!,
+          RegExp(
+            r'nowMsClamped\(\): (\d+)',
+          ).firstMatch(display.data!)!.group(1)!,
         );
         expect(
           shown,
-          greaterThanOrEqualTo(before + const Duration(hours: 23).inMilliseconds),
+          greaterThanOrEqualTo(
+            before + const Duration(hours: 23).inMilliseconds,
+          ),
         );
         expect(tester.takeException(), isNull);
       },
     );
 
-    testWidgets('bấm +2h rồi +7 ngày cộng dồn (không ghi đè)', (
-      tester,
-    ) async {
+    testWidgets('bấm +2h rồi +7 ngày cộng dồn (không ghi đè)', (tester) async {
       await openPanel(tester);
 
       await tester.tap(find.byKey(const Key('debugQaTimeTravelPlus2h')));
@@ -448,7 +454,10 @@ void main() {
       await tester.pump();
       expect(debugTimeOffsetMs, isNot(0));
 
-      await tester.tap(find.byKey(const Key('debugQaTimeTravelReset')));
+      final reset = find.byKey(const Key('debugQaTimeTravelReset'));
+      await tester.ensureVisible(reset);
+      await tester.pump();
+      await tester.tap(reset);
       await tester.pump();
 
       expect(debugTimeOffsetMs, 0);
@@ -508,7 +517,9 @@ void main() {
       },
     );
 
-    testWidgets('Force online thay override offline thành online', (tester) async {
+    testWidgets('Force online thay override offline thành online', (
+      tester,
+    ) async {
       final coordinator = await openPanel(tester);
       await tester.tap(find.byKey(const Key('debugQaNetworkForceOffline')));
       await tester.pump();
@@ -592,7 +603,10 @@ void main() {
       (tester) async {
         final service = await openPanel(tester);
 
-        await tester.tap(find.byKey(const Key('debugQaVariantChip_variant_a')));
+        final variant = find.byKey(const Key('debugQaVariantChip_variant_a'));
+        await tester.ensureVisible(variant);
+        await tester.pump();
+        await tester.tap(variant);
         await tester.pump();
 
         expect(
@@ -603,45 +617,56 @@ void main() {
           ]),
           'variant_a',
         );
-        expect(
-          find.textContaining('Đang chọn: variant_a'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('Đang chọn: variant_a'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
 
-    testWidgets('đổi experiment key và danh sách variants rebuild chips và override đúng key', (
-      tester,
-    ) async {
-      final service = await openPanel(tester);
-      await tester.enterText(find.byKey(const Key('debugQaVariantKeyField')), 'new_experiment');
-      await tester.pump();
-      await tester.enterText(find.byKey(const Key('debugQaVariantListField')), 'alpha,beta');
-      await tester.pump();
-      expect(find.byKey(const Key('debugQaVariantChip_variant_a')), findsNothing);
-      expect(find.byKey(const Key('debugQaVariantChip_beta')), findsOneWidget);
-      await tester.tap(find.byKey(const Key('debugQaVariantChip_beta')));
-      await tester.pump();
-      expect(service.variantFor('new_experiment', ['alpha', 'beta']), 'beta');
-      expect(find.textContaining('Đang chọn: beta'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+    testWidgets(
+      'đổi experiment key và danh sách variants rebuild chips và override đúng key',
+      (tester) async {
+        final service = await openPanel(tester);
+        await tester.enterText(
+          find.byKey(const Key('debugQaVariantKeyField')),
+          'new_experiment',
+        );
+        await tester.pump();
+        await tester.enterText(
+          find.byKey(const Key('debugQaVariantListField')),
+          'alpha,beta',
+        );
+        await tester.pump();
+        expect(
+          find.byKey(const Key('debugQaVariantChip_variant_a')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('debugQaVariantChip_beta')),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(const Key('debugQaVariantChip_beta')));
+        await tester.pump();
+        expect(service.variantFor('new_experiment', ['alpha', 'beta']), 'beta');
+        expect(find.textContaining('Đang chọn: beta'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('bấm Clear override -> quay lại bucket hash bình thường', (
       tester,
     ) async {
       final service = await openPanel(tester);
-      await tester.tap(find.byKey(const Key('debugQaVariantChip_variant_a')));
+      final variant = find.byKey(const Key('debugQaVariantChip_variant_a'));
+      await tester.ensureVisible(variant);
+      await tester.pump();
+      await tester.tap(variant);
       await tester.pump();
 
       // This tab's content (2 text fields + chip row + button) overflows
       // the panel's visible height at the default 800x600 test viewport —
       // scroll the button into view within its own SingleChildScrollView
       // before tapping it.
-      await tester.ensureVisible(
-        find.byKey(const Key('debugQaVariantClear')),
-      );
+      await tester.ensureVisible(find.byKey(const Key('debugQaVariantClear')));
       await tester.pump();
       await tester.tap(find.byKey(const Key('debugQaVariantClear')));
       await tester.pump();
@@ -663,7 +688,9 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       Get.put(StorageService(await SharedPreferences.getInstance()));
       final controller = RemoteKillSwitchController(
-        remoteConfig: RemoteConfigService(assetPath: 'assets/no_such_file.json'),
+        remoteConfig: RemoteConfigService(
+          assetPath: 'assets/no_such_file.json',
+        ),
         assetDefaults: assetDefaults,
       );
       Get.put(controller, permanent: true);
@@ -739,7 +766,9 @@ void main() {
 
         expect(controller.isKilled('shop_v2'), isFalse);
 
-        await tester.tap(find.byKey(const Key('debugQaKillSwitchKill_shop_v2')));
+        await tester.tap(
+          find.byKey(const Key('debugQaKillSwitchKill_shop_v2')),
+        );
         await tester.pump();
 
         expect(controller.isKilled('shop_v2'), isTrue);
@@ -756,7 +785,9 @@ void main() {
           assetDefaults: {'shop_v2': false},
         );
 
-        await tester.tap(find.byKey(const Key('debugQaKillSwitchKill_shop_v2')));
+        await tester.tap(
+          find.byKey(const Key('debugQaKillSwitchKill_shop_v2')),
+        );
         await tester.pump();
         expect(controller.isKilled('shop_v2'), isTrue);
 
@@ -774,10 +805,7 @@ void main() {
       'feature bị kill bởi nguồn KHÔNG PHẢI local override -> không có nút bỏ, '
       'chỉ hiện ghi chú "không bật lại được qua đây"',
       (tester) async {
-        await openPanel(
-          tester,
-          assetDefaults: {'always_off': true},
-        );
+        await openPanel(tester, assetDefaults: {'always_off': true});
 
         expect(find.textContaining('always_off: KILLED'), findsOneWidget);
         expect(
@@ -809,18 +837,17 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets(
-      'chưa gọi RoyCasualKit.initialize() -> báo rõ, không crash',
-      (tester) async {
-        await openBootTab(tester);
+    testWidgets('chưa gọi RoyCasualKit.initialize() -> báo rõ, không crash', (
+      tester,
+    ) async {
+      await openBootTab(tester);
 
-        expect(
-          find.textContaining('chưa được gọi trong app này'),
-          findsOneWidget,
-        );
-        expect(tester.takeException(), isNull);
-      },
-    );
+      expect(
+        find.textContaining('chưa được gọi trong app này'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets(
       'status healthy -> hiện rõ "OK" + đúng danh sách module đã đăng ký',
@@ -838,23 +865,22 @@ void main() {
       },
     );
 
-    testWidgets(
-      'có module đăng ký thành công -> liệt kê đúng tên module',
-      (tester) async {
-        SharedPreferences.setMockInitialValues({});
-        final prefs = await SharedPreferences.getInstance();
-        await RoyCasualKit.initialize(
-          config: RoyCasualKitConfig(
-            modules: {RoyCasualKitModule.storage},
-            preferences: prefs,
-          ),
-        );
+    testWidgets('có module đăng ký thành công -> liệt kê đúng tên module', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await RoyCasualKit.initialize(
+        config: RoyCasualKitConfig(
+          modules: {RoyCasualKitModule.storage},
+          preferences: prefs,
+        ),
+      );
 
-        await openBootTab(tester);
+      await openBootTab(tester);
 
-        expect(find.textContaining('✓ storage'), findsOneWidget);
-      },
-    );
+      expect(find.textContaining('✓ storage'), findsOneWidget);
+    });
 
     testWidgets(
       'status degraded -> hiện rõ "Degraded" + liệt kê đúng module lỗi',
@@ -875,5 +901,34 @@ void main() {
         );
       },
     );
+  });
+
+  group('FEAT-104: Live Frame Graph tab', () {
+    testWidgets('Frames tab charts samples and stops subscription on switch', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: DebugQaOverlay(child: Material(child: Text('app content'))),
+        ),
+      );
+      await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+      await tester.pump();
+      await tester.tap(find.text('Frames'));
+      await tester.pump();
+
+      expect(find.byType(LiveFrameGraph), findsOneWidget);
+      expect(find.text('0/100 frames'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.textContaining('/100 frames'), findsOneWidget);
+      await tester.tap(find.text('State'));
+      await tester.pump();
+      expect(find.byType(LiveFrameGraph), findsNothing);
+      await tester.tap(find.text('Frames'));
+      await tester.pump();
+      expect(find.byType(LiveFrameGraph), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      expect(tester.takeException(), isNull);
+    });
   });
 }

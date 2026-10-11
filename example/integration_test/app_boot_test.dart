@@ -85,8 +85,8 @@ Future<void> _goToGameDemo(WidgetTester tester) async {
 Future<void> _scrollUntilVisible(
   WidgetTester tester,
   Finder target, {
-  double delta = 300,
-  int maxTries = 30,
+  double delta = 450,
+  int maxTries = 60,
 }) async {
   for (var i = 0; i < maxTries; i++) {
     if (target.evaluate().isNotEmpty) return;
@@ -1772,12 +1772,92 @@ void main() {
       await _scrollUntilVisible(tester, coordinator);
       final claim = find.widgetWithText(CommonButton, 'Claim All');
       await _scrollUntilVisible(tester, claim);
+      // Ensure the button is fully scrolled into viewport
+      await tester.drag(find.byType(ListView).first, const Offset(0, -200));
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(claim.first);
       await tester.pump(const Duration(milliseconds: 300));
-      expect(claim.hitTestable(), findsOneWidget);
+      expect(claim.first.hitTestable(), findsOneWidget);
       final button = tester.widget<CommonButton>(claim.first);
       expect(button.label, 'Claim All');
       expect(button.onTap, isNotNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave 1: ENH-99 VictoryCard staggered stars & FEAT-104 LiveFrameGraph survive on device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      // Verify VictoryCardTemplate renders with 3 staggered stars
+      final victoryCard = find.byType(VictoryCardTemplate);
+      await _scrollUntilVisible(tester, victoryCard);
+      expect(victoryCard, findsOneWidget);
+      expect(find.byIcon(Icons.star_rounded), findsNWidgets(3));
+      final burstStatus = find.byKey(const Key('victoryStarBurstStatus'));
+      for (var i = 0; i < 8; i++) {
+        if (tester.widget<Text>(burstStatus).data == 'Star burst: 0, 1, 2') {
+          break;
+        }
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(tester.widget<Text>(burstStatus).data, 'Star burst: 0, 1, 2');
+
+      // Replay and verify the visible callback sequence on device.
+      final replay = find.widgetWithText(CommonButton, 'Replay star burst');
+      await _scrollUntilVisible(tester, replay);
+      await tester.ensureVisible(replay.first);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(replay.first);
+      await tester.pump();
+      expect(tester.widget<Text>(burstStatus).data, 'Star burst: ');
+      await tester.pump(const Duration(milliseconds: 550));
+      expect(tester.widget<Text>(burstStatus).data, 'Star burst: 0, 1, 2');
+
+      // Open Debug QA Overlay via corner long press
+      final trigger = find.byKey(const Key('debugQaOverlayTrigger'));
+      expect(trigger, findsOneWidget);
+      await tester.longPress(trigger);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Tap on 'Frames' tab to open LiveFrameGraph
+      final framesTab = find.text('Frames');
+      expect(framesTab, findsOneWidget);
+      await tester.tap(framesTab);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Verify scheduler timing callback streams real frame samples on device.
+      expect(find.byType(LiveFrameGraph), findsOneWidget);
+      expect(find.textContaining('/100 frames'), findsOneWidget);
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(find.textContaining('/100 frames'), findsOneWidget);
+      final frameCount = tester
+          .widget<Text>(find.textContaining('/100 frames'))
+          .data!;
+      expect(int.parse(frameCount.split('/').first), greaterThan(0));
+
+      // Real FrameTiming.totalSpan produced a sane FPS estimate + jank count.
+      final summary = tester
+          .widget<Text>(find.textContaining('Frame time ·'))
+          .data!;
+      final match = RegExp(r'· (\d+) FPS · Jank: (\d+)').firstMatch(summary);
+      expect(match, isNotNull, reason: summary);
+      expect(int.parse(match!.group(1)!), greaterThan(0));
+      expect(
+        int.parse(match.group(2)!),
+        lessThanOrEqualTo(int.parse(frameCount.split('/').first)),
+      );
+
+      // Close panel; disposing the graph unregisters SchedulerBinding callback.
+      await tester.tap(find.byIcon(Icons.close).first);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(LiveFrameGraph), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );

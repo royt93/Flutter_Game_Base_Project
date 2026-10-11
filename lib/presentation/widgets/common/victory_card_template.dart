@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -46,6 +48,10 @@ class VictoryCardTemplate extends StatelessWidget {
     this.qrData,
     this.accentColor,
     this.qrCaption = 'Scan to play',
+    this.starsEarned,
+    this.totalStars = 3,
+    this.starStaggerDuration = const Duration(milliseconds: 250),
+    this.onStarPopped,
   });
 
   /// Caller-supplied headline, e.g. "Level 50 Complete!" — no i18n baked in.
@@ -76,6 +82,18 @@ class VictoryCardTemplate extends StatelessWidget {
   /// translation keys for game-specific copy like this).
   final String qrCaption;
 
+  /// Optional earned-star count; when set, stars animate in sequence.
+  final int? starsEarned;
+
+  /// Number of stars available when [starsEarned] is set.
+  final int totalStars;
+
+  /// Stagger delay between sequential star pops.
+  final Duration starStaggerDuration;
+
+  /// Callback fired when each individual star completes its entrance pop.
+  final ValueChanged<int>? onStarPopped;
+
   @override
   Widget build(BuildContext context) {
     final accent = accentColor ?? NeonTheme.gold;
@@ -101,6 +119,15 @@ class VictoryCardTemplate extends StatelessWidget {
               const SizedBox(height: NeonTheme.s16),
             ],
             StrokeText(title, fontSize: 22, color: accent),
+            if (starsEarned != null) ...[
+              const SizedBox(height: NeonTheme.s8),
+              _VictoryStarsRow(
+                earned: starsEarned!.clamp(0, totalStars),
+                total: totalStars,
+                staggerDuration: starStaggerDuration,
+                onStarPopped: onStarPopped,
+              ),
+            ],
             const SizedBox(height: NeonTheme.s16),
             for (final line in statLines)
               Padding(
@@ -144,6 +171,119 @@ class VictoryCardTemplate extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _VictoryStarsRow extends StatefulWidget {
+  const _VictoryStarsRow({
+    required this.earned,
+    required this.total,
+    required this.staggerDuration,
+    this.onStarPopped,
+  });
+
+  final int earned;
+  final int total;
+  final Duration staggerDuration;
+  final ValueChanged<int>? onStarPopped;
+
+  @override
+  State<_VictoryStarsRow> createState() => _VictoryStarsRowState();
+}
+
+class _VictoryStarsRowState extends State<_VictoryStarsRow>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  final Set<int> _notified = {};
+  static const _popDuration = Duration(milliseconds: 300);
+
+  @override
+  void initState() {
+    super.initState();
+    final totalUs =
+        widget.staggerDuration.inMicroseconds *
+            (math.max(1, widget.earned) - 1) +
+        _popDuration.inMicroseconds;
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(microseconds: totalUs),
+    )..addListener(_checkCallbacks);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (NeonTheme.reducedMotion(context)) {
+        _controller.value = 1.0;
+      } else {
+        _controller.forward();
+      }
+    });
+  }
+
+  void _checkCallbacks() {
+    final totalUs = _controller.duration?.inMicroseconds ?? 0;
+    if (totalUs == 0) return;
+    for (var i = 0; i < widget.earned; i++) {
+      final startRatio = (widget.staggerDuration.inMicroseconds * i) / totalUs;
+      if (_controller.value >= startRatio && _notified.add(i)) {
+        widget.onStarPopped?.call(i);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isReduced = NeonTheme.reducedMotion(context);
+    final totalUs = _controller.duration?.inMicroseconds ?? 1;
+
+    return Semantics(
+      label: '${widget.earned} of ${widget.total} stars',
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < widget.total; i++) ...[
+            Builder(
+              builder: (context) {
+                final isFilled = i < widget.earned;
+                final icon = Icon(
+                  isFilled ? Icons.star_rounded : Icons.star_outline_rounded,
+                  size: 40,
+                  color: isFilled ? NeonTheme.gold : NeonTheme.muted,
+                  shadows: isFilled
+                      ? [Shadow(color: NeonTheme.gold, blurRadius: 12)]
+                      : null,
+                );
+
+                if (!isFilled || isReduced) return icon;
+
+                final startUs = widget.staggerDuration.inMicroseconds * i;
+                final endUs = startUs + _popDuration.inMicroseconds;
+                final startRatio = (startUs / totalUs).clamp(0.0, 1.0);
+                final endRatio = (endUs / totalUs).clamp(0.0, 1.0);
+
+                final anim = CurvedAnimation(
+                  parent: _controller,
+                  curve: Interval(
+                    startRatio,
+                    endRatio,
+                    curve: Curves.easeOutBack,
+                  ),
+                );
+
+                return ScaleTransition(scale: anim, child: icon);
+              },
+            ),
+            if (i < widget.total - 1) const SizedBox(width: 4),
+          ],
+        ],
       ),
     );
   }

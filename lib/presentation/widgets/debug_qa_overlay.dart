@@ -18,6 +18,7 @@ import '../../core/storage_service.dart';
 import '../../core/utils/clamped_clock.dart';
 import '../../core/utils/trusted_clock.dart';
 import 'common/common_button.dart';
+import 'common/live_frame_graph.dart';
 
 /// Hidden debug/QA overlay — a small long-press trigger in a screen corner
 /// that opens a panel with 2 tabs: a read-only dump of live internal
@@ -298,6 +299,11 @@ class _Panel extends StatelessWidget {
                             selected: tab == 8,
                             onTap: () => onTabChanged(8),
                           ),
+                          _TabButton(
+                            label: 'Frames',
+                            selected: tab == 9,
+                            onTap: () => onTabChanged(9),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -322,7 +328,8 @@ class _Panel extends StatelessWidget {
                           5 => _NetworkSimulatorTab(onChanged: onQaChanged),
                           6 => const _VariantSwitcherTab(),
                           7 => const _KillSwitchTab(),
-                          _ => const _BootTab(),
+                          8 => const _BootTab(),
+                          _ => const _FramesTab(),
                         },
                       ),
                     ],
@@ -679,6 +686,13 @@ class _HealthTabState extends State<_HealthTab> {
   }
 }
 
+class _FramesTab extends StatelessWidget {
+  const _FramesTab();
+
+  @override
+  Widget build(BuildContext context) => const LiveFrameGraph();
+}
+
 String _formatDebugOffset(int ms) {
   if (ms == 0) return '0 (không time travel)';
   final sign = ms < 0 ? '-' : '+';
@@ -715,7 +729,10 @@ class _TimeTravelTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Time Travel', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text(
+            'Time Travel',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
           Text('Offset hiện tại: ${_formatDebugOffset(debugTimeOffsetMs)}'),
           const SizedBox(height: 4),
@@ -917,10 +934,8 @@ class _VariantSwitcherTabState extends State<_VariantSwitcherTab> {
                   label: Text(variant),
                   selected: current == variant,
                   onSelected: (_) => setState(
-                    () => service.debugSetVariantOverride(
-                      experimentKey,
-                      variant,
-                    ),
+                    () =>
+                        service.debugSetVariantOverride(experimentKey, variant),
                   ),
                 ),
             ],
@@ -1066,7 +1081,8 @@ class _KillSwitchRow extends StatelessWidget {
     // queried yet — `states` has no entry for it until `isKilled`/
     // `forceKillLocally` is called at least once.
     final state = controller.states[featureId];
-    final killed = state?.killed ?? controller.assetDefaults[featureId] ?? false;
+    final killed =
+        state?.killed ?? controller.assetDefaults[featureId] ?? false;
     final canClearLocally = state?.source == KillSwitchSource.localOverride;
 
     return Padding(

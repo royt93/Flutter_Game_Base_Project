@@ -39,6 +39,7 @@ export 'notification_permission_primer.dart';
 export 'review_prompt_trigger.dart';
 export 'smart_review_funnel.dart';
 export 'shimmer_placeholder.dart';
+export 'live_frame_graph.dart';
 export 'spotlight_overlay.dart';
 export 'tutorial_sequence.dart';
 

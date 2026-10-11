@@ -1208,21 +1208,23 @@ void main() {
       },
     );
 
-    testWidgets(
-      '"Start 12s cooldown": hiện countdown đúng ~12s, đếm lùi thật',
-      (tester) async {
-        await _pumpShowcase(tester);
+    testWidgets('"Start 12s cooldown": remains near 12s after fake-time pump', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
 
-        await tester.tap(find.text('Start 12s cooldown').last);
-        await tester.pump();
+      await tester.tap(find.text('Start 12s cooldown').last);
+      await tester.pump();
 
-        expect(find.text(fmtDur(const Duration(seconds: 12))), findsOneWidget);
+      expect(find.text(fmtDur(const Duration(seconds: 12))), findsOneWidget);
 
-        await tester.pump(const Duration(seconds: 3));
-        expect(find.text(fmtDur(const Duration(seconds: 9))), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      },
-    );
+      // `CooldownCountdownChip` targets DateTime.now(), not FakeAsync time;
+      // a long tester.pump must not be mistaken for elapsed wall-clock time.
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.textContaining('00:1'), findsWidgets);
+      expect(find.text('00:09'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets(
       'bấm Start lần nữa khi đang chạy: reset lại đúng 12s (restart policy)',
@@ -2462,7 +2464,8 @@ void main() {
           // prime its ticker, then advance past 4*550ms + 3*70ms flight timeline.
           await tester.pump(const Duration(milliseconds: 1));
           await tester.pump(const Duration(milliseconds: 3000));
-          await tester.pump(); // OverlayEntry removal rebuilds Overlay on next frame.
+          await tester
+              .pump(); // OverlayEntry removal rebuilds Overlay on next frame.
           expect(find.byType(ItemFlyOverlay), findsNothing);
           expect(tester.takeException(), isNull);
         },
@@ -2480,6 +2483,32 @@ void main() {
             find.widgetWithText(CommonButton, 'Claim All').first,
             findsOneWidget,
           );
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'ENH-99 victory card stars pop sequentially with status callbacks',
+        (tester) async {
+          await _pumpShowcase(tester);
+          final status = find.byKey(const Key('victoryStarBurstStatus'));
+          expect(status, findsOneWidget);
+          expect(tester.widget<Text>(status).data, startsWith('Star burst:'));
+
+          await tester.pump();
+          expect(find.text('Star burst: 0'), findsOneWidget);
+          await tester.pump(const Duration(milliseconds: 250));
+          expect(find.text('Star burst: 0, 1'), findsOneWidget);
+          await tester.pump(const Duration(milliseconds: 250));
+          expect(find.text('Star burst: 0, 1, 2'), findsOneWidget);
+
+          final replay = find.widgetWithText(CommonButton, 'Replay star burst');
+          await tester.tap(replay);
+          await tester.pump();
+          expect(tester.widget<Text>(status).data, startsWith('Star burst:'));
+          await tester.pump(const Duration(milliseconds: 1));
+          await tester.pump(const Duration(milliseconds: 550));
+          expect(tester.widget<Text>(status).data, 'Star burst: 0, 1, 2');
           expect(tester.takeException(), isNull);
         },
       );

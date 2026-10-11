@@ -195,6 +195,310 @@ void main() {
     },
   );
 
+  group('ENH-99: Sequential Staggered StarBurst', () {
+    testWidgets('fires star callbacks in threshold order with 250ms stagger', (
+      tester,
+    ) async {
+      var progress = 0.0;
+      late StateSetter setProgress;
+      final popped = <int>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Center(
+              child: SizedBox(
+                width: 300,
+                child: StatefulBuilder(
+                  builder: (context, setState) {
+                    setProgress = setState;
+                    return ProgressBarStars(
+                      progress: progress,
+                      onStarPopped: popped.add,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      setProgress(() => progress = 1.0);
+      await tester.pump();
+
+      // At t=0ms, only first star filled and popped
+      expect(popped, [0]);
+      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.star_outline_rounded), findsNWidgets(2));
+
+      // Advance through first stagger window
+      await tester.pump(const Duration(milliseconds: 249));
+      expect(popped, [0]);
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(popped, [0, 1]);
+      expect(find.byIcon(Icons.star_rounded), findsNWidgets(2));
+
+      // Advance through second stagger window
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(popped, [0, 1, 2]);
+      expect(find.byIcon(Icons.star_rounded), findsNWidgets(3));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('all crossed stars pop when Reduce Motion is enabled', (
+      tester,
+    ) async {
+      var progress = 0.0;
+      late StateSetter setProgress;
+      final popped = <int>[];
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Material(
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  setProgress = setState;
+                  return ProgressBarStars(
+                    progress: progress,
+                    onStarPopped: popped.add,
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      setProgress(() => progress = 1.0);
+      await tester.pump();
+      expect(popped, [0, 1, 2]);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('dropping progress cancels later stars in the burst', (
+      tester,
+    ) async {
+      var progress = 0.0;
+      late StateSetter setProgress;
+      final popped = <int>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                setProgress = setState;
+                return ProgressBarStars(
+                  progress: progress,
+                  onStarPopped: popped.add,
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      setProgress(() => progress = 1.0);
+      await tester.pump();
+      expect(popped, [0]);
+      setProgress(() => progress = 0.5);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(popped, [0]);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('unmount cancels pending stagger timers', (tester) async {
+      var progress = 0.0;
+      late StateSetter setProgress;
+      final popped = <int>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                setProgress = setState;
+                return ProgressBarStars(
+                  progress: progress,
+                  onStarPopped: popped.add,
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      setProgress(() => progress = 1.0);
+      await tester.pump();
+      expect(popped, [0]);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 1));
+      expect(popped, [0]);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('additional thresholds join an active burst in order', (
+      tester,
+    ) async {
+      var progress = 0.0;
+      late StateSetter setProgress;
+      final popped = <int>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                setProgress = setState;
+                return ProgressBarStars(
+                  progress: progress,
+                  onStarPopped: popped.add,
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      setProgress(() => progress = 0.4);
+      await tester.pump();
+      expect(popped, [0]);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      setProgress(() => progress = 1.0);
+      await tester.pump();
+      expect(popped, [0]);
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(popped, [0, 1]);
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(popped, [0, 1, 2]);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('decreased progress allows a earned star to pop again', (
+      tester,
+    ) async {
+      var progress = 0.0;
+      late StateSetter setProgress;
+      final popped = <int>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                setProgress = setState;
+                return ProgressBarStars(
+                  progress: progress,
+                  onStarPopped: popped.add,
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      setProgress(() => progress = 0.4);
+      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(popped, [0]);
+
+      setProgress(() => progress = 0.0);
+      await tester.pump();
+      expect(find.byIcon(Icons.star_outline_rounded), findsNWidgets(3));
+      setProgress(() => progress = 0.4);
+      await tester.pump();
+      expect(popped, [0, 0]);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('crossing a single threshold pops only that star', (
+      tester,
+    ) async {
+      var progress = 0.0;
+      late StateSetter setProgress;
+      final popped = <int>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Center(
+              child: SizedBox(
+                width: 300,
+                child: StatefulBuilder(
+                  builder: (context, setState) {
+                    setProgress = setState;
+                    return ProgressBarStars(
+                      progress: progress,
+                      onStarPopped: popped.add,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      setProgress(() => progress = 0.4);
+      await tester.pump();
+      expect(popped, [0]);
+      await tester.pumpAndSettle();
+      expect(popped, [0]);
+      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+    });
+
+    testWidgets('staggerDuration zero pops all stars simultaneously', (
+      tester,
+    ) async {
+      var progress = 0.0;
+      late StateSetter setProgress;
+      final popped = <int>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Center(
+              child: SizedBox(
+                width: 300,
+                child: StatefulBuilder(
+                  builder: (context, setState) {
+                    setProgress = setState;
+                    return ProgressBarStars(
+                      progress: progress,
+                      staggerDuration: Duration.zero,
+                      onStarPopped: popped.add,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      setProgress(() => progress = 1.0);
+      await tester.pump();
+      expect(popped, [0, 1, 2]);
+      expect(find.byIcon(Icons.star_rounded), findsNWidgets(3));
+    });
+
+    testWidgets('negative stagger duration throws ArgumentError', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: ProgressBarStars(
+              progress: 0.5,
+              staggerDuration: Duration(milliseconds: -10),
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isA<ArgumentError>());
+    });
+  });
+
   testWidgets('ENH-32: Reduce Motion bật → không animate khi vượt ngưỡng', (
     tester,
   ) async {
