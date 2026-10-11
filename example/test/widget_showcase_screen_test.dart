@@ -18,6 +18,7 @@ import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/deep_link_command_router.dart';
 import 'package:roy_casual_kit/core/game_session_controller.dart';
 import 'package:roy_casual_kit/core/inventory_service.dart';
+import 'package:roy_casual_kit/core/juicy_feedback.dart';
 import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/reminder_service.dart';
@@ -2538,6 +2539,26 @@ void main() {
         }
         expect(state.freeCount, 50);
         expect(find.text('Completed: 3 · Objects created: 50'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('FEAT-107 JuicyFeedback showcases six preset actions', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final tapButton = find.widgetWithText(CommonButton, 'tap');
+        for (var i = 0; i < 40 && tapButton.evaluate().isEmpty; i++) {
+          await tester.drag(find.byType(ListView).first, const Offset(0, -500));
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        for (final preset in JuicyPreset.values) {
+          expect(
+            find.widgetWithText(CommonButton, preset.name),
+            findsOneWidget,
+          );
+        }
+        await tester.tap(tapButton.first);
+        await tester.pump();
         expect(tester.takeException(), isNull);
       });
 

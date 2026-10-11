@@ -35,6 +35,7 @@ export 'core/experiment_bucketing_service.dart';
 export 'core/haptic_choreographer.dart';
 export 'core/haptics.dart';
 export 'core/in_app_review_helper.dart';
+export 'core/juicy_feedback.dart';
 export 'core/inventory_service.dart';
 export 'core/invite_friend_coordinator.dart';
 export 'core/kit_bootstrap.dart';

@@ -1785,6 +1785,24 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-107: JuicyFeedback presets respond on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    for (final preset in JuicyPreset.values) {
+      final button = find.widgetWithText(CommonButton, preset.name);
+      await _scrollUntilVisible(tester, button);
+      await tester.ensureVisible(button.first);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(button.first);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-106: 10 particle bursts reuse pool on device', (
     tester,
   ) async {
@@ -1806,34 +1824,6 @@ void main() {
       expect(state.activeCount, 0);
       expect(state.totalCreated, 50);
     }
-    expect(find.text('Completed: 10 · Objects created: 50'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('FEAT-106: 10 particle bursts reuse pool on device', (
-    tester,
-  ) async {
-    await app.app();
-    await tester.pump(const Duration(seconds: 4));
-    await _goToWidgetShowcase(tester);
-
-    final burst = find.byType(PooledParticleBurst);
-    await _scrollUntilVisible(tester, burst);
-    final state = tester.state<PooledParticleBurstState>(burst.first);
-    expect(state.totalCreated, 50);
-    final button = find.widgetWithText(CommonButton, 'Burst 50 particles');
-
-    for (var i = 0; i < 10; i++) {
-      await _scrollUntilVisible(tester, button);
-      await tester.ensureVisible(button.first);
-      await tester.tap(button.first);
-      await tester.pump();
-      expect(state.activeCount, 50);
-      await tester.pump(const Duration(milliseconds: 1200));
-      expect(state.activeCount, 0);
-      expect(state.totalCreated, 50);
-    }
-
     expect(find.text('Completed: 10 · Objects created: 50'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

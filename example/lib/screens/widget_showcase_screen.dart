@@ -15,6 +15,7 @@ import 'package:roy_casual_kit/core/game_session_controller.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/player_progression_service.dart';
 import 'package:roy_casual_kit/core/inventory_service.dart';
+import 'package:roy_casual_kit/core/juicy_feedback.dart';
 import 'package:roy_casual_kit/core/lifecycle_coordinator.dart';
 import 'package:roy_casual_kit/core/offline_outbox_service.dart';
 import 'package:roy_casual_kit/core/reminder_service.dart';
@@ -3837,6 +3838,33 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     CommonButton(
                                       label: 'Bump heat',
                                       onTap: _cycleComboHeat,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'JuicyFeedback (FEAT-107)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Uses example-owned assets/audio/demo_sfx.mp3',
+                                    ),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      runSpacing: NeonTheme.s8,
+                                      children: [
+                                        for (final preset in JuicyPreset.values)
+                                          CommonButton(
+                                            label: preset.name,
+                                            variant:
+                                                CommonButtonVariant.secondary,
+                                            onTap: () => JuicyFeedback.trigger(
+                                              preset,
+                                              sfxAsset: 'audio/demo_sfx.mp3',
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ],
                                 ),
