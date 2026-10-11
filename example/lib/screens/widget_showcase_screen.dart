@@ -2141,7 +2141,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     const Positioned(
                                       top: -2,
                                       right: -2,
-                                      child: BadgeDot(),
+                                      child: BadgeDot(pulse: true, radar: true),
                                     ),
                                   ],
                                 ),

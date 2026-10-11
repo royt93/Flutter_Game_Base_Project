@@ -2507,6 +2507,15 @@ void main() {
         },
       );
 
+      testWidgets('ENH-101 showcase mounts pulsing/radar BadgeDot', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        expect(find.byType(BadgeDot), findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 750));
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets(
         'ENH-99 victory card stars pop sequentially with status callbacks',
         (tester) async {

@@ -1785,6 +1785,21 @@ void main() {
     },
   );
 
+  testWidgets('ENH-101: pulsing/radar BadgeDot remains mounted on TECNO', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final badge = find.byType(BadgeDot);
+    await _scrollUntilVisible(tester, badge);
+    await tester.ensureVisible(badge.first);
+    await tester.pump(const Duration(milliseconds: 1600));
+    expect(badge, findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-105: Iris scene transition covers and reveals on device', (
     tester,
   ) async {
@@ -1816,6 +1831,34 @@ void main() {
     }
     expect(find.text('Phase: idle'), findsOneWidget);
     expect(find.text('Scene #2'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('ENH-101: pulsing/radar BadgeDot animates on TECNO', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final badge = find.byType(BadgeDot);
+    await _scrollUntilVisible(tester, badge);
+    await tester.ensureVisible(badge.first);
+    await tester.pump();
+    final widget = tester.widget<BadgeDot>(badge.first);
+    expect(widget.pulse, isTrue);
+    expect(widget.radar, isTrue);
+
+    final transform = find
+        .descendant(of: badge.first, matching: find.byType(Transform))
+        .first;
+    var peakScale = 1.0;
+    for (var i = 0; i < 15; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      final scale = tester.widget<Transform>(transform).transform.entry(0, 0);
+      if (scale > peakScale) peakScale = scale;
+    }
+    expect(peakScale, greaterThan(1.2));
     expect(tester.takeException(), isNull);
   });
 
