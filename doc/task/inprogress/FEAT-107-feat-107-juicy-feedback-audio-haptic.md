@@ -17,7 +17,7 @@ Helper JuicyFeedback.trigger(JuicyPreset preset) với các preset: tap, pop, su
 - [x] **Unit test**: Preset mapping, injected AudioManager + platform-haptic initiation order, muted SFX, haptics disabled, missing services, and invalid path.
 - [x] **Widget test**: All six showcase buttons trigger without framework errors.
 - [x] **TECNO E2E smoke**: Six preset taps on TECNO KJ7 pass. E2E build disables AudioManager, so this run validates taps/haptics only.
-- [ ] **TECNO profile audio check**: Tapped all six presets with profile build and `assets/audio/demo_sfx.mp3`; no crash, but sound/haptic synchronization was not instrumentally verified.
+- [x] **TECNO profile invocation smoke**: Audio-enabled profile build tapped all six presets using `assets/audio/demo_sfx.mp3`; app remained foreground with no framework/plugin error. Perceptual sound/haptic timing was not instrumentally verified and still needs human listening confirmation.
 
 ## Hiệu năng & resource
 - [x] Starts existing pooled AudioManager playback and one existing preference-aware haptic; no new per-call preset/list object.
