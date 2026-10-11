@@ -699,7 +699,7 @@
     "core/invite_friend_coordinator.dart:InviteFriendCoordinator.new({ required DeepLinkCommandRouter router, required StorageService storage, this.commandType = 'invite', })",
     "core/invite_friend_coordinator.dart:InviteFriendCoordinator.route({ required String scheme, String host = 'invite', String commandType = 'invite', }): DeepLinkRoute",
     "core/invite_friend_coordinator.dart:InviteFriendCoordinator.shareInvite(String playerId, { BuildContext? sharePositionContext, String Function(String code)? messageBuilder, }): Future<void>",
-    "core/juicy_feedback.dart:JuicyFeedback.trigger(JuicyPreset preset, {required String sfxAsset}): void",
+    "core/juicy_feedback.dart:JuicyFeedback.trigger(JuicyPreset preset, { required String sfxAsset, AudioManager? audioManager, }): void",
     "core/kit_bootstrap.dart:RoyCasualKit.initialize({ RoyCasualKitConfig config = const RoyCasualKitConfig(), }): Future<RoyCasualKitResult>",
     "core/kit_bootstrap.dart:RoyCasualKit.resetForTesting(): Future<void>",
     "core/kit_bootstrap.dart:RoyCasualKitConfig.new({ this.modules = const { RoyCasualKitModule.storage, RoyCasualKitModule.locale, RoyCasualKitModule.lifecycle, }, this.preferences, this.storageOverride, this.permanent = true, })",

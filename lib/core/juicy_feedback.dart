@@ -21,11 +21,15 @@ HapticLevel hapticLevelForJuicyPreset(JuicyPreset preset) => switch (preset) {
 class JuicyFeedback {
   JuicyFeedback._();
 
-  static void trigger(JuicyPreset preset, {required String sfxAsset}) {
+  static void trigger(
+    JuicyPreset preset, {
+    required String sfxAsset,
+    AudioManager? audioManager,
+  }) {
     if (sfxAsset.isEmpty) {
       throw ArgumentError.value(sfxAsset, 'sfxAsset', 'must not be empty');
     }
-    final audio = AudioManager.maybe;
+    final audio = audioManager ?? AudioManager.maybe;
     if (audio != null && !audio.muted.value) {
       unawaited(audio.playSfx(sfxAsset));
     }
