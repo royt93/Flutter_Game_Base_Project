@@ -2568,6 +2568,39 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      testWidgets('FEAT-112 scratch card reveals caller-owned prize status', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final scratch = find.byType(ScratchCard);
+        await tester.scrollUntilVisible(
+          scratch,
+          300,
+          scrollable: find
+              .descendant(
+                of: find.byKey(const ValueKey('widgetShowcaseList')),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        final rect = tester.getRect(scratch.first);
+        final gesture = await tester.startGesture(
+          rect.topLeft + const Offset(10, 10),
+        );
+        for (final lane in [10.0, 48.0, 86.0, 124.0]) {
+          await gesture.moveTo(Offset(rect.left + 10, rect.top + lane));
+          for (var step = 1; step <= 10; step++) {
+            await gesture.moveTo(
+              Offset(rect.left + 10 + step * 25, rect.top + lane),
+            );
+          }
+        }
+        await gesture.up();
+        await tester.pump();
+        expect(find.text('Prize revealed'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('FEAT-111 piggy bank unlocks, fills and breaks', (
         tester,
       ) async {

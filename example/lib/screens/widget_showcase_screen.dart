@@ -980,6 +980,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   bool _showRankAround = false;
   int _battlePassProgress = 500;
   int _piggyBankAmount = 250;
+  bool _scratchPrizeRevealed = false;
   bool _piggyBankUnlocked = false;
   bool _chestRewardRevealed = false;
   bool _battlePassVipEnabled = false;
@@ -3698,6 +3699,55 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
 
+                              const SizedBox(height: NeonTheme.s24),
+                              const SectionHeader(title: 'Scratch Card'),
+                              const SizedBox(height: NeonTheme.s16),
+                              _Demo(
+                                label: 'ScratchCard (FEAT-112)',
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      height: 180,
+                                      child: ScratchCard(
+                                        prize: Center(
+                                          child: Text(
+                                            'PRIZE: +1000 coins',
+                                            key: const Key('scratchPrize'),
+                                            style: TextStyle(
+                                              color: NeonTheme.gold,
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 22,
+                                            ),
+                                          ),
+                                        ),
+                                        cover: const DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                Color(0xFF888888),
+                                                Color(0xFFE0E0E0),
+                                                Color(0xFF999999),
+                                              ],
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text('SCRATCH TO WIN'),
+                                          ),
+                                        ),
+                                        onRevealed: () => setState(
+                                          () => _scratchPrizeRevealed = true,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      _scratchPrizeRevealed
+                                          ? 'Prize revealed'
+                                          : 'Scratch area to reveal prize',
+                                      key: const Key('scratchCardStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: NeonTheme.s24),
                               const SectionHeader(title: 'Mystery Chest'),
                               const SizedBox(height: NeonTheme.s16),

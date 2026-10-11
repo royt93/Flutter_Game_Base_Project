@@ -1828,6 +1828,34 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-112: ScratchCard clears continuously on S24 Ultra', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final scratch = find.byType(ScratchCard);
+    await _scrollUntilVisible(tester, scratch);
+    await tester.ensureVisible(scratch.first);
+    final rect = tester.getRect(scratch.first);
+    final gesture = await tester.startGesture(
+      rect.topLeft + const Offset(15, 12),
+    );
+    for (final lane in [12.0, 52.0, 92.0, 132.0]) {
+      await gesture.moveTo(Offset(rect.left + 15, rect.top + lane));
+      for (var i = 1; i <= 12; i++) {
+        await gesture.moveTo(
+          Offset(rect.left + 15 + i * (rect.width - 30) / 12, rect.top + lane),
+        );
+      }
+    }
+    await gesture.up();
+    await tester.pump();
+    expect(find.text('Prize revealed'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-111: PiggyBank earns, fills and breaks on S24 Ultra', (
     tester,
   ) async {
