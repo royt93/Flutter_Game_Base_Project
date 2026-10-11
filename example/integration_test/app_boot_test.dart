@@ -1785,6 +1785,45 @@ void main() {
     },
   );
 
+  testWidgets('ENH-100: PressableScale tap remains responsive on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final primaryButton = find.widgetWithText(CommonButton, 'Primary');
+    await _scrollUntilVisible(tester, primaryButton);
+    final pressable = find.descendant(
+      of: primaryButton.first,
+      matching: find.byType(PressableScale),
+    );
+    expect(pressable, findsOneWidget);
+    await tester.ensureVisible(pressable);
+    await tester.pump();
+    await tester.tap(pressable);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(pressable.hitTestable(), findsOneWidget);
+
+    final rewardTrigger = find.widgetWithText(CommonButton, 'Show reward');
+    await _scrollUntilVisible(tester, rewardTrigger);
+    await tester.tap(rewardTrigger.first);
+    await tester.pump();
+    final popup = find.byType(RewardPopup);
+    expect(popup, findsOneWidget);
+    final spring = find.descendant(
+      of: popup,
+      matching: find.byType(SpringScaleTransition),
+    );
+    expect(spring, findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+    expect(
+      tester.widget<SpringScaleTransition>(spring).controller.value,
+      closeTo(1, 0.001),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'Wave 1: ENH-99 VictoryCard staggered stars & FEAT-104 LiveFrameGraph survive on device',
     (tester) async {

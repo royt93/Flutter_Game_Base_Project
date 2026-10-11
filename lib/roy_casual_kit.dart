@@ -123,6 +123,7 @@ export 'presentation/widgets/neon_button.dart';
 export 'presentation/widgets/neon_dialog.dart';
 export 'presentation/widgets/neon_icon.dart';
 export 'presentation/widgets/pressable_scale.dart';
+export 'presentation/widgets/spring_scale_transition.dart';
 export 'presentation/widgets/shader_ticker_layer.dart';
 export 'presentation/widgets/stroke_text.dart';
 

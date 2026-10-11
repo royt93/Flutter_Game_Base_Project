@@ -27,6 +27,7 @@ import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:roy_casual_kit/core/utils/format.dart';
 import 'package:roy_casual_kit/core/utils/smart_reminder_scheduling.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
+import 'package:roy_casual_kit/presentation/widgets/spring_scale_transition.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -2512,6 +2513,35 @@ void main() {
           expect(tester.takeException(), isNull);
         },
       );
+
+      testWidgets('ENH-100 RewardPopup demo uses spring entrance', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final trigger = find.widgetWithText(CommonButton, 'Show reward').first;
+        await tester.tap(trigger);
+        await tester.pump();
+
+        final popup = find.byType(RewardPopup);
+        expect(popup, findsOneWidget);
+        final spring = find.descendant(
+          of: popup,
+          matching: find.byType(SpringScaleTransition),
+        );
+        expect(spring, findsOneWidget);
+        expect(
+          tester.widget<SpringScaleTransition>(spring).controller.isAnimating,
+          isTrue,
+        );
+        for (var i = 0; i < 40; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        expect(
+          tester.widget<SpringScaleTransition>(spring).controller.value,
+          1,
+        );
+        expect(tester.takeException(), isNull);
+      });
 
       testWidgets('CardFlip3D demo renders and flips on reveal button tap', (
         tester,

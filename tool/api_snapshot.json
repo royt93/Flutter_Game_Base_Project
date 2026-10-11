@@ -119,6 +119,7 @@
     "presentation/widgets/neon_icon.dart",
     "presentation/widgets/pressable_scale.dart",
     "presentation/widgets/shader_ticker_layer.dart",
+    "presentation/widgets/spring_scale_transition.dart",
     "presentation/widgets/stroke_text.dart"
   ],
   "symbols": [
@@ -479,6 +480,10 @@
     "presentation/widgets/neon_icon.dart:NeonIconButton",
     "presentation/widgets/pressable_scale.dart:PressableScale",
     "presentation/widgets/shader_ticker_layer.dart:ShaderTickerLayerState",
+    "presentation/widgets/spring_scale_transition.dart:SpringMotionPreset",
+    "presentation/widgets/spring_scale_transition.dart:SpringScaleTransition",
+    "presentation/widgets/spring_scale_transition.dart:SpringSimulationController",
+    "presentation/widgets/spring_scale_transition.dart:springDescriptionFor",
     "presentation/widgets/stroke_text.dart:StrokeText"
   ],
   "members": [
@@ -1154,9 +1159,15 @@
     "presentation/widgets/neon_icon.dart:NeonIconButton.build(BuildContext context): Widget",
     "presentation/widgets/neon_icon.dart:NeonIconButton.new(this.icon, { super.key, required this.color, required this.onTap, this.size = 24, this.boxed = false, this.semanticLabel, this.compact = false, })",
     "presentation/widgets/pressable_scale.dart:PressableScale.createState(): State<PressableScale>",
-    "presentation/widgets/pressable_scale.dart:PressableScale.new({ super.key, required this.onTap, required this.child, this.scale = 0.94, this.focusNode, this.autofocus = false, })",
+    "presentation/widgets/pressable_scale.dart:PressableScale.new({ super.key, required this.onTap, required this.child, this.scale = 0.94, this.springPreset = SpringMotionPreset.snappy, this.focusNode, this.autofocus = false, })",
     "presentation/widgets/shader_ticker_layer.dart:ShaderTickerLayerState.didChangeDependencies(): void",
     "presentation/widgets/shader_ticker_layer.dart:ShaderTickerLayerState.dispose(): void",
+    "presentation/widgets/spring_scale_transition.dart:SpringScaleTransition.build(BuildContext context): Widget",
+    "presentation/widgets/spring_scale_transition.dart:SpringScaleTransition.new({ super.key, required this.controller, required this.child, this.begin = 0.85, this.end = 1, this.opacity = false, })",
+    "presentation/widgets/spring_scale_transition.dart:SpringSimulationController.animateTo(double target, { SpringMotionPreset? preset, bool reducedMotion = false, }): void",
+    "presentation/widgets/spring_scale_transition.dart:SpringSimulationController.dispose(): void",
+    "presentation/widgets/spring_scale_transition.dart:SpringSimulationController.jumpTo(double value): void",
+    "presentation/widgets/spring_scale_transition.dart:SpringSimulationController.new({ required TickerProvider vsync, this.preset = SpringMotionPreset.snappy, double initialValue = 0, })",
     "presentation/widgets/stroke_text.dart:StrokeText.build(BuildContext context): Widget",
     "presentation/widgets/stroke_text.dart:StrokeText.new(this.text, { super.key, required this.fontSize, this.color = Colors.white, this.stroke, this.strokeWidth = 3.5, this.weight = FontWeight.w900, this.letterSpacing = 0.5, this.shadows, })"
   ]

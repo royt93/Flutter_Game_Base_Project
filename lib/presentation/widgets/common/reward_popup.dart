@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
 import 'common_button.dart';
+import '../spring_scale_transition.dart';
 
 /// Celebration popup (level-up, reward unlocked, ...) — a panel layout like
 /// `NeonDialog.panel` (rounded `NeonTheme.card` card, colored border,
@@ -49,8 +50,14 @@ class RewardPopup extends StatefulWidget {
 }
 
 class _RewardPopupState extends State<RewardPopup>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _burst;
+  late final SpringSimulationController _entranceSpring =
+      SpringSimulationController(
+        vsync: this,
+        preset: SpringMotionPreset.bouncy,
+        initialValue: 0,
+      );
   late final List<_Confetto> _bits;
   bool _startedOnce = false;
   bool _showParticles = false;
@@ -89,11 +96,16 @@ class _RewardPopupState extends State<RewardPopup>
     _showParticles =
         widget.enableParticles && !NeonTheme.reducedMotion(context);
     if (_showParticles) _burst.forward();
+    _entranceSpring.animateTo(
+      1,
+      reducedMotion: NeonTheme.reducedMotion(context),
+    );
   }
 
   @override
   void dispose() {
     _burst.dispose();
+    _entranceSpring.dispose();
     super.dispose();
   }
 
@@ -111,16 +123,11 @@ class _RewardPopupState extends State<RewardPopup>
               size: const Size(320, 320),
             ),
           ),
-        TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: 1),
-          duration: NeonTheme.reducedMotion(context)
-              ? Duration.zero
-              : const Duration(milliseconds: 320),
-          curve: Curves.easeOutBack,
-          builder: (context, t, child) => Opacity(
-            opacity: t.clamp(0.0, 1.0),
-            child: Transform.scale(scale: 0.85 + 0.15 * t, child: child),
-          ),
+        SpringScaleTransition(
+          controller: _entranceSpring,
+          begin: 0.85,
+          end: 1,
+          opacity: true,
           child: _panel(color),
         ),
       ],

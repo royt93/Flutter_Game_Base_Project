@@ -67,6 +67,23 @@ class NeonTheme {
   /// Symmetrical smooth curve for loop or continuous movements.
   static const Curve curveSmooth = Curves.easeInOut;
 
+  /// Spring parameters for playful, neutral and crisp interactions.
+  static const SpringDescription springBouncy = SpringDescription(
+    mass: 1,
+    stiffness: 180,
+    damping: 12,
+  );
+  static const SpringDescription springGentle = SpringDescription(
+    mass: 1,
+    stiffness: 220,
+    damping: 26,
+  );
+  static const SpringDescription springSnappy = SpringDescription(
+    mass: 1,
+    stiffness: 500,
+    damping: 32,
+  );
+
   /// Returns [Duration.zero] if [reducedMotion] is on, else [base].
   static Duration motionDuration(BuildContext context, Duration base) =>
       reducedMotion(context) ? Duration.zero : base;

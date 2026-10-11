@@ -1,23 +1,53 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/pressable_scale.dart';
+import 'package:roy_casual_kit/presentation/widgets/spring_scale_transition.dart';
 
 void main() {
-  testWidgets('cancelled gesture restores scale and never fires onTap', (tester) async {
+  testWidgets('cancelled gesture restores scale and never fires onTap', (
+    tester,
+  ) async {
     var taps = 0;
-    await tester.pumpWidget(MaterialApp(home: Material(child: Center(
-      child: PressableScale(
-        onTap: () => taps++,
-        child: const ColoredBox(color: Colors.blue, child: SizedBox(width: 60, height: 60)),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: Center(
+            child: PressableScale(
+              onTap: () => taps++,
+              child: const ColoredBox(
+                color: Colors.blue,
+                child: SizedBox(width: 60, height: 60),
+              ),
+            ),
+          ),
+        ),
       ),
-    ))));
-    final gesture = await tester.startGesture(tester.getCenter(find.byType(PressableScale)));
+    );
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(PressableScale)),
+    );
     await tester.pump();
-    expect(tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale, 0.94);
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(
+      tester
+          .widget<Transform>(find.byType(Transform).first)
+          .transform
+          .entry(0, 0),
+      lessThan(1),
+    );
     await gesture.cancel();
-    await tester.pump();
-    expect(tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale, 1.0);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<Transform>(find.byType(Transform).first)
+          .transform
+          .entry(0, 0),
+      1,
+    );
     expect(taps, 0);
   });
 
@@ -57,50 +87,251 @@ void main() {
       tester.getCenter(find.byType(PressableScale)),
     );
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
     expect(
-      tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale,
-      0.94,
+      tester
+          .widget<Transform>(find.byType(Transform).first)
+          .transform
+          .entry(0, 0),
+      lessThan(1),
     );
 
     await gesture.up();
-    await tester.pump();
-    expect(tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale, 1.0);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<Transform>(find.byType(Transform).first)
+          .transform
+          .entry(0, 0),
+      1,
+    );
   });
 
-  testWidgets(
-    'ENH-22: nhấn xuống dùng easeOut, thả tay dùng easeOutBack (nảy nhẹ)',
-    (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Material(
-            child: PressableScale(onTap: () {}, child: const Text('X')),
+  testWidgets('ENH-100: spring button settles exactly at rest', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: PressableScale(
+            onTap: () {},
+            child: const ColoredBox(
+              color: Colors.blue,
+              child: SizedBox(width: 60, height: 60),
+            ),
           ),
         ),
-      );
+      ),
+    );
 
-      // Chưa nhấn (trạng thái nghỉ) khớp curve của chiều "thả tay".
-      expect(
-        tester.widget<AnimatedScale>(find.byType(AnimatedScale)).curve,
-        Curves.easeOutBack,
-      );
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(PressableScale)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(
+      tester
+          .widget<Transform>(find.byType(Transform).first)
+          .transform
+          .entry(0, 0),
+      lessThan(1),
+    );
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(
+      tester
+          .widget<Transform>(find.byType(Transform).first)
+          .transform
+          .entry(0, 0),
+      greaterThan(0.94),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<Transform>(find.byType(Transform).first)
+          .transform
+          .entry(0, 0),
+      1,
+    );
+    expect(tester.takeException(), isNull);
+  });
 
-      final gesture = await tester.startGesture(
-        tester.getCenter(find.byType(PressableScale)),
-      );
-      await tester.pump();
-      expect(
-        tester.widget<AnimatedScale>(find.byType(AnimatedScale)).curve,
-        Curves.easeOut,
-      );
+  testWidgets('ENH-100: quick retap interrupts current spring and settles', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: PressableScale(
+            onTap: () {},
+            child: const ColoredBox(
+              color: Colors.blue,
+              child: SizedBox(width: 60, height: 60),
+            ),
+          ),
+        ),
+      ),
+    );
 
-      await gesture.up();
-      await tester.pump();
-      expect(
-        tester.widget<AnimatedScale>(find.byType(AnimatedScale)).curve,
-        Curves.easeOutBack,
-      );
-    },
-  );
+    final center = tester.getCenter(find.byType(PressableScale));
+    final first = await tester.startGesture(center);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 70));
+    await first.up();
+    await tester.pump(const Duration(milliseconds: 40));
+
+    final second = await tester.startGesture(center);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(
+      tester
+          .widget<Transform>(find.byType(Transform).first)
+          .transform
+          .entry(0, 0),
+      lessThan(1),
+    );
+    await second.cancel();
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<Transform>(find.byType(Transform).first)
+          .transform
+          .entry(0, 0),
+      1,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('ENH-100: bouncy preset overshoots then settles at rest', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: PressableScale(
+            onTap: () {},
+            springPreset: SpringMotionPreset.bouncy,
+            child: const ColoredBox(
+              color: Colors.blue,
+              child: SizedBox(width: 60, height: 60),
+            ),
+          ),
+        ),
+      ),
+    );
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(PressableScale)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    final pressedScale = tester
+        .widget<Transform>(find.byType(Transform).first)
+        .transform
+        .entry(0, 0);
+    await gesture.up();
+    await tester.pump();
+    var peakScale = 1.0;
+    for (var i = 0; i < 60; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      final scale = tester
+          .widget<Transform>(find.byType(Transform).first)
+          .transform
+          .entry(0, 0);
+      peakScale = math.max(peakScale, scale);
+    }
+    expect(
+      peakScale,
+      greaterThan(pressedScale + (1 - pressedScale) * 0.5),
+      reason: 'spring should overshoot its rest target after release',
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<Transform>(find.byType(Transform).first)
+          .transform
+          .entry(0, 0),
+      1,
+    );
+  });
+
+  test('ENH-100: SpringSimulation converges and becomes done', () {
+    final spring = springDescriptionFor(SpringMotionPreset.bouncy);
+    final simulation = SpringSimulation(spring, 0, 1, 0);
+    var elapsed = 0.0;
+    while (elapsed < 10 && !simulation.isDone(elapsed)) {
+      elapsed += 0.01;
+    }
+    expect(simulation.isDone(elapsed), isTrue);
+    expect(simulation.x(elapsed), closeTo(1, 0.001));
+    expect(simulation.dx(elapsed).abs(), lessThan(0.01));
+  });
+
+  test('ENH-100: velocity-aware simulation preserves release velocity', () {
+    final spring = springDescriptionFor(SpringMotionPreset.bouncy);
+    final simulation = SpringSimulation(spring, 0.94, 1, 4.0);
+    expect(simulation.dx(0), 4.0);
+    expect(simulation.x(0.01), greaterThan(0.94));
+  });
+
+  testWidgets('ENH-100: enabling Reduce Motion mid-press snaps immediately', (
+    tester,
+  ) async {
+    var reducedMotion = false;
+    late StateSetter setReducedMotion;
+    await tester.pumpWidget(
+      StatefulBuilder(
+        builder: (context, setState) {
+          setReducedMotion = setState;
+          return MediaQuery(
+            data: MediaQueryData(disableAnimations: reducedMotion),
+            child: MaterialApp(
+              home: Material(
+                child: PressableScale(
+                  onTap: () {},
+                  child: const ColoredBox(
+                    color: Colors.blue,
+                    child: SizedBox(width: 60, height: 60),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(PressableScale)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(
+      tester
+          .widget<Transform>(find.byType(Transform).first)
+          .transform
+          .entry(0, 0),
+      lessThan(1),
+    );
+
+    setReducedMotion(() => reducedMotion = true);
+    await tester.pump();
+    await tester.pump();
+    expect(
+      tester
+          .widget<Transform>(find.byType(Transform).first)
+          .transform
+          .entry(0, 0),
+      closeTo(0.94, 0.001),
+    );
+    await gesture.up();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('ENH-100: spring presets have distinct tuning', (tester) async {
+    final bouncy = springDescriptionFor(SpringMotionPreset.bouncy);
+    final gentle = springDescriptionFor(SpringMotionPreset.gentle);
+    final snappy = springDescriptionFor(SpringMotionPreset.snappy);
+    expect(bouncy.damping, lessThan(gentle.damping));
+    expect(snappy.stiffness, greaterThan(gentle.stiffness));
+  });
 
   testWidgets(
     'FEAT-17: Reduce Motion bật → chuyển scale tức thời (duration = 0)',
@@ -116,9 +347,25 @@ void main() {
         ),
       );
 
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(PressableScale)),
+      );
+      await tester.pump();
       expect(
-        tester.widget<AnimatedScale>(find.byType(AnimatedScale)).duration,
-        Duration.zero,
+        tester
+            .widget<Transform>(find.byType(Transform).first)
+            .transform
+            .entry(0, 0),
+        closeTo(0.94, 0.001),
+      );
+      await gesture.up();
+      await tester.pump();
+      expect(
+        tester
+            .widget<Transform>(find.byType(Transform).first)
+            .transform
+            .entry(0, 0),
+        1,
       );
     },
   );

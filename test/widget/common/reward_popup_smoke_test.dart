@@ -3,16 +3,69 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/reward_popup.dart';
+import 'package:roy_casual_kit/presentation/widgets/spring_scale_transition.dart';
 
 void main() {
-  testWidgets('custom reward content is rendered inside the popup', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: Material(child: Center(
-      child: RewardPopup(title: 'Reward', enableParticles: false, content: Text('Custom reward')),
-    ))));
+  testWidgets('custom reward content is rendered inside the popup', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Material(
+          child: Center(
+            child: RewardPopup(
+              title: 'Reward',
+              enableParticles: false,
+              content: Text('Custom reward'),
+            ),
+          ),
+        ),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Custom reward'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('ENH-100: RewardPopup spring entrance settles at scale 1', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Material(
+          child: Center(
+            child: RewardPopup(title: 'Spring Reward', enableParticles: false),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final transition = tester.widget<SpringScaleTransition>(
+      find.byType(SpringScaleTransition),
+    );
+    expect(transition.controller.isAnimating, isTrue);
+    await tester.pumpAndSettle();
+    expect(transition.controller.value, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'ENH-100: unmount popup during spring animation disposes safely',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: RewardPopup(title: 'Spring Reward', enableParticles: false),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 2));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('RewardPopup burst animation runs without throwing', (
     tester,
@@ -60,10 +113,14 @@ void main() {
         ),
       );
 
-      // 1 frame duy nhất — cả entrance (320ms) lẫn burst không cần chờ.
+      // One frame: the spring snaps directly to its rest position.
       await tester.pump();
 
       expect(find.text('Level Complete!'), findsOneWidget);
+      final transition = tester.widget<SpringScaleTransition>(
+        find.byType(SpringScaleTransition),
+      );
+      expect(transition.controller.value, 1);
       final burstPainters = tester
           .widgetList<CustomPaint>(find.byType(CustomPaint))
           .where((w) => w.painter.runtimeType.toString() == '_BurstPainter');
