@@ -22,4 +22,4 @@ Widget BattlePassRoad nhận danh sách MilestoneItem, vẽ đường ray tiến
 
 ## Hiệu năng & Animation
 - [x] ListView.builder virtualizes milestone rows; each row paints one short rail segment.
-- [ ] 60 FPS benchmark: TECNO scroll smoke passed; sustained frame-time benchmark not measured.
+- [x] S24 Ultra (SM-S928B) profile build after 25 fast scroll swipes through ~Tier 28: LiveFrameGraph rolling 100-frame window showed jank 0 and no slow/jank bars (latest-frame estimate 169 FPS). Short window sample, not sustained benchmark or 60 FPS guarantee; TECNO integration smoke also passed earlier.

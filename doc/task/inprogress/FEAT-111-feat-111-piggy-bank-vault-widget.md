@@ -22,4 +22,4 @@ Widget PiggyBankVault hiển thị dung lượng hiện tại/tối đa, thanh t
 
 ## Hiệu năng & resource
 - [x] Full-state animation uses bounded repeat `Transform.scale` and only creates ticker when full/unlocked/animations allowed; ticker stops when conditions clear and disposes on unmount.
-- [ ] 60 FPS benchmark not measured.
+- [x] S24 Ultra (SM-S928B) profile build, LiveFrameGraph rolling 100-frame window while PiggyBank was full and pulsing: jank 0, no slow/jank bars, latest-frame estimate 131 FPS. This is a short window sample, not a sustained benchmark or 60 FPS guarantee.
