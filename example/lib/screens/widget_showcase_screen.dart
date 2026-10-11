@@ -979,6 +979,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // 2 API are genuinely different results once 'You' isn't in the top 3.
   bool _showRankAround = false;
   int _battlePassProgress = 500;
+  int _piggyBankAmount = 250;
+  bool _piggyBankUnlocked = false;
   bool _chestRewardRevealed = false;
   bool _battlePassVipEnabled = false;
   final Set<String> _battlePassClaimedFree = {};
@@ -3773,6 +3775,47 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           ),
                                         ),
                                       ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: NeonTheme.s24),
+                              const SectionHeader(title: 'Piggy Bank'),
+                              const SizedBox(height: NeonTheme.s16),
+                              _Demo(
+                                label: 'PiggyBankVault (FEAT-111)',
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text(
+                                      'Win bonus: +100 coins',
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    CommonButton(
+                                      key: const Key('piggyBankAddWinCoins'),
+                                      label: 'Add win coins',
+                                      onTap: () => setState(() {
+                                        _piggyBankAmount =
+                                            (_piggyBankAmount + 100).clamp(
+                                              0,
+                                              1000,
+                                            );
+                                      }),
+                                    ),
+                                    PiggyBankVault(
+                                      amount: _piggyBankAmount,
+                                      capacity: 1000,
+                                      isUnlocked: _piggyBankUnlocked,
+                                      onBreak: _piggyBankAmount >= 1000
+                                          ? () => setState(
+                                              () => _piggyBankAmount = 0,
+                                            )
+                                          : null,
+                                      onUnlock: () => setState(
+                                        () => _piggyBankUnlocked = true,
+                                      ),
                                     ),
                                   ],
                                 ),

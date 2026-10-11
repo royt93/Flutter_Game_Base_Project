@@ -2568,6 +2568,36 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      testWidgets('FEAT-111 piggy bank unlocks, fills and breaks', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        await tester.tap(find.byKey(const Key('piggyBankUnlock')));
+        await tester.pump();
+        for (var i = 0; i < 8; i++) {
+          await tester.tap(find.byKey(const Key('piggyBankAddWinCoins')));
+          await tester.pump();
+        }
+        expect(find.text('1000 / 1000 coins'), findsOneWidget);
+        expect(find.byKey(const Key('piggyBankBreak')), findsOneWidget);
+        var peakScale = 1.0;
+        for (var i = 0; i < 9; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+          final scale = tester
+              .widget<Transform>(
+                find.byKey(const ValueKey('piggyBankPulseTransform')),
+              )
+              .transform
+              .entry(0, 0);
+          if (scale > peakScale) peakScale = scale;
+        }
+        expect(peakScale, greaterThan(1));
+        await tester.tap(find.byKey(const Key('piggyBankBreak')));
+        await tester.pump();
+        expect(find.text('0 / 1000 coins'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('FEAT-110 MysteryChest showcase reveals caller reward', (
         tester,
       ) async {

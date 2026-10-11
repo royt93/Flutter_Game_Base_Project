@@ -1828,6 +1828,41 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-111: PiggyBank earns, fills and breaks on TECNO', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final unlock = find.byKey(const Key('piggyBankUnlock'));
+    await _scrollUntilVisible(tester, unlock);
+    await tester.ensureVisible(unlock.first);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(unlock.first);
+    await tester.pump(const Duration(milliseconds: 100));
+    final earn = find.byKey(const Key('piggyBankAddWinCoins'));
+    for (var i = 0; i < 8; i++) {
+      await tester.ensureVisible(earn);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(earn);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('1000 / 1000 coins'), findsOneWidget);
+    var peakScale = 1.0;
+    final pulse = find.byKey(const ValueKey('piggyBankPulseTransform'));
+    for (var i = 0; i < 9; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      final scale = tester.widget<Transform>(pulse).transform.entry(0, 0);
+      if (scale > peakScale) peakScale = scale;
+    }
+    expect(peakScale, greaterThan(1));
+    await tester.tap(find.byKey(const Key('piggyBankBreak')));
+    await tester.pump();
+    expect(find.text('0 / 1000 coins'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-110: MysteryChest opens and reveals on TECNO', (
     tester,
   ) async {
