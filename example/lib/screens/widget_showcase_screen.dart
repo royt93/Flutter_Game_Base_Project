@@ -1268,6 +1268,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                         ),
                         Expanded(
                           child: ListView(
+                            key: const ValueKey('widgetShowcaseList'),
                             padding: const EdgeInsets.all(NeonTheme.s16),
                             children: [
                               const SectionHeader(

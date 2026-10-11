@@ -17,7 +17,7 @@ Widget PiggyBankVault hiển thị dung lượng hiện tại/tối đa, thanh t
 - [x] **Unit test**: Fill ratio clamp và `isFull` boundary; invalid capacity/amount.
 - [x] **Widget test**: Amount at 25/50/100%, unlocked-full pulse, Reduced Motion no ticker, unlock/break actions.
 - [x] **Showcase integration test**: Caller adds win-earned coins, unlocks and breaks vault.
-- [ ] **TECNO smoke**: pending; isolated Java17 build succeeded, but ADB disconnected before Flutter test began (`Unable to start the app on the device` / device not found). No simulator used.
+- [x] **Physical-device smoke**: PiggyBank unlocked, filled to 100%, pulsed and broke back to 0 on Samsung S24 Ultra (SM-S928B); 60ms-scale sample showed pulse. TECNO disconnected earlier; no simulator used.
 - [x] **Host validation**: root 2941/example 241 suites; both analyzers and quality gates pass.
 
 ## Hiệu năng & resource

@@ -1828,7 +1828,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('FEAT-111: PiggyBank earns, fills and breaks on TECNO', (
+  testWidgets('FEAT-111: PiggyBank earns, fills and breaks on S24 Ultra', (
     tester,
   ) async {
     await app.app();
@@ -1836,7 +1836,30 @@ void main() {
     await _goToWidgetShowcase(tester);
 
     final unlock = find.byKey(const Key('piggyBankUnlock'));
-    await _scrollUntilVisible(tester, unlock);
+    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+    expect(showcaseList, findsOneWidget);
+    final outerScrollable = find.descendant(
+      of: showcaseList,
+      matching: find.byType(Scrollable),
+    );
+    final outerPosition = tester
+        .state<ScrollableState>(outerScrollable.first)
+        .position;
+    for (var i = 0; i < 80 && unlock.evaluate().isEmpty; i++) {
+      final next = (outerPosition.pixels + 500).clamp(
+        0.0,
+        outerPosition.maxScrollExtent,
+      );
+      if (next == outerPosition.pixels) break;
+      outerPosition.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(
+      unlock,
+      findsOneWidget,
+      reason:
+          'showcase scroll offset=${outerPosition.pixels}, max=${outerPosition.maxScrollExtent}',
+    );
     await tester.ensureVisible(unlock.first);
     await tester.pump(const Duration(milliseconds: 100));
     await tester.tap(unlock.first);
