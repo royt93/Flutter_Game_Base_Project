@@ -156,11 +156,16 @@ void main() {
 
     // ComboHeatBackground demo: tapping "Bump heat" cycles the displayed
     // heat percentage.
-    expect(find.text('Heat: 0%'), findsOneWidget);
-    final bumpHeat = find.text('Bump heat').last;
-    await tester.ensureVisible(bumpHeat);
+    final heatLabel = find.text('Heat: 0%');
+    final bumpHeat = find.widgetWithText(CommonButton, 'Bump heat');
+    for (var i = 0; i < 12 && heatLabel.evaluate().isEmpty; i++) {
+      await tester.drag(find.byType(ListView).first, const Offset(0, -500));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(heatLabel, findsOneWidget);
+    await tester.ensureVisible(bumpHeat.last);
     await tester.pump();
-    await tester.tap(bumpHeat);
+    await tester.tap(bumpHeat.last);
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Heat: 25%'), findsOneWidget);
 
@@ -2559,6 +2564,17 @@ void main() {
         }
         await tester.tap(tapButton.first);
         await tester.pump();
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('FEAT-108 GoldenShimmerText showcase renders jackpot', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final jackpot = find.byType(GoldenShimmerText);
+        expect(jackpot, findsOneWidget);
+        expect(find.text('JACKPOT 1,000,000'), findsWidgets);
+        await tester.pump(const Duration(milliseconds: 500));
         expect(tester.takeException(), isNull);
       });
 

@@ -1966,6 +1966,17 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                               _Demo(
+                                label: 'GoldenShimmerText (FEAT-108)',
+                                child: Center(
+                                  child: GoldenShimmerText(
+                                    'JACKPOT 1,000,000',
+                                    fontSize: 26,
+                                    color: NeonTheme.gold,
+                                    stroke: NeonTheme.ink,
+                                  ),
+                                ),
+                              ),
+                              _Demo(
                                 label: 'StarRating',
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,

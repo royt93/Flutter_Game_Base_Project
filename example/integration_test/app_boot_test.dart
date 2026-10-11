@@ -1828,6 +1828,21 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-108: GoldenShimmerText renders on TECNO', (tester) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final jackpot = find.byType(GoldenShimmerText);
+    await _scrollUntilVisible(tester, jackpot);
+    await tester.ensureVisible(jackpot.first);
+    await tester.pump(const Duration(milliseconds: 2500));
+    expect(jackpot, findsOneWidget);
+    expect(find.byType(ShaderMask), findsWidgets);
+    expect(find.text('JACKPOT 1,000,000'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('ENH-101: pulsing/radar BadgeDot remains mounted on TECNO', (
     tester,
   ) async {
