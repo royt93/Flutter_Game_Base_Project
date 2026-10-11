@@ -156,7 +156,10 @@ void main() {
     // ComboHeatBackground demo: tapping "Bump heat" cycles the displayed
     // heat percentage.
     expect(find.text('Heat: 0%'), findsOneWidget);
-    await tester.tap(find.text('Bump heat').last);
+    final bumpHeat = find.text('Bump heat').last;
+    await tester.ensureVisible(bumpHeat);
+    await tester.pump();
+    await tester.tap(bumpHeat);
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Heat: 25%'), findsOneWidget);
 
@@ -2506,6 +2509,37 @@ void main() {
           expect(tester.takeException(), isNull);
         },
       );
+
+      testWidgets('FEAT-106 showcase reuses its 50 particle pool', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final demo = find.byKey(const Key('pooledParticleBurstDemo'));
+        final burst = find.descendant(
+          of: demo,
+          matching: find.byType(PooledParticleBurst),
+        );
+        expect(burst, findsOneWidget);
+        final state = tester.state<PooledParticleBurstState>(burst);
+        expect(state.totalCreated, 50);
+        final button = find.descendant(
+          of: demo,
+          matching: find.widgetWithText(CommonButton, 'Burst 50 particles'),
+        );
+
+        for (var i = 0; i < 3; i++) {
+          await tester.tap(button);
+          await tester.pump();
+          expect(state.activeCount, 50);
+          await tester.pump(const Duration(milliseconds: 1200));
+          await tester.pump();
+          expect(state.activeCount, 0);
+          expect(state.totalCreated, 50);
+        }
+        expect(state.freeCount, 50);
+        expect(find.text('Completed: 3 · Objects created: 50'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
 
       testWidgets('ENH-101 showcase mounts pulsing/radar BadgeDot', (
         tester,

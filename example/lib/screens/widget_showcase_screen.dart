@@ -137,6 +137,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   bool _cardFlipped = false;
   final List<int> _victoryStarsPopped = [];
   int _victoryStarBurstRevision = 0;
+  final _pooledBurstKey = GlobalKey<PooledParticleBurstState>();
+  int _particleBurstsCompleted = 0;
 
   // FEAT-11: SpotlightOverlay demo — highlights the "Primary" CommonButton
   // from the Buttons & Interactive section above.
@@ -2048,6 +2050,54 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                               _Demo(
+                                key: const Key('pooledParticleBurstDemo'),
+                                label: 'PooledParticleBurst (FEAT-106)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      height: 140,
+                                      width: double.infinity,
+                                      child: Stack(
+                                        children: [
+                                          PooledParticleBurst(
+                                            key: _pooledBurstKey,
+                                            particleCount: 50,
+                                            onBurstFinished: () {
+                                              if (mounted) {
+                                                setState(
+                                                  () =>
+                                                      _particleBurstsCompleted++,
+                                                );
+                                              }
+                                            },
+                                          ),
+                                          Center(
+                                            child: Icon(
+                                              Icons.stars_rounded,
+                                              color: NeonTheme.gold,
+                                              size: 32,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      'Completed: $_particleBurstsCompleted · '
+                                      'Objects created: ${_pooledBurstKey.currentState?.totalCreated ?? 0}',
+                                      key: const Key('pooledBurstStatus'),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    CommonButton(
+                                      label: 'Burst 50 particles',
+                                      color: NeonTheme.gold,
+                                      onTap: () =>
+                                          _pooledBurstKey.currentState?.burst(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
                                 label: 'ConfettiOverlay',
                                 child: SizedBox(
                                   height: 160,
@@ -3951,7 +4001,7 @@ class _DemoAnalyticsProvider implements AnalyticsProvider {
 /// of a given visual is unambiguous), then the live widget itself — laid out
 /// in a [PanelCard], the kit's own generic container.
 class _Demo extends StatelessWidget {
-  const _Demo({required this.label, required this.child});
+  const _Demo({super.key, required this.label, required this.child});
 
   final String label;
   final Widget child;

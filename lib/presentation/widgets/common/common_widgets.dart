@@ -63,6 +63,7 @@ export 'wheel_spinner.dart';
 
 // Layout & Cards
 export 'card_flip_3d.dart';
+export 'pooled_particle_burst.dart';
 export 'panel_card.dart';
 export 'list_tile_row.dart';
 export 'section_header.dart';
