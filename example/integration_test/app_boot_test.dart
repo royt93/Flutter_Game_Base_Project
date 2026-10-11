@@ -1828,6 +1828,44 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-109: BattlePassRoad scrolls 30 tiers on TECNO', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final road = find.byType(BattlePassRoad);
+    await _scrollUntilVisible(tester, road);
+    await tester.ensureVisible(road.first);
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(
+      find.byKey(const ValueKey('battlePassMilestone_tier_5')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('battlePassMilestone_tier_30')),
+      findsNothing,
+    );
+
+    final roadList = find.byKey(const ValueKey('battlePassRoadList'));
+    await tester.ensureVisible(roadList);
+    await tester.pump();
+    final roadRect = tester.getRect(roadList);
+    for (var i = 0; i < 14; i++) {
+      await tester.dragFrom(
+        Offset(roadRect.center.dx, roadRect.top + roadRect.height * 0.75),
+        const Offset(0, -400),
+      );
+      await tester.pump(const Duration(milliseconds: 120));
+    }
+    expect(
+      find.byKey(const ValueKey('battlePassMilestone_tier_30')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-108: GoldenShimmerText renders on TECNO', (tester) async {
     await app.app();
     await tester.pump(const Duration(seconds: 4));

@@ -16,6 +16,7 @@ import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
 import 'package:roy_casual_kit/core/deep_link_command_router.dart';
+import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/game_session_controller.dart';
 import 'package:roy_casual_kit/core/inventory_service.dart';
 import 'package:roy_casual_kit/core/juicy_feedback.dart';
@@ -51,7 +52,7 @@ Future<void> _pumpShowcase(WidgetTester tester) async {
   // mỗi demo section mới đẩy list dài hơn — tăng chiều cao viewport ảo để
   // mọi widget phía sau vẫn nằm trong vùng tap được mà không cần scroll
   // (đúng lý do file này dùng physicalSize cố định).
-  tester.view.physicalSize = const Size(1080, 16600);
+  tester.view.physicalSize = const Size(1080, 20000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -2564,6 +2565,67 @@ void main() {
         }
         await tester.tap(tapButton.first);
         await tester.pump();
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('FEAT-109 demo lazily scrolls full 30 milestone road', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final road = find.byType(BattlePassRoad);
+        expect(road, findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('battlePassMilestone_tier_5')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('battlePassMilestone_tier_30')),
+          findsNothing,
+        );
+
+        final target = find.byKey(
+          const ValueKey('battlePassMilestone_tier_30'),
+        );
+        final roadScroll = find.descendant(
+          of: road,
+          matching: find.byType(Scrollable),
+        );
+        expect(roadScroll, findsOneWidget);
+        await tester.scrollUntilVisible(target, 300, scrollable: roadScroll);
+        expect(target, findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('FEAT-109 claims free and VIP rewards through pipeline', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final wallet = Get.find<EconomyWallet>();
+        final coinsBefore = wallet.balanceOf('coin');
+        final gemsBefore = wallet.balanceOf('gem');
+        final freeClaim = find.byKey(
+          const ValueKey('battlePassClaim_tier_5_free'),
+        );
+        expect(freeClaim, findsOneWidget);
+        await tester.tap(freeClaim);
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(freeClaim, findsNothing);
+        expect(wallet.balanceOf('coin'), coinsBefore + 250);
+
+        await tester.tap(find.widgetWithText(CommonButton, 'Enable VIP'));
+        await tester.pump();
+        expect(
+          tester.widget<BattlePassRoad>(find.byType(BattlePassRoad)).vipEnabled,
+          isTrue,
+        );
+        final vipClaim = find.byKey(
+          const ValueKey('battlePassClaim_tier_5_vip'),
+        );
+        expect(vipClaim, findsOneWidget);
+        await tester.tap(vipClaim);
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(vipClaim, findsNothing);
+        expect(wallet.balanceOf('gem'), gemsBefore + 10);
         expect(tester.takeException(), isNull);
       });
 

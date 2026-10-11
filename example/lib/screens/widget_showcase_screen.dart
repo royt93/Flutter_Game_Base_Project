@@ -978,6 +978,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // entriesAround('You', radius: 1) (the classic "you're #N" window) — the
   // 2 API are genuinely different results once 'You' isn't in the top 3.
   bool _showRankAround = false;
+  int _battlePassProgress = 500;
+  bool _battlePassVipEnabled = false;
+  final Set<String> _battlePassClaimedFree = {};
+  final Set<String> _battlePassClaimedVip = {};
 
   // FEAT-52: toggles AdaptiveGameHud's debugShowBounds demo control.
   bool _hudDebugBounds = false;
@@ -988,6 +992,37 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       'expectedOutcome': score,
     });
     setState(() => _scoreboard.submitScore('You', score));
+  }
+
+  List<BattlePassMilestone> get _battlePassMilestones => [
+    for (var i = 1; i <= 30; i++)
+      BattlePassMilestone(
+        id: 'tier_$i',
+        requiredProgress: i * 100,
+        freeRewards: [RewardLine(currency: 'coin', amount: 50 * i)],
+        vipRewards: [RewardLine(currency: 'gem', amount: 2 * i)],
+      ),
+  ];
+
+  Future<void> _claimBattlePassMilestone(
+    String id,
+    BattlePassTrack track,
+  ) async {
+    final milestone = _battlePassMilestones.firstWhere((item) => item.id == id);
+    final result = await _progressionPipeline.grant(
+      source: RewardSource.other,
+      transactionId: 'battle_pass:$id:${track.name}',
+      lines: track == BattlePassTrack.free
+          ? milestone.freeRewards
+          : milestone.vipRewards,
+    );
+    if (!mounted || result is! SdkSuccess<RewardTransactionRecord>) return;
+    setState(() {
+      (track == BattlePassTrack.free
+              ? _battlePassClaimedFree
+              : _battlePassClaimedVip)
+          .add(id);
+    });
   }
 
   void _claimDailyLogin() => setState(() => _dailyLogin.claimToday());
@@ -3656,6 +3691,62 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     message: 'Level $level tapped',
                                     color: NeonTheme.cyan,
                                   ),
+                                ),
+                              ),
+
+                              const SizedBox(height: NeonTheme.s24),
+                              const SectionHeader(title: 'Battle Pass'),
+                              const SizedBox(height: NeonTheme.s16),
+                              _Demo(
+                                label: 'BattlePassRoad (FEAT-109)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Progress: $_battlePassProgress XP · '
+                                      'VIP: ${_battlePassVipEnabled ? 'enabled' : 'locked'}',
+                                      key: const Key('battlePassStatus'),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    SizedBox(
+                                      height: 520,
+                                      child: BattlePassRoad(
+                                        milestones: _battlePassMilestones,
+                                        progress: _battlePassProgress,
+                                        vipEnabled: _battlePassVipEnabled,
+                                        claimedFreeIds: _battlePassClaimedFree,
+                                        claimedVipIds: _battlePassClaimedVip,
+                                        onClaimMilestone:
+                                            _claimBattlePassMilestone,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          key: const Key(
+                                            'battlePassEarnProgress',
+                                          ),
+                                          label: 'Earn 100 battle pass XP',
+                                          onTap: () => setState(
+                                            () => _battlePassProgress += 100,
+                                          ),
+                                        ),
+                                        CommonButton(
+                                          label: _battlePassVipEnabled
+                                              ? 'Disable VIP'
+                                              : 'Enable VIP',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(
+                                            () => _battlePassVipEnabled =
+                                                !_battlePassVipEnabled,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
 
