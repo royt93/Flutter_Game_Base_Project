@@ -17,6 +17,7 @@ export 'retry_error_state.dart';
 export 'reward_choice_panel.dart';
 export 'reward_sequence_coordinator.dart';
 export 'scene_transition_overlay.dart';
+export 'scene_wipe_geometry.dart';
 export 'toggle_switch.dart';
 export 'segmented_tab_bar.dart';
 export 'icon_badge_button.dart';

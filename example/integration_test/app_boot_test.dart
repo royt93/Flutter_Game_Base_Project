@@ -1785,6 +1785,40 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-105: Iris scene transition covers and reveals on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final iris = find.byKey(const Key('sceneWipeShape_iris'));
+    await _scrollUntilVisible(tester, iris);
+    await tester.ensureVisible(iris.first);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(iris.first);
+    await tester.pump();
+    expect(
+      tester
+          .widget<SceneTransitionOverlay>(find.byType(SceneTransitionOverlay))
+          .wipeShape,
+      SceneWipeShape.iris,
+    );
+
+    final switchButton = find.widgetWithText(CommonButton, 'Switch scene (OK)');
+    await _scrollUntilVisible(tester, switchButton);
+    await tester.ensureVisible(switchButton.first);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(switchButton.first);
+    for (var i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      if (find.text('Scene #2').evaluate().isNotEmpty) break;
+    }
+    expect(find.text('Phase: idle'), findsOneWidget);
+    expect(find.text('Scene #2'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('ENH-100: PressableScale tap remains responsive on device', (
     tester,
   ) async {

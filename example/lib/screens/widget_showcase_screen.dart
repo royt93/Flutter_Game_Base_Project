@@ -930,6 +930,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // trên — 2 demo minh hoạ 2 khía cạnh khác nhau (preload thuần vs
   // transition state machine), dùng chung sẽ làm rối UX của cả 2.
   late final SceneTransitionController _sceneTransition;
+  SceneWipeShape _sceneWipeShape = SceneWipeShape.iris;
   int _sceneRevision = 1;
   bool _sceneDemoForceFail = false;
   // FEAT-43: curve riêng cho demo — max level 3, level 3 mở khoá 50 gem qua
@@ -3100,6 +3101,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                         height: 320,
                                         child: SceneTransitionOverlay(
                                           controller: _sceneTransition,
+                                          wipeShape: _sceneWipeShape,
                                           onRetry: () => _sceneTransition.retry(
                                             _sceneDemoLoad,
                                           ),
@@ -3126,6 +3128,25 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       ),
                                       const SizedBox(height: NeonTheme.s8),
                                       Text('Phase: ${phase.name}'),
+                                      const SizedBox(height: NeonTheme.s8),
+                                      Wrap(
+                                        spacing: NeonTheme.s8,
+                                        children: [
+                                          for (final shape
+                                              in SceneWipeShape.values)
+                                            ChoiceChip(
+                                              key: Key(
+                                                'sceneWipeShape_${shape.name}',
+                                              ),
+                                              label: Text(shape.name),
+                                              selected:
+                                                  _sceneWipeShape == shape,
+                                              onSelected: (_) => setState(
+                                                () => _sceneWipeShape = shape,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                       const SizedBox(height: NeonTheme.s16),
                                       Wrap(
                                         spacing: NeonTheme.s8,

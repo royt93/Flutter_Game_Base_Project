@@ -6,6 +6,7 @@ import '../../../core/game_session_controller.dart';
 import '../../../core/neon_theme.dart';
 import '../../../core/utils/sdk_result.dart';
 import 'retry_error_state.dart';
+import 'scene_wipe_geometry.dart';
 
 /// Lifecycle of one scene transition: [idle] (no overlay, old/new scene
 /// interactive) → [covering] (fading a barrier in over the old scene) →
@@ -150,23 +151,10 @@ class SceneTransitionController {
   }
 }
 
-/// Fades a full-screen barrier over [child] while a [controller]-driven
-/// transition runs, showing progress while loading or [RetryErrorState] on
-/// failure — see `CLAUDE.md`'s "Dialog pattern" note for why this is an
-/// in-tree overlay (works over a full-screen Flame `GameWidget`) rather than
-/// a pushed route, same reasoning as `NeonDialog`.
-///
-/// The underlying [child] is excluded from the semantics tree and ignores
-/// pointer events for the whole time [controller.phase] isn't [idle] — so a
-/// stray tap/screen-reader focus can never reach the scene being replaced,
-/// and the barrier is released the instant [controller] returns to [idle]
-/// (via a successful reveal or [SceneTransitionController.cancel]) — it can
-/// never get stuck blocking pointer input.
-///
-/// Respects reduced-motion: when [reducedMotion] is `true` (or, if left
-/// `null`, when `MediaQuery.of(context).disableAnimations` is `true`), the
-/// cover/reveal fade duration collapses to zero instead of animating.
-class SceneTransitionOverlay extends StatelessWidget {
+/// Fades or shape-wipes a full-screen barrier over [child] while a
+/// [controller]-driven transition runs. The underlying scene cannot receive
+/// pointers or semantics while the transition is active.
+class SceneTransitionOverlay extends StatefulWidget {
   const SceneTransitionOverlay({
     super.key,
     required this.controller,
@@ -175,35 +163,137 @@ class SceneTransitionOverlay extends StatelessWidget {
     this.retryLabel,
     this.onRetry,
     this.reducedMotion,
+    this.wipeShape = SceneWipeShape.fade,
+    this.wipeCenter,
   });
 
   final SceneTransitionController controller;
   final Widget child;
   final Color? color;
   final String? retryLabel;
-
-  /// Re-runs the failed load. Left `null` hides the retry button (see
-  /// [RetryErrorState.onRetry]) — the barrier still lifts via [cancel] on
-  /// the controller in that case, it just isn't offered here.
   final Future<void> Function()? onRetry;
   final bool? reducedMotion;
+  final SceneWipeShape wipeShape;
+  final Offset? wipeCenter;
+
+  @override
+  State<SceneTransitionOverlay> createState() => _SceneTransitionOverlayState();
+}
+
+class _SceneTransitionOverlayState extends State<SceneTransitionOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _wipe;
+  SceneTransitionPhase? _lastPhase;
+  bool _reduced = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _wipe = AnimationController(vsync: this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final wasReduced = _reduced;
+    _reduced = _isReduced;
+    if (_reduced &&
+        widget.controller.phase.value != SceneTransitionPhase.idle) {
+      _wipe.value = 1;
+    } else if (wasReduced && !_reduced) {
+      _lastPhase = null;
+    }
+  }
+
+  bool get _isReduced =>
+      widget.reducedMotion ??
+      MediaQuery.maybeOf(context)?.disableAnimations ??
+      false;
+
+  @override
+  void didUpdateWidget(covariant SceneTransitionOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      _lastPhase = null;
+      _wipe.value = 0;
+    }
+  }
+
+  void _syncWipe(SceneTransitionPhase phase, bool reduced) {
+    if (widget.wipeShape == SceneWipeShape.fade || _lastPhase == phase) return;
+    _lastPhase = phase;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.wipeShape == SceneWipeShape.fade) return;
+      if (reduced) {
+        _wipe.value = phase == SceneTransitionPhase.idle ? 0 : 1;
+      } else {
+        switch (phase) {
+          case SceneTransitionPhase.covering:
+            _wipe.duration = widget.controller.coverDuration;
+            _wipe.forward(from: 0);
+          case SceneTransitionPhase.loading:
+          case SceneTransitionPhase.error:
+            _wipe.value = 1;
+          case SceneTransitionPhase.revealing:
+            _wipe.duration = widget.controller.revealDuration;
+            _wipe.reverse(from: 1);
+          case SceneTransitionPhase.idle:
+            _wipe.value = 0;
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _wipe.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final reduced =
-        reducedMotion ??
-        MediaQuery.maybeOf(context)?.disableAnimations ??
-        false;
-
+    _reduced = _isReduced;
     return Obx(() {
-      final phase = controller.phase.value;
+      final phase = widget.controller.phase.value;
       final active = phase != SceneTransitionPhase.idle;
+      _syncWipe(phase, _reduced);
+
+      final barrier = ColoredBox(
+        color: widget.color ?? NeonTheme.bgMid,
+        child: Center(
+          child: phase == SceneTransitionPhase.error
+              ? RetryErrorState.fromSdkFailure(
+                  widget.controller.lastError!,
+                  onRetry: widget.onRetry,
+                  retryLabel: widget.retryLabel,
+                )
+              : _ProgressIndicator(controller: widget.controller),
+        ),
+      );
+      final transitionedBarrier = widget.wipeShape == SceneWipeShape.fade
+          ? AnimatedOpacity(
+              opacity: phase == SceneTransitionPhase.revealing ? 0 : 1,
+              duration: _reduced
+                  ? Duration.zero
+                  : (phase == SceneTransitionPhase.revealing
+                        ? widget.controller.revealDuration
+                        : widget.controller.coverDuration),
+              child: barrier,
+            )
+          : ClipPath(
+              clipper: _SceneWipeClipper(
+                animation: _wipe,
+                shape: widget.wipeShape,
+                center: widget.wipeCenter,
+              ),
+              child: barrier,
+            );
 
       return Stack(
         children: [
           ExcludeSemantics(
             excluding: active,
-            child: IgnorePointer(ignoring: active, child: child),
+            child: IgnorePointer(ignoring: active, child: widget.child),
           ),
           if (active)
             Positioned.fill(
@@ -212,32 +302,37 @@ class SceneTransitionOverlay extends StatelessWidget {
                 label: phase == SceneTransitionPhase.error
                     ? 'Scene transition failed'
                     : 'Loading next scene',
-                child: AnimatedOpacity(
-                  opacity: phase == SceneTransitionPhase.revealing ? 0.0 : 1.0,
-                  duration: reduced
-                      ? Duration.zero
-                      : (phase == SceneTransitionPhase.revealing
-                            ? controller.revealDuration
-                            : controller.coverDuration),
-                  child: ColoredBox(
-                    color: color ?? NeonTheme.bgMid,
-                    child: Center(
-                      child: phase == SceneTransitionPhase.error
-                          ? RetryErrorState.fromSdkFailure(
-                              controller.lastError!,
-                              onRetry: onRetry,
-                              retryLabel: retryLabel,
-                            )
-                          : _ProgressIndicator(controller: controller),
-                    ),
-                  ),
-                ),
+                child: transitionedBarrier,
               ),
             ),
         ],
       );
     });
   }
+}
+
+class _SceneWipeClipper extends CustomClipper<Path> {
+  _SceneWipeClipper({
+    required this.animation,
+    required this.shape,
+    required this.center,
+  }) : super(reclip: animation);
+
+  final Animation<double> animation;
+  final SceneWipeShape shape;
+  final Offset? center;
+
+  @override
+  Path getClip(Size size) => sceneWipePath(
+    size: size,
+    center: center ?? size.center(Offset.zero),
+    progress: animation.value,
+    shape: shape,
+  );
+
+  @override
+  bool shouldReclip(covariant _SceneWipeClipper oldClipper) =>
+      oldClipper.shape != shape || oldClipper.center != center;
 }
 
 class _ProgressIndicator extends StatelessWidget {

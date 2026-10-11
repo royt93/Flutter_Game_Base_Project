@@ -1902,7 +1902,26 @@ void main() {
     });
   });
 
-  group('FEAT-58: SceneTransitionOverlay demo', () {
+  group('FEAT-58/FEAT-105: SceneTransitionOverlay demo', () {
+    testWidgets('selecting Iris/Star/Diamond updates wipe shape', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+      for (final shape in [
+        SceneWipeShape.iris,
+        SceneWipeShape.star,
+        SceneWipeShape.diamond,
+      ]) {
+        await tester.tap(find.byKey(Key('sceneWipeShape_${shape.name}')));
+        await tester.pump();
+        final overlay = tester.widget<SceneTransitionOverlay>(
+          find.byType(SceneTransitionOverlay),
+        );
+        expect(overlay.wipeShape, shape);
+      }
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets(
       'bấm "Switch scene (OK)": phase quay lại idle, Scene revision tăng',
       (tester) async {
