@@ -16,8 +16,8 @@ Widget MysteryChestOpening với trạng thái idle (thở nhẹ) -> shake (rung
 ## Kiểm thử
 - [x] **Unit/widget test**: phase order, tap opens, revealed callback once, repeated activation ignored, Reduced Motion immediate/mid-animation snap, unmount cleanup.
 - [x] **Showcase test**: caller-owned reward content appears after reveal.
-- [ ] **TECNO integration smoke**: pending; two build attempts failed before test launch with local Gradle cache error `Could not read workspace metadata ... metadata.bin`. No simulator used and no cache deleted.
-- [x] **Host validation**: focused chest tests and analyzers pass; full suite/gates pending.
+- [x] **TECNO integration smoke**: tapped the chest and verified reward reveal on TECNO KJ7. Local shared Gradle cache remained untouched; used isolated `/tmp/roy-gradle-isolated` and Gradle JDK 17 after the default JDK25/cache path failed.
+- [x] **Host validation**: root 2937/example 240 tests, analyzers and all quality gates pass.
 
 ## Hiệu năng & lifecycle
 - [x] Single AnimationController stops at completion and disposes on unmount; ray painter reuses Path/Paint.
