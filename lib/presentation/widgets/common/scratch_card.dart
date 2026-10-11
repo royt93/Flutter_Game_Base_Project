@@ -28,13 +28,13 @@ class ScratchCoverageGrid {
   int get cellCount => _cells.length;
   double get ratio => _covered / _cells.length;
 
-  List<int> markSegment({
+  int markSegment({
     required Offset start,
     required Offset end,
     required Size size,
     required double brushWidth,
   }) {
-    if (size.width <= 0 || size.height <= 0 || brushWidth <= 0) return const [];
+    if (size.width <= 0 || size.height <= 0 || brushWidth <= 0) return 0;
     final cellWidth = size.width / columns;
     final cellHeight = size.height / rows;
     final cellRadius =
@@ -56,7 +56,7 @@ class ScratchCoverageGrid {
       rows - 1,
       ((math.max(start.dy, end.dy) + radius) / cellHeight).floor(),
     );
-    final added = <int>[];
+    var added = 0;
     for (var y = minY; y <= maxY; y++) {
       for (var x = minX; x <= maxX; x++) {
         final center = Offset((x + 0.5) * cellWidth, (y + 0.5) * cellHeight);
@@ -65,7 +65,7 @@ class ScratchCoverageGrid {
         if (_cells[index]) continue;
         _cells[index] = true;
         _covered++;
-        added.add(index);
+        added++;
       }
     }
     return added;
@@ -203,7 +203,7 @@ class ScratchCardState extends State<ScratchCard> {
       size: widget.size,
       brushWidth: widget.brushWidth,
     );
-    if (added.isEmpty) return;
+    if (added == 0) return;
     _segments.add(_ScratchSegment(start, end));
     _progress = _grid.ratio;
     if (scratchThresholdReached(_progress, threshold: widget.threshold)) {
@@ -317,7 +317,6 @@ class _RenderScratchCoverLayer extends RenderProxyBox {
     ..strokeJoin = StrokeJoin.round;
 
   set segments(List<_ScratchSegment> value) {
-    if (identical(_segments, value)) return;
     _segments = value;
     markNeedsPaint();
   }

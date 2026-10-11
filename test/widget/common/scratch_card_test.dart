@@ -13,7 +13,7 @@ void main() {
         size: const Size(100, 40),
         brushWidth: 2,
       );
-      expect(first, isNotEmpty);
+      expect(first, greaterThan(0));
       final ratioAfterFirst = grid.ratio;
       final second = grid.markSegment(
         start: const Offset(5, 5),
@@ -21,7 +21,7 @@ void main() {
         size: const Size(100, 40),
         brushWidth: 2,
       );
-      expect(second, isEmpty);
+      expect(second, 0);
       expect(grid.ratio, ratioAfterFirst);
     });
 
