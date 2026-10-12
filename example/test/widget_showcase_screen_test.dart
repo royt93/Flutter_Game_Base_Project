@@ -2568,6 +2568,29 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      testWidgets('FEAT-114 opens three panels in sequence', (tester) async {
+        await _pumpShowcase(tester);
+        for (final header in [
+          'How do I earn more coins?',
+          'More details 1',
+          'More details 2',
+        ]) {
+          final title = find.text(header);
+          await tester.ensureVisible(title);
+          await tester.tap(title);
+          await tester.pump(const Duration(milliseconds: 300));
+        }
+        expect(
+          find.text(
+            'Win levels and collect daily rewards to fill your wallet.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Additional help topic 1.'), findsOneWidget);
+        expect(find.text('Additional help topic 2.'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('FEAT-113 radio and checkbox update caller state', (
         tester,
       ) async {

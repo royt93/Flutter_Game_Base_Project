@@ -1828,6 +1828,51 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-114: open three accordion topics on S24 Ultra', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    for (final header in [
+      'How do I earn more coins?',
+      'More details 1',
+      'More details 2',
+    ]) {
+      final target = find.text(header);
+      final list = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: list, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (
+        var attempt = 0;
+        attempt < 80 && target.evaluate().isEmpty;
+        attempt++
+      ) {
+        final next = (position.pixels + 400).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 80));
+      }
+      expect(target, findsOneWidget);
+      await tester.ensureVisible(target);
+      await tester.tap(target);
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+    expect(
+      find.text('Win levels and collect daily rewards to fill your wallet.'),
+      findsOneWidget,
+    );
+    expect(find.text('Additional help topic 1.'), findsOneWidget);
+    expect(find.text('Additional help topic 2.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-113: Candy choice controls respond on S24 Ultra', (
     tester,
   ) async {

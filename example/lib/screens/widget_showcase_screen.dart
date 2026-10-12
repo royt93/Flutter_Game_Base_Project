@@ -981,6 +981,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _battlePassProgress = 500;
   int _piggyBankAmount = 250;
   bool _scratchPrizeRevealed = false;
+  bool _faqExpanded = false;
   String _candyRadioMode = 'Classic';
   bool _candyCheckboxEnabled = false;
   bool _piggyBankUnlocked = false;
@@ -3701,6 +3702,44 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
 
+                              const SizedBox(height: NeonTheme.s24),
+                              const SectionHeader(title: 'Expandable Panel'),
+                              const SizedBox(height: NeonTheme.s16),
+                              _Demo(
+                                label: 'ExpandablePanel (FEAT-114)',
+                                child: Column(
+                                  children: [
+                                    ExpandablePanel(
+                                      header: const Text(
+                                        'How do I earn more coins?',
+                                      ),
+                                      content: const Text(
+                                        'Win levels and collect daily rewards to fill your wallet.',
+                                      ),
+                                      isExpanded: _faqExpanded,
+                                      semanticLabel: 'FAQ: earning coins',
+                                      onExpansionChanged: (expanded) =>
+                                          setState(
+                                            () => _faqExpanded = expanded,
+                                          ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    for (var i = 0; i < 2; i++)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: NeonTheme.s8,
+                                        ),
+                                        child: ExpandablePanel(
+                                          header: Text('More details ${i + 1}'),
+                                          content: Text(
+                                            'Additional help topic ${i + 1}.',
+                                          ),
+                                          semanticLabel: 'Help topic ${i + 1}',
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: NeonTheme.s24),
                               const SectionHeader(title: 'Candy Choices'),
                               const SizedBox(height: NeonTheme.s16),
