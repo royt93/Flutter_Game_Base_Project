@@ -649,6 +649,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _analyticsQueue.dispose();
     _wheelController.dispose();
     _candyTextFieldController.dispose();
+    _candySearchController.dispose();
     _deepLinkController.dispose();
     _haptics.cancel();
     Get.delete<GameSessionController>(tag: _assetSessionTag, force: true);
@@ -985,6 +986,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _staggeredGridTaps = 0;
   String _candyRadioMode = 'Classic';
   bool _candyCheckboxEnabled = false;
+  final _candySearchController = TextEditingController();
+  String? _debouncedSearch;
+  Set<String> _selectedFilters = const {};
   bool _piggyBankUnlocked = false;
   bool _chestRewardRevealed = false;
   bool _battlePassVipEnabled = false;
@@ -3703,6 +3707,56 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
 
+                              const SizedBox(height: NeonTheme.s24),
+                              const SectionHeader(title: 'Search & Filters'),
+                              const SizedBox(height: NeonTheme.s16),
+                              _Demo(
+                                label:
+                                    'CandySearchBar & FilterChipRow (FEAT-116)',
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    CandySearchBar(
+                                      controller: _candySearchController,
+                                      hintText: 'Search items',
+                                      onChanged: (value) => setState(
+                                        () => _debouncedSearch = value,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    FilterChipRow<String>(
+                                      filters: const [
+                                        CandyFilter(
+                                          value: 'rare',
+                                          label: 'Rare',
+                                        ),
+                                        CandyFilter(
+                                          value: 'fire',
+                                          label: 'Fire',
+                                        ),
+                                        CandyFilter(
+                                          value: 'water',
+                                          label: 'Water',
+                                        ),
+                                        CandyFilter(
+                                          value: 'nature',
+                                          label: 'Nature',
+                                        ),
+                                      ],
+                                      selectedValues: _selectedFilters,
+                                      onChanged: (values) => setState(
+                                        () => _selectedFilters = values,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Search: ${_debouncedSearch ?? '(waiting)'} · '
+                                      'Filters: ${_selectedFilters.join(', ')}',
+                                      key: const Key('candySearchStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: NeonTheme.s24),
                               const SectionHeader(title: 'Expandable Panel'),
                               const SizedBox(height: NeonTheme.s16),

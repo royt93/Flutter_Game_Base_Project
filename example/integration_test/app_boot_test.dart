@@ -1828,6 +1828,40 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-116: search and filter controls on S24 Ultra', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+    final scrollable = find
+        .descendant(of: showcaseList, matching: find.byType(Scrollable))
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    final search = find.byType(CandySearchBar);
+    for (var i = 0; i < 80 && search.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 80));
+    }
+    expect(search, findsOneWidget);
+    await tester.ensureVisible(search);
+    await tester.enterText(find.byType(TextFormField), 'gem');
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(find.textContaining('Search: gem'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('candySearchClear')));
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.tap(find.text('Rare'));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.textContaining('Filters: rare'), findsOneWidget);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-115: staggered grid tiles respond on S24 Ultra', (
     tester,
   ) async {

@@ -21,6 +21,7 @@ class CandyTextField extends StatefulWidget {
     this.obscureText = false,
     this.keyboardType,
     this.onChanged,
+    this.onSubmitted,
     this.color,
   });
 
@@ -31,6 +32,7 @@ class CandyTextField extends StatefulWidget {
   final bool obscureText;
   final TextInputType? keyboardType;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
 
   /// Focus border/glow color. Defaults to [NeonTheme.cyan].
   final Color? color;
@@ -91,6 +93,7 @@ class _CandyTextFieldState extends State<CandyTextField> {
         obscureText: widget.obscureText,
         keyboardType: widget.keyboardType,
         onChanged: widget.onChanged,
+        onFieldSubmitted: widget.onSubmitted,
         style: TextStyle(
           color: NeonTheme.ink,
           fontWeight: FontWeight.w600,

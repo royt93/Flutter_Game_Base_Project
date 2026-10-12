@@ -2568,6 +2568,27 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      testWidgets('FEAT-116 search debounce, clear and filters work', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final search = find.byType(CandySearchBar);
+        await tester.ensureVisible(search);
+        await tester.enterText(
+          find.descendant(of: search, matching: find.byType(TextFormField)),
+          'gem',
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.textContaining('Search: gem'), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('candySearchClear')));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.textContaining('Search:  ·'), findsOneWidget);
+        await tester.tap(find.text('Rare'));
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.textContaining('Filters: rare'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('FEAT-115 staggered grid showcases six tappable tiles', (
         tester,
       ) async {
