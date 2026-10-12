@@ -981,6 +981,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _battlePassProgress = 500;
   int _piggyBankAmount = 250;
   bool _scratchPrizeRevealed = false;
+  String _candyRadioMode = 'Classic';
+  bool _candyCheckboxEnabled = false;
   bool _piggyBankUnlocked = false;
   bool _chestRewardRevealed = false;
   bool _battlePassVipEnabled = false;
@@ -3699,6 +3701,55 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
 
+                              const SizedBox(height: NeonTheme.s24),
+                              const SectionHeader(title: 'Candy Choices'),
+                              const SizedBox(height: NeonTheme.s16),
+                              _Demo(
+                                label:
+                                    'CandyRadioGroup & CandyCheckboxTile (FEAT-113)',
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    CandyRadioGroup<String>(
+                                      value: _candyRadioMode,
+                                      options: const [
+                                        CandyRadioOption(
+                                          value: 'Classic',
+                                          label: 'Classic mode',
+                                          subtitle: 'Balanced game pace',
+                                        ),
+                                        CandyRadioOption(
+                                          value: 'Relaxed',
+                                          label: 'Relaxed mode',
+                                          subtitle: 'No move timer',
+                                        ),
+                                        CandyRadioOption(
+                                          value: 'Challenge',
+                                          label: 'Challenge mode',
+                                          subtitle: 'Extra objectives',
+                                        ),
+                                      ],
+                                      onChanged: (value) => setState(
+                                        () => _candyRadioMode = value,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    CandyCheckboxTile(
+                                      label: 'Enable extra hints',
+                                      subtitle: 'Show helpful suggestions',
+                                      value: _candyCheckboxEnabled,
+                                      onChanged: (value) => setState(
+                                        () => _candyCheckboxEnabled = value,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Mode: $_candyRadioMode · Hints: ${_candyCheckboxEnabled ? 'on' : 'off'}',
+                                      key: const Key('candyChoiceStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: NeonTheme.s24),
                               const SectionHeader(title: 'Scratch Card'),
                               const SizedBox(height: NeonTheme.s16),

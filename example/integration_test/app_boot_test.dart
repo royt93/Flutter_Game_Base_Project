@@ -1828,6 +1828,36 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-113: Candy choice controls respond on S24 Ultra', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+    final scrollable = find
+        .descendant(of: showcaseList, matching: find.byType(Scrollable))
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    final radio = find.text('Relaxed mode');
+    for (var i = 0; i < 80 && radio.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 80));
+    }
+    expect(radio, findsOneWidget);
+    await tester.ensureVisible(radio);
+    await tester.tap(radio);
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.ensureVisible(find.text('Enable extra hints'));
+    await tester.tap(find.text('Enable extra hints'));
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.text('Mode: Relaxed · Hints: on'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-112: ScratchCard clears continuously on S24 Ultra', (
     tester,
   ) async {

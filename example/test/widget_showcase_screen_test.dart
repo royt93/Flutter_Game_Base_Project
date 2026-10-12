@@ -2568,6 +2568,30 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      testWidgets('FEAT-113 radio and checkbox update caller state', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final radio = find.text('Relaxed mode');
+        await tester.scrollUntilVisible(
+          radio,
+          350,
+          scrollable: find
+              .descendant(
+                of: find.byKey(const ValueKey('widgetShowcaseList')),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tester.tap(radio);
+        await tester.pump(const Duration(milliseconds: 250));
+        expect(find.text('Mode: Relaxed · Hints: off'), findsOneWidget);
+        await tester.tap(find.text('Enable extra hints'));
+        await tester.pump(const Duration(milliseconds: 250));
+        expect(find.text('Mode: Relaxed · Hints: on'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('FEAT-112 scratch card reveals caller-owned prize status', (
         tester,
       ) async {
