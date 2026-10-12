@@ -17,7 +17,7 @@ Widget ExpandablePanel nhận header, content, hỗ trợ tự mở rộng chi�
 - [x] Unit/widget: external expansion, toggle callback once, SizeTransition, lazy closed child, Reduced Motion, invalid duration.
 - [x] Showcase: open 3 help topics sequentially.
 - [x] Host validation: root 2954/example 244 suites; analyzers and quality gates pass.
-- [ ] S24 Ultra physical smoke (SM-S928B only; no simulator): pending device reconnection.
+- [x] S24 Ultra physical smoke (SM-S928B): opened three help topics sequentially; no simulator used.
 
 ## Hiệu năng & Animation
 - [x] Lazy mode omits collapsed content until first open; controller disposes on unmount.
