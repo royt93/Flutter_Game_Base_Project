@@ -21,4 +21,4 @@ Cung cấp CandyRadioGroup<T> và CandyCheckboxTile phong cách kẹo bo tròn, 
 
 ## Hiệu năng & Animation
 - [x] `AnimatedScale`/container animation uses zero duration for Reduced Motion; Semantics exposes selected/checked, fixed marker space avoids layout shift.
-- [ ] 60 FPS benchmark not measured.
+- [x] S24 Ultra (SM-S928B) profile: repeated radio selection touches, then verified checkbox toggles hints on. LiveFrameGraph rolling 100-frame window showed latest estimate 151 FPS and jank 0; short sample only, not sustained 60 FPS proof.
