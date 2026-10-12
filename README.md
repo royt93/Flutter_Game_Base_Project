@@ -726,9 +726,9 @@ emulator, re-measures both, and opens a PR refreshing the numbers below.
 | Metric | Value | Source | Recorded |
 |---|---|---|---|
 | Example App Boot Wall Ms | 32318 ms | realDevice | 2026-09-20 |
-| Example App Boot Wall Ms Emulator | 338690 ms | realDevice | 2026-09-22 |
-| Object Pool Allocation Reduction Percent | 97.5% | hostHeadless | 2026-09-22 |
-| Object Pool Pooled Elapsed Us | 22327 us | hostHeadless | 2026-09-22 |
+| Example App Boot Wall Ms Emulator | 360267 ms | realDevice | 2026-10-12 |
+| Object Pool Allocation Reduction Percent | 97.5% | hostHeadless | 2026-10-12 |
+| Object Pool Pooled Elapsed Us | 31265 us | hostHeadless | 2026-10-12 |
 <!-- PERF_BENCHMARK_END -->
 
 ## Integration guide
