@@ -1828,6 +1828,35 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-115: staggered grid tiles respond on S24 Ultra', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+    final scrollable = find
+        .descendant(of: showcaseList, matching: find.byType(Scrollable))
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    final tile = find.byKey(const ValueKey('staggeredGridTile_5'));
+    for (var i = 0; i < 80 && tile.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 80));
+    }
+    expect(tile, findsOneWidget);
+    await tester.ensureVisible(tile);
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(tile.hitTestable(), findsOneWidget);
+    await tester.tap(tile);
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.text('Tapped: 1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-114: open three accordion topics on S24 Ultra', (
     tester,
   ) async {

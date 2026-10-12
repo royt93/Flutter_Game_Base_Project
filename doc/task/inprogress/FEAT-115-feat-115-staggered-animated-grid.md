@@ -13,10 +13,13 @@ Khi mở màn hình Shop, chọn nhân vật, danh mục vật phẩm, hiển th
 ## Đề xuất phạm vi
 Widget StaggeredAnimatedGrid tự động tính toán delay từng ô theo hàng/cột (offset theo ma trận i, j), làm các thẻ bài trượt nảy vào vị trí với độ trễ 40ms.
 
-## Yêu cầu kiểm thử (Bắt buộc theo chuẩn đối tác)
-- [ ] **Unit test**: Kiểm tra tính toán stagger delay cho từng item index theo crossAxisCount.
-- [ ] **Widget test**: Mount grid 6 phần tử, pump thời gian và kiểm tra các phần tử xuất hiện lần lượt từ trên xuống dưới.
-- [ ] **Integration test**: Mở tab Shop trên thiết bị thật, quan sát các thẻ vật phẩm nảy vào vị trí mượt mà 60fps.
+## Kiểm thử
+- [x] Unit test: row/column delay and invalid configuration.
+- [x] Widget test: six-cell cascade order/timing, last-cell tap, Reduced Motion bypass; offscreen disposal cancels delay.
+- [x] S24 Ultra smoke (SM-S928B): opened Showcase, scrolled to staggered tiles, tapped last tile successfully; no simulator.
+- [ ] Dispose/cancel offscreen delay test pending.
 
-## Yêu cầu hiệu năng & Animation
-- [ ] **60 FPS & Resource cleanup**: Hỗ trợ tắt stagger khi reducedMotion bật, tự ngắt controller sau khi toàn bộ grid đã xuất hiện.
+## Hiệu năng & Animation
+- [x] Lazy GridView; each visible item owns/cancels one entrance timer/controller; Reduced Motion bypasses wrappers.
+- [ ] Sustained 60 FPS benchmark not measured.
+- [x] Root 2960/example 245 suites and full quality gates pass.

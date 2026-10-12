@@ -982,6 +982,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _piggyBankAmount = 250;
   bool _scratchPrizeRevealed = false;
   bool _faqExpanded = false;
+  int _staggeredGridTaps = 0;
   String _candyRadioMode = 'Classic';
   bool _candyCheckboxEnabled = false;
   bool _piggyBankUnlocked = false;
@@ -3740,6 +3741,48 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   ],
                                 ),
                               ),
+                              const SizedBox(height: NeonTheme.s24),
+                              const SectionHeader(title: 'Staggered Grid'),
+                              const SizedBox(height: NeonTheme.s16),
+                              _Demo(
+                                label: 'StaggeredAnimatedGrid (FEAT-115)',
+                                child: SizedBox(
+                                  height: 360,
+                                  child: StaggeredAnimatedGrid(
+                                    itemCount: 6,
+                                    crossAxisCount: 3,
+                                    spacing: NeonTheme.s8,
+                                    itemBuilder: (context, index) => Material(
+                                      color: NeonTheme.gold,
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: InkWell(
+                                        key: ValueKey(
+                                          'staggeredGridTile_$index',
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        onTap: () => setState(
+                                          () => _staggeredGridTaps++,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'Tile ${index + 1}',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: NeonTheme.ink,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                'Tapped: $_staggeredGridTaps',
+                                key: const Key('staggeredGridStatus'),
+                              ),
+
                               const SizedBox(height: NeonTheme.s24),
                               const SectionHeader(title: 'Candy Choices'),
                               const SizedBox(height: NeonTheme.s16),

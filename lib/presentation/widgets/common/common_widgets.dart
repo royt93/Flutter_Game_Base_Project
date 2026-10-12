@@ -82,6 +82,7 @@ export 'battle_pass_road.dart';
 export 'piggy_bank_vault.dart';
 export 'candy_radio_group.dart';
 export 'expandable_panel.dart';
+export 'staggered_animated_grid.dart';
 export 'scratch_card.dart';
 export '../../../core/reward_transaction_pipeline.dart' show RewardLine;
 export 'save_health_card.dart';

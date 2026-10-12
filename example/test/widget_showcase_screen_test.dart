@@ -2568,6 +2568,33 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      testWidgets('FEAT-115 staggered grid showcases six tappable tiles', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final lastTile = find.byKey(const ValueKey('staggeredGridTile_5'));
+        await tester.scrollUntilVisible(
+          lastTile,
+          400,
+          scrollable: find
+              .descendant(
+                of: find.byKey(const ValueKey('widgetShowcaseList')),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        for (var i = 0; i < 6; i++) {
+          expect(find.byKey(ValueKey('staggeredGridTile_$i')), findsOneWidget);
+        }
+        await tester.pump(const Duration(milliseconds: 900));
+        await tester.ensureVisible(lastTile);
+        await tester.pump();
+        await tester.tap(lastTile);
+        await tester.pump();
+        expect(find.text('Tapped: 1'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('FEAT-114 opens three panels in sequence', (tester) async {
         await _pumpShowcase(tester);
         for (final header in [
