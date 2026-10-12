@@ -16,7 +16,7 @@ Cung cấp CandyRadioGroup<T> và CandyCheckboxTile phong cách kẹo bo tròn, 
 ## Kiểm thử
 - [x] **Unit/widget test**: Generic radio emits selected value; checkbox toggles bool; selection/checked semantics; Reduced Motion; empty/duplicate options validation.
 - [x] **Showcase test**: Radio + checkbox caller state updates, bounce marker without layout shift.
-- [ ] **S24 Ultra smoke**: Select radio/checkbox on SM-S928B; pending device reconnection. No TECNO or simulator substitute.
+- [x] **S24 Ultra smoke**: Radio and checkbox choices tapped on SM-S928B; caller state updated. No simulator used.
 - [x] **Host validation**: root 2950/example 243 suites, analyzers and quality gates pass.
 
 ## Hiệu năng & Animation
