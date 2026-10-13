@@ -147,7 +147,14 @@ void main() {
       return Offset(translation.x, translation.y);
     }
 
-    await tester.tap(find.text('Shake!').last);
+    final shakeButton = find.widgetWithText(CommonButton, 'Shake!');
+    for (var i = 0; i < 20 && shakeButton.evaluate().isEmpty; i++) {
+      await tester.drag(find.byType(ListView).first, const Offset(0, -500));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(shakeButton.last);
+    await tester.pump();
+    await tester.tap(shakeButton.last);
     await tester.pump(const Duration(milliseconds: 50));
     expect(shakeOffset(), isNot(Offset.zero));
 
@@ -1052,7 +1059,10 @@ void main() {
 
       // Tap lại trong lúc đang loading không được kích hoạt thêm 1 lần
       // đếm ngược mới (không throw, không đổi hành vi).
-      await tester.tap(find.byType(CommonButton).last, warnIfMissed: false);
+      await tester.tap(
+        find.widgetWithText(CommonButton, 'Simulate async').last,
+        warnIfMissed: false,
+      );
       await tester.pump(const Duration(milliseconds: 500));
       expect(
         find.byType(CircularProgressIndicator),
@@ -2565,6 +2575,24 @@ void main() {
         }
         await tester.tap(tapButton.first);
         await tester.pump();
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('FEAT-118 radial menu opens and invokes action', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final menu = find.byType(RadialActionMenu);
+        await tester.ensureVisible(menu);
+        await tester.pump();
+        final primary = find.byKey(const ValueKey('radialActionPrimary'));
+        await tester.tap(primary);
+        await tester.pump(const Duration(milliseconds: 300));
+        final share = find.byKey(const ValueKey('radialAction_0_Share'));
+        expect(share, findsOneWidget);
+        tester.widget<CommonButton>(share).onTap!();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Last action: Share'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 

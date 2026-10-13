@@ -984,6 +984,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   bool _scratchPrizeRevealed = false;
   bool _faqExpanded = false;
   int _staggeredGridTaps = 0;
+  String _lastRadialAction = 'none';
   String _candyRadioMode = 'Classic';
   bool _candyCheckboxEnabled = false;
   final _candySearchController = TextEditingController();
@@ -3705,6 +3706,48 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     color: NeonTheme.cyan,
                                   ),
                                 ),
+                              ),
+
+                              const SizedBox(height: NeonTheme.s24),
+                              const SectionHeader(title: 'Radial Actions'),
+                              const SizedBox(height: NeonTheme.s16),
+                              _Demo(
+                                label: 'RadialActionMenu (FEAT-118)',
+                                child: SizedBox(
+                                  height: 220,
+                                  child: RadialActionMenu(
+                                    radius: 84,
+                                    startAngleDegrees: 180,
+                                    sweepAngleDegrees: 90,
+                                    items: [
+                                      RadialActionItem(
+                                        label: 'Share',
+                                        icon: Icons.share_rounded,
+                                        onTap: () => setState(
+                                          () => _lastRadialAction = 'Share',
+                                        ),
+                                      ),
+                                      RadialActionItem(
+                                        label: 'Rank',
+                                        icon: Icons.emoji_events_rounded,
+                                        onTap: () => setState(
+                                          () => _lastRadialAction = 'Rank',
+                                        ),
+                                      ),
+                                      RadialActionItem(
+                                        label: 'Help',
+                                        icon: Icons.help_outline_rounded,
+                                        onTap: () => setState(
+                                          () => _lastRadialAction = 'Help',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                'Last action: $_lastRadialAction',
+                                key: const Key('radialActionStatus'),
                               ),
 
                               const SizedBox(height: NeonTheme.s24),

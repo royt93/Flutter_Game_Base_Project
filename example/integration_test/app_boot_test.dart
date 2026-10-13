@@ -1828,6 +1828,38 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-118: radial menu actions respond on S24 Ultra', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+    final scrollable = find
+        .descendant(of: showcaseList, matching: find.byType(Scrollable))
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    final menu = find.byType(RadialActionMenu);
+    for (var i = 0; i < 80 && menu.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 80));
+    }
+    expect(menu, findsOneWidget);
+    final primary = find.byKey(const ValueKey('radialActionPrimary'));
+    await tester.ensureVisible(primary);
+    await tester.tap(primary);
+    await tester.pump(const Duration(milliseconds: 300));
+    final share = find.byKey(const ValueKey('radialAction_0_Share'));
+    expect(share, findsOneWidget);
+    await tester.tap(share);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Last action: Share'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-116: search and filter controls on Pixel 7 Pro', (
     tester,
   ) async {
