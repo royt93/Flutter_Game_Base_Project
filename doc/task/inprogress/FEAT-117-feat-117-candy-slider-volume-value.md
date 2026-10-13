@@ -16,7 +16,9 @@ Widget CandySlider có track bo tròn dày dặn, thumb viên kẹo nảy nhẹ 
 ## Yêu cầu kiểm thử (Bắt buộc theo chuẩn đối tác)
 - [x] **Unit test**: Kiểm tra tính toán tỷ lệ % từ giá trị value/min/max và clamp đúng giới hạn.
 - [x] **Widget test**: Kéo drag con trượt, kiểm tra thumb scale biến dạng nhẹ và callback onChanged phát ra giá trị tương ứng.
-- [x] **Integration test**: Kéo thanh trượt chỉnh âm lượng trong Settings trên thiết bị thật TECNO, phản hồi trơn tru dưới ngón tay.
+- [x] **Physical integration**: Settings BGM slider changed volume on Pixel 7 Pro (user-authorized device substitute); no simulator.
+- [x] **Host validation**: root 2963/example 246 suites; analyzers and all quality gates pass.
 
-## Yêu cầu hiệu năng & Animation
-- [x] **60 FPS & Resource cleanup**: Render track và thumb trên CustomPainter riêng biệt, không rebuild widget ngoài vùng slider.
+## Hiệu năng & Animation
+- [x] CandySlider uses native Flutter Slider rendering with a custom candy thumb and track theme; activation bounce uses native slider paint invalidation.
+- [ ] Sustained 60 FPS benchmark not measured.

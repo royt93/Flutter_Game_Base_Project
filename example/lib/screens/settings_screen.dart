@@ -43,8 +43,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       message: 'settings_export_success'.trParams({
         'count': '${receipt.data.length}',
         'version': '${receipt.schemaVersion}',
-        'time':
-            '${DateTime.fromMillisecondsSinceEpoch(receipt.exportedAtMs)}',
+        'time': '${DateTime.fromMillisecondsSinceEpoch(receipt.exportedAtMs)}',
       }),
     );
   }
@@ -66,8 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context,
       message: 'settings_erasure_success'.trParams({
         'count': '${receipt.erasedKeyCount}',
-        'time':
-            '${DateTime.fromMillisecondsSinceEpoch(receipt.completedAtMs)}',
+        'time': '${DateTime.fromMillisecondsSinceEpoch(receipt.completedAtMs)}',
       }),
     );
   }
@@ -140,8 +138,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             label: 'bgm_volume'.tr,
                             value: '${(audio.bgmVolume.value * 100).round()}%',
                             slider: true,
-                            child: Slider(
+                            child: CandySlider(
                               value: audio.bgmVolume.value,
+                              activeColor: NeonTheme.purple,
                               onChanged: audio.setBgmVolume,
                             ),
                           ),
@@ -156,8 +155,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             label: 'sfx_volume'.tr,
                             value: '${(audio.sfxVolume.value * 100).round()}%',
                             slider: true,
-                            child: Slider(
+                            child: CandySlider(
                               value: audio.sfxVolume.value,
+                              activeColor: NeonTheme.cyan,
                               onChanged: audio.setSfxVolume,
                             ),
                           ),

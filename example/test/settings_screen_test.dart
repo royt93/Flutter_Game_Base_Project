@@ -8,6 +8,7 @@ import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/pseudo_locale.dart';
 import 'package:roy_casual_kit/core/wake_lock_service.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/candy_slider.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/list_tile_row.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/toggle_switch.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_dialog.dart';
@@ -228,18 +229,24 @@ void main() {
         await tester.pumpWidget(_wrap(const SettingsScreen()));
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.byType(Slider), findsNWidgets(2));
+        expect(find.byType(CandySlider), findsNWidgets(2));
         final bgmSemantics = tester.getSemantics(
           find
               .ancestor(
-                of: find.byType(Slider).first,
+                of: find.byType(CandySlider).first,
                 matching: find.byType(Semantics),
               )
               .first,
         );
         expect(bgmSemantics.label, 'Background music volume');
 
-        await tester.drag(find.byType(Slider).first, const Offset(-200, 0));
+        await tester.drag(
+          find.descendant(
+            of: find.byType(CandySlider).first,
+            matching: find.byType(Slider),
+          ),
+          const Offset(-200, 0),
+        );
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(audio.bgmVolume.value, lessThan(1.0));

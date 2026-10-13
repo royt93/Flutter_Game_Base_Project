@@ -1871,6 +1871,29 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-117: CandySlider volume responds on S24 Ultra', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    if (!Get.isRegistered<AudioManager>()) {
+      Get.put<AudioManager>(AudioManager(), permanent: true);
+    }
+    await _goToSettings(tester);
+
+    final audio = Get.find<AudioManager>();
+    final slider = find.byType(CandySlider).first;
+    await tester.ensureVisible(slider);
+    final before = audio.bgmVolume.value;
+    await tester.drag(
+      find.descendant(of: slider, matching: find.byType(Slider)),
+      const Offset(-250, 0),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(audio.bgmVolume.value, isNot(before));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-115: staggered grid tiles respond on S24 Ultra', (
     tester,
   ) async {
