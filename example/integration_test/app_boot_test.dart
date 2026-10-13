@@ -1828,7 +1828,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('FEAT-116: search and filter controls on S24 Ultra', (
+  testWidgets('FEAT-116: search and filter controls on Pixel 7 Pro', (
     tester,
   ) async {
     await app.app();
@@ -1852,9 +1852,18 @@ void main() {
     await tester.enterText(find.byType(TextFormField), 'gem');
     await tester.pump(const Duration(milliseconds: 350));
     expect(find.textContaining('Search: gem'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('candySearchClear')));
+    final demo = find.byKey(const Key('candySearchFilterDemo'));
+    final clear = find.descendant(
+      of: demo,
+      matching: find.byKey(const ValueKey('candySearchClear')),
+    );
+    await tester.ensureVisible(clear);
+    await tester.pump(const Duration(milliseconds: 80));
+    await tester.tap(clear);
     await tester.pump(const Duration(milliseconds: 350));
-    await tester.tap(find.text('Rare'));
+    final rareChip = find.descendant(of: demo, matching: find.text('Rare'));
+    await tester.ensureVisible(rareChip);
+    await tester.tap(rareChip);
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.textContaining('Filters: rare'), findsOneWidget);
     await tester.testTextInput.receiveAction(TextInputAction.done);

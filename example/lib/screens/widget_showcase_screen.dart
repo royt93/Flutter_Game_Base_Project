@@ -3711,6 +3711,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               const SectionHeader(title: 'Search & Filters'),
                               const SizedBox(height: NeonTheme.s16),
                               _Demo(
+                                key: const Key('candySearchFilterDemo'),
                                 label:
                                     'CandySearchBar & FilterChipRow (FEAT-116)',
                                 child: Column(

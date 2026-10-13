@@ -136,16 +136,6 @@ class _CandyChoiceTile extends StatelessWidget {
     final duration = NeonTheme.reducedMotion(context)
         ? Duration.zero
         : const Duration(milliseconds: 220);
-    final marker = checked
-        ? Icon(Icons.check_rounded, size: 19, color: Colors.white)
-        : Container(
-            width: 10,
-            height: 10,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-            ),
-          );
 
     return Semantics(
       container: true,
@@ -176,33 +166,42 @@ class _CandyChoiceTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              AnimatedScale(
-                duration: duration,
-                curve: Curves.easeOutBack,
-                scale: selected ? 1 : 0,
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  alignment: Alignment.center,
+              SizedBox(
+                width: 28,
+                height: 28,
+                child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: color,
                     shape: BoxShape.circle,
-                    border: Border.all(color: color, width: 2),
+                    border: Border.all(
+                      color: selected ? color : color.withValues(alpha: 0.8),
+                      width: 2,
+                    ),
                   ),
-                  child: marker,
+                  child: Center(
+                    child: AnimatedScale(
+                      duration: duration,
+                      curve: Curves.easeOutBack,
+                      scale: selected ? 1 : 0,
+                      child: Container(
+                        width: checked ? 24 : 12,
+                        height: checked ? 24 : 12,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
+                        child: checked
+                            ? const Icon(
+                                Icons.check_rounded,
+                                size: 17,
+                                color: Colors.white,
+                              )
+                            : null,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              if (!selected) ...[
-                const SizedBox(width: 28),
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: color, width: 2),
-                  ),
-                ),
-              ],
               const SizedBox(width: NeonTheme.s8),
               Expanded(
                 child: Column(

@@ -16,7 +16,7 @@ Thanh tìm kiếm CandySearchBar có nút xoá nhanh (clear), kết hợp Filter
 ## Kiểm thử
 - [x] **Unit/widget test**: Debounced latest search text/clear, callback and immutable selected-filter set; duplicate filter IDs/invalid debounce.
 - [x] **Showcase test**: Search/clear then toggle chip; caller-controlled status updates.
-- [ ] **S24 Ultra smoke**: Pending SM-S928B reconnection; keyboard/search/filter test not run. Do not use another device or simulator.
+- [x] **Physical-device smoke**: Pixel 7 Pro (replacing disconnected SM-S928B per user direction); typed/cleared search, selected filter chip and closed keyboard successfully. No simulator used.
 - [x] **Host validation**: root 2963/example 246 suites; analyzers and all quality gates pass.
 
 ## Hiệu năng & Animation
