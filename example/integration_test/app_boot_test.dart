@@ -2014,6 +2014,32 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-120: stacked avatars and overflow tap on S24 Ultra', (
+    tester,
+  ) async {
+    var overflowTaps = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StackedAvatarGroup(
+            items: List.generate(
+              6,
+              (index) => StackedAvatarItem.widget(Text('$index')),
+            ),
+            maxAvatars: 3,
+            onOverflowTap: () => overflowTaps++,
+          ),
+        ),
+      ),
+    );
+    expect(find.text('+3'), findsOneWidget);
+    final overflow = find.byKey(const ValueKey('stackedAvatarOverflow'));
+    expect(overflow.hitTestable(), findsOneWidget);
+    await tester.tap(overflow);
+    expect(overflowTaps, 1);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-115: staggered grid tiles respond on S24 Ultra', (
     tester,
   ) async {

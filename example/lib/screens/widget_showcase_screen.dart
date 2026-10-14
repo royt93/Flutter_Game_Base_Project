@@ -986,6 +986,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _staggeredGridTaps = 0;
   String _lastRadialAction = 'none';
   String _lastSwipeAction = 'none';
+  String _avatarGroupStatus = 'none';
   String _candyRadioMode = 'Classic';
   bool _candyCheckboxEnabled = false;
   final _candySearchController = TextEditingController();
@@ -2682,6 +2683,45 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       ),
                                     ),
                                   ),
+                                ),
+                              ),
+                              _Demo(
+                                label: 'StackedAvatarGroup (FEAT-120)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    StackedAvatarGroup(
+                                      key: const Key('stackedAvatarDemo'),
+                                      maxAvatars: 3,
+                                      semanticLabel: 'Online friends',
+                                      onOverflowTap: () => setState(
+                                        () => _avatarGroupStatus =
+                                            'Opened 3 more',
+                                      ),
+                                      items: [
+                                        for (final label in [
+                                          'A',
+                                          'B',
+                                          'C',
+                                          'D',
+                                          'E',
+                                          'F',
+                                        ])
+                                          StackedAvatarItem.widget(
+                                            ColoredBox(
+                                              color: NeonTheme.cardAlt,
+                                              child: Center(child: Text(label)),
+                                            ),
+                                            semanticLabel: 'Friend $label',
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Avatar group: $_avatarGroupStatus',
+                                      key: const Key('stackedAvatarStatus'),
+                                    ),
+                                  ],
                                 ),
                               ),
                               _Demo(

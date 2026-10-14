@@ -204,6 +204,16 @@ void main() {
 
   testWidgets('ShopItemCard demo buy button shows a toast', (tester) async {
     await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final offer = find.text(r'$0.99').first;
+    await tester.scrollUntilVisible(offer, 300, scrollable: scrollable);
+    await tester.ensureVisible(offer);
+    await tester.pump();
 
     await tester.tap(find.text(r'$0.99').last);
     await tester.pump(const Duration(milliseconds: 100));
@@ -234,7 +244,9 @@ void main() {
         300,
         scrollable: scrollable,
       );
-      await tester.tap(firstGemOffer.last);
+      await tester.ensureVisible(firstGemOffer);
+      await tester.pump();
+      await tester.tap(find.text(r'$0.99').last);
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('Gems: 100'), findsOneWidget);
       // Let this toast's full lifecycle (2s hold + reverse animation)
@@ -249,7 +261,9 @@ void main() {
         300,
         scrollable: scrollable,
       );
-      await tester.tap(secondGemOffer.last);
+      await tester.ensureVisible(secondGemOffer);
+      await tester.pump();
+      await tester.tap(find.text(r'$4.99').last);
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('Gems: 600'), findsOneWidget);
 
@@ -279,7 +293,9 @@ void main() {
       expect(find.text(r'$2.99'), findsWidgets);
       expect(find.text('Owned'), findsNothing);
 
-      await tester.tap(removeAdsOffer.last);
+      await tester.ensureVisible(removeAdsOffer);
+      await tester.pump();
+      await tester.tap(find.text(r'$2.99').last);
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Owned'), findsWidgets);
@@ -2645,6 +2661,28 @@ void main() {
         tester.widget<CommonButton>(share).onTap!();
         await tester.pump(const Duration(milliseconds: 300));
         expect(find.text('Last action: Share'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('FEAT-120 stacked avatar group caps and taps overflow', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final group = find.byKey(const Key('stackedAvatarDemo'));
+        await tester.scrollUntilVisible(
+          group,
+          300,
+          scrollable: find
+              .descendant(
+                of: find.byKey(const ValueKey('widgetShowcaseList')),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        expect(find.text('+3'), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('stackedAvatarOverflow')));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.text('Avatar group: Opened 3 more'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
