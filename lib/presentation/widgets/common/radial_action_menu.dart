@@ -163,6 +163,7 @@ class RadialActionMenuState extends State<RadialActionMenu>
           animation: _controller,
           builder: (context, _) {
             final open = _controller.value > 0;
+            final size = Size(constraints.maxWidth, constraints.maxHeight);
             return Stack(
               clipBehavior: Clip.none,
               children: [
@@ -176,7 +177,7 @@ class RadialActionMenuState extends State<RadialActionMenu>
                     ),
                   ),
                 for (var i = 0; i < widget.items.length; i++)
-                  _buildAction(i, color),
+                  _buildAction(i, color, size: size, open: open),
                 Align(
                   alignment: widget.alignment,
                   child: Semantics(
@@ -207,7 +208,12 @@ class RadialActionMenuState extends State<RadialActionMenu>
     );
   }
 
-  Widget _buildAction(int index, Color color) {
+  Widget _buildAction(
+    int index,
+    Color color, {
+    required Size size,
+    required bool open,
+  }) {
     final item = widget.items[index];
     final offset = radialActionOffsetForIndex(
       index: index,
@@ -217,6 +223,13 @@ class RadialActionMenuState extends State<RadialActionMenu>
       sweepAngleDegrees: widget.sweepAngleDegrees,
     );
     final intervalStart = index * 0.08;
+    final textDirection = Directionality.of(context);
+    final anchor = Offset(
+      size.width / 2 +
+          widget.alignment.x * (size.width - widget.buttonSize) / 2,
+      size.height / 2 +
+          widget.alignment.y * (size.height - widget.buttonSize) / 2,
+    );
     final t = CurvedAnimation(
       parent: _controller,
       curve: Interval(
@@ -225,43 +238,46 @@ class RadialActionMenuState extends State<RadialActionMenu>
         curve: Curves.easeOutBack,
       ),
     );
-    return Align(
-      alignment: widget.alignment,
-      child: AnimatedBuilder(
-        animation: t,
-        child: Semantics(
-          button: true,
-          label: item.semanticLabel ?? item.label,
-          child: CommonButton(
-            key: ValueKey('radialAction_${index}_${item.label}'),
-            icon: item.icon,
-            variant: CommonButtonVariant.icon,
-            semanticLabel: item.semanticLabel ?? item.label,
-            color: item.color ?? color,
-            width: widget.buttonSize,
-            onTap: () {
-              item.onTap();
-              close();
-            },
-          ),
+    return AnimatedBuilder(
+      animation: t,
+      child: Semantics(
+        button: true,
+        label: item.semanticLabel ?? item.label,
+        child: CommonButton(
+          key: ValueKey('radialAction_${index}_${item.label}'),
+          icon: item.icon,
+          variant: CommonButtonVariant.icon,
+          semanticLabel: item.semanticLabel ?? item.label,
+          color: item.color ?? color,
+          width: widget.buttonSize,
+          onTap: () {
+            item.onTap();
+            close();
+          },
         ),
-        builder: (context, child) {
-          final progress = t.value;
-          return IgnorePointer(
-            ignoring: progress < 0.98,
+      ),
+      builder: (context, child) {
+        final progress = t.value;
+        final physicalLeft =
+            anchor.dx + offset.dx * progress - widget.buttonSize / 2;
+        final start = textDirection == TextDirection.ltr
+            ? physicalLeft
+            : size.width - physicalLeft - widget.buttonSize;
+        return PositionedDirectional(
+          start: start,
+          top: anchor.dy + offset.dy * progress - widget.buttonSize / 2,
+          child: IgnorePointer(
+            ignoring: !open || progress < 0.5,
             child: Opacity(
               opacity: progress.clamp(0.0, 1.0),
-              child: Transform.translate(
-                offset: offset * progress,
-                child: Transform.scale(
-                  scale: 0.72 + progress * 0.28,
-                  child: child,
-                ),
+              child: Transform.scale(
+                scale: 0.72 + progress * 0.28,
+                child: child,
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

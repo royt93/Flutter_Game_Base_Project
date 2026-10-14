@@ -3714,6 +3714,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               _Demo(
                                 label: 'RadialActionMenu (FEAT-118)',
                                 child: SizedBox(
+                                  width: double.infinity,
                                   height: 220,
                                   child: RadialActionMenu(
                                     radius: 84,

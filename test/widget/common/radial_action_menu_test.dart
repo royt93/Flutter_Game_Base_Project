@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/radial_action_menu.dart';
 
 void main() {
@@ -108,25 +107,21 @@ void main() {
     await tester.pump(const Duration(milliseconds: 250));
     expect(key.currentState!.isOpen, isTrue);
     expect(find.byKey(const ValueKey('radialActionBarrier')), findsOneWidget);
-    expect(find.byKey(const ValueKey('radialAction_0_Share')), findsOneWidget);
+    final share = find.byKey(const ValueKey('radialAction_0_Share'));
+    expect(share, findsOneWidget);
+    await tester.tap(share);
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(actionTaps, 1);
+    expect(key.currentState!.isOpen, isFalse);
     final help = find.byKey(const ValueKey('radialAction_1_Help'));
     expect(help, findsOneWidget);
-
-    await tester.tapAt(const Offset(20, 20));
-    await tester.pump(const Duration(milliseconds: 250));
-    expect(backgroundTaps, 0);
-    expect(key.currentState!.isOpen, isFalse);
 
     await tester.tap(find.byKey(const ValueKey('radialActionPrimary')));
     await tester.pump(const Duration(milliseconds: 1));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(key.currentState!.progress, 1);
-    final helpAction = tester.widget<CommonButton>(
-      find.byKey(const ValueKey('radialAction_1_Help')),
-    );
-    expect(helpAction.onTap, isNotNull);
-    helpAction.onTap!();
+    await tester.tapAt(const Offset(20, 20));
     await tester.pump(const Duration(milliseconds: 250));
+    expect(backgroundTaps, 0);
     expect(actionTaps, 1);
     expect(key.currentState!.isOpen, isFalse);
     expect(tester.takeException(), isNull);

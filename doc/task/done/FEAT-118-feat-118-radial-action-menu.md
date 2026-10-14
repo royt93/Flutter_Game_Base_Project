@@ -17,9 +17,9 @@ Widget RadialActionMenu nhận danh sách menu items, khi bấm nút chính sẽ
 - [x] **Unit test**: sin/cos radial offset, radius, arc bounds and invalid values.
 - [x] **Widget test**: open state, barrier blocks taps through, action callback closes menu, Reduced Motion instant open.
 - [x] **Showcase test**: primary menu opens; action callback updates caller state.
-- [ ] **Physical smoke**: S24 Ultra disconnected. User authorized Samsung SM-A507FN substitute; attempted integration hung after black screen and was stopped without a pass claim. Retry on a responsive physical device; no simulator.
+- [x] **Physical smoke**: Samsung S24 Ultra (SM-S928B) tapped primary, selected Share, verified outside barrier consumed tap and closed menu; no simulator.
 - [x] **Host validation**: root 2967/example 247 suites; analyzers and all quality gates pass.
 
 ## Hiệu năng & Animation
-- [x] Child buttons use Transform.translate/scale and controller disposes on unmount; outside barrier closes menu.
+- [x] Child buttons use positioned offsets with scale animation and controller disposes on unmount; outside barrier closes menu.
 - [ ] Sustained 60 FPS benchmark not measured.

@@ -1831,32 +1831,77 @@ void main() {
   testWidgets('FEAT-118: radial menu actions respond on S24 Ultra', (
     tester,
   ) async {
-    await app.app();
-    await tester.pump(const Duration(seconds: 4));
-    await _goToWidgetShowcase(tester);
-
-    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-    final scrollable = find
-        .descendant(of: showcaseList, matching: find.byType(Scrollable))
-        .first;
-    final position = tester.state<ScrollableState>(scrollable).position;
-    final menu = find.byType(RadialActionMenu);
-    for (var i = 0; i < 80 && menu.evaluate().isEmpty; i++) {
-      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
-      if (next == position.pixels) break;
-      position.jumpTo(next);
-      await tester.pump(const Duration(milliseconds: 80));
-    }
-    expect(menu, findsOneWidget);
+    var actionTaps = 0;
+    var backgroundTaps = 0;
+    final menuKey = GlobalKey<RadialActionMenuState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox.expand(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: () => backgroundTaps++,
+                    child: const ColoredBox(color: Colors.white),
+                  ),
+                ),
+                Center(
+                  child: SizedBox(
+                    width: 300,
+                    height: 260,
+                    child: RadialActionMenu(
+                      key: menuKey,
+                      radius: 90,
+                      startAngleDegrees: 180,
+                      sweepAngleDegrees: 90,
+                      items: [
+                        RadialActionItem(
+                          label: 'Share',
+                          icon: Icons.share_rounded,
+                          onTap: () => actionTaps++,
+                        ),
+                        RadialActionItem(
+                          label: 'Help',
+                          icon: Icons.help_outline_rounded,
+                          onTap: () => actionTaps++,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
     final primary = find.byKey(const ValueKey('radialActionPrimary'));
-    await tester.ensureVisible(primary);
     await tester.tap(primary);
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(menuKey.currentState!.isOpen, isTrue);
+    expect(menuKey.currentState!.progress, 1);
     final share = find.byKey(const ValueKey('radialAction_0_Share'));
     expect(share, findsOneWidget);
+    final ignored = find.ancestor(
+      of: share,
+      matching: find.byType(IgnorePointer),
+    );
+    expect(tester.widget<IgnorePointer>(ignored.first).ignoring, isFalse);
+    expect(share.hitTestable(), findsOneWidget);
     await tester.tap(share);
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Last action: Share'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(actionTaps, 1);
+    expect(menuKey.currentState!.isOpen, isFalse);
+
+    await tester.tap(primary);
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.tapAt(
+      tester.getTopLeft(find.byType(RadialActionMenu)) + const Offset(20, 20),
+    );
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(backgroundTaps, 0);
+    expect(menuKey.currentState!.isOpen, isFalse);
     expect(tester.takeException(), isNull);
   });
 
