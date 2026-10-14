@@ -1971,6 +1971,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-119: swipe reveals and confirms action on S24 Ultra', (
+    tester,
+  ) async {
+    var actionTaps = 0;
+    final key = GlobalKey<SwipeableActionTileState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SwipeableActionTile(
+            key: key,
+            enableHaptic: false,
+            leadingActions: [
+              SwipeableAction(
+                label: 'Claim',
+                icon: Icons.card_giftcard,
+                onTap: () => actionTaps++,
+              ),
+            ],
+            child: const SizedBox(
+              height: 72,
+              child: ColoredBox(
+                color: Colors.white,
+                child: Center(child: Text('Reward ready')),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    final tile = find.byType(SwipeableActionTile);
+    await tester.drag(tile, const Offset(180, 0));
+    await tester.pumpAndSettle();
+    expect(key.currentState!.isOpen, isTrue);
+    expect(actionTaps, 0);
+    final action = find.byKey(const ValueKey('swipeAction_Claim'));
+    expect(action.hitTestable(), findsOneWidget);
+    await tester.tap(action);
+    await tester.pumpAndSettle();
+    expect(actionTaps, 1);
+    expect(key.currentState!.isOpen, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-115: staggered grid tiles respond on S24 Ultra', (
     tester,
   ) async {

@@ -111,7 +111,18 @@ void main() {
     expect(find.text('Layout & Cards'), findsOneWidget);
     expect(find.text('Level Select'), findsOneWidget);
     expect(find.text('Shop'), findsOneWidget);
-    expect(find.text('Game Feel'), findsOneWidget);
+    final gameFeel = find.text('Game Feel');
+    await tester.scrollUntilVisible(
+      gameFeel,
+      350,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(gameFeel, findsOneWidget);
     expect(find.byType(RibbonBadge), findsWidgets);
     expect(find.byType(ShopItemCard), findsNWidgets(3));
     expect(tester.takeException(), isNull);
@@ -123,7 +134,18 @@ void main() {
     await _pumpShowcase(tester);
 
     // SquashStretch demo card: tapping bumps the displayed tap count.
-    expect(find.text('Taps: 0'), findsOneWidget);
+    final taps = find.text('Taps: 0');
+    await tester.scrollUntilVisible(
+      taps,
+      350,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(taps, findsOneWidget);
     await tester.tap(find.text('Taps: 0'));
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Taps: 1'), findsOneWidget);
@@ -200,8 +222,19 @@ void main() {
       await _pumpShowcase(tester);
 
       expect(find.text('Gems: 0'), findsOneWidget);
-
-      await tester.tap(find.text(r'$0.99').last);
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final firstGemOffer = find.text(r'$0.99').first;
+      await tester.scrollUntilVisible(
+        firstGemOffer,
+        300,
+        scrollable: scrollable,
+      );
+      await tester.tap(firstGemOffer.last);
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('Gems: 100'), findsOneWidget);
       // Let this toast's full lifecycle (2s hold + reverse animation)
@@ -210,7 +243,13 @@ void main() {
       // Flutter framework assertion, not a bug in this demo's own code.
       await tester.pump(const Duration(seconds: 3));
 
-      await tester.tap(find.text(r'$4.99').last);
+      final secondGemOffer = find.text(r'$4.99').first;
+      await tester.scrollUntilVisible(
+        secondGemOffer,
+        300,
+        scrollable: scrollable,
+      );
+      await tester.tap(secondGemOffer.last);
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('Gems: 600'), findsOneWidget);
 
@@ -224,10 +263,23 @@ void main() {
     (tester) async {
       await _pumpShowcase(tester);
 
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final removeAdsOffer = find.text(r'$2.99').first;
+      await tester.scrollUntilVisible(
+        removeAdsOffer,
+        300,
+        scrollable: scrollable,
+      );
+
       expect(find.text(r'$2.99'), findsWidgets);
       expect(find.text('Owned'), findsNothing);
 
-      await tester.tap(find.text(r'$2.99').last);
+      await tester.tap(removeAdsOffer.last);
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Owned'), findsWidgets);
@@ -2593,6 +2645,22 @@ void main() {
         tester.widget<CommonButton>(share).onTap!();
         await tester.pump(const Duration(milliseconds: 300));
         expect(find.text('Last action: Share'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('FEAT-119 reveals then explicitly invokes swipe action', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final tile = find.byKey(const Key('swipeActionDemo'));
+        await tester.ensureVisible(tile);
+        await tester.drag(tile, const Offset(180, 0));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byKey(const ValueKey('swipeAction_Claim')), findsOneWidget);
+        expect(find.text('Swipe action: Claimed'), findsNothing);
+        await tester.tap(find.byKey(const ValueKey('swipeAction_Claim')));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Swipe action: Claimed'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 

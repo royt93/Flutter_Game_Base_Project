@@ -85,6 +85,7 @@ export 'candy_search_bar.dart';
 export 'expandable_panel.dart';
 export 'staggered_animated_grid.dart';
 export 'radial_action_menu.dart';
+export 'swipeable_action_tile.dart';
 export 'scratch_card.dart';
 export '../../../core/reward_transaction_pipeline.dart' show RewardLine;
 export 'save_health_card.dart';

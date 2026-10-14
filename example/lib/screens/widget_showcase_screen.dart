@@ -985,6 +985,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   bool _faqExpanded = false;
   int _staggeredGridTaps = 0;
   String _lastRadialAction = 'none';
+  String _lastSwipeAction = 'none';
   String _candyRadioMode = 'Classic';
   bool _candyCheckboxEnabled = false;
   final _candySearchController = TextEditingController();
@@ -3749,6 +3750,52 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               Text(
                                 'Last action: $_lastRadialAction',
                                 key: const Key('radialActionStatus'),
+                              ),
+                              const SizedBox(height: NeonTheme.s24),
+                              const SectionHeader(title: 'Swipe Actions'),
+                              const SizedBox(height: NeonTheme.s16),
+                              _Demo(
+                                label: 'SwipeableActionTile (FEAT-119)',
+                                child: SwipeableActionTile(
+                                  key: const Key('swipeActionDemo'),
+                                  leadingActions: [
+                                    SwipeableAction(
+                                      label: 'Claim',
+                                      icon: Icons.card_giftcard_rounded,
+                                      color: NeonTheme.lime,
+                                      onTap: () => setState(
+                                        () => _lastSwipeAction = 'Claimed',
+                                      ),
+                                    ),
+                                  ],
+                                  trailingActions: [
+                                    SwipeableAction(
+                                      label: 'Delete',
+                                      icon: Icons.delete_outline_rounded,
+                                      color: NeonTheme.red,
+                                      onTap: () => setState(
+                                        () => _lastSwipeAction = 'Deleted',
+                                      ),
+                                    ),
+                                  ],
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: ColoredBox(
+                                      color: NeonTheme.cardAlt,
+                                      child: const ListTile(
+                                        leading: Icon(Icons.mail_outline),
+                                        title: Text('Daily reward is ready'),
+                                        subtitle: Text(
+                                          'Swipe to reveal actions',
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                'Swipe action: $_lastSwipeAction',
+                                key: const Key('swipeActionStatus'),
                               ),
 
                               const SizedBox(height: NeonTheme.s24),
