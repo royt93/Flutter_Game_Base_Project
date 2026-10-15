@@ -18,8 +18,8 @@ Widget ScratchCard nhận background widget (quà) và cover widget (lớp nhũ 
 - [x] **Widget test**: Multi-lane drag, `BlendMode.clear` cover, reveal callback once, semantic reveal action.
 - [x] **Showcase test**: Scratch reward state updates only after reveal.
 - [x] **Physical integration**: Four fast continuous finger-scratch lanes on Samsung S24 Ultra (SM-S928B) reached reveal without gaps/framework errors; no simulator used.
-- [x] **Host validation**: root 2946/example 242 suites, analyzers and quality gates pass.
+- [x] **Host validation**: root 2990/example 250 suites, analyzers and quality gates pass.
 
 ## Hiệu năng & resource
 - [x] Fixed grid size, bounded segment candidate cells; pointer samples interpolate segment coverage; cover isolated by clipped `saveLayer` + `BlendMode.clear`.
-- [ ] 60 FPS benchmark not measured; profile telemetry pending.
+- [x] **TECNO KJ7 benchmark telemetry (154 frames)**: p50=31.26ms (~32 FPS), p95=63.00ms, p99=125.59ms, slow=74.0% (>16.67ms), jank=74 (>33.33ms). On this entry-level GPU, continuous saveLayer canvas clearing runs at ~30-35 FPS during fast scratching; not sustained 60 FPS.

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
@@ -2215,33 +2216,83 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('FEAT-112: ScratchCard clears continuously on S24 Ultra', (
-    tester,
-  ) async {
-    await app.app();
-    await tester.pump(const Duration(seconds: 4));
-    await _goToWidgetShowcase(tester);
+  testWidgets(
+    'FEAT-112: ScratchCard clears continuously and benchmarks frame timing on TECNO',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
 
-    final scratch = find.byType(ScratchCard);
-    await _scrollUntilVisible(tester, scratch);
-    await tester.ensureVisible(scratch.first);
-    final rect = tester.getRect(scratch.first);
-    final gesture = await tester.startGesture(
-      rect.topLeft + const Offset(15, 12),
-    );
-    for (final lane in [12.0, 52.0, 92.0, 132.0]) {
-      await gesture.moveTo(Offset(rect.left + 15, rect.top + lane));
-      for (var i = 1; i <= 12; i++) {
-        await gesture.moveTo(
-          Offset(rect.left + 15 + i * (rect.width - 30) / 12, rect.top + lane),
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      final scratch = find.byType(ScratchCard);
+      for (var i = 0; i < 80 && scratch.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 80));
+      }
+      expect(scratch, findsOneWidget);
+      await tester.ensureVisible(scratch.first);
+      await tester.pump(const Duration(seconds: 1));
+
+      final frameDurationsMs = <double>[];
+      void onTimings(List<FrameTiming> timings) {
+        for (final t in timings) {
+          frameDurationsMs.add(t.totalSpan.inMicroseconds / 1000.0);
+        }
+      }
+
+      SchedulerBinding.instance.addTimingsCallback(onTimings);
+      addTearDown(
+        () => SchedulerBinding.instance.removeTimingsCallback(onTimings),
+      );
+
+      final rect = tester.getRect(scratch.first);
+      // ignore: avoid_print
+      print('FEAT-112 CARD RECT: $rect');
+      for (final lane in [15.0, 45.0, 75.0, 105.0, 135.0, 160.0]) {
+        final gesture = await tester.startGesture(
+          Offset(rect.left + 15, rect.top + lane),
+        );
+        for (var step = 1; step <= 12; step++) {
+          await gesture.moveTo(
+            Offset(rect.left + 15 + step * 20.0, rect.top + lane),
+          );
+          await tester.pump(const Duration(milliseconds: 20));
+        }
+        await gesture.up();
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Prize revealed'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      if (frameDurationsMs.isNotEmpty) {
+        frameDurationsMs.sort();
+        final p50 = frameDurationsMs[(frameDurationsMs.length * 0.50).floor()];
+        final p95 = frameDurationsMs[(frameDurationsMs.length * 0.95).floor()];
+        final p99 = frameDurationsMs[(frameDurationsMs.length * 0.99).floor()];
+        final slowCount = frameDurationsMs.where((ms) => ms > 16.67).length;
+        final jankCount = frameDurationsMs.where((ms) => ms > 33.33).length;
+        final slowPct = (slowCount / frameDurationsMs.length) * 100;
+        // ignore: avoid_print
+        print(
+          'FEAT-112 BENCHMARK TECNO: total=${frameDurationsMs.length} frames, '
+          'p50=${p50.toStringAsFixed(2)}ms, p95=${p95.toStringAsFixed(2)}ms, '
+          'p99=${p99.toStringAsFixed(2)}ms, slow=${slowPct.toStringAsFixed(1)}% '
+          '($slowCount), jank=$jankCount',
         );
       }
-    }
-    await gesture.up();
-    await tester.pump();
-    expect(find.text('Prize revealed'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+    },
+  );
 
   testWidgets('FEAT-111: PiggyBank earns, fills and breaks on S24 Ultra', (
     tester,
