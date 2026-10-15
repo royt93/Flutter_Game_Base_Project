@@ -2664,6 +2664,35 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      testWidgets('FEAT-121 emoji burst caps, rises and cleans up', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final demo = find.byType(FloatingEmojiBurst);
+        await tester.scrollUntilVisible(
+          demo,
+          350,
+          scrollable: find
+              .descendant(
+                of: find.byKey(const ValueKey('widgetShowcaseList')),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        final heart = find.byKey(const ValueKey('emojiButton_❤️'));
+        await tester.ensureVisible(heart);
+        await tester.pump();
+        for (var i = 0; i < 5; i++) {
+          await tester.tap(heart);
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        final floating = find.descendant(of: demo, matching: find.text('❤️'));
+        expect(floating, findsNWidgets(5));
+        await tester.pump(const Duration(seconds: 2));
+        expect(floating, findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('FEAT-120 stacked avatar group caps and taps overflow', (
         tester,
       ) async {

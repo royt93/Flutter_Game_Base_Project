@@ -2014,6 +2014,34 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-121: floating emoji bursts clean up on TECNO', (
+    tester,
+  ) async {
+    final key = GlobalKey<FloatingEmojiBurstState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox.expand(
+            child: FloatingEmojiBurst(
+              key: key,
+              duration: const Duration(milliseconds: 900),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    for (var i = 0; i < 5; i++) {
+      key.currentState!.burst('❤️');
+      await tester.pump(const Duration(milliseconds: 80));
+    }
+    expect(find.text('❤️'), findsNWidgets(5));
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.text('❤️'), findsNothing);
+    expect(key.currentState!.isAnimating, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-120: stacked avatars and overflow tap on S24 Ultra', (
     tester,
   ) async {

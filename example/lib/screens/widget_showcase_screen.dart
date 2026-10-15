@@ -987,6 +987,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   String _lastRadialAction = 'none';
   String _lastSwipeAction = 'none';
   String _avatarGroupStatus = 'none';
+  final _emojiBurstKey = GlobalKey<FloatingEmojiBurstState>();
   String _candyRadioMode = 'Classic';
   bool _candyCheckboxEnabled = false;
   final _candySearchController = TextEditingController();
@@ -4507,6 +4508,41 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
 
+                              _Demo(
+                                label: 'FloatingEmojiBurst (FEAT-121)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      height: 220,
+                                      width: double.infinity,
+                                      child: FloatingEmojiBurst(
+                                        key: _emojiBurstKey,
+                                        origin: const Offset(0.85, 0.9),
+                                      ),
+                                    ),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        for (final emoji in ['❤️', '😂', '👏'])
+                                          CommonButton(
+                                            key: ValueKey('emojiButton_$emoji'),
+                                            label: emoji,
+                                            width: 72,
+                                            onTap: () => setState(
+                                              () => _emojiBurstKey.currentState
+                                                  ?.burst(emoji),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    Text(
+                                      'Active emoji: ${_emojiBurstKey.currentState?.activeCount ?? 0}',
+                                      key: const Key('emojiBurstStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: NeonTheme.s24),
                             ],
                           ),
