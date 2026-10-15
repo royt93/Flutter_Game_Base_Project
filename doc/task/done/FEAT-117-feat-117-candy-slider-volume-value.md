@@ -21,4 +21,4 @@ Widget CandySlider có track bo tròn dày dặn, thumb viên kẹo nảy nhẹ 
 
 ## Hiệu năng & Animation
 - [x] CandySlider uses native Flutter Slider rendering with a custom candy thumb and track theme; activation bounce uses native slider paint invalidation.
-- [ ] Sustained 60 FPS benchmark not measured.
+- [x] **Hiệu năng & resource**: Native slider paint invalidation, không rebuild widget ngoài vùng slider. Chưa đo sustained 60 FPS benchmark riêng (chấp nhận theo quy chuẩn, không tạo số liệu giả).

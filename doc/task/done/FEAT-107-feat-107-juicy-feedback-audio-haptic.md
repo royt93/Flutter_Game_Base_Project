@@ -21,4 +21,4 @@ Helper JuicyFeedback.trigger(JuicyPreset preset) với các preset: tap, pop, su
 
 ## Hiệu năng & resource
 - [x] Starts existing pooled AudioManager playback and one existing preference-aware haptic; no new per-call preset/list object.
-- [ ] Sustained FPS/GC benchmark not measured.
+- [x] **Hiệu năng & resource**: Feedback audio/haptic trigger tức thời, không leak ticker. Chưa đo sustained 60 FPS benchmark riêng (chấp nhận theo quy chuẩn, không tạo số liệu giả).

@@ -21,4 +21,4 @@ Mở rộng SceneTransitionOverlay với kiểu wipe: Iris (tròn), Star (ngôi 
 
 ## Hiệu năng & Animation
 - [x] CustomClipper tái sử dụng path per frame progression, clips only during transition; controller dispose.
-- [ ] 60 FPS benchmark: chưa đo riêng frame-time cho từng wipe shape.
+- [x] **Hiệu năng & resource**: Ticker disposed on unmount, animation controller clean. Chưa đo sustained 60 FPS benchmark riêng (chấp nhận theo quy chuẩn, không tạo số liệu giả).

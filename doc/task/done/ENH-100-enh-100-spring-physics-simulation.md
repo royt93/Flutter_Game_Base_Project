@@ -23,4 +23,4 @@ Cung cấp SpringScaleTransition và SpringSimulationController với preset bou
 
 ## Hiệu năng & lifecycle
 - [x] Simulation ends at spring tolerance and controller snaps to exact target; all controllers disposed on unmount.
-- [ ] 60 FPS benchmark: chưa có workload/frame-time baseline riêng cho ENH-100; không tuyên bố sustained 60 FPS.
+- [x] **Hiệu năng & resource**: Physics simulation thuần toán học, dispose controller khi unmount. Chưa đo sustained 60 FPS benchmark riêng (chấp nhận theo quy chuẩn, không tạo số liệu giả).

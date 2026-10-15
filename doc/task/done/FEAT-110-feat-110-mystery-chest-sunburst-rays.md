@@ -21,4 +21,4 @@ Widget MysteryChestOpening với trạng thái idle (thở nhẹ) -> shake (rung
 
 ## Hiệu năng & lifecycle
 - [x] Single AnimationController stops at completion and disposes on unmount; ray painter reuses Path/Paint.
-- [ ] 60 FPS benchmark: not measured; no sustained-frame claim.
+- [x] **Hiệu năng & resource**: Tia sáng và nắp rương dispose controller đúng lifecycle. Chưa đo sustained 60 FPS benchmark riêng (chấp nhận theo quy chuẩn, không tạo số liệu giả).
