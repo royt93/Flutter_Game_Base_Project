@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -12,35 +13,115 @@ Widget _wrap(Widget child, {bool reducedMotion = false}) => MediaQuery(
 );
 
 void main() {
-  group('WheelSpinner', () {
-    testWidgets('controller swap removes old listener and new controller spins', (tester) async {
-      final old = _CountingWheelController();
-      final next = _CountingWheelController();
-      addTearDown(old.dispose);
-      addTearDown(next.dispose);
-      const choices = [
-        WheelSegment(label: 'A', color: Colors.red),
-        WheelSegment(label: 'B', color: Colors.blue),
-      ];
-      final results = <WheelSegment>[];
-      Widget build(WheelSpinnerController c) => _wrap(WheelSpinner(
-        segments: choices, controller: c, onSpinEnd: results.add,
-        spinDuration: const Duration(milliseconds: 100),
-      ));
-      await tester.pumpWidget(build(old));
-      await tester.pumpWidget(build(next));
-      expect(old.listeners, 0);
-      expect(next.listeners, 1);
-      old.spin(0);
-      await tester.pump(const Duration(milliseconds: 200));
-      expect(results, isEmpty);
-      next.spin(1);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-      expect(results.single.label, 'B');
-      await tester.pumpWidget(const SizedBox.shrink());
-      expect(next.listeners, 0);
+  group('WheelPointerClicker math', () {
+    test('counts crossed segment boundaries in either direction', () {
+      final step = math.pi / 2;
+      expect(
+        wheelSegmentCrossingCount(
+          previousRotation: 0,
+          currentRotation: step * 2.2,
+          segmentCount: 4,
+        ),
+        2,
+      );
+      expect(
+        wheelSegmentCrossingCount(
+          previousRotation: step,
+          currentRotation: step + 0.1,
+          segmentCount: 4,
+        ),
+        0,
+      );
+      expect(
+        wheelSegmentCrossingCount(
+          previousRotation: step * 2,
+          currentRotation: -0.1,
+          segmentCount: 4,
+        ),
+        2,
+      );
+      expect(
+        wheelSegmentCrossingCount(
+          previousRotation: 1,
+          currentRotation: 1,
+          segmentCount: 4,
+        ),
+        0,
+      );
     });
+
+    test(
+      'pointer kick opposes motion, decays and stays under half a slice',
+      () {
+        final positive = wheelPointerBounceAngle(
+          velocity: 20,
+          secondsSinceCrossing: 0.02,
+          segmentCount: 6,
+        );
+        final negative = wheelPointerBounceAngle(
+          velocity: -20,
+          secondsSinceCrossing: 0.02,
+          segmentCount: 6,
+        );
+        expect(positive, lessThan(0));
+        expect(negative, greaterThan(0));
+        expect(positive.abs(), lessThan(math.pi / 6));
+        expect(
+          wheelPointerBounceAngle(
+            velocity: 20,
+            secondsSinceCrossing: 1,
+            segmentCount: 6,
+          ).abs(),
+          lessThan(positive.abs()),
+        );
+        expect(
+          wheelPointerBounceAngle(
+            velocity: 0,
+            secondsSinceCrossing: 0,
+            segmentCount: 6,
+          ),
+          0,
+        );
+      },
+    );
+  });
+
+  group('WheelSpinner', () {
+    testWidgets(
+      'controller swap removes old listener and new controller spins',
+      (tester) async {
+        final old = _CountingWheelController();
+        final next = _CountingWheelController();
+        addTearDown(old.dispose);
+        addTearDown(next.dispose);
+        const choices = [
+          WheelSegment(label: 'A', color: Colors.red),
+          WheelSegment(label: 'B', color: Colors.blue),
+        ];
+        final results = <WheelSegment>[];
+        Widget build(WheelSpinnerController c) => _wrap(
+          WheelSpinner(
+            segments: choices,
+            controller: c,
+            onSpinEnd: results.add,
+            spinDuration: const Duration(milliseconds: 100),
+          ),
+        );
+        await tester.pumpWidget(build(old));
+        await tester.pumpWidget(build(next));
+        expect(old.listeners, 0);
+        expect(next.listeners, 1);
+        old.spin(0);
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(results, isEmpty);
+        next.spin(1);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(results.single.label, 'B');
+        await tester.pumpWidget(const SizedBox.shrink());
+        expect(next.listeners, 0);
+      },
+    );
 
     final segments = const [
       WheelSegment(label: '10 coins', color: Colors.red, value: 10),
@@ -168,6 +249,70 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets('tick callback fires per crossed slice and pointer bounces', (
+      tester,
+    ) async {
+      final controller = WheelSpinnerController();
+      final ticks = <int>[];
+      WheelSegment? landed;
+      await tester.pumpWidget(
+        _wrap(
+          WheelSpinner(
+            segments: segments,
+            controller: controller,
+            onSpinEnd: (segment) => landed = segment,
+            onTick: () => ticks.add(ticks.length),
+            spinDuration: const Duration(milliseconds: 600),
+          ),
+        ),
+      );
+      final pointer = find.byKey(const ValueKey('wheelPointerClicker'));
+      double pointerAngle() {
+        final transform = tester.widget<Transform>(pointer).transform;
+        return math.atan2(transform.entry(1, 0), transform.entry(0, 0));
+      }
+
+      controller.spin(2);
+      await tester.pump();
+      var maxPointerAngle = 0.0;
+      for (var frame = 0; frame < 35; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        maxPointerAngle = math.max(maxPointerAngle, pointerAngle().abs());
+      }
+      await tester.pumpAndSettle();
+      expect(ticks, isNotEmpty);
+      expect(maxPointerAngle, greaterThan(0));
+      expect(maxPointerAngle, lessThan(math.pi / 4));
+      expect(landed, segments[2]);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Reduced Motion lands without ticks or pointer bounce', (
+      tester,
+    ) async {
+      final controller = WheelSpinnerController();
+      var ticks = 0;
+      await tester.pumpWidget(
+        _wrap(
+          WheelSpinner(
+            segments: segments,
+            controller: controller,
+            onSpinEnd: (_) {},
+            onTick: () => ticks++,
+          ),
+          reducedMotion: true,
+        ),
+      );
+      controller.spin(1);
+      await tester.pump();
+      final transform = tester.widget<Transform>(
+        find.byKey(const ValueKey('wheelPointerClicker')),
+      );
+      expect(transform.transform.entry(1, 0), 0);
+      expect(ticks, 0);
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets(
       'BUG-73: đổi spinDuration trước khi spin -> spin dùng đúng duration '
@@ -477,7 +622,14 @@ void main() {
 class _CountingWheelController extends WheelSpinnerController {
   int listeners = 0;
   @override
-  void addListener(VoidCallback listener) { listeners++; super.addListener(listener); }
+  void addListener(VoidCallback listener) {
+    listeners++;
+    super.addListener(listener);
+  }
+
   @override
-  void removeListener(VoidCallback listener) { listeners--; super.removeListener(listener); }
+  void removeListener(VoidCallback listener) {
+    listeners--;
+    super.removeListener(listener);
+  }
 }

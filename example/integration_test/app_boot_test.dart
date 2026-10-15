@@ -2014,6 +2014,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-122: wheel pointer ticks and bounces on TECNO', (
+    tester,
+  ) async {
+    final controller = WheelSpinnerController();
+    var ticks = 0;
+    var landed = '';
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: WheelSpinner(
+              controller: controller,
+              segments: const [
+                WheelSegment(label: 'A', color: Colors.red),
+                WheelSegment(label: 'B', color: Colors.green),
+                WheelSegment(label: 'C', color: Colors.blue),
+                WheelSegment(label: 'D', color: Colors.orange),
+              ],
+              spinDuration: const Duration(milliseconds: 1200),
+              onTick: () => ticks++,
+              onSpinEnd: (segment) => landed = segment.label,
+            ),
+          ),
+        ),
+      ),
+    );
+    controller.spin(2);
+    await tester.pump();
+    var sawBounce = false;
+    for (var i = 0; i < 90; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      final transform = tester
+          .widget<Transform>(find.byKey(const ValueKey('wheelPointerClicker')))
+          .transform;
+      sawBounce = sawBounce || transform.entry(1, 0).abs() > 0.0001;
+    }
+    await tester.pumpAndSettle();
+    expect(ticks, greaterThan(4));
+    expect(sawBounce, isTrue);
+    expect(landed, 'C');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-121: floating emoji bursts clean up on TECNO', (
     tester,
   ) async {

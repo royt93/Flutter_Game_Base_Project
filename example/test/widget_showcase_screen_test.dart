@@ -146,7 +146,9 @@ void main() {
           .first,
     );
     expect(taps, findsOneWidget);
-    await tester.tap(find.text('Taps: 0'));
+    await tester.ensureVisible(taps);
+    await tester.pump();
+    await tester.tap(taps);
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Taps: 1'), findsOneWidget);
 
@@ -843,6 +845,7 @@ void main() {
       await _pumpShowcase(tester);
 
       expect(find.textContaining('Landed on'), findsNothing);
+      expect(find.text('Wheel ticks: 0'), findsOneWidget);
 
       await tester.tap(find.text('Spin').last);
       // Default spinDuration is 3s — several smaller pumps (not one big
@@ -850,6 +853,10 @@ void main() {
       await _settle(tester, steps: 20, stepMs: 200);
 
       expect(find.textContaining('Landed on'), findsOneWidget);
+      final tickLabel = tester
+          .widget<Text>(find.byKey(const Key('wheelTickStatus')))
+          .data!;
+      expect(tickLabel, matches(RegExp(r'Wheel ticks: [1-9]')));
       expect(tester.takeException(), isNull);
 
       // Drain the toast's own auto-dismiss timer + reverse animation

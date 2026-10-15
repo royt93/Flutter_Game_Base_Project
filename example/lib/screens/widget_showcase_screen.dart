@@ -1098,6 +1098,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     WheelSegment(label: '5', color: NeonTheme.red),
   ];
   final _wheelController = WheelSpinnerController();
+  int _wheelTicks = 0;
 
   void _spinWheel() {
     final segment = _rng.stream('wheel_spin').nextInt(_wheelSegments.length);
@@ -2456,6 +2457,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     WheelSpinner(
                                       segments: _wheelSegments,
                                       controller: _wheelController,
+                                      onTick: () =>
+                                          setState(() => _wheelTicks++),
                                       onSpinEnd: (segment) => ToastBanner.show(
                                         context,
                                         message: 'Landed on ${segment.label}!',
@@ -2466,6 +2469,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     CommonButton(
                                       label: 'Spin',
                                       onTap: _spinWheel,
+                                    ),
+                                    Text(
+                                      'Wheel ticks: $_wheelTicks',
+                                      key: const Key('wheelTickStatus'),
                                     ),
                                   ],
                                 ),

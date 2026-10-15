@@ -3,7 +3,91 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/haptics.dart';
 import '../../../core/neon_theme.dart';
+import '../../../core/storage_service.dart';
+
+/// Number of segment boundaries a wheel passed between two unwrapped
+/// rotations (radians). Boundaries sit every `2π / segmentCount`; the
+/// previous rotation is exclusive and the current one inclusive, so a frame
+/// resting exactly on a boundary neither double-counts nor misses it.
+int wheelSegmentCrossingCount({
+  required double previousRotation,
+  required double currentRotation,
+  required int segmentCount,
+}) {
+  if (segmentCount < 2) {
+    throw ArgumentError.value(segmentCount, 'segmentCount', 'must be >= 2');
+  }
+  if (!previousRotation.isFinite || !currentRotation.isFinite) {
+    throw ArgumentError('rotations must be finite');
+  }
+  final step = 2 * math.pi / segmentCount;
+  const epsilon = 1e-9;
+  if (currentRotation > previousRotation) {
+    return (currentRotation / step + epsilon).floor() -
+        (previousRotation / step + epsilon).floor();
+  }
+  if (currentRotation < previousRotation) {
+    return (previousRotation / step - epsilon).ceil() -
+        (currentRotation / step - epsilon).ceil();
+  }
+  return 0;
+}
+
+/// Pointer deflection (radians) shortly after a segment crossing: a damped
+/// sine kick opposing the wheel's motion, scaled by angular [velocity]
+/// (radians/second) and capped to a fraction of one segment so the pointer
+/// never swings past the neighbouring slice.
+double wheelPointerBounceAngle({
+  required double velocity,
+  required double secondsSinceCrossing,
+  required int segmentCount,
+}) {
+  if (segmentCount < 2) {
+    throw ArgumentError.value(segmentCount, 'segmentCount', 'must be >= 2');
+  }
+  if (!velocity.isFinite ||
+      !secondsSinceCrossing.isFinite ||
+      secondsSinceCrossing < 0 ||
+      velocity == 0) {
+    return 0;
+  }
+  final segmentAngle = 2 * math.pi / segmentCount;
+  final amplitude = math.min(segmentAngle * 0.45, velocity.abs() * 0.04);
+  final decay = math.exp(-secondsSinceCrossing * 18);
+  final swing = math.sin(secondsSinceCrossing * 2 * math.pi * 9);
+  return -velocity.sign * amplitude * decay * swing;
+}
+
+/// The fixed pointer of a [WheelSpinner]: flicks about its top anchor by
+/// [angle] (radians), which the wheel derives from its own rotation — this
+/// widget owns no timer or controller.
+class WheelPointerClicker extends StatelessWidget {
+  const WheelPointerClicker({super.key, required this.angle});
+
+  final double angle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      key: const ValueKey('wheelPointerClicker'),
+      angle: angle,
+      alignment: Alignment.topCenter,
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: NeonTheme.glow(NeonTheme.gold, blur: 10),
+        ),
+        child: Icon(
+          Icons.arrow_drop_down_rounded,
+          size: 44,
+          color: NeonTheme.ink,
+        ),
+      ),
+    );
+  }
+}
 
 /// One slice of a [WheelSpinner] — caller-supplied, same convention as
 /// `LeaderboardEntry`/`VictoryCardTemplate.statLines`: this widget never
@@ -58,6 +142,8 @@ class WheelSpinner extends StatefulWidget {
     required this.segments,
     required this.controller,
     required this.onSpinEnd,
+    this.onTick,
+    this.enableHaptics = true,
     this.size = 260,
     this.spinDuration = const Duration(seconds: 3),
     this.extraTurns = 4,
@@ -66,6 +152,11 @@ class WheelSpinner extends StatefulWidget {
   final List<WheelSegment> segments;
   final WheelSpinnerController controller;
   final ValueChanged<WheelSegment> onSpinEnd;
+
+  /// Called once for every segment boundary crossed during the spin. A host
+  /// app can use this seam to play its own tick sound.
+  final VoidCallback? onTick;
+  final bool enableHaptics;
   final double size;
   final Duration spinDuration;
 
@@ -128,6 +219,9 @@ class _WheelSpinnerState extends State<WheelSpinner>
   double _startRotation = 0;
   double _endRotation = 0;
   double _rotation = 0;
+  double _lastTickVelocity = 0;
+  Duration? _lastRotationElapsed;
+  Duration? _lastCrossingElapsed;
   int _spinToken = 0;
 
   @override
@@ -140,11 +234,7 @@ class _WheelSpinnerState extends State<WheelSpinner>
       extraTurns: widget.extraTurns,
     );
     widget.controller.addListener(_onSpinRequested);
-    _controller.addListener(() {
-      setState(() {
-        _rotation = ui.lerpDouble(_startRotation, _endRotation, _curved.value)!;
-      });
-    });
+    _controller.addListener(_handleRotationFrame);
   }
 
   @override
@@ -167,6 +257,52 @@ class _WheelSpinnerState extends State<WheelSpinner>
     if (oldWidget.spinDuration != widget.spinDuration) {
       _controller.duration = widget.spinDuration;
     }
+  }
+
+  void _handleRotationFrame() {
+    final next = ui.lerpDouble(_startRotation, _endRotation, _curved.value)!;
+    final previous = _rotation;
+    final elapsed = _controller.lastElapsedDuration ?? Duration.zero;
+    final previousElapsed = _lastRotationElapsed;
+    final seconds = previousElapsed == null
+        ? 0.0
+        : (elapsed - previousElapsed).inMicroseconds / 1e6;
+    final velocity = seconds <= 0 ? 0.0 : (next - previous) / seconds;
+    final crossings = wheelSegmentCrossingCount(
+      previousRotation: previous,
+      currentRotation: next,
+      segmentCount: widget.segments.length,
+    );
+
+    setState(() {
+      _rotation = next;
+      if (crossings > 0) {
+        _lastTickVelocity = velocity;
+        _lastCrossingElapsed = elapsed;
+      }
+      _lastRotationElapsed = elapsed;
+    });
+
+    for (var i = 0; i < crossings; i++) {
+      widget.onTick?.call();
+      if (widget.enableHaptics && StorageService.maybe != null) {
+        fireHaptic(HapticLevel.light);
+      }
+    }
+  }
+
+  double _pointerAngle() {
+    final crossedAt = _lastCrossingElapsed;
+    final elapsed = _controller.lastElapsedDuration;
+    if (crossedAt == null || elapsed == null || !_controller.isAnimating) {
+      return 0;
+    }
+    final sinceCrossing = (elapsed - crossedAt).inMicroseconds / 1e6;
+    return wheelPointerBounceAngle(
+      velocity: _lastTickVelocity,
+      secondsSinceCrossing: sinceCrossing,
+      segmentCount: widget.segments.length,
+    );
   }
 
   double _normalizeAngle(double angle) {
@@ -217,13 +353,21 @@ class _WheelSpinnerState extends State<WheelSpinner>
     final myToken = ++_spinToken;
 
     if (NeonTheme.reducedMotion(context)) {
-      setState(() => _rotation = end);
+      setState(() {
+        _rotation = end;
+        _lastTickVelocity = 0;
+        _lastCrossingElapsed = null;
+        _lastRotationElapsed = null;
+      });
       widget.onSpinEnd(widget.segments[resultIndex]);
       return;
     }
 
     _startRotation = _rotation;
     _endRotation = end;
+    _lastTickVelocity = 0;
+    _lastRotationElapsed = null;
+    _lastCrossingElapsed = null;
     _controller
       ..reset()
       ..forward().whenComplete(() {
@@ -267,17 +411,7 @@ class _WheelSpinnerState extends State<WheelSpinner>
             ),
             Positioned(
               top: -12,
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: NeonTheme.glow(NeonTheme.gold, blur: 10),
-                ),
-                child: Icon(
-                  Icons.arrow_drop_down_rounded,
-                  size: 44,
-                  color: NeonTheme.ink,
-                ),
-              ),
+              child: WheelPointerClicker(angle: _pointerAngle()),
             ),
           ],
         ),
