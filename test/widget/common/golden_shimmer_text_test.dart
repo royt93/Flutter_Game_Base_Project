@@ -84,6 +84,40 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('pauses outside vertical viewport and resumes when visible', (
+    tester,
+  ) async {
+    final controller = ScrollController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          height: 140,
+          child: ListView(
+            controller: controller,
+            children: [
+              const SizedBox(height: 240, child: Text('Spacer above')),
+              const GoldenShimmerText('OFFSCREEN', fontSize: 24),
+              const SizedBox(height: 500, child: Text('Spacer below')),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.byType(ShaderMask), findsOneWidget);
+
+    controller.jumpTo(500);
+    await tester.pump();
+    expect(find.byType(ShaderMask), findsNothing);
+
+    controller.jumpTo(250);
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(ShaderMask), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    controller.dispose();
+  });
+
   testWidgets('invalid non-positive duration throws ArgumentError', (
     tester,
   ) async {

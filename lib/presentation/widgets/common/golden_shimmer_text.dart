@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../../../core/neon_theme.dart';
 import '../stroke_text.dart';
@@ -43,6 +44,9 @@ class GoldenShimmerText extends StatefulWidget {
 class _GoldenShimmerTextState extends State<GoldenShimmerText>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  ScrollPosition? _scrollPosition;
+  bool _isVisible = true;
+  bool _visibilityCheckScheduled = false;
   bool _shouldAnimate = false;
 
   @override
@@ -61,6 +65,8 @@ class _GoldenShimmerTextState extends State<GoldenShimmerText>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _updateScrollPosition();
+    _scheduleVisibilityCheck();
     _syncTicker();
   }
 
@@ -77,12 +83,61 @@ class _GoldenShimmerTextState extends State<GoldenShimmerText>
     if (oldWidget.duration != widget.duration) {
       _controller.duration = widget.duration;
     }
+    _updateScrollPosition();
+    _scheduleVisibilityCheck();
     _syncTicker();
+  }
+
+  void _updateScrollPosition() {
+    final position = Scrollable.maybeOf(context, axis: Axis.vertical)?.position;
+    if (identical(position, _scrollPosition)) return;
+    _scrollPosition?.removeListener(_scheduleVisibilityCheck);
+    _scrollPosition = position;
+    _scrollPosition?.addListener(_scheduleVisibilityCheck);
+  }
+
+  void _scheduleVisibilityCheck() {
+    if (_visibilityCheckScheduled || !mounted) return;
+    _visibilityCheckScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _visibilityCheckScheduled = false;
+      if (!mounted) return;
+      final visible = _computeVisibility();
+      if (visible == _isVisible) return;
+      setState(() {
+        _isVisible = visible;
+        _syncTicker();
+      });
+    });
+  }
+
+  bool _computeVisibility() {
+    final position = _scrollPosition;
+    final target = context.findRenderObject();
+    if (position == null ||
+        target == null ||
+        !target.attached ||
+        !position.hasPixels ||
+        !position.hasViewportDimension) {
+      return true;
+    }
+    final viewport = RenderAbstractViewport.maybeOf(target);
+    if (viewport == null || target is! RenderBox) return true;
+    final viewportBox = viewport is RenderBox ? viewport : null;
+    if (viewportBox == null) return true;
+    final targetBox = target;
+    final targetBounds = MatrixUtils.transformRect(
+      targetBox.getTransformTo(viewportBox),
+      targetBox.paintBounds,
+    );
+    return targetBounds.bottom > 0 &&
+        targetBounds.top < position.viewportDimension;
   }
 
   void _syncTicker() {
     final shouldAnimate =
         widget.animated &&
+        _isVisible &&
         // ignore: deprecated_member_use
         TickerMode.of(context) &&
         !NeonTheme.reducedMotion(context);
@@ -98,6 +153,7 @@ class _GoldenShimmerTextState extends State<GoldenShimmerText>
 
   @override
   void dispose() {
+    _scrollPosition?.removeListener(_scheduleVisibilityCheck);
     _controller.dispose();
     super.dispose();
   }
