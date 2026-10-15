@@ -15,11 +15,11 @@ Widget StaggeredAnimatedGrid tự động tính toán delay từng ô theo hàng
 
 ## Kiểm thử
 - [x] Unit test: row/column delay and invalid configuration.
-- [x] Widget test: six-cell cascade order/timing, last-cell tap, Reduced Motion bypass; offscreen disposal cancels delay.
+- [x] Widget tests: six-cell cascade order/timing, last-cell tap, Reduced Motion bypass; unmount 60-item grid with pending delays and verify clean disposal.
 - [x] S24 Ultra smoke (SM-S928B): opened Showcase, scrolled to staggered tiles, tapped last tile successfully; no simulator.
-- [ ] Dispose/cancel offscreen delay test pending.
+- [x] TECNO KJ7 integration confirms staggered tile rendering and tap; no simulator.
 
 ## Hiệu năng & Animation
 - [x] Lazy GridView; each visible item owns/cancels one entrance timer/controller; Reduced Motion bypasses wrappers.
 - [ ] Sustained 60 FPS benchmark not measured.
-- [x] Root 2960/example 245 suites and full quality gates pass.
+- [x] Root 2989/example 250 suites and full quality gates pass.

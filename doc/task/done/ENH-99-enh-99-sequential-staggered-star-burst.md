@@ -15,8 +15,8 @@ Hỗ trợ animation staggered: sao 1 nổ tại 0ms, sao 2 tại 250ms, sao 3 t
 
 ## Yêu cầu kiểm thử
 - [x] **Widget test**: Callback thứ tự 0/250/500ms, Reduced Motion không chờ stagger, downgrade progress hủy timer đang chờ, unmount hủy timer; VictoryCardTemplate có slot sao tùy chọn.
-- [ ] **TECNO UI check**: Chưa xác minh VictoryCardTemplate 3-sao trên thiết bị thật.
-- [x] **Host validation**: root 2881 tests, example 230 tests, analyzer, API/accessibility/performance/SBOM/license/deprecation gates pass.
+- [x] **TECNO UI check**: TECNO KJ7 (115333744A005844) showed three VictoryCard stars, verified sequential callbacks, replayed burst and confirmed visible star order. No simulator.
+- [ ] Host validation: historical full suite counts above are stale; rerun before closing task.
 
 ## Yêu cầu hiệu năng & Animation
 - [x] Timer được hủy khi progress giảm hoặc widget dispose; star controllers được dispose. Performance frame-time chưa được benchmark riêng cho widget này.

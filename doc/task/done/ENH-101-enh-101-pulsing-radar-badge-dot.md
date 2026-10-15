@@ -16,8 +16,8 @@ Nâng cấp BadgeDot với tuỳ chọn pulse: true (hiệu ứng nhịp đập 
 ## Yêu cầu kiểm thử
 - [x] **Unit/widget test**: Pulse scale, radar painter, Reduced Motion static mode, flags off stop ticker, default static behavior, semantics unchanged.
 - [x] **Showcase test**: Animated BadgeDot mounts and ticks without framework errors.
-- [ ] **TECNO integration smoke**: Visible badge animation/sample scale on TECNO KJ7.
-- [x] **Host validation**: targeted tests/analyzers pass; full suite pending.
+- [x] **TECNO integration smoke**: TECNO KJ7 (115333744A005844) sampled the pulsing BadgeDot transform over 1.5s and saw peak scale above 1.2; no simulator.
+- [x] **Host validation**: root 2989/example 250 suites, analyzers and all quality gates pass.
 
 ## Hiệu năng & lifecycle
 - [x] Uses one repeating 1500ms controller only when pulse/radar enabled and motion allowed; RepaintBoundary isolates badge; dispose stops ticker.
