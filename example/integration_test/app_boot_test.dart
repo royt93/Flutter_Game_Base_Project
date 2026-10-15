@@ -1804,30 +1804,80 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('FEAT-106: 10 particle bursts reuse pool on device', (
-    tester,
-  ) async {
-    await app.app();
-    await tester.pump(const Duration(seconds: 4));
-    await _goToWidgetShowcase(tester);
+  testWidgets(
+    'FEAT-106: 10 particle bursts reuse pool and benchmark frame timing on TECNO',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
 
-    final burst = find.byType(PooledParticleBurst);
-    await _scrollUntilVisible(tester, burst);
-    final state = tester.state<PooledParticleBurstState>(burst.first);
-    expect(state.totalCreated, 50);
-    final button = find.widgetWithText(CommonButton, 'Burst 50 particles');
-    for (var i = 0; i < 10; i++) {
-      await tester.ensureVisible(button.first);
-      await tester.tap(button.first);
-      await tester.pump();
-      expect(state.activeCount, 50);
-      await tester.pump(const Duration(milliseconds: 1250));
-      expect(state.activeCount, 0);
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      final burst = find.byType(PooledParticleBurst);
+      for (var i = 0; i < 80 && burst.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 80));
+      }
+      expect(burst, findsOneWidget);
+      await tester.ensureVisible(burst.first);
+      await tester.pump(const Duration(seconds: 1));
+
+      final frameDurationsMs = <double>[];
+      void onTimings(List<FrameTiming> timings) {
+        for (final t in timings) {
+          frameDurationsMs.add(t.totalSpan.inMicroseconds / 1000.0);
+        }
+      }
+
+      SchedulerBinding.instance.addTimingsCallback(onTimings);
+      addTearDown(
+        () => SchedulerBinding.instance.removeTimingsCallback(onTimings),
+      );
+
+      final state = tester.state<PooledParticleBurstState>(burst.first);
       expect(state.totalCreated, 50);
-    }
-    expect(find.text('Completed: 10 · Objects created: 50'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      final button = find.widgetWithText(CommonButton, 'Burst 50 particles');
+
+      for (var i = 0; i < 10; i++) {
+        await tester.ensureVisible(button.first);
+        await tester.tap(button.first);
+        await tester.pump();
+        expect(state.activeCount, 50);
+        for (var frame = 0; frame < 10; frame++) {
+          await tester.pump(const Duration(milliseconds: 125));
+        }
+        expect(state.activeCount, 0);
+        expect(state.totalCreated, 50);
+      }
+      expect(find.text('Completed: 10 · Objects created: 50'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      if (frameDurationsMs.isNotEmpty) {
+        frameDurationsMs.sort();
+        final p50 = frameDurationsMs[(frameDurationsMs.length * 0.50).floor()];
+        final p95 = frameDurationsMs[(frameDurationsMs.length * 0.95).floor()];
+        final p99 = frameDurationsMs[(frameDurationsMs.length * 0.99).floor()];
+        final slowCount = frameDurationsMs.where((ms) => ms > 16.67).length;
+        final jankCount = frameDurationsMs.where((ms) => ms > 33.33).length;
+        final slowPct = (slowCount / frameDurationsMs.length) * 100;
+        // ignore: avoid_print
+        print(
+          'FEAT-106 BENCHMARK TECNO: total=${frameDurationsMs.length} frames, '
+          'p50=${p50.toStringAsFixed(2)}ms, p95=${p95.toStringAsFixed(2)}ms, '
+          'p99=${p99.toStringAsFixed(2)}ms, slow=${slowPct.toStringAsFixed(1)}% '
+          '($slowCount), jank=$jankCount',
+        );
+      }
+    },
+  );
 
   testWidgets('FEAT-118: radial menu actions respond on S24 Ultra', (
     tester,
