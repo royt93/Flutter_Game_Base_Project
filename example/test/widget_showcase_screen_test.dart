@@ -29,6 +29,7 @@ import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:roy_casual_kit/core/utils/format.dart';
 import 'package:roy_casual_kit/core/utils/smart_reminder_scheduling.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
+import 'package:roy_casual_kit/presentation/widgets/neon_dialog.dart';
 import 'package:roy_casual_kit/presentation/widgets/spring_scale_transition.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -2668,6 +2669,39 @@ void main() {
         tester.widget<CommonButton>(share).onTap!();
         await tester.pump(const Duration(milliseconds: 300));
         expect(find.text('Last action: Share'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('FEAT-123 repairs streak through caller callback', (
+        tester,
+      ) async {
+        await _pumpShowcase(tester);
+        final open = find.byKey(const Key('openStreakRepairShowcase'));
+        await tester.scrollUntilVisible(
+          open,
+          300,
+          scrollable: find
+              .descendant(
+                of: find.byKey(const ValueKey('widgetShowcaseList')),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tester.ensureVisible(open);
+        await tester.tap(open);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.textContaining('14-day streak'), findsOneWidget);
+        final repairButton = tester.widget<NeonDialogButton>(
+          find.byWidgetPredicate(
+            (w) =>
+                w is NeonDialogButton && w.action.label == 'Repair (20 gems)',
+          ),
+        );
+        repairButton.action.onTap();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+        expect(find.text('Streaks repaired: 1'), findsOneWidget);
+        expect(find.text('Streak Lost!'), findsNothing);
         expect(tester.takeException(), isNull);
       });
 

@@ -988,6 +988,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   String _lastSwipeAction = 'none';
   String _avatarGroupStatus = 'none';
   final _emojiBurstKey = GlobalKey<FloatingEmojiBurstState>();
+  int _streakRepairCount = 0;
   String _candyRadioMode = 'Classic';
   bool _candyCheckboxEnabled = false;
   final _candySearchController = TextEditingController();
@@ -4546,6 +4547,35 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     Text(
                                       'Active emoji: ${_emojiBurstKey.currentState?.activeCount ?? 0}',
                                       key: const Key('emojiBurstStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'StreakRepairDialog (FEAT-123)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CommonButton(
+                                      key: const Key(
+                                        'openStreakRepairShowcase',
+                                      ),
+                                      label: 'Open streak repair (14 days)',
+                                      color: NeonTheme.orange,
+                                      onTap: () => StreakRepairDialog.show(
+                                        context,
+                                        streakDays: 14,
+                                        costGems: 20,
+                                        onRepair: () => setState(
+                                          () => _streakRepairCount++,
+                                        ),
+                                        onSkip: () {},
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Streaks repaired: $_streakRepairCount',
+                                      key: const Key('streakRepairStatus'),
                                     ),
                                   ],
                                 ),

@@ -2065,6 +2065,47 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-123: streak repair dialog confirms on S24 Ultra', (
+    tester,
+  ) async {
+    var repaired = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                key: const Key('openStreakRepairIntegration'),
+                onPressed: () => StreakRepairDialog.show(
+                  context,
+                  streakDays: 12,
+                  costGems: 15,
+                  onRepair: () => repaired = true,
+                  onSkip: () {},
+                ),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('openStreakRepairIntegration')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.textContaining('12-day streak'), findsOneWidget);
+    final confirm = tester.widget<NeonDialogButton>(
+      find.byWidgetPredicate(
+        (w) => w is NeonDialogButton && w.action.label == 'Repair (15 gems)',
+      ),
+    );
+    confirm.action.onTap();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(repaired, isTrue);
+    expect(find.text('Streak Lost!'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-122: wheel pointer ticks and bounces on TECNO', (
     tester,
   ) async {

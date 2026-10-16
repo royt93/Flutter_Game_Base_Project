@@ -88,6 +88,7 @@ export 'radial_action_menu.dart';
 export 'swipeable_action_tile.dart';
 export 'stacked_avatar_group.dart';
 export 'floating_emoji_burst.dart';
+export 'streak_repair_dialog.dart';
 export 'scratch_card.dart';
 export '../../../core/reward_transaction_pipeline.dart' show RewardLine;
 export 'save_health_card.dart';
