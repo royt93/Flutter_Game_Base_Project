@@ -213,9 +213,10 @@ void main() {
           matching: find.byType(Scrollable),
         )
         .first;
-    final offer = find.text(r'$0.99').first;
-    await tester.scrollUntilVisible(offer, 300, scrollable: scrollable);
-    await tester.ensureVisible(offer);
+    final sectionAnchor = find.text('Gems: 0');
+    await tester.scrollUntilVisible(sectionAnchor, 300, scrollable: scrollable);
+    final offer = find.text(r'$0.99');
+    await tester.ensureVisible(offer.first);
     await tester.pump();
 
     await tester.tap(find.text(r'$0.99').last);
@@ -234,13 +235,15 @@ void main() {
     (tester) async {
       await _pumpShowcase(tester);
 
-      expect(find.text('Gems: 0'), findsOneWidget);
       final scrollable = find
           .descendant(
             of: find.byKey(const ValueKey('widgetShowcaseList')),
             matching: find.byType(Scrollable),
           )
           .first;
+      final gemsStatus = find.text('Gems: 0');
+      await tester.scrollUntilVisible(gemsStatus, 300, scrollable: scrollable);
+      expect(gemsStatus, findsOneWidget);
       final firstGemOffer = find.text(r'$0.99').first;
       await tester.scrollUntilVisible(
         firstGemOffer,
@@ -286,17 +289,17 @@ void main() {
             matching: find.byType(Scrollable),
           )
           .first;
-      final removeAdsOffer = find.text(r'$2.99').first;
+      final sectionAnchor = find.text('Gems: 0');
       await tester.scrollUntilVisible(
-        removeAdsOffer,
+        sectionAnchor,
         300,
         scrollable: scrollable,
       );
-
-      expect(find.text(r'$2.99'), findsWidgets);
+      final removeAdsOffer = find.text(r'$2.99');
+      expect(removeAdsOffer, findsWidgets);
       expect(find.text('Owned'), findsNothing);
 
-      await tester.ensureVisible(removeAdsOffer);
+      await tester.ensureVisible(removeAdsOffer.first);
       await tester.pump();
       await tester.tap(find.text(r'$2.99').last);
       await tester.pump(const Duration(milliseconds: 100));
@@ -1035,6 +1038,52 @@ void main() {
 
         expect(find.text('40%'), findsNothing);
         expect(find.text('60%'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'LevelGoalTracker: collect action advances and completes goal',
+      (tester) async {
+        await _pumpShowcase(tester);
+
+        final strawberries = find.byKey(
+          const ValueKey('goalChip_strawberries'),
+        );
+        await tester.scrollUntilVisible(
+          strawberries,
+          350,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.ensureVisible(strawberries);
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final goalSemantics = tester.getSemantics(strawberries);
+        expect(goalSemantics.label, 'Strawberries: 7 remaining');
+        expect(
+          find.byKey(const ValueKey('goalRemaining_strawberries')),
+          findsOneWidget,
+        );
+
+        final collect = find.byKey(const Key('bumpLevelGoalBtn'));
+        await tester.ensureVisible(collect);
+        for (var i = 0; i < 7; i++) {
+          await tester.tap(collect);
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        await tester.pump(const Duration(milliseconds: 350));
+
+        expect(
+          find.byKey(const ValueKey('goalCheck_strawberries')),
+          findsOneWidget,
+        );
+        final checkmark = tester.widget<AnimatedScale>(
+          find.ancestor(
+            of: find.byKey(const ValueKey('goalCheck_strawberries')),
+            matching: find.byType(AnimatedScale),
+          ),
+        );
+        expect(checkmark.scale, 1.0);
         expect(tester.takeException(), isNull);
       },
     );

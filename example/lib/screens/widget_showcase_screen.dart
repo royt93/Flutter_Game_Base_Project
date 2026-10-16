@@ -86,6 +86,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   );
   int _starsEarned = 1;
   double _progress = 0.4;
+  int _strawberryGoalProgress = 8;
+  int _iceGoalProgress = 3;
   bool _showLoadingOverlay = false;
   // IDEA-53: demos CommonButton's loading state via a fake 1.5s async
   // action — the same shape a real "Buy"/save/cloud-sync button would use.
@@ -1152,6 +1154,34 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   void _bumpProgress() =>
       setState(() => _progress = (_progress + 0.2) > 1 ? 0 : _progress + 0.2);
 
+  void _bumpLevelGoal() => setState(() {
+    if (_strawberryGoalProgress < 15) {
+      _strawberryGoalProgress++;
+    } else if (_iceGoalProgress < 8) {
+      _iceGoalProgress++;
+    } else {
+      _strawberryGoalProgress = 0;
+      _iceGoalProgress = 0;
+    }
+  });
+
+  List<GoalItem> get _levelGoalItems => [
+    GoalItem(
+      id: 'strawberries',
+      label: 'Strawberries',
+      icon: const Icon(Icons.favorite_rounded, color: Color(0xFFE53935)),
+      target: 15,
+      current: _strawberryGoalProgress,
+    ),
+    GoalItem(
+      id: 'ice',
+      label: 'Ice Blocks',
+      icon: const Icon(Icons.ac_unit_rounded, color: Color(0xFF29B6F6)),
+      target: 8,
+      current: _iceGoalProgress,
+    ),
+  ];
+
   void _flashLoadingOverlay() {
     setState(() => _showLoadingOverlay = true);
     Future.delayed(const Duration(milliseconds: 1200), () {
@@ -1998,6 +2028,23 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               const SizedBox(height: NeonTheme.s24),
                               const SectionHeader(title: 'Progress & Reward'),
                               const SizedBox(height: NeonTheme.s16),
+                              _Demo(
+                                label: 'LevelGoalTracker (FEAT-125)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    LevelGoalTracker(
+                                      goals: _levelGoalItems,
+                                    ),
+                                    const SizedBox(height: NeonTheme.s16),
+                                    CommonButton(
+                                      key: const Key('bumpLevelGoalBtn'),
+                                      label: 'Collect goal item (+1)',
+                                      onTap: _bumpLevelGoal,
+                                    ),
+                                  ],
+                                ),
+                              ),
                               _Demo(
                                 label: 'ProgressBarStars',
                                 child: Column(

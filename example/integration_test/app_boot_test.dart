@@ -1956,6 +1956,31 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-125: level goal HUD completes on physical device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final goal = find.byKey(const ValueKey('goalChip_strawberries'));
+    await _scrollUntilVisible(tester, goal);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(goal, findsWidgets);
+
+    final collect = find.byKey(const Key('bumpLevelGoalBtn'));
+    await _scrollUntilVisible(tester, collect);
+    await tester.ensureVisible(collect.first);
+    await tester.pump(const Duration(milliseconds: 300));
+    for (var i = 0; i < 7; i++) {
+      await tester.tap(collect.first);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byKey(const ValueKey('goalCheck_strawberries')), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-116: search and filter controls on Pixel 7 Pro', (
     tester,
   ) async {
