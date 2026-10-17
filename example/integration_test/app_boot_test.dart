@@ -2001,6 +2001,77 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-127: flash sale card buy responds on physical device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final buy = find.byKey(const ValueKey('flashSaleBuyBtn'));
+    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+    final scrollable = find
+        .descendant(of: showcaseList, matching: find.byType(Scrollable))
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && buy.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(buy, findsWidgets);
+    await tester.ensureVisible(buy.first);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const ValueKey('flashSaleCountdownText')), findsWidgets);
+
+    await tester.tap(buy.first);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.textContaining('Flash sale buys: 1'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'FEAT-124: tiered reward chest upgrades and opens on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final upgrade = find.byKey(const Key('tieredChestUpgradeBtn'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && upgrade.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(upgrade, findsWidgets);
+      await tester.ensureVisible(upgrade.first);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(upgrade.first);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.textContaining('Tier: Silver'), findsWidgets);
+
+      final chest = find.byKey(const ValueKey('tieredChestTap'));
+      await tester.ensureVisible(chest.first);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(chest.first);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.textContaining('Silver reward: 200 gems'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('FEAT-116: search and filter controls on Pixel 7 Pro', (
     tester,
   ) async {

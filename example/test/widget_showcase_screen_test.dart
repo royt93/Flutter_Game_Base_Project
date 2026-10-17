@@ -205,6 +205,63 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'FEAT-124: upgrade tier then open chest reveals matching reward',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final upgrade = find.byKey(const Key('tieredChestUpgradeBtn'));
+      await tester.scrollUntilVisible(upgrade, 350, scrollable: scrollable);
+      await tester.ensureVisible(upgrade);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Tier: Wood · Opened: false'), findsOneWidget);
+      await tester.tap(upgrade);
+      await tester.pump(const Duration(milliseconds: 220));
+      expect(find.text('Tier: Silver · Opened: false'), findsOneWidget);
+
+      final chest = find.byKey(const ValueKey('tieredChestTap'));
+      await tester.ensureVisible(chest);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(chest);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 900));
+      expect(find.text('Tier: Silver · Opened: true'), findsOneWidget);
+      expect(find.text('Silver reward: 200 gems'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('FEAT-127: flash sale buy increments caller-owned status', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final buy = find.byKey(const ValueKey('flashSaleBuyBtn'));
+    await tester.scrollUntilVisible(buy, 300, scrollable: scrollable);
+    await tester.ensureVisible(buy);
+    await tester.pump();
+    expect(find.text('Flash sale buys: 0 · Expired: false'), findsOneWidget);
+
+    await tester.tap(buy);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Flash sale buys: 1 · Expired: false'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('ShopItemCard demo buy button shows a toast', (tester) async {
     await _pumpShowcase(tester);
     final scrollable = find

@@ -991,6 +991,13 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   String _avatarGroupStatus = 'none';
   final _emojiBurstKey = GlobalKey<FloatingEmojiBurstState>();
   int _streakRepairCount = 0;
+  int _flashSaleBuys = 0;
+  ChestTier _chestTier = ChestTier.wood;
+  bool _chestOpened = false;
+  bool _flashSaleExpired = false;
+  late final DateTime _flashSaleEndsAt = DateTime.now().add(
+    const Duration(hours: 1, minutes: 29, seconds: 59),
+  );
   String _candyRadioMode = 'Classic';
   bool _candyCheckboxEnabled = false;
   final _candySearchController = TextEditingController();
@@ -4369,6 +4376,95 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           onBuy: _purchases.owns(_removeAdsSku)
                                               ? null
                                               : _buyRemoveAds,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'FlashSaleOfferCard (FEAT-127)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    FlashSaleOfferCard(
+                                      title: 'Starter Bundle',
+                                      subtitle: '500 Gems + 5 Lives',
+                                      priceLabel: r'$1.99',
+                                      originalPriceLabel: r'$9.99',
+                                      discountPercent: 80,
+                                      expiresAt: _flashSaleEndsAt,
+                                      onBuyTap: () =>
+                                          setState(() => _flashSaleBuys++),
+                                      onExpired: () => setState(
+                                        () => _flashSaleExpired = true,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Flash sale buys: $_flashSaleBuys · Expired: $_flashSaleExpired',
+                                      key: const Key('flashSaleShowcaseStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'TieredRewardChest (FEAT-124)',
+                                child: Column(
+                                  children: [
+                                    TieredRewardChest(
+                                      currentTier: _chestTier,
+                                      isOpened: _chestOpened,
+                                      onOpen: () =>
+                                          setState(() => _chestOpened = true),
+                                      tierRewards: {
+                                        for (final t in ChestTier.values)
+                                          t: Text(
+                                            '${t.displayName} reward: ${(t.index + 1) * 100} gems',
+                                            key: const Key('tieredChestReward'),
+                                            style: TextStyle(
+                                              color: NeonTheme.ink,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                      },
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Tier: ${_chestTier.displayName} · Opened: $_chestOpened',
+                                      key: const Key('tieredChestStatus'),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          key: const Key(
+                                            'tieredChestUpgradeBtn',
+                                          ),
+                                          label: 'Upgrade tier',
+                                          onTap:
+                                              _chestOpened ||
+                                                  _chestTier ==
+                                                      ChestTier.diamond
+                                              ? null
+                                              : () => setState(
+                                                  () => _chestTier =
+                                                      ChestTier
+                                                          .values[_chestTier
+                                                              .index +
+                                                          1],
+                                                ),
+                                        ),
+                                        CommonButton(
+                                          key: const Key('tieredChestResetBtn'),
+                                          label: 'Reset chest',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(() {
+                                            _chestTier = ChestTier.wood;
+                                            _chestOpened = false;
+                                          }),
                                         ),
                                       ],
                                     ),
