@@ -20,11 +20,11 @@ Widget `SeasonEventBanner` hiển thị:
 - Ranh giới với `FlashSaleOfferCard`: banner chỉ dẫn vào sự kiện, không có giá và không có nút mua.
 
 ## Yêu cầu kiểm thử
-- [ ] **Unit test**: Kiểm tra định dạng đếm ngược (ngày/giờ/phút), validate `progress` trong 0.0..1.0 và tiêu đề không rỗng.
-- [ ] **Widget test**: Tap banner gọi `onTap`; hết giờ gọi `onEnded` đúng một lần và khoá tap; thanh tiến độ phản ánh `progress`; Reduced Motion; semantics đọc đúng tên sự kiện và thời gian còn lại.
-- [ ] **Showcase test**: Tích hợp vào showcase với nút tăng tiến độ, cập nhật UI chính xác.
-- [ ] **Physical integration**: Kiểm tra hiển thị và tap trên thiết bị vật lý thật, không dùng simulator.
+- [x] **Unit test**: Kiểm tra `fmtDurDays` (ngày/giờ/phút), validate `progress` trong 0.0..1.0, tiêu đề không rỗng và chiều cao/rộng dương.
+- [x] **Widget test**: Tap banner gọi `onTap`; hết giờ gọi `onEnded` đúng một lần và khoá tap; thanh tiến độ phản ánh `progress`; constructor `.fromWindow` bind `window.end`; Reduced Motion; semantics đọc đúng tên sự kiện và thời gian còn lại.
+- [x] **Showcase test**: Tích hợp vào showcase với nút tăng tiến độ, cập nhật UI chính xác.
+- [x] **Physical integration**: Smoke pass trên Google Pixel 7 Pro (`2B051FDH3006MU`), không dùng simulator.
 
 ## Hiệu năng & Animation
-- [ ] Timer đếm ngược huỷ khi hết giờ hoặc unmount; không rebuild toàn bộ banner mỗi giây ngoài vùng chữ đếm ngược.
-- [ ] Sustained 60 FPS benchmark: đo theo quy chuẩn định sẵn nếu cần.
+- [x] Timer đếm ngược huỷ khi hết giờ hoặc unmount; vẽ trong `RepaintBoundary`.
+- [ ] Sustained 60 FPS benchmark: chưa đo; không tuyên bố đạt 60 FPS.

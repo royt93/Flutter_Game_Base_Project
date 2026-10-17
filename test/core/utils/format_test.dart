@@ -81,6 +81,27 @@ void main() {
     });
   });
 
+  group('fmtDurDays (FEAT-130)', () {
+    test('dưới 24 giờ → uỷ quyền cho fmtDurLong', () {
+      expect(fmtDurDays(const Duration(seconds: 5)), '00:05');
+      expect(fmtDurDays(const Duration(minutes: 45, seconds: 9)), '45:09');
+      expect(fmtDurDays(const Duration(hours: 1, minutes: 15)), '01:15:00');
+      expect(
+        fmtDurDays(const Duration(hours: 23, minutes: 59, seconds: 59)),
+        '23:59:59',
+      );
+    });
+
+    test('từ 24 giờ trở lên → định dạng Xd Yh', () {
+      expect(fmtDurDays(const Duration(days: 1)), '1d 0h');
+      expect(
+        fmtDurDays(const Duration(days: 3, hours: 4, minutes: 20)),
+        '3d 4h',
+      );
+      expect(fmtDurDays(const Duration(hours: 50, minutes: 12)), '2d 2h');
+    });
+  });
+
   group('fmtNumCompact', () {
     test('dưới 1000 → giống fmtNum, không rút gọn', () {
       expect(fmtNumCompact(0), '0');

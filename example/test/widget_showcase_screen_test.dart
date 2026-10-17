@@ -49,11 +49,11 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58/FEAT-43/FEAT-52/FEAT-56/ENH-90:
+  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58/FEAT-43/FEAT-52/FEAT-56/ENH-90/FEAT-130:
   // mỗi demo section mới đẩy list dài hơn — tăng chiều cao viewport ảo để
   // mọi widget phía sau vẫn nằm trong vùng tap được mà không cần scroll
   // (đúng lý do file này dùng physicalSize cố định).
-  tester.view.physicalSize = const Size(1080, 20000);
+  tester.view.physicalSize = const Size(1080, 26000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -204,6 +204,49 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'FEAT-130: season event banner advances progress and calls onTap',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final progressBtn = find.byKey(const Key('seasonEventProgressBtn'));
+      await tester.scrollUntilVisible(progressBtn, 350, scrollable: scrollable);
+      await tester.ensureVisible(progressBtn);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('seasonEventStatus'));
+      String statusText() => tester.widget<Text>(status).data!;
+      expect(statusText(), 'Event taps: 0 · Ended: false · Progress: 45%');
+
+      // Tap banner
+      final banner = find.byType(SeasonEventBanner);
+      await tester.ensureVisible(banner);
+      await tester.tap(banner);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Event taps: 1 · Ended: false · Progress: 45%');
+
+      // Add progress
+      await tester.ensureVisible(progressBtn);
+      await tester.tap(progressBtn);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Event taps: 1 · Ended: false · Progress: 70%');
+
+      // Reset
+      final resetBtn = find.byKey(const Key('seasonEventResetBtn'));
+      await tester.ensureVisible(resetBtn);
+      await tester.tap(resetBtn);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Event taps: 1 · Ended: false · Progress: 0%');
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'FEAT-131: tap hint toggles, switches gesture, never blocks tap',
@@ -1423,7 +1466,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Player 1'), findsOneWidget);
-      expect(find.textContaining('Active'), findsOneWidget);
+      expect(find.textContaining('• Active'), findsOneWidget);
 
       await tester.tap(find.text('+10 score').last);
       await tester.pump();

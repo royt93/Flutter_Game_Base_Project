@@ -2072,6 +2072,48 @@ void main() {
     },
   );
 
+  testWidgets(
+    'FEAT-130: season event banner advances progress on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final progressBtn = find.byKey(const Key('seasonEventProgressBtn'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && progressBtn.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(progressBtn, findsWidgets);
+      await tester.ensureVisible(progressBtn.first);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final banner = find.byType(SeasonEventBanner);
+      expect(banner, findsWidgets);
+      await tester.ensureVisible(banner.first);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(banner.first);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('Event taps: 1'), findsWidgets);
+
+      await tester.ensureVisible(progressBtn.first);
+      await tester.tap(progressBtn.first);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('Progress: 70%'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('FEAT-131: tap hint shows and passes taps on physical device', (
     tester,
   ) async {

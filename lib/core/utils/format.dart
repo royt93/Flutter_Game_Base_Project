@@ -61,6 +61,17 @@ String fmtDurLong(Duration d) {
   return '$h:$m:$s';
 }
 
+/// Formats [Duration] as "Xd Yh" when 24 hours or longer (e.g. "3d 4h"),
+/// or delegates to [fmtDurLong] when under 24 hours (FEAT-130).
+String fmtDurDays(Duration d) {
+  if (d.inDays > 0) {
+    final days = d.inDays;
+    final hours = d.inHours.remainder(24);
+    return '${days}d ${hours}h';
+  }
+  return fmtDurLong(d);
+}
+
 const _compactUnits = [
   (1000000000000, 'T'),
   (1000000000, 'B'),

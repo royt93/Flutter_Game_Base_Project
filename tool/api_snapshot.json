@@ -392,6 +392,7 @@
     "core/utils/fnv1a.dart:fnv1aHash",
     "core/utils/format.dart:durationToLocalMidnight",
     "core/utils/format.dart:fmtDur",
+    "core/utils/format.dart:fmtDurDays",
     "core/utils/format.dart:fmtDurLong",
     "core/utils/format.dart:fmtNum",
     "core/utils/format.dart:fmtNumCompact",

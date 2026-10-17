@@ -998,6 +998,12 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   bool _hintVisible = true;
   TapHintGesture _hintGesture = TapHintGesture.tap;
   int _hintTargetTaps = 0;
+  int _seasonEventTaps = 0;
+  double _seasonEventProgress = 0.45;
+  bool _seasonEventEnded = false;
+  late final DateTime _seasonEventEndsAt = DateTime.now().add(
+    const Duration(days: 2, hours: 14),
+  );
   int _comboMultiplier = 1;
   double _comboProgress = 0.0;
   bool _flashSaleExpired = false;
@@ -4603,6 +4609,58 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                                 ? TapHintGesture.swipe
                                                 : TapHintGesture.tap,
                                           ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'SeasonEventBanner (FEAT-130)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SeasonEventBanner(
+                                      title: 'Autumn Harvest',
+                                      subtitle: 'Earn Golden Acorns',
+                                      milestoneLabel: 'Tier 3/5',
+                                      endsAt: _seasonEventEndsAt,
+                                      progress: _seasonEventProgress,
+                                      color: NeonTheme.orange,
+                                      onTap: () =>
+                                          setState(() => _seasonEventTaps++),
+                                      onEnded: () => setState(
+                                        () => _seasonEventEnded = true,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Event taps: $_seasonEventTaps · Ended: $_seasonEventEnded · Progress: ${(_seasonEventProgress * 100).round()}%',
+                                      key: const Key('seasonEventStatus'),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          key: const Key(
+                                            'seasonEventProgressBtn',
+                                          ),
+                                          label: 'Add progress (+25%)',
+                                          onTap: () => setState(() {
+                                            _seasonEventProgress =
+                                                (_seasonEventProgress + 0.25)
+                                                    .clamp(0.0, 1.0);
+                                          }),
+                                        ),
+                                        CommonButton(
+                                          key: const Key('seasonEventResetBtn'),
+                                          label: 'Reset progress',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(() {
+                                            _seasonEventProgress = 0.0;
+                                          }),
                                         ),
                                       ],
                                     ),
