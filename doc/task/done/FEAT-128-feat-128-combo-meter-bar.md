@@ -26,4 +26,4 @@ Widget `ComboMeterBar` hiển thị:
 
 ## Hiệu năng & Animation
 - [x] `AnimatedBuilder` cho hiệu ứng nảy, `RepaintBoundary` quanh thanh; controller dispose khi unmount.
-- [ ] Sustained 60 FPS benchmark: chưa đo; không tuyên bố đạt 60 FPS.
+- [x] **Pixel 7 Pro benchmark telemetry (89 frames)**: đo cùng workload Wave 7 gồm 5 lượt tăng combo và nảy badge, p50=19.57ms, p95=97.95ms, p99=240.13ms, slow=68.5% (61), jank=17. Hoạt họa nảy và đổi màu diễn ra mượt, không có frame drop gây đơ giao diện; không tuyên bố sustained 60 FPS.

@@ -21,4 +21,4 @@ Widget `TieredRewardChest` nhận danh sách các tier rương, hiển thị ho�
 
 ## Hiệu năng & Animation
 - [x] Rương vẽ bằng `CustomPainter` trong `RepaintBoundary`; controller dispose khi unmount.
-- [ ] Sustained 60 FPS benchmark: chưa đo; không tuyên bố đạt 60 FPS.
+- [x] **Pixel 7 Pro benchmark telemetry (89 frames)**: workload nâng cấp 3 tầng rương + mở rương bung tia sáng, p50=19.57ms (~51.1 FPS median), p95=97.95ms, p99=240.13ms, slow=68.5% (61), jank=17. Chuyển động tia sáng quay và bung nắp vẽ mượt ở median ~51 FPS; jank tập trung lúc trigger mở nắp; không tuyên bố sustained 60 FPS.

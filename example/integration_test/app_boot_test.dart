@@ -2224,6 +2224,91 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'BENCHMARK: Wave 6-7 casual expansion widgets FrameTiming on Pixel 7 Pro',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final upgradeChest = find.byKey(const Key('tieredChestUpgradeBtn'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && upgradeChest.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 80));
+      }
+      expect(upgradeChest, findsWidgets);
+      await tester.ensureVisible(upgradeChest.first);
+      await tester.pump(const Duration(seconds: 1));
+
+      final frameDurationsMs = <double>[];
+      void onTimings(List<FrameTiming> timings) {
+        for (final t in timings) {
+          frameDurationsMs.add(t.totalSpan.inMicroseconds / 1000.0);
+        }
+      }
+
+      SchedulerBinding.instance.addTimingsCallback(onTimings);
+      addTearDown(
+        () => SchedulerBinding.instance.removeTimingsCallback(onTimings),
+      );
+
+      // Workload: 3 tier upgrades + chest opening + 5 combo adds
+      for (var i = 0; i < 3; i++) {
+        await tester.ensureVisible(upgradeChest.first);
+        await tester.tap(upgradeChest.first);
+        for (var f = 0; f < 8; f++) {
+          await tester.pump(const Duration(milliseconds: 60));
+        }
+      }
+
+      final chest = find.byKey(const ValueKey('tieredChestTap'));
+      await tester.ensureVisible(chest.first);
+      await tester.tap(chest.first);
+      for (var f = 0; f < 15; f++) {
+        await tester.pump(const Duration(milliseconds: 60));
+      }
+
+      final addCombo = find.byKey(const Key('comboMeterAddBtn'));
+      await tester.ensureVisible(addCombo.first);
+      for (var i = 0; i < 5; i++) {
+        await tester.tap(addCombo.first);
+        for (var f = 0; f < 6; f++) {
+          await tester.pump(const Duration(milliseconds: 60));
+        }
+      }
+
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+
+      if (frameDurationsMs.isNotEmpty) {
+        frameDurationsMs.sort();
+        final p50 = frameDurationsMs[(frameDurationsMs.length * 0.50).floor()];
+        final p95 = frameDurationsMs[(frameDurationsMs.length * 0.95).floor()];
+        final p99 = frameDurationsMs[(frameDurationsMs.length * 0.99).floor()];
+        final slowCount = frameDurationsMs.where((ms) => ms > 16.67).length;
+        final jankCount = frameDurationsMs.where((ms) => ms > 33.33).length;
+        final slowPct = (slowCount / frameDurationsMs.length) * 100;
+        // ignore: avoid_print
+        print(
+          'WAVE 6-7 BENCHMARK PIXEL 7 PRO: total=${frameDurationsMs.length} frames, '
+          'p50=${p50.toStringAsFixed(2)}ms, p95=${p95.toStringAsFixed(2)}ms, '
+          'p99=${p99.toStringAsFixed(2)}ms, slow=${slowPct.toStringAsFixed(1)}% '
+          '($slowCount), jank=$jankCount',
+        );
+      }
+    },
+  );
+
   testWidgets('FEAT-116: search and filter controls on Pixel 7 Pro', (
     tester,
   ) async {
