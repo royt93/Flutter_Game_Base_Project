@@ -1007,6 +1007,15 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   String _lastBoosterAction = 'none';
   int _lastSelectedPathLevel = 0;
   int _milestoneClaims = 0;
+  int _winStreak = 0;
+  int _winStreakInfoTaps = 0;
+  String get _winStreakMultiplier => _winStreak >= 5
+      ? 'x3'
+      : _winStreak >= 3
+      ? 'x2'
+      : _winStreak > 0
+      ? 'x1.5'
+      : 'x1';
   int _weeklyChallengeProgress = 20;
   final Set<int> _weeklyChallengeClaimed = {};
   int _weeklyChallengeClaims = 0;
@@ -5034,6 +5043,46 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                             _multiplierWheelWon = null;
                                             _multiplierWheelController.reset();
                                           }),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              _Demo(
+                                label: 'WinStreakFlameHud (FEAT-137)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    WinStreakFlameHud(
+                                      streakCount: _winStreak,
+                                      multiplierLabel: _winStreakMultiplier,
+                                      onInfoTap: () =>
+                                          setState(() => _winStreakInfoTaps++),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Win streak: $_winStreak · Info taps: $_winStreakInfoTaps',
+                                      key: const Key('winStreakShowcaseStatus'),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          key: const Key('winRoundBtn'),
+                                          label: 'Win round (+1)',
+                                          onTap: () =>
+                                              setState(() => _winStreak++),
+                                        ),
+                                        CommonButton(
+                                          key: const Key('loseRoundBtn'),
+                                          label: 'Lose round (reset)',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () =>
+                                              setState(() => _winStreak = 0),
                                         ),
                                       ],
                                     ),

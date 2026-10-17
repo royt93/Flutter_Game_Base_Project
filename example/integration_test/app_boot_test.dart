@@ -2529,6 +2529,48 @@ void main() {
     },
   );
 
+  testWidgets(
+    'FEAT-137: win streak flame HUD updates and resets on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final win = find.byKey(const Key('winRoundBtn'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && win.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(win, findsWidgets);
+      await tester.ensureVisible(win.first);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(win.first);
+        await tester.pump(const Duration(milliseconds: 150));
+      }
+      expect(find.textContaining('Win streak: 3'), findsWidgets);
+      expect(find.text('x2'), findsWidgets);
+
+      final lose = find.byKey(const Key('loseRoundBtn'));
+      await tester.ensureVisible(lose.first);
+      await tester.tap(lose.first);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('Win streak: 0'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('FEAT-116: search and filter controls on Pixel 7 Pro', (
     tester,
   ) async {

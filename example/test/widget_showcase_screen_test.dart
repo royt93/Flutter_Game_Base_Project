@@ -206,6 +206,50 @@ void main() {
   });
 
   testWidgets(
+    'FEAT-137: win streak advances multiplier tiers, info tap, and loss resets',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final win = find.byKey(const Key('winRoundBtn'));
+      await tester.scrollUntilVisible(win, 350, scrollable: scrollable);
+      await tester.ensureVisible(win);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('winStreakShowcaseStatus'));
+      String statusText() => tester.widget<Text>(status).data!;
+      expect(statusText(), 'Win streak: 0 · Info taps: 0');
+      expect(find.text('x1'), findsWidgets);
+
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(win);
+        await tester.pump(const Duration(milliseconds: 120));
+      }
+      expect(statusText(), 'Win streak: 3 · Info taps: 0');
+      expect(find.text('x2'), findsOneWidget);
+      expect(find.text('3 wins'), findsOneWidget);
+
+      final hud = find.byKey(const ValueKey('winStreakFlameTapTarget'));
+      await tester.ensureVisible(hud);
+      await tester.tap(hud);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Win streak: 3 · Info taps: 1');
+
+      final lose = find.byKey(const Key('loseRoundBtn'));
+      await tester.ensureVisible(lose);
+      await tester.tap(lose);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Win streak: 0 · Info taps: 1');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-136: weekly challenge advances, claims milestones and resets',
     (tester) async {
       await _pumpShowcase(tester);
