@@ -1048,6 +1048,17 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
 
   void _consumeEnergy() => setState(() => _energy.consumeEnergy());
 
+  int _livesRefillTaps = 0;
+
+  // EnergyService has no "refill" API by design — what a refill means (shop,
+  // ad, friend request) is the caller's call. The demo just counts the tap
+  // and grants a short infinite-lives window so the HUD visibly reacts.
+  Future<void> _refillLives() async {
+    await _energy.grantInfiniteLives(const Duration(seconds: 20));
+    if (!mounted) return;
+    setState(() => _livesRefillTaps++);
+  }
+
   // ENH-90: rescheduleEnergyReminder/rescheduleStreakReminder (IDEA-62)
   // had no demo anywhere in example/ — only unit-test coverage (a mocked
   // platform channel) since they shipped. `.maybe ?? Get.put(...)` — same
@@ -2033,9 +2044,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    LevelGoalTracker(
-                                      goals: _levelGoalItems,
-                                    ),
+                                    LevelGoalTracker(goals: _levelGoalItems),
                                     const SizedBox(height: NeonTheme.s16),
                                     CommonButton(
                                       key: const Key('bumpLevelGoalBtn'),
@@ -2446,7 +2455,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                               _Demo(
-                                label: 'EnergyBar',
+                                label: 'EnergyBar / LivesHeartHud (FEAT-126)',
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -2457,11 +2466,21 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           _energy.timeUntilNextEnergy,
                                       hasInfiniteLives:
                                           _energy.hasInfiniteLives,
+                                      onRefillTap: _refillLives,
                                     ),
                                     const SizedBox(height: NeonTheme.s16),
-                                    CommonButton(
-                                      label: 'Consume 1 energy',
-                                      onTap: _consumeEnergy,
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          label: 'Consume 1 energy',
+                                          onTap: _consumeEnergy,
+                                        ),
+                                        Text(
+                                          'Refills: $_livesRefillTaps',
+                                          key: const Key('livesRefillStatus'),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),

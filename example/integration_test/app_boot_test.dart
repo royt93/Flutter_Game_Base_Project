@@ -1981,6 +1981,26 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'FEAT-126: lives heart refill button responds on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final refill = find.byKey(const ValueKey('energyBarRefillBtn'));
+      await _scrollUntilVisible(tester, refill);
+      await tester.ensureVisible(refill.first);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(refill, findsWidgets);
+
+      await tester.tap(refill.first);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Refills: 1'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('FEAT-116: search and filter controls on Pixel 7 Pro', (
     tester,
   ) async {

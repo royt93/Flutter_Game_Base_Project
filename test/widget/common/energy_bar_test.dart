@@ -113,6 +113,87 @@ void main() {
     expect(find.text('00:42'), findsOneWidget);
   });
 
+  group('FEAT-126: LivesHeartHud controls and status pulse', () {
+    testWidgets('refill button invokes caller callback', (tester) async {
+      var calls = 0;
+      await tester.pumpWidget(
+        _wrap(
+          EnergyBar(
+            currentEnergy: 1,
+            maxEnergy: 5,
+            timeUntilNextEnergy: const Duration(minutes: 20),
+            onRefillTap: () => calls++,
+          ),
+        ),
+      );
+
+      final refill = find.byKey(const ValueKey('energyBarRefillBtn'));
+      expect(refill, findsOneWidget);
+      expect(tester.getSemantics(refill).label, 'Refill lives');
+      await tester.tap(refill);
+      expect(calls, 1);
+    });
+
+    testWidgets('zero-energy pulse oscillates and stops with Reduced Motion', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const EnergyBar(
+            currentEnergy: 0,
+            maxEnergy: 5,
+            timeUntilNextEnergy: Duration(minutes: 20),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 350));
+      final transform = tester.widget<Transform>(
+        find.byKey(const ValueKey('energyBarPulse')),
+      );
+      expect(transform.transform.entry(0, 0), greaterThan(1.0));
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: _wrap(
+            const EnergyBar(
+              currentEnergy: 0,
+              maxEnergy: 5,
+              timeUntilNextEnergy: Duration(minutes: 20),
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      final reducedTransform = tester.widget<Transform>(
+        find.byKey(const ValueKey('energyBarPulse')),
+      );
+      expect(reducedTransform.transform.entry(0, 0), 1.0);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'full and infinite energy do not pulse, infinite hides refill',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            EnergyBar(
+              currentEnergy: 5,
+              maxEnergy: 5,
+              timeUntilNextEnergy: Duration.zero,
+              hasInfiniteLives: true,
+              onRefillTap: () {},
+            ),
+          ),
+        );
+
+        expect(find.byKey(const ValueKey('energyBarRefillBtn')), findsNothing);
+        expect(find.text('∞'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
   group('ENH-42: direction/icon/color customization', () {
     testWidgets('mặc định (không truyền gì mới) vẫn Column, icon/màu như cũ', (
       tester,
@@ -306,117 +387,141 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('didUpdateWidget cập nhật khi swap energyService hoặc pollInterval', (
-      tester,
-    ) async {
-      final s1 = _SnapshotEnergyService(maxEnergy: 4, count: 2);
-      final s2 = _SnapshotEnergyService(maxEnergy: 6, count: 5);
+    testWidgets(
+      'didUpdateWidget cập nhật khi swap energyService hoặc pollInterval',
+      (tester) async {
+        final s1 = _SnapshotEnergyService(maxEnergy: 4, count: 2);
+        final s2 = _SnapshotEnergyService(maxEnergy: 6, count: 5);
 
-      await tester.pumpWidget(_wrap(ReactiveEnergyBar(
-        energyService: s1,
-        pollInterval: const Duration(seconds: 2),
-      )));
-      await tester.pump(const Duration(milliseconds: 50));
-      expect(find.byIcon(Icons.favorite), findsNWidgets(2));
-      expect(find.byIcon(Icons.favorite_border), findsNWidgets(2));
+        await tester.pumpWidget(
+          _wrap(
+            ReactiveEnergyBar(
+              energyService: s1,
+              pollInterval: const Duration(seconds: 2),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.byIcon(Icons.favorite), findsNWidgets(2));
+        expect(find.byIcon(Icons.favorite_border), findsNWidgets(2));
 
-      // Swap sang service mới + pollInterval mới
-      await tester.pumpWidget(_wrap(ReactiveEnergyBar(
-        energyService: s2,
-        pollInterval: Duration.zero,
-      )));
-      await tester.pump(const Duration(milliseconds: 50));
-      expect(find.byIcon(Icons.favorite), findsNWidgets(5));
-      expect(find.byIcon(Icons.favorite_border), findsNWidgets(1));
-      s2.count = 1;
-      await tester.pump(const Duration(seconds: 3));
-      expect(find.byIcon(Icons.favorite), findsNWidgets(5));
+        // Swap sang service mới + pollInterval mới
+        await tester.pumpWidget(
+          _wrap(
+            ReactiveEnergyBar(energyService: s2, pollInterval: Duration.zero),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.byIcon(Icons.favorite), findsNWidgets(5));
+        expect(find.byIcon(Icons.favorite_border), findsNWidgets(1));
+        s2.count = 1;
+        await tester.pump(const Duration(seconds: 3));
+        expect(find.byIcon(Icons.favorite), findsNWidgets(5));
 
-      await tester.pumpWidget(_wrap(ReactiveEnergyBar(
-        energyService: s2,
-        pollInterval: const Duration(milliseconds: 200),
-      )));
-      expect(find.byIcon(Icons.favorite), findsOneWidget);
-      s2.count = 4;
-      await tester.pump(const Duration(milliseconds: 200));
-      expect(find.byIcon(Icons.favorite), findsNWidgets(4));
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump(const Duration(seconds: 1));
-      expect(tester.takeException(), isNull);
-    });
+        await tester.pumpWidget(
+          _wrap(
+            ReactiveEnergyBar(
+              energyService: s2,
+              pollInterval: const Duration(milliseconds: 200),
+            ),
+          ),
+        );
+        expect(find.byIcon(Icons.favorite), findsOneWidget);
+        s2.count = 4;
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.byIcon(Icons.favorite), findsNWidgets(4));
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(seconds: 1));
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('didUpdateWidget: chỉ đổi energyService (pollInterval giữ nguyên) '
-        'vẫn đọc lại ngay từ service mới', (tester) async {
-      final s1 = _SnapshotEnergyService(maxEnergy: 4, count: 2);
-      final s2 = _SnapshotEnergyService(maxEnergy: 6, count: 5);
-      const interval = Duration(seconds: 30);
+    testWidgets(
+      'didUpdateWidget: chỉ đổi energyService (pollInterval giữ nguyên) '
+      'vẫn đọc lại ngay từ service mới',
+      (tester) async {
+        final s1 = _SnapshotEnergyService(maxEnergy: 4, count: 2);
+        final s2 = _SnapshotEnergyService(maxEnergy: 6, count: 5);
+        const interval = Duration(seconds: 30);
 
-      await tester.pumpWidget(_wrap(ReactiveEnergyBar(
-        energyService: s1,
-        pollInterval: interval,
-      )));
-      await tester.pump(const Duration(milliseconds: 50));
-      expect(find.byIcon(Icons.favorite), findsNWidgets(2));
+        await tester.pumpWidget(
+          _wrap(ReactiveEnergyBar(energyService: s1, pollInterval: interval)),
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.byIcon(Icons.favorite), findsNWidgets(2));
 
-      await tester.pumpWidget(_wrap(ReactiveEnergyBar(
-        energyService: s2,
-        pollInterval: interval,
-      )));
-      // Chưa tới lần poll kế tiếp (30s): chỉ didUpdateWidget mới làm UI đổi.
-      await tester.pump(const Duration(milliseconds: 50));
-      expect(find.byIcon(Icons.favorite), findsNWidgets(5));
-      expect(find.byIcon(Icons.favorite_border), findsNWidgets(1));
+        await tester.pumpWidget(
+          _wrap(ReactiveEnergyBar(energyService: s2, pollInterval: interval)),
+        );
+        // Chưa tới lần poll kế tiếp (30s): chỉ didUpdateWidget mới làm UI đổi.
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.byIcon(Icons.favorite), findsNWidgets(5));
+        expect(find.byIcon(Icons.favorite_border), findsNWidgets(1));
 
-      await tester.pumpWidget(const SizedBox.shrink());
-      expect(tester.takeException(), isNull);
-    });
+        await tester.pumpWidget(const SizedBox.shrink());
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('poll làm mới khi CHỈ đếm lùi đổi, rồi khi CHỈ trạng thái vô hạn đổi', (
-      tester,
-    ) async {
-      final service = _SnapshotEnergyService(maxEnergy: 3, count: 1)
-        ..until = const Duration(seconds: 30);
-      await tester.pumpWidget(_wrap(ReactiveEnergyBar(
-        energyService: service,
-        pollInterval: const Duration(milliseconds: 200),
-      )));
-      await tester.pump(const Duration(milliseconds: 50));
-      expect(find.text('00:30'), findsOneWidget);
+    testWidgets(
+      'poll làm mới khi CHỈ đếm lùi đổi, rồi khi CHỈ trạng thái vô hạn đổi',
+      (tester) async {
+        final service = _SnapshotEnergyService(maxEnergy: 3, count: 1)
+          ..until = const Duration(seconds: 30);
+        await tester.pumpWidget(
+          _wrap(
+            ReactiveEnergyBar(
+              energyService: service,
+              pollInterval: const Duration(milliseconds: 200),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.text('00:30'), findsOneWidget);
 
-      // Chỉ đếm lùi đổi (số tim giữ nguyên).
-      service.until = const Duration(seconds: 12);
-      await tester.pump(const Duration(milliseconds: 200));
-      expect(find.text('00:12'), findsOneWidget);
-      expect(find.byIcon(Icons.favorite), findsOneWidget);
+        // Chỉ đếm lùi đổi (số tim giữ nguyên).
+        service.until = const Duration(seconds: 12);
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.text('00:12'), findsOneWidget);
+        expect(find.byIcon(Icons.favorite), findsOneWidget);
 
-      // Chỉ trạng thái vô hạn đổi.
-      expect(find.text('∞'), findsNothing);
-      service.infinite = true;
-      await tester.pump(const Duration(milliseconds: 200));
-      expect(find.text('∞'), findsOneWidget);
-      expect(find.byIcon(Icons.favorite), findsNothing);
+        // Chỉ trạng thái vô hạn đổi.
+        expect(find.text('∞'), findsNothing);
+        service.infinite = true;
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.text('∞'), findsOneWidget);
+        expect(find.byIcon(Icons.favorite), findsNothing);
 
-      await tester.pumpWidget(const SizedBox.shrink());
-      expect(tester.takeException(), isNull);
-    });
+        await tester.pumpWidget(const SizedBox.shrink());
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('didUpdateWidget trên EnergyBar khởi động lại timer đếm lùi', (
       tester,
     ) async {
-      await tester.pumpWidget(_wrap(const EnergyBar(
-        currentEnergy: 1,
-        maxEnergy: 2,
-        timeUntilNextEnergy: Duration(seconds: 5),
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          const EnergyBar(
+            currentEnergy: 1,
+            maxEnergy: 2,
+            timeUntilNextEnergy: Duration(seconds: 5),
+          ),
+        ),
+      );
       await tester.pump(const Duration(seconds: 2));
       expect(find.text('00:03'), findsOneWidget);
 
       // Cập nhật mốc mới
-      await tester.pumpWidget(_wrap(const EnergyBar(
-        currentEnergy: 1,
-        maxEnergy: 2,
-        timeUntilNextEnergy: Duration(seconds: 10),
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          const EnergyBar(
+            currentEnergy: 1,
+            maxEnergy: 2,
+            timeUntilNextEnergy: Duration(seconds: 10),
+          ),
+        ),
+      );
       await tester.pump(const Duration(seconds: 1));
       expect(find.text('00:09'), findsOneWidget);
     });

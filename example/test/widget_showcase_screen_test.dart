@@ -813,6 +813,36 @@ void main() {
     },
   );
 
+  testWidgets(
+    'FEAT-126: EnergyBar refill (+) invokes caller action and updates status',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final refill = find.byKey(const ValueKey('energyBarRefillBtn'));
+      await tester.scrollUntilVisible(
+        refill,
+        300,
+        scrollable: find
+            .descendant(
+              of: find.byKey(const ValueKey('widgetShowcaseList')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.ensureVisible(refill);
+      await tester.pump();
+      expect(find.text('Refills: 0'), findsOneWidget);
+
+      await tester.tap(refill);
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('Refills: 1'), findsOneWidget);
+      expect(find.text('∞'), findsWidgets);
+      expect(find.byKey(const ValueKey('energyBarRefillBtn')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   group('ENH-55: previously-untested demo interactions', () {
     // The 3 newest widgets (per Đề xuất's priority) first.
     testWidgets(

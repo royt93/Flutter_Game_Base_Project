@@ -32,6 +32,8 @@ class EnergyBar extends StatefulWidget {
     this.emptyIcon = Icons.favorite_border,
     this.color,
     this.semanticLabel,
+    this.onRefillTap,
+    this.enableStatusPulse = true,
   });
 
   final int currentEnergy;
@@ -58,13 +60,33 @@ class EnergyBar extends StatefulWidget {
   /// label (ENH-37).
   final String? semanticLabel;
 
+  /// When non-null, a compact (+) button is shown after the pips/countdown
+  /// and calls this on tap — the caller decides what "refill" means (open a
+  /// shop, ask friends, watch an ad). `null` (default) shows no button, so
+  /// existing callers are unchanged. Hidden while [hasInfiniteLives].
+  final VoidCallback? onRefillTap;
+
+  /// Heartbeat pulse on the pips while lives are at zero (danger) — skipped
+  /// under Reduce Motion, when [hasInfiniteLives], or when `false`.
+  final bool enableStatusPulse;
+
   @override
   State<EnergyBar> createState() => _EnergyBarState();
 }
 
-class _EnergyBarState extends State<EnergyBar> {
+class _EnergyBarState extends State<EnergyBar>
+    with SingleTickerProviderStateMixin {
   late Duration _remaining = widget.timeUntilNextEnergy;
   Timer? _timer;
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 700),
+  );
+
+  bool get _wantsPulse =>
+      widget.enableStatusPulse &&
+      !widget.hasInfiniteLives &&
+      widget.currentEnergy <= 0;
 
   @override
   void initState() {
@@ -73,11 +95,29 @@ class _EnergyBarState extends State<EnergyBar> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncPulse();
+  }
+
+  @override
   void didUpdateWidget(EnergyBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.timeUntilNextEnergy != widget.timeUntilNextEnergy) {
       _remaining = widget.timeUntilNextEnergy;
       _startTimer();
+    }
+    _syncPulse();
+  }
+
+  void _syncPulse() {
+    final run = _wantsPulse && !NeonTheme.reducedMotion(context);
+    if (run && !_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    } else if (!run && (_pulse.isAnimating || _pulse.value != 0)) {
+      _pulse
+        ..stop()
+        ..value = 0;
     }
   }
 
@@ -97,6 +137,7 @@ class _EnergyBarState extends State<EnergyBar> {
   @override
   void dispose() {
     _timer?.cancel();
+    _pulse.dispose();
     super.dispose();
   }
 
@@ -108,10 +149,43 @@ class _EnergyBarState extends State<EnergyBar> {
             ? 'Energy: infinite'
             : 'Energy: ${widget.currentEnergy}/${widget.maxEnergy}'
                   '${widget.currentEnergy < widget.maxEnergy ? ', next in ${fmtDur(_remaining)}' : ''}');
-    return Semantics(
+    final mainBar = Semantics(
       label: label,
       excludeSemantics: true,
       child: _buildContent(context),
+    );
+
+    if (widget.onRefillTap == null || widget.hasInfiniteLives) {
+      return mainBar;
+    }
+
+    final refillButton = Padding(
+      padding: const EdgeInsetsDirectional.only(start: NeonTheme.s8),
+      child: Semantics(
+        button: true,
+        label: 'Refill lives',
+        child: GestureDetector(
+          key: const ValueKey('energyBarRefillBtn'),
+          onTap: widget.onRefillTap,
+          child: Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: NeonTheme.card,
+              shape: BoxShape.circle,
+              border: Border.all(color: NeonTheme.lime, width: 2),
+              boxShadow: NeonTheme.drop(blur: 4),
+            ),
+            child: Icon(Icons.add_rounded, color: NeonTheme.lime, size: 20),
+          ),
+        ),
+      ),
+    );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [mainBar, refillButton],
     );
   }
 
@@ -129,25 +203,36 @@ class _EnergyBarState extends State<EnergyBar> {
 
     final reducedMotion = NeonTheme.reducedMotion(context);
     final fillColor = widget.color ?? NeonTheme.red;
-    final pips = Wrap(
-      spacing: 4,
-      children: List.generate(widget.maxEnergy, (i) {
-        final filled = i < widget.currentEnergy;
-        final icon = Icon(
-          filled ? widget.icon : widget.emptyIcon,
-          color: filled ? fillColor : NeonTheme.muted,
-          size: 24,
+    final pips = AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, child) {
+        final pulseScale = _wantsPulse && !reducedMotion
+            ? 1 + 0.05 * _pulse.value
+            : 1.0;
+        return Transform.scale(
+          key: const ValueKey('energyBarPulse'),
+          scale: pulseScale,
+          child: child,
         );
-        // Decorative pop only for the pip that just changed state —
-        // skipped entirely under Reduce Motion.
-        return reducedMotion
-            ? icon
-            : AnimatedScale(
-                scale: filled ? 1.0 : 0.9,
-                duration: const Duration(milliseconds: 150),
-                child: icon,
-              );
-      }),
+      },
+      child: Wrap(
+        spacing: 4,
+        children: List.generate(widget.maxEnergy, (i) {
+          final filled = i < widget.currentEnergy;
+          final icon = Icon(
+            filled ? widget.icon : widget.emptyIcon,
+            color: filled ? fillColor : NeonTheme.muted,
+            size: 24,
+          );
+          return reducedMotion
+              ? icon
+              : AnimatedScale(
+                  scale: filled ? 1.0 : 0.9,
+                  duration: const Duration(milliseconds: 150),
+                  child: icon,
+                );
+        }),
+      ),
     );
     final showCountdown = widget.currentEnergy < widget.maxEnergy;
     final countdown = Row(
@@ -166,29 +251,30 @@ class _EnergyBarState extends State<EnergyBar> {
       ],
     );
 
-    // ENH-42: horizontal lays pips + countdown side by side (compact
-    // app-bar placement); vertical (default) keeps the original stacked
-    // layout unchanged.
-    if (widget.direction == Axis.horizontal) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          pips,
-          if (showCountdown) ...[
-            const SizedBox(width: NeonTheme.s8),
-            countdown,
-          ],
-        ],
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        pips,
-        if (showCountdown) ...[const SizedBox(height: NeonTheme.s8), countdown],
-      ],
-    );
+    final pipsAndCountdown = widget.direction == Axis.horizontal
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              pips,
+              if (showCountdown) ...[
+                const SizedBox(width: NeonTheme.s8),
+                countdown,
+              ],
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              pips,
+              if (showCountdown) ...[
+                const SizedBox(height: NeonTheme.s8),
+                countdown,
+              ],
+            ],
+          );
+
+    return pipsAndCountdown;
   }
 }
 
@@ -215,6 +301,8 @@ class ReactiveEnergyBar extends StatefulWidget {
     this.emptyIcon = Icons.favorite_border,
     this.color,
     this.semanticLabel,
+    this.onRefillTap,
+    this.enableStatusPulse = true,
   });
 
   final EnergyService? energyService;
@@ -224,6 +312,8 @@ class ReactiveEnergyBar extends StatefulWidget {
   final IconData emptyIcon;
   final Color? color;
   final String? semanticLabel;
+  final VoidCallback? onRefillTap;
+  final bool enableStatusPulse;
 
   @override
   State<ReactiveEnergyBar> createState() => _ReactiveEnergyBarState();
@@ -309,6 +399,14 @@ class _ReactiveEnergyBarState extends State<ReactiveEnergyBar> {
       emptyIcon: widget.emptyIcon,
       color: widget.color,
       semanticLabel: widget.semanticLabel,
+      onRefillTap: widget.onRefillTap,
+      enableStatusPulse: widget.enableStatusPulse,
     );
   }
 }
+
+/// Semantic alias for [EnergyBar] matching the Lives/Heart HUD pattern (FEAT-126).
+typedef LivesHeartHud = EnergyBar;
+
+/// Semantic alias for [ReactiveEnergyBar] matching the Lives/Heart HUD pattern (FEAT-126).
+typedef ReactiveLivesHeartHud = ReactiveEnergyBar;
