@@ -206,6 +206,63 @@ void main() {
   });
 
   testWidgets(
+    'FEAT-138: move hint consumes uses, switches to Get More and dismisses',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final open = find.byKey(const Key('openMoveHintBtn'));
+      await tester.scrollUntilVisible(open, 350, scrollable: scrollable);
+      await tester.ensureVisible(open);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('moveHintShowcaseStatus'));
+      String statusText() => tester.widget<Text>(status).data!;
+      expect(statusText(), 'Hints: 3 · Shown: 0 · Refills: 0 · none');
+
+      // Consume three available hints; each dialog is dismissed through its
+      // dialog action so the next modal opens only after the previous closes.
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(open);
+        await tester.pump(const Duration(milliseconds: 300));
+        final action = tester.widget<CommonButton>(
+          find.byKey(const ValueKey('moveHintActionBtn')),
+        );
+        action.onTap!.call();
+        await tester.pump(const Duration(milliseconds: 300));
+        final dismiss = tester.widget<NeonDialogButton>(
+          find.byWidgetPredicate(
+            (w) => w is NeonDialogButton && w.action.label == 'Got it',
+          ),
+        );
+        dismiss.action.onTap();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+      }
+      expect(statusText(), 'Hints: 0 · Shown: 3 · Refills: 0 · Dismissed');
+
+      await tester.tap(open);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Get More (+)'), findsWidgets);
+      final getMore = tester.widget<CommonButton>(
+        find.byKey(const ValueKey('moveHintActionBtn')),
+      );
+      getMore.onTap!.call();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        statusText(),
+        'Hints: 0 · Shown: 3 · Refills: 1 · Refill requested',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-137: win streak advances multiplier tiers, info tap, and loss resets',
     (tester) async {
       await _pumpShowcase(tester);

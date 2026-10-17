@@ -1016,6 +1016,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       : _winStreak > 0
       ? 'x1.5'
       : 'x1';
+  int _moveHintCount = 3;
+  int _moveHintShown = 0;
+  int _moveHintRefillCount = 0;
+  String _moveHintFeedback = 'none';
   int _weeklyChallengeProgress = 20;
   final Set<int> _weeklyChallengeClaimed = {};
   int _weeklyChallengeClaims = 0;
@@ -4771,6 +4775,54 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           ),
                                         ),
                                       ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'MoveHintPopup (FEAT-138)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Hints: $_moveHintCount · Shown: $_moveHintShown · Refills: $_moveHintRefillCount · $_moveHintFeedback',
+                                      key: const Key('moveHintShowcaseStatus'),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    CommonButton(
+                                      key: const Key('openMoveHintBtn'),
+                                      label: 'Open move hint',
+                                      onTap: () => MoveHintPopup.show(
+                                        context,
+                                        type: MoveHintType.swap,
+                                        title: 'Swap Tiles',
+                                        message:
+                                            'Swap these gems to complete a match.',
+                                        remainingHints: _moveHintCount,
+                                        onHintTap: () => setState(() {
+                                          _moveHintCount--;
+                                          _moveHintShown++;
+                                          _moveHintFeedback = 'Hint shown';
+                                        }),
+                                        onEmptyHintTap: () => setState(() {
+                                          _moveHintRefillCount++;
+                                          _moveHintFeedback =
+                                              'Refill requested';
+                                        }),
+                                        onDismiss: () => setState(() {
+                                          _moveHintFeedback = 'Dismissed';
+                                        }),
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    CommonButton(
+                                      key: const Key('moveHintForceEmptyBtn'),
+                                      label: 'Set hints to 0',
+                                      variant: CommonButtonVariant.secondary,
+                                      onTap: () => setState(() {
+                                        _moveHintCount = 0;
+                                        _moveHintFeedback = 'Out of hints';
+                                      }),
                                     ),
                                   ],
                                 ),
