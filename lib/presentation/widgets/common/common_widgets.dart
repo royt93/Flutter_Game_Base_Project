@@ -48,6 +48,7 @@ export 'tutorial_sequence.dart';
 export 'progress_bar_stars.dart';
 export 'circular_progress_ring.dart';
 export 'star_rating.dart';
+export 'star_chest_progress_hud.dart';
 export 'currency_counter.dart';
 export 'golden_shimmer_text.dart';
 export 'reward_popup.dart';

@@ -85,6 +85,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     () => setState(() => _throttledTapCount++),
   );
   int _starsEarned = 1;
+  int _starChestAccumulated = 15;
+  int _starChestOpenedCount = 0;
+  String _starChestFeedback = 'none';
   double _progress = 0.4;
   int _strawberryGoalProgress = 8;
   int _iceGoalProgress = 3;
@@ -2152,6 +2155,66 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     CommonButton(
                                       label: 'Cycle stars',
                                       onTap: _cycleStars,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'StarChestProgressHud (FEAT-134)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    StarChestProgressHud(
+                                      currentStars: _starChestAccumulated,
+                                      targetStars: 20,
+                                      onOpenChestTap: () => setState(() {
+                                        _starChestOpenedCount++;
+                                        _starChestAccumulated =
+                                            (_starChestAccumulated - 20).clamp(
+                                              0,
+                                              999,
+                                            );
+                                        _starChestFeedback =
+                                            'Opened Star Chest!';
+                                      }),
+                                      onInfoTap: () => setState(() {
+                                        _starChestFeedback =
+                                            'Need ${20 - _starChestAccumulated} more stars';
+                                      }),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Star Chest status: $_starChestFeedback · Opened: $_starChestOpenedCount',
+                                      key: const Key('starChestShowcaseStatus'),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          key: const Key(
+                                            'starChestAddStarsBtn',
+                                          ),
+                                          label: 'Add +5 stars',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(() {
+                                            _starChestAccumulated += 5;
+                                            _starChestFeedback =
+                                                'Earned 5 stars';
+                                          }),
+                                        ),
+                                        CommonButton(
+                                          key: const Key('starChestResetBtn'),
+                                          label: 'Reset stars',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(() {
+                                            _starChestAccumulated = 15;
+                                            _starChestFeedback = 'none';
+                                          }),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),

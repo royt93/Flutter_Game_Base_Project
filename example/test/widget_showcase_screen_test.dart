@@ -206,6 +206,50 @@ void main() {
   });
 
   testWidgets(
+    'FEAT-134: star chest hud shows info, adds stars to fill, and opens chest',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final addStarsBtn = find.byKey(const Key('starChestAddStarsBtn'));
+      await tester.scrollUntilVisible(addStarsBtn, 350, scrollable: scrollable);
+      await tester.ensureVisible(addStarsBtn);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('starChestShowcaseStatus'));
+      String statusText() => tester.widget<Text>(status).data!;
+      expect(statusText(), 'Star Chest status: none · Opened: 0');
+      expect(find.text('15/20 ⭐'), findsOneWidget);
+
+      // Tap when not ready -> calls onInfoTap
+      final tapTarget = find.byKey(const ValueKey('starChestTapTarget'));
+      await tester.ensureVisible(tapTarget);
+      await tester.tap(tapTarget);
+      await tester.pump();
+      expect(statusText(), 'Star Chest status: Need 5 more stars · Opened: 0');
+
+      // Add stars (+5) -> reaches 20/20, ready to open
+      await tester.ensureVisible(addStarsBtn);
+      await tester.tap(addStarsBtn);
+      await tester.pump();
+      expect(statusText(), 'Star Chest status: Earned 5 stars · Opened: 0');
+      expect(find.byKey(const ValueKey('starChestOpenBadge')), findsOneWidget);
+
+      // Tap when ready -> calls onOpenChestTap
+      await tester.ensureVisible(tapTarget);
+      await tester.tap(tapTarget);
+      await tester.pump();
+      expect(statusText(), 'Star Chest status: Opened Star Chest! · Opened: 1');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-132: multiplier wheel stops needle, awards prize, and resets',
     (tester) async {
       await _pumpShowcase(tester);

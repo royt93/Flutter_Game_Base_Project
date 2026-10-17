@@ -19,11 +19,11 @@ Widget `StarChestProgressHud` hiển thị:
 - Widget thuần dữ liệu: caller sở hữu số sao tích luỹ và logic trả thưởng khi mở.
 
 ## Yêu cầu kiểm thử
-- [ ] **Unit test**: Kiểm tra tính toán % tiến độ, trạng thái `isReadyToOpen`, validate `targetStars > 0` và `currentStars >= 0`.
-- [ ] **Widget test**: Khi đủ sao hiển thị nhãn "Open!" và gọi `onOpenChestTap` khi bấm; khi chưa đủ gọi `onInfoTap`; Reduced Motion tắt hiệu ứng golden pulse.
-- [ ] **Showcase test**: Tích hợp cụm Star Chest vào showcase có nút cộng sao và mở rương, cập nhật UI chính xác.
-- [ ] **Physical integration**: Kiểm tra hiển thị và phản hồi tap trên thiết bị vật lý thật (Pixel 7 Pro), không dùng simulator.
+- [x] **Unit test**: Kiểm tra `starChestProgressFraction`, kẹp 0.0..1.0, validate `targetStars > 0`, `currentStars >= 0` và chiều cao dương.
+- [x] **Widget test**: Khi đủ sao hiển thị nhãn "Open!" và gọi `onOpenChestTap` khi bấm; khi chưa đủ hiển thị số sao và gọi `onInfoTap`; Reduced Motion tắt hiệu ứng golden pulse; semantics đọc rõ tiến độ sao và trạng thái sẵn sàng mở.
+- [x] **Showcase test**: Tích hợp cụm Star Chest vào showcase có nút cộng sao và mở rương, cập nhật UI chính xác.
+- [x] **Physical integration**: Smoke pass trên Google Pixel 7 Pro (`2B051FDH3006MU`), không dùng simulator.
 
 ## Hiệu năng & Animation
-- [ ] Golden pulse điều khiển bởi `AnimationController` chạy lặp khi rương sẵn sàng, tự động dừng khi unmount hoặc khi sao chưa đầy.
-- [ ] Sustained 60 FPS benchmark: đo theo quy chuẩn định sẵn nếu cần.
+- [x] Golden pulse điều khiển bởi `AnimationController` chạy lặp khi rương sẵn sàng, tự động dừng khi unmount hoặc khi sao chưa đầy; vẽ trong `RepaintBoundary`.
+- [ ] Sustained 60 FPS benchmark: chưa đo; không tuyên bố đạt 60 FPS.
