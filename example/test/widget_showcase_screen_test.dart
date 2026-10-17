@@ -205,6 +205,44 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'FEAT-131: tap hint toggles, switches gesture, never blocks tap',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final toggle = find.byKey(const Key('tapHintToggleBtn'));
+      await tester.scrollUntilVisible(toggle, 350, scrollable: scrollable);
+      await tester.ensureVisible(toggle);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('tapHintStatus'));
+      String statusText() => tester.widget<Text>(status).data!;
+      expect(statusText(), 'Hint: tap · Target taps: 0');
+      expect(find.byKey(const ValueKey('tapHintHand')), findsOneWidget);
+
+      await tester.tap(find.text('Tap me').last);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Hint: tap · Target taps: 1');
+
+      await tester.tap(find.byKey(const Key('tapHintGestureBtn')));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Hint: swipe · Target taps: 1');
+      expect(find.byKey(const ValueKey('tapHintHand')), findsOneWidget);
+
+      await tester.tap(toggle);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Hint: hidden · Target taps: 1');
+      expect(find.byKey(const ValueKey('tapHintHand')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('FEAT-128: combo meter fills, ranks up, and drops', (
     tester,
   ) async {

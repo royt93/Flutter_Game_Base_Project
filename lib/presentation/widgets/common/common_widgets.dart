@@ -107,3 +107,4 @@ export 'squash_stretch.dart';
 export 'screen_shake.dart';
 export 'combo_heat_background.dart';
 export 'combo_meter_bar.dart';
+export 'tap_hint_pointer.dart';

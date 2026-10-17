@@ -994,6 +994,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _flashSaleBuys = 0;
   ChestTier _chestTier = ChestTier.wood;
   bool _chestOpened = false;
+  final GlobalKey _hintTargetKey = GlobalKey();
+  bool _hintVisible = true;
+  TapHintGesture _hintGesture = TapHintGesture.tap;
+  int _hintTargetTaps = 0;
   int _comboMultiplier = 1;
   double _comboProgress = 0.0;
   bool _flashSaleExpired = false;
@@ -4516,6 +4520,89 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                             _comboMultiplier = 1;
                                             _comboProgress = 0.0;
                                           }),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'TapHintPointer (FEAT-131)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      height: 120,
+                                      child: Stack(
+                                        children: [
+                                          Positioned(
+                                            left: 24,
+                                            top: 36,
+                                            child: CommonButton(
+                                              key: _hintTargetKey,
+                                              label: 'Tap me',
+                                              onTap: () => setState(
+                                                () => _hintTargetTaps++,
+                                              ),
+                                            ),
+                                          ),
+                                          Positioned.fill(
+                                            child: TapHintPointer(
+                                              key: const Key('tapHintDemo'),
+                                              targetKey: _hintTargetKey,
+                                              gesture: TapHintGesture.tap,
+                                              visible:
+                                                  _hintVisible &&
+                                                  _hintGesture ==
+                                                      TapHintGesture.tap,
+                                            ),
+                                          ),
+                                          Positioned.fill(
+                                            child: TapHintPointer(
+                                              key: const Key('swipeHintDemo'),
+                                              position: const Offset(60, 90),
+                                              gesture: TapHintGesture.swipe,
+                                              swipeTo: const Offset(240, 90),
+                                              visible:
+                                                  _hintVisible &&
+                                                  _hintGesture ==
+                                                      TapHintGesture.swipe,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      'Hint: ${_hintVisible ? _hintGesture.name : 'hidden'} · Target taps: $_hintTargetTaps',
+                                      key: const Key('tapHintStatus'),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          key: const Key('tapHintToggleBtn'),
+                                          label: _hintVisible
+                                              ? 'Hide hint'
+                                              : 'Show hint',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(
+                                            () => _hintVisible = !_hintVisible,
+                                          ),
+                                        ),
+                                        CommonButton(
+                                          key: const Key('tapHintGestureBtn'),
+                                          label: 'Switch tap/swipe',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(
+                                            () => _hintGesture =
+                                                _hintGesture ==
+                                                    TapHintGesture.tap
+                                                ? TapHintGesture.swipe
+                                                : TapHintGesture.tap,
+                                          ),
                                         ),
                                       ],
                                     ),
