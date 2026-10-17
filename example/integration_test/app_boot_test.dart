@@ -2452,6 +2452,45 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-136: weekly challenge milestone claims on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final addProgress = find.byKey(const Key('weeklyChallengeAddBtn'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && addProgress.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(addProgress, findsWidgets);
+      await tester.ensureVisible(addProgress.first);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(addProgress.first);
+      await tester.pump(const Duration(milliseconds: 300));
+      final claim = find.byKey(const ValueKey('weeklyChallengeClaim_0'));
+      await tester.ensureVisible(claim);
+      await tester.drag(find.byType(ListView).first, const Offset(0, 150));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(claim);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('Claims: 1'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-135: milestone dialog opens and claims on physical device',
     (tester) async {
       await app.app();

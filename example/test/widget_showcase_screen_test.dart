@@ -206,6 +206,55 @@ void main() {
   });
 
   testWidgets(
+    'FEAT-136: weekly challenge advances, claims milestones and resets',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final addProgress = find.byKey(const Key('weeklyChallengeAddBtn'));
+      await tester.scrollUntilVisible(addProgress, 350, scrollable: scrollable);
+      await tester.ensureVisible(addProgress);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('weeklyChallengeShowcaseStatus'));
+      String statusText() => tester.widget<Text>(status).data!;
+      expect(statusText(), 'Weekly progress: 20 · Claims: 0');
+
+      // Add 30 -> progress 50, unlock milestone 25. Claim through its milestone callback.
+      await tester.tap(addProgress);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Weekly progress: 50 · Claims: 0');
+      final tier1 = find.byKey(const ValueKey('weeklyChallengeClaim_0'));
+      await tester.ensureVisible(tier1);
+      await tester.tap(tier1);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Weekly progress: 50 · Claims: 1');
+
+      // Add 30 -> progress 80, unlock milestone 75; claim once.
+      await tester.ensureVisible(addProgress);
+      await tester.tap(addProgress);
+      await tester.pump(const Duration(milliseconds: 100));
+      final tier2 = find.byKey(const ValueKey('weeklyChallengeClaim_1'));
+      await tester.ensureVisible(tier2);
+      await tester.tap(tier2);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Weekly progress: 80 · Claims: 2');
+
+      final reset = find.byKey(const Key('weeklyChallengeResetBtn'));
+      await tester.ensureVisible(reset);
+      await tester.tap(reset);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Weekly progress: 20 · Claims: 0');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-135: milestone dialog opens, claim updates caller status and closes',
     (tester) async {
       await _pumpShowcase(tester);

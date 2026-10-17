@@ -78,6 +78,7 @@ export 'shop_item_card.dart';
 export 'flash_sale_offer_card.dart';
 export 'tiered_reward_chest.dart';
 export 'season_event_banner.dart';
+export 'weekly_challenge_card.dart';
 export 'victory_card_template.dart';
 export 'leaderboard_list.dart';
 export 'quest_board_panel.dart';

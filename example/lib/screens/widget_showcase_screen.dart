@@ -1007,6 +1007,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   String _lastBoosterAction = 'none';
   int _lastSelectedPathLevel = 0;
   int _milestoneClaims = 0;
+  int _weeklyChallengeProgress = 20;
+  final Set<int> _weeklyChallengeClaimed = {};
+  int _weeklyChallengeClaims = 0;
   int? _multiplierWheelWon;
   final _multiplierWheelController = CoinMultiplierWheelController();
   int _seasonEventTaps = 0;
@@ -4808,6 +4811,84 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                               CommonButtonVariant.secondary,
                                           onTap: () => setState(() {
                                             _seasonEventProgress = 0.0;
+                                          }),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'WeeklyChallengeCard (FEAT-136)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    WeeklyChallengeCard(
+                                      title: 'Weekly Gem Race',
+                                      subtitle: 'Earn 100 gems this week',
+                                      expiresAt: _seasonEventEndsAt,
+                                      currentProgress: _weeklyChallengeProgress,
+                                      targetProgress: 100,
+                                      milestones: [
+                                        ChallengeMilestone(
+                                          target: 25,
+                                          label: '25 gems',
+                                          isClaimed: _weeklyChallengeClaimed
+                                              .contains(0),
+                                        ),
+                                        ChallengeMilestone(
+                                          target: 75,
+                                          label: '75 gems',
+                                          isClaimed: _weeklyChallengeClaimed
+                                              .contains(1),
+                                        ),
+                                        ChallengeMilestone(
+                                          target: 100,
+                                          label: 'Crown',
+                                          isClaimed: _weeklyChallengeClaimed
+                                              .contains(2),
+                                        ),
+                                      ],
+                                      onClaimMilestone: (index) => setState(() {
+                                        _weeklyChallengeClaimed.add(index);
+                                        _weeklyChallengeClaims++;
+                                      }),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Weekly progress: $_weeklyChallengeProgress · Claims: $_weeklyChallengeClaims',
+                                      key: const Key(
+                                        'weeklyChallengeShowcaseStatus',
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          key: const Key(
+                                            'weeklyChallengeAddBtn',
+                                          ),
+                                          label: 'Add +30 progress',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(() {
+                                            _weeklyChallengeProgress =
+                                                (_weeklyChallengeProgress + 30)
+                                                    .clamp(0, 100);
+                                          }),
+                                        ),
+                                        CommonButton(
+                                          key: const Key(
+                                            'weeklyChallengeResetBtn',
+                                          ),
+                                          label: 'Reset weekly',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(() {
+                                            _weeklyChallengeProgress = 20;
+                                            _weeklyChallengeClaimed.clear();
+                                            _weeklyChallengeClaims = 0;
                                           }),
                                         ),
                                       ],
