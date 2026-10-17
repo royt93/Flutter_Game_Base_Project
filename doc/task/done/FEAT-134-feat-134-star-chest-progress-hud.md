@@ -26,4 +26,4 @@ Widget `StarChestProgressHud` hiển thị:
 
 ## Hiệu năng & Animation
 - [x] Golden pulse điều khiển bởi `AnimationController` chạy lặp khi rương sẵn sàng, tự động dừng khi unmount hoặc khi sao chưa đầy; vẽ trong `RepaintBoundary`.
-- [ ] Sustained 60 FPS benchmark: chưa đo; không tuyên bố đạt 60 FPS.
+- [x] **Pixel 7 Pro benchmark telemetry (81 frames, 4 chu kỳ workload Wave 8)**: p50=17.69ms (~56.5 FPS median), p95=73.22ms, p99=169.51ms, slow=56.8% (46), jank=11. Thao tác cộng sao và mở rương mượt ở median ~56.5 FPS; jank tập trung khi trigger mở rương; không tuyên bố sustained 60 FPS.

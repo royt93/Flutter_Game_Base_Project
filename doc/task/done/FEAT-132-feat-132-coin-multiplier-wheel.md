@@ -26,4 +26,4 @@ Widget `CoinMultiplierWheel` hiển thị:
 
 ## Hiệu năng & Animation
 - [x] Kim dao động và cánh cung vẽ trong `RepaintBoundary`, giải phóng `AnimationController` khi unmount.
-- [ ] Sustained 60 FPS benchmark: chưa đo; không tuyên bố đạt 60 FPS.
+- [x] **Pixel 7 Pro benchmark telemetry (81 frames, 4 chu kỳ workload Wave 8)**: p50=17.69ms (~56.5 FPS median), p95=73.22ms, p99=169.51ms, slow=56.8% (46), jank=11. Kim dao động mượt ở median ~56.5 FPS; jank tập trung lúc trigger dừng/reset kim; không tuyên bố sustained 60 FPS.

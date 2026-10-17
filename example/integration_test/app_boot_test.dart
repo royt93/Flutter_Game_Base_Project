@@ -2224,90 +2224,122 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets(
-    'BENCHMARK: Wave 6-7 casual expansion widgets FrameTiming on Pixel 7 Pro',
-    (tester) async {
-      await app.app();
-      await tester.pump(const Duration(seconds: 4));
-      await _goToWidgetShowcase(tester);
+  testWidgets('BENCHMARK: Wave 8 casual widgets FrameTiming on Pixel 7 Pro', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
 
-      final upgradeChest = find.byKey(const Key('tieredChestUpgradeBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && upgradeChest.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 80));
+    final stopWheelAnchor = find.byKey(const Key('multiplierWheelStopBtn'));
+    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+    final scrollable = find
+        .descendant(of: showcaseList, matching: find.byType(Scrollable))
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && stopWheelAnchor.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 80));
+    }
+    expect(stopWheelAnchor, findsWidgets);
+    await tester.ensureVisible(stopWheelAnchor.first);
+    await tester.pump(const Duration(seconds: 1));
+
+    final frameDurationsMs = <double>[];
+    void onTimings(List<FrameTiming> timings) {
+      for (final t in timings) {
+        frameDurationsMs.add(t.totalSpan.inMicroseconds / 1000.0);
       }
-      expect(upgradeChest, findsWidgets);
-      await tester.ensureVisible(upgradeChest.first);
-      await tester.pump(const Duration(seconds: 1));
+    }
 
-      final frameDurationsMs = <double>[];
-      void onTimings(List<FrameTiming> timings) {
-        for (final t in timings) {
-          frameDurationsMs.add(t.totalSpan.inMicroseconds / 1000.0);
-        }
-      }
+    SchedulerBinding.instance.addTimingsCallback(onTimings);
+    addTearDown(
+      () => SchedulerBinding.instance.removeTimingsCallback(onTimings),
+    );
 
-      SchedulerBinding.instance.addTimingsCallback(onTimings);
-      addTearDown(
-        () => SchedulerBinding.instance.removeTimingsCallback(onTimings),
-      );
+    // Repeat the 4-widget Wave 8 workload to collect enough profile frames
+    // for p95/p99 to be meaningful (wheel stop/reset, chest fill/open, path
+    // node tap, milestone open/claim).
+    final stopWheel = find.byKey(const Key('multiplierWheelStopBtn'));
+    final resetWheel = find.byKey(const Key('multiplierWheelResetBtn'));
+    final addStars = find.byKey(const Key('starChestAddStarsBtn'));
+    final chestTap = find.byKey(const ValueKey('starChestTapTarget'));
+    final pathNode = find.byKey(const ValueKey('levelPathNodeTap_4'));
+    final openMilestone = find.byKey(const Key('openMilestoneBtn'));
+    final claim = find.text('Claim');
 
-      // Workload: 3 tier upgrades + chest opening + 5 combo adds
-      for (var i = 0; i < 3; i++) {
-        await tester.ensureVisible(upgradeChest.first);
-        await tester.tap(upgradeChest.first);
+    for (var cycle = 0; cycle < 4; cycle++) {
+      if (stopWheel.evaluate().isNotEmpty) {
+        await tester.ensureVisible(stopWheel.first);
+        await tester.tap(stopWheel.first);
         for (var f = 0; f < 8; f++) {
-          await tester.pump(const Duration(milliseconds: 60));
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        await tester.ensureVisible(resetWheel.first);
+        await tester.tap(resetWheel.first);
+        for (var f = 0; f < 8; f++) {
+          await tester.pump(const Duration(milliseconds: 50));
         }
       }
 
-      final chest = find.byKey(const ValueKey('tieredChestTap'));
-      await tester.ensureVisible(chest.first);
-      await tester.tap(chest.first);
-      for (var f = 0; f < 15; f++) {
-        await tester.pump(const Duration(milliseconds: 60));
-      }
-
-      final addCombo = find.byKey(const Key('comboMeterAddBtn'));
-      await tester.ensureVisible(addCombo.first);
-      for (var i = 0; i < 5; i++) {
-        await tester.tap(addCombo.first);
+      if (addStars.evaluate().isNotEmpty) {
+        await tester.ensureVisible(addStars.first);
+        await tester.tap(addStars.first);
         for (var f = 0; f < 6; f++) {
-          await tester.pump(const Duration(milliseconds: 60));
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        await tester.ensureVisible(chestTap.first);
+        await tester.tap(chestTap.first);
+        for (var f = 0; f < 10; f++) {
+          await tester.pump(const Duration(milliseconds: 50));
         }
       }
 
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(tester.takeException(), isNull);
-
-      if (frameDurationsMs.isNotEmpty) {
-        frameDurationsMs.sort();
-        final p50 = frameDurationsMs[(frameDurationsMs.length * 0.50).floor()];
-        final p95 = frameDurationsMs[(frameDurationsMs.length * 0.95).floor()];
-        final p99 = frameDurationsMs[(frameDurationsMs.length * 0.99).floor()];
-        final slowCount = frameDurationsMs.where((ms) => ms > 16.67).length;
-        final jankCount = frameDurationsMs.where((ms) => ms > 33.33).length;
-        final slowPct = (slowCount / frameDurationsMs.length) * 100;
-        // ignore: avoid_print
-        print(
-          'WAVE 6-7 BENCHMARK PIXEL 7 PRO: total=${frameDurationsMs.length} frames, '
-          'p50=${p50.toStringAsFixed(2)}ms, p95=${p95.toStringAsFixed(2)}ms, '
-          'p99=${p99.toStringAsFixed(2)}ms, slow=${slowPct.toStringAsFixed(1)}% '
-          '($slowCount), jank=$jankCount',
-        );
+      if (pathNode.evaluate().isNotEmpty) {
+        await tester.ensureVisible(pathNode.first);
+        await tester.tap(pathNode.first);
+        for (var f = 0; f < 6; f++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
       }
-    },
-  );
+
+      if (openMilestone.evaluate().isNotEmpty) {
+        await tester.ensureVisible(openMilestone.first);
+        await tester.tap(openMilestone.first);
+        for (var f = 0; f < 10; f++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        if (claim.evaluate().isNotEmpty) {
+          await tester.tap(claim.last);
+          for (var f = 0; f < 8; f++) {
+            await tester.pump(const Duration(milliseconds: 50));
+          }
+        }
+      }
+    }
+
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
+
+    if (frameDurationsMs.isNotEmpty) {
+      frameDurationsMs.sort();
+      final p50 = frameDurationsMs[(frameDurationsMs.length * 0.50).floor()];
+      final p95 = frameDurationsMs[(frameDurationsMs.length * 0.95).floor()];
+      final p99 = frameDurationsMs[(frameDurationsMs.length * 0.99).floor()];
+      final slowCount = frameDurationsMs.where((ms) => ms > 16.67).length;
+      final jankCount = frameDurationsMs.where((ms) => ms > 33.33).length;
+      final slowPct = (slowCount / frameDurationsMs.length) * 100;
+      // ignore: avoid_print
+      print(
+        'WAVE 8 BENCHMARK PIXEL 7 PRO: total=${frameDurationsMs.length} frames, '
+        'p50=${p50.toStringAsFixed(2)}ms, p95=${p95.toStringAsFixed(2)}ms, '
+        'p99=${p99.toStringAsFixed(2)}ms, slow=${slowPct.toStringAsFixed(1)}% '
+        '($slowCount), jank=$jankCount',
+      );
+    }
+  });
 
   testWidgets(
     'FEAT-132: coin multiplier wheel stops needle on physical device',
