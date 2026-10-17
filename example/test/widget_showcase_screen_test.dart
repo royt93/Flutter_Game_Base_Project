@@ -206,6 +206,34 @@ void main() {
   });
 
   testWidgets(
+    'FEAT-133: level path map renders winding nodes and invokes onLevelTap on unlocked node',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final status = find.byKey(const Key('levelPathMapStatus'));
+      await tester.scrollUntilVisible(status, 350, scrollable: scrollable);
+      await tester.ensureVisible(status);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Path Level selected: 0'), findsOneWidget);
+
+      final level4Node = find.byKey(const ValueKey('levelPathNodeTap_4'));
+      await tester.ensureVisible(level4Node);
+      await tester.tap(level4Node);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Path Level selected: 4'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-134: star chest hud shows info, adds stars to fill, and opens chest',
     (tester) async {
       await _pumpShowcase(tester);

@@ -1005,6 +1005,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _boosterHammerCount = 2;
   int _boosterBombCount = 0;
   String _lastBoosterAction = 'none';
+  int _lastSelectedPathLevel = 0;
   int? _multiplierWheelWon;
   final _multiplierWheelController = CoinMultiplierWheelController();
   int _seasonEventTaps = 0;
@@ -3937,6 +3938,55 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     message: 'Level $level tapped',
                                     color: NeonTheme.cyan,
                                   ),
+                                ),
+                              ),
+                              _Demo(
+                                label: 'LevelPathMap (FEAT-133)',
+                                child: Column(
+                                  children: [
+                                    LevelPathMap(
+                                      width: 280,
+                                      rowHeight: 80,
+                                      nodes: [
+                                        LevelPathNode(
+                                          level: 1,
+                                          state: LevelState.completed,
+                                          starsEarned: 3,
+                                        ),
+                                        LevelPathNode(
+                                          level: 2,
+                                          state: LevelState.completed,
+                                          starsEarned: 2,
+                                        ),
+                                        LevelPathNode(
+                                          level: 3,
+                                          state: LevelState.completed,
+                                          starsEarned: 1,
+                                        ),
+                                        LevelPathNode(
+                                          level: 4,
+                                          state: LevelState.unlocked,
+                                          isCurrent: true,
+                                        ),
+                                        LevelPathNode(
+                                          level: 5,
+                                          state: LevelState.locked,
+                                        ),
+                                        LevelPathNode(
+                                          level: 6,
+                                          state: LevelState.locked,
+                                        ),
+                                      ],
+                                      onLevelTap: (level) => setState(() {
+                                        _lastSelectedPathLevel = level;
+                                      }),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Path Level selected: $_lastSelectedPathLevel',
+                                      key: const Key('levelPathMapStatus'),
+                                    ),
+                                  ],
                                 ),
                               ),
 

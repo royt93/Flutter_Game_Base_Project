@@ -19,11 +19,11 @@ Widget `LevelPathMapTile` hiển thị:
 - Widget thuần dữ liệu: caller cung cấp mảng level states, widget dựng đường nối uốn lượn liên tục.
 
 ## Yêu cầu kiểm thử
-- [ ] **Unit test**: Kiểm tra tính toán tọa độ cong Bézier giữa các điểm node liên tiếp, validate số level dương và số sao 0..3.
-- [ ] **Widget test**: Tap vào node mở khóa gọi `onLevelTap`; node khóa không gọi callback; node hiện tại có hiệu ứng pulse; Reduced Motion tắt pulse.
-- [ ] **Showcase test**: Tích hợp danh sách 6-8 node uốn lượn vào showcase, tap level hiện toast thông báo.
-- [ ] **Physical integration**: Kiểm tra hiển thị đường cong và tap mượt trên thiết bị vật lý thật (Pixel 7 Pro), không dùng simulator.
+- [x] **Unit test**: `levelPathNodeCenter` tạo toạ độ S-curve xen kẽ trái/giữa/phải; validate `level >= 1`, `starsEarned` 0..3, `width`/`rowHeight` dương, danh sách node không rỗng.
+- [x] **Widget test**: Tap node hoàn thành/mở khóa gọi `onLevelTap`; node khóa không gọi callback; node hiện tại có hiệu ứng pulse; Reduced Motion tắt pulse; semantics đọc đúng level, trạng thái và số sao; bản đồ bottom-up đặt level 1 ở dưới cùng.
+- [x] **Showcase test**: Tích hợp bản đồ 6 node uốn lượn vào showcase; tap node level 4 cập nhật trạng thái do caller sở hữu (không phải toast).
+- [x] **Physical integration**: Smoke pass trên Google Pixel 7 Pro (`2B051FDH3006MU`), không dùng simulator.
 
 ## Hiệu năng & Animation
-- [ ] Vẽ đường cong nối trong `RepaintBoundary`, tái sử dụng path và paint đối tượng.
-- [ ] Sustained 60 FPS benchmark: đo theo quy chuẩn định sẵn nếu cần.
+- [x] Đường chấm bi Bézier vẽ trong `RepaintBoundary`; controller pulse dispose khi unmount.
+- [ ] Sustained 60 FPS benchmark: chưa đo; không tuyên bố đạt 60 FPS.

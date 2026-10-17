@@ -100,6 +100,7 @@ export 'save_health_card.dart';
 
 // Game-specific
 export 'level_select_grid.dart';
+export 'level_path_map_tile.dart';
 export 'adaptive_game_hud.dart';
 export 'level_goal_tracker.dart';
 export 'booster_slot_bar.dart';

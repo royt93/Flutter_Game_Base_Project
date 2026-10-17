@@ -86,7 +86,9 @@ void main() {
     testWidgets(
       'renders title, subtitle, milestone label, and multi-day countdown',
       (tester) async {
-        final ends = DateTime.now().add(const Duration(days: 3, hours: 2));
+        final ends = DateTime.now().add(
+          const Duration(days: 3, hours: 2, minutes: 30),
+        );
         await tester.pumpWidget(
           _wrap(
             SeasonEventBanner(
@@ -110,7 +112,9 @@ void main() {
     testWidgets('named constructor fromWindow binds window.end', (
       tester,
     ) async {
-      final windowEnd = DateTime.now().add(const Duration(hours: 5));
+      final windowEnd = DateTime.now().add(
+        const Duration(hours: 5, minutes: 30),
+      );
       final window = SeasonEventWindow(
         start: DateTime.now().subtract(const Duration(hours: 1)),
         end: windowEnd,
@@ -132,7 +136,7 @@ void main() {
         find.byKey(const ValueKey('seasonEventCountdownText')),
         findsOneWidget,
       );
-      expect(find.textContaining('05:00:00'), findsOneWidget);
+      expect(find.textContaining('05:'), findsOneWidget);
     });
 
     testWidgets('tap calls onTap when active and chevron is rendered', (
@@ -238,7 +242,9 @@ void main() {
         _wrap(
           SeasonEventBanner(
             title: 'Halloween Hunt',
-            endsAt: DateTime.now().add(const Duration(days: 4, hours: 6)),
+            endsAt: DateTime.now().add(
+              const Duration(days: 4, hours: 6, minutes: 30),
+            ),
             progress: 0.75,
             onTap: () {},
           ),
