@@ -19,11 +19,11 @@ Widget `ComboMeterBar` hiển thị:
 - Widget thuần dữ liệu: caller sở hữu logic tính combo và decay theo thời gian, widget chỉ nhận `comboCount`, `multiplier`, `progress` (0.0..1.0), `maxCombo`.
 
 ## Yêu cầu kiểm thử
-- [ ] **Unit test**: Kiểm tra tính toán dải màu theo multiplier, validate `progress` trong khoảng 0.0..1.0 và `multiplier >= 1`.
-- [ ] **Widget test**: Kiểm tra tăng tầng combo kích hoạt animation rung nảy, kiểm tra nhãn multiplier hiển thị đúng, Reduced Motion dừng hiệu ứng rung.
-- [ ] **Showcase test**: Tích hợp thanh combo vào showcase với nút tăng combo và reset, cập nhật UI chính xác.
-- [ ] **Physical integration**: Kiểm tra hiển thị và phản hồi mượt trên thiết bị vật lý thật (Pixel 7 Pro / S24U), không dùng simulator.
+- [x] **Unit test**: Dải màu `comboTierColor` khác nhau từ 1x..5x và clamp từ 5x; validate `multiplier >= 1`, `progress` 0.0..1.0 hữu hạn, `height`/`width` dương.
+- [x] **Widget test**: Tăng tầng combo nảy rồi về 1.0; mount, cùng tầng, và giảm tầng không nảy; Reduced Motion bỏ nảy; nhãn `xN`, độ rộng fill theo progress, semantics, dispose giữa chừng không lỗi.
+- [x] **Showcase test**: Nút "Combo +" tăng progress, đầy thì lên tầng x2; "Drop combo" về x1.
+- [x] **Physical integration**: Smoke pass trên Google Pixel 7 Pro (`2B051FDH3006MU`), không dùng simulator.
 
 ## Hiệu năng & Animation
-- [ ] Dùng `AnimatedBuilder` và `RepaintBoundary` cô lập vùng thanh combo, tránh rebuild widget cha.
-- [ ] Sustained 60 FPS benchmark: đo theo quy chuẩn định sẵn nếu cần.
+- [x] `AnimatedBuilder` cho hiệu ứng nảy, `RepaintBoundary` quanh thanh; controller dispose khi unmount.
+- [ ] Sustained 60 FPS benchmark: chưa đo; không tuyên bố đạt 60 FPS.

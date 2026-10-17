@@ -205,6 +205,46 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-128: combo meter fills, ranks up, and drops', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final add = find.byKey(const Key('comboMeterAddBtn'));
+    await tester.scrollUntilVisible(add, 350, scrollable: scrollable);
+    await tester.ensureVisible(add);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final status = find.byKey(const Key('comboMeterStatus'));
+    String statusText() => tester.widget<Text>(status).data!;
+    expect(statusText(), 'Multiplier: x1 · Progress: 0%');
+
+    await tester.tap(add);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(statusText(), 'Multiplier: x1 · Progress: 34%');
+
+    await tester.tap(add);
+    await tester.tap(add);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(statusText(), 'Multiplier: x1 · Progress: 100%');
+
+    await tester.tap(add);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(statusText(), 'Multiplier: x2 · Progress: 0%');
+    expect(find.text('x2'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('comboMeterResetBtn')));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(statusText(), 'Multiplier: x1 · Progress: 0%');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'FEAT-124: upgrade tier then open chest reveals matching reward',
     (tester) async {

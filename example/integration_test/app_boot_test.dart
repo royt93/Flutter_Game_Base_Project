@@ -2072,6 +2072,38 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-128: combo meter ranks up on physical device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+
+    final add = find.byKey(const Key('comboMeterAddBtn'));
+    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+    final scrollable = find
+        .descendant(of: showcaseList, matching: find.byType(Scrollable))
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && add.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(add, findsWidgets);
+    await tester.ensureVisible(add.first);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    for (var i = 0; i < 4; i++) {
+      await tester.tap(add.first);
+      await tester.pump(const Duration(milliseconds: 150));
+    }
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.textContaining('Multiplier: x2'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-116: search and filter controls on Pixel 7 Pro', (
     tester,
   ) async {

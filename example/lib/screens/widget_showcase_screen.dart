@@ -994,6 +994,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _flashSaleBuys = 0;
   ChestTier _chestTier = ChestTier.wood;
   bool _chestOpened = false;
+  int _comboMultiplier = 1;
+  double _comboProgress = 0.0;
   bool _flashSaleExpired = false;
   late final DateTime _flashSaleEndsAt = DateTime.now().add(
     const Duration(hours: 1, minutes: 29, seconds: 59),
@@ -4464,6 +4466,55 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           onTap: () => setState(() {
                                             _chestTier = ChestTier.wood;
                                             _chestOpened = false;
+                                          }),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'ComboMeterBar (FEAT-128)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ComboMeterBar(
+                                      multiplier: _comboMultiplier,
+                                      progress: _comboProgress,
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Multiplier: x$_comboMultiplier · Progress: ${(_comboProgress * 100).round()}%',
+                                      key: const Key('comboMeterStatus'),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          key: const Key('comboMeterAddBtn'),
+                                          label: 'Combo +',
+                                          onTap: () => setState(() {
+                                            if (_comboProgress < 0.8) {
+                                              _comboProgress =
+                                                  (_comboProgress + 0.34).clamp(
+                                                    0.0,
+                                                    1.0,
+                                                  );
+                                            } else {
+                                              _comboMultiplier++;
+                                              _comboProgress = 0.0;
+                                            }
+                                          }),
+                                        ),
+                                        CommonButton(
+                                          key: const Key('comboMeterResetBtn'),
+                                          label: 'Drop combo',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(() {
+                                            _comboMultiplier = 1;
+                                            _comboProgress = 0.0;
                                           }),
                                         ),
                                       ],
