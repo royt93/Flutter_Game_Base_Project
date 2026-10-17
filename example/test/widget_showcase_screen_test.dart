@@ -206,6 +206,41 @@ void main() {
   });
 
   testWidgets(
+    'FEAT-132: multiplier wheel stops needle, awards prize, and resets',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final stopBtn = find.byKey(const Key('multiplierWheelStopBtn'));
+      await tester.scrollUntilVisible(stopBtn, 350, scrollable: scrollable);
+      await tester.ensureVisible(stopBtn);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('multiplierWheelStatus'));
+      String statusText() => tester.widget<Text>(status).data!;
+      expect(statusText(), 'Won multiplier: spinning · Prize: pending');
+
+      await tester.tap(stopBtn);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), contains('coins'));
+      expect(statusText(), isNot(contains('spinning')));
+
+      // Reset
+      final resetBtn = find.byKey(const Key('multiplierWheelResetBtn'));
+      await tester.ensureVisible(resetBtn);
+      await tester.tap(resetBtn);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Won multiplier: spinning · Prize: pending');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-129: booster slot bar taps ready booster, refills empty, and resets',
     (tester) async {
       await _pumpShowcase(tester);

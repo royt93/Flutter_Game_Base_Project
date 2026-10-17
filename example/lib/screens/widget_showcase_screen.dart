@@ -650,6 +650,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     _tutorialSequenceController.dispose();
     _analyticsQueue.dispose();
     _wheelController.dispose();
+    _multiplierWheelController.dispose();
     _candyTextFieldController.dispose();
     _candySearchController.dispose();
     _deepLinkController.dispose();
@@ -1001,6 +1002,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _boosterHammerCount = 2;
   int _boosterBombCount = 0;
   String _lastBoosterAction = 'none';
+  int? _multiplierWheelWon;
+  final _multiplierWheelController = CoinMultiplierWheelController();
   int _seasonEventTaps = 0;
   double _seasonEventProgress = 0.45;
   bool _seasonEventEnded = false;
@@ -4751,6 +4754,50 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                             _boosterHammerCount = 2;
                                             _boosterBombCount = 0;
                                             _lastBoosterAction = 'none';
+                                          }),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'CoinMultiplierWheel (FEAT-132)',
+                                child: Column(
+                                  children: [
+                                    CoinMultiplierWheel(
+                                      controller: _multiplierWheelController,
+                                      onStopped: (m) => setState(() {
+                                        _multiplierWheelWon = m;
+                                      }),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Won multiplier: ${_multiplierWheelWon != null ? 'x$_multiplierWheelWon' : 'spinning'} · Prize: ${_multiplierWheelWon != null ? '${100 * _multiplierWheelWon!} coins' : 'pending'}',
+                                      key: const Key('multiplierWheelStatus'),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          key: const Key(
+                                            'multiplierWheelStopBtn',
+                                          ),
+                                          label: 'Stop needle',
+                                          onTap: () =>
+                                              _multiplierWheelController.stop(),
+                                        ),
+                                        CommonButton(
+                                          key: const Key(
+                                            'multiplierWheelResetBtn',
+                                          ),
+                                          label: 'Reset needle',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(() {
+                                            _multiplierWheelWon = null;
+                                            _multiplierWheelController.reset();
                                           }),
                                         ),
                                       ],

@@ -19,11 +19,11 @@ Widget `CoinMultiplierWheel` hiển thị:
 - Widget thuần trình bày: caller sở hữu số xu gốc và logic cộng tiền qua `EconomyWallet`.
 
 ## Yêu cầu kiểm thử
-- [ ] **Unit test**: Kiểm tra tính toán góc dừng kim tương ứng với multiplier trúng thưởng, validate danh sách multipliers hợp lệ (ít nhất 2 ô, multiplier >= 1).
-- [ ] **Widget test**: Bấm nút dừng kim khóa chuyển động, gọi callback `onStopped` đúng giá trị; Reduced Motion; semantics đọc đúng các mốc nhân thưởng.
-- [ ] **Showcase test**: Tích hợp vào showcase với nút bắt đầu lắc và dừng kim, cập nhật số tiền nhân được chính xác.
-- [ ] **Physical integration**: Kiểm tra hiển thị và tap trên thiết bị vật lý thật (Pixel 7 Pro), không dùng simulator.
+- [x] **Unit test**: Kiểm tra tính toán góc dao động kim `multiplierNeedleAngleAtProgress`, ánh xạ tiến độ sang sector `multiplierIndexAtNormalizedProgress`, validate danh sách multipliers hợp lệ (ít nhất 2 ô, multiplier >= 1), radius dương và duration.
+- [x] **Widget test**: Bấm nút dừng kim khóa chuyển động, gọi callback `onStopped` đúng giá trị; controller `start`/`stop`/`reset`; Reduced Motion dừng kim ở giữa; semantics đọc đúng các mốc nhân thưởng và kết quả dừng.
+- [x] **Showcase test**: Tích hợp vào showcase với nút bắt đầu lắc và dừng kim, cập nhật số tiền nhân được chính xác.
+- [x] **Physical integration**: Smoke pass trên Google Pixel 7 Pro (`2B051FDH3006MU`), không dùng simulator.
 
 ## Hiệu năng & Animation
-- [ ] Kim dao động vẽ trong `RepaintBoundary`, giải phóng `AnimationController` khi unmount hoặc dừng kim.
-- [ ] Sustained 60 FPS benchmark: đo theo quy chuẩn định sẵn nếu cần.
+- [x] Kim dao động và cánh cung vẽ trong `RepaintBoundary`, giải phóng `AnimationController` khi unmount.
+- [ ] Sustained 60 FPS benchmark: chưa đo; không tuyên bố đạt 60 FPS.
