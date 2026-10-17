@@ -2114,6 +2114,45 @@ void main() {
     },
   );
 
+  testWidgets(
+    'FEAT-129: booster slot bar taps and refills on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final hammerSlot = find.byKey(const ValueKey('boosterSlotTap_hammer'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && hammerSlot.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(hammerSlot, findsWidgets);
+      await tester.ensureVisible(hammerSlot.first);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(hammerSlot.first);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('Used hammer'), findsWidgets);
+
+      final bombSlot = find.byKey(const ValueKey('boosterSlotTap_bomb'));
+      await tester.ensureVisible(bombSlot.first);
+      await tester.tap(bombSlot.first);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('Refilled bomb'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('FEAT-131: tap hint shows and passes taps on physical device', (
     tester,
   ) async {

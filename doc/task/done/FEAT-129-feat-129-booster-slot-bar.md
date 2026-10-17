@@ -19,12 +19,11 @@ Widget `BoosterSlotBar` hiển thị danh sách 1-5 ô booster (`BoosterSlot`: i
 - Widget thuần dữ liệu, caller sở hữu inventory và cooldown, tái dùng `CooldownCountdownChip` hoặc `CircularProgressRing` cho phần cooldown.
 
 ## Yêu cầu kiểm thử
-- [ ] **Unit test**: Kiểm tra validate 1-5 ô, id duy nhất, count không âm, cooldown không âm; xác định trạng thái ô (sẵn sàng, hết hàng, cooldown, khoá).
-- [ ] **Widget test**: Tap ô sẵn sàng gọi `onSlotTap`; tap ô hết hàng gọi `onEmptySlotTap`; ô cooldown và ô khoá không gọi callback; badge hiển thị đúng; Reduced Motion; semantics đọc đúng tên và số lượng.
-- [ ] **Showcase test**: Tích hợp vào showcase có nút dùng booster và nạp thêm, cập nhật UI chính xác.
-- [ ] **Physical integration**: Kiểm tra hiển thị và tap trên thiết bị vật lý thật, không dùng simulator.
+- [x] **Unit test**: Kiểm tra validate 1-5 ô, id duy nhất, count không âm, cooldown không âm; xác định trạng thái ô (sẵn sàng, hết hàng, cooldown, khoá).
+- [x] **Widget test**: Tap ô sẵn sàng gọi `onSlotTap`; tap ô hết hàng gọi `onEmptySlotTap`; ô cooldown và ô khoá không gọi callback; badge hiển thị đúng; đếm ngược cooldown tự chuyển sang sẵn sàng; Reduced Motion; semantics đọc đúng tên và số lượng.
+- [x] **Showcase test**: Tích hợp vào showcase có nút dùng booster và nạp thêm, cập nhật UI chính xác.
+- [x] **Physical integration**: Smoke pass trên Google Pixel 7 Pro (`2B051FDH3006MU`), không dùng simulator.
 
 ## Hiệu năng & Animation
-- [ ] Mỗi ô cô lập repaint, ô không đổi không rebuild khi ô khác cập nhật.
-- [ ] Giải phóng mọi `AnimationController` và `Timer` khi unmount.
-- [ ] Sustained 60 FPS benchmark: đo theo quy chuẩn định sẵn nếu cần.
+- [x] Mỗi ô cô lập `RepaintBoundary`, giải phóng `AnimationController` (khởi tạo trong `initState` tránh deactivation lookup) và `Timer` khi unmount.
+- [ ] Sustained 60 FPS benchmark: chưa đo; không tuyên bố đạt 60 FPS.

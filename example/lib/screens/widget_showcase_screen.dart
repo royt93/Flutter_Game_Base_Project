@@ -998,6 +998,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   bool _hintVisible = true;
   TapHintGesture _hintGesture = TapHintGesture.tap;
   int _hintTargetTaps = 0;
+  int _boosterHammerCount = 2;
+  int _boosterBombCount = 0;
+  String _lastBoosterAction = 'none';
   int _seasonEventTaps = 0;
   double _seasonEventProgress = 0.45;
   bool _seasonEventEnded = false;
@@ -1209,6 +1212,34 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       icon: const Icon(Icons.ac_unit_rounded, color: Color(0xFF29B6F6)),
       target: 8,
       current: _iceGoalProgress,
+    ),
+  ];
+
+  List<BoosterSlot> get _showcaseBoosterSlots => [
+    BoosterSlot(
+      id: 'hammer',
+      label: 'Hammer',
+      iconData: Icons.build_rounded,
+      count: _boosterHammerCount,
+    ),
+    BoosterSlot(
+      id: 'bomb',
+      label: 'Bomb',
+      iconData: Icons.sports_volleyball_rounded,
+      count: _boosterBombCount,
+    ),
+    BoosterSlot(
+      id: 'shuffle',
+      label: 'Shuffle',
+      iconData: Icons.shuffle_rounded,
+      count: 1,
+      cooldown: const Duration(seconds: 45),
+    ),
+    BoosterSlot(
+      id: 'laser',
+      label: 'Laser',
+      iconData: Icons.highlight_rounded,
+      isLocked: true,
     ),
   ];
 
@@ -4660,6 +4691,66 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                               CommonButtonVariant.secondary,
                                           onTap: () => setState(() {
                                             _seasonEventProgress = 0.0;
+                                          }),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'BoosterSlotBar (FEAT-129)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    BoosterSlotBar(
+                                      slots: _showcaseBoosterSlots,
+                                      onSlotTap: (id) => setState(() {
+                                        if (id == 'hammer' &&
+                                            _boosterHammerCount > 0) {
+                                          _boosterHammerCount--;
+                                        }
+                                        _lastBoosterAction = 'Used $id';
+                                      }),
+                                      onEmptySlotTap: (id) => setState(() {
+                                        if (id == 'bomb') {
+                                          _boosterBombCount += 3;
+                                        }
+                                        _lastBoosterAction =
+                                            'Refilled $id (+3)';
+                                      }),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Booster action: $_lastBoosterAction · Hammer: $_boosterHammerCount · Bomb: $_boosterBombCount',
+                                      key: const Key('boosterSlotStatus'),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          key: const Key(
+                                            'boosterRefillHammerBtn',
+                                          ),
+                                          label: 'Add +1 Hammer',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(
+                                            () => _boosterHammerCount++,
+                                          ),
+                                        ),
+                                        CommonButton(
+                                          key: const Key(
+                                            'boosterResetCountsBtn',
+                                          ),
+                                          label: 'Reset boosters',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(() {
+                                            _boosterHammerCount = 2;
+                                            _boosterBombCount = 0;
+                                            _lastBoosterAction = 'none';
                                           }),
                                         ),
                                       ],

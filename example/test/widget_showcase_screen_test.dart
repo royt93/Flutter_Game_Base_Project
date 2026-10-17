@@ -206,6 +206,57 @@ void main() {
   });
 
   testWidgets(
+    'FEAT-129: booster slot bar taps ready booster, refills empty, and resets',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final refillHammerBtn = find.byKey(const Key('boosterRefillHammerBtn'));
+      await tester.scrollUntilVisible(
+        refillHammerBtn,
+        350,
+        scrollable: scrollable,
+      );
+      await tester.ensureVisible(refillHammerBtn);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('boosterSlotStatus'));
+      String statusText() => tester.widget<Text>(status).data!;
+      expect(statusText(), 'Booster action: none · Hammer: 2 · Bomb: 0');
+
+      // Tap ready Hammer slot
+      final hammerTap = find.byKey(const ValueKey('boosterSlotTap_hammer'));
+      await tester.ensureVisible(hammerTap);
+      await tester.tap(hammerTap);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Booster action: Used hammer · Hammer: 1 · Bomb: 0');
+
+      // Tap empty Bomb slot (refills +3)
+      final bombTap = find.byKey(const ValueKey('boosterSlotTap_bomb'));
+      await tester.ensureVisible(bombTap);
+      await tester.tap(bombTap);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(
+        statusText(),
+        'Booster action: Refilled bomb (+3) · Hammer: 1 · Bomb: 3',
+      );
+
+      // Reset
+      final resetBtn = find.byKey(const Key('boosterResetCountsBtn'));
+      await tester.ensureVisible(resetBtn);
+      await tester.tap(resetBtn);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(statusText(), 'Booster action: none · Hammer: 2 · Bomb: 0');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-130: season event banner advances progress and calls onTap',
     (tester) async {
       await _pumpShowcase(tester);
