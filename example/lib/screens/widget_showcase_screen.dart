@@ -1006,6 +1006,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _boosterBombCount = 0;
   String _lastBoosterAction = 'none';
   int _lastSelectedPathLevel = 0;
+  int _milestoneClaims = 0;
   int? _multiplierWheelWon;
   final _multiplierWheelController = CoinMultiplierWheelController();
   int _seasonEventTaps = 0;
@@ -4870,6 +4871,46 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           }),
                                         ),
                                       ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'MilestoneCelebrationDialog (FEAT-135)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CommonButton(
+                                      key: const Key('openMilestoneBtn'),
+                                      label: 'Open milestone (Level 50)',
+                                      onTap: () =>
+                                          MilestoneCelebrationDialog.show(
+                                            context,
+                                            level: 50,
+                                            subtitle:
+                                                'You cleared 50 levels. Amazing!',
+                                            rewards: [
+                                              MilestoneReward(
+                                                icon: Icons
+                                                    .monetization_on_rounded,
+                                                label: 'Coins',
+                                                amountLabel: '+500',
+                                              ),
+                                              MilestoneReward(
+                                                icon: Icons.flash_on_rounded,
+                                                label: 'Hammer',
+                                                amountLabel: 'x2',
+                                              ),
+                                            ],
+                                            onClaim: () => setState(
+                                              () => _milestoneClaims++,
+                                            ),
+                                          ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Milestone claimed: $_milestoneClaims',
+                                      key: const Key('milestoneStatus'),
                                     ),
                                   ],
                                 ),

@@ -20,11 +20,11 @@ Widget `MilestoneCelebrationDialog` hiển thị:
 - Hỗ trợ Reduced Motion: huy hiệu đứng yên, không xoay vệt sáng.
 
 ## Yêu cầu kiểm thử
-- [ ] **Unit test**: Validate số level cột mốc dương, danh sách phần thưởng không rỗng.
-- [ ] **Widget test**: Bấm nút nhận quà gọi `onClaimTap` và đóng dialog; Reduced Motion giữ huy hiệu tĩnh; semantics đọc rõ level cột mốc và các phần thưởng.
-- [ ] **Showcase test**: Thêm nút mở dialog chúc mừng trong showcase, bấm claim cập nhật trạng thái UI.
-- [ ] **Physical integration**: Kiểm tra hiển thị và tap đóng mở trên thiết bị vật lý thật (Pixel 7 Pro), không dùng simulator.
+- [x] **Unit test**: Validate level cột mốc dương, danh sách phần thưởng không rỗng, label reward không rỗng.
+- [x] **Widget test**: Nút Claim gọi `onClaimTap`; Reduced Motion giữ vệt sáng tĩnh; semantics đọc rõ level và tất cả rewards; overlay `NeonDialog.show` mở/đóng đúng.
+- [x] **Showcase test**: Nút mở dialog level 50, Claim cập nhật trạng thái caller-owned.
+- [x] **Physical integration**: Smoke pass trên Google Pixel 7 Pro (`2B051FDH3006MU`), không dùng simulator.
 
 ## Hiệu năng & Animation
-- [ ] Huy hiệu mốc và vệt sáng xoay nằm trong `RepaintBoundary`, tự động giải phóng controller khi đóng.
-- [ ] Sustained 60 FPS benchmark: đo theo quy chuẩn định sẵn nếu cần.
+- [x] Huy hiệu và `SunburstGodRays` nằm trong `RepaintBoundary`; animation controller dispose khi unmount.
+- [ ] Sustained 60 FPS benchmark: chưa đo; không tuyên bố đạt 60 FPS.

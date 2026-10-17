@@ -206,6 +206,44 @@ void main() {
   });
 
   testWidgets(
+    'FEAT-135: milestone dialog opens, claim updates caller status and closes',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final openBtn = find.byKey(const Key('openMilestoneBtn'));
+      await tester.scrollUntilVisible(openBtn, 350, scrollable: scrollable);
+      await tester.ensureVisible(openBtn);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Milestone claimed: 0'), findsOneWidget);
+
+      await tester.tap(openBtn);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Milestone Reached!'), findsOneWidget);
+      expect(find.text('Coins'), findsOneWidget);
+
+      final claimButton = tester.widget<NeonDialogButton>(
+        find.byWidgetPredicate(
+          (w) => w is NeonDialogButton && w.action.label == 'Claim',
+        ),
+      );
+      claimButton.action.onTap();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+
+      expect(find.text('Milestone claimed: 1'), findsOneWidget);
+      expect(find.text('Milestone Reached!'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-133: level path map renders winding nodes and invokes onLevelTap on unlocked node',
     (tester) async {
       await _pumpShowcase(tester);
