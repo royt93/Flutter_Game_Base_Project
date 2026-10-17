@@ -1006,6 +1006,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _boosterBombCount = 0;
   String _lastBoosterAction = 'none';
   int _lastSelectedPathLevel = 0;
+  int _tieredLeaderboardScore = 15420;
+  bool _tieredLeaderboardRankShifted = false;
   int _milestoneClaims = 0;
   int _winStreak = 0;
   int _winStreakInfoTaps = 0;
@@ -2832,6 +2834,76 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                         () =>
                                             _showRankAround = !_showRankAround,
                                       ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'TieredLeaderboardRow (FEAT-139)',
+                                child: Column(
+                                  children: [
+                                    TieredLeaderboardRow(
+                                      rank: _tieredLeaderboardRankShifted
+                                          ? 1
+                                          : 2,
+                                      playerName: 'RoyPlayer',
+                                      score: '$_tieredLeaderboardScore',
+                                      tier: LeaderboardTier.diamond,
+                                      zone: TierZone.promotion,
+                                      isCurrentPlayer: true,
+                                      onTap: () => ToastBanner.show(
+                                        context,
+                                        message: 'You tapped your profile',
+                                        color: NeonTheme.gold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    TieredLeaderboardRow(
+                                      rank: _tieredLeaderboardRankShifted
+                                          ? 2
+                                          : 1,
+                                      playerName: 'Elena',
+                                      score: '15,000',
+                                      tier: LeaderboardTier.gold,
+                                      zone: TierZone.safe,
+                                      onTap: () => ToastBanner.show(
+                                        context,
+                                        message: 'Elena tapped',
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    TieredLeaderboardRow(
+                                      rank: 18,
+                                      playerName: 'Bob',
+                                      score: '4,200',
+                                      tier: LeaderboardTier.silver,
+                                      zone: TierZone.demotion,
+                                    ),
+                                    const SizedBox(height: NeonTheme.s16),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          key: const Key('tieredRankBumpBtn'),
+                                          label: '+500 score (climb rank)',
+                                          onTap: () => setState(() {
+                                            _tieredLeaderboardScore += 500;
+                                            _tieredLeaderboardRankShifted =
+                                                true;
+                                          }),
+                                        ),
+                                        CommonButton(
+                                          key: const Key('tieredRankResetBtn'),
+                                          label: 'Reset rank demo',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(() {
+                                            _tieredLeaderboardScore = 15420;
+                                            _tieredLeaderboardRankShifted =
+                                                false;
+                                          }),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),

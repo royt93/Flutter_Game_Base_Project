@@ -49,11 +49,11 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58/FEAT-43/FEAT-52/FEAT-56/ENH-90/FEAT-130:
+  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58/FEAT-43/FEAT-52/FEAT-56/ENH-90/FEAT-130/FEAT-139:
   // mỗi demo section mới đẩy list dài hơn — tăng chiều cao viewport ảo để
   // mọi widget phía sau vẫn nằm trong vùng tap được mà không cần scroll
   // (đúng lý do file này dùng physicalSize cố định).
-  tester.view.physicalSize = const Size(1080, 26000);
+  tester.view.physicalSize = const Size(1080, 32000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -204,6 +204,52 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'FEAT-139: tiered leaderboard rows reflect score/rank update and reset',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final bump = find.byKey(const Key('tieredRankBumpBtn'));
+      await tester.scrollUntilVisible(bump, 350, scrollable: scrollable);
+      await tester.ensureVisible(bump);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      TieredLeaderboardRow youRow() => tester.widget<TieredLeaderboardRow>(
+        find
+            .ancestor(
+              of: find.text('RoyPlayer'),
+              matching: find.byType(TieredLeaderboardRow),
+            )
+            .first,
+      );
+
+      final youBefore = youRow();
+      expect(youBefore.rank, 2);
+      expect(youBefore.score, '15420');
+
+      await tester.tap(bump);
+      await tester.pump(const Duration(milliseconds: 300));
+      final youAfter = youRow();
+      expect(youAfter.rank, 1);
+      expect(youAfter.score, '15920');
+
+      final reset = find.byKey(const Key('tieredRankResetBtn'));
+      await tester.ensureVisible(reset);
+      await tester.tap(reset);
+      await tester.pump(const Duration(milliseconds: 300));
+      final youReset = youRow();
+      expect(youReset.rank, 2);
+      expect(youReset.score, '15420');
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'FEAT-138: move hint consumes uses, switches to Get More and dismisses',

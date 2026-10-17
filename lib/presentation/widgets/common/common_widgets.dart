@@ -81,6 +81,7 @@ export 'season_event_banner.dart';
 export 'weekly_challenge_card.dart';
 export 'victory_card_template.dart';
 export 'leaderboard_list.dart';
+export 'tiered_leaderboard_row.dart';
 export 'quest_board_panel.dart';
 export 'game_over_card_template.dart';
 export 'backup_restore_panel.dart';
