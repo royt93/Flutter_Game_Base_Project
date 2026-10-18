@@ -21,7 +21,7 @@ Widget `GuildContributionCard` hiển thị:
 ## Ma trận kiểm thử bắt buộc (DoD)
 - [ ] **Unit test**: Validate goal > 0, progress không âm, milestone IDs duy nhất và tăng đơn điệu.
 - [ ] **Widget test**: Progress tổng/cá nhân, milestones, claim/contribute callbacks, disabled/loading/error, semantics, Reduced Motion.
-- [ ] **Integration test (Device)**: CHƯA CHẠY. Pixel foreground đang là AdMob Wrapper; không gián đoạn app người dùng. Showcase host test đã xác nhận contribute/claim callbacks.
+- [x] **Integration test (Device)**: Pixel 7 Pro (`2B051FDH3006MU`) pass sau khi chạy bù: contribute tăng tổng và claim milestone gọi caller callback qua showcase. Lần chạy đầu fail vì milestone nằm ngoài viewport, đã sửa bằng cuộn vào vùng nhìn thấy.
 - [ ] **Golden test**: Chưa đóng góp/đang tiến triển/goal hoàn tất/error trên light/dark/vi/RTL/textScale/reducedMotion.
 - [ ] **Interruption test**: App pause/rebuild trong lúc update không gọi callback trùng hoặc hiển thị progress stale.
 - [ ] **Network conditioning test**: Service/consumer contract test riêng nếu caller sync guild từ backend; UI chỉ test state props.

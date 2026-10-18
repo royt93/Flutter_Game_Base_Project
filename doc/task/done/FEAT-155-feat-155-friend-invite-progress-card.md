@@ -21,7 +21,7 @@ Widget `FriendInviteProgressCard` hiển thị:
 ## Ma trận kiểm thử bắt buộc (DoD)
 - [ ] **Unit test**: Validate invite count không âm, goal > 0, milestone/reward labels hợp lệ.
 - [ ] **Widget test**: Progress, milestone states, invite/claim/copy callbacks, maxed state, semantics, Reduced Motion.
-- [ ] **Integration test (Device)**: CHƯA CHẠY — Pixel foreground đang là AdMob Wrapper; không gián đoạn app đang mở. Showcase host test đã kiểm tra invite/copy/claim seams; smoke spec sẵn trong `app_boot_test.dart`.
+- [x] **Integration test (Device)**: Pixel 7 Pro (`2B051FDH3006MU`) pass sau khi chạy bù: invite và copy gọi caller callback qua showcase. Claim milestone chỉ được kiểm tra ở host showcase test.
 - [ ] **Golden test**: 0%, gần mốc, hoàn tất, claimed và không có mã invite trên light/dark/vi/RTL/textScale/reducedMotion.
 - [ ] **Interruption test**: Dismiss/rebuild trong lúc caller action pending không gọi action hai lần.
 - [ ] **Network conditioning test**: Referral validation/backend retry thuộc consumer contract tests; widget không fetch.

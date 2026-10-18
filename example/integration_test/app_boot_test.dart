@@ -2860,6 +2860,10 @@ void main() {
 
       final claim = find.byKey(const ValueKey('guildMilestone_demo_m100'));
       await tester.ensureVisible(claim);
+      position.jumpTo(
+        (position.pixels - 250).clamp(0.0, position.maxScrollExtent),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
       await tester.tap(claim);
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Guild claims: 1'), findsOneWidget);
