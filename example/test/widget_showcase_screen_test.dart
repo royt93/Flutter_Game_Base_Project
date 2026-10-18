@@ -264,6 +264,43 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-152: collection album filters items and routes item selection',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final panel = find.byKey(const Key('collectionAlbumShowcasePanel'));
+      await tester.scrollUntilVisible(panel, 350, scrollable: scrollable);
+      await tester.ensureVisible(panel);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('1 / 3 collected'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('collectionFilter_owned')));
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('collectionItem_forest_fox')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('collectionItem_moon_crown')),
+        findsNothing,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('collectionFilter_all')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('collectionItem_moon_crown')));
+      await tester.pump();
+      expect(find.text('Items tapped: 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-151: comeback bundle routes view and claim, locks when expired',
     (tester) async {
       await _pumpShowcase(tester);
@@ -1374,17 +1411,35 @@ void main() {
         300,
         scrollable: scrollable,
       );
-      final removeAdsOffer = find.text(r'$2.99');
+      final removeAdsCard = find.ancestor(
+        of: find.text('Remove Ads'),
+        matching: find.byType(ShopItemCard),
+      );
+      final removeAdsOffer = find.descendant(
+        of: removeAdsCard,
+        matching: find.text(r'$2.99'),
+      );
       expect(removeAdsOffer, findsWidgets);
-      expect(find.text('Owned'), findsNothing);
+      expect(
+        find.descendant(of: removeAdsCard, matching: find.text('Owned')),
+        findsNothing,
+      );
 
       await tester.ensureVisible(removeAdsOffer.first);
       await tester.pump();
-      await tester.tap(find.text(r'$2.99').last);
+      await tester.tap(
+        find.descendant(of: removeAdsCard, matching: find.byType(CommonButton)),
+      );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Owned'), findsWidgets);
-      expect(find.text(r'$2.99'), findsNothing);
+      expect(
+        find.descendant(of: removeAdsCard, matching: find.text('Owned')),
+        findsWidgets,
+      );
+      expect(
+        find.descendant(of: removeAdsCard, matching: find.text(r'$2.99')),
+        findsNothing,
+      );
       expect(tester.takeException(), isNull);
       await tester.pump(const Duration(seconds: 3));
     },

@@ -1068,6 +1068,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   final Set<String> _demoClaimedTrackIds = {};
   int _demoTrackClaimCount = 0;
   int _demoComebackClaims = 0;
+  int _demoCollectionItemTaps = 0;
   int _demoComebackViews = 0;
   bool _demoComebackExpired = false;
   final DateTime _demoInboxExpiresAt = DateTime.now().add(
@@ -5139,6 +5140,60 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Claims: $_demoTrackClaimCount',
                                       key: const Key(
                                         'rewardTrackShowcaseStatus',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'CollectionAlbumPanel (FEAT-152)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CollectionAlbumPanel(
+                                      key: const Key(
+                                        'collectionAlbumShowcasePanel',
+                                      ),
+                                      title: 'Forest Collection',
+                                      items: const [
+                                        CollectionAlbumItem(
+                                          id: 'forest_fox',
+                                          name: 'Blue Fox',
+                                          rarity: ItemRarity.rare,
+                                          ownedCount: 1,
+                                          requiredCount: 1,
+                                          icon: Icons.pets_rounded,
+                                        ),
+                                        CollectionAlbumItem(
+                                          id: 'moon_crown',
+                                          name: 'Moon Crown',
+                                          rarity: ItemRarity.legendary,
+                                          ownedCount: 0,
+                                          requiredCount: 1,
+                                          icon: Icons.workspace_premium_rounded,
+                                        ),
+                                        CollectionAlbumItem(
+                                          id: 'star_shard',
+                                          name: 'Star Shard',
+                                          rarity: ItemRarity.epic,
+                                          ownedCount: 2,
+                                          requiredCount: 5,
+                                          icon: Icons.auto_awesome_rounded,
+                                        ),
+                                      ],
+                                      completionRewardLabel: 'Golden Avatar',
+                                      onItemTap: (_) => setState(
+                                        () => _demoCollectionItemTaps++,
+                                      ),
+                                      onViewReward: () => setState(
+                                        () => _demoCollectionItemTaps++,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Items tapped: $_demoCollectionItemTaps',
+                                      key: const Key(
+                                        'collectionAlbumShowcaseStatus',
                                       ),
                                     ),
                                   ],

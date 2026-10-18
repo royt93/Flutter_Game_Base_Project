@@ -2750,6 +2750,57 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-152: CollectionAlbumPanel filters and routes item on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final panel = find.byKey(const Key('collectionAlbumShowcasePanel'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && panel.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.ensureVisible(panel);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('1 / 3 collected'), findsOneWidget);
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('collectionFilter_owned')),
+      );
+      await tester.tap(find.byKey(const ValueKey('collectionFilter_owned')));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(
+        find.byKey(const ValueKey('collectionItem_forest_fox')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('collectionItem_moon_crown')),
+        findsNothing,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('collectionFilter_all')));
+      await tester.pump(const Duration(milliseconds: 200));
+      final missing = find.byKey(const ValueKey('collectionItem_moon_crown'));
+      await tester.ensureVisible(missing);
+      await tester.tap(missing);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('Items tapped: 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-151: ComebackBundleCard routes callbacks and disables after expiry on physical device',
     (tester) async {
       await app.app();
