@@ -264,6 +264,34 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-155: friend invite progress routes invite copy and reward callbacks',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final card = find.byKey(const Key('friendInviteShowcaseCard'));
+      await tester.scrollUntilVisible(card, 350, scrollable: scrollable);
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('1 / 3 invited'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('friendInviteActionBtn')));
+      await tester.tap(find.byKey(const ValueKey('friendInviteCopyBtn')));
+      await tester.tap(
+        find.byKey(const ValueKey('friendInviteMilestone_friend_1')),
+      );
+      await tester.pump();
+      expect(find.text('Invites: 2 · Claims: 1 · Copies: 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-154: community leaderboard routes player tap and refresh callbacks',
     (tester) async {
       await _pumpShowcase(tester);

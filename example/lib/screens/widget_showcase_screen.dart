@@ -1073,6 +1073,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoGuildPersonal = 125;
   int _demoGuildClaims = 0;
   int _demoLeaderboardRefreshes = 0;
+  int _demoFriendInvites = 1;
+  int _demoFriendInviteClaims = 0;
+  int _demoFriendInviteCopies = 0;
   String _demoLastLeaderboardPlayer = 'none';
   int _demoComebackViews = 0;
   bool _demoComebackExpired = false;
@@ -5145,6 +5148,62 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Claims: $_demoTrackClaimCount',
                                       key: const Key(
                                         'rewardTrackShowcaseStatus',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'FriendInviteProgressCard (FEAT-155)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    FriendInviteProgressCard(
+                                      key: const Key(
+                                        'friendInviteShowcaseCard',
+                                      ),
+                                      completedInvites: _demoFriendInvites,
+                                      inviteGoal: 3,
+                                      inviteCode: 'ROY2026',
+                                      milestones: [
+                                        FriendInviteMilestone(
+                                          id: 'friend_1',
+                                          requiredInvites: 1,
+                                          reward: MilestoneReward(
+                                            icon: Icons.diamond_rounded,
+                                            label: 'Gems',
+                                            amountLabel: 'x20',
+                                          ),
+                                        ),
+                                        FriendInviteMilestone(
+                                          id: 'friend_3',
+                                          requiredInvites: 3,
+                                          reward: MilestoneReward(
+                                            icon: Icons.shield_rounded,
+                                            label: 'Freeze Shield',
+                                            amountLabel: 'x1',
+                                          ),
+                                        ),
+                                      ],
+                                      onInvite: () => setState(
+                                        () => _demoFriendInvites =
+                                            (_demoFriendInvites + 1).clamp(
+                                              0,
+                                              3,
+                                            ),
+                                      ),
+                                      onCopyInvite: () => setState(
+                                        () => _demoFriendInviteCopies++,
+                                      ),
+                                      onClaimReward: (_) => setState(
+                                        () => _demoFriendInviteClaims++,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Invites: $_demoFriendInvites · Claims: $_demoFriendInviteClaims · Copies: $_demoFriendInviteCopies',
+                                      key: const Key(
+                                        'friendInviteShowcaseStatus',
                                       ),
                                     ),
                                   ],
