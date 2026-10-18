@@ -1059,6 +1059,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   bool _demoInboxRead = false;
   bool _demoInboxClaimed = false;
   int _demoInboxClaimTaps = 0;
+  int _demoRankPromotions = 0;
+  int _demoRankShares = 0;
   final DateTime _demoInboxExpiresAt = DateTime.now().add(
     const Duration(minutes: 15),
   );
@@ -4918,6 +4920,47 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     Text(
                                       'Inbox read: $_demoInboxRead · collected: $_demoInboxClaimed · count: $_demoInboxClaimTaps',
                                       key: const Key('inboxShowcaseStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'RankPromotionDialog (FEAT-147)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Rank continues: $_demoRankPromotions · shares: $_demoRankShares',
+                                      key: const Key(
+                                        'rankPromotionShowcaseStatus',
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    CommonButton(
+                                      key: const Key('openRankPromotionBtn'),
+                                      label: 'Open rank promotion',
+                                      onTap: () => RankPromotionDialog.show(
+                                        context,
+                                        fromTier: LeaderboardTier.silver,
+                                        toTier: LeaderboardTier.gold,
+                                        rewards: [
+                                          MilestoneReward(
+                                            icon: Icons.diamond_rounded,
+                                            label: 'Gems',
+                                            amountLabel: 'x200',
+                                          ),
+                                          MilestoneReward(
+                                            icon: Icons.shield_rounded,
+                                            label: 'Freeze Shield',
+                                            amountLabel: 'x2',
+                                          ),
+                                        ],
+                                        onContinue: () => setState(
+                                          () => _demoRankPromotions++,
+                                        ),
+                                        onShare: () =>
+                                            setState(() => _demoRankShares++),
+                                      ),
                                     ),
                                   ],
                                 ),

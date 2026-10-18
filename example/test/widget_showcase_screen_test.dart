@@ -264,6 +264,62 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-147: rank promotion dialog routes continue and share actions',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final open = find.byKey(const Key('openRankPromotionBtn'));
+      await tester.scrollUntilVisible(open, 350, scrollable: scrollable);
+      await tester.ensureVisible(open);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('rankPromotionShowcaseStatus'));
+      expect(tester.widget<Text>(status).data, 'Rank continues: 0 · shares: 0');
+
+      // Tap open and share
+      await tester.tap(open);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Rank Promoted!'), findsOneWidget);
+      expect(find.text('GOLD'), findsOneWidget);
+      expect(find.text('Freeze Shield'), findsOneWidget);
+
+      tester
+          .widget<NeonDialogButton>(
+            find.byWidgetPredicate(
+              (w) => w is NeonDialogButton && w.action.label == 'Share',
+            ),
+          )
+          .action
+          .onTap();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(tester.widget<Text>(status).data, 'Rank continues: 0 · shares: 1');
+
+      // Tap open and continue
+      await tester.tap(open);
+      await tester.pump(const Duration(milliseconds: 300));
+      tester
+          .widget<NeonDialogButton>(
+            find.byWidgetPredicate(
+              (w) => w is NeonDialogButton && w.action.label == 'Continue',
+            ),
+          )
+          .action
+          .onTap();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(tester.widget<Text>(status).data, 'Rank continues: 1 · shares: 1');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-146: inbox message opens and claims caller-owned attachments',
     (tester) async {
       await _pumpShowcase(tester);

@@ -102,6 +102,7 @@ export 'streak_repair_dialog.dart';
 export 'streak_shield_card.dart';
 export 'vip_perk_progress_row.dart';
 export 'inbox_message_card.dart';
+export 'rank_promotion_dialog.dart';
 export 'win_streak_flame_hud.dart';
 export 'milestone_celebration_dialog.dart';
 export 'move_hint_popup.dart';
