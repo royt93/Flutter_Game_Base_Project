@@ -79,6 +79,21 @@ Root tests mirror `lib/`: `test/core` (+ `test/core/utils`), `test/widget`
 holds widget tests for the demo screens; `example/integration_test/` has the
 device boot test.
 
+**Golden baselines (`test/widget/goldens/goldens/*.png`) must come from the
+`regenerate-goldens.yml` workflow, never from a local macOS run.** CI renders
+on Linux + the pinned Flutter 3.35.1, so macOS-generated images fail the "Test
+host" job (the comparator's 1% tolerance only absorbs sub-pixel font noise, it
+is not a substitute). Flow for a new golden test: commit and push the widget +
+golden test first (CI is red until baselines exist), run
+`gh workflow run regenerate-goldens.yml --ref main`, then take **only** the new
+PNGs from the PR branch it opens
+(`git fetch origin chore/regenerate-goldens && git checkout FETCH_HEAD -- 'test/widget/goldens/goldens/<name>_*.png'`),
+commit, push and close that PR. Do not merge the PR as-is: running
+`flutter pub get` on 3.35.1 also rewrites `pubspec.lock` and
+`example/pubspec.lock` to older dependency versions. Locally, run
+`flutter test --exclude-tags slow test/widget/common test/core test/tool test/presentation`
+to skip the golden directory (it fails on macOS by design).
+
 ## Architecture
 
 ### 1. Bootstrap (`lib/core/kit_bootstrap.dart`)
