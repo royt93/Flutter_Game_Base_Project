@@ -26,9 +26,15 @@ Widget `OfflineEarningsPopup` hiển thị:
 - [x] **Interruption test**: Pause/resume hoặc đóng overlay giữa count-up; không gọi callback hai lần và không phát sinh ticker orphan.
 - [x] **Network conditioning test**: N/A với widget thuần presentation. Consumer integration test chỉ áp dụng nếu caller nối claim tới backend.
 - [x] **Memory leak & profiling test**: MemoryWatchdog/resource lifecycle check cho controller/overlay sau dismiss.
-- [ ] **Frame rate / Jank test**: CHƯA ĐO. Smoke test trên Pixel 7 Pro chỉ xác nhận popup mở và collect chạy đúng, không thu FrameTiming (p50/p95/p99, slow-frame %, jank count).
+- [x] **Frame rate / Jank test**: Pixel 7 Pro profile qua `flutter drive --profile` (`example/integration_test/offline_earnings_perf_test.dart`, 2026-10-18): 30 chu kỳ mount/count-up 1s/unmount, 4.004 frames, totalSpan p50/p95/p99 = 6.413/10.018/13.487ms, max(build,raster) p50/p95/p99 = 3.270/4.844/7.920ms, slow-frame 0,25%, jank 10 với ngưỡng max(build,raster) > 16.667ms. Đây là engine FrameTiming, không phải số missed-vsync từ compositor. RSS sau unmount (mỗi 6 chu kỳ): 289.603.584 → 293.347.328 byte, chỉ là số tham khảo, không chứng minh không leak.
 - [x] **IAP & Ad mediation test**: N/A trong package; `onDoubleTap` chỉ là seam, không khởi tạo ad/IAP SDK.
 
 ## Hiệu năng & Animation
 - [x] Count-up controller chỉ sống khi popup mounted, hủy khi dismiss; `RepaintBoundary` cô lập phần số lớn.
-- [ ] Sustained 60 FPS benchmark: chưa đo, không tuyên bố đạt 60 FPS. Cần chạy profile FrameTiming trên Pixel 7 Pro nếu muốn ghi số liệu.
+- [x] Benchmark đã đo trên Pixel 7 Pro: 10/4.004 frames vượt budget 60Hz, p99 engine frame latency 13.487ms. Không đạt zero-jank tuyệt đối; chưa đo thiết bị yếu hoặc thermal soak, không cam kết 60 FPS cho các trường hợp đó.
+
+## Chạy lại benchmark
+```bash
+cd example
+flutter drive --profile --driver integration_test/profile_driver.dart --target integration_test/offline_earnings_perf_test.dart -d <device-id> --dart-define=E2E_TEST=true
+```
