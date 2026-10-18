@@ -319,6 +319,46 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-145: VIP perk progress updates tier, points and caller action',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final addPoints = find.byKey(const Key('vipPerkAddPointsBtn'));
+      await tester.scrollUntilVisible(addPoints, 350, scrollable: scrollable);
+      await tester.ensureVisible(addPoints);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final row = tester.widget<VipPerkProgressRow>(
+        find.byKey(const Key('vipPerkShowcaseRow')),
+      );
+      expect(row.currentTier, 1);
+      expect(row.currentPoints, 400);
+      expect(row.nextTierPoints, 500);
+      expect(find.text('+1 Max Life'), findsOneWidget);
+
+      await tester.tap(addPoints);
+      await tester.pump(const Duration(milliseconds: 600));
+      final promoted = tester.widget<VipPerkProgressRow>(
+        find.byKey(const Key('vipPerkShowcaseRow')),
+      );
+      expect(promoted.currentTier, 2);
+      expect(promoted.currentPoints, 650);
+      expect(promoted.nextTierPoints, 1000);
+
+      await tester.tap(find.byKey(const ValueKey('vipPerkActionBtn')));
+      await tester.pump();
+      expect(find.text('VIP 2 · 650 pts · Perk taps: 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-140: offline earnings popup counts up and caller owns collect/double',
     (tester) async {
       await _pumpShowcase(tester);

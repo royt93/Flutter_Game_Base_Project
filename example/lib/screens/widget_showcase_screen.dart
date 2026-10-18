@@ -1053,7 +1053,25 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoProtectedStreak = 12;
   int _demoShieldRepairs = 0;
   int _demoShieldDismissals = 0;
+  int _demoVipTier = 1;
+  int _demoVipPoints = 400;
+  int _demoVipPerkTaps = 0;
+  static const _demoVipThresholds = [500, 1000, 2000];
   ChestTier _chestTier = ChestTier.wood;
+
+  int? get _demoVipNextPoints => _demoVipTier - 1 < _demoVipThresholds.length
+      ? _demoVipThresholds[_demoVipTier - 1]
+      : null;
+
+  void _addDemoVipPoints() {
+    setState(() {
+      _demoVipPoints += 250;
+      final next = _demoVipNextPoints;
+      if (next != null && _demoVipPoints >= next) {
+        _demoVipTier++;
+      }
+    });
+  }
 
   void _useDemoStreakShield() {
     if (_demoShieldCount <= 0) return;
@@ -4814,6 +4832,44 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           () => _demoShieldDismissals++,
                                         ),
                                       ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'VipPerkProgressRow (FEAT-145)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    VipPerkProgressRow(
+                                      key: const Key('vipPerkShowcaseRow'),
+                                      currentTier: _demoVipTier,
+                                      currentPoints: _demoVipPoints,
+                                      nextTierPoints: _demoVipNextPoints,
+                                      perks: [
+                                        const VipPerk(
+                                          icon: Icons.bolt_rounded,
+                                          label: '+10% Coins',
+                                        ),
+                                        VipPerk(
+                                          icon: Icons.favorite_rounded,
+                                          label: '+1 Max Life',
+                                          isUnlocked: _demoVipTier >= 2,
+                                        ),
+                                      ],
+                                      onAction: () =>
+                                          setState(() => _demoVipPerkTaps++),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'VIP $_demoVipTier · $_demoVipPoints pts · Perk taps: $_demoVipPerkTaps',
+                                      key: const Key('vipPerkShowcaseStatus'),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    CommonButton(
+                                      key: const Key('vipPerkAddPointsBtn'),
+                                      label: 'Add 250 VIP points',
+                                      onTap: _addDemoVipPoints,
                                     ),
                                   ],
                                 ),

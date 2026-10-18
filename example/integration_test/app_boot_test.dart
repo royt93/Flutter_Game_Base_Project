@@ -2706,6 +2706,50 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-145: VipPerkProgressRow promotes tier and routes action on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final addPoints = find.byKey(const Key('vipPerkAddPointsBtn'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && addPoints.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.ensureVisible(addPoints);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final rowFinder = find.byKey(const Key('vipPerkShowcaseRow'));
+      expect(tester.widget<VipPerkProgressRow>(rowFinder).currentTier, 1);
+
+      await tester.tap(addPoints);
+      await tester.pump(const Duration(milliseconds: 700));
+      final promoted = tester.widget<VipPerkProgressRow>(rowFinder);
+      expect(promoted.currentTier, 2);
+      expect(promoted.currentPoints, 650);
+
+      final action = find.byKey(const ValueKey('vipPerkActionBtn'));
+      await tester.ensureVisible(action);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(action);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('VIP 2 · 650 pts · Perk taps: 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-141: prestige confirmation card confirm and cancel flow on physical device',
     (tester) async {
       await app.app();
