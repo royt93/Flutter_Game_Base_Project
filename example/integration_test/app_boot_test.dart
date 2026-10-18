@@ -2572,6 +2572,75 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-143: SaveSlotPicker select/create/delete on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final create = find.byKey(const ValueKey('saveSlotCreateBtn'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && create.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      position.jumpTo(
+        (position.pixels + 350).clamp(0.0, position.maxScrollExtent),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.ensureVisible(create);
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('Warrior Arthur'), findsOneWidget);
+      expect(find.text('ACTIVE'), findsOneWidget);
+
+      final selectMage = find.byKey(
+        const ValueKey('saveSlotSelectBtn_picker_slot_mage'),
+      );
+      await tester.ensureVisible(selectMage);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(selectMage);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(selectMage, findsNothing);
+
+      await tester.ensureVisible(create);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(create);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Hero 3'), findsOneWidget);
+      expect(tester.widget<CommonButton>(create).onTap, isNull);
+
+      final delete = find.byKey(
+        const ValueKey('saveSlotDeleteBtn_picker_slot_3'),
+      );
+      await tester.ensureVisible(delete);
+      await tester.tap(delete);
+      await tester.pump(const Duration(milliseconds: 300));
+      final confirm = find.byWidgetPredicate(
+        (w) => w is NeonDialogButton && w.action.label == 'Delete',
+      );
+      expect(confirm, findsOneWidget);
+      tester.widget<NeonDialogButton>(confirm).action.onTap();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+
+      expect(find.text('Hero 3'), findsNothing);
+      expect(tester.widget<CommonButton>(create).onTap, isNotNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-141: prestige confirmation card confirm and cancel flow on physical device',
     (tester) async {
       await app.app();

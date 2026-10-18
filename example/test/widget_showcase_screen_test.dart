@@ -1964,6 +1964,81 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-143: SaveSlotPicker selects, creates, and confirms deletion through caller state',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final create = find.byKey(const ValueKey('saveSlotCreateBtn'));
+      await tester.scrollUntilVisible(create, 350, scrollable: scrollable);
+      await tester.ensureVisible(create);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      Finder inPicker(Finder m) =>
+          find.descendant(of: find.byType(SaveSlotPicker), matching: m);
+
+      expect(inPicker(find.text('Warrior Arthur')), findsOneWidget);
+      expect(inPicker(find.text('ACTIVE')), findsOneWidget);
+
+      // Select inactive slot
+      await tester.tap(
+        find.byKey(const ValueKey('saveSlotSelectBtn_picker_slot_mage')),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(
+        find.byKey(const ValueKey('saveSlotSelectBtn_picker_slot_warrior')),
+        findsOneWidget,
+      );
+
+      // Create third slot -> hits maxSlots (3), create disabled
+      await tester.tap(create);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(inPicker(find.text('Hero 3')), findsOneWidget);
+      expect(tester.widget<CommonButton>(create).onTap, isNull);
+
+      // Delete cancel keeps slot
+      await tester.tap(
+        find.byKey(const ValueKey('saveSlotDeleteBtn_picker_slot_3')),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Delete Save Slot?'), findsOneWidget);
+      tester
+          .widget<NeonDialogButton>(
+            find.byWidgetPredicate(
+              (w) => w is NeonDialogButton && w.action.label == 'Cancel',
+            ),
+          )
+          .action
+          .onTap();
+      await _settle(tester);
+      expect(inPicker(find.text('Hero 3')), findsOneWidget);
+
+      // Delete confirm removes slot and re-enables create
+      await tester.tap(
+        find.byKey(const ValueKey('saveSlotDeleteBtn_picker_slot_3')),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      tester
+          .widget<NeonDialogButton>(
+            find.byWidgetPredicate(
+              (w) => w is NeonDialogButton && w.action.label == 'Delete',
+            ),
+          )
+          .action
+          .onTap();
+      await _settle(tester);
+      expect(inPicker(find.text('Hero 3')), findsNothing);
+      expect(tester.widget<CommonButton>(create).onTap, isNotNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'IDEA-56: SaveSlotManager tạo/chuyển/xoá slot đúng, mỗi slot giữ dữ liệu riêng qua keyFor',
     (tester) async {
       await _pumpShowcase(tester);

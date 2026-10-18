@@ -277,6 +277,55 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     if (mounted) setState(() {});
   }
 
+  // FEAT-143: Demo state riêng cho SaveSlotPicker để không va chạm tên
+  // 'Player 1'/'Player 2' với SaveSlotManager (IDEA-56) phía trên.
+  final List<SaveSlotMeta> _pickerSlots = [
+    const SaveSlotMeta(
+      id: 'picker_slot_warrior',
+      displayName: 'Warrior Arthur',
+      createdAtMs: 1700000000000,
+      lastPlayedAtMs: 1700005000000,
+    ),
+    const SaveSlotMeta(
+      id: 'picker_slot_mage',
+      displayName: 'Mage Merlin',
+      createdAtMs: 1700000000000,
+      lastPlayedAtMs: 1700002000000,
+    ),
+  ];
+  String? _pickerActiveSlotId = 'picker_slot_warrior';
+
+  void _onPickerSelect(String id) {
+    setState(() => _pickerActiveSlotId = id);
+  }
+
+  void _onPickerCreate() {
+    final count = _pickerSlots.length + 1;
+    final id = 'picker_slot_$count';
+    setState(() {
+      _pickerSlots.add(
+        SaveSlotMeta(
+          id: id,
+          displayName: 'Hero $count',
+          createdAtMs: DateTime.now().millisecondsSinceEpoch,
+          lastPlayedAtMs: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
+      _pickerActiveSlotId = id;
+    });
+  }
+
+  void _onPickerDelete(String id) {
+    setState(() {
+      _pickerSlots.removeWhere((s) => s.id == id);
+      if (_pickerActiveSlotId == id) {
+        _pickerActiveSlotId = _pickerSlots.isNotEmpty
+            ? _pickerSlots.first.id
+            : null;
+      }
+    });
+  }
+
   // IDEA-08: Game Feel demo state — SquashStretch tap count, a
   // ScreenShakeController the caller owns/disposes, and a cycling combo
   // heat value.
@@ -3155,6 +3204,17 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       ],
                                     ),
                                   ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'SaveSlotPicker (FEAT-143)',
+                                child: SaveSlotPicker(
+                                  slots: _pickerSlots,
+                                  activeSlotId: _pickerActiveSlotId,
+                                  maxSlots: 3,
+                                  onSelect: _onPickerSelect,
+                                  onCreate: _onPickerCreate,
+                                  onDelete: _onPickerDelete,
                                 ),
                               ),
                               _Demo(

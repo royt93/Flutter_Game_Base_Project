@@ -87,6 +87,7 @@ export 'tiered_leaderboard_row.dart';
 export 'quest_board_panel.dart';
 export 'game_over_card_template.dart';
 export 'backup_restore_panel.dart';
+export 'save_slot_picker.dart';
 export 'battle_pass_road.dart';
 export 'piggy_bank_vault.dart';
 export 'candy_radio_group.dart';
