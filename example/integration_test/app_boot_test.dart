@@ -2788,6 +2788,68 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-168: avatar frame selector via caller seam', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final selector = find.byKey(const Key('avatarFrameShowcase'));
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && selector.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(selector);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byKey(const ValueKey('avatarFrameOption_neon')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Frame: neon · locked tap: none'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('avatarFrameOption_gold')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Frame: neon · locked tap: gold'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('FEAT-168: avatar frame selector via caller seam', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final selector = find.byKey(const Key('avatarFrameShowcase'));
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && selector.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(selector);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byKey(const ValueKey('avatarFrameOption_neon')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Frame: neon · locked tap: none'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('avatarFrameOption_gold')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Frame: neon · locked tap: gold'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-167: reward chip opens caller overlay when ready', (
     tester,
   ) async {

@@ -51,7 +51,7 @@ Widget _wrap(Widget child) => GetMaterialApp(
 Future<void> _pumpShowcase(WidgetTester tester) async {
   // Additional showcase demos increase document height; keep the virtual
   // viewport taller so every section remains inside the test surface.
-  tester.view.physicalSize = const Size(1080, 34000);
+  tester.view.physicalSize = const Size(1080, 38000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -282,6 +282,41 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('characterSelect_mage')));
       await tester.pump();
       expect(tester.widget<Text>(status).data, 'Selected: mage · Taps: 1');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'FEAT-168: avatar frame selector selects and reports locked taps',
+    (tester) async {
+      await _pumpShowcase(tester);
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final selector = find.byKey(const Key('avatarFrameShowcase'));
+      await tester.scrollUntilVisible(selector, 350, scrollable: scrollable);
+      await tester.ensureVisible(selector);
+      await tester.pump(const Duration(milliseconds: 100));
+      final status = find.byKey(const Key('avatarFrameStatus'));
+      expect(
+        tester.widget<Text>(status).data,
+        'Frame: classic · locked tap: none',
+      );
+      await tester.tap(find.byKey(const ValueKey('avatarFrameOption_neon')));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(
+        tester.widget<Text>(status).data,
+        'Frame: neon · locked tap: none',
+      );
+      await tester.tap(find.byKey(const ValueKey('avatarFrameOption_gold')));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(
+        tester.widget<Text>(status).data,
+        'Frame: neon · locked tap: gold',
+      );
       expect(tester.takeException(), isNull);
     },
   );

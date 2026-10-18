@@ -1102,6 +1102,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     });
   }
 
+  String _demoFrameId = 'classic';
+  String _demoFrameLockedHint = 'none';
   int _demoChipWins = 3;
   bool _demoChipOpen = false;
   int _demoStreak = 8;
@@ -5380,6 +5382,51 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     Text(
                                       'Lives Sent: $_demoGiftLivesSentCount · State: ${_demoGiftLivesState.name}',
                                       key: const Key('giftLivesShowcaseStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'AvatarFrameSelector (FEAT-168)',
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    AvatarFrameSelector(
+                                      key: const Key('avatarFrameShowcase'),
+                                      selectedId: _demoFrameId,
+                                      previewChild: const Icon(
+                                        Icons.person_rounded,
+                                      ),
+                                      options: const [
+                                        AvatarFrameOption(
+                                          id: 'classic',
+                                          label: 'Classic Cyan',
+                                          color: Colors.cyan,
+                                        ),
+                                        AvatarFrameOption(
+                                          id: 'neon',
+                                          label: 'Neon Purple',
+                                          color: Colors.purple,
+                                        ),
+                                        AvatarFrameOption(
+                                          id: 'gold',
+                                          label: 'Golden Legend',
+                                          color: Colors.amber,
+                                          locked: true,
+                                          lockHint: 'Reach level 50',
+                                        ),
+                                      ],
+                                      onSelect: (id) =>
+                                          setState(() => _demoFrameId = id),
+                                      onLockedTap: (id) => setState(
+                                        () => _demoFrameLockedHint = id,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Frame: $_demoFrameId · locked tap: $_demoFrameLockedHint',
+                                      key: const Key('avatarFrameStatus'),
                                     ),
                                   ],
                                 ),
