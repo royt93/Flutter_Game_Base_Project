@@ -2750,6 +2750,43 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-158: AchievementRoadmapCard routes open and claim callbacks on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final card = find.byKey(const Key('achievementRoadmapShowcaseCard'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(
+        find.byKey(const ValueKey('achievementRoadmapItem_demo_collector')),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('achievementClaim_demo_champion')),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Claims: 1 · Opened: demo_collector'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-157: UpgradePreviewPanel routes upgrade and updates caller state on physical device',
     (tester) async {
       await app.app();

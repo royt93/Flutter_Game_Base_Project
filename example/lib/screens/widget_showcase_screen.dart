@@ -1080,6 +1080,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoCraftedShields = 0;
   int _demoUpgradeLevel = 3;
   int _demoUpgradeCount = 0;
+  int _demoAchievementClaimCount = 0;
+  String _demoLastOpenedAchievement = 'none';
   String _demoLastLeaderboardPlayer = 'none';
   int _demoComebackViews = 0;
   bool _demoComebackExpired = false;
@@ -5152,6 +5154,57 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Claims: $_demoTrackClaimCount',
                                       key: const Key(
                                         'rewardTrackShowcaseStatus',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'AchievementRoadmapCard (FEAT-158)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    AchievementRoadmapCard(
+                                      key: const Key(
+                                        'achievementRoadmapShowcaseCard',
+                                      ),
+                                      items: [
+                                        AchievementRoadmapItem(
+                                          id: 'demo_collector',
+                                          title: 'Collect 100 Items',
+                                          description:
+                                              'Find items in every region',
+                                          progress: 62,
+                                          target: 100,
+                                          reward: MilestoneReward(
+                                            icon: Icons.diamond_rounded,
+                                            label: 'Gems',
+                                            amountLabel: 'x50',
+                                          ),
+                                        ),
+                                        AchievementRoadmapItem(
+                                          id: 'demo_champion',
+                                          title: 'Win 25 Matches',
+                                          progress: 25,
+                                          target: 25,
+                                          reward: MilestoneReward(
+                                            icon: Icons.emoji_events_rounded,
+                                            label: 'Trophy',
+                                          ),
+                                        ),
+                                      ],
+                                      onClaim: (_) => setState(
+                                        () => _demoAchievementClaimCount++,
+                                      ),
+                                      onOpen: (id) => setState(
+                                        () => _demoLastOpenedAchievement = id,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Claims: $_demoAchievementClaimCount · Opened: $_demoLastOpenedAchievement',
+                                      key: const Key(
+                                        'achievementRoadmapShowcaseStatus',
                                       ),
                                     ),
                                   ],

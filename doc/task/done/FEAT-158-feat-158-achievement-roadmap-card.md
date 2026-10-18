@@ -20,7 +20,7 @@ Widget `AchievementRoadmapCard` hiển thị:
 ## Ma trận kiểm thử bắt buộc (DoD)
 - [ ] **Unit test**: Validate IDs duy nhất, progress không âm, goal dương, milestone thresholds tăng đơn điệu.
 - [ ] **Widget test**: Progress, milestone states, claim/open callbacks, completed/max state, empty/loading, semantics và Reduced Motion.
-- [ ] **Integration test (Device)**: Pixel 7 Pro tiến triển/claim caller seam trên showcase; không dùng simulator.
+- [ ] **Integration test (Device)**: CHƯA CHẠY — Pixel foreground đang là AdMob Wrapper; không gián đoạn app đang mở. Device smoke spec sẵn trong `app_boot_test.dart`; host showcase test xác nhận open/claim callbacks.
 - [ ] **Golden test**: 0%, mid, completed, nhiều milestones trên light/dark/vi/RTL/textScale/reducedMotion.
 - [ ] **Interruption test**: Rebuild/unmount khi progress animation chạy không leak ticker hoặc claim lặp.
 - [ ] **Network conditioning test**: N/A — service/remote achievement sync thuộc caller.

@@ -112,6 +112,7 @@ export 'community_leaderboard_card.dart';
 export 'friend_invite_progress_card.dart';
 export 'crafting_recipe_card.dart';
 export 'upgrade_preview_panel.dart';
+export 'achievement_roadmap_card.dart';
 export 'rank_promotion_dialog.dart';
 export 'win_streak_flame_hud.dart';
 export 'milestone_celebration_dialog.dart';

@@ -263,6 +263,37 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-158: achievement roadmap routes open and claim callbacks', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final card = find.byKey(const Key('achievementRoadmapShowcaseCard'));
+    await tester.scrollUntilVisible(card, 350, scrollable: scrollable);
+    await tester.ensureVisible(card);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final status = find.byKey(const Key('achievementRoadmapShowcaseStatus'));
+    await tester.tap(
+      find.byKey(const ValueKey('achievementRoadmapItem_demo_collector')),
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('achievementClaim_demo_champion')),
+    );
+    await tester.pump();
+    expect(
+      tester.widget<Text>(status).data,
+      'Claims: 1 · Opened: demo_collector',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-157: upgrade preview applies caller-owned upgrade state', (
     tester,
   ) async {
