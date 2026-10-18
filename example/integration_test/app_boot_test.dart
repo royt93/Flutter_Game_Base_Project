@@ -2788,6 +2788,44 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-167: reward chip opens caller overlay when ready', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final chip = find.byKey(const Key('nextRewardChipShowcase'));
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && chip.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(chip);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byKey(const Key('nextRewardChipWin')));
+    await tester.tap(find.byKey(const Key('nextRewardChipWin')));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(
+      find.descendant(of: chip, matching: find.text('Claim')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('nextRewardChipTap')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('nextRewardChipOverlay')), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('nextRewardChipOverlay')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-166: streak strip claims milestones via caller seam', (
     tester,
   ) async {

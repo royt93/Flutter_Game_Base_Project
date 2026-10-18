@@ -144,3 +144,4 @@ export 'friend_request_tile.dart';
 export 'quest_progress_pill.dart';
 export 'xp_level_header.dart';
 export 'streak_milestone_strip.dart';
+export 'next_reward_teaser_chip.dart';

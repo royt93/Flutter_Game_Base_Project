@@ -1102,6 +1102,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     });
   }
 
+  int _demoChipWins = 3;
+  bool _demoChipOpen = false;
   int _demoStreak = 8;
   final Set<int> _demoStreakClaimed = <int>{};
   bool _demoLevelInfoOpen = false;
@@ -5383,6 +5385,33 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                               _Demo(
+                                label: 'NextRewardTeaserChip (FEAT-167)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    NextRewardTeaserChip(
+                                      key: const Key('nextRewardChipShowcase'),
+                                      rewardLabel: 'Star Chest',
+                                      remainingText:
+                                          '${5 - _demoChipWins} wins to go',
+                                      progress: _demoChipWins / 5,
+                                      ready: _demoChipWins >= 5,
+                                      onTap: () =>
+                                          setState(() => _demoChipOpen = true),
+                                    ),
+                                    CommonButton(
+                                      key: const Key('nextRewardChipWin'),
+                                      label: '+1 win',
+                                      width: double.infinity,
+                                      onTap: () => setState(
+                                        () => _demoChipWins =
+                                            (_demoChipWins + 1).clamp(0, 5),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
                                 label: 'StreakMilestoneStrip (FEAT-166)',
                                 child: Column(
                                   crossAxisAlignment:
@@ -6762,6 +6791,25 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                     ),
                   ),
                 ),
+                if (_demoChipOpen)
+                  Positioned.fill(
+                    key: const Key('nextRewardChipOverlay'),
+                    child: NeonDialog.overlay(
+                      onBarrier: () => setState(() => _demoChipOpen = false),
+                      panel: NeonDialog.panel(
+                        title: 'Star Chest',
+                        color: NeonTheme.purple,
+                        message: '$_demoChipWins / 5 wins',
+                        actions: [
+                          NeonDialogAction(
+                            label: 'Close',
+                            color: NeonTheme.purple,
+                            onTap: () => setState(() => _demoChipOpen = false),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 if (_demoLevelInfoOpen)
                   Positioned.fill(
                     key: const Key('xpLevelInfoOverlay'),

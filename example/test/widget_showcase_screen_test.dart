@@ -286,6 +286,38 @@ void main() {
     },
   );
 
+  testWidgets(
+    'FEAT-167: reward chip progresses, turns ready and opens overlay',
+    (tester) async {
+      await _pumpShowcase(tester);
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final chip = find.byKey(const Key('nextRewardChipShowcase'));
+      await tester.scrollUntilVisible(chip, 350, scrollable: scrollable);
+      await tester.ensureVisible(chip);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('2 wins to go'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('nextRewardChipWin')));
+      await tester.tap(find.byKey(const Key('nextRewardChipWin')));
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(
+        find.descendant(of: chip, matching: find.text('Claim')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('nextRewardChipTap')));
+      await tester.pump();
+      expect(find.byKey(const Key('nextRewardChipOverlay')), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byKey(const Key('nextRewardChipOverlay')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('FEAT-166: streak strip claims milestones and unlocks new ones', (
     tester,
   ) async {
