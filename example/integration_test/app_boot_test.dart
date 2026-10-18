@@ -2572,6 +2572,55 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-141: prestige confirmation card confirm and cancel flow on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final open = find.byKey(const Key('openPrestigeCardBtn'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && open.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(open, findsWidgets);
+      await tester.ensureVisible(open.first);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Open and cancel
+      await tester.tap(open.first);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Prestige Confirmation'), findsWidgets);
+
+      final cancel = find.text('Keep Playing');
+      expect(cancel, findsWidgets);
+      await tester.tap(cancel.last);
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.textContaining('Keep playing: 1'), findsWidgets);
+
+      // Open and confirm
+      await tester.tap(open.first);
+      await tester.pump(const Duration(milliseconds: 500));
+      final confirm = find.text('Prestige Now');
+      expect(confirm, findsWidgets);
+      await tester.tap(confirm.last);
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.textContaining('Prestige confirms: 1'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-140: offline earnings popup collects caller-owned coins on physical device',
     (tester) async {
       await app.app();

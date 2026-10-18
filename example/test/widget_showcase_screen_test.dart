@@ -206,6 +206,64 @@ void main() {
   });
 
   testWidgets(
+    'FEAT-141: prestige confirmation card confirms and cancels caller actions',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final open = find.byKey(const Key('openPrestigeCardBtn'));
+      await tester.scrollUntilVisible(open, 350, scrollable: scrollable);
+      await tester.ensureVisible(open);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(
+        const Key('prestigeConfirmationShowcaseStatus'),
+      );
+      String statusText() => tester.widget<Text>(status).data!;
+      expect(statusText(), 'Prestige confirms: 0 · Keep playing: 0');
+
+      // Test cancel (Keep Playing)
+      await tester.tap(open);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Prestige Confirmation'), findsOneWidget);
+      expect(
+        find.text('Requires Level 50 · Level 50 resets to 1'),
+        findsOneWidget,
+      );
+
+      final cancelAction = tester.widget<NeonDialogButton>(
+        find.byWidgetPredicate(
+          (w) => w is NeonDialogButton && w.action.label == 'Keep Playing',
+        ),
+      );
+      cancelAction.action.onTap();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(statusText(), 'Prestige confirms: 0 · Keep playing: 1');
+
+      // Test confirm (Prestige Now)
+      await tester.tap(open);
+      await tester.pump(const Duration(milliseconds: 300));
+      final confirmAction = tester.widget<NeonDialogButton>(
+        find.byWidgetPredicate(
+          (w) => w is NeonDialogButton && w.action.label == 'Prestige Now',
+        ),
+      );
+      confirmAction.action.onTap();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(statusText(), 'Prestige confirms: 1 · Keep playing: 1');
+
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-140: offline earnings popup counts up and caller owns collect/double',
     (tester) async {
       await _pumpShowcase(tester);

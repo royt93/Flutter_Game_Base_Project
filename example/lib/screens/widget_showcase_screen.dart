@@ -998,6 +998,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _flashSaleBuys = 0;
   int _offlineCollectedCoins = 0;
   int _offlineDoubleRequests = 0;
+  int _prestigeConfirms = 0;
+  int _prestigeCancels = 0;
   ChestTier _chestTier = ChestTier.wood;
   bool _chestOpened = false;
   final GlobalKey _hintTargetKey = GlobalKey();
@@ -4661,6 +4663,52 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           () => _offlineDoubleRequests++,
                                         ),
                                       ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'PrestigeConfirmationCard (FEAT-141)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Prestige confirms: $_prestigeConfirms · Keep playing: $_prestigeCancels',
+                                      key: const Key(
+                                        'prestigeConfirmationShowcaseStatus',
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    CommonButton(
+                                      key: const Key('openPrestigeCardBtn'),
+                                      label: 'Open prestige confirmation',
+                                      onTap: () =>
+                                          PrestigeConfirmationCard.show(
+                                            context,
+                                            currentLevel: 50,
+                                            requiredPrestigeValue: 'Level 50',
+                                            currentMultiplier: 1.0,
+                                            nextMultiplier: 1.5,
+                                            rewards: const [
+                                              PrestigeReward(
+                                                icon: Icons.bolt_rounded,
+                                                label: 'Permanent Energy Boost',
+                                                amount: '+25%',
+                                              ),
+                                              PrestigeReward(
+                                                icon:
+                                                    Icons.auto_awesome_rounded,
+                                                label: 'Prestige Star',
+                                                amount: 'x1',
+                                              ),
+                                            ],
+                                            onConfirm: () => setState(
+                                              () => _prestigeConfirms++,
+                                            ),
+                                            onCancel: () => setState(
+                                              () => _prestigeCancels++,
+                                            ),
+                                          ),
                                     ),
                                   ],
                                 ),
