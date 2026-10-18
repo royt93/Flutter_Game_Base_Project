@@ -264,6 +264,48 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-148: daily offers preserve caller order and route offer id',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final stack = find.byKey(const Key('dailyOfferShowcaseStack'));
+      await tester.scrollUntilVisible(stack, 350, scrollable: scrollable);
+      await tester.ensureVisible(stack);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final starter = find.byKey(const ValueKey('dailyOffer_daily_starter'));
+      final bundle = find.byKey(const ValueKey('dailyOffer_daily_coin_bundle'));
+      expect(
+        tester.getTopLeft(starter).dy,
+        lessThan(tester.getTopLeft(bundle).dy),
+      );
+      expect(
+        find.descendant(of: stack, matching: find.text('BEST VALUE')),
+        findsOneWidget,
+      );
+      final expired = tester.widget<CommonButton>(
+        find.byKey(const ValueKey('dailyOfferOpen_daily_expired')),
+      );
+      expect(expired.label, 'Expired');
+      expect(expired.onTap, isNull);
+
+      final status = find.byKey(const Key('dailyOfferShowcaseStatus'));
+      await tester.tap(
+        find.byKey(const ValueKey('dailyOfferOpen_daily_coin_bundle')),
+      );
+      await tester.pump();
+      expect(tester.widget<Text>(status).data, 'Offers opened: 1');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-147: rank promotion dialog routes continue and share actions',
     (tester) async {
       await _pumpShowcase(tester);
@@ -1095,11 +1137,16 @@ void main() {
         .first;
     final sectionAnchor = find.text('Gems: 0');
     await tester.scrollUntilVisible(sectionAnchor, 300, scrollable: scrollable);
-    final offer = find.text(r'$0.99');
-    await tester.ensureVisible(offer.first);
+    final firstGemOffer = find.ancestor(
+      of: find.text('100 Gems'),
+      matching: find.byType(ShopItemCard),
+    );
+    await tester.ensureVisible(firstGemOffer);
     await tester.pump();
 
-    await tester.tap(find.text(r'$0.99').last);
+    await tester.tap(
+      find.descendant(of: firstGemOffer, matching: find.byType(CommonButton)),
+    );
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Purchased!'), findsOneWidget);
@@ -1124,7 +1171,10 @@ void main() {
       final gemsStatus = find.text('Gems: 0');
       await tester.scrollUntilVisible(gemsStatus, 300, scrollable: scrollable);
       expect(gemsStatus, findsOneWidget);
-      final firstGemOffer = find.text(r'$0.99').first;
+      final firstGemOffer = find.ancestor(
+        of: find.text('100 Gems'),
+        matching: find.byType(ShopItemCard),
+      );
       await tester.scrollUntilVisible(
         firstGemOffer,
         300,
@@ -1132,7 +1182,9 @@ void main() {
       );
       await tester.ensureVisible(firstGemOffer);
       await tester.pump();
-      await tester.tap(find.text(r'$0.99').last);
+      await tester.tap(
+        find.descendant(of: firstGemOffer, matching: find.byType(CommonButton)),
+      );
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('Gems: 100'), findsOneWidget);
       // Let this toast's full lifecycle (2s hold + reverse animation)

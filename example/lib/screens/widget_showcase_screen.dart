@@ -1061,6 +1061,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoInboxClaimTaps = 0;
   int _demoRankPromotions = 0;
   int _demoRankShares = 0;
+  int _demoOpenedOfferCount = 0;
   final DateTime _demoInboxExpiresAt = DateTime.now().add(
     const Duration(minutes: 15),
   );
@@ -4960,6 +4961,53 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                         ),
                                         onShare: () =>
                                             setState(() => _demoRankShares++),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'DailyOfferStack (FEAT-148)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    DailyOfferStack(
+                                      key: const Key('dailyOfferShowcaseStack'),
+                                      offers: const [
+                                        DailyOffer(
+                                          id: 'daily_starter',
+                                          title: 'Daily Starter Pack',
+                                          priceLabel: r'$0.99',
+                                          subtitle: 'Gems and bonus lives',
+                                          badgeLabel: 'TODAY',
+                                          icon: Icons.bolt_rounded,
+                                        ),
+                                        DailyOffer(
+                                          id: 'daily_coin_bundle',
+                                          title: 'Coin Bundle',
+                                          priceLabel: r'$1.99',
+                                          subtitle: 'Limited daily value',
+                                          badgeLabel: 'BEST VALUE',
+                                          icon: Icons.monetization_on_rounded,
+                                        ),
+                                        DailyOffer(
+                                          id: 'daily_expired',
+                                          title: 'Yesterday Offer',
+                                          priceLabel: r'$0.49',
+                                          isExpired: true,
+                                          icon:
+                                              Icons.hourglass_disabled_rounded,
+                                        ),
+                                      ],
+                                      onOpen: (_) => setState(
+                                        () => _demoOpenedOfferCount++,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Offers opened: $_demoOpenedOfferCount',
+                                      key: const Key(
+                                        'dailyOfferShowcaseStatus',
                                       ),
                                     ),
                                   ],
