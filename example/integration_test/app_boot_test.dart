@@ -2750,6 +2750,56 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-150: RewardTrackRoad unlocks premium and claims tier on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final road = find.byKey(const Key('rewardTrackShowcaseRoad'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && road.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.ensureVisible(road);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      var widget = tester.widget<RewardTrackRoad>(road);
+      expect(widget.currentXp, 150);
+      expect(widget.premiumEnabled, isFalse);
+
+      await tester.ensureVisible(
+        find.byKey(const Key('rewardTrackPremiumBtn')),
+      );
+      await tester.tap(find.byKey(const Key('rewardTrackPremiumBtn')));
+      await tester.pump(const Duration(milliseconds: 300));
+      widget = tester.widget<RewardTrackRoad>(road);
+      expect(widget.premiumEnabled, isTrue);
+
+      final claim = find.byKey(
+        const ValueKey('rewardTrackClaim_showcase_tier_1_free_Coins'),
+      );
+      await tester.scrollUntilVisible(claim, 200, scrollable: scrollable);
+      await tester.ensureVisible(claim);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(claim);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Claims: 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-149: EventCalendarCard opens caller event on physical device',
     (tester) async {
       await app.app();

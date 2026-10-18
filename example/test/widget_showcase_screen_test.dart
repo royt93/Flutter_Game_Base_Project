@@ -264,6 +264,65 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-150: reward track advances XP, unlocks premium and routes claims',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final road = find.byKey(const Key('rewardTrackShowcaseRoad'));
+      await tester.scrollUntilVisible(road, 350, scrollable: scrollable);
+      await tester.ensureVisible(road);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      var track = tester.widget<RewardTrackRoad>(road);
+      expect(track.currentXp, 150);
+      expect(track.premiumEnabled, isFalse);
+      expect(
+        find.byKey(
+          const ValueKey('rewardTrackClaim_showcase_tier_1_free_Coins'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const ValueKey('rewardTrackClaim_showcase_tier_1_premium_Gems'),
+        ),
+        findsNothing,
+      );
+
+      await tester.tap(find.byKey(const Key('rewardTrackPremiumBtn')));
+      await tester.pump();
+      track = tester.widget<RewardTrackRoad>(road);
+      expect(track.premiumEnabled, isTrue);
+      expect(
+        find.byKey(
+          const ValueKey('rewardTrackClaim_showcase_tier_1_premium_Gems'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const Key('rewardTrackAddXpBtn')));
+      await tester.pump();
+      track = tester.widget<RewardTrackRoad>(road);
+      expect(track.currentXp, 250);
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey('rewardTrackClaim_showcase_tier_1_free_Coins'),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Claims: 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-149: event calendar marks states and routes current event',
     (tester) async {
       await _pumpShowcase(tester);
@@ -808,7 +867,10 @@ void main() {
       await tester.tap(openBtn);
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Milestone Reached!'), findsOneWidget);
-      expect(find.text('Coins'), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(Dialog), matching: find.text('Coins')),
+        findsOneWidget,
+      );
 
       final claimButton = tester.widget<NeonDialogButton>(
         find.byWidgetPredicate(

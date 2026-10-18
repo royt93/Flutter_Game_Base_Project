@@ -1063,6 +1063,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoRankShares = 0;
   int _demoOpenedOfferCount = 0;
   int _demoOpenedEventCount = 0;
+  int _demoTrackXp = 150;
+  bool _demoPremiumTrack = false;
+  final Set<String> _demoClaimedTrackIds = {};
+  int _demoTrackClaimCount = 0;
   final DateTime _demoInboxExpiresAt = DateTime.now().add(
     const Duration(minutes: 15),
   );
@@ -5058,6 +5062,80 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Events opened: $_demoOpenedEventCount',
                                       key: const Key(
                                         'eventCalendarShowcaseStatus',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'RewardTrackRoad (FEAT-150)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    RewardTrackRoad(
+                                      key: const Key('rewardTrackShowcaseRoad'),
+                                      tiers: [
+                                        for (var tier = 1; tier <= 3; tier++)
+                                          RewardTrackTier(
+                                            id: 'showcase_tier_$tier',
+                                            requiredXp: tier * 100,
+                                            freeReward: MilestoneReward(
+                                              icon:
+                                                  Icons.monetization_on_rounded,
+                                              label: 'Coins',
+                                              amountLabel: 'x${tier * 100}',
+                                            ),
+                                            premiumReward: MilestoneReward(
+                                              icon: Icons.diamond_rounded,
+                                              label: 'Gems',
+                                              amountLabel: 'x${tier * 10}',
+                                            ),
+                                          ),
+                                      ],
+                                      currentXp: _demoTrackXp,
+                                      premiumEnabled: _demoPremiumTrack,
+                                      claimedFreeIds: _demoClaimedTrackIds,
+                                      claimedPremiumIds: _demoClaimedTrackIds,
+                                      onClaim: (id, lane) => setState(() {
+                                        _demoClaimedTrackIds.add(
+                                          '$id:${lane.name}',
+                                        );
+                                        _demoTrackClaimCount++;
+                                      }),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Wrap(
+                                      spacing: NeonTheme.s8,
+                                      runSpacing: NeonTheme.s8,
+                                      children: [
+                                        CommonButton(
+                                          key: const Key('rewardTrackAddXpBtn'),
+                                          label: 'Add 100 XP',
+                                          onTap: () => setState(
+                                            () => _demoTrackXp += 100,
+                                          ),
+                                        ),
+                                        CommonButton(
+                                          key: const Key(
+                                            'rewardTrackPremiumBtn',
+                                          ),
+                                          label: _demoPremiumTrack
+                                              ? 'Premium On'
+                                              : 'Unlock Premium',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () => setState(
+                                            () => _demoPremiumTrack =
+                                                !_demoPremiumTrack,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Claims: $_demoTrackClaimCount',
+                                      key: const Key(
+                                        'rewardTrackShowcaseStatus',
                                       ),
                                     ),
                                   ],
