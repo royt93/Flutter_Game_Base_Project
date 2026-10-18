@@ -1088,6 +1088,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoTeamMemberTaps = 0;
   String _demoLastPromotedMember = 'none';
   String _demoLastKickedMember = 'none';
+  bool _demoClanChatOpen = false;
+  int _demoClanUnread = 3;
   int _demoGiftLivesSentCount = 0;
   GiftLivesRequestState _demoGiftLivesState = GiftLivesRequestState.pending;
   final List<TeamMemberItem> _demoTeamMembers = [
@@ -5360,6 +5362,20 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                               _Demo(
+                                label: 'ClanChatPreviewBar (FEAT-162)',
+                                child: ClanChatPreviewBar(
+                                  key: const Key('clanChatShowcaseBar'),
+                                  senderName: 'Maya Rose',
+                                  message: 'Ready for the team event?',
+                                  timestampText: '2m ago',
+                                  unreadCount: _demoClanUnread,
+                                  onTap: () => setState(() {
+                                    _demoClanChatOpen = true;
+                                    _demoClanUnread = 0;
+                                  }),
+                                ),
+                              ),
+                              _Demo(
                                 label: 'UpgradePreviewPanel (FEAT-157)',
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -6602,6 +6618,27 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                     ),
                   ),
                 ),
+                if (_demoClanChatOpen)
+                  Positioned.fill(
+                    key: const Key('clanChatShowcaseOverlay'),
+                    child: NeonDialog.overlay(
+                      onBarrier: () =>
+                          setState(() => _demoClanChatOpen = false),
+                      panel: NeonDialog.panel(
+                        title: 'Clan chat',
+                        color: NeonTheme.purple,
+                        message: 'Maya Rose: Ready for the team event?',
+                        actions: [
+                          NeonDialogAction(
+                            label: 'Close chat',
+                            color: NeonTheme.purple,
+                            onTap: () =>
+                                setState(() => _demoClanChatOpen = false),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 if (_rewardPopupOpen)
                   Positioned.fill(
                     child: NeonDialog.overlay(

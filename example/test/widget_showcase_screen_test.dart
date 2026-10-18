@@ -286,6 +286,31 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-162: clan preview opens overlay and clears unread count', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final bar = find.byKey(const Key('clanChatShowcaseBar'));
+    await tester.scrollUntilVisible(bar, 350, scrollable: scrollable);
+    await tester.ensureVisible(bar);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.descendant(of: bar, matching: find.text('3')), findsOneWidget);
+    await tester.tap(bar);
+    await tester.pump();
+    expect(find.byKey(const Key('clanChatShowcaseOverlay')), findsOneWidget);
+    await tester.tap(find.text('Close chat'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('clanChatShowcaseOverlay')), findsNothing);
+    expect(find.descendant(of: bar, matching: find.text('3')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'FEAT-161: gift lives request routes send callback and updates state',
     (tester) async {
@@ -4588,7 +4613,12 @@ void main() {
         tester,
       ) async {
         await _pumpShowcase(tester);
-        expect(find.byType(BadgeDot), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (widget) => widget is BadgeDot && widget.pulse && widget.radar,
+          ),
+          findsOneWidget,
+        );
         await tester.pump(const Duration(milliseconds: 750));
         expect(tester.takeException(), isNull);
       });
