@@ -20,7 +20,7 @@ Widget `UpgradePreviewPanel` hiển thị:
 ## Ma trận kiểm thử bắt buộc (DoD)
 - [ ] **Unit test**: Validate labels không rỗng, cost không âm, stat values hữu hạn; max/affordable state hợp lệ.
 - [ ] **Widget test**: Before/after diff, cost, affordable/insufficient/max states, callback, semantics, Reduced Motion.
-- [ ] **Integration test (Device)**: Pixel 7 Pro xem preview, upgrade seam cập nhật showcase state; không dùng simulator.
+- [ ] **Integration test (Device)**: CHƯA CHẠY — Pixel foreground đang là AdMob Wrapper; không gián đoạn app đang mở. Device smoke spec sẵn trong `app_boot_test.dart`; host showcase test xác nhận preview/upgrade state.
 - [ ] **Golden test**: Tăng/giảm stats, nhiều currency, insufficient/max trên light/dark/vi/RTL/textScale/reducedMotion.
 - [ ] **Interruption test**: Rebuild khi upgrade callback pending không gọi callback kép từ widget.
 - [ ] **Network conditioning test**: N/A — widget presentation-only; purchase/cloud upgrade thuộc caller.

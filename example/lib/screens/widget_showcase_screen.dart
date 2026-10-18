@@ -1078,6 +1078,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoFriendInviteCopies = 0;
   int _demoCraftCount = 0;
   int _demoCraftedShields = 0;
+  int _demoUpgradeLevel = 3;
+  int _demoUpgradeCount = 0;
   String _demoLastLeaderboardPlayer = 'none';
   int _demoComebackViews = 0;
   bool _demoComebackExpired = false;
@@ -5150,6 +5152,64 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Claims: $_demoTrackClaimCount',
                                       key: const Key(
                                         'rewardTrackShowcaseStatus',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'UpgradePreviewPanel (FEAT-157)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    UpgradePreviewPanel(
+                                      key: const Key(
+                                        'upgradePreviewShowcasePanel',
+                                      ),
+                                      title: 'Dragon Sword',
+                                      currentLevel: _demoUpgradeLevel,
+                                      nextLevel: _demoUpgradeLevel + 1,
+                                      subtitle: 'A sturdy weapon upgrade',
+                                      statChanges: [
+                                        UpgradeStatChange(
+                                          label: 'Attack',
+                                          currentValue:
+                                              '${20 + _demoUpgradeLevel * 5}',
+                                          nextValue:
+                                              '${25 + _demoUpgradeLevel * 5}',
+                                          icon: Icons.flash_on_rounded,
+                                        ),
+                                        UpgradeStatChange(
+                                          label: 'Defense',
+                                          currentValue:
+                                              '${5 + _demoUpgradeLevel}',
+                                          nextValue: '${7 + _demoUpgradeLevel}',
+                                          icon: Icons.shield_rounded,
+                                        ),
+                                      ],
+                                      costs: const [
+                                        UpgradeCost(
+                                          label: 'Coins',
+                                          currentAmount: 5000,
+                                          requiredAmount: 750,
+                                        ),
+                                        UpgradeCost(
+                                          label: 'Gems',
+                                          currentAmount: 30,
+                                          requiredAmount: 10,
+                                          icon: Icons.diamond_rounded,
+                                        ),
+                                      ],
+                                      onUpgrade: () => setState(() {
+                                        _demoUpgradeLevel++;
+                                        _demoUpgradeCount++;
+                                      }),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Level: $_demoUpgradeLevel · Upgrades: $_demoUpgradeCount',
+                                      key: const Key(
+                                        'upgradePreviewShowcaseStatus',
                                       ),
                                     ),
                                   ],

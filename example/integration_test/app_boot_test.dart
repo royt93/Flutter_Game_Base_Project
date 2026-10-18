@@ -2750,6 +2750,40 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-157: UpgradePreviewPanel routes upgrade and updates caller state on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final panel = find.byKey(const Key('upgradePreviewShowcasePanel'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && panel.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.ensureVisible(panel);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.widget<UpgradePreviewPanel>(panel).currentLevel, 3);
+
+      await tester.tap(find.byKey(const ValueKey('upgradePreviewButton')));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.widget<UpgradePreviewPanel>(panel).currentLevel, 4);
+      expect(find.text('Level: 4 · Upgrades: 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-156: CraftingRecipeCard crafts and reflects caller ingredients on physical device',
     (tester) async {
       await app.app();

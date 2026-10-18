@@ -263,6 +263,34 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-157: upgrade preview applies caller-owned upgrade state', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final panel = find.byKey(const Key('upgradePreviewShowcasePanel'));
+    await tester.scrollUntilVisible(panel, 350, scrollable: scrollable);
+    await tester.ensureVisible(panel);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    var widget = tester.widget<UpgradePreviewPanel>(panel);
+    expect(widget.currentLevel, 3);
+    expect(widget.nextLevel, 4);
+    expect(widget.isAffordable, isTrue);
+    await tester.tap(find.byKey(const ValueKey('upgradePreviewButton')));
+    await tester.pump();
+    widget = tester.widget<UpgradePreviewPanel>(panel);
+    expect(widget.currentLevel, 4);
+    expect(find.text('Level: 4 · Upgrades: 1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'FEAT-156: crafting recipe crafts once and then locks on missing ingredient',
     (tester) async {
