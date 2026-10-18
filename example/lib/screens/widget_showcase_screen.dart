@@ -1072,6 +1072,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoGuildTotal = 300;
   int _demoGuildPersonal = 125;
   int _demoGuildClaims = 0;
+  int _demoLeaderboardRefreshes = 0;
+  String _demoLastLeaderboardPlayer = 'none';
   int _demoComebackViews = 0;
   bool _demoComebackExpired = false;
   final DateTime _demoInboxExpiresAt = DateTime.now().add(
@@ -5143,6 +5145,60 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Claims: $_demoTrackClaimCount',
                                       key: const Key(
                                         'rewardTrackShowcaseStatus',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'CommunityLeaderboardCard (FEAT-154)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CommunityLeaderboardCard(
+                                      key: const Key(
+                                        'communityLeaderboardShowcaseCard',
+                                      ),
+                                      title: 'Guild Contribution Rankings',
+                                      entries: const [
+                                        CommunityLeaderboardEntry(
+                                          id: 'guild_alpha',
+                                          rank: 1,
+                                          playerName: 'Alpha Guild',
+                                          score: '25,000 pts',
+                                          zone: TierZone.promotion,
+                                          tier: LeaderboardTier.diamond,
+                                        ),
+                                        CommunityLeaderboardEntry(
+                                          id: 'guild_beta',
+                                          rank: 2,
+                                          playerName: 'Your Guild',
+                                          score: '18,400 pts',
+                                          zone: TierZone.safe,
+                                          tier: LeaderboardTier.gold,
+                                          isCurrentPlayer: true,
+                                        ),
+                                        CommunityLeaderboardEntry(
+                                          id: 'guild_gamma',
+                                          rank: 3,
+                                          playerName: 'Gamma Guild',
+                                          score: '15,200 pts',
+                                          zone: TierZone.demotion,
+                                          tier: LeaderboardTier.silver,
+                                        ),
+                                      ],
+                                      onPlayerTap: (id) => setState(
+                                        () => _demoLastLeaderboardPlayer = id,
+                                      ),
+                                      onRefresh: () => setState(
+                                        () => _demoLeaderboardRefreshes++,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Last player: $_demoLastLeaderboardPlayer · Refreshes: $_demoLeaderboardRefreshes',
+                                      key: const Key(
+                                        'communityLeaderboardShowcaseStatus',
                                       ),
                                     ),
                                   ],

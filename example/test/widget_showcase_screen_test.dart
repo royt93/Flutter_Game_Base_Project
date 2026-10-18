@@ -264,6 +264,44 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-154: community leaderboard routes player tap and refresh callbacks',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final card = find.byKey(const Key('communityLeaderboardShowcaseCard'));
+      await tester.scrollUntilVisible(card, 350, scrollable: scrollable);
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(
+        const Key('communityLeaderboardShowcaseStatus'),
+      );
+      expect(
+        tester.widget<Text>(status).data,
+        'Last player: none · Refreshes: 0',
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('communityLeaderboard_guild_beta')),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('communityLeaderboardRefresh')),
+      );
+      await tester.pump();
+      expect(
+        tester.widget<Text>(status).data,
+        'Last player: guild_beta · Refreshes: 1',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-153: guild contribution updates total and routes milestone claim',
     (tester) async {
       await _pumpShowcase(tester);

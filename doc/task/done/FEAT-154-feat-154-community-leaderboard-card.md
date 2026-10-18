@@ -21,7 +21,7 @@ Widget `CommunityLeaderboardCard` hiển thị:
 ## Ma trận kiểm thử bắt buộc (DoD)
 - [ ] **Unit test**: Validate player IDs duy nhất, rank dương, display name/score label không rỗng.
 - [ ] **Widget test**: Giữ đúng thứ tự input, current-player highlight, rank zone, long names/text scale, callbacks, empty/loading/error, semantics.
-- [ ] **Integration test (Device)**: Pixel 7 Pro mở leaderboard, refresh/tap gọi caller seam; không dùng simulator.
+- [ ] **Integration test (Device)**: CHƯA CHẠY — Pixel foreground đang là AdMob Wrapper; không gián đoạn app đang mở. Showcase host test đã kiểm tra tap/refresh callbacks.
 - [ ] **Golden test**: Current player ở top/mid/outside visible range, zones và empty trên light/dark/vi/RTL/textScale/reducedMotion.
 - [ ] **Interruption test**: Rebuild data khi row tap/refresh không để stale state hoặc callback lặp.
 - [ ] **Network conditioning test**: N/A cho widget; timeout/offline thuộc caller service contract test.
