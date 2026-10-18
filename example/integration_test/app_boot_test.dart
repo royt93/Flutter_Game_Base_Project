@@ -2750,6 +2750,45 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-159: CharacterCollectionGrid filters and selects via caller seam on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final grid = find.byKey(const Key('characterCollectionShowcaseGrid'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && grid.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.ensureVisible(grid);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.byKey(const ValueKey('characterFilter_locked')));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Dragon Lord'), findsOneWidget);
+      expect(find.text('Knight'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('characterFilter_owned')));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byKey(const ValueKey('characterSelect_mage')));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Selected: mage · Taps: 0'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-158: AchievementRoadmapCard routes open and claim callbacks on physical device',
     (tester) async {
       await app.app();

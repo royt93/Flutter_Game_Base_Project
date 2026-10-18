@@ -1081,6 +1081,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoUpgradeLevel = 3;
   int _demoUpgradeCount = 0;
   int _demoAchievementClaimCount = 0;
+  int _demoCharacterTaps = 0;
+  String _demoSelectedCharacter = 'knight';
+  CharacterCollectionFilter _demoCharacterFilter =
+      CharacterCollectionFilter.all;
   String _demoLastOpenedAchievement = 'none';
   String _demoLastLeaderboardPlayer = 'none';
   int _demoComebackViews = 0;
@@ -5205,6 +5209,60 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Claims: $_demoAchievementClaimCount · Opened: $_demoLastOpenedAchievement',
                                       key: const Key(
                                         'achievementRoadmapShowcaseStatus',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'CharacterCollectionGrid (FEAT-159)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CharacterCollectionGrid(
+                                      key: const Key(
+                                        'characterCollectionShowcaseGrid',
+                                      ),
+                                      characters: [
+                                        CharacterCollectionItem(
+                                          id: 'knight',
+                                          name: 'Knight',
+                                          rarity: ItemRarity.common,
+                                          isOwned: true,
+                                          isSelected:
+                                              _demoSelectedCharacter ==
+                                              'knight',
+                                        ),
+                                        CharacterCollectionItem(
+                                          id: 'mage',
+                                          name: 'Mage',
+                                          rarity: ItemRarity.epic,
+                                          isOwned: true,
+                                          isSelected:
+                                              _demoSelectedCharacter == 'mage',
+                                        ),
+                                        const CharacterCollectionItem(
+                                          id: 'dragon',
+                                          name: 'Dragon Lord',
+                                          rarity: ItemRarity.legendary,
+                                          isOwned: false,
+                                        ),
+                                      ],
+                                      filter: _demoCharacterFilter,
+                                      onFilterChanged: (filter) => setState(
+                                        () => _demoCharacterFilter = filter,
+                                      ),
+                                      onCharacterTap: (_) =>
+                                          setState(() => _demoCharacterTaps++),
+                                      onSelect: (id) => setState(
+                                        () => _demoSelectedCharacter = id,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Selected: $_demoSelectedCharacter · Taps: $_demoCharacterTaps',
+                                      key: const Key(
+                                        'characterCollectionShowcaseStatus',
                                       ),
                                     ),
                                   ],

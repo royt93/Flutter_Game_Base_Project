@@ -49,11 +49,9 @@ Widget _wrap(Widget child) => GetMaterialApp(
 );
 
 Future<void> _pumpShowcase(WidgetTester tester) async {
-  // FEAT-57/FEAT-51/FEAT-36/FEAT-61/FEAT-60/FEAT-47/FEAT-58/FEAT-43/FEAT-52/FEAT-56/ENH-90/FEAT-130/FEAT-139:
-  // mỗi demo section mới đẩy list dài hơn — tăng chiều cao viewport ảo để
-  // mọi widget phía sau vẫn nằm trong vùng tap được mà không cần scroll
-  // (đúng lý do file này dùng physicalSize cố định).
-  tester.view.physicalSize = const Size(1080, 32000);
+  // Additional showcase demos increase document height; keep the virtual
+  // viewport taller so every section remains inside the test surface.
+  tester.view.physicalSize = const Size(1080, 34000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -259,6 +257,31 @@ void main() {
       await tester.pump();
       expect(statusText(), 'Prestige confirms: 1 · Keep playing: 1');
 
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'FEAT-159: character collection routes tap and select callbacks',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final grid = find.byKey(const Key('characterCollectionShowcaseGrid'));
+      await tester.scrollUntilVisible(grid, 350, scrollable: scrollable);
+      await tester.ensureVisible(grid);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('characterCollectionShowcaseStatus'));
+      await tester.tap(find.byKey(const ValueKey('characterItem_dragon')));
+      await tester.tap(find.byKey(const ValueKey('characterSelect_mage')));
+      await tester.pump();
+      expect(tester.widget<Text>(status).data, 'Selected: mage · Taps: 1');
       expect(tester.takeException(), isNull);
     },
   );
