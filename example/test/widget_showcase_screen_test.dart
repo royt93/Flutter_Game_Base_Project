@@ -264,6 +264,51 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-151: comeback bundle routes view and claim, locks when expired',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final card = find.byKey(const Key('comebackBundleShowcaseCard'));
+      await tester.scrollUntilVisible(card, 350, scrollable: scrollable);
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('comebackBundleShowcaseStatus'));
+      expect(
+        tester.widget<Text>(status).data,
+        'Views: 0 · Claims: 0 · Expired: false',
+      );
+      await tester.tap(find.byKey(const ValueKey('comebackBundleViewBtn')));
+      await tester.tap(find.byKey(const ValueKey('comebackBundleClaimBtn')));
+      await tester.pump();
+      expect(
+        tester.widget<Text>(status).data,
+        'Views: 1 · Claims: 1 · Expired: false',
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('comebackBundleToggleExpiryBtn')),
+      );
+      await tester.pump();
+      expect(
+        tester.widget<Text>(status).data,
+        'Views: 1 · Claims: 1 · Expired: true',
+      );
+      final claim = tester.widget<CommonButton>(
+        find.byKey(const ValueKey('comebackBundleClaimBtn')),
+      );
+      expect(claim.onTap, isNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-150: reward track advances XP, unlocks premium and routes claims',
     (tester) async {
       await _pumpShowcase(tester);
@@ -476,8 +521,14 @@ void main() {
         'Inbox read: false · collected: false · count: 0',
       );
       expect(find.byKey(const ValueKey('inboxUnreadBadge')), findsOneWidget);
-      expect(find.text('Gems x100'), findsOneWidget);
-      expect(find.text('Coins x2,500'), findsOneWidget);
+      expect(
+        find.descendant(of: card, matching: find.text('Gems x100')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: card, matching: find.text('Coins x2,500')),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byKey(const ValueKey('inboxMessageCardTap')));
       await tester.pump();

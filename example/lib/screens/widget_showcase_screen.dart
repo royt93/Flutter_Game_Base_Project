@@ -1067,6 +1067,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   bool _demoPremiumTrack = false;
   final Set<String> _demoClaimedTrackIds = {};
   int _demoTrackClaimCount = 0;
+  int _demoComebackClaims = 0;
+  int _demoComebackViews = 0;
+  bool _demoComebackExpired = false;
   final DateTime _demoInboxExpiresAt = DateTime.now().add(
     const Duration(minutes: 15),
   );
@@ -5136,6 +5139,63 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Claims: $_demoTrackClaimCount',
                                       key: const Key(
                                         'rewardTrackShowcaseStatus',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'ComebackBundleCard (FEAT-151)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ComebackBundleCard(
+                                      key: const Key(
+                                        'comebackBundleShowcaseCard',
+                                      ),
+                                      title: 'Welcome Back Bundle',
+                                      body:
+                                          'A special bundle to celebrate your return.',
+                                      absenceLabel: '7 days away',
+                                      rewards: [
+                                        MilestoneReward(
+                                          icon: Icons.diamond_rounded,
+                                          label: 'Gems',
+                                          amountLabel: 'x100',
+                                        ),
+                                        MilestoneReward(
+                                          icon: Icons.favorite_rounded,
+                                          label: 'Lives',
+                                          amountLabel: 'x5',
+                                        ),
+                                      ],
+                                      expiryLabel: 'Limited time offer',
+                                      isExpired: _demoComebackExpired,
+                                      badgeLabel: 'RETURN GIFT',
+                                      onViewOffer: () =>
+                                          setState(() => _demoComebackViews++),
+                                      onClaim: () =>
+                                          setState(() => _demoComebackClaims++),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Views: $_demoComebackViews · Claims: $_demoComebackClaims · Expired: $_demoComebackExpired',
+                                      key: const Key(
+                                        'comebackBundleShowcaseStatus',
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    CommonButton(
+                                      key: const Key(
+                                        'comebackBundleToggleExpiryBtn',
+                                      ),
+                                      label: _demoComebackExpired
+                                          ? 'Reactivate demo offer'
+                                          : 'Expire demo offer',
+                                      variant: CommonButtonVariant.secondary,
+                                      onTap: () => setState(
+                                        () => _demoComebackExpired =
+                                            !_demoComebackExpired,
                                       ),
                                     ),
                                   ],

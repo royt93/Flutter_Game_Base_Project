@@ -2750,6 +2750,63 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-151: ComebackBundleCard routes callbacks and disables after expiry on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final card = find.byKey(const Key('comebackBundleShowcaseCard'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final status = find.byKey(const Key('comebackBundleShowcaseStatus'));
+      expect(
+        tester.widget<Text>(status).data,
+        'Views: 0 · Claims: 0 · Expired: false',
+      );
+      await tester.tap(find.byKey(const ValueKey('comebackBundleViewBtn')));
+      await tester.tap(find.byKey(const ValueKey('comebackBundleClaimBtn')));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        tester.widget<Text>(status).data,
+        'Views: 1 · Claims: 1 · Expired: false',
+      );
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('comebackBundleToggleExpiryBtn')),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('comebackBundleToggleExpiryBtn')),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      final claim = tester.widget<CommonButton>(
+        find.byKey(const ValueKey('comebackBundleClaimBtn')),
+      );
+      expect(claim.onTap, isNull);
+      expect(
+        tester.widget<Text>(status).data,
+        'Views: 1 · Claims: 1 · Expired: true',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-150: RewardTrackRoad unlocks premium and claims tier on physical device',
     (tester) async {
       await app.app();
