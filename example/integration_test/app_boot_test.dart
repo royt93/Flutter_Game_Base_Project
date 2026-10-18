@@ -2788,6 +2788,35 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-166: streak strip claims milestones via caller seam', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final strip = find.byKey(const Key('streakStripShowcase'));
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && strip.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(strip);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byKey(const ValueKey('streakClaim_3')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Streak 8 · claimed 3'), findsOneWidget);
+    expect(find.byKey(const ValueKey('streakClaim_3')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-165: xp header grows and opens level info overlay', (
     tester,
   ) async {

@@ -143,3 +143,4 @@ export 'clan_chat_preview_bar.dart';
 export 'friend_request_tile.dart';
 export 'quest_progress_pill.dart';
 export 'xp_level_header.dart';
+export 'streak_milestone_strip.dart';

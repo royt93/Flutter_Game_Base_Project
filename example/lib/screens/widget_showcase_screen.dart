@@ -1102,6 +1102,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     });
   }
 
+  int _demoStreak = 8;
+  final Set<int> _demoStreakClaimed = <int>{};
   bool _demoLevelInfoOpen = false;
   int _demoXp = 40;
   bool _demoQuestBoardOpen = false;
@@ -5376,6 +5378,52 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     Text(
                                       'Lives Sent: $_demoGiftLivesSentCount · State: ${_demoGiftLivesState.name}',
                                       key: const Key('giftLivesShowcaseStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'StreakMilestoneStrip (FEAT-166)',
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    StreakMilestoneStrip(
+                                      key: const Key('streakStripShowcase'),
+                                      milestones: const [
+                                        StreakMilestone(
+                                          days: 3,
+                                          rewardLabel: '50 coins',
+                                        ),
+                                        StreakMilestone(
+                                          days: 7,
+                                          rewardLabel: 'Mystery chest',
+                                        ),
+                                        StreakMilestone(
+                                          days: 14,
+                                          rewardLabel: 'Rare skin',
+                                        ),
+                                        StreakMilestone(
+                                          days: 30,
+                                          rewardLabel: 'Legendary hero',
+                                        ),
+                                      ],
+                                      currentStreak: _demoStreak,
+                                      claimedDays: _demoStreakClaimed,
+                                      onClaim: (days) => setState(
+                                        () => _demoStreakClaimed.add(days),
+                                      ),
+                                    ),
+                                    Text(
+                                      'Streak $_demoStreak · claimed ${(_demoStreakClaimed.toList()..sort()).join(',')}',
+                                      key: const Key('streakStripStatus'),
+                                    ),
+                                    CommonButton(
+                                      key: const Key('streakStripAdvance'),
+                                      label: '+6 days',
+                                      width: double.infinity,
+                                      onTap: () =>
+                                          setState(() => _demoStreak += 6),
                                     ),
                                   ],
                                 ),

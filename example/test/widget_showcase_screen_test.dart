@@ -286,6 +286,33 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-166: streak strip claims milestones and unlocks new ones', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final strip = find.byKey(const Key('streakStripShowcase'));
+    await tester.scrollUntilVisible(strip, 350, scrollable: scrollable);
+    await tester.ensureVisible(strip);
+    await tester.pump(const Duration(milliseconds: 100));
+    final status = find.byKey(const Key('streakStripStatus'));
+    expect(tester.widget<Text>(status).data, 'Streak 8 · claimed ');
+    await tester.tap(find.byKey(const ValueKey('streakClaim_3')));
+    await tester.pump();
+    expect(tester.widget<Text>(status).data, 'Streak 8 · claimed 3');
+    expect(find.byKey(const ValueKey('streakClaim_3')), findsNothing);
+    await tester.tap(find.byKey(const Key('streakStripAdvance')));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(tester.widget<Text>(status).data, 'Streak 14 · claimed 3');
+    expect(find.byKey(const ValueKey('streakClaim_14')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-165: xp header grows and opens level info overlay', (
     tester,
   ) async {
