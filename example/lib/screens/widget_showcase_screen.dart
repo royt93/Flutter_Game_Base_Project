@@ -1085,6 +1085,32 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   String _demoSelectedCharacter = 'knight';
   CharacterCollectionFilter _demoCharacterFilter =
       CharacterCollectionFilter.all;
+  int _demoTeamMemberTaps = 0;
+  String _demoLastPromotedMember = 'none';
+  String _demoLastKickedMember = 'none';
+  final List<TeamMemberItem> _demoTeamMembers = [
+    const TeamMemberItem(
+      id: 'ana',
+      name: 'Ana',
+      role: TeamRole.leader,
+      trophies: 4200,
+      isOnline: true,
+    ),
+    const TeamMemberItem(
+      id: 'bao',
+      name: 'Bao Nguyen',
+      role: TeamRole.elder,
+      trophies: 1800,
+      lastSeenText: '5m ago',
+    ),
+    const TeamMemberItem(
+      id: 'cy',
+      name: 'Cy',
+      role: TeamRole.member,
+      trophies: 300,
+      isSelf: true,
+    ),
+  ];
   String _demoLastOpenedAchievement = 'none';
   String _demoLastLeaderboardPlayer = 'none';
   int _demoComebackViews = 0;
@@ -5263,6 +5289,41 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Selected: $_demoSelectedCharacter · Taps: $_demoCharacterTaps',
                                       key: const Key(
                                         'characterCollectionShowcaseStatus',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'TeamRosterList (FEAT-160)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      height: 300,
+                                      child: TeamRosterList(
+                                        key: const Key(
+                                          'teamRosterShowcaseList',
+                                        ),
+                                        members: _demoTeamMembers,
+                                        maxMembers: 50,
+                                        expand: true,
+                                        onMemberTap: (id) => setState(
+                                          () => _demoTeamMemberTaps++,
+                                        ),
+                                        onPromote: (id) => setState(
+                                          () => _demoLastPromotedMember = id,
+                                        ),
+                                        onKick: (id) => setState(
+                                          () => _demoLastKickedMember = id,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Taps: $_demoTeamMemberTaps · Promoted: $_demoLastPromotedMember · Kicked: $_demoLastKickedMember',
+                                      key: const Key(
+                                        'teamRosterShowcaseStatus',
                                       ),
                                     ),
                                   ],

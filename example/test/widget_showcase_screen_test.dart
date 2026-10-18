@@ -286,6 +286,34 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-160: team roster routes tap, promote and kick callbacks', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final list = find.byKey(const Key('teamRosterShowcaseList'));
+    await tester.scrollUntilVisible(list, 350, scrollable: scrollable);
+    await tester.ensureVisible(list);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final status = find.byKey(const Key('teamRosterShowcaseStatus'));
+    await tester.tap(find.byKey(const ValueKey('teamMemberTile_bao')));
+    await tester.tap(find.byKey(const ValueKey('teamMemberPromote_bao')));
+    await tester.tap(find.byKey(const ValueKey('teamMemberKick_bao')));
+    await tester.pump();
+    expect(
+      tester.widget<Text>(status).data,
+      'Taps: 1 · Promoted: bao · Kicked: bao',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-158: achievement roadmap routes open and claim callbacks', (
     tester,
   ) async {
