@@ -1062,6 +1062,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoRankPromotions = 0;
   int _demoRankShares = 0;
   int _demoOpenedOfferCount = 0;
+  int _demoOpenedEventCount = 0;
   final DateTime _demoInboxExpiresAt = DateTime.now().add(
     const Duration(minutes: 15),
   );
@@ -5008,6 +5009,55 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Offers opened: $_demoOpenedOfferCount',
                                       key: const Key(
                                         'dailyOfferShowcaseStatus',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'EventCalendarCard (FEAT-149)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    EventCalendarCard(
+                                      key: const Key(
+                                        'eventCalendarShowcaseCard',
+                                      ),
+                                      events: const [
+                                        EventCalendarItem(
+                                          id: 'weekly_boss',
+                                          dayLabel: 'MON',
+                                          title: 'Weekly Boss',
+                                          timeLabel: '10:00–18:00',
+                                          status: EventCalendarStatus.active,
+                                          icon: Icons.bolt_rounded,
+                                        ),
+                                        EventCalendarItem(
+                                          id: 'puzzle_tourney',
+                                          dayLabel: 'WED',
+                                          title: 'Puzzle Tournament',
+                                          timeLabel: 'Starts 12:00',
+                                          status: EventCalendarStatus.upcoming,
+                                          icon: Icons.extension_rounded,
+                                        ),
+                                        EventCalendarItem(
+                                          id: 'flashback',
+                                          dayLabel: 'SUN',
+                                          title: 'Flashback Challenge',
+                                          timeLabel: 'Ended 20:00',
+                                          status: EventCalendarStatus.ended,
+                                          icon: Icons.history_rounded,
+                                        ),
+                                      ],
+                                      onOpen: (_) => setState(
+                                        () => _demoOpenedEventCount++,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Events opened: $_demoOpenedEventCount',
+                                      key: const Key(
+                                        'eventCalendarShowcaseStatus',
                                       ),
                                     ),
                                   ],

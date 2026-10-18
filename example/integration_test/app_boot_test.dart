@@ -2750,6 +2750,49 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-149: EventCalendarCard opens caller event on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final card = find.byKey(const Key('eventCalendarShowcaseCard'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Live'), findsOneWidget);
+      expect(find.text('Upcoming'), findsOneWidget);
+      expect(find.text('Ended'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('eventCalendarOpen_flashback')),
+        findsNothing,
+      );
+
+      final status = find.byKey(const Key('eventCalendarShowcaseStatus'));
+      await tester.tap(
+        find.byKey(const ValueKey('eventCalendarOpen_weekly_boss')),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.widget<Text>(status).data, 'Events opened: 1');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-148: DailyOfferStack routes active offer and disables expired on physical device',
     (tester) async {
       await app.app();

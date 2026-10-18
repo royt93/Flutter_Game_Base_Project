@@ -264,6 +264,40 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-149: event calendar marks states and routes current event',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final card = find.byKey(const Key('eventCalendarShowcaseCard'));
+      await tester.scrollUntilVisible(card, 350, scrollable: scrollable);
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Live'), findsOneWidget);
+      expect(find.text('Upcoming'), findsOneWidget);
+      expect(find.text('Ended'), findsOneWidget);
+      final endedOpen = find.byKey(
+        const ValueKey('eventCalendarOpen_flashback'),
+      );
+      expect(endedOpen, findsNothing);
+
+      final status = find.byKey(const Key('eventCalendarShowcaseStatus'));
+      await tester.tap(
+        find.byKey(const ValueKey('eventCalendarOpen_weekly_boss')),
+      );
+      await tester.pump();
+      expect(tester.widget<Text>(status).data, 'Events opened: 1');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-148: daily offers preserve caller order and route offer id',
     (tester) async {
       await _pumpShowcase(tester);
