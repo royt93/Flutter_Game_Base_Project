@@ -2750,6 +2750,43 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-156: CraftingRecipeCard crafts and reflects caller ingredients on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final card = find.byKey(const Key('craftingRecipeShowcaseCard'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Crafts: 0 · Shields: 0'), findsOneWidget);
+      final craft = find.byKey(const ValueKey('craftingRecipeCraftBtn'));
+      expect(tester.widget<CommonButton>(craft).onTap, isNotNull);
+      await tester.tap(craft);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Crafts: 1 · Shields: 1'), findsOneWidget);
+      expect(tester.widget<CommonButton>(craft).onTap, isNull);
+      expect(find.text('Missing ingredients'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-155: FriendInviteProgressCard routes caller seams on physical device',
     (tester) async {
       await app.app();

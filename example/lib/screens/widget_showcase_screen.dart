@@ -1076,6 +1076,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoFriendInvites = 1;
   int _demoFriendInviteClaims = 0;
   int _demoFriendInviteCopies = 0;
+  int _demoCraftCount = 0;
+  int _demoCraftedShields = 0;
   String _demoLastLeaderboardPlayer = 'none';
   int _demoComebackViews = 0;
   bool _demoComebackExpired = false;
@@ -5148,6 +5150,57 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Claims: $_demoTrackClaimCount',
                                       key: const Key(
                                         'rewardTrackShowcaseStatus',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'CraftingRecipeCard (FEAT-156)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CraftingRecipeCard(
+                                      key: const Key(
+                                        'craftingRecipeShowcaseCard',
+                                      ),
+                                      recipeId: 'demo_iron_shield',
+                                      title: 'Iron Shield Recipe',
+                                      subtitle: 'A sturdy defense item',
+                                      output: MilestoneReward(
+                                        icon: Icons.shield_rounded,
+                                        label: 'Iron Shield',
+                                        amountLabel: 'x1',
+                                      ),
+                                      ingredients: [
+                                        CraftingIngredient(
+                                          itemId: 'demo_iron',
+                                          label: 'Iron',
+                                          ownedQuantity: 5,
+                                          requiredQuantity: 3,
+                                          icon: Icons.hardware_rounded,
+                                        ),
+                                        CraftingIngredient(
+                                          itemId: 'demo_wood',
+                                          label: 'Wood',
+                                          ownedQuantity: _demoCraftCount == 0
+                                              ? 2
+                                              : 1,
+                                          requiredQuantity: 2,
+                                          icon: Icons.park_rounded,
+                                        ),
+                                      ],
+                                      onCraft: () => setState(() {
+                                        _demoCraftCount++;
+                                        _demoCraftedShields++;
+                                      }),
+                                      onIngredientTap: (_) {},
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Crafts: $_demoCraftCount · Shields: $_demoCraftedShields',
+                                      key: const Key(
+                                        'craftingRecipeShowcaseStatus',
                                       ),
                                     ),
                                   ],

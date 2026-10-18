@@ -264,6 +264,40 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-156: crafting recipe crafts once and then locks on missing ingredient',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final card = find.byKey(const Key('craftingRecipeShowcaseCard'));
+      await tester.scrollUntilVisible(card, 350, scrollable: scrollable);
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Creates Iron Shield'), findsOneWidget);
+      var craft = tester.widget<CommonButton>(
+        find.byKey(const ValueKey('craftingRecipeCraftBtn')),
+      );
+      expect(craft.onTap, isNotNull);
+      await tester.tap(find.byKey(const ValueKey('craftingRecipeCraftBtn')));
+      await tester.pump();
+      expect(find.text('Crafts: 1 · Shields: 1'), findsOneWidget);
+
+      craft = tester.widget<CommonButton>(
+        find.byKey(const ValueKey('craftingRecipeCraftBtn')),
+      );
+      expect(craft.onTap, isNull);
+      expect(find.text('Missing ingredients'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-155: friend invite progress routes invite copy and reward callbacks',
     (tester) async {
       await _pumpShowcase(tester);
