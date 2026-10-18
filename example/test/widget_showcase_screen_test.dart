@@ -286,6 +286,34 @@ void main() {
     },
   );
 
+  testWidgets(
+    'FEAT-163: friend request routes accept and decline through busy state',
+    (tester) async {
+      await _pumpShowcase(tester);
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final tile = find.byKey(const Key('friendRequestShowcaseTile'));
+      await tester.scrollUntilVisible(tile, 350, scrollable: scrollable);
+      await tester.ensureVisible(tile);
+      await tester.pump(const Duration(milliseconds: 100));
+      for (final action in FriendRequestAction.values) {
+        await tester.tap(
+          find.byKey(ValueKey('friendRequest_${action.name}_showcase_friend')),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(tester.widget<FriendRequestTile>(tile).busyAction, action);
+        await tester.pump(const Duration(milliseconds: 700));
+        expect(tester.widget<FriendRequestTile>(tile).busyAction, isNull);
+        expect(find.text('Friend response: ${action.name}'), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('FEAT-162: clan preview opens overlay and clears unread count', (
     tester,
   ) async {

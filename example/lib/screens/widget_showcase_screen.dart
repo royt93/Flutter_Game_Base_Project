@@ -1088,6 +1088,20 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoTeamMemberTaps = 0;
   String _demoLastPromotedMember = 'none';
   String _demoLastKickedMember = 'none';
+  FriendRequestAction? _demoFriendBusy;
+  String _demoFriendResult = 'none';
+
+  Future<void> _demoRespondToFriend(FriendRequestAction action) async {
+    if (_demoFriendBusy != null) return;
+    setState(() => _demoFriendBusy = action);
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+    setState(() {
+      _demoFriendBusy = null;
+      _demoFriendResult = action.name;
+    });
+  }
+
   bool _demoClanChatOpen = false;
   int _demoClanUnread = 3;
   int _demoGiftLivesSentCount = 0;
@@ -5357,6 +5371,40 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     Text(
                                       'Lives Sent: $_demoGiftLivesSentCount · State: ${_demoGiftLivesState.name}',
                                       key: const Key('giftLivesShowcaseStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'FriendRequestTile (FEAT-163)',
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    FriendRequestTile(
+                                      key: const Key(
+                                        'friendRequestShowcaseTile',
+                                      ),
+                                      request: FriendRequestItem(
+                                        requestId: 'showcase_friend',
+                                        name: 'Maya Rose',
+                                        subtitle: 'Level 42',
+                                        mutualFriendsCount: 3,
+                                      ),
+                                      busyAction: _demoFriendBusy,
+                                      onAccept: (_) => _demoRespondToFriend(
+                                        FriendRequestAction.accept,
+                                      ),
+                                      onDecline: (_) => _demoRespondToFriend(
+                                        FriendRequestAction.decline,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Friend response: $_demoFriendResult',
+                                      key: const Key(
+                                        'friendRequestShowcaseStatus',
+                                      ),
                                     ),
                                   ],
                                 ),

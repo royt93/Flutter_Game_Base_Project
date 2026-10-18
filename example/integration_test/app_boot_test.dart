@@ -2788,6 +2788,40 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-163: friend request accept and decline caller seam', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final tile = find.byKey(const Key('friendRequestShowcaseTile'));
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && tile.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(tile);
+    await tester.pump(const Duration(milliseconds: 300));
+    for (final action in ['accept', 'decline']) {
+      await tester.tap(
+        find.byKey(ValueKey('friendRequest_${action}_showcase_friend')),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byType(CircularProgressIndicator), findsWidgets);
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('Friend response: $action'), findsOneWidget);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-162: clan preview opens caller chat overlay', (
     tester,
   ) async {
