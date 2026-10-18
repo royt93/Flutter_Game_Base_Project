@@ -1049,7 +1049,20 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _offlineDoubleRequests = 0;
   int _prestigeConfirms = 0;
   int _prestigeCancels = 0;
+  int _demoShieldCount = 1;
+  int _demoProtectedStreak = 12;
+  int _demoShieldRepairs = 0;
+  int _demoShieldDismissals = 0;
   ChestTier _chestTier = ChestTier.wood;
+
+  void _useDemoStreakShield() {
+    if (_demoShieldCount <= 0) return;
+    setState(() {
+      _demoShieldCount--;
+      _demoProtectedStreak++;
+    });
+  }
+
   bool _chestOpened = false;
   final GlobalKey _hintTargetKey = GlobalKey();
   bool _hintVisible = true;
@@ -4769,6 +4782,38 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                               () => _prestigeCancels++,
                                             ),
                                           ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'StreakShieldCard (FEAT-144)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Streak: $_demoProtectedStreak days · Shields: $_demoShieldCount · Repairs: $_demoShieldRepairs',
+                                      key: const Key(
+                                        'streakShieldShowcaseStatus',
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    CommonButton(
+                                      key: const Key('openStreakShieldCardBtn'),
+                                      label: 'Open streak shield modal',
+                                      onTap: () => StreakShieldCard.show(
+                                        context,
+                                        streakDays: _demoProtectedStreak,
+                                        shieldCount: _demoShieldCount,
+                                        missedDateLabel: 'Yesterday',
+                                        onUseShield: _useDemoStreakShield,
+                                        onRepair: () => setState(
+                                          () => _demoShieldRepairs++,
+                                        ),
+                                        onDismiss: () => setState(
+                                          () => _demoShieldDismissals++,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),

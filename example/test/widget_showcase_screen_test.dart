@@ -264,6 +264,61 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-144: streak shield modal uses shield and repair caller seams',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final open = find.byKey(const Key('openStreakShieldCardBtn'));
+      await tester.scrollUntilVisible(open, 350, scrollable: scrollable);
+      await tester.ensureVisible(open);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('streakShieldShowcaseStatus'));
+      String statusText() => tester.widget<Text>(status).data!;
+      expect(statusText(), 'Streak: 12 days · Shields: 1 · Repairs: 0');
+
+      await tester.tap(open);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Streak Protection'), findsOneWidget);
+      expect(find.text('Use Shield'), findsOneWidget);
+
+      tester
+          .widget<NeonDialogButton>(
+            find.byWidgetPredicate(
+              (w) => w is NeonDialogButton && w.action.label == 'Use Shield',
+            ),
+          )
+          .action
+          .onTap();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(statusText(), 'Streak: 13 days · Shields: 0 · Repairs: 0');
+
+      await tester.tap(open);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Repair Streak'), findsOneWidget);
+      tester
+          .widget<NeonDialogButton>(
+            find.byWidgetPredicate(
+              (w) => w is NeonDialogButton && w.action.label == 'Repair Streak',
+            ),
+          )
+          .action
+          .onTap();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(statusText(), 'Streak: 13 days · Shields: 0 · Repairs: 1');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-140: offline earnings popup counts up and caller owns collect/double',
     (tester) async {
       await _pumpShowcase(tester);

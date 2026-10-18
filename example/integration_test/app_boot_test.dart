@@ -2641,6 +2641,71 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-144: StreakShieldCard uses shield and repair seams on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final open = find.byKey(const Key('openStreakShieldCardBtn'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && open.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.ensureVisible(open);
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final status = find.byKey(const Key('streakShieldShowcaseStatus'));
+      expect(
+        tester.widget<Text>(status).data,
+        'Streak: 12 days · Shields: 1 · Repairs: 0',
+      );
+
+      await tester.tap(open);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Streak Protection'), findsOneWidget);
+      final useShield = find.byWidgetPredicate(
+        (w) => w is NeonDialogButton && w.action.label == 'Use Shield',
+      );
+      expect(useShield, findsOneWidget);
+      tester.widget<NeonDialogButton>(useShield).action.onTap();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(
+        tester.widget<Text>(status).data,
+        'Streak: 13 days · Shields: 0 · Repairs: 0',
+      );
+
+      await tester.ensureVisible(open);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(open);
+      await tester.pump(const Duration(milliseconds: 400));
+      final repair = find.byWidgetPredicate(
+        (w) => w is NeonDialogButton && w.action.label == 'Repair Streak',
+      );
+      expect(repair, findsOneWidget);
+      tester.widget<NeonDialogButton>(repair).action.onTap();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(
+        tester.widget<Text>(status).data,
+        'Streak: 13 days · Shields: 0 · Repairs: 1',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-141: prestige confirmation card confirm and cancel flow on physical device',
     (tester) async {
       await app.app();
