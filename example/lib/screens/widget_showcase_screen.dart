@@ -1102,6 +1102,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     });
   }
 
+  bool _demoLevelInfoOpen = false;
+  int _demoXp = 40;
   bool _demoQuestBoardOpen = false;
   final int _demoQuestCompleted = 2;
   int _demoQuestClaimable = 2;
@@ -5379,6 +5381,37 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                               _Demo(
+                                label: 'XpLevelHeader (FEAT-165)',
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    XpLevelHeader(
+                                      key: const Key('xpHeaderShowcase'),
+                                      level: 7,
+                                      currentXp: _demoXp,
+                                      xpForNextLevel: 100,
+                                      title: 'Explorer',
+                                      onTap: () => setState(
+                                        () => _demoLevelInfoOpen = true,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    CommonButton(
+                                      key: const Key('xpHeaderGain'),
+                                      label: '+20 XP',
+                                      width: double.infinity,
+                                      onTap: () => setState(
+                                        () => _demoXp = (_demoXp + 20).clamp(
+                                          0,
+                                          100,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
                                 label: 'QuestProgressPill (FEAT-164)',
                                 child: QuestProgressPill(
                                   key: const Key('questPillShowcase'),
@@ -6681,6 +6714,27 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                     ),
                   ),
                 ),
+                if (_demoLevelInfoOpen)
+                  Positioned.fill(
+                    key: const Key('xpLevelInfoOverlay'),
+                    child: NeonDialog.overlay(
+                      onBarrier: () =>
+                          setState(() => _demoLevelInfoOpen = false),
+                      panel: NeonDialog.panel(
+                        title: 'Level 7',
+                        color: NeonTheme.purple,
+                        message: '$_demoXp / 100 XP to level 8',
+                        actions: [
+                          NeonDialogAction(
+                            label: 'Close',
+                            color: NeonTheme.purple,
+                            onTap: () =>
+                                setState(() => _demoLevelInfoOpen = false),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 if (_demoQuestBoardOpen)
                   Positioned.fill(
                     key: const Key('questBoardShowcaseOverlay'),

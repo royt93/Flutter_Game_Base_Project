@@ -286,6 +286,39 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-165: xp header grows and opens level info overlay', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final header = find.byKey(const Key('xpHeaderShowcase'));
+    await tester.scrollUntilVisible(header, 350, scrollable: scrollable);
+    await tester.ensureVisible(header);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(
+      find.descendant(of: header, matching: find.text('40/100')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('xpHeaderGain')));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(
+      find.descendant(of: header, matching: find.text('60/100')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('xpLevelHeaderTap')));
+    await tester.pump();
+    expect(find.byKey(const Key('xpLevelInfoOverlay')), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('xpLevelInfoOverlay')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-164: quest pill opens board and claim clears badge', (
     tester,
   ) async {
