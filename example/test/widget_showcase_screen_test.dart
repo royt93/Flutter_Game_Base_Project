@@ -286,6 +286,37 @@ void main() {
     },
   );
 
+  testWidgets(
+    'FEAT-161: gift lives request routes send callback and updates state',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final card = find.byKey(const Key('giftLivesShowcaseCard'));
+      await tester.scrollUntilVisible(card, 350, scrollable: scrollable);
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('giftLivesShowcaseStatus'));
+      expect(
+        tester.widget<Text>(status).data,
+        'Lives Sent: 0 · State: pending',
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('giftLivesSend_showcase_req')),
+      );
+      await tester.pump();
+      expect(tester.widget<Text>(status).data, 'Lives Sent: 1 · State: sent');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('FEAT-160: team roster routes tap, promote and kick callbacks', (
     tester,
   ) async {

@@ -1088,6 +1088,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoTeamMemberTaps = 0;
   String _demoLastPromotedMember = 'none';
   String _demoLastKickedMember = 'none';
+  int _demoGiftLivesSentCount = 0;
+  GiftLivesRequestState _demoGiftLivesState = GiftLivesRequestState.pending;
   final List<TeamMemberItem> _demoTeamMembers = [
     const TeamMemberItem(
       id: 'ana',
@@ -5325,6 +5327,34 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       key: const Key(
                                         'teamRosterShowcaseStatus',
                                       ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'GiftLivesRequestCard (FEAT-161)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    GiftLivesRequestCard(
+                                      key: const Key('giftLivesShowcaseCard'),
+                                      request: GiftLivesRequest(
+                                        requestId: 'showcase_req',
+                                        senderName: 'Maya Rose',
+                                        requestedAtText: '10m ago',
+                                        state: _demoGiftLivesState,
+                                      ),
+                                      statusText: 'Expires in 2h',
+                                      onSendLife: (id) => setState(() {
+                                        _demoGiftLivesSentCount++;
+                                        _demoGiftLivesState =
+                                            GiftLivesRequestState.sent;
+                                      }),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Lives Sent: $_demoGiftLivesSentCount · State: ${_demoGiftLivesState.name}',
+                                      key: const Key('giftLivesShowcaseStatus'),
                                     ),
                                   ],
                                 ),
