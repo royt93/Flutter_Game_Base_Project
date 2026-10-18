@@ -264,6 +264,49 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-146: inbox message opens and claims caller-owned attachments',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final card = find.byKey(const Key('inboxShowcaseCard'));
+      await tester.scrollUntilVisible(card, 350, scrollable: scrollable);
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('inboxShowcaseStatus'));
+      expect(
+        tester.widget<Text>(status).data,
+        'Inbox read: false · collected: false · count: 0',
+      );
+      expect(find.byKey(const ValueKey('inboxUnreadBadge')), findsOneWidget);
+      expect(find.text('Gems x100'), findsOneWidget);
+      expect(find.text('Coins x2,500'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('inboxMessageCardTap')));
+      await tester.pump();
+      expect(
+        tester.widget<Text>(status).data,
+        'Inbox read: true · collected: false · count: 0',
+      );
+      expect(find.byKey(const ValueKey('inboxUnreadBadge')), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('inboxClaimBtn')));
+      await tester.pump();
+      expect(
+        tester.widget<Text>(status).data,
+        'Inbox read: true · collected: true · count: 1',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-144: streak shield modal uses shield and repair caller seams',
     (tester) async {
       await _pumpShowcase(tester);

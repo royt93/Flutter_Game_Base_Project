@@ -2750,6 +2750,58 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-146: InboxMessageCard reads and claims attachments on physical device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+
+      final card = find.byKey(const Key('inboxShowcaseCard'));
+      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+      final scrollable = find
+          .descendant(of: showcaseList, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final status = find.byKey(const Key('inboxShowcaseStatus'));
+      expect(
+        tester.widget<Text>(status).data,
+        'Inbox read: false · collected: false · count: 0',
+      );
+
+      // Open message
+      await tester.tap(find.byKey(const ValueKey('inboxMessageCardTap')));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(
+        tester.widget<Text>(status).data,
+        'Inbox read: true · collected: false · count: 0',
+      );
+
+      // Claim reward
+      final claim = find.byKey(const ValueKey('inboxClaimBtn'));
+      await tester.ensureVisible(claim);
+      await tester.tap(claim);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        tester.widget<Text>(status).data,
+        'Inbox read: true · collected: true · count: 1',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-141: prestige confirmation card confirm and cancel flow on physical device',
     (tester) async {
       await app.app();

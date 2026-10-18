@@ -1056,6 +1056,12 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoVipTier = 1;
   int _demoVipPoints = 400;
   int _demoVipPerkTaps = 0;
+  bool _demoInboxRead = false;
+  bool _demoInboxClaimed = false;
+  int _demoInboxClaimTaps = 0;
+  final DateTime _demoInboxExpiresAt = DateTime.now().add(
+    const Duration(minutes: 15),
+  );
   static const _demoVipThresholds = [500, 1000, 2000];
   ChestTier _chestTier = ChestTier.wood;
 
@@ -4870,6 +4876,48 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       key: const Key('vipPerkAddPointsBtn'),
                                       label: 'Add 250 VIP points',
                                       onTap: _addDemoVipPoints,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'InboxMessageCard (FEAT-146)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    InboxMessageCard(
+                                      key: const Key('inboxShowcaseCard'),
+                                      title: 'Weekly Boss Event Reward',
+                                      body:
+                                          'Great job defeating the event boss! Here are your community milestone rewards.',
+                                      receivedLabel: '5 minutes ago',
+                                      isRead: _demoInboxRead,
+                                      isClaimed: _demoInboxClaimed,
+                                      attachments: const [
+                                        InboxAttachment(
+                                          icon: Icons.diamond_rounded,
+                                          label: 'Gems',
+                                          amount: 100,
+                                        ),
+                                        InboxAttachment(
+                                          icon: Icons.monetization_on_rounded,
+                                          label: 'Coins',
+                                          amount: 2500,
+                                        ),
+                                      ],
+                                      expiresAt: _demoInboxExpiresAt,
+                                      onOpen: () =>
+                                          setState(() => _demoInboxRead = true),
+                                      onClaim: () => setState(() {
+                                        _demoInboxRead = true;
+                                        _demoInboxClaimed = true;
+                                        _demoInboxClaimTaps++;
+                                      }),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Inbox read: $_demoInboxRead · collected: $_demoInboxClaimed · count: $_demoInboxClaimTaps',
+                                      key: const Key('inboxShowcaseStatus'),
                                     ),
                                   ],
                                 ),
