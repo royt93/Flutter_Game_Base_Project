@@ -286,6 +286,31 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-164: quest pill opens board and claim clears badge', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final pill = find.byKey(const Key('questPillShowcase'));
+    await tester.scrollUntilVisible(pill, 350, scrollable: scrollable);
+    await tester.ensureVisible(pill);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.descendant(of: pill, matching: find.text('2')), findsOneWidget);
+    await tester.tap(pill);
+    await tester.pump();
+    expect(find.byKey(const Key('questBoardShowcaseOverlay')), findsOneWidget);
+    await tester.tap(find.text('Claim all'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('questBoardShowcaseOverlay')), findsNothing);
+    expect(find.descendant(of: pill, matching: find.text('2')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'FEAT-163: friend request routes accept and decline through busy state',
     (tester) async {

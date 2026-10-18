@@ -1102,6 +1102,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     });
   }
 
+  bool _demoQuestBoardOpen = false;
+  final int _demoQuestCompleted = 2;
+  int _demoQuestClaimable = 2;
   bool _demoClanChatOpen = false;
   int _demoClanUnread = 3;
   int _demoGiftLivesSentCount = 0;
@@ -5376,6 +5379,18 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                               _Demo(
+                                label: 'QuestProgressPill (FEAT-164)',
+                                child: QuestProgressPill(
+                                  key: const Key('questPillShowcase'),
+                                  completed: _demoQuestCompleted,
+                                  total: 3,
+                                  claimableCount: _demoQuestClaimable,
+                                  onTap: () => setState(
+                                    () => _demoQuestBoardOpen = true,
+                                  ),
+                                ),
+                              ),
+                              _Demo(
                                 label: 'FriendRequestTile (FEAT-163)',
                                 child: Column(
                                   crossAxisAlignment:
@@ -6666,6 +6681,30 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                     ),
                   ),
                 ),
+                if (_demoQuestBoardOpen)
+                  Positioned.fill(
+                    key: const Key('questBoardShowcaseOverlay'),
+                    child: NeonDialog.overlay(
+                      onBarrier: () =>
+                          setState(() => _demoQuestBoardOpen = false),
+                      panel: NeonDialog.panel(
+                        title: 'Quests',
+                        color: NeonTheme.purple,
+                        message:
+                            '$_demoQuestCompleted/3 complete, $_demoQuestClaimable ready',
+                        actions: [
+                          NeonDialogAction(
+                            label: 'Claim all',
+                            color: NeonTheme.lime,
+                            onTap: () => setState(() {
+                              _demoQuestClaimable = 0;
+                              _demoQuestBoardOpen = false;
+                            }),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 if (_demoClanChatOpen)
                   Positioned.fill(
                     key: const Key('clanChatShowcaseOverlay'),

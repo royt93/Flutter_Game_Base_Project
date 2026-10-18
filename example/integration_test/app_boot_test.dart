@@ -2788,6 +2788,38 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-164: quest pill opens board and claim clears badge', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final pill = find.byKey(const Key('questPillShowcase'));
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && pill.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(pill);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(pill);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('questBoardShowcaseOverlay')), findsOneWidget);
+    await tester.tap(find.text('Claim all'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('questBoardShowcaseOverlay')), findsNothing);
+    expect(find.descendant(of: pill, matching: find.text('2')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-163: friend request accept and decline caller seam', (
     tester,
   ) async {
