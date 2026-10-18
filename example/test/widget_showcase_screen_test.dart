@@ -264,6 +264,35 @@ void main() {
   );
 
   testWidgets(
+    'FEAT-153: guild contribution updates total and routes milestone claim',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final card = find.byKey(const Key('guildContributionShowcaseCard'));
+      await tester.scrollUntilVisible(card, 350, scrollable: scrollable);
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('300 / 1,000'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('guildContributeBtn')));
+      await tester.pump();
+      expect(find.text('350 / 1,000'), findsOneWidget);
+      expect(find.text('You: 175'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('guildMilestone_demo_m100')));
+      await tester.pump();
+      expect(find.text('Guild claims: 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-152: collection album filters items and routes item selection',
     (tester) async {
       await _pumpShowcase(tester);

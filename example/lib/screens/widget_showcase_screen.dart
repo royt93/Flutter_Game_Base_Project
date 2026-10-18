@@ -1069,6 +1069,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoTrackClaimCount = 0;
   int _demoComebackClaims = 0;
   int _demoCollectionItemTaps = 0;
+  int _demoGuildTotal = 300;
+  int _demoGuildPersonal = 125;
+  int _demoGuildClaims = 0;
   int _demoComebackViews = 0;
   bool _demoComebackExpired = false;
   final DateTime _demoInboxExpiresAt = DateTime.now().add(
@@ -5140,6 +5143,57 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Claims: $_demoTrackClaimCount',
                                       key: const Key(
                                         'rewardTrackShowcaseStatus',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'GuildContributionCard (FEAT-153)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    GuildContributionCard(
+                                      key: const Key(
+                                        'guildContributionShowcaseCard',
+                                      ),
+                                      guildName: 'Star Seekers',
+                                      goalTitle: 'Community Boss',
+                                      totalContribution: _demoGuildTotal,
+                                      goalContribution: 1000,
+                                      memberContribution: _demoGuildPersonal,
+                                      milestones: [
+                                        GuildContributionMilestone(
+                                          id: 'demo_m100',
+                                          requiredContribution: 100,
+                                          reward: MilestoneReward(
+                                            icon: Icons.diamond_rounded,
+                                            label: 'Gems',
+                                            amountLabel: 'x50',
+                                          ),
+                                        ),
+                                        GuildContributionMilestone(
+                                          id: 'demo_m500',
+                                          requiredContribution: 500,
+                                          reward: MilestoneReward(
+                                            icon: Icons.shield_rounded,
+                                            label: 'Shield',
+                                            amountLabel: 'x2',
+                                          ),
+                                        ),
+                                      ],
+                                      onContribute: () => setState(() {
+                                        _demoGuildTotal += 50;
+                                        _demoGuildPersonal += 50;
+                                      }),
+                                      onClaimMilestone: (_) =>
+                                          setState(() => _demoGuildClaims++),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    Text(
+                                      'Guild claims: $_demoGuildClaims',
+                                      key: const Key(
+                                        'guildContributionShowcaseStatus',
                                       ),
                                     ),
                                   ],
