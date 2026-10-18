@@ -301,6 +301,36 @@ void main() {
     },
   );
 
+  testWidgets('selected (bold) two-line labels never overflow their cell', (
+    tester,
+  ) async {
+    const long = [
+      AvatarFrameOption(
+        id: 'a',
+        label: 'Golden Legend Edition Extra Long Name',
+        color: Colors.amber,
+      ),
+      AvatarFrameOption(
+        id: 'b',
+        label: 'Neon Purple Deluxe Collector Frame',
+        color: Colors.purple,
+      ),
+    ];
+    for (final scale in [1.0, 1.3, 2.0]) {
+      for (final selected in ['a', 'b']) {
+        await tester.pumpWidget(
+          subject(options: long, selectedId: selected, scale: scale),
+        );
+        await tester.pump(const Duration(seconds: 1));
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'scale $scale selected $selected',
+        );
+      }
+    }
+  });
+
   testWidgets('selection pulses once; mount and reduced motion do not', (
     tester,
   ) async {

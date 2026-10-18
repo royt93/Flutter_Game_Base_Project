@@ -193,8 +193,11 @@ class _AvatarFrameSelectorState extends State<AvatarFrameSelector>
     final scaler = MediaQuery.textScalerOf(context);
     final scale = scaler.scale(1);
     // Avatar + gap + two label lines (1.25 line height) + vertical padding +
-    // the selected border (2.5 per side), which counts as inner padding.
-    final cellExtent = _avatarSize + 6 + 2 * scaler.scale(12) * 1.25 + 20 + 5;
+    // the selected border (2.5 per side, counts as inner padding) + 4dp of
+    // slack: bold glyph metrics differ across platforms (macOS vs the Linux CI
+    // runner), and an exact fit overflowed by 1px there.
+    final cellExtent =
+        _avatarSize + 6 + 2 * scaler.scale(12) * 1.25 + 20 + 5 + 4;
     final minCellWidth = 92 + (scale - 1).clamp(0.0, 1.0) * 24;
 
     return LayoutBuilder(
