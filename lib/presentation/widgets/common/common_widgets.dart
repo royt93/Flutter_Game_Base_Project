@@ -75,6 +75,7 @@ export 'empty_state_placeholder.dart';
 export 'avatar_frame.dart';
 export 'ribbon_badge.dart';
 export 'shop_item_card.dart';
+export 'offline_earnings_popup.dart';
 export 'flash_sale_offer_card.dart';
 export 'tiered_reward_chest.dart';
 export 'season_event_banner.dart';

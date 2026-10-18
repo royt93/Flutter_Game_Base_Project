@@ -996,6 +996,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   final _emojiBurstKey = GlobalKey<FloatingEmojiBurstState>();
   int _streakRepairCount = 0;
   int _flashSaleBuys = 0;
+  int _offlineCollectedCoins = 0;
+  int _offlineDoubleRequests = 0;
   ChestTier _chestTier = ChestTier.wood;
   bool _chestOpened = false;
   final GlobalKey _hintTargetKey = GlobalKey();
@@ -4626,6 +4628,39 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                               : _buyRemoveAds,
                                         ),
                                       ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'OfflineEarningsPopup (FEAT-140)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Offline coins collected: $_offlineCollectedCoins · Double seam calls: $_offlineDoubleRequests',
+                                      key: const Key(
+                                        'offlineEarningsShowcaseStatus',
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    CommonButton(
+                                      key: const Key(
+                                        'simulateOfflineReturnBtn',
+                                      ),
+                                      label: 'Simulate 4h offline return',
+                                      onTap: () => OfflineEarningsPopup.show(
+                                        context,
+                                        coins: 1250,
+                                        elapsed: const Duration(hours: 4),
+                                        ratePerSecond: 0.087,
+                                        onCollect: () => setState(
+                                          () => _offlineCollectedCoins += 1250,
+                                        ),
+                                        onDoubleTap: () => setState(
+                                          () => _offlineDoubleRequests++,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),

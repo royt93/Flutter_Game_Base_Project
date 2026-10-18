@@ -206,6 +206,64 @@ void main() {
   });
 
   testWidgets(
+    'FEAT-140: offline earnings popup counts up and caller owns collect/double',
+    (tester) async {
+      await _pumpShowcase(tester);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final open = find.byKey(const Key('simulateOfflineReturnBtn'));
+      await tester.scrollUntilVisible(open, 350, scrollable: scrollable);
+      await tester.ensureVisible(open);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final status = find.byKey(const Key('offlineEarningsShowcaseStatus'));
+      String statusText() => tester.widget<Text>(status).data!;
+      expect(statusText(), 'Offline coins collected: 0 · Double seam calls: 0');
+
+      await tester.tap(open);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.byKey(const ValueKey('offlineEarningsCoinCount')),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(milliseconds: 800));
+      expect(find.text('1,250'), findsWidgets);
+
+      // Exercise caller-owned double seam through NeonDialog action callback.
+      final doubleAction = tester.widget<NeonDialogButton>(
+        find.byWidgetPredicate(
+          (w) => w is NeonDialogButton && w.action.label == 'Double 2x',
+        ),
+      );
+      doubleAction.action.onTap();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(statusText(), 'Offline coins collected: 0 · Double seam calls: 1');
+
+      await tester.tap(open);
+      await tester.pump(const Duration(milliseconds: 300));
+      final collectAction = tester.widget<NeonDialogButton>(
+        find.byWidgetPredicate(
+          (w) => w is NeonDialogButton && w.action.label == 'Collect',
+        ),
+      );
+      collectAction.action.onTap();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(
+        statusText(),
+        'Offline coins collected: 1250 · Double seam calls: 1',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-139: tiered leaderboard rows reflect score/rank update and reset',
     (tester) async {
       await _pumpShowcase(tester);
