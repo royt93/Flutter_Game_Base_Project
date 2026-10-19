@@ -286,6 +286,40 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-171: profile card opens profile and edit stays isolated', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final card = find.byKey(const Key('profileStatsShowcase'));
+    await tester.scrollUntilVisible(card, 350, scrollable: scrollable);
+    await tester.ensureVisible(card);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(
+      find.descendant(of: card, matching: find.text('Maya Rose')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('profileStatsEditAvatar')));
+    await tester.pump();
+    expect(find.text('Avatar edits: 1'), findsOneWidget);
+    expect(find.byKey(const Key('profileStatsOverlay')), findsNothing);
+    await tester.tap(card);
+    await tester.pump();
+    expect(find.byKey(const Key('profileStatsOverlay')), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('profileStatsOverlay')), findsNothing);
+    await tester.tap(find.byKey(const Key('profileStatsWin')));
+    await tester.pump();
+    expect(find.text('43'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'FEAT-168: avatar frame selector selects and reports locked taps',
     (tester) async {

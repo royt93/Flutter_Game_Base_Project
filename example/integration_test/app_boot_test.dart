@@ -2788,6 +2788,69 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-171: profile card caller actions stay independent', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final card = find.byKey(const Key('profileStatsShowcase'));
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(card);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byKey(const ValueKey('profileStatsEditAvatar')));
+    await tester.pump();
+    expect(find.text('Avatar edits: 1'), findsOneWidget);
+    await tester.tap(card);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('profileStatsOverlay')), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('profileStatsOverlay')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('FEAT-171: ProfileStatsCard actions on device', (tester) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final card = find.byKey(const Key('profileStatsShowcase'));
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(card);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byKey(const ValueKey('profileStatsEditAvatar')));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Avatar edits: 1'), findsOneWidget);
+    await tester.tap(card);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('profileStatsOverlay')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-168: avatar frame selector via caller seam', (
     tester,
   ) async {

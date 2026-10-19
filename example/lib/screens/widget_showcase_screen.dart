@@ -1102,6 +1102,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     });
   }
 
+  int _demoProfileWins = 42;
+  int _demoProfileEditCount = 0;
+  bool _demoProfileOpen = false;
   String _demoFrameId = 'classic';
   String _demoFrameLockedHint = 'none';
   int _demoChipWins = 3;
@@ -5387,6 +5390,58 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                               _Demo(
+                                label: 'ProfileStatsCard (FEAT-171)',
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    ProfileStatsCard(
+                                      key: const Key('profileStatsShowcase'),
+                                      name: 'Maya Rose',
+                                      title: 'Explorer',
+                                      avatar: const Icon(Icons.face),
+                                      frameColor: NeonTheme.gold,
+                                      level: ProfileLevel(
+                                        level: 12,
+                                        currentXp: 60,
+                                        xpForNextLevel: 100,
+                                        label: 'Adventurer',
+                                      ),
+                                      stats: [
+                                        ProfileStat(
+                                          label: 'Wins',
+                                          valueText: '$_demoProfileWins',
+                                          icon: Icons.emoji_events_rounded,
+                                        ),
+                                        ProfileStat(
+                                          label: 'Best streak',
+                                          valueText: '14 days',
+                                          icon: Icons
+                                              .local_fire_department_rounded,
+                                        ),
+                                      ],
+                                      onTap: () => setState(
+                                        () => _demoProfileOpen = true,
+                                      ),
+                                      onEditAvatar: () => setState(
+                                        () => _demoProfileEditCount++,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Avatar edits: $_demoProfileEditCount',
+                                      key: const Key('profileStatsEditStatus'),
+                                    ),
+                                    CommonButton(
+                                      key: const Key('profileStatsWin'),
+                                      label: '+1 win',
+                                      width: double.infinity,
+                                      onTap: () =>
+                                          setState(() => _demoProfileWins++),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
                                 label: 'AvatarFrameSelector (FEAT-168)',
                                 child: Column(
                                   crossAxisAlignment:
@@ -6838,6 +6893,26 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                     ),
                   ),
                 ),
+                if (_demoProfileOpen)
+                  Positioned.fill(
+                    key: const Key('profileStatsOverlay'),
+                    child: NeonDialog.overlay(
+                      onBarrier: () => setState(() => _demoProfileOpen = false),
+                      panel: NeonDialog.panel(
+                        title: 'Maya Rose',
+                        color: NeonTheme.purple,
+                        message: 'Explorer · Level 12 · $_demoProfileWins wins',
+                        actions: [
+                          NeonDialogAction(
+                            label: 'Close',
+                            color: NeonTheme.purple,
+                            onTap: () =>
+                                setState(() => _demoProfileOpen = false),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 if (_demoChipOpen)
                   Positioned.fill(
                     key: const Key('nextRewardChipOverlay'),
