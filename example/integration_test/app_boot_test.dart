@@ -2886,6 +2886,40 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'FEAT-173: contrast preview reports pass/fail and routes editor',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToWidgetShowcase(tester);
+      final card = find.byKey(const Key('contrastPreviewShowcase'));
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
+        final next = (position.pixels + 450).clamp(
+          0.0,
+          position.maxScrollExtent,
+        );
+        if (next == position.pixels) break;
+        position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.ensureVisible(card);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Pass'), findsOneWidget);
+      expect(find.text('Needs more contrast'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('contrastPreviewTap')));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('Contrast edits: 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('FEAT-172: accessibility preview scale and close on device', (
     tester,
   ) async {
