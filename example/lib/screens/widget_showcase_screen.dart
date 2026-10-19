@@ -1103,6 +1103,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   }
 
   int _demoBadgeSlotTaps = 0;
+  int _demoA11yCloseCount = 0;
   String? _demoTitleId = 'explorer';
   String _demoLockedTitleHint = 'none';
   int _demoProfileWins = 42;
@@ -5388,6 +5389,50 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     Text(
                                       'Lives Sent: $_demoGiftLivesSentCount · State: ${_demoGiftLivesState.name}',
                                       key: const Key('giftLivesShowcaseStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'AccessibilityPreviewPanel (FEAT-172)',
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    AccessibilityPreviewPanel(
+                                      key: const Key(
+                                        'accessibilityPreviewShowcase',
+                                      ),
+                                      maxHeight: 480,
+                                      onClose: () =>
+                                          setState(() => _demoA11yCloseCount++),
+                                      targets: const [],
+                                      preview: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            const Text(
+                                              'Player profile',
+                                              style: TextStyle(fontSize: 20),
+                                            ),
+                                            const SizedBox(height: 12),
+                                            ProfileStatsCard(
+                                              name: 'Maya Rose',
+                                              title: 'Explorer',
+                                              avatar: const Icon(Icons.face),
+                                              stats: const [],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      'Preview closed: $_demoA11yCloseCount',
+                                      key: const Key(
+                                        'accessibilityPreviewStatus',
+                                      ),
                                     ),
                                   ],
                                 ),

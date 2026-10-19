@@ -286,6 +286,34 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-172: accessibility preview scales locally and closes', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final panel = find.byKey(const Key('accessibilityPreviewShowcase'));
+    await tester.scrollUntilVisible(panel, 350, scrollable: scrollable);
+    await tester.ensureVisible(panel);
+    await tester.pump(const Duration(milliseconds: 100));
+    final previewText = find.descendant(
+      of: panel,
+      matching: find.text('Player profile'),
+    );
+    expect(MediaQuery.textScalerOf(tester.element(previewText)).scale(1), 1);
+    await tester.tap(find.text('200%'));
+    await tester.pump();
+    expect(MediaQuery.textScalerOf(tester.element(previewText)).scale(1), 2);
+    await tester.tap(find.text('Close preview'));
+    await tester.pump();
+    expect(find.text('Preview closed: 1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'FEAT-170: title picker selects, clears, and routes locked taps',
     (tester) async {

@@ -2851,6 +2851,76 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-172: accessibility preview scales locally and closes', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final panel = find.byKey(const Key('accessibilityPreviewShowcase'));
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && panel.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(panel);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('200%'));
+    await tester.pump(const Duration(milliseconds: 200));
+    final previewText = find.descendant(
+      of: panel,
+      matching: find.text('Player profile'),
+    );
+    expect(MediaQuery.textScalerOf(tester.element(previewText)).scale(1), 2);
+    await tester.tap(find.text('Close preview'));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Preview closed: 1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('FEAT-172: accessibility preview scale and close on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final panel = find.byKey(const Key('accessibilityPreviewShowcase'));
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && panel.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(panel);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('200%'));
+    await tester.pump(const Duration(milliseconds: 200));
+    final text = find.descendant(
+      of: panel,
+      matching: find.text('Player profile'),
+    );
+    expect(MediaQuery.textScalerOf(tester.element(text)).scale(1), 2);
+    await tester.tap(find.text('Close preview'));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Preview closed: 1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-170: title picker caller callbacks on device', (
     tester,
   ) async {
