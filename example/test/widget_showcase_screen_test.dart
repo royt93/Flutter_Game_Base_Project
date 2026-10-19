@@ -330,6 +330,41 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-175: diagnostics preview stays local and share confirms', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final card = find.byKey(const Key('supportDiagnosticsShowcase'));
+    await tester.scrollUntilVisible(card, 350, scrollable: scrollable);
+    await tester.ensureVisible(card);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.descendant(of: card, matching: find.text('Preview')));
+    await tester.pump();
+    expect(find.textContaining('Redacted preview'), findsOneWidget);
+    expect(find.text('Confirm share'), findsNothing);
+    await tester.tap(
+      find.descendant(of: card, matching: find.text('Close preview')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('diagnosticsShareButton')));
+    await tester.pump();
+    expect(find.textContaining('shares the listed'), findsOneWidget);
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) => widget is CommonButton && widget.label == 'Confirm share',
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('2 section(s) could not be included.'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-173: contrast preview reports and routes editor tap', (
     tester,
   ) async {

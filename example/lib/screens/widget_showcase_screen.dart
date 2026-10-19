@@ -1108,6 +1108,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   String? _demoHapticSelected = 'soft';
   int _demoA11yCloseCount = 0;
   int _demoContrastEdits = 0;
+  int _demoDiagnosticsShares = 0;
   String? _demoTitleId = 'explorer';
   String _demoLockedTitleHint = 'none';
   int _demoProfileWins = 42;
@@ -5409,6 +5410,35 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       key: const Key('giftLivesShowcaseStatus'),
                                     ),
                                   ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'SupportDiagnosticsCard (FEAT-175)',
+                                child: SupportDiagnosticsCard(
+                                  key: const Key('supportDiagnosticsShowcase'),
+                                  summary: SupportDiagnosticsSummary(
+                                    appVersion: kAppVersion,
+                                    generatedAtText: 'Today, 10:30',
+                                    sections: const [
+                                      'health',
+                                      'replay',
+                                      'config',
+                                    ],
+                                    truncated: _demoDiagnosticsShares > 0,
+                                    errors: _demoDiagnosticsShares > 1
+                                        ? const {'logs': 'section omitted'}
+                                        : const {},
+                                  ),
+                                  preview: const Text(
+                                    'Redacted preview: health + replay + config',
+                                  ),
+                                  onShare: () async {
+                                    await Future<void>.delayed(
+                                      const Duration(milliseconds: 200),
+                                    );
+                                    if (!mounted) return;
+                                    setState(() => _demoDiagnosticsShares++);
+                                  },
                                 ),
                               ),
                               _Demo(
