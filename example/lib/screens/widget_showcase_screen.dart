@@ -1103,6 +1103,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   }
 
   int _demoBadgeSlotTaps = 0;
+  HapticChoreographer? _demoHapticChoreographer;
+  bool _demoHapticBusy = false;
+  String? _demoHapticSelected = 'soft';
   int _demoA11yCloseCount = 0;
   int _demoContrastEdits = 0;
   String? _demoTitleId = 'explorer';
@@ -1545,6 +1548,20 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       _confettiTrigger++;
       _confettiActive = true;
     });
+  }
+
+  Future<void> _previewHapticPattern(HapticPattern pattern) async {
+    if (_demoHapticBusy) return;
+    final choreographer = _demoHapticChoreographer ??= HapticChoreographer();
+    setState(() => _demoHapticBusy = true);
+    choreographer.play(pattern);
+    final delay = pattern.pulses.fold<Duration>(
+      Duration.zero,
+      (sum, pulse) => sum + pulse.delayAfter,
+    );
+    await Future<void>.delayed(delay + const Duration(milliseconds: 300));
+    if (!mounted) return;
+    setState(() => _demoHapticBusy = false);
   }
 
   @override
@@ -5420,6 +5437,44 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       key: const Key('contrastPreviewStatus'),
                                     ),
                                   ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'HapticPatternPicker (FEAT-174)',
+                                child: HapticPatternPicker(
+                                  key: const Key('hapticPatternPickerShowcase'),
+                                  options: [
+                                    HapticPatternOption(
+                                      id: 'soft',
+                                      label: 'Soft',
+                                      pattern: HapticPattern([
+                                        const HapticPulse(
+                                          level: HapticLevel.light,
+                                        ),
+                                      ]),
+                                    ),
+                                    HapticPatternOption(
+                                      id: 'reward',
+                                      label: 'Reward',
+                                      pattern: HapticPattern.reward,
+                                    ),
+                                    HapticPatternOption(
+                                      id: 'error',
+                                      label: 'Error',
+                                      pattern: HapticPattern.error,
+                                    ),
+                                  ],
+                                  selectedId: _demoHapticSelected,
+                                  busy: _demoHapticBusy,
+                                  hapticsEnabled:
+                                      StorageService.maybe?.getBool(
+                                        StorageKeys.hapticsEnabled,
+                                        def: true,
+                                      ) ??
+                                      true,
+                                  onSelect: (id) =>
+                                      setState(() => _demoHapticSelected = id),
+                                  onPreview: _previewHapticPattern,
                                 ),
                               ),
                               _Demo(

@@ -151,3 +151,4 @@ export 'badge_showcase_strip.dart';
 export 'title_chip_picker.dart';
 export 'accessibility_preview_panel.dart';
 export 'contrast_preview_card.dart';
+export 'haptic_pattern_picker.dart';

@@ -2886,6 +2886,39 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-174: haptic pattern caller preview on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final picker = find.byKey(const Key('hapticPatternPickerShowcase'));
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && picker.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(picker);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byKey(const ValueKey('hapticOption_reward')));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.widget<HapticPatternPicker>(picker).selectedId, 'reward');
+    await tester.tap(find.byKey(const ValueKey('hapticPreview_reward')));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.widget<HapticPatternPicker>(picker).busy, isTrue);
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(tester.widget<HapticPatternPicker>(picker).busy, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'FEAT-173: contrast preview reports pass/fail and routes editor',
     (tester) async {

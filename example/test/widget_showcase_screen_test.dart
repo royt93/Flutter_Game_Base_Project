@@ -8,6 +8,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -285,6 +286,49 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('FEAT-174: haptic picker selection and preview busy seam', (
+    tester,
+  ) async {
+    final vibrates = <Object?>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'HapticFeedback.vibrate') {
+          vibrates.add(call.arguments);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final picker = find.byKey(const Key('hapticPatternPickerShowcase'));
+    await tester.scrollUntilVisible(picker, 350, scrollable: scrollable);
+    await tester.ensureVisible(picker);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.byKey(const ValueKey('hapticOption_reward')));
+    await tester.pump();
+    expect(tester.widget<HapticPatternPicker>(picker).selectedId, 'reward');
+    await tester.tap(find.byKey(const ValueKey('hapticPreview_reward')));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.widget<HapticPatternPicker>(picker).busy, isTrue);
+    expect(vibrates, contains('HapticFeedbackType.lightImpact'));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(tester.widget<HapticPatternPicker>(picker).busy, isFalse);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('FEAT-173: contrast preview reports and routes editor tap', (
     tester,
