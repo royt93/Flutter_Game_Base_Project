@@ -1103,6 +1103,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   }
 
   int _demoBadgeSlotTaps = 0;
+  String? _demoTitleId = 'explorer';
+  String _demoLockedTitleHint = 'none';
   int _demoProfileWins = 42;
   int _demoProfileEditCount = 0;
   bool _demoProfileOpen = false;
@@ -5386,6 +5388,43 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     Text(
                                       'Lives Sent: $_demoGiftLivesSentCount · State: ${_demoGiftLivesState.name}',
                                       key: const Key('giftLivesShowcaseStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'TitleChipPicker (FEAT-170)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    TitleChipPicker(
+                                      key: const Key('titleChipPickerShowcase'),
+                                      selectedId: _demoTitleId,
+                                      options: [
+                                        TitleOption(
+                                          id: 'explorer',
+                                          label: 'Explorer',
+                                        ),
+                                        TitleOption(
+                                          id: 'streak',
+                                          label: 'Streak Master',
+                                        ),
+                                        TitleOption(
+                                          id: 'legend',
+                                          label: 'Legendary Champion',
+                                          locked: true,
+                                          unlockHint: 'Reach level 50',
+                                        ),
+                                      ],
+                                      onSelect: (id) =>
+                                          setState(() => _demoTitleId = id),
+                                      onLockedTap: (id) => setState(
+                                        () => _demoLockedTitleHint = id,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Title: ${_demoTitleId ?? 'none'} · locked tap: $_demoLockedTitleHint',
+                                      key: const Key('titleChipPickerStatus'),
                                     ),
                                   ],
                                 ),

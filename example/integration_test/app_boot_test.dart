@@ -2851,6 +2851,37 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-170: title picker caller callbacks on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final picker = find.byKey(const Key('titleChipPickerShowcase'));
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var i = 0; i < 100 && picker.evaluate().isEmpty; i++) {
+      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(picker);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byKey(const ValueKey('titleChip_streak')));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Title: streak · locked tap: none'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('titleChip_legend')));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Title: streak · locked tap: legend'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-169: badge showcase slots via caller seam', (tester) async {
     await app.app();
     await tester.pump(const Duration(seconds: 4));

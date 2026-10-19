@@ -286,6 +286,43 @@ void main() {
     },
   );
 
+  testWidgets(
+    'FEAT-170: title picker selects, clears, and routes locked taps',
+    (tester) async {
+      await _pumpShowcase(tester);
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final picker = find.byKey(const Key('titleChipPickerShowcase'));
+      await tester.scrollUntilVisible(picker, 350, scrollable: scrollable);
+      await tester.ensureVisible(picker);
+      await tester.pump(const Duration(milliseconds: 100));
+      final status = find.byKey(const Key('titleChipPickerStatus'));
+      await tester.tap(find.byKey(const ValueKey('titleChip_streak')));
+      await tester.pump();
+      expect(
+        tester.widget<Text>(status).data,
+        'Title: streak · locked tap: none',
+      );
+      await tester.tap(find.byKey(const ValueKey('titleChip_none')));
+      await tester.pump();
+      expect(
+        tester.widget<Text>(status).data,
+        'Title: none · locked tap: none',
+      );
+      await tester.tap(find.byKey(const ValueKey('titleChip_legend')));
+      await tester.pump();
+      expect(
+        tester.widget<Text>(status).data,
+        'Title: none · locked tap: legend',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('FEAT-169: badge showcase slot taps route to caller', (
     tester,
   ) async {

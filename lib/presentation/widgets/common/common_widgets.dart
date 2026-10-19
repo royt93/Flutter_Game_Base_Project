@@ -148,3 +148,4 @@ export 'next_reward_teaser_chip.dart';
 export 'avatar_frame_selector.dart';
 export 'profile_stats_card.dart';
 export 'badge_showcase_strip.dart';
+export 'title_chip_picker.dart';
