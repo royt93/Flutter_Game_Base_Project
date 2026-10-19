@@ -147,3 +147,4 @@ export 'streak_milestone_strip.dart';
 export 'next_reward_teaser_chip.dart';
 export 'avatar_frame_selector.dart';
 export 'profile_stats_card.dart';
+export 'badge_showcase_strip.dart';

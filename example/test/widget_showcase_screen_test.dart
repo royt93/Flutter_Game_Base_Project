@@ -286,6 +286,29 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-169: badge showcase slot taps route to caller', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final strip = find.byKey(const Key('badgeStripShowcase'));
+    await tester.scrollUntilVisible(strip, 350, scrollable: scrollable);
+    await tester.ensureVisible(strip);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.byKey(const ValueKey('badgeShowcaseSlot_4')));
+    await tester.pump();
+    expect(find.text('Badge slot taps: 1'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('badgeShowcaseSlot_0')));
+    await tester.pump();
+    expect(find.text('Badge slot taps: 2'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-171: profile card opens profile and edit stays isolated', (
     tester,
   ) async {

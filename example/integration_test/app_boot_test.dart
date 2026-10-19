@@ -2851,13 +2851,11 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('FEAT-168: avatar frame selector via caller seam', (
-    tester,
-  ) async {
+  testWidgets('FEAT-169: badge showcase slots via caller seam', (tester) async {
     await app.app();
     await tester.pump(const Duration(seconds: 4));
     await _goToWidgetShowcase(tester);
-    final selector = find.byKey(const Key('avatarFrameShowcase'));
+    final strip = find.byKey(const Key('badgeStripShowcase'));
     final scrollable = find
         .descendant(
           of: find.byKey(const ValueKey('widgetShowcaseList')),
@@ -2865,20 +2863,17 @@ void main() {
         )
         .first;
     final position = tester.state<ScrollableState>(scrollable).position;
-    for (var i = 0; i < 100 && selector.evaluate().isEmpty; i++) {
+    for (var i = 0; i < 100 && strip.evaluate().isEmpty; i++) {
       final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
       if (next == position.pixels) break;
       position.jumpTo(next);
       await tester.pump(const Duration(milliseconds: 100));
     }
-    await tester.ensureVisible(selector);
+    await tester.ensureVisible(strip);
     await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(find.byKey(const ValueKey('avatarFrameOption_neon')));
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Frame: neon · locked tap: none'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('avatarFrameOption_gold')));
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Frame: neon · locked tap: gold'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('badgeShowcaseSlot_4')));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Badge slot taps: 1'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

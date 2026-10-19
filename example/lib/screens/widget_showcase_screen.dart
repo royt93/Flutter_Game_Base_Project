@@ -1102,6 +1102,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     });
   }
 
+  int _demoBadgeSlotTaps = 0;
   int _demoProfileWins = 42;
   int _demoProfileEditCount = 0;
   bool _demoProfileOpen = false;
@@ -5385,6 +5386,37 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     Text(
                                       'Lives Sent: $_demoGiftLivesSentCount · State: ${_demoGiftLivesState.name}',
                                       key: const Key('giftLivesShowcaseStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'BadgeShowcaseStrip (FEAT-169)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    BadgeShowcaseStrip(
+                                      key: const Key('badgeStripShowcase'),
+                                      slotCount: 5,
+                                      badges: [
+                                        BadgeShowcaseItem(
+                                          id: 'first_win',
+                                          label: 'First Win',
+                                          icon: Icons.emoji_events_rounded,
+                                        ),
+                                        BadgeShowcaseItem(
+                                          id: 'streak_7',
+                                          label: '7-Day Streak',
+                                          icon: Icons
+                                              .local_fire_department_rounded,
+                                        ),
+                                      ],
+                                      onSlotTap: (_) =>
+                                          setState(() => _demoBadgeSlotTaps++),
+                                    ),
+                                    Text(
+                                      'Badge slot taps: $_demoBadgeSlotTaps',
+                                      key: const Key('badgeStripStatus'),
                                     ),
                                   ],
                                 ),
