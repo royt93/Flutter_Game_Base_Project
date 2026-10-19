@@ -1104,6 +1104,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
 
   int _demoBadgeSlotTaps = 0;
   int _demoA11yCloseCount = 0;
+  int _demoContrastEdits = 0;
   String? _demoTitleId = 'explorer';
   String _demoLockedTitleHint = 'none';
   int _demoProfileWins = 42;
@@ -5389,6 +5390,34 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     Text(
                                       'Lives Sent: $_demoGiftLivesSentCount · State: ${_demoGiftLivesState.name}',
                                       key: const Key('giftLivesShowcaseStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'ContrastPreviewCard (FEAT-173)',
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    ContrastPreviewCard(
+                                      key: const Key('contrastPreviewShowcase'),
+                                      foreground: Colors.white,
+                                      background: const Color(0xFF0072B2),
+                                      sampleText: 'Readable sample text',
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ContrastPreviewCard(
+                                      foreground: Colors.white,
+                                      background: Colors.white,
+                                      sampleText: 'Low contrast sample',
+                                      largeText: true,
+                                      onTap: () =>
+                                          setState(() => _demoContrastEdits++),
+                                    ),
+                                    Text(
+                                      'Contrast edits: $_demoContrastEdits',
+                                      key: const Key('contrastPreviewStatus'),
                                     ),
                                   ],
                                 ),

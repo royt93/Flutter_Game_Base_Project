@@ -286,6 +286,28 @@ void main() {
     },
   );
 
+  testWidgets('FEAT-173: contrast preview reports and routes editor tap', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final card = find.byKey(const Key('contrastPreviewShowcase'));
+    await tester.scrollUntilVisible(card, 350, scrollable: scrollable);
+    await tester.ensureVisible(card);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Pass'), findsOneWidget);
+    expect(find.text('Needs more contrast'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('contrastPreviewTap')));
+    await tester.pump();
+    expect(find.text('Contrast edits: 1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-172: accessibility preview scales locally and closes', (
     tester,
   ) async {
