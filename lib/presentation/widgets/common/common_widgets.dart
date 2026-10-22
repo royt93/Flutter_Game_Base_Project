@@ -66,6 +66,8 @@ export 'wheel_spinner.dart';
 export 'coin_multiplier_wheel.dart';
 
 // Layout & Cards
+export 'checkpoint_resume_card.dart';
+export 'cloud_save_status_card.dart';
 export 'card_flip_3d.dart';
 export 'pooled_particle_burst.dart';
 export 'panel_card.dart';
@@ -120,6 +122,7 @@ export 'milestone_celebration_dialog.dart';
 export 'move_hint_popup.dart';
 export 'scratch_card.dart';
 export '../../../core/reward_transaction_pipeline.dart' show RewardLine;
+export 'save_conflict_picker.dart';
 export 'save_health_card.dart';
 
 // Game-specific

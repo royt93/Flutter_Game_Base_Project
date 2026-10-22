@@ -365,6 +365,60 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 19: caller-owned save recovery demos', (tester) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    Future<void> reveal(Finder target) async {
+      for (var i = 0; i < 100 && target.evaluate().isEmpty; i++) {
+        final next =
+            (tester.state<ScrollableState>(scrollable).position.pixels + 450)
+                .clamp(
+                  0.0,
+                  tester
+                      .state<ScrollableState>(scrollable)
+                      .position
+                      .maxScrollExtent,
+                );
+        if (next == tester.state<ScrollableState>(scrollable).position.pixels) {
+          break;
+        }
+        tester.state<ScrollableState>(scrollable).position.jumpTo(next);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(target, findsOneWidget);
+      await tester.ensureVisible(target);
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    Future<void> tapVisible(Finder target) async {
+      await reveal(target);
+      await tester.tap(target);
+      await tester.pump(const Duration(milliseconds: 150));
+    }
+
+    await tapVisible(find.byKey(const ValueKey('cloudSaveSync')));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Synced'), findsOneWidget);
+
+    await tapVisible(find.byKey(const ValueKey('saveConflict_cloud')));
+    expect(find.text('Keep: Cloud'), findsOneWidget);
+    await tapVisible(find.byKey(const ValueKey('saveConflictConfirm')));
+    expect(find.text('Kept: cloud'), findsOneWidget);
+
+    await tapVisible(find.byKey(const ValueKey('checkpointStartNew')));
+    await tapVisible(find.byKey(const ValueKey('checkpointCancel')));
+    expect(find.text('Level 14 · 3 moves left'), findsOneWidget);
+    await tapVisible(find.byKey(const ValueKey('checkpointStartNew')));
+    await tapVisible(find.byKey(const ValueKey('checkpointConfirm')));
+    expect(find.text('No checkpoint available'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-173: contrast preview reports and routes editor tap', (
     tester,
   ) async {

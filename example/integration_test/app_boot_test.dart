@@ -2966,6 +2966,187 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 19: caller-owned save recovery actions', (tester) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+
+    Future<void> reveal(Finder target) async {
+      final viewportHeight =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      final targetCenter = viewportHeight / 2;
+      for (var i = 0; i < 100; i++) {
+        if (target.evaluate().isNotEmpty) {
+          final centerY = tester.getRect(target.first).center.dy;
+          if (centerY >= 120 && centerY <= viewportHeight - 100) break;
+          final next = (position.pixels + centerY - targetCenter).clamp(
+            0.0,
+            position.maxScrollExtent,
+          );
+          if (next == position.pixels) break;
+          position.jumpTo(next);
+        } else {
+          final next = (position.pixels + 450).clamp(
+            0.0,
+            position.maxScrollExtent,
+          );
+          if (next == position.pixels) break;
+          position.jumpTo(next);
+        }
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(target, findsOneWidget);
+      final centerY = tester.getRect(target.first).center.dy;
+      expect(centerY, inInclusiveRange(120, viewportHeight - 100));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    Future<void> tapVisible(Finder target) async {
+      await reveal(target);
+      await tester.tap(target.first);
+      await tester.pump(const Duration(milliseconds: 150));
+    }
+
+    await tapVisible(find.byKey(const ValueKey('cloudSaveSync')));
+    await tester.pump(const Duration(milliseconds: 650));
+    expect(find.text('Synced'), findsOneWidget);
+
+    await tapVisible(find.byKey(const ValueKey('saveConflict_cloud')));
+    expect(find.text('Keep: Cloud'), findsOneWidget);
+    await tapVisible(find.byKey(const ValueKey('saveConflictConfirm')));
+    final conflictResult = find.byKey(const ValueKey('recoveryConflictResult'));
+    await reveal(conflictResult);
+    expect(tester.widget<Text>(conflictResult).data, 'Kept: cloud');
+
+    await tapVisible(find.byKey(const ValueKey('checkpointStartNew')));
+    await tapVisible(find.byKey(const ValueKey('checkpointCancel')));
+    expect(find.text('Level 14 · 3 moves left'), findsOneWidget);
+    await tapVisible(find.byKey(const ValueKey('checkpointStartNew')));
+    await tapVisible(find.byKey(const ValueKey('checkpointConfirm')));
+    expect(find.text('No checkpoint available'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Wave 19: recovery errors, retries and both conflict choices', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    var cloudAttempts = 0;
+    var choice = SaveConflictChoice.local;
+    String? localRevision;
+    String? cloudRevision;
+    String? resumedRevision;
+    String? newGameRevision;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) => SingleChildScrollView(
+              child: Column(
+                children: [
+                  CloudSaveStatusCard(
+                    status: CloudSaveStatus.error,
+                    onSync: () async {
+                      cloudAttempts++;
+                      if (cloudAttempts == 1) {
+                        throw StateError('device-only private detail');
+                      }
+                    },
+                  ),
+                  SaveConflictPicker(
+                    local: SaveConflictSummary(
+                      revision: 'local-device-r1',
+                      savedAtText: 'This device',
+                      progressText: 'Level 6',
+                    ),
+                    cloud: SaveConflictSummary(
+                      revision: 'cloud-device-r2',
+                      savedAtText: 'Cloud',
+                      progressText: 'Level 9',
+                    ),
+                    onResolve: (selected, local, cloud) async {
+                      choice = selected;
+                      localRevision = local;
+                      cloudRevision = cloud;
+                    },
+                  ),
+                  CheckpointResumeCard(
+                    checkpoint: CheckpointSummary(
+                      revision: 'checkpoint-device-r3',
+                      savedAtText: 'Today',
+                      progressText: 'Level 11',
+                    ),
+                    onResume: (revision) async => resumedRevision = revision,
+                    onStartNew: (revision) async {
+                      newGameRevision = revision;
+                    },
+                  ),
+                  Text('cloud attempts: $cloudAttempts'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final sync = find.byKey(const ValueKey('cloudSaveSync'));
+    await tester.ensureVisible(sync);
+    await tester.tap(sync);
+    await tester.pumpAndSettle();
+    expect(find.text('Sync failed. Try again.'), findsOneWidget);
+    expect(find.textContaining('device-only private detail'), findsNothing);
+    await tester.ensureVisible(sync);
+    await tester.tap(sync);
+    await tester.pumpAndSettle();
+    expect(cloudAttempts, 2);
+
+    final local = find.byKey(const ValueKey('saveConflict_local'));
+    await tester.ensureVisible(local);
+    await tester.tap(local);
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('saveConflictCancel')));
+    await tester.pump();
+    expect(localRevision, isNull);
+    final cloud = find.byKey(const ValueKey('saveConflict_cloud'));
+    await tester.ensureVisible(cloud);
+    await tester.tap(cloud);
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('saveConflictConfirm')));
+    await tester.pumpAndSettle();
+    expect(choice, SaveConflictChoice.cloud);
+    expect(localRevision, 'local-device-r1');
+    expect(cloudRevision, 'cloud-device-r2');
+
+    final resume = find.byKey(const ValueKey('checkpointResume'));
+    await tester.ensureVisible(resume);
+    await tester.tap(resume);
+    await tester.pumpAndSettle();
+    expect(resumedRevision, 'checkpoint-device-r3');
+    final startNew = find.byKey(const ValueKey('checkpointStartNew'));
+    await tester.ensureVisible(startNew);
+    await tester.tap(startNew);
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('checkpointCancel')));
+    await tester.pump();
+    expect(newGameRevision, isNull);
+    await tester.ensureVisible(startNew);
+    await tester.tap(startNew);
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('checkpointConfirm')));
+    await tester.pumpAndSettle();
+    expect(newGameRevision, 'checkpoint-device-r3');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'FEAT-173: contrast preview reports pass/fail and routes editor',
     (tester) async {

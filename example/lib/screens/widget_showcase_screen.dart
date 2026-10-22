@@ -295,6 +295,40 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   ];
   String? _pickerActiveSlotId = 'picker_slot_warrior';
 
+  CloudSaveStatus _recoveryCloudStatus = CloudSaveStatus.ready;
+  bool _recoveryCloudBusy = false;
+  bool _recoveryCheckpointAvailable = true;
+  SaveConflictChoice? _recoveryChoice;
+
+  Future<void> _simulateCloudSync() async {
+    setState(() => _recoveryCloudBusy = true);
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    setState(() {
+      _recoveryCloudBusy = false;
+      _recoveryCloudStatus = CloudSaveStatus.synced;
+    });
+  }
+
+  Future<void> _resolveRecoveryConflict(
+    SaveConflictChoice choice,
+    String localRevision,
+    String cloudRevision,
+  ) async {
+    if (localRevision != 'local-demo-r1' || cloudRevision != 'cloud-demo-r1') {
+      throw StateError('Demo revision changed');
+    }
+    if (!mounted) return;
+    setState(() => _recoveryChoice = choice);
+  }
+
+  Future<void> _startNewRecoveryGame(String revision) async {
+    if (revision != 'checkpoint-demo-r1') {
+      throw StateError('Demo revision changed');
+    }
+    setState(() => _recoveryCheckpointAvailable = false);
+  }
+
   void _onPickerSelect(String id) {
     setState(() => _pickerActiveSlotId = id);
   }
@@ -3352,6 +3386,72 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       ],
                                     ),
                                   ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'CloudSaveStatusCard (Wave 19)',
+                                child: CloudSaveStatusCard(
+                                  status: _recoveryCloudBusy
+                                      ? CloudSaveStatus.syncing
+                                      : _recoveryCloudStatus,
+                                  busy: _recoveryCloudBusy,
+                                  pendingCount:
+                                      _recoveryCloudStatus ==
+                                          CloudSaveStatus.synced
+                                      ? 0
+                                      : 2,
+                                  lastSyncText:
+                                      _recoveryCloudStatus ==
+                                          CloudSaveStatus.synced
+                                      ? 'Synced just now'
+                                      : 'Last synced earlier',
+                                  onSync: _simulateCloudSync,
+                                ),
+                              ),
+                              _Demo(
+                                label: 'SaveConflictPicker (Wave 19)',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SaveConflictPicker(
+                                      local: SaveConflictSummary(
+                                        revision: 'local-demo-r1',
+                                        savedAtText: 'This device · 10:20',
+                                        progressText: 'Level 8 · 320 stars',
+                                      ),
+                                      cloud: SaveConflictSummary(
+                                        revision: 'cloud-demo-r1',
+                                        savedAtText: 'Cloud · 10:18',
+                                        progressText: 'Level 12 · 280 stars',
+                                      ),
+                                      onResolve: _resolveRecoveryConflict,
+                                    ),
+                                    if (_recoveryChoice != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 8),
+                                        child: Text(
+                                          'Kept: ${_recoveryChoice!.name}',
+                                          key: const ValueKey(
+                                            'recoveryConflictResult',
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'CheckpointResumeCard (Wave 19)',
+                                child: CheckpointResumeCard(
+                                  checkpoint: _recoveryCheckpointAvailable
+                                      ? CheckpointSummary(
+                                          revision: 'checkpoint-demo-r1',
+                                          savedAtText: 'Saved 10 minutes ago',
+                                          progressText:
+                                              'Level 14 · 3 moves left',
+                                        )
+                                      : null,
+                                  onResume: (_) async {},
+                                  onStartNew: _startNewRecoveryGame,
                                 ),
                               ),
                               _Demo(
