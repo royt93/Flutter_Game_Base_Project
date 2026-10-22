@@ -143,6 +143,30 @@ void main() {
     }
   });
 
+  testWidgets('repeated color updates and unmount stay clean', (tester) async {
+    for (var i = 0; i < 5; i++) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ContrastPreviewCard(
+              foreground: i.isEven ? Colors.black : Colors.white,
+              background: Colors.white,
+              sampleText: 'Updated sample',
+            ),
+          ),
+        ),
+      );
+      expect(
+        find.text(i.isEven ? 'Pass' : 'Needs more contrast'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    }
+    await tester.pumpWidget(const SizedBox.shrink());
+    expect(tester.binding.transientCallbackCount, 0);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('320dp, text scale 2.0 and RTL keep status readable', (
     tester,
   ) async {
@@ -151,12 +175,12 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
-      Directionality(
-        textDirection: TextDirection.rtl,
-        child: MediaQuery(
-          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
-          child: MaterialApp(
-            home: Scaffold(
+      MaterialApp(
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: Scaffold(
               body: ContrastPreviewCard(
                 foreground: Colors.white,
                 background: Colors.white,
