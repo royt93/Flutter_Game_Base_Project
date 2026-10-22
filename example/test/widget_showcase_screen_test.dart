@@ -419,6 +419,41 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 20: content pack refresh and scene preload stay local', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+
+    final refresh = find.byKey(const ValueKey('contentPackRefresh'));
+    await tester.scrollUntilVisible(refresh, 350, scrollable: scrollable);
+    await tester.ensureVisible(refresh);
+    await tester.tap(refresh);
+    await tester.pump(const Duration(milliseconds: 450));
+    final pack = tester.widget<ContentPackStatusCard>(
+      find.ancestor(of: refresh, matching: find.byType(ContentPackStatusCard)),
+    );
+    expect(pack.contentVersion, 4);
+    expect(pack.status, ContentPackStatus.ready);
+
+    final preload = find.byKey(const ValueKey('scenePreloadStart'));
+    await tester.scrollUntilVisible(preload, 350, scrollable: scrollable);
+    await tester.ensureVisible(preload);
+    await tester.tap(preload);
+    await tester.pump(const Duration(milliseconds: 300));
+    final panel = tester.widget<ScenePreloadStatusPanel>(
+      find.byType(ScenePreloadStatusPanel),
+    );
+    expect(panel.status, ScenePreloadStatus.ready);
+    expect(panel.progress, 1);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-173: contrast preview reports and routes editor tap', (
     tester,
   ) async {

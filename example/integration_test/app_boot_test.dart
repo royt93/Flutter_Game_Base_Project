@@ -3147,6 +3147,73 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 20: content pack refresh and preload status callbacks', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 4));
+    await _goToWidgetShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+
+    Future<void> reveal(Finder target) async {
+      final height =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      for (var i = 0; i < 100; i++) {
+        if (target.evaluate().isNotEmpty) {
+          final center = tester.getRect(target.first).center.dy;
+          if (center >= 120 && center <= height - 100) break;
+          final next = (position.pixels + center - height / 2).clamp(
+            0.0,
+            position.maxScrollExtent,
+          );
+          if (next == position.pixels) break;
+          position.jumpTo(next);
+        } else {
+          final next = (position.pixels + 450).clamp(
+            0.0,
+            position.maxScrollExtent,
+          );
+          if (next == position.pixels) break;
+          position.jumpTo(next);
+        }
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(target, findsOneWidget);
+      expect(
+        tester.getRect(target.first).center.dy,
+        inInclusiveRange(120, height - 100),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    await reveal(find.byKey(const ValueKey('contentPackRefresh')));
+    await tester.tap(find.byKey(const ValueKey('contentPackRefresh')));
+    await tester.pump(const Duration(milliseconds: 500));
+    final packFinder = find.byType(ContentPackStatusCard);
+    expect(tester.widget<ContentPackStatusCard>(packFinder).contentVersion, 4);
+    expect(
+      tester.widget<ContentPackStatusCard>(packFinder).status,
+      ContentPackStatus.ready,
+    );
+
+    await reveal(find.byKey(const ValueKey('scenePreloadStart')));
+    await tester.tap(find.byKey(const ValueKey('scenePreloadStart')));
+    await tester.pump(const Duration(milliseconds: 350));
+    final panelFinder = find.byType(ScenePreloadStatusPanel);
+    expect(
+      tester.widget<ScenePreloadStatusPanel>(panelFinder).status,
+      ScenePreloadStatus.ready,
+    );
+    expect(tester.widget<ScenePreloadStatusPanel>(panelFinder).progress, 1);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'FEAT-173: contrast preview reports pass/fail and routes editor',
     (tester) async {

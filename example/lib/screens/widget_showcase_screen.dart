@@ -300,6 +300,12 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   bool _recoveryCheckpointAvailable = true;
   SaveConflictChoice? _recoveryChoice;
 
+  ContentPackStatus _deliveryPackStatus = ContentPackStatus.ready;
+  int _deliveryPackVersion = 3;
+  ScenePreloadStatus _deliverySceneStatus = ScenePreloadStatus.idle;
+  bool _deliverySceneBusy = false;
+  double _deliverySceneProgress = 0;
+
   Future<void> _simulateCloudSync() async {
     setState(() => _recoveryCloudBusy = true);
     await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -327,6 +333,45 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       throw StateError('Demo revision changed');
     }
     setState(() => _recoveryCheckpointAvailable = false);
+  }
+
+  Future<void> _refreshDeliveryPack() async {
+    setState(() => _deliveryPackStatus = ContentPackStatus.refreshing);
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (!mounted) return;
+    setState(() {
+      _deliveryPackVersion++;
+      _deliveryPackStatus = ContentPackStatus.ready;
+    });
+  }
+
+  Future<void> _startDeliveryPreload() async {
+    setState(() {
+      _deliverySceneBusy = true;
+      _deliverySceneStatus = ScenePreloadStatus.loading;
+      _deliverySceneProgress = 0;
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    if (!mounted) return;
+    setState(() => _deliverySceneProgress = 0.5);
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    if (!mounted) return;
+    setState(() {
+      _deliverySceneProgress = 1;
+      _deliverySceneBusy = false;
+      _deliverySceneStatus = ScenePreloadStatus.ready;
+    });
+  }
+
+  Future<void> _retryDeliveryPreload() async {
+    await _startDeliveryPreload();
+  }
+
+  void _cancelDeliveryPreload() {
+    setState(() {
+      _deliverySceneBusy = false;
+      _deliverySceneStatus = ScenePreloadStatus.cancelled;
+    });
   }
 
   void _onPickerSelect(String id) {
@@ -3734,6 +3779,28 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           ),
                                     ),
                                   ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'ContentPackStatusCard (Wave 20)',
+                                child: ContentPackStatusCard(
+                                  status: _deliveryPackStatus,
+                                  contentVersion: _deliveryPackVersion,
+                                  updatedAtText: 'Caller demo · local only',
+                                  onRefresh: _refreshDeliveryPack,
+                                ),
+                              ),
+                              _Demo(
+                                label: 'ScenePreloadStatusPanel (Wave 20)',
+                                child: ScenePreloadStatusPanel(
+                                  sceneId: 'demo-level-7',
+                                  status: _deliverySceneStatus,
+                                  progress: _deliverySceneProgress,
+                                  itemCount: 5,
+                                  busy: _deliverySceneBusy,
+                                  onStart: _startDeliveryPreload,
+                                  onRetry: _retryDeliveryPreload,
+                                  onCancel: _cancelDeliveryPreload,
                                 ),
                               ),
                               _Demo(

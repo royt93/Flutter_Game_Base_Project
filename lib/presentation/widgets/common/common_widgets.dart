@@ -26,6 +26,7 @@ export 'candy_text_field.dart';
 export 'candy_slider.dart';
 
 // Feedback & Overlay
+export 'scene_preload_status_panel.dart';
 export 'achievement_unlock_listener.dart';
 export 'consent_banner.dart';
 export 'loading_overlay.dart';
@@ -66,6 +67,7 @@ export 'wheel_spinner.dart';
 export 'coin_multiplier_wheel.dart';
 
 // Layout & Cards
+export 'content_pack_status_card.dart';
 export 'checkpoint_resume_card.dart';
 export 'cloud_save_status_card.dart';
 export 'card_flip_3d.dart';
