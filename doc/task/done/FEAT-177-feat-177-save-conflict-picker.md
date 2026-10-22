@@ -19,9 +19,10 @@ source: Scrum Master Epic: Save Continuity & Recovery (Wave 19)
 ## DoD
 - [x] Unit/widget test: typed summary validation, choice/cancel/confirm, exact revisions, revision change invalidates confirmation.
 - [x] Showcase in-memory only; host test pass.
-- [ ] Golden matrix unselected/confirm × 7 biến thể; Linux + Flutter 3.35.1 baselines chưa được lấy. Local macOS PNG không dùng.
+- [x] Golden matrix unselected/confirm × 7 biến thể cộng ảnh confirm sau tap; Linux + Flutter 3.35.1 baselines committed.
 - [x] Callback generic error requires fresh selection; revision change during in-flight callback ignores stale completion and releases lock without applying stale error.
-- [ ] Root/example full suites, API compatibility and quality gates verified.
+- [x] Root/example suites, API compatibility and quality gates pass; CI run `39759123154` xanh.
+- [x] Integration device smoke trên TECNO KJ7: cancel, cloud choice, exact revisions và revision demo hoạt động.
 
 ## Chạy lại
 ```bash

@@ -20,8 +20,9 @@ source: Scrum Master Epic: Save Continuity & Recovery (Wave 19)
 - [x] Widget test: empty inert, start-new cancel/confirm, revision update cancels pending confirmation.
 - [x] Showcase state in-memory; host test verifies cancel giữ checkpoint, confirm start-new làm trống summary.
 - [x] Resume receives exact revision; unmount during async callback ignores stale error without exception.
-- [ ] Golden matrix available/empty/confirm × 7 biến thể; Linux + Flutter 3.35.1 baselines chưa được lấy. Local macOS PNG không dùng.
-- [ ] Root/example full suites, API compatibility and quality gates verified.
+- [x] Golden matrix available/empty/confirm × 7 biến thể cộng ảnh confirm sau tap; Linux + Flutter 3.35.1 baselines committed.
+- [x] Root/example suites, API compatibility and quality gates pass; CI run `39759123154` xanh.
+- [x] Integration device smoke trên TECNO KJ7: resume revision, cancel, confirm start-new và empty state hoạt động.
 
 ## Chạy lại
 ```bash

@@ -19,9 +19,9 @@ source: Scrum Master Epic: Save Continuity & Recovery (Wave 19)
 ## DoD
 - [x] Widget/unit test: states, offline disable, generic callback error, async double-tap guard.
 - [x] Showcase caller-owned in-memory state; host showcase test pass.
-- [ ] Golden matrix ready/syncing/error × 7 biến thể; Linux + Flutter 3.35.1 baselines chưa được lấy. Local macOS PNG không dùng.
-- [ ] Root/example full suites, API compatibility and quality gates verified.
-- [ ] Integration device smoke optional: host test đã cover status/callback; không claim device pass nếu chưa chạy.
+- [x] Golden matrix ready/syncing × 7 biến thể, viewport 390×844; Linux + Flutter 3.35.1 baselines committed.
+- [x] Root/example suites, API compatibility and quality gates pass; CI run `39759123154` xanh.
+- [x] Integration device smoke trên TECNO KJ7 (`115333744A005844`): sync callback kết thúc, trạng thái synced hiển thị.
 
 ## Chạy lại
 ```bash
