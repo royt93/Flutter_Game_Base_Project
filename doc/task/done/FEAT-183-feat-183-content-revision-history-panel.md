@@ -21,7 +21,7 @@ source: Scrum Master Epic: Content Revision Recovery (Wave 22)
 - [x] Root non-golden regression 3,221 and example 306 tests pass before final unmount-only test addition; all 9 panel tests pass after addition.
 - [x] Root/example analyzers, API compatibility, 5 quality gates and 104 tool tests pass.
 - [x] Four golden states (empty/history/confirmation/busy) × 7 layout/accessibility variants pass local update-mode validation. Confirmation is tapped before every variant capture. Generated macOS PNGs removed.
-- [ ] Linux + Flutter 3.35.1 PNG baselines and CI verification pending; no local PNG accepted.
+- [x] 28 Linux + Flutter 3.35.1 PNG baselines imported from `regenerate-goldens.yml` run 39815802770 (only `content_revision_*.png`; lockfiles untouched; generated PR not merged). CI run 39816711430 on `bfb79b1` passes analyze-test, quality-gate and consumer-smoke.
 
 ## Chạy lại
 ```bash
