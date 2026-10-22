@@ -3242,6 +3242,62 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 22: revision metadata confirm and cancel on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    String? restored;
+    final entries = [
+      ContentRevisionSummary(
+        revision: 'opaque-device-r1',
+        version: 1,
+        appliedAtText: 'Yesterday',
+        label: 'Previous content',
+      ),
+      ContentRevisionSummary(
+        revision: 'opaque-device-r2',
+        version: 2,
+        appliedAtText: 'Today',
+        label: 'Active content',
+      ),
+    ];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ContentRevisionHistoryPanel(
+            revisions: entries,
+            currentRevision: 'opaque-device-r2',
+            onRollback: (revision) async => restored = revision,
+          ),
+        ),
+      ),
+    );
+    final select = find.byKey(
+      const ValueKey('contentRevisionSelect_opaque-device-r1'),
+    );
+    await tester.ensureVisible(select);
+    await tester.tap(select);
+    await tester.pump();
+    await tester.tap(
+      find.byKey(const ValueKey('contentRevisionCancel_opaque-device-r1')),
+    );
+    await tester.pump();
+    expect(restored, isNull);
+    await tester.ensureVisible(select);
+    await tester.tap(select);
+    await tester.pump();
+    final confirm = find.byKey(
+      const ValueKey('contentRevisionConfirm_opaque-device-r1'),
+    );
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+    expect(restored, 'opaque-device-r1');
+    expect(find.textContaining('opaque-device'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 20: content pack refresh and preload status callbacks', (
     tester,
   ) async {

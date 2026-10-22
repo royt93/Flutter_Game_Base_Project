@@ -68,6 +68,7 @@ export 'coin_multiplier_wheel.dart';
 
 // Layout & Cards
 export 'content_pack_status_card.dart';
+export 'content_revision_history_panel.dart';
 export 'checkpoint_resume_card.dart';
 export 'cloud_save_status_card.dart';
 export 'card_flip_3d.dart';

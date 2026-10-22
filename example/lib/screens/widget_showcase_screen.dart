@@ -305,6 +305,35 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   ScenePreloadStatus _deliverySceneStatus = ScenePreloadStatus.idle;
   bool _deliverySceneBusy = false;
   double _deliverySceneProgress = 0;
+  String _contentCurrentRevision = 'content-rev-8';
+  String? _contentRollbackResult;
+
+  List<ContentRevisionSummary> get _contentRevisionSummaries => [
+    ContentRevisionSummary(
+      revision: 'content-rev-7',
+      version: 7,
+      appliedAtText: 'Yesterday, 16:05',
+      label: 'Summer event',
+    ),
+    ContentRevisionSummary(
+      revision: 'content-rev-8',
+      version: 8,
+      appliedAtText: 'Today, 10:30',
+      label: 'Autumn event',
+    ),
+  ];
+
+  Future<void> _restoreContentRevision(String revision) async {
+    if (!_contentRevisionSummaries.any((entry) => entry.revision == revision)) {
+      throw StateError('Revision is no longer available');
+    }
+    if (!mounted) return;
+    setState(() {
+      _contentCurrentRevision = revision;
+      _contentRollbackResult =
+          'Active version: ${_contentRevisionSummaries.firstWhere((entry) => entry.revision == revision).version}';
+    });
+  }
 
   Future<void> _simulateCloudSync() async {
     setState(() => _recoveryCloudBusy = true);
@@ -3810,6 +3839,28 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                             ),
                                           ),
                                     ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'ContentRevisionHistoryPanel (Wave 22)',
+                                child: Column(
+                                  children: [
+                                    ContentRevisionHistoryPanel(
+                                      key: const ValueKey(
+                                        'contentRevisionShowcase',
+                                      ),
+                                      revisions: _contentRevisionSummaries,
+                                      currentRevision: _contentCurrentRevision,
+                                      onRollback: _restoreContentRevision,
+                                    ),
+                                    if (_contentRollbackResult != null)
+                                      Text(
+                                        _contentRollbackResult!,
+                                        key: const ValueKey(
+                                          'contentRevisionResult',
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),

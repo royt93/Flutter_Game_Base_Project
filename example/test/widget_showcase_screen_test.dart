@@ -454,6 +454,37 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 22: caller-owned revision rollback changes active ref', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final select = find.byKey(
+      const ValueKey('contentRevisionSelect_content-rev-7'),
+    );
+    await tester.scrollUntilVisible(select, 350, scrollable: scrollable);
+    await tester.ensureVisible(select);
+    await tester.tap(select);
+    await tester.pump();
+    expect(find.textContaining('active content'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('contentRevisionConfirm_content-rev-7')),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Active version: 7'), findsOneWidget);
+    final panel = tester.widget<ContentRevisionHistoryPanel>(
+      find.byKey(const ValueKey('contentRevisionShowcase')),
+    );
+    expect(panel.currentRevision, 'content-rev-7');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-173: contrast preview reports and routes editor tap', (
     tester,
   ) async {
@@ -4475,7 +4506,9 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.widgetWithText(CommonButton, 'Keep local change').first);
+      await tester.tap(
+        find.widgetWithText(CommonButton, 'Keep local change').first,
+      );
       await tester.pump();
       expect(find.textContaining('retry delivery later'), findsOneWidget);
       await tester.tap(find.widgetWithText(CommonButton, 'Cancel').last);
@@ -4485,7 +4518,9 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.widgetWithText(CommonButton, 'Keep local change').first);
+      await tester.tap(
+        find.widgetWithText(CommonButton, 'Keep local change').first,
+      );
       await tester.pump();
       await tester.tap(
         find.widgetWithText(CommonButton, 'Confirm choice').first,
