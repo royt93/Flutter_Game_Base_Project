@@ -21,6 +21,5 @@ source: Scrum Master Epic: Content Delivery Readiness (Wave 20)
 - [x] Layout: 320dp + 200% RTL; golden matrix accessibility/layout guidelines pass locally.
 - [x] Showcase caller-owned local demo; host test confirms idle → ready and progress 1.
 - [x] TECNO KJ7 smoke confirms preload start and ready state.
-- [x] Root non-golden tests (3,206) + example tests (304), both analyzers, API, accessibility, SBOM, asset license, perf, deprecation, and publish dry-run pass.
-- [ ] Linux golden PNG matrix pending; local macOS renders removed.
-- [ ] CI pending Linux golden commit.
+- [x] Linux + Flutter 3.35.1 golden matrix idle/loading/error/ready × 7; 28 PNGs in commit `5fd3005`, lockfiles unchanged.
+- [x] Root/example suites (3,206/304), analyzers, API, all quality gates and publish dry-run pass; CI `39770438468` green.
