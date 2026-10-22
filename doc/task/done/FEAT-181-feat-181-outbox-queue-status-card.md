@@ -20,5 +20,5 @@ source: Scrum Master Epic: Offline Delivery UI (Wave 21)
 - [x] Showcase replaces raw queue/conflict payload display; FEAT-67 tests pass with online state before drain.
 - [x] TECNO KJ7 smoke validates queue counts and drain UI in full flow.
 - [x] Root tests (3,213 non-golden), example tests (305), analyzers, API and quality gates pass.
-- [x] Golden layout/guideline matrix passes locally; local PNGs discarded.
-- [ ] Linux golden PNGs and CI pending.
+- [x] Linux + Flutter 3.35.1 golden matrix idle/offline/error × 7 committed in `ca0d654`; lockfiles unchanged.
+- [x] CI `39790922224`: host tests, quality gates, consumer-smoke all pass.

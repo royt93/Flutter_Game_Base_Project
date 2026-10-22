@@ -21,7 +21,6 @@ source: Scrum Master Epic: Offline Delivery UI (Wave 21)
 - [x] Widget tests: privacy markers absent, both resolutions, cancel, multi-reference isolation, busy/reference invalidation, error path and duplicate refs.
 - [x] 320dp + 200% RTL layout/semantics test.
 - [x] Showcase uses stable opaque refs and generic labels; no payload/key rendering.
-- [x] Golden matrix empty/pending/keep-local/accept-remote × 7 locally validates layout/guidelines; Linux PNGs pending.
+- [x] Linux + Flutter 3.35.1 golden matrix empty/pending/keep-local/accept-remote × 7 plus confirmation shots committed in `ca0d654`; lockfiles unchanged.
 - [x] TECNO KJ7 smoke covers cancel, keep-local, accept-remote and opaque references.
-- [x] Root tests (3,213 non-golden), example tests (305), analyzers, API and quality gates pass.
-- [ ] Linux goldens, CI run and clean commit pending.
+- [x] Root/example suites (3,213/305), analyzers, API, quality gates and CI `39790922224` pass.
