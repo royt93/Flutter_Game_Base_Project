@@ -374,6 +374,34 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     });
   }
 
+  Future<void> _drainOutbox() async {
+    if (_outboxBusy) return;
+    setState(() => _outboxBusy = true);
+    try {
+      await _outbox.drain();
+    } finally {
+      if (mounted) setState(() => _outboxBusy = false);
+    }
+  }
+
+  Future<void> _resolveOutboxConflict(
+    String reference,
+    OutboxConflictResolution resolution,
+  ) async {
+    final key = _outboxConflictKeys[reference];
+    if (key == null) throw StateError('Outbox item is no longer available');
+    final result = _outbox.resolveManual(
+      idempotencyKey: key,
+      resolution: switch (resolution) {
+        OutboxConflictResolution.keepLocal => ManualResolution.keepLocal,
+        OutboxConflictResolution.acceptRemote => ManualResolution.acceptRemote,
+      },
+    );
+    if (result is SdkFailure<void>) throw StateError('Outbox choice failed');
+    await Future<void>.delayed(Duration.zero);
+    if (mounted) setState(() {});
+  }
+
   void _onPickerSelect(String id) {
     setState(() => _pickerActiveSlotId = id);
   }
@@ -1107,6 +1135,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int? _selectedInventorySlotId;
   late final OfflineOutboxService _outbox;
   int _outboxCounter = 0;
+  bool _outboxBusy = false;
+  final Map<String, String> _outboxConflictKeys = {};
+  final Map<String, String> _outboxConflictRefs = {};
+  int _outboxConflictRefCounter = 0;
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
   // IDEA-48: toggles the demo between topN(3) (always the leaders) and
@@ -4229,73 +4261,68 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 }),
                               ),
                               _Demo(
-                                label: 'OfflineOutboxService (FEAT-67)',
+                                label:
+                                    'OfflineOutboxService (FEAT-67 / Wave 21)',
                                 child: Obx(() {
                                   final pending = _outbox.items
-                                      .where((i) => !i.manualReview)
-                                      .toList();
+                                      .where((item) => !item.manualReview)
+                                      .length;
                                   final manual = _outbox.manualReviewItems;
+                                  final conflicts = <OutboxConflictSummary>[];
+                                  final currentKeys = manual
+                                      .map((item) => item.idempotencyKey)
+                                      .toSet();
+                                  _outboxConflictRefs.removeWhere(
+                                    (key, _) => !currentKeys.contains(key),
+                                  );
+                                  _outboxConflictKeys
+                                    ..clear()
+                                    ..addEntries(
+                                      _outboxConflictRefs.entries.map(
+                                        (entry) =>
+                                            MapEntry(entry.value, entry.key),
+                                      ),
+                                    );
+                                  for (final item in manual) {
+                                    final reference = _outboxConflictRefs
+                                        .putIfAbsent(
+                                          item.idempotencyKey,
+                                          () =>
+                                              'review-${++_outboxConflictRefCounter}',
+                                        );
+                                    _outboxConflictKeys[reference] =
+                                        item.idempotencyKey;
+                                    conflicts.add(
+                                      OutboxConflictSummary(
+                                        reference: reference,
+                                        localLabel: 'Local change needs review',
+                                        remoteLabel: 'Remote version differs',
+                                      ),
+                                    );
+                                  }
+                                  final status = _outboxBusy
+                                      ? OutboxQueueStatus.draining
+                                      : _connectivity.state ==
+                                            ConnectivityState.offline
+                                      ? OutboxQueueStatus.offline
+                                      : OutboxQueueStatus.idle;
                                   return Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        'Pending: ${pending.length}  · '
-                                        'Manual review: ${manual.length}',
+                                      OutboxQueueStatusCard(
+                                        pendingCount: pending,
+                                        manualReviewCount: manual.length,
+                                        status: status,
+                                        busy: _outboxBusy,
+                                        onDrain: _drainOutbox,
                                       ),
-                                      for (final item in pending)
-                                        Text(
-                                          '${item.idempotencyKey}: '
-                                          '${item.payload['score']}',
-                                        ),
-                                      for (final item in manual)
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: NeonTheme.s8,
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Conflict ${item.idempotencyKey}: '
-                                                'local ${item.payload['score']} '
-                                                'vs server ${item.remotePayload?['score']}',
-                                              ),
-                                              Wrap(
-                                                spacing: NeonTheme.s8,
-                                                children: [
-                                                  CommonButton(
-                                                    label: 'Keep local',
-                                                    variant: CommonButtonVariant
-                                                        .secondary,
-                                                    onTap: () =>
-                                                        _outbox.resolveManual(
-                                                          idempotencyKey: item
-                                                              .idempotencyKey,
-                                                          resolution:
-                                                              ManualResolution
-                                                                  .keepLocal,
-                                                        ),
-                                                  ),
-                                                  CommonButton(
-                                                    label: 'Accept remote',
-                                                    variant: CommonButtonVariant
-                                                        .secondary,
-                                                    onTap: () =>
-                                                        _outbox.resolveManual(
-                                                          idempotencyKey: item
-                                                              .idempotencyKey,
-                                                          resolution:
-                                                              ManualResolution
-                                                                  .acceptRemote,
-                                                        ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                                      const SizedBox(height: NeonTheme.s8),
+                                      OutboxConflictSummaryPanel(
+                                        conflicts: conflicts,
+                                        busy: _outboxBusy,
+                                        onResolve: _resolveOutboxConflict,
+                                      ),
                                       const SizedBox(height: NeonTheme.s16),
                                       Wrap(
                                         spacing: NeonTheme.s8,
@@ -4329,12 +4356,6 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                                 },
                                               );
                                             },
-                                          ),
-                                          CommonButton(
-                                            label: 'Drain now',
-                                            variant:
-                                                CommonButtonVariant.secondary,
-                                            onTap: _outbox.drain,
                                           ),
                                         ],
                                       ),

@@ -3147,6 +3147,101 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 21: outbox queue and opaque conflict resolution UI', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    var pending = 2;
+    var review = 2;
+    var drains = 0;
+    final resolved = <String, OutboxConflictResolution>{};
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) => SingleChildScrollView(
+              child: Column(
+                children: [
+                  OutboxQueueStatusCard(
+                    pendingCount: pending,
+                    manualReviewCount: review,
+                    status: OutboxQueueStatus.idle,
+                    onDrain: () async {
+                      drains++;
+                      setState(() => pending = 0);
+                    },
+                  ),
+                  OutboxConflictSummaryPanel(
+                    conflicts: [
+                      OutboxConflictSummary(
+                        reference: 'opaque-a',
+                        localLabel: 'Purchase change pending',
+                        remoteLabel: 'Remote purchase differs',
+                      ),
+                      OutboxConflictSummary(
+                        reference: 'opaque-b',
+                        localLabel: 'Reward change pending',
+                        remoteLabel: 'Remote reward differs',
+                      ),
+                    ],
+                    onResolve: (reference, resolution) async {
+                      resolved[reference] = resolution;
+                      setState(() {
+                        review--;
+                        if (resolution == OutboxConflictResolution.keepLocal) {
+                          pending++;
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey('outboxDrain')));
+    await tester.pumpAndSettle();
+    expect(drains, 1);
+    expect(find.textContaining('Pending: 0'), findsOneWidget);
+
+    final keepLocal = find.byKey(const ValueKey('outboxKeepLocal_opaque-a'));
+    await tester.ensureVisible(keepLocal);
+    await tester.tap(keepLocal);
+    await tester.pump();
+    await tester.tap(
+      find.byKey(const ValueKey('outboxConflictCancel_opaque-a')),
+    );
+    await tester.pump();
+    expect(resolved, isEmpty);
+    await tester.ensureVisible(keepLocal);
+    await tester.tap(keepLocal);
+    await tester.pump();
+    await tester.tap(
+      find.byKey(const ValueKey('outboxConflictConfirm_opaque-a')),
+    );
+    await tester.pumpAndSettle();
+    expect(resolved['opaque-a'], OutboxConflictResolution.keepLocal);
+
+    final acceptRemote = find.byKey(
+      const ValueKey('outboxAcceptRemote_opaque-b'),
+    );
+    await tester.ensureVisible(acceptRemote);
+    await tester.tap(acceptRemote);
+    await tester.pump();
+    expect(find.textContaining('does not undo'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('outboxConflictConfirm_opaque-b')),
+    );
+    await tester.pumpAndSettle();
+    expect(resolved['opaque-b'], OutboxConflictResolution.acceptRemote);
+    expect(find.textContaining('opaque-a'), findsNothing);
+    expect(find.textContaining('opaque-b'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 20: content pack refresh and preload status callbacks', (
     tester,
   ) async {

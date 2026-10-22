@@ -80,6 +80,8 @@ export 'avatar_frame.dart';
 export 'ribbon_badge.dart';
 export 'shop_item_card.dart';
 export 'offline_earnings_popup.dart';
+export 'outbox_conflict_summary_panel.dart';
+export 'outbox_queue_status_card.dart';
 export 'prestige_confirmation_card.dart';
 export 'flash_sale_offer_card.dart';
 export 'tiered_reward_chest.dart';

@@ -4421,14 +4421,20 @@ void main() {
       (tester) async {
         await _pumpShowcase(tester);
 
-        expect(find.text('Pending: 0  · Manual review: 0'), findsOneWidget);
+        await tester.tap(find.text('Interface up').last);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('State: online'), findsOneWidget);
+        expect(
+          find.textContaining('Pending: 0 · Needs review: 0'),
+          findsOneWidget,
+        );
         await tester.tap(find.widgetWithText(CommonButton, 'Enqueue OK').first);
         await tester.pump();
-        expect(find.text('Pending: 1  · Manual review: 0'), findsOneWidget);
-
-        await tester.tap(find.widgetWithText(CommonButton, 'Drain now').first);
         await tester.pump(const Duration(milliseconds: 300));
-        expect(find.text('Pending: 0  · Manual review: 0'), findsOneWidget);
+        expect(
+          find.textContaining('Pending: 0 · Needs review: 0'),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
       },
     );
@@ -4438,37 +4444,93 @@ void main() {
       (tester) async {
         await _pumpShowcase(tester);
 
+        await tester.tap(find.text('Interface up').last);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('State: online'), findsOneWidget);
         await tester.tap(
           find.widgetWithText(CommonButton, 'Enqueue (conflict)').first,
         );
-        await tester.pump();
-        await tester.tap(find.widgetWithText(CommonButton, 'Drain now').first);
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Pending: 0  · Manual review: 1'), findsOneWidget);
-        expect(find.textContaining('Conflict score_'), findsOneWidget);
+        expect(
+          find.textContaining('Pending: 0 · Needs review: 1'),
+          findsOneWidget,
+        );
+        expect(find.text('Local change needs review'), findsWidgets);
+        expect(find.textContaining('score_'), findsNothing);
+        expect(find.textContaining('forceConflict'), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets('manual review cancel leaves item and keep-local requeues', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+      await tester.tap(find.text('Interface up').last);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('State: online'), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(CommonButton, 'Enqueue (conflict)').first,
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.widgetWithText(CommonButton, 'Keep local change').first);
+      await tester.pump();
+      expect(find.textContaining('retry delivery later'), findsOneWidget);
+      await tester.tap(find.widgetWithText(CommonButton, 'Cancel').last);
+      await tester.pump();
+      expect(
+        find.textContaining('Pending: 0 · Needs review: 1'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.widgetWithText(CommonButton, 'Keep local change').first);
+      await tester.pump();
+      await tester.tap(
+        find.widgetWithText(CommonButton, 'Confirm choice').first,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 20));
+      expect(
+        find.textContaining('Pending: 1 · Needs review: 0'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('score_'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets('manual review: bấm "Accept remote" xoá item khỏi outbox hẳn', (
       tester,
     ) async {
       await _pumpShowcase(tester);
 
+      await tester.tap(find.text('Interface up').last);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('State: online'), findsOneWidget);
       await tester.tap(
         find.widgetWithText(CommonButton, 'Enqueue (conflict)').first,
       );
-      await tester.pump();
-      await tester.tap(find.widgetWithText(CommonButton, 'Drain now').first);
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Pending: 0  · Manual review: 1'), findsOneWidget);
+      expect(
+        find.textContaining('Pending: 0 · Needs review: 1'),
+        findsOneWidget,
+      );
 
       await tester.tap(
-        find.widgetWithText(CommonButton, 'Accept remote').first,
+        find.widgetWithText(CommonButton, 'Use remote version').first,
       );
       await tester.pump();
-      expect(find.text('Pending: 0  · Manual review: 0'), findsOneWidget);
+      expect(find.textContaining('does not undo'), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(CommonButton, 'Confirm choice').first,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 20));
+      expect(
+        find.textContaining('Pending: 0 · Needs review: 0'),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -4493,7 +4555,10 @@ void main() {
 
         await tester.tap(find.widgetWithText(CommonButton, 'Enqueue OK').first);
         await tester.pump();
-        expect(find.text('Pending: 1  · Manual review: 0'), findsOneWidget);
+        expect(
+          find.textContaining('Pending: 1 · Needs review: 0'),
+          findsOneWidget,
+        );
 
         // KHÔNG bấm "Drain now" thủ công — chỉ bật interface (Connectivity
         // demo) để kích hoạt auto-drain qua đúng coordinator của lần mở lại.
@@ -4501,7 +4566,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 200));
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Pending: 0  · Manual review: 0'), findsOneWidget);
+        expect(
+          find.textContaining('Pending: 0 · Needs review: 0'),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
 
         ConnectivityCoordinator.maybe?.onClose();
