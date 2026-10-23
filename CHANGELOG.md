@@ -1,7 +1,8 @@
-## Unreleased
+## 0.6.1
 
 - Fixed `ExperimentVariantAssignmentCard` to hide and reject debug variant overrides in release builds, matching `ExperimentBucketingService.debugSetVariantOverride`.
 - Restricted `OnboardingFlowQueueCard` mark-seen action to caller-designated `nextEligibleFlow`; loading indicator now applies only to that flow.
+- Verified: 21 focused widget tests, a profile-mode override integration test on a TECNO KJ7, and CI 39969956180 (all three jobs). A throwaway release-mode probe on the same device rendered both a control and an overridden row with the callback supplied and showed no override or clear button; that probe is not kept in the repo.
 
 ## 0.6.0
 
