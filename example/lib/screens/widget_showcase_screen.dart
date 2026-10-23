@@ -323,6 +323,11 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     ),
   ];
 
+  ConsentStatus _w24Analytics = ConsentStatus.unknown;
+  ConsentStatus _w24Personalization = ConsentStatus.granted;
+  SyncStatus _w24SyncStatus = SyncStatus.failed;
+  int _w24SyncAttempts = 0;
+  bool _w24BatterySaver = false;
   int _w23Coins = 400;
   int _w23Prestiges = 0;
   int _w23Exports = 0;
@@ -3868,6 +3873,80 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           'contentRevisionResult',
                                         ),
                                       ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'Wave 24 privacy, sync and battery',
+                                child: Column(
+                                  children: [
+                                    ConsentPreferencesPanel(
+                                      items: [
+                                        ConsentPreferenceItem(
+                                          id: 'analytics',
+                                          label: 'Analytics',
+                                          description: 'Help improve the game.',
+                                          status: _w24Analytics,
+                                        ),
+                                        ConsentPreferenceItem(
+                                          id: 'personalization',
+                                          label: 'Personalization',
+                                          description:
+                                              'Tailor content to your play.',
+                                          status: _w24Personalization,
+                                        ),
+                                      ],
+                                      onChanged: (id, status) async {
+                                        setState(() {
+                                          if (id == 'analytics') {
+                                            _w24Analytics = status;
+                                          } else {
+                                            _w24Personalization = status;
+                                          }
+                                        });
+                                      },
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SyncStatusCard(
+                                      status: _w24SyncStatus,
+                                      lastSyncedText: _w24SyncAttempts == 0
+                                          ? 'Yesterday, 16:05'
+                                          : 'Just now',
+                                      onSync: () async {
+                                        setState(() {
+                                          _w24SyncStatus = SyncStatus.syncing;
+                                          _w24SyncAttempts++;
+                                        });
+                                        await Future<void>.delayed(
+                                          const Duration(milliseconds: 300),
+                                        );
+                                        if (!mounted) return;
+                                        setState(() {
+                                          _w24SyncStatus = SyncStatus.synced;
+                                        });
+                                      },
+                                    ),
+                                    Text(
+                                      'Demo sync attempts: $_w24SyncAttempts',
+                                      key: const ValueKey('w24SyncResult'),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SwitchListTile(
+                                      key: const ValueKey('w24BatteryToggle'),
+                                      title: const Text(
+                                        'Simulate low-battery saver',
+                                      ),
+                                      value: _w24BatterySaver,
+                                      onChanged: (value) => setState(
+                                        () => _w24BatterySaver = value,
+                                      ),
+                                    ),
+                                    BatterySaverIndicator(
+                                      active: _w24BatterySaver,
+                                      batteryPercent: _w24BatterySaver
+                                          ? 12
+                                          : null,
+                                    ),
                                   ],
                                 ),
                               ),

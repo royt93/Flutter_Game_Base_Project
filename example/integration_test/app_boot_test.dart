@@ -3298,6 +3298,76 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 24: consent, sync and battery state on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    var status = ConsentStatus.unknown;
+    var syncStatus = SyncStatus.failed;
+    var syncs = 0;
+    var battery = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) => SingleChildScrollView(
+              child: Column(
+                children: [
+                  ConsentPreferencesPanel(
+                    items: [
+                      ConsentPreferenceItem(
+                        id: 'analytics',
+                        label: 'Analytics',
+                        description: 'Help improve the game.',
+                        status: status,
+                      ),
+                    ],
+                    onChanged: (id, next) async =>
+                        setState(() => status = next),
+                  ),
+                  SyncStatusCard(
+                    status: syncStatus,
+                    onSync: () async => setState(() {
+                      syncs++;
+                      syncStatus = SyncStatus.synced;
+                    }),
+                  ),
+                  Switch(
+                    key: const ValueKey('wave24Battery'),
+                    value: battery,
+                    onChanged: (value) => setState(() => battery = value),
+                  ),
+                  BatterySaverIndicator(active: battery, batteryPercent: 12),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    final deny = find.byKey(const ValueKey('consentDeny_analytics'));
+    await tester.ensureVisible(deny);
+    await tester.tap(deny);
+    await tester.pumpAndSettle();
+    expect(status, ConsentStatus.denied);
+    expect(tester.widget<CommonButton>(deny).onTap, isNull);
+
+    final sync = find.byKey(const ValueKey('syncStatusAction'));
+    await tester.ensureVisible(sync);
+    await tester.tap(sync);
+    await tester.pumpAndSettle();
+    expect(syncs, 1);
+    expect(find.text('Up to date'), findsOneWidget);
+
+    final toggle = find.byKey(const ValueKey('wave24Battery'));
+    await tester.ensureVisible(toggle);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(find.text('Battery saver on'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 23: prestige, cooldown and erase confirmation on device', (
     tester,
   ) async {

@@ -544,6 +544,39 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 24: consent, sync and battery demos', (tester) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final allow = find.byKey(const ValueKey('consentAllow_analytics'));
+    await tester.scrollUntilVisible(allow, 350, scrollable: scrollable);
+    await tester.ensureVisible(allow);
+    await tester.tap(allow);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(tester.widget<CommonButton>(allow).onTap, isNull);
+
+    final sync = find.byKey(const ValueKey('syncStatusAction'));
+    await tester.ensureVisible(sync);
+    await tester.tap(sync);
+    await tester.pump();
+    expect(find.text('Demo sync attempts: 1'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Up to date'), findsOneWidget);
+
+    expect(find.text('Battery saver on'), findsNothing);
+    final toggle = find.byKey(const ValueKey('w24BatteryToggle'));
+    await tester.ensureVisible(toggle);
+    await tester.tap(toggle);
+    await tester.pump();
+    expect(find.text('Battery saver on'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-173: contrast preview reports and routes editor tap', (
     tester,
   ) async {
