@@ -15,5 +15,5 @@ source: Scrum Master Epic: Session and Trust Inspection (Wave 26)
 ## Kiểm chứng
 - [x] Widget tests, showcase host, root 3,374 and example 310 suites, analyzers, API compatibility and 5 quality gates pass.
 - [x] 14 Linux + Flutter 3.35.1 PNG baselines imported from workflow 39908030941; lockfiles untouched.
-- [ ] Physical-device smoke not run: S24 Ultra unavailable; TECNO foreground app was a benchmark and was not interrupted.
+- [x] 2026-10-23: TECNO KJ7 passes 'Wave 26: session timeline and trust summary on device' in `example/integration_test/app_boot_test.dart` with `E2E_TEST=true`. UI fixture evidence only, not live rollout-controller verification.
 - [x] CI 39908353321 (analyze-test, quality-gate, consumer-smoke) passes on `f1b32df`.

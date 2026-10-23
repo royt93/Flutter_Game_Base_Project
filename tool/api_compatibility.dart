@@ -53,58 +53,32 @@ Future<Map<String, Object>> collectApiSnapshot(String root) async {
   final version = pubspecFile.existsSync()
       ? _readVersion(await pubspecFile.readAsString())
       : null;
-  final exports = RegExp(
-    r"^export '([^']+)';",
-    multiLine: true,
-  ).allMatches(entry).map((m) => m.group(1)!).toList()..sort();
+  final exports = _parseExports(
+    _entrypointRelPath.substring('lib/'.length),
+    entry,
+  ).map((edge) => edge.target).toSet().toList()..sort();
   final symbols = <String>[];
   final members = <String>[];
-  for (final relative in exports) {
+  // ponytail: regex scanner omits fields/getters; use analyzer for full Dart API coverage.
+  final reachable = await _resolveReachableApi(root);
+  for (final relative in reachable.keys.toList()..sort()) {
+    final visible = reachable[relative];
     final source = await File('$root/lib/$relative').readAsString();
-    // 1. Classes, enums, mixins, typedefs, extensions, extension types with modern Dart modifiers
-    for (final match in RegExp(
-      r'^(?:(?:abstract|sealed|final|base|interface|mixin)\s+)*(?:class|enum|mixin|typedef|extension(?:\s+type)?)\s+([A-Za-z][A-Za-z0-9_]*)',
-      multiLine: true,
-    ).allMatches(source)) {
-      symbols.add('$relative:${match.group(1)}');
-    }
-    // 2. Top-level const / final
-    for (final match in RegExp(
-      r'^(?:const|final)\s+(?:[A-Za-z0-9_<>,?\s]+\s+)?([A-Za-z][A-Za-z0-9_]*)\s*=',
-      multiLine: true,
-    ).allMatches(source)) {
-      symbols.add('$relative:${match.group(1)}');
-    }
-    // 3. Top-level typed functions (block or arrow) and getters/setters
-    for (final match in RegExp(
-      r'^(?:(?:external\s+)?(?:(?:void|[A-Za-z][A-Za-z0-9_<>.,?]*)\s+)?(?:(get|set)\s+)?([A-Za-z][A-Za-z0-9_]*)\s*(?:<[^>]*>)?\s*(?:\([^;]*?\)|(?<=\bget\s+[A-Za-z][A-Za-z0-9_]*))\s*(?:async\*?|sync\*?)?\s*(?:=>|\{))',
-      multiLine: true,
-    ).allMatches(source)) {
-      final name = match.group(2)!;
-      const reserved = {
-        'if',
-        'for',
-        'while',
-        'switch',
-        'return',
-        'class',
-        'enum',
-        'mixin',
-        'typedef',
-        'extension',
-        'const',
-        'final',
-        'assert',
-      };
-      if (!reserved.contains(name)) {
-        symbols.add('$relative:$name');
-      }
-    }
+    symbols.addAll([
+      for (final name in _declaredSymbols(source))
+        if (visible == null || visible.contains(name)) '$relative:$name',
+    ]);
     // 4. BUG-98: class/mixin MEMBER signatures (methods + constructors) —
     // top-level symbols above only record a class's own NAME, so deleting
     // or changing a method's params/return type (EconomyWallet.earn,
     // VersionedJsonStore.syncWith) previously reported "unchanged".
-    members.addAll(_collectMembers(relative, source));
+    members.addAll(
+      _collectMembers(relative, source).where((member) {
+        if (visible == null) return true;
+        final owner = member.substring(relative.length + 1).split('.').first;
+        return visible.contains(owner);
+      }),
+    );
   }
   symbols.sort();
   members.sort();
@@ -116,6 +90,213 @@ Future<Map<String, Object>> collectApiSnapshot(String root) async {
     'members': members,
   };
   return result;
+}
+
+/// Top-level declared names in [source] — the same three regex passes
+/// `collectApiSnapshot` always used, unchanged, just extracted so the
+/// transitive resolver below can reuse them.
+Set<String> _declaredSymbols(String source) {
+  final names = <String>{};
+  // 1. Classes, enums, mixins, typedefs, extensions, extension types with modern Dart modifiers
+  for (final match in RegExp(
+    r'^(?:(?:abstract|sealed|final|base|interface|mixin)\s+)*(?:class|enum|mixin|typedef|extension(?:\s+type)?)\s+([A-Za-z][A-Za-z0-9_]*)',
+    multiLine: true,
+  ).allMatches(source)) {
+    names.add(match.group(1)!);
+  }
+  // 2. Top-level const / final
+  for (final match in RegExp(
+    r'^(?:const|final)\s+(?:[A-Za-z0-9_<>,?\s]+\s+)?([A-Za-z][A-Za-z0-9_]*)\s*=',
+    multiLine: true,
+  ).allMatches(source)) {
+    names.add(match.group(1)!);
+  }
+  // 3. Top-level typed functions (block or arrow) and getters/setters
+  for (final match in RegExp(
+    r'^(?:(?:external\s+)?(?:(?:void|[A-Za-z][A-Za-z0-9_<>.,?]*)\s+)?(?:(get|set)\s+)?([A-Za-z][A-Za-z0-9_]*)\s*(?:<[^>]*>)?\s*(?:\([^;]*?\)|(?<=\bget\s+[A-Za-z][A-Za-z0-9_]*))\s*(?:async\*?|sync\*?)?\s*(?:=>|\{))',
+    multiLine: true,
+  ).allMatches(source)) {
+    final name = match.group(2)!;
+    const reserved = {
+      'if',
+      'for',
+      'while',
+      'switch',
+      'return',
+      'class',
+      'enum',
+      'mixin',
+      'typedef',
+      'extension',
+      'const',
+      'final',
+      'assert',
+    };
+    if (!reserved.contains(name)) names.add(name);
+  }
+  return names;
+}
+
+// ---- Wave 30: transitive local export resolution ----
+
+final _exportDirective = RegExp(
+  r'''^\s*export\s+(?:'([^']*)'|"([^"]*)")\s*([^;]*);$''',
+);
+
+class _ExportEdge {
+  _ExportEdge(this.target, this.show, this.hide);
+  final String target;
+  final Set<String>? show;
+  final Set<String> hide;
+}
+
+/// Parses `export` directives of [source] (lib-relative [from]), rejecting
+/// forms this local scanner cannot resolve rather than silently dropping
+/// public API: package:/dart: URIs, conditional exports, `part` files and
+/// anything else that is not a plain relative path with optional
+/// show/hide. Comment lines are ignored.
+List<_ExportEdge> _parseExports(String from, String source) {
+  final code = source.replaceAllMapped(
+    RegExp(r'''"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|//[^\n]*|/\*[\s\S]*?\*/'''),
+    (match) => match[0]!.startsWith('/')
+        ? match[0]!.replaceAll(RegExp(r'[^\n]'), ' ')
+        : match[0]!,
+  );
+  if (RegExp(r'^\s*part\s+', multiLine: true).hasMatch(code)) {
+    throw StateError('Unsupported part directive in lib/$from');
+  }
+  final directives = RegExp(
+    r'''^\s*export\s+(?:'[^']*'|"[^"]*")[^;]*(?:;|$)''',
+    multiLine: true,
+  ).allMatches(code);
+  final edges = <_ExportEdge>[];
+  for (final directive in directives) {
+    final match = _exportDirective.firstMatch(directive.group(0)!);
+    if (match == null) {
+      throw StateError('Unsupported export syntax in lib/$from');
+    }
+    final uri = match.group(1) ?? match.group(2)!;
+    if (uri.isEmpty ||
+        uri.contains(RegExp(r'[:\\?#%]')) ||
+        uri.startsWith('/')) {
+      throw StateError('Unsupported export URI "$uri" in lib/$from');
+    }
+    final tail = match.group(3)!.trim();
+    Set<String>? show;
+    final hide = <String>{};
+    var remaining = tail;
+    final combinator = RegExp(
+      r'^(show|hide)\s+([A-Za-z_][A-Za-z0-9_]*(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*)*)(?=\s+(?:show|hide)\b|$)',
+    );
+    while (remaining.isNotEmpty) {
+      final parsed = combinator.firstMatch(remaining);
+      if (parsed == null) {
+        throw StateError('Unsupported export clause "$tail" in lib/$from');
+      }
+      final names = parsed.group(2)!.split(',').map((n) => n.trim()).toSet();
+      if (parsed.group(1) == 'show') {
+        show = show == null ? names : show.intersection(names);
+      } else {
+        hide.addAll(names);
+      }
+      remaining = remaining.substring(parsed.end).trim();
+    }
+    edges.add(_ExportEdge(_resolveLibPath(from, uri), show, hide));
+  }
+  return edges;
+}
+
+String _resolveLibPath(String from, String uri) {
+  final parts = from.split('/')..removeLast();
+  for (final segment in uri.split('/')) {
+    if (segment.isEmpty || segment == '.') continue;
+    if (segment == '..') {
+      if (parts.isEmpty) {
+        throw StateError('Export "$uri" in lib/$from escapes lib/');
+      }
+      parts.removeLast();
+    } else {
+      parts.add(segment);
+    }
+  }
+  return parts.join('/');
+}
+
+// Preserve defining-file identity while propagating filtered names through cycles.
+Future<Map<String, Set<String>?>> _resolveReachableApi(String root) async {
+  final sources = <String, String>{};
+  final edges = <String, List<_ExportEdge>>{};
+  final pending = <String>[_entrypointRelPath.substring('lib/'.length)];
+  while (pending.isNotEmpty) {
+    final file = pending.removeLast();
+    if (sources.containsKey(file)) continue;
+    final f = File('$root/lib/$file');
+    if (!f.existsSync()) {
+      throw StateError('Exported file lib/$file does not exist');
+    }
+    final source = await f.readAsString();
+    sources[file] = source;
+    edges[file] = _parseExports(file, source);
+    pending.addAll(edges[file]!.map((e) => e.target));
+  }
+
+  // names each file exposes to its importers (own declarations + filtered
+  // re-exports), iterated until nothing changes.
+  final own = {
+    for (final e in sources.entries) e.key: _declaredSymbols(e.value),
+  };
+  final exposed = {
+    for (final e in own.entries) e.key: {...e.value},
+  };
+  var changed = true;
+  while (changed) {
+    changed = false;
+    for (final file in sources.keys) {
+      for (final edge in edges[file]!) {
+        var names = exposed[edge.target]!;
+        if (edge.show != null) {
+          names = names.intersection(edge.show!);
+        }
+        names = names.difference(edge.hide);
+        final before = exposed[file]!.length;
+        exposed[file]!.addAll(names);
+        if (exposed[file]!.length != before) changed = true;
+      }
+    }
+  }
+
+  // Push names admitted by the root down each export path. Unioning arrivals
+  // preserves alternate unrestricted routes alongside narrower show/hide paths.
+  final root0 = _entrypointRelPath.substring('lib/'.length);
+  final admitted = <String, Set<String>>{
+    root0: {...exposed[root0]!},
+  };
+  final visible = <String, Set<String>>{};
+  var routesChanged = true;
+  while (routesChanged) {
+    routesChanged = false;
+    for (final file in sources.keys) {
+      final incoming = admitted[file];
+      if (incoming == null) continue;
+      if (file != root0) {
+        final beforeVisible = visible
+            .putIfAbsent(file, () => <String>{})
+            .length;
+        visible[file]!.addAll(own[file]!.intersection(incoming));
+        if (visible[file]!.length != beforeVisible) routesChanged = true;
+      }
+      for (final edge in edges[file]!) {
+        var names = exposed[edge.target]!.intersection(incoming);
+        if (edge.show != null) names = names.intersection(edge.show!);
+        names = names.difference(edge.hide);
+        final target = admitted.putIfAbsent(edge.target, () => <String>{});
+        final before = target.length;
+        target.addAll(names);
+        if (target.length != before) routesChanged = true;
+      }
+    }
+  }
+  return visible;
 }
 
 // ---- BUG-98: member-level signature extraction ----

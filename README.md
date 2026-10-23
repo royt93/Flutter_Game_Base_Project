@@ -139,15 +139,19 @@ delivery (`ContentPackStatusCard`, `ScenePreloadStatusPanel`,
 (`PlayerDataRightsPanel`, `PrestigeReadinessCard`, `CooldownActionButton`,
 `ConsentPreferencesPanel`, `SyncStatusCard`, `BatterySaverIndicator`),
 operational status (`RemoteKillSwitchPanel`, `PlatformCapabilityMatrix`,
-`DeepLinkResultCard`) and QA/rewarded-ad status (`MemoryWatchdogPanel`,
-`AnnouncementPreviewCard`, `RewardedAdResultCard`, `RemoteConfigHealthCard`,
-`ReminderPreferencesPanel`, `ConnectivityStatusCard`) widgets never read a
-service. You pass plain state and callbacks; your code
+`DeepLinkResultCard`), session/trust/rollout status (`SessionTimelineInspector`,
+`EconomyCertificateStatusCard`, `GuardrailStatusPanel`), analytics/restore
+(`AnalyticsQueueStatusCard`, `SaveRestorePreviewPanel`) and QA/rewarded-ad
+status (`MemoryWatchdogPanel`, `AnnouncementPreviewCard`,
+`RewardedAdResultCard`, `RemoteConfigHealthCard`, `ReminderPreferencesPanel`,
+`ConnectivityStatusCard`) widgets never read a service. This list is
+illustrative, not exhaustive. You pass plain state and callbacks; your code
 calls the service. Destructive or state-replacing actions (restore a revision,
 resolve a conflict, erase data) require inline confirmation, failures show
 generic copy (never exception text, payloads, keys or checksums), and a
-pending call locks the buttons. A callback that returns without throwing is
-shown as success, so throw when the work did not finish.
+pending call locks the buttons. Where a widget runs your async callback itself,
+a callback that returns without throwing is shown as success, so throw when the
+work did not finish. Other widgets show an explicit status you pass in.
 
 ## Cookbook
 

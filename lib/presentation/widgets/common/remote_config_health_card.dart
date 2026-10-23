@@ -82,6 +82,7 @@ class _RemoteConfigHealthCardState extends State<RemoteConfigHealthCard> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.source != widget.source ||
         oldWidget.violationCount != widget.violationCount ||
+        oldWidget.lastCheckedText != widget.lastCheckedText ||
         oldWidget.busy != widget.busy) {
       _generation++;
       _failed = false;

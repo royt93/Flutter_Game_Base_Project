@@ -71,6 +71,113 @@ void main() {
       exportedFiles.map((f) => "export '$f';").join('\n'),
     );
 
+    Future<Map<String, dynamic>> snapshotFixture() async {
+      Directory('${tempDir.path}/tool').createSync(recursive: true);
+      final result = await _runCheck(['snapshot', '--root=${tempDir.path}']);
+      expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+      return jsonDecode(
+            File('${tempDir.path}/tool/api_snapshot.json').readAsStringSync(),
+          )
+          as Map<String, dynamic>;
+    }
+
+    test(
+      'nested filters, relative paths, cycles and alternate routes',
+      () async {
+        await writeFile('lib/roy_casual_kit.dart', '''
+/* export 'missing.dart'; */
+  export "barrels/outer.dart" show Foo, Bar hide Bar;
+export 'barrels/alternate.dart';
+''');
+        await writeFile('lib/barrels/outer.dart', '''
+export '../types.dart' hide Secret;
+export 'cycle.dart';
+''');
+        await writeFile('lib/barrels/cycle.dart', "export 'outer.dart';");
+        await writeFile(
+          'lib/barrels/alternate.dart',
+          "export '.././types.dart' show Bar;",
+        );
+        await writeFile('lib/types.dart', '''
+class Foo {
+  void run(int value) {}
+}
+class Bar {
+  void run() {}
+}
+class Secret {
+  void leak() {}
+}
+''');
+        final snapshot = await snapshotFixture();
+        expect(snapshot['symbols'], ['types.dart:Bar', 'types.dart:Foo']);
+        expect(
+          snapshot['members'],
+          contains('types.dart:Foo.run(int value): void'),
+        );
+        expect(
+          (snapshot['members'] as List).any((m) => '$m'.contains('Secret')),
+          false,
+        );
+        expect(await snapshotFixture(), snapshot);
+      },
+    );
+
+    for (final change in ['removal', 'signature', 'addition']) {
+      test('nested barrel detects $change', () async {
+        await writeEntrypoint(['barrel.dart']);
+        await writeFile('lib/barrel.dart', "export 'nested/inner.dart';");
+        await writeFile('lib/nested/inner.dart', "export '../types.dart';");
+        await writeFile('lib/types.dart', '''
+class Foo {
+  void run(int value) {}
+}
+''');
+        await writePubspec('0.6.0');
+        await writeChangelog('0.6.0', '- Added public API coverage.');
+        await snapshotFixture();
+        await writeFile('lib/types.dart', switch (change) {
+          'removal' => '',
+          'signature' => 'class Foo {\n  void run(String value) {}\n}',
+          _ => 'class Foo {\n  void run(int value) {}\n}\nclass Bar {}',
+        });
+        final result = await _runCheck(['check', '--root=${tempDir.path}']);
+        expect(
+          result.exitCode,
+          change == 'addition' ? 0 : isNot(0),
+          reason: '${result.stdout}\n${result.stderr}',
+        );
+        if (change == 'addition') {
+          expect(result.stdout as String, contains('additive'));
+        } else {
+          expect(
+            result.stderr as String,
+            contains('Breaking API removals require a major version'),
+          );
+        }
+      });
+    }
+
+    for (final directive in [
+      "export 'package:other/other.dart';",
+      "export 'dart:io';",
+      "export 'types.dart' if (dart.library.io) 'io.dart';",
+      "export 'types.dart' show Foo,;",
+      "export 'types.dart'",
+      "export '../outside.dart';",
+      "export 'missing.dart';",
+      "part 'types.dart';",
+    ]) {
+      test('unsupported directive fails: $directive', () async {
+        await writeFile('lib/roy_casual_kit.dart', directive);
+        await writeFile('lib/types.dart', 'class Foo {}');
+        Directory('${tempDir.path}/tool').createSync(recursive: true);
+        final result = await _runCheck(['snapshot', '--root=${tempDir.path}']);
+        expect(result.exitCode, isNot(0));
+        expect(result.stderr as String, contains('lib/'));
+      });
+    }
+
     test('export mới thêm (additive), changelog có mục cho version hiện tại: '
         'exit code 0, "additive", Added đúng symbol mới', () async {
       await writeEntrypoint(['foo.dart', 'bar.dart']);

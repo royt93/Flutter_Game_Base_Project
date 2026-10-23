@@ -87,6 +87,73 @@ void main() {
       expect(find.textContaining('shop_price'), findsNothing);
     });
 
+    testWidgets('timestamp-only update clears a prior refresh error', (
+      tester,
+    ) async {
+      Widget build(String checked) => _host(
+        RemoteConfigHealthCard(
+          source: RemoteConfigHealthSource.remoteMerged,
+          violationCount: 0,
+          lastCheckedText: checked,
+          onRefresh: () async => throw StateError('private config'),
+        ),
+      );
+      await tester.pumpWidget(build('Yesterday'));
+      await tester.tap(find.byKey(const ValueKey('remoteConfigHealthRefresh')));
+      await tester.pumpAndSettle();
+      expect(find.text('Refresh failed. Try again.'), findsOneWidget);
+      await tester.pumpWidget(build('Just now'));
+      expect(find.text('Last checked: Just now'), findsOneWidget);
+      expect(find.text('Refresh failed. Try again.'), findsNothing);
+    });
+
+    testWidgets('new timestamp ignores late error but keeps in-flight lock', (
+      tester,
+    ) async {
+      final done = Completer<void>();
+      var calls = 0;
+      Widget build(String checked) => _host(
+        RemoteConfigHealthCard(
+          source: RemoteConfigHealthSource.remoteMerged,
+          violationCount: 0,
+          lastCheckedText: checked,
+          onRefresh: () {
+            calls++;
+            return done.future;
+          },
+        ),
+      );
+      await tester.pumpWidget(build('Yesterday'));
+      final action = find.byKey(const ValueKey('remoteConfigHealthRefresh'));
+      await tester.tap(action);
+      await tester.pump();
+      await tester.pumpWidget(build('Just now'));
+      expect(tester.widget<CommonButton>(action).onTap, isNull);
+      expect(calls, 1);
+      done.completeError(StateError('stale private failure'));
+      await tester.pumpAndSettle();
+      expect(find.text('Refresh failed. Try again.'), findsNothing);
+      expect(tester.widget<CommonButton>(action).onTap, isNotNull);
+    });
+
+    testWidgets('unmount during refresh ignores late failure', (tester) async {
+      final done = Completer<void>();
+      await tester.pumpWidget(
+        _host(
+          RemoteConfigHealthCard(
+            source: RemoteConfigHealthSource.remoteMerged,
+            violationCount: 0,
+            onRefresh: () => done.future,
+          ),
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('remoteConfigHealthRefresh')));
+      await tester.pumpWidget(const SizedBox.shrink());
+      done.completeError(StateError('private late failure'));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('fits 320dp at 200% RTL with labeled action', (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
