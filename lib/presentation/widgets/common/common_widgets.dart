@@ -84,6 +84,8 @@ export 'session_timeline_inspector.dart';
 export 'announcement_preview_card.dart';
 export 'memory_watchdog_panel.dart';
 export 'rewarded_ad_result_card.dart';
+export 'analytics_queue_status_card.dart';
+export 'save_restore_preview_panel.dart';
 export 'checkpoint_resume_card.dart';
 export 'cloud_save_status_card.dart';
 export 'card_flip_3d.dart';

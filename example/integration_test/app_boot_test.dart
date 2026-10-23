@@ -3298,6 +3298,73 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 28: aggregate analytics and restore confirmation', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    var flushes = 0;
+    var restores = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                AnalyticsQueueStatusCard(
+                  snapshot: AnalyticsQueueSnapshot(
+                    pendingCount: 2,
+                    uploadedCount: 4,
+                    droppedCounts: {'Schema rejected': 1},
+                  ),
+                  consentGranted: true,
+                  onFlush: () async => flushes++,
+                ),
+                SaveRestorePreviewPanel(
+                  slots: [
+                    RestoreSlotPreview(
+                      slotName: 'Test Slot',
+                      lastPlayedText: 'Yesterday',
+                      keyCount: 3,
+                    ),
+                  ],
+                  onConfirmRestore: () async => restores++,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    final flush = find.byKey(const ValueKey('analyticsQueueFlush'));
+    await tester.ensureVisible(flush);
+    await tester.tap(flush);
+    await tester.pumpAndSettle();
+    expect(flushes, 1);
+    expect(find.text('Pending: 2'), findsOneWidget);
+
+    final start = find.byKey(const ValueKey('restorePreviewStart'));
+    await tester.ensureVisible(start);
+    await tester.tap(start);
+    await tester.pump();
+    expect(restores, 0);
+    final cancel = find.byKey(const ValueKey('restorePreviewCancel'));
+    await tester.ensureVisible(cancel);
+    await tester.tap(cancel);
+    await tester.pump();
+    expect(restores, 0);
+
+    await tester.ensureVisible(start);
+    await tester.tap(start);
+    await tester.pump();
+    final confirm = find.byKey(const ValueKey('restorePreviewConfirm'));
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+    expect(restores, 1);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 27: debug status and rewarded-ad state on device', (
     tester,
   ) async {

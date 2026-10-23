@@ -323,6 +323,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     ),
   ];
 
+  int _w28Flushes = 0;
+  int _w28Restores = 0;
+  bool _w28Consent = true;
   RewardedAdStatus _w27AdStatus = RewardedAdStatus.idle;
   int _w27RewardGrants = 0;
   int _w27AnnouncementPreviews = 0;
@@ -3880,6 +3883,62 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           'contentRevisionResult',
                                         ),
                                       ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'Wave 28 analytics and restore preview',
+                                child: Column(
+                                  children: [
+                                    AnalyticsQueueStatusCard(
+                                      snapshot: AnalyticsQueueSnapshot(
+                                        pendingCount: 12,
+                                        uploadedCount: 88,
+                                        droppedCounts: {
+                                          'Rate limited': 4,
+                                          'Schema rejected': 2,
+                                        },
+                                      ),
+                                      consentGranted: _w28Consent,
+                                      onFlush: () async =>
+                                          setState(() => _w28Flushes++),
+                                    ),
+                                    SwitchListTile(
+                                      key: const ValueKey('w28Consent'),
+                                      title: const Text(
+                                        'Demo analytics consent',
+                                      ),
+                                      value: _w28Consent,
+                                      onChanged: (value) =>
+                                          setState(() => _w28Consent = value),
+                                    ),
+                                    Text(
+                                      'Demo flushes: $_w28Flushes',
+                                      key: const ValueKey('w28Flushes'),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SaveRestorePreviewPanel(
+                                      slots: [
+                                        RestoreSlotPreview(
+                                          slotName: 'Hero Slot',
+                                          lastPlayedText: 'Yesterday, 16:05',
+                                          keyCount: 42,
+                                        ),
+                                        RestoreSlotPreview(
+                                          slotName: 'Speed Run',
+                                          lastPlayedText: 'Last week',
+                                          keyCount: 19,
+                                        ),
+                                      ],
+                                      appVersionText: '0.6.0',
+                                      generatedAtText: 'Today, 10:30',
+                                      onConfirmRestore: () async =>
+                                          setState(() => _w28Restores++),
+                                    ),
+                                    Text(
+                                      'Demo restores: $_w28Restores',
+                                      key: const ValueKey('w28Restores'),
+                                    ),
                                   ],
                                 ),
                               ),

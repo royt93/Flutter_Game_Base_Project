@@ -52,7 +52,7 @@ Widget _wrap(Widget child) => GetMaterialApp(
 Future<void> _pumpShowcase(WidgetTester tester) async {
   // Additional showcase demos increase document height; keep the virtual
   // viewport taller so every section remains inside the test surface.
-  tester.view.physicalSize = const Size(1080, 50000);
+  tester.view.physicalSize = const Size(1080, 56000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -541,6 +541,46 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 20));
     expect(find.textContaining('erasures: 1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Wave 28: analytics queue and confirmed restore preview', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final flush = find.byKey(const ValueKey('analyticsQueueFlush'));
+    await tester.scrollUntilVisible(flush, 350, scrollable: scrollable);
+    await tester.ensureVisible(flush);
+    await tester.tap(flush);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Demo flushes: 1'), findsOneWidget);
+    expect(find.text('Rate limited: 4'), findsOneWidget);
+
+    final consent = find.byKey(const ValueKey('w28Consent'));
+    await tester.ensureVisible(consent);
+    await tester.tap(consent);
+    await tester.pump();
+    expect(find.text('Analytics consent not granted'), findsOneWidget);
+    expect(find.byKey(const ValueKey('analyticsQueueFlush')), findsNothing);
+
+    final start = find.byKey(const ValueKey('restorePreviewStart'));
+    await tester.ensureVisible(start);
+    await tester.tap(start);
+    await tester.pump();
+    expect(find.text('Demo restores: 0'), findsOneWidget);
+    final confirm = find.byKey(const ValueKey('restorePreviewConfirm'));
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Demo restores: 1'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
