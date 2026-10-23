@@ -14,4 +14,5 @@ source: Scrum Master Epic: Config, Reminder and Connectivity Status (Wave 29)
 
 ## Kiểm chứng
 - [x] Widget tests, showcase host, TECNO KJ7 smoke, root 3,408/example 313 tests, analyzers, API compatibility and 5 quality gates pass.
-- [ ] Linux + Flutter 3.35.1 PNG baselines and CI verification.
+- [x] 28 Linux + Flutter 3.35.1 PNG baselines imported from workflow 39933038754; lockfiles untouched.
+- [x] CI 39933455167 (analyze-test, quality-gate, consumer-smoke) passes on `93b9168`.
