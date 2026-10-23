@@ -16,5 +16,7 @@ A signed multi-slot backup has a safe `RestorePreview`, but existing `BackupRest
 - Busy/in-flight lock, stale preview invalidates confirmation, generic errors.
 
 ## Kiểm chứng
-- [ ] Widget tests, showcase host and device smoke if safe device available.
-- [ ] Linux + Flutter 3.35.1 goldens, full suites, analyzers, API check, gates and CI.
+- [x] Widget tests, showcase host, root 3,395 and example 312 suites, analyzers, API compatibility and 5 quality gates pass.
+- [x] 14 Linux + Flutter 3.35.1 PNG baselines imported from workflow 39928480292; lockfiles untouched.
+- [x] TECNO KJ7 (`115333744A005844`) integration smoke passes confirm/cancel and caller restore callback.
+- [x] CI 39928814646 (analyze-test, quality-gate, consumer-smoke) passes on `c37e944`.
