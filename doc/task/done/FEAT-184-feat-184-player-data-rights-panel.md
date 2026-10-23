@@ -16,8 +16,9 @@ source: Scrum Master Epic: Privacy, Progression and Cooldown UI (Wave 23)
 - [x] 7 widget tests: validation, confirm/cancel, export, generic failure, in-flight/busy lock, unmount, 320dp + 200% RTL with labeled targets.
 - [x] Showcase demo is in-memory only (counters, no real data touched) and host test passes.
 - [x] Local golden layout matrix (rights/confirm/busy × 7 variants) passes; macOS PNGs removed.
-- [ ] Linux + Flutter 3.35.1 PNG baselines and CI verification.
-- [ ] Reachable-device smoke (S24 Ultra requested; not connected, not claimed).
+- [x] 21 Linux + Flutter 3.35.1 PNG baselines imported from regeneration workflow 39895246813; lockfiles untouched.
+- [x] Samsung S24 Ultra (`R5CX613VZBR`, SM-S928B) smoke passes, including confirm/cancel and in-memory callback. No real data erased.
+- [x] Root/example suites, analyzers, API compatibility, 5 quality gates and CI `39895499954` (analyze-test, quality-gate, consumer-smoke) pass on `240092e`.
 
 ## Chạy lại
 ```bash
