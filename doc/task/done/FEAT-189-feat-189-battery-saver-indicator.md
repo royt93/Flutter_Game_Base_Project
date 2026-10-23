@@ -14,5 +14,5 @@ source: Scrum Master Epic: Privacy, Sync and Battery UI (Wave 24)
 
 ## Kiểm chứng
 - [x] Unit/widget tests, showcase host test and Samsung S24 Ultra (`R5CX613VZBR`, SM-S928B) smoke pass; showcase callbacks are in-memory only.
-- [ ] Linux + Flutter 3.35.1 goldens for inactive/active-with-percent/active-unknown × 7 variants.
-- [ ] Root/example suites, analyzers, API compatibility, quality gates and CI.
+- [x] 21 Linux + Flutter 3.35.1 PNG baselines imported from workflow 39897925134; lockfiles untouched.
+- [x] Root 3,351 and example 308 tests pass; API compatibility, analyzers, 5 quality gates, and CI 39898119566 (analyze-test, quality-gate, consumer-smoke) pass on `1e147de`.
