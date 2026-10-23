@@ -544,6 +544,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 32: onboarding queue and experiment override', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final mark = find.byKey(const ValueKey('onboardingMarkSeen_welcome'));
+    await tester.scrollUntilVisible(mark, 350, scrollable: scrollable);
+    await tester.ensureVisible(mark);
+    expect(find.text('Demo seen flows: 0'), findsOneWidget);
+    expect(find.text('Next'), findsOneWidget);
+    await tester.tap(mark);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Demo seen flows: 1'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('onboardingMarkSeen_welcome')),
+      findsNothing,
+    );
+
+    final override = find.byKey(
+      const ValueKey('experimentOverride_shop_layout_wide'),
+    );
+    await tester.ensureVisible(override);
+    expect(find.text('Assigned variant: control'), findsOneWidget);
+    await tester.tap(override);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Assigned variant: wide'), findsOneWidget);
+    expect(find.text('Overridden for testing'), findsOneWidget);
+    final clear = find.byKey(const ValueKey('experimentClear_shop_layout'));
+    await tester.ensureVisible(clear);
+    await tester.tap(clear);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Assigned variant: control'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 31: reward preview applies only on committed record', (
     tester,
   ) async {

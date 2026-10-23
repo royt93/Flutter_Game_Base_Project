@@ -3363,6 +3363,72 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 32: onboarding queue and experiment override', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    final seen = <String>{};
+    String? override;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) => SingleChildScrollView(
+              child: Column(
+                children: [
+                  OnboardingFlowQueueCard(
+                    rows: [
+                      OnboardingFlowRow(
+                        flowId: 'welcome',
+                        label: 'Welcome tour',
+                        priority: 10,
+                        version: 1,
+                        isSeen: seen.contains('welcome'),
+                        isNext: !seen.contains('welcome'),
+                      ),
+                    ],
+                    onMarkSeen: (id) async => setState(() => seen.add(id)),
+                  ),
+                  ExperimentVariantAssignmentCard(
+                    rows: [
+                      ExperimentVariantRow(
+                        experimentKey: 'shop_layout',
+                        label: 'Shop layout',
+                        assignedVariant: override ?? 'control',
+                        availableVariants: const ['control', 'wide'],
+                        isOverridden: override != null,
+                      ),
+                    ],
+                    onSelectOverride: (key, variant) async =>
+                        setState(() => override = variant),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Next'), findsOneWidget);
+    final mark = find.byKey(const ValueKey('onboardingMarkSeen_welcome'));
+    await tester.ensureVisible(mark);
+    await tester.tap(mark);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(seen, {'welcome'});
+    expect(find.text('Seen'), findsOneWidget);
+
+    final choose = find.byKey(
+      const ValueKey('experimentOverride_shop_layout_wide'),
+    );
+    await tester.ensureVisible(choose);
+    await tester.tap(choose);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Assigned variant: wide'), findsOneWidget);
+    expect(find.text('Overridden for testing'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 31: reward preview, replay check and audit retry', (
     tester,
   ) async {

@@ -329,6 +329,20 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _w31PlanRefreshes = 0;
   int _w31Resumes = 0;
   bool _w31ReplayChecked = false;
+  static const _w32Flows = [
+    (id: 'welcome', label: 'Welcome tour', priority: 10),
+    (id: 'shop_tip', label: 'Shop tip', priority: 5),
+  ];
+  final Set<String> _w32Seen = {};
+  String? _w32Override;
+
+  String? get _w32NextFlowId {
+    for (final flow in _w32Flows) {
+      if (!_w32Seen.contains(flow.id)) return flow.id;
+    }
+    return null;
+  }
+
   RemoteConfigHealthSource _w29ConfigSource =
       RemoteConfigHealthSource.remoteMerged;
   bool _w29ReminderEnabled = true;
@@ -3936,6 +3950,53 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           'contentRevisionResult',
                                         ),
                                       ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label:
+                                    'Wave 32 onboarding queue and experiments',
+                                child: Column(
+                                  children: [
+                                    OnboardingFlowQueueCard(
+                                      rows: [
+                                        for (final flow in _w32Flows)
+                                          OnboardingFlowRow(
+                                            flowId: flow.id,
+                                            label: flow.label,
+                                            priority: flow.priority,
+                                            version: 1,
+                                            isSeen: _w32Seen.contains(flow.id),
+                                            isNext: _w32NextFlowId == flow.id,
+                                          ),
+                                      ],
+                                      onMarkSeen: (id) async =>
+                                          setState(() => _w32Seen.add(id)),
+                                    ),
+                                    Text(
+                                      'Demo seen flows: ${_w32Seen.length}',
+                                      key: const ValueKey('w32SeenCount'),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ExperimentVariantAssignmentCard(
+                                      rows: [
+                                        ExperimentVariantRow(
+                                          experimentKey: 'shop_layout',
+                                          label: 'Shop layout',
+                                          assignedVariant:
+                                              _w32Override ?? 'control',
+                                          availableVariants: const [
+                                            'control',
+                                            'wide',
+                                          ],
+                                          isOverridden: _w32Override != null,
+                                        ),
+                                      ],
+                                      onSelectOverride: (key, variant) async =>
+                                          setState(
+                                            () => _w32Override = variant,
+                                          ),
+                                    ),
                                   ],
                                 ),
                               ),

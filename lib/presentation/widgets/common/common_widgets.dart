@@ -18,6 +18,8 @@ export 'reward_choice_panel.dart';
 export 'reward_plan_preview_card.dart';
 export 'reward_audit_trail_panel.dart';
 export 'replay_verification_result_card.dart';
+export 'onboarding_flow_queue_card.dart';
+export 'experiment_variant_assignment_card.dart';
 export 'reward_sequence_coordinator.dart';
 export 'scene_transition_overlay.dart';
 export 'scene_wipe_geometry.dart';
