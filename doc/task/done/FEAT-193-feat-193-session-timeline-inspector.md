@@ -14,6 +14,6 @@ source: Scrum Master Epic: Session and Trust Inspection (Wave 26)
 
 ## Kiểm chứng
 - [x] Widget tests, showcase host, root 3,374 and example 310 suites, analyzers, API compatibility and 5 quality gates pass.
-- [ ] Reachable-device smoke (S24 Ultra not connected; TECNO foreground app was a benchmark and was not interrupted).
-- [ ] Linux + Flutter 3.35.1 goldens for empty/history × 7 variants.
-- [ ] Full suites, analyzers, API compatibility, quality gates and CI.
+- [x] 14 Linux + Flutter 3.35.1 PNG baselines imported from workflow 39908030941; lockfiles untouched.
+- [ ] Physical-device smoke not run: S24 Ultra unavailable; TECNO foreground app was a benchmark and was not interrupted.
+- [x] CI 39908353321 (analyze-test, quality-gate, consumer-smoke) passes on `f1b32df`.
