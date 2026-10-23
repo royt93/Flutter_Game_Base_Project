@@ -52,7 +52,7 @@ Widget _wrap(Widget child) => GetMaterialApp(
 Future<void> _pumpShowcase(WidgetTester tester) async {
   // Additional showcase demos increase document height; keep the virtual
   // viewport taller so every section remains inside the test surface.
-  tester.view.physicalSize = const Size(1080, 38000);
+  tester.view.physicalSize = const Size(1080, 44000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -541,6 +541,38 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 20));
     expect(find.textContaining('erasures: 1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Wave 26: timeline, certificate status and guardrails', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final recheck = find.byKey(const ValueKey('economyCertificateVerify'));
+    await tester.scrollUntilVisible(recheck, 350, scrollable: scrollable);
+    await tester.ensureVisible(recheck);
+    expect(find.text('Duration: 00:17'), findsOneWidget);
+    expect(
+      find.text(
+        'Signature checks out, but the device clock looked altered when it was issued',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Rolled back on this device'), findsOneWidget);
+    expect(
+      find.textContaining('Certificate verification result only'),
+      findsOneWidget,
+    );
+    await tester.tap(recheck);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Demo rechecks: 1'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

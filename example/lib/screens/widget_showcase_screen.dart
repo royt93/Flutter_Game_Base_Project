@@ -323,6 +323,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     ),
   ];
 
+  int _w26CertificateVerifications = 0;
   bool _w25ShopKilled = false;
   bool _w25LocalKilled = true;
   ConsentStatus _w24Analytics = ConsentStatus.unknown;
@@ -3875,6 +3876,70 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           'contentRevisionResult',
                                         ),
                                       ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'Wave 26 session and trust inspection',
+                                child: Column(
+                                  children: [
+                                    SessionTimelineInspector(
+                                      rows: [
+                                        SessionTimelineRow(
+                                          offsetText: '00:00',
+                                          phaseLabel: 'Ready',
+                                        ),
+                                        SessionTimelineRow(
+                                          offsetText: '00:03',
+                                          phaseLabel: 'Playing',
+                                        ),
+                                        SessionTimelineRow(
+                                          offsetText: '00:17',
+                                          phaseLabel: 'Won',
+                                          detailText: 'Level completion',
+                                        ),
+                                      ],
+                                      durationText: '00:17',
+                                      terminalLabel: 'Won',
+                                    ),
+                                    const SizedBox(height: 12),
+                                    EconomyCertificateStatusCard(
+                                      status: EconomyCertificateCardStatus
+                                          .clockSuspicious,
+                                      summaryText:
+                                          'Certificate verification result only; no balances shown.',
+                                      onVerifyAgain: () async => setState(
+                                        () => _w26CertificateVerifications++,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Demo rechecks: $_w26CertificateVerifications',
+                                      key: const ValueKey(
+                                        'w26CertificateRechecks',
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    GuardrailStatusPanel(
+                                      rows: [
+                                        GuardrailStatusRow(
+                                          featureLabel: 'Shop rollout',
+                                          metricLabel: 'Crash rate',
+                                          state: GuardrailRowState.violated,
+                                        ),
+                                        GuardrailStatusRow(
+                                          featureLabel: 'Quest rollout',
+                                          metricLabel: 'Failure rate',
+                                          state: GuardrailRowState.ok,
+                                          boundsText: 'below 2%',
+                                          currentText: '0.4%',
+                                        ),
+                                        GuardrailStatusRow(
+                                          featureLabel: 'Offer rollout',
+                                          metricLabel: 'Load time',
+                                          state: GuardrailRowState.noData,
+                                        ),
+                                      ],
+                                    ),
                                   ],
                                 ),
                               ),

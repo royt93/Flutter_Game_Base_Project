@@ -3298,6 +3298,67 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 26: session timeline and trust summary on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    var verificationRetries = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                SessionTimelineInspector(
+                  rows: [
+                    SessionTimelineRow(
+                      offsetText: '00:00',
+                      phaseLabel: 'Ready',
+                    ),
+                    SessionTimelineRow(
+                      offsetText: '00:05',
+                      phaseLabel: 'Playing',
+                    ),
+                  ],
+                  durationText: '00:05',
+                ),
+                EconomyCertificateStatusCard(
+                  status: EconomyCertificateCardStatus.valid,
+                  summaryText: 'Signature verified only.',
+                  onVerifyAgain: () async => verificationRetries++,
+                ),
+                GuardrailStatusPanel(
+                  rows: [
+                    GuardrailStatusRow(
+                      featureLabel: 'Event shop',
+                      metricLabel: 'Crash rate',
+                      state: GuardrailRowState.violated,
+                    ),
+                    GuardrailStatusRow(
+                      featureLabel: 'Quest',
+                      metricLabel: 'Load time',
+                      state: GuardrailRowState.noData,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('00:05 · Playing'), findsOneWidget);
+    expect(find.text('Signature checks out'), findsOneWidget);
+    expect(find.textContaining('Rolled back on this device'), findsOneWidget);
+    final retry = find.byKey(const ValueKey('economyCertificateVerify'));
+    await tester.ensureVisible(retry);
+    await tester.tap(retry);
+    await tester.pumpAndSettle();
+    expect(verificationRetries, 1);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'Wave 25: local kill, platform matrix and link result on device',
     (tester) async {
