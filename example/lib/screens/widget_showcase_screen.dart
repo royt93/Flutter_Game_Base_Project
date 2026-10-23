@@ -323,6 +323,14 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     ),
   ];
 
+  RemoteConfigHealthSource _w29ConfigSource =
+      RemoteConfigHealthSource.remoteMerged;
+  bool _w29ReminderEnabled = true;
+  String? _w29ReminderInterval = 'daily';
+  ConnectivityCardState _w29Connectivity = ConnectivityCardState.degraded;
+  int _w29Refreshes = 0;
+  int _w29ReminderChanges = 0;
+  int _w29Retries = 0;
   int _w28Flushes = 0;
   int _w28Restores = 0;
   bool _w28Consent = true;
@@ -3883,6 +3891,69 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           'contentRevisionResult',
                                         ),
                                       ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label:
+                                    'Wave 29 config, reminder and connectivity',
+                                child: Column(
+                                  children: [
+                                    RemoteConfigHealthCard(
+                                      source: _w29ConfigSource,
+                                      violationCount: 1,
+                                      lastCheckedText: 'Just now',
+                                      onRefresh: () async => setState(() {
+                                        _w29ConfigSource =
+                                            RemoteConfigHealthSource
+                                                .remoteMerged;
+                                        _w29Refreshes++;
+                                      }),
+                                    ),
+                                    Text(
+                                      'Demo config refreshes: $_w29Refreshes',
+                                      key: const ValueKey('w29ConfigRefreshes'),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ReminderPreferencesPanel(
+                                      intervalOptions: [
+                                        ReminderIntervalOption(
+                                          id: 'daily',
+                                          label: 'Every day',
+                                        ),
+                                        ReminderIntervalOption(
+                                          id: 'weekly',
+                                          label: 'Every week',
+                                        ),
+                                      ],
+                                      enabled: _w29ReminderEnabled,
+                                      selectedId: _w29ReminderInterval,
+                                      onChanged: (enabled, id) async {
+                                        setState(() {
+                                          _w29ReminderEnabled = enabled;
+                                          _w29ReminderInterval = id;
+                                          _w29ReminderChanges++;
+                                        });
+                                      },
+                                    ),
+                                    Text(
+                                      'Demo reminder changes: $_w29ReminderChanges',
+                                      key: const ValueKey('w29ReminderChanges'),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ConnectivityStatusCard(
+                                      state: _w29Connectivity,
+                                      queuedCount: 4,
+                                      onRetry: () async => setState(() {
+                                        _w29Connectivity =
+                                            ConnectivityCardState.online;
+                                        _w29Retries++;
+                                      }),
+                                    ),
+                                    Text(
+                                      'Demo retries: $_w29Retries',
+                                      key: const ValueKey('w29Retries'),
+                                    ),
                                   ],
                                 ),
                               ),

@@ -140,7 +140,9 @@ delivery (`ContentPackStatusCard`, `ScenePreloadStatusPanel`,
 `ConsentPreferencesPanel`, `SyncStatusCard`, `BatterySaverIndicator`),
 operational status (`RemoteKillSwitchPanel`, `PlatformCapabilityMatrix`,
 `DeepLinkResultCard`) and QA/rewarded-ad status (`MemoryWatchdogPanel`,
-`AnnouncementPreviewCard`, `RewardedAdResultCard`) widgets never read a service. You pass plain state and callbacks; your code
+`AnnouncementPreviewCard`, `RewardedAdResultCard`, `RemoteConfigHealthCard`,
+`ReminderPreferencesPanel`, `ConnectivityStatusCard`) widgets never read a
+service. You pass plain state and callbacks; your code
 calls the service. Destructive or state-replacing actions (restore a revision,
 resolve a conflict, erase data) require inline confirmation, failures show
 generic copy (never exception text, payloads, keys or checksums), and a

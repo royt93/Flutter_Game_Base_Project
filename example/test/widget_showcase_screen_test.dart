@@ -52,7 +52,7 @@ Widget _wrap(Widget child) => GetMaterialApp(
 Future<void> _pumpShowcase(WidgetTester tester) async {
   // Additional showcase demos increase document height; keep the virtual
   // viewport taller so every section remains inside the test surface.
-  tester.view.physicalSize = const Size(1080, 56000);
+  tester.view.physicalSize = const Size(1080, 62000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -541,6 +541,54 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 20));
     expect(find.textContaining('erasures: 1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Wave 29: config, reminder preferences and connectivity', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final refresh = find.byKey(const ValueKey('remoteConfigHealthRefresh'));
+    await tester.scrollUntilVisible(refresh, 350, scrollable: scrollable);
+    await tester.ensureVisible(refresh);
+    await tester.tap(refresh);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Demo config refreshes: 1'), findsOneWidget);
+    expect(find.textContaining('shop_price'), findsNothing);
+
+    final reminderSave = find.byKey(const ValueKey('reminderPreferencesSave'));
+    await tester.ensureVisible(reminderSave);
+    await tester.tap(reminderSave);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Demo reminder changes: 1'), findsOneWidget);
+    expect(find.textContaining('system may delay or skip'), findsOneWidget);
+
+    final retry = find.byKey(const ValueKey('connectivityStatusRetry'));
+    await tester.ensureVisible(retry);
+    await tester.tap(retry);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(
+      find.descendant(
+        of: find.byType(ConnectivityStatusCard),
+        matching: find.text('Online'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('connectivityStatusRetry')), findsNothing);
+    expect(find.text('Demo retries: 1'), findsOneWidget);
+    expect(
+      find.text('Waiting tasks run automatically when back online.'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 

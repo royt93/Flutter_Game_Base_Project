@@ -3298,6 +3298,71 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 29: config, reminders and connectivity caller flow', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    var refreshed = 0;
+    var reminderSaved = 0;
+    var retried = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                RemoteConfigHealthCard(
+                  source: RemoteConfigHealthSource.remoteFailed,
+                  violationCount: 2,
+                  onRefresh: () async => refreshed++,
+                ),
+                ReminderPreferencesPanel(
+                  intervalOptions: [
+                    ReminderIntervalOption(id: 'daily', label: 'Every day'),
+                    ReminderIntervalOption(id: 'weekly', label: 'Every week'),
+                  ],
+                  enabled: false,
+                  selectedId: 'daily',
+                  onChanged: (_, _) async => reminderSaved++,
+                ),
+                ConnectivityStatusCard(
+                  state: ConnectivityCardState.offline,
+                  queuedCount: 3,
+                  onRetry: () async => retried++,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    final refresh = find.byKey(const ValueKey('remoteConfigHealthRefresh'));
+    await tester.ensureVisible(refresh);
+    await tester.tap(refresh);
+    await tester.pumpAndSettle();
+    expect(refreshed, 1);
+    expect(find.textContaining('key'), findsNothing);
+
+    final save = find.byKey(const ValueKey('reminderPreferencesSave'));
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(reminderSaved, 1);
+    expect(find.textContaining('may delay or skip'), findsOneWidget);
+
+    final retry = find.byKey(const ValueKey('connectivityStatusRetry'));
+    await tester.ensureVisible(retry);
+    await tester.tap(retry);
+    await tester.pumpAndSettle();
+    expect(retried, 1);
+    expect(
+      find.text('Waiting tasks run automatically when back online.'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 28: aggregate analytics and restore confirmation', (
     tester,
   ) async {
