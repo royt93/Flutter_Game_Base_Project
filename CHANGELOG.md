@@ -1,3 +1,8 @@
+## Unreleased
+
+- Fixed `ExperimentVariantAssignmentCard` to hide and reject debug variant overrides in release builds, matching `ExperimentBucketingService.debugSetVariantOverride`.
+- Restricted `OnboardingFlowQueueCard` mark-seen action to caller-designated `nextEligibleFlow`; loading indicator now applies only to that flow.
+
 ## 0.6.0
 
 - Widget kit expansion, additive only: the public API check reports no removed export. The new service-state widgets are presentation-only: pass plain state and callbacks, your code calls the service. Constructors that validate input at runtime are not `const`. Failures show generic copy, and a pending call locks the buttons. Some widgets take an explicit status from the caller instead of inferring success from a callback that returns.

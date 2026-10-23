@@ -140,24 +140,39 @@ void main() {
       expect(find.text('Flow f2'), findsNothing);
     });
 
-    testWidgets('mark seen only for unseen rows; callback gets flow id', (
+    testWidgets('mark seen only for next row; callback gets flow id', (
       tester,
     ) async {
       final ids = <String>[];
       await tester.pumpWidget(
         _host(
           OnboardingFlowQueueCard(
-            rows: [_flow('a', seen: true), _flow('b', next: true)],
+            rows: [_flow('a', seen: true), _flow('b', next: true), _flow('c')],
             onMarkSeen: (id) async => ids.add(id),
           ),
         ),
       );
       expect(find.byKey(const ValueKey('onboardingMarkSeen_a')), findsNothing);
+      expect(find.byKey(const ValueKey('onboardingMarkSeen_c')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('onboardingMarkSeen_b')));
       await tester.pumpAndSettle();
       expect(ids, ['b']);
       expect(find.text('Seen'), findsOneWidget);
       expect(find.text('Next'), findsOneWidget);
+    });
+
+    testWidgets('no next flow means no mark-seen action', (tester) async {
+      var calls = 0;
+      await tester.pumpWidget(
+        _host(
+          OnboardingFlowQueueCard(
+            rows: [_flow('a'), _flow('b', seen: true)],
+            onMarkSeen: (_) async => calls++,
+          ),
+        ),
+      );
+      expect(find.byType(CommonButton), findsNothing);
+      expect(calls, 0);
     });
 
     testWidgets('in-flight lock and generic failure copy', (tester) async {
@@ -166,7 +181,7 @@ void main() {
       await tester.pumpWidget(
         _host(
           OnboardingFlowQueueCard(
-            rows: [_flow('a'), _flow('b')],
+            rows: [_flow('a', next: true), _flow('b')],
             onMarkSeen: (_) {
               calls++;
               return done.future;
@@ -179,8 +194,9 @@ void main() {
       await tester.tap(first);
       await tester.pump();
       expect(tester.widget<CommonButton>(first).onTap, isNull);
-      expect(tester.widget<CommonButton>(second).onTap, isNull);
-      await tester.tap(second, warnIfMissed: false);
+      expect(second, findsNothing);
+      expect(tester.widget<CommonButton>(first).loading, isTrue);
+      await tester.tap(first, warnIfMissed: false);
       expect(calls, 1);
       done.completeError(StateError('private flow storage key'));
       await tester.pumpAndSettle();
@@ -195,16 +211,19 @@ void main() {
       Widget build(List<OnboardingFlowRow> rows) => _host(
         OnboardingFlowQueueCard(rows: rows, onMarkSeen: (_) => done.future),
       );
-      await tester.pumpWidget(build([_flow('a'), _flow('b')]));
-      final action = find.byKey(const ValueKey('onboardingMarkSeen_b'));
+      await tester.pumpWidget(build([_flow('a', next: true), _flow('b')]));
       await tester.tap(find.byKey(const ValueKey('onboardingMarkSeen_a')));
       await tester.pump();
-      await tester.pumpWidget(build([_flow('a', seen: true), _flow('b')]));
-      expect(tester.widget<CommonButton>(action).onTap, isNull);
+      await tester.pumpWidget(
+        build([_flow('a', seen: true), _flow('b', next: true)]),
+      );
+      final actionB = find.byKey(const ValueKey('onboardingMarkSeen_b'));
+      expect(tester.widget<CommonButton>(actionB).onTap, isNull);
+      expect(tester.widget<CommonButton>(actionB).loading, isFalse);
       done.completeError(StateError('late'));
       await tester.pumpAndSettle();
       expect(find.text('Action failed. Try again.'), findsNothing);
-      expect(tester.widget<CommonButton>(action).onTap, isNotNull);
+      expect(tester.widget<CommonButton>(actionB).onTap, isNotNull);
     });
 
     testWidgets('unmount during action is safe', (tester) async {
@@ -212,7 +231,7 @@ void main() {
       await tester.pumpWidget(
         _host(
           OnboardingFlowQueueCard(
-            rows: [_flow('a')],
+            rows: [_flow('a', next: true)],
             onMarkSeen: (_) => done.future,
           ),
         ),

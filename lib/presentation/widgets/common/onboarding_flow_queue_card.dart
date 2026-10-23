@@ -109,11 +109,11 @@ class OnboardingFlowQueueCard extends StatefulWidget {
 }
 
 class _OnboardingFlowQueueCardState extends State<OnboardingFlowQueueCard> {
-  bool _running = false;
+  String? _runningFlowId;
   bool _failed = false;
   int _generation = 0;
 
-  bool get _isBusy => widget.busy || _running;
+  bool get _isBusy => widget.busy || _runningFlowId != null;
 
   @override
   void didUpdateWidget(covariant OnboardingFlowQueueCard oldWidget) {
@@ -142,10 +142,14 @@ class _OnboardingFlowQueueCardState extends State<OnboardingFlowQueueCard> {
 
   Future<void> _markSeen(String flowId) async {
     final action = widget.onMarkSeen;
-    if (_isBusy || action == null) return;
+    if (_isBusy ||
+        action == null ||
+        !widget.rows.any((row) => row.flowId == flowId && row.isNext)) {
+      return;
+    }
     final generation = _generation;
     setState(() {
-      _running = true;
+      _runningFlowId = flowId;
       _failed = false;
     });
     var failed = false;
@@ -156,7 +160,7 @@ class _OnboardingFlowQueueCardState extends State<OnboardingFlowQueueCard> {
     }
     if (!mounted) return;
     setState(() {
-      _running = false;
+      _runningFlowId = null;
       if (generation == _generation) _failed = failed;
     });
   }
@@ -213,7 +217,7 @@ class _OnboardingFlowQueueCardState extends State<OnboardingFlowQueueCard> {
                               '${widget.priorityLabel}: ${row.priority} · '
                               '${widget.versionLabel}: ${row.version}',
                             ),
-                            if (widget.onMarkSeen != null && !row.isSeen)
+                            if (widget.onMarkSeen != null && row.isNext)
                               Padding(
                                 padding: const EdgeInsets.only(top: 4),
                                 child: CommonButton(
@@ -223,7 +227,7 @@ class _OnboardingFlowQueueCardState extends State<OnboardingFlowQueueCard> {
                                   label: widget.markSeenLabel,
                                   variant: CommonButtonVariant.secondary,
                                   width: double.infinity,
-                                  loading: _running,
+                                  loading: _runningFlowId == row.flowId,
                                   onTap: _isBusy
                                       ? null
                                       : () => _markSeen(row.flowId),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode, kProfileMode;
 import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
@@ -58,8 +59,10 @@ class ExperimentVariantRow {
 
 /// Read-only experiment assignments. The caller maps `variantFor` results to
 /// rows; the per-device anonymous id never enters or leaves this widget. The
-/// override action is debug-only, so pass `onSelectOverride` only in debug or
-/// profile builds.
+/// override controls only appear in debug or profile builds, matching
+/// `ExperimentBucketingService.debugSetVariantOverride`, which is a no-op in
+/// release; in release the card stays read-only even if `onSelectOverride`
+/// is passed.
 class ExperimentVariantAssignmentCard extends StatefulWidget {
   ExperimentVariantAssignmentCard({
     super.key,
@@ -96,6 +99,8 @@ class ExperimentVariantAssignmentCard extends StatefulWidget {
   }
 
   final List<ExperimentVariantRow> rows;
+
+  static const bool _overrideAllowed = kDebugMode || kProfileMode;
 
   /// `variant == null` clears the override.
   final Future<void> Function(String experimentKey, String? variant)?
@@ -148,7 +153,11 @@ class _ExperimentVariantAssignmentCardState
 
   Future<void> _select(String key, String? variant) async {
     final action = widget.onSelectOverride;
-    if (_isBusy || action == null) return;
+    if (_isBusy ||
+        action == null ||
+        !ExperimentVariantAssignmentCard._overrideAllowed) {
+      return;
+    }
     final generation = _generation;
     setState(() {
       _running = true;
@@ -196,7 +205,8 @@ class _ExperimentVariantAssignmentCardState
                       ),
                     ),
                     if (row.isOverridden) Text(widget.overriddenLabel),
-                    if (widget.onSelectOverride != null) ...[
+                    if (widget.onSelectOverride != null &&
+                        ExperimentVariantAssignmentCard._overrideAllowed) ...[
                       for (final variant in row.availableVariants)
                         if (variant != row.assignedVariant || !row.isOverridden)
                           Padding(
