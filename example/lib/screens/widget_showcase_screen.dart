@@ -323,6 +323,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     ),
   ];
 
+  RewardedAdStatus _w27AdStatus = RewardedAdStatus.idle;
+  int _w27RewardGrants = 0;
+  int _w27AnnouncementPreviews = 0;
+  int _w27WatchdogRefreshes = 0;
   int _w26CertificateVerifications = 0;
   bool _w25ShopKilled = false;
   bool _w25LocalKilled = true;
@@ -3876,6 +3880,84 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           'contentRevisionResult',
                                         ),
                                       ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'Wave 27 QA and rewarded ad states',
+                                child: Column(
+                                  children: [
+                                    MemoryWatchdogPanel(
+                                      orphans: const [],
+                                      recentlyDisposed: [
+                                        WatchdogRow(
+                                          kindLabel: 'Controller',
+                                          ownerText: 'DemoController',
+                                          ageText: '2s ago',
+                                          labelText: 'sample only',
+                                        ),
+                                      ],
+                                      onRefresh: () async => setState(
+                                        () => _w27WatchdogRefreshes++,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Demo refreshes: $_w27WatchdogRefreshes',
+                                      key: const ValueKey(
+                                        'w27WatchdogRefreshes',
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    AnnouncementPreviewCard(
+                                      messageText:
+                                          'Level 7 complete. 250 coins earned.',
+                                      localeLabel: 'English',
+                                      categoryLabel: 'Reward',
+                                      throttleText: '1.5 seconds per category',
+                                      onPreview: () async => setState(
+                                        () => _w27AnnouncementPreviews++,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Demo previews: $_w27AnnouncementPreviews',
+                                      key: const ValueKey(
+                                        'w27AnnouncementPreviews',
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    RewardedAdResultCard(
+                                      status: _w27AdStatus,
+                                      rewardText: 'Demo reward: 50 coins',
+                                      onWatch: () async {
+                                        setState(() {
+                                          _w27AdStatus =
+                                              RewardedAdStatus.loading;
+                                        });
+                                        await Future<void>.delayed(
+                                          const Duration(milliseconds: 150),
+                                        );
+                                        if (!mounted) return;
+                                        setState(() {
+                                          _w27AdStatus =
+                                              RewardedAdStatus.rewarded;
+                                          _w27RewardGrants++;
+                                        });
+                                      },
+                                    ),
+                                    Text(
+                                      'Caller demo grants: $_w27RewardGrants',
+                                      key: const ValueKey('w27RewardGrants'),
+                                    ),
+                                    TextButton(
+                                      key: const ValueKey('w27AdCancel'),
+                                      onPressed: () => setState(
+                                        () => _w27AdStatus =
+                                            RewardedAdStatus.cancelled,
+                                      ),
+                                      child: const Text(
+                                        'Simulate ad cancelled',
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),

@@ -52,7 +52,7 @@ Widget _wrap(Widget child) => GetMaterialApp(
 Future<void> _pumpShowcase(WidgetTester tester) async {
   // Additional showcase demos increase document height; keep the virtual
   // viewport taller so every section remains inside the test surface.
-  tester.view.physicalSize = const Size(1080, 44000);
+  tester.view.physicalSize = const Size(1080, 50000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -541,6 +541,43 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 20));
     expect(find.textContaining('erasures: 1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Wave 27: watchdog, announcement preview and ad result', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final watchdog = find.text('Resource watchdog');
+    await tester.scrollUntilVisible(watchdog, 350, scrollable: scrollable);
+    expect(
+      find.text(
+        'Debug detector only. It does not prevent leaks and reports nothing in release builds.',
+      ),
+      findsOneWidget,
+    );
+
+    final preview = find.byKey(const ValueKey('announcementPreview'));
+    await tester.ensureVisible(preview);
+    await tester.tap(preview);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Demo previews: 1'), findsOneWidget);
+
+    final watch = find.byKey(const ValueKey('rewardedAdWatch'));
+    await tester.ensureVisible(watch);
+    await tester.tap(watch);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Reward earned'), findsOneWidget);
+    expect(find.text('Demo reward: 50 coins'), findsOneWidget);
+    expect(find.text('Caller demo grants: 1'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

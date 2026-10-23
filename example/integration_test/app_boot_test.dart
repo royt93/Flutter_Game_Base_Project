@@ -3298,6 +3298,70 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 27: debug status and rewarded-ad state on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    var refreshes = 0;
+    var previews = 0;
+    var watches = 0;
+    var adStatus = RewardedAdStatus.idle;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) => SingleChildScrollView(
+              child: Column(
+                children: [
+                  MemoryWatchdogPanel(
+                    orphans: [],
+                    recentlyDisposed: [
+                      WatchdogRow(
+                        kindLabel: 'Controller',
+                        ownerText: 'DeviceDemo',
+                        ageText: '1s',
+                      ),
+                    ],
+                    onRefresh: () async => refreshes++,
+                  ),
+                  AnnouncementPreviewCard(
+                    messageText: 'Level complete.',
+                    localeLabel: 'English',
+                    onPreview: () async => previews++,
+                  ),
+                  RewardedAdResultCard(
+                    status: adStatus,
+                    onWatch: () async => setState(() {
+                      watches++;
+                      adStatus = RewardedAdStatus.rewarded;
+                    }),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('No leak candidates.'), findsOneWidget);
+    for (final key in const [
+      'watchdogRefresh',
+      'announcementPreview',
+      'rewardedAdWatch',
+    ]) {
+      final action = find.byKey(ValueKey(key));
+      await tester.ensureVisible(action);
+      await tester.tap(action);
+      await tester.pumpAndSettle();
+    }
+    expect(refreshes, 1);
+    expect(previews, 1);
+    expect(watches, 1);
+    expect(find.text('Reward earned'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 26: session timeline and trust summary on device', (
     tester,
   ) async {
