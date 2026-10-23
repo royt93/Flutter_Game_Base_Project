@@ -13,5 +13,6 @@ source: Scrum Master Epic: Debug QA and Rewarded-Ad UI (Wave 27)
 
 ## Kiểm chứng
 - [x] Widget tests, showcase host, root 3,386 and example 311 suites, analyzers, API compatibility and 5 quality gates pass.
-- [ ] Linux + Flutter 3.35.1 PNG baselines and CI verification.
+- [x] 14 Linux + Flutter 3.35.1 PNG baselines imported from workflow 39914597588; lockfiles untouched.
+- [x] CI 39914900027 (analyze-test, quality-gate, consumer-smoke) passes on `7a7c03d`.
 - [ ] Physical-device smoke not run: S24 Ultra unavailable; TECNO foreground app was a benchmark and was not interrupted.
