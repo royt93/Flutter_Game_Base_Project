@@ -544,6 +544,52 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 25: local kill, clear and generic link result', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final select = find.byKey(const ValueKey('killSwitchSelect_shop'));
+    await tester.scrollUntilVisible(select, 350, scrollable: scrollable);
+    await tester.ensureVisible(select);
+    await tester.tap(select);
+    await tester.pump();
+    expect(
+      find.textContaining('cannot enable a remotely killed feature'),
+      findsOneWidget,
+    );
+    final confirm = find.byKey(const ValueKey('killSwitchConfirm_shop'));
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.byKey(const ValueKey('killSwitchClear_shop')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('killSwitchClear_remote-event')),
+      findsNothing,
+    );
+
+    final clear = find.byKey(const ValueKey('killSwitchClear_shop'));
+    await tester.ensureVisible(clear);
+    await tester.tap(clear);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.byKey(const ValueKey('killSwitchSelect_shop')), findsOneWidget);
+
+    expect(
+      find.text('Defaults for this platform, not a live check.'),
+      findsOneWidget,
+    );
+    expect(find.text('The link could not be completed'), findsOneWidget);
+    expect(find.byKey(const ValueKey('deepLinkRetry')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 24: consent, sync and battery demos', (tester) async {
     await _pumpShowcase(tester);
     final scrollable = find

@@ -3298,6 +3298,93 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'Wave 25: local kill, platform matrix and link result on device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 2));
+      final killed = <String>[];
+      final cleared = <String>[];
+      var retries = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  RemoteKillSwitchPanel(
+                    items: [
+                      KillSwitchItem(
+                        id: 'shop',
+                        label: 'Event shop',
+                        killed: false,
+                        sourceLabel: 'Default',
+                      ),
+                      KillSwitchItem(
+                        id: 'local',
+                        label: 'Local event',
+                        killed: true,
+                        sourceLabel: 'Local override',
+                        localOverride: true,
+                      ),
+                    ],
+                    onKillLocally: (id) async => killed.add(id),
+                    onClearOverride: (id) async => cleared.add(id),
+                  ),
+                  PlatformCapabilityMatrix(
+                    platformLabel: 'Android',
+                    rows: [
+                      PlatformCapabilityRow(label: 'Haptics', supported: true),
+                      PlatformCapabilityRow(label: 'Shaders', supported: true),
+                    ],
+                  ),
+                  DeepLinkResultCard(
+                    status: DeepLinkResultStatus.handlerFailed,
+                    onRetry: () async => retries++,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      final select = find.byKey(const ValueKey('killSwitchSelect_shop'));
+      await tester.ensureVisible(select);
+      await tester.tap(select);
+      await tester.pump();
+      final cancel = find.byKey(const ValueKey('killSwitchCancel_shop'));
+      await tester.ensureVisible(cancel);
+      await tester.tap(cancel);
+      await tester.pump();
+      expect(killed, isEmpty);
+      await tester.ensureVisible(select);
+      await tester.tap(select);
+      await tester.pump();
+      final confirm = find.byKey(const ValueKey('killSwitchConfirm_shop'));
+      await tester.ensureVisible(confirm);
+      await tester.tap(confirm);
+      await tester.pumpAndSettle();
+      expect(killed, ['shop']);
+
+      final clear = find.byKey(const ValueKey('killSwitchClear_local'));
+      await tester.ensureVisible(clear);
+      await tester.tap(clear);
+      await tester.pumpAndSettle();
+      expect(cleared, ['local']);
+
+      final retry = find.byKey(const ValueKey('deepLinkRetry'));
+      await tester.ensureVisible(retry);
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(retries, 1);
+      expect(
+        find.text('Defaults for this platform, not a live check.'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('Wave 24: consent, sync and battery state on device', (
     tester,
   ) async {

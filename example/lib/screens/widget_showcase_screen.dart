@@ -323,6 +323,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     ),
   ];
 
+  bool _w25ShopKilled = false;
+  bool _w25LocalKilled = true;
   ConsentStatus _w24Analytics = ConsentStatus.unknown;
   ConsentStatus _w24Personalization = ConsentStatus.granted;
   SyncStatus _w24SyncStatus = SyncStatus.failed;
@@ -3873,6 +3875,97 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           'contentRevisionResult',
                                         ),
                                       ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'Wave 25 operational status',
+                                child: Column(
+                                  children: [
+                                    RemoteKillSwitchPanel(
+                                      items: [
+                                        KillSwitchItem(
+                                          id: 'shop',
+                                          label: 'Event shop',
+                                          killed: _w25ShopKilled,
+                                          sourceLabel: _w25ShopKilled
+                                              ? 'Local override'
+                                              : 'Bundled default',
+                                          localOverride: _w25ShopKilled,
+                                        ),
+                                        KillSwitchItem(
+                                          id: 'remote-event',
+                                          label: 'Remote event',
+                                          killed: true,
+                                          sourceLabel: 'Remote configuration',
+                                        ),
+                                        if (_w25LocalKilled)
+                                          KillSwitchItem(
+                                            id: 'local-event',
+                                            label: 'Demo local event',
+                                            killed: true,
+                                            sourceLabel: 'Local override',
+                                            localOverride: true,
+                                          ),
+                                      ],
+                                      onKillLocally: (id) async {
+                                        setState(() {
+                                          if (id == 'shop') {
+                                            _w25ShopKilled = true;
+                                          }
+                                        });
+                                      },
+                                      onClearOverride: (id) async {
+                                        setState(() {
+                                          if (id == 'shop') {
+                                            _w25ShopKilled = false;
+                                          }
+                                          if (id == 'local-event') {
+                                            _w25LocalKilled = false;
+                                          }
+                                        });
+                                      },
+                                    ),
+                                    const SizedBox(height: 12),
+                                    PlatformCapabilityMatrix(
+                                      platformLabel: _platformCapabilities
+                                          .snapshot
+                                          .platformKind
+                                          .name,
+                                      rows: [
+                                        PlatformCapabilityRow(
+                                          label: 'Haptics',
+                                          supported: _platformCapabilities
+                                              .snapshot
+                                              .supportsHaptics,
+                                        ),
+                                        PlatformCapabilityRow(
+                                          label: 'Shaders',
+                                          supported: _platformCapabilities
+                                              .snapshot
+                                              .supportsShaders,
+                                        ),
+                                        PlatformCapabilityRow(
+                                          label: 'Notifications',
+                                          supported: _platformCapabilities
+                                              .snapshot
+                                              .supportsNotifications,
+                                        ),
+                                        PlatformCapabilityRow(
+                                          label: 'Background audio',
+                                          supported: _platformCapabilities
+                                              .snapshot
+                                              .supportsBackgroundAudio,
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    DeepLinkResultCard(
+                                      status:
+                                          DeepLinkResultStatus.handlerFailed,
+                                      summaryText: 'Demo result only',
+                                      onRetry: () async {},
+                                    ),
                                   ],
                                 ),
                               ),

@@ -135,9 +135,10 @@ reference, and the whole set is exported from one barrel,
 (`CloudSaveStatusCard`, `SaveConflictPicker`, `CheckpointResumeCard`), content
 delivery (`ContentPackStatusCard`, `ScenePreloadStatusPanel`,
 `ContentRevisionHistoryPanel`), offline delivery (`OutboxQueueStatusCard`,
-`OutboxConflictSummaryPanel`) and player-comfort/progression
-(`PlayerDataRightsPanel`, `PrestigeReadinessCard`, `CooldownActionButton`)
-widgets never read a service. You pass plain state and callbacks; your code
+`OutboxConflictSummaryPanel`) and player-comfort/progression (`PlayerDataRightsPanel`, `PrestigeReadinessCard`,
+`CooldownActionButton`, `ConsentPreferencesPanel`, `SyncStatusCard`,
+`BatterySaverIndicator`) and operational status (`RemoteKillSwitchPanel`,
+`PlatformCapabilityMatrix`, `DeepLinkResultCard`) widgets never read a service. You pass plain state and callbacks; your code
 calls the service. Destructive or state-replacing actions (restore a revision,
 resolve a conflict, erase data) require inline confirmation, failures show
 generic copy (never exception text, payloads, keys or checksums), and a
