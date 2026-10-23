@@ -1,3 +1,13 @@
+## 0.6.0
+
+- Widget kit expansion, additive only: the public API check reports no removed or changed export. All new widgets are presentation-only: pass plain state and callbacks, your code calls the service. Constructors validate at runtime (so they are not `const`), failures show generic copy, and a pending call locks the buttons.
+- Added save-recovery widgets `CloudSaveStatusCard`, `SaveConflictPicker` (keep local / use cloud, each with inline confirmation) and `CheckpointResumeCard` (confirm before discarding a checkpoint).
+- Added content-delivery widgets `ContentPackStatusCard`, `ScenePreloadStatusPanel` and `ContentRevisionHistoryPanel`. The panel lists metadata only (opaque revision reference, version, label, time) and never a checksum or content body; restoring needs confirmation, and the caller performs the rollback (for example `RemoteContentPack.rollbackToChecksum`) and refreshes its content.
+- Added offline-delivery widgets `OutboxQueueStatusCard` and `OutboxConflictSummaryPanel`. Neither shows a queued payload or key; the conflict panel works on caller-approved labels and opaque references, and accepting the remote version states that it does not undo local effects.
+- Added `PlayerDataRightsPanel` (export, plus erase behind inline confirmation, for `PlayerDataRightsService`), `PrestigeReadinessCard` (progress toward the threshold; the button is enabled only when ready, and the caller should confirm, for example with `PrestigeConfirmationCard.show`, before calling `PrestigeService.prestige`) and `CooldownActionButton` (disabled while a `PersistentCooldownService` cooldown runs). The cooldown gate is UI only: re-check the service inside your tap handler.
+- Added accessibility and player-comfort widgets, retention/progression/social HUD widgets and juice/motion widgets (see `common_widgets.dart` and the showcase screen for the full list).
+- Verified: local golden layout/accessibility matrix for the seven Wave 23 states, full root and example suites, API compatibility, analyzers and five quality gates. Wave 23 Linux PNG baselines and reachable-device smoke remain pending; earlier wave device results are recorded separately in their task specs. No 60 FPS, memory-leak or real-persistence claim: the showcase callbacks are in-memory only.
+
 ## 0.5.1
 
 - Added `PluginAdapterConformanceSuite.verifyAchievementSyncSeam` with five checks for exact round-trip, duplicate uploads without progress inflation, max-progress merging, disjoint ID preservation, and a concurrent-upload probe that also checks previously written IDs remain intact. Throws and timeouts fail the relevant check.

@@ -131,6 +131,19 @@ progress/reward, layout/cards, game-specific, and game-feel/juice —
 reference, and the whole set is exported from one barrel,
 `lib/presentation/widgets/common/common_widgets.dart`.
 
+**Service-state widgets are presentation-only.** The save-recovery
+(`CloudSaveStatusCard`, `SaveConflictPicker`, `CheckpointResumeCard`), content
+delivery (`ContentPackStatusCard`, `ScenePreloadStatusPanel`,
+`ContentRevisionHistoryPanel`), offline delivery (`OutboxQueueStatusCard`,
+`OutboxConflictSummaryPanel`) and player-comfort/progression
+(`PlayerDataRightsPanel`, `PrestigeReadinessCard`, `CooldownActionButton`)
+widgets never read a service. You pass plain state and callbacks; your code
+calls the service. Destructive or state-replacing actions (restore a revision,
+resolve a conflict, erase data) require inline confirmation, failures show
+generic copy (never exception text, payloads, keys or checksums), and a
+pending call locks the buttons. A callback that returns without throwing is
+shown as success, so throw when the work did not finish.
+
 ## Cookbook
 
 Every core service in `lib/core/` (grouped the same way as the overview

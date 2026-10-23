@@ -323,6 +323,13 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     ),
   ];
 
+  int _w23Coins = 400;
+  int _w23Prestiges = 0;
+  int _w23Exports = 0;
+  int _w23Erasures = 0;
+  int _w23CooldownUses = 0;
+  Duration _w23Cooldown = Duration.zero;
+
   Future<void> _restoreContentRevision(String revision) async {
     if (!_contentRevisionSummaries.any((entry) => entry.revision == revision)) {
       throw StateError('Revision is no longer available');
@@ -3861,6 +3868,83 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           'contentRevisionResult',
                                         ),
                                       ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label:
+                                    'Wave 23 prestige, cooldown, data rights',
+                                child: Column(
+                                  children: [
+                                    PrestigeReadinessCard(
+                                      current: _w23Coins,
+                                      threshold: 1000,
+                                      multiplierText:
+                                          'Multiplier x${(1 + 0.1 * _w23Prestiges).toStringAsFixed(1)}',
+                                      onPrestige: () =>
+                                          PrestigeConfirmationCard.show(
+                                            context,
+                                            currentLevel: _w23Prestiges,
+                                            requiredPrestigeValue:
+                                                '1,000 demo coins',
+                                            currentMultiplier:
+                                                1 + 0.1 * _w23Prestiges,
+                                            nextMultiplier:
+                                                1 + 0.1 * (_w23Prestiges + 1),
+                                            rewards: [
+                                              PrestigeReward(
+                                                icon: Icons.auto_awesome,
+                                                label: 'Permanent multiplier',
+                                                amount:
+                                                    'x${(1 + 0.1 * (_w23Prestiges + 1)).toStringAsFixed(1)}',
+                                              ),
+                                            ],
+                                            onConfirm: () => setState(() {
+                                              _w23Coins = 0;
+                                              _w23Prestiges++;
+                                            }),
+                                            onCancel: () {},
+                                          ),
+                                    ),
+                                    OutlinedButton(
+                                      key: const ValueKey('w23AddCoins'),
+                                      onPressed: () =>
+                                          setState(() => _w23Coins += 600),
+                                      child: const Text('Add 600 demo coins'),
+                                    ),
+                                    Text(
+                                      'Prestiges: $_w23Prestiges',
+                                      key: const ValueKey('w23PrestigeResult'),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    CooldownActionButton(
+                                      label: 'Claim booster',
+                                      remaining: _w23Cooldown,
+                                      onTap: () => setState(() {
+                                        _w23CooldownUses++;
+                                        _w23Cooldown = const Duration(
+                                          seconds: 3,
+                                        );
+                                      }),
+                                      onReady: () => setState(
+                                        () => _w23Cooldown = Duration.zero,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Claims: $_w23CooldownUses',
+                                      key: const ValueKey('w23CooldownResult'),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    PlayerDataRightsPanel(
+                                      onExport: () async =>
+                                          setState(() => _w23Exports++),
+                                      onErase: () async =>
+                                          setState(() => _w23Erasures++),
+                                    ),
+                                    Text(
+                                      'Demo exports: $_w23Exports · erasures: $_w23Erasures (no real data touched)',
+                                      key: const ValueKey('w23RightsResult'),
+                                    ),
                                   ],
                                 ),
                               ),

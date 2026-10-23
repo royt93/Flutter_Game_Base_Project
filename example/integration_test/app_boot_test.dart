@@ -3298,6 +3298,89 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 23: prestige, cooldown and erase confirmation on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    var prestiged = 0;
+    var claimed = 0;
+    var erased = 0;
+    var coins = 1000;
+    var cooldown = Duration.zero;
+    late StateSetter update;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              update = setState;
+              return SingleChildScrollView(
+                child: Column(
+                  children: [
+                    PrestigeReadinessCard(
+                      current: coins,
+                      threshold: 1000,
+                      multiplierText: 'Multiplier x1.0',
+                      onPrestige: () => prestiged++,
+                    ),
+                    CooldownActionButton(
+                      label: 'Claim',
+                      remaining: cooldown,
+                      onTap: () => claimed++,
+                    ),
+                    PlayerDataRightsPanel(
+                      onExport: () async {},
+                      onErase: () async => erased++,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    final prestige = find.byKey(const ValueKey('prestigeReadinessAction'));
+    await tester.ensureVisible(prestige);
+    await tester.tap(prestige);
+    await tester.pump();
+    expect(prestiged, 1);
+    update(() => coins = 10);
+    await tester.pump();
+    expect(tester.widget<CommonButton>(prestige).onTap, isNull);
+
+    final claim = find.byKey(const ValueKey('cooldownActionButton'));
+    await tester.ensureVisible(claim);
+    await tester.tap(claim);
+    await tester.pump();
+    expect(claimed, 1);
+    update(() => cooldown = const Duration(seconds: 30));
+    await tester.pump();
+    expect(tester.widget<CommonButton>(claim).onTap, isNull);
+    update(() => cooldown = Duration.zero);
+    await tester.pump();
+
+    final erase = find.byKey(const ValueKey('dataRightsErase'));
+    await tester.ensureVisible(erase);
+    await tester.tap(erase);
+    await tester.pump();
+    final cancel = find.byKey(const ValueKey('dataRightsEraseCancel'));
+    await tester.ensureVisible(cancel);
+    await tester.tap(cancel);
+    await tester.pump();
+    expect(erased, 0);
+    await tester.ensureVisible(erase);
+    await tester.tap(erase);
+    await tester.pump();
+    final confirm = find.byKey(const ValueKey('dataRightsEraseConfirm'));
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+    expect(erased, 1);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 20: content pack refresh and preload status callbacks', (
     tester,
   ) async {

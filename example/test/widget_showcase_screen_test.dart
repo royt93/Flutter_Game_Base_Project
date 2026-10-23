@@ -485,6 +485,65 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 23: prestige gate, cooldown and data rights demos', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final action = find.byKey(const ValueKey('prestigeReadinessAction'));
+    await tester.scrollUntilVisible(action, 350, scrollable: scrollable);
+    expect(tester.widget<CommonButton>(action).onTap, isNull);
+    final add = find.byKey(const ValueKey('w23AddCoins'));
+    await tester.ensureVisible(add);
+    await tester.tap(add);
+    await tester.pump();
+    await tester.ensureVisible(action);
+    await tester.tap(action);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Prestige Confirmation'), findsOneWidget);
+    final confirmPrestige = tester.widget<NeonDialogButton>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is NeonDialogButton && widget.action.label == 'Prestige Now',
+      ),
+    );
+    confirmPrestige.action.onTap();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+    expect(find.text('Prestiges: 1'), findsOneWidget);
+
+    final claim = find.byKey(const ValueKey('cooldownActionButton'));
+    await tester.ensureVisible(claim);
+    await tester.tap(claim);
+    await tester.pump();
+    expect(find.text('Claims: 1'), findsOneWidget);
+    expect(tester.widget<CommonButton>(claim).onTap, isNull);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(seconds: 1));
+    expect(tester.widget<CommonButton>(claim).onTap, isNotNull);
+
+    final erase = find.byKey(const ValueKey('dataRightsErase'));
+    await tester.ensureVisible(erase);
+    await tester.tap(erase);
+    await tester.pump();
+    expect(
+      find.textContaining('Demo exports: 0 · erasures: 0'),
+      findsOneWidget,
+    );
+    final confirm = find.byKey(const ValueKey('dataRightsEraseConfirm'));
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.textContaining('erasures: 1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FEAT-173: contrast preview reports and routes editor tap', (
     tester,
   ) async {
