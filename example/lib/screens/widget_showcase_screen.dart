@@ -323,6 +323,12 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     ),
   ];
 
+  RewardPlan? _w31Plan;
+  RewardPlanPreviewStatus _w31PlanStatus = RewardPlanPreviewStatus.stale;
+  int _w31PlanConfirms = 0;
+  int _w31PlanRefreshes = 0;
+  int _w31Resumes = 0;
+  bool _w31ReplayChecked = false;
   RemoteConfigHealthSource _w29ConfigSource =
       RemoteConfigHealthSource.remoteMerged;
   bool _w29ReminderEnabled = true;
@@ -985,6 +991,45 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
       });
     }
     return const SyncAck();
+  }
+
+  Future<void> _refreshWave31Plan() async {
+    _w31Plan = null;
+    final result = _progressionPipeline.preview(
+      source: RewardSource.other,
+      transactionId: 'wave31_${DateTime.now().microsecondsSinceEpoch}',
+      currencyLines: const [RewardLine(currency: 'gem', amount: 50)],
+    );
+    if (!mounted) return;
+    setState(() {
+      _w31PlanRefreshes++;
+      if (result is SdkSuccess<RewardPlan>) {
+        _w31Plan = result.value;
+        _w31PlanStatus = RewardPlanPreviewStatus.ready;
+      } else {
+        _w31PlanStatus = RewardPlanPreviewStatus.failed;
+      }
+    });
+  }
+
+  Future<void> _executeWave31Plan() async {
+    final plan = _w31Plan;
+    if (plan == null) return;
+    setState(() => _w31PlanStatus = RewardPlanPreviewStatus.executing);
+    final result = await _progressionPipeline.executePlan(plan);
+    if (!mounted) return;
+    setState(() {
+      _w31PlanConfirms++;
+      _w31Plan = null;
+      _w31PlanStatus = switch (result) {
+        SdkSuccess<RewardTransactionRecord>(:final value)
+            when value.status == RewardTransactionStatus.committed =>
+          RewardPlanPreviewStatus.applied,
+        SdkFailure<RewardTransactionRecord>(kind: SdkErrorKind.conflict) =>
+          RewardPlanPreviewStatus.stale,
+        _ => RewardPlanPreviewStatus.failed,
+      };
+    });
   }
 
   Future<void> _inventoryGrant(String itemId, int quantity) async {
@@ -3891,6 +3936,65 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           'contentRevisionResult',
                                         ),
                                       ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'Wave 31 reward preview and audit trail',
+                                child: Column(
+                                  children: [
+                                    RewardPlanPreviewCard(
+                                      lines: [
+                                        RewardPlanPreviewLine(
+                                          label: 'Gems',
+                                          amountText: '+50',
+                                        ),
+                                      ],
+                                      status: _w31PlanStatus,
+                                      onConfirm: _executeWave31Plan,
+                                      onRefresh: _refreshWave31Plan,
+                                    ),
+                                    Text(
+                                      'Demo confirms: $_w31PlanConfirms, refreshes: $_w31PlanRefreshes',
+                                      key: const ValueKey('w31PlanCounts'),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    RewardAuditTrailPanel(
+                                      rows: [
+                                        RewardAuditRow(
+                                          sourceLabel: 'Daily login',
+                                          timeText: 'Yesterday, 09:10',
+                                          summaryText: '1 currency line',
+                                          status: RewardAuditStatus.committed,
+                                        ),
+                                        RewardAuditRow(
+                                          sourceLabel: 'Quest',
+                                          timeText: 'Today, 10:30',
+                                          summaryText:
+                                              '2 currency lines, 1 item',
+                                          status: RewardAuditStatus.partial,
+                                        ),
+                                      ],
+                                      onResumePending: () async =>
+                                          setState(() => _w31Resumes++),
+                                    ),
+                                    Text(
+                                      'Demo reward retries: $_w31Resumes',
+                                      key: const ValueKey('w31Resumes'),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ReplayVerificationResultCard(
+                                      status: _w31ReplayChecked
+                                          ? ReplayVerificationStatus.matched
+                                          : ReplayVerificationStatus.notChecked,
+                                      checkedOutcomeCount: _w31ReplayChecked
+                                          ? 3
+                                          : 0,
+                                      onVerifyAgain: () async => setState(
+                                        () => _w31ReplayChecked =
+                                            !_w31ReplayChecked,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),

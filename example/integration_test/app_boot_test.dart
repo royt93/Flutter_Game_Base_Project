@@ -3363,6 +3363,89 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 31: reward preview, replay check and audit retry', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    var status = RewardPlanPreviewStatus.stale;
+    var replayChecked = false;
+    var retries = 0;
+    var confirms = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) => SingleChildScrollView(
+              child: Column(
+                children: [
+                  RewardPlanPreviewCard(
+                    lines: [
+                      RewardPlanPreviewLine(label: 'Gems', amountText: '+50'),
+                    ],
+                    status: status,
+                    onRefresh: () async =>
+                        setState(() => status = RewardPlanPreviewStatus.ready),
+                    onConfirm: () async => setState(() {
+                      confirms++;
+                      status = RewardPlanPreviewStatus.stale;
+                    }),
+                  ),
+                  ReplayVerificationResultCard(
+                    status: replayChecked
+                        ? ReplayVerificationStatus.matched
+                        : ReplayVerificationStatus.notChecked,
+                    checkedOutcomeCount: replayChecked ? 2 : 0,
+                    onVerifyAgain: () async =>
+                        setState(() => replayChecked = true),
+                  ),
+                  RewardAuditTrailPanel(
+                    rows: [
+                      RewardAuditRow(
+                        sourceLabel: 'Quest',
+                        timeText: 'Today',
+                        summaryText: '1 currency line',
+                        status: RewardAuditStatus.partial,
+                      ),
+                    ],
+                    onResumePending: () async => retries++,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    final refresh = find.byKey(const ValueKey('rewardPlanRefresh'));
+    await tester.ensureVisible(refresh);
+    await tester.tap(refresh);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Ready to apply'), findsOneWidget);
+
+    final confirm = find.byKey(const ValueKey('rewardPlanConfirm'));
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(confirms, 1);
+    expect(find.text('Rewards applied'), findsNothing);
+
+    final replay = find.byKey(const ValueKey('replayVerificationVerifyAgain'));
+    await tester.ensureVisible(replay);
+    await tester.tap(replay);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Checked recorded outcomes matched.'), findsOneWidget);
+    expect(find.text('Randomness check was not run.'), findsOneWidget);
+
+    final resume = find.byKey(const ValueKey('rewardAuditResume'));
+    await tester.ensureVisible(resume);
+    await tester.tap(resume);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(retries, 1);
+    expect(find.text('Partially applied'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 28: aggregate analytics and restore confirmation', (
     tester,
   ) async {

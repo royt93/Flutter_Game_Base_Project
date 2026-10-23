@@ -544,6 +544,52 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 31: reward preview applies only on committed record', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final refresh = find.byKey(const ValueKey('rewardPlanRefresh'));
+    await tester.scrollUntilVisible(refresh, 350, scrollable: scrollable);
+    await tester.ensureVisible(refresh);
+    await tester.tap(refresh);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Ready to apply'), findsOneWidget);
+    expect(find.text('Rewards applied'), findsNothing);
+
+    final confirm = find.byKey(const ValueKey('rewardPlanConfirm'));
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Rewards applied'), findsOneWidget);
+    expect(find.text('Demo confirms: 1, refreshes: 1'), findsOneWidget);
+
+    final resume = find.byKey(const ValueKey('rewardAuditResume'));
+    await tester.ensureVisible(resume);
+    await tester.tap(resume);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Demo reward retries: 1'), findsOneWidget);
+    expect(find.text('Partially applied'), findsOneWidget);
+
+    final replay = find.byKey(const ValueKey('replayVerificationVerifyAgain'));
+    await tester.ensureVisible(replay);
+    expect(find.text('No replay comparison was checked.'), findsOneWidget);
+    await tester.tap(replay);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Checked recorded outcomes matched.'), findsOneWidget);
+    expect(find.text('Randomness check was not run.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 29: config, reminder preferences and connectivity', (
     tester,
   ) async {

@@ -1,0 +1,19 @@
+---
+id: FEAT-206
+title: RewardAuditTrailPanel — Bounded reward audit rows and retry-all
+type: feature
+priority: P2
+effort: S
+source: Reward and replay inspection UI (Wave 31)
+---
+
+## Phạm vi
+- Sanitized rows only: source, time, summary and pending/partial/committed status; no transaction id or receipt metadata.
+- One retry-all action, enabled only while an unfinished row exists. `resumePending` retries every unfinished record and returns nothing, so completing it does not imply all committed; the caller refreshes the rows.
+- Positive row cap with newest rows kept and a hidden count.
+
+## Kiểm chứng
+- [x] Widget tests, showcase host test, analyzers and API compatibility (snapshot refreshed) pass.
+- [ ] Linux + Flutter 3.35.1 golden baselines not generated yet.
+- [ ] CI not run yet.
+- [x] 2026-10-23: TECNO KJ7 passes 'Wave 31: reward preview, replay check and audit retry' (`example/integration_test/app_boot_test.dart`, `E2E_TEST=true`). UI/callback fixture evidence only, not a real reward grant, replay authenticity or fair-play proof.
