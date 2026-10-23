@@ -14,6 +14,6 @@ source: Onboarding and experiment inspection UI (Wave 32)
 
 ## Kiểm chứng
 - [x] Widget tests (20), showcase host test, analyzers and API compatibility (snapshot refreshed) pass.
-- [ ] Linux + Flutter 3.35.1 golden baselines not generated yet.
-- [ ] CI not run yet.
+- [x] 49 Linux + Flutter 3.35.1 PNG baselines (7 states x 7 variants, shared by FEAT-207..208) imported from workflow 39957224354; lockfiles untouched, PR #35 closed unmerged.
+- [x] CI 39957603046 (analyze-test, quality-gate, consumer-smoke) passes on `f86615f`.
 - [x] 2026-10-23: TECNO KJ7 passes 'Wave 32: onboarding queue and experiment override' (`example/integration_test/app_boot_test.dart`, `E2E_TEST=true`). UI/callback fixture evidence only, not a real onboarding flow run or experiment bucketing proof.
