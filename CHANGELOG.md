@@ -2,6 +2,7 @@
 
 - Use opaque row-index/variant-index keys in `ExperimentVariantAssignmentCard`; experiment identifiers remain in callback data and no longer appear in widget keys.
 - Added `EventSchemaAuditCard`, a read-only view of caller-mapped aggregate schema-validation counts (accepted, rejected, redacted). It accepts no event names, parameter names, values or raw violations, and states that schema validation does not confirm analytics delivery.
+- Verified Wave 33: 7 focused widget tests, root 3,484/example 316 non-golden suites, analyzers, API compatibility and five quality gates pass; 21 Linux + Flutter 3.35.1 golden baselines imported from workflow 40065228127; CI 40065468318 passes all three jobs. TECNO KJ7 smoke passes the aggregate-summary UI test; not evidence of real analytics delivery.
 - Verified: root 3,477 and example 315 non-golden tests, analyzers, API compatibility, five quality gates, and a TECNO KJ7 profile-mode override integration test pass.
 
 ## 0.6.1
