@@ -7,6 +7,7 @@ import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
 import 'package:roy_casual_kit/core/purchase_seam.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit_example/screens/monetization_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -291,4 +292,101 @@ void main() {
     expect(EconomyWallet.maybe!.balanceOf('coins'), 0);
     expect(tester.takeException(), isNull);
   });
+
+  group('BUG-101: wallet earn failure consistency', () {
+    testWidgets(
+      'mua consumable khi wallet earn fail: không tăng ledger, không báo thành công',
+      (tester) async {
+        await _boot();
+        Get.put<EconomyWallet>(_FailingWallet());
+
+        await tester.pumpWidget(_wrap(const MonetizationScreen()));
+        await tester.pump(const Duration(milliseconds: 500));
+
+        final buyCoinsBtn = _button(r'$0.99').first;
+        await tester.tap(buyCoinsBtn);
+        await tester.pump(const Duration(milliseconds: 500));
+
+        expect(
+          find.textContaining('Wallet could not be updated. Please try again.'),
+          findsOneWidget,
+        );
+        expect(find.text('Coins: 0 | Gems: 0'), findsOneWidget);
+        expect(find.textContaining('Purchased Pouch of Coins!'), findsNothing);
+        expect(PurchaseLedgerService.maybe!.balanceOf('pack_coins_100'), 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'xem ad khi wallet earn fail: không báo nhận coin, báo lỗi wallet',
+      (tester) async {
+        await _boot();
+        Get.put<EconomyWallet>(_FailingWallet());
+        final ads = _ScriptedAds(isReady: true, rewarded: true);
+        Get.put<AdRewardSeam>(ads);
+
+        await tester.pumpWidget(_wrap(const MonetizationScreen()));
+        await tester.pump(const Duration(milliseconds: 500));
+        await scrollToAdButton(tester, 'Watch Ad for +50 Coins');
+
+        expect(ads.shown, 1);
+        expect(
+          find.textContaining('Wallet could not be updated. Please try again.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Watched ad! Received 50 coins.'), findsNothing);
+        expect(EconomyWallet.maybe!.balanceOf('coins'), 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'VIP ad skip khi wallet earn fail: không báo nhận coin, báo lỗi wallet',
+      (tester) async {
+        await _boot();
+        Get.put<EconomyWallet>(_FailingWallet());
+        final ledger = Get.put(PurchaseLedgerService(), permanent: true);
+        ledger.grantPermanent('pack_vip_no_ads');
+
+        await tester.pumpWidget(_wrap(const MonetizationScreen()));
+        await tester.pump(const Duration(milliseconds: 500));
+
+        await tester.drag(find.byType(ListView), const Offset(0, -500));
+        await tester.pump();
+        final vipAdBtn = _button('Claim Free 50 Coins (VIP Skip)').first;
+        await tester.ensureVisible(vipAdBtn);
+        await tester.pump();
+        await tester.tap(vipAdBtn);
+        await tester.pump(const Duration(milliseconds: 500));
+
+        expect(
+          find.textContaining('Wallet could not be updated. Please try again.'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('VIP Perk: Ad skipped! Received 50 coins.'),
+          findsNothing,
+        );
+        expect(EconomyWallet.maybe!.balanceOf('coins'), 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+}
+
+class _FailingWallet extends EconomyWallet {
+  _FailingWallet() : super(storage: StorageService.to);
+
+  @override
+  Future<SdkResult<int>> earn({
+    required String currency,
+    required int amount,
+    required String transactionId,
+  }) async {
+    return const SdkFailure(
+      kind: SdkErrorKind.storage,
+      message: 'Simulated wallet persist failure',
+    );
+  }
 }

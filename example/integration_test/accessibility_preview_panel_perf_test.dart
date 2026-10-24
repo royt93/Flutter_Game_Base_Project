@@ -97,5 +97,18 @@ void main() {
     };
     // ignore: avoid_print
     print('FEAT-172_METRICS ${jsonEncode(report)}');
+
+    const budget = WorkloadPerformanceBudget(
+      workloadName: 'accessibility_preview_panel',
+      maxP95Ms: 64.0,
+      maxSlowFramePercent: 60.0,
+      minFrames: 50,
+    );
+    final evalResult = budget.evaluate(report);
+    expect(
+      evalResult.passed,
+      isTrue,
+      reason: evalResult.violations.map((v) => v.toString()).join('; '),
+    );
   });
 }

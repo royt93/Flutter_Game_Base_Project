@@ -461,6 +461,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                     children: [
                       FloatingActionButton(
                         heroTag: 'pause',
+                        tooltip: 'game_demo_pause_tooltip'.tr,
                         onPressed: () {
                           _haptics.play(HapticPattern.combo);
                           unawaited(
@@ -474,6 +475,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                       const SizedBox(height: NeonTheme.s16),
                       FloatingActionButton(
                         heroTag: 'info',
+                        tooltip: 'game_demo_info_tooltip'.tr,
                         onPressed: () {
                           _haptics.play(HapticPattern.combo);
                           unawaited(

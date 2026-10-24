@@ -63,6 +63,8 @@ class AppTranslations extends Translations {
           'Score: @score | Lv.@level | XP: @xp/@xpToNext | Coins: @coins',
       'game_demo_achievement_unlocked':
           '🎉 Achievement Unlocked: Circle Tap Master! +10 Gems',
+      'game_demo_pause_tooltip': 'Pause game',
+      'game_demo_info_tooltip': 'Game info',
       'settings_request_export_title': 'Request Data Export',
       'settings_request_export_subtitle':
           'Download all stored data (GDPR/CCPA)',
@@ -174,6 +176,8 @@ class AppTranslations extends Translations {
           'Điểm: @score | Cấp @level | XP: @xp/@xpToNext | Xu: @coins',
       'game_demo_achievement_unlocked':
           '🎉 Đã mở khóa thành tựu: Bậc thầy chạm Vòng tròn! +10 Ngọc',
+      'game_demo_pause_tooltip': 'Tạm dừng trò chơi',
+      'game_demo_info_tooltip': 'Thông tin trò chơi',
       'settings_request_export_title': 'Yêu cầu xuất dữ liệu',
       'settings_request_export_subtitle':
           'Tải toàn bộ dữ liệu đã lưu (GDPR/CCPA)',

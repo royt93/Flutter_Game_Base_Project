@@ -238,4 +238,94 @@ void main() {
       expect(policy.maxAgeMs, isNull);
     });
   });
+
+  group('WorkloadPerformanceBudget (ENH-102)', () {
+    const budget = WorkloadPerformanceBudget(
+      workloadName: 'demo_workload',
+      maxP95Ms: 32.0,
+      maxSlowFramePercent: 20.0,
+      minFrames: 50,
+    );
+
+    final validReport = {
+      'frameCount': 100,
+      'maxBuildRasterMs': {'p50': 8.0, 'p95': 14.5, 'p99': 18.0},
+      'slowFramePercent': 5.0,
+    };
+
+    test('report hợp lệ nằm trong ngưỡng -> pass', () {
+      final result = budget.evaluate(validReport);
+      expect(result.passed, isTrue);
+      expect(result.violations, isEmpty);
+    });
+
+    test('frameCount quá ít (< minFrames) -> missingMeasurement violation', () {
+      final result = budget.evaluate({
+        'frameCount': 10,
+        'maxBuildRasterMs': {'p95': 10.0},
+        'slowFramePercent': 0.0,
+      });
+      expect(result.passed, isFalse);
+      expect(
+        result.violations.any(
+          (v) =>
+              v.kind == PerformanceBudgetViolationKind.missingMeasurement &&
+              v.metricName == 'demo_workload_frame_count',
+        ),
+        isTrue,
+      );
+    });
+
+    test('p95 vượt ngưỡng maxP95Ms -> budgetExceeded violation', () {
+      final result = budget.evaluate({
+        'frameCount': 60,
+        'maxBuildRasterMs': {'p95': 45.0},
+        'slowFramePercent': 5.0,
+      });
+      expect(result.passed, isFalse);
+      expect(
+        result.violations.any(
+          (v) =>
+              v.kind == PerformanceBudgetViolationKind.budgetExceeded &&
+              v.metricName == 'demo_workload_p95_ms',
+        ),
+        isTrue,
+      );
+    });
+
+    test('slowFramePercent vượt ngưỡng -> budgetExceeded violation', () {
+      final result = budget.evaluate({
+        'frameCount': 60,
+        'maxBuildRasterMs': {'p95': 15.0},
+        'slowFramePercent': 35.0,
+      });
+      expect(result.passed, isFalse);
+      expect(
+        result.violations.any(
+          (v) =>
+              v.kind == PerformanceBudgetViolationKind.budgetExceeded &&
+              v.metricName == 'demo_workload_slow_frame_percent',
+        ),
+        isTrue,
+      );
+    });
+
+    test('extractMetrics trích xuất đúng PerformanceBudgetMetric', () {
+      final metrics = budget.extractMetrics(
+        validReport,
+        source: MeasurementSource.realDevice,
+        recordedAtMs: 123456,
+      );
+      expect(metrics, hasLength(2));
+      expect(metrics[0].name, 'demo_workload_p95_ms');
+      expect(metrics[0].value, 14.5);
+      expect(metrics[0].unit, 'ms');
+      expect(metrics[0].source, MeasurementSource.realDevice);
+      expect(metrics[0].recordedAtMs, 123456);
+
+      expect(metrics[1].name, 'demo_workload_slow_frame_percent');
+      expect(metrics[1].value, 5.0);
+      expect(metrics[1].unit, '%');
+    });
+  });
 }

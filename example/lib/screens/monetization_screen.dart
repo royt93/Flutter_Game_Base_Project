@@ -87,13 +87,21 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
       return;
     }
 
-    _ledger.grantConsumable(sku, 1);
-    await _wallet.earn(
+    final earnResult = await _wallet.earn(
       currency: currency,
       amount: amount,
       transactionId: 'iap_${sku}_${DateTime.now().microsecondsSinceEpoch}',
     );
+    if (!earnResult.isSuccess) {
+      _haptics.play(HapticPattern.error);
+      if (!mounted) return;
+      setState(
+        () => _status = 'Wallet could not be updated. Please try again.',
+      );
+      return;
+    }
 
+    _ledger.grantConsumable(sku, 1);
     _haptics.play(HapticPattern.reward);
     if (!mounted) return;
     setState(() => _status = 'Purchased $label! +$amount $currency.');
@@ -127,11 +135,19 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
   Future<void> _watchRewardedAd() async {
     // If player owns VIP No-Ads, skip ad playback directly as a VIP benefit.
     if (_isVip) {
-      await _wallet.earn(
+      final earnResult = await _wallet.earn(
         currency: 'coins',
         amount: 50,
         transactionId: 'ad_vip_skip_${DateTime.now().microsecondsSinceEpoch}',
       );
+      if (!earnResult.isSuccess) {
+        _haptics.play(HapticPattern.error);
+        if (!mounted) return;
+        setState(
+          () => _status = 'Wallet could not be updated. Please try again.',
+        );
+        return;
+      }
       _haptics.play(HapticPattern.reward);
       if (!mounted) return;
       setState(() => _status = 'VIP Perk: Ad skipped! Received 50 coins.');
@@ -147,11 +163,19 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
 
     final rewarded = await _ads.showRewardedAd(placement: 'store_free_coins');
     if (rewarded) {
-      await _wallet.earn(
+      final earnResult = await _wallet.earn(
         currency: 'coins',
         amount: 50,
         transactionId: 'ad_reward_${DateTime.now().microsecondsSinceEpoch}',
       );
+      if (!earnResult.isSuccess) {
+        _haptics.play(HapticPattern.error);
+        if (!mounted) return;
+        setState(
+          () => _status = 'Wallet could not be updated. Please try again.',
+        );
+        return;
+      }
       _haptics.play(HapticPattern.reward);
       if (!mounted) return;
       setState(() => _status = 'Watched ad! Received 50 coins.');

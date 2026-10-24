@@ -241,3 +241,89 @@ PerformanceBudgetResult checkPerformanceBudgets({
 
   return PerformanceBudgetResult(violations: violations);
 }
+
+/// Evaluates integration test frame workload reports against configurable budgets (ENH-102).
+class WorkloadPerformanceBudget {
+  const WorkloadPerformanceBudget({
+    required this.workloadName,
+    this.maxP95Ms = 64.0,
+    this.maxSlowFramePercent = 50.0,
+    this.minFrames = 30,
+  });
+
+  final String workloadName;
+  final double maxP95Ms;
+  final double maxSlowFramePercent;
+  final int minFrames;
+
+  PerformanceBudgetResult evaluate(Map<String, Object?> report) {
+    final violations = <PerformanceBudgetViolation>[];
+    final frameCount = asIntOr(report['frameCount'], 0);
+    if (frameCount < minFrames) {
+      violations.add(
+        PerformanceBudgetViolation(
+          metricName: '${workloadName}_frame_count',
+          kind: PerformanceBudgetViolationKind.missingMeasurement,
+          detail: 'measured $frameCount frames, required at least $minFrames',
+        ),
+      );
+    }
+
+    final maxBuildRaster = report['maxBuildRasterMs'];
+    final p95 = maxBuildRaster is Map
+        ? asDoubleOr(maxBuildRaster['p95'], 0.0)
+        : 0.0;
+    if (p95 > maxP95Ms) {
+      violations.add(
+        PerformanceBudgetViolation(
+          metricName: '${workloadName}_p95_ms',
+          kind: PerformanceBudgetViolationKind.budgetExceeded,
+          detail:
+              'measured ${p95.toStringAsFixed(2)}ms, limit ${maxP95Ms.toStringAsFixed(2)}ms',
+        ),
+      );
+    }
+
+    final slowPercent = asDoubleOr(report['slowFramePercent'], 0.0);
+    if (slowPercent > maxSlowFramePercent) {
+      violations.add(
+        PerformanceBudgetViolation(
+          metricName: '${workloadName}_slow_frame_percent',
+          kind: PerformanceBudgetViolationKind.budgetExceeded,
+          detail:
+              'measured ${slowPercent.toStringAsFixed(1)}%, limit ${maxSlowFramePercent.toStringAsFixed(1)}%',
+        ),
+      );
+    }
+
+    return PerformanceBudgetResult(violations: violations);
+  }
+
+  List<PerformanceBudgetMetric> extractMetrics(
+    Map<String, Object?> report, {
+    required MeasurementSource source,
+    int? recordedAtMs,
+  }) {
+    final maxBuildRaster = report['maxBuildRasterMs'];
+    final p95 = maxBuildRaster is Map
+        ? asDoubleOr(maxBuildRaster['p95'], 0.0)
+        : 0.0;
+    final slowPercent = asDoubleOr(report['slowFramePercent'], 0.0);
+    return [
+      PerformanceBudgetMetric(
+        name: '${workloadName}_p95_ms',
+        source: source,
+        value: p95,
+        unit: 'ms',
+        recordedAtMs: recordedAtMs,
+      ),
+      PerformanceBudgetMetric(
+        name: '${workloadName}_slow_frame_percent',
+        source: source,
+        value: slowPercent,
+        unit: '%',
+        recordedAtMs: recordedAtMs,
+      ),
+    ];
+  }
+}

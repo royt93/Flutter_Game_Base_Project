@@ -644,4 +644,59 @@ void main() {
       },
     );
   });
+
+  group('BUG-102: GameDemoScreen FAB accessibility semantics', () {
+    testWidgets('pause và info FABs có tooltip và semantics label rõ ràng', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_wrap(const GameDemoScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final pauseFabFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is FloatingActionButton && widget.heroTag == 'pause',
+      );
+      final infoFabFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is FloatingActionButton && widget.heroTag == 'info',
+      );
+
+      expect(pauseFabFinder, findsOneWidget);
+      expect(infoFabFinder, findsOneWidget);
+
+      final pauseSemantics = tester.getSemantics(pauseFabFinder);
+      final infoSemantics = tester.getSemantics(infoFabFinder);
+
+      expect(pauseSemantics.tooltip, 'game_demo_pause_tooltip'.tr);
+      expect(infoSemantics.tooltip, 'game_demo_info_tooltip'.tr);
+
+      handle.dispose();
+    });
+
+    testWidgets('vi locale: pause và info FABs tooltip localized', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_wrapVi(const GameDemoScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final pauseFabFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is FloatingActionButton && widget.heroTag == 'pause',
+      );
+      final infoFabFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is FloatingActionButton && widget.heroTag == 'info',
+      );
+
+      final pauseSemantics = tester.getSemantics(pauseFabFinder);
+      final infoSemantics = tester.getSemantics(infoFabFinder);
+
+      expect(pauseSemantics.tooltip, 'Tạm dừng trò chơi');
+      expect(infoSemantics.tooltip, 'Thông tin trò chơi');
+
+      handle.dispose();
+    });
+  });
 }

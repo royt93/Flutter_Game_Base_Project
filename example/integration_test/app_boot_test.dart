@@ -11,6 +11,7 @@ import 'package:roy_casual_kit_example/main.dart' as app;
 import 'package:roy_casual_kit_example/screens/cookbook_screen.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
+import 'package:roy_casual_kit_example/screens/monetization_screen.dart';
 import 'package:roy_casual_kit_example/screens/settings_screen.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
 
@@ -70,6 +71,27 @@ Future<void> _goToGameDemo(WidgetTester tester) async {
   await tester.tap(find.byType(NeonButton).at(2));
   await tester.pump(const Duration(seconds: 1));
   expect(find.byType(GameDemoScreen), findsOneWidget);
+}
+
+Future<void> _goToMonetization(WidgetTester tester) async {
+  while (find.byType(MonetizationScreen).evaluate().isNotEmpty) {
+    Get.back();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+  final btn = find.widgetWithText(NeonButton, 'monetization'.tr).first;
+  for (var i = 0; i < 6; i++) {
+    if (btn.evaluate().isNotEmpty) break;
+    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -300));
+    await tester.pump(const Duration(milliseconds: 200));
+  }
+  await tester.ensureVisible(btn);
+  await tester.pump(const Duration(milliseconds: 200));
+  await tester.tap(btn);
+  for (var i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 200));
+    if (find.byType(MonetizationScreen).evaluate().isNotEmpty) break;
+  }
+  expect(find.byType(MonetizationScreen), findsOneWidget);
 }
 
 /// Scrolls the screen's `ListView` in `-delta`-pixel steps until [target]
@@ -365,6 +387,70 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       expect(game.orb.position, isNot(equals(position)));
+
+      Get.back();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'BUG-102: GameDemoScreen FABs declare accessible tooltips and semantics on device',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToGameDemo(tester);
+
+      final pauseFab = find.byWidgetPredicate(
+        (widget) =>
+            widget is FloatingActionButton && widget.heroTag == 'pause',
+      );
+      final infoFab = find.byWidgetPredicate(
+        (widget) =>
+            widget is FloatingActionButton && widget.heroTag == 'info',
+      );
+
+      expect(pauseFab, findsOneWidget);
+      expect(infoFab, findsOneWidget);
+
+      final pauseSemantics = tester.getSemantics(pauseFab);
+      final infoSemantics = tester.getSemantics(infoFab);
+
+      expect(pauseSemantics.tooltip, 'game_demo_pause_tooltip'.tr);
+      expect(infoSemantics.tooltip, 'game_demo_info_tooltip'.tr);
+
+      Get.back();
+      await tester.pump(const Duration(milliseconds: 300));
+      handle.dispose();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'BUG-101: MonetizationScreen handles purchase and reward on device cleanly',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToMonetization(tester);
+
+      expect(find.byType(MonetizationScreen), findsOneWidget);
+
+      final buyBtn = find
+          .byWidgetPredicate(
+            (widget) => widget is CommonButton && widget.label == r'$0.99',
+          )
+          .first;
+      expect(buyBtn, findsOneWidget);
+
+      await tester.tap(buyBtn);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.textContaining('Purchased Pouch of Coins! +100 coins.'),
+        findsOneWidget,
+      );
+      expect(EconomyWallet.maybe!.balanceOf('coins'), 100);
+      expect(PurchaseLedgerService.maybe!.balanceOf('pack_coins_100'), 1);
 
       Get.back();
       await tester.pump(const Duration(milliseconds: 300));
