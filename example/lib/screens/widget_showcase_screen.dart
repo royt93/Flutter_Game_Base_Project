@@ -3954,6 +3954,16 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                               _Demo(
+                                label: 'Wave 33 analytics schema audit',
+                                child: EventSchemaAuditCard(
+                                  snapshot: EventSchemaAuditSnapshot(
+                                    totalValidations: 42,
+                                    rejectedCount: 3,
+                                    redactedCount: 5,
+                                  ),
+                                ),
+                              ),
+                              _Demo(
                                 label:
                                     'Wave 32 onboarding queue and experiments',
                                 child: Column(

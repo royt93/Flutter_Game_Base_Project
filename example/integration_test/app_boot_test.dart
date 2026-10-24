@@ -3363,6 +3363,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 33: analytics schema audit aggregate summary', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                EventSchemaAuditCard(
+                  snapshot: EventSchemaAuditSnapshot(
+                    totalValidations: 0,
+                    rejectedCount: 0,
+                    redactedCount: 0,
+                  ),
+                ),
+                EventSchemaAuditCard(
+                  snapshot: EventSchemaAuditSnapshot(
+                    totalValidations: 42,
+                    rejectedCount: 3,
+                    redactedCount: 5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('No schema validations yet.'), findsOneWidget);
+    expect(find.text('Accepted validations: 39'), findsOneWidget);
+    expect(find.text('Rejected validations: 3'), findsOneWidget);
+    expect(find.text('Validations with redacted fields: 5'), findsOneWidget);
+    expect(
+      find.text('Schema validation does not confirm analytics delivery.'),
+      findsNWidgets(2),
+    );
+    expect(find.textContaining('private'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 32: onboarding queue and experiment override', (
     tester,
   ) async {

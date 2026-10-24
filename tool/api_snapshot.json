@@ -1,5 +1,5 @@
 {
-  "version": "0.6.0",
+  "version": "0.6.2",
   "entrypoint": "lib/roy_casual_kit.dart",
   "exports": [
     "core/achievement_service.dart",
@@ -582,6 +582,8 @@
     "presentation/widgets/common/event_calendar_card.dart:EventCalendarCard",
     "presentation/widgets/common/event_calendar_card.dart:EventCalendarItem",
     "presentation/widgets/common/event_calendar_card.dart:EventCalendarStatus",
+    "presentation/widgets/common/event_schema_audit_card.dart:EventSchemaAuditCard",
+    "presentation/widgets/common/event_schema_audit_card.dart:EventSchemaAuditSnapshot",
     "presentation/widgets/common/expandable_panel.dart:ExpandablePanel",
     "presentation/widgets/common/expandable_panel.dart:ExpandablePanelState",
     "presentation/widgets/common/experiment_variant_assignment_card.dart:ExperimentVariantAssignmentCard",
@@ -1672,6 +1674,9 @@
     "presentation/widgets/common/event_calendar_card.dart:EventCalendarCard.build(BuildContext context): Widget",
     "presentation/widgets/common/event_calendar_card.dart:EventCalendarCard.new({ super.key, required this.events, required this.onOpen, this.title = 'Event Calendar', this.emptyMessage = 'No events scheduled.', this.semanticLabel, })",
     "presentation/widgets/common/event_calendar_card.dart:EventCalendarItem.new({ required this.id, required this.dayLabel, required this.title, required this.timeLabel, required this.status, this.icon = Icons.event_rounded, })",
+    "presentation/widgets/common/event_schema_audit_card.dart:EventSchemaAuditCard.build(BuildContext context): Widget",
+    "presentation/widgets/common/event_schema_audit_card.dart:EventSchemaAuditCard.new({ super.key, required this.snapshot, this.title = 'Analytics schema audit', this.emptyLabel = 'No schema validations yet.', this.acceptedLabel = 'Accepted validations', this.rejectedLabel = 'Rejected validations', this.redactedLabel = 'Validations with redacted fields', this.deliveryNote = 'Schema validation does not confirm analytics delivery.', })",
+    "presentation/widgets/common/event_schema_audit_card.dart:EventSchemaAuditSnapshot.new({ required this.totalValidations, required this.rejectedCount, required this.redactedCount, })",
     "presentation/widgets/common/expandable_panel.dart:ExpandablePanel.createState(): State<ExpandablePanel>",
     "presentation/widgets/common/expandable_panel.dart:ExpandablePanel.new({ super.key, required this.header, required this.content, this.isExpanded = false, this.onExpansionChanged, this.duration = const Duration(milliseconds: 250), this.lazy = true, this.borderColor, this.semanticLabel, })",
     "presentation/widgets/common/expandable_panel.dart:ExpandablePanelState.build(BuildContext context): Widget",

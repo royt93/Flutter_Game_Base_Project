@@ -145,9 +145,9 @@ operational status (`RemoteKillSwitchPanel`, `PlatformCapabilityMatrix`,
 status (`MemoryWatchdogPanel`, `AnnouncementPreviewCard`,
 `RewardedAdResultCard`, `RemoteConfigHealthCard`, `ReminderPreferencesPanel`,
 `ConnectivityStatusCard`) and reward/replay inspection (`RewardPlanPreviewCard`,
-`ReplayVerificationResultCard`, `RewardAuditTrailPanel`) and onboarding/experiment
-(`OnboardingFlowQueueCard`, `ExperimentVariantAssignmentCard`) widgets never
-read a service. This list is
+`ReplayVerificationResultCard`, `RewardAuditTrailPanel`), onboarding/experiment
+(`OnboardingFlowQueueCard`, `ExperimentVariantAssignmentCard`) and analytics
+schema audit (`EventSchemaAuditCard`) widgets never read a service. This list is
 illustrative, not exhaustive. You pass plain state and callbacks; your code
 calls the service. Destructive or state-replacing actions (restore a revision,
 resolve a conflict, erase data) require inline confirmation, failures show

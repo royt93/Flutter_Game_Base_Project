@@ -1,6 +1,7 @@
 ## 0.6.2
 
 - Use opaque row-index/variant-index keys in `ExperimentVariantAssignmentCard`; experiment identifiers remain in callback data and no longer appear in widget keys.
+- Added `EventSchemaAuditCard`, a read-only view of caller-mapped aggregate schema-validation counts (accepted, rejected, redacted). It accepts no event names, parameter names, values or raw violations, and states that schema validation does not confirm analytics delivery.
 - Verified: root 3,477 and example 315 non-golden tests, analyzers, API compatibility, five quality gates, and a TECNO KJ7 profile-mode override integration test pass.
 
 ## 0.6.1

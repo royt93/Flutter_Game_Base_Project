@@ -544,6 +544,29 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Wave 33: analytics schema audit shows aggregate counts', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('widgetShowcaseList')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final title = find.text('Analytics schema audit');
+    await tester.scrollUntilVisible(title, 350, scrollable: scrollable);
+    expect(find.text('Accepted validations: 39'), findsOneWidget);
+    expect(find.text('Rejected validations: 3'), findsOneWidget);
+    expect(find.text('Validations with redacted fields: 5'), findsOneWidget);
+    expect(
+      find.text('Schema validation does not confirm analytics delivery.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('param'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Wave 32: onboarding queue and experiment override', (
     tester,
   ) async {

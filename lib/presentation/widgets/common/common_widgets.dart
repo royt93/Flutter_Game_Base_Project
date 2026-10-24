@@ -186,3 +186,4 @@ export 'accessibility_preview_panel.dart';
 export 'contrast_preview_card.dart';
 export 'haptic_pattern_picker.dart';
 export 'support_diagnostics_card.dart';
+export 'event_schema_audit_card.dart';
