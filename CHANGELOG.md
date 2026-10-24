@@ -1,3 +1,12 @@
+## 0.6.3
+
+- Added `WorkloadPerformanceBudget` in `core/utils/performance_budget.dart` to evaluate integration test frame timings against configurable p95, slow-frame percentage, and minimum frame thresholds with actionable failure diagnostics, plus `extractMetrics` for baseline integration.
+- Added localized tooltips and semantics to `GameDemoScreen`'s icon-only pause and info FloatingActionButtons (`game_demo_pause_tooltip` and `game_demo_info_tooltip` in both `en` and `vi` locales).
+- Hardened `MonetizationScreen` demo to verify `EconomyWallet.earn()` results for consumables and rewarded ads; on storage or persistence failure, error haptics and status are shown without granting phantom consumable ledger items or crediting unearned currency.
+- Verified: 22 unit tests in `performance_budget_test.dart` (including 5 workload evaluator tests), 13 tests in `monetization_screen_test.dart`, key parity in `app_translations_test.dart`, and 21 tests in `game_demo_screen_test.dart` pass.
+- Verified on physical TECNO KJ7 (Android 14): integration smoke tests for wallet failure consistency and accessible FAB tooltips pass; benchmark runs for accessibility preview panel (202 frames, p95=21.45ms, slow-frame=13.37%) and offline earnings (3227 frames, p95=12.12ms, slow-frame=2.32%) satisfy performance budgets.
+- Verified CI: analyzers report 0 issues on package and example; public API compatibility gate is additive; five quality gates pass; GitHub Actions CI Linux (run 40102532740) passes all three jobs. Clean-tree pub publish dry-run passes with 0 warnings.
+
 ## 0.6.2
 
 - Use opaque row-index/variant-index keys in `ExperimentVariantAssignmentCard`; experiment identifiers remain in callback data and no longer appear in widget keys.
