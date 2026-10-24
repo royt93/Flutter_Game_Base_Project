@@ -1,3 +1,8 @@
+## 0.6.2
+
+- Use opaque row-index/variant-index keys in `ExperimentVariantAssignmentCard`; experiment identifiers remain in callback data and no longer appear in widget keys.
+- Verified: root 3,477 and example 315 non-golden tests, analyzers, API compatibility, five quality gates, and a TECNO KJ7 profile-mode override integration test pass.
+
 ## 0.6.1
 
 - Fixed `ExperimentVariantAssignmentCard` to hide and reject debug variant overrides in release builds, matching `ExperimentBucketingService.debugSetVariantOverride`.

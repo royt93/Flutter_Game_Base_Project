@@ -191,7 +191,7 @@ class _ExperimentVariantAssignmentCardState
               style: TextStyle(color: NeonTheme.ink, fontSize: 18),
             ),
             if (widget.rows.isEmpty) Text(widget.emptyLabel),
-            for (final row in widget.rows)
+            for (final (rowIndex, row) in widget.rows.indexed)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Column(
@@ -207,13 +207,14 @@ class _ExperimentVariantAssignmentCardState
                     if (row.isOverridden) Text(widget.overriddenLabel),
                     if (widget.onSelectOverride != null &&
                         ExperimentVariantAssignmentCard._overrideAllowed) ...[
-                      for (final variant in row.availableVariants)
+                      for (final (variantIndex, variant)
+                          in row.availableVariants.indexed)
                         if (variant != row.assignedVariant || !row.isOverridden)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: CommonButton(
                               key: ValueKey(
-                                'experimentOverride_${row.experimentKey}_$variant',
+                                'experimentOverride_${rowIndex}_$variantIndex',
                               ),
                               label: variant,
                               variant: CommonButtonVariant.secondary,
@@ -227,9 +228,7 @@ class _ExperimentVariantAssignmentCardState
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: CommonButton(
-                            key: ValueKey(
-                              'experimentClear_${row.experimentKey}',
-                            ),
+                            key: ValueKey('experimentClear_$rowIndex'),
                             label: widget.clearOverrideLabel,
                             width: double.infinity,
                             loading: _running,

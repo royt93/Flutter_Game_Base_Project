@@ -45,8 +45,8 @@ void main() {
         expect(calls, 0);
       } else {
         final action = row.isOverridden
-            ? find.byKey(const ValueKey('experimentClear_layout'))
-            : find.byKey(const ValueKey('experimentOverride_layout_Wide'));
+            ? find.byKey(const ValueKey('experimentClear_0'))
+            : find.byKey(const ValueKey('experimentOverride_0_1'));
         await tester.tap(action);
         await tester.pump(const Duration(milliseconds: 100));
         expect(calls, row.isOverridden ? 2 : 1);

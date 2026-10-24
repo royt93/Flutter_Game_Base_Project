@@ -3418,9 +3418,7 @@ void main() {
     expect(seen, {'welcome'});
     expect(find.text('Seen'), findsOneWidget);
 
-    final choose = find.byKey(
-      const ValueKey('experimentOverride_shop_layout_wide'),
-    );
+    final choose = find.byKey(const ValueKey('experimentOverride_0_1'));
     await tester.ensureVisible(choose);
     await tester.tap(choose);
     await tester.pump(const Duration(milliseconds: 100));

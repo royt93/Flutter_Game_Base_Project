@@ -359,6 +359,46 @@ void main() {
       expect(find.text('Overridden for testing'), findsNothing);
     });
 
+    testWidgets('action keys omit experiment identity across row reorders', (
+      tester,
+    ) async {
+      final calls = <(String, String?)>[];
+      final first = _exp(key: 'private_experiment_a');
+      final second = _exp(key: 'private_experiment_b', overridden: true);
+      Widget build(List<ExperimentVariantRow> rows) => _host(
+        ExperimentVariantAssignmentCard(
+          rows: rows,
+          onSelectOverride: (key, variant) async => calls.add((key, variant)),
+        ),
+      );
+      await tester.pumpWidget(build([first, second]));
+      final buttons = tester.widgetList<CommonButton>(
+        find.byType(CommonButton),
+      );
+      expect(buttons, isNotEmpty);
+      expect(
+        buttons.map((button) => button.key.toString()).join(),
+        isNot(contains('private_experiment')),
+      );
+      expect(
+        find.byKey(const ValueKey('experimentOverride_0_1')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('experimentOverride_1_1')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('experimentOverride_0_1')));
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(build([second, first]));
+      await tester.tap(find.byKey(const ValueKey('experimentClear_0')));
+      await tester.pumpAndSettle();
+      expect(calls, [
+        ('private_experiment_a', 'wide'),
+        ('private_experiment_b', null),
+      ]);
+    });
+
     testWidgets('override choices exclude the assigned variant', (
       tester,
     ) async {
@@ -372,20 +412,18 @@ void main() {
         ),
       );
       expect(
-        find.byKey(const ValueKey('experimentOverride_shop_control')),
+        find.byKey(const ValueKey('experimentOverride_0_0')),
         findsOneWidget,
       );
       expect(
         tester
             .widget<CommonButton>(
-              find.byKey(const ValueKey('experimentOverride_shop_control')),
+              find.byKey(const ValueKey('experimentOverride_0_0')),
             )
             .onTap,
         isNull,
       );
-      await tester.tap(
-        find.byKey(const ValueKey('experimentOverride_shop_wide')),
-      );
+      await tester.tap(find.byKey(const ValueKey('experimentOverride_0_1')));
       await tester.pumpAndSettle();
       expect(calls, [('shop', 'wide')]);
       expect(find.text('Assigned variant: control'), findsOneWidget);
@@ -402,7 +440,7 @@ void main() {
         ),
       );
       expect(find.text('Overridden for testing'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('experimentClear_shop')));
+      await tester.tap(find.byKey(const ValueKey('experimentClear_0')));
       await tester.pumpAndSettle();
       expect(calls, [('shop', null)]);
     });
@@ -421,7 +459,7 @@ void main() {
           ),
         ),
       );
-      final action = find.byKey(const ValueKey('experimentOverride_shop_wide'));
+      final action = find.byKey(const ValueKey('experimentOverride_0_1'));
       await tester.tap(action);
       await tester.pump();
       expect(tester.widget<CommonButton>(action).onTap, isNull);
@@ -442,9 +480,7 @@ void main() {
         ),
       );
       await tester.pumpWidget(build(_exp()));
-      await tester.tap(
-        find.byKey(const ValueKey('experimentOverride_shop_wide')),
-      );
+      await tester.tap(find.byKey(const ValueKey('experimentOverride_0_1')));
       await tester.pump();
       await tester.pumpWidget(build(_exp(assigned: 'wide', overridden: true)));
       done.completeError(StateError('late'));
@@ -462,9 +498,7 @@ void main() {
           ),
         ),
       );
-      await tester.tap(
-        find.byKey(const ValueKey('experimentOverride_shop_wide')),
-      );
+      await tester.tap(find.byKey(const ValueKey('experimentOverride_0_1')));
       await tester.pumpWidget(const SizedBox.shrink());
       done.completeError(StateError('late'));
       await tester.pump();
@@ -490,9 +524,7 @@ void main() {
             scale: 2,
           ),
         );
-        final action = find.byKey(
-          const ValueKey('experimentOverride_shop_wide'),
-        );
+        final action = find.byKey(const ValueKey('experimentOverride_0_1'));
         await tester.ensureVisible(action);
         expect(tester.takeException(), isNull);
         expect(

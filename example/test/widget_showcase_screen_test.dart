@@ -568,9 +568,7 @@ void main() {
       findsNothing,
     );
 
-    final override = find.byKey(
-      const ValueKey('experimentOverride_shop_layout_wide'),
-    );
+    final override = find.byKey(const ValueKey('experimentOverride_0_1'));
     await tester.ensureVisible(override);
     expect(find.text('Assigned variant: control'), findsOneWidget);
     await tester.tap(override);
@@ -578,7 +576,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 20));
     expect(find.text('Assigned variant: wide'), findsOneWidget);
     expect(find.text('Overridden for testing'), findsOneWidget);
-    final clear = find.byKey(const ValueKey('experimentClear_shop_layout'));
+    final clear = find.byKey(const ValueKey('experimentClear_0'));
     await tester.ensureVisible(clear);
     await tester.tap(clear);
     await tester.pump();
