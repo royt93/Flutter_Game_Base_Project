@@ -57,7 +57,7 @@ void main() {
     );
 
     test(
-      'repo thật: example/assets có 6 runtime assets + manifest hợp lệ -> pass',
+      'repo thật: example/assets có 10 runtime assets + manifest hợp lệ -> pass',
       () async {
         final result = await _runCheck([
           '--root=example',
@@ -70,7 +70,7 @@ void main() {
           0,
           reason: '${result.stdout}\n${result.stderr}',
         );
-        expect(result.stdout as String, contains('6 asset runtime'));
+        expect(result.stdout as String, contains('10 asset runtime'));
         expect(
           result.stdout as String,
           contains('No asset license issues found.'),
@@ -80,7 +80,7 @@ void main() {
     );
 
     test('audit fix: --asset-roots trùng lặp (assets,assets) được dedupe, '
-        'không double-count 6 asset thật thành 12', () async {
+        'không double-count 10 asset thật thành 20', () async {
       final result = await _runCheck([
         '--root=example',
         '--asset-roots=assets, assets',
@@ -88,8 +88,8 @@ void main() {
       ]);
 
       expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
-      expect(result.stdout as String, contains('6 asset runtime'));
-      expect(result.stdout as String, isNot(contains('12 asset runtime')));
+      expect(result.stdout as String, contains('10 asset runtime'));
+      expect(result.stdout as String, isNot(contains('20 asset runtime')));
     }, timeout: const Timeout(Duration(seconds: 30)));
 
     test(
