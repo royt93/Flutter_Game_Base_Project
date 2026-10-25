@@ -4,11 +4,12 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
-import 'package:flutter/material.dart' show Color, Paint;
+import 'package:flutter/material.dart' show Canvas, Color, Colors, Offset, Paint;
 
 import '../../core/game_event_bus.dart';
 import '../../core/neon_theme.dart';
 import '../../core/utils/object_pool.dart';
+import '../widgets/common/game_joystick.dart';
 import 'pooled_component.dart';
 
 /// Minimal Flame starter template (FEAT-14): proves `FlameGame`/`Component`/
@@ -18,7 +19,10 @@ import 'pooled_component.dart';
 /// [TappableCircle]. A consumer app building a real game should extend this
 /// rather than reading it as a template to copy-paste from scratch.
 class RoyGame extends FlameGame with HasCollisionDetection {
-  RoyGame({this.eventBus});
+  RoyGame({this.eventBus, this.enablePlayableCharacter = false});
+
+  final bool enablePlayableCharacter;
+  PlayableCharacter? player;
 
   late final TappableCircle circle;
 
@@ -67,6 +71,11 @@ class RoyGame extends FlameGame with HasCollisionDetection {
 
     orb = BouncingOrb()..position = Vector2(size.x * 0.2, size.y * 0.2);
     add(orb);
+
+    if (enablePlayableCharacter) {
+      player = PlayableCharacter()..position = Vector2(size.x * 0.5, size.y * 0.7);
+      add(player!);
+    }
   }
 
   @override
@@ -258,4 +267,81 @@ class BouncingOrb extends CircleComponent
 /// package.
 class CircleTappedEvent extends GameEvent {
   const CircleTappedEvent();
+}
+
+/// A playable character moving in 8 directions with attack action.
+class PlayableCharacter extends PositionComponent
+    with HasGameReference<RoyGame>, CollisionCallbacks {
+  PlayableCharacter({
+    this.speed = 120.0,
+    Sprite? idleSprite,
+    Sprite? attackSprite,
+  })  : _idleSprite = idleSprite,
+        _attackSprite = attackSprite,
+        super(size: Vector2.all(32), anchor: Anchor.center);
+
+  final double speed;
+  final Sprite? _idleSprite;
+  final Sprite? _attackSprite;
+
+  Vector2 _velocity = Vector2.zero();
+  GameJoystickDirection _direction = GameJoystickDirection.idle;
+  double _attackTimer = 0.0;
+  static const double _attackDuration = 0.2;
+
+  bool get isAttacking => _attackTimer > 0;
+  GameJoystickDirection get direction => _direction;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    await add(CircleHitbox(radius: size.x / 2 - 2));
+  }
+
+  void setMoveInput(GameJoystickDirection direction, Offset unitVector) {
+    _direction = direction;
+    if (unitVector == Offset.zero || direction == GameJoystickDirection.idle) {
+      _velocity = Vector2.zero();
+      return;
+    }
+    final len = unitVector.distance;
+    final normalized = len > 0 ? unitVector / len : Offset.zero;
+    _velocity = Vector2(normalized.dx * speed, normalized.dy * speed);
+    angle = math.atan2(normalized.dy, normalized.dx);
+  }
+
+  void attack() {
+    _attackTimer = _attackDuration;
+    game.spawnSparkleBurst(position + Vector2(math.cos(angle) * 20, math.sin(angle) * 20), count: 4);
+    game.eventBus?.emit(const PlayerAttackedEvent());
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (_attackTimer > 0) {
+      _attackTimer = math.max(0, _attackTimer - dt);
+    }
+    position += _velocity * dt;
+    final bounds = game.size;
+    position.x = position.x.clamp(size.x / 2, bounds.x - size.x / 2);
+    position.y = position.y.clamp(size.y / 2, bounds.y - size.y / 2);
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final sprite = isAttacking ? (_attackSprite ?? _idleSprite) : _idleSprite;
+    if (sprite != null) {
+      sprite.render(canvas, size: size, anchor: Anchor.center);
+    } else {
+      final paint = Paint()..color = isAttacking ? NeonTheme.gold : NeonTheme.cyan;
+      canvas.drawCircle(Offset.zero, size.x / 2, paint);
+      final headingPaint = Paint()..color = Colors.white;
+      canvas.drawCircle(Offset(size.x * 0.35, 0), 4, headingPaint);
+    }
+  }
+}
+
+class PlayerAttackedEvent extends GameEvent {
+  const PlayerAttackedEvent();
 }

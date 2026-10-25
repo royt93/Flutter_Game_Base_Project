@@ -27,7 +27,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.35.1
+          flutter-version: 3.41.9
           channel: stable
           cache: true
 
@@ -40,7 +40,7 @@ jobs:
           title: 'chore: regenerate golden images on Linux CI runner'
           body: |
             Automated regeneration of `test/widget/goldens/*.png` on the
-            exact `ubuntu-latest` + Flutter 3.35.1 environment CI runs on.
+            exact `ubuntu-latest` + Flutter 3.41.9 environment CI runs on.
             These were failing CI's "Test host" check (macOS-generated
             images vs Linux rendering) — review the image diffs before
             merging.

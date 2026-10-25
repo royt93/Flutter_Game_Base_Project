@@ -29,6 +29,7 @@ export 'icon_badge_button.dart';
 export 'sound_toggle_fab.dart';
 export 'candy_text_field.dart';
 export 'candy_slider.dart';
+export 'game_joystick.dart';
 
 // Feedback & Overlay
 export 'scene_preload_status_panel.dart';

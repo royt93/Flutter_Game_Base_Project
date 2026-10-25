@@ -65,6 +65,8 @@ class AppTranslations extends Translations {
           '🎉 Achievement Unlocked: Circle Tap Master! +10 Gems',
       'game_demo_pause_tooltip': 'Pause game',
       'game_demo_info_tooltip': 'Game info',
+      'game_demo_joystick_label': 'Move 8-direction character',
+      'game_demo_attack_button': 'Attack',
       'settings_request_export_title': 'Request Data Export',
       'settings_request_export_subtitle':
           'Download all stored data (GDPR/CCPA)',
@@ -178,6 +180,8 @@ class AppTranslations extends Translations {
           '🎉 Đã mở khóa thành tựu: Bậc thầy chạm Vòng tròn! +10 Ngọc',
       'game_demo_pause_tooltip': 'Tạm dừng trò chơi',
       'game_demo_info_tooltip': 'Thông tin trò chơi',
+      'game_demo_joystick_label': 'Điều khiển nhân vật 8 hướng',
+      'game_demo_attack_button': 'Đánh',
       'settings_request_export_title': 'Yêu cầu xuất dữ liệu',
       'settings_request_export_subtitle':
           'Tải toàn bộ dữ liệu đã lưu (GDPR/CCPA)',

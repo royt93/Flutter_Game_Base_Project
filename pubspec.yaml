@@ -32,7 +32,7 @@ screenshots:
     path: screenshots/game_demo.png
 
 environment:
-  sdk: ^3.9.0
+  sdk: ^3.11.0
 
 dependencies:
   flutter:
@@ -40,7 +40,9 @@ dependencies:
   intl: ^0.20.2
   crypto: ^3.0.6
   get: ^4.7.3
-  flame: ^1.35.1
+  flame: ^1.38.0
+  flame_tiled: ^3.1.2
+  tiled: ^0.11.1
   shared_preferences: ^2.5.5
   flame_audio: ^2.11.14
   share_plus: ^12.0.2

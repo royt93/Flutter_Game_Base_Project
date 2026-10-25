@@ -48,6 +48,38 @@
       "source": "original configuration data, written for this project",
       "attributionRequired": false,
       "distributable": true
+    },
+    {
+      "path": "assets/tiles/survivor1_gun.png",
+      "owner": "Kenney",
+      "license": "CC0-1.0",
+      "source": "https://kenney.nl/assets/top-down-shooter (Topdown Shooter Pack, Survivor 1, survivor1_gun.png)",
+      "attributionRequired": false,
+      "distributable": true
+    },
+    {
+      "path": "assets/tiles/survivor1_machine.png",
+      "owner": "Kenney",
+      "license": "CC0-1.0",
+      "source": "https://kenney.nl/assets/top-down-shooter (Topdown Shooter Pack, Survivor 1, survivor1_machine.png)",
+      "attributionRequired": false,
+      "distributable": true
+    },
+    {
+      "path": "assets/images/roguelikeSheet_transparent.png",
+      "owner": "Kenney",
+      "license": "CC0-1.0",
+      "source": "https://kenney.nl/assets/roguelike-rpg-pack (Roguelike pack, roguelikeSheet_transparent.png)",
+      "attributionRequired": false,
+      "distributable": true
+    },
+    {
+      "path": "assets/tiles/character_arena.tmx",
+      "owner": "royt93",
+      "license": "MIT",
+      "source": "Original Tiled map authored for the roy_casual_kit example using independently licensed CC0 tileset images.",
+      "attributionRequired": false,
+      "distributable": true
     }
   ]
 }

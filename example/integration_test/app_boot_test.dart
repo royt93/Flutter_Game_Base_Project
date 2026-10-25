@@ -68,8 +68,20 @@ Future<void> _goToGameDemo(WidgetTester tester) async {
     Get.back();
     await tester.pump(const Duration(milliseconds: 300));
   }
-  await tester.tap(find.byType(NeonButton).at(2));
-  await tester.pump(const Duration(seconds: 1));
+  // Reset HomeScreen scroll if a previous test scrolled it down.
+  final scrollable = find.byType(SingleChildScrollView);
+  if (scrollable.evaluate().isNotEmpty) {
+    await tester.drag(scrollable.first, const Offset(0, 1000));
+    await tester.pump(const Duration(milliseconds: 200));
+  }
+  final btn = find.widgetWithText(NeonButton, 'game_demo'.tr).first;
+  await tester.ensureVisible(btn);
+  await tester.pump(const Duration(milliseconds: 200));
+  await tester.tap(btn);
+  for (var i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 200));
+    if (find.byType(GameDemoScreen).evaluate().isNotEmpty) break;
+  }
   expect(find.byType(GameDemoScreen), findsOneWidget);
 }
 
@@ -451,6 +463,67 @@ void main() {
       );
       expect(EconomyWallet.maybe!.balanceOf('coins'), 100);
       expect(PurchaseLedgerService.maybe!.balanceOf('pack_coins_100'), 1);
+
+      Get.back();
+      await tester.pump(const Duration(milliseconds: 300));
+      final scrollable = find.byType(SingleChildScrollView);
+      if (scrollable.evaluate().isNotEmpty) {
+        await tester.drag(
+          scrollable.first,
+          const Offset(0, 1000),
+          warnIfMissed: false,
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'FEAT-101: 2D Playable Character joystick and attack button interactive on device',
+    (tester) async {
+      await app.app();
+      await tester.pump(const Duration(seconds: 4));
+      await _goToGameDemo(tester);
+
+      expect(find.byType(GameJoystick), findsOneWidget);
+      final attackBtn = find
+          .byWidgetPredicate(
+            (widget) =>
+                widget is CommonButton &&
+                widget.label == 'game_demo_attack_button'.tr,
+          )
+          .first;
+      expect(attackBtn, findsOneWidget);
+
+      final game = tester
+          .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
+          .game!;
+      expect(game.player, isNotNull);
+
+      // On physical device, system lifecycle may briefly pause the engine at launch.
+      // Ensure the engine is running so touches and updates process.
+      if (game.paused) {
+        game.resumeEngine();
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(game.paused, isFalse);
+
+      // Drag joystick right
+      final startX = game.player!.position.x;
+      final joystick = find.byType(GameJoystick);
+      await tester.timedDrag(
+        joystick,
+        const Offset(40, 0),
+        const Duration(milliseconds: 400),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(game.player!.position.x, greaterThan(startX));
+
+      // Tap attack button
+      await tester.tap(attackBtn);
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(game.player!.isAttacking, isTrue);
 
       Get.back();
       await tester.pump(const Duration(milliseconds: 300));
