@@ -1,3 +1,15 @@
+## 0.6.4
+
+- Added reusable public `GameJoystick` widget (`presentation/widgets/common/game_joystick.dart`) with caller-owned normalized vector output, eight-way direction classification (`GameJoystickDirection`), auto-reset to neutral on pointer release/cancel, and accessible semantics.
+- Added Tiled terrain collision parser `lib/presentation/game/tiled_terrain_collision.dart` supporting solid tiles (`solid: true` property) and object-layer shapes (rectangles and polygons), converting map data into Flame hitboxes.
+- Added `PlayableCharacter` to `RoyGame` supporting 8-direction movement, normalized diagonal speed, automatic heading rotation, and attack action triggering particle bursts.
+- Integrated `GameJoystick` and attack `CommonButton` into `GameDemoScreen` alongside existing pause/resume, event bus, and session lifecycle flows.
+- Upgraded `flame` to `^1.38.0`, added `flame_tiled: ^3.1.2` and `tiled: ^0.11.1`. Raised minimum Dart SDK constraint to `^3.11.0` and Flutter CI runner pin to `3.41.9`.
+- Added verified CC0 Kenney character poses (`survivor1_gun.png`, `survivor1_machine.png`), Roguelike terrain spritesheet, and `character_arena.tmx` to `example/assets/` with full license manifest records in `LICENSES.json`.
+- Verified: unit tests in `game_joystick_test.dart` and `tiled_terrain_collision_test.dart`, Flame component tests in `roy_game_character_test.dart`, and full demo tests in `game_demo_screen_test.dart` pass.
+- Verified on physical TECNO KJ7 (Android 14): multi-touch joystick drag, 8-direction movement, attack button particle flare, and unpause recovery verified with screen captures and integration smoke test.
+- Verified CI: analyzers report 0 issues on package and example; public API compatibility gate is additive; five quality gates pass; GitHub Actions CI Linux (run 40167026533) passes all three jobs.
+
 ## 0.6.3
 
 - Added `WorkloadPerformanceBudget` in `core/utils/performance_budget.dart` to evaluate integration test frame timings against configurable p95, slow-frame percentage, and minimum frame thresholds with actionable failure diagnostics, plus `extractMetrics` for baseline integration.
