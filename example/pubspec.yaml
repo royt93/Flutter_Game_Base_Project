@@ -35,6 +35,8 @@ flutter:
   assets:
     - assets/audio/
     - assets/remote_config/
+    - assets/images/
+    - assets/tiles/
 
 icons_launcher:
   image_path: "asset/icon/ic_launcher.png"

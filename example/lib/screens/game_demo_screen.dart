@@ -104,7 +104,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     super.initState();
     _ownsEventBus = widget.eventBus == null;
     _eventBus = widget.eventBus ?? GameEventBus();
-    _game = RoyGame(eventBus: _eventBus, enablePlayableCharacter: true);
+    _game = RoyGame(eventBus: _eventBus);
     _sessionPhaseWorker = ever<GameSessionSnapshot>(_session.snapshot, (
       snapshot,
     ) {
@@ -449,39 +449,6 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                         }),
                       ],
                     ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: NeonTheme.s16,
-                bottom: 230,
-                child: RepaintBoundary(
-                  child: GameJoystick(
-                    semanticLabel: 'game_demo_joystick_label'.tr,
-                    size: 110,
-                    knobSize: 42,
-                    onDirectionChanged: (direction, vector) {
-                      _game.player?.setMoveInput(direction, vector);
-                    },
-                  ),
-                ),
-              ),
-              Positioned(
-                right: NeonTheme.s16,
-                bottom: 370,
-                child: RepaintBoundary(
-                  child: CommonButton(
-                    label: 'game_demo_attack_button'.tr,
-                    variant: CommonButtonVariant.primary,
-                    width: 100,
-                    color: NeonTheme.orange,
-                    onTap: () {
-                      _haptics.play(HapticPattern([const HapticPulse(level: HapticLevel.light)]));
-                      unawaited(
-                        AudioManager.maybe?.playSfx(_sfxTap, volume: 0.5),
-                      );
-                      _game.player?.attack();
-                    },
                   ),
                 ),
               ),

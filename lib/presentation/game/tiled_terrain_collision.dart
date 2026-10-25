@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show Rect;
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
@@ -23,16 +24,59 @@ class TerrainRectangle extends TerrainCollider {
 }
 
 class TerrainPolygon extends TerrainCollider {
-  const TerrainPolygon(this.vertices);
+  const TerrainPolygon(this.position, this.vertices);
 
+  final Vector2 position;
   final List<Vector2> vertices;
 
   @override
   PositionComponent toComponent() =>
-      PolygonComponent([for (final v in vertices) v.clone()])
-        ..add(PolygonHitbox([
+      PositionComponent(position: position.clone())..add(
+        PolygonHitbox([
           for (final v in vertices) v.clone(),
-        ], collisionType: CollisionType.passive));
+        ], collisionType: CollisionType.passive),
+      );
+}
+
+bool terrainColliderOverlapsRect(TerrainCollider collider, Rect rect) {
+  if (collider is TerrainRectangle) {
+    return rect.overlaps(
+      Rect.fromLTWH(
+        collider.position.x,
+        collider.position.y,
+        collider.size.x,
+        collider.size.y,
+      ),
+    );
+  }
+  final polygon = collider as TerrainPolygon;
+  final points = [
+    for (final point in polygon.vertices) point + polygon.position,
+  ];
+  final rectPoints = [
+    Vector2(rect.left, rect.top),
+    Vector2(rect.right, rect.top),
+    Vector2(rect.right, rect.bottom),
+    Vector2(rect.left, rect.bottom),
+  ];
+  final axes = <Vector2>[
+    Vector2(1, 0),
+    Vector2(0, 1),
+    for (var i = 0; i < points.length; i++)
+      Vector2(
+        -(points[(i + 1) % points.length].y - points[i].y),
+        points[(i + 1) % points.length].x - points[i].x,
+      ),
+  ];
+  for (final axis in axes) {
+    final polygonProjection = points.map((point) => point.dot(axis));
+    final rectProjection = rectPoints.map((point) => point.dot(axis));
+    if (polygonProjection.reduce(math.min) > rectProjection.reduce(math.max) ||
+        rectProjection.reduce(math.min) > polygonProjection.reduce(math.max)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 List<TerrainCollider> readTiledTerrainColliders(
@@ -86,13 +130,10 @@ List<TerrainCollider> readTiledTerrainColliders(
           }
           final vertices = [
             for (final point in object.polygon)
-              Vector2(
-                point.x * scaleX,
-                point.y * scaleY,
-              ),
+              Vector2(point.x * scaleX, point.y * scaleY),
           ];
           _validateSimplePolygon(vertices, object.name);
-          colliders.add(TerrainPolygon(vertices));
+          colliders.add(TerrainPolygon(Vector2(x, y), vertices));
         } else if (object.isRectangle) {
           if (object.width <= 0 || object.height <= 0) {
             throw FormatException(
@@ -125,8 +166,11 @@ void _validateSimplePolygon(List<Vector2> vertices, String name) {
     crosses.add((b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x));
   }
   if (crosses.any((cross) => cross.abs() < 1e-9) ||
-      (crosses.any((cross) => cross > 0) && crosses.any((cross) => cross < 0))) {
-    throw FormatException('Tiled collision polygon must be simple and convex: $name');
+      (crosses.any((cross) => cross > 0) &&
+          crosses.any((cross) => cross < 0))) {
+    throw FormatException(
+      'Tiled collision polygon must be simple and convex: $name',
+    );
   }
   final signedArea = vertices.fold<double>(0, (area, a) {
     final b = vertices[(vertices.indexOf(a) + 1) % vertices.length];

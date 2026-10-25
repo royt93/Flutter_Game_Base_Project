@@ -8,11 +8,14 @@ import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:roy_casual_kit/roy_casual_kit.dart';
 import 'package:roy_casual_kit_example/main.dart' as app;
+import 'package:roy_casual_kit_example/game/sprite_arena_game.dart';
 import 'package:roy_casual_kit_example/screens/cookbook_screen.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
+import 'package:roy_casual_kit_example/screens/mini_game_hub_screen.dart';
 import 'package:roy_casual_kit_example/screens/monetization_screen.dart';
 import 'package:roy_casual_kit_example/screens/settings_screen.dart';
+import 'package:roy_casual_kit_example/screens/sprite_arena_demo_screen.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
 
 /// Navigates fresh to [WidgetShowcaseScreen] from [HomeScreen]. GetX's
@@ -62,12 +65,27 @@ Future<void> _goToCookbook(WidgetTester tester) async {
   expect(find.byType(CookbookScreen), findsOneWidget);
 }
 
-/// Same index-not-label reasoning as [_goToWidgetShowcase].
-Future<void> _goToGameDemo(WidgetTester tester) async {
-  while (find.byType(GameDemoScreen).evaluate().isNotEmpty) {
+/// Pops the mini-game hub and any game screen above it (offstage routes
+/// included) so Home is the only live screen again.
+Future<void> _popToHome(WidgetTester tester) async {
+  bool gameRoutesLive() => [
+    find.byType(MiniGameHubScreen),
+    find.byType(GameDemoScreen),
+    find.byType(SpriteArenaDemoScreen),
+  ].any((f) => f.evaluate().isNotEmpty);
+  while (gameRoutesLive()) {
     Get.back();
     await tester.pump(const Duration(milliseconds: 300));
   }
+}
+
+/// Home → Flame Demo (opens [MiniGameHubScreen]) → tap [optionLabelKey].
+Future<void> _openMiniGame(
+  WidgetTester tester,
+  String optionLabelKey,
+  Type target,
+) async {
+  await _popToHome(tester);
   // Reset HomeScreen scroll if a previous test scrolled it down.
   final scrollable = find.byType(SingleChildScrollView);
   if (scrollable.evaluate().isNotEmpty) {
@@ -80,10 +98,27 @@ Future<void> _goToGameDemo(WidgetTester tester) async {
   await tester.tap(btn);
   for (var i = 0; i < 10; i++) {
     await tester.pump(const Duration(milliseconds: 200));
-    if (find.byType(GameDemoScreen).evaluate().isNotEmpty) break;
+    if (find.byType(MiniGameHubScreen).evaluate().isNotEmpty) break;
   }
-  expect(find.byType(GameDemoScreen), findsOneWidget);
+  expect(find.byType(MiniGameHubScreen), findsOneWidget);
+
+  await tester.tap(
+    find.byWidgetPredicate(
+      (widget) => widget is CommonButton && widget.label == optionLabelKey.tr,
+    ),
+  );
+  for (var i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 200));
+    if (find.byType(target).evaluate().isNotEmpty) break;
+  }
+  expect(find.byType(target), findsOneWidget);
 }
+
+Future<void> _goToGameDemo(WidgetTester tester) =>
+    _openMiniGame(tester, 'mini_game_classic_flame', GameDemoScreen);
+
+Future<void> _goToSpriteArena(WidgetTester tester) =>
+    _openMiniGame(tester, 'mini_game_sprite_arena', SpriteArenaDemoScreen);
 
 Future<void> _goToMonetization(WidgetTester tester) async {
   while (find.byType(MonetizationScreen).evaluate().isNotEmpty) {
@@ -93,7 +128,10 @@ Future<void> _goToMonetization(WidgetTester tester) async {
   final btn = find.widgetWithText(NeonButton, 'monetization'.tr).first;
   for (var i = 0; i < 6; i++) {
     if (btn.evaluate().isNotEmpty) break;
-    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -300));
+    await tester.drag(
+      find.byType(SingleChildScrollView),
+      const Offset(0, -300),
+    );
     await tester.pump(const Duration(milliseconds: 200));
   }
   await tester.ensureVisible(btn);
@@ -415,12 +453,10 @@ void main() {
       await _goToGameDemo(tester);
 
       final pauseFab = find.byWidgetPredicate(
-        (widget) =>
-            widget is FloatingActionButton && widget.heroTag == 'pause',
+        (widget) => widget is FloatingActionButton && widget.heroTag == 'pause',
       );
       final infoFab = find.byWidgetPredicate(
-        (widget) =>
-            widget is FloatingActionButton && widget.heroTag == 'info',
+        (widget) => widget is FloatingActionButton && widget.heroTag == 'info',
       );
 
       expect(pauseFab, findsOneWidget);
@@ -480,13 +516,15 @@ void main() {
   );
 
   testWidgets(
-    'FEAT-101: 2D Playable Character joystick and attack button interactive on device',
+    'FEAT-101: Sprite Arena joystick and attack button interactive on device',
     (tester) async {
       await app.app();
       await tester.pump(const Duration(seconds: 4));
-      await _goToGameDemo(tester);
+      await _goToSpriteArena(tester);
 
       expect(find.byType(GameJoystick), findsOneWidget);
+      // Dedicated arena: no legacy circle-demo HUD.
+      expect(find.byType(ReactiveEnergyBar), findsNothing);
       final attackBtn = find
           .byWidgetPredicate(
             (widget) =>
@@ -499,34 +537,101 @@ void main() {
       final game = tester
           .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
           .game!;
-      expect(game.player, isNotNull);
+      await Future<void>.sync(
+        game.toBeLoaded,
+      ).timeout(const Duration(seconds: 10));
+      await tester.pump(const Duration(milliseconds: 300));
+      final player = game.player!;
+      expect(player.hasSprites, isTrue);
+      expect(game.arena, isNotNull);
+      expect(game.children.whereType<TappableCircle>(), isEmpty);
+      expect(game.children.whereType<BouncingOrb>(), isEmpty);
+      expect(game.terrainColliders, isNotEmpty);
 
-      // On physical device, system lifecycle may briefly pause the engine at launch.
-      // Ensure the engine is running so touches and updates process.
-      if (game.paused) {
-        game.resumeEngine();
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-      expect(game.paused, isFalse);
-
-      // Drag joystick right
-      final startX = game.player!.position.x;
       final joystick = find.byType(GameJoystick);
-      await tester.timedDrag(
-        joystick,
-        const Offset(40, 0),
-        const Duration(milliseconds: 400),
-      );
+      final center = tester.getCenter(joystick);
+      final cameraStart = game.camera.viewfinder.position.clone();
+      final cameraGesture = await tester.startGesture(center);
+      await cameraGesture.moveTo(center + const Offset(50, 0));
+      await tester.pump(const Duration(seconds: 1));
+      await cameraGesture.up();
       await tester.pump(const Duration(milliseconds: 200));
-      expect(game.player!.position.x, greaterThan(startX));
+      expect(
+        game.camera.viewfinder.position.x,
+        greaterThan(cameraStart.x),
+        reason: 'camera follows the player',
+      );
+      expect(
+        (game.camera.viewfinder.position - player.position).length,
+        lessThan(120),
+      );
 
-      // Tap attack button
+      for (final direction in GameJoystickDirection.values) {
+        if (direction == GameJoystickDirection.idle) continue;
+        player.position = Vector2(300, 220);
+        final start = player.position.clone();
+        final input = GameJoystick.vectorFor(direction);
+        final gesture = await tester.startGesture(center);
+        await gesture.moveTo(center + input * 40);
+        await tester.pump(const Duration(milliseconds: 150));
+        expect(player.direction, direction);
+        final delta = player.position - start;
+        if (input.dx.abs() > 0.01) {
+          expect(delta.x * input.dx, greaterThan(0), reason: '$direction x');
+        }
+        if (input.dy.abs() > 0.01) {
+          expect(delta.y * input.dy, greaterThan(0), reason: '$direction y');
+        }
+        await gesture.up();
+        await tester.pump();
+        expect(player.direction, GameJoystickDirection.idle);
+      }
+
+      player.position = Vector2(180, 280);
+      final wallGesture = await tester.startGesture(center);
+      await wallGesture.moveTo(center - const Offset(50, 0));
+      await tester.pump(const Duration(seconds: 2));
+      await wallGesture.up();
+      expect(player.position.x, greaterThanOrEqualTo(48 + player.size.x / 4));
+      expect(player.position.x, lessThan(180));
+
+      player.position = Vector2(300, 312);
+      final crateGesture = await tester.startGesture(center);
+      await crateGesture.moveTo(center + const Offset(50, 0));
+      await tester.pump(const Duration(milliseconds: 700));
+      await crateGesture.up();
+      expect(player.position.x, lessThanOrEqualTo(384 - player.size.x / 4));
+
+      player.position = Vector2(360, 360);
+      player.setMoveInput(GameJoystickDirection.right, const Offset(1, 0));
+      player.update(0);
+      player.setMoveInput(GameJoystickDirection.idle, Offset.zero);
       await tester.tap(attackBtn);
       await tester.pump(const Duration(milliseconds: 50));
-      expect(game.player!.isAttacking, isTrue);
-
-      Get.back();
+      expect(player.isAttacking, isTrue);
+      final bullets = game.world.children.whereType<ArenaBullet>().toList();
+      expect(bullets, hasLength(1));
+      final bulletStart = bullets.single.position.clone();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(bullets.single.position.x, greaterThan(bulletStart.x));
       await tester.pump(const Duration(milliseconds: 300));
+      expect(player.isAttacking, isFalse);
+
+      final pause = find.byTooltip('game_demo_pause_tooltip'.tr);
+      await tester.tap(pause);
+      await tester.pump();
+      expect(game.paused, isTrue);
+      final frozen = player.position.clone();
+      final pausedGesture = await tester.startGesture(center);
+      await pausedGesture.moveTo(center - const Offset(50, 0));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(player.position, frozen);
+      await pausedGesture.up();
+      await tester.tap(pause);
+      await tester.pump();
+      expect(game.paused, isFalse);
+
+      await _popToHome(tester);
       expect(tester.takeException(), isNull);
     },
   );
@@ -1420,10 +1525,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(game.eventBus?.hasListeners, isTrue);
 
-      while (find.byType(GameDemoScreen).evaluate().isNotEmpty) {
-        Get.back();
-        await tester.pump(const Duration(milliseconds: 300));
-      }
+      await _popToHome(tester);
       expect(game.eventBus?.hasListeners, isFalse);
 
       await _goToWidgetShowcase(tester);
@@ -1716,8 +1818,7 @@ void main() {
     await tester.tap(resume.first);
     await tester.pump(const Duration(milliseconds: 500));
 
-    Get.back();
-    await tester.pump(const Duration(milliseconds: 300));
+    await _popToHome(tester);
     expect(find.byType(HomeScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

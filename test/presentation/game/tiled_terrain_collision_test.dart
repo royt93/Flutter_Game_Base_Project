@@ -1,3 +1,5 @@
+import 'dart:ui' show Rect;
+
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -46,6 +48,7 @@ void main() {
     expect(rectangle.position, Vector2(36, 54));
     expect(rectangle.size, Vector2(32, 12));
     final polygon = colliders[1] as TerrainPolygon;
+    expect(polygon.position, Vector2(4, 6));
     expect(polygon.vertices, [Vector2.zero(), Vector2(32, 0), Vector2(16, 24)]);
   });
 
@@ -76,6 +79,37 @@ void main() {
     );
   });
 
+  test('tile rectangles and object polygons block overlapping player bounds', () {
+    final wall = TerrainRectangle(Vector2(40, 40), Vector2(20, 20));
+    expect(
+      terrainColliderOverlapsRect(wall, const Rect.fromLTWH(30, 45, 16, 16)),
+      isTrue,
+    );
+    expect(
+      terrainColliderOverlapsRect(wall, const Rect.fromLTWH(0, 0, 16, 16)),
+      isFalse,
+    );
+
+    final polygon = TerrainPolygon(
+      Vector2(40, 40),
+      [Vector2.zero(), Vector2(20, 0), Vector2(10, 20)],
+    );
+    expect(
+      terrainColliderOverlapsRect(
+        polygon,
+        const Rect.fromLTWH(47, 45, 8, 8),
+      ),
+      isTrue,
+    );
+    expect(
+      terrainColliderOverlapsRect(
+        polygon,
+        const Rect.fromLTWH(0, 0, 8, 8),
+      ),
+      isFalse,
+    );
+  });
+
   test('TerrainCollider toComponent builds Passive hitboxes with matching bounds', () {
     final rectCollider = TerrainRectangle(Vector2(10, 20), Vector2(30, 40));
     final rectComp = rectCollider.toComponent();
@@ -83,7 +117,10 @@ void main() {
     expect(rectComp.size, Vector2(30, 40));
     expect(rectComp.children.whereType<ShapeHitbox>(), isNotEmpty);
 
-    final polyCollider = TerrainPolygon([Vector2.zero(), Vector2(10, 0), Vector2(5, 10)]);
+    final polyCollider = TerrainPolygon(
+      Vector2.zero(),
+      [Vector2.zero(), Vector2(10, 0), Vector2(5, 10)],
+    );
     final polyComp = polyCollider.toComponent();
     expect(polyComp.children.whereType<ShapeHitbox>(), isNotEmpty);
   });

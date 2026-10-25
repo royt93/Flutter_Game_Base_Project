@@ -15,7 +15,6 @@ import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/game/roy_game.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/confetti_overlay.dart';
-import 'package:roy_casual_kit/presentation/widgets/common/game_joystick.dart';
 import 'package:roy_casual_kit/presentation/widgets/flame_tracked_overlay.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_app_bar.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
@@ -701,42 +700,4 @@ void main() {
     });
   });
 
-  group('FEAT-101: 2D Playable Character & Joystick Controls', () {
-    testWidgets('renders GameJoystick and Attack button in GameDemoScreen', (
-      tester,
-    ) async {
-      await tester.pumpWidget(_wrap(const GameDemoScreen()));
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(GameJoystick), findsOneWidget);
-      expect(_button('Attack'), findsOneWidget);
-
-      final game = tester
-          .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
-          .game!;
-      expect(game.player, isNotNull);
-
-      // Drag joystick right -> player moves right
-      final startX = game.player!.position.x;
-      final joystick = find.byType(GameJoystick);
-      final center = tester.getCenter(joystick);
-      final gesture = await tester.startGesture(center);
-      await gesture.moveBy(const Offset(30, 0));
-      for (var i = 0; i < 4; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
-      expect(game.player!.position.x, greaterThan(startX));
-
-      await gesture.up();
-      await tester.pump(const Duration(milliseconds: 50));
-
-      // Tap attack button -> player enters attack state
-      expect(game.player!.isAttacking, isFalse);
-      await tester.tap(_button('Attack'));
-      await tester.pump(const Duration(milliseconds: 50));
-      expect(game.player!.isAttacking, isTrue);
-
-      expect(tester.takeException(), isNull);
-    });
-  });
 }

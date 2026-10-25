@@ -27,6 +27,8 @@ Là Flutter/Flame developer, tôi muốn xem và tái sử dụng joystick ảo 
 - [x] Joystick emits all 8 directions, normalized diagonal vector, neutral after pointer-up/cancel; semantics label is present.
 - [x] Example character moves and faces all 8 directions; speed remains normalized diagonally.
 - [x] Attack button triggers a visible local effect; repeated attacks remain bounded and do not create unbounded components.
+- [x] Home opens a mini-game hub; classic Flame demo and Sprite Arena remain separate screens.
+- [x] Sprite Arena widget tests prove isolated screen structure, joystick movement, and Attack action.
 - [x] Tiled map renders; `solid: true` tiles block movement; object-layer rectangles/polygons block movement; traversable terrain stays passable.
 - [x] Tile-size scaling, layer/object offsets and supported polygon conversion have explicit tests; unsupported shapes/rotation fail clearly rather than silently bypass collision.
 - [x] Pause/resume, app background/foreground lifecycle, existing circle tap/collision demo and HUD/info overlays continue to work.
@@ -36,11 +38,14 @@ Là Flutter/Flame developer, tôi muốn xem và tái sử dụng joystick ảo 
 ## Test plan
 
 - [x] Unit: joystick direction/normalization/release (`game_joystick_test.dart`); Tiled tile/object collision conversion (`tiled_terrain_collision_test.dart`).
-- [x] Widget: joystick drag, eight directions, release/cancel, semantics, attack callback (`game_demo_screen_test.dart`).
+- [x] Widget: joystick direction/normalization/release/cancel/semantics (`game_joystick_test.dart`); `RoyGame` player movement and attack (`roy_game_character_test.dart`).
+- [x] Widget: hub navigation and dedicated Sprite Arena structure/joystick/attack (`settings_screen_test.dart`, `sprite_arena_demo_screen_test.dart`).
 - [x] Flame `GameWidget`: character movement in 8 directions, diagonal normalization, attack state timer reset (`roy_game_character_test.dart`).
-- [x] Existing root and example tests pass; analyzers, API compatibility, all five quality checks and clean-tree `dart pub publish --dry-run` pass.
-- [x] Linux golden workflow only if golden files change; never regenerate PNGs locally on macOS.
-- [x] TECNO physical-device smoke: physical drag on joystick moves player, tap attack button triggers attack state and visual particle flare; screenshots captured on TECNO KJ7.
+- [x] Root non-golden regression after camera/bullet/map fixes: 3,502 tests passed. Final full example suite (including the real-asset camera/muzzle regression) also passed.
+- [x] Root/example analyzers and API compatibility passed for the camera/bullet changes.
+- [x] Five quality gates and example asset-license check (10/10 entries) passed after camera/bullet/map fixes.
+- [x] Physical-device smoke: Pixel 7 Pro (thay TECNO ngắt kết nối theo lựa chọn của người dùng) chạy `app_boot_test.dart` pass 100% (sprite/map load, 8 hướng joystick, camera follow, cản tường viền, cản crate, đạn bay từ nòng, pause/resume). Đã chụp ảnh màn hình bằng chứng camera follow, đạn bay từ nòng súng, thùng và đá.
+- [ ] Clean-tree publish gate: chạy `dart pub publish --dry-run` sau khi commit; trước commit chỉ báo cảnh báo working tree (exit 65).
 
 ## Prompt loop feature
 
@@ -48,13 +53,11 @@ Read this task and the approved implementation plan before coding. Work only on 
 
 ## Decision
 
-Đã hoàn thành, tự chấm 10/10.
+Hoàn thành, tự chấm 9.5/10 (trừ điểm vì proof thiết bị là Pixel 7 Pro, không phải TECNO; TECNO mất kết nối USB giữa chừng và người dùng chọn thay bằng Pixel).
 
-- **SDK & Dependency**: Nâng Flame lên `^1.38.0`, bổ sung `flame_tiled: ^3.1.2` và `tiled: ^0.11.1`. Cập nhật SDK constraint lên `^3.11.0` và đồng bộ version Flutter 3.41.9 trong `.github/workflows/ci.yml`, `regenerate-goldens.yml`, `benchmark.yml` và `CLAUDE.md`.
-- **Public SDK Joystick Widget**: Tạo `GameJoystick` (`lib/presentation/widgets/common/game_joystick.dart`) là Flutter widget dùng chung cho developer, xuất ra `GameJoystickDirection` (8 hướng + idle) và `unitVector` chuẩn hóa, tự động reset về neutral khi thả tay/cancel, có semantic label accessibility. Export qua `common_widgets.dart` và cập nhật API snapshot.
-- **Tiled Terrain Collision**: Tạo `lib/presentation/game/tiled_terrain_collision.dart` đọc metadata Tiled map (`tiled 0.11.1`), trích xuất các ô có thuộc tính `solid: true` thành `TerrainRectangle` và các đối tượng trong ObjectGroup thành `TerrainRectangle`/`TerrainPolygon`, chuyển đổi trực tiếp thành Flame `PositionComponent` gắn passive hitbox. 4 unit tests trong `tiled_terrain_collision_test.dart` pass 100%.
-- **Playable Character & Attack**: Bổ sung `PlayableCharacter` vào `RoyGame` (`lib/presentation/game/roy_game.dart`) di chuyển 8 hướng theo joystick, chuẩn hoá tốc độ đường chéo, tự xoay theo hướng di chuyển, nút Attack kích hoạt particle burst và đổi trạng thái. Test `roy_game_character_test.dart` pass 100%.
-- **Tiled Map & CC0 Assets**: Thêm Tiled map `character_arena.tmx` cùng spritesheet và nhân vật CC0 từ Kenney (đã kiểm tra và khai báo đầy đủ trong `example/assets/LICENSES.json`). Kiểm tra bản quyền `tool/asset_license_check.dart` pass 10/10 entries sạch 0 issue.
-- **GameDemoScreen Integration**: Tích hợp `GameJoystick` và nút Attack `CommonButton` vào màn hình demo, test tương tác trong `game_demo_screen_test.dart` pass 22/22 tests.
-- **Kiểm chứng trên thiết bị thật TECNO KJ7 (`115333744A005844`)**: Chạy integration test `FEAT-101: 2D Playable Character joystick and attack button interactive on device` pass; cài đặt app và chụp ảnh màn hình chứng minh nhân vật di chuyển 8 hướng và nút Attack bắn hiệu ứng trên máy thật.
-- **Analyzers & Gates**: `flutter analyze` 0 issue ở cả root và example; 5 quality gates pass; `dart pub publish --dry-run` 0 warnings.
+- **Tách demo**: `HomeScreen` mở `MiniGameHubScreen`; hub chọn `GameDemoScreen` (classic, giữ nguyên vòng tròn/HUD) hoặc `SpriteArenaDemoScreen` (full-screen: map Tiled, nhân vật sprite, joystick, Attack, pause/back).
+- **SDK public**: `GameJoystick` (8 hướng, vector chuẩn hoá, neutral khi thả/cancel, semantic label), đọc collider Tiled (`solid: true` tile + object layer rectangle/polygon), `PlayableCharacter` với hook `onAttack`. Không có combat API trong package.
+- **Example-owned**: `SpriteArenaGame` — camera follow có bounds trên map 32×24, đạn xuất phát từ nòng súng (tối đa 24 viên, mất khi chạm vật cản, nổ tia lửa khi trúng), tile Kenney crate/barrel/đá khớp collision object.
+- **Sửa bug lộ ra khi kiểm chứng**: nhân vật xuyên tường khi một frame đi quá xa (nay đi theo bước ngắn, có test); polygon collider vẽ khối trắng (nay chỉ còn hitbox vô hình).
+- **Kiểm chứng**: root non-golden 3,502 test, full example 328 test, root/example analyzer, API check, 5 quality gate, asset-license check (10/10) đều pass; smoke `app_boot_test.dart` trên Pixel 7 Pro pass; ảnh chụp thực tế xác nhận camera follow, đạn từ nòng, thùng/đá hiển thị.
+- **Chưa làm**: golden không đổi (không cần workflow Linux); chưa push, CI Linux chưa chạy cho bản này.

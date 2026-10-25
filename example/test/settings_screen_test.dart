@@ -9,11 +9,14 @@ import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/pseudo_locale.dart';
 import 'package:roy_casual_kit/core/wake_lock_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/candy_slider.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/list_tile_row.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/toggle_switch.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_dialog.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
+import 'package:roy_casual_kit_example/screens/mini_game_hub_screen.dart';
+import 'package:roy_casual_kit_example/screens/sprite_arena_demo_screen.dart';
 import 'package:roy_casual_kit_example/screens/daily_reward_screen.dart';
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
 import 'package:roy_casual_kit_example/screens/save_cloud_screen.dart';
@@ -100,22 +103,56 @@ void main() {
         },
       );
 
-      testWidgets('tap "Flame Demo" → điều hướng thật sang GameDemoScreen', (
-        tester,
-      ) async {
-        await _boot();
+      testWidgets(
+        'tap "Flame Demo" → điều hướng sang MiniGameHubScreen rồi mở cả 2 demo',
+        (tester) async {
+          await _boot();
 
-        await tester.pumpWidget(_wrap(const HomeScreen()));
-        await tester.pump(const Duration(milliseconds: 100));
-
-        await tester.tap(find.widgetWithText(NeonButton, 'Flame Demo').first);
-        for (var i = 0; i < 3; i++) {
+          await tester.pumpWidget(_wrap(const HomeScreen()));
           await tester.pump(const Duration(milliseconds: 100));
-        }
 
-        expect(find.byType(GameDemoScreen), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      });
+          await tester.tap(find.widgetWithText(NeonButton, 'Flame Demo').first);
+          for (var i = 0; i < 3; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+
+          expect(find.byType(MiniGameHubScreen), findsOneWidget);
+
+          // Can navigate to Sprite Arena
+          await tester.tap(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is CommonButton && widget.label == '2D Sprite Arena',
+            ),
+          );
+          for (var i = 0; i < 3; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+          expect(find.byType(SpriteArenaDemoScreen), findsOneWidget);
+
+          Get.back();
+          for (var i = 0; i < 8; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+          expect(find.byType(SpriteArenaDemoScreen), findsNothing);
+          expect(find.byType(MiniGameHubScreen), findsOneWidget);
+
+          // Can navigate to Classic Flame demo
+          await tester.tap(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is CommonButton &&
+                  widget.label == 'Classic Flame Demo',
+            ),
+          );
+          for (var i = 0; i < 3; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+          expect(find.byType(GameDemoScreen), findsOneWidget);
+
+          expect(tester.takeException(), isNull);
+        },
+      );
 
       testWidgets(
         'tap "Daily Rewards" → điều hướng thật sang DailyRewardScreen',

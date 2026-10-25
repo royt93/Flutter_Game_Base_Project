@@ -1,16 +1,22 @@
+import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' show Rect;
 
+import 'package:flame/cache.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
-import 'package:flutter/material.dart' show Canvas, Color, Colors, Offset, Paint;
+import 'package:flame_tiled/flame_tiled.dart';
+import 'package:flutter/material.dart'
+    show Canvas, Color, Colors, Offset, Paint;
 
 import '../../core/game_event_bus.dart';
 import '../../core/neon_theme.dart';
 import '../../core/utils/object_pool.dart';
 import '../widgets/common/game_joystick.dart';
 import 'pooled_component.dart';
+import 'tiled_terrain_collision.dart';
 
 /// Minimal Flame starter template (FEAT-14): proves `FlameGame`/`Component`/
 /// `GameWidget` actually wire up end-to-end in this package — the `flame`
@@ -19,10 +25,26 @@ import 'pooled_component.dart';
 /// [TappableCircle]. A consumer app building a real game should extend this
 /// rather than reading it as a template to copy-paste from scratch.
 class RoyGame extends FlameGame with HasCollisionDetection {
-  RoyGame({this.eventBus, this.enablePlayableCharacter = false});
+  RoyGame({
+    this.eventBus,
+    this.enablePlayableCharacter = false,
+    this.showClassicDemo = true,
+    this.arenaMapFileName,
+    this.spriteLoader,
+    List<TerrainCollider> terrainColliders = const [],
+  }) : terrainColliders = List.of(terrainColliders) {
+    images = Images();
+  }
 
   final bool enablePlayableCharacter;
+  final bool showClassicDemo;
+  final String? arenaMapFileName;
+  final Future<Sprite> Function(String assetName)? spriteLoader;
   PlayableCharacter? player;
+  TiledComponent? arena;
+  final List<TerrainCollider> terrainColliders;
+  Future<void>? arenaLoad;
+  Future<void>? playerLoad;
 
   late final TappableCircle circle;
 
@@ -66,22 +88,58 @@ class RoyGame extends FlameGame with HasCollisionDetection {
     // `camera.localToGlobal(...)` (used by FlameTrackedOverlay, IDEA-07)
     // silently doubles any position that happens to equal size / 2.
     camera.viewfinder.anchor = Anchor.topLeft;
-    circle = TappableCircle()..position = size / 2;
-    add(circle);
+    if (showClassicDemo) {
+      circle = TappableCircle()..position = size / 2;
+      add(circle);
 
-    orb = BouncingOrb()..position = Vector2(size.x * 0.2, size.y * 0.2);
-    add(orb);
+      orb = BouncingOrb()..position = Vector2(size.x * 0.2, size.y * 0.2);
+      add(orb);
+    }
+
+    if (arenaMapFileName != null) {
+      arenaLoad = _loadArena(arenaMapFileName!);
+    }
 
     if (enablePlayableCharacter) {
-      player = PlayableCharacter()..position = Vector2(size.x * 0.5, size.y * 0.7);
-      add(player!);
+      player = PlayableCharacter()
+        ..position = Vector2(size.x * 0.45, size.y * 0.4);
+      world.add(player!);
+      playerLoad = _loadPlayerSprites();
     }
+  }
+
+  Future<void> _loadArena(String mapFileName) async {
+    final loaded = await TiledComponent.load(
+      mapFileName,
+      Vector2.all(48),
+      prefix: 'assets/tiles/',
+      images: images,
+      priority: -10,
+    );
+    arena = loaded;
+    world.add(loaded);
+    final colliders = readTiledTerrainColliders(
+      loaded.tileMap.map,
+      destinationTileSize: loaded.tileMap.destTileSize,
+    );
+    terrainColliders.addAll(colliders);
+    for (final collider in colliders) {
+      world.add(collider.toComponent());
+    }
+  }
+
+  Future<void> _loadPlayerSprites() async {
+    final loader = spriteLoader;
+    if (loader == null) return;
+    final idle = await loader('survivor1_gun.png');
+    final attack = await loader('survivor1_machine.png');
+    player?.setSprites(idle: idle, attack: attack);
   }
 
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
-    if (isLoaded) circle.position = size / 2;
+    if (isLoaded && showClassicDemo) circle.position = size / 2;
   }
 
   /// Acquires [count] [SparkleParticle]s from [sparklePool], fans them out
@@ -100,7 +158,7 @@ class RoyGame extends FlameGame with HasCollisionDetection {
           color: NeonTheme.gemColors[i % NeonTheme.gemColors.length],
         )
         ..attachToPool(() => sparklePool.release(particle));
-      add(particle);
+      (showClassicDemo ? this : world).add(particle);
     }
   }
 }
@@ -276,13 +334,19 @@ class PlayableCharacter extends PositionComponent
     this.speed = 120.0,
     Sprite? idleSprite,
     Sprite? attackSprite,
-  })  : _idleSprite = idleSprite,
-        _attackSprite = attackSprite,
-        super(size: Vector2.all(32), anchor: Anchor.center);
+    this.onAttack,
+  }) : _idleSprite = idleSprite,
+       _attackSprite = attackSprite,
+       super(size: Vector2(51, 43), anchor: Anchor.center) {
+    if (!speed.isFinite || speed <= 0) {
+      throw ArgumentError.value(speed, 'speed', 'must be finite and positive');
+    }
+  }
 
   final double speed;
-  final Sprite? _idleSprite;
-  final Sprite? _attackSprite;
+  void Function()? onAttack;
+  Sprite? _idleSprite;
+  Sprite? _attackSprite;
 
   Vector2 _velocity = Vector2.zero();
   GameJoystickDirection _direction = GameJoystickDirection.idle;
@@ -290,7 +354,13 @@ class PlayableCharacter extends PositionComponent
   static const double _attackDuration = 0.2;
 
   bool get isAttacking => _attackTimer > 0;
+  bool get hasSprites => _idleSprite != null && _attackSprite != null;
   GameJoystickDirection get direction => _direction;
+
+  void setSprites({required Sprite idle, required Sprite attack}) {
+    _idleSprite = idle;
+    _attackSprite = attack;
+  }
 
   @override
   Future<void> onLoad() async {
@@ -312,7 +382,15 @@ class PlayableCharacter extends PositionComponent
 
   void attack() {
     _attackTimer = _attackDuration;
-    game.spawnSparkleBurst(position + Vector2(math.cos(angle) * 20, math.sin(angle) * 20), count: 4);
+    final callback = onAttack;
+    if (callback != null) {
+      callback();
+    } else {
+      game.spawnSparkleBurst(
+        position + Vector2(math.cos(angle) * 20, math.sin(angle) * 20),
+        count: 4,
+      );
+    }
     game.eventBus?.emit(const PlayerAttackedEvent());
   }
 
@@ -322,19 +400,41 @@ class PlayableCharacter extends PositionComponent
     if (_attackTimer > 0) {
       _attackTimer = math.max(0, _attackTimer - dt);
     }
-    position += _velocity * dt;
-    final bounds = game.size;
-    position.x = position.x.clamp(size.x / 2, bounds.x - size.x / 2);
-    position.y = position.y.clamp(size.y / 2, bounds.y - size.y / 2);
+    final delta = _velocity * dt;
+    final steps = (delta.length / (size.x / 4)).ceil().clamp(1, 4096);
+    final step = delta / steps.toDouble();
+    for (var i = 0; i < steps; i++) {
+      final candidateX = Vector2(position.x + step.x, position.y);
+      if (!_blockedAt(candidateX)) position.x = candidateX.x;
+      final candidateY = Vector2(position.x, position.y + step.y);
+      if (!_blockedAt(candidateY)) position.y = candidateY.y;
+    }
+    if (game.arena == null) {
+      final bounds = game.size;
+      position.x = position.x.clamp(size.x / 2, bounds.x - size.x / 2);
+      position.y = position.y.clamp(size.y / 2, bounds.y - size.y / 2);
+    }
+  }
+
+  bool _blockedAt(Vector2 center) {
+    final playerRect = Rect.fromCenter(
+      center: Offset(center.x, center.y),
+      width: size.x * 0.5,
+      height: size.y * 0.5,
+    );
+    return game.terrainColliders.any(
+      (collider) => terrainColliderOverlapsRect(collider, playerRect),
+    );
   }
 
   @override
   void render(Canvas canvas) {
     final sprite = isAttacking ? (_attackSprite ?? _idleSprite) : _idleSprite;
     if (sprite != null) {
-      sprite.render(canvas, size: size, anchor: Anchor.center);
+      sprite.render(canvas, size: size);
     } else {
-      final paint = Paint()..color = isAttacking ? NeonTheme.gold : NeonTheme.cyan;
+      final paint = Paint()
+        ..color = isAttacking ? NeonTheme.gold : NeonTheme.cyan;
       canvas.drawCircle(Offset.zero, size.x / 2, paint);
       final headingPaint = Paint()..color = Colors.white;
       canvas.drawCircle(Offset(size.x * 0.35, 0), 4, headingPaint);

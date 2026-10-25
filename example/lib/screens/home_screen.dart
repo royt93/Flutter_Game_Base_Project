@@ -5,7 +5,7 @@ import 'package:roy_casual_kit/roy_casual_kit.dart';
 
 import 'cookbook_screen.dart';
 import 'daily_reward_screen.dart';
-import 'game_demo_screen.dart';
+import 'mini_game_hub_screen.dart';
 import 'level_progression_screen.dart';
 import 'monetization_screen.dart';
 import 'save_cloud_screen.dart';
@@ -46,7 +46,7 @@ class HomeScreen extends StatelessWidget {
                 NeonButton(
                   label: 'game_demo'.tr,
                   color: NeonTheme.orange,
-                  onTap: () => Get.to(() => const GameDemoScreen()),
+                  onTap: () => Get.to(() => const MiniGameHubScreen()),
                 ),
                 const SizedBox(height: 16),
                 NeonButton(
