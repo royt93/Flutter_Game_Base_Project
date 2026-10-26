@@ -12,12 +12,12 @@ source: "user-selected post-release sequence 2026-10-26"
 
 - pub.dev liệt kê `roy_casual_kit 0.6.5` là `latest` (đăng 2026-10-26T04:13Z). Phiên bản 0.6.4 chưa từng được publish lên pub.dev; pub.dev đi thẳng từ 0.6.3 lên 0.6.5.
 - Git tag `v0.6.5` trỏ commit `7cfadce`; GitHub Release: https://github.com/royt93/Flutter_Game_Base_Project/releases/tag/v0.6.5
-- GitHub CI: run 40265823288 trên `7cfadce` và run 40268097876 trên commit docs `d0dd9b8` pass cả `quality-gate`, `analyze-test`, `consumer-smoke`. Run 40210322949 trên `4fb904c` có một lần `consumer-smoke` timeout emulator, pass khi rerun.
+- GitHub CI: run 40265823288 trên `7cfadce`, run 40268097876 trên `d0dd9b8` và run 40269662059 trên `fa6908f` pass cả `quality-gate`, `analyze-test`, `consumer-smoke`. Run 40210322949 trên `4fb904c` có một lần `consumer-smoke` timeout emulator, pass khi rerun.
 - Không có open GitHub issue tại lần rà này.
+- Consumer sample ngoài repo (`/tmp/roy_consumer_065`, không phải path dependency): `roy_casual_kit: 0.6.5` resolve từ `https://pub.dev` (`source: hosted`, sha256 `029fa80c…1281`); `flutter analyze` sạch; 5/5 test pass (8 hướng `GameJoystick`, trả về neutral khi thả tay, hook `PlayableCharacter.onAttack` và kiểm tra tốc độ, `terrainColliderOverlapsRect` với tường mỏng, polygon collider không còn là `PolygonComponent`). Sample nằm trong `/tmp` nên không được lưu vào repo.
 
 ## Chưa kiểm chứng
 
-- Chưa resolve `roy_casual_kit 0.6.5` từ pub.dev trong một consumer sample ngoài repo (0.6.3 đã làm). Chỉ đã xác nhận pub.dev API trả `latest = 0.6.5`.
 - Bằng chứng thiết bị thật chỉ từ Pixel 7 Pro; TECNO KJ7 mất kết nối USB giữa chừng nên chưa có.
 - Ghi chú 0.6.4 trong CHANGELOG (joystick trong `GameDemoScreen`) đã được 0.6.5 đính chính, nhưng 0.6.4 chưa có release GitHub riêng.
 
@@ -28,7 +28,7 @@ Quan sát lỗi/regression và feedback consumer thật sau 0.6.5. Không mở f
 ## Checklist khi có lần rà tiếp theo
 
 - [ ] Kiểm tra pub.dev vẫn liệt kê 0.6.5 là hosted release mới nhất.
-- [ ] Resolve `roy_casual_kit: 0.6.5` từ pub.dev trong consumer sample ngoài repo; chạy `flutter analyze` và test của sample.
+- [x] Resolve `roy_casual_kit: 0.6.5` từ pub.dev trong consumer sample ngoài repo; chạy `flutter analyze` và test của sample (2026-10-26, xem Trạng thái phát hành).
 - [ ] Rà GitHub Issues/consumer feedback kể từ release; ghi link/id và affected flow nếu có.
 - [ ] Kiểm tra CI của `main` và các commit hậu release nếu có.
 - [ ] Tách confirmed regression khỏi nhu cầu feature mới; không suy diễn từ lượt tải hoặc khoảng im lặng.
