@@ -16,6 +16,13 @@ source: "user-selected post-release sequence 2026-10-26"
 - Không có open GitHub issue tại lần rà này.
 - Consumer sample ngoài repo (`/tmp/roy_consumer_065`, không phải path dependency): `roy_casual_kit: 0.6.5` resolve từ `https://pub.dev` (`source: hosted`, sha256 `029fa80c…1281`); `flutter analyze` sạch; 5/5 test pass (8 hướng `GameJoystick`, trả về neutral khi thả tay, hook `PlayableCharacter.onAttack` và kiểm tra tốc độ, `terrainColliderOverlapsRect` với tường mỏng, polygon collider không còn là `PolygonComponent`). Sample nằm trong `/tmp` nên không được lưu vào repo.
 
+## Sửa lỗi hậu phát hành (chưa phát hành)
+
+- Review chỉ đọc tìm ra lỗi trong example: Attack vẫn tạo đạn khi Pause, và giới hạn 24 đạn không tính đạn đang chờ mount, nên spam Attack lúc Pause có thể thả một loạt đạn khi Resume. Đã tái hiện bằng test fail trước khi sửa.
+- Sửa ở commit `1c17d8a` (chỉ `example/`, không đổi API package): Attack bị khóa khi Pause hoặc loading, và giới hạn 24 đạn tính cả đạn chờ mount. CI run 40290637183 pass cả ba job; root 3,502 và example 329 test pass; smoke TECNO pass.
+- pub.dev 0.6.5 và tag `v0.6.5` không chứa bản sửa này. Theo lựa chọn của người dùng, giữ lại cho lần phát hành sau, không tag hay publish 0.6.6.
+- Chưa kiểm chứng: Pause qua lifecycle hệ thống (đưa app xuống nền) chưa có test riêng.
+
 ## Bổ sung kiểm chứng thiết bị
 
 - Đã bổ sung TECNO KJ7 (Android 14) ngày 2026-10-26: smoke Sprite Arena pass sau 16 giây, release APK từ `753bdeb` được thao tác thật. Ảnh/video/log tại [`../evidence/FEAT-101-tecno-2026-10-26/`](../evidence/FEAT-101-tecno-2026-10-26/) chứng minh camera follow, đạn bay, thùng/đá hiển thị, nhân vật bị đá chặn và tia lửa khi đạn trúng đá. Lần smoke đầu treo khi app tụt foreground; lần chạy lại pass, nguyên nhân chưa xác định.
