@@ -54,7 +54,10 @@ Read this task and the approved implementation plan before coding. Work only on 
 
 ## Decision
 
-Hoàn thành, tự chấm 9.5/10 (trừ điểm vì proof thiết bị là Pixel 7 Pro, không phải TECNO; TECNO mất kết nối USB giữa chừng và người dùng chọn thay bằng Pixel).
+Hoàn thành; đã bổ sung kiểm chứng TECNO KJ7 ngày 2026-10-26, ngoài bằng chứng Pixel 7 Pro trước đó.
+
+- **Bằng chứng TECNO**: [`../evidence/FEAT-101-tecno-2026-10-26/`](../evidence/FEAT-101-tecno-2026-10-26/) chứa `smoke.txt` (16 giây, `All tests passed!`, exit 0), ảnh hub/arena/đạn/camera follow, hai ảnh `rock-block-before.png` và `rock-block-after.png` giống nhau từng pixel sau khi tiếp tục đẩy xuống đá, ảnh `bullet-impact.png` thấy tia lửa và video `collision-impact.mp4` dài khoảng 8 giây ghi thao tác chặn chuyển động và bắn trúng đá. Release APK build từ `753bdeb` (chỉ khác release commit bởi hồ sơ docs, không đổi gameplay). Lần smoke đầu treo khi app ở background; đã dừng rồi chạy lại pass, chưa xác định nguyên nhân tụt foreground.
+- **Dọn thiết bị**: đã gỡ app `com.galaxyjoy.roycasualkit` và hai video tạm trên TECNO theo lựa chọn người dùng; xác nhận package không còn cài, máy về launcher. Không gỡ hoặc thay đổi app khác.
 
 - **Tách demo**: `HomeScreen` mở `MiniGameHubScreen`; hub chọn `GameDemoScreen` (classic, giữ nguyên vòng tròn/HUD) hoặc `SpriteArenaDemoScreen` (full-screen: map Tiled, nhân vật sprite, joystick, Attack, pause/back).
 - **SDK public**: `GameJoystick` (8 hướng, vector chuẩn hoá, neutral khi thả/cancel, semantic label), đọc collider Tiled (`solid: true` tile + object layer rectangle/polygon), `PlayableCharacter` với hook `onAttack`. Không có combat API trong package.

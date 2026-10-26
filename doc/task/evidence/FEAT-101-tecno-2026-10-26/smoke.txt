@@ -1,0 +1,20 @@
+00:00 +0: loading /Users/LoiTP/StudioProjects/roy/Flutter_Game_Base_Project/example/integration_test/app_boot_test.dart
+Running Gradle task 'assembleDebug'...
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/Users/LoiTP/.gradle/wrapper/dists/gradle-8.12-all/ejduaidbjup3bmmkhw3rie4zb/gradle-8.12/lib/native-platform-0.22-milestone-27.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Running Gradle task 'assembleDebug'...                             15.4s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...           3.7s
+00:00 +0: FEAT-101: Sprite Arena joystick and attack button interactive on device
+roy93~ app: ensureInitialized
+roy93~ app: loadAppVersion start
+roy93~ app: loadAppVersion done
+roy93~ app: bootstrap start
+roy93~ app: bootstrap done
+roy93~ app: runApp done
+00:15 +1: (tearDownAll)
+00:16 +1: All tests passed!
+SMOKE_EXIT=0

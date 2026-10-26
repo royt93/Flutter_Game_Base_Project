@@ -16,10 +16,14 @@ source: "user-selected post-release sequence 2026-10-26"
 - Không có open GitHub issue tại lần rà này.
 - Consumer sample ngoài repo (`/tmp/roy_consumer_065`, không phải path dependency): `roy_casual_kit: 0.6.5` resolve từ `https://pub.dev` (`source: hosted`, sha256 `029fa80c…1281`); `flutter analyze` sạch; 5/5 test pass (8 hướng `GameJoystick`, trả về neutral khi thả tay, hook `PlayableCharacter.onAttack` và kiểm tra tốc độ, `terrainColliderOverlapsRect` với tường mỏng, polygon collider không còn là `PolygonComponent`). Sample nằm trong `/tmp` nên không được lưu vào repo.
 
-## Chưa kiểm chứng
+## Bổ sung kiểm chứng thiết bị
 
-- Bằng chứng thiết bị thật chỉ từ Pixel 7 Pro; TECNO KJ7 mất kết nối USB giữa chừng nên chưa có.
-- Ghi chú 0.6.4 trong CHANGELOG (joystick trong `GameDemoScreen`) đã được 0.6.5 đính chính, nhưng 0.6.4 chưa có release GitHub riêng.
+- Đã bổ sung TECNO KJ7 (Android 14) ngày 2026-10-26: smoke Sprite Arena pass sau 16 giây, release APK từ `753bdeb` được thao tác thật. Ảnh/video/log tại [`../evidence/FEAT-101-tecno-2026-10-26/`](../evidence/FEAT-101-tecno-2026-10-26/) chứng minh camera follow, đạn bay, thùng/đá hiển thị, nhân vật bị đá chặn và tia lửa khi đạn trúng đá. Lần smoke đầu treo khi app tụt foreground; lần chạy lại pass, nguyên nhân chưa xác định.
+- Đã gỡ app test `com.galaxyjoy.roycasualkit` và video tạm khỏi TECNO sau khi lưu bằng chứng; không thay đổi app khác.
+
+## Ghi chú lịch sử
+
+- Ghi chú 0.6.4 trong CHANGELOG (joystick trong `GameDemoScreen`) đã được 0.6.5 đính chính; 0.6.4 không có release GitHub riêng.
 
 ## Mục tiêu
 
