@@ -21,7 +21,7 @@ source: "user-selected post-release sequence 2026-10-26"
 - Review chỉ đọc tìm ra lỗi trong example: Attack vẫn tạo đạn khi Pause, và giới hạn 24 đạn không tính đạn đang chờ mount, nên spam Attack lúc Pause có thể thả một loạt đạn khi Resume. Đã tái hiện bằng test fail trước khi sửa.
 - Sửa ở commit `1c17d8a` (chỉ `example/`, không đổi API package): Attack bị khóa khi Pause hoặc loading, và giới hạn 24 đạn tính cả đạn chờ mount. CI run 40290637183 pass cả ba job; root 3,502 và example 329 test pass; smoke TECNO pass.
 - pub.dev 0.6.5 và tag `v0.6.5` không chứa bản sửa này. Theo lựa chọn của người dùng, giữ lại cho lần phát hành sau, không tag hay publish 0.6.6.
-- Chưa kiểm chứng: Pause qua lifecycle hệ thống (đưa app xuống nền) chưa có test riêng.
+- Pause qua lifecycle hệ thống (đưa app xuống nền): đã có test riêng ở commit `494ff3b` (`example/test/sprite_arena_game_test.dart`), mô phỏng trạng thái paused rồi resumed bằng `lifecycleStateChange`; Attack bị khóa và không xếp đạn khi ở nền, mở lại khi quay về. CI run 40297803177 pass cả ba job; example 330 test pass. Test này chỉ mô phỏng lifecycle, chưa chạy trên máy thật khi app thực sự xuống nền.
 
 ## Bổ sung kiểm chứng thiết bị
 
