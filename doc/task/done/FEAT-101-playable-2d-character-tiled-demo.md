@@ -45,7 +45,8 @@ Là Flutter/Flame developer, tôi muốn xem và tái sử dụng joystick ảo 
 - [x] Root/example analyzers and API compatibility passed for the camera/bullet changes.
 - [x] Five quality gates and example asset-license check (10/10 entries) passed after camera/bullet/map fixes.
 - [x] Physical-device smoke: Pixel 7 Pro (thay TECNO ngắt kết nối theo lựa chọn của người dùng) chạy `app_boot_test.dart` pass 100% (sprite/map load, 8 hướng joystick, camera follow, cản tường viền, cản crate, đạn bay từ nòng, pause/resume). Đã chụp ảnh màn hình bằng chứng camera follow, đạn bay từ nòng súng, thùng và đá.
-- [ ] Clean-tree publish gate: chạy `dart pub publish --dry-run` sau khi commit; trước commit chỉ báo cảnh báo working tree (exit 65).
+- [x] Clean-tree publish gate: `dart pub publish --dry-run` sau commit sạch đạt 0 warnings; pub.dev upload phiên bản 0.6.5 thành công và hiển thị `latest = 0.6.5`.
+- [x] Release và Tag: commit `7cfadce` gắn tag `v0.6.5`, GitHub Release đã tạo tại https://github.com/royt93/Flutter_Game_Base_Project/releases/tag/v0.6.5, CI Linux (run 40265823288) pass 3/3 jobs.
 
 ## Prompt loop feature
 
@@ -60,4 +61,4 @@ Hoàn thành, tự chấm 9.5/10 (trừ điểm vì proof thiết bị là Pixel
 - **Example-owned**: `SpriteArenaGame` — camera follow có bounds trên map 32×24, đạn xuất phát từ nòng súng (tối đa 24 viên, mất khi chạm vật cản, nổ tia lửa khi trúng), tile Kenney crate/barrel/đá khớp collision object.
 - **Sửa bug lộ ra khi kiểm chứng**: nhân vật xuyên tường khi một frame đi quá xa (nay đi theo bước ngắn, có test); polygon collider vẽ khối trắng (nay chỉ còn hitbox vô hình).
 - **Kiểm chứng**: root non-golden 3,502 test, full example 328 test, root/example analyzer, API check, 5 quality gate, asset-license check (10/10) đều pass; smoke `app_boot_test.dart` trên Pixel 7 Pro pass; ảnh chụp thực tế xác nhận camera follow, đạn từ nòng, thùng/đá hiển thị.
-- **Chưa làm**: golden không đổi (không cần workflow Linux); chưa push, CI Linux chưa chạy cho bản này.
+- **Chưa làm**: golden không đổi (không cần workflow Linux). Đã phát hành 0.6.5 (tag `v0.6.5`, GitHub Release, pub.dev); `consumer-smoke` từng timeout một lần trên emulator ở run 40210322949 và pass khi rerun.
