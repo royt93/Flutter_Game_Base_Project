@@ -141,6 +141,38 @@ void main() {
     },
   );
 
+  testWidgets('system background pauses attacks and foreground restores them', (
+    tester,
+  ) async {
+    final game = SpriteArenaGame();
+    await tester.runAsync(() async {
+      rootBundle.evict('assets/tiles/character_arena.tmx');
+      await tester.pumpWidget(MaterialApp(home: GameWidget(game: game)));
+      await Future<void>.sync(
+        game.toBeLoaded,
+      ).timeout(const Duration(seconds: 10));
+    });
+    await tester.pump();
+    await tester.pump();
+    expect(game.attackEnabled.value, isTrue);
+
+    game.lifecycleStateChange(AppLifecycleState.paused);
+    expect(game.paused, isTrue);
+    expect(game.attackEnabled.value, isFalse);
+    for (var i = 0; i < 50; i++) {
+      game.attack();
+    }
+    game.update(0);
+    expect(game.world.children.whereType<ArenaBullet>(), isEmpty);
+
+    game.lifecycleStateChange(AppLifecycleState.resumed);
+    expect(game.paused, isFalse);
+    expect(game.attackEnabled.value, isTrue);
+    game.attack();
+    game.update(0);
+    expect(game.world.children.whereType<ArenaBullet>(), hasLength(1));
+  });
+
   test('arena includes visible props aligned with collision objects', () {
     final map = File('assets/tiles/character_arena.tmx').readAsStringSync();
     expect(map, contains('width="32" height="24"'));
