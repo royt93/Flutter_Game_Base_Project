@@ -1,3 +1,11 @@
+## 0.6.6
+
+- Fixed the Sprite Arena example accepting Attack while paused or still loading. The button is disabled and its callback checks the current game state before firing.
+- Fixed the example's 24-bullet limit ignoring bullets queued for mounting. Pending bullets now count toward the limit, and removing a bullet releases its slot.
+- Added regression coverage for paused attack spam, pending-bullet limits and slot reuse, disabled loading/paused controls, stale callbacks, and system background/foreground attack locking. No public package API changed.
+- Verified before release preparation: root non-golden 3,502 tests and example 330 tests pass; analyzers and quality gates pass. CI run 40303926614 on `17b7f8c` passes all three jobs.
+- Physical TECNO KJ7 (Android 14): the app returns from Home and can fire; a manual pause stays paused across Home/return with Attack disabled. Five paused taps produced no visible bullets, and no burst was visible after Resume. Evidence consists of step screenshots, not continuous video; rotation and screen locking were not tested.
+
 ## 0.6.5
 
 - Split the Flame demo into a mini-game hub: Home "Flame Demo" now opens `MiniGameHubScreen`, which offers the unchanged classic circle demo (`GameDemoScreen`) and a dedicated full-screen `SpriteArenaDemoScreen`. The 0.6.4 notes below that put the joystick and Attack button inside `GameDemoScreen` no longer apply: that screen is classic-only again.
