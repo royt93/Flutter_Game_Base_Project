@@ -621,6 +621,14 @@ void main() {
       await tester.tap(pause);
       await tester.pump();
       expect(game.paused, isTrue);
+      expect(tester.widget<CommonButton>(attackBtn).onTap, isNull);
+      final bulletCountBeforePause = game.world.children
+          .whereType<ArenaBullet>()
+          .length;
+      for (var i = 0; i < 50; i++) {
+        (game as SpriteArenaGame).attack();
+      }
+      expect(player.isAttacking, isFalse);
       final frozen = player.position.clone();
       final pausedGesture = await tester.startGesture(center);
       await pausedGesture.moveTo(center - const Offset(50, 0));
@@ -630,6 +638,11 @@ void main() {
       await tester.tap(pause);
       await tester.pump();
       expect(game.paused, isFalse);
+      expect(tester.widget<CommonButton>(attackBtn).onTap, isNotNull);
+      expect(
+        game.world.children.whereType<ArenaBullet>().length,
+        lessThanOrEqualTo(bulletCountBeforePause),
+      );
 
       await _popToHome(tester);
       expect(tester.takeException(), isNull);

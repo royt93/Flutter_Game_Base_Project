@@ -20,7 +20,7 @@ class SpriteArenaDemoScreen extends StatefulWidget {
 class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
   static const _sfxTap = 'audio/tap.ogg';
   final _haptics = HapticChoreographer();
-  late final RoyGame _game;
+  late final SpriteArenaGame _game;
   bool _paused = false;
 
   @override
@@ -46,7 +46,7 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
           child: Stack(
             children: [
               Positioned.fill(
-                child: RepaintBoundary(child: GameWidget(game: _game)),
+                child: RepaintBoundary(child: GameWidget<RoyGame>(game: _game)),
               ),
               Positioned(
                 top: 0,
@@ -77,22 +77,31 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                 right: NeonTheme.s24,
                 bottom: NeonTheme.s24,
                 child: RepaintBoundary(
-                  child: CommonButton(
-                    label: 'game_demo_attack_button'.tr,
-                    variant: CommonButtonVariant.primary,
-                    width: 110,
-                    color: NeonTheme.orange,
-                    onTap: () {
-                      _haptics.play(
-                        HapticPattern([
-                          const HapticPulse(level: HapticLevel.light),
-                        ]),
-                      );
-                      unawaited(
-                        AudioManager.maybe?.playSfx(_sfxTap, volume: 0.5),
-                      );
-                      _game.player?.attack();
-                    },
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: _game.attackEnabled,
+                    builder: (context, enabled, child) => CommonButton(
+                      label: 'game_demo_attack_button'.tr,
+                      variant: CommonButtonVariant.primary,
+                      width: 110,
+                      color: NeonTheme.orange,
+                      onTap: !enabled
+                          ? null
+                          : () {
+                              if (!_game.attackEnabled.value) return;
+                              _haptics.play(
+                                HapticPattern([
+                                  const HapticPulse(level: HapticLevel.light),
+                                ]),
+                              );
+                              unawaited(
+                                AudioManager.maybe?.playSfx(
+                                  _sfxTap,
+                                  volume: 0.5,
+                                ),
+                              );
+                              _game.attack();
+                            },
+                    ),
                   ),
                 ),
               ),
