@@ -1,3 +1,14 @@
+## 0.6.5
+
+- Split the Flame demo into a mini-game hub: Home "Flame Demo" now opens `MiniGameHubScreen`, which offers the unchanged classic circle demo (`GameDemoScreen`) and a dedicated full-screen `SpriteArenaDemoScreen`. The 0.6.4 notes below that put the joystick and Attack button inside `GameDemoScreen` no longer apply: that screen is classic-only again.
+- Sprite Arena (example): a 32x24 Tiled map with visible Kenney crate, barrel and rock tiles aligned to the collision objects, a perimeter wall, and a camera that follows the player within the map bounds.
+- Added `PlayableCharacter.onAttack`, an optional hook that replaces the default spark burst. The example uses it to fire bullets from the sprite's barrel; bullets belong to the example (`SpriteArenaGame`), so the package still has no combat API.
+- Fixed `PlayableCharacter` tunnelling through thin terrain walls when one frame covered a large distance: movement now advances in short steps.
+- Fixed Tiled polygon colliders drawing a white fill; `TerrainPolygon.toComponent()` now returns a hitbox-only component.
+- Player, map and colliders now live in the Flame `world`, so the camera moves them together.
+- Verified: root non-golden 3,502 tests and example 328 tests pass; analyzers report 0 issues; public API check is additive (`onAttack`); five quality gates and the example asset-license check pass; Pixel 7 Pro integration smoke (sprite and map load, eight joystick directions, camera follow, wall and crate blocking, bullets from the barrel, pause/resume) passes. The TECNO KJ7 lost its USB connection during this work, so device evidence is from the Pixel 7 Pro.
+- Verified CI: GitHub Actions run 40210322949 on `4fb904c` passes all three jobs; `consumer-smoke` timed out once on the emulator and passed on rerun.
+
 ## 0.6.4
 
 - Added reusable public `GameJoystick` widget (`presentation/widgets/common/game_joystick.dart`) with caller-owned normalized vector output, eight-way direction classification (`GameJoystickDirection`), auto-reset to neutral on pointer release/cancel, and accessible semantics.
