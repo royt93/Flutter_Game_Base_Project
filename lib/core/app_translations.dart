@@ -72,6 +72,14 @@ class AppTranslations extends Translations {
       'game_demo_info_tooltip': 'Game info',
       'game_demo_joystick_label': 'Move 8-direction character',
       'game_demo_attack_button': 'Attack',
+      'sprite_arena_loading': 'Loading arena…',
+      'sprite_arena_error': 'Could not load arena.',
+      'sprite_arena_controls_tooltip': 'Controls',
+      'sprite_arena_help_title': 'Controls',
+      'sprite_arena_help_move':
+          'Drag the joystick to move in eight directions.',
+      'sprite_arena_help_attack': 'Tap Attack to fire bullets.',
+      'sprite_arena_help_pause': 'Use Pause to freeze the action.',
       'settings_request_export_title': 'Request Data Export',
       'settings_request_export_subtitle':
           'Download all stored data (GDPR/CCPA)',
@@ -84,31 +92,40 @@ class AppTranslations extends Translations {
       'settings_export_success':
           'Exported @count keys (schema v@version) at @time',
       'settings_erasure_success': 'Erased @count keys at @time',
-      'settings_pseudo_locale_subtitle':
-          'Debug only — catch hardcode/overflow',
+      'settings_pseudo_locale_subtitle': 'Debug only — catch hardcode/overflow',
       'cookbook_sync_no_conflict': 'no conflict',
-      'cookbook_sync_conflict': 'real conflict: local level=@local, cloud level=@cloud -> prefer cloud',
+      'cookbook_sync_conflict':
+          'real conflict: local level=@local, cloud level=@cloud -> prefer cloud',
       'cookbook_prestige_threshold': 'below threshold (coins=@coins)',
-      'cookbook_prestige_result': 'relics=@relics, multiplier=@multiplierx, earned=@earned (rate×multiplier)',
-      'cookbook_perf_downgrade': 'tier: @before -> @after (after 60 frames ~33fps, below default 40fps downgrade threshold)',
+      'cookbook_prestige_result':
+          'relics=@relics, multiplier=@multiplierx, earned=@earned (rate×multiplier)',
+      'cookbook_perf_downgrade':
+          'tier: @before -> @after (after 60 frames ~33fps, below default 40fps downgrade threshold)',
       'showcase_quest_win_label': 'Win 3 matches',
       'showcase_quest_booster_label': 'Use 1 booster',
-      'showcase_maintenance_msg': 'Demo under maintenance, please come back later.',
+      'showcase_maintenance_msg':
+          'Demo under maintenance, please come back later.',
       'showcase_dl_level': 'level: opening level @id',
       'showcase_dl_shop': 'shop: opening store',
-      'showcase_scene_load_failed': 'Could not load the new scene (simulated demo failure).',
+      'showcase_scene_load_failed':
+          'Could not load the new scene (simulated demo failure).',
       'showcase_conflict_reason': 'server has a different value',
       'showcase_preload_loading': 'Preloading...',
       'showcase_preload_ok': 'Preload OK — scene ready (phase: playing).',
       'showcase_dl_initial': 'No deep link yet.',
       'showcase_preload_initial': 'Not preloaded.',
       'showcase_reminder_unchecked': 'Not checked yet.',
-      'showcase_reminder_cancelled_full': 'Reminder cancelled (energy is full or unlimited)',
-      'showcase_reminder_set_minutes': 'Reminder set in @minutes min (@secondss)',
-      'showcase_reminder_cancelled_claimed': 'Reminder cancelled (already claimed today)',
+      'showcase_reminder_cancelled_full':
+          'Reminder cancelled (energy is full or unlimited)',
+      'showcase_reminder_set_minutes':
+          'Reminder set in @minutes min (@secondss)',
+      'showcase_reminder_cancelled_claimed':
+          'Reminder cancelled (already claimed today)',
       'showcase_reminder_set_hours': 'Reminder set in @hours h',
-      'showcase_duck_desc': 'Tap to play one short SFX — bgm volume ducks while the SFX plays, then restores when done. Listen on a real device to feel it.',
-      'showcase_throttle_desc': 'throttled() — tap quickly several times to compare',
+      'showcase_duck_desc':
+          'Tap to play one short SFX — bgm volume ducks while the SFX plays, then restores when done. Listen on a real device to feel it.',
+      'showcase_throttle_desc':
+          'throttled() — tap quickly several times to compare',
       'showcase_throttle_btn_no': 'No throttle',
       'showcase_throttle_btn_yes': 'Throttled',
       'showcase_throttle_count': 'Count: @count',
@@ -121,7 +138,8 @@ class AppTranslations extends Translations {
       'showcase_store_toast': 'Open store: @url',
       'showcase_app_content': 'App content (demo)',
       'showcase_btn_win_one': 'Win 1 match',
-      'showcase_analytics_no_consent': 'Analytics context: {} (no analytics consent)',
+      'showcase_analytics_no_consent':
+          'Analytics context: {} (no analytics consent)',
       'showcase_preload_retry_ok': 'Retry OK — scene ready.',
       'showcase_preload_retry_fail': 'Retry still failed: @msg',
       'showcase_preload_unloaded': 'Scene unloaded.',
@@ -192,6 +210,13 @@ class AppTranslations extends Translations {
       'game_demo_info_tooltip': 'Thông tin trò chơi',
       'game_demo_joystick_label': 'Điều khiển nhân vật 8 hướng',
       'game_demo_attack_button': 'Đánh',
+      'sprite_arena_loading': 'Đang tải đấu trường…',
+      'sprite_arena_error': 'Không thể tải đấu trường.',
+      'sprite_arena_controls_tooltip': 'Điều khiển',
+      'sprite_arena_help_title': 'Cách điều khiển',
+      'sprite_arena_help_move': 'Kéo joystick để di chuyển 8 hướng.',
+      'sprite_arena_help_attack': 'Chạm Đánh để bắn đạn.',
+      'sprite_arena_help_pause': 'Dùng Tạm dừng để dừng trận đấu.',
       'settings_request_export_title': 'Yêu cầu xuất dữ liệu',
       'settings_request_export_subtitle':
           'Tải toàn bộ dữ liệu đã lưu (GDPR/CCPA)',
@@ -205,30 +230,37 @@ class AppTranslations extends Translations {
       'settings_export_success':
           'Đã xuất @count key (schema v@version) lúc @time',
       'settings_erasure_success': 'Đã xoá @count key lúc @time',
-      'settings_pseudo_locale_subtitle':
-          'Debug only — bắt hardcode/overflow',
+      'settings_pseudo_locale_subtitle': 'Debug only — bắt hardcode/overflow',
       'cookbook_sync_no_conflict': 'không có xung đột',
-      'cookbook_sync_conflict': 'xung đột thật: local level=@local, cloud level=@cloud -> chọn cloud',
+      'cookbook_sync_conflict':
+          'xung đột thật: local level=@local, cloud level=@cloud -> chọn cloud',
       'cookbook_prestige_threshold': 'chưa đủ ngưỡng (coins=@coins)',
-      'cookbook_prestige_result': 'relics=@relics, multiplier=@multiplierx, earned=@earned (rate×multiplier)',
-      'cookbook_perf_downgrade': 'tier: @before -> @after (sau 60 frame ~33fps, dưới ngưỡng downgrade mặc định 40fps)',
+      'cookbook_prestige_result':
+          'relics=@relics, multiplier=@multiplierx, earned=@earned (rate×multiplier)',
+      'cookbook_perf_downgrade':
+          'tier: @before -> @after (sau 60 frame ~33fps, dưới ngưỡng downgrade mặc định 40fps)',
       'showcase_quest_win_label': 'Thắng 3 trận',
       'showcase_quest_booster_label': 'Dùng 1 booster',
       'showcase_maintenance_msg': 'Đang bảo trì demo, quay lại sau nhé.',
       'showcase_dl_level': 'level: mở level @id',
       'showcase_dl_shop': 'shop: mở cửa hàng',
-      'showcase_scene_load_failed': 'Không tải được scene mới (demo lỗi giả lập).',
+      'showcase_scene_load_failed':
+          'Không tải được scene mới (demo lỗi giả lập).',
       'showcase_conflict_reason': 'server có giá trị khác',
       'showcase_preload_loading': 'Đang preload...',
       'showcase_preload_ok': 'Preload OK — scene sẵn sàng (phase: playing).',
       'showcase_dl_initial': 'Chưa có deep link nào.',
       'showcase_preload_initial': 'Chưa preload.',
       'showcase_reminder_unchecked': 'Chưa kiểm tra.',
-      'showcase_reminder_cancelled_full': 'Đã huỷ lịch nhắc (năng lượng đã đầy hoặc đang vô hạn)',
-      'showcase_reminder_set_minutes': 'Đã đặt lịch nhắc sau @minutes phút (@secondss)',
-      'showcase_reminder_cancelled_claimed': 'Đã huỷ lịch nhắc (hôm nay đã claim rồi)',
+      'showcase_reminder_cancelled_full':
+          'Đã huỷ lịch nhắc (năng lượng đã đầy hoặc đang vô hạn)',
+      'showcase_reminder_set_minutes':
+          'Đã đặt lịch nhắc sau @minutes phút (@secondss)',
+      'showcase_reminder_cancelled_claimed':
+          'Đã huỷ lịch nhắc (hôm nay đã claim rồi)',
       'showcase_reminder_set_hours': 'Đã đặt lịch nhắc sau @hours giờ',
-      'showcase_duck_desc': 'Bấm để phát 1 SFX ngắn — bgm tự giảm volume trong lúc SFX phát, tự trả về sau khi xong. Nghe thật trên máy để cảm nhận.',
+      'showcase_duck_desc':
+          'Bấm để phát 1 SFX ngắn — bgm tự giảm volume trong lúc SFX phát, tự trả về sau khi xong. Nghe thật trên máy để cảm nhận.',
       'showcase_throttle_desc': 'throttled() — bấm nhanh nhiều lần để so sánh',
       'showcase_throttle_btn_no': 'Không throttle',
       'showcase_throttle_btn_yes': 'Có throttle',
@@ -242,7 +274,8 @@ class AppTranslations extends Translations {
       'showcase_store_toast': 'Mở store: @url',
       'showcase_app_content': 'Nội dung app (demo)',
       'showcase_btn_win_one': 'Thắng 1 trận',
-      'showcase_analytics_no_consent': 'Analytics context: {} (chưa có analytics consent)',
+      'showcase_analytics_no_consent':
+          'Analytics context: {} (chưa có analytics consent)',
       'showcase_preload_retry_ok': 'Retry OK — scene sẵn sàng.',
       'showcase_preload_retry_fail': 'Retry vẫn fail: @msg',
       'showcase_preload_unloaded': 'Đã unload scene.',

@@ -154,11 +154,13 @@ void main() {
     });
     await tester.pump();
     await tester.pump();
-    expect(game.attackEnabled.value, isTrue);
+    expect(game.attackEnabled, isTrue);
 
+    game.player!.setMoveInput(GameJoystickDirection.right, const Offset(1, 0));
     game.lifecycleStateChange(AppLifecycleState.paused);
+    expect(game.player!.direction, GameJoystickDirection.idle);
     expect(game.paused, isTrue);
-    expect(game.attackEnabled.value, isFalse);
+    expect(game.attackEnabled, isFalse);
     for (var i = 0; i < 50; i++) {
       game.attack();
     }
@@ -167,10 +169,15 @@ void main() {
 
     game.lifecycleStateChange(AppLifecycleState.resumed);
     expect(game.paused, isFalse);
-    expect(game.attackEnabled.value, isTrue);
+    expect(game.attackEnabled, isTrue);
     game.attack();
     game.update(0);
     expect(game.world.children.whereType<ArenaBullet>(), hasLength(1));
+    game.pauseEngine();
+    game.lifecycleStateChange(AppLifecycleState.paused);
+    game.lifecycleStateChange(AppLifecycleState.resumed);
+    expect(game.phase.value, ArenaPhase.paused);
+    expect(game.attackEnabled, isFalse);
   });
 
   test('arena includes visible props aligned with collision objects', () {

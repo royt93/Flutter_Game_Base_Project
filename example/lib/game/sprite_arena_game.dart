@@ -4,8 +4,11 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flame/experimental.dart';
 import 'package:flutter/foundation.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/game_joystick.dart';
 import 'package:roy_casual_kit/presentation/game/roy_game.dart';
 import 'package:roy_casual_kit/presentation/game/tiled_terrain_collision.dart';
+
+enum ArenaPhase { loading, playing, paused, failed }
 
 class SpriteArenaGame extends RoyGame {
   SpriteArenaGame()
@@ -15,48 +18,59 @@ class SpriteArenaGame extends RoyGame {
         arenaMapFileName: 'character_arena.tmx',
       );
 
-  final attackEnabled = ValueNotifier(false);
+  final phase = ValueNotifier(ArenaPhase.loading);
+  bool get attackEnabled => phase.value == ArenaPhase.playing;
   final _bullets = <ArenaBullet>{};
   bool _ready = false;
 
   @override
   void pauseEngine() {
     super.pauseEngine();
-    attackEnabled.value = false;
+    player?.setMoveInput(GameJoystickDirection.idle, Offset.zero);
+    if (_ready && phase.value != ArenaPhase.failed) {
+      phase.value = ArenaPhase.paused;
+    }
   }
 
   @override
   void resumeEngine() {
     super.resumeEngine();
-    attackEnabled.value = _ready;
+    if (phase.value != ArenaPhase.failed) {
+      phase.value = _ready ? ArenaPhase.playing : ArenaPhase.loading;
+    }
   }
 
   void attack() {
-    if (attackEnabled.value) player!.attack();
+    if (attackEnabled) player!.attack();
   }
 
   @override
   Future<void> onLoad() async {
-    await super.onLoad();
-    await Future.wait([arenaLoad!, playerLoad!]);
-    player!.setSprites(
-      idle: await loadSprite('survivor1_gun.png'),
-      attack: await loadSprite('survivor1_machine.png'),
-    );
-    player!.position.setValues(480, 480);
-    player!.onAttack = _shoot;
-    camera.viewfinder.anchor = Anchor.center;
-    camera.follow(player!, snap: true);
-    camera.setBounds(
-      Rectangle.fromLTWH(0, 0, arena!.width, arena!.height),
-      considerViewport: true,
-    );
-    _ready = true;
-    attackEnabled.value = !paused;
+    try {
+      await super.onLoad();
+      await Future.wait([arenaLoad!, playerLoad!]);
+      player!.setSprites(
+        idle: await loadSprite('survivor1_gun.png'),
+        attack: await loadSprite('survivor1_machine.png'),
+      );
+      player!.position.setValues(480, 480);
+      player!.onAttack = _shoot;
+      camera.viewfinder.anchor = Anchor.center;
+      camera.follow(player!, snap: true);
+      camera.setBounds(
+        Rectangle.fromLTWH(0, 0, arena!.width, arena!.height),
+        considerViewport: true,
+      );
+      _ready = true;
+      phase.value = paused ? ArenaPhase.paused : ArenaPhase.playing;
+    } catch (_) {
+      phase.value = ArenaPhase.failed;
+      rethrow;
+    }
   }
 
   void _shoot() {
-    if (!attackEnabled.value || _bullets.length >= 24) return;
+    if (!attackEnabled || _bullets.length >= 24) return;
     final player = this.player!;
     // Sprite barrel tip is (50, 31), relative to its (25.5, 21.5) pivot.
     final muzzle = Vector2(24.5, 9.5)..rotate(player.angle);

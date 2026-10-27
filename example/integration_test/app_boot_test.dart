@@ -522,6 +522,13 @@ void main() {
       await tester.pump(const Duration(seconds: 4));
       await _goToSpriteArena(tester);
 
+      final game = tester
+          .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
+          .game!;
+      await Future<void>.sync(
+        game.toBeLoaded,
+      ).timeout(const Duration(seconds: 10));
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(GameJoystick), findsOneWidget);
       // Dedicated arena: no legacy circle-demo HUD.
       expect(find.byType(ReactiveEnergyBar), findsNothing);
@@ -534,13 +541,6 @@ void main() {
           .first;
       expect(attackBtn, findsOneWidget);
 
-      final game = tester
-          .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
-          .game!;
-      await Future<void>.sync(
-        game.toBeLoaded,
-      ).timeout(const Duration(seconds: 10));
-      await tester.pump(const Duration(milliseconds: 300));
       final player = game.player!;
       expect(player.hasSprites, isTrue);
       expect(game.arena, isNotNull);
@@ -635,7 +635,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(player.position, frozen);
       await pausedGesture.up();
-      await tester.tap(pause);
+      expect(find.text('pause_title'.tr), findsWidgets);
+      await tester.tap(find.byTooltip('pause_resume'.tr));
       await tester.pump();
       expect(game.paused, isFalse);
       expect(tester.widget<CommonButton>(attackBtn).onTap, isNotNull);
@@ -644,6 +645,17 @@ void main() {
         lessThanOrEqualTo(bulletCountBeforePause),
       );
 
+      await tester.tap(find.byTooltip('sprite_arena_controls_tooltip'.tr));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(game.paused, isTrue);
+      expect(find.text('sprite_arena_help_move'.tr), findsOneWidget);
+      await tester.tap(
+        find.byWidgetPredicate(
+          (w) => w is NeonDialogButton && w.action.label == 'ok'.tr,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(game.paused, isFalse);
       await _popToHome(tester);
       expect(tester.takeException(), isNull);
     },
