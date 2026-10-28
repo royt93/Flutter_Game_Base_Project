@@ -97,6 +97,10 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
               valueListenable: _game.phase,
               builder: (context, phase, _) {
                 final ready =
+                    phase == ArenaPhase.playing ||
+                    phase == ArenaPhase.paused ||
+                    phase == ArenaPhase.gameOver;
+                final controllable =
                     phase == ArenaPhase.playing || phase == ArenaPhase.paused;
                 return SizedBox.expand(
                   child: Stack(
@@ -119,7 +123,7 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                             title: 'sprite_arena_title'.tr,
                             onBack: _back,
                             actions: [
-                              if (ready) ...[
+                              if (controllable) ...[
                                 IconButton(
                                   constraints: const BoxConstraints(
                                     minWidth: 48,
@@ -190,6 +194,80 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                         ),
                       if (ready)
                         Positioned(
+                          top: 76,
+                          right: padding,
+                          child: ValueListenableBuilder<int>(
+                            valueListenable: _game.lives,
+                            builder: (context, lives, _) =>
+                                ValueListenableBuilder<int>(
+                                  valueListenable: _game.wave,
+                                  builder: (context, wave, _) => Container(
+                                    constraints: BoxConstraints(
+                                      maxWidth: constraints.maxWidth * 0.62,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 7,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: NeonTheme.card,
+                                      border: Border.all(
+                                        color: NeonTheme.cyan,
+                                        width: 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Semantics(
+                                      liveRegion: true,
+                                      label: 'sprite_arena_status_semantics'
+                                          .trParams({
+                                            'lives': '$lives',
+                                            'wave': '$wave',
+                                          }),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.favorite,
+                                            size: 18,
+                                            color: NeonTheme.pink,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '$lives',
+                                            style: TextStyle(
+                                              color: NeonTheme.ink,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Icon(
+                                            Icons.waves,
+                                            size: 18,
+                                            color: NeonTheme.cyan,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              'sprite_arena_wave'.trParams({
+                                                'n': '$wave',
+                                              }),
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: NeonTheme.ink,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                          ),
+                        ),
+                      if (controllable)
+                        Positioned(
                           left: padding,
                           right: padding,
                           bottom: 16,
@@ -227,6 +305,72 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                                       : null,
                                 ),
                               ],
+                            ),
+                          ),
+                        ),
+                      if (phase == ArenaPhase.gameOver)
+                        Positioned.fill(
+                          child: Container(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.all(16),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight: constraints.maxHeight - 32,
+                              ),
+                              child: SingleChildScrollView(
+                                child: PanelCard(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Semantics(
+                                        liveRegion: true,
+                                        child: Text(
+                                          'sprite_arena_game_over'.tr,
+                                          style: TextStyle(
+                                            color: NeonTheme.ink,
+                                            fontSize: 26,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'sprite_arena_final_score'.trParams({
+                                          'n': '${_game.score.value}',
+                                          'wave': '${_game.wave.value}',
+                                        }),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: NeonTheme.inkSoft,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      CommonButton(
+                                        label: 'sprite_arena_restart'.tr,
+                                        width: math.min(
+                                          200,
+                                          constraints.maxWidth - 64,
+                                        ),
+                                        onTap: () {
+                                          _game.restart();
+                                          setState(() {});
+                                        },
+                                      ),
+                                      const SizedBox(height: 8),
+                                      CommonButton(
+                                        label: 'back_button_label'.tr,
+                                        variant: CommonButtonVariant.secondary,
+                                        width: math.min(
+                                          200,
+                                          constraints.maxWidth - 64,
+                                        ),
+                                        onTap: Get.back,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),

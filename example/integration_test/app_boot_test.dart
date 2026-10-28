@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:roy_casual_kit/roy_casual_kit.dart';
 import 'package:roy_casual_kit_example/main.dart' as app;
+import 'package:roy_casual_kit_example/game/arena_actors.dart';
 import 'package:roy_casual_kit_example/game/sprite_arena_game.dart';
 import 'package:roy_casual_kit_example/screens/cookbook_screen.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
@@ -620,12 +621,15 @@ void main() {
       final arena = game as SpriteArenaGame;
       expect(arena.targets, isNotEmpty);
       final target = arena.targets.first;
-      player.position.setValues(target.position.x - 120, target.position.y);
-      player.angle = 0;
-      arena.attack();
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(target.hp, lessThan(3));
-      await tester.pump(const Duration(milliseconds: 500));
+      for (var hit = 0; hit < ArenaTarget.maxHp; hit++) {
+        player.position.setValues(target.position.x - 120, target.position.y);
+        player.angle = 0;
+        arena.attack();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 500));
+      }
+      expect(target.alive, isFalse);
+      expect(arena.score.value, 10);
 
       final pause = find.byTooltip('game_demo_pause_tooltip'.tr);
       await tester.tap(pause);
@@ -666,6 +670,23 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 300));
       expect(game.paused, isFalse);
+
+      await tester.pump(const Duration(seconds: 1));
+      arena.lives.value = 1;
+      final gameOverMonster = arena.monsters.firstWhere((m) => m.alive);
+      gameOverMonster.position.setFrom(player.position);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(arena.roundOver.value, isTrue);
+      expect(find.text('sprite_arena_game_over'.tr), findsOneWidget);
+      await tester.tap(
+        find.byWidgetPredicate(
+          (w) => w is CommonButton && w.label == 'sprite_arena_restart'.tr,
+        ),
+      );
+      await tester.pump();
+      expect(arena.roundOver.value, isFalse);
+      expect(arena.lives.value, 4);
+      expect(arena.wave.value, 1);
       await _popToHome(tester);
       expect(tester.takeException(), isNull);
     },

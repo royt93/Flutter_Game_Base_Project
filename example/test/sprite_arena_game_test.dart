@@ -177,13 +177,17 @@ void main() {
     final game = await loadArena(tester);
     expect(game.monsters, isNotEmpty);
     expect(game.monsters.length, lessThanOrEqualTo(3));
-    for (final m in game.monsters) {
+    for (var i = 0; i < game.monsters.length; i++) {
+      final m = game.monsters[i];
       expect(
         game.terrainColliders.any(
           (c) => terrainColliderOverlapsRect(c, m.hitRect),
         ),
         isFalse,
       );
+      for (var j = i + 1; j < game.monsters.length; j++) {
+        expect(m.hitRect.overlaps(game.monsters[j].hitRect), isFalse);
+      }
     }
     final m = game.monsters.first;
     final before = m.position.distanceTo(game.player!.position);
@@ -210,7 +214,7 @@ void main() {
     }
   });
 
-  testWidgets('two hits kill a monster for +25, it respawns home after 4s', (
+  testWidgets('two hits remove a monster for +25 without respawning', (
     tester,
   ) async {
     final game = await loadArena(tester);
@@ -227,8 +231,11 @@ void main() {
     expect(m.alive, isFalse);
     expect(game.score.value, 25);
     game.update(4.1);
-    expect(m.alive, isTrue);
-    expect(m.position.distanceTo(m.home), lessThan(1));
+    expect(m.alive, isFalse);
+    expect(
+      game.monsters.where((monster) => monster.alive).length,
+      lessThanOrEqualTo(3),
+    );
   });
 
   testWidgets('touching the player knocks the monster back with a cooldown', (
@@ -250,6 +257,219 @@ void main() {
     expect(m.position.x, lessThan(600));
     game.update(0.016);
     expect(touches, 1);
+  });
+
+  testWidgets('survival starts with 4 lives and wave 1', (tester) async {
+    final game = await loadArena(tester);
+    expect(game.lives.value, 4);
+    expect(game.wave.value, 1);
+    expect(game.roundOver.value, isFalse);
+  });
+
+  testWidgets('monster contact removes one life with global invulnerability', (
+    tester,
+  ) async {
+    final game = await loadArena(tester);
+    final first = game.monsters.first;
+    first.position.setFrom(game.player!.position);
+    first.update(0.016);
+    expect(game.lives.value, 3);
+    final second = game.monsters.last;
+    second.position.setFrom(game.player!.position);
+    second.update(0.016);
+    expect(game.lives.value, 3);
+    first.position.setValues(1000, 1000);
+    first.position.setValues(1000, 1000);
+    game.update(1.26);
+    second.position.setFrom(game.player!.position);
+    second.update(0.016);
+    expect(game.lives.value, 2);
+  });
+
+  testWidgets('last hit ends survival and lifecycle resume cannot restart it', (
+    tester,
+  ) async {
+    final game = await loadArena(tester);
+    game.lives.value = 1;
+    game.monsters.first.position.setFrom(game.player!.position);
+    game.monsters.first.update(0.016);
+    expect(game.lives.value, 0);
+    expect(game.roundOver.value, isTrue);
+    expect(game.phase.value, ArenaPhase.gameOver);
+    game.lifecycleStateChange(AppLifecycleState.resumed);
+    expect(game.phase.value, ArenaPhase.gameOver);
+    expect(game.attackEnabled, isFalse);
+    game.attack();
+    expect(game.world.children.whereType<ArenaBullet>(), isEmpty);
+  });
+
+  testWidgets('large frame damages player only once across monster contacts', (
+    tester,
+  ) async {
+    final game = await loadArena(tester);
+    game.player!.position.setValues(700, 700);
+    for (final monster in game.monsters) {
+      monster.position.setValues(700, 700);
+    }
+    final before = game.lives.value;
+    game.update(2);
+    expect(game.lives.value, before - 1);
+  });
+
+  testWidgets('wave advances only after full spawn interval', (tester) async {
+    final game = await loadArena(tester);
+    final initialMonsters = game.monsters.toList();
+    for (final monster in initialMonsters) {
+      monster.takeHit();
+      monster.takeHit();
+    }
+    expect(game.wave.value, 1);
+    game.update(SpriteArenaGame.spawnInterval - 0.01);
+    expect(game.wave.value, 1);
+    expect(game.monsters.where((m) => m.alive), isEmpty);
+    game.update(0.02);
+    expect(game.wave.value, 2);
+    expect(game.waveSize, 3);
+    expect(game.monsters.where((m) => m.alive), isEmpty);
+    game.update(SpriteArenaGame.spawnInterval - 0.01);
+    expect(game.monsters.where((m) => m.alive), isEmpty);
+    game.update(0.02);
+    expect(game.monsters.where((m) => m.alive).length, 1);
+    game.update(SpriteArenaGame.spawnInterval);
+    expect(game.monsters.where((m) => m.alive).length, 2);
+  });
+
+  testWidgets('long run keeps active cap and monster speed bounded', (
+    tester,
+  ) async {
+    final game = await loadArena(tester);
+    for (var frame = 0; frame < 1000 && game.wave.value < 35; frame++) {
+      for (final monster in game.monsters.where((m) => m.alive).toList()) {
+        monster.takeHit();
+        monster.takeHit();
+      }
+      game.update(SpriteArenaGame.spawnInterval);
+      final active = game.monsters.where((m) => m.alive).toList();
+      expect(
+        active.length,
+        lessThanOrEqualTo(SpriteArenaGame.activeMonsterCap),
+      );
+      expect(active.every((m) => m.speed <= 84), isTrue);
+    }
+    expect(game.wave.value, greaterThanOrEqualTo(35));
+    for (var slot = 0; slot < SpriteArenaGame.activeMonsterCap; slot++) {
+      game.update(SpriteArenaGame.spawnInterval);
+    }
+    final active = game.monsters.where((m) => m.alive).toList();
+    expect(active, hasLength(SpriteArenaGame.activeMonsterCap));
+    expect(active.every((m) => m.speed == 84), isTrue);
+  });
+
+  testWidgets('all blocked spawn spots retry on cadence without hanging', (
+    tester,
+  ) async {
+    final game = await loadArena(tester);
+    final blockers = [
+      for (final (x, y) in [(1100.0, 300.0), (300.0, 900.0), (1300.0, 1000.0)])
+        TerrainRectangle(Vector2(x - 30, y - 30), Vector2.all(60)),
+    ];
+    for (final monster in game.monsters.toList()) {
+      monster.takeHit();
+      monster.takeHit();
+    }
+    game.terrainColliders.addAll(blockers);
+    game.update(SpriteArenaGame.spawnInterval);
+    expect(game.wave.value, 2);
+    expect(game.monsters.where((m) => m.alive), isEmpty);
+    game.update(SpriteArenaGame.spawnInterval);
+    expect(game.monsters.where((m) => m.alive), isEmpty);
+    game.terrainColliders.removeWhere(blockers.contains);
+    game.update(SpriteArenaGame.spawnInterval);
+    expect(game.monsters.where((m) => m.alive), hasLength(1));
+  });
+
+  testWidgets('wave advances after batch, kills do not respawn, wave grows', (
+    tester,
+  ) async {
+    final game = await loadArena(tester);
+    expect(game.wave.value, 1);
+    expect(game.monsters.length, 2);
+    for (final monster in game.monsters.toList()) {
+      monster.takeHit();
+      monster.takeHit();
+    }
+    game.update(SpriteArenaGame.spawnInterval);
+    expect(game.wave.value, 2);
+    expect(game.waveSize, 3);
+    game.update(SpriteArenaGame.spawnInterval);
+    expect(game.monsters.where((m) => m.alive).length, lessThanOrEqualTo(3));
+    expect(game.monsters.where((m) => m.alive), isNotEmpty);
+  });
+
+  testWidgets('restart resets lives, wave, score, actors and colliders', (
+    tester,
+  ) async {
+    final game = await loadArena(tester);
+    final baselineColliders = game.terrainColliders.length;
+    final baselineTargetCount = game.targets.length;
+    final target = game.targets.first;
+    target.takeHit();
+    target.takeHit();
+    game.player!.attack();
+    game.update(0);
+    expect(game.world.children.whereType<ArenaBullet>(), hasLength(1));
+    game.score.value = 90;
+    game.lives.value = 0;
+    game.wave.value = 5;
+    game.roundOver.value = true;
+    game.pauseEngine();
+    game.restart();
+    await tester.pump();
+    expect(game.phase.value, ArenaPhase.playing);
+    expect(game.roundOver.value, isFalse);
+    expect(game.lives.value, 4);
+    expect(game.wave.value, 1);
+    expect(game.score.value, 0);
+    expect(game.terrainColliders.length, baselineColliders);
+    expect(target.alive, isTrue);
+    expect(target.hp, ArenaTarget.maxHp);
+    expect(game.targets, hasLength(baselineTargetCount));
+    expect(game.world.children.whereType<ArenaBullet>(), isEmpty);
+    expect(
+      game.world.children.whereType<ArenaTarget>(),
+      hasLength(game.targets.length),
+    );
+    expect(
+      game.world.children.whereType<ArenaCrate>(),
+      hasLength(game.crates.length),
+    );
+    final crateCount = game.crates.length;
+    game.restart();
+    await tester.pump();
+    expect(game.targets, hasLength(baselineTargetCount));
+    expect(game.crates, hasLength(crateCount));
+    expect(game.terrainColliders, hasLength(baselineColliders));
+    expect(
+      game.world.children.whereType<ArenaTarget>(),
+      hasLength(baselineTargetCount),
+    );
+  });
+
+  testWidgets('pause freezes wave transition timer', (tester) async {
+    final game = await loadArena(tester);
+    for (final monster in game.monsters.toList()) {
+      monster.takeHit();
+      monster.takeHit();
+    }
+    game.update(0.5);
+    game.pauseEngine();
+    await tester.pump(const Duration(seconds: 5));
+    game.resumeEngine();
+    game.update(0.69);
+    expect(game.wave.value, 1);
+    game.update(0.02);
+    expect(game.wave.value, 2);
+    expect(game.monsters.where((m) => m.alive), isEmpty);
   });
 
   testWidgets('pause freezes monsters', (tester) async {

@@ -38,6 +38,12 @@ class ArenaTarget extends PositionComponent implements ArenaHittable {
     height: size.y,
   );
 
+  void reset() {
+    hp = maxHp;
+    _flash = 0;
+    _respawn = 0;
+  }
+
   @override
   void takeHit() {
     if (!alive) return;
@@ -89,8 +95,8 @@ class ArenaTarget extends PositionComponent implements ArenaHittable {
 }
 
 /// Slow chaser: 2 HP, walks toward [chase] one axis at a time in small steps so
-/// it slides along walls instead of sticking or tunnelling. Touching the player
-/// knocks the monster back; the player has no HP, so there is no fail state.
+/// it slides along walls instead of sticking or tunnelling. Contact knocks the
+/// monster back and reports a hit to its owner.
 class ArenaMonster extends PositionComponent implements ArenaHittable {
   ArenaMonster({
     required Vector2 position,
@@ -99,12 +105,14 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
     this.onHit,
     this.onDestroyed,
     this.onTouchPlayer,
+    this.respawnSeconds = 4.0,
+    this.speed = ArenaMonster.baseSpeed,
   }) : super(position: position, size: Vector2.all(28), anchor: Anchor.center);
 
   static const maxHp = 2;
-  static const speed = 60.0;
-  static const respawnSeconds = 4.0;
-  static const touchCooldownSeconds = 1.0;
+  static const baseSpeed = 60.0;
+  static const defaultRespawnSeconds = 4.0;
+  static const touchCooldownSeconds = 0.1;
   static const knockback = 36.0;
 
   final Vector2 Function() chase;
@@ -112,6 +120,8 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
   final void Function(ArenaMonster m)? onHit;
   final void Function(ArenaMonster m)? onDestroyed;
   final void Function(ArenaMonster m)? onTouchPlayer;
+  final double respawnSeconds;
+  final double speed;
 
   late final Vector2 home = position.clone();
   int hp = maxHp;
@@ -145,6 +155,14 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
     }
   }
 
+  void reset() {
+    hp = maxHp;
+    _respawn = 0;
+    _touchCooldown = 0;
+    _flash = 0;
+    position.setFrom(home);
+  }
+
   @override
   void takeHit() {
     if (!alive) return;
@@ -162,6 +180,7 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
     super.update(dt);
     if (_flash > 0) _flash -= dt;
     if (!alive) {
+      if (respawnSeconds <= 0) return;
       _respawn -= dt;
       if (_respawn <= 0) {
         hp = maxHp;
@@ -170,20 +189,17 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
       return;
     }
     if (_touchCooldown > 0) _touchCooldown -= dt;
-    final to = chase() - position;
-    final dist = to.length;
-    if (dist < 1) return;
     final player = chase();
-    final touching = _rectAt(
-      position,
-    ).inflate(10).contains(Offset(player.x, player.y));
+    final to = player - position;
+    final dist = to.length;
+    final touching = hitRect.inflate(10).contains(Offset(player.x, player.y));
     if (touching && _touchCooldown <= 0) {
       _touchCooldown = touchCooldownSeconds;
-      _move(-to / dist * knockback);
+      if (dist > 0) _move(-to / dist * knockback);
       onTouchPlayer?.call(this);
       return;
     }
-    _move(to / dist * speed * dt);
+    if (dist > 0) _move(to / dist * speed * dt);
   }
 
   @override

@@ -228,6 +228,106 @@ void main() {
     });
   }
 
+  for (final locale in [
+    (const Locale('en'), '4 lives, wave 1'),
+    (const Locale('vi'), '4 mạng, đợt 1'),
+  ]) {
+    testWidgets('HUD semantics follow ${locale.$1}', (tester) async {
+      final game = SpriteArenaGame();
+      await tester.runAsync(() async {
+        rootBundle.evict('assets/tiles/character_arena.tmx');
+        await tester.pumpWidget(_wrap(game: game, locale: locale.$1));
+        await Future<void>.sync(
+          game.toBeLoaded,
+        ).timeout(const Duration(seconds: 10));
+      });
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics && widget.properties.label == locale.$2,
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('small-screen HUD fits and terminal hides gameplay controls', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(240, 480);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final game = SpriteArenaGame();
+    await tester.runAsync(() async {
+      rootBundle.evict('assets/tiles/character_arena.tmx');
+      await tester.pumpWidget(_wrap(game: game, textScale: 2));
+      await Future<void>.sync(
+        game.toBeLoaded,
+      ).timeout(const Duration(seconds: 10));
+    });
+    await tester.pump();
+    await tester.pump();
+    final status = find.byWidgetPredicate(
+      (widget) =>
+          widget is Semantics && widget.properties.label == '4 lives, wave 1',
+    );
+    final statusRect = tester.getRect(status);
+    expect(statusRect.left, greaterThanOrEqualTo(0));
+    expect(statusRect.right, lessThanOrEqualTo(240));
+    expect(statusRect.top, greaterThan(48));
+    game.lives.value = 0;
+    game.roundOver.value = true;
+    game.phase.value = ArenaPhase.gameOver;
+    await tester.pump();
+    expect(find.byType(GameJoystick), findsNothing);
+    expect(
+      find.byWidgetPredicate((w) => w is CommonButton && w.label == 'Attack'),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('shows lives and wave HUD, game over, and restarts', (
+    tester,
+  ) async {
+    final game = SpriteArenaGame();
+    await tester.runAsync(() async {
+      rootBundle.evict('assets/tiles/character_arena.tmx');
+      await tester.pumpWidget(_wrap(game: game));
+      await Future<void>.sync(
+        game.toBeLoaded,
+      ).timeout(const Duration(seconds: 10));
+    });
+    await tester.pump();
+    await tester.pump();
+    expect(find.byIcon(Icons.favorite), findsOneWidget);
+    expect(find.text('4'), findsOneWidget);
+    expect(find.text('Wave 1'), findsOneWidget);
+    game.lives.value = 0;
+    game.roundOver.value = true;
+    game.phase.value = ArenaPhase.gameOver;
+    await tester.pump();
+    expect(find.text('Game Over'), findsOneWidget);
+    expect(find.text('Score: 0  |  Wave: 1'), findsOneWidget);
+    await tester.tap(
+      find.byWidgetPredicate((w) => w is CommonButton && w.label == 'Restart'),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(game.phase.value, ArenaPhase.playing);
+    expect(game.lives.value, 4);
+    expect(game.wave.value, 1);
+    expect(game.score.value, 0);
+    expect(find.text('4'), findsOneWidget);
+    expect(find.text('Wave 1'), findsOneWidget);
+    expect(find.text('Game Over'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('shows isolated full-screen Sprite Arena controls', (
     tester,
   ) async {

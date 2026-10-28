@@ -12,7 +12,7 @@ import 'package:roy_casual_kit/presentation/game/tiled_terrain_collision.dart';
 
 import 'arena_actors.dart';
 
-enum ArenaPhase { loading, playing, paused, failed }
+enum ArenaPhase { loading, playing, paused, gameOver, failed }
 
 class SpriteArenaGame extends RoyGame {
   SpriteArenaGame()
@@ -25,11 +25,27 @@ class SpriteArenaGame extends RoyGame {
   final phase = ValueNotifier(ArenaPhase.loading);
   bool get attackEnabled => phase.value == ArenaPhase.playing;
   final score = ValueNotifier(0);
+  final lives = ValueNotifier(4);
+  final wave = ValueNotifier(1);
+  final roundOver = ValueNotifier(false);
   final targets = <ArenaTarget>[];
   final monsters = <ArenaMonster>[];
   final crates = <ArenaCrate>[];
   final _bullets = <ArenaBullet>{};
   bool _ready = false;
+  final _mapColliders = <TerrainCollider>[];
+  double _damageCooldown = 0;
+  bool _damagedThisUpdate = false;
+  double _spawnCooldown = 0;
+  int _waveSize = 2;
+  int _spawnedThisWave = 0;
+  int _spawnCursor = 0;
+
+  int get waveSize => _waveSize;
+  static const activeMonsterCap = 3;
+  static const spawnInterval = 1.2;
+  static const playerMaxLives = 4;
+  static const playerInvulnerabilitySeconds = 1.25;
 
   static const _targetSpots = [
     (220.0, 400.0),
@@ -44,15 +60,16 @@ class SpriteArenaGame extends RoyGame {
   void pauseEngine() {
     super.pauseEngine();
     player?.setMoveInput(GameJoystickDirection.idle, Offset.zero);
-    if (_ready && phase.value != ArenaPhase.failed) {
+    if (_ready && phase.value == ArenaPhase.playing) {
       phase.value = ArenaPhase.paused;
     }
   }
 
   @override
   void resumeEngine() {
+    if (roundOver.value || phase.value == ArenaPhase.failed) return;
     super.resumeEngine();
-    if (phase.value != ArenaPhase.failed) {
+    if (phase.value == ArenaPhase.paused || phase.value == ArenaPhase.loading) {
       phase.value = _ready ? ArenaPhase.playing : ArenaPhase.loading;
     }
   }
@@ -78,6 +95,7 @@ class SpriteArenaGame extends RoyGame {
         Rectangle.fromLTWH(0, 0, arena!.width, arena!.height),
         considerViewport: true,
       );
+      _mapColliders.addAll(terrainColliders);
       _spawnTargets();
       _spawnMonsters();
       _spawnCrates();
@@ -122,18 +140,32 @@ class SpriteArenaGame extends RoyGame {
   ];
 
   void _spawnMonsters() {
+    _spawnedThisWave = 0;
+    _spawnCursor = 0;
+    _spawnCooldown = 0;
+    while (_spawnedThisWave < math.min(_waveSize, activeMonsterCap) &&
+        _spawnNextMonster()) {}
+    if (_spawnedThisWave < _waveSize) _spawnCooldown = spawnInterval;
+  }
+
+  bool _spawnNextMonster() {
+    final spots = _monsterSpots;
     final start = player!.position;
-    for (final (x, y) in _monsterSpots) {
+    for (var tries = 0; tries < spots.length; tries++) {
+      final (x, y) = spots[_spawnCursor++ % spots.length];
       final spot = Vector2(x, y);
       final box = Rect.fromCenter(center: Offset(x, y), width: 36, height: 36);
       final blocked = terrainColliders.any(
         (c) => terrainColliderOverlapsRect(c, box),
       );
-      if (blocked || spot.distanceTo(start) < 200) continue;
+      final occupied = monsters.any((m) => m.alive && m.hitRect.overlaps(box));
+      if (blocked || occupied || spot.distanceTo(start) < 200) continue;
       final monster = ArenaMonster(
         position: spot,
         chase: () => player!.position,
         terrain: terrainColliders,
+        respawnSeconds: 0,
+        speed: math.min(84, ArenaMonster.baseSpeed + wave.value - 1),
         onHit: (m) {
           AudioManager.maybe?.playSfx('audio/tap.ogg', volume: 0.4);
         },
@@ -142,12 +174,97 @@ class SpriteArenaGame extends RoyGame {
           fireHaptic(HapticLevel.light);
           AudioManager.maybe?.playSfx('audio/victory.ogg', volume: 0.5);
           score.value += 25;
+          _onMonsterDestroyed();
         },
-        onTouchPlayer: (m) => fireHaptic(HapticLevel.light),
+        onTouchPlayer: (m) {
+          fireHaptic(HapticLevel.light);
+          _takePlayerHit();
+        },
       );
       monsters.add(monster);
       world.add(monster);
+      _spawnedThisWave++;
+      return true;
     }
+    return false;
+  }
+
+  void _onMonsterDestroyed() {
+    if (roundOver.value) return;
+    _spawnCooldown = spawnInterval;
+  }
+
+  void _takePlayerHit() {
+    if (!attackEnabled ||
+        roundOver.value ||
+        _damageCooldown > 0 ||
+        _damagedThisUpdate) {
+      return;
+    }
+    _damagedThisUpdate = true;
+    _damageCooldown = playerInvulnerabilitySeconds;
+    lives.value--;
+    if (lives.value == 0) {
+      roundOver.value = true;
+      phase.value = ArenaPhase.gameOver;
+      player?.setMoveInput(GameJoystickDirection.idle, Offset.zero);
+      pauseEngine();
+    }
+  }
+
+  @override
+  void update(double dt) {
+    _damagedThisUpdate = false;
+    if (attackEnabled && !roundOver.value) {
+      _damageCooldown = math.max(0, _damageCooldown - dt);
+      _spawnCooldown = math.max(0, _spawnCooldown - dt);
+    }
+    super.update(dt);
+    if (!attackEnabled || roundOver.value || _spawnCooldown > 0) return;
+    final active = monsters.where((m) => m.alive).length;
+    if (_spawnedThisWave < _waveSize && active < activeMonsterCap) {
+      _spawnNextMonster();
+      _spawnCooldown = spawnInterval;
+    } else if (_spawnedThisWave == _waveSize && active == 0) {
+      wave.value++;
+      _waveSize++;
+      _spawnedThisWave = 0;
+      _spawnCooldown = spawnInterval;
+    }
+  }
+
+  void restart() {
+    if (!_ready) return;
+    pauseEngine();
+    for (final bullet in _bullets.toList()) {
+      bullet.removeFromParent();
+    }
+    for (final actor in [...monsters, ...crates]) {
+      actor.removeFromParent();
+    }
+    for (final target in targets) {
+      target.reset();
+    }
+    terrainColliders
+      ..clear()
+      ..addAll(_mapColliders);
+    monsters.clear();
+    crates.clear();
+    player!.position.setValues(480, 480);
+    player!.setMoveInput(GameJoystickDirection.idle, Offset.zero);
+    score.value = 0;
+    lives.value = playerMaxLives;
+    wave.value = 1;
+    roundOver.value = false;
+    _damageCooldown = 0;
+    _waveSize = 2;
+    _spawnedThisWave = 0;
+    _spawnCursor = 0;
+    _spawnCooldown = 0;
+    _spawnMonsters();
+    _spawnCrates();
+    phase.value = ArenaPhase.paused;
+    resumeEngine();
   }
 
   static const _crateSpots = [
