@@ -156,6 +156,40 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                       ),
                       if (ready)
                         Positioned(
+                          top: 76,
+                          left: padding,
+                          child: ValueListenableBuilder<int>(
+                            valueListenable: _game.score,
+                            builder: (context, score, _) => Semantics(
+                              liveRegion: true,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: NeonTheme.card,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: NeonTheme.cyan,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Text(
+                                  'sprite_arena_score'.trParams({
+                                    'n': '$score',
+                                  }),
+                                  style: TextStyle(
+                                    color: NeonTheme.ink,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (ready)
+                        Positioned(
                           left: padding,
                           right: padding,
                           bottom: 16,

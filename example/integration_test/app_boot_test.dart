@@ -617,6 +617,16 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(player.isAttacking, isFalse);
 
+      final arena = game as SpriteArenaGame;
+      expect(arena.targets, isNotEmpty);
+      final target = arena.targets.first;
+      player.position.setValues(target.position.x - 120, target.position.y);
+      player.angle = 0;
+      arena.attack();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(target.hp, lessThan(3));
+      await tester.pump(const Duration(milliseconds: 500));
+
       final pause = find.byTooltip('game_demo_pause_tooltip'.tr);
       await tester.tap(pause);
       await tester.pump();
@@ -626,7 +636,7 @@ void main() {
           .whereType<ArenaBullet>()
           .length;
       for (var i = 0; i < 50; i++) {
-        (game as SpriteArenaGame).attack();
+        arena.attack();
       }
       expect(player.isAttacking, isFalse);
       final frozen = player.position.clone();

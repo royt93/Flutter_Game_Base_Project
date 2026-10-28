@@ -193,6 +193,41 @@ void main() {
     });
   }
 
+  for (final c in [
+    (const Locale('en'), 'Score: 10'),
+    (const Locale('vi'), 'Điểm: 10'),
+  ]) {
+    testWidgets('score chip follows the notifier in ${c.$1} at 240x480', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(240, 480);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.runAsync(() async {
+        rootBundle.evict('assets/tiles/character_arena.tmx');
+        await tester.pumpWidget(_wrap(locale: c.$1, textScale: 2));
+        final game = tester
+            .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
+            .game!;
+        await Future<void>.sync(
+          game.toBeLoaded,
+        ).timeout(const Duration(seconds: 10));
+      });
+      await tester.pump();
+      await tester.pump();
+      final game =
+          tester
+                  .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
+                  .game!
+              as SpriteArenaGame;
+      game.score.value = 10;
+      await tester.pump();
+      expect(find.text(c.$2), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('shows isolated full-screen Sprite Arena controls', (
     tester,
   ) async {
