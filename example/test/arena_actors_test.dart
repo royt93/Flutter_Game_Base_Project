@@ -178,4 +178,78 @@ void main() {
     expect(crate.alive, isFalse);
     expect(crate.hitRect, const Rect.fromLTWH(34, 44, 32, 32));
   });
+
+  test(
+    'dasher telegraphs then dashes fast towards player, stopping at wall',
+    () {
+      final player = Vector2(400, 300);
+      final dasher = ArenaMonster(
+        position: Vector2(250, 300),
+        chase: () => player,
+        terrain: [TerrainRectangle(Vector2(320, 260), Vector2(16, 80))],
+        monsterType: ArenaMonsterType.dasher,
+      );
+      expect(dasher.monsterType, ArenaMonsterType.dasher);
+      expect(dasher.hp, 2);
+
+      // Ở cự ly 150 (giữa 60 và 220), dasher kích hoạt telegraph
+      dasher.update(0.01);
+      expect(dasher.isTelegraphing, isTrue);
+      expect(dasher.isCharging, isFalse);
+
+      // Trong 0.4s telegraph, không di chuyển
+      final telegraphPos = dasher.position.clone();
+      dasher.update(ArenaMonster.dasherTelegraphSeconds - 0.02);
+      expect(dasher.position, telegraphPos);
+
+      // Hết 0.4s -> dash!
+      dasher.update(0.03);
+      expect(dasher.isCharging, isTrue);
+
+      // Di chuyển nhanh nhưng bị chặn bởi tường x = 320
+      dasher.update(0.3);
+      expect(dasher.position.x, greaterThan(telegraphPos.x));
+      expect(dasher.position.x, lessThan(320));
+    },
+  );
+
+  test('shooter fires projectile toward player at cooldown cadence', () {
+    final shots = <(Vector2, Vector2)>[];
+    final player = Vector2(400, 300);
+    final shooter = ArenaMonster(
+      position: Vector2(250, 300),
+      chase: () => player,
+      terrain: const [],
+      monsterType: ArenaMonsterType.shooter,
+      onShoot: (at, dir) => shots.add((at, dir)),
+    );
+
+    // Ban đầu chưa bắn
+    shooter.update(1.0);
+    expect(shots, isEmpty);
+
+    // Sau khi hết cooldown 2.2s -> bắn
+    shooter.update(1.3);
+    expect(shots, hasLength(1));
+    expect(shots.first.$1, shooter.position);
+    expect(shots.first.$2.x, greaterThan(0)); // Hướng về phía player bên phải
+  });
+
+  test('monster bullet damages player and cannot tunnel through obstacle', () {
+    var hits = 0;
+    var impacts = 0;
+    final bullet = ArenaMonsterBullet(
+      position: Vector2(100, 100),
+      direction: Vector2(1, 0),
+      terrain: [TerrainRectangle(Vector2(160, 80), Vector2(20, 40))],
+      playerHitRect: () => const Rect.fromLTWH(300, 90, 20, 20),
+      onHitPlayer: () => hits++,
+      onImpact: (_) => impacts++,
+    );
+
+    // Đạn bay chạm tường ở x = 160
+    bullet.update(0.5); // 180 * 0.5 = 90 px -> bay từ 100 tới 190
+    expect(impacts, 1);
+    expect(hits, 0);
+  });
 }

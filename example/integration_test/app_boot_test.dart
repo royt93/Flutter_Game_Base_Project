@@ -748,6 +748,20 @@ void main() {
       );
       arena.resumeEngine();
 
+      final testMonsterBullet = ArenaMonsterBullet(
+        position: player.position + Vector2(60, 0),
+        direction: Vector2(-1, 0),
+        terrain: const [],
+        playerHitRect: () => Rect.fromCenter(
+          center: Offset(player.position.x, player.position.y),
+          width: 32,
+          height: 32,
+        ),
+      );
+      arena.monsterBullets.add(testMonsterBullet);
+      arena.world.add(testMonsterBullet);
+      await tester.pump(const Duration(milliseconds: 100));
+
       await tester.pump(const Duration(seconds: 1));
       arena.lives.value = 1;
       final gameOverMonster = arena.monsters.firstWhere((m) => m.alive);

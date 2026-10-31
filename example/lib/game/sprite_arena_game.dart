@@ -84,8 +84,10 @@ class SpriteArenaGame extends RoyGame {
   SpriteArenaGame({
     double Function()? pickupRoll,
     List<ArenaUpgradeKind> Function(Set<ArenaUpgradeKind> active)? upgradeRoll,
+    ArenaMonsterType Function(int wave)? monsterTypeRoll,
   }) : _pickupRoll = pickupRoll ?? math.Random().nextDouble,
        _upgradeRoll = upgradeRoll,
+       _monsterTypeRoll = monsterTypeRoll,
        super(
          showClassicDemo: false,
          enablePlayableCharacter: true,
@@ -95,6 +97,7 @@ class SpriteArenaGame extends RoyGame {
   final double Function() _pickupRoll;
   final List<ArenaUpgradeKind> Function(Set<ArenaUpgradeKind> active)?
   _upgradeRoll;
+  final ArenaMonsterType Function(int wave)? _monsterTypeRoll;
   final phase = ValueNotifier(ArenaPhase.loading);
   bool get attackEnabled => phase.value == ArenaPhase.playing;
   final score = ValueNotifier(0);
@@ -104,6 +107,8 @@ class SpriteArenaGame extends RoyGame {
   final roundOver = ValueNotifier(false);
   final activeUpgrades = ValueNotifier<Set<ArenaUpgradeKind>>({});
   final pendingUpgrades = ValueNotifier<List<ArenaUpgradeKind>?>(null);
+  final monsterBullets = <ArenaMonsterBullet>{};
+  static const maxMonsterBullets = 8;
   Vector2 _lastPlayerPos = Vector2.zero();
   final targets = <ArenaTarget>[];
   final monsters = <ArenaMonster>[];
@@ -443,6 +448,43 @@ class SpriteArenaGame extends RoyGame {
     }
   }
 
+  ArenaMonsterType _rollMonsterType() {
+    if (isBossWave) return ArenaMonsterType.boss;
+    if (_monsterTypeRoll != null) return _monsterTypeRoll(wave.value);
+    if (wave.value <= 5) return ArenaMonsterType.chaser;
+    final roll = _pickupRoll();
+    if (roll < 0.40) {
+      return ArenaMonsterType.chaser;
+    } else if (roll < 0.70) {
+      return ArenaMonsterType.dasher;
+    } else {
+      return ArenaMonsterType.shooter;
+    }
+  }
+
+  void _spawnMonsterBullet(Vector2 at, Vector2 direction) {
+    if (!attackEnabled ||
+        roundOver.value ||
+        monsterBullets.length >= maxMonsterBullets) {
+      return;
+    }
+    late final ArenaMonsterBullet bullet;
+    bullet = ArenaMonsterBullet(
+      position: at,
+      direction: direction,
+      terrain: terrainColliders,
+      playerHitRect: () => _playerHitRect,
+      onHitPlayer: () {
+        fireHaptic(HapticLevel.medium);
+        _takePlayerHit(damage: 1);
+      },
+      onImpact: (hit) => spawnSparkleBurst(hit, count: 6),
+      onRemoved: monsterBullets.remove,
+    );
+    monsterBullets.add(bullet);
+    world.add(bullet);
+  }
+
   bool _spawnNextMonster() {
     final spots = _monsterSpots;
     final start = player!.position;
@@ -455,18 +497,21 @@ class SpriteArenaGame extends RoyGame {
       );
       final occupied = monsters.any((m) => m.alive && m.hitRect.overlaps(box));
       if (blocked || occupied || spot.distanceTo(start) < 200) continue;
-      final boss = isBossWave;
+      final type = _rollMonsterType();
+      final boss = type == ArenaMonsterType.boss;
       final monster = ArenaMonster(
         position: spot,
         chase: () => player!.position,
         terrain: terrainColliders,
         respawnSeconds: 0,
+        monsterType: type,
         speed: boss
             ? ArenaMonster.bossSpeed
             : math.min(84, ArenaMonster.baseSpeed + wave.value - 1),
         maxHp: boss ? ArenaMonster.bossHp : ArenaMonster.baseHp,
         isBoss: boss,
         contactDamage: boss ? ArenaMonster.bossChargeDamage : 1,
+        onShoot: (at, dir) => _spawnMonsterBullet(at, dir),
         onHit: (m) {
           if (m.isBoss) bossHp.value = m.hp;
           AudioManager.maybe?.playSfx('audio/tap.ogg', volume: 0.4);
@@ -608,6 +653,10 @@ class SpriteArenaGame extends RoyGame {
     for (final bullet in _bullets.toList()) {
       bullet.removeFromParent();
     }
+    for (final mb in monsterBullets.toList()) {
+      mb.removeFromParent();
+    }
+    monsterBullets.clear();
     for (final actor in [...monsters, ...crates]) {
       actor.removeFromParent();
     }

@@ -174,9 +174,14 @@ class ArenaTarget extends PositionComponent implements ArenaHittable {
   }
 }
 
+enum ArenaMonsterType { chaser, dasher, shooter, boss }
+
 enum _BossState { approach, telegraph, charge }
 
+enum _DasherState { walk, telegraph, dash }
+
 /// Chases [chase] in small wall-safe steps; bosses telegraph and charge.
+/// Post-wave-5 monsters feature Dasher and Shooter variants.
 class ArenaMonster extends PositionComponent implements ArenaHittable {
   ArenaMonster({
     required Vector2 position,
@@ -185,12 +190,27 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
     this.onHit,
     this.onDestroyed,
     this.onTouchPlayer,
+    this.onShoot,
     this.respawnSeconds = 4.0,
-    this.speed = ArenaMonster.baseSpeed,
+    double? speed,
     int? maxHp,
-    this.isBoss = false,
-    this.contactDamage = 1,
-  }) : maxHp = maxHp ?? (isBoss ? bossHp : baseHp),
+    bool isBoss = false,
+    ArenaMonsterType? monsterType,
+    int? contactDamage,
+  }) : monsterType =
+           monsterType ??
+           (isBoss ? ArenaMonsterType.boss : ArenaMonsterType.chaser),
+       contactDamage = contactDamage ?? (isBoss ? bossChargeDamage : 1),
+       speed =
+           speed ??
+           (isBoss
+               ? bossSpeed
+               : (monsterType == ArenaMonsterType.dasher
+                     ? dasherWalkSpeed
+                     : (monsterType == ArenaMonsterType.shooter
+                           ? shooterSpeed
+                           : baseSpeed))),
+       maxHp = maxHp ?? (isBoss ? bossHp : baseHp),
        super(
          position: position,
          size: Vector2.all(isBoss ? 56 : 28),
@@ -202,17 +222,31 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
   static const baseHp = 2;
   static const bossHp = 8;
   static const baseSpeed = 60.0;
+  static const dasherWalkSpeed = 66.0;
+  static const dasherDashSpeed = 190.0;
+  static const dasherTelegraphSeconds = 0.40;
+  static const dasherDashSeconds = 0.45;
+  static const dasherCooldownSeconds = 2.5;
+  static const shooterSpeed = 48.0;
+  static const shooterCooldownSeconds = 2.2;
   static const bossSpeed = 32.0;
   static const bossTelegraphSeconds = 1.0;
   static const bossChargeSeconds = 0.45;
   static const bossChargeSpeed = 160.0;
   static const bossChargeDamage = 2;
 
+  final ArenaMonsterType monsterType;
   final int maxHp;
-  final bool isBoss;
+  bool get isBoss => monsterType == ArenaMonsterType.boss;
   final int contactDamage;
-  bool get isCharging => _bossState == _BossState.charge;
-  bool get isTelegraphing => _bossState == _BossState.telegraph;
+  bool get isCharging => isBoss
+      ? _bossState == _BossState.charge
+      : (monsterType == ArenaMonsterType.dasher &&
+            _dasherState == _DasherState.dash);
+  bool get isTelegraphing => isBoss
+      ? _bossState == _BossState.telegraph
+      : (monsterType == ArenaMonsterType.dasher &&
+            _dasherState == _DasherState.telegraph);
   static const defaultRespawnSeconds = 4.0;
   static const touchCooldownSeconds = 0.1;
   static const knockback = 36.0;
@@ -222,6 +256,7 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
   final void Function(ArenaMonster m)? onHit;
   final void Function(ArenaMonster m)? onDestroyed;
   final void Function(ArenaMonster m)? onTouchPlayer;
+  final void Function(Vector2 at, Vector2 direction)? onShoot;
   final double respawnSeconds;
   final double speed;
 
@@ -231,6 +266,13 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
   _BossState _bossState = _BossState.approach;
   double _bossStateTimer = 0;
   Vector2 _chargeDirection = Vector2.zero();
+
+  _DasherState _dasherState = _DasherState.walk;
+  double _dasherTimer = 0;
+  double _dasherCooldown = 0;
+  Vector2 _dashDirection = Vector2.zero();
+
+  double _shooterCooldown = shooterCooldownSeconds;
   double _touchCooldown = 0;
   double _flash = 0;
 
@@ -284,6 +326,11 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
     _bossState = _BossState.approach;
     _bossStateTimer = 0;
     _chargeDirection = Vector2.zero();
+    _dasherState = _DasherState.walk;
+    _dasherTimer = 0;
+    _dasherCooldown = 0;
+    _dashDirection = Vector2.zero();
+    _shooterCooldown = shooterCooldownSeconds;
     position.setFrom(home);
   }
 
@@ -318,8 +365,80 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
     final dist = to.length;
     if (isBoss) {
       _updateBoss(dt, to, dist);
+    } else if (monsterType == ArenaMonsterType.dasher) {
+      _updateDasher(dt, player, to, dist);
+    } else if (monsterType == ArenaMonsterType.shooter) {
+      _updateShooter(dt, player, to, dist);
     } else {
       _moveTowardPlayer(player, to, dist, speed * dt);
+    }
+  }
+
+  void _updateDasher(
+    double dt,
+    Vector2 player,
+    Vector2 toPlayer,
+    double distance,
+  ) {
+    if (_dasherCooldown > 0) _dasherCooldown -= dt;
+    switch (_dasherState) {
+      case _DasherState.walk:
+        _moveTowardPlayer(player, toPlayer, distance, speed * dt);
+        if (_dasherCooldown <= 0 && distance <= 220 && distance >= 60) {
+          _dashDirection = distance > 0 ? toPlayer / distance : Vector2(1, 0);
+          _dasherState = _DasherState.telegraph;
+          _dasherTimer = 0;
+        }
+      case _DasherState.telegraph:
+        _dasherTimer += dt;
+        if (_dasherTimer >= dasherTelegraphSeconds) {
+          _dasherState = _DasherState.dash;
+          _dasherTimer = 0;
+        }
+      case _DasherState.dash:
+        _dasherTimer += dt;
+        final touched = _moveCharge(
+          _dashDirection * dasherDashSpeed * dt,
+          player,
+        );
+        if (touched && _touchCooldown <= 0) {
+          _touchCooldown = touchCooldownSeconds;
+          onTouchPlayer?.call(this);
+          _dasherState = _DasherState.walk;
+          _dasherCooldown = dasherCooldownSeconds;
+          _dasherTimer = 0;
+        } else if (_dasherTimer >= dasherDashSeconds) {
+          _dasherState = _DasherState.walk;
+          _dasherCooldown = dasherCooldownSeconds;
+          _dasherTimer = 0;
+        }
+    }
+  }
+
+  void _updateShooter(
+    double dt,
+    Vector2 player,
+    Vector2 toPlayer,
+    double distance,
+  ) {
+    _shooterCooldown -= dt;
+    if (_shooterCooldown <= 0 && distance <= 380) {
+      _shooterCooldown = shooterCooldownSeconds;
+      final dir = distance > 0 ? toPlayer / distance : Vector2(1, 0);
+      onShoot?.call(position.clone(), dir);
+    }
+
+    if (distance > 240) {
+      _moveTowardPlayer(player, toPlayer, distance, speed * dt);
+    } else if (distance < 130 && distance > 0) {
+      _move(-toPlayer / distance * speed * dt);
+    }
+
+    final touching = hitRect.inflate(10).contains(Offset(player.x, player.y));
+    if (touching && _touchCooldown <= 0) {
+      _touchCooldown = touchCooldownSeconds;
+      if (distance > 0) _move(-toPlayer / distance * knockback);
+      onTouchPlayer?.call(this);
     }
   }
 
@@ -377,15 +496,23 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
     if (!alive) return;
     final c = Offset(size.x / 2, size.y / 2);
     final bossTelegraphing = isBoss && _bossState == _BossState.telegraph;
+    final dasherTelegraphing =
+        monsterType == ArenaMonsterType.dasher &&
+        _dasherState == _DasherState.telegraph;
+    final isDasher = monsterType == ArenaMonsterType.dasher;
+    final isShooter = monsterType == ArenaMonsterType.shooter;
+
+    final baseColor = switch (monsterType) {
+      ArenaMonsterType.boss => const Color(0xff8e24aa),
+      ArenaMonsterType.dasher => const Color(0xffff9800),
+      ArenaMonsterType.shooter => const Color(0xffab47bc),
+      ArenaMonsterType.chaser => const Color(0xff66bb6a),
+    };
+
     canvas.drawCircle(
       c,
       size.x / 2,
-      Paint()
-        ..color = _flash > 0
-            ? const Color(0xffffffff)
-            : isBoss
-            ? const Color(0xff8e24aa)
-            : const Color(0xff66bb6a),
+      Paint()..color = _flash > 0 ? const Color(0xffffffff) : baseColor,
     );
     if (isBoss) {
       canvas.drawCircle(
@@ -414,13 +541,45 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
           markerPaint,
         );
       }
-    }
-    for (final dx in [-5.0, 5.0]) {
+    } else if (isDasher) {
+      if (dasherTelegraphing || _dasherState == _DasherState.dash) {
+        canvas.drawCircle(
+          c,
+          size.x / 2 - 2,
+          Paint()
+            ..color = const Color(0xffff3d00)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = dasherTelegraphing ? 3 : 2,
+        );
+        final markerPaint = Paint()
+          ..color = Colors.white
+          ..strokeWidth = 3
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(
+          c,
+          c.translate(
+            _dashDirection.x * size.x * 0.45,
+            _dashDirection.y * size.y * 0.45,
+          ),
+          markerPaint,
+        );
+      }
+    } else if (isShooter) {
       canvas.drawCircle(
-        c.translate(dx, -3),
-        3,
-        Paint()..color = const Color(0xff1b5e20),
+        c,
+        size.x / 2 - 2,
+        Paint()
+          ..color = const Color(0xff4a148c)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
       );
+    }
+    final faceColor = isBoss || isShooter
+        ? const Color(0xff4a148c)
+        : (isDasher ? const Color(0xffe65100) : const Color(0xff1b5e20));
+
+    for (final dx in [-5.0, 5.0]) {
+      canvas.drawCircle(c.translate(dx, -3), 3, Paint()..color = faceColor);
     }
     canvas.drawArc(
       Rect.fromCenter(center: c.translate(0, 5), width: 12, height: 8),
@@ -428,7 +587,82 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
       math.pi,
       false,
       Paint()
-        ..color = const Color(0xff1b5e20)
+        ..color = faceColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+  }
+}
+
+/// Slow poison projectile fired by Shooter monsters toward the player.
+/// Ray-marches in 4px steps so it cannot tunnel through walls or the player.
+class ArenaMonsterBullet extends PositionComponent {
+  ArenaMonsterBullet({
+    required Vector2 position,
+    required this.direction,
+    required this.terrain,
+    required this.playerHitRect,
+    this.speed = 180.0,
+    this.lifetime = 2.0,
+    this.onHitPlayer,
+    this.onImpact,
+    this.onRemoved,
+  }) : super(position: position, size: Vector2.all(12), anchor: Anchor.center);
+
+  final Vector2 direction;
+  final List<TerrainCollider> terrain;
+  final Rect Function() playerHitRect;
+  final double speed;
+  double lifetime;
+  final VoidCallback? onHitPlayer;
+  final void Function(Vector2 at)? onImpact;
+  final void Function(ArenaMonsterBullet bullet)? onRemoved;
+
+  @override
+  void onRemove() {
+    onRemoved?.call(this);
+    super.onRemove();
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    final travel = speed * math.min(dt, lifetime);
+    lifetime -= dt;
+    final steps = (travel / 4).ceil().clamp(1, 4096);
+    final step = direction * (travel / steps);
+
+    for (var i = 0; i < steps; i++) {
+      final hitbox = Rect.fromCenter(
+        center: Offset(position.x, position.y),
+        width: 8,
+        height: 8,
+      );
+      if (hitbox.overlaps(playerHitRect())) {
+        onHitPlayer?.call();
+        onImpact?.call(position.clone());
+        removeFromParent();
+        return;
+      }
+      if (terrain.any((t) => terrainColliderOverlapsRect(t, hitbox))) {
+        onImpact?.call(position.clone());
+        removeFromParent();
+        return;
+      }
+      position += step;
+    }
+    if (lifetime <= 0) removeFromParent();
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final c = Offset(size.x / 2, size.y / 2);
+    canvas.drawCircle(c, size.x / 2, Paint()..color = const Color(0xffe040fb));
+    canvas.drawCircle(
+      c,
+      size.x / 2 - 2,
+      Paint()
+        ..color = const Color(0xff7b1fa2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2,
     );

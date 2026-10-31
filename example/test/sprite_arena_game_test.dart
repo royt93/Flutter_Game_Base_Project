@@ -1201,6 +1201,91 @@ void main() {
     expect(game.pendingUpgrades.value, isNull);
   });
 
+  testWidgets(
+    'waves 1-4 spawn chasers, wave 5 spawns boss, wave 6+ spawns mixed variants',
+    (tester) async {
+      final game = await loadArenaInto(
+        tester,
+        SpriteArenaGame(
+          pickupRoll: () => 0.99,
+          monsterTypeRoll: (w) => w == 6
+              ? ArenaMonsterType.dasher
+              : (w == 7 ? ArenaMonsterType.shooter : ArenaMonsterType.chaser),
+        ),
+      );
+      // Wave 1 quái là chaser
+      expect(
+        game.monsters.every((m) => m.monsterType == ArenaMonsterType.chaser),
+        isTrue,
+      );
+
+      // Đi tới wave 5: boss
+      await advanceToWave(game, 5);
+      game.update(SpriteArenaGame.spawnInterval);
+      final boss = game.monsters.singleWhere((m) => m.alive);
+      expect(boss.isBoss, isTrue);
+
+      // Clear wave 5, qua wave 6: dasher
+      for (var hit = 0; hit < ArenaMonster.bossHp; hit++) {
+        boss.takeHit();
+      }
+      game.update(SpriteArenaGame.spawnInterval);
+      if (game.pendingUpgrades.value != null) {
+        game.applyUpgrade(game.pendingUpgrades.value!.first);
+        game.resumeEngine();
+      }
+      expect(game.wave.value, 6);
+      game.update(SpriteArenaGame.spawnInterval);
+      final wave6Monsters = game.monsters.where((m) => m.alive).toList();
+      expect(
+        wave6Monsters.any((m) => m.monsterType == ArenaMonsterType.dasher),
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    'shooter bullet hits player and subtracts one life with global invulnerability',
+    (tester) async {
+      final game = await loadArena(tester);
+      final initialLives = game.lives.value;
+
+      // Cho 1 viên monster bullet bay trúng player
+      final playerPos = game.player!.position.clone();
+      final bullet = ArenaMonsterBullet(
+        position: Vector2(playerPos.x - 30, playerPos.y),
+        direction: Vector2(1, 0),
+        terrain: const [],
+        playerHitRect: () => Rect.fromCenter(
+          center: Offset(playerPos.x, playerPos.y),
+          width: 32,
+          height: 32,
+        ),
+        onHitPlayer: () => game.lives.value--,
+      );
+      game.world.add(bullet);
+      bullet.update(0.2); // Bay trúng player
+
+      expect(game.lives.value, initialLives - 1);
+    },
+  );
+
+  testWidgets('restart clears active monster bullets', (tester) async {
+    final game = await loadArena(tester);
+    final bullet = ArenaMonsterBullet(
+      position: Vector2(100, 100),
+      direction: Vector2(1, 0),
+      terrain: const [],
+      playerHitRect: () => Rect.zero,
+    );
+    game.monsterBullets.add(bullet);
+    game.world.add(bullet);
+    expect(game.monsterBullets, hasLength(1));
+
+    game.restart();
+    expect(game.monsterBullets, isEmpty);
+  });
+
   test('arena includes visible props aligned with collision objects', () {
     final map = File('assets/tiles/character_arena.tmx').readAsStringSync();
     expect(map, contains('width="32" height="24"'));
