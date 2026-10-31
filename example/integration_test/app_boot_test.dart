@@ -720,6 +720,18 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(game.paused, isFalse);
 
+      await tester.tap(find.byTooltip('sprite_arena_objectives_tooltip'.tr));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(game.paused, isTrue);
+      expect(find.text('sprite_arena_objectives_title'.tr), findsOneWidget);
+      await tester.tap(
+        find.byWidgetPredicate(
+          (w) => w is NeonDialogButton && w.action.label == 'ok'.tr,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(game.paused, isFalse);
+
       await tester.pump(const Duration(seconds: 1));
       arena.lives.value = 1;
       final gameOverMonster = arena.monsters.firstWhere((m) => m.alive);
@@ -727,6 +739,15 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       expect(arena.roundOver.value, isTrue);
       expect(find.text('sprite_arena_game_over'.tr), findsOneWidget);
+      expect(
+        find.text(
+          'sprite_arena_objectives_summary'.trParams({
+            'completed': '${arena.completedObjectivesCount}',
+            'total': '${arena.objectives.value.length}',
+          }),
+        ),
+        findsOneWidget,
+      );
       await tester.tap(
         find.byWidgetPredicate(
           (w) => w is CommonButton && w.label == 'sprite_arena_restart'.tr,

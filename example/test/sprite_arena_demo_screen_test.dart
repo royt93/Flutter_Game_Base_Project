@@ -12,6 +12,7 @@ import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/energy_bar.dart';
+import 'package:roy_casual_kit/presentation/widgets/neon_app_bar.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_dialog.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/game_joystick.dart';
 import 'package:roy_casual_kit/presentation/game/roy_game.dart';
@@ -513,4 +514,122 @@ void main() {
     expect(game.paused, isFalse);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('objectives button opens dialog and closes on OK', (
+    tester,
+  ) async {
+    final game = SpriteArenaGame();
+    await tester.runAsync(() async {
+      rootBundle.evict('assets/tiles/character_arena.tmx');
+      await tester.pumpWidget(_wrap(game: game));
+      await Future<void>.sync(
+        game.toBeLoaded,
+      ).timeout(const Duration(seconds: 10));
+    });
+    await tester.pump();
+    await tester.pump();
+
+    // Mở dialog objectives
+    await tester.tap(find.byTooltip('View objectives'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Run Objectives'), findsOneWidget);
+    expect(find.text('Defeat Boss at Wave 5'), findsOneWidget);
+    expect(find.text('Clear Wave 5 with ≥3 lives'), findsOneWidget);
+    expect(find.text('Reach 500 score'), findsOneWidget);
+    expect(find.text('0/1'), findsNWidgets(2));
+    expect(find.text('0/500'), findsOneWidget);
+    expect(find.text('+150 pts'), findsOneWidget);
+    expect(find.text('+100 pts'), findsOneWidget);
+    expect(find.text('+200 pts'), findsOneWidget);
+
+    final okBtn = find.byWidgetPredicate(
+      (w) => w is NeonDialogButton && w.action.label == 'OK',
+    );
+    await tester.ensureVisible(okBtn);
+    await tester.tap(okBtn);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Run Objectives'), findsNothing);
+    expect(game.paused, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'Back button closes objectives dialog first before exiting screen',
+    (tester) async {
+      final game = SpriteArenaGame();
+      await tester.runAsync(() async {
+        rootBundle.evict('assets/tiles/character_arena.tmx');
+        await tester.pumpWidget(_wrap(game: game));
+        await Future<void>.sync(
+          game.toBeLoaded,
+        ).timeout(const Duration(seconds: 10));
+      });
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.byTooltip('View objectives'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Run Objectives'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Run Objectives'), findsNothing);
+      expect(find.byType(NeonAppBar), findsOneWidget);
+      expect(game.paused, isFalse);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('GameOver modal shows objectives summary counter', (
+    tester,
+  ) async {
+    final game = SpriteArenaGame();
+    await tester.runAsync(() async {
+      rootBundle.evict('assets/tiles/character_arena.tmx');
+      await tester.pumpWidget(_wrap(game: game));
+      await Future<void>.sync(
+        game.toBeLoaded,
+      ).timeout(const Duration(seconds: 10));
+    });
+    await tester.pump();
+    await tester.pump();
+
+    game.lives.value = 0;
+    game.roundOver.value = true;
+    game.phase.value = ArenaPhase.gameOver;
+    await tester.pump();
+
+    expect(find.text('Objectives: 0/3 completed'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'objectives dialog renders cleanly on narrow 240px width without overflow',
+    (tester) async {
+      tester.view.physicalSize = const Size(240, 480);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final game = SpriteArenaGame();
+      await tester.runAsync(() async {
+        rootBundle.evict('assets/tiles/character_arena.tmx');
+        await tester.pumpWidget(_wrap(game: game));
+        await Future<void>.sync(
+          game.toBeLoaded,
+        ).timeout(const Duration(seconds: 10));
+      });
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.byTooltip('View objectives'));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Run Objectives'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

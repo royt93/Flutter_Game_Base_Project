@@ -23,6 +23,8 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
   late final SpriteArenaGame _game;
   bool _showingHelp = false;
   bool _resumeAfterHelp = false;
+  bool _showingObjectives = false;
+  bool _resumeAfterObjectives = false;
   int? _attackPointer;
 
   @override
@@ -37,7 +39,7 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
   }
 
   void _pointerDown(PointerDownEvent event) {
-    if (!_game.attackEnabled || _showingHelp) return;
+    if (!_game.attackEnabled || _showingHelp || _showingObjectives) return;
     if (_attackPointer != null && _game.isFiring) return;
     _attackPointer = event.pointer;
     if (!_game.isFiring) {
@@ -66,8 +68,25 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
     }
   }
 
+  void _openObjectives() {
+    if (_showingObjectives || _showingHelp || !_game.isLoaded) return;
+    _stopHeldFire();
+    _resumeAfterObjectives = _game.phase.value == ArenaPhase.playing;
+    if (_resumeAfterObjectives) _game.pauseEngine();
+    setState(() => _showingObjectives = true);
+  }
+
+  void _closeObjectives() {
+    if (!_showingObjectives) return;
+    setState(() => _showingObjectives = false);
+    if (_resumeAfterObjectives) {
+      _resumeAfterObjectives = false;
+      _game.resumeEngine();
+    }
+  }
+
   void _openHelp() {
-    if (_showingHelp || !_game.isLoaded) return;
+    if (_showingHelp || _showingObjectives || !_game.isLoaded) return;
     _stopHeldFire();
     _resumeAfterHelp = _game.phase.value == ArenaPhase.playing;
     if (_resumeAfterHelp) _game.pauseEngine();
@@ -84,7 +103,9 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
   }
 
   void _back() {
-    if (_showingHelp) {
+    if (_showingObjectives) {
+      _closeObjectives();
+    } else if (_showingHelp) {
       _closeHelp();
     } else {
       Get.back();
@@ -92,7 +113,7 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
   }
 
   void _attack() {
-    if (!_game.attackEnabled || _showingHelp) return;
+    if (!_game.attackEnabled || _showingHelp || _showingObjectives) return;
     _attackFeedback();
     _game.fireOnce();
   }
@@ -106,9 +127,15 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
 
   @override
   Widget build(BuildContext context) => PopScope(
-    canPop: !_showingHelp,
+    canPop: !_showingHelp && !_showingObjectives,
     onPopInvokedWithResult: (didPop, result) {
-      if (!didPop && _showingHelp) _closeHelp();
+      if (!didPop) {
+        if (_showingObjectives) {
+          _closeObjectives();
+        } else if (_showingHelp) {
+          _closeHelp();
+        }
+      }
     },
     child: Scaffold(
       body: SafeArea(
@@ -154,6 +181,18 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                             onBack: _back,
                             actions: [
                               if (controllable) ...[
+                                IconButton(
+                                  constraints: const BoxConstraints(
+                                    minWidth: 48,
+                                    minHeight: 48,
+                                  ),
+                                  tooltip: 'sprite_arena_objectives_tooltip'.tr,
+                                  onPressed: _openObjectives,
+                                  icon: Icon(
+                                    Icons.emoji_events_outlined,
+                                    color: NeonTheme.gold,
+                                  ),
+                                ),
                                 IconButton(
                                   constraints: const BoxConstraints(
                                     minWidth: 48,
@@ -494,6 +533,21 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                                           color: NeonTheme.inkSoft,
                                         ),
                                       ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'sprite_arena_objectives_summary'.trParams({
+                                          'completed':
+                                              '${_game.completedObjectivesCount}',
+                                          'total':
+                                              '${_game.objectives.value.length}',
+                                        }),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: NeonTheme.gold,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
                                       const SizedBox(height: 16),
                                       CommonButton(
                                         label: 'sprite_arena_restart'.tr,
@@ -563,6 +617,13 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                             ),
                           ),
                         ),
+                      if (_showingObjectives)
+                        Positioned.fill(
+                          child: NeonDialog.overlay(
+                            onBarrier: _closeObjectives,
+                            panel: _buildObjectivesPanel(context, constraints),
+                          ),
+                        ),
                       if (_showingHelp)
                         Positioned.fill(
                           child: NeonDialog.overlay(
@@ -609,6 +670,104 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
       ),
     ),
   );
+
+  Widget _buildObjectivesPanel(
+    BuildContext context,
+    BoxConstraints constraints,
+  ) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: constraints.maxHeight - 16),
+      child: SingleChildScrollView(
+        child: ValueListenableBuilder<List<ArenaObjective>>(
+          valueListenable: _game.objectives,
+          builder: (context, objectives, _) => NeonDialog.panel(
+            title: 'sprite_arena_objectives_title'.tr,
+            color: NeonTheme.gold,
+            icon: Icons.emoji_events,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < objectives.length; i++) ...[
+                  if (i > 0) const SizedBox(height: NeonTheme.s16),
+                  _buildObjectiveRow(objectives[i]),
+                ],
+              ],
+            ),
+            actions: [
+              NeonDialogAction(
+                label: 'ok'.tr,
+                color: NeonTheme.gold,
+                onTap: _closeObjectives,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildObjectiveRow(ArenaObjective obj) {
+    final completed = obj.completed;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(
+          completed ? Icons.check_circle : Icons.radio_button_unchecked,
+          color: completed ? NeonTheme.lime : NeonTheme.inkSoft,
+          size: 24,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                obj.titleKey.tr,
+                style: TextStyle(
+                  color: completed ? NeonTheme.ink : NeonTheme.inkSoft,
+                  fontSize: 14,
+                  fontWeight: completed ? FontWeight.w800 : FontWeight.w600,
+                  decoration: completed ? TextDecoration.lineThrough : null,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${obj.progress}/${obj.target}',
+                style: TextStyle(
+                  color: NeonTheme.inkSoft,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: NeonTheme.s8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: completed
+                ? NeonTheme.gold.withValues(alpha: 0.18)
+                : NeonTheme.muted.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: completed ? NeonTheme.gold : NeonTheme.muted,
+              width: 1.5,
+            ),
+          ),
+          child: Text(
+            'sprite_arena_obj_bonus'.trParams({'pts': '${obj.bonusScore}'}),
+            style: TextStyle(
+              color: completed ? NeonTheme.gold : NeonTheme.inkSoft,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _statusChip(IconData icon, String label, Color color) => Container(
     constraints: const BoxConstraints(maxWidth: 150, minHeight: 40),

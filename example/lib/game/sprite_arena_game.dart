@@ -14,6 +14,35 @@ import 'arena_actors.dart';
 
 enum ArenaPhase { loading, playing, paused, gameOver, failed }
 
+enum ArenaObjectiveId { defeatBossWave5, surviveWith3Lives, reachScore500 }
+
+class ArenaObjective {
+  const ArenaObjective({
+    required this.id,
+    required this.titleKey,
+    required this.target,
+    required this.progress,
+    required this.completed,
+    required this.bonusScore,
+  });
+
+  final ArenaObjectiveId id;
+  final String titleKey;
+  final int target;
+  final int progress;
+  final bool completed;
+  final int bonusScore;
+
+  ArenaObjective copyWith({int? progress, bool? completed}) => ArenaObjective(
+    id: id,
+    titleKey: titleKey,
+    target: target,
+    progress: progress ?? this.progress,
+    completed: completed ?? this.completed,
+    bonusScore: bonusScore,
+  );
+}
+
 class SpriteArenaGame extends RoyGame {
   SpriteArenaGame({double Function()? pickupRoll})
     : _pickupRoll = pickupRoll ?? math.Random().nextDouble,
@@ -37,6 +66,43 @@ class SpriteArenaGame extends RoyGame {
   final rapidFireRemaining = ValueNotifier<double>(0);
   final pickupRemaining = ValueNotifier<double>(0);
   final bossHp = ValueNotifier<int?>(null);
+
+  static List<ArenaObjective> get _initialObjectives => const [
+    ArenaObjective(
+      id: ArenaObjectiveId.defeatBossWave5,
+      titleKey: 'sprite_arena_obj_boss_w5',
+      target: 1,
+      progress: 0,
+      completed: false,
+      bonusScore: 150,
+    ),
+    ArenaObjective(
+      id: ArenaObjectiveId.surviveWith3Lives,
+      titleKey: 'sprite_arena_obj_survive_lives',
+      target: 1,
+      progress: 0,
+      completed: false,
+      bonusScore: 100,
+    ),
+    ArenaObjective(
+      id: ArenaObjectiveId.reachScore500,
+      titleKey: 'sprite_arena_obj_score_500',
+      target: 500,
+      progress: 0,
+      completed: false,
+      bonusScore: 200,
+    ),
+  ];
+
+  late final objectives = ValueNotifier<List<ArenaObjective>>(
+    _initialObjectives,
+  );
+  int get completedObjectivesCount =>
+      objectives.value.where((o) => o.completed).length;
+
+  /// Phase 2 hook: called when boss wave 5 clears so UI can show upgrade selection.
+  VoidCallback? onBossWaveCleared;
+
   final _bullets = <ArenaBullet>{};
   bool _ready = false;
   final _mapColliders = <TerrainCollider>[];
@@ -168,8 +234,42 @@ class SpriteArenaGame extends RoyGame {
     }
   }
 
+  void _completeObjective(ArenaObjectiveId id) {
+    if (roundOver.value) return;
+    final list = List<ArenaObjective>.from(objectives.value);
+    final idx = list.indexWhere((o) => o.id == id);
+    if (idx == -1 || list[idx].completed) return;
+
+    final target = list[idx].target;
+    final obj = list[idx].copyWith(progress: target, completed: true);
+    list[idx] = obj;
+    objectives.value = list;
+
+    score.value += obj.bonusScore;
+    fireHaptic(HapticLevel.medium);
+    AudioManager.maybe?.playSfx('audio/victory.ogg', volume: 0.6);
+  }
+
+  void _onScoreChanged() {
+    if (roundOver.value) return;
+    final list = List<ArenaObjective>.from(objectives.value);
+    final idx = list.indexWhere((o) => o.id == ArenaObjectiveId.reachScore500);
+    if (idx == -1 || list[idx].completed) return;
+
+    final target = list[idx].target;
+    final current = score.value;
+    final prog = math.min(current, target);
+    if (prog >= target) {
+      _completeObjective(ArenaObjectiveId.reachScore500);
+    } else if (prog != list[idx].progress) {
+      list[idx] = list[idx].copyWith(progress: prog);
+      objectives.value = list;
+    }
+  }
+
   @override
   Future<void> onLoad() async {
+    score.addListener(_onScoreChanged);
     try {
       await super.onLoad();
       await Future.wait([arenaLoad!, playerLoad!]);
@@ -195,6 +295,12 @@ class SpriteArenaGame extends RoyGame {
       phase.value = ArenaPhase.failed;
       rethrow;
     }
+  }
+
+  @override
+  void onRemove() {
+    score.removeListener(_onScoreChanged);
+    super.onRemove();
   }
 
   void _spawnTargets() {
@@ -269,7 +375,12 @@ class SpriteArenaGame extends RoyGame {
           AudioManager.maybe?.playSfx('audio/tap.ogg', volume: 0.4);
         },
         onDestroyed: (m) {
-          if (m.isBoss) bossHp.value = 0;
+          if (m.isBoss) {
+            bossHp.value = 0;
+            if (wave.value == 5) {
+              _completeObjective(ArenaObjectiveId.defeatBossWave5);
+            }
+          }
           spawnSparkleBurst(m.position.clone(), count: 12);
           fireHaptic(HapticLevel.light);
           AudioManager.maybe?.playSfx('audio/victory.ogg', volume: 0.5);
@@ -350,6 +461,12 @@ class SpriteArenaGame extends RoyGame {
       _spawnNextMonster();
       _spawnCooldown = spawnInterval;
     } else if (_spawnedThisWave == _waveMonsterCount && active == 0) {
+      if (wave.value == 5) {
+        if (lives.value >= 3) {
+          _completeObjective(ArenaObjectiveId.surviveWith3Lives);
+        }
+        onBossWaveCleared?.call();
+      }
       bossHp.value = null;
       wave.value++;
       _waveSize++;
@@ -396,6 +513,7 @@ class SpriteArenaGame extends RoyGame {
     lives.value = playerMaxLives;
     wave.value = 1;
     roundOver.value = false;
+    objectives.value = _initialObjectives;
     _damageCooldown = 0;
     _waveSize = 2;
     _spawnedThisWave = 0;

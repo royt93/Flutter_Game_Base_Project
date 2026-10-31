@@ -31,6 +31,17 @@ Future<SpriteArenaGame> loadArenaInto(
 Future<SpriteArenaGame> loadArena(WidgetTester tester) =>
     loadArenaInto(tester, SpriteArenaGame());
 
+Future<void> advanceToWave(SpriteArenaGame game, int targetWave) async {
+  for (var step = 0; step < 500 && game.wave.value < targetWave; step++) {
+    for (final monster in game.monsters.where((m) => m.alive).toList()) {
+      for (var hit = 0; hit < monster.hp; hit++) {
+        monster.takeHit();
+      }
+    }
+    game.update(SpriteArenaGame.spawnInterval);
+  }
+}
+
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -586,7 +597,7 @@ void main() {
         boss.takeHit();
       }
       expect(game.pickup?.kind, ArenaPickupKind.rapidFire);
-      expect(game.score.value, scoreBeforeBoss + 100);
+      expect(game.score.value, scoreBeforeBoss + 100 + 150 + 200);
       expect(game.wave.value, 5);
       game.update(SpriteArenaGame.spawnInterval - 0.01);
       expect(game.wave.value, 5);
@@ -945,6 +956,109 @@ void main() {
     game.lifecycleStateChange(AppLifecycleState.resumed);
     expect(game.phase.value, ArenaPhase.paused);
     expect(game.attackEnabled, isFalse);
+  });
+
+  testWidgets(
+    'initial objectives has 3 items with 0 progress and not completed',
+    (tester) async {
+      final game = await loadArena(tester);
+      expect(game.objectives.value, hasLength(3));
+      expect(game.completedObjectivesCount, 0);
+      for (final obj in game.objectives.value) {
+        expect(obj.progress, 0);
+        expect(obj.completed, isFalse);
+      }
+    },
+  );
+
+  testWidgets(
+    'reaching score 500 completes reachScore500 and awards +200 bonus score without recursion',
+    (tester) async {
+      final game = await loadArena(tester);
+      // Đặt score lên 490 -> progress cập nhật 490, chưa complete
+      game.score.value = 490;
+      final objBefore = game.objectives.value.firstWhere(
+        (o) => o.id == ArenaObjectiveId.reachScore500,
+      );
+      expect(objBefore.progress, 490);
+      expect(objBefore.completed, isFalse);
+
+      // Đặt lên 500 -> complete, bonus +200 vào score (thành 700)
+      game.score.value = 500;
+      final objAfter = game.objectives.value.firstWhere(
+        (o) => o.id == ArenaObjectiveId.reachScore500,
+      );
+      expect(objAfter.progress, 500);
+      expect(objAfter.completed, isTrue);
+      expect(game.score.value, 700); // 500 + 200
+      expect(game.completedObjectivesCount, 1);
+    },
+  );
+
+  testWidgets(
+    'defeating boss at wave 5 completes defeatBossWave5 and awards +150 bonus score',
+    (tester) async {
+      final game = await loadArenaInto(
+        tester,
+        SpriteArenaGame(pickupRoll: () => 0.99),
+      );
+      await advanceToWave(game, 5);
+      game.update(SpriteArenaGame.spawnInterval);
+      final boss = game.monsters.singleWhere((m) => m.alive);
+      final scoreBefore = game.score.value;
+      for (var hit = 0; hit < ArenaMonster.bossHp; hit++) {
+        boss.takeHit();
+      }
+      final obj = game.objectives.value.firstWhere(
+        (o) => o.id == ArenaObjectiveId.defeatBossWave5,
+      );
+      expect(obj.completed, isTrue);
+      expect(obj.progress, 1);
+      // Điểm boss +100, bonus objective boss +150, bonus score500 +200 = +450
+      expect(game.score.value, scoreBefore + 100 + 150 + 200);
+    },
+  );
+
+  testWidgets(
+    'clearing wave 5 with >=3 lives completes surviveWith3Lives and calls onBossWaveCleared',
+    (tester) async {
+      final game = await loadArenaInto(
+        tester,
+        SpriteArenaGame(pickupRoll: () => 0.99),
+      );
+      var bossClearedCalled = false;
+      game.onBossWaveCleared = () => bossClearedCalled = true;
+      game.lives.value = 3;
+      await advanceToWave(game, 5);
+      game.update(SpriteArenaGame.spawnInterval);
+      final boss = game.monsters.singleWhere((m) => m.alive);
+      for (var hit = 0; hit < ArenaMonster.bossHp; hit++) {
+        boss.takeHit();
+      }
+      final scoreBefore = game.score.value;
+      // Tick để wave 5 clear
+      game.update(SpriteArenaGame.spawnInterval);
+      expect(bossClearedCalled, isTrue);
+      final obj = game.objectives.value.firstWhere(
+        (o) => o.id == ArenaObjectiveId.surviveWith3Lives,
+      );
+      expect(obj.completed, isTrue);
+      expect(game.score.value, scoreBefore + 100);
+    },
+  );
+
+  testWidgets('restart resets objectives to initial 0-progress state', (
+    tester,
+  ) async {
+    final game = await loadArena(tester);
+    game.score.value = 500;
+    expect(game.completedObjectivesCount, 1);
+    game.restart();
+    expect(game.completedObjectivesCount, 0);
+    for (final obj in game.objectives.value) {
+      expect(obj.progress, 0);
+      expect(obj.completed, isFalse);
+    }
   });
 
   test('arena includes visible props aligned with collision objects', () {
